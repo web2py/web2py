@@ -331,12 +331,12 @@ class RadioWidget(OptionsWidget):
             for k, v in options[r_index*cols:(r_index+1)*cols]:
                 checked={'_checked':'checked'} if k==value else {}
                 tds.append(inner(INPUT(_type='radio',
-                                       _id='%s%s' % (field.name,k), 
+                                       _id='%s%s' % (field.name,k),
                                        _name=field.name,
                                        requires=attr.get('requires',None),
                                        hideerror=True, _value=k,
                                        value=value,
-                                       **checked), 
+                                       **checked),
                                        LABEL(v,_for='%s%s' % (field.name,k))))
             opts.append(child(tds))
 
@@ -398,12 +398,12 @@ class CheckboxesWidget(OptionsWidget):
                     r_value = k
                 else:
                     r_value = []
-                tds.append(inner(INPUT(_type='checkbox', 
+                tds.append(inner(INPUT(_type='checkbox',
                                        _id='%s%s' % (field.name,k),
                                        _name=field.name,
                                        requires=attr.get('requires', None),
                                        hideerror=True, _value=k,
-                                       value=r_value), 
+                                       value=r_value),
                                        LABEL(v,_for='%s%s' % (field.name,k))))
             opts.append(child(tds))
 
@@ -1126,7 +1126,7 @@ class SQLFORM(FORM):
                     else:
                         value = self.table[fieldname].default
                     if field.type.startswith('list:') and \
-                            isinstance(value, str): 
+                            isinstance(value, str):
                         value = [value]
                     row_id = '%s_%s%s' % (self.table, fieldname, SQLFORM.ID_ROW_SUFFIX)
                     widget = field.widget(field, value)
@@ -1199,7 +1199,7 @@ class SQLFORM(FORM):
                     ### do not know why this happens, it should not
                     (source_file, original_filename) = \
                         (cStringIO.StringIO(f), 'file.txt')
-                newfilename = field.store(source_file, original_filename, field.uploadfolder)                
+                newfilename = field.store(source_file, original_filename, field.uploadfolder)
                 # this line is for backward compatibility only
                 self.vars['%s_newfilename' % fieldname] = newfilename
                 fields[fieldname] = newfilename
@@ -1288,11 +1288,11 @@ class SQLFORM(FORM):
         if 'table_name' in attributes:
             del attributes['table_name']
 
-        return SQLFORM(DAL(None).define_table(table_name, *fields), 
+        return SQLFORM(DAL(None).define_table(table_name, *fields),
                        **attributes)
 
     @staticmethod
-    def build_query(fields,keywords):        
+    def build_query(fields,keywords):
         key = keywords.strip()
         if key and not ' ' in key:
             SEARCHABLE_TYPES = ('string','text','list:string')
@@ -1371,7 +1371,7 @@ class SQLFORM(FORM):
             INPUT(
                 _value="query",_type="button",_id="w2p_query_trigger",
                 _onclick="jQuery('#w2p_query_fields').val('');jQuery('#w2p_query_panel').slideToggle();"))
-            
+
     @staticmethod
     def grid(query,
              fields=None,
@@ -1397,12 +1397,12 @@ class SQLFORM(FORM):
              maxtextlength=20,
              onvalidation=None,
              oncreate=None,
-             onupdate=None, 
+             onupdate=None,
              ondelete=None,
              sorter_icons=('[^]','[v]'),
              ui = 'web2py',
              showbuttontext=True,
-             _class="web2py_grid",             
+             _class="web2py_grid",
              formname='web2py_grid',
              search_widget='default',
              ignore_rw = False,
@@ -1411,7 +1411,7 @@ class SQLFORM(FORM):
 
         # jQuery UI ThemeRoller classes (empty if ui is disabled)
         if ui == 'jquery-ui':
-            ui = dict(widget='ui-widget',                      
+            ui = dict(widget='ui-widget',
                       header='ui-widget-header',
                       content='ui-widget-content',
                       default='ui-state-default',
@@ -1429,7 +1429,7 @@ class SQLFORM(FORM):
                       buttonview='ui-icon ui-icon-zoomin',
                       )
         elif ui == 'web2py':
-            ui = dict(widget='',                      
+            ui = dict(widget='',
                       header='',
                       content='',
                       default='',
@@ -1448,13 +1448,13 @@ class SQLFORM(FORM):
                       )
         elif not isinstance(ui,dict):
             raise RuntimeError,'SQLFORM.grid ui argument must be a dictionary'
-        
+
         from gluon import current, redirect
         db = query._db
         T = current.T
         request = current.request
         session = current.session
-        response = current.response        
+        response = current.response
         wenabled = (not user_signature or (session.auth and session.auth.user))
         create = wenabled and create
         editable = wenabled and editable
@@ -1470,13 +1470,13 @@ class SQLFORM(FORM):
                        buttonurl=url(args=[]),callback=None,delete=None,trap=True):
             if showbuttontext:
                 if callback:
-                    return A(SPAN(_class=ui.get(buttonclass,'')), 
+                    return A(SPAN(_class=ui.get(buttonclass,'')),
                              SPAN(T(buttontext),_title=buttontext,
                                   _class=ui.get('buttontext','')),
                              callback=callback,delete=delete,
                              _class=trap_class(ui.get('button',''),trap))
                 else:
-                    return A(SPAN(_class=ui.get(buttonclass,'')), 
+                    return A(SPAN(_class=ui.get(buttonclass,'')),
                              SPAN(T(buttontext),_title=buttontext,
                                   _class=ui.get('buttontext','')),
                              _href=buttonurl,
@@ -1500,7 +1500,7 @@ class SQLFORM(FORM):
         if not field_id:
             field_id = tables[0]._id
         columns = [str(field) for field in fields \
-                       if field._tablename in tablenames]        
+                       if field._tablename in tablenames]
         if not str(field_id) in [str(f) for f in fields]:
             fields.append(field_id)
         table = field_id.table
@@ -1531,10 +1531,12 @@ class SQLFORM(FORM):
                                           url(args=args)))
             if record and links:
                 for link in links:
-                    if link(record):
-                        buttons.append(link(record))
+                    if isinstance(link,dict):
+                         buttons.append(link['body'](record))
+                    elif link(record):
+                         buttons.append(link(record))
             return buttons
-        
+
         formfooter = DIV(
             _class='form_footer row_buttons %(header)s %(cornerbottom)s' % ui)
 
@@ -1548,7 +1550,7 @@ class SQLFORM(FORM):
                 _class='web2py_form').process(
                 next=referrer,
                 onvalidation=onvalidation,
-                onsuccess=oncreate,                          
+                onsuccess=oncreate,
                 formname=formname)
             res = DIV(buttons(),create_form,formfooter,_class=_class)
             res.create_form = create_form
@@ -1642,7 +1644,7 @@ class SQLFORM(FORM):
         else:
             subquery = None
         if subquery:
-            dbset = dbset(subquery)   
+            dbset = dbset(subquery)
         try:
             if left:
                 nrows = dbset.select('count(*)',left=left).first()['count(*)']
@@ -1651,7 +1653,7 @@ class SQLFORM(FORM):
         except:
             nrows = 0
             error = T('Unsupported query')
-                
+
         search_actions = DIV(_class='web2py_search_actions')
         if create:
             search_actions.append(gridbutton(
@@ -1683,7 +1685,7 @@ class SQLFORM(FORM):
 
         head = TR(_class=ui.get('header',''))
         if selectable:
-            head.append(TH(_class=ui.get('default','')))        
+            head.append(TH(_class=ui.get('default','')))
         for field in fields:
             if columns and not str(field) in columns: continue
             if not field.readable: continue
@@ -1704,16 +1706,16 @@ class SQLFORM(FORM):
 
         if links and links_in_grid:
             for link in links:
-                if isinstance(link,dict): 
+                if isinstance(link,dict):
                     head.append(TH(link['header'], _class=ui.get('default','')))
-        
+
         # Include extra column for buttons if needed.
         include_buttons_column = (details or editable or deletable or
             (links and links_in_grid and
              not all([isinstance(link, dict) for link in links])))
         if include_buttons_column:
             head.append(TH(_class=ui.get('default','')))
-        
+
         paginator = UL()
         if paginate and paginate<nrows:
             npages,reminder = divmod(nrows,paginate)
@@ -1745,7 +1747,7 @@ class SQLFORM(FORM):
         else:
             limitby = None
 
-        try:            
+        try:
             table_fields = [f for f in fields if f._tablename in tablenames]
             rows = dbset.select(left=left,orderby=orderby,limitby=limitby,*table_fields)
         except SyntaxError:
@@ -1769,7 +1771,7 @@ class SQLFORM(FORM):
                 if selectable:
                     tr.append(INPUT(_type="checkbox",_name="records",_value=id,
                                     value=request.vars.records))
-                for field in fields:                
+                for field in fields:
                     if not str(field) in columns: continue
                     if not field.readable: continue
                     if field.type=='blob': continue
@@ -1783,14 +1785,14 @@ class SQLFORM(FORM):
                             except KeyError:
                                 pass
                     elif field.type=='boolean':
-                        value = INPUT(_type="checkbox",_checked = value, 
+                        value = INPUT(_type="checkbox",_checked = value,
                                       _disabled=True)
                     elif field.type=='upload':
                         if value:
                             if callable(upload):
                                 value = A('File', _href=upload(value))
                             elif upload:
-                                value = A('File', 
+                                value = A('File',
                                           _href='%s/%s' % (upload, value))
                         else:
                             value = ''
@@ -1844,7 +1846,7 @@ class SQLFORM(FORM):
         return res
 
     @staticmethod
-    def smartgrid(table, constraints=None, linked_tables=None,                  
+    def smartgrid(table, constraints=None, linked_tables=None,
                   links=None, links_in_grid=True,
                   args=None, user_signature=True,
                   **kwargs):
@@ -1864,17 +1866,17 @@ class SQLFORM(FORM):
         form=SQLFORM.smartgrid(db[request.args(0) or 'person']) #***
         return dict(form=form)
 
-        *** builds a complete interface to navigate all tables links 
+        *** builds a complete interface to navigate all tables links
             to the request.args(0)
-            table: pagination, search, view, edit, delete, 
+            table: pagination, search, view, edit, delete,
                    children, parent, etc.
 
-        constraints is a dict {'table',query} that limits which 
+        constraints is a dict {'table',query} that limits which
         records can be accessible
-        links is a dict like 
+        links is a dict like
            {'tablename':[lambda row: A(....), ...]}
         that will add buttons when table tablename is displayed
-        linked_tables is a optional list of tablenames of tables 
+        linked_tables is a optional list of tablenames of tables
         to be linked
         """
         from gluon import current, A, URL, DIV, H3, redirect
