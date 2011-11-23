@@ -16,26 +16,24 @@ To start web2py there is NO NEED to install it. Just unzip and do:
 
 Thats is it!!!
 
-## web2py file structure
+## web2py directory structure
 
     project/
         README
         LICENSE
-        web2py.py                  ## the startup script
-        anyserver.py               ## to run with third party servers
-        wsgihandler.py             ## handler to connect to WSGI
-        ...                        ## other handlers and example files
-        site-packages/             ## additional optional modules
-        scripts/                   ## utility and installation scripts
-        gluon/                     ## the core libraries
-            contrib/               ## third party libraries
-            tests/                 ## unittests
-        applications/              ## are the apps
-	    admin/                 ## web based IDE
+        web2py.py                  > the startup script
+        anyserver.py               > to run with third party servers
+        wsgihandler.py             > handler to connect to WSGI
+        ...                        > other handlers and example files
+        gluon/                     > the core libraries
+            contrib/               > third party libraries
+            tests/                 > unittests
+        applications/              > are the apps
+	    admin/                 > web based IDE
                 ...
-            examples/              ## examples, docs, links
+            examples/              > examples, docs, links
                 ...
-            welcome/               ## the scaffolding app
+            welcome/               > the scaffolding app (they all copy it)
                 ABOUT
                 LICENSE
                 models/
@@ -49,3 +47,6 @@ Thats is it!!!
                 modules/
                 cron/
                 tests/
+            ...                    > your own apps
+        scripts/                   > utility and installation scripts
+        site-packages/             > additional optional modules
