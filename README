@@ -1,4 +1,8 @@
-## INSTALLATION INSTRUCTION - IMPORTANT
+# LEARN MORE
+
+http://web2py.com
+
+# INSTALLATION INSTRUCTION - IMPORTANT
 
 To start web2py there is NO NEED to install it. Just unzip and do:
 
@@ -6,12 +10,13 @@ To start web2py there is NO NEED to install it. Just unzip and do:
 
 Thats is it!!!
 
-## web2py file structure
+# web2py file structure
 
 start web2py with:
  
    python web2py.py
 
+Overview:
 ``
     \project
 	README
@@ -45,7 +50,9 @@ start web2py with:
                         \modules
 ``
 
-## EWF v1.5 -> v1.6 
+# Version History
+
+## EWF v1.5 -> v1.6  (2007)
 - load and save .py in ascii, avoids problem with LF+CR on windows
 - added path.join in compileapp, fixed problem with Windows compileapp
 
