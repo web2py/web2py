@@ -118,6 +118,9 @@ run:
 push:
 	make src
 	echo '' > NEWINSTALL
+	hg commit -m "$(S)"
+	bzr commit -m "$(S)"
+	git commit -a -m "$(S)"
 	hg push
+	git push
 	bzr push bzr+ssh://mdipierro@bazaar.launchpad.net/~mdipierro/web2py/devel --use-existing-dir
-
