@@ -1,0 +1,12 @@
+{{extend 'layout.html'}}
+
+<p>Type something and press the button.
+   The last 10 entries will appear sorted in a table below.</p>
+
+<form>
+<INPUT type="text" id="q" name = "q" value="web2py"/>
+<INPUT type="button" value="submit" 
+       onclick="ajax('{{=URL('data')}}',['q'],'target');"/>
+</form>
+<br/>
+<div id="target"></div>

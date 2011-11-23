@@ -1,0 +1,685 @@
+{{extend 'layout.html'}} 
+{{import os}}
+
+<div class="onecolcontent">
+  <h2>web2py<sup style="font-size:0.5em;">TM</sup> Examples</h2>
+  <div id="navigation">
+    <a href="#simple_examples">simple</a> |
+    <a href="#session_examples">session</a> |
+    <a href="#template_examples">template</a> |
+    <a href="#layout_examples">layout</a> |
+    <a href="#form_examples">form</a> |
+    <a href="#database_examples">database</a> |
+    <a href="#cache_examples">cache</a> |
+    <a href="#ajax_examples">ajax</a> |
+    <a href="#testing_examples">testing</a> |
+    <a href="#streaming_examples">streaming</a> |
+    <a href="#xmlrpc_examples">xmlrpc</a> |
+    <a href="http://www.web2py.com/book/default/chapter/06">dal</a> |
+    <a href="http://www.web2py.com/book/default/chapter/07">crud</a> |
+    <a href="http://www.web2py.com/book/default/chapter/08">auth</a>
+  </div>
+  <div id="scrollhere">
+    
+    <h2 id="simple_examples">Simple Examples</h2>
+    
+    <p><i>Here are some working and complete examples that explain the basic syntax of the framework.<br/>
+    You can click on the web2py keywords (in the highlighted code!) to get documentation.</i></p>
+
+    <h3>Example {{c=1}}{{=c}}{{c+=1}}</h3><b>In controller: simple_examples.py</b>
+    {{=CODE("""
+    def hello1():
+        return "Hello World"
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+
+    <p>If the controller function returns a string, that is the body of the rendered page.<br/>Try it here: <a href="/{{=request.application}}/simple_examples/hello1">hello1</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: simple_examples.py</b>
+    {{=CODE("""
+    def hello2():
+        return T("Hello World")
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+
+    <p>The function T() marks strings that need to be translated. Translation dictionaries can be created at /admin/default/design<br/>Try it here: <a href="/{{=request.application}}/simple_examples/hello2">hello2</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: simple_examples.py</b>
+    {{=CODE("""
+    def hello3():
+        return dict(message=T("Hello World"))
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+
+    <b>and view: simple_examples/hello3.html</b>
+    {{=CODE(open(os.path.join(request.folder,'views/simple_examples/hello3.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>If you return a dictionary, the variables defined in the dictionery are visible to the view (template).
+    <br/>Try it here: <a href="/{{=request.application}}/simple_examples/hello3.html">hello3</a></p>
+
+    <p>Actions can also be be rendered in other formsts like JSON, <a href="/{{=request.application}}/simple_examples/hello3.json">hello3.json</a>, and XML, <a href="/{{=request.application}}/simple_examples/hello3.xml">hello3.xml</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: simple_examples.py</b>
+    {{=CODE("""
+    def hello4():
+        response.view='simple_examples/hello3.html'
+        return dict(message=T("Hello World"))
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>You can change the view, but the default is /[controller]/[function].html. If the default is not found web2py tries to render the page using the generic.html view.
+    <br/>Try it here: <a href="/{{=request.application}}/simple_examples/hello4">hello4</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: simple_examples.py</b>
+    {{=CODE("""
+    def hello5():
+        return HTML(BODY(H1(T('Hello World'),_style="color: red;"))).xml() # .xml to serialize
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>You can also generate HTML using helper objects HTML, BODY, H1, etc. Each of these tags is a class and the views know how to render the corresponding objects. The method .xml() serializes them and produce html/xml code for the page.
+    Each tag, DIV for example, takes three types of arguments:</p>
+    <ul>
+    <li>unnamed arguments, they correspond to nested tags</li>
+    <li>named arguments and name starts with '_'. These are mapped blindly into tag attributes and the '_' is removed. attributes without value like "READONLY" can be created with the argument "_readonly=ON".</li>
+    <li>named arguments and name does not start with '_'. They have a special meaning. See "value=" for INPUT, TEXTAREA, SELECT tags later.
+    </ul>
+    <p>Try it here: <a href="/{{=request.application}}/simple_examples/hello5">hello5</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: simple_examples.py</b>
+    {{=CODE("""
+    def hello6():
+        response.flash=T("Hello World in a flash!")
+        return dict(message=T("Hello World"))
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+
+    <p>response.flash allows you to flash a message to the user when the page is returned. Use session.flash instead of response.flash to display a message after redirection. With default layout, you can click on the flash to make it disappear.
+    <br/>Try it here: <a href="/{{=request.application}}/simple_examples/hello6">hello6</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: simple_examples.py</b>
+    {{=CODE("""
+    def status():
+        return dict(request=request,session=session,response=response)
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>Here we are showing the request, session and response objects using the generic.html template.
+    <br/>Try it here: <a href="/{{=request.application}}/simple_examples/status">status</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: simple_examples.py</b>
+    {{=CODE("""
+    def redirectme():
+        redirect(URL('hello3'))
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>You can do redirect.
+    <br/>Try it here: <a href="/{{=request.application}}/simple_examples/redirectme">redirectme</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: simple_examples.py</b>
+    {{=CODE("""
+    def raisehttp():
+        raise HTTP(400,"internal error")
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>You can raise HTTP exceptions to return an error page.
+    <br/>Try it here: <a href="/{{=request.application}}/simple_examples/raisehttp">raisehttp</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: simple_examples.py</b>
+    {{=CODE("""
+    def raiseexception():
+        1/0
+        return 'oops'
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>If an exception occurs (other than HTTP) a ticket is generated and the event is logged for the administrator. These tickets and logs can be accessed, reviewed and deleted at any later time.
+    <br/>Try it here: <a href="/{{=request.application}}/simple_examples/raiseexception">raiseexception</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: simple_examples.py</b>
+    {{=CODE("""
+    def servejs():
+        import gluon.contenttype
+        response.headers['Content-Type']=gluon.contenttype.contenttype('.js')
+        return 'alert("This is a Javascript document, it is not supposed to run!");'
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>You can serve other than HTML pages by changing the contenttype via the response.headers. The gluon.contenttype module can help you figure the type of the file to be served. NOTICE: this is not necessary for static files unless you want to require authorization.
+    <br/>Try it here: <a href="/{{=request.application}}/simple_examples/servejs">servejs</a></p>
+
+    <h3 id="example_json">Example {{=c}}{{c+=1}}</h3><b>In controller: simple_examples.py</b>
+    {{=CODE("""
+    def makejson():
+        return response.json(['foo', {'bar': ('baz', None, 1.0, 2)}])
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>If you are into Ajax, web2py includes gluon.contrib.<a href="http://cheeseshop.python.org/pypi/simplejson">simplejson</a>, developed by Bob Ippolito. This module provides a fast and easy way to serve asynchronous content to your Ajax page. gluon.simplesjson.dumps(...) can serialize most Python types into <a href="http://www.json.org">JSON</a>. gluon.contrib.simplejson.loads(...) performs the reverse operation.
+    <br/>Try it here: <a href="/{{=request.application}}/simple_examples/makejson">makejson</a></p>
+
+    <p>New in web2py 1.63: Any normal action returning a dict is automatically serialized in JSON if '.json' is appended to the URL.</p>
+
+    <h3 id="example_rtf">Example {{=c}}{{c+=1}}</h3><b>In controller: simple_examples.py</b>
+    {{=CODE("""
+    def makertf():
+        import gluon.contrib.pyrtf as q
+        doc=q.Document()
+        section=q.Section()
+        doc.Sections.append(section)
+        section.append('Section Title')
+        section.append('web2py is great. '*100)
+        response.headers['Content-Type']='text/rtf'
+        return q.dumps(doc)
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>web2py also includes gluon.contrib.<a href="http://pyrtf.sourceforge.net/">pyrtf</a>, developed by Simon Cusack and revised by Grant Edwards. This module allows you to generate Rich Text Format documents including colored formatted text and pictures.<br/>Try it here: <a href="/{{=request.application}}/simple_examples/makertf">makertf</a></p>
+
+    <h3 id="example_rss">Example {{=c}}{{c+=1}}</h3><b>In controller: simple_examples.py</b>
+    {{=CODE("""
+    def rss_aggregator():
+        import datetime
+        import gluon.contrib.rss2 as rss2
+        import gluon.contrib.feedparser as feedparser
+        d = feedparser.parse("http://rss.slashdot.org/Slashdot/slashdot/to")
+
+        rss = rss2.RSS2(title=d.channel.title,
+           link = d.channel.link,
+           description = d.channel.description,
+           lastBuildDate = datetime.datetime.now(),
+           items = [
+              rss2.RSSItem(
+                title = entry.title,
+                link = entry.link,
+                description = entry.description,
+                # guid = rss2.Guid('unkown'),
+                pubDate = datetime.datetime.now()) for entry in d.entries]
+           )
+        response.headers['Content-Type']='application/rss+xml'
+        return rss2.dumps(rss)
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>web2py includes gluon.contrib.<a href="http://www.dalkescientific.com/Python/PyRSS2Gen.html">rss2</a>, developed by Dalke Scientific Software, which generates RSS2 feeds, and
+    gluon.contrib.<a href="http://www.feedparser.org/">feedparser</a>, developed by Mark Pilgrim, which collects RSS and ATOM feeds. The above controller collects a slashdot feed and makes new one.
+    <br/>Try it here: <a href="/{{=request.application}}/simple_examples/rss_aggregator">rss_aggregator</a></p>
+
+
+    <h3 id="example_wiki">Example {{=c}}{{c+=1}}</h3><b>In controller: simple_examples.py</b>
+    {{=CODE("""
+    def ajaxwiki():
+        form=FORM(TEXTAREA(_id='text',_name='text'),
+                 INPUT(_type='button',_value='markmin',
+                       _onclick="ajax('ajaxwiki_onclick',['text'],'html')"))
+        return dict(form=form,html=DIV(_id='html'))
+
+    def ajaxwiki_onclick():
+        return MARKMIN(request.vars.text).xml()
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>The markmin wiki markup is described <a href="{{=URL(r=request,c='static',f='markmin.html')}}">here</a>.
+    web2py also includes gluon.contrib.<a href="http://code.google.com/p/python-markdown2/">markdown</a>.WIKI helper (markdown2) which converts WIKI markup to HTML following <a href="http://en.wikipedia.org/wiki/Markdown">this syntax</a>. In this example we added a fancy ajax effect.<br/>Try it here: <a href="/{{=request.application}}/simple_examples/ajaxwiki">ajaxwiki</a></p>
+
+    <h2 id="session_examples">Session Examples</h2>
+
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: session_examples.py </b>
+    {{=CODE("""
+    def counter():
+        if not session.counter: session.counter=0
+        session.counter+=1
+        return dict(counter=session.counter)
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}<b>and view: session_examples/counter.html</b>
+    {{=CODE(open(os.path.join(request.folder,'views/session_examples/counter.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>Click to count. The session.counter is persistent for this user and application. Every applicaiton within the system has its own separate session management.
+    <br/>Try it here: <a href="/{{=request.application}}/session_examples/counter">counter</a></p>
+
+    <h2 id="template_examples">Template Examples</h2>
+
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: template_examples.py</b>
+    {{=CODE("""
+    def variables(): return dict(a=10, b=20)
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}<b>and view: template_examples/variables.html</b>
+    {{=CODE(open(os.path.join(request.folder,'views/template_examples/variables.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>A view (also known as template) is just an HTML file with &#123;&#123;...&#125;&#125; tags. You can put ANY python code into the tags, no need to indent but you must use pass to close blocks. The view is transformed into a python code and then executed. &#123;&#123;=a&#125;&#125; prints a.xml() or escape(str(a)).
+    <br/>Try it here: <a href="/{{=request.application}}/template_examples/variables">variables</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: template_examples.py </b>
+    {{=CODE("""
+    def test_for(): return dict()
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}<b>and view: template_examples/test_for.html</b>
+    {{=CODE(open(os.path.join(request.folder,'views/template_examples/test_for.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>You can do for and while loops.
+    <br/>Try it here: <a href="/{{=request.application}}/template_examples/test_for">test_for</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: template_examples.py </b>
+    {{=CODE("""
+    def test_if(): return dict()
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}<b>and view: template_examples/test_if.html</b>
+    {{=CODE(open(os.path.join(request.folder,'views/template_examples/test_if.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>You can do if, elif, else.
+    <br/>Try it here: <a href="/{{=request.application}}/template_examples/test_if">test_if</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: template_examples.py </b>
+    {{=CODE("""
+    def test_try(): return dict()
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}<b>and view: template_examples/test_try.html</b>
+    {{=CODE(open(os.path.join(request.folder,'views/template_examples/test_try.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>You can do try, except, finally.
+    <br/>Try it here: <a href="/{{=request.application}}/template_examples/test_try">test_try</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: template_examples.py </b>
+    {{=CODE("""
+    def test_def(): return dict()
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}<b>and view: template_examples/test_def.html</b>
+    {{=CODE(open(os.path.join(request.folder,'views/template_examples/test_def.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>You can write functions in HTML too.
+    <br/>Try it here: <a href="/{{=request.application}}/template_examples/test_def">test_def</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: template_examples.py </b>
+    {{=CODE("""
+    def escape(): return dict(message='<h1>text is escaped</h1>')
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}<b>and view: template_examples/escape.html</b>
+    {{=CODE(open(os.path.join(request.folder,'views/template_examples/escape.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>The argument of  &#123;&#123;=...&#125;&#125; is always escaped unless it is an object with a .xml() method such as link, A(...), a FORM(...), a XML(...) block, etc.
+    <br/>Try it here: <a href="/{{=request.application}}/template_examples/escape">escape</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: template_examples.py </b>
+    {{=CODE("""
+    def xml():
+        return dict(message=XML('<h1>text is not escaped</h1>'))
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}<b>and view: template_examples/xml.html</b>
+    {{=CODE(open(os.path.join(request.folder,'views/template_examples/xml.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>If you do not want to escape the argument of  &#123;&#123;=...&#125;&#125; mark it as XML.
+    <br/>Try it here: <a href="/{{=request.application}}/template_examples/xml">xml</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: template_examples.py </b>
+    {{=CODE("""
+    def beautify(): return dict(message=BEAUTIFY(request))
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}<b>and view: template_examples/beautify.html</b>
+    {{=CODE(open(os.path.join(request.folder,'views/template_examples/beautify.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>You can use BEAUTIFY to turn lists and dictionaries into organized HTML.
+    <br/>Try it here: <a href="/{{=request.application}}/template_examples/beautify">beautify</a></p>
+
+    <h2 id="layout_examples">Layout Examples</h2>
+
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: layout_examples.py </b>
+    {{=CODE("""
+    def civilized():
+        response.menu=[['civilized',True,URL('civilized')],
+                       ['slick',False,URL('slick')],
+                       ['basic',False,URL('basic')]]
+        response.flash='you clicked on civilized'
+        return dict(message="you clicked on civilized")
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}<b>and view: layout_examples/civilized.html</b>
+    {{=CODE(open(os.path.join(request.folder,'views/layout_examples/civilized.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>You can specify the layout file at the top of your view. civilized Layout file is a view that somewhere in the body contains &#123;&#123;include&#125;&#125;.
+    <br/>Try it here: <a href="/{{=request.application}}/layout_examples/civilized">civilized</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: layout_examples.py </b>
+    {{=CODE("""
+    def slick():
+        response.menu=[['civilized',False,URL('civilized')],
+                       ['slick',True,URL('slick')],
+                       ['basic',False,URL('basic')]]
+        response.flash='you clicked on slick'
+        return dict(message="you clicked on slick")
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}<b>and view: layout_examples/slick.html</b>
+    {{=CODE(open(os.path.join(request.folder,'views/layout_examples/slick.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>Same here, but using a different template.<br/>Try it here: <a href="/{{=request.application}}/layout_examples/slick">slick</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: layout_examples.py </b>
+    {{=CODE("""
+    def basic():
+        response.menu=[['civilized',False,URL('civilized')],
+                       ['slick',False,URL('slick')],
+                       ['basic',True,URL('basic')]]
+        response.flash='you clicked on basic'
+        return dict(message="you clicked on basic")
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}<b>and view: layout_examples/basic.html</b>
+    {{=CODE(open(os.path.join(request.folder,'views/layout_examples/basic.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>'layout.html' is the default template, every application has a copy of it.
+    <br/>Try it here: <a href="/{{=request.application}}/layout_examples/basic">basic</a></p>
+
+    <h2 id="form_examples">Form Examples</h2>
+
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: form_examples.py</b>
+    {{=CODE("""
+    def form():
+        form=FORM(TABLE(TR("Your name:",INPUT(_type="text",_name="name",requires=IS_NOT_EMPTY())),
+                        TR("Your email:",INPUT(_type="text",_name="email",requires=IS_EMAIL())),
+                        TR("Admin",INPUT(_type="checkbox",_name="admin")),
+                        TR("Sure?",SELECT('yes','no',_name="sure",requires=IS_IN_SET(['yes','no']))),
+                        TR("Profile",TEXTAREA(_name="profile",value="write something here")),
+                        TR("",INPUT(_type="submit",_value="SUBMIT"))))
+        if form.accepts(request,session):
+            response.flash="form accepted"
+        elif form.errors:
+            response.flash="form is invalid"
+        else:
+            response.flash="please fill the form"
+        return dict(form=form,vars=form.vars)
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>You can use HTML helpers like FORM, INPUT, TEXTAREA, OPTION, SELECT to build forms. The "value=" attribute sets the initial value of the field (works for TEXTAREA and OPTION/SELECT too) and the requires attribute sets the validators.
+    FORM.accepts(..) tries to validate the form and, on success, stores vars into form.vars. On failure the error messages are stored into form.errors and shown in the form.
+    <br/>Try it here: <a href="/{{=request.application}}/form_examples/form">form</a></p>
+
+    <h2 id="database_examples">Database Examples</h2>
+
+    <p>You can find more examples of the web2py Database Abstraction Layer <a href="http://www.web2py.com/book/default/chapter/06">here</a></p>
+
+    <p>Let's create a simple model with users, dogs, products and purchases (the database of an animal store). Users can have many dogs (ONE TO MANY), can buy many products and every product can have many buyers (MANY TO MANY).</p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>in model: db.py</b>
+    {{=CODE("""
+    db=DAL('sqlite://storage.db')
+
+    db.define_table('users',
+                    Field('name'),
+                    Field('email'))
+
+    # ONE (users) TO MANY (dogs)
+    db.define_table('dogs',
+                    Field('owner_id',db.users),
+                    Field('name'),                
+                    Field('type'),
+                    Field('vaccinated','boolean',default=False),
+                    Field('picture','upload',default=''))
+
+    db.define_table('products',
+                    Field('name'),
+                    Field('description','text'))
+
+    # MANY (users) TO MANY (products)
+    db.define_table('purchases',
+                    Field('buyer_id',db.users),
+                    Field('product_id',db.products),
+                    Field('quantity','integer'))
+
+    purchased=((db.users.id==db.purchases.buyer_id)&(db.products.id==db.purchases.product_id))
+
+    db.users.name.requires=IS_NOT_EMPTY()
+    db.users.email.requires=[IS_EMAIL(), IS_NOT_IN_DB(db,'users.email')]
+    db.dogs.owner_id.requires=IS_IN_DB(db,'users.id','users.name')
+    db.dogs.name.requires=IS_NOT_EMPTY()
+    db.dogs.type.requires=IS_IN_SET(['small','medium','large'])
+    db.purchases.buyer_id.requires=IS_IN_DB(db,'users.id','users.name')
+    db.purchases.product_id.requires=IS_IN_DB(db,'products.id','products.name')
+    db.purchases.quantity.requires=IS_INT_IN_RANGE(0,10)
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>
+    Tables are created if they do not exist (try... except).
+    Here "purchased" is an SQLQuery object, "db(purchased)" would be a SQLSet objects. A SQLSet object can be selected, updated, deleted. SQLSets can also be intersected. Allowed field types are string, integer, password, text, blob, upload, date, time, datetime, references(*), and id(*). The id field is there by default and must not be declared. references are for one to many and many to many as in the example above. For strings you should specify a length or you get length=32.<br/><br/>
+    You can use db.tablename.fieldname.requires= to set restrictions on the field values. These restrictions are automatically converted into widgets when generating forms from the table with SQLFORM(db.tablename).
+    <br/><br/>
+    define_tables creates the table and attempts a migration if table has changed or if database name has changed since last time. If you know you already have the table in the database and you do not want to attempt a migration add one last argument to define_table <tt>migrate=False</tt>.</p>
+
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: database_examples.py </b>
+    {{=CODE("""
+    response.menu=[['Register User',False,URL('register_user')],
+                   ['Register Dog',False,URL('register_dog')],
+                   ['Register Product',False,URL('register_product')],
+                   ['Buy product',False,URL('buy')]]
+
+    def register_user():
+        ### create an insert form from the table
+        form=SQLFORM(db.users)
+        ### if form is correct, perform the insert
+        if form.accepts(request,session):
+            response.flash='new record inserted'
+        ### and get a list of all users
+        records=SQLTABLE(db().select(db.users.ALL))
+        return dict(form=form,records=records)
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}<b>and view: database_examples/register_user.html</b>
+    {{=CODE(open(os.path.join(request.folder,'views/database_examples/register_user.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>This is a simple user registration form. SQLFORM takes a table and returns the corresponding entry form with validators, etc. SQLFORM.accepts is similar to FORM.accepts but, if form is validated, the corresponding insert is also performed. SQLFORM can also do update and edit if a record is passed as its second argument.
+    SQLTABLE instead turns a set of records (result of a select) into an HTML table with links as specified by its optional parameters.
+    The response.menu on top is just a variable used by the layout to make the navigation menu for all functions in this controller.<br/>
+    Try it here: <a href="/{{=request.application}}/database_examples/register_user">register_user</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: database_examples.py </b>
+    {{=CODE("""
+    def register_dog():
+        form=SQLFORM(db.dogs)
+        if form.accepts(request,session):
+            response.flash='new record inserted'
+        download=URL('download') # to see the picture
+        records=SQLTABLE(db().select(db.dogs.ALL),upload=download)
+        return dict(form=form,records=records)
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}<b>and view: database_examples/register_dog.html</b>
+    {{=CODE(open(os.path.join(request.folder,'views/database_examples/register_dog.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>Here is a dog registration form. Notice that the "image" (type "upload") field is rendered into a &lt;INPUT type="file"&gt; html tag. SQLFORM.accepts(...) handles the upload of the file into the uploads/ folder.
+    <br/>Try it here: <a href="/{{=request.application}}/database_examples/register_dog">register_dog</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: database_examples.py </b>
+    {{=CODE("""
+    def register_product():
+        form=SQLFORM(db.products)
+        if form.accepts(request,session):
+            response.flash='new record inserted'
+        records=SQLTABLE(db().select(db.products.ALL))
+        return dict(form=form,records=records)
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}<b>and view: database_examples/register_product.html</b>
+    {{=CODE(open(os.path.join(request.folder,'views/database_examples/register_product.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>Nothing new here.
+    <br/>Try it here: <a href="/{{=request.application}}/database_examples/register_product">register_product</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: database_examples.py </b>
+    {{=CODE("""
+    def buy():
+        form=FORM(TABLE(TR("Buyer id:",INPUT(_type="text",_name="buyer_id",requires=IS_NOT_EMPTY())),
+               TR("Product id:",INPUT(_type="text",_name="product_id",requires=IS_NOT_EMPTY())),
+               TR("Quantity:",INPUT(_type="text",_name="quantity",requires=IS_INT_IN_RANGE(1,100))),
+               TR("",INPUT(_type="submit",_value="Order"))))
+        if form.accepts(request,session):
+            ### check if user is in the database
+            if len(db(db.users.id==form.vars.buyer_id).select())==0:
+                form.errors.buyer_id="buyer not in database"
+            ### check if product is in the database
+            if len(db(db.products.id==form.vars.product_id).select())==0:
+                form.errors.product_id="product not in database"
+            ### if no errors
+            if len(form.errors)==0:
+                ### get a list of same purchases by same user
+                purchases=db((db.purchases.buyer_id==form.vars.buyer_id)&
+                             (db.purchases.product_id==form.vars.product_id)).select()
+                ### if list contains a record, update that record
+                if len(purchases)>0:
+                    purchases[0].update_record(quantity=purchases[0].quantity+form.vars.quantity)
+                ### or insert a new record in table
+                else:
+                    db.purchases.insert(buyer_id=form.vars.buyer_id,
+                                        product_id=form.vars.product_id,
+                                        quantity=form.vars.quantity)
+                response.flash="product purchased!"
+        if len(form.errors): response.flash="invalid valus in form!"
+        ### now get a list of all purchases
+        records=db(purchased).select(db.users.name,db.purchases.quantity,db.products.name)
+        return dict(form=form,records=SQLTABLE(records),vars=form.vars,vars2=request.vars)
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}<b>and view: database_examples/buy.html</b>
+    {{=CODE(open(os.path.join(request.folder,'views/database_examples/buy.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>Here is a rather sophisticated buy form. It checks that the buyer and the product are in the database and updates the corresponding record or inserts a new purchase. It also does a JOIN to list all purchases.
+    <br/>Try it here: <a href="/{{=request.application}}/database_examples/buy">buy</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: database_examples.py</b>
+    {{=CODE("""
+    def delete_purchased():
+        db(db.purchases.id>0).delete()
+        redirect(URL('buy'))
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}Try it here: <a href="/{{=request.application}}/database_examples/delete_purchased">delete_purchased</a> 
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: database_examples.py</b>
+    {{=CODE("""
+    def reset_purchased():
+        db(db.purchases.id>0).update(quantity=0)
+        redirect(URL('buy'))
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>This is an update on an SQLSet. (db.purchase.id>0 identifies the set containing only table db.purchases.)
+    <br/>Try it here: <a href="/{{=request.application}}/database_examples/reset_purchased">reset_purchased</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: database_examples.py</b>
+    {{=CODE("""
+    def download():
+        return response.download(request,db)
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>This controller allows users to download the uploaded pictures of the dogs.
+    Remember the upload=URL(...'download'...) statement in the register_dog function. Notice that in the URL path /application/controller/function/a/b/etc a, b, etc are passed to the controller as request.args[0], request.args[1], etc. Since the URL is validated request.args[] always contain valid filenames and no '~' or '..' etc. This is useful to allow visitors to link uploaded files.</p>
+
+    <h2 id="cache_examples">Cache Examples</h2>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: cache_examples.py </b>
+    {{=CODE("""
+    def cache_in_ram():
+        import time
+        t=cache.ram('time',lambda:time.ctime(),time_expire=5)
+        return dict(time=t,link=A('click to reload',_href=URL(r=request)))
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>The output of <tt>lambda:time.ctime()</tt> is cached in ram for 5 seconds. The string 'time' is used as cache key. 
+    <br/>Try it here: <a href="/{{=request.application}}/cache_examples/cache_in_ram">cache_in_ram</a></p>
+
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: cache_examples.py </b>
+    {{=CODE("""
+    def cache_on_disk():
+        import time
+        t=cache.disk('time',lambda:time.ctime(),time_expire=5)
+        return dict(time=t,link=A('click to reload',_href=URL(r=request)))
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>The output of <tt>lambda:time.ctime()</tt> is cached on disk (using the shelve module) for 5 seconds.
+    <br/>Try it here: <a href="/{{=request.application}}/cache_examples/cache_on_disk">cache_on_disk</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: cache_examples.py </b>
+    {{=CODE("""
+    def cache_in_ram_and_disk():
+        import time
+        t=cache.ram('time',lambda:cache.disk('time',
+                           lambda:time.ctime(),time_expire=5),time_expire=5)
+        return dict(time=t,link=A('click to reload',_href=URL(r=request)))
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>The output of <tt>lambda:time.ctime()</tt> is cached on disk (using the shelve module) and then in ram for 5 seconds. web2py looks in ram first and if not there it looks on disk. If it is not on disk it calls the function. This is useful in a multiprocess type of environment. The two times do not have to be the same.
+    <br/>Try it here: <a href="/{{=request.application}}/cache_examples/cache_in_ram_and_disk">cache_in_ram_and_disk</a></p>
+
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: cache_examples.py </b>
+    {{=CODE("""
+    @cache(request.env.path_info,time_expire=5,cache_model=cache.ram)
+    def cache_controller_in_ram():
+        import time
+        t=time.ctime()
+        return dict(time=t,link=A('click to reload',_href=URL(r=request)))""".strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>Here the entire controller (dictionary) is cached in ram for 5 seconds. The result of a select cannot be cached unless it is first serialized into a table <tt>lambda:SQLTABLE(db().select(db.users.ALL)).xml()</tt>. You can read below for an even better way to do it.
+    <br/>Try it here: <a href="/{{=request.application}}/cache_examples/cache_controller_in_ram">cache_controller_in_ram</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: cache_examples.py </b>
+    {{=CODE("""
+    @cache(request.env.path_info,time_expire=5,cache_model=cache.disk)
+    def cache_controller_on_disk():
+        import time
+        t=time.ctime()
+        return dict(time=t,link=A('click to reload',_href=URL(r=request)))
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>Here the entire controller (dictionary) is cached on disk for 5 seconds. This will not work if the dictionary contains unpickleable objects.
+    <br/>Try it here: <a href="/{{=request.application}}/cache_examples/cache_controller_on_disk">cache_controller_on_disk</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: cache_examples.py </b>
+    {{=CODE("""
+    @cache(request.env.path_info,time_expire=5,cache_model=cache.ram)
+    def cache_controller_and_view():
+        import time
+        t=time.ctime()
+        d=dict(time=t,link=A('click to reload',_href=URL(r=request)))
+        return response.render(d)
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p><tt>response.render(d)</tt> renders the dictionary inside the controller, so everything is cached now for 5 seconds. This is best and fastest way of caching!
+    <br/>Try it here: <a href="/{{=request.application}}/cache_examples/cache_controller_and_view">cache_controller_and_view</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: cache_examples.py </b>
+    {{=CODE("""
+    def cache_db_select():
+        import time
+        db.users.insert(name='somebody',email='gluon@mdp.cti.depaul.edu')
+        records=db().select(db.users.ALL,cache=(cache.ram,5))
+        if len(records)>20: db(db.users.id>0).delete()
+        return dict(records=records)
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>The results of a select are complex unpickleable objects that cannot be cached using the previous method, but the select command takes an argument <tt>cache=(cache_model,time_expire)</tt> and will cache the result of the query accordingly. Notice that the key is not necessary since key is generated based on the database name and the select string.
+    <br/>Try it here: <a href="/{{=request.application}}/cache_examples/cache_db_select">cache_db_select</a></p>
+
+    <h2 id="ajax_examples">Ajax Examples</h2>
+
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: ajax_examples.py</b>
+    {{=CODE("""
+    def index():
+        return dict()
+
+    def data():
+        if not session.m or len(session.m)==10: session.m=[]
+        if request.vars.q: session.m.append(request.vars.q)
+        session.m.sort()
+        return TABLE(*[TR(v) for v in session.m]).xml()
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <b>In view: ajax_examples/index.html</b>
+    {{=CODE(open(os.path.join(request.folder,'views/ajax_examples/index.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>The javascript function "ajax" is provided in "web2py_ajax.html" and included by "layout.html". It takes three arguments, a url, a list of ids and a target id. When called, it sends to the url (via a get) the values of the ids and display the response in the value (of innerHTML) of the target id.
+    <br/>Try it here: <a href="/{{=request.application}}/ajax_examples/index">index</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: ajax_examples.py </b>
+    {{=CODE("""
+    def flash():
+        response.flash='this text should appear!'
+        return dict()
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>Try it here: <a href="/{{=request.application}}/ajax_examples/flash">flash</a></p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: ajax_examples.py </b>
+    {{=CODE("""
+    def fade():
+        return dict()
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <b>In view: ajax_examples/fade.html </b><br/>
+    {{=CODE(open(os.path.join(request.folder,'views/ajax_examples/fade.html'),'r').read(),language='html',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>Try it here: <a href="/{{=request.application}}/ajax_examples/fade">fade</a></p>
+
+    <h3>Excel-like spreadsheet via Ajax</h3>
+    Web2py includes a widget that acts like an Excel-like spreadsheet and can be used to build forms
+    [<a href="{{=URL(r=request,c='spreadsheet',f='index')}}">read more</a>].
+
+    <h2 id="testing_examples">Testing Examples</h2>
+
+
+    <h3>Example {{=c}}{{c+=1}}</h3>
+    <p>Using the Python doctest notation it is possible to write tests for all controller functions. Tests are then run via the administrative interface which generates a report. Here is an example of a test in the code:
+    {{=CODE("""
+    def index():
+        '''
+        This is a docstring. The following 3 lines are a doctest:
+        >>> request.vars.name='Max'
+        >>> index()
+        {'name': 'Max'}
+        '''
+        return dict(name=request.vars.name)
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p></p>
+
+    <h2 id="streaming_examples">Streaming Examples</h2>
+
+
+    <h3 id="example_stream">Example {{=c}}{{c+=1}}</h3>
+    <p>It is very easy in web2py to stream large files. Here is an example of a controller that does so:</p>
+    {{=CODE("""
+    def streamer():
+        import os
+        path=os.path.join(request.folder,'private','largefile.mpeg4')
+        return response.stream(open(path,'rb'),chunk_size=4096)
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+    <p>By default all static files and files stored in 'upload' fields in the database are streamed when larger than 1MByte.</p>
+
+    </p>web2py automatically and transparently handles PARTIAL_CONTENT and RANGE requests.</p>
+
+    <h2 id="xmlrpc_examples">XML-RPC Examples</h2>
+
+    <h3>Example {{=c}}{{c+=1}}</h3>
+    <p>Web2py has native support for the XMLRPC protocol. Below is a controller function "handler" that exposes two functions, "add" and "sub" via XMLRPC. The controller "tester" executes the two function remotely via xmlrpc.</p>
+    {{=CODE("""
+    from gluon.tools import Service
+    service = Service(globals())
+
+    @service.xmlrpc
+    def add(a,b): return a+b
+
+    @service.xmlrpc
+    def sub(a,b): return a-b
+
+    def call(): return service()
+
+    def tester():
+        import xmlrpclib
+        server=xmlrpclib.ServerProxy('http://hostname:port/app/controller/call/xmlrpc')
+        return str(server.add(3,4)+server.sub(3,4))
+    """.strip(),language='web2py',link=URL(r=request,c='global',f='vars'),_class='boxCode')}}
+
+</div>
+</div>
+{{block sidebar}}{{end}}

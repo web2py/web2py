@@ -1,0 +1,76 @@
+## What is web2py?
+
+- **Created by a community of professionals** and University professors in Computer Science and Software Engineering.
+- **Always backward compatible.** We have not broken backward compatibility since version 1.0 in 2007, and we pledge not to break it in the future.
+- **Easy to run.** It requires no installation and no configuration.
+- **Runs on** Windows, Mac, Unix/Linux, Google App Engine, Amazon EC2, and almost any web hosting via Python 2.5/2.6/2.7, or Java with Jython.
+- **Runs with** Apache, Lighttpd, Cherokee and almost any other web server via CGI, FastCGI, WSGI, mod_proxy, and/or mod_python. It can embed third party WSGI apps and middleware.
+- **Talks to** SQLite, PostgreSQL, MySQL, MSSQL, FireBird, Oracle, IBM DB2, Informix, Ingres, and Google App Engine. 
+- **Secure** [[It prevents the most common types of vulnerabilities http://web2py.com/examples/default/security]] including Cross Site Scripting, Injection Flaws, and Malicious File Execution.
+- **Enforces good Software Engineering practices** (Model-View-Controller design, Server-side form validation, postbacks) that make the code more readable, scalable, and maintainable.
+- **Speaks multiple protocols** HTML/XML, RSS/ATOM, RTF, PDF, JSON, AJAX, XML-RPC, CSV, REST, WIKI, Flash/AMF, and Linked Data (RDF). 
+- **Includes** a SSL-enabled and streaming-capable web server, a relational database, a web-based integrated development environment and web-based management interface, a Database Abstraction Layer that writes SQL for you in real time, internationalization support, multiple authentication methods, role based access control, an error logging and ticketing system, multiple caching methods for scalability, the jQuery library for AJAX and effects. [[Read more... http://web2py.com/examples/default/what]]
+
+The best way to understand web2py is to try it.
+You can try it online [[here http://www.web2py.com/demo_admin]].
+
+This online version is identical to the actual web2py although some functions are disabled for security reasons.
+
+web2py was inspired by Ruby on Rails and, as Rails, it focuses on rapid development and follows a Model View Controller design. web2py differs from Rails because it is based on Python (thus it is faster and more scalable), because it provides a comprehensive web-based administrative interface (thus there is no need to ever type shell commands unless you wish), includes libraries to handle more protocols (for example XML-RPC and RSS feeds), and can run on the Google App Engine.
+
+web2py was also inspired by Django and, as Django, it has the ability to generate forms from database tables and it includes an extensive set of validators. web2py differs from Django because it is more compact, easier to learn and does not have any project-level configuration files.
+
+web2py is less verbose than Java-based frameworks and its syntax is much cleaner than PHP-based frameworks. This makes applications simpler to develop, and easier to read
+and maintain.
+
+
+[[Here http://www.web2py.com/examples/static/web2py_vs_others.pdf]] is a features comparison of web2py vs other popular web frameworks.
+
+web2py comes in source code version (for any Operating System that runs Python) and in binary versions for OSX and Windows. web2py does not need to be installed. You unzip it, click on it, and choose a one-time administrator password. It then opens the browser for you and directs you to the administrative interface. Everything it needs to make this happen (the Python interpreter, the web-server, the relational database, etc.) is already packaged with web2py. If you need more power you customize your applications to use your preferred web-server (for example Apache) and your preferred database engine (for example PostgreSQL or Oracle).
+
+Via the admin interface you can upload a packed application, create a new application, design an application, maintain an existing application, bytecode-compile an application, pack and download an application. Everything can be done via the web-based admin interface, including editing the files that comprise your applications, clearing temp files, browsing past tickets/errors, run tests, interact with the database. If you so choose, it is also possible to interact with web2py via the Operating System shell or the Python shell.
+
+Any web2py application is comprised of Models (files that contain a description of the data representation), Views (files that contain a description of the data presentation), Controllers (files that contain a description of the business logic and workflow), Cron Jobs (tasks that need to be executed regularly in background), Modules (collections of reusable classes and functions), and Static Files (images, scripts, stylesheets, etc.).
+
+
+Controllers consist of functions that are associated to a URL and are called when the associated URL is visited. Models are executed before the function is called, independently on the visited URL (for each app). Views are called when the function returns data other than a string, and renders the data in the proper format (for example html).
+
+
+A web2py application can be as simple as a single file (controllers/default.py) containing:
+
+``
+def index(): return "Hello World"
+``
+
+When http://localhost:8000/app/default/index is visited the function is called and it displays the message "Hello World".
+
+Here is a more complex complete application that lets the visitor upload images into a database:
+
+### In Model
+``
+db=DAL('sqlite://storage.db')
+db.define_table('image', 
+    Field('name'),
+    Field('file','upload'))
+``:code_python
+
+### In Controller
+
+``
+def index():
+    form = SQLFORM(db.image)
+    if form.process().accepted:
+        response.flash = 'image uploaded'
+    return dict(form = form)""",counter=None,_class='boxCode')}}
+``:code_python
+
+### In View
+
+``
+{{extend 'layout.html'}}
+<h1>Image upload form</h1>
+{{form}}
+``:code_python
+   
+    Uploaded images are safely renamed to avoid directory traversal vulnerabilities, stored on the filesystem (or database) and a corresponding entry is inserted in the database, linking the file. A built-in mechanism prevents involuntary double form submission. All DB IO is transaction safe by default. Any exception in the code causes the transaction to rollback.
+

@@ -1,0 +1,22 @@
+.statusbar {padding-top: 2px; padding-bottom: 2px; border: 0; margin-bottom: 60px;
+background: url('../images/menu.png') repeat-x; }
+.statusbar a, .statusbar a:visited {color: #406361}
+a, a:visited, a:hover, h1,h2,h3,h4,h5 {color: #658883}
+.wrapper { background: url('../images/back-02.png') repeat-x; padding-top:10px;}
+h1 { font-size: 32px }
+h2 { font-size: 24px }
+h3 { font-size: 20px }
+h4 { font-size: 14px }
+sup  { font-size: 0.5em; vertical-align: top;}
+.frame { border: 3px solid #959595; margin-bottom: 5px; }
+ul { list-style: circle outside;}
+.announce { position:absolute;align:center;color:white;top:120px;font-weight:bold;text-align:center;
+    }
+.announce a { color: white !important;}
+
+input:focus,textarea:focus {background:#f0f0f0!important}
+
+table.downloads { width:100%; }
+table.downloads th, table.downloads td {text-align:center;}
+table.downloads a.button { width: 150px; }
+

@@ -1,0 +1,89 @@
+## What is web2py?
+
+- **Created by a community of professionals** and University professors in Computer Science and Software Engineering.
+- **Always backward compatible.** We have not broken backward compatibility since version 1.0 in 2007, and we pledge not to break it in the future.
+- **Easy to run.** It requires no installation and no configuration.
+- **Runs on** Windows, Mac, Unix/Linux, Google App Engine, Amazon EC2, and almost any web hosting via Python 2.5/2.6/2.7, or Java with Jython.
+- **Runs with** Apache, Lighttpd, Cherokee and almost any other web server via CGI, FastCGI, WSGI, mod_proxy, and/or mod_python. It can embed third party WSGI apps and middleware.
+- **Talks to** SQLite, PostgreSQL, MySQL, MSSQL, FireBird, Oracle, IBM DB2, Informix, Ingres, and Google App Engine. 
+- **Secure** [[It prevents the most common types of vulnerabilities http://web2py.com/examples/default/security]] including Cross Site Scripting, Injection Flaws, and Malicious File Execution.
+- **Enforces good Software Engineering practices** (Model-View-Controller design, Server-side form validation, postbacks) that make the code more readable, scalable, and maintainable.
+- **Speaks multiple protocols** HTML/XML, RSS/ATOM, RTF, PDF, JSON, AJAX, XML-RPC, CSV, REST, WIKI, Flash/AMF, and Linked Data (RDF). 
+- **Includes** a SSL-enabled and streaming-capable web server, a relational database, a web-based integrated development environment and web-based management interface, a Database Abstraction Layer that writes SQL for you in real time, internationalization support, multiple authentication methods, role based access control, an error logging and ticketing system, multiple caching methods for scalability, the jQuery library for AJAX and effects. [[Read more... http://web2py.com/examples/default/what]]
+
+The best way to understand web2py is to try it; try it online [[here http://www.web2py.com/demo_admin]]. (We have disabled some functions for security.)
+
+**web2py makes it easier** to develop, read and maintain web applications.
+
+web2py, like Ruby on Rails, focuses on rapid development and follows a Model-View-Controller design. 
+
+Unlike Rails, web2py is based on Python for speed and scalability. web2py's complete web-based administrative interface eliminates shell commands unless you wish to use them. web2py also includes libraries for more protocols (for example XML-RPC and RSS feeds), and runs on the Google App Engine.
+
+web2py, like Django, generates forms from database tables and includes an extensive set of validators. web2py is more compact than Django, easier to learn and has no project-level configuration files.
+
+web2py is less verbose than Java-based frameworks and its syntax is much cleaner than PHP-based frameworks. 
+
+[[Here http://www.web2py.com/examples/static/web2py_vs_others.pdf]] you can compare features of web2py and other popular web frameworks.
+
+You can download a source code version for any Operating System that runs Python, or get a binary version for OSX and Windows. After that, you do not need to install web2py.Just unzip it, click on it, choose a one-time administrator password and you're done. web2py then opens your browser at the administrative interface.
+
+You can do everything via the admin interface:
+- create a new application
+- design an application 
+- maintain an existing application
+- pack and download an application
+- upload a packed application, or
+- bytecode-compile an application
+
+Use the admin interface for everyday maintenance tasks. Edit your application files,
+clear temp files, browse past tickets/errors, run
+tests or work with the database. 
+
+You can also interact with web2py via the Operating System shell or the Python shell.
+
+For more power, customize your applications to use your preferred web-server (for example Apache) and your preferred database engine (for example PostgreSQL or Oracle).  Create your own models, views and controllers.
+
+web2py application Models describe the data representation, Views describe the data presentation, Controllers describe the business logic and workflow. Cron Jobs regularly run background jobs. web2py Modules are collections of reusable classes and functions and Static Files are images, scripts, stylesheets and the like.
+
+Controllers consist of functions associated with a URL. web2py calls the function when the user visits the URL. web2py executes an application's models before calling the function, independent of the visited URL. web2py calls views when the function returns data other than a string, and renders the data in the proper format, such as html.
+
+A web2py application can be as simple as a single file (controllers/default.py) containing:
+
+``
+def index(): return "Hello World"
+``
+
+When http://localhost:8000/app/default/index is visited the function is called and it displays the message "Hello World".
+
+Here is a more complex complete application that lets the visitor upload images into a database:
+
+### In Model
+``
+db=DAL('sqlite://storage.db')
+db.define_table('image', 
+    Field('name'),
+    Field('file','upload'))
+``:code_python
+
+### In Controller
+
+``
+def index():
+    form = SQLFORM(db.image)
+    if form.process().accepted:
+        response.flash = 'image uploaded'
+    return dict(form = form)""",counter=None,_class='boxCode')}}
+``:code_python
+
+### In View
+
+``
+{{extend 'layout.html'}}
+<h1>Image upload form</h1>
+{{form}}
+``:code_python
+   
+    Uploaded images are safely renamed to avoid directory traversal vulnerabilities, stored on the filesystem (or database) and a corresponding entry is inserted in the database, linking the file. 
+
+A built-in mechanism prevents involuntary double form submission. All DB IO is transaction-safe by default. Any exception in the code causes the transaction to rollback.
+

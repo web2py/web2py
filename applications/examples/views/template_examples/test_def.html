@@ -1,0 +1,7 @@
+{{extend 'layout.html'}}
+{{def itemlink(name):}}<li>{{=A(name,_href=name)}}</li>{{return}}
+<ul>
+{{itemlink('http://www.google.com')}}
+{{itemlink('http://www.yahoo.com')}}
+{{itemlink('http://www.nyt.com')}}
+</ul>

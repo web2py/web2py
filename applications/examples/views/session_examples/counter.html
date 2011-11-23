@@ -1,0 +1,8 @@
+{{extend 'layout.html'}}
+<h1>session counter</h1>
+
+<h2>{{for i in range(counter):}}{{=i}}... {{pass}}</h2>
+
+<a href="{{=URL(r=request)}}">{{=T('click me to count')}}</a>
+
+{{block sidebar}} {{end}}

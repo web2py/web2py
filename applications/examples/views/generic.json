@@ -1,0 +1,15 @@
+{{
+###
+# response._vars contains the dictionary returned by the controller action
+###
+try:
+	from gluon.serializers import json
+	response.write(json(response._vars), escape=False)
+	response.headers['Content-Type'] = 'application/json; charset=utf-8'
+except (TypeError, ValueError):
+	raise HTTP(405, 'JSON serialization error')
+except ImportError:
+	raise HTTP(405, 'JSON not available')
+except:
+	raise HTTP(405, 'JSON error')
+}}

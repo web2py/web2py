@@ -1,0 +1,8 @@
+{{extend 'layout.html'}}
+
+<form>
+<input type="button" onclick="fade('test',-0.2);" value="fade down"/>
+<input type="button" onclick="fade('test',+0.2);" value="fade up"/>
+</form>
+
+<div id="test">{{='Hello World '*100}}</div>

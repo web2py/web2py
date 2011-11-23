@@ -1,0 +1,15 @@
+{{
+###
+# response._vars contains the dictionary returned by thecontroller action
+###
+try:
+   from gluon.serializers import xml
+   response.write(xml(response._vars), escape=False)
+   response.headers['Content-Type'] = 'text/xml'
+except (TypeError, ValueError):
+	raise HTTP(405, 'XML serialization error')
+except ImportError:
+	raise HTTP(405, 'XML not available')
+except:
+	raise HTTP(405, 'XML error')
+}}

@@ -1,0 +1,47 @@
+{{extend 'layout.html'}}
+{{import cgi}}
+
+<div class="contentleft">
+    <h1>{{=T('Docs for')}} {{=title}}</h1>
+
+    <div align="right">
+    [ <a href="http://docs.python.org/tut/">Python Tutorial</a> ]
+    [ <a href="http://docs.python.org/lib/">Python Libraries</a> ]
+    [ <a href="/{{=request.application}}/static/epydoc/index.html">web2py epydoc</a> ]
+    </div>
+
+    <h2>{{=T('Description')}}</h2>
+
+    <br/>
+    {{if t:}}
+    {{=t}}{{if d:}} extends {{=d}}{{pass}}
+    {{pass}}
+    <br/>
+    {{pass}}
+
+    {{if doc:}}<br/><br/>{{=CODE(str(doc),language=None,counter=None,_class='boxCode')}}{{pass}}
+    <br/><br/>
+    <div class="boxInfo">
+    <h2>{{=T('Attributes')}}</h2>
+
+    {{keys=attributes.keys(); keys.sort()}}
+    <table>
+    <tr><td colspan=2><hr/></td></tr>
+    {{for a in keys:}}
+    {{doc1,t1,c1,d1=attributes[a]}}
+    <tr>
+    <td><b>{{#=a}}</b>{{=A(a,_href=URL(r=request,args=a.split('.')))}}</td>
+    <td>
+    {{if t1:}}
+    {{=t1}}{{if d1:}} extends {{=d1}}{{pass}}
+    {{if c1:}} belongs to class {{=c1}}{{pass}}
+    <br/>
+    {{pass}}
+    {{if doc1:}}{{=XML(cgi.escape(str(doc1)).replace(chr(13),'<br/>'))}}{{pass}}
+    </td>
+    </tr>
+    <tr><td colspan=2><hr/></td></tr>
+    {{pass}}
+    </table>
+    </div>
+</div>

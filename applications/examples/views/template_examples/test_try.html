@@ -1,0 +1,8 @@
+{{extend 'layout.html'}}
+<h1>Try... except</h1>
+
+{{try:}}
+   <h2>a={{=1/0}}</h2>
+{{except:}}
+   infinity</h2>
+{{pass}}

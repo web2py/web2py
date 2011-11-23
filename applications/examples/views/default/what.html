@@ -1,0 +1,28 @@
+{{right_sidebar_enabled = True}}
+{{extend 'layout.html'}} {{import os}}
+
+{{=get_content('whyweb2py')}}
+
+{{block right_sidebar}}
+<center>
+  <h3 class="feature-title">SITES POWERED BY WEB2PY</h3>
+  <a href="http://web2py.com/poweredby"><img class="frame" id="img1" width="200px"/></a>
+  <a href="http://web2py.com/poweredby"><img class="frame" id="img2" width="200px"/></a>
+  <a href="http://web2py.com/poweredby"><img class="frame" id="img3" width="200px"/></a>
+  <a href="http://web2py.com/poweredby"><img class="frame" id="img4" width="200px"/></a>
+  <a href="http://web2py.com/poweredby"><img class="frame" id="img5" width="200px"/></a>
+  <a href="http://web2py.com/poweredby"><img class="frame" id="img6" width="200px"/></a>
+  <a href="http://web2py.com/poweredby"><img class="frame" id="img7" width="200px"/></a>
+  <a href="http://web2py.com/poweredby"><img class="frame" id="img8" width="200px"/></a>
+  </div>
+</center>
+<script>
+  function showimages() {
+    var images = {{=images}};
+    rotation = Math.floor(Math.random()*(images.length-8));
+    for(var i=0; i<8; i++)
+      jQuery('#img'+(i+1)).attr('src',images[i+rotation]);
+  }
+  jQuery(function(){showimages();});
+</script>
+{{end}}

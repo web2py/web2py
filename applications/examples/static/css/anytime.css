@@ -1,0 +1,56 @@
+/* anytimec.css 4.1112H (anytime.css 4.1112H)
+Copyright 2008-2010 Andrew M. Andrews III (www.AMA3.com). Some Rights 
+Reserved. This work licensed under the Creative Commons Attribution-
+Noncommercial-Share Alike 3.0 Unported License except in jurisdicitons
+for which the license has been ported by Creative Commons International,
+where the work is licensed under the applicable ported license instead.
+For a copy of the unported license, visit
+http://creativecommons.org/licenses/by-nc-sa/3.0/
+or send a letter to Creative Commons, 171 Second Street, Suite 300,
+San Francisco, California, 94105, USA.  For ported versions of the
+license, visit http://creativecommons.org/international/
+Any+Time is a trademark of Andrew M. Andrews III. */
+.AnyTime-pkr * {border:0;font: inherit;font-size: x-small;font-style:normal;font-weight:normal;list-style-type:none;margin:0;padding:0;white-space: nowrap}
+.AnyTime-win {background-color:#F0F0F1;border:3px solid #C0C0C0;font:normal normal normal xx-small/normal sans-serif;padding-bottom:0.2em;-moz-border-radius:6px;-webkit-border-radius:6px}
+.AnyTime-pkr .AnyTime-cloak {background-color:#D7D7D7;opacity:0.7;filter:alpha(opacity=70)}
+.AnyTime-pkr .AnyTime-hdr {background-color:#D0D0D1;color:#606062;font-family:Arial,Helvetica,sans-serif;font-size:medium;font-weight:normal;height:1em;margin:0;padding:0 0 0.4em 0;text-align:center;-moz-border-radius:2px;-webkit-border-radius:2px}
+.AnyTime-pkr .AnyTime-x-btn {background-color:#FCFCFF;border:1px solid #F99;color:#FF9F9F;cursor:default;float:right;margin:0.3em;text-align:center;width:1.5em;-moz-border-radius:0.4em;-webkit-border-radius:0.4em}
+.AnyTime-pkr .AnyTime-btn {background-color:#FCFCFE;border:1px solid #999;color:#606062;cursor:default;float:left;font-family:Arial,Helvetica,sans-serif;height:1.5em;margin-bottom:1px;margin-right:1px;padding-top:0.1em;-moz-border-radius:0.4em;-webkit-border-radius:0.4em}
+.AnyTime-pkr .AnyTime-body {padding:0.5em}
+.AnyTime-pkr .AnyTime-date {float:left;padding:0 0.5em}
+.AnyTime-pkr .AnyTime-lbl {clear:left;color:#606063;font-family:Arial,Helvetica,sans-serif;font-size:100%;font-weight:normal;font-style:normal;height:1.3em;margin:0;padding:0;text-align:center}
+.AnyTime-pkr .AnyTime-yrs {height:2.6em;text-align:center;width:18.6em}
+.AnyTime-pkr .AnyTime-yrs-past-btn {width:2.7em}
+.AnyTime-pkr .AnyTime-yr-prior-btn, .AnyTime-pkr .AnyTime-yr-cur-btn, .AnyTime-pkr .AnyTime-yr-next-btn {width:3.75em}
+.AnyTime-pkr .AnyTime-yrs-ahead-btn {width:2.7em}
+.AnyTime-pkr .AnyTime-mons {height:4.8em;text-align:center;width:18.8em}
+.AnyTime-pkr .AnyTime-mon-btn {width:2.75em}
+.AnyTime-pkr .AnyTime-mon7-btn {clear:left}
+.AnyTime-pkr .AnyTime-dom-table {background-color:#F0F0F1;border:1px solid #E3E3E4;border-spacing:1px;width:18.6em}
+.AnyTime-pkr th.AnyTime-dow {background-color:#C0C0C1;color:white;font-family:Arial,Helvetica,sans-serif;font-size:95%;font-weight:normal;font-style:normal}
+.AnyTime-pkr .AnyTime-dom-btn {float:none;height:1.7em;text-align:right;padding:0 0.5em 0 0}
+.AnyTime-pkr .AnyTime-dom-btn-empty {background-color:#F3F3F4;border:1px solid #C0C0c1}
+.AnyTime-pkr .AnyTime-time {float:left;padding:0 0 0 1em;text-align:center}
+.AnyTime-pkr .AnyTime-hrs {float:left;padding-left:0.5em;padding-right:0.5em;text-align:center;width:7.2em}
+.AnyTime-pkr .AnyTime-hrs-am, .AnyTime-pkr .AnyTime-hrs-pm {float:left;width:3.6em}
+.AnyTime-pkr .AnyTime-hr-btn {text-align:right;padding-right:0.25em;width:3em; }
+.AnyTime-pkr .AnyTime-mins {float:left;padding-left:0.5em;padding-right:0.5em;text-align:center;width:4.7em}
+.AnyTime-pkr .AnyTime-mins-tens, .AnyTime-pkr .AnyTime-mins-ones {float:left;width:2.3em}
+.AnyTime-pkr .AnyTime-min-ten-btn, .AnyTime-pkr .AnyTime-min-one-btn {float:left;text-align:center;width:2em}
+.AnyTime-pkr .AnyTime-min-ten-btn-empty, .AnyTime-pkr .AnyTime-min-one-btn-empty {background-color:#F3F3F4;border:1px solid #C0C0c1}
+.AnyTime-pkr .AnyTime-secs {float:left;padding-left:0.5em;padding-right:0.5em;text-align:center;width:4.7em}
+.AnyTime-pkr .AnyTime-secs-tens, .AnyTime-pkr .AnyTime-secs-ones {float:left;width:2.3em}
+.AnyTime-pkr .AnyTime-sec-ten-btn, .AnyTime-pkr .AnyTime-sec-one-btn {float:left;text-align:center;width:2em}
+.AnyTime-pkr .AnyTime-sec-ten-btn-empty, .AnyTime-pkr .AnyTime-sec-one-btn-empty {background-color:#F3F3F4;border:1px solid #C0C0c1} 
+.AnyTime-pkr .AnyTime-offs {clear:left;float:left;padding-left:0.5em;padding-top:0.5em;text-align:center}
+.AnyTime-pkr .AnyTime-off-select-btn {width:1.5em}
+.AnyTime-pkr .AnyTime-body-yr-selector {padding:1em;    }
+.AnyTime-pkr .AnyTime-yr-mil, .AnyTime-pkr .AnyTime-yr-cent, .AnyTime-pkr .AnyTime-yr-dec, .AnyTime-pkr .AnyTime-yr-yr {float:left;width:2.5em}
+.AnyTime-pkr .AnyTime-mil-btn, .AnyTime-pkr .AnyTime-cent-btn, .AnyTime-pkr .AnyTime-dec-btn, .AnyTime-pkr .AnyTime-yr-btn {float:left;text-align:center;width:2em}
+.AnyTime-pkr .AnyTime-yr-era {float:left;padding-left:1em;width:4.1em}
+.AnyTime-pkr .AnyTime-era-btn {text-align:center;width:3em}
+.AnyTime-pkr .AnyTime-body-off-selector {margin:0.5em; }
+.AnyTime-pkr .AnyTime-off-off-btn {clear:left;padding-left:1em;padding-right:1em;text-align:left}
+.AnyTime-pkr .AnyTime-cur-btn {border:1px solid #333334;background-color:#C0C0C1;color:#FCFCFE;font-weight:bold}
+.AnyTime-pkr .AnyTime-out-btn {background-color:#F0F0F1;border:1px solid #C0C0c1} 
+.AnyTime-pkr .AnyTime-focus-btn {border:1px dashed black}

@@ -1,0 +1,252 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<!--
+
+Smooth and Sleek by christopher robinson
+http://www.edg3.co.uk/
+hope you enjoy it and find it usefull :)
+
+-->
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head profile="http://gmpg.org/xfn/11">
+<title>{{=request.application}}</title>
+<style>
+<!--
+/*
+	Author	:	Christopher Robinson
+	Email		:	christopher@edg3.co.uk
+	Website	:	http://www.edg3.co.uk/
+*/
+* {
+	border:0;
+	margin:0;
+	padding:0;
+}
+
+/* body */
+body {
+	background:#fff;
+	color:#666;
+	font:0.75em/100% 'Lucida Grande', 'Lucida Sans Unicode', Verdana, sans-serif;
+	line-height:1.4em;
+}
+
+/* general */
+a {
+	color:#9C0;
+	text-decoration:none;
+}
+a:hover {
+	color:#555;
+	text-decoration:none;
+}
+
+/* header */
+#header {
+	background:#323232 url('/{{=request.application}}/static/sleek/background_header.jpg') center repeat-y;
+	width:100%;
+}
+#header:after {
+	clear:both;
+	content:'.';
+	display:block;
+	height:0;
+	visibility:hidden;
+}
+#header_inside {
+	border-left:1px solid #bbb;
+	border-right:1px solid #bbb;
+	margin:0 auto;
+	width:800px;
+}
+#header_inside h1 {
+	color:#fff;
+	float:left;
+	font:3.2em 'Trebuchet MS', Verdana, sans-serif;
+	height:100px;
+	line-height:100px;
+	margin:0 0 0 20px;
+	width:180px;
+}
+#header_inside h1 span {
+	color:#9c0;
+}
+#header_inside ul {
+	float:right;
+	height:100px;
+	list-style:none;
+	width:600px;
+}
+#header_inside ul li {
+	border-right:1px solid #555;
+	float:right;
+	height:100px;
+	list-style:none;
+	width:75px;
+}
+#header_inside ul li a {
+	color:#fff;
+	display:block;
+	height:50px;
+	line-height:50px;
+	padding:50px 0 0;
+	text-align:center;
+	width:75px;
+}
+#header_inside ul li a:hover {
+	background:#fff;
+	color:#111;
+}
+#header_inside ul li a.active {
+	background:#fff;
+	color:#111;
+}
+
+/* content */
+#content {
+	background:#fff url('/{{=request.application}}/static/sleek/background_content.jpg') center repeat-y;
+	clear:both;
+	width:100%;
+}
+#content_inside {
+	border-left:1px solid #bbb;
+	border-right:1px solid #bbb;
+	margin:0 auto;
+	width:800px;
+}
+#content_inside_sidebar {
+	border-left:1px solid #bbb;
+	clear:both;
+	float:right;
+	height:auto;
+	line-height:175%;
+	margin:5px 0;
+	padding:0 10px;
+	width:200px;
+}
+#content_inside_sidebar h2 {
+	background:#fff;
+	color:#000;
+	font-size:110%;
+	font-weight:400;
+	padding:5px 0;
+	text-align:right;
+}
+#content_inside_sidebar ul {
+	letter-spacing:-1px;
+	list-style:none;
+	margin:0 0 10px;
+}
+#content_inside_sidebar ul li {
+	list-style:none;
+}
+#content_inside_sidebar ul li a {
+	border-bottom:1px solid #e9e9e9;
+	display:block;
+	padding:3px;
+	text-align:right;
+	width:194px;
+}
+#content_inside_sidebar ul li a:hover {
+	background:#ddd;
+	color:#000;
+}
+#content_inside_main {
+	background:#fff;
+	float:left;
+	letter-spacing:-1px;
+	line-height:175%;
+	margin:0 auto;
+	padding:10px;
+	width:559px;
+}
+#content_inside_main h1 {
+	border-bottom:1px solid #ccc;
+	font-size:125%;
+	padding:0 0 2px;
+}
+#content_inside_main h2 {
+	color:#ccc;
+	font-size:115%;
+	text-align:right;
+}
+#content_inside_main h2.flash {
+	color:red;
+	font-size:115%;
+	text-align:right;
+}
+#content_inside_main p {
+	padding:0 0 10px;
+}
+
+/* footer */
+#footer {
+	background:#323232 url('/{{=request.application}}/static/sleek/background_footer.jpg') center repeat-y;
+	clear:both;
+	height:100px;
+	width:100%;
+}
+#footer_inside {
+	border-left:1px solid #bbb;
+	border-right:1px solid #bbb;
+	height:100px;
+	margin:0 auto;
+	width:800px;
+}
+#footer_inside p {
+	color:#fff;
+	line-height:100px;
+	text-align:center;
+}
+-->
+</style>
+
+<meta http-equiv="cache-control" content="no-cache" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<meta http-equiv="content-language" content="en-gb" />
+<meta http-equiv="imagetoolbar" content="false" />
+<meta http-equiv="pragma" content="no-cache" />
+<meta name="author" content="Christopher Robinson" />
+<meta name="copyright" content="Copyright (c) Christopher Robinson 2005 - 2007" />
+<meta name="description" content=""/>
+<meta name="keywords" content="" />
+<meta name="last-modified" content="Thursday, 01 February 2007 12:00:00 GMT" />
+<meta name="mssmarttagspreventparsing" content="true" />
+<meta name="robots" content="index, follow, noarchive" />
+<meta name="revisit-after" content="7 days" />
+</head>
+
+<body>
+
+<div id="header">
+<div id="header_inside">
+<h1><span>{{=request.application}}</span> {{=request.controller}} {{request.function}}</h1>
+<ul>
+{{if response.menu:}}
+{{for item,active,link in response.menu:}}
+{{if not active:}}<li>{{=A(item,_href=link)}}</li>{{else:}}
+<li>{{=A(item,_href=link,_class='active')}}</li>{{pass}}
+{{pass}}
+{{pass}}
+</ul>
+</div>
+</div>
+
+<div id="content">
+<div id="content_inside">
+<div id="content_inside_sidebar">
+</div>
+
+<div id="content_inside_main">
+{{if response.flash:}}<h2 class="flash">FLASH: {{=response.flash}}</h2>{{pass}}
+{{include}}
+</div>
+<div id="footer">
+<div id="footer_inside">
+</div>
+</div>
+</div>
+</body>
+
+</html>
+

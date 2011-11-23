@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
+<!--[if lt IE 7]><html class="ie ie6 ie-lte9 ie-lte8 ie-lte7 no-js" lang="{{=T.accepted_language or 'en'}}"> <![endif]-->
+<!--[if IE 7]><html class="ie ie7 ie-lte9 ie-lte8 ie-lte7 no-js" lang="{{=T.accepted_language or 'en'}}"> <![endif]-->
+<!--[if IE 8]><html class="ie ie8 ie-lte9 ie-lte8 no-js" lang="{{=T.accepted_language or 'en'}}"> <![endif]-->
+<!--[if IE 9]><html class="ie9 ie-lte9 no-js" lang="{{=T.accepted_language or 'en'}}"> <![endif]-->
+<!--[if (gt IE 9)|!(IE)]><!--> <html class="no-js" lang="{{=T.accepted_language or 'en'}}"> <!--<![endif]-->
+<head>
+  <meta charset="utf-8" />
+  <!-- www.phpied.com/conditional-comments-block-downloads/ -->
+  <!-- Always force latest IE rendering engine
+	   (even in intranet) & Chrome Frame
+	   Remove this if you use the .htaccess -->
+  <!--[if IE]>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <![endif]-->
+  
+  <title>{{=response.title or request.application}}</title>
+  
+  <!-- http://dev.w3.org/html5/markup/meta.name.html -->
+  <meta name="application-name" content="{{=request.application}}" />
+  
+  <!-- Speaking of Google, don't forget to set your site up:
+	   http://google.com/webmasters -->
+  <meta name="google-site-verification" content="" />
+
+  <!--  Mobile Viewport Fix
+	  j.mp/mobileviewport & davidbcalhoun.com/2010/viewport-metatag
+	  device-width: Occupy full width of the screen in its current orientation
+	  initial-scale = 1.0 retains dimensions instead of zooming out if page height > device height
+	  user-scalable = yes allows the user to zoom in -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  
+  <!-- Place favicon.ico and apple-touch-icon.png in the root of your domain and delete these references -->
+  <link rel="shortcut icon" href="{{=URL('static','favicon.ico')}}" type="image/x-icon">
+  <link rel="apple-touch-icon" href="{{=URL('static','favicon.png')}}">
+
+  <!-- All JavaScript at the bottom, except for Modernizr which enables 
+	   HTML5 elements & feature detects -->
+  <script src="{{=URL('static','js/modernizr.custom.js')}}"></script>  
+
+  <!-- include stylesheets -->
+  {{
+  response.files.append(URL('static','css/skeleton.css'))
+  response.files.append(URL('static','css/web2py.css'))
+  response.files.append(URL('static','css/examples.css'))
+  response.files.append(URL('static','css/superfish.css'))
+  response.files.append(URL('static','js/superfish.js'))
+  }}
+
+  {{include 'web2py_ajax.html'}}
+
+  <script type="text/javascript">
+    jQuery(function(){jQuery('.sf-menu').superfish();});
+  </script>
+
+  {{
+  # using sidebars need to know what sidebar you want to use
+  left_sidebar_enabled = globals().get('left_sidebar_enabled',False)
+  right_sidebar_enabled = globals().get('right_sidebar_enabled',False)
+  middle_columns = {0:'sixteen',1:'ten',2:'eight'}[
+     (left_sidebar_enabled and 1 or 0)+(right_sidebar_enabled and 1 or 0)]
+  }}
+
+  <!-- uncomment here to load jquery-ui
+  <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/themes/base/jquery-ui.css" type="text/css" media="all" />
+  <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js" type="text/javascript"></script>
+  uncomment to load jquery-ui //-->
+  </style>
+</head>
+<body>
+  <div class="wrapper"><!-- for sticky footer -->    
+    <div class="flash">{{=response.flash or ''}}</div>    
+    <div class="main">
+      <div class="container header">
+        <div class="sixteen columns">
+	  <img src="{{=URL('static','images/web2py_logo.png')}}" />
+          <h5>{{=response.subtitle or ''}}</h5>
+        </div>
+        
+        <div class="sixteen columns statusbar">
+	  {{block statusbar}}
+	  {{is_mobile=request.user_agent().is_mobile}}
+          <div id="menu">{{=MENU(response.menu,_class='mobile-menu' if is_mobile else 'sf-menu',mobile=is_mobile)}}
+	    {{end}}
+            <!-- AddToAny BEGIN -->
+            <div style="float:right;padding-top:6px;" class="a2a_kit a2a_default_style">
+            <a class="a2a_dd" href="http://www.addtoany.com/share_save">Share</a></div>
+            <script type="text/javascript" src="http://static.addtoany.com/menu/page.js"></script>
+            <!-- AddToAny END -->
+          </div>
+	  
+	  <div class="sixteen columns announce">
+	    <a href="http://www.infoworld.com/d/open-source-software/bossie-awards-2011-the-best-open-source-application-development-software-171759-0&current=10&last=1#slideshowTop">2011 BOSSIE AWARD FOR OPEN SOURCE DEVELOPMENT SOFTWARE</a>
+          </div>
+	</div>
+      </div>
+      <div class="container mainbody">	
+        <div class="sixteen columns">
+          <div class="{{=middle_columns}} columns center">
+            {{block center}}
+            {{include}}
+            {{end}}
+          </div>
+          
+          {{if right_sidebar_enabled:}}
+          <div class="five columns">
+            {{block right_sidebar}}
+            <h3>Right Sidebar</h3>
+            <p></p>
+            {{end}}
+          </div>    
+          {{pass}}
+        </div>
+      </div><!-- container -->
+      {{block extra}}{{end}}      
+      
+    </div><!-- main -->
+    
+    <div class="push"></div>
+  </div><!-- wrapper -->
+
+  <div class="footer">
+    <div class="container header">    
+      <div class="sixteen columns">
+        {{block footer}} <!-- this is default footer -->
+        <div class="footer-content" >
+          {{=T('Copyright')}} &#169; 2011
+	  - User communities in <a href="https://groups.google.com/forum/?fromgroups#!forum/web2py" target="_blank">English<a>, <a href="https://groups.google.com/forum/?fromgroups#!forum/web2py-fr" target="_blank">French</a>, <a href="https://groups.google.com/forum/?fromgroups#!forum/web2py-japan" target="_blank">Japanese</a>, <a href="https://groups.google.com/forum/?fromgroups#!forum/web2py-users-brazil" target="_blank">Portuguese</a>, and <a href="https://groups.google.com/forum/?fromgroups#!forum/web2py-usuarios" target="_blank">Spanish</a>.
+          <div style="float: right;">
+            <a href="http://www.web2py.com/" style="float: left; padding-right: 6px;">
+            <img style="padding-bottom: 0;" src="{{=URL('static','images/poweredby.png')}}"/>
+            </a>
+          </div>
+        </div>
+        {{end}}	
+      </div>
+    </div><!-- container -->
+  </div><!-- footer -->
+  
+  <!--[if lt IE 7 ]>
+	<script src="{{=URL('static','js/dd_belatedpng.js')}}"></script>
+	<script> DD_belatedPNG.fix('img, .png_bg'); //fix any <img> or .png_bg background-images </script>
+	<![endif]-->
+  {{if response.google_analytics_id:}}<script>/* http://mathiasbynens.be/notes/async-analytics-snippet */ var _gaq=[['_setAccount','{{=response.google_analytics_id}}'],['_trackPageview']];(function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];g.src='//www.google-analytics.com/ga.js';s.parentNode.insertBefore(g,s)}(document,'script')) </script>{{pass}}
+</body>
+</html>

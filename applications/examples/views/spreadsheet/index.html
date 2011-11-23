@@ -1,0 +1,7 @@
+{{extend 'layout.html'}}
+
+<h1>Excel-like spreadsheet widget</h1>
+
+Try insert "=r0c1+1" in cell r0c0 and "2" in r0c1. Formulas start with "=" as in Excel. You can use a subset of python commands and math function, and reference cells by r[row]c[col]. All computations are performed serverside via Ajax (input is validated for security). Cell values and formulas can be set and locked serverside. The shape of the spreadsheet can be modifed serverside and does not need to be tabular (think of it as a graph of css-friendly widgets you can place where you want). Cells can be given arbistrary names. This example is distributed with web2py so look at the source code of the example to learn more.
+
+{{=sheet}}
