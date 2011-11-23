@@ -19,4 +19,4 @@ input:focus,textarea:focus {background:#f0f0f0!important}
 table.downloads { width:100%; }
 table.downloads th, table.downloads td {text-align:center;}
 table.downloads a.button { width: 150px; }
-
+th,td {padding-right: 10px;}

@@ -1,7 +1,3 @@
-
-
-
-
 def index():
     return dict()
 

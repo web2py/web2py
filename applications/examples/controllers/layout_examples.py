@@ -1,6 +1,3 @@
-
-
-
 def civilized():
     response.menu = [['civilized', True, URL('civilized'
                      )], ['slick', False, URL('slick')],

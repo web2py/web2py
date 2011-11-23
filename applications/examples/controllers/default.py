@@ -8,11 +8,11 @@ response.description = T('web2py Web Framework')
 
 session.forget()
 
-@cache('index')
+#@cache('index')
 def index():
     return response.render()
 
-@cache('what')
+#@cache('what')
 def what():
     import urllib;
     try:
@@ -21,30 +21,30 @@ def what():
         images = []
     return response.render(images=images)
 
-@cache('download')
+#@cache('download')
 def download():
     return response.render()
 
-@cache('who')
+#@cache('who')
 def who():
     return response.render()
 
-@cache('support')
+#@cache('support')
 def support():
     return response.render()
 
-@cache('documentation')
+#@cache('documentation')
 def documentation():
     return response.render()
 
-@cache('usergroups')
+#@cache('usergroups')
 def usergroups():
     return response.render()
 
 def contact():
     redirect(URL('default','usergroups'))
 
-@cache('videos')
+#@cache('videos')
 def videos():
     return response.render()
 
@@ -54,7 +54,7 @@ def security():
 def api():
     redirect('http://web2py.com/book/default/chapter/04#API')
 
-@cache('license')
+#@cache('license')
 def license():
     import os
     filename = os.path.join(request.env.gluon_parent, 'LICENSE')
@@ -63,11 +63,11 @@ def license():
 def version():
     return 'Version %s.%s.%s (%s) %s' % request.env.web2py_version
 
-@cache('examples')
+#@cache('examples')
 def examples():
     return response.render()
 
-@cache('changelog')
+#@cache('changelog')
 def changelog():
     import os
     filename = os.path.join(request.env.gluon_parent, 'CHANGELOG')

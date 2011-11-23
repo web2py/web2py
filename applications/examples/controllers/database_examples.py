@@ -1,51 +1,50 @@
 from gluon.fileutils import read_file
 
-response.menu = [['Register User', False, URL(r=request,
-                 f='register_user')], ['Register Dog', False,
-                 URL('register_dog')], ['Register Product'
-                 , False, URL('register_product')],
+response.menu = [['Register Person', False, URL('register_person')], 
+                 ['Register Dog', False, URL('register_dog')], 
+                 ['Register Product', False, URL('register_product')],
                  ['Buy product', False, URL('buy')]]
 
 
-def register_user():
-    """ simple user registration form with validation and database.insert()
+def register_person():
+    """ simple person registration form with validation and database.insert()
         also lists all records currently in the table"""
 
-    # ## create an insert form from the table
+    # create an insert form from the table
+    form = SQLFORM(db.person)
 
-    form = SQLFORM(db.users)
-
-    # ## if form correct perform the insert
-
-    if form.accepts(request.vars, session):
+    # if form correct perform the insert
+    if form.process().accepted:
         response.flash = 'new record inserted'
 
-    # ## and get a list of all users
+    # and get a list of all persons
+    records = SQLTABLE(db().select(db.person.ALL),headers='fieldname:capitalize')
 
-    records = SQLTABLE(db().select(db.users.ALL))
     return dict(form=form, records=records)
 
 
 def register_dog():
-    """ simple user registration form with validation and database.insert()
+    """ simple person registration form with validation and database.insert()
         also lists all records currently in the table"""
 
-    form = SQLFORM(db.dogs)
-    if form.accepts(request.vars, session):
+    form = SQLFORM(db.dog)
+    if form.process().accepted:
         response.flash = 'new record inserted'
     download = URL('download')  # to see the picture
-    records = SQLTABLE(db().select(db.dogs.ALL), upload=download)
+    records = SQLTABLE(db().select(db.dog.ALL), upload=download,
+                       headers='fieldname:capitalize')
     return dict(form=form, records=records)
 
 
 def register_product():
-    """ simple user registration form with validation and database.insert()
+    """ simple person registration form with validation and database.insert()
         also lists all records currently in the table"""
 
-    form = SQLFORM(db.products)
-    if form.accepts(request.vars, session):
+    form = SQLFORM(db.product)
+    if form.process().accepted:
         response.flash = 'new record inserted'
-    records = SQLTABLE(db().select(db.products.ALL))
+    records = SQLTABLE(db().select(db.product.ALL),
+                       headers='fieldname:capitalize')
     return dict(form=form, records=records)
 
 
@@ -53,100 +52,38 @@ def buy():
     """ uses a form to query who is buying what. validates form and
         updates existing record or inserts new record in purchases """
 
-    buyerRecords = db().select(db.users.ALL)
-    buyerOptions = []
-    for row in buyerRecords:
-        buyerOptions.append(OPTION(row.name, _value=row.id))
+    form = SQLFORM.factory(
+        Field('buyer_id',requires=IS_IN_DB(db,db.person.id,'%(name)s')),
+        Field('product_id',requires=IS_IN_DB(db,db.product.id,'%(name)s')),
+        Field('quantity','integer',requires=IS_INT_IN_RANGE(1,100)))
+    if form.process().accepted:
+        # get previous purchese
+        purchase = db((db.purchase.buyer_id == form.vars.buyer_id)&
+            (db.purchase.product_id==form.vars.product_id)).select().first()
 
-    productRecords = db().select(db.products.ALL)
-    productOptions = []
-    for row in productRecords:
-        productOptions.append(OPTION(row.name, _value=row.id))
-
-    form = FORM(TABLE(
-                TR('Buyer id:',
-                    SELECT(buyerOptions,_name='buyer_id')),
-                TR('Product id:',
-                    SELECT(productOptions,_name='product_id')),
-                TR('Quantity:',
-                    INPUT(_type='text', _name='quantity',
-                          requires=IS_INT_IN_RANGE(1, 100))),
-                TR('',
-                    INPUT(_type='submit', _value='Order'))
-                ))
-    if form.accepts(request.vars, session, keepvalues=True):
-
-        # ## check if user is in the database
-
-        if len(db(db.users.id == form.vars.buyer_id).select()) == 0:
-            form.errors.buyer_id = 'buyer not in database'
-
-        # ## check if product is the database
-
-        if len(db(db.products.id == form.vars.product_id).select())\
-             == 0:
-            form.errors.product_id = 'product not in database'
-
-        # ## if no errors
-
-        if len(form.errors) == 0:
-
-            # ## get a list of same purchases by same user
-
-            purchases = db((db.purchases.buyer_id == form.vars.buyer_id)
-                            & (db.purchases.product_id
-                            == form.vars.product_id)).select()
-
-            # ## if list contains a record, update that record
-
-            if len(purchases) > 0:
-                purchases[0].update_record(quantity=purchases[0].quantity
-                         + form.vars.quantity)
-            else:
-
-            # ## or insert a new record in table
-                db.purchases.insert(buyer_id=form.vars.buyer_id,
-                                    product_id=form.vars.product_id,
-                                    quantity=form.vars.quantity)
-            response.flash = 'product purchased!'
-    if len(form.errors):
+        if purchase:
+            # if list contains a record, update that record        
+            purchase.update_record(
+                quantity = purchase.quantity+form.vars.quantity)
+        else:
+            # self insert a new record in table
+            db.purchase.insert(buyer_id=form.vars.buyer_id,
+                               product_id=form.vars.product_id,
+                               quantity=form.vars.quantity)
+        response.flash = 'product purchased!'
+    elif form.errors:
         response.flash = 'invalid values in form!'
 
-    # ## now get a list of all purchases
-
-    # quick fix to make it runnable on gae
-    if purchased:
-        records = db(purchased).select(db.users.name,
-                                       db.purchases.quantity,
-                                       db.products.name)
-    else:
-        records = db().select(db.purchases.ALL)
-    return dict(form=form, records=SQLTABLE(records), vars=form.vars,
-                vars2=request.vars)
+    # now get a list of all purchases
+    records = SQLTABLE(db(purchased).select(),headers='fieldname:capitalize')
+    return dict(form=form, records=records)
 
 
 def delete_purchased():
     """ delete all records in purchases """
-
-    db(db.purchases.id > 0).delete()
+    db(db.purchase.id > 0).delete()
     redirect(URL('buy'))
-
-
-def reset_purchased():
-    """ set quantity=0 for all records in purchases """
-
-    db(db.purchases.id > 0).update(quantity=0)
-    redirect(URL('buy'))
-
 
 def download():
     """ used to download uploaded files """
-
-    import gluon.contenttype
-    app = request.application
-    filename = request.args[0]
-    response.headers['Content-Type'] = \
-        gluon.contenttype.contenttype(filename)
-    return read_file('applications/%s/uploads/%s' % (app, filename), 'rb')
-
-
+    return response.download(request,db)

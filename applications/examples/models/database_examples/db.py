@@ -18,52 +18,55 @@ else:
     db = DAL('sqlite://storage.sqlite')
 
 db.define_table(
-    'users',
+    'person',
     Field('name'),
-    Field('email')
+    Field('email'),
+    format = '%(name)s',
+    singular = 'Person',
+    plural = 'Persons',
     )
 
-# ONE (users) TO MANY (dogs)
+# ONE (person) TO MANY (dogs)
 
 db.define_table(
-    'dogs',
-    Field('owner_id', db.users),
+    'dog',
+    Field('owner_id', db.person),
     Field('name'),
     Field('type'),
     Field('vaccinated', 'boolean', default=False),
     Field('picture', 'upload', default=''),
+    format = '%(name)s',
+    singular = 'Dog',
+    plural = 'Dogs',
     )
 
 db.define_table(
-    'products',
+    'product',
     Field('name'),
-    Field('description', 'text')
+    Field('description', 'text'),
+    format = '%(name)s',
+    singular = 'Product',
+    plural = 'Products',
     )
 
-# MANY (users) TO MANY (purchases)
+# MANY (persons) TO MANY (purchases)
 
 db.define_table(
-    'purchases',
-    Field('buyer_id', db.users),
-    Field('product_id', db.products),
-    Field('quantity', 'integer')
+    'purchase',
+    Field('buyer_id', db.person),
+    Field('product_id', db.product),
+    Field('quantity', 'integer'),
+    format = '%(quantity)s %(product_id)s -> %(buyer_id)s',
+    singular = 'Purchase',
+    plural = 'Purchases',
     )
 
-# if running on Google App Engine
-if settings.web2py_runtime_gae:
-    # quick hack to skip the join
-    purchased = None
-else:
-    # use a joined view
-    purchased = (db.users.id == db.purchases.buyer_id) & (db.products.id
-                 == db.purchases.product_id)
+purchased = \
+    (db.person.id==db.purchase.buyer_id)&\
+    (db.product.id==db.purchase.product_id)
 
-db.users.name.requires = IS_NOT_EMPTY()
-db.users.email.requires = [IS_EMAIL(), IS_NOT_IN_DB(db, 'users.email')]
-db.dogs.owner_id.requires = IS_IN_DB(db, 'users.id', 'users.name')
-db.dogs.name.requires = IS_NOT_EMPTY()
-db.dogs.type.requires = IS_IN_SET(['small', 'medium', 'large'])
-db.purchases.buyer_id.requires = IS_IN_DB(db, 'users.id', 'users.name')
-db.purchases.product_id.requires = IS_IN_DB(db, 'products.id',
-        'products.name')
-db.purchases.quantity.requires = IS_INT_IN_RANGE(0, 10)
+db.person.name.requires = IS_NOT_EMPTY()
+db.person.email.requires = [IS_EMAIL(), IS_NOT_IN_DB(db, 'person.email')]
+db.dog.name.requires = IS_NOT_EMPTY()
+db.dog.type.requires = IS_IN_SET(('small', 'medium', 'large'))
+db.purchase.quantity.requires = IS_INT_IN_RANGE(0, 10)

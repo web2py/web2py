@@ -71,8 +71,8 @@
 <body>
   <div class="wrapper"><!-- for sticky footer -->    
     <div class="flash">{{=response.flash or ''}}</div>    
-    <div class="main">
-      <div class="container header">
+    <div class="header">
+      <div class="container">
         <div class="sixteen columns">
 	  <img src="{{=URL('static','images/web2py_logo.png')}}" />
           <h5>{{=response.subtitle or ''}}</h5>
@@ -95,6 +95,8 @@
           </div>
 	</div>
       </div>
+    </div>
+    <div class="main">
       <div class="container mainbody">	
         <div class="sixteen columns">
           <div class="{{=middle_columns}} columns center">

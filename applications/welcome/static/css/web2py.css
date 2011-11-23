@@ -77,7 +77,7 @@ fieldset { padding: 16px; border-top: 1px #DEDEDE solid;}
 fieldset legend {text-transform:uppercase; font-weight: bold; padding: 4px 16px 4px 16px; background: #f1f1f1;}
 
 /* fix ie problem with menu */
-.ie-lte7 .topbar {z-index: 2; }
+.ie-lte7 .topbar .container {z-index: 2; }
 
 td.w2p_fw {padding-bottom: 1em;}
 td.w2p_fl, td.w2p_fw, td.w2p_fc { vertical-align:top; }

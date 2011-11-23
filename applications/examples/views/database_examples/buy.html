@@ -1,7 +1,6 @@
-{{extend 'layout_examples/layout_civilized.html'}}
-  <h1>Purchase form</h1>
+{{extend 'layout.html'}}
+<h1>Purchase form</h1>
   {{=form}}
-  [ {{=A('reset purchased',_href=URL('reset_purchased'))}} |
-    {{=A('delete purchased',_href=URL('delete_purchased'))}} ]<br/> 
+  [ {{=A('delete purchases',_href=URL('delete_purchased'))}} ] 
   <h2>Current purchases (SQL JOIN!)</h2>
 <p>{{=records}}</p>
