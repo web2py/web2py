@@ -7,7 +7,7 @@ h1 { font-size: 32px }
 h2 { font-size: 24px }
 h3 { font-size: 20px }
 h4 { font-size: 14px }
-sup  { font-size: 0.5em; vertical-align: top;}
+sup  { font-size: 0.5em; line-height: 2em; vertical-align: top;}
 .frame { border: 3px solid #959595; margin-bottom: 5px; }
 ul { list-style: circle outside;}
 .announce { position:absolute;align:center;color:white;top:120px;font-weight:bold;text-align:center;
