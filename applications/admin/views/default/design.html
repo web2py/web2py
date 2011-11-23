@@ -1,0 +1,313 @@
+{{extend 'layout.html'}}
+{{
+def all(items):
+    return reduce(lambda a,b:a and b,items,True)
+def peekfile(path,file):
+    return A(file.replace('\\\\','/'),_href=URL('peek', args=(app, path, file)))  
+def editfile(path,file):
+    return A(SPAN(T('Edit')),_class='button editbutton',_href=URL('edit', args=(app, path, file)))  
+def testfile(path,file):
+    return A(TAG[''](IMG(_src=URL('static', 'images/test_icon.png'), _alt=T('test')), SPAN(T("Run tests in this file (to run all files, you may also use the button labelled 'test')"))), _class='icon test tooltip',_href=URL('test', args=(app, file))) 
+def editlanguagefile(path,file):
+    return A(SPAN(T('Edit')),_class='button editbutton',_href=URL('edit_language', args=(app, path, file))) 
+def file_upload_form(location):
+    form=FORM(T("upload file:")," ",
+              INPUT(_type="file",_name="file")," ",T("and rename it:")," ",
+              INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY),
+              INPUT(_type="hidden",_name="location",_value=location),
+              INPUT(_type="hidden",_name="sender",_value=URL('design',args=app)),
+              INPUT(_type="submit",_value=T("upload")),_action=URL('upload_file'))
+    return form  
+def file_create_form(location):
+    form=FORM(T("create file with filename:")," ",
+              INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY),
+              INPUT(_type="hidden",_name="location",_value=location),
+              INPUT(_type="hidden",_name="sender",_value=URL('design',args=app)),
+              INPUT(_type="submit",_value=T("Create")),_action=URL('create_file'))
+    return form
+def upload_plugin_form(app):
+    form=FORM(T("upload plugin file:")," ",
+              INPUT(_type="file",_name="pluginfile"),
+              INPUT(_type="submit",_value=T("upload")))
+    return form
+def deletefile(arglist):
+  return A(TAG[''](IMG(_src=URL('static', 'images/delete_icon.png')), SPAN(T('Delete this file (you will be asked to confirm deletion)'))), _class='icon delete tooltip', _href=URL('delete',args=arglist,vars=dict(sender=request.function+'/'+app)))
+}}
+
+{{block sectionclass}}design{{end}}
+
+<h2>{{=T("Edit application")}} "{{=A(app,_href=URL(app,'default','index'),_target="_blank")}}"</h2>
+
+<!-- COLLAPSE/JUMP-TO BUTTONS -->
+<div class="right-full controls">
+  <p>
+    {{=searchbox('search')}}
+    <a class="button special" href="#" onclick="jQuery('h3').click();return false"><span>{{=T("collapse/expand all")}}</span></a>
+    <span class="buttongroup">
+    {{=button('#models', T("models"))}}
+    {{=button('#controllers', T("controllers"))}}
+    {{=button('#views', T("views"))}}
+    {{=button('#languages', T("languages"))}}
+    {{=button('#static', T("static"))}}
+    {{=button('#modules', T("modules"))}}
+    {{=button('#plugins', T("plugins"))}}
+    </span>
+  </p>
+</div>
+
+<!-- MODELS -->
+
+<h3 id="models" onclick="collapse('models_inner');" class="component">
+  {{=T("Models")}} 
+  <span class="tooltip">{{=helpicon()}} <span>{{=T("The data representation, define database tables and sets")}}</span></span>
+</h3>
+<div id="models_inner" class="component_contents">
+  {{if not models:}}<p><strong>{{=T("There are no models")}}</strong></p>{{else:}}
+  <div class="controls comptools">
+    {{=button(URL(a=app,c='appadmin',f='index'), T('database administration'))}}
+    {{if os.access(os.path.join(request.folder,'..',app,'databases','sql.log'),os.R_OK):}}
+      {{=button(URL('peek/%s/databases/sql.log'%app), 'sql.log')}}
+    {{pass}}
+  </div>
+  {{pass}}
+
+  <ul>
+    {{for m in models:}}
+    <li id="models__{{=m.replace('.','__')}}">
+    <span class="filetools controls">
+      {{=editfile('models',m)}}
+      {{=deletefile([app, 'models', m])}}
+    </span>
+    <span class="file">
+      {{=peekfile('models',m)}}
+    </span>
+    <span class="extras">
+      {{if len(defines[m]):}}{{=T("defines tables")}} {{pass}}{{=XML(', '.join([B(table).xml() for table in defines[m]]))}}
+    </span>
+    </li>
+    {{pass}}
+  </ul>
+  <div class="controls formfield">{{=file_create_form('%s/models/' % app)}}</div>
+</div>
+
+<!-- FIND CONTROLLER FUNCTIONS -->
+{{
+controller_functions=[]
+for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functions[c]]
+}}
+
+<!-- CONTROLLERS -->
+
+<h3 id="controllers" onclick="collapse('controllers_inner');" class="component">
+  {{=T("Controllers")}} 
+  <span class="tooltip">{{=helpicon()}} <span>{{=T("The application logic, each URL path is mapped in one exposed function in the controller")}}</span></span>
+</h3>
+<div id="controllers_inner" class="component_contents">
+  {{if not controllers:}}<p><strong>{{=T("There are no controllers")}}</strong></p>{{else:}}
+  <div class="controls comptools">
+      {{=button(URL(r=request,c='shell',f='index',args=app), T("shell"))}}
+      {{=button(URL('test',args=app), T("test"))}}
+      {{=button(URL('edit',args=[app,'cron','crontab']), T("crontab"))}}
+  </div>
+  {{pass}}
+  <ul>
+    {{for c in controllers:}}
+    <li id="controllers__{{=c.replace('.','__')}}">
+    <span class="filetools controls">
+      {{=editfile('controllers',c)}}
+      {{=deletefile([app, 'controllers', c])}}
+      {{=testfile('controllers',c)}}
+    </span>
+    <span class="file">
+      {{=peekfile('controllers',c)}}
+    </span>
+    <span class="extras">
+      {{if functions[c]:}}{{=T("exposes")}} {{pass}}{{=XML(', '.join([A(f,_href=URL(a=app,c=c[:-3],f=f)).xml() for f in functions[c]]))}}
+    </span>
+    </li>
+    {{pass}}
+  </ul>
+  <div class="controls formfield">{{=file_create_form('%s/controllers/' % app)}}</div>
+</div>
+
+<!-- VIEWS -->
+
+<h3 id="views" onclick="collapse('views_inner');" class="component">
+  {{=T("Views")}}
+  <span class="tooltip">{{=helpicon()}} <span>{{=T("The presentations layer, views are also known as templates")}}</span></span>
+</h3>
+<div id="views_inner" class="component_contents">
+  <div class="controls comptools">
+    {{=button(LAYOUTS_APP, T("download layouts"))}}
+  </div>
+  {{if not views:}}<p><strong>{{=T("There are no views")}}</strong></p>{{pass}}
+  <ul>
+    {{for c in views:}}
+    <li id="views__{{=c.replace('/','__').replace('.','__')}}">
+    <span class="filetools controls">
+      {{=editfile('views',c)}}
+      {{=deletefile([app, 'views', c])}}
+    </span>
+    <span class="file">
+      {{=peekfile('views',c)}}
+    </span>
+    <span class="extras">
+      {{if extend.has_key(c):}}{{=T("extends")}} <b>{{=extend[c]}}</b> {{pass}}
+      {{if include[c]:}}{{=T("includes")}} {{pass}}{{=XML(', '.join([B(f).xml() for f in include[c]]))}}
+    </span>
+    </li>
+    {{pass}}
+  </ul>
+  <div class="controls formfield">{{=file_create_form('%s/views/' % app)}}</div>
+</div>
+
+<!-- LANGUAGES -->
+
+<h3 id="languages" onclick="collapse('languages_inner');" class="component">
+  {{=T("Languages")}}
+  <span class="tooltip">{{=helpicon()}} <span>{{=T("Translation strings for the application")}}</span></span>
+</h3>
+<div id="languages_inner" class="component_contents">
+  <div class="controls comptools">
+    {{=button(URL('update_languages/'+app), T('update all languages'))}}
+  </div>
+  {{if not languages:}}<p><strong>{{=T("There are no translators, only default language is supported")}}</strong></p>{{pass}}
+  <ul>
+    {{for file in languages:}}
+    <li id="languages__{{=file.replace('.','__')}}">
+    <span class="filetools controls">
+      {{=editlanguagefile('languages',file)}}
+      {{=deletefile([app, 'languages', file])}}
+    </span>
+    <span class="file">
+      {{=peekfile('languages',file)}}
+    </span>
+    </li>
+    {{pass}}
+  </ul>
+  <div class="controls formfield">{{=file_create_form('%s/languages/' % app)}}{{=T('(something like "it-it")')}}</div>
+</div>
+
+<!-- STATIC -->
+
+<h3 id="static" onclick="collapse('static_inner');" class="component">
+  {{=T("Static files")}}
+  <span class="tooltip">{{=helpicon()}} <span>{{=T("These files are served without processing, your images go here")}}</span></span>
+</h3>
+<div id="static_inner" class="component_contents">
+  <div class="controls comptools">
+  </div>
+  {{if not statics:}}<p><strong>{{=T("There are no static files")}}</strong></p>{{pass}}
+  <ul>
+    {{
+    path=[]
+    for file in statics+['']:
+      items=file.split('/')
+      file_path=items[:-1]
+      filename=items[-1]
+      while path!=file_path:          
+          if len(file_path)>=len(path) and all([v==file_path[k] for k,v in enumerate(path)]):
+              path.append(file_path[len(path)])
+              thispath='static__'+'__'.join(path)
+    }}
+    <li class="folder">
+    <a href="javascript:collapse('{{=thispath}}');" class="file">{{=path[-1]}}/</a>
+    <ul id="{{=thispath}}" style="display: none;" class="sublist">{{
+          else:
+              path = path[:-1]
+      }}
+    </ul></li>
+    {{
+              pass
+          pass
+      if filename:
+      }}<li>
+      <span class="filetools controls">
+	{{=editfile('static',file)}} {{=deletefile([app,'static',file])}}
+      </span>
+      <span class="file">
+	<a href="{{=URL(a=app,c='static',f=file)}}">{{=filename}}</a>
+      </span>
+    </li>{{
+          pass
+      pass
+    }}
+    {{pass}}
+  </ul>
+  <div class="controls formfield">{{=file_create_form('%s/static/' % app)}}
+  {{=file_upload_form('%s/static/' % app)}}</div>
+</div>
+
+<!-- MODULES -->
+
+<h3 id="modules" onclick="collapse('modules_inner');" class="component">
+  {{=T("Modules")}}
+  <span class="tooltip">{{=helpicon()}} <span>{{=T("Additional code for your application")}}</span></span>
+</h3>
+<div id="modules_inner" class="component_contents">
+  <div class="controls comptools">
+  </div>
+  {{if not modules:}}<p><strong>{{=T("There are no modules")}}</strong></p>{{pass}}
+  <ul>
+    {{for m in modules:}}
+    <li id="modules__{{=m.replace('/','__').replace('.','__')}}">
+    <span class="filetols controls">
+      {{=editfile('modules',m)}}
+      {{if m!='__init__.py':}}{{=deletefile([app, 'modules', m])}}{{pass}}
+    </span>
+    <span class="file">
+      {{=peekfile('modules',m)}}
+    </span>
+    </li>
+    {{pass}}
+  </ul>
+  <div class="controls formfield">{{=file_create_form('%s/modules/' % app)}}
+  {{=file_upload_form('%s/modules/' % app)}}</div>
+</div>
+
+<!-- PLUGINS -->
+
+<h3 id="plugins" onclick="collapse('plugins_inner');" class="component">
+  {{=T("Plugins")}}
+  <span class="tooltip">{{=helpicon()}} <span>{{=T("To create a plugin, name a file/folder plugin_[name]")}}</span></span>
+</h3>
+<div id="plugins_inner" class="component_contents">
+  <div class="controls comptools">
+    {{=button(PLUGINS_APP, T('download plugins'))}}
+  </div>
+  <div class="controls">
+  </div>
+  {{if plugins:}}
+  <ul>
+      {{for plugin in plugins:}}
+      <li>
+      {{=A('plugin_%s' % plugin, _class='file', _href=URL('plugin', args=[app, plugin]))}}
+      </li>
+      {{pass}}
+  </ul>
+  {{else:}}
+  <p><strong>{{=T('There are no plugins')}}</strong></p>
+  {{pass}}
+  <div class="controls formfield">{{=upload_plugin_form(app)}}</div>
+</div>
+
+
+<script>
+jQuery(document).ready(function(){
+   jQuery('#search').keyup(function(e){
+      var code = (e.keyCode ? e.keyCode : e.which);
+      if(code==13 && jQuery('#search').val()){
+        jQuery.getJSON('{{=URL('search',args=request.args)}}?keywords='+escape(jQuery('#search').val()),null,function(data, textStatus, xhr){
+          jQuery('.component_contents li, .formfield, .comptools').hide();
+		  files=data['files'];
+          for(var i=0; i<files.length; i++)
+            jQuery('li#'+files[i].replace(/\//g,'__').replace('.','__')).slideDown();   
+          jQuery('.flash').html('{{=T("Searching:")}} '+files.length+' {{=T("files")}}').slideDown();
+		  });
+      } else if(code==13) {
+          jQuery('.component_contents li, .formfield, .comptools').slideDown();
+          jQuery('.flash').html('').hide();
+      }
+   });
+});
+</script>

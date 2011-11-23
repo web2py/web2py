@@ -1,0 +1,158 @@
+{{extend 'layout.html'}}
+{{import os, glob}}
+
+{{block sectionclass}}site{{end}}
+
+<div class="applist f60">
+  <div class="applist_inner">
+    <h2>{{=T("Installed applications")}}</h2>
+    <ul>
+      {{for a in apps:}} 
+      <li class="application"> <!-- onmouseover="jQuery(this).children('p').show()" onmouseout="jQuery(this).children('p').hide()"-->
+        {{if a==request.application:}}
+        <h3 class="currentapp">{{=a}} ({{=T('currently running')}})</h3>  
+        <p class="controls">
+        {{else:}}
+        <h3 class="editableapp">{{=A(a,_href=URL(a,'default','index'))}}</h3> 
+	{{if MULTI_USER_MODE and db.app(name=a):}}(created by {{="%(first_name)s %(last_name)s" % db.auth_user[db.app(name=a).owner]}}){{pass}}
+        <p class="controls">
+        {{if not os.path.exists('applications/%s/compiled' % a):}}
+        {{=sp_button(URL('design',args=a), T("Edit"))}}
+        {{else:}}
+        {{=button(URL(a,'appadmin','index'), T("appadmin"))}}
+        {{pass}}
+        {{=button(URL('about',args=a), T("About"))}}
+        {{pass}}
+        {{=button(URL('errors',args=a), T("Errors"))}}
+        {{=button(URL('cleanup',args=a), T("Clean"))}}
+        {{=button(URL('pack',args=a), T("Pack all"))}}
+        {{if not os.path.exists('applications/%s/compiled' % a):}}
+        {{=button(URL('compile_app',args=a), T("Compile"))}}
+        {{else:}}
+        {{=button(URL('pack',args=(a, 'compiled')), T("Pack compiled"))}}
+        {{if glob.glob('applications/%s/controllers/*.py' % a):}}
+        {{=button(URL('remove_compiled_app',args=a), T("Remove compiled"))}}
+        {{pass}}
+        {{pass}}
+        {{if a!=request.application:}}
+        {{=button(URL('uninstall',args=a), T("Uninstall"))}}
+    	{{=button_enable(URL('enable',args=a), a)}}
+        {{pass}}
+        </p>
+      </li>
+      {{pass}}
+    </ul>
+  </div>
+</div>
+
+<div class="sidebar fl60">
+  <div class="sidebar_inner controls">
+    <div class="pwdchange">
+      <!-- CHANGE ADMIN PWD -->
+      {{if MULTI_USER_MODE:}}
+      {{=auth.navbar()}}
+      {{else:}}
+      {{=sp_button(URL('change_password'), T('Change admin password'))}}
+      {{pass}}
+    </div>
+    <!-- VERSION -->
+    {{if is_manager():}}
+    <div class="box">
+      <h3>{{="Version %s.%s.%s (%s) %s" % myversion}}</h3>      
+      {{if session.check_version:}}
+      <p id="check_version">
+        {{=T('Checking for upgrades...')}}
+      <script>ajax('{{=URL('check_version')}}',[],'check_version');</script>{{session.check_version=False}}
+      {{else:}}
+      <p id="check_version">
+        {{=button("javascript:ajax('"+URL('check_version')+"',[],'check_version')", T('Check for upgrades'))}}
+      {{pass}}
+      </p>
+      <div class="formfield">
+	Running on {{=request.env.server_software}}
+      </div>
+      <p>{{=button(URL('default','reload_routes'), T('Reload routes'))}}</p>
+    </div>
+    {{pass}}
+    <!-- APP WIZARD -->
+    <div class="box">
+      <h3>{{=T("New application wizard")}}</h3>
+      <p>{{=button(URL('wizard','index'), T('Start wizard'))}}
+      {{=T("(requires internet access)")}}</p>
+    </div>
+    <!-- SCAFFOLD APP -->
+    <div class="box">
+      <h3>{{=T("New simple application")}}</h3>
+      <form action="" enctype="multipart/form-data" method="post">
+        <div class="formfield">
+          {{=LABEL(T("Application name:"), _for="scaffold_filename")}} 
+          <input name="filename" type="text" id="scaffold_filename" /> 
+          <button type="submit" class="button">{{=T('Create')}}</button>
+        </div>
+        <div class="hidden"></div>
+      </form>
+    </div>
+    <!-- UPLOAD PACKAGE -->
+    <div class="box">
+      <h3>{{=T("Upload and install packed application")}}</h3>
+      <form action="" enctype="multipart/form-data" method="post">
+        <div class="formfield">
+	  <table>
+            <tr>
+	      <td>
+		{{=LABEL(T("Application name:"), _form='upload_filename')}}
+	      </td>
+	      <td>
+		<input id="appname" name="filename" type="text" id="upload_filename" />
+	      </td>
+	    </tr>
+	    <tr>
+	      <td>
+		{{=LABEL(T("Upload a package:"), _for='upload_file')}}
+	      </td>
+	      <td>
+		<input id="file" name="file" type="file" id="upload_file" /> 
+		<b>OR</b>
+	      </td>
+            </tr>
+	    <tr>
+              <td>
+		{{=LABEL(T("Get from URL:"), _for='upload_url')}}
+	      </td>
+	      <td>
+		<input id="appurl" name="appurl" type="text" id="upload_url"/>
+	      </td>
+	    </tr>
+	    <tr>
+	      <td></td>
+              <td>
+		<input type="checkbox" name="overwrite_check" id="upload_overwrite" /> 
+		{{=LABEL(T("Overwrite installed app"), _for='upload_overwrite')}}
+	      </td>
+	    </tr>
+	    <tr>
+	      <td></td>
+	      <td>
+		<button type="submit">{{=T('Install')}}</button>
+	      </td>
+	    </tr>
+	  </table>
+        </div>
+      </form>
+    </div>
+    <!-- DEPLOY ON GAE -->
+    <div class="box">
+      <h3>{{=T("Deploy on Google App Engine")}}</h3>
+      <p>{{=button(URL('gae','deploy'), T('Deploy'))}}</p>
+    </div><br/>
+    {{if TWITTER_HASH:}}	
+    <div class="box">
+      <h3>{{=T("%s Recent Tweets"%TWITTER_HASH)}}</h3>
+      <div id="tweets">{{=T('loading...')}}</div>
+      <script>
+        jQuery(document).ready(function(){jQuery('#tweets').load('{{=URL('twitter')}}')});
+      </script>
+    </div>
+    {{pass}}
+  </div>
+</div>

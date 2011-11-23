@@ -1,0 +1,1065 @@
+/**
+* cSans v0.6.3
+* 2009 Copyright A navalla suíza http://anavallasuiza.com
+* cSans is released under the GNU Affero GPL version 3 - more information at http://www.fsf.org/licensing/licenses/agpl-3.0.html
+*/
+
+/* 1. RESET */
+html,body,div,span,object,iframe,
+h1,h2,h3,h4,h5,h6,p,blockquote,pre,
+a,abbr,acronym,address,code,
+del,dfn,em,img,q,dl,dt,dd,ol,ul,li,
+fieldset,form,label,legend,textarea,
+table,caption,tbody,tfoot,thead,tr,th,td {
+	margin:0;
+	padding:0;
+	border:0;
+}
+textarea,select,input { font-size:1em; }
+html,body { height:100%; }
+body {
+	font-family:Arial,Helvetica,"Liberation Sans",Sans,sans-serif;
+	font-size: 12pt;
+	line-height:1.25em;
+	text-align:center;
+	background:#fff;
+	color:#000;
+}
+.page,.expanded-page { text-align:left; }
+
+/* 2. DEBUG: Show borders to stress an element */
+.omg-red,.omg-yellow,.omg-blue,.omg-green,.omg-black,.omg-white {
+	border-top:dotted 3px;
+	border-bottom:dotted 3px;
+}
+.omg-red { border-color:red; }
+.omg-yellow { border-color:yellow; }
+.omg-blue { border-color:blue; }
+.omg-green { border-color:green; }
+.omg-black { border-color:black; }
+.omg-white { border-color:white; }
+
+/* 3. BASIC STYLES */
+/* 3.1. Titles */
+h1,h2,h3,h4,h5,h6 {
+	font-weight:bold;
+	line-height:1em;
+	margin:1em 0 0.5em 0;
+}
+h1 { font-size:2em; }
+h2 { font-size:1.75em; }
+h3 { font-size:1.5em; }
+h4 { font-size:1.125em; }
+h5 { font-size:1em; }
+h6 { font-size:1em; font-weight:normal; }
+
+/* 3.2. Lists */
+ul,dd { margin-left:1em; }
+ol { list-style-type:decimal; margin-left:1.5em; }
+dl dt { font-weight:bold; }
+
+/* 3.3. Tables */
+table { border-collapse:collapse; border-spacing:0; }
+caption,th { font-weight:bold; }
+th,td { text-align:left; padding:0; border:1px solid #ccc; }
+tfoot { font-style:italic; }
+
+/* 3.4. Images */
+a img { border:none; }
+img.right { margin-left:1em; }
+img.left { margin-right:1em; }
+
+/* 3.5. Forms */
+fieldset { border:1px solid #ccc; }
+legend { font-weight:bold; font-size:1.2em; }
+input { margin:0; }
+input.text,input.password { overflow-y:visible; }
+textarea { width:400px; height:100px; border:1px solid #ccc; overflow-y: auto; }
+select { margin:0; font-size:1em; }
+input,textarea,select { font-family:Arial,sans-serif; font-size: 1em; }
+
+/* 3.6. Monospace elements */
+pre,code,tt { font-family:"Courier New", Courier, monospace; line-height:1.5; }
+pre,code { white-space:pre; }
+tt { display:block; line-height:1.5; }
+
+/* 3.7. Block elements */
+p,form,table,address,blockquote,pre,code,tt,ul,ol,dl { margin-bottom:1em; }
+
+/* 3.8. Inline elements */
+em,dfn { font-style:italic; }
+
+/* 3.9. HR element */
+hr {
+	background:none;
+	visibility:hidden;
+	clear:both;
+	float:none;
+	width:100%;
+	height:1px;
+	border:none;
+	margin:-1px 0;
+}
+
+/* 3.10. Flash objects */
+object { outline:none; }
+
+/* 4. UTILS */
+/* 4.1. Images with link and without link must overwrite background, width and height properties in your css */
+.image a,.image li,.image {
+	background-repeat:no-repeat;
+	background-color:transparent;
+	margin:0;
+	padding:0;
+	outline:none;
+	font-size:0px !important;
+	line-height:0em !important;
+	letter-spacing:-20px;
+	text-indent: -2px;
+	display:block;
+	overflow:hidden;
+	text-align:left;
+	border: none;
+}
+.image a {
+	display:block;
+	width:100%;
+	height:100%;
+	height:inherit;
+}
+ol.image,ul.image {
+	background:none;
+	width:100%;
+	height:auto;
+	float:left;
+}
+.image li {
+	float:left;
+}
+span.image,strong.image,em.image,a.image {
+	display:inline-block;
+	vertical-align:bottom;
+}
+input.image { cursor:pointer; }
+
+/* 4.2. Simple tabs system. You can overwrite background and text styles */
+.tabs {
+	list-style:none;
+	padding:0;
+	margin:0;
+	float:left;
+	width:100%;
+}
+.tabs li {
+	float:left;
+	margin:0 1px 0 0;
+}
+.tabs li span,
+.tabs li a {
+	float: left;
+	padding:2px 5px;
+	white-space:nowrap;
+	text-align:center;
+	cursor:pointer;
+	outline:0;
+	text-decoration:none;
+}
+.tabs li span { cursor:default; }
+.tabs .select a,.tabs a:hover {
+	background:#ddd;
+}
+
+/* 4.3. Convert a block element (like a fieldset) into a inline element */
+.inline {
+	border:none;
+	margin:0;
+	padding:0;
+	display:inline;
+}
+fieldset.inline {
+	display:block;
+	float:left;
+	width: 100%;
+}
+	
+/* 4.4. Inline-block element must content any element inside (div, p, etc) for the correct visualization in FF<3 */
+.inline-block-top,.inline-block-middle,.inline-block-bottom {
+	float:none !important;
+	display:inline-block;
+}
+.inline-block-top { vertical-align:top !important; }
+.inline-block-middle { vertical-align:middle !important; }
+.inline-block-bottom { vertical-align:bottom !important; }
+
+/* 4.5. Float elements */
+.left { float:left !important; }
+.right,.right-right { float:right !important; }
+.right-right { text-align:right !important; }
+.right-full { width:100%; text-align:right !important; }
+
+/* 4.6. Clear */
+.clear,.content,.page,.expanded-page { display:block; }
+.clear:after,.tabs:after,.content:after,.page:after,.expanded-page:after {
+	content:" ";
+	display:block;
+	height:0;
+	clear:both;
+	visibility:hidden;
+	font-size:0;
+}
+
+/* 4.7. Destroy margin collapse */
+.no-collapse { padding-top:1px; }
+
+/* 4.8. Hide an element */
+.hide { display:none; }
+
+/* 5. LAYOUT */
+/* 5.1. Row */
+.row {
+	float:left;
+	width:100%;
+	margin:0;
+	padding:0;
+	border:none;
+}
+
+/* 5.2. Last column in a row */
+.last { margin-right:0 !important; }
+
+/* 5.3. Content */
+.content {
+	padding:0;
+	margin:0;
+}
+
+/* 6. HACKS */
+img	{ -ms-interpolation-mode:bicubic; } /* IE */
+.clear,.tabs,.content,.page,.expanded-page {
+	*overflow-y:auto; /* IE7 */
+	*overflow-x:hidden; /* IE7 */
+	_height:1%; /* IE6 */
+	_overflow-y:visible; /* IE6 */
+	_overflow-x:visible; /* IE6 */
+}
+a.image,span.image,strong.image,em.image,.inline-block-top,.inline-block-middle,.inline-block-bottom {
+	display:-moz-inline-box; /* FF<3 */
+	-moz-box-orient:vertical; /* FF<3 */
+	*display:inline; /* IE */
+}
+
+/**
+* cSans Button plugin v0.3.1
+* 2009 Copyright A navalla suíza http://anavallasuiza.com
+* cSans is released under the GNU Affero GPL version 3 - more information at http://www.fsf.org/licensing/licenses/agpl-3.0.html
+*/
+
+/* 1. BASIC STYLES */
+
+ul.button {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	display:block;
+	}
+ul.button {
+	overflow-y: auto;
+	overflow-x: hidden;
+	}
+ul.button li {
+	float: left;
+	margin: 0;
+	}
+ul.button li a {
+	display: block;
+	z-index: 2;
+	}
+a.button {
+	display: inline-block;
+	vertical-align: middle;
+	}
+
+/* 1.1. Normal status */
+a.button,
+ul.button li a {
+	background-position: 100% 0;
+	background-repeat: no-repeat;
+	white-space: nowrap;
+	text-align: center;
+	cursor: pointer;
+	outline: 0;
+	}
+a.button span,
+ul.button li a span {
+	display: block;
+	background-position: 0 0;
+	background-repeat: no-repeat;
+	}
+
+/* 1.2. Hover/selected status */
+a.button:hover,
+a.button.select,
+ul.button li a:hover,
+ul.button li.select a {
+	background-position: 100% -70px !important;
+	}
+a.button:hover span,
+a.button.select span,
+ul.button li a:hover span,
+ul.button li.select a span {
+	background-position: 0 -70px !important;
+	}
+
+/* 2. EDITABLE STYLES */
+
+/* 2.1. Image background used */
+a.button,
+.button a,
+.button span {
+	background-image: url(../images/button.png);
+	}
+
+/* 2.2. Normal status (Example for padding 10px) */
+a.button,
+.button a {
+	padding: 0 10px 0 0; /* Padding-right: 10px */
+	margin: 0 1px 0 10px; /* Margin-left: 10px */
+	text-decoration: none;
+	}
+.button span {
+	padding: 4px 0 6px 10px; /*Padding-left: 10px */
+	margin: 0 0 0 -10px; /* Margin-left: -10px */
+	}
+	
+/* 3. HACKS */
+
+ul.button {
+	_height: 1%; /* IE6 */
+	_overflow-y: visible; /* IE6 */
+	_overflow-x: visible; /* IE6 */
+	}
+a.button span {
+	_float: left; /* Only IE6 */
+	_position: relative; /* Only IE6 */
+	}
+a.button {
+	display: -moz-inline-box; /* FF<3 */
+	display: inline-block; /* FF<3 */
+	-moz-box-orient: vertical; /* FF<3 */
+	*display: inline; /* IE */
+	}
+	
+/**
+* cSans Tooltip pluging v0.1
+* 2009 Copyright A navalla suíza http://anavallasuiza.com
+* cSans is released under the GNU Affero GPL version 3 - more information at http://www.fsf.org/licensing/licenses/agpl-3.0.html
+*/
+
+/* BASIC STYLES */
+
+.tooltip:hover {
+	background:transparent;
+	text-decoration:none;
+	}
+.tooltip span {
+	display:none;
+	padding:5px;
+	margin-left:10px;
+	width:150px;
+	}
+.tooltip:hover span {
+	cursor: default;
+	display:inline;
+	position:absolute;
+	}
+	
+/**
+* cSans Flexible v0.1
+* 2009 Copyright A navalla suíza http://anavallasuiza.com
+* cSans is released under the GNU Affero GPL version 3 - more information at http://www.fsf.org/licensing/licenses/agpl-3.0.html
+*/
+
+/* 1. BASIC STYLES */
+/* 1.1 Widths */
+.f10 { width:10%; }
+.f20 { width:20%; }
+.f25 { width:25%; }
+.f30 { width:30%; }
+.f33 { width:33.33%; }
+.f40 { width:40%; }
+.f50 { width:50%; }
+.f60 { width:60%; }
+.f66 { width:66.66%; }
+.f70 { width:70%; }
+.f75 { width:75%; }
+.f80 { width:80%; }
+.f90 { width:90%; }
+.f100 { width:100%; }
+
+.f10,.f20,.f25,.f30,.f33,.f40,.f50,.f60,.f66,.f70,.f75,.f80,.f90,.f100 {
+	float:left;
+	overflow:hidden;
+}
+
+/* 1.2 Margin-left */
+.fl10 { margin-left:10%; }
+.fl20 { margin-left:20%; }
+.fl25 { margin-left:25%; }
+.fl30 { margin-left:30%; }
+.fl33 { margin-left:33.33%; }
+.fl40 { margin-left:40%; }
+.fl50 { margin-left:50%; }
+.fl60 { margin-left:60%; }
+.fl66 { margin-left:66.66%; }
+.fl70 { margin-left:70%; }
+.fl75 { margin-left:75%; }
+.fl80 { margin-left:80%; }
+.fl90 { margin-left:90%; }
+.fl100 { margin-left:100%; }
+
+/* 1.3 Margin-right */
+.fr10 { margin-right:10%; }
+.fr20 { margin-right:20%; }
+.fr25 { margin-right:25%; }
+.fr30 { margin-right:30%; }
+.fr33 { margin-right:33.33%; }
+.fr40 { margin-right:40%; }
+.fr50 { margin-right:50%; }
+.fr60 { margin-right:60%; }
+.fr66 { margin-right:66.66%; }
+.fr70 { margin-right:70%; }
+.fr75 { margin-right:75%; }
+.fr80 { margin-right:80%; }
+.fr90 { margin-right:90%; }
+.fr100 { margin-right:100%; }
+
+/* 2. HACKS */
+.f10,.f20,.f25,.f30,.f33,.f40,.f50,.f60,.f66,.f70,.f75,.f80,.f90,.f100 {
+	_display:inline; /* IE5-6 */
+	*margin-left:-1px; /* IE5-7 */
+}
+
+/**
+* web2py Nuovo Theme
+* ------------------
+**/
+
+/* Basics */
+
+html, body {
+  font-size: 13px;
+  text-align: left;
+  color: #333;
+  padding: 0;
+  margin: 0;
+  background: #fff url(../images/header_shadow.png) repeat-x left 33px;
+}
+
+a {
+  color: #e8953c;
+  text-decoration: none;
+}
+
+label {
+  color: #777;
+  font-weight: bold;
+  font-size: 100%;
+}
+
+img {
+  vertical-align: baseline;
+}
+
+td, th {
+  border: none;
+}
+
+.center {
+  text-align: center;
+}
+
+.centerblock {
+  margin: 0 auto;
+}
+
+.clear {
+  clear: both;
+}
+
+.att {
+  color: #d22;
+}
+
+/* General */
+
+h3 {
+  padding-left: 18px;
+  background: url(../images/sidebar_bullet.gif) no-repeat;
+  color: #555;
+  font-weight: normal;
+  font-size: 130%;
+}
+
+.formfield {
+  padding: 0.7em 0.5em;
+  -moz-border-radius: 0.3em;
+  border-radius: 0.3em;
+  margin: 1em 0;
+  border: 1px solid #ddd;
+}
+
+.buttongroup {
+  padding: 0.7em 0.5em;
+}
+
+.formfield {
+  background: #eee;
+}
+
+.flash {
+  position: fixed;
+  top: 2em;
+  right: 2em;
+  background: #e8953c;
+  color: #fff;
+  border: 2px solid #fff;
+  -moz-border-radius: 0.7em;
+  border-radius: 0.7em;
+  padding: 0.5em 1em;
+}
+
+.tooltip span {
+  background: #9fb364;
+  color: #eef1d9;
+  border: 1px solid #eef1d9;
+  font-style: italic;
+  width: 20%;
+  padding: 0.3em;
+  -moz-border-radius: 0.5em;
+  border-radius: 0.5em;
+  font-size: 13px;
+  text-transform: none;
+}
+
+.help {
+  width: 60%;
+  font-size: 1em;
+  padding: 0.3em;
+  -moz-border-radius: 0.5em;
+  border-radius: 0.5em;
+  background: #eef1d9;
+  color: #9fb364;
+  font-style: italic;
+  text-transform: none;
+}
+
+.help h3 {
+  color: #9fb364;
+  font-size: 1.2em;
+  background: transparent;
+  font-weight: bold;
+}
+
+.icon img {
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.form td {
+  padding: 0.2em 1em 0.2em 0;
+}
+
+/* Buttons */
+
+.controls a.button,
+.controls a.button span {
+  background-image: url(../images/small_button.png);
+}
+
+.controls a.button span {
+  padding-top: 2px;
+}
+
+.controls a.button {
+  color: #333;
+}
+
+.controls a.special,
+.controls a.special span {
+  background-image: url(../images/small_special_button.png);
+}
+
+.controls a.special {
+  color: #ddd;
+}
+
+/* Header */
+
+#header {
+  background: #292929 url(../images/header_bg.png) repeat-x;
+  height: 33px;
+  overflow: hidden;
+}
+
+/* Home button */
+
+#start {
+  position: absolute;
+  top: 2px;
+  left: 13px;
+  margin: 0;
+}
+
+#start a.button {
+  display: block;
+}
+
+#start a.button,
+#start a.button span {
+  background-image: url(../images/start.png);
+}
+
+#start a {
+  text-indent: -999px;
+  overflow: hidden;
+  padding: 0;
+  margin: 0;
+}
+
+#start a.button span {
+  width: 112px;
+  height: 36px;
+  padding: 0;
+  margin: 0;
+}
+
+/* Menu */
+
+#menu {
+  float: right;
+  margin: 3px 13px 0 0;
+}
+
+#menu li {
+  float: left;
+  list-style: none;
+  margin-right: 0.4em;
+}
+
+#menu a.button,
+#menu a.button span {
+  background-image: url(../images/menu.png);
+}
+
+#menu a.button {
+  padding-right: 1em;
+}
+
+#menu a.button span {
+  padding-left: 1em;
+}
+
+#menu a {
+  color: #333;
+}
+
+/* Main area */
+
+#main {
+  padding: 2em 1em 5em;
+  position: relative;
+}
+
+#main h2 {
+  margin-top: 0;
+  font-weight: normal;
+  text-transform: uppercase;
+  border-bottom: 1px dotted #aaa;
+  padding-left: 18px;
+  background: transparent url(../images/section_bullet.png) no-repeat left 3px;
+  color: #aaa;
+}
+
+/* Applist */
+
+.applist h3 {
+  color: #aaa;
+  font-weight: normal;
+}
+
+.applist ul {
+  margin: 0;
+}
+
+.applist li {
+  list-style: none;
+  padding: 0;
+}
+
+h3.editableapp,
+h3.currentapp {
+  padding: 5px 0 5px 54px;
+}
+
+h3.editableapp {
+  background: #fff url(../images/folder.png) no-repeat;
+}
+
+h3.currentapp {
+  background: #fff url(../images/folder_locked.png) no-repeat;
+}
+
+.applist .controls {
+  margin-left: 1.5em;
+}
+
+
+/* Site sidebar */
+
+.sidebar_inner {
+  margin: 0 1em 0;
+  -moz-border-radius: 0.5em;
+  border-radius: 0.5em;
+  border: 1px solid #ddd;
+  min-width:400px;
+}
+
+.sidebar h4 {
+  color: #888;
+}
+
+.pwdchange {
+  padding: 1em;
+  float: right !important;
+}
+
+.sidebar .box {
+  clear: right;
+  margin-top: 2em;
+  border-top: 1px solid #eee;
+  padding: 0 1em;
+}
+
+.sidebar .box {
+  background: url(../images/sidebar_background.jpg) no-repeat;
+}
+
+.sidebar .upgrade_version {
+  color: #71c837;
+}
+
+/* Tweets */
+
+#tweets ol {
+  margin: 1em 0;
+}
+
+#tweets ol li {
+  background: #ebe8d0;
+  list-style: none;
+  -moz-border-radius: 0.5em;
+  border-radius: 0.5em;
+  padding: 0.5em;
+  margin: 1em 0;
+  border: 1px solid #aaa;
+}
+
+#tweets .entry-date {
+  font-weight: bold;
+  display: block;
+}
+
+/* Design/Plugin page */
+
+.component {
+  cursor: pointer;
+}
+
+.component_contents {
+  padding-left: 20px;
+}
+
+.component_contents li {
+  list-style: none;
+}
+
+.component_contents div.comptools {
+  margin-bottom: 1em;
+  padding-bottom: 0.5em;
+}
+
+.component_contents div.formfield form {
+  margin-bottom: 0.2em;
+  margin-top: 0.2em;
+}
+
+.file {
+  font-weight: bold;
+}
+
+.folder {
+  display: block;
+  padding: 4px 0 4px 40px;
+  background: url(../images/folder_sm.png) no-repeat;
+  margin: 0.5em 0;
+}
+
+.folder .file {
+  font-weight: bold;
+}
+
+.sublist {
+  margin-left: 0;
+  border-left: 1px dotted #aaa;
+  padding-left: 0.5em;
+  margin-top: 0.5em;
+  margin-bottom: 0.0em;
+}
+
+/* About */
+
+.legalese {
+  background: #eee url(../images/embossed.png) repeat-y;
+  padding: 1em 1em 1em 2em;
+}
+
+/* Wizard */
+
+.step li {
+  list-style: none;
+  margin-left: 1em;
+  margin-top: 0.5em;
+}
+
+.step #wizard_nav .box {
+  border-bottom: 1px dotted #aaa;
+  padding: 0.5em;
+}
+
+.step #wizard_form {
+  padding: 0.5em 0 2em 2em;
+}
+
+/* Editor */
+
+.edit #body {
+  height: auto;
+  width: 100%;
+}
+
+.edit .help li {
+  list-style: none;
+  padding: 0.5em 0;
+}
+
+.edit .help tt {
+  font-weight: bold;
+  font-style: normal;
+  display: inline; /* Rest cSans base style */
+  border: 1px solid #999;
+  background: #333;
+  color: #ddd;
+  padding: 0.3em;
+  -moz-border-radius: 0.3em;
+  border-radius: 0.3em;
+}
+
+/* Ticket */
+
+ul#snapshot > li {
+  list-style: none;
+}
+
+.inspect td,
+.versions td,
+.inspect th,
+.versions th {
+  padding: 0.3em;
+  // border: 1px solid #aaa;
+}
+
+.inspect th,
+.versions th {
+  background: #ddd;
+  color: #777;
+}
+
+.ticket h3 {
+  margin-top: 0.5em;
+  background: url(../images/ticket_section.png) no-repeat;
+  padding: 30px;
+  text-transform: uppercase;
+}
+
+
+.ticket .inspect li {
+  list-style: none;
+}
+
+#frames ul {
+  margin: 0;
+}
+
+#frames li {
+  margin: 0.5em 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Errors */
+
+.errors table.sortable th {
+  background: url(../images/header_bg.png) repeat-x;
+  color: #eee;
+  //  border-right: 1px solid #eee;
+  padding-top: 0.5em;
+}
+
+.errors table.sortable td {
+  border-bottom: 1px dotted #ddd;
+  padding: 0.4em 0.2em;
+}
+
+/* Tests */
+
+.test h3.failed {
+  background-image: url(../images/red_bullet.gif);
+}
+
+.test h3.nodoctests {
+  background-image: url(../images/dim_bullet.gif);
+}
+
+/* Footer */
+
+#footer {
+  padding: 1em 0 0;
+  color: #eee;
+  text-align: center;
+  background: #292929 url(../images/header_bg.png) repeat-x;
+  height: 45px;
+  overflow: hidden;
+  clear: both;
+}
+
+/* Shell */
+
+.shell #wrapper {
+  margin: 0 auto;
+}
+
+.shell #output {
+  width: 75%;
+  height:30em;
+}
+
+.shell #output,
+.shell #output pre {
+  color: #e8953c;
+  background: white;
+  border: 1px solid #333;  
+}
+
+.shell .prompt, 
+.shell #output, 
+.shell pre,
+.shell #caret {
+  font-family: monospace;
+}
+
+.shell .prompt, 
+.shell #output,
+.shell #caret {
+  font-size: 10pt;
+  padding: 6px;
+  padding-right: 0em;
+}
+
+.shell #shellwrapper {
+  background: white;
+  border: 1px solid #333;  
+  color: #e8953c;
+  width: 75%;
+  // padding: 6px;
+  //  -moz-border-radius: 1em;
+  // border-radius: 1em;
+  margin: 1em 0
+}
+
+.shell #caret {
+  border: 0;
+  float: left;
+}
+
+.shell .prompt {
+  color: #e8953c;
+  width: 85%;
+  height: 4em;
+  border: 0;
+}
+
+.shell .prompt, .shell #output {
+  overflow: auto;
+}
+
+.shell table, tr, td {
+  text-align: left;
+  vertical-align: top;
+}
+
+.shell pre {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  color: #333333;
+}
+
+.shell .message {
+  width: 100%;
+  color: #8AD;
+  font-weight: bold;
+  font-style: italic;
+}
+
+.shell .error {
+  color: #F44;
+}
+
+.shell .username {
+  font-weight: bold;
+}
+
+.shell dd{
+  color: #000033;
+}
+
+.shell dt{
+  color: #333333;
+}
+
+.shell #ajax-status {
+  font-weight: bold;
+}
+
+.shell .processing {
+  background-image: url('../images/spinner.gif');
+}
+
+.shell #caret {
+  width: 2.5em;
+  margin-right: 0px;
+  padding-right: 0px;
+  border-right: 0px;
+}
+
+
+/* ie7 hacks */
+
+.sublist {
+  zoom: 1;
+}
+
+.untranslated { background-color: #FFCC00; }
+.translated { background-color: white; }
+.ui-multiselect { border: 1px solid #ccc; width:400px;}
+#editor_area textarea { height: 400px; width: 100% }

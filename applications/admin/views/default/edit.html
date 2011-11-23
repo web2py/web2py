@@ -1,0 +1,92 @@
+{{extend 'layout.html'}}
+
+{{
+  def shortcut(combo, description):
+    return XML('<li><tt>%s</tt> %s</li>' % (combo, description))
+}}
+
+{{if TEXT_EDITOR == 'amy':}}
+{{include 'default/amy_ajax.html'}}
+{{else:}}
+<script language="Javascript" type="text/javascript" src="{{=URL(r=request,c='static',f='edit_area/edit_area_full.js')}}"></script><script language="Javascript" type="text/javascript">
+editAreaLoader.init({id: "body",start_highlight: true,allow_resize: "both",allow_toggle: {{=editarea_preferences['ALLOW_TOGGLE']}},language: "en",syntax: "{{=filetype}}",replace_tab_by_spaces: {{=editarea_preferences['REPLACE_TAB_BY_SPACES']}}, font_size: {{=editarea_preferences['FONT_SIZE']}}, fullscreen: {{=editarea_preferences['FULL_SCREEN']}}, display: "{{=editarea_preferences['DISPLAY']}}", show_line_colors: true, word_wrap: true, save_callback: "doClickSave" {{if filetype=='html':}},plugins: "zencoding"{{pass}} });
+</script>
+<script language="Javascript" type="text/javascript" src="{{=URL('static','js/ajax_editor.js')}}"></script>
+<script language="Javascript" type="text/javascript">
+jQuery(document).ready(function(){
+     setTimeout("keepalive('{{=URL('keepalive')}}')",10000);
+});
+</script>
+{{pass}}
+
+{{block sectionclass}}edit{{end}}
+
+<h2>{{=T('Editing file "%s"',filename)}}</h2>
+
+{{if functions:}}
+  <p class="formfield">
+<span style="text-align:left;" id="exposed">
+  {{=B(T('exposes:'))}}{{=XML(', '.join([A(f,_href=URL(a=app,c=controller,f=f)).xml() for f in functions]))}}
+</span>
+  {{if editviewlinks:}}<br/>
+  {{=B(T('edit views:'))}}
+  {{=XML(', '.join([v.xml() for v in editviewlinks]))}}
+  {{pass}}
+  </p>
+{{pass}}
+
+<p class="right controls">
+  {{=button(URL('design',args=request.args[0]), T('back'))}}
+  {{if edit_controller:}}
+  {{=button(edit_controller, T('edit controller'))}}
+  {{pass}}
+  {{if view_link:}} 
+  {{=button(view_link, T('try view'))}}
+  {{pass}}
+  {{if request.args[1]=='models':}}
+  <a class="button" href="http://www.web2py.com/sqldesigner" target="_blank"><span>{{=T('online designer')}}</span></a>
+  {{pass}}
+  <a class="button" href="http://www.web2py.com/examples/static/epydoc/index.html" target="_blank"><span>{{=T('docs')}}</span></a>
+</p>
+
+<div id="editor_area">
+  <form action="{{=URL('edit',args=filename)}}" method="post" name="editform" id="editform">
+    <a value="save" name="save" onclick="return doClickSave();" class="icon saveicon">
+      {{=IMG(_src=URL('static', 'images/save_icon.png'), _alt=T('Save'))}}
+    </a>
+    {{=T('Saved file hash:')}}
+    <input type="input" name="file_hash" value="{{=file_hash}}" readonly="readonly"/>
+    {{=T('Last saved on:')}} <input type="input" name="saved_on" value="{{=saved_on}}" readonly="readonly"/>
+    {{if TEXT_EDITOR=='amy':}}
+    <textarea style="width: auto; height:400px;direction:ltr;" rows="58" cols="100" -amy-enabled="true" id="body" name="data">{{=data}}</textarea>
+    {{else:}}
+    <textarea cols="80" rows="25" id="body" style="direction:ltr;" name="data">{{=data}}</textarea>
+    {{pass}}
+    <button class="editbutton" onclick="window.location.reload(); return false">{{=T('restore')}}</button> {{=T('currently saved or')}} <button class="editbutton" type="submit" name="revert">{{=T('revert')}}</button>
+    {{=T('to  previous version.')}}
+    <br/>
+  </form>
+</div>
+
+{{if filetype=='html':}}
+<div class="help">
+  <h3>Key bindings for ZenCoding Plugin</h3>
+  <ul>
+    {{=shortcut('Ctrl+S', 'Save via Ajax')}}
+    {{=shortcut('Ctrl+,', 'Expand Abbreviation')}}
+    {{=shortcut('Ctrl+M', 'Match Pair')}}
+    {{=shortcut('Ctrl+H', 'Wrap with Abbreviation')}}
+    {{=shortcut('Shift+Ctrl+M', 'Merge Lines')}}
+    {{=shortcut('Ctrl+Shift+←', 'Previous Edit Point')}}
+    {{=shortcut('Ctrl+Shift+→', 'Next Edit Point')}}
+    {{=shortcut('Ctrl+Shift+↑', 'Go to Matching Pair')}}
+  </ul>
+</div>
+{{else:}}
+<div class="help">
+  <h3>Key bindings</h3>
+  <ul>
+    {{=shortcut('Ctrl+S', 'Save via Ajax')}}
+  </ul>
+</div>
+{{pass}}

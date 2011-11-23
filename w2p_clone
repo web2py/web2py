@@ -1,0 +1,55 @@
+#!/usr/bin/env python
+import os
+import sys
+
+"""
+Author: Christopher Steel on behalf of Voice of Access
+Copyright: Copyrighted (c) by Massimo Di Pierro (2007-2011)
+
+web2py_clone becomes part of the web2py distribution available
+on Pypi via 'pip install web2py'
+
+web2py_clone is one of multiple commands that become available after running
+'pip install web2py' in a virtual environment. It requires
+mercurial to be installed in the virtual environment.
+
+web2py_clone creates a local clone from the Web2py google code
+project in the directory "./web2py," a directory called web2py
+one directory up from the location of this script.
+
+./bin/web2py_clone
+./web2py
+"""
+
+
+def main():
+    iwd = cwd = os.getcwd() # set initial and current working directories
+    script_filename = os.path.realpath(__file__)
+    script_dirname  = os.path.dirname(script_filename)
+    try:
+        print ("cwd now: %s" % cwd)
+    except:
+        print ("command failed %s" % cwd)
+    try:
+        os.chdir(script_dirname)
+        cwd = os.getcwd()
+        print ("cwd now: %s" % cwd)
+        source = "https://code.google.com/p/web2py/"
+        target = os.path.join('..','web2py')
+        print ("attempting to clone %s" % source)
+        print ("to %s" % target)
+        if os.path.isdir(target):
+            print ("found directory called web2py at %s" % target)
+            print ("is web2py already installed?")
+            print ("aborting clone attempt")
+        else:
+            os.system("hg clone %s %s" % (source,target))
+            os.chdir(iwd)  # return to our initial working directory
+            cwd = iwd      # set current working directory 
+
+    except:
+        print ("web2py-clone failed in second try statement %s" % cwd)
+
+if __name__ == '__main__':
+    main()
+

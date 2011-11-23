@@ -1,0 +1,24 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+import os
+import sys
+
+path = os.getcwd()
+try:
+    if sys.argv[1] and os.path.exists(sys.argv[1]):
+        path = sys.argv[1]
+except:
+    pass
+
+os.chdir(path)
+sys.path = [path]+[p for p in sys.path if not p==path]
+# import gluon.import_all ##### This should be uncommented for py2exe.py
+import gluon.widget
+
+def main():
+    # Start Web2py and Web2py cron service!
+    gluon.widget.start(cron=True)
+
+if __name__ == '__main__':
+    main()
