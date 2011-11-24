@@ -5591,8 +5591,9 @@ class Field(Expression):
             dest_file = open(pathfilename, 'wb')
             try:
                 shutil.copyfileobj(file, dest_file)
-            finally:
-                dest_file.close()
+            except IOError:
+                raise IOError, 'Unable to store file "%s" because invalid permissions, readonly file system, or filename too long' % pathfilename
+            dest_file.close()
         return newfilename
 
     def retrieve(self, name, path=None):
