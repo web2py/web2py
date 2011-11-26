@@ -1615,6 +1615,8 @@ class SQLiteAdapter(BaseAdapter):
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
+        if not self.driver:
+            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "sqlite"
         self.uri = uri
@@ -1665,6 +1667,8 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
+        if not self.driver:
+            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "sqlite"
         self.uri = uri
@@ -1744,6 +1748,8 @@ class MySQLAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
+        if not self.driver:
+            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "mysql"
         self.uri = uri
@@ -1842,6 +1848,8 @@ class PostgreSQLAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
+        if not self.driver:
+            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "postgres"
         self.uri = uri
@@ -1906,6 +1914,8 @@ class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
+        if not self.driver:
+            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "postgres"
         self.uri = uri
@@ -2022,6 +2032,8 @@ class OracleAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
+        if not self.driver:
+            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "oracle"
         self.uri = uri
@@ -2128,6 +2140,8 @@ class MSSQLAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                     adapter_args={}, fake_connect=False):
+        if not self.driver:
+            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "mssql"
         self.uri = uri
@@ -2289,6 +2303,8 @@ class FireBirdAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
+        if not self.driver:
+            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "firebird"
         self.uri = uri
@@ -2349,6 +2365,8 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
+        if not self.driver:
+            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "firebird"
         self.uri = uri
@@ -2458,6 +2476,8 @@ class InformixAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
+        if not self.driver:
+            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "informix"
         self.uri = uri
@@ -2555,6 +2575,8 @@ class DB2Adapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
+        if not self.driver:
+            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "db2"
         self.uri = uri
@@ -2612,6 +2634,8 @@ class TeradataAdapter(DB2Adapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
+        if not self.driver:
+            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "teradata"
         self.uri = uri
@@ -2675,6 +2699,8 @@ class IngresAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
+        if not self.driver:
+            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "ingres"
         self.uri = uri
@@ -2795,6 +2821,8 @@ class SAPDBAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
+        if not self.driver:
+            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "sapdb"
         self.uri = uri
@@ -2835,6 +2863,8 @@ class CubridAdapter(MySQLAdapter):
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
+        if not self.driver:
+            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "cubrid"
         self.uri = uri
