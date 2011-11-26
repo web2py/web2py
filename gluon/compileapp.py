@@ -106,7 +106,6 @@ def LOAD(c=None, f='index', args=None, vars=None,
          extension=None, target=None,ajax=False,ajax_trap=False,
          url=None,user_signature=False, content='loading...',**attr):
     from html import TAG, DIV, URL, SCRIPT, XML
-    from gluon import current
     if args is None: args = []
     vars = Storage(vars or {})
     target = target or 'c'+str(random.random())[2:]
