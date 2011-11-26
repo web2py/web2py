@@ -378,6 +378,7 @@ class Scheduler(MetaScheduler):
                 assigned_worker_name=self.worker_name,status=ASSIGNED)
             db.commit()
         except:
+            number_grabbed = None
             db.rollback()
         if number_grabbed:
             logging.debug('  grabbed %s tasks' % number_grabbed)
@@ -527,7 +528,7 @@ def main():
         tasks = {}
     group_names = [x.strip() for x in options.group_names.split(',')]
 
-    logging.getLogger().setLevel(logging.DEBUG)
+    logging.getLogger().setLevel(options.logger_level)
 
     print 'groups for this worker: '+', '.join(group_names)
     print 'connecting to database in folder: ' + options.db_folder or './'
