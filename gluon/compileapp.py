@@ -28,7 +28,7 @@ from languages import translator
 from dal import BaseAdapter, SQLDB, SQLField, DAL, Field
 from sqlhtml import SQLFORM, SQLTABLE
 from cache import Cache
-from globals import current
+from globals import current, Response
 import settings
 from cfs import getcfs
 import html
@@ -101,6 +101,85 @@ class mybuiltin(object):
             raise KeyError, key
     def __setitem__(self, key, value):
         setattr(self, key, value)
+
+def LOAD(c=None, f='index', args=None, vars=None,
+         extension=None, target=None,ajax=False,ajax_trap=False,
+         url=None,user_signature=False, content='loading...',**attr):
+    from html import TAG, DIV, URL, SCRIPT, XML
+    from gluon import current
+    if args is None: args = []
+    vars = Storage(vars or {})
+    target = target or 'c'+str(random.random())[2:]
+    attr['_id']=target
+    request = current.request
+    if '.' in f:
+        f, extension = f.split('.',1)
+    if url or ajax:
+        url = url or URL(request.application, c, f, r=request,
+                         args=args, vars=vars, extension=extension,
+                         user_signature=user_signature)
+        script = SCRIPT('web2py_component("%s","%s")' % (url, target),
+                             _type="text/javascript")
+        return TAG[''](script, DIV(content,**attr))
+    else:
+        if not isinstance(args,(list,tuple)):
+            args = [args]
+        c = c or request.controller        
+        other_request = Storage()
+        for key, value in request.items():
+            other_request[key] = value
+        other_request['env'] = Storage()
+        for key, value in request.env.items():
+            other_request.env['key'] = value
+        other_request.controller = c
+        other_request.function = f
+        other_request.extension = extension or request.extension
+        other_request.args = List(args)
+        other_request.vars = vars
+        other_request.get_vars = vars
+        other_request.post_vars = Storage()
+        other_response = Response()
+        other_request.env.path_info = '/' + \
+            '/'.join([request.application,c,f] + \
+                         map(str, other_request.args))
+        other_request.env.query_string = \
+            vars and URL(vars=vars).split('?')[1] or ''
+        other_request.env.http_web2py_component_location = \
+            request.env.path_info
+        other_request.cid = target
+        other_request.env.http_web2py_component_element = target
+        other_response.view = '%s/%s.%s' % (c,f, other_request.extension)
+
+        other_environment = copy.copy(current.globalenv) ### NASTY
+
+        other_response._view_environment = other_environment
+        other_response.generic_patterns = \
+            copy.copy(current.response.generic_patterns)
+        other_environment['request'] = other_request
+        other_environment['response'] = other_response
+        
+        ## some magic here because current are thread-locals
+        
+        original_request, current.request = current.request, other_request
+        original_response, current.response = current.response, other_response
+        page = run_controller_in(c, f, other_environment)
+        if isinstance(page, dict):
+            other_response._vars = page
+            for key in page:
+                other_response._view_environment[key] = page[key]
+            run_view_in(other_response._view_environment)
+            page = other_response.body.getvalue()
+        current.request, current.response = original_request, original_response
+        js = None
+        if ajax_trap:
+            link = URL(request.application, c, f, r=request,
+                            args=args, vars=vars, extension=extension,
+                            user_signature=user_signature)
+            js = "web2py_trap_form('%s','%s');" % (link, target)
+        script = js and SCRIPT(js,_type="text/javascript") or ''
+        return TAG[''](DIV(XML(page),**attr),script)
+
+
 
 class LoadFactory(object):
     """
@@ -256,6 +335,7 @@ def build_environment(request, response, session, store_current=True):
     t = environment['T'] = translator(request)
     c = environment['cache'] = Cache(request)
     if store_current:
+        current.globalenv = environment
         current.request = request
         current.response = response
         current.session = session
@@ -279,7 +359,7 @@ def build_environment(request, response, session, store_current=True):
     environment['SQLField'] = SQLField  # for backward compatibility
     environment['SQLFORM'] = SQLFORM
     environment['SQLTABLE'] = SQLTABLE
-    environment['LOAD'] = LoadFactory(environment)
+    environment['LOAD'] = LOAD
     environment['local_import'] = \
         lambda name, reload=False, app=request.application:\
         local_import_aux(name,reload,app)
