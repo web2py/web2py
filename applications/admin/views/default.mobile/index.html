@@ -1,0 +1,13 @@
+{{extend 'default.mobile/layout.html'}}
+
+<h2>web2py&trade; {{=T('Web Framework')}}</h2>
+<h3>{{=T('Login to the Administrative Interface')}}</h3>
+<div class="form">
+  <form action="{{=URL(r=request)}}" method="post">
+    <div><input type="hidden" name="send" value="{{=send}}"/></div>
+    <table>
+      <tr><td>{{=T('Administrator Password:')}}</td><td><input type="password" name="password" id="password"/></td></tr>
+      <tr><td></td><td><input type="submit" name="login" value="{{=T('Login')}}"/></td></tr>
+    </table>
+  </form>
+</div>
