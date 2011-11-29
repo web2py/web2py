@@ -320,22 +320,22 @@ if not 'google' in drivers:
         logger.debug('no mongoDB driver')
 
 PLURALIZE_RULES = [
-    (re.compile('child$'), re.compile('child$'), 'children'), 
-    (re.compile('oot$'), re.compile('oot$'), 'eet'), 
-    (re.compile('ooth$'), re.compile('ooth$'), 'eeth'), 
-    (re.compile('l[eo]af$'), re.compile('l([eo])af$'), 'l\\1aves'), 
-    (re.compile('sis$'), re.compile('sis$'), 'ses'), 
-    (re.compile('man$'), re.compile('man$'), 'men'), 
-    (re.compile('ife$'), re.compile('ife$'), 'ives'), 
-    (re.compile('eau$'), re.compile('eau$'), 'eaux'), 
-    (re.compile('lf$'), re.compile('lf$'), 'lves'), 
-    (re.compile('[sxz]$'), re.compile('$'), 'es'), 
-    (re.compile('[^aeioudgkprt]h$'), re.compile('$'), 'es'), 
-    (re.compile('(qu|[^aeiou])y$'), re.compile('y$'), 'ies'), 
+    (re.compile('child$'), re.compile('child$'), 'children'),
+    (re.compile('oot$'), re.compile('oot$'), 'eet'),
+    (re.compile('ooth$'), re.compile('ooth$'), 'eeth'),
+    (re.compile('l[eo]af$'), re.compile('l([eo])af$'), 'l\\1aves'),
+    (re.compile('sis$'), re.compile('sis$'), 'ses'),
+    (re.compile('man$'), re.compile('man$'), 'men'),
+    (re.compile('ife$'), re.compile('ife$'), 'ives'),
+    (re.compile('eau$'), re.compile('eau$'), 'eaux'),
+    (re.compile('lf$'), re.compile('lf$'), 'lves'),
+    (re.compile('[sxz]$'), re.compile('$'), 'es'),
+    (re.compile('[^aeioudgkprt]h$'), re.compile('$'), 'es'),
+    (re.compile('(qu|[^aeiou])y$'), re.compile('y$'), 'ies'),
     (re.compile('$'), re.compile('$'), 's'),
     ]
-    
-def pluralize(singular, rules=PLURALIZE_RULES):        
+
+def pluralize(singular, rules=PLURALIZE_RULES):
     for line in rules:
         re_search, re_sub, replace = line
         plural = re_search.search(singular) and re_sub.sub(replace, singular)
@@ -448,7 +448,7 @@ class ConnectionPool(object):
             while True:
                 sql_locker.acquire()
                 if not uri in ConnectionPool.pools:
-                    ConnectionPool.pools[uri] = []                    
+                    ConnectionPool.pools[uri] = []
                 if ConnectionPool.pools[uri]:
                     self.connection = ConnectionPool.pools[uri].pop()
                     sql_locker.release()
@@ -1689,7 +1689,7 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
         # FIXME http://www.zentus.com/sqlitejdbc/custom_functions.html for UDFs
         self.connection.create_function('web2py_extract', 2, SQLiteAdapter.web2py_extract)
 
-    def execute(self, a):        
+    def execute(self, a):
         return self.log_execute(a)
 
 
@@ -2303,6 +2303,14 @@ class FireBirdAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
+        if adapter_args.has_key('driver_name'):
+            if adapter_args['driver_name'] == 'kinterbasdb':
+                self.driver = kinterbasdb
+            elif adapter_args['driver_name'] == 'firebirdsql':
+                self.driver = firebirdsql
+        else:
+            self.driver = kinterbasdb
+
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
         self.db = db
@@ -2334,13 +2342,7 @@ class FireBirdAdapter(BaseAdapter):
                                    user = credential_decoder(user),
                                    password = credential_decoder(password),
                                    charset = charset))
-        if adapter_args.has_key('driver_name'):
-            if adapter_args['driver_name'] == 'kinterbasdb':
-                self.driver = kinterbasdb
-            elif adapter_args['driver_name'] == 'firebirdsql':
-                self.driver = firebirdsql
-        else:
-            self.driver = kinterbasdb
+
         def connect(driver_args=driver_args):
             return self.driver.connect(**driver_args)
         self.pool_connection(connect)
@@ -2365,6 +2367,15 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
+
+        if adapter_args.has_key('driver_name'):
+            if adapter_args['driver_name'] == 'kinterbasdb':
+                self.driver = kinterbasdb
+            elif adapter_args['driver_name'] == 'firebirdsql':
+                self.driver = firebirdsql
+        else:
+            self.driver = kinterbasdb
+
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
         self.db = db
@@ -2399,13 +2410,7 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
                                    charset=charset))
         #def connect(driver_args=driver_args):
         #    return kinterbasdb.connect(**driver_args)
-        if adapter_args.has_key('driver_name'):
-            if adapter_args['driver_name'] == 'kinterbasdb':
-                self.driver = kinterbasdb
-            elif adapter_args['driver_name'] == 'firebirdsql':
-                self.driver = firebirdsql
-        else:
-            self.driver = kinterbasdb
+
         def connect(driver_args=driver_args):
             return self.driver.connect(**driver_args)
         self.pool_connection(connect)
@@ -2908,7 +2913,7 @@ class DatabaseStoredFile:
     web2py_filesystem = False
 
     def escape(self,obj):
-        return self.db._adapter.escape(obj)    
+        return self.db._adapter.escape(obj)
 
     def __init__(self,db,filename,mode):
         if db._adapter.dbengine != 'mysql':
@@ -3440,7 +3445,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         (items, tablename, fields) = self.select_raw(query,fields,attributes)
         # self.db['_lastsql'] = self._select(query,fields,attributes)
         rows = [
-            [t=='id' and (int(item.key().id()) if item.key().id() else 
+            [t=='id' and (int(item.key().id()) if item.key().id() else
                           item.key().name()) or getattr(item, t) for t in fields]
             for item in items]
         colnames = ['%s.%s' % (tablename, t) for t in fields]
@@ -4018,18 +4023,18 @@ def smart_query(fields,text):
     field_map = {}
     for field in fields:
         n = field.name.lower()
-        if not n in field_map: 
+        if not n in field_map:
             field_map[n] = field
         n = str(field).lower()
         if not n in field_map:
             field_map[n] = field
     re_constants = re.compile('(\"[^\"]*?\")|(\'[^\']*?\')')
     constants = {}
-    i = 0 
+    i = 0
     while True:
         m = re_constants.search(text)
         if not m: break
-        text = text[:m.start()]+('#%i' % i)+text[m.end():] 
+        text = text[:m.start()]+('#%i' % i)+text[m.end():]
         constants[str(i)] = m.group()[1:-1]
         i+=1
     text = re.sub('\s+',' ',text).lower()
@@ -4062,7 +4067,7 @@ def smart_query(fields,text):
                 (' greater than ','>'),
                 (' starts with ','startswith'),
                 (' ends with ','endswith'),
-                (' is ','==')]:            
+                (' is ','==')]:
         if a[0]==' ':
             text = text.replace(' is'+a,' %s ' % b)
         text = text.replace(a,' %s ' % b)
@@ -4075,7 +4080,7 @@ def smart_query(fields,text):
             elif not neg and not logic and item in ('and','or'):
                 logic = item
             elif item in field_map:
-                field = field_map[item]                
+                field = field_map[item]
             else:
                 raise RuntimeError, "Invalid syntax"
         elif not field is None and op is None:
@@ -4090,7 +4095,7 @@ def smart_query(fields,text):
                 if op == '==': op = 'like'
             if op == '==': new_query = field==value
             elif op == '<': new_query = field<value
-            elif op == '>': new_query = field>value                
+            elif op == '>': new_query = field>value
             elif op == '<=': new_query = field<=value
             elif op == '>=': new_query = field>=value
             elif field.type in ('text','string'):
@@ -4100,13 +4105,13 @@ def smart_query(fields,text):
                 elif op == 'endswith': new_query = field.endswith(value)
                 else: raise RuntimeError, "Invalid operation"
             else: raise RuntimeError, "Invalid operation"
-            if neg: new_query = ~new_query                
+            if neg: new_query = ~new_query
             if query is None:
                 query = new_query
             elif logic == 'and':
                 query &= new_query
             elif logic == 'or':
-                query |= new_query                
+                query |= new_query
             field = op = neg = logic = None
     return query
 
@@ -4350,7 +4355,7 @@ def index():
                 f = db[table][field]
                 if not f.readable: continue
                 if f.type=='id' or 'slug' in field or f.type.startswith('reference'):
-                    tag += '/{%s.%s}' % (table,field)                    
+                    tag += '/{%s.%s}' % (table,field)
                     patterns.append(tag)
                     patterns.append(tag+'/:field')
                 elif f.type.startswith('boolean'):
@@ -4416,11 +4421,11 @@ def index():
         for pattern in patterns:
             otable=table=None
             if not isinstance(queries,dict):
-                dbset=db(queries)            
+                dbset=db(queries)
             i=0
             tags = pattern[1:].split('/')
             if len(tags)!=len(args):
-                continue            
+                continue
             for tag in tags:
                 if re1.match(tag):
                     # print 're1:'+tag
@@ -4538,7 +4543,7 @@ def index():
         for key in args:
             if key not in [
                     'migrate',
-                    'primarykey',                    
+                    'primarykey',
                     'fake_migrate',
                     'format',
                     'singular',
@@ -4694,7 +4699,7 @@ def index():
     def export_to_csv_file(self, ofile, *args, **kwargs):
         step = int(kwargs.get('max_fetch_rows,',500))
         write_colnames = kwargs['write_colnames'] = \
-            kwargs.get("write_colnames", True)        
+            kwargs.get("write_colnames", True)
         for table in self.tables:
             ofile.write('TABLE %s\r\n' % table)
             query = self[table]._id > 0
