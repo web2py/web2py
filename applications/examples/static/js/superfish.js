@@ -196,7 +196,7 @@
 				.each(function(){
 					var $childUl = $('>ul',this);
 					var offsetDirection = $childUl.css('left')!==undefined ? 'left' : 'right';
-					$childUl.css(offsetDirection,emWidth);
+					$childUl.css(offsetDirection,$ul.width());
 				});
 			});
 			
