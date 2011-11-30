@@ -8,7 +8,7 @@ response.description = T('web2py Web Framework')
 
 session.forget()
 
-@cache('index')
+#@cache('index')
 def index():
     return response.render()
 

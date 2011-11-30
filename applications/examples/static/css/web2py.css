@@ -50,7 +50,11 @@ html, body {
 .footer, .push {
   height: 6em;
   padding: 1em 0;
-  clear: both;
+  clear: both;  
+}
+
+.footer {
+  padding-bottom: 100px;
 }
 
 .footer-content {position: relative; bottom: -4em; width: 100%;}

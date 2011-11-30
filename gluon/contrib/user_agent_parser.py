@@ -179,6 +179,13 @@ class Linux(OS):
     def getVersion(self, agent):
         pass
 
+class RIM(OS):
+    look_for = 'BlackBerry'
+    prefs = dict(dist=[None], flavor=None)
+
+    def getVersion(self, agent):
+        pass
+
 
 class Macintosh(OS):
     look_for = 'Macintosh'
@@ -204,7 +211,7 @@ class MacOS(Flavor):
 class Windows(OS):
     look_for = 'Windows'
     prefs = dict(browser=["Microsoft Internet Explorer", 'Firefox'],
-                 dict=None, flavor=None)
+                 dist=['WindowsMobile'] flavor=None)
 
     def getVersion(self, agent):
         v = agent.split('Windows')[-1].split(';')[0].strip()
@@ -236,6 +243,13 @@ class ChromeOS(OS):
     def getVersion(self, agent):
         vs = self.version_splitters
         return agent.split(self.look_for+vs[0])[-1].split(vs[1])[1].strip()[:-1]
+
+class WindowsMobile(Dist):
+    look_for = 'Windows Phone'
+    is_mobile = True
+
+    def getVersion(self, agent):
+        return agent.split('Windows Phone')[-1].split(';')[0].strip().split(' ')[-1]
 
 class Android(Dist):
     look_for = 'Android'
