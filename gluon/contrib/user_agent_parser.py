@@ -211,7 +211,7 @@ class MacOS(Flavor):
 class Windows(OS):
     look_for = 'Windows'
     prefs = dict(browser=["Microsoft Internet Explorer", 'Firefox'],
-                 dist=['WindowsMobile'] flavor=None)
+                 dist=['WindowsMobile'], flavor=None)
 
     def getVersion(self, agent):
         v = agent.split('Windows')[-1].split(';')[0].strip()
