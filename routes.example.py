@@ -42,6 +42,13 @@ routes_in = ((r'.*:/favicon.ico', r'/examples/static/favicon.ico'),
 routes_out = ((r'.*http://otherdomain.com.* /app/ctr(?P<any>.*)', r'\g<any>'),
               (r'/app(?P<any>.*)', r'\g<any>'))
 
+# Specify log level for rewrite's debug logging
+# Possible values: debug, info, warning, error, critical (loglevels),
+#                  off, print (print uses print statement rather than logging)
+# GAE users may want to use 'off' to suppress routine logging.
+#
+logging = 'debug'
+
 # Error-handling redirects all HTTP errors (status codes >= 400) to a specified
 # path.  If you wish to use error-handling redirects, uncomment the tuple
 # below.  You can customize responses by adding a tuple entry with the first
