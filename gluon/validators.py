@@ -59,8 +59,8 @@ def translate(text):
     if isinstance(text,(str,unicode)):
         from globals import current
         if hasattr(current,'T'):
-            return current.T(text)
-    return text
+            return str(current.T(text))
+    return str(text)
 
 def options_sorter(x,y):
     return (str(x[1]).upper()>str(y[1]).upper() and 1) or -1
@@ -2100,7 +2100,7 @@ class IS_DATE(Validator):
 
     def __init__(self, format='%Y-%m-%d',
                  error_message='enter date as %(format)s'):
-        self.format = str(format)
+        self.format = translate(format)
         self.error_message = str(error_message)
 
     def __call__(self, value):
@@ -2156,7 +2156,7 @@ class IS_DATETIME(Validator):
 
     def __init__(self, format='%Y-%m-%d %H:%M:%S',
                  error_message='enter date and time as %(format)s'):
-        self.format = str(format)
+        self.format = translate(format)
         self.error_message = str(error_message)
 
     def __call__(self, value):
