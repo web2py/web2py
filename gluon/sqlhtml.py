@@ -1829,8 +1829,10 @@ class SQLFORM(FORM):
             htmltable = DIV(htmltable,_style='width:100%;overflow-x:scroll')
             if selectable:
                 htmltable = FORM(htmltable,INPUT(_type="submit"))
-                if htmltable.process(formname=formname).accepted:
-                    records = [int(r) for r in htmltable.vars.records or []]
+                if htmltable.process(formname=formname).accepted:#
+                    htmltable.vars.records = htmltable.vars.records or []
+                    htmltable.vars.records = htmltable.vars.records if type(htmltable.vars.records) == list else [htmltable.vars.records]
+                    records = [int(r) for r in htmltable.vars.records]
                     selectable(records)
                     redirect(referrer)
         else:
