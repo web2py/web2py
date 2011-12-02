@@ -60,22 +60,27 @@ def safe_float(x):
 
 class FormWidget(object):
     """
-    helper for SQLFORM to generate form input fields (widget),
-    related to the fieldtype
+    helper for SQLFORM to generate form input fields 
+    (widget), related to the fieldtype
     """
 
-    @staticmethod
-    def _attributes(field, widget_attributes, **attributes):
+    _class = 'generic-widget'
+
+    @classmethod
+    def _attributes(cls, field, 
+                    widget_attributes, **attributes):
         """
         helper to build a common set of attributes
 
-        :param field: the field involved, some attributes are derived from this
+        :param field: the field involved, 
+                      some attributes are derived from this
         :param widget_attributes:  widget related attributes
         :param attributes: any other supplied attributes
         """
         attr = dict(
             _id = '%s_%s' % (field._tablename, field.name),
-            _class = widget_class.match(str(field.type)).group(),
+            _class = cls._class or \
+                widget_class.match(str(field.type)).group(),
             _name = field.name,
             requires = field.requires,
             )
@@ -102,7 +107,7 @@ class FormWidget(object):
         raise NotImplementedError
 
 class StringWidget(FormWidget):
-
+    _class = 'string'
     @staticmethod
     def widget(field, value, **attributes):
         """
@@ -121,36 +126,32 @@ class StringWidget(FormWidget):
 
 
 class IntegerWidget(StringWidget):
-
-    pass
+    _class = 'integer'
 
 
 class DoubleWidget(StringWidget):
-
-    pass
+    _class = 'double'
 
 
 class DecimalWidget(StringWidget):
-
-    pass
+    _class = 'double'
 
 
 class TimeWidget(StringWidget):
-
-    pass
+    _class = 'time'
 
 
 class DateWidget(StringWidget):
-
-    pass
+    _class = 'date'
 
 
 class DatetimeWidget(StringWidget):
-
+    _class = 'datetime'
     pass
 
 
 class TextWidget(FormWidget):
+    _class = 'text'
 
     @staticmethod
     def widget(field, value, **attributes):
@@ -160,15 +161,14 @@ class TextWidget(FormWidget):
         see also: :meth:`FormWidget.widget`
         """
 
-        default = dict(
-            value = value,
-            )
-        attr = TextWidget._attributes(field, default, **attributes)
-
+        default = dict(value = value)
+        attr = TextWidget._attributes(field, default, 
+                                      **attributes)
         return TEXTAREA(**attr)
 
 
 class BooleanWidget(FormWidget):
+    _class = 'boolean'
 
     @staticmethod
     def widget(field, value, **attributes):
@@ -178,12 +178,9 @@ class BooleanWidget(FormWidget):
         see also: :meth:`FormWidget.widget`
         """
 
-        default=dict(
-            _type='checkbox',
-            value=value,
-            )
-        attr = BooleanWidget._attributes(field, default, **attributes)
-
+        default=dict(_type='checkbox', value=value)
+        attr = BooleanWidget._attributes(field, default,
+                                         **attributes)
         return INPUT(**attr)
 
 
@@ -207,11 +204,9 @@ class OptionsWidget(FormWidget):
 
         see also: :meth:`FormWidget.widget`
         """
-        default = dict(
-            value=value,
-            )
-        attr = OptionsWidget._attributes(field, default, **attributes)
-
+        default = dict(value=value)
+        attr = OptionsWidget._attributes(field, default,
+                                         **attributes)
         requires = field.requires
         if not isinstance(requires, (list, tuple)):
             requires = [requires]
@@ -219,13 +214,13 @@ class OptionsWidget(FormWidget):
             if hasattr(requires[0], 'options'):
                 options = requires[0].options()
             else:
-                raise SyntaxError, 'widget cannot determine options of %s' \
-                    % field
+                raise SyntaxError, 'widget cannot determine options of %s' % field                    
         opts = [OPTION(v, _value=k) for (k, v) in options]
 
         return SELECT(*opts, **attr)
 
 class ListWidget(StringWidget):
+
     @staticmethod
     def widget(field,value,**attributes):
         _id = '%s_%s' % (field._tablename, field.name)
@@ -413,6 +408,7 @@ class CheckboxesWidget(OptionsWidget):
 
 
 class PasswordWidget(FormWidget):
+    _class = 'password'
 
     DEFAULT_PASSWORD_DISPLAY = 8*('*')
 
@@ -436,6 +432,7 @@ class PasswordWidget(FormWidget):
 
 
 class UploadWidget(FormWidget):
+    _class = 'upload'
 
     DEFAULT_WIDTH = '150px'
     ID_DELETE_SUFFIX = '__delete'
@@ -535,6 +532,7 @@ class UploadWidget(FormWidget):
 
 
 class AutocompleteWidget(object):
+    _class = 'string'
 
     def __init__(self, request, field, id_field=None, db=None,
                  orderby=None, limitby=(0,10),
