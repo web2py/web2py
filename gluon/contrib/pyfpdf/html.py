@@ -83,7 +83,7 @@ class HTML2FPDF(HTMLParser):
             else:
                 self.set_style('B',True)
                 border = border or 'B'
-                align = 'C'
+                align = self.td.get('align', 'C')[0].upper()
             bgcolor = hex2dec(self.td.get('bgcolor', self.tr.get('bgcolor', '')))
             # parsing table header/footer (drawn later):
             if self.thead is not None:
