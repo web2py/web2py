@@ -40,12 +40,15 @@ import imp
 import logging
 logger = logging.getLogger("web2py")
 import rewrite
+import platform
 
 try:
     import py_compile
 except:
     logger.warning('unable to import py_compile')
 
+is_pypy = True if platform.python_implementation() == 'PyPy' else False
+settings.global_settings.is_pypy = is_pypy
 is_gae = settings.global_settings.web2py_runtime_gae
 is_jython = settings.global_settings.is_jython = 'java' in sys.platform.lower() or hasattr(sys, 'JYTHON_JAR') or str(sys.copyright).find('Jython') > 0
 
@@ -343,6 +346,8 @@ def build_environment(request, response, session, store_current=True):
 
     global __builtins__
     if is_jython: # jython hack
+        __builtins__ = mybuiltin()
+    elif is_pypy: # apply the same hack to pypy too
         __builtins__ = mybuiltin()
     else:
         __builtins__['__import__'] = __builtin__.__import__ ### WHY?
