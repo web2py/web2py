@@ -880,6 +880,8 @@ class Auth(object):
         settings.cas_provider = cas_provider
         settings.cas_actions = {'login':'login',
                                 'validate':'validate',
+                                'servicevalidate':'serviceValidate',
+                                'proxyvalidate':'proxyValidate',
                                 'logout':'logout'}
         settings.cas_maps = None
         settings.extra_fields = {}
@@ -1141,7 +1143,11 @@ class Auth(object):
             if args(1) == self.settings.cas_actions['login']:
                 return self.cas_login(version=2)
             elif args(1) == self.settings.cas_actions['validate']:
-                return self.cas_validate(version=2)
+                return self.cas_validate(version=1)
+            elif args(1) == self.settings.cas_actions['servicevalidate']:
+                return self.cas_validate(version=2, proxy=False)
+            elif args(1) == self.settings.cas_actions['proxyvalidate']:
+                return self.cas_validate(version=2, proxy=True)
             elif args(1) == self.settings.cas_actions['logout']:
                 return self.logout(next=request.vars.service or DEFAULT)
         else:
@@ -1381,8 +1387,9 @@ class Auth(object):
                     Field('user_id', settings.table_user, default=None,
                           label=self.messages.label_user_id),
                     Field('created_on','datetime',default=now),
-                    Field('url',requires=IS_URL()),
-                    Field('uuid'),
+                    Field('service',requires=IS_URL()),
+                    Field('ticket'),
+                    Field('renew', 'boolean', default=False),
                     *settings.extra_fields.get(settings.table_cas_name,[]),
                     **dict(
                         migrate=self.__get_migrate(
@@ -1509,52 +1516,79 @@ class Auth(object):
         log=DEFAULT,
         version=2,
         ):
-        request, session = current.request, current.session
+        request = current.request
+        response = current.response
+        session = current.session
         db, table = self.db, self.settings.table_cas
         session._cas_service = request.vars.service or session._cas_service
         if not request.env.http_host in self.settings.cas_domains or \
                 not session._cas_service:
             raise HTTP(403,'not authorized')
-        def allow_access():
-            row = table(url=session._cas_service,user_id=self.user.id)
+        def allow_access(interactivelogin=False):
+            row = table(service=session._cas_service,user_id=self.user.id)
             if row:
                 row.update_record(created_on=request.now)
-                uuid = 'LT-'+row.uuid
+                ticket = row.ticket
             else:
-                uuid = 'LT-'+web2py_uuid()
-                table.insert(url=session._cas_service, user_id=self.user.id,
-                             uuid=uuid, created_on=request.now)
-            url = session._cas_service
+                ticket = 'ST-'+web2py_uuid()
+                table.insert(service=session._cas_service, user_id=self.user.id,
+                             ticket=ticket, created_on=request.now, renew=interactivelogin)
+            service = session._cas_service
             del session._cas_service
-            redirect(url+"?ticket="+uuid)
-        if self.is_logged_in():
-            allow_access()
+            if request.vars.has_key('warn'):
+                response.headers['refresh'] = "5;URL=%s"%service+"?ticket="+ticket
+                return A("Continue to %s"%service, 
+                    _href=service+"?ticket="+ticket)
+            else:
+                redirect(service+"?ticket="+ticket)
+        if self.is_logged_in() and not request.vars.has_key('renew'):
+            return allow_access()
+        elif not self.is_logged_in() and request.vars.has_key('gateway'):
+            redirect(service)
         def cas_onaccept(form, onaccept=onaccept):
             if not onaccept is DEFAULT: onaccept(form)
-            allow_access()
+            return allow_access(interactivelogin=True)
         return self.login(next,onvalidation,cas_onaccept,log)
 
 
-    def cas_validate(self, version=2):
+    def cas_validate(self, version=2, proxy=False):
         request = current.request
         db, table = self.db, self.settings.table_cas
         current.response.headers['Content-Type']='text'
-        ticket = table(uuid=request.vars.ticket)
-        if ticket: # and ticket.created_on>request.now-datetime.timedelta(60):
-            user = self.settings.table_user(ticket.user_id)
-            fullname = user.first_name+' '+user.last_name
-            if version == 1:
-                raise HTTP(200,'yes\n%s:%s:%s'%(user.id,user.email,fullname))
-            # assume version 2
-            username = user.get('username',user.email)
-            raise HTTP(200,'<?xml version="1.0" encoding="UTF-8"?>\n'+\
-                           TAG['cas:serviceResponse'](
-                    TAG['cas:authenticationSuccess'](
-                        TAG['cas:user'](username),
-                        *[TAG['cas:'+field.name](user[field.name]) \
-                              for field in self.settings.table_user \
-                              if field.readable]),
-                    **{'_xmlns:cas':'http://www.yale.edu/tp/cas'}).xml())
+        ticket = request.vars.ticket
+        renew = True if request.vars.has_key('renew') else False
+        row = table(ticket=ticket)
+        if row:
+            if self.settings.login_userfield:
+                userfield = self.settings.login_userfield
+            elif 'username' in table.fields:
+                userfield = 'username'
+            else:
+                userfield = 'email'
+            # If ticket is a service Ticket and RENEW flag respected
+            if ticket[0:3] == 'ST-' and not ((row.renew and renew) ^ renew):
+                user = self.settings.table_user(row.user_id)
+                row.delete_record()
+                if version == 1:
+                    raise HTTP(200,'yes\n%s'%(user[userfield]))
+                # assume version 2
+                username = user.get('username',user[userfield])
+                raise HTTP(200,'<?xml version="1.0" encoding="UTF-8"?>\n'+\
+                    TAG['cas:serviceResponse'](
+                        TAG['cas:authenticationSuccess'](
+                            TAG['cas:user'](username),
+                            *[TAG['cas:'+field.name](user[field.name]) \
+                                  for field in self.settings.table_user \
+                                  if field.readable]),
+                        **{'_xmlns:cas':'http://www.yale.edu/tp/cas'}).xml())
+            else: 
+                raise HTTP(200,'<?xml version="1.0" encoding="UTF-8"?>\n'+\
+                    TAG['cas:serviceResponse'](
+                        TAG['cas:authenticationFailure'](),
+                        **{'_xmlns:cas':'http://www.yale.edu/tp/cas'}).xml())
+            # Delete ticket if not already done
+            row.delete_record()
+                
         if version == 1:
             raise HTTP(200,'no\n')
         # assume version 2

@@ -41,7 +41,7 @@ class CasAuth( object ):
     """
     def __init__(self, g=None, ### g for backward compatibility ###
                  urlbase = "https://web2py.com/cas/cas",
-                 actions=['login','check','logout'],
+                 actions=['login','validate','logout'],
                  maps=dict(username=lambda v:v.get('username',v['user']),
                            email=lambda v:v.get('email',None),
                            user_id=lambda v:v['user']),
@@ -97,7 +97,7 @@ class CasAuth( object ):
             if data.startswith('yes') or data.startswith('no'):
                 data = data.split('\n')
                 if data[0]=='yes':
-                    a,b,c = data[1].split( ':' )+[None,None]
+                    a=b=c = data[1]
                     return dict(user=a,email=b,username=c)
                 return None
             import xml.dom.minidom as dom
