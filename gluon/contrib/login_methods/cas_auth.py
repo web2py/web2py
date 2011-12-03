@@ -97,7 +97,13 @@ class CasAuth( object ):
             if data.startswith('yes') or data.startswith('no'):
                 data = data.split('\n')
                 if data[0]=='yes':
-                    a=b=c = data[1]
+                    if ':' in data[1]: # for Compatibility with Custom CAS
+                        items = data[1].split(':')
+                        a = items[0]
+                        b = len(items)>1 and items[1] or a
+                        c = len(items)>2 and items[2] or b
+                    else:
+                        a = b = c = data[1]
                     return dict(user=a,email=b,username=c)
                 return None
             import xml.dom.minidom as dom

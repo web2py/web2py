@@ -1143,7 +1143,7 @@ class Auth(object):
             if args(1) == self.settings.cas_actions['login']:
                 return self.cas_login(version=2)
             elif args(1) == self.settings.cas_actions['validate']:
-                return self.cas_validate(version=1)
+                return self.cas_validate(version=2)
             elif args(1) == self.settings.cas_actions['servicevalidate']:
                 return self.cas_validate(version=2, proxy=False)
             elif args(1) == self.settings.cas_actions['proxyvalidate']:
@@ -1531,8 +1531,11 @@ class Auth(object):
                 ticket = row.ticket
             else:
                 ticket = 'ST-'+web2py_uuid()
-                table.insert(service=session._cas_service, user_id=self.user.id,
-                             ticket=ticket, created_on=request.now, renew=interactivelogin)
+                table.insert(service=session._cas_service,
+                             user_id=self.user.id,
+                             ticket=ticket,
+                             created_on=request.now,
+                             renew=interactivelogin)
             service = session._cas_service
             del session._cas_service
             if request.vars.has_key('warn'):
@@ -1558,6 +1561,7 @@ class Auth(object):
         ticket = request.vars.ticket
         renew = True if request.vars.has_key('renew') else False
         row = table(ticket=ticket)
+        success = False
         if row:
             if self.settings.login_userfield:
                 userfield = self.settings.login_userfield
@@ -1566,39 +1570,37 @@ class Auth(object):
             else:
                 userfield = 'email'
             # If ticket is a service Ticket and RENEW flag respected
-            if ticket[0:3] == 'ST-' and not ((row.renew and renew) ^ renew):
+            if ticket[0:3] == 'ST-' and \
+                    not ((row.renew and renew) ^ renew):
                 user = self.settings.table_user(row.user_id)
                 row.delete_record()
-                if version == 1:
-                    raise HTTP(200,'yes\n%s'%(user[userfield]))
-                # assume version 2
+                success = True
+        def build_response(body):
+            return '<?xml version="1.0" encoding="UTF-8"?>\n'+\
+                TAG['cas:serviceResponse'](
+                body,**{'_xmlns:cas':'http://www.yale.edu/tp/cas'}).xml()
+        if success:
+            if version == 1:
+                message = 'yes\n%s' % user[userfield]
+            else: # assume version 2
                 username = user.get('username',user[userfield])
-                raise HTTP(200,'<?xml version="1.0" encoding="UTF-8"?>\n'+\
-                    TAG['cas:serviceResponse'](
-                        TAG['cas:authenticationSuccess'](
-                            TAG['cas:user'](username),
-                            *[TAG['cas:'+field.name](user[field.name]) \
-                                  for field in self.settings.table_user \
-                                  if field.readable]),
-                        **{'_xmlns:cas':'http://www.yale.edu/tp/cas'}).xml())
-            else: 
-                raise HTTP(200,'<?xml version="1.0" encoding="UTF-8"?>\n'+\
-                    TAG['cas:serviceResponse'](
-                        TAG['cas:authenticationFailure'](),
-                        **{'_xmlns:cas':'http://www.yale.edu/tp/cas'}).xml())
-            # Delete ticket if not already done
-            row.delete_record()
-                
-        if version == 1:
-            raise HTTP(200,'no\n')
-        # assume version 2
-        raise HTTP(200,'<?xml version="1.0" encoding="UTF-8"?>\n'+\
-                       TAG['cas:serviceResponse'](
-                TAG['cas:authenticationFailure'](
-                    'Ticket %s not recognized' % ticket,
-                    _code='INVALID TICKET'),
-                **{'_xmlns:cas':'http://www.yale.edu/tp/cas'}).xml())
-
+                message = build_response(
+                    TAG['cas:authenticationSuccess'](
+                        TAG['cas:user'](username),
+                        *[TAG['cas:'+field.name](user[field.name]) \
+                              for field in self.settings.table_user \
+                              if field.readable]))
+        else:
+           if version == 1:
+               message = 'no\n'
+           elif row:
+               message = build_response(TAG['cas:authenticationFailure']())
+           else:
+               message = build_response(
+                   TAG['cas:authenticationFailure'](
+                       'Ticket %s not recognized' % ticket,
+                       _code='INVALID TICKET'))
+        raise HTTP(200,message)
 
     def login(
         self,
