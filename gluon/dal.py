@@ -3762,12 +3762,33 @@ class MongoDBAdapter(NoSQLAdapter):
             return pymongo.Connection(**driver_args)[dbname]
         self.pool_connection(connect,cursor=False)
 
+    def represent(self, obj, fieldtype):
+        value = NoSQLAdapter.represent(self, obj, fieldtype)
+        if fieldtype  =='date':
+            if value == None:
+                return value
+            t = datetime.time(0, 0, 0)#this piece of data can be stripped of based on the fieldtype
+            return datetime.datetime.combine(value, t) #mongodb doesn't has a date object and so it must datetime, string or integer
+        elif fieldtype == 'time':
+            if value == None:
+                return value
+            d = datetime.date(2000, 1, 1) #this piece of data can be stripped of based on the fieldtype
+            return datetime.datetime.combine(d, value) #mongodb doesn't has a  time object and so it must datetime, string or integer
+        elif fieldtype == 'list:string' or fieldtype == 'list:integer' or fieldtype == 'list:reference':
+            return value #raise SyntaxError, "Not Supported"
+        return value
+
     def insert(self,table,fields):
         ctable = self.connection[table._tablename]
-        values = dict((k,self.represent(v,table[k].type)) for k,v in fields)
+        values = dict((k.name,self.represent(v,table[k.name].type)) for k,v in fields)
         ctable.insert(values)
-        return uuid2int(id)
-
+        return int(str(values['_id']), 16) 
+        
+    def create_table(self, table, migrate=True, fake_migrate=False, polymodel=None, isCapped=False):
+        if isCapped:
+            raise RuntimeError, "Not implemented"
+        else:
+            pass
 
     def count(self,query):
         raise RuntimeError, "Not implemented"
