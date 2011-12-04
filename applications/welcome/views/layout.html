@@ -12,7 +12,7 @@
 	   (even in intranet) & Chrome Frame
 	   Remove this if you use the .htaccess -->
   <!--[if IE]>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge{{=not request.is_local and ',chrome=1' or ''}}">
   <![endif]-->
   
   <title>{{=response.title or request.application}}</title>
@@ -91,9 +91,9 @@
           <h5>{{=response.subtitle or ''}}</h5>
         </div>
         <div class="sixteen columns">
-          <div class="statusbar">
+          <div class="statusbar clearfix">
             {{block statusbar}}
-            <span class="breadcrumbs">{{=request.function.replace('_', ' ').title()}}</span>
+            <div class="breadcrumbs">{{=request.function.replace('_', ' ').title()}}</div>
             {{end}}
             <!-- AddToAny BEGIN -->
             <div style="float:right; padding-top: .25em;" class="a2a_kit a2a_default_style">
@@ -141,8 +141,8 @@
     <div class="container">    
       <div class="sixteen columns">
         {{block footer}} <!-- this is default footer -->
-        <div class="footer-content" >
-          {{=T('Copyright')}} &#169; 2011
+        <div class="footer-content clearfix">
+          <div class="copyright">{{=T('Copyright')}} &#169; 2011</div>
           <div style="float: right;">
             <a href="http://www.web2py.com/">
             <img style="padding-bottom: 0;" src="{{=URL('static','images/poweredby.png')}}"/>

@@ -165,7 +165,10 @@ div.error {
 
 .breadcrumbs {
   font-size: 1.25em;
+  float: left;
 }
+
+.copyright {float: left;}
 
 /* #MEDIA QUERIES SECTION */
     
