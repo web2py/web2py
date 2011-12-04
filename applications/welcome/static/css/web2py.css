@@ -191,6 +191,7 @@ div.error {
 * if needed to remove base.css consider keeping these following lines in some css file.
 */
 .web2py_table { border: 1px solid #ccc; }
+.web2py_paginator { border-left: 1px solid #ccc; border-right: 1px solid #ccc; border-bottom: 1px solid #ccc; }
 .web2py_grid a { text-decoration:none;}
 .web2py_grid table { width: 100% }
 .web2py_grid td { white-space:nowrap; }

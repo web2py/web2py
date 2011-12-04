@@ -1823,7 +1823,7 @@ class SQLFORM(FORM):
                     tr.append(row_buttons)
                 tbody.append(tr)
             htmltable.append(tbody)
-            htmltable = DIV(htmltable,_style='width:100%;overflow-x:scroll')
+            htmltable = DIV(htmltable,_style='width:100%;overflow-x:auto')
             if selectable:
                 htmltable = FORM(htmltable,INPUT(_type="submit"))
                 if htmltable.process(formname=formname).accepted:#
