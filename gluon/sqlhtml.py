@@ -88,8 +88,8 @@ class FormWidget(object):
         attr.update(attributes)
         return attr
 
-    @staticmethod
-    def widget(field, value, **attributes):
+    @classmethod
+    def widget(cls, field, value, **attributes):
         """
         generates the widget for the field.
 
@@ -108,8 +108,9 @@ class FormWidget(object):
 
 class StringWidget(FormWidget):
     _class = 'string'
-    @staticmethod
-    def widget(field, value, **attributes):
+
+    @classmethod
+    def widget(cls, field, value, **attributes):
         """
         generates an INPUT text tag.
 
@@ -120,7 +121,7 @@ class StringWidget(FormWidget):
             _type = 'text',
             value = (not value is None and str(value)) or '',
             )
-        attr = StringWidget._attributes(field, default, **attributes)
+        attr = cls._attributes(field, default, **attributes)
 
         return INPUT(**attr)
 
@@ -147,14 +148,13 @@ class DateWidget(StringWidget):
 
 class DatetimeWidget(StringWidget):
     _class = 'datetime'
-    pass
 
 
 class TextWidget(FormWidget):
     _class = 'text'
 
-    @staticmethod
-    def widget(field, value, **attributes):
+    @classmethod
+    def widget(cls, field, value, **attributes):
         """
         generates a TEXTAREA tag.
 
@@ -162,16 +162,16 @@ class TextWidget(FormWidget):
         """
 
         default = dict(value = value)
-        attr = TextWidget._attributes(field, default, 
-                                      **attributes)
+        attr = cls._attributes(field, default, 
+                               **attributes)
         return TEXTAREA(**attr)
 
 
 class BooleanWidget(FormWidget):
     _class = 'boolean'
 
-    @staticmethod
-    def widget(field, value, **attributes):
+    @classmethod
+    def widget(cls, field, value, **attributes):
         """
         generates an INPUT checkbox tag.
 
@@ -179,8 +179,8 @@ class BooleanWidget(FormWidget):
         """
 
         default=dict(_type='checkbox', value=value)
-        attr = BooleanWidget._attributes(field, default,
-                                         **attributes)
+        attr = cls._attributes(field, default,
+                               **attributes)
         return INPUT(**attr)
 
 
@@ -197,16 +197,16 @@ class OptionsWidget(FormWidget):
 
         return hasattr(field.requires, 'options')
 
-    @staticmethod
-    def widget(field, value, **attributes):
+    @classmethod
+    def widget(cls, field, value, **attributes):
         """
         generates a SELECT tag, including OPTIONs (only 1 option allowed)
 
         see also: :meth:`FormWidget.widget`
         """
         default = dict(value=value)
-        attr = OptionsWidget._attributes(field, default,
-                                         **attributes)
+        attr = cls._attributes(field, default,
+                               **attributes)
         requires = field.requires
         if not isinstance(requires, (list, tuple)):
             requires = [requires]
@@ -221,8 +221,8 @@ class OptionsWidget(FormWidget):
 
 class ListWidget(StringWidget):
 
-    @staticmethod
-    def widget(field,value,**attributes):
+    @classmethod
+    def widget(cls, field, value, **attributes):
         _id = '%s_%s' % (field._tablename, field.name)
         _name = field.name
         if field.type=='list:integer': _class = 'integer'
@@ -266,8 +266,8 @@ jQuery(document).ready(function(){jQuery('#%s_grow_input').grow_input();});
 
 class MultipleOptionsWidget(OptionsWidget):
 
-    @staticmethod
-    def widget(field, value, size=5, **attributes):
+    @classmethod
+    def widget(cls, field, value, size=5, **attributes):
         """
         generates a SELECT tag, including OPTIONs (multiple options allowed)
 
@@ -284,15 +284,15 @@ class MultipleOptionsWidget(OptionsWidget):
 
 class RadioWidget(OptionsWidget):
 
-    @staticmethod
-    def widget(field, value, **attributes):
+    @classmethod
+    def widget(cls, field, value, **attributes):
         """
         generates a TABLE tag, including INPUT radios (only 1 option allowed)
 
         see also: :meth:`FormWidget.widget`
         """
 
-        attr = RadioWidget._attributes(field, {}, **attributes)
+        attr = cls._attributes(field, {}, **attributes)
         attr['_class'] = attr.get('_class','web2py_radiowidget')
 
         requires = field.requires
@@ -342,8 +342,8 @@ class RadioWidget(OptionsWidget):
 
 class CheckboxesWidget(OptionsWidget):
 
-    @staticmethod
-    def widget(field, value, **attributes):
+    @classmethod
+    def widget(cls, field, value, **attributes):
         """
         generates a TABLE tag, including INPUT checkboxes (multiple allowed)
 
@@ -356,7 +356,7 @@ class CheckboxesWidget(OptionsWidget):
         else:
             values = [str(value)]
 
-        attr = CheckboxesWidget._attributes(field, {}, **attributes)
+        attr = cls._attributes(field, {}, **attributes)
         attr['_class'] = attr.get('_class','web2py_checkboxeswidget')
 
         requires = field.requires
@@ -412,8 +412,8 @@ class PasswordWidget(FormWidget):
 
     DEFAULT_PASSWORD_DISPLAY = 8*('*')
 
-    @staticmethod
-    def widget(field, value, **attributes):
+    @classmethod
+    def widget(cls, field, value, **attributes):
         """
         generates a INPUT password tag.
         If a value is present it will be shown as a number of '*', not related
@@ -424,9 +424,9 @@ class PasswordWidget(FormWidget):
 
         default=dict(
             _type='password',
-            _value=(value and PasswordWidget.DEFAULT_PASSWORD_DISPLAY) or '',
+            _value=(value and cls.DEFAULT_PASSWORD_DISPLAY) or '',
             )
-        attr = PasswordWidget._attributes(field, default, **attributes)
+        attr = cls._attributes(field, default, **attributes)
 
         return INPUT(**attr)
 
@@ -439,8 +439,8 @@ class UploadWidget(FormWidget):
     GENERIC_DESCRIPTION = 'file'
     DELETE_FILE = 'delete'
 
-    @staticmethod
-    def widget(field, value, download_url=None, **attributes):
+    @classmethod
+    def widget(cls, field, value, download_url=None, **attributes):
         """
         generates a INPUT file tag.
 
@@ -456,7 +456,7 @@ class UploadWidget(FormWidget):
         default=dict(
             _type='file',
             )
-        attr = UploadWidget._attributes(field, default, **attributes)
+        attr = cls._attributes(field, default, **attributes)
 
         inp = INPUT(**attr)
 
@@ -468,7 +468,7 @@ class UploadWidget(FormWidget):
             (br, image) = ('', '')
             if UploadWidget.is_image(value):
                 br = BR()
-                image = IMG(_src = url, _width = UploadWidget.DEFAULT_WIDTH)
+                image = IMG(_src = url, _width = cls.DEFAULT_WIDTH)
 
             requires = attr["requires"]
             if requires == [] or isinstance(requires, IS_EMPTY_OR):
@@ -476,19 +476,19 @@ class UploadWidget(FormWidget):
                           A(UploadWidget.GENERIC_DESCRIPTION, _href = url),
                           '|',
                           INPUT(_type='checkbox',
-                                _name=field.name + UploadWidget.ID_DELETE_SUFFIX,
-                                _id=field.name + UploadWidget.ID_DELETE_SUFFIX),
-                                LABEL(UploadWidget.DELETE_FILE,
-                                     _for=field.name + UploadWidget.ID_DELETE_SUFFIX),
+                                _name=field.name + cls.ID_DELETE_SUFFIX,
+                                _id=field.name + cls.ID_DELETE_SUFFIX),
+                                LABEL(cls.DELETE_FILE,
+                                     _for=field.name + cls.ID_DELETE_SUFFIX),
                                 ']', br, image)
             else:
                 inp = DIV(inp, '[',
-                          A(UploadWidget.GENERIC_DESCRIPTION, _href = url),
+                          A(cls.GENERIC_DESCRIPTION, _href = url),
                           ']', br, image)
         return inp
 
-    @staticmethod
-    def represent(field, value, download_url=None):
+    @classmethod
+    def represent(cls, field, value, download_url=None):
         """
         how to represent the file:
 
@@ -501,15 +501,15 @@ class UploadWidget(FormWidget):
         :param download_url: url for the file download (default = None)
         """
 
-        inp = UploadWidget.GENERIC_DESCRIPTION
+        inp = cls.GENERIC_DESCRIPTION
 
         if download_url and value:
             if callable(download_url):
                 url = download_url(value)
             else:
                 url = download_url + '/' + value
-            if UploadWidget.is_image(value):
-                inp = IMG(_src = url, _width = UploadWidget.DEFAULT_WIDTH)
+            if cls.is_image(value):
+                inp = IMG(_src = url, _width = cls.DEFAULT_WIDTH)
             inp = A(inp, _href = url)
 
         return inp
@@ -841,7 +841,7 @@ class SQLFORM(FORM):
                 elif field.type in ['blob']:
                     continue
                 elif field.type == 'upload':
-                    inp = UploadWidget.represent(field, default, upload)
+                    inp = cls.represent(field, default, upload)
                 elif field.type == 'boolean':
                     inp = self.widgets.boolean.widget(field, default, _disabled=True)
                 else:
@@ -878,6 +878,8 @@ class SQLFORM(FORM):
                     dspval = ''
             elif field.type == 'blob':
                 continue
+            elif field.type in self.widgets:
+                inp = self.widgets[field.type].widget(field, default)
             else:
                 inp = self.widgets.string.widget(field, default)
 
@@ -1094,7 +1096,7 @@ class SQLFORM(FORM):
                         and self.table[key].type == 'upload' \
                         and request_vars.get(key, None) in (None, '') \
                         and self.record[key] \
-                        and not key + UploadWidget.ID_DELETE_SUFFIX in request_vars:
+                        and not key + cls.ID_DELETE_SUFFIX in request_vars:
                     del self.errors[key]
             if not self.errors:
                 ret = True
