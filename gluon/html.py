@@ -1904,9 +1904,10 @@ class FORM(DIV):
             elif callable(onsuccess):
                 onsuccess(self)
             if next:
-                if self.vars.id:
-                    next = next.replace('[id]',str(self.vars.id))
-                    next = next % self.vars
+                if self.vars:
+                    for key,value in self.vars.items():
+                        next = next.replace('[%s]' % key,
+                                            urllib.quote(str(value)))
                     if not next.startswith('/'):
                         next = URL(next)
                 redirect(next)
