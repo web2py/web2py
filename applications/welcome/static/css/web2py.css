@@ -163,8 +163,7 @@ div.error {
     -webkit-border-radius: 5px;
 }
 
-.breadcrumbs {
-}
+.breadcrumbs { float: left; }
 
 .copyright {float: left;}
 
