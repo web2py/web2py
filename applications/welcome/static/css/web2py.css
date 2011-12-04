@@ -53,10 +53,6 @@ html, body {
   clear: both;  
 }
 
-.footer {
-  padding-bottom: 100px;
-}
-
 .footer-content {position: relative; bottom: -4em; width: 100%;}
 
 .auth_navbar {  

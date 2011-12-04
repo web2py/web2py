@@ -453,9 +453,7 @@ class UploadWidget(FormWidget):
         :param download_url: Optional URL to link to the file (default = None)
         """
 
-        default=dict(
-            _type='file',
-            )
+        default=dict(_type='file',)
         attr = cls._attributes(field, default, **attributes)
 
         inp = INPUT(**attr)
