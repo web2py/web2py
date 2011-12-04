@@ -23,6 +23,19 @@ from settings import global_settings
 logger = logging.getLogger("web2py.cron")
 _cron_stopping = False
 
+def absolute_path_link(path):
+    """
+    Return an absolute path for the destination of a symlink
+    
+    """
+    if os.path.islink(path):
+        link = os.readlink(path)
+        if not os.path.isabs(link):
+            link = os.path.join(os.path.dirname(path), link)
+    else:
+        link = os.path.abspath(path)
+    return link
+
 def stopcron():
     "graceful shutdown of cron"
     global _cron_stopping
@@ -244,10 +257,20 @@ def crondance(applications_parent, ctype='soft', startup=False):
     apps = [x for x in os.listdir(apppath)
             if os.path.isdir(os.path.join(apppath, x))]
 
+    full_apath_links = set()
+
     for app in apps:
         if _cron_stopping:
             break;
         apath = os.path.join(apppath,app)
+        
+        # if app is a symbolic link to other app, skip it
+        full_apath_link = absolute_path_link(apath)
+        if full_apath_link in full_apath_links:
+            continue
+        else:
+            full_apath_links.add(full_apath_link)
+
         cronpath = os.path.join(apath, 'cron')
         crontab = os.path.join(cronpath, 'crontab')
         if not os.path.exists(crontab):
