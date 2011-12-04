@@ -1672,15 +1672,13 @@ class SQLFORM(FORM):
         order = request.vars.order or ''
         if sortable:
             if order and not order=='None':
-                if order[:1]=='~':
-                    sign, rorder = '~', order[1:]
+                tablename,fieldname = order.split('~')[-1].split('.',1)
+                sort_field = db[tablename][fieldname]
+                exception = sort_field.type in ('date','datetime','time')
+                if exception:
+                    orderby = (order[:1]=='~' and sort_field) or ~sort_field
                 else:
-                    sign, rorder = '', order
-                tablename,fieldname = rorder.split('.',1)
-                if sign=='~':
-                    orderby=~db[tablename][fieldname]
-                else:
-                    orderby=db[tablename][fieldname]
+                    orderby = (order[:1]=='~' and ~sort_field) or sort_field
 
         head = TR(_class=ui.get('header',''))
         if selectable:
