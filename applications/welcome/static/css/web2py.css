@@ -248,11 +248,12 @@ div.error {
     text-align:left;
 
 }
-.web2py_grid .row_buttons{
+.web2py_grid .row_buttons {
     min-height:25px;
+    vertical-align: middle;
 }
-.web2py_grid>.row_buttons a{
-    margin:10px;
+.web2py_grid .row_buttons a {
+    margin: 3px;
 }
 
 .web2py_grid .row_buttons a,
