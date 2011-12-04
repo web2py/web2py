@@ -194,10 +194,8 @@ div.error {
 .web2py_grid a { text-decoration:none;}
 .web2py_grid table { width: 100% }
 .web2py_grid td { white-space:nowrap; }
-.web2py_grid th { background-color:#EAEAEA; }
-.web2py_grid tbody th,
 .web2py_grid tbody td {
-    padding: 5px 10px 5px;
+    padding: 2px 5px 2px 5px;
     line-height: 13.5px;
     vertical-align: middle;
 }
@@ -211,7 +209,10 @@ div.error {
     }
 
 .web2py_grid thead th {
-    padding-top: 9px;
+    background-color:#EAEAEA;	
+    padding: 10px 5px 10px 5px;
+    line-height: 13.5px;
+    vertical-align: middle;
     font-weight: bold;
     border-bottom: 1px solid #DDD;
     border-right: 1px solid #DDD;
