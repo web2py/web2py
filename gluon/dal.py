@@ -5829,13 +5829,14 @@ class Set(object):
        subset = set(db.users.id<5)
     """
 
-    def __init__(self, db, query, ignore_common_filters = False):
+    def __init__(self, db, query, ignore_common_filters = None):
         self.db = db
         self._db = db # for backward compatibility
-        self.query = query
-        if query:
-            ### Some care here we shuld copy query but we are not for speed!
+        if query and not ignore_common_filters is None and \
+                query.ignore_common_filters != ignore_common_filters:
+            query = copy.copy(query)
             query.ignore_common_filters = ignore_common_filters
+        self.query = query
 
     def __call__(self, query, ignore_common_filters=False):
         if isinstance(query,Table):
