@@ -15,9 +15,9 @@ left { float:left; text-align: left; }
 center { width:100; text-align: center; vertical-align:middle;}
 label { white-space: nowrap; }
 th, label { font-weight: bold; }
-th, td { text-align: left; vertical-align: top; }
+th, td { text-align: left; vertical-align: top; padding: 2px 5px 2px 5px;}
 form table tr td label { text-align: right; }
-p, table, ol, ul { margin: 0.5em 0 0.5em 0 }
+p, table, ol, ul { padding: 0.5em 0 0.5em 0 }
 p {text-align: justify }
 ol, ul { padding-left: 30px }
 li { margin-bottom: 0.5em; }
@@ -164,8 +164,6 @@ div.error {
 }
 
 .breadcrumbs {
-  font-size: 1.25em;
-  float: left;
 }
 
 .copyright {float: left;}
@@ -192,6 +190,7 @@ div.error {
 * will look better with the declarations below
 * if needed to remove base.css consider keeping these following lines in some css file.
 */
+.web2py_table { border: 1px solid #ccc; }
 .web2py_grid a { text-decoration:none;}
 .web2py_grid table { width: 100% }
 .web2py_grid td { white-space:nowrap; }
@@ -220,6 +219,7 @@ div.error {
 .web2py_grid tr.odd {background-color: #F9F9F9;}
 .web2py_grid tr:hover {background-color: #F5F5F5; }
 
+/*
 .web2py_breadcrumbs a {
     line-height: 20px; margin-right: 5px; display: inline-block;
     padding: 3px 5px 3px 5px;
@@ -233,11 +233,11 @@ div.error {
     -webkit-background-clip: padding-box; border-radius: 2px;
     outline: none; position: relative; zoom: 1; *display: inline;
 }
+*/
 
 .web2py_console {
-    /*background-color: #f2f2f2; padding: 5px; border-bottom: 1px solid #DDD; */
     min-height: 60px;
-    /*text-align:center;*/
+    text-align: left;
 }
 
 
@@ -308,12 +308,6 @@ color: #222;
     text-align:right;
 }
 
-.web2py_table, .web2py_form {
-
-    border-left: 1px solid #CCC;
-    border-right: 1px solid #CCC;
-    border-bottom: 1px solid #CCC;
-}
 /*Fix firefox problem*/
 .web2py_table {clear: both; display: block;}
 
@@ -335,13 +329,16 @@ color: #222;
 .web2py_paginator .current {
     font-weight: bold;
 }
+#w2p_query_trigger {
+        margin-left: 0;
+}
 #w2p_query_panel {
-        float:left;
+        // float:left;
 	background:#e0e0e0;
         border:1px solid #CFCFCF;
 	// bottom:3px;
         // left:187px;
-        margin-top: 30px;
+        // margin-top: 30px;
         min-width:550px;
 	min-height:16px;
         padding: 3px 3px;
