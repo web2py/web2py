@@ -98,13 +98,13 @@ class DetectorBase(object):
                 return False
         return True
 
-    # It get the version correctly only if the words list
-    # contains only one element, alternatively, you have to
+    # This works only for the first element of look_for
+    # If you want a different behaviour, you have to
     # override this method
     def getVersion(self, agent):
         # -> version string /None
         vs = self.version_splitters
-        return agent.split(self.look_for[0] + vs[0])[1].split(vs[1])[0].strip()
+        return agent.partition(self.look_for[0] + vs[0])[2].partition(vs[1])[0].strip()
 
 
 class OS(DetectorBase):
@@ -147,7 +147,7 @@ class Konqueror(Browser):
 class Opera(Browser):
     look_for = ["Opera"]
     def getVersion(self, agent):
-        return agent.split(self.look_for[0])[1][1:].split(' ')[0]
+        return agent.partition(self.look_for[0])[2][1:].partition(' ')[0]
 
 class Netscape(Browser):
     look_for = ["Netscape"]
@@ -169,7 +169,7 @@ class Safari(Browser):
 
     def getVersion(self, agent):
         if "Version/" in agent:
-            return agent.split('Version/')[1].split(' ')[0].strip()
+            return agent.partition('Version/')[2].partition(' ')[0].strip()
 
 class SafariTablet(Browser):
     name = "Safari"
@@ -180,7 +180,7 @@ class SafariTablet(Browser):
 
     def getVersion(self, agent):
         if "Version/" in agent:
-            return agent.split('Version/')[1].split(' ')[0].strip()
+            return agent.partition('Version/')[2].partition(' ')[0].strip()
 
 class SafariMobile(Browser):
     name = "Safari"
@@ -189,7 +189,7 @@ class SafariMobile(Browser):
 
     def getVersion(self, agent):
         if "Version/" in agent:
-            return agent.split('Version/')[1].split(' ')[0].strip()
+            return agent.partition('Version/')[2].partition(' ')[0].strip()
 
 class SafariNokia(Browser):
     name = "Safari"
@@ -208,7 +208,7 @@ class SafariiPad(Browser):
 
     def getVersion(self, agent):
         if "Version/" in agent:
-            return agent.split('Version/')[1].split(' ')[0].strip()
+            return agent.partition('Version/')[2].partition(' ')[0].strip()
 
 
 class Linux(OS):
@@ -254,10 +254,10 @@ class MacOS(Flavor):
 
     def getVersion(self, agent):
         version_end_chars = [';', ')']
-        part = agent.split('Mac OS')[-1].strip()
+        part = agent.partition('Mac OS')[2].strip()
         for c in version_end_chars:
             if c in part:
-                version = part.split(c)[0]
+                version = part.partition(c)[0]
                 break
         return version.replace('_', '.')
 
@@ -297,11 +297,11 @@ class Chrome(Browser):
 
 class ChromeOS(OS):
     look_for = ['CrOS']
-    version_splitters = [" ", " "]
+    version_splitters = [" ", ")"]
     prefs = dict(browser=['Chrome'])
     def getVersion(self, agent):
         vs = self.version_splitters
-        return agent.split(self.look_for[0]+vs[0])[1].split(vs[1])[1].strip()[:-1]
+        return agent.partition(self.look_for[0]+vs[0])[2].partition(vs[1])[0].partition(" ")[2].strip()
 
 class Android(Dist):
     look_for = ['Android']
@@ -309,7 +309,7 @@ class Android(Dist):
     is_mobile = True
 
     def getVersion(self, agent):
-        return agent.split('Android')[1].split(';')[0].strip()
+        return agent.partition('Android')[2].partition(';')[0].strip()
 
 class SymbianOS(OS):
     look_for = ['SymbianOS']
@@ -337,10 +337,10 @@ class iPhone(Dist):
         version_end_chars = ['like', ';', ')']
         if (not 'CPU iPhone OS' in agent) and (not 'CPU OS' in agent):
             return 'X'
-        part = agent.split('OS')[1].strip()
+        part = agent.partition('OS')[2].strip()
         for c in version_end_chars:
             if c in part:
-                version = 'iOS ' + part.split(c)[0].strip()
+                version = 'iOS ' + part.partition(c)[0].strip()
                 break
         return version.replace('_', '.')
 
@@ -353,10 +353,10 @@ class iPad(Dist):
         version_end_chars = ['like', ';', ')']
         if not 'OS' in agent:
             return ''
-        part = agent.split('OS')[1].strip()
+        part = agent.partition('OS')[2].strip()
         for c in version_end_chars:
             if c in part:
-                version = 'iOS ' + part.split(c)[0].strip()
+                version = 'iOS ' + part.partition(c)[0].strip()
                 break
         return version.replace('_', '.')
 
@@ -364,17 +364,20 @@ detectorshub = DetectorsHub()
 
 def detect(agent):
     result = dict()
+    prefs = dict()
     result['is_mobile'] = False
     result['is_tablet'] = False
-    prefs = dict()
     for info_type in detectorshub:
         detectors = detectorshub[info_type]
         _d_prefs = prefs.get(info_type, [])
         detectors = detectorshub.reorderByPrefs(detectors, _d_prefs)
-        for detector in detectors:
-            if detector.detect(agent, result):
-                prefs = detector.prefs
-                break
+        try:
+            for detector in detectors:
+                if detector.detect(agent, result):
+                    prefs = detector.prefs
+                    break
+        except Exception as ex:
+            result['exception'] = ex 
     return result
 
 

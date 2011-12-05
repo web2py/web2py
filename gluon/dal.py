@@ -1152,7 +1152,7 @@ class BaseAdapter(ConnectionPool):
         fields = new_fields
         tablenames = self.tables(query)        
 
-        if not query.ignore_common_filters:
+        if query and not query.ignore_common_filters:
             query = self.common_filter(query,tablenames)
 
         if not fields:
