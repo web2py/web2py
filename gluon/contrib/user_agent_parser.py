@@ -376,7 +376,7 @@ def detect(agent):
                 if detector.detect(agent, result):
                     prefs = detector.prefs
                     break
-        except Exception as ex:
+        except Exception, ex:
             result['exception'] = ex 
     return result
 
