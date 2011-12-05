@@ -19,3 +19,5 @@ for filename in os.listdir(path):
                 os.unlink(fullpath)
         except:
             logging.exception('failure to check %s'%fullpath)
+
+

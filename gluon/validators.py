@@ -2290,7 +2290,7 @@ class IS_LIST_OF(Validator):
         self.minimum = minimum
         self.maximum = maximum
         self.error_message = error_message or "enter between %(min)g and %(max)g values"
-        
+
     def __call__(self, value):
         ivalue = value
         if not isinstance(value, list):
@@ -2514,10 +2514,10 @@ class CRYPT(object):
     If the digest_alg is specified this is used to replace the
     MD5 with, for example, SHA512. The digest_alg can be
     the name of a hashlib algorithm as a string or the algorithm itself.
-    
+
     min_length is the minimal password length (default 4) - IS_STRONG for serious security
     error_message is the message if password is too short
-    
+
     Notice that an empty password is accepted but invalid. It will not allow login back.
     Stores junk as hashed password.
     """
@@ -2975,6 +2975,7 @@ class IS_IPV4(Validator):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

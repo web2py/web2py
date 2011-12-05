@@ -3,13 +3,13 @@
 def all(items):
     return reduce(lambda a,b:a and b,items,True)
 def peekfile(path,file):
-    return A(file.replace('\\\\','/'),_href=URL('peek', args=(app, path, file)))  
+    return A(file.replace('\\\\','/'),_href=URL('peek', args=(app, path, file)))
 def editfile(path,file):
-    return A(SPAN(T('Edit')),_class='button editbutton',_href=URL('edit', args=(app, path, file)))  
+    return A(SPAN(T('Edit')),_class='button editbutton',_href=URL('edit', args=(app, path, file)))
 def testfile(path,file):
-    return A(TAG[''](IMG(_src=URL('static', 'images/test_icon.png'), _alt=T('test')), SPAN(T("Run tests in this file (to run all files, you may also use the button labelled 'test')"))), _class='icon test tooltip',_href=URL('test', args=(app, file))) 
+    return A(TAG[''](IMG(_src=URL('static', 'images/test_icon.png'), _alt=T('test')), SPAN(T("Run tests in this file (to run all files, you may also use the button labelled 'test')"))), _class='icon test tooltip',_href=URL('test', args=(app, file)))
 def editlanguagefile(path,file):
-    return A(SPAN(T('Edit')),_class='button editbutton',_href=URL('edit_language', args=(app, path, file))) 
+    return A(SPAN(T('Edit')),_class='button editbutton',_href=URL('edit_language', args=(app, path, file)))
 def file_upload_form(location):
     form=FORM(T("upload file:")," ",
               INPUT(_type="file",_name="file")," ",T("and rename it:")," ",
@@ -17,7 +17,7 @@ def file_upload_form(location):
               INPUT(_type="hidden",_name="location",_value=location),
               INPUT(_type="hidden",_name="sender",_value=URL('design',args=app)),
               INPUT(_type="submit",_value=T("upload")),_action=URL('upload_file'))
-    return form  
+    return form
 def file_create_form(location):
     form=FORM(T("create file with filename:")," ",
               INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY),
@@ -58,7 +58,7 @@ def deletefile(arglist):
 <!-- MODELS -->
 
 <h3 id="models" onclick="collapse('models_inner');" class="component">
-  {{=T("Models")}} 
+  {{=T("Models")}}
   <span class="tooltip">{{=helpicon()}} <span>{{=T("The data representation, define database tables and sets")}}</span></span>
 </h3>
 <div id="models_inner" class="component_contents">
@@ -99,7 +99,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 <!-- CONTROLLERS -->
 
 <h3 id="controllers" onclick="collapse('controllers_inner');" class="component">
-  {{=T("Controllers")}} 
+  {{=T("Controllers")}}
   <span class="tooltip">{{=helpicon()}} <span>{{=T("The application logic, each URL path is mapped in one exposed function in the controller")}}</span></span>
 </h3>
 <div id="controllers_inner" class="component_contents">
@@ -205,7 +205,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
       items=file.split('/')
       file_path=items[:-1]
       filename=items[-1]
-      while path!=file_path:          
+      while path!=file_path:
           if len(file_path)>=len(path) and all([v==file_path[k] for k,v in enumerate(path)]):
               path.append(file_path[len(path)])
               thispath='static__'+'__'.join(path)
@@ -301,7 +301,7 @@ jQuery(document).ready(function(){
           jQuery('.component_contents li, .formfield, .comptools').hide();
 		  files=data['files'];
           for(var i=0; i<files.length; i++)
-            jQuery('li#'+files[i].replace(/\//g,'__').replace('.','__')).slideDown();   
+            jQuery('li#'+files[i].replace(/\//g,'__').replace('.','__')).slideDown();
           jQuery('.flash').html('{{=T("Searching:")}} '+files.length+' {{=T("files")}}').slideDown();
 		  });
       } else if(code==13) {
@@ -311,3 +311,4 @@ jQuery(document).ready(function(){
    });
 });
 </script>
+

@@ -1,5 +1,5 @@
 /* anytimec.js 4.1112H (anytime.js 4.1112H)
-Copyright 2008-2010 Andrew M. Andrews III (www.AMA3.com). Some Rights 
+Copyright 2008-2010 Andrew M. Andrews III (www.AMA3.com). Some Rights
 Reserved. This work licensed under the Creative Commons Attribution-
 Noncommercial-Share Alike 3.0 Unported License except in jurisdicitons
 for which the license has been ported by Creative Commons International,
@@ -787,4 +787,5 @@ yearValue=AnyTime.pad(yearValue,4);var eY=_this.earliest&&new Date(_this.earlies
 {legal=(((!_this.earliest)||(era*i>=eY))&&((!_this.latest)||(era*i<=lY)));$(this).AnyTime_current(this.innerHTML==yearValue.substring(3),legal);i+=1;});this.yDiv.find('.AnyTime-bce-btn').each(function()
 {$(this).AnyTime_current(era<0,(!_this.earliest)||(_this.earliest<0));});this.yDiv.find('.AnyTime-ce-btn').each(function()
 {$(this).AnyTime_current(era>0,(!_this.latest)||(_this.latest>0));});this.conv.setUtcFormatOffsetAlleged(this.offMin);this.conv.setUtcFormatOffsetSubIndex(this.offSI);this.inp.val(this.conv.format(this.time)).change();this.upd(fBtn);}};__pickers[id].initialize(id);}})(jQuery);
+
 

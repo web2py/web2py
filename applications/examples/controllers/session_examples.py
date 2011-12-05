@@ -10,3 +10,4 @@ def counter():
     return dict(counter=session.counter)
 
 
+

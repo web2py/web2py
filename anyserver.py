@@ -132,17 +132,17 @@ class Servers:
     def eventlet(app,address, **options):
         from eventlet import wsgi, listen
         wsgi.server(listen(address), app)
-        
+
     @staticmethod
     def mongrel2(app,address,**options):
         import uuid
         sys.path.append(os.path.abspath(os.path.dirname(__file__)))
         from mongrel2 import handler
-        conn = handler.Connection(str(uuid.uuid4()), 
+        conn = handler.Connection(str(uuid.uuid4()),
                                   "tcp://127.0.0.1:9997",
                                   "tcp://127.0.0.1:9996")
         mongrel2_handler(app,conn,debug=False)
-        
+
 
 def run(servername,ip,port,softcron=True,logging=False,profiler=None):
     if logging:
@@ -161,8 +161,8 @@ def mongrel2_handler(application,conn,debug=False):
     Based on :
     https://github.com/berry/Mongrel2-WSGI-Handler/blob/master/wsgi-handler.py
 
-    WSGI handler based on the Python wsgiref SimpleHandler.    
-    A WSGI application should return a iterable op StringTypes. 
+    WSGI handler based on the Python wsgiref SimpleHandler.
+    A WSGI application should return a iterable op StringTypes.
     Any encoding must be handled by the WSGI application itself.
     """
     from wsgiref.handlers import SimpleHandler
@@ -170,28 +170,28 @@ def mongrel2_handler(application,conn,debug=False):
         import cStringIO as StringIO
     except:
         import StringIO
-    
-    # TODO - this wsgi handler executes the application and renders a page 
-    # in memory completely before returning it as a response to the client. 
-    # Thus, it does not "stream" the result back to the client. It should be 
-    # possible though. The SimpleHandler accepts file-like stream objects. So, 
-    # it should be just a matter of connecting 0MQ requests/response streams to 
-    # the SimpleHandler requests and response streams. However, the Python API 
-    # for Mongrel2 doesn't seem to support file-like stream objects for requests 
+
+    # TODO - this wsgi handler executes the application and renders a page
+    # in memory completely before returning it as a response to the client.
+    # Thus, it does not "stream" the result back to the client. It should be
+    # possible though. The SimpleHandler accepts file-like stream objects. So,
+    # it should be just a matter of connecting 0MQ requests/response streams to
+    # the SimpleHandler requests and response streams. However, the Python API
+    # for Mongrel2 doesn't seem to support file-like stream objects for requests
     # and responses. Unless I have missed something.
-    
+
     while True:
         if debug: print "WAITING FOR REQUEST"
-        
+
         # receive a request
         req = conn.recv()
         if debug: print "REQUEST BODY: %r\n" % req.body
-        
+
         if req.is_disconnect():
             if debug: print "DISCONNECT"
             continue #effectively ignore the disconnect from the client
-        
-        # Set a couple of environment attributes a.k.a. header attributes 
+
+        # Set a couple of environment attributes a.k.a. header attributes
         # that are a must according to PEP 333
         environ = req.headers
         environ['SERVER_PROTOCOL'] = 'HTTP/1.1' # SimpleHandler expects a server_protocol, lets assume it is HTTP 1.1
@@ -211,21 +211,21 @@ def mongrel2_handler(application,conn,debug=False):
         if environ.has_key('Content-Length'):
             environ['CONTENT_LENGTH'] = environ['Content-Length'] # necessary for POST to work with Django
         environ['wsgi.input'] = req.body
-        
+
         if debug: print "ENVIRON: %r\n" % environ
-        
+
         # SimpleHandler needs file-like stream objects for
         # requests, errors and responses
         reqIO = StringIO.StringIO(req.body)
         errIO = StringIO.StringIO()
         respIO = StringIO.StringIO()
-        
+
         # execute the application
         handler = SimpleHandler(reqIO, respIO, errIO, environ, multithread = False, multiprocess = False)
         handler.run(application)
-        
+
         # Get the response and filter out the response (=data) itself,
-        # the response headers, 
+        # the response headers,
         # the response status code and the response status description
         response = respIO.getvalue()
         response = response.split("\r\n")
@@ -233,22 +233,22 @@ def mongrel2_handler(application,conn,debug=False):
         headers = dict([r.split(": ") for r in response[1:-2]])
         code = response[0][9:12]
         status = response[0][13:]
-        
+
         # strip BOM's from response data
         # Especially the WSGI handler from Django seems to generate them (2 actually, huh?)
         # a BOM isn't really necessary and cause HTML parsing errors in Chrome and Safari
         # See also: http://www.xs4all.nl/~mechiel/projects/bomstrip/
         # Although I still find this a ugly hack, it does work.
         data = data.replace('\xef\xbb\xbf', '')
-        
+
         # Get the generated errors
         errors = errIO.getvalue()
-        
+
         # return the response
         if debug: print "RESPONSE: %r\n" % response
         if errors:
             if debug: print "ERRORS: %r" % errors
-            data = "%s\r\n\r\n%s" % (data, errors)            
+            data = "%s\r\n\r\n%s" % (data, errors)
         conn.reply_http(req, data, code = code, status = status, headers = headers)
 
 def main():
@@ -297,4 +297,5 @@ def main():
 
 if __name__=='__main__':
     main()
+
 

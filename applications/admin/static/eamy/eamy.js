@@ -25,7 +25,7 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
-  
+
  *
  *
  * This file is auto-generated from original Fry Framework and Amy Editor sources..
@@ -45,7 +45,7 @@
  */
 
 /* Reserving global `fry` object */
-var fry = 
+var fry =
 {
 	version:1.0,
 	__production_mode:false
@@ -142,7 +142,7 @@ String.prototype.embed = function()
 }
 
 // Tuning helpers - dealing with user-agent differences
-var $__tune = 
+var $__tune =
 {
 	__prop:{},
 	isIE:('function' == typeof window.ActiveXObject),
@@ -196,11 +196,11 @@ var $__tune =
 		getPageScrollPosition:function()
 		{
 			var d = document.documentElement;
-			if ( d && d.scrollTop) 
+			if ( d && d.scrollTop)
 			{
 				return [d.scrollLeft, d.scrollTop];
-			} 
-			else if (document.body) 
+			}
+			else if (document.body)
 			{
 				return [document.body.scrollLeft, document.body.scrollTop];
 			}
@@ -251,7 +251,7 @@ var $__tune =
 					evt.offsetX = evt.pageX - pos.x;
 					evt.offsetY = evt.pageY - pos.y;
 				}
-				return evt.offsetY;				
+				return evt.offsetY;
 			}
 			evt.isAnyControlKeyPressed = function()
 			{
@@ -286,8 +286,8 @@ var $__tune =
 			else if ( node.removeEventListener )
 			{
 				node.removeEventListener(type, listener, false);
-			}				
-		}		
+			}
+		}
 	},
 	behavior:
 	{
@@ -395,7 +395,7 @@ function ACNode(node)
 	this.$ = node;
 	if ( node )
 	{
-		node.setAttribute('fryis', '1');		
+		node.setAttribute('fryis', '1');
 	}
 }
 // `$$` creates new node
@@ -466,7 +466,7 @@ ACNode.prototype.e = function(t, c, oneUseOnly)
 		evt = evt || self.event;
 		if ( null != c )
 		{
-			c($__tune.event.get(evt));			
+			c($__tune.event.get(evt));
 		}
 		if ( null != evt )
 		{
@@ -478,7 +478,7 @@ ACNode.prototype.e = function(t, c, oneUseOnly)
 			else if ( evt.stopped )
 			{
 //				console.log('*E* stop self.%s for %s', hash, t);
-				evt = null;				
+				evt = null;
 			}
 		}
 	};
@@ -656,7 +656,7 @@ ACNode.prototype.d = function(d)
 		return 'none' != this.$.style.display;
 	}
 	this.$.style.display = d ? 'block' : 'none';
-	return this;						
+	return this;
 }
 // *v*isibility
 ACNode.prototype.v = function(v)
@@ -666,7 +666,7 @@ ACNode.prototype.v = function(v)
 		return 'hidden' != this.$.style.visibility;
 	}
 	this.$.style.visibility = v ? 'visible' : 'hidden';
-	return this;			
+	return this;
 }
 // H*T*ML source (equivalent to infamous innerHTML, remember innerHTML is not considered *evil* here - see the KISS principle, plus it's actually faster than DOM)
 ACNode.prototype.t = function(t)
@@ -892,7 +892,7 @@ ACNode.prototype.lc = function()
 	{
 		n = n.previousSibling;
 	}
-	return null != n ? $(n) : null;			
+	return null != n ? $(n) : null;
 }
 // *n*ext *s*ibling of the node - always returns first $-ed node (ignoring text, comment etc. nodes)
 ACNode.prototype.ns = function()
@@ -912,7 +912,7 @@ ACNode.prototype.ps = function()
 	{
 		n = n.previousSibling;
 	}
-	return null != n ? $(n) : null;			
+	return null != n ? $(n) : null;
 }
 // *g*et *a*ttribute
 ACNode.prototype.ga = function(n)
@@ -988,7 +988,7 @@ var $ = function(id)
 	======
 	Creates new class, multiple class inheritance is allowed.
 	Usage:
-	
+
 	$class('AClass',
 	{
 		construct:function(a)
@@ -1061,7 +1061,7 @@ var $class = function(className, methods)
 	var preprocessSource = function(s, cn)
 	{
 		// parsing source code and replacing calls to base constructor or methods
-		eval('var re = /'+cn+'\.([^\\(]*)\\(([\\)]*)/g;');		
+		eval('var re = /'+cn+'\.([^\\(]*)\\(([\\)]*)/g;');
 		s = s.replace(re, function()
 		{
 			return 'this.__'+cn+'_'+arguments[1]+'.call(this'+(''==arguments[2].replace(/ /g, '')?',':'')+arguments[2];
@@ -1072,7 +1072,7 @@ var $class = function(className, methods)
 			return 'this.__'+cn+'_construct.call(this'+(''==arguments[1].replace(/ /g, '')?',':'')+arguments[1];
 		});
 		return s;
-	}	
+	}
 	methods = methods || {};
 	var c_code = '';
 	var d_code = '';
@@ -1106,15 +1106,15 @@ var $class = function(className, methods)
 		{
 			if ( 'Object' != bases[i] )
 			{
-				oc_code = preprocessSource(oc_code, bases[i]);				
+				oc_code = preprocessSource(oc_code, bases[i]);
 			}
 		}
 		c_code += oc_code;
-	}	
+	}
 	d_code += methods.destruct ? getSource(methods.destruct) : '';
 	try
 	{
-		eval('var newClass=function('+p.join(',')+'){'+c_code+'};');		
+		eval('var newClass=function('+p.join(',')+'){'+c_code+'};');
 	}
 	catch (e)
 	{
@@ -1185,7 +1185,7 @@ var $delete = function(object)
 			{
 				if ( 'Object' != bases[i] )
 				{
-					$call(object, bases[i]+'.destruct()');				
+					$call(object, bases[i]+'.destruct()');
 				}
 			}
 		}
@@ -1248,7 +1248,7 @@ var $runafter = function(t, c)
 var $runinterval = function(from, to, interval, c)
 {
 	var i = from;
-	var control = 
+	var control =
 	{
 		from:from,
 		to:to,
@@ -1322,7 +1322,7 @@ var $foreach = function(o, c)
 		return;
 	}
 	var n = 'function' == typeof o.__length ? o.__length() : o.length;
-	var control = 
+	var control =
 	{
 		stopped:false,
 		stop:function()
@@ -1392,7 +1392,7 @@ var $foreach = function(o, c)
 		}
 	}
 	control = null;
-	c = null;	
+	c = null;
 }
 var $notset = function(value)
 {
@@ -1581,11 +1581,11 @@ fry.remote =
 			},
 			150
 		);
-	},	
+	},
 	result:function(s, callbackOk, callbackError)
 	{
 		var httpStatus;
-		var responseObject;	
+		var responseObject;
 		try
 		{
 			httpStatus = s.status;
@@ -1613,7 +1613,7 @@ fry.remote =
 				}
 				try
 				{
-					callbackOk(r);					
+					callbackOk(r);
 				}
 				catch(e)
 				{
@@ -1638,7 +1638,7 @@ fry.remote =
 					else
 					{
 						callbackError('Invalid data returned from remote side: `?`.'.embed(s.responseText.substr('#E#'==code?3:0)));
-					}					
+					}
 				}
 			}
 		}
@@ -1760,7 +1760,7 @@ fry.remote.upload.Adapter.prototype.onGetRemoteActionName = function()
 }
 
 
-/*  ---------------------------------------------------------------- 
+/*  ----------------------------------------------------------------
 	fry.cookie namespace
 */
 
@@ -1772,14 +1772,14 @@ fry.cookie =
 		var dc = document.cookie;
 		var prefix = name + "=";
 		var begin = dc.indexOf("; " + prefix);
-		if (begin == -1) 
+		if (begin == -1)
 		{
 			begin = dc.indexOf(prefix);
 			if (begin != 0) return null;
-		} 
+		}
 		else
 		{
-			begin += 2;			
+			begin += 2;
 		}
 		var end = document.cookie.indexOf(";", begin);
 		if (end == -1)
@@ -1790,7 +1790,7 @@ fry.cookie =
 	},
 	remove:function(name, path, domain)
 	{
-		if (getCookie(name)) 
+		if (getCookie(name))
 		{
 			document.cookie = name + "=" + ((path) ? "; path=" + path : "") + ((domain) ? "; domain=" + domain : "") + "; expires=Thu, 01-Jan-70 00:00:01 GMT";
 		}
@@ -1809,12 +1809,12 @@ var $rpost = function(params, callbackOk, callbackError, method, url)
 {
 	method = method || 'POST';
 	url = url || client.conf.fry.backendURL;
-	$post( function(s) { $result( s, 
-		function(r) 
+	$post( function(s) { $result( s,
+		function(r)
 		{
 			callbackOk(r);
 		},
-		function(e) 
+		function(e)
 		{
 			// result Error
 			callbackError(e);
@@ -1990,7 +1990,7 @@ function __fry_gc_recycle()
 $__tune.event.addListener(self, 'load', function(evt)
 {
 	__gc_trash_node = document.getElementsByTagName('body').item(0).appendChild(document.createElement('div'));
-	__gc_trash_node.style.display = 'none';		
+	__gc_trash_node.style.display = 'none';
 });
 $__tune.event.addListener(self, 'unload', function(evt)
 {
@@ -2003,7 +2003,7 @@ $__tune.event.addListener(self, 'unload', function(evt)
 
 /*--------*/
 
-fry.keyboard = 
+fry.keyboard =
 {
 	initialized:false,
 	last_down_evt: null,
@@ -2035,7 +2035,7 @@ fry.keyboard.initialize = function()
 		return;
 	}
 	var react_as = 'none';
-	
+
 	if ($__tune.isGecko)
 	{
 		react_as = 'ff_' + ($__tune.isMac ? 'mac' : 'win');
@@ -2089,7 +2089,7 @@ fry.keyboard.initialize = function()
 	code = code.replace(/fry\.keyboard\.([A-Z_]+)/g, function() {return fry.keyboard[arguments[1]];});
     // alert(code);
 	eval(code);
-	
+
 	code = "document.onkeypress = function(evt)	{\n";
 	code += "if (fry.keyboard.stopped || fry.keyboard.ignore_further_events) { return; }\n";
 	code += "if (fry.keyboard.paste.was) {\n";
@@ -2112,7 +2112,7 @@ fry.keyboard.initialize = function()
 	code = code.replace(/fry\.keyboard\.([A-Z_]+)/g, function() {return fry.keyboard[arguments[1]];});
     // alert(code);
 	eval(code);
-	
+
 	document.onkeydown2 = function(evt)
 	{
 		if (fry.keyboard.stopped)
@@ -2142,7 +2142,7 @@ fry.keyboard.initialize = function()
 					fry.keyboard.clipboard.ie.node.value = '';
 					fry.keyboard.clipboard.ie.node.focus();
 				}
-			}			
+			}
 		}
 		return fry.keyboard.down[react_as](evt || event);
 	}
@@ -2458,7 +2458,7 @@ fry.keyboard.press.webkit = function(evt)
 	}
 	evt.preventDefault();
 	evt.stopPropagation();
-	return false;			
+	return false;
 }
 
 fry.keyboard.paste.ie = function(evt)
@@ -2497,7 +2497,7 @@ fry.keyboard.down.ie = function(evt)
 			return !fry.keyboard.pushKey(code, mask);
 		}
 	}
-	return true;			
+	return true;
 }
 
 fry.keyboard.press.ie = function(evt)
@@ -2507,7 +2507,7 @@ fry.keyboard.press.ie = function(evt)
 		var mask = (evt.altKey ? 2 : 0) + (evt.ctrlKey ? 4 : 0) + (evt.shiftKey ? 8 : 0) + (evt.metaKey ? 16 : 0);
 		return !fry.keyboard.pushKey(evt.keyCode, mask);
 	}
-	return false;			
+	return false;
 }
 
 
@@ -2644,7 +2644,7 @@ fry.keyboard.getClipboardContent = function()
 
 /*--------*/
 var client = {conf:{fry:{backendURL:''}}};
-var eamy = 
+var eamy =
 {
 	snippets:[],
 	instances:[]
@@ -2659,7 +2659,7 @@ if ( 'undefined' == typeof ac )
 	var ac = {chap:{}};
 }
 
-ac.chap = 
+ac.chap =
 {
 	state:
 	{
@@ -2672,7 +2672,7 @@ ac.chap =
 	TOKEN_DOUBLE_QUOTED:3,
 	TOKEN_NEWROW:4,
 	TOKEN_WHITESPACE:5,
-	
+
 	ROWSTATE_NONE:0,
 	ROWSTATE_FOLD_START:1,
 	ROWSTATE_FOLD_STOP:2,
@@ -2680,7 +2680,7 @@ ac.chap =
 	ROWSTATE_FOLD_COLLAPSED:8,
 	ROWSTATE_SELECTION:16,
 	ROWSTATE_BOOKMARK:32,
-	
+
 	CHUNK_KEYWORD:4,
 	CHUNK_NUMBER:5,
 	CHUNK_OPERATOR:6,
@@ -2689,7 +2689,7 @@ ac.chap =
 	CHUNK_FUNCTION_NAME:9,
 	CHUNK_LIBRARY:10,
 	CHUNK_LIBRARY_CUSTOM:11,
-	
+
 	ACTION_CARET:1,
 	ACTION_SELECTION:2,
 	ACTION_INSERT:3,
@@ -2699,25 +2699,25 @@ ac.chap =
 	ACTION_UNDO:7,
 	ACTION_REDO:8,
 	ACTION_CUSTOM:9,
-	
+
 	ACTION_RES_REDRAWCARET:1,
 	ACTION_RES_REDRAWTEXT:2,
 	ACTION_RES_SELECTIONCHANGED:4,
 	ACTION_RES_SCROLLTOCARET:8,
-	
+
 	CKEY_NONE:0,
 	CKEY_ALT:2,
 	CKEY_CTRL:4,
 	CKEY_SHIFT:8,
 	CKEY_META:16,
-	
+
 	TRANSLOG_TYPE_INSERT:1,
 	TRANSLOG_TYPE_REMOVE:2,
-	
+
 	ACTION_LISTENER_BEFORE:1,
 	ACTION_LISTENER_AFTER:2,
 	ACTION_LISTENER_BOTH:3
-	
+
 }
 
 
@@ -2822,7 +2822,7 @@ $class('ac.chap.Window',
 		this.caret = null;
 		this.options = null;
 		this.state = null;
-		
+
 		this.views = [];
 		this.activeView = null;
 		this.viewLayoutNodes = [];
@@ -2833,16 +2833,16 @@ $class('ac.chap.Window',
 		this.style_map = [];
 
 		this.row_id_sequence = 1;
-		
+
 		this.language = null;
 		this.keymap = null;
 		this.snippets = [];
 		this.commands = [];
-		
+
 		this.selection = null;
 		this.transaction_log = [];
 		this.redo_log = [];
-		
+
 		this.setOptions(options||{});
 		this.setState();
 	},
@@ -2917,7 +2917,7 @@ ac.chap.Window.prototype.onPaste = function(selection, wasCut)
 
 ac.chap.Window.prototype.setOptions = function(options)
 {
-	this.options = 
+	this.options =
 	{
 		initialCaretPosition:[0,0],
 		tokenizerLazyLaunch:900,
@@ -2968,7 +2968,7 @@ ac.chap.Window.prototype.setOptions = function(options)
 	{
 		if ($isset(options.font['size']))
 		{
-			this.options.font.size = options.font.size;			
+			this.options.font.size = options.font.size;
 		}
 		if ($isset(options.font['family']))
 		{
@@ -2996,7 +2996,7 @@ ac.chap.Window.prototype.setState = function()
 		transactionListener:[null,800],
 		passThroughKeysListener:null
 	}
-	this.caret = 
+	this.caret =
 	{
 		position:[this.options.initialCaretPosition[0], this.options.initialCaretPosition[1]],
 		mode:1 // 1 normal, 2 overwrite
@@ -3052,7 +3052,7 @@ ac.chap.Window.prototype.edit = function(text, setAsActive)
 	this.row_id_sequence = 1;
 	this.transaction_log = [];
 	this.redo_log = [];
-	
+
 	this.insertIntoCharacterMap(text, 0, 0);
 	this.tokenize(0);
 	this.renderText();
@@ -3408,7 +3408,7 @@ ac.chap.Window.prototype.keyboardListener = function(code, mask)
 				    }
 				    else
 				    {
-				        setTimeout(function(){listener[2](me, listener[1], ac.chap.ACTION_LISTENER_AFTER, result, action_type, params, caret_row, caret_col);}, 300);						        
+				        setTimeout(function(){listener[2](me, listener[1], ac.chap.ACTION_LISTENER_AFTER, result, action_type, params, caret_row, caret_col);}, 300);
 				    }
 				}
 			}
@@ -3456,7 +3456,7 @@ ac.chap.Window.prototype.keyboardListener = function(code, mask)
 	return true;
 }
 
-// called if chap is not a part of Fry MVC 
+// called if chap is not a part of Fry MVC
 ac.chap.Window.prototype.standaloneKeyboardListener = function(code, mask)
 {
 	if (fry.keyboard.CONTROL_CODE == (mask & fry.keyboard.CONTROL_CODE))
@@ -3649,7 +3649,7 @@ ac.chap.Window.prototype.runAction = function(actionType, params)
 	var key_code = params.keyCode;
 	var control_key = params.controlKey;
 //	console.log('action_type:%s, params:%o', actionType, params);
-	
+
 	switch ( actionType )
 	{
 		case ac.chap.ACTION_CARET:
@@ -3727,7 +3727,7 @@ ac.chap.Window.prototype.runAction = function(actionType, params)
 						}
 						this.setCaretPosition(caret_row+1, caret_col);
 						return ac.chap.ACTION_RES_REDRAWCARET;
-					}					
+					}
 				}
 				else if ( 'prev_word' == direction )
 				{
@@ -3755,7 +3755,7 @@ ac.chap.Window.prototype.runAction = function(actionType, params)
 						}
 					}
 					this.setCaretPosition(caret_row, caret_col);
-					return ac.chap.ACTION_RES_REDRAWCARET;					
+					return ac.chap.ACTION_RES_REDRAWCARET;
 				}
 				else if ( 'next_word' == direction )
 				{
@@ -3846,7 +3846,7 @@ ac.chap.Window.prototype.runAction = function(actionType, params)
 					if ( 0 < caret_col )
 					{
 						caret_col = 0;
-						this.setCaretPosition(caret_row, caret_col);				
+						this.setCaretPosition(caret_row, caret_col);
 						return ac.chap.ACTION_RES_REDRAWCARET;
 					}
 				}
@@ -3855,7 +3855,7 @@ ac.chap.Window.prototype.runAction = function(actionType, params)
 					if ( this.char_map[caret_row].length > caret_col )
 					{
 						caret_col = this.char_map[caret_row].length;
-						this.setCaretPosition(caret_row, caret_col);				
+						this.setCaretPosition(caret_row, caret_col);
 						return ac.chap.ACTION_RES_REDRAWCARET;
 					}
 				}
@@ -3986,7 +3986,7 @@ ac.chap.Window.prototype.runAction = function(actionType, params)
 				// }
 				this.insertIntoCharacterMap(ins_content);
 				this.setCaretPosition(caret_row+1, caret_col);
-				return ac.chap.ACTION_RES_REDRAWCARET | ac.chap.ACTION_RES_REDRAWTEXT;				
+				return ac.chap.ACTION_RES_REDRAWCARET | ac.chap.ACTION_RES_REDRAWTEXT;
 			}
 			else if ( $isset(params.character) )
 			{
@@ -4033,21 +4033,21 @@ ac.chap.Window.prototype.runAction = function(actionType, params)
 				{
 					if ( -1 == str.indexOf('\n') )
 					{
-						caret_col += str.length;					
+						caret_col += str.length;
 					}
 					else
 					{
 						caret_row += str.length - str.replace(/\n/g, '').length;
-						caret_col = str.length - str.lastIndexOf('\n') - 1;					
+						caret_col = str.length - str.lastIndexOf('\n') - 1;
 					}
-					this.setCaretPosition(caret_row, caret_col);					
+					this.setCaretPosition(caret_row, caret_col);
 				}
 				return ac.chap.ACTION_RES_REDRAWCARET | ac.chap.ACTION_RES_REDRAWTEXT;
-			}			
+			}
 		};break;
 		case ac.chap.ACTION_UPDATE:
 		{
-			
+
 		};break;
 		case ac.chap.ACTION_DELETE:
 		{
@@ -4063,7 +4063,7 @@ ac.chap.Window.prototype.runAction = function(actionType, params)
 					else
 					{
 						this.removeFromCharacterMap(caret_row-1, this.char_map[caret_row-1].length, caret_row, this.char_map[caret_row].length);
-						this.setCaretPosition(caret_row-1, this.char_map[caret_row-1].length);						
+						this.setCaretPosition(caret_row-1, this.char_map[caret_row-1].length);
 					}
 				}
 				else
@@ -4149,7 +4149,7 @@ ac.chap.Window.prototype.runAction = function(actionType, params)
 				if ( proceed_delete )
 				{
 					this.setCaretPosition(caret_row, caret_col-(after_caret?0:1));
-					return ac.chap.ACTION_RES_REDRAWCARET | ac.chap.ACTION_RES_REDRAWTEXT;				
+					return ac.chap.ACTION_RES_REDRAWCARET | ac.chap.ACTION_RES_REDRAWTEXT;
 				}
 			}
 		};break;
@@ -4165,7 +4165,7 @@ ac.chap.Window.prototype.runAction = function(actionType, params)
 			else if ( $isset(params.paste) )
 			{
 				this.runAction(ac.chap.ACTION_INSERT, {string:params.content})
-				return ac.chap.ACTION_RES_REDRAWCARET | ac.chap.ACTION_RES_REDRAWTEXT;					
+				return ac.chap.ACTION_RES_REDRAWCARET | ac.chap.ACTION_RES_REDRAWTEXT;
 			}
 		};break;
 		case ac.chap.ACTION_UNDO:
@@ -4184,12 +4184,12 @@ ac.chap.Window.prototype.runAction = function(actionType, params)
 					range_to[0] += (source.length - source.replace(/\n/g, '').length);
 					var ix = source.lastIndexOf('\n');
 					range_to[1] = -1 == ix ? (range_from[1]+source.length) : (source.length - ix);
-					
+
 //					this.removeFromCharacterMap(range_from[0], range_from[1], range_to[0], range_to[1], this.redo_log);
 					this.removeFromCharacterMap(range_from[0], range_from[1], range_to[0], range_to[1]);//, this.redo_log);
 					caret_row = range_from[0];
 					caret_col = range_from[1];
-					
+
 				}
 				else if ( ac.chap.TRANSLOG_TYPE_REMOVE == operation_type )
 				{
@@ -4199,7 +4199,7 @@ ac.chap.Window.prototype.runAction = function(actionType, params)
 				}
 				this.setCaretPosition(caret_row, caret_col);
 				this.removeSelection();
-				
+
 				this.redo_log = [].concat(this.redo_log, this.transaction_log.slice(num_trecords-3, num_trecords));
 				this.transaction_log = [].concat(this.transaction_log.slice(0, num_trecords-3));
 
@@ -4322,7 +4322,7 @@ ac.chap.Window.prototype.getWordAt = function(row, column, numWords)
 			// word character found
 			if ( direction_after )
 			{
-				words[words.length-1] += ch;				
+				words[words.length-1] += ch;
 			}
 			else
 			{
@@ -4333,11 +4333,11 @@ ac.chap.Window.prototype.getWordAt = function(row, column, numWords)
 		{
 			if ( required_words == words.length )
 			{
-				break;				
+				break;
 			}
 			next_word = true;
 		}
-		
+
 		column += (direction_after ? 1 : -1);
 		if ( 0 > column )
 		{
@@ -4347,7 +4347,7 @@ ac.chap.Window.prototype.getWordAt = function(row, column, numWords)
 				break;
 			}
 			next_word = true;
-			column = this.char_map[row].length-1;				
+			column = this.char_map[row].length-1;
 		}
 		else if ( this.char_map[row].length <= column )
 		{
@@ -4428,7 +4428,7 @@ ac.chap.Window.prototype.addAllSelection = function()
 			this.row_id_map[ii][i][5][1] = this.char_map[i].length;
 		}
 	}
-	this.selection = 
+	this.selection =
 	{
 		startPosition: [0, 0],
 		endPosition: [num_rows-1, this.char_map[num_rows-1].length]
@@ -4448,7 +4448,7 @@ ac.chap.Window.prototype.addSelection = function(range_to, range_from)
 	if ( null == this.selection )
 	{
 		// no previous selection
-		range_from = range_from || range_to;		
+		range_from = range_from || range_to;
 		this.selection = {};
 		this.selection.startPosition = [range_from[0], range_from[1]];
 	}
@@ -4471,7 +4471,7 @@ ac.chap.Window.prototype.addSelection = function(range_to, range_from)
 	}
 	else
 	{
-		range_to[1]--;		
+		range_to[1]--;
 	}
 	this.selection.endPosition = [range_to[0], range_to[1]];
 	if ( (range_to[0] < range_from[0]) || (range_to[0] == range_from[0] && range_to[1] < range_from[1]) )
@@ -4539,7 +4539,7 @@ ac.chap.Window.prototype.getSelection = function()
 		{
 			var r = range_from;
 			range_from = range_to;
-			range_to = r;			
+			range_to = r;
 		}
 		if ( range_from[0] == range_to[0] )
 		{
@@ -4552,7 +4552,7 @@ ac.chap.Window.prototype.getSelection = function()
 		}
 		// console.log('SELECTION: `%s`', selection_text.replace(/\n/g, '$'));
 	}
-	return selection_text;	
+	return selection_text;
 }
 
 ac.chap.Window.prototype.getCaretPosition = function()
@@ -4631,7 +4631,7 @@ ac.chap.Window.prototype.captureEditAreaClick = function(evt, view)
 	evt.stop();
 	this.hideInteractiveSearch();
 	this.activeView = view;
-	
+
 	var pos = evt.$.abspos();
 	var offset_x = evt.pageX - pos.x;
 	var offset_y = evt.pageY - pos.y + ($__tune.isGecko ? view.nodeScrollArea.$.scrollTop : 0);
@@ -4656,7 +4656,7 @@ ac.chap.Window.prototype.captureEditAreaClick = function(evt, view)
 	{
 		return;
 	}
-	
+
 	var row_index = target.getAttribute ? parseInt(target.getAttribute('row-index')) : row_index;
 	var num_subrows = 1;
 	var col_index = 0;
@@ -4688,7 +4688,7 @@ ac.chap.Window.prototype.captureEditAreaClick = function(evt, view)
 				// last char
 				col_index = i+1;
 				break;
-			}			
+			}
 		}
 		i++;
 	}
@@ -4771,7 +4771,7 @@ ac.chap.Window.prototype.foldingize = function()
 						foldings[ix][2]--;
 						if ( 0 == foldings[ix][2] )
 						{
-							foldings[ix][1] = ii;							
+							foldings[ix][1] = ii;
 						}
 						break;
 					}
@@ -4799,7 +4799,7 @@ ac.chap.Window.prototype.foldingize = function()
 			this.row_id_map[ii][fold[1]][3][0] = 0
 			this.row_id_map[ii][fold[1]][3][1] = fold[0];
 		}
-	}	
+	}
 }
 
 ac.chap.Window.prototype.tokenize = function()
@@ -4818,15 +4818,15 @@ ac.chap.Window.prototype.tokenize = function()
 	var ml_start = this.language.multiRowCommentStartMarker;
 	var ml_end = this.language.multiRowCommentEndMarker;
 //	console.log(ml_end);
-	var sq = this.language.singleQuoteStringMarker;	
+	var sq = this.language.singleQuoteStringMarker;
 	var sq_exception = this.language.singleQuoteStringMarkerException;
 	var dq = this.language.doubleQuoteStringMarker;
 	var dq_exception = this.language.doubleQuoteStringMarkerException;
 	var sl_markers = this.language.singleRowCommentStartMarkers;
-	
+
 	var cursor = {row:startRowIndex, col:0};
 	var col_offset = 0;
-	
+
 	var fillRowTokens = function(tokenType, fromRowIndex, toRowIndex, pars)
 	{
 		pars = pars || '';
@@ -4896,18 +4896,18 @@ ac.chap.Window.prototype.tokenize = function()
 		var num_skipped_rows = skipped_source.split('\n').length;
 		cursor.row += num_skipped_rows - 1;
 		cursor.col = (1 == num_skipped_rows ? col_offset : 0) + skipped_source.length - ('\n'+skipped_source).lastIndexOf('\n');
-		
+
 		if ( 'undefined' == typeof syntax_map[cursor.row] )
 		{
 			syntax_map[cursor.row] = [];
 		}
-		
+
 		var start_marker_len = ixs[found_marker_index][2].length;
 		var end_marker_len = ixs[found_marker_index][3].length;
 		source = source.substr(start_index+start_marker_len);
 
 		var token_type = ixs[found_marker_index][0];
-		
+
 		var end_index = source.indexOf(ixs[found_marker_index][3]);
 		var sub_source = source;
 		var end_index_offset = 0;
@@ -5018,7 +5018,7 @@ ac.chap.Window.prototype.tokenize = function()
 		}
 		// console.log('%s marked as changed.', i);
 	}
-	
+
 	delete syntax_map;
 	delete fillRowTokens;
 }
@@ -5050,7 +5050,7 @@ ac.chap.Window.prototype.insertIntoCharacterMap = function(source, atRow, atColu
 		this.transaction_log.push([atRow, atColumn, userId]);
 		this.transaction_log.push(source);
 	}
-	
+
 	var num_existing_rows = this.char_map.length;
 	var new_rows = source.split('\n');
 	var num_new_rows = new_rows.length;
@@ -5065,9 +5065,9 @@ ac.chap.Window.prototype.insertIntoCharacterMap = function(source, atRow, atColu
             me = null;
         }, this.state.transactionListener[1]);
     }
-	
+
 	var i = ii = 0;
-	
+
 	if ( 'undefined' == typeof this.char_map[atRow] )
 	{
 		this.char_map = this.char_map.concat(new_rows);
@@ -5114,13 +5114,13 @@ ac.chap.Window.prototype.insertIntoCharacterMap = function(source, atRow, atColu
 			}
 			this.row_id_sequence = start_sequence;
 			for ( i=0; i<num_views; i++ )
-			{			
+			{
 				this.row_id_map[i] = [].concat(this.row_id_map[i].slice(0, atRow+1), ins_map[i], this.row_id_map[i].slice(atRow+1));
 			}
 			this.char_map[last_row_index] += end_snippet;
 			for ( i=0; i<num_views; i++ )
 			{
-				this.row_id_map[i][last_row_index][1] = false;	
+				this.row_id_map[i][last_row_index][1] = false;
 			}
 		}
 	}
@@ -5130,7 +5130,7 @@ ac.chap.Window.prototype.insertIntoCharacterMap = function(source, atRow, atColu
 		for ( i=0; i<num_views; i++ )
 		{
 			this.views[i].numVisibleRows += (num_new_rows-1);
-		}		
+		}
 	}
 }
 
@@ -5151,7 +5151,7 @@ ac.chap.Window.prototype.removeFromCharacterMap = function(startRow, startCol, e
 		source = this.char_map[startRow].substring(startCol, endCol);
 		this.char_map[startRow] = this.char_map[startRow].substr(0, startCol)+this.char_map[startRow].substr(endCol);
 		for ( i=0; i<num_views; i++ )
-		{			
+		{
 			this.row_id_map[i][startRow][1] = false;
 		}
 	}
@@ -5215,9 +5215,9 @@ $class('ac.chap.View',
 		this.nodeEditAreaCache = null;
 		this.nodeCaret = null;
 		this.nodeCaretRow = null;
-		
+
 		this.renderingRunning = false;
-		
+
 		this.numRows = 0;
 		this.numCols = 0;
 		this.wrapWidth = 0;
@@ -5225,14 +5225,14 @@ $class('ac.chap.View',
 
 		this.startRow = 0;
 		this.startCol = 0;
-		
+
 		this.startRowOffset = 0;
 		this.numVisibleRows = 0;
-		
+
 		this.state = {lastCaretPosition:[-1,-1], lastCaretRenderedPosition:null};
-		
+
 		this.theme = null;
-		
+
 		this.setOptions(options);
 	},
 	destruct:function()
@@ -5245,7 +5245,7 @@ $class('ac.chap.View',
 
 ac.chap.View.prototype.setOptions = function(options)
 {
-	this.options = 
+	this.options =
 	{
 		tabelator:'  ',
 		wordWrap:false,
@@ -5367,7 +5367,7 @@ function ch_encode_markup_spaces(str)
 			var is_inside = -1 != arguments[1].indexOf('<');
 			is_inside = is_inside && (arguments[1].replace(/</g, '').length != arguments[1].replace(/>/g, '').length);
 			return arguments[1]+(is_inside?'~`~`~`~`':'&nbsp;');
-		});		
+		});
 	}
 	return str.replace(/~`~`~`~`/g, ' ');
 }
@@ -5473,7 +5473,7 @@ ac.chap.View.prototype.showCaret = function(skipScroll)
 {
 	var caret_row = this.window.caret.position[0];
 	var caret_col = this.window.caret.position[1];
-	
+
 	pos = this.getRenderedCharPosition(caret_row, caret_col);
 	if ( null != pos )
 	{
@@ -5501,7 +5501,7 @@ ac.chap.View.prototype.showCaret = function(skipScroll)
 			this.theme.renderCaret(this.window.caret.mode, node);
 			this.nodeCaret = node_row.appendChild(node);
 			node_row.style.background = this.theme.caretRowStyleActive;
-			
+
 			if ( !skipScroll )
 			{
 				// might be out of borders, at least partially
@@ -5533,7 +5533,7 @@ ac.chap.View.prototype.showCaret = function(skipScroll)
 		if ( !skipScroll )
 		{
 			// scrolling into view
-			this.scrollToRow(caret_row - Math.floor(this.numRows/2));			
+			this.scrollToRow(caret_row - Math.floor(this.numRows/2));
 		}
 	}
 }
@@ -5613,7 +5613,7 @@ ac.chap.View.prototype.reloadOptions = function()
 	this.recalculateNumRows();
 	this.recalculateVisibleRows();
 	this.renderSidebarStub();
-	this.renderText(true);	
+	this.renderText(true);
 }
 
 ac.chap.View.prototype.recalculateNumCols = function(node, withoutScrollbar)
@@ -5683,14 +5683,14 @@ ac.chap.View.prototype.showInteractiveSearch = function()
 	{
 		evt.stopPropagation();
 		search();
-		
+
 	}).$.focus();
 	node.g('img:0').e('click', function(evt)
 	{
 		evt.stopPropagation();
 		finish(true);
 	});
-	
+
 	function finish(canceled)
 	{
 		if (canceled)
@@ -5703,12 +5703,12 @@ ac.chap.View.prototype.showInteractiveSearch = function()
 		ac.chap.setActiveComponent(me.window);
 		me.hideInteractiveSearch();
 	}
-	
+
 	function update_status(numFound)
 	{
 		status_node.t('Found <strong>?</strong> results.'.embed(numFound));
 	}
-	
+
 	function search()
 	{
 		var keyword = search_key_node.$.value.trim();
@@ -5728,8 +5728,8 @@ ac.chap.View.prototype.showInteractiveSearch = function()
 		me.window.runAction(ac.chap.ACTION_CUSTOM, {action:'SearchKeyword', direction:'down'});
 		me.scrollToRow(me.window.caret.position[0], false, true);
 		me.window.processActionResult(true, true);
-	}	
-	
+	}
+
 	if (null != selection)
 	{
 		search_key_node.$.value = selection;
@@ -5738,8 +5738,8 @@ ac.chap.View.prototype.showInteractiveSearch = function()
 		search();
 	}
 
-	
-	
+
+
 	this.interactiveSearchNode = node;
 }
 
@@ -5761,7 +5761,7 @@ ac.chap.View.prototype.render = function(node)
 	var me = this;
 	this.nodeRoot = node.a($$()).pos(true).w(w).h(h).n('acw-chap').s('background:?'.embed(this.theme.background));
 	this.interactiveSearchNode = null;
-	
+
 	var w_rows = 58;
 	w -= w_rows;
 	this.nodeSidebar = this.nodeRoot.a($$()).pos(true).x(0).y(0).w(w_rows).h(h).s('overflow:hidden').n('sidebar');
@@ -5802,7 +5802,7 @@ ac.chap.View.prototype.render = function(node)
 		{
 			if ( null == me.window.selection )
 			{
-				me.showCaret(true);					
+				me.showCaret(true);
 			}
 		}
 	});
@@ -5834,7 +5834,7 @@ ac.chap.View.prototype.renderSidebarStub = function()
 	var node = this.nodeRoot;
 	var h = node.$.offsetHeight;
 	var w_rows = 58;
-	
+
 	this.nodeSidebar = $(this.nodeSidebar).rc();
 	var node_sidebar_scroll = this.nodeSidebar.a($$()).pos(true).w(w_rows).h(h).x(0).y(0).s('overflow:hidden');
 	var bar_offset = 0;
@@ -5977,7 +5977,7 @@ ac.chap.View.prototype.renderChunk = function(chunk)
 			rend_chunk += ch_encode_markup(chunk.substr(offset, i-offset));
 			if ( this.theme.colorScheme[token[0]] )
 			{
-				rend_chunk += '<span style="' + this.theme.colorScheme[token[0]] + font_style + '">' + ch_encode_markup(token[1]) + '</span>';				
+				rend_chunk += '<span style="' + this.theme.colorScheme[token[0]] + font_style + '">' + ch_encode_markup(token[1]) + '</span>';
 			}
 			else
 			{
@@ -6057,7 +6057,7 @@ ac.chap.View.prototype.renderTextRow = function(node, rowIndex, renderedPrevious
 				}
 				else
 				{
-					rendered_row += '<span style="' + this.theme.colorScheme[token_type] + font_style + '">'+ch_encode_markup(chunk)+'</span>';					
+					rendered_row += '<span style="' + this.theme.colorScheme[token_type] + font_style + '">'+ch_encode_markup(chunk)+'</span>';
 					// console.log(rendered_row);
 				}
 			}
@@ -6066,7 +6066,7 @@ ac.chap.View.prototype.renderTextRow = function(node, rowIndex, renderedPrevious
 				rendered_row += ch_encode_markup(chunk);
 			}
 			offset = -1 == end_offset ? row.length : end_offset;
-		}		
+		}
 	}
 	rendered_row += this.renderChunk(row.substr(offset));
 	// console.log(rendered_row);
@@ -6223,7 +6223,7 @@ ac.chap.View.prototype.renderTextRow = function(node, rowIndex, renderedPrevious
 		rendered_row += '<a href="javascript:ac.chap.route(\'expand-folding\', \'window-id\', '+this.index+', '+rowIndex+')"><div class="folding-expand-inner" style="position:absolute" title="?"></div></a>'.embed(content);
 	}
 	node.setAttribute('num-subrows', num_subrows);
-	
+
 	if ( $__tune.isIE )
 	{
 		// IE trims input source in innerHTML
@@ -6308,12 +6308,12 @@ ac.chap.View.prototype.renderRowSidebar = function(position, rowIndex, rowNode, 
 		bar_node.firstChild.style.fontSize = (this.window.options.font.size-2) + 'px';
 	}
 	// console.log(cache_id);
-	
+
 	var row_height = num_subrows * this.options.rowHeight;
 	bar_node.parentNode.style.height = row_height + 'px';
 	if (forceCompleteRedraw)
 	{
-		bar_node.firstChild.style.fontSize = (this.window.options.font.size-2) + 'px';		
+		bar_node.firstChild.style.fontSize = (this.window.options.font.size-2) + 'px';
 	}
 	var ht = rowIndex+1;
 	if ( this.options.wordWrap )
@@ -6342,7 +6342,7 @@ ac.chap.View.prototype.renderRowSidebar = function(position, rowIndex, rowNode, 
 			bar_node.lastChild.className = 'folding-expand';
 		}
 		else
-		{			
+		{
 			if ( ac.chap.ROWSTATE_FOLD_START == (row_state & ac.chap.ROWSTATE_FOLD_START) )
 			{
 				// folding starts
@@ -6353,7 +6353,7 @@ ac.chap.View.prototype.renderRowSidebar = function(position, rowIndex, rowNode, 
 			{
 				// folding stops
 				bar_node.lastChild.className = 'folding-stop';
-			}				
+			}
 		}
 	}
 	if ( ac.chap.ROWSTATE_BOOKMARK == (row_state & ac.chap.ROWSTATE_BOOKMARK) )
@@ -6364,7 +6364,7 @@ ac.chap.View.prototype.renderRowSidebar = function(position, rowIndex, rowNode, 
 	else
 	{
 		bar_node.firstChild.nextSibling.className = 'void';
-	}	
+	}
 }
 
 ac.chap.View.prototype.renderSelection = function()
@@ -6482,12 +6482,12 @@ ac.chap.View.prototype.renderSelection = function()
 							{
 								// caret stays on the end of the row
 								node_row_selection.style.left = (ix_c*this.options.colWidth) + 'px';
-								node_row_selection.style.width = (node_row.offsetWidth - (ix_c*this.options.colWidth)) + 'px';								
+								node_row_selection.style.width = (node_row.offsetWidth - (ix_c*this.options.colWidth)) + 'px';
 							}
 							else
 							{
 								node_row_selection.style.left = (offset[1]*this.options.colWidth) + 'px';
-								node_row_selection.style.width = (node_row.offsetWidth - (offset[1]*this.options.colWidth)) + 'px';								
+								node_row_selection.style.width = (node_row.offsetWidth - (offset[1]*this.options.colWidth)) + 'px';
 							}
 							// marking as non-cacheable
 							node_row_selection.removeAttribute('cachid');
@@ -6502,7 +6502,7 @@ ac.chap.View.prototype.renderSelection = function()
 								node_row_selection.style.height = this.options.rowHeight + 'px';
 								if ( ii != offset[2] )
 								{
-									node_row_selection.style.width = node_row.offsetWidth + 'px';									
+									node_row_selection.style.width = node_row.offsetWidth + 'px';
 								}
 								else
 								{
@@ -6510,7 +6510,7 @@ ac.chap.View.prototype.renderSelection = function()
 								}
 							}
 						}
-						
+
 					}
 					else
 					{
@@ -6522,7 +6522,7 @@ ac.chap.View.prototype.renderSelection = function()
 				}
 			}
 			// console.log('selection after range: %o', this.window.row_id_map[this.index][row_index][3]);
-			
+
 		}
 	}
 	// console.log('%o', this.window.row_id_map[this.index][0]);
@@ -6602,7 +6602,7 @@ ac.chap.View.prototype.renderText = function(forceCompleteRedraw)
 
 			// marking row as unchanged
 			this.window.row_id_map[this.index][row_index][1] = true;
-			
+
 			var row_node = document.getElementById('row-'+this.window.instanceId+'-'+this.index+'-'+row_index);
 			if ( !is_row_changed )
 			{
@@ -6611,7 +6611,7 @@ ac.chap.View.prototype.renderText = function(forceCompleteRedraw)
 			if ( null == row_node || null == row_node.parentNode )
 			{
 				is_row_changed = true;
-				
+
 				// console.log(this.options.rowTemplate);
 				row_node = this.options.rowTemplate.cloneNode(false);
 				row_node.id = 'row-'+this.window.instanceId+'-'+this.index+'-'+row_index;
@@ -6683,7 +6683,7 @@ ac.chap.View.prototype.renderText = function(forceCompleteRedraw)
 			fill_area_h = this.nodeRoot.h()-$__tune.ui.scrollbarWidth;
 		}
 		this.nodeFillArea.h(fill_area_h);
-		
+
 	}
 	else
 	{
@@ -6692,7 +6692,7 @@ ac.chap.View.prototype.renderText = function(forceCompleteRedraw)
 	if ( parseInt(this.nodeSidebar.firstChild.style.top) != top_offset )
 	{
 		this.nodeSidebar.firstChild.style.top  = (top_offset)+'px';
-		this.nodeSidebar.firstChild.style.height  = (this.nodeSidebar.offsetHeight - $__tune.ui.scrollbarWidth - top_offset)+'px';		
+		this.nodeSidebar.firstChild.style.height  = (this.nodeSidebar.offsetHeight - $__tune.ui.scrollbarWidth - top_offset)+'px';
 	}
 	this.renderSelection();
 }
@@ -6839,7 +6839,7 @@ ac.chap.KeyMap.prototype.action_WordComplete = function(keyCode, controlKeysMask
 			if ( words_next[i] && words_next[i].length > looking_for_len && words_next[i].substr(0, looking_for_len) == looking_for )
 			{
 				if ( -1 == found_words_index.indexOf(' '+words_next[i]) )
-				{					
+				{
 					found_words.push(words_next[i]);
 					found_words_index += ' '+words_next[i];
 				}
@@ -6915,7 +6915,7 @@ ac.chap.KeyMap.prototype.action_Indent = function(keyCode, controlKeysMask, care
 	{
 		if ('right' == params.direction)
 		{
-			component.insertIntoCharacterMap(tab, i, 0);			
+			component.insertIntoCharacterMap(tab, i, 0);
 		}
 		else
 		{
@@ -6928,7 +6928,7 @@ ac.chap.KeyMap.prototype.action_Indent = function(keyCode, controlKeysMask, care
 			}
 		}
 	}
-	return ac.chap.ACTION_RES_REDRAWCARET | ac.chap.ACTION_RES_REDRAWTEXT | ac.chap.ACTION_RES_SELECTIONCHANGED;	
+	return ac.chap.ACTION_RES_REDRAWCARET | ac.chap.ACTION_RES_REDRAWTEXT | ac.chap.ACTION_RES_SELECTIONCHANGED;
 }
 
 ac.chap.KeyMap.prototype.action_Comment = function(keyCode, controlKeysMask, caretRow, caretCol, component, params)
@@ -6962,13 +6962,13 @@ ac.chap.KeyMap.prototype.action_Comment = function(keyCode, controlKeysMask, car
 			component.insertIntoCharacterMap(marker, i, 0);
 		}
 	}
-	return ac.chap.ACTION_RES_REDRAWCARET | ac.chap.ACTION_RES_REDRAWTEXT | ac.chap.ACTION_RES_SELECTIONCHANGED;	
+	return ac.chap.ACTION_RES_REDRAWCARET | ac.chap.ACTION_RES_REDRAWTEXT | ac.chap.ACTION_RES_SELECTIONCHANGED;
 }
 
 ac.chap.KeyMap.prototype.action_RuntimeOption = function(keyCode, controlKeysMask, caretRow, caretCol, component, params)
 {
 	component.setRuntimeOption(params['key'], params['value']);
-	return ac.chap.ACTION_RES_REDRAWCARET | ac.chap.ACTION_RES_REDRAWTEXT | ac.chap.ACTION_RES_SELECTIONCHANGED;	
+	return ac.chap.ACTION_RES_REDRAWCARET | ac.chap.ACTION_RES_REDRAWTEXT | ac.chap.ACTION_RES_SELECTIONCHANGED;
 }
 
 ac.chap.KeyMap.prototype.action_SearchInteractive = function(keyCode, controlKeysMask, caretRow, caretCol, component, params)
@@ -7075,7 +7075,7 @@ ac.chap.KeyMap.prototype.action_SmartIndent = function(keyCode, controlKeysMask,
 	// console.log(prepend_text);
 	if (params['split_line'])
 	{
-		component.runAction(ac.chap.ACTION_INSERT, {row:true});		
+		component.runAction(ac.chap.ACTION_INSERT, {row:true});
 	}
 	else
 	{
@@ -7116,7 +7116,7 @@ ac.chap.KeyMap.prototype.action_SmartUnindent = function(keyCode, controlKeysMas
 		{
 			proceed = true;
 			break;
-		}				
+		}
 	}
 	var prepend_text = null;
 	if (proceed)
@@ -7129,8 +7129,8 @@ ac.chap.KeyMap.prototype.action_SmartUnindent = function(keyCode, controlKeysMas
 			line = component.getLineAt(row);
 			var m = match_from_end ? line.match(/^([ \t]*)(.*)$/) : line.match(/([ \t]*)([^ \t]*)/);
 			m[2] = m[2].trim();
-			
-			
+
+
 			for (i=0; i<ends_with.length; i++)
 			{
 				if ((match_from_end && ends_with[i] == m[2].substr(m[2].length-ends_with[i].length)) || (!match_from_end && ends_with[i] == m[2].substr(0, ends_with[i].length)))
@@ -7138,7 +7138,7 @@ ac.chap.KeyMap.prototype.action_SmartUnindent = function(keyCode, controlKeysMas
 					need_nth_match++;
 					trim_line = line.trim();
 					break;
-				}				
+				}
 			}
 			for (i=0; i<starts_with.length; i++)
 			{
@@ -7150,7 +7150,7 @@ ac.chap.KeyMap.prototype.action_SmartUnindent = function(keyCode, controlKeysMas
 					}
 					need_nth_match--;
 					break;
-				}				
+				}
 			}
 			// console.log('row: %i, %o', row, m);
 			row--;
@@ -7272,7 +7272,7 @@ ac.chap.KeyMap.prototype.action_SnippetComplete = function(keyCode, controlKeysM
 				var placeholder = scc.tabstops[tab_id];
 //				console.log('#%s : %o', tab_id, placeholder);
 			}
-			
+
 			component.runAction(ac.chap.ACTION_SELECTION, {remove:true});
 			component.runAction(ac.chap.ACTION_CARET, {moveTo:scc.insertCaretPosition});
 			component.runAction(ac.chap.ACTION_CARET, {moveBy:'column', value:tabstop[2]-(scc.wasSelection?0:scc.tabActivation.length)});
@@ -7284,7 +7284,7 @@ ac.chap.KeyMap.prototype.action_SnippetComplete = function(keyCode, controlKeysM
 				component.runAction(ac.chap.ACTION_SELECTION, {add:true});
 				selection_changed = true;
 			}
-			
+
 			if ( 0 != scc.activeTabStopIndex )
 			{
 				scc.firstInitialized = true;
@@ -7350,7 +7350,7 @@ ac.chap.KeyMap.prototype.snippetInit = function(snippet, component, caretRow, ca
 		{
 			break;
 		}
-		var is_escaped = 2 == m[2].length;		
+		var is_escaped = 2 == m[2].length;
 		var var_name = m[3];
 		var default_value = m[4];
 		var value = component.getVariableValue(var_name, default_value);
@@ -7362,7 +7362,7 @@ ac.chap.KeyMap.prototype.snippetInit = function(snippet, component, caretRow, ca
 //		console.log('found %s (def:%s) = %s', var_name, default_value, value);
 		code = code.substr(0, m.index+m[1].length)+value+code.substr(m.index+m[0].length);
 	}
-	
+
 	// [preprocessing - variables with regular transformations]
 	re = /(^|[^\\])(\${1,2})\{([a-zA-Z][\w_\-\+]*)\/([^\/]*)\/([^\/]*)\/([^\}]*)\}/;
 	while ( true )
@@ -7372,7 +7372,7 @@ ac.chap.KeyMap.prototype.snippetInit = function(snippet, component, caretRow, ca
 		{
 			break;
 		}
-		var is_escaped = 2 == m[2].length;		
+		var is_escaped = 2 == m[2].length;
 		var var_name = m[3];
 		var pattern = m[4];
 		var replacement = m[5];
@@ -7381,7 +7381,7 @@ ac.chap.KeyMap.prototype.snippetInit = function(snippet, component, caretRow, ca
 //		console.log('found %s (pattern:%s  repl:%s  opt:%s) = %s', var_name, pattern, replacement, options, value);
 		try
 		{
-			eval('value = value.replace(/?/?, "?");'.embed(pattern, options, replacement.replace(/"/g, '\"')));			
+			eval('value = value.replace(/?/?, "?");'.embed(pattern, options, replacement.replace(/"/g, '\"')));
 		}
 		catch (e)
 		{
@@ -7395,7 +7395,7 @@ ac.chap.KeyMap.prototype.snippetInit = function(snippet, component, caretRow, ca
 		}
 		code = code.substr(0, m.index+m[1].length)+value+code.substr(m.index+m[0].length);
 	}
-	
+
 	// [preprocessing - variables with custom transformations]
 	re = /(^|[^\\])(\${1,2})\{([a-zA-Z][\w_\-\+]*)\|([^\}]*)\}/;
 	while ( true )
@@ -7432,7 +7432,7 @@ ac.chap.KeyMap.prototype.snippetInit = function(snippet, component, caretRow, ca
 			value = value.replace(/'/g, "\\'").replace(/\n/g, "\\n");
 		}
 		code = code.substr(0, m.index+m[1].length)+value+code.substr(m.index+m[0].length);
-	}	
+	}
 
 	if ( wasSelection && null != component.selection)
 	{
@@ -7440,7 +7440,7 @@ ac.chap.KeyMap.prototype.snippetInit = function(snippet, component, caretRow, ca
 		caretRow = component.caret.position[0];
 		caretCol = component.caret.position[1];
 	}
-	
+
 	// [executing backsticks]
 	var execution_scheduled = false;
 
@@ -7637,11 +7637,11 @@ ac.chap.KeyMap.prototype.snippetInit = function(snippet, component, caretRow, ca
 				{
 					if ( start_ix < tabstops[tab_id][2] )
 					{
-						tabstops[tab_id][2] -= offset;								
+						tabstops[tab_id][2] -= offset;
 					}
 					if ( start_ix < tabstops[tab_id][4] )
 					{
-						tabstops[tab_id][4] -= offset;								
+						tabstops[tab_id][4] -= offset;
 					}
 				}
 				else if ( 'ph' == tabstops[tab_id][0] && start_ix < tabstops[tab_id][2] )
@@ -7655,7 +7655,7 @@ ac.chap.KeyMap.prototype.snippetInit = function(snippet, component, caretRow, ca
 		{
 			tabstops[0] = ['ts', '', code.length, 0];
 		}
-	
+
 		// [postprocessing - unescape]
 		code = code.replace(/\0/g, '$');
 
@@ -7665,7 +7665,7 @@ ac.chap.KeyMap.prototype.snippetInit = function(snippet, component, caretRow, ca
 			var placeholder = tabstops[tab_id];
 //			console.log('#%s : %o', tab_id, placeholder);
 		}
-		var scc = 
+		var scc =
 		{
 			firstInitialized:true,
 			insertCaretPosition:[caretRow, caretCol],
@@ -7687,7 +7687,7 @@ ac.chap.KeyMap.prototype.snippetInit = function(snippet, component, caretRow, ca
 		}
 
 		var tabstop = tabstops[scc.activeTabStopIndex];
-		
+
 
 		component.runAction(ac.chap.ACTION_INSERT, {string:code.substr(0, tabstop[2])});
 		component.runAction(ac.chap.ACTION_INSERT, {string:code.substr(tabstop[2]), skipCaretChange:true});
@@ -7705,7 +7705,7 @@ ac.chap.KeyMap.prototype.snippetInit = function(snippet, component, caretRow, ca
 		if ( 0 != scc.activeTabStopIndex )
 		{
 			// starting action listener
-			this.snippetCompleteCache = scc;					
+			this.snippetCompleteCache = scc;
 			this.snippetCompleteCache.callbackIndex = component.addActionListener(ac.chap.ACTION_LISTENER_BOTH, this, this.snippetCompleteActionListener);
 		}
 	}
@@ -7766,7 +7766,7 @@ ac.chap.KeyMap.prototype.snippetCompleteActionListener = function(component, act
 				scc.activeTabStopContent = tabstop[1];
 			}
 			scc.firstRealRun = false;
-			
+
 //			action.snippetCompletePostInit(component, caretRow, caretCol);
 			// console.log('firstRealRun: %o', scc.activeTabStopRange);
 		}
@@ -7799,7 +7799,7 @@ ac.chap.KeyMap.prototype.snippetCompleteActionListener = function(component, act
 			}
 			if ( !scc.firstRealRun )
 			{
-				scc.activeTabStopContent = new_content;				
+				scc.activeTabStopContent = new_content;
 			}
 			if ( !found )
 			{
@@ -7810,7 +7810,7 @@ ac.chap.KeyMap.prototype.snippetCompleteActionListener = function(component, act
 				// console.log('COULD NOT FIND STOPMARKER');
 				return;
 			}
-			
+
 			var offset = new_content.length - old_content.length;
 			if ( 'mi' == scc.tabstops[scc.activeTabStopIndex][0] )
 			{
@@ -7847,7 +7847,7 @@ ac.chap.KeyMap.prototype.snippetCompleteActionListener = function(component, act
 				//adjusting stopmarker for mirrored placeholder AFTER original
 				if ( 0 < scc.tabstops[scc.activeTabStopIndex][4] )
 				{
-					scc.stopMarker = component.char_map[scc.activeTabStopRange[2]].substr(scc.activeTabStopRange[3]);					
+					scc.stopMarker = component.char_map[scc.activeTabStopRange[2]].substr(scc.activeTabStopRange[3]);
 				}
 			}
 			if ( !scc.firstRealRun )
@@ -7858,7 +7858,7 @@ ac.chap.KeyMap.prototype.snippetCompleteActionListener = function(component, act
 					offset = new_content.length - scc.tabstops[scc.activeTabStopIndex][1].length;
 				}
 			}
-			
+
 //			console.log('offset: %s', offset);
 			var active_offset = scc.tabstops[scc.activeTabStopIndex][2];
 			if ( 0 != offset )
@@ -7895,14 +7895,14 @@ ac.chap.KeyMap.prototype.snippetCompleteActionListener = function(component, act
 ac.chap.KeyMap.prototype.compile = function(source)
 {
 	/* example:
-	
+
 		KEY: -13+shift
 			selection(add:true)
 			caret(move:'up')
-			
+
 		KEY: -27
 			caret(move:'row_end')
-			
+
 		...
 		..
 		.
@@ -8036,7 +8036,7 @@ ac.chap.Language.prototype.initDefinition = function()
 	this.singleQuoteStringMarkerException = '\\';
 	this.doubleQuoteStringMarker = '"';
 	this.doubleQuoteStringMarkerException = '\\';
-	this.chunkRules = 
+	this.chunkRules =
 	[
 		[/(([^\w]|^)(\d{1,}[\d\.Ee]*)([^w]|$))/i, 3, ac.chap.CHUNK_NUMBER],
 		[/(\+|\-|\*|\/|\=|\!|\^|\%|\||\&|\<|\>)/i, 0, ac.chap.CHUNK_OPERATOR],
@@ -8064,10 +8064,10 @@ function showEditor(templateNode)
 	templateNode = $(templateNode);
 	var w = templateNode.w();
 	var h = templateNode.h();
-	
+
 	var node = templateNode.p().ib($$(), templateNode).w(w).h(h);
 	templateNode.d(false);
-	
+
 	var language = ac.chap.lang.JavaScript;
 	var keymap = ac.chap.keymap.EAmyJavaScript;
 
@@ -8113,7 +8113,7 @@ $__tune.event.addListener(self, 'load', function(evt)
 			}
 			break;
 		}
-	}		
+	}
 });
 
 
@@ -8137,7 +8137,8 @@ if (!self['console'])
 {
 	var console = {info:function(){}};
 	console.log = console.error = console.warn = console.info;
-	
+
 }
+
 
 

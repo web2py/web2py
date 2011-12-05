@@ -1,4 +1,4 @@
-{{extend 'layout.html'}} 
+{{extend 'layout.html'}}
 {{import os}}
 
 <div class="onecolcontent">
@@ -20,9 +20,9 @@
     <a href="http://www.web2py.com/book/default/chapter/08">auth</a>
   </div>
   <div id="scrollhere">
-    
+
     <h2 id="simple_examples">Simple Examples</h2>
-    
+
     <p><i>Here are some working and complete examples that explain the basic syntax of the framework.<br/>
     You can click on the web2py keywords (in the highlighted code!) to get documentation.</i></p>
 
@@ -162,7 +162,7 @@ def rss_aggregator():
     import gluon.contrib.rss2 as rss2
     import gluon.contrib.feedparser as feedparser
     d = feedparser.parse("http://rss.slashdot.org/Slashdot/slashdot/to")
-    
+
     rss = rss2.RSS2(title=d.channel.title,
     link = d.channel.link,
     description = d.channel.description,
@@ -202,7 +202,7 @@ def ajaxwiki_onclick():
 
     <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: session_examples.py </b>
     {{=CODE("""
-def counter():    
+def counter():
     session.counter = (sesstion.counter or 0) + 1
     return dict(counter=session.counter)
     """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}<b>and view: session_examples/counter.html</b>
@@ -480,11 +480,11 @@ def buy():
             (db.purchase.product_id==form.vars.product_id)).select().first()
 
         if purchase:
-            # if list contains a record, update that record                                                 
+            # if list contains a record, update that record
             purchase.update_record(
                 quantity = purchase.quantity+form.vars.quantity)
         else:
-            # self insert a new record in table                                                             
+            # self insert a new record in table
             db.purchase.insert(buyer_id=form.vars.buyer_id,
                                product_id=form.vars.product_id,
                                quantity=form.vars.quantity)
@@ -492,7 +492,7 @@ def buy():
     elif form.errors:
         response.flash = 'invalid values in form!'
 
-    # now get a list of all purchases                                                                      
+    # now get a list of all purchases
     records = SQLTABLE(db(purchased).select(),headers='fieldname:capitalize')
     return dict(form=form, records=records)
     """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}<b>and view: database_examples/buy.html</b>
@@ -505,7 +505,7 @@ def buy():
 def delete_purchased():
     db(db.purchase.id > 0).delete()
     redirect(URL('buy'))
-    """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}Try it here: <a href="/{{=request.application}}/database_examples/delete_purchased">delete_purchased</a> 
+    """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}Try it here: <a href="/{{=request.application}}/database_examples/delete_purchased">delete_purchased</a>
 
     <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: database_examples.py</b>
     {{=CODE("""
@@ -524,7 +524,7 @@ def cache_in_ram():
     t=cache.ram('time',lambda:time.ctime(),time_expire=5)
     return dict(time=t,link=A('click to reload',_href=URL(r=request)))
     """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}
-    <p>The output of <tt>lambda:time.ctime()</tt> is cached in ram for 5 seconds. The string 'time' is used as cache key. 
+    <p>The output of <tt>lambda:time.ctime()</tt> is cached in ram for 5 seconds. The string 'time' is used as cache key.
     <br/>Try it here: <a href="/{{=request.application}}/cache_examples/cache_in_ram">cache_in_ram</a></p>
 
 
@@ -692,3 +692,4 @@ def tester():
 </div>
 </div>
 {{block sidebar}}{{end}}
+

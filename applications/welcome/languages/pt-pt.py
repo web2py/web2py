@@ -114,3 +114,4 @@
 'table': 'tabela',
 'unable to parse csv file': 'não foi possível carregar ficheiro csv',
 }
+

@@ -7,10 +7,10 @@ def button(href, label):
 
 def button_enable(href, app):
     if os.path.exists(os.path.join(apath(app,r=request),'DISABLED')):
-        label = SPAN(T('Enable'),_style='color:red') 
+        label = SPAN(T('Enable'),_style='color:red')
     else:
         label = SPAN(T('Disable'),_style='color:green')
-    id = 'enable_'+app 
+    id = 'enable_'+app
     return A(label,_class='button',_id=id,callback=href,target=id)
 
 def sp_button(href, label):
@@ -21,3 +21,5 @@ def helpicon():
 
 def searchbox(elementid):
     return TAG[''](LABEL(IMG(_src=URL('static', 'images/search.png'), _alt=T('filter')), _class='icon', _for=elementid), ' ', INPUT(_id=elementid, _type='text', _size=12))
+
+

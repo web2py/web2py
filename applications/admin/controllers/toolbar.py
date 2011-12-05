@@ -20,10 +20,12 @@ def profiler():
             size = 0
         if os.path.exists(filename):
             data = read_file('profiler.log','rb')
-            if size<len(data): 
+            if size<len(data):
                 data = data[size:]
-            else: 
+            else:
                 size=0
             size += len(data)
             response.cookies[KEY] = size
     return data
+
+

@@ -264,3 +264,5 @@
 'web2py is up to date': 'web2py è aggiornato',
 'web2py upgraded; please restart it': 'web2py aggiornato; prego riavviarlo',
 }
+
+

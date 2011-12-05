@@ -458,7 +458,7 @@ class Listener(Thread):
                 self.err_log.error("Cannot find root ca certificate file "
                           "'%s'.  Cannot bind to %s:%s" % data)
                 return
-            
+
         # Set socket options
         try:
             listener.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -2073,4 +2073,5 @@ def demo():
 
 if __name__=='__main__':
     demo()
+
 

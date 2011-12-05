@@ -44,7 +44,7 @@ class DowCommerce:
         self.parameters = {}
         self.setParameter('username', username)
         self.setParameter('password', password)
-        
+
 
     def process(self):
         encoded_args = urllib.urlencode(self.parameters)
@@ -58,11 +58,11 @@ class DowCommerce:
                 results += str(opened.read()).split(self.delimiter)
             finally:
                 opened.close()
-                
+
         for result in results:
             (key,val) = result.split('=')
             self.results[key] = val
-            
+
         if self.results['response'] == '1':
             self.error = False
             self.success = True
@@ -74,7 +74,7 @@ class DowCommerce:
         elif self.results['response'] == '3':
             self.error = True
             self.success = False
-            self.declined = False                
+            self.declined = False
         else:
             self.error = True
             self.success = False
@@ -82,7 +82,7 @@ class DowCommerce:
             raise DowCommerce.DowCommerceError(self.results)
 
     def setTransaction(self, creditcard, expiration, total, cvv=None, orderid=None, orderdescription=None,
-                        ipaddress=None, tax=None, shipping=None, 
+                        ipaddress=None, tax=None, shipping=None,
                         firstname=None, lastname=None, company=None, address1=None, address2=None, city=None, state=None, zipcode=None,
                         country=None, phone=None, fax=None, emailaddress=None, website=None,
                         shipping_firstname=None, shipping_lastname=None, shipping_company=None, shipping_address1=None, shipping_address2=None,
@@ -93,11 +93,11 @@ class DowCommerce:
             raise DowCommerce.DowCommerceError('No expiration number passed to setTransaction(): {0}'.format(expiration))
         if str(total).strip() == '' or total == None:
             raise DowCommerce.DowCommerceError('No total amount passed to setTransaction(): {0}'.format(total))
-        
+
         self.setParameter('ccnumber', creditcard)
         self.setParameter('ccexp', expiration)
         self.setParameter('amount', total)
-        
+
         if cvv:
             self.setParameter('cvv', cvv)
         if orderid:
@@ -110,10 +110,10 @@ class DowCommerce:
             self.setParameter('tax', tax)
         if shipping:
             self.setParameter('shipping', shipping)
-            
-        ## billing info    
+
+        ## billing info
         if firstname:
-            self.setParameter('firstname', firstname)                        
+            self.setParameter('firstname', firstname)
         if lastname:
             self.setParameter('lastname', lastname)
         if company:
@@ -138,7 +138,7 @@ class DowCommerce:
             self.setParameter('email', emailaddress)
         if website:
             self.setParameter('website', website)
-            
+
         ## shipping info
         if shipping_firstname:
             self.setParameter('shipping_firstname', shipping_firstname)
@@ -147,9 +147,9 @@ class DowCommerce:
         if shipping_company:
             self.setParameter('shipping_company', shipping_company)
         if shipping_address1:
-            self.setParameter('shipping_address1', shipping_address1)            
+            self.setParameter('shipping_address1', shipping_address1)
         if shipping_address2:
-            self.setParameter('shipping_address2', shipping_address2)   
+            self.setParameter('shipping_address2', shipping_address2)
         if shipping_city:
             self.setParameter('shipping_city', shipping_city)
         if shipping_state:
@@ -188,12 +188,12 @@ class DowCommerce:
     def getResultResponseShort(self):
         responses = ['', 'Approved', 'Declined', 'Error']
         return responses[int(self.results['response'])]
-        
+
     def getFullResponse(self):
-        return self.results    
-        
+        return self.results
+
     def getResponseText(self):
-        return self.results['responsetext']    
+        return self.results['responsetext']
 
 def test():
     import socket
@@ -220,7 +220,7 @@ def test():
         payment.setTransaction(creditcard, expiration, total, cvv=cvv, tax=tax, orderid=orderid, orderdescription='Test Transaction',
                                 firstname='John', lastname='Doe', company='Acme', address1='123 Min Street', city='Hometown', state='VA',
                                 zipcode='12345', country='US', phone='888-555-1212', emailaddress='john@noemail.local', ipaddress='192.168.1.1')
-                                
+
         payment.process()
         if payment.isApproved():
             print 'Payment approved!'
@@ -238,5 +238,7 @@ def test():
 
 if __name__=='__main__':
     test()
+
+
 
 

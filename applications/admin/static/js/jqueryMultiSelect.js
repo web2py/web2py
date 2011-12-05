@@ -22,13 +22,13 @@
 //                the jQuery Dimensions plugin (http://plugins.jquery.com/project/dimensions)
 //
 // Licensing & Terms of Use
-// 
+//
 // jQuery File Tree is licensed under a Creative Commons License and is copyrighted (C)2008 by Cory S.N. LaViska.
 // For details, visit http://creativecommons.org/licenses/by/3.0/us/
-//	
+//
 */
 if(jQuery) (function($){
-	
+
 	$.extend($.fn, {
 		multiSelect: function(o, callback) {
 			// Default options
@@ -37,7 +37,7 @@ if(jQuery) (function($){
 			if( o.selectAllText == undefined ) o.selectAllText = "Select All";
 			if( o.noneSelected == undefined ) o.noneSelected = 'Select options';
 			if( o.oneOrMoreSelected == undefined ) o.oneOrMoreSelected = '% selected';
-			
+
 			// Initialize each multiSelect
 			$(this).each( function() {
 				var select = $(this);
@@ -53,7 +53,7 @@ if(jQuery) (function($){
 				});
 				html += '</div>';
 				$(select).after(html);
-				
+
 				// Events
 				$(select).next('.multiSelect').mouseover( function() {
 					$(this).addClass('hover');
@@ -74,7 +74,7 @@ if(jQuery) (function($){
 					// So it can be styled with CSS
 					$(this).removeClass('focus');
 				});
-				
+
 				// Determine if Select All should be checked initially
 				if( o.selectAll ) {
 					var sa = true;
@@ -83,12 +83,12 @@ if(jQuery) (function($){
 					});
 					if( sa ) $(select).next('.multiSelect').next('.multiSelectOptions').find('INPUT.selectAll').attr('checked', true).parent().addClass('checked');
 				}
-				
+
 				// Handle Select All
 				$(select).next('.multiSelect').next('.multiSelectOptions').find('INPUT.selectAll').click( function() {
 					if( $(this).attr('checked') == true ) $(this).parent().parent().find('INPUT:checkbox').attr('checked', true).parent().addClass('checked'); else $(this).parent().parent().find('INPUT:checkbox').attr('checked', false).parent().removeClass('checked');
 				});
-				
+
 				// Handle checkboxes
 				$(select).next('.multiSelect').next('.multiSelectOptions').find('INPUT:checkbox').click( function() {
 					$(this).parent().parent().multiSelectUpdateSelected(o);
@@ -97,13 +97,13 @@ if(jQuery) (function($){
 					if( !$(this).attr('checked') ) $(this).parent().parent().find('INPUT:checkbox.selectAll').attr('checked', false).parent().removeClass('checked');
 					if( callback ) callback($(this));
 				});
-				
+
 				// Initial display
 				$(select).next('.multiSelect').next('.multiSelectOptions').each( function() {
 					$(this).multiSelectUpdateSelected(o);
 					$(this).find('INPUT:checked').parent().addClass('checked');
 				});
-				
+
 				// Handle hovers
 				$(select).next('.multiSelect').next('.multiSelectOptions').find('LABEL').mouseover( function() {
 					$(this).parent().find('LABEL').removeClass('hover');
@@ -111,7 +111,7 @@ if(jQuery) (function($){
 				}).mouseout( function() {
 					$(this).parent().find('LABEL').removeClass('hover');
 				});
-				
+
 				// Keyboard
 				$(select).next('.multiSelect').keydown( function(e) {
 					// Is dropdown visible?
@@ -123,7 +123,7 @@ if(jQuery) (function($){
 							$(this).focus().next(':input').focus();
 							return true;
 						}
-						
+
 						// ESC, Left, Right
 						if( e.keyCode == 27 || e.keyCode == 37 || e.keyCode == 39 ) {
 							// Hide dropdown
@@ -208,30 +208,30 @@ if(jQuery) (function($){
 					// Prevent enter key from submitting form
 					if( e.keyCode == 13 ) return false;
 				});
-				
+
 				// Eliminate the original form element
 				$(select).remove();
 			});
-			
+
 		},
-		
+
 		// Hide the dropdown
 		multiSelectOptionsHide: function() {
 			$(this).removeClass('active').next('.multiSelectOptions').hide();
 		},
-		
+
 		// Show the dropdown
 		multiSelectOptionsShow: function() {
 			// Hide any open option boxes
 			$('.multiSelect').multiSelectOptionsHide();
 			$(this).next('.multiSelectOptions').find('LABEL').removeClass('hover');
 			$(this).addClass('active').next('.multiSelectOptions').show();
-			
+
 			// Position it
 			var offset = $(this).offset();
 			$(this).next('.multiSelectOptions').css({ top:  offset.top + $(this).outerHeight() + 'px' });
 			$(this).next('.multiSelectOptions').css({ left: offset.left + 'px' });
-			
+
 			// Disappear on hover out
 			multiSelectCurrent = $(this);
 			var timer = '';
@@ -240,9 +240,9 @@ if(jQuery) (function($){
 			}, function() {
 				timer = setTimeout('$(multiSelectCurrent).multiSelectOptionsHide(); $(multiSelectCurrent).unbind("hover");', 250);
 			});
-			
+
 		},
-		
+
 		// Update the textbox with the total number of selected items
 		multiSelectUpdateSelected: function(o) {
 			var i = 0, s = '';
@@ -264,7 +264,7 @@ if(jQuery) (function($){
 				}
 			}
 		}
-		
+
 	});
-	
+
 })(jQuery);

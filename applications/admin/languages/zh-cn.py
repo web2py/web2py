@@ -288,3 +288,5 @@
 'web2py is up to date': 'web2py现在已经是最新的版本了',
 'web2py upgraded; please restart it': 'web2py upgraded; please restart it',
 }
+
+

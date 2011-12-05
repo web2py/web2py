@@ -42,7 +42,7 @@ try:
     have_minify = True
 except ImportError:
     have_minify = False
-    
+
 regex_session_id = re.compile('^([\w\-]+/)?[\w\-\.]+$')
 
 __all__ = ['Request', 'Response', 'Session']
@@ -207,11 +207,11 @@ class Response(Storage):
 
     def include_files(self):
 
-        
+
         """
-        Caching method for writing out files. 
+        Caching method for writing out files.
         By default, caches in ram for 5 minutes. To change,
-        response.cache_includes = (cache_method, time_expire). 
+        response.cache_includes = (cache_method, time_expire).
         Example: (cache.disk, 60) # caches to disk for 1 minute.
         """
         from gluon import URL
@@ -222,7 +222,7 @@ class Response(Storage):
         if have_minify and (self.optimize_css or self.optimize_js):
             # cache for 5 minutes by default
             cache = self.cache_includes or (current.cache.ram, 60*5)
-            def call_minify():                
+            def call_minify():
                 return minify.minify(files,URL('static','temp'),
                                      current.request.folder,
                                      self.optimize_css,self.optimize_js)
@@ -233,7 +233,7 @@ class Response(Storage):
             else:
                 files = call_minify()
         s = ''
-        for item in files:            
+        for item in files:
             if isinstance(item,str):
                 f = item.lower()
                 if f.endswith('.css'):  s += css_template % item
@@ -358,10 +358,10 @@ class Response(Storage):
         if hasattr(thread,'instances'):
             dbstats = [TABLE(*[TR(PRE(row[0]),'%.2fms' % (row[1]*1000)) \
                                    for row in i.db._timings]) \
-                           for i in thread.instances]        
+                           for i in thread.instances]
         else:
             dbstats = [] # if no db or on GAE
-        u = web2py_uuid() 
+        u = web2py_uuid()
         return DIV(
             BUTTON('design',_onclick="document.location='%s'" % admin),
             BUTTON('request',_onclick="jQuery('#request-%s').slideToggle()"%u),
@@ -598,5 +598,6 @@ class Session(Storage):
                 del response.session_file
             except:
                 pass
+
 
 

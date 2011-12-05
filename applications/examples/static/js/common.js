@@ -7,7 +7,7 @@ $(function(){
       $('img', this).attr('src', 'images/close.png');
     }
     $('header').slideToggle('slow');
-    
+
     return false;
   });
 
@@ -40,7 +40,7 @@ $(function(){
 
   // Lightbox
   $(".gallery a[rel^='prettyPhoto']").prettyPhoto({animationSpeed:'slow',theme:'dark_rounded',slideshow:4000, autoplay_slideshow: false});
-  
+
   // Tipsy
   $('#social li a img').tipsy({delayIn: 1200, delayOut: 1200, gravity: 's'});
 
@@ -49,7 +49,7 @@ $(function(){
   $('#newsletterform').ajaxForm({dataType: 'json',
                                  timeout: 2000,
                                  success: newsletterResponse});
-    
+
   // Twitter script config
   if ($('#tweet').length) {
       getTwitters('tweet', {
@@ -59,8 +59,8 @@ $(function(){
         ignoreReplies: true,
         template: '"%text%" <a class="meta" href="http://twitter.com/%user_screen_name%/status/%id%">%time%</a>'});
   }
-  
-  
+
+
   // init contact form validation and AJAX handling
   if ($("#contactform").length > 0) {
     $("#contactform").validate({ rules: { name: "required",

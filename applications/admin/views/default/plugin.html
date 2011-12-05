@@ -10,7 +10,7 @@ def editfile(path,file):
 def testfile(path,file):
     return A(TAG[''](IMG(_src=URL('static', 'images/test_icon.png'), _alt=T('test')), SPAN(T("Run tests in this file"))), _class='icon test tooltip',_href=URL('test', args=(app, file)))
 def editlanguagefile(path,file):
-    return A(SPAN(T('Edit')),_class='button editbutton',_href=URL('edit_language', args=(app, path, file))) 
+    return A(SPAN(T('Edit')),_class='button editbutton',_href=URL('edit_language', args=(app, path, file)))
 def file_upload_form(location):
     form=FORM(T("upload file:")," ",
               INPUT(_type="file",_name="file")," ",T("and rename it:")," ",
@@ -217,5 +217,6 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     {{pass}}
   </ul>
 </div>
+
 
 

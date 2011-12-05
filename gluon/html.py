@@ -2100,7 +2100,7 @@ class MENU(DIV):
             return self.serialize_mobile(self.data, 0).xml()
         else:
             return self.serialize(self.data, 0).xml()
-    
+
 
 def embed64(
     filename = None,
@@ -2300,6 +2300,7 @@ class MARKMIN(XmlComponent):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

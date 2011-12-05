@@ -60,19 +60,19 @@ def safe_float(x):
 
 class FormWidget(object):
     """
-    helper for SQLFORM to generate form input fields 
+    helper for SQLFORM to generate form input fields
     (widget), related to the fieldtype
     """
 
     _class = 'generic-widget'
 
     @classmethod
-    def _attributes(cls, field, 
+    def _attributes(cls, field,
                     widget_attributes, **attributes):
         """
         helper to build a common set of attributes
 
-        :param field: the field involved, 
+        :param field: the field involved,
                       some attributes are derived from this
         :param widget_attributes:  widget related attributes
         :param attributes: any other supplied attributes
@@ -162,7 +162,7 @@ class TextWidget(FormWidget):
         """
 
         default = dict(value = value)
-        attr = cls._attributes(field, default, 
+        attr = cls._attributes(field, default,
                                **attributes)
         return TEXTAREA(**attr)
 
@@ -214,7 +214,7 @@ class OptionsWidget(FormWidget):
             if hasattr(requires[0], 'options'):
                 options = requires[0].options()
             else:
-                raise SyntaxError, 'widget cannot determine options of %s' % field                    
+                raise SyntaxError, 'widget cannot determine options of %s' % field
         opts = [OPTION(v, _value=k) for (k, v) in options]
 
         return SELECT(*opts, **attr)
@@ -1333,11 +1333,14 @@ class SQLFORM(FORM):
                         _id="w2p_value_"+name)
                 else:
                     value_input = INPUT(_type='text',_id="w2p_value_"+name,_class=field.type)
+                new_button = INPUT(_type="button", _value=T('New'),
+                                  _onclick="w2p_build_query('new','"+str(field)+"')")
                 and_button = INPUT(_type="button", _value=T('And'),
                                    _onclick="w2p_build_query('and','"+str(field)+"')")
                 or_button = INPUT(_type="button", _value=T('Or'),
                                   _onclick="w2p_build_query('or','"+str(field)+"')")
-                criterion.extend([operators,value_input,and_button,or_button])
+
+                criterion.extend([operators,value_input,new_button,and_button,or_button])
             criteria.append(DIV(criterion, _id='w2p_field_%s' % name,
                                 _class='w2p_query_row hidden'))
         criteria.insert(0,SELECT(
@@ -1355,7 +1358,7 @@ class SQLFORM(FORM):
           var s=a+' '+option+' "'+value+'"';
           var k=jQuery('#web2py_keywords');
           var v=k.val();
-          k.val((v?(v+' '+ aggregator +' '):'')+s);
+          if(aggregator=='new') k.val(s); else k.val((v?(v+' '+ aggregator +' '):'')+s);
           jQuery('#w2p_query_fields').val('').change();
           jQuery('#w2p_query_panel').slideUp();
         }
@@ -1590,7 +1593,7 @@ class SQLFORM(FORM):
             table = db[request.args[-2]]
             if ondelete:
                 ondelete(table,request.args[-1],ret)
-            ret = db(table.id==request.args[-1]).delete()            
+            ret = db(table.id==request.args[-1]).delete()
             return ret
         elif csv and len(request.args)>0 and request.args[-1]=='csv':
             if request.vars.keywords:
@@ -2249,6 +2252,7 @@ class SQLTABLE(TABLE):
         return css
 
 form_factory = SQLFORM.factory # for backward compatibility, deprecated
+
 
 
 

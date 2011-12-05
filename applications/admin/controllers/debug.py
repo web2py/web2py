@@ -31,3 +31,5 @@ def reset():
     session['debug_commands:'+app] = []
     return 'done'
 
+
+

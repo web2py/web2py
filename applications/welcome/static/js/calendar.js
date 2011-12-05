@@ -26,8 +26,8 @@ Calendar=function(J,K,H,G){this.activeDiv=null;this.currentDateEl=null;this.getD
    Time entry for jQuery v1.4.8.
    Written by Keith Wood (kbwood{at}iinet.com.au) June 2007.
    Minor changes by Massimo Di Pierro Nov 2010 (simplified and changed behavior)
-   Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
-   MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
+   Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and
+   MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses.
    Please attribute the author if you use it.
 
    Turn an input field into an entry point for a time value.

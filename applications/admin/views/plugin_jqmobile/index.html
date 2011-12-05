@@ -22,12 +22,13 @@
   <li><a href="{{=URL('index', vars=dict(title=child))}}">{{=child}}</a></li>
   {{pass}}
   {{pass}}
-</ul> 
+</ul>
 
-<div>      
+<div>
   {{for tag in ('dog','cat','mouse'):}}
   <a data-inline="true" href={{=URL('index', vars=dict(tag=tag))}} data-role="button">{{=tag}}</a>
   {{pass}}
 </div>
+
 
 

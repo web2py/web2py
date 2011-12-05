@@ -3,8 +3,8 @@
    Time entry for jQuery v1.4.8.
    Written by Keith Wood (kbwood{at}iinet.com.au) June 2007.
    Minor changes by Massimo Di Pierro Nov 2010 (simplified and changed behavior)
-   Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and 
-   MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses. 
+   Dual licensed under the GPL (http://dev.jquery.com/browser/trunk/jquery/GPL-LICENSE.txt) and
+   MIT (http://dev.jquery.com/browser/trunk/jquery/MIT-LICENSE.txt) licenses.
    Please attribute the author if you use it.
 
    Turn an input field into an entry point for a time value.
@@ -19,13 +19,13 @@
 (function(jQuery) { // Hide scope, no jQuery conflict
 
     var PROP_NAME = 'timeEntry';
-    
+
     /* TimeEntry manager.
        Use the singleton instance of this class, jQuery.timeEntry, to interact with the time entry
        functionality. Settings for (groups of) fields are maintained in an instance object
-       (TimeEntryInstance), allowing multiple different settings on the same page. 
+       (TimeEntryInstance), allowing multiple different settings on the same page.
     */
-    
+
     function TimeEntry() {
 	this._disabledInputs = []; // List of time entry inputs that have been disabled
 	this._defaults = {
@@ -38,25 +38,25 @@
 	};
 	jQuery.extend(this._defaults);
     }
-    
+
     jQuery.extend(TimeEntry.prototype, {
-	    /* 
-	       Class name added to elements to indicate already configured with time entry. 
+	    /*
+	       Class name added to elements to indicate already configured with time entry.
 	     */
 	    markerClassName: 'hasTimeEntry',
-		
+
 	    /* Override the default settings for all instances of the time entry.
 	       @param  options  (object) the new settings to use as defaults (anonymous object)
-	       @return  (DateEntry) this object 
+	       @return  (DateEntry) this object
 	    */
 	    setDefaults: function(options) {
 		extendRemove(this._defaults, options || {});
 		return this;
 	    },
-		
+
 	    /* Attach the time entry handler to an input field.
 	       @param  target   (element) the field to attach to
-	       @param  options  (object) custom settings for this instance 
+	       @param  options  (object) custom settings for this instance
 	    */
 	    _connectTimeEntry: function(target, options) {
 		var input = jQuery(target);
@@ -80,21 +80,21 @@
 		if (jQuery.browser.msie)
 		    input.bind('paste.timeEntry', function(event) { setTimeout(function() { jQuery.timeEntry._parseTime(inst); }, 1); });
 	    },
-		
-		
+
+
 	    /* Check whether an input field has been disabled.
 	       @param  input  (element) input field to check
-	       @return  (boolean) true if this field has been disabled, false if it is enabled 
+	       @return  (boolean) true if this field has been disabled, false if it is enabled
 	    */
 	    _isDisabledTimeEntry: function(input) {
 		return jQuery.inArray(input, this._disabledInputs) > -1;
 	    },
-		
+
 	    /* Reconfigure the settings for a time entry field.
 	       @param  input    (element) input field to change
 	       @param  options  (object) new settings to add or
 	       (string) an individual setting name
-	       @param  value    (any) the individual setting's value 
+	       @param  value    (any) the individual setting's value
 	    */
 	    _changeTimeEntry: function(input, options, value) {
 		var inst = jQuery.data(input, PROP_NAME);
@@ -112,50 +112,50 @@
 		}
 		jQuery.data(input, PROP_NAME, inst);
 	    },
-		
+
 	    /* Remove the time entry functionality from an input.
-	       @param  input  (element) input field to affect 
+	       @param  input  (element) input field to affect
 	    */
 	    _destroyTimeEntry: function(input) {
 		jQueryinput = jQuery(input);
 		if (!jQueryinput.hasClass(this.markerClassName)) return;
-		jQueryinput.removeClass(this.markerClassName).unbind('.timeEntry');		
+		jQueryinput.removeClass(this.markerClassName).unbind('.timeEntry');
 		this._disabledInputs = jQuery.map(this._disabledInputs, function(value) { return (value == input ? null : value); }); // Delete entry
 		jQueryinput.parent().replaceWith(jQueryinput);
 		jQuery.removeData(input, PROP_NAME);
 	    },
-		
+
 	    /* Initialise the current time for a time entry input field.
 	       @param  input  (element) input field to update
-	       @param  time   (Date) the new time (year/month/day ignored) or null for now 
+	       @param  time   (Date) the new time (year/month/day ignored) or null for now
 	    */
 	    _setTimeTimeEntry: function(input, time) {
 		var inst = jQuery.data(input, PROP_NAME);
 		if (inst) this._setTime(inst, time ? (typeof time == 'object' ? new Date(time.getTime()) : time) : null);
 	    },
-		
+
 	    /* Retrieve the current time for a time entry input field.
 	       @param  input  (element) input field to examine
-	       @return  (Date) current time (year/month/day zero) or null if none 
+	       @return  (Date) current time (year/month/day zero) or null if none
 	    */
 	    _getTimeTimeEntry: function(input) {
 		var inst = jQuery.data(input, PROP_NAME);
 		var currentTime = (inst ? this._extractTime(inst) : null);
 		return (!currentTime ? null : new Date(0, 0, 0, currentTime[0], currentTime[1], currentTime[2]));
 	    },
-		
+
 	    /* Retrieve the millisecond offset for the current time.
 	       @param  input  (element) input field to examine
-	       @return  (number) the time as milliseconds offset or zero if none 
+	       @return  (number) the time as milliseconds offset or zero if none
 	    */
 	    _getOffsetTimeEntry: function(input) {
 		var inst = jQuery.data(input, PROP_NAME);
 		var currentTime = (inst ? this._extractTime(inst) : null);
 		return (!currentTime ? 0 : (currentTime[0] * 3600 + currentTime[1] * 60 + currentTime[2]) * 1000);
 	    },
-		
+
 	    /* Initialise time entry.
-	       @param  target  (element) the input field or (event) the focus event 
+	       @param  target  (element) the input field or (event) the focus event
 	    */
 	    _doFocus: function(target) {
 		var input = (target.nodeName && target.nodeName.toLowerCase() == 'input' ? target : this);
@@ -171,17 +171,17 @@
 		jQuery.timeEntry._parseTime(inst);
 		setTimeout(function() { jQuery.timeEntry._showField(inst); }, 10);
 	    },
-		
+
 	    /* Note that the field has been exited.
-	       @param  event  (event) the blur event 
+	       @param  event  (event) the blur event
 	    */
 	    _doBlur: function(event) {
 		jQuery.timeEntry._blurredInput = jQuery.timeEntry._lastInput;
 		jQuery.timeEntry._lastInput = null;
 	    },
-		
+
 	    /* Select appropriate field portion on click, if already in the field.
-	       @param  event  (event) the click event 
+	       @param  event  (event) the click event
 	    */
 	    _doClick: function(event) {
 		var input = event.target;
@@ -217,21 +217,21 @@
 		jQuery.timeEntry._showField(inst);
 		jQuery.timeEntry._focussed = false;
 	    },
-		
+
 	    /* Handle keystrokes in the field.
 	       @param  event  (event) the keydown event
-	       @return  (boolean) true to continue, false to stop processing 
+	       @return  (boolean) true to continue, false to stop processing
 	    */
 	    _doKeyDown: function(event) {
 		if (event.keyCode >= 48) return true;
 		var inst = jQuery.data(event.target, PROP_NAME);
-		
-		switch (event.keyCode) {		
-		case 9: 
+
+		switch (event.keyCode) {
+		case 9:
 		    var its = jQuery(':input');
 		    its.eq(its.index(this)+(event.shiftKey?-1:+1)).focus();
 		    break;
-		case 37: jQuery.timeEntry._changeField(inst, -1, false); break; // Previous field on left		    
+		case 37: jQuery.timeEntry._changeField(inst, -1, false); break; // Previous field on left
 		case 38: jQuery.timeEntry._adjustField(inst, -1); break; // Increment time field on down
 		case 16: if(!event.shiftKey) jQuery.timeEntry._changeField(inst, +1, false); break; // Next field on right
 		case 39: jQuery.timeEntry._changeField(inst, +1, false); break; // Next field on right
@@ -240,10 +240,10 @@
 		}
 		return false;
 	    },
-		
+
 	    /* Disallow unwanted characters.
 	       @param  event  (event) the keypress event
-	       @return  (boolean) true to continue, false to stop processing 
+	       @return  (boolean) true to continue, false to stop processing
 	    */
 	    _doKeyPress: function(event) {
 		var chr = String.fromCharCode(event.charCode == undefined ? event.keyCode : event.charCode);
@@ -252,18 +252,18 @@
 		jQuery.timeEntry._handleKeyPress(inst, chr);
 		return false;
 	    },
-		
+
 	    /* Get a setting value, defaulting if necessary.
 	       @param  inst  (object) the instance settings
 	       @param  name  (string) the setting name
-	       @return  (any) the setting value 
+	       @return  (any) the setting value
 	    */
 	    _get: function(inst, name) {
 		return (inst.options[name] != null ? inst.options[name] : jQuery.timeEntry._defaults[name]);
 	    },
-		
+
 	    /* Extract the time value from the input field, or default to now.
-	       @param  inst  (object) the instance settings 
+	       @param  inst  (object) the instance settings
 	    */
 	    _parseTime: function(inst) {
 		var currentTime = this._extractTime(inst);
@@ -285,12 +285,12 @@
 		inst._field = Math.max(0, Math.min(Math.max(1, inst._secondField, inst._ampmField), 0));
 		if (inst.input.val() != '') this._showTime(inst);
 	    },
-		
+
 	    /* Extract the time value from a string as an array of values, or default to null.
 	       @param  inst   (object) the instance settings
 	       @param  value  (string) the time value to parse
 	       @return  (number[3]) the time components (hours, minutes, seconds)
-	       or null if no value 
+	       or null if no value
 	    */
 	    _extractTime: function(inst, value) {
 		value = value || inst.input.val();
@@ -309,14 +309,14 @@
 				  parseInt(currentTime[2], 10) : 0);
 		    second = (isNaN(second) || !this._get(inst, 'showSeconds') ? 0 : second);
 		    return this._constrainTime(inst, [hour, minute, second]);
-		} 
+		}
 		return null;
 	    },
-		
+
 	    /* Constrain the given/current time to the time steps.
 	       @param  inst    (object) the instance settings
 	       @param  fields  (number[3]) the current time components (hours, minutes, seconds)
-	       @return  (number[3]) the constrained time components (hours, minutes, seconds) 
+	       @return  (number[3]) the constrained time components (hours, minutes, seconds)
 	    */
 	    _constrainTime: function(inst, fields) {
 		var specified = (fields != null);
@@ -326,9 +326,9 @@
 		}
 		return fields;
 	    },
-		
+
 	    /* Set the selected time into the input field.
-	       @param  inst  (object) the instance settings 
+	       @param  inst  (object) the instance settings
 	    */
 	    _showTime: function(inst) {
 		var show24Hours = this._get(inst, 'show24Hours');
@@ -341,9 +341,9 @@
 		this._setValue(inst, currentTime);
 		this._showField(inst);
 	    },
-		
+
 	    /* Highlight the current time field.
-	       @param  inst  (object) the instance settings 
+	       @param  inst  (object) the instance settings
 	    */
 	    _showField: function(inst) {
 		var input = inst.input[0];
@@ -362,28 +362,28 @@
 		}
 		if (!input.disabled) input.focus();
 	    },
-		
+
 	    /* Ensure displayed single number has a leading zero.
 	       @param  value  (number) current value
-	       @return  (string) number with at least two digits 
+	       @return  (string) number with at least two digits
 	    */
 	    _formatNumber: function(value) {
 		return (value < 10 ? '0' : '') + value;
 	    },
-		
+
 	    /* Update the input field and notify listeners.
 	       @param  inst   (object) the instance settings
-	       @param  value  (string) the new value 
+	       @param  value  (string) the new value
 	    */
 	    _setValue: function(inst, value) {
 		if (value != inst.input.val()) inst.input.val(value).trigger('change');
 	    },
-		
+
 	    /* Move to previous/next field, or out of field altogether if appropriate.
 	       @param  inst     (object) the instance settings
 	       @param  offset   (number) the direction of change (-1, +1)
 	       @param  moveOut  (boolean) true if can move out of the field
-	       @return  (boolean) true if exitting the field, false if not 
+	       @return  (boolean) true if exitting the field, false if not
 	    */
 	    _changeField: function(inst, offset, moveOut) {
 		var atFirstLast = (inst.input.val() == '' || inst._field == (offset == -1 ? 0 : Math.max(1, inst._secondField, inst._ampmField)));
@@ -393,10 +393,10 @@
 		jQuery.data(inst.input[0], PROP_NAME, inst);
 		return (atFirstLast && moveOut);
 	    },
-		
+
 	    /* Update the current field in the direction indicated.
 	       @param  inst    (object) the instance settings
-	       @param  offset  (number) the amount to change by 
+	       @param  offset  (number) the amount to change by
 	    */
 	    _adjustField: function(inst, offset) {
 		if (inst.input.val() == '') offset = 0;
@@ -406,12 +406,12 @@
 					     inst._selectedMinute + (inst._field == 1 ? offset : 0),
 					     inst._selectedSecond + (inst._field == inst._secondField ? offset : 0)));
 	    },
-		
+
 	    /* Check against minimum/maximum and display time.
 	       @param  inst  (object) the instance settings
 	       @param  time  (Date) an actual time or
 	       (number) offset in seconds from now or
-	       (string) units and periods of offsets from now 
+	       (string) units and periods of offsets from now
 	    */
 	    _setTime: function(inst, time) {
 		time = this._determineTime(inst, time);
@@ -434,7 +434,7 @@
 
 		/* Normalise time object to a common date.
 		   @param  time  (Date) the original time
-		   @return  (Date) the normalised time 
+		   @return  (Date) the normalised time
 		*/
 		_normaliseTime: function(time) {
 		if (!time) return null;
@@ -443,13 +443,13 @@
 		time.setDate(0);
 		return time;
 	    },
-		
+
 	    /* A time may be specified as an exact value or a relative one.
 	       @param  inst     (object) the instance settings
 	       @param  setting  (Date) an actual time or
 	       (number) offset in seconds from now or
 	       (string) units and periods of offsets from now
-	       @return  (Date) the calculated time 
+	       @return  (Date) the calculated time
 	    */
 	    _determineTime: function(inst, setting) {
 		var offsetNumeric = function(offset) { // E.g. +300, -2
@@ -487,10 +487,10 @@
 		return (setting ? (typeof setting == 'string' ? offsetString(setting) :
 				   (typeof setting == 'number' ? offsetNumeric(setting) : setting)) : null);
 	    },
-		
+
 	    /* Update time based on keystroke entered.
 	       @param  inst  (object) the instance settings
-	       @param  chr   (ch) the new character 
+	       @param  chr   (ch) the new character
 	    */
 	    _handleKeyPress: function(inst, chr) {
 		if (chr == ':') this._changeField(inst, +1, false);
@@ -525,25 +525,25 @@
 		}
 	    }
 	});
-    
+
     /* jQuery extend now ignores nulls!
        @param  target  (object) the object to update
-       @param  props   (object) the new settings 
-       @return  (object) the updated object 
+       @param  props   (object) the new settings
+       @return  (object) the updated object
     */
     function extendRemove(target, props) {
 	jQuery.extend(target, props);
 	for (var name in props) if (props[name] == null) target[name] = null;
 	return target;
     }
-    
+
     // Commands that don't return a jQuery object
     var getters = ['getOffset', 'getTime', 'isDisabled'];
-    
+
     /* Attach the time entry functionality to a jQuery selection.
        @param  command  (string) the command to run (optional, default 'attach')
        @param  options  (object) the new settings to use for these countdown instances (optional)
-       @return  (jQuery) for chaining further calls 
+       @return  (jQuery) for chaining further calls
     */
     jQuery.fn.timeEntry = function(options) {
 	var otherArgs = Array.prototype.slice.call(arguments, 1);
@@ -560,11 +560,12 @@
 			var inlineSettings = (jQuery.fn.metadata ? jQuery(this).metadata() : {});
 			jQuery.timeEntry._connectTimeEntry(this, jQuery.extend(inlineSettings, options));
 		    }
-		} 
+		}
 	    });
     };
-    
+
     /* Initialise the time entry functionality. */
     jQuery.timeEntry = new TimeEntry(); // Singleton instance
-    
+
 })(jQuery);
+

@@ -18,7 +18,7 @@ function ajax(u,s,t) {
         }
         if (pcs.length>0){query = pcs.join("&");}
     }
-    jQuery.ajax({type: "POST", url: u, data: query, success: function(msg) { if(t) { if(t==':eval') eval(msg); else jQuery("#" + t).html(msg); } } }); 
+    jQuery.ajax({type: "POST", url: u, data: query, success: function(msg) { if(t) { if(t==':eval') eval(msg); else jQuery("#" + t).html(msg); } } });
 }
 
 String.prototype.reverse = function () { return this.split('').reverse().join('');};
@@ -30,9 +30,9 @@ function web2py_ajax_fields(target) {
   var date_format = (typeof w2p_ajax_date_format != 'undefined') ? w2p_ajax_date_format : "%Y-%m-%d";
   var datetime_format = (typeof w2p_ajax_datetime_format != 'undefined') ? w2p_ajax_datetime_format : "%Y-%m-%d %H:%M:%S";
   jQuery("input.date",target).each(function() {Calendar.setup({inputField:this, ifFormat:date_format, showsTime:false });});
-  jQuery("input.datetime",target).each(function() {Calendar.setup({inputField:this, ifFormat:datetime_format, showsTime: true, timeFormat: "24" });});  
+  jQuery("input.datetime",target).each(function() {Calendar.setup({inputField:this, ifFormat:datetime_format, showsTime: true, timeFormat: "24" });});
   jQuery("input.time",target).each(function(){jQuery(this).timeEntry();});
-  
+
 };
 
 function web2py_ajax_init(target) {
@@ -43,7 +43,7 @@ function web2py_ajax_init(target) {
   web2py_ajax_fields(target);
 };
 
-jQuery(function() {   
+jQuery(function() {
    var flash = jQuery('.flash');
    flash.hide();
    if(flash.html()) flash.slideDown();
@@ -68,7 +68,7 @@ function web2py_trap_link(target) {
 		    web2py_ajax_page('get',link.attr('href'),[],target);
 		    e.preventDefault();
 		});
-	});  
+	});
 }
 function web2py_ajax_page(method,action,data,target) {
   jQuery.ajax({'type':method,'url':action,'data':data,
@@ -77,16 +77,16 @@ function web2py_ajax_page(method,action,data,target) {
       xhr.setRequestHeader('web2py-component-element',target);},
     'complete':function(xhr,text){
       var html=xhr.responseText;
-      var content=xhr.getResponseHeader('web2py-component-content'); 
+      var content=xhr.getResponseHeader('web2py-component-content');
       var command=xhr.getResponseHeader('web2py-component-command');
       var flash=xhr.getResponseHeader('web2py-component-flash');
       var t = jQuery('#'+target);
-      if(content=='prepend') t.prepend(html); 
+      if(content=='prepend') t.prepend(html);
       else if(content=='append') t.append(html);
-      else if(content!='hide') t.html(html);  
+      else if(content!='hide') t.html(html);
       web2py_trap_form(action,target);
       web2py_trap_link(target);
-      web2py_ajax_init('#'+target);      
+      web2py_ajax_init('#'+target);
       if(command) eval(command);
       if(flash) jQuery('.flash').html(flash).slideDown();
       }
@@ -104,3 +104,4 @@ function web2py_comet(url,onmessage,onopen,onclose) {
     return true; // supported
   } else return false; // not supported
 }
+

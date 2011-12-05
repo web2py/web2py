@@ -813,7 +813,7 @@ def start_schedulers(options):
             p.terminate()
             p.join()
 
-            
+
 def start(cron=True):
     """ Start server  """
 
@@ -979,6 +979,7 @@ def start(cron=True):
     except KeyboardInterrupt:
         server.stop()
     logging.shutdown()
+
 
 
 

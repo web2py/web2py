@@ -1,16 +1,16 @@
 /****
  * This page contains some general usefull functions for javascript
  *
- ****/  
-	
-	
+ ****/
+
+
 	// need to redefine this functiondue to IE problem
 	function getAttribute( elm, aName ) {
 		var aValue,taName,i;
 		try{
 			aValue = elm.getAttribute( aName );
 		}catch(exept){}
-		
+
 		if( ! aValue ){
 			for( i = 0; i < elm.attributes.length; i ++ ) {
 				taName = elm.attributes[i] .name.toLowerCase();
@@ -22,7 +22,7 @@
 		}
 		return aValue;
 	};
-	
+
 	// need to redefine this function due to IE problem
 	function setAttribute( elm, attr, val ) {
 		if(attr=="class"){
@@ -32,7 +32,7 @@
 			elm.setAttribute(attr, val);
 		}
 	};
-	
+
 	/* return a child element
 		elem: element we are searching in
 		elem_type: type of the eleemnt we are searching (DIV, A, etc...)
@@ -42,7 +42,7 @@
 		depth: depth of search (-1 or no set => unlimited)
 	*/
 	function getChildren(elem, elem_type, elem_attribute, elem_attribute_match, option, depth)
-	{           
+	{
 		if(!option)
 			var option="single";
 		if(!depth)
@@ -69,7 +69,7 @@
 							if(result.length>0){
 								results= results.concat(result);
 							}
-						}else if(result!=null){                                                                          
+						}else if(result!=null){
 							return result;
 						}
 					}
@@ -79,8 +79,8 @@
 			   return results;
 		}
 		return null;
-	};       
-	
+	};
+
 	function isChildOf(elem, parent){
 		if(elem){
 			if(elem==parent)
@@ -91,7 +91,7 @@
 		}
 		return false;
 	};
-	
+
 	function getMouseX(e){
 
 		if(e!=null && typeof(e.pageX)!="undefined"){
@@ -100,7 +100,7 @@
 			return (e!=null?e.x:event.x)+ document.documentElement.scrollLeft;
 		}
 	};
-	
+
 	function getMouseY(e){
 		if(e!=null && typeof(e.pageY)!="undefined"){
 			return e.pageY;
@@ -108,15 +108,15 @@
 			return (e!=null?e.y:event.y)+ document.documentElement.scrollTop;
 		}
 	};
-	
+
 	function calculeOffsetLeft(r){
 		return calculeOffset(r,"offsetLeft")
 	};
-	
+
 	function calculeOffsetTop(r){
 		return calculeOffset(r,"offsetTop")
 	};
-	
+
 	function calculeOffset(element,attr){
 		var offset=0;
 		while(element){
@@ -125,10 +125,10 @@
 		}
 		return offset;
 	};
-	
+
 	/** return the computed style
 	 *	@param: elem: the reference to the element
-	 *	@param: prop: the name of the css property	 
+	 *	@param: prop: the name of the css property
 	 */
 	function get_css_property(elem, prop)
 	{
@@ -146,40 +146,40 @@
 		}
 		else return null;
 	}
-	
+
 /****
- * Moving an element 
- ***/  
-	
+ * Moving an element
+ ***/
+
 	var _mCE;	// currently moving element
-	
+
 	/* allow to move an element in a window
 		e: the event
 		id: the id of the element
-		frame: the frame of the element 
+		frame: the frame of the element
 		ex of use:
-			in html:	<img id='move_area_search_replace' onmousedown='return parent.start_move_element(event,"area_search_replace", parent.frames["this_frame_id"]);' .../>  
+			in html:	<img id='move_area_search_replace' onmousedown='return parent.start_move_element(event,"area_search_replace", parent.frames["this_frame_id"]);' .../>
 		or
 			in javascript: document.getElementById("my_div").onmousedown= start_move_element
 	*/
 	function start_move_element(e, id, frame){
 		var elem_id=(e.target || e.srcElement).id;
 		if(id)
-			elem_id=id;		
+			elem_id=id;
 		if(!frame)
 			frame=window;
 		if(frame.event)
 			e=frame.event;
-			
+
 		_mCE= frame.document.getElementById(elem_id);
 		_mCE.frame=frame;
 		frame.document.onmousemove= move_element;
 		frame.document.onmouseup= end_move_element;
 		/*_mCE.onmousemove= move_element;
 		_mCE.onmouseup= end_move_element;*/
-		
+
 		//alert(_mCE.frame.document.body.offsetHeight);
-		
+
 		mouse_x= getMouseX(e);
 		mouse_y= getMouseY(e);
 		//window.status=frame+ " elem: "+elem_id+" elem: "+ _mCE + " mouse_x: "+mouse_x;
@@ -187,13 +187,13 @@
 		_mCE.start_pos_y = mouse_y - (_mCE.style.top.replace("px","") || calculeOffsetTop(_mCE));
 		return false;
 	};
-	
+
 	function end_move_element(e){
 		_mCE.frame.document.onmousemove= "";
-		_mCE.frame.document.onmouseup= "";		
+		_mCE.frame.document.onmouseup= "";
 		_mCE=null;
 	};
-	
+
 	function move_element(e){
 		var newTop,newLeft,maxLeft;
 
@@ -201,61 +201,61 @@
 			e=_mCE.frame.event;
 		newTop	= getMouseY(e) - _mCE.start_pos_y;
 		newLeft	= getMouseX(e) - _mCE.start_pos_x;
-		
+
 		maxLeft	= _mCE.frame.document.body.offsetWidth- _mCE.offsetWidth;
 		max_top	= _mCE.frame.document.body.offsetHeight- _mCE.offsetHeight;
 		newTop	= Math.min(Math.max(0, newTop), max_top);
 		newLeft	= Math.min(Math.max(0, newLeft), maxLeft);
-		
+
 		_mCE.style.top	= newTop+"px";
-		_mCE.style.left	= newLeft+"px";		
+		_mCE.style.left	= newLeft+"px";
 		return false;
 	};
-	
+
 /***
  * Managing a textarea (this part need the navigator infos from editAreaLoader
- ***/ 
-	
+ ***/
+
 	var nav= editAreaLoader.nav;
-	
+
 	// allow to get infos on the selection: array(start, end)
 	function getSelectionRange(textarea){
 		return {"start": textarea.selectionStart, "end": textarea.selectionEnd};
 	};
-	
+
 	// allow to set the selection
 	function setSelectionRange(t, start, end){
 		t.focus();
-		
+
 		start	= Math.max(0, Math.min(t.value.length, start));
 		end		= Math.max(start, Math.min(t.value.length, end));
-	
+
 		if( nav.isOpera && nav.isOpera < 9.6 ){	// Opera bug when moving selection start and selection end
-			t.selectionEnd = 1;	
-			t.selectionStart = 0;			
-			t.selectionEnd = 1;	
-			t.selectionStart = 0;		
+			t.selectionEnd = 1;
+			t.selectionStart = 0;
+			t.selectionEnd = 1;
+			t.selectionStart = 0;
 		}
 		t.selectionStart	= start;
-		t.selectionEnd		= end;		
+		t.selectionEnd		= end;
 		//textarea.setSelectionRange(start, end);
-		
+
 		if(nav.isIE)
 			set_IE_selection(t);
 	};
 
-	
+
 	// set IE position in Firefox mode (textarea.selectionStart and textarea.selectionEnd). should work as a repeated task
 	function get_IE_selection(t){
 		var d=document,div,range,stored_range,elem,scrollTop,relative_top,line_start,line_nb,range_start,range_end,tab;
 		if(t && t.focused)
-		{	
+		{
 			if(!t.ea_line_height)
 			{	// calculate the lineHeight
 				div= d.createElement("div");
 				div.style.fontFamily= get_css_property(t, "font-family");
 				div.style.fontSize= get_css_property(t, "font-size");
-				div.style.visibility= "hidden";			
+				div.style.visibility= "hidden";
 				div.innerHTML="0";
 				d.body.appendChild(div);
 				t.ea_line_height= div.offsetHeight;
@@ -276,23 +276,23 @@
 						scrollTop+= elem.scrollTop;
 						elem	= elem.parentNode;
 					}
-				
+
 				//	var scrollTop= t.scrollTop + document.body.scrollTop;
-					
+
 				//	var relative_top= range.offsetTop - calculeOffsetTop(t) + scrollTop;
 					relative_top= range.offsetTop - calculeOffsetTop(t)+ scrollTop;
 				//	alert("rangeoffset: "+ range.offsetTop +"\ncalcoffsetTop: "+ calculeOffsetTop(t) +"\nrelativeTop: "+ relative_top);
 					line_start	= Math.round((relative_top / t.ea_line_height) +1);
-					
+
 					line_nb		= Math.round(range.boundingHeight / t.ea_line_height);
-					
+
 					range_start	= stored_range.text.length - range.text.length;
-					tab	= t.value.substr(0, range_start).split("\n");			
+					tab	= t.value.substr(0, range_start).split("\n");
 					range_start	+= (line_start - tab.length)*2;		// add missing empty lines to the selection
 					t.selectionStart = range_start;
-					
+
 					range_end	= t.selectionStart + range.text.length;
-					tab	= t.value.substr(0, range_start + range.text.length).split("\n");			
+					tab	= t.value.substr(0, range_start + range.text.length).split("\n");
 					range_end	+= (line_start + line_nb - 1 - tab.length)*2;
 					t.selectionEnd = range_end;
 				}
@@ -304,19 +304,19 @@
 			setTimeout("get_IE_selection(document.getElementById('"+ t.id +"'));", 50);
 		}
 	};
-	
+
 	function IE_textarea_focus(){
 		event.srcElement.focused= true;
 	}
-	
+
 	function IE_textarea_blur(){
 		event.srcElement.focused= false;
 	}
-	
+
 	// select the text for IE (take into account the \r difference)
 	function set_IE_selection( t ){
 		var nbLineStart,nbLineStart,nbLineEnd,range;
-		if(!window.closed){ 
+		if(!window.closed){
 			nbLineStart=t.value.substr(0, t.selectionStart).split("\n").length - 1;
 			nbLineEnd=t.value.substr(0, t.selectionEnd).split("\n").length - 1;
 			try
@@ -331,6 +331,7 @@
 			catch(e){}
 		}
 	};
-	
-	
+
+
 	editAreaLoader.waiting_loading["elements_functions.js"]= "loaded";
+

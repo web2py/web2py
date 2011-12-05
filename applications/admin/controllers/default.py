@@ -271,7 +271,7 @@ def uninstall():
             else:
                 session.flash = T('no permission to uninstall "%s"', app)
                 redirect(URL('site'))
-        if app_uninstall(app, request):            
+        if app_uninstall(app, request):
             session.flash = T('application "%s" uninstalled', app)
         else:
             session.flash = T('unable to uninstall "%s"', app)
@@ -946,7 +946,7 @@ def create_file():
                 raise SyntaxError
 
             msg = T('This is the %(filename)s template',
-                    dict(filename=filename))            
+                    dict(filename=filename))
             if extension == 'html':
                 text = dedent("""
                    {{extend 'layout.html'}}
@@ -958,7 +958,7 @@ def create_file():
                     text = read_file(generic)
                 else:
                     text = ''
-                
+
         elif path[-9:] == '/modules/':
             if request.vars.plugin and not filename.startswith('plugin_%s/' % request.vars.plugin):
                 filename = 'plugin_%s/%s' % (request.vars.plugin, filename)
@@ -1103,27 +1103,27 @@ def errors():
         decorated.sort(key=operator.itemgetter(0), reverse=True)
 
         return dict(errors = [x[1] for x in decorated], app=app, method=method)
-        
+
     elif method == 'dbnew':
         errors_path = apath('%s/errors' % app, r=request)
         tk_db, tk_table = get_ticket_storage(app)
-        
+
         delete_hashes = []
         for item in request.vars:
             if item[:7] == 'delete_':
                 delete_hashes.append(item[7:])
 
         hash2error = dict()
-        
+
         for fn in tk_db(tk_table.id>0).select():
             try:
                 error = pickle.loads(fn.ticket_data)
             except AttributeError:
                 tk_db(tk_table.id == fn.id).delete()
                 tk_db.commit()
-            
+
             hash = hashlib.md5(error['traceback']).hexdigest()
-            
+
             if hash in delete_hashes:
                 tk_db(tk_table.id == fn.id).delete()
                 tk_db.commit()
@@ -1140,9 +1140,9 @@ def errors():
                                             hash=hash,ticket=fn.ticket_id)
 
         decorated = [(x['count'], x) for x in hash2error.values()]
-        
+
         decorated.sort(key=operator.itemgetter(0), reverse=True)
-        
+
         return dict(errors = [x[1] for x in decorated], app=app, method=method)
 
     elif method == 'dbold':
@@ -1153,7 +1153,7 @@ def errors():
                 tk_db.commit()
         tickets_ = tk_db(tk_table.id>0).select(tk_table.ticket_id, tk_table.created_datetime, orderby=~tk_table.created_datetime)
         tickets = [row.ticket_id for row in tickets_]
-        times = dict([(row.ticket_id, row.created_datetime) for row in tickets_]) 
+        times = dict([(row.ticket_id, row.created_datetime) for row in tickets_])
 
         return dict(app=app, tickets=tickets, method=method, times=times)
 
@@ -1323,7 +1323,7 @@ def twitter():
 def user():
     if MULTI_USER_MODE:
         if not db(db.auth_user).count():
-            auth.settings.registration_requires_approval = False            
+            auth.settings.registration_requires_approval = False
         return dict(form=auth())
     else:
         return dict(form=T("Disabled"))
@@ -1333,3 +1333,5 @@ def reload_routes():
     import gluon.rewrite
     gluon.rewrite.load()
     redirect(URL('site'))
+
+

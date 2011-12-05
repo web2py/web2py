@@ -6,7 +6,7 @@ function keyDown(e){
 	if(!e){	// if IE
 		e=event;
 	}
-	
+
 	// send the event to the plugins
 	for(var i in editArea.plugins){
 		if(typeof(editArea.plugins[i].onkeydown)=="function"){
@@ -24,9 +24,9 @@ function keyDown(e){
 		letter=EA_keys[e.keyCode];
 	else
 		letter=String.fromCharCode(e.keyCode);
-	
+
 	var low_letter= letter.toLowerCase();
-			
+
 	if(letter=="Page up" && !AltPressed(e) && !editArea.isOpera){
 		editArea.execCommand("scroll_page", {"dir": "up", "shift": ShiftPressed(e)});
 		use=true;
@@ -36,12 +36,12 @@ function keyDown(e){
 	}else if(editArea.is_editable==false){
 		// do nothing but also do nothing else (allow to navigate with page up and page down)
 		return true;
-	}else if(letter=="Tabulation" && target_id=="textarea" && !CtrlPressed(e) && !AltPressed(e)){	
+	}else if(letter=="Tabulation" && target_id=="textarea" && !CtrlPressed(e) && !AltPressed(e)){
 		if(ShiftPressed(e))
 			editArea.execCommand("invert_tab_selection");
 		else
 			editArea.execCommand("tab_selection");
-		
+
 		use=true;
 		if(editArea.isOpera || (editArea.isFirefox && editArea.isMac) )	// opera && firefox mac can't cancel tabulation events...
 			setTimeout("editArea.execCommand('focus');", 1);
@@ -56,7 +56,7 @@ function keyDown(e){
 		use=true;
 	}else if(CtrlPressed(e) && !AltPressed(e) && !ShiftPressed(e)){
 		switch(low_letter){
-			case "f":				
+			case "f":
 				editArea.execCommand("area_search");
 				use=true;
 				break;
@@ -69,7 +69,7 @@ function keyDown(e){
 				use=true;
 				break;
 			case "h":
-				editArea.execCommand("change_highlight");			
+				editArea.execCommand("change_highlight");
 				use=true;
 				break;
 			case "g":
@@ -89,18 +89,18 @@ function keyDown(e){
 				editArea.execCommand("redo");
 				break;
 			default:
-				break;			
-		}		
-	}		
-	
+				break;
+		}
+	}
+
 	// check to disable the redo possibility if the textarea content change
 	if(editArea.next.length > 0){
 		setTimeout("editArea.check_redo();", 10);
 	}
-	
+
 	setTimeout("editArea.check_file_changes();", 10);
-	
-	
+
+
 	if(use){
 		// in case of a control that sould'nt be used by IE but that is used => THROW a javascript error that will stop key action
 		if(editArea.isIE)
@@ -108,9 +108,9 @@ function keyDown(e){
 		return false;
 	}
 	//alert("Test: "+ letter + " ("+e.keyCode+") ALT: "+ AltPressed(e) + " CTRL "+ CtrlPressed(e) + " SHIFT "+ ShiftPressed(e));
-	
+
 	return true;
-	
+
 };
 
 
@@ -143,3 +143,4 @@ function ShiftPressed(e) {
 		return (e.shiftKey || (e.modifiers>3));
 	}
 };
+

@@ -51,7 +51,7 @@ function doClickSave() {
             xhr.setRequestHeader('web2py-component-location',document.location);
             xhr.setRequestHeader('web2py-component-element','doClickSave');},
 	  success: function(json,text,xhr){
-	  
+
 	        // show flash message (if any)
 	        var flash=xhr.getResponseHeader('web2py-component-flash');
             if (flash) jQuery('.flash').html(flash).slideDown();
@@ -73,13 +73,13 @@ function doClickSave() {
 			        editAreaLoader.setSelectionRange('body', json.highlight.start, json.highlight.end);
 			    } else {
 			        jQuery("input[name='saved_on']").attr('style','background-color:#99FF99');
-			        jQuery(".flash").delay(1000).fadeOut('slow'); 
+			        jQuery(".flash").delay(1000).fadeOut('slow');
 			    }
 			    // console.info(jQuery("input[name='file_hash']").val());
-			    
+
 			    var output = '<b>exposes:</b> ';
 			    for ( var i in json.functions) {
-				output += ' <a href="/' + json.application + '/' + json.controller + '/' + json.functions[i] + '">' + json.functions[i] + '</a>,'; 
+				output += ' <a href="/' + json.application + '/' + json.controller + '/' + json.functions[i] + '">' + json.functions[i] + '</a>,';
 			    }
 			    if(output!='<b>exposes:</b> ') {
 				jQuery("#exposed").html( output.substring(0, output.length-1));
@@ -89,7 +89,7 @@ function doClickSave() {
 			on_error();
 		    }
 		},
-	  error: function(json) { on_error(); } 
+	  error: function(json) { on_error(); }
 	});
 	return false;
 }
@@ -102,3 +102,4 @@ function keepalive(url) {
 	  success: function(){},
 	  error: function(x) { on_error(); } });
 }
+

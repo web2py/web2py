@@ -51,3 +51,5 @@ class MemcacheClient(Client):
         key = '%s/%s' % (self.request.application, key)
         self.delete(key)
 
+
+

@@ -268,3 +268,5 @@
 'web2py is up to date': 'web2py מותקנת בגירסתה האחרונה',
 'web2py upgraded; please restart it': 'web2py שודרגה; נא אתחל אותה',
 }
+
+

@@ -28,14 +28,14 @@
 {{try:}}
 
     <!-- ERROR SNAPSHOT -->
-    
+
     <h3>
-    {{=T('Error snapshot')}} 
+    {{=T('Error snapshot')}}
     <span class="tooltip">{{=helpicon()}} <span>{{=T('Detailed traceback description')}}</span></span>
     </h3>
-    
+
     <!-- SNAPSHOT LIST -->
-    
+
     <div id="snapshot">
     <!-- Exception details -->
       <p class="exception_object inspect">
@@ -60,7 +60,7 @@
         </div>
       </div>
     </div>
-    
+
     <!-- FRAMES -->
     <div id="frames">
     <h4>{{=T('Frames')}}</h4>
@@ -71,18 +71,18 @@
         <div class="framefile inspect controls">
           <p>
             <strong>File {{="%s in %s at line %s" % (frame['file'], frame['func'], frame['lnum'])}}</strong>
-            <a class="button tbbutton" onclick="collapse('{{="%s_code_inner" % i}}');"><span>{{=T("code")}}</span></a> 
-            <a class="button tbbutton" onclick="collapse('{{="%s_args_inner" % i}}');"><span>{{=T("arguments")}}</span></a> 
+            <a class="button tbbutton" onclick="collapse('{{="%s_code_inner" % i}}');"><span>{{=T("code")}}</span></a>
+            <a class="button tbbutton" onclick="collapse('{{="%s_args_inner" % i}}');"><span>{{=T("arguments")}}</span></a>
             <a class="button tbbutton" onclick="collapse('{{="%s_vars_inner" % i}}');"><span>{{=T("variables")}}</span></a>
-          </p> 
-          <div id="{{="%s_args_inner" % i}}" class="{{=is_hidden}}"> 
+          </p>
+          <div id="{{="%s_args_inner" % i}}" class="{{=is_hidden}}">
             <h5>Function argument list</h5>
             <p>{{=frame['call']}}</p>
           </div>
           <div id="{{="%s_code_inner" % i}}" class="{{=is_hidden}}">
             <h5>Code listing</h5>
             {{if frame['lines']:}}
-            <pre>{{=CODE('\n'.join([x[1] for x in sorted(frame['lines'].items(),key=lambda x: x[0])]), 
+            <pre>{{=CODE('\n'.join([x[1] for x in sorted(frame['lines'].items(),key=lambda x: x[0])]),
                     language='python', link=None, counter=min(frame['lines'].keys()), highlight_line=frame['lnum'])}}</pre>
             {{pass}}
           </div>
@@ -123,10 +123,11 @@
     <!-- this should not happen, just in case... (cannot output normal hmtl as we don't know current open tags) -->
     {{import traceback;tb=traceback.format_exc().replace("\n","\\n") }}
     <script language='javascript'>alert("Exception during snapshot rendering: {{=tb}} ");</script>
-{{pass}}    
+{{pass}}
 {{pass}}
 
 <div class="errorsource">
   <h3>In file: {{=layer}}</h3>
   {{=CODE(code.replace('\r',''),language='python',link='/examples/global/vars/')}}
 </div>
+

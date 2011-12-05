@@ -165,3 +165,4 @@
 'unable to parse csv file': "incapable d'analyser le fichier cvs",
 'value already in database or empty': 'valeur déjà dans la base ou vide',
 }
+

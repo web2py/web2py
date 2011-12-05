@@ -41,12 +41,12 @@ tr.error_ticket:hover {
 
 <div class="errorform">
   <form name="myform" method="post">
-    <input name="CheckAll" value="{{=T('check all')}}" 
+    <input name="CheckAll" value="{{=T('check all')}}"
      onclick="check()" type="button">
-    <input name="CheckAll" value="{{=T('uncheck all')}}" 
+    <input name="CheckAll" value="{{=T('uncheck all')}}"
      onclick="uncheck()" type="button">
     <input value="{{=T('delete all checked')}}" type="submit"><br><br>
-    
+
     {{ if 'new' in method: }}
     {{base_url = 'db' in method and 'ticketdb' or 'ticket' }}
     <h3>{{=T('Click row to expand traceback')}}</h3>
@@ -131,3 +131,4 @@ tr.error_ticket:hover {
     {{ pass }}
   </form>
 </div>
+

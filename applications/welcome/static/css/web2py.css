@@ -50,22 +50,22 @@ html, body {
 .footer, .push {
   height: 6em;
   padding: 1em 0;
-  clear: both;  
+  clear: both;
 }
 
 .footer-content {position: relative; bottom: -4em; width: 100%;}
 
-.auth_navbar {  
-    white-space: nowrap;  
+.auth_navbar {
+    white-space: nowrap;
 }
 
 /* Sticky footer end */
 
 body {
-    background-color: #FFFFFF;      
+    background-color: #FFFFFF;
 }
 .footer {
-    background-color: #ECECEC;      
+    background-color: #ECECEC;
 }
 .header {
 	// background: <fill here for header image>;
@@ -93,7 +93,7 @@ td.w2p_fl, td.w2p_fc { padding-top: 4px; }
 
 a, a:visited, a:hover { color:#0069D6}
 
-/*********** web2py specific ***********/      
+/*********** web2py specific ***********/
 div.flash {
     font-weight: bold;
     display: none;
@@ -167,7 +167,7 @@ div.error {
 .copyright {float: left;}
 
 /* #MEDIA QUERIES SECTION */
-    
+
     /* All Mobile Sizes (devices and browser) */
     @media only screen and (max-width: 767px) {
 
@@ -208,7 +208,7 @@ div.error {
     }
 
 .web2py_grid thead th {
-    background-color:#EAEAEA;	
+    background-color:#EAEAEA;
     padding: 10px 5px 10px 5px;
     line-height: 13.5px;
     vertical-align: middle;
@@ -261,7 +261,7 @@ div.error {
 .web2py_console input[type=submit],
 .web2py_console input[type=button],
 .web2py_console button {
-    line-height: 20px; 
+    line-height: 20px;
     margin-right: 5px; display: inline-block;
     padding: 3px 5px 3px 5px;
     font-family: 'lucida grande', tahoma, verdana, arial, sans-serif;
@@ -346,3 +346,4 @@ color: #222;
 	border-radius:2px;
 }
 .ie9 #query_panel {padding-bottom:2px;}
+

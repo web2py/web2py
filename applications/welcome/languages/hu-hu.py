@@ -91,3 +91,4 @@
 'table': 't\xc3\xa1bla',
 'unable to parse csv file': 'nem lehet a csv f\xc3\xa1jlt beolvasni',
 }
+

@@ -60,3 +60,4 @@ jQuery(document).ready(function () {
 // todo: some key - toggle off
 // todo: drag scrollbar up - toggle off
 // todo: drag scrollbar to bottom - toggle off
+

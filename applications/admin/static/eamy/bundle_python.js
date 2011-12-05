@@ -25,7 +25,7 @@
  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
  OTHER DEALINGS IN THE SOFTWARE.
-  
+
  *
  *
  * This file is auto-generated from original Fry Framework and Amy Editor sources..
@@ -294,3 +294,4 @@ snippet = {tab_activation: 're', code: 'redirect(\'$0\')'};
 eamy.snippets.push(snippet);
 snippet = {tab_activation: 'rej', code: 'response.json=\'$0\''};
 eamy.snippets.push(snippet);
+

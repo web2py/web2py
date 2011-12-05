@@ -24,7 +24,7 @@ from cStringIO import StringIO
 import random
 import sys
 try:
-    import gluon.contrib.simplejson as json     # try web2py json serializer 
+    import gluon.contrib.simplejson as json     # try web2py json serializer
 except ImportError:
     try:
         import json                             # try stdlib (py2.6)
@@ -40,7 +40,7 @@ class JSONRPCError(RuntimeError):
     def __unicode__(self):
         return u"%s: %s" % (self.code, self.message)
     def __str__(self):
-        return self.__unicode__().encode("ascii","ignore")        
+        return self.__unicode__().encode("ascii","ignore")
 
 
 class JSONDummyParser:
@@ -55,11 +55,11 @@ class JSONDummyParser:
 
 class JSONTransportMixin:
     "json wrapper for xmlrpclib transport interfase"
-    
+
     def send_content(self, connection, request_body):
         connection.putheader("Content-Type", "application/json")
         connection.putheader("Content-Length", str(len(request_body)))
-        connection.endheaders()           
+        connection.endheaders()
         if request_body:
             connection.send(request_body)
         # todo: add gzip compression
@@ -76,7 +76,7 @@ class JSONTransport(JSONTransportMixin, Transport):
 class JSONSafeTransport(JSONTransportMixin, SafeTransport):
     pass
 
-    
+
 class ServerProxy(object):
     "JSON RPC Simple Client Service Proxy"
 
@@ -99,12 +99,12 @@ class ServerProxy(object):
                 transport = JSONTransport()
         self.__transport = transport
         self.__encoding = encoding
-        self.__verbose = verbose                
+        self.__verbose = verbose
 
     def __getattr__(self, attr):
         "pseudo method that can be called"
         return lambda *args: self.call(attr, *args)
-    
+
     def call(self, method, *args):
         "JSON RPC communication (method invocation)"
 
@@ -120,15 +120,15 @@ class ServerProxy(object):
             request,
             verbose=self.__verbose
             )
-      
+
         # store plain request and response for further debugging
         self.json_request = request
         self.json_response = response
 
-        # parse json data coming from service 
+        # parse json data coming from service
         # {'version': '1.1', 'id': id, 'result': result, 'error': None}
         response = json.loads(response)
-        
+
         if response['id'] != request_id:
             raise JSONRPCError(0, "JSON Request ID != Response ID")
 
@@ -144,4 +144,6 @@ if __name__ == "__main__":
     location = "http://www.web2py.com.ar/webservices/sample/call/jsonrpc"
     client = ServerProxy(location, verbose='--verbose' in sys.argv,)
     print client.add(1, 2)
+
+
 

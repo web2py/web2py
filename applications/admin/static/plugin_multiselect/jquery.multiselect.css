@@ -23,3 +23,4 @@
 
 /* shadow effect */
 .ui-multiselect-shadow { box-shadow:0 0 10px #777; -moz-box-shadow:0 0 10px #777; -webkit-box-shadow:0 0 10px #777; -ms-filter: "progid:DXImageTransform.Microsoft.Glow(color=#666666,strength=3) progid:DXImageTransform.Microsoft.Shadow(color=#777777,direction=135,strength=3)"; filter: progid:DXImageTransform.Microsoft.Glow(color=#666666,strength=3) progid:DXImageTransform.Microsoft.Shadow(color=#777777,direction=135,strength=3); }
+

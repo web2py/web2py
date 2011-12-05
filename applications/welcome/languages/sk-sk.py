@@ -109,3 +109,4 @@
 'table': 'tabuľka',
 'unable to parse csv file': 'nedá sa načítať csv súbor',
 }
+

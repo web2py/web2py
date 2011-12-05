@@ -1,6 +1,7 @@
 {{extend 'layout.html'}}
 <h1>Purchase form</h1>
   {{=form}}
-  [ {{=A('delete purchases',_href=URL('delete_purchased'))}} ] 
+  [ {{=A('delete purchases',_href=URL('delete_purchased'))}} ]
   <h2>Current purchases (SQL JOIN!)</h2>
 <p>{{=records}}</p>
+

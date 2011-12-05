@@ -127,7 +127,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
     else:
         if not isinstance(args,(list,tuple)):
             args = [args]
-        c = c or request.controller        
+        c = c or request.controller
         other_request = Storage()
         for key, value in request.items():
             other_request[key] = value
@@ -160,9 +160,9 @@ def LOAD(c=None, f='index', args=None, vars=None,
             copy.copy(current.response.generic_patterns)
         other_environment['request'] = other_request
         other_environment['response'] = other_response
-        
+
         ## some magic here because current are thread-locals
-        
+
         original_request, current.request = current.request, other_request
         original_response, current.response = current.response, other_response
         page = run_controller_in(c, f, other_environment)
@@ -653,6 +653,7 @@ def test():
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

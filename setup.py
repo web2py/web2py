@@ -66,15 +66,16 @@ def start():
           package_data = {'gluon':['env.tar']},
           scripts = ['w2p_apps','w2p_run','w2p_clone'],
           )
-    
+
 if __name__ == '__main__':
     #print "web2py does not require installation and"
     #print "you should just start it with:"
-    #print 
+    #print
     #print "$ python web2py.py"
-    #print 
+    #print
     #print "are you sure you want to install it anyway (y/n)?"
     #s = raw_input('>')
     #if s.lower()[:1]=='y':
     start()
-        
+
+

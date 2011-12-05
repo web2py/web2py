@@ -46,7 +46,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 <!-- CONTROLLERS -->
 
 <h3 id="controllers" onclick="collapse('controllers_inner');" class="component">
-  {{=T("Controllers")}} 
+  {{=T("Controllers")}}
   <span class="tooltip">{{=helpicon()}} <span>{{=T("The application logic, each URL path is mapped in one exposed function in the controller")}}</span></span>
 </h3>
 <div id="controllers_inner" class="component_contents">
@@ -152,7 +152,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
       items=file.split('/')
       file_path=items[:-1]
       filename=items[-1]
-      while path!=file_path:          
+      while path!=file_path:
           if len(file_path)>=len(path) and all([v==file_path[k] for k,v in enumerate(path)]):
               path.append(file_path[len(path)])
               thispath='static__'+'__'.join(path)
@@ -248,7 +248,7 @@ jQuery(document).ready(function(){
           jQuery('.component_contents li, .formfield, .comptools').hide();
 		  files=data['files'];
           for(var i=0; i<files.length; i++)
-            jQuery('li#'+files[i].replace(/\//g,'__').replace('.','__')).slideDown();   
+            jQuery('li#'+files[i].replace(/\//g,'__').replace('.','__')).slideDown();
           jQuery('.flash').html('{{=T("Searching:")}} '+files.length+' {{=T("files")}}').slideDown();
 		  });
       } else if(code==13) {
@@ -258,3 +258,4 @@ jQuery(document).ready(function(){
    });
 });
 </script>
+

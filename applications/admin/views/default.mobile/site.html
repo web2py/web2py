@@ -5,10 +5,10 @@
 <h2>{{=T("Installed applications")}}</h2>
 
 <ul data-role="listview">
-  {{for a in apps:}} 
+  {{for a in apps:}}
   <li>
     {{if a==request.application:}}
-    <h3>{{=a}} ({{=T('currently running')}})</h3>  
+    <h3>{{=a}} ({{=T('currently running')}})</h3>
     {{else:}}
     <h3>{{=a}}</h3>
     {{if MULTI_USER_MODE and db.app(name=a):}}<p>created by {{="%(first_name)s %(last_name)s" % db.auth_user[db.app(name=a).owner]}}</p>{{pass}}
@@ -18,7 +18,7 @@
       {{=LI(A(T('Goto'),_rel="external",_href=URL(a,'default','index')))}}
       {{if not os.path.exists('applications/%s/compiled' % a):}}
       {{=LI(A(T('Edit'),_href=URL('design',args=a)))}}
-      {{else:}}      
+      {{else:}}
       {{=LI(A(T('appadmin'),_rel="external",_href=URL(a,'appadmin','index')))}}
       {{pass}}
       {{=LI(A(T('About'),_href=URL('about',args=a)))}}
@@ -41,3 +41,4 @@
   </li>
   {{pass}}
 </ul>
+

@@ -349,7 +349,7 @@ def ccache():
         seconds = math.floor(seconds)
 
         return (hours, minutes, seconds)
-        
+
     for key, value in cache.ram.storage.items():
         if isinstance(value, dict):
             ram['hits'] = value['hit_total'] - value['misses']
@@ -388,7 +388,7 @@ def ccache():
                 if value[0] < disk['oldest']:
                     disk['oldest'] = value[0]
                 disk['keys'].append((key, GetInHMS(time.time() - value[0])))
-            
+
     finally:
         portalocker.unlock(locker)
         locker.close()
@@ -417,14 +417,16 @@ def ccache():
     def key_table(keys):
         return TABLE(
             TR(TD(B('Key')), TD(B('Time in Cache (h:m:s)'))),
-            *[TR(TD(k[0]), TD('%02d:%02d:%02d' % k[1])) for k in keys], 
+            *[TR(TD(k[0]), TD('%02d:%02d:%02d' % k[1])) for k in keys],
             **dict(_class='cache-keys',
                    _style="border-collapse: separate; border-spacing: .5em;"))
-    
+
     ram['keys'] = key_table(ram['keys'])
     disk['keys'] = key_table(disk['keys'])
     total['keys'] = key_table(total['keys'])
-    
+
     return dict(form=form, total=total,
                 ram=ram, disk=disk, object_stats=hp != False)
+
+
 

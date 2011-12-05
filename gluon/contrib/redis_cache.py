@@ -21,15 +21,15 @@ def RedisCache(*args, **vars):
     from gluon.contrib.redis import RedisCache
     cache.redis = RedisCache('localhost:6379',db=None, debug=True)
 
-    cache.redis.stats() 
-    
+    cache.redis.stats()
+
     return a dictionary with statistics of Redis server
     with one additional key ('w2p_keys') showing all keys currently set
     from web2py with their TTL
     if debug=True additional tracking is activate and another key is added
-    ('w2p_stats') showing total_hits and misses    
+    ('w2p_stats') showing total_hits and misses
     """
-    
+
     locker.acquire()
     try:
         if not hasattr(RedisCache, 'redis_instance'):
@@ -52,7 +52,7 @@ class RedisClient(object):
             app = request.application
         else:
             app = ''
-        
+
         if not app in self.meta_storage:
             self.storage = self.meta_storage[app] = {
                 CacheAbstract.cache_stats_name: {
@@ -72,7 +72,7 @@ class RedisClient(object):
         obj = self.r_server.get(key)
         if obj:
             if self.debug:
-                self.r_server.incr('web2py_cache_statistics:hit_total') 
+                self.r_server.incr('web2py_cache_statistics:hit_total')
             value = pickle.loads(obj)
         elif f is None:
             if obj: self.r_server.delete(key)
@@ -94,7 +94,7 @@ class RedisClient(object):
 
     def clear(self, regex):
         """
-        Auxiliary function called by `clear` to search and 
+        Auxiliary function called by `clear` to search and
         clear cache entries
         """
         r = re.compile(regex)
@@ -120,7 +120,9 @@ class RedisClient(object):
             statscollector['w2p_keys']["%s_expire_in_sec" % (a)] = \
                 self.r_server.ttl(a)
         return statscollector
-        
+
     def __keyFormat__(self, key):
-        return 'w2p:%s:%s' % (self.request.application, 
+        return 'w2p:%s:%s' % (self.request.application,
                               key.replace(' ', '_'))
+
+

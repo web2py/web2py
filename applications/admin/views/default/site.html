@@ -7,13 +7,13 @@
   <div class="applist_inner">
     <h2>{{=T("Installed applications")}}</h2>
     <ul>
-      {{for a in apps:}} 
+      {{for a in apps:}}
       <li class="application"> <!-- onmouseover="jQuery(this).children('p').show()" onmouseout="jQuery(this).children('p').hide()"-->
         {{if a==request.application:}}
-        <h3 class="currentapp">{{=a}} ({{=T('currently running')}})</h3>  
+        <h3 class="currentapp">{{=a}} ({{=T('currently running')}})</h3>
         <p class="controls">
         {{else:}}
-        <h3 class="editableapp">{{=A(a,_href=URL(a,'default','index'))}}</h3> 
+        <h3 class="editableapp">{{=A(a,_href=URL(a,'default','index'))}}</h3>
 	{{if MULTI_USER_MODE and db.app(name=a):}}(created by {{="%(first_name)s %(last_name)s" % db.auth_user[db.app(name=a).owner]}}){{pass}}
         <p class="controls">
         {{if not os.path.exists('applications/%s/compiled' % a):}}
@@ -58,7 +58,7 @@
     <!-- VERSION -->
     {{if is_manager():}}
     <div class="box">
-      <h3>{{="Version %s.%s.%s (%s) %s" % myversion}}</h3>      
+      <h3>{{="Version %s.%s.%s (%s) %s" % myversion}}</h3>
       {{if session.check_version:}}
       <p id="check_version">
         {{=T('Checking for upgrades...')}}
@@ -85,8 +85,8 @@
       <h3>{{=T("New simple application")}}</h3>
       <form action="" enctype="multipart/form-data" method="post">
         <div class="formfield">
-          {{=LABEL(T("Application name:"), _for="scaffold_filename")}} 
-          <input name="filename" type="text" id="scaffold_filename" /> 
+          {{=LABEL(T("Application name:"), _for="scaffold_filename")}}
+          <input name="filename" type="text" id="scaffold_filename" />
           <button type="submit" class="button">{{=T('Create')}}</button>
         </div>
         <div class="hidden"></div>
@@ -111,7 +111,7 @@
 		{{=LABEL(T("Upload a package:"), _for='upload_file')}}
 	      </td>
 	      <td>
-		<input id="file" name="file" type="file" id="upload_file" /> 
+		<input id="file" name="file" type="file" id="upload_file" />
 		<b>OR</b>
 	      </td>
             </tr>
@@ -126,7 +126,7 @@
 	    <tr>
 	      <td></td>
               <td>
-		<input type="checkbox" name="overwrite_check" id="upload_overwrite" /> 
+		<input type="checkbox" name="overwrite_check" id="upload_overwrite" />
 		{{=LABEL(T("Overwrite installed app"), _for='upload_overwrite')}}
 	      </td>
 	    </tr>
@@ -145,7 +145,7 @@
       <h3>{{=T("Deploy on Google App Engine")}}</h3>
       <p>{{=button(URL('gae','deploy'), T('Deploy'))}}</p>
     </div><br/>
-    {{if TWITTER_HASH:}}	
+    {{if TWITTER_HASH:}}
     <div class="box">
       <h3>{{=T("%s Recent Tweets"%TWITTER_HASH)}}</h3>
       <div id="tweets">{{=T('loading...')}}</div>
@@ -156,3 +156,4 @@
     {{pass}}
   </div>
 </div>
+

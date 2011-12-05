@@ -69,3 +69,4 @@ if SOFTCRON:
 # uncomment one of the two rows below depending on the SCGIWSGI server installed
 #scgi.serve_application(application, '', 4000).run()
 SCGIServer(application, port=4000).enable_sighandler().run()
+

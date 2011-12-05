@@ -26,7 +26,7 @@ _cron_stopping = False
 def absolute_path_link(path):
     """
     Return an absolute path for the destination of a symlink
-    
+
     """
     if os.path.islink(path):
         link = os.readlink(path)
@@ -263,7 +263,7 @@ def crondance(applications_parent, ctype='soft', startup=False):
         if _cron_stopping:
             break;
         apath = os.path.join(apppath,app)
-        
+
         # if app is a symbolic link to other app, skip it
         full_apath_link = absolute_path_link(apath)
         if full_apath_link in full_apath_links:
@@ -333,6 +333,7 @@ def crondance(applications_parent, ctype='soft', startup=False):
                     'WEB2PY CRON: Execution error for %s: %s' \
                         % (task.get('cmd'), e))
     token.release()
+
 
 
 

@@ -102,3 +102,4 @@
 'table': 'tabela',
 'unable to parse csv file': 'nie mo\xc5\xbcna sparsowa\xc4\x87 pliku csv',
 }
+

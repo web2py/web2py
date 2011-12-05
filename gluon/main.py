@@ -788,7 +788,7 @@ class HttpServer(object):
             sock_list.extend([ssl_private_key, ssl_certificate])
             if ssl_ca_certificate:
                 sock_list.append(ssl_ca_certificate)
-            
+
             logger.info('SSL is ON')
         app_info = {'wsgi_app': appfactory(wsgibase,
                                            log_filename,
@@ -827,6 +827,7 @@ class HttpServer(object):
             os.unlink(self.pid_filename)
         except:
             pass
+
 
 
 

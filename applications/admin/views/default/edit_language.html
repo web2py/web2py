@@ -4,7 +4,7 @@ function delkey(id) {
   jQuery('#'+id).hide();
   jQuery('#'+id+' INPUT').val(String.fromCharCode(127));
   jQuery('#'+id+' TEXTAREA').val(String.fromCharCode(127));
-  return false; 
+  return false;
 }
 </script>
 
@@ -15,4 +15,5 @@ function delkey(id) {
 <div class="languageform">
   {{=form}}
 </div>
+
 

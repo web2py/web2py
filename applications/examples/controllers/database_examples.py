@@ -1,7 +1,7 @@
 from gluon.fileutils import read_file
 
-response.menu = [['Register Person', False, URL('register_person')], 
-                 ['Register Dog', False, URL('register_dog')], 
+response.menu = [['Register Person', False, URL('register_person')],
+                 ['Register Dog', False, URL('register_dog')],
                  ['Register Product', False, URL('register_product')],
                  ['Buy product', False, URL('buy')]]
 
@@ -62,7 +62,7 @@ def buy():
             (db.purchase.product_id==form.vars.product_id)).select().first()
 
         if purchase:
-            # if list contains a record, update that record        
+            # if list contains a record, update that record
             purchase.update_record(
                 quantity = purchase.quantity+form.vars.quantity)
         else:
@@ -87,3 +87,4 @@ def delete_purchased():
 def download():
     """ used to download uploaded files """
     return response.download(request,db)
+

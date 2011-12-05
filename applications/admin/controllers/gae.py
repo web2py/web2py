@@ -7,7 +7,7 @@ try:
     import signal
     import os
     import shutil
-    from gluon.fileutils import read_file, write_file    
+    from gluon.fileutils import read_file, write_file
 except:
     session.flash='sorry, only on Unix systems'
     redirect(URL(request.application,'default','site'))
@@ -53,7 +53,7 @@ def deploy():
         yaml = apath('../app.yaml', r=request)
         if not os.path.exists(yaml):
             example = apath('../app.example.yaml', r=request)
-            shutil.copyfile(example,yaml)            
+            shutil.copyfile(example,yaml)
         data = read_file(yaml)
         data = re.sub('application:.*','application: %s' % form.vars.google_application_id,data)
         data = regex.sub('(applications/(%s)/.*)|' % '|'.join(ignore_apps),data)
@@ -85,3 +85,5 @@ def callback():
     except:
         errors=''
     return (output+errors).replace('\n','<br/>')
+
+

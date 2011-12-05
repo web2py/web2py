@@ -11,7 +11,7 @@
 	background: right center no-repeat;
 }
 
-.multiSelect.active, 
+.multiSelect.active,
 .multiSelect.focus {
 	border: inset 1px #000;
 }

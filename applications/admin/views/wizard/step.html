@@ -14,7 +14,7 @@
     <p><strong>App Name:</strong> {{=session.app['name']}}</p>
   </div>
   <div class="box">
-    <h3>Current settings</h3>      
+    <h3>Current settings</h3>
     <p>{{=button(URL('step1'), T('Edit'))}}</p>
     <ul id="current_settings">
     	{{for key,value in session.app['params']:}}
@@ -50,7 +50,7 @@
 <div id="wizard_form" class="fl20 controls">
 
   <!-- FORM -->
-  
+
   {{if 'step' in request.function:}}
   <h3>{{=T('Step')}} {{=step}}</h3>
   {{if request.function!='step1':}}
@@ -77,7 +77,7 @@ jQuery(document).ready(function(){
       });
 });
   </script>
-  
+
   <!-- INSTRUCTIONS -->
   <div class="box">
     <h4>Instructions</h4>
@@ -89,7 +89,7 @@ jQuery(document).ready(function(){
       </ul>
       {{elif request.function=='step1':}}
       <ul>
-        <li>This Wizard will help you build a new web2py app.</li>	
+        <li>This Wizard will help you build a new web2py app.</li>
       	<li>You can create an app with a name that already exists.</li>
       	<li>If you do not have an email server set email server to "logging".</li>
       	<li>If you want to use Janrain Engage for login: 1) Sign up for a <a href="http://www.janrain.com/products/engage">Janrain Engage</a> account; 2) Register you hostname, domain, and obtain an api key; 3) Set Login Config above to "domain:api_key".</li>
@@ -102,7 +102,7 @@ jQuery(document).ready(function(){
       	<li>Press enter to create a new input row.</li>
       	<li>Empty rows are ignored.</li>
       	<li>Other tables for role based access control will be created automatically, and do not need to be listed.</li>
-        <li>You will be able to add fields later.</li>	
+        <li>You will be able to add fields later.</li>
       </ul>
       {{elif request.function=='step3':}}
       <ul>
@@ -115,7 +115,7 @@ jQuery(document).ready(function(){
         <li>string, integer and reference fields can be "multiple", i.e. multiple values will be allowed</li>
       	<li>For the "auth_user" table do not add attributes to the default fields (username, first_name, last_name, password and email). They are handled automatically.</li>
         <li>Some fields will be added automatically upon creation and handled automatically: "created_by", "created_on", "modified_by", "modified_on", "active" (only active fields can be selected).</li>
-        <li>For every table "table" another table "table_archive" is created and it contains the previous versions of each record. This is only accessible via appadmin or programmatically.</li> 
+        <li>For every table "table" another table "table_archive" is created and it contains the previous versions of each record. This is only accessible via appadmin or programmatically.</li>
       </ul>
       {{elif request.function=='step4':}}
       <ul>
@@ -137,4 +137,5 @@ jQuery(document).ready(function(){
     </div>
   </div>
 </div>
+
 

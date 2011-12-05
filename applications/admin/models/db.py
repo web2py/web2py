@@ -9,7 +9,7 @@ if MULTI_USER_MODE:
     crud = Crud(globals(),db)                      # for CRUD helpers using auth
     service = Service(globals())                   # for json, xml, jsonrpc, xmlrpc, amfrpc
     plugins = PluginManager()
-    
+
     mail.settings.server = 'logging' or 'smtp.gmail.com:587'  # your SMTP server
     mail.settings.sender = 'you@gmail.com'         # your email
     mail.settings.login = 'username:password'      # your credentials or None
@@ -38,3 +38,5 @@ def is_manager():
         return True
     else:
         return False
+
+

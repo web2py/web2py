@@ -39,7 +39,7 @@ except ImportError:
     except:
         import contrib.simplejson as json_parser    # fallback to pure-Python module
 
-__all__ = ['Mail', 'Auth', 'Recaptcha', 'Crud', 'Service', 
+__all__ = ['Mail', 'Auth', 'Recaptcha', 'Crud', 'Service',
            'PluginManager', 'fetch', 'geocode', 'prettydate']
 
 ### mind there are two loggers here (logger and crud.settings.logger)!
@@ -834,7 +834,7 @@ class Auth(object):
 
     def here(self):
         return URL(args=current.request.args,vars=current.request.vars)
- 
+
     def __init__(self, environment=None, db=None, mailer=True,
                  hmac_key=None, controller='default', cas_provider=None):
         """
@@ -1443,7 +1443,7 @@ class Auth(object):
             If the user doesn't yet exist, then they are created.
         """
         table_user = self.settings.table_user
-        user = None        
+        user = None
         checks = []
         # make a guess about who this user is
         for fieldname in ['registration_id','username','email']:
@@ -1540,7 +1540,7 @@ class Auth(object):
             del session._cas_service
             if request.vars.has_key('warn'):
                 response.headers['refresh'] = "5;URL=%s"%service+"?ticket="+ticket
-                return A("Continue to %s"%service, 
+                return A("Continue to %s"%service,
                     _href=service+"?ticket="+ticket)
             else:
                 redirect(service+"?ticket="+ticket)
@@ -1690,7 +1690,7 @@ class Auth(object):
             captcha = self.settings.login_captcha or \
                 (self.settings.login_captcha!=False and self.settings.captcha)
             if captcha:
-                addrow(form, captcha.label, captcha, captcha.comment, 
+                addrow(form, captcha.label, captcha, captcha.comment,
                        self.settings.formstyle,'captcha__row')
             accepted_form = False
 
@@ -1764,7 +1764,7 @@ class Auth(object):
                 cas_user[passfield] = None
                 user = self.get_or_create_user(table_user._filter_fields(cas_user))
             elif hasattr(cas,'login_form'):
-                return cas.login_form()            
+                return cas.login_form()
             else:
                 # we need to pass through login again before going on
                 next = self.url('user',args='login')
@@ -1861,8 +1861,8 @@ class Auth(object):
         if log is DEFAULT:
             log = self.messages.register_log
 
-        passfield = self.settings.password_field        
-        formstyle = self.settings.formstyle        
+        passfield = self.settings.password_field
+        formstyle = self.settings.formstyle
         form = SQLFORM(table_user,
                        fields = self.settings.register_fields,
                        hidden = dict(_next=next),
@@ -2501,7 +2501,7 @@ class Auth(object):
 
             def f(*a, **b):
 
-                basic_allowed,basic_accepted,user = self.basic() 
+                basic_allowed,basic_accepted,user = self.basic()
                 user = user or self.user
                 if requires_login:
                     if not user:
@@ -2517,9 +2517,9 @@ class Auth(object):
                                 self.settings.on_failed_authentication,
                                 self.settings.login_url+\
                                     '?_next='+urllib.quote(next))
-                
+
                 #Check condition variable.
-                #Since condition could be callable, following cases could occur: 
+                #Since condition could be callable, following cases could occur:
                 # 1. condition == True => ok
                 # 2. condition == False => failed
                 # 3. condition is NOT callable but it NOT None and NOT False and NOT 0 => failed
@@ -2796,20 +2796,20 @@ class Auth(object):
         If you have a table (db.mytable) that needs full revision history you can just do:
 
             form=crud.update(db.mytable,myrecord,onaccept=auth.archive)
-            
+
         or
 
             form=SQLFORM(db.mytable,myrecord).process(onaccept=auth.archive)
 
-        crud.archive will define a new table "mytable_archive" and store 
-        a copy of the current record (if archive_current=True) 
-        or a copy of the previous record (if archive_current=False) 
+        crud.archive will define a new table "mytable_archive" and store
+        a copy of the current record (if archive_current=True)
+        or a copy of the previous record (if archive_current=False)
         in the newly created table including a reference
         to the current record.
 
         fields allows to specify extra fields that need to be archived.
 
-        If you want to access such table you need to define it yourself 
+        If you want to access such table you need to define it yourself
         in a model:
 
             db.define_table('mytable_archive',
@@ -4109,3 +4109,4 @@ class PluginManager(object):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+

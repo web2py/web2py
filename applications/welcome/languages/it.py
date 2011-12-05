@@ -105,3 +105,4 @@
 'table': 'tabella',
 'unable to parse csv file': 'non riesco a decodificare questo file CSV',
 }
+

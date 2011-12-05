@@ -10,7 +10,7 @@ Aim is
 Taken from http://pypi.python.org/pypi/httpagentparser (MIT license)
 Modified my Ross Peoples for web2py to better support iPhone and iPad.
 Modified by Angelo Compagnucci <angelo.compagnucci@gmail.com> to better support a wide ringe of mobile devices.
-Now it supports: tablet device (is_tablet), BlackBerry, BlackBerry PlayBook, Android Tablets, Windows Mobile, 
+Now it supports: tablet device (is_tablet), BlackBerry, BlackBerry PlayBook, Android Tablets, Windows Mobile,
 Symbian.
 """
 import sys
@@ -81,11 +81,11 @@ class DetectorBase(object):
                 result['is_mobile'] = is_mobile
             if is_tablet:
                 result['is_tablet'] = is_tablet
-                
+
             version = self.getVersion(agent)
             if version:
                 result[self.info_type]['version'] = version
-            
+
             return True
         return False
 
@@ -222,13 +222,13 @@ class BlackBerry(OS):
     look_for = ['BlackBerry']
     prefs = dict( flavor=['PlayBook'])
     is_mobile = True
-    
+
     # Manual check for tablet
     def checkWords(self, agent):
         if 'BlackBerry' in agent or 'PlayBook' in agent:
             return True
         return False
-        
+
     def getVersion(self, agent):
         pass
 
@@ -236,14 +236,14 @@ class PlayBook(Flavor):
     look_for = ['PlayBook']
     is_mobile=True
     is_tablet=True
-    
+
     def getVersion(self, agent):
         return agent.partition('Tablet OS')[2].partition(';')[0].strip()
 
 class Macintosh(OS):
     look_for = ['Macintosh']
     prefs = dict(dist=None, flavor=['MacOS'])
-    
+
     def getVersion(self, agent):
         pass
 
@@ -269,7 +269,7 @@ class Windows(OS):
 
     def getVersion(self, agent):
         v = agent.partition('NT')
-        return v[1]+' '+v[2].replace(')',';').partition(';')[0].strip() 
+        return v[1]+' '+v[2].replace(')',';').partition(';')[0].strip()
 
 class WindowsMobile(Dist):
     name = 'Phone'
@@ -320,7 +320,7 @@ class SymbianOS(OS):
 class Series(Flavor):
     look_for = ['SymbianOS', 'Series']
     version_splitters = ['/', ';']
-    
+
     def getVersion(self, agent):
         return agent.partition('Series')[2].partition(' ')[0].replace('/',' ')
 
@@ -330,8 +330,8 @@ class BrowserNG(Browser):
 
 class iPhone(Dist):
     look_for = ['iPhone']
-    is_mobile = True 
-    prefs = dict(browser=['SafariMobile']) 
+    is_mobile = True
+    prefs = dict(browser=['SafariMobile'])
 
     def getVersion(self, agent):
         version_end_chars = ['like', ';', ')']
@@ -377,7 +377,7 @@ def detect(agent):
                     prefs = detector.prefs
                     break
         except Exception, ex:
-            result['exception'] = ex 
+            result['exception'] = ex
     return result
 
 
@@ -415,8 +415,8 @@ if __name__ == '__main__':
     import unittest
 
     data = (
-            
-            
+
+
         ('Mozilla/5.0 (SymbianOS/9.2; U; Series60/3.1 Nokia6120c/3.83; Profile/MIDP-2.0 Configuration/CLDC-1.1) AppleWebKit/413 (KHTML, like Gecko) Safari/413',
          ('Series SymbianOS 60 3.1', 'Safari', True),
             {'is_mobile': True, 'is_tablet': False, 'flavor': {'name': 'Series', 'version': '60 3.1'}, 'os': {'name': 'SymbianOS',  'version': '9.2'}, 'browser': {'name': 'Safari'}},),
@@ -503,16 +503,18 @@ if __name__ == '__main__':
     unittest.main()
 
 
-class mobilize(object): 
+class mobilize(object):
 
-    def __init__(self, func): 
-        self.func = func 
+    def __init__(self, func):
+        self.func = func
 
     def __call__(self):
-        from gluon import current 
+        from gluon import current
         user_agent = current.request.user_agent()
-        if user_agent.is_mobile: 
+        if user_agent.is_mobile:
             items = current.response.view.split('.')
             items.insert(-1,'mobile')
             current.response.view = '.'.join(items)
-        return self.func() 
+        return self.func()
+
+

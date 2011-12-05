@@ -1139,7 +1139,7 @@ class BaseAdapter(ConnectionPool):
     def _select(self, query, fields, attributes):
         for key in set(attributes.keys())-set(('orderby', 'groupby', 'limitby',
                                                'required', 'cache', 'left',
-                                               'distinct', 'having', 'join', 
+                                               'distinct', 'having', 'join',
                                                'for_update')):
             raise SyntaxError, 'invalid select attribute: %s' % key
         # ## if no fields specified take them all from the requested tables
@@ -1150,7 +1150,7 @@ class BaseAdapter(ConnectionPool):
             else:
                 new_fields.append(item)
         fields = new_fields
-        tablenames = self.tables(query)        
+        tablenames = self.tables(query)
 
         if query and not query.ignore_common_filters:
             query = self.common_filter(query,tablenames)
@@ -3414,7 +3414,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
 
         if not query.ignore_common_filters:
             query = self.common_filter(query,[tablename])
-            
+
         tableobj = self.db[tablename]._tableobj
         items = tableobj.all()
         filters = self.expand(query)
@@ -3800,8 +3800,8 @@ class MongoDBAdapter(NoSQLAdapter):
         ctable = self.connection[table._tablename]
         values = dict((k.name,self.represent(v,table[k.name].type)) for k,v in fields)
         ctable.insert(values)
-        return int(str(values['_id']), 16) 
-        
+        return int(str(values['_id']), 16)
+
     def create_table(self, table, migrate=True, fake_migrate=False, polymodel=None, isCapped=False):
         if isCapped:
             raise RuntimeError, "Not implemented"
@@ -4622,13 +4622,13 @@ def index():
         if self._common_fields:
             fields = [f for f in fields] + [f for f in self._common_fields]
 
-        common_filter = args.get('common_filter', None)                                    
+        common_filter = args.get('common_filter', None)
 
         t = self[tablename] = table_class(self, tablename, *fields,
                                           **dict(primarykey=primarykey,
                                                  trigger_name=trigger_name,
                                                  sequence_name=sequence_name,
-                                                 common_filter=common_filter)) 
+                                                 common_filter=common_filter))
 
         # db magic
         if self._uri in (None,'None'):
@@ -6497,6 +6497,7 @@ DAL.Table = Table  # was necessary in gluon/globals.py session.connect
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

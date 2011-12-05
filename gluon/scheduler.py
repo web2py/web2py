@@ -109,9 +109,9 @@ def demo_function(*argv,**kwargs):
     """ test function """
     for i in range(argv[0]):
         print 'click',i
-        time.sleep(1)    
+        time.sleep(1)
     return 'done'
-    
+
 #the two functions below deal with simplejson decoding as unicode, esp for the dict decode
 #and subsequent usage as function Keyword arguments unicode variable names won't work!
 #borrowed from http://stackoverflow.com/questions/956867/how-to-get-string-objects-instead-unicode-ones-from-json-in-python
@@ -136,12 +136,12 @@ def _decode_dict(dct):
             v = _decode_list(v)
         newdict[k] = v
     return newdict
-    
+
 def executor(queue,task):
     """ the background process """
     logging.debug('    task started')
     stdout, sys.stdout = sys.stdout, cStringIO.StringIO()
-    try:        
+    try:
         if task.app:
             os.chdir(os.environ['WEB2PY_PATH'])
             from gluon.shell import env
@@ -152,9 +152,9 @@ def executor(queue,task):
             _env = env(task.app,import_models=True)
             logging.getLogger().setLevel(level)
             scheduler = current._scheduler
-            scheduler_tasks = current._scheduler.tasks            
+            scheduler_tasks = current._scheduler.tasks
             _function = scheduler_tasks[task.function]
-            globals().update(_env)            
+            globals().update(_env)
             args = loads(task.args)
             vars = loads(task.vars, object_hook=_decode_dict)
             result = dumps(_function(*args,**vars))
@@ -182,7 +182,7 @@ class MetaScheduler(threading.Thread):
         ('terminated',None,None)
         """
         queue = multiprocessing.Queue(maxsize=1)
-        p = multiprocessing.Process(target=executor,args=(queue,task))        
+        p = multiprocessing.Process(target=executor,args=(queue,task))
         self.process = p
         logging.debug('   task starting')
         p.start()
@@ -196,7 +196,7 @@ class MetaScheduler(threading.Thread):
             return TaskReport(STOPPED)
         if p.is_alive():
             p.terminate()
-            p.join()            
+            p.join()
             logging.debug('    task timeout')
             return TaskReport(TIMEOUT)
         elif queue.empty():
@@ -211,7 +211,7 @@ class MetaScheduler(threading.Thread):
         logging.info('die!')
         self.have_heartbeat = False
         self.terminate_process()
-        
+
     def terminate_process(self):
         try:
             self.process.terminate()
@@ -221,17 +221,17 @@ class MetaScheduler(threading.Thread):
     def run(self):
         """ the thread that sends heartbeat """
         counter = 0
-        while self.have_heartbeat:            
+        while self.have_heartbeat:
             self.send_heartbeat(counter)
             counter += 1
 
     def start_heartbeats(self):
         self.start()
-        
+
     def send_heartbeat(self,counter):
         print 'thum'
         time.sleep(1)
-            
+
     def pop_task(self):
         return Task(
             app = None,
@@ -243,7 +243,7 @@ class MetaScheduler(threading.Thread):
     def report_task(self,task,task_report):
         print 'reporting task'
         pass
-    
+
     def sleep(self):
         pass
 
@@ -304,7 +304,7 @@ class Scheduler(MetaScheduler):
         self.worker_name = worker_name or socket.gethostname()+'#'+str(web2py_uuid())
 
         from gluon import current
-        current._scheduler = self        
+        current._scheduler = self
 
         self.define_tables(db,migrate=migrate)
 
@@ -364,7 +364,7 @@ class Scheduler(MetaScheduler):
 
     def pop_task(self):
         now = datetime.datetime.now()
-        db, ts = self.db, self.db.scheduler_task        
+        db, ts = self.db, self.db.scheduler_task
         try:
             logging.debug(' grabbing all queued tasks')
             all_available = db(ts.status.belongs((QUEUED,RUNNING)))\
@@ -385,7 +385,7 @@ class Scheduler(MetaScheduler):
             grabbed = db(ts.assigned_worker_name==self.worker_name)\
                 (ts.status==ASSIGNED)
             task = grabbed.select(limitby=(0,1), orderby=ts.next_run_time).first()
-                                  
+
             logging.debug('   releasing all but one (running)')
             if task:
                 task.update_record(status=RUNNING,last_run_time=now)
@@ -399,7 +399,7 @@ class Scheduler(MetaScheduler):
             run_again = True
         else:
             run_again = False
-        logging.debug('    new scheduler_run record')    
+        logging.debug('    new scheduler_run record')
         while True:
             try:
                 run_id = db.scheduler_run.insert(
@@ -432,7 +432,7 @@ class Scheduler(MetaScheduler):
             stop_time = datetime.datetime.now(),
             result = task_report.result,
             output = task_report.output,
-            traceback = task_report.tb)        
+            traceback = task_report.tb)
         if task_report.status == COMPLETED:
             d = dict(status = task.run_again and QUEUED or COMPLETED,
                      next_run_time = task.next_run_time,
@@ -447,27 +447,27 @@ class Scheduler(MetaScheduler):
         db(db.scheduler_task.id==task.task_id)\
             (db.scheduler_task.status==RUNNING).update(**d)
         db.commit()
-        logging.info('task completed (%s)' % task_report.status)    
-    
+        logging.info('task completed (%s)' % task_report.status)
+
     def send_heartbeat(self,counter):
         if not self.db_thread:
-            logging.debug('thread building own DAL object')    
+            logging.debug('thread building own DAL object')
             self.db_thread = DAL(self.db._uri,folder = self.db._adapter.folder)
             self.define_tables(self.db_thread,migrate=False)
         try:
             db = self.db_thread
             sw, st = db.scheduler_worker, db.scheduler_task
             now = datetime.datetime.now()
-            expiration = now-datetime.timedelta(seconds=self.heartbeat*3)    
+            expiration = now-datetime.timedelta(seconds=self.heartbeat*3)
             # record heartbeat
-            logging.debug('........recording heartbeat')    
+            logging.debug('........recording heartbeat')
             if not db(sw.worker_name==self.worker_name)\
                     .update(last_heartbeat = now, status = ACTIVE):
                 sw.insert(status = ACTIVE,worker_name = self.worker_name,
                           first_heartbeat = now,last_heartbeat = now)
             if counter % 10 == 0:
                 # deallocate jobs assigned to inactive workers and requeue them
-                logging.debug('    freeing workers that have not sent heartbeat')    
+                logging.debug('    freeing workers that have not sent heartbeat')
                 inactive_workers = db(sw.last_heartbeat<expiration)
                 db(st.assigned_worker_name.belongs(
                         inactive_workers._select(sw.worker_name)))\
@@ -478,7 +478,7 @@ class Scheduler(MetaScheduler):
         except:
             db.rollback()
         time.sleep(self.heartbeat)
-    
+
     def sleep(self):
         time.sleep(self.heartbeat) # should only sleep until next available task
 
@@ -546,3 +546,4 @@ def main():
 
 if __name__=='__main__':
     main()
+

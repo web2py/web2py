@@ -181,7 +181,7 @@ fieldset.inline {
 	float:left;
 	width: 100%;
 }
-	
+
 /* 4.4. Inline-block element must content any element inside (div, p, etc) for the correct visualization in FF<3 */
 .inline-block-top,.inline-block-middle,.inline-block-bottom {
 	float:none !important;
@@ -330,7 +330,7 @@ a.button,
 	padding: 4px 0 6px 10px; /*Padding-left: 10px */
 	margin: 0 0 0 -10px; /* Margin-left: -10px */
 	}
-	
+
 /* 3. HACKS */
 
 ul.button {
@@ -348,7 +348,7 @@ a.button {
 	-moz-box-orient: vertical; /* FF<3 */
 	*display: inline; /* IE */
 	}
-	
+
 /**
 * cSans Tooltip pluging v0.1
 * 2009 Copyright A navalla suíza http://anavallasuiza.com
@@ -372,7 +372,7 @@ a.button {
 	display:inline;
 	position:absolute;
 	}
-	
+
 /**
 * cSans Flexible v0.1
 * 2009 Copyright A navalla suíza http://anavallasuiza.com
@@ -957,17 +957,17 @@ ul#snapshot > li {
 .shell #output pre {
   color: #e8953c;
   background: white;
-  border: 1px solid #333;  
+  border: 1px solid #333;
 }
 
-.shell .prompt, 
-.shell #output, 
+.shell .prompt,
+.shell #output,
 .shell pre,
 .shell #caret {
   font-family: monospace;
 }
 
-.shell .prompt, 
+.shell .prompt,
 .shell #output,
 .shell #caret {
   font-size: 10pt;
@@ -977,7 +977,7 @@ ul#snapshot > li {
 
 .shell #shellwrapper {
   background: white;
-  border: 1px solid #333;  
+  border: 1px solid #333;
   color: #e8953c;
   width: 75%;
   // padding: 6px;
@@ -1063,3 +1063,4 @@ ul#snapshot > li {
 .translated { background-color: white; }
 .ui-multiselect { border: 1px solid #ccc; width:400px;}
 #editor_area textarea { height: 400px; width: 100% }
+

@@ -188,7 +188,7 @@ def try_rewrite_on_error(http_response, request, environ, ticket=None):
                 else:
                     error_raising_path = environ['PATH_INFO']
                     # Rewrite routes_onerror path.
-                    path_info = '/' + path_info.lstrip('/') # add leading '/' if missing                    
+                    path_info = '/' + path_info.lstrip('/') # add leading '/' if missing
                     environ['PATH_INFO'] = path_info
                     error_handling_path = url_in(request, environ)[1]['PATH_INFO']
                     # Avoid infinite loop.
@@ -1270,6 +1270,7 @@ def get_effective_router(appname):
     if not routers or appname not in routers:
         return None
     return Storage(routers[appname])  # return a copy
+
 
 
 
