@@ -77,12 +77,8 @@ class DetectorBase(object):
             result[self.info_type] = dict(name=self.name)
             is_mobile=self.is_mobile
             is_tablet=self.is_tablet
-            if result.get('is_mobile') is None:
-                result['is_mobile'] = False
             if is_mobile:
                 result['is_mobile'] = is_mobile
-            if result.get('is_tablet') is None:
-                result['is_tablet'] = False
             if is_tablet:
                 result['is_tablet'] = is_tablet
                 
@@ -368,6 +364,8 @@ detectorshub = DetectorsHub()
 
 def detect(agent):
     result = dict()
+    result['is_mobile'] = False
+    result['is_tablet'] = False
     prefs = dict()
     for info_type in detectorshub:
         detectors = detectorshub[info_type]
