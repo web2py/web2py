@@ -1143,7 +1143,7 @@ class Auth(object):
             if args(1) == self.settings.cas_actions['login']:
                 return self.cas_login(version=2)
             elif args(1) == self.settings.cas_actions['validate']:
-                return self.cas_validate(version=2)
+                return self.cas_validate(version=1)
             elif args(1) == self.settings.cas_actions['servicevalidate']:
                 return self.cas_validate(version=2, proxy=False)
             elif args(1) == self.settings.cas_actions['proxyvalidate']:
@@ -1411,7 +1411,7 @@ class Auth(object):
                 maps['registration_id'] = \
                     lambda v,p=settings.cas_provider:'%s/%s' % (p,v['user'])
             actions = [self.settings.cas_actions['login'],
-                       self.settings.cas_actions['validate'],
+                       self.settings.cas_actions['servicevalidate'],
                        self.settings.cas_actions['logout']]
             settings.login_form = CasAuth(
                 casversion = 2,
@@ -1527,7 +1527,6 @@ class Auth(object):
         def allow_access(interactivelogin=False):
             row = table(service=session._cas_service,user_id=self.user.id)
             if row:
-                row.update_record(created_on=request.now)
                 ticket = row.ticket
             else:
                 ticket = 'ST-'+web2py_uuid()
@@ -1538,7 +1537,7 @@ class Auth(object):
                              renew=interactivelogin)
             service = session._cas_service
             del session._cas_service
-            if request.vars.has_key('warn'):
+            if request.vars.has_key('warn') and not interactivelogin:
                 response.headers['refresh'] = "5;URL=%s"%service+"?ticket="+ticket
                 return A("Continue to %s"%service,
                     _href=service+"?ticket="+ticket)
