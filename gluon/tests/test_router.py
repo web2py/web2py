@@ -45,12 +45,15 @@ def setUpModule():
         for ctr in ('ajax_examples', 'appadmin', 'default', 'global', 'spreadsheet'):
             open(abspath('applications', 'examples', 'controllers', '%s.py' % ctr), 'w').close()
         #  applications/welcome/controllers/*.py
-        for ctr in ('appadmin', 'default'):
+        #  (include controller that collides with another app)
+        for ctr in ('appadmin', 'default', 'other', 'admin'):
             open(abspath('applications', 'welcome', 'controllers', '%s.py' % ctr), 'w').close()
+
         #  create an app-specific routes.py for examples app
         routes = open(abspath('applications', 'examples', 'routes.py'), 'w')
         routes.write("routers=dict(examples=dict(default_function='exdef'))")
         routes.close()
+        
         #  create language files for examples app
         for lang in ('en', 'it'):
             os.mkdir(abspath('applications', 'examples', 'static', lang))
@@ -360,6 +363,29 @@ class TestRouter(unittest.TestCase):
         except AttributeError:
             pass
 
+    def test_router_domains_fs(self):
+        '''
+        Test URLs that map domains using test filesystem layout
+        '''
+        routers = dict(
+            BASE = dict(
+                domains = {
+                    "domain1.com" : "admin",
+                    "domain2.com" : "welcome",
+                },
+            ),
+        )
+
+        load(rdict=routers)
+        self.assertEqual(filter_url('http://domain1.com'), '/admin/default/index')
+        self.assertEqual(filter_url('http://domain2.com'), '/welcome/default/index')
+        self.assertEqual(filter_url('http://domain1.com/gae'), '/admin/gae/index')
+        self.assertEqual(filter_url('http://domain2.com/other'), '/welcome/other/index')
+        self.assertEqual(filter_url('http://domain1.com/gae/f1'), '/admin/gae/f1')
+        self.assertEqual(filter_url('http://domain2.com/f2'), '/welcome/default/f2')
+        self.assertEqual(filter_url('http://domain2.com/other/f3'), '/welcome/other/f3')
+
+        
     def test_router_domains(self):
         '''
         Test URLs that map domains
