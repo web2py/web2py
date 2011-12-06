@@ -9,13 +9,13 @@ import threading
 
 # Install the new import function:
 def custom_import_install(web2py_path):
-        global _web2py_importer
-        global _web2py_path
-	if isinstance(__builtin__.__import__, _Web2pyImporter):
-	    return #aready installed
-        _web2py_path = web2py_path
-        _web2py_importer = _Web2pyImporter(web2py_path)
-        __builtin__.__import__ = _web2py_importer
+    global _web2py_importer
+    global _web2py_path
+    if isinstance(__builtin__.__import__, _Web2pyImporter):
+        return #aready installed
+    _web2py_path = web2py_path
+    _web2py_importer = _Web2pyImporter(web2py_path)
+    __builtin__.__import__ = _web2py_importer
 
 def is_tracking_changes():
     """
@@ -41,7 +41,7 @@ def track_changes(track=True):
     if track:
         if not _web2py_date_tracker_importer:
             _web2py_date_tracker_importer = \
-              _Web2pyDateTrackerImporter(_web2py_path)
+                _Web2pyDateTrackerImporter(_web2py_path)
         __builtin__.__import__ = _web2py_date_tracker_importer
     else:
         __builtin__.__import__ = _web2py_importer
@@ -322,6 +322,7 @@ class _Web2pyDateTrackerImporter(_Web2pyImporter, _DateTrackerImporter):
     """
     Like _Web2pyImporter but using a _DateTrackerImporter.
     """
+
 
 
 

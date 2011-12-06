@@ -150,7 +150,7 @@ def csv():
         return None
     response.headers['Content-disposition'] = 'attachment; filename=%s_%s.csv'\
          % tuple(request.vars.query.split('.')[:2])
-    return str(db(query).select(ignore_common_filter=True))
+    return str(db(query,ignore_common_filters=True).select())
 
 
 def import_csv(table, file):
@@ -225,10 +225,9 @@ def select():
                 response.flash = T('%s rows deleted', nrows)
             nrows = db(query).count()
             if orderby:
-                rows = db(query).select(limitby=(start, stop),ignore_common_filter=True,
-                        orderby=eval_in_global_env(orderby))
+                rows = db(query,ignore_common_filters=True).select(limitby=(start, stop), orderby=eval_in_global_env(orderby))
             else:
-                rows = db(query).select(limitby=(start, stop), ignore_common_filter=True)
+                rows = db(query,ignore_common_filters=True).select(limitby=(start, stop))
         except Exception, e:
             (rows, nrows) = ([], 0)
             response.flash = DIV(T('Invalid Query'),PRE(str(e)))
@@ -255,9 +254,9 @@ def update():
     if keyed:
         key = [f for f in request.vars if f in db[table]._primarykey]
         if key:
-            record = db(db[table][key[0]] == request.vars[key[0]]).select(ignore_common_filter=True).first()
+            record = db(db[table][key[0]] == request.vars[key[0]], ignore_common_filters=True).select().first()
     else:
-        record = db(db[table].id == request.args(2)).select(ignore_common_filter=True).first()
+        record = db(db[table].id == request.args(2),ignore_common_filters=True).select().first()
 
     if not record:
         qry = query_by_table_type(table, db)
