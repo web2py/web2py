@@ -3412,7 +3412,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         else:
             raise SyntaxError, "Unable to determine a tablename"
 
-        if not query.ignore_common_filters:
+        if query and not query.ignore_common_filters:
             query = self.common_filter(query,[tablename])
 
         tableobj = self.db[tablename]._tableobj
@@ -4677,7 +4677,7 @@ def index():
     def smart_query(self,fields,text):
         return Set(self, smart_query(fields,text))
 
-    def __call__(self, query=None, ignore_common_filters=False):
+    def __call__(self, query=None, ignore_common_filters=None):
         if isinstance(query,Table):
             query = query._id>0
         elif isinstance(query,Field):
