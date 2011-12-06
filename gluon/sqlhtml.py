@@ -839,7 +839,7 @@ class SQLFORM(FORM):
                 elif field.type in ['blob']:
                     continue
                 elif field.type == 'upload':
-                    inp = cls.represent(field, default, upload)
+                    inp = UploadWidget.represent(field, default, upload)
                 elif field.type == 'boolean':
                     inp = self.widgets.boolean.widget(field, default, _disabled=True)
                 else:
@@ -1094,7 +1094,7 @@ class SQLFORM(FORM):
                         and self.table[key].type == 'upload' \
                         and request_vars.get(key, None) in (None, '') \
                         and self.record[key] \
-                        and not key + cls.ID_DELETE_SUFFIX in request_vars:
+                        and not key + UploadWidget.ID_DELETE_SUFFIX in request_vars:
                     del self.errors[key]
             if not self.errors:
                 ret = True
