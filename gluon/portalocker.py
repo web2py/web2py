@@ -49,17 +49,17 @@ try:
     import google.appengine
     os_locking = 'gae'
 except:
-	try:
-		import fcntl
-		os_locking = 'posix'
-	except:
-		try:
-			import win32con
-			import win32file
-			import pywintypes
-			os_locking = 'windows'
-		except:
-			pass
+    try:
+        import fcntl
+        os_locking = 'posix'
+    except:
+        try:
+            import win32con
+            import win32file
+            import pywintypes
+            os_locking = 'windows'
+        except:
+            pass
 
 if os_locking == 'windows':
     LOCK_EX = win32con.LOCKFILE_EXCLUSIVE_LOCK
@@ -122,6 +122,7 @@ if __name__ == '__main__':
     dummy = sys.stdin.readline()
 
     log.close()
+
 
 
 
