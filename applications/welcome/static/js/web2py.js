@@ -26,7 +26,7 @@ function web2py_ajax_fields(target) {
   jQuery('input.integer', target).keyup(function(){this.value=this.value.reverse().replace(/[^0-9\-]|\-(?=.)/g,'').reverse();});
   jQuery('input.double,input.decimal', target).keyup(function(){this.value=this.value.reverse().replace(/[^0-9\-\.,]|[\-](?=.)|[\.,](?=[0-9]*[\.,])/g,'').reverse();});
   var confirm_message = (typeof w2p_ajax_confirm_message != 'undefined') ? w2p_ajax_confirm_message : "Are you sure you want to delete this object?";
-  jQuery("input[type='checkbox'].delete", target).click(function(){ if(this.checked) if(!confirm(confirm_message)) this.checked=false; });
+  jQuery("input[type='checkbox'].delete", target).live('click',function(){ if(this.checked) if(!confirm(confirm_message)) this.checked=false; });
   var date_format = (typeof w2p_ajax_date_format != 'undefined') ? w2p_ajax_date_format : "%Y-%m-%d";
   var datetime_format = (typeof w2p_ajax_datetime_format != 'undefined') ? w2p_ajax_datetime_format : "%Y-%m-%d %H:%M:%S";
   jQuery("input.date",target).each(function() {Calendar.setup({inputField:this, ifFormat:date_format, showsTime:false });});
