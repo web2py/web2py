@@ -267,6 +267,9 @@ regex_audio = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +audio\]\]')
 regex_link = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+)\]\]')
 regex_link_popup = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+) popup\]\]')
 regex_link_no_anchor = re.compile('\[\[ +(?P<k>\S+)\]\]')
+regex_embed = re.compile('(?<!["\w\>])embed:(?P<k>\w+://[\w\.\-\+\?&%\/]+)',re.M)
+regex_auto_video = re.compile('(?<!["\w\>])(?P<k>\w+://[\w\.\-\+\?&%\/]+\.(mp4|mpeg|mov))',re.M)
+regex_auto_audio = re.compile('(?<!["\w\>])(?P<k>\w+://[\w\.\-\+\?&%\/]+\.(mp3|wav))',re.M)
 regex_auto = re.compile('(?<!["\w\>])(?P<k>\w+://[\w\.\-\+\?&%\/]+)',re.M)
 
 def render(text,extra={},allowed={},sep='p'):
@@ -393,6 +396,10 @@ def render(text,extra={},allowed={},sep='p'):
     text = regex_link_popup.sub('<a href="\g<k>" target="_blank">\g<t></a>', text)
     text = regex_link_no_anchor.sub('<a href="\g<k>">\g<k></a>', text)
     text = regex_link.sub('<a href="\g<k>">\g<t></a>', text)
+    text = regex_embed.sub('<iframe src="\g<k>" frameborder="0" allowfullscreen></iframe>', 
+                           text)
+    text = regex_auto_video.sub('<video src="\g<k>" controls></video>', text)
+    text = regex_auto_audio.sub('<audio src="\g<k>" controls></audio>', text)
     text = regex_auto.sub('<a href="\g<k>">\g<k></a>', text)
 
     #############################################################
