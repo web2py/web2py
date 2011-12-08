@@ -5492,8 +5492,8 @@ class SQLCustomType(object):
         self.validator = validator
         self._class = _class or type
 
-    def startswith(self, dummy=None):
-        return False
+    def startswith(self, text=None):
+        return self.type.startswith(self,text)
 
     def __getslice__(self, a=0, b=100):
         return None
