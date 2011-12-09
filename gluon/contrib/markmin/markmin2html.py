@@ -267,12 +267,12 @@ regex_audio = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +audio\]\]')
 regex_link = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+)\]\]')
 regex_link_popup = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+) popup\]\]')
 regex_link_no_anchor = re.compile('\[\[ +(?P<k>\S+)\]\]')
-regex_qr = re.compile('(?<!["\w\>/=])qr:(?P<k>\w+://[\w\.\-\+\?&%\/]+)',re.M)
-regex_embed = re.compile('(?<!["\w\>/=])embed:(?P<k>\w+://[\w\.\-\+\?&%\/]+)',re.M)
-regex_auto_image = re.compile('(?<!["\w\>/=])(?P<k>\w+://[\w\.\-\+\?&%\/]+\.(jpeg|jpg|gif|png))',re.M)
-regex_auto_video = re.compile('(?<!["\w\>/=])(?P<k>\w+://[\w\.\-\+\?&%\/]+\.(mp4|mpeg|mov))',re.M)
-regex_auto_audio = re.compile('(?<!["\w\>/=])(?P<k>\w+://[\w\.\-\+\?&%\/]+\.(mp3|wav))',re.M)
-regex_auto = re.compile('(?<!["\w\>/=])(?P<k>\w+://[\w\.\-\+\?&%\/]+)',re.M)
+regex_qr = re.compile('(?<!["\w\>/=])qr:(?P<k>\w+://[\w\.\-\+\?&%\/\:]+)',re.M)
+regex_embed = re.compile('(?<!["\w\>/=])embed:(?P<k>\w+://[\w\.\-\+\?&%\/\:]+)',re.M)
+regex_auto_image = re.compile('(?<!["\w\>/=])(?P<k>\w+://[\w\.\-\+\?&%\/\:]+\.(jpeg|jpg|gif|png))',re.M)
+regex_auto_video = re.compile('(?<!["\w\>/=])(?P<k>\w+://[\w\.\-\+\?&%\/\:]+\.(mp4|mpeg|mov))',re.M)
+regex_auto_audio = re.compile('(?<!["\w\>/=])(?P<k>\w+://[\w\.\-\+\?&%\/\:]+\.(mp3|wav))',re.M)
+regex_auto = re.compile('(?<!["\w\>/=])(?P<k>\w+://[\w\.\-\+\?&%\/\:]+)',re.M)
 
 def render(text,extra={},allowed={},sep='p'):
     """

@@ -38,7 +38,7 @@ regex_image = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +(?P<p>left|right|cente
 #regex_video = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +video\]\]')
 #regex_audio = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +audio\]\]')
 regex_link = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+)\]\]')
-regex_auto = re.compile('(?<!["\w])(?P<k>\w+://[\w\.\-\?&%]+)',re.M)
+regex_auto = re.compile('(?<!["\w])(?P<k>\w+://[\w\.\-\?&%\:]+)',re.M)
 regex_commas = re.compile('[ ]+(?P<t>[,;\.])')
 regex_noindent = re.compile('\n\n(?P<t>[a-z])')
 regex_quote_left = re.compile('"(?=\w)')

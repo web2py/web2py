@@ -3764,6 +3764,11 @@ class MongoDBAdapter(NoSQLAdapter):
         db['_lastsql'] = ''
         self.db_codec = 'UTF-8'
         self.pool_size = pool_size
+        #this is the minimum amount of replicates that it should wait for on insert/update
+        self.minimumreplication = adapter_args.get('minimumreplication',0)
+        #by default alle insert and selects are performand asynchronous, but now the default is
+        #synchronous, except when overruled by either this default or function parameter
+        self.defaultsafe = adapter_args.get('safe',True)
 
         m = re.compile('^(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>.+)$').match(self.uri[10:])
         if not m:
@@ -3795,30 +3800,478 @@ class MongoDBAdapter(NoSQLAdapter):
         elif fieldtype == 'list:string' or fieldtype == 'list:integer' or fieldtype == 'list:reference':
             return value #raise SyntaxError, "Not Supported"
         return value
-
-    def insert(self,table,fields):
+    
+    #Safe determines whether a asynchronious request is done or a synchronious action is done
+    #For safety, we use by default synchronious requests
+    def insert(self,table,fields,safe=True):
         ctable = self.connection[table._tablename]
         values = dict((k.name,self.represent(v,table[k.name].type)) for k,v in fields)
-        ctable.insert(values)
-        return int(str(values['_id']), 16)
-
+        ctable.insert(values,safe=safe)
+        return int(str(values['_id']), 16) 
+        
     def create_table(self, table, migrate=True, fake_migrate=False, polymodel=None, isCapped=False):
         if isCapped:
             raise RuntimeError, "Not implemented"
         else:
             pass
+    
+    def count(self,query,distinct=None):
+        if distinct:
+            raise RuntimeError, "COUNT DISTINCT not supported"
+        if not isinstance(query,Query):
+            raise SyntaxError, "Not Supported"
+        tablename = self.get_table(query)
+        rows = self.select(query,[self.db[tablename]._id],{})
+        #Maybe it would be faster if we just implemented the pymongo .count() function which is probably quicker?
+        # therefor call __select() connection[table].find(query).count() Since this will probably reduce the return set?
+        return len(rows)
 
-    def count(self,query):
-        raise RuntimeError, "Not implemented"
+    def expand(self, expression, field_type=None):
+        #if isinstance(expression,Field):
+        #    if expression.type=='id':
+        #        return {_id}"
+        if isinstance(expression, Query):
+            print "in expand and this is a query"
+            # any query using 'id':=
+            #   set name as _id (as per pymongo/mongodb primary key)
+            #   convert second arg to an objectid field (if its not already)
+            #   if second arg is 0 convert to objectid
+            if isinstance(expression.first,Field) and expression.first.type == 'id':
+                expression.first.name = '_id'
+                if expression.second != 0 and not isinstance(expression.second,pymongo.objectid.ObjectId):
+                    if isinstance(expression.second,int):
+                        try:
+                            #Cause the reference field is by default an integer and therefor this must be an integer to be able to work with other databases
+                            expression.second = pymongo.objectid.ObjectId(("%X" % expression.second))
+                        except:
+                            raise SyntaxError, 'The second argument must by an integer that can represent an objectid.'
+                    else:
+                        try:
+                            #But a direct id is also possible
+                            expression.second = pymongo.objectid.ObjectId(expression.second)
+                        except:
+                            raise SyntaxError, 'second argument must be of type bson.objectid.ObjectId or an objectid representable integer'
+                elif expression.second == 0:
+                    expression.second = pymongo.objectid.ObjectId('000000000000000000000000')
+                return expression.op(expression.first, expression.second)   
+        if isinstance(expression, Field):
+            if expression.type=='id':
+                return "_id"
+            else:
+                return expression.name
+            #return expression
+        elif isinstance(expression, (Expression, Query)):
+            if not expression.second is None:
+                return expression.op(expression.first, expression.second)
+            elif not expression.first is None:
+                return expression.op(expression.first)
+            elif not isinstance(expression.op, str):
+                return expression.op()
+            else:
+                return expression.op
+        elif field_type:
+            return str(self.represent(expression,field_type))
+        elif isinstance(expression,(list,tuple)):
+            return ','.join(self.represent(item,field_type) for item in expression)
+        else:
+            return expression
+    
+    def _select(self,query,fields,attributes):
+        from pymongo import son
+
+        for key in set(attributes.keys())-set(('limitby','orderby')):
+            raise SyntaxError, 'invalid select attribute: %s' % key
+        
+        new_fields=[]
+        mongosort_list = []
+        
+        # try an orderby attribute
+        orderby = attributes.get('orderby', False)
+        limitby = attributes.get('limitby', False)
+        #distinct = attributes.get('distinct', False)
+        if orderby:
+            #print "in if orderby %s" % orderby
+            if isinstance(orderby, (list, tuple)):
+                print "in xorify"
+                orderby = xorify(orderby)
+           
+
+            # !!!! need to add 'random'
+            for f in self.expand(orderby).split(','):
+                if f.startswith('-'):
+                    mongosort_list.append((f[1:],-1))
+                else:
+                    mongosort_list.append((f,1))
+            print "mongosort_list = %s" % mongosort_list  
+            
+        if limitby:
+            # a tuple 
+            limitby_skip,limitby_limit = limitby
+        else:
+            limitby_skip = 0
+            limitby_limit = 0
+
+        #if distinct:
+            #print "in distinct %s" % distinct
+        
+        mongofields_dict = son.SON()
+        mongoqry_dict = {}
+        for item in fields:
+            if isinstance(item,SQLALL):
+                new_fields += item.table
+            else:
+                new_fields.append(item)
+        fields = new_fields
+        if isinstance(query,Query):
+            tablename = self.get_table(query)
+        elif len(fields) != 0:
+            tablename = fields[0].tablename
+        else:
+            raise SyntaxError, "The table name could not be found in the query nor from the select statement."
+        fieldnames = [f for f in (fields or self.db[tablename])]  # ie table.field
+        mongoqry_dict = self.expand(query)
+        for f in fieldnames:
+            mongofields_dict[f.name] = 1  # ie field=1
+        return tablename, mongoqry_dict, mongofields_dict, mongosort_list, limitby_limit, limitby_skip
+   
+    # need to define all the 'sql' methods gt,lt etc....
 
     def select(self,query,fields,attributes):
-        raise RuntimeError, "Not implemented"
 
-    def delete(self,tablename, query):
-        raise RuntimeError, "Not implemented"
+        tablename, mongoqry_dict , mongofields_dict, mongosort_list, limitby_limit, limitby_skip = self._select(query,fields,attributes)
+        try:
+            print "mongoqry_dict=%s" % mongoqry_dict
+        except:
+            pass
+        print "mongofields_dict=%s" % mongofields_dict
+        ctable = self.connection[tablename]
+        mongo_list_dicts = ctable.find(mongoqry_dict,mongofields_dict,skip=limitby_skip, limit=limitby_limit, sort=mongosort_list) # pymongo cursor object 
+        print "mongo_list_dicts=%s" % mongo_list_dicts 
+        #if mongo_list_dicts.count() > 0: #
+            #colnames = mongo_list_dicts[0].keys() # assuming all docs have same "shape", grab colnames from first dictionary (aka row)
+        #else:    
+            #colnames = mongofields_dict.keys()
+        #print "colnames = %s" % colnames
+        #rows = [row.values() for row in mongo_list_dicts]
+        rows = mongo_list_dicts
+        return self.parse(rows, mongofields_dict.keys(), False, tablename)
+
+    def parse(self, rows, colnames, blob_decode=True,tablename=None):
+        import pymongo.objectid
+        print "in parse"
+        print "colnames=%s" % colnames
+        db = self.db
+        virtualtables = []
+        table_colnames = []
+        new_rows = []
+        for (i,row) in enumerate(rows):
+            print "i,row = %s,%s" % (i,row)
+            new_row = Row()
+            for j,colname in enumerate(colnames):
+                # hack to get past 'id' key error, we seem to need to keep the 'id' key so lets create an id row value 
+                if colname == 'id':
+                    #try:
+                    if isinstance(row['_id'],pymongo.objectid.ObjectId):
+                        row[colname] = int(str(row['_id']),16)
+                    else:
+                        #in case of alternative key
+                        row[colname] = row['_id']
+                    #except:
+                        #an id can also be user defined
+                        #row[colname] = row['_id']
+                        #Alternative solutions are UUID's, counter function in mongo
+                    #del row['_id']
+                    #colnames.append('_id')
+                print "j = %s" % j
+                value = row.get(colname,None) # blob field not implemented, or missing key:value in a mongo document
+                colname = "%s.%s" % (tablename, colname) # hack to match re (table_field)
+                if i == 0: #only on first row
+                    table_colnames.append(colname)
+                if not table_field.match(colname):
+                    if not '_extra' in new_row:
+                        new_row['_extra'] = Row()
+                    new_row['_extra'][colnames[j]] = value
+                    select_as_parser = re.compile("\s+AS\s+(\S+)")
+                    new_column_name = select_as_parser.search(colnames[j])
+                    if not new_column_name is None:
+                        column_name = new_column_name.groups(0)
+                        setattr(new_row,column_name[0],value)
+                    continue
+                (tablename, fieldname) = colname.split('.')
+                table = db[tablename]
+                field = table[fieldname]
+                field_type = field.type
+                # hack to get past field_type = 'id'
+                #if field_type == 'id': field_type = '_id'
+                print "field = %s, type = %s" % (field, field_type)
+                if field.type != 'blob' and isinstance(value, str):
+                    try:
+                        value = value.decode(db._db_codec)
+                    except Exception:
+                        pass
+                if isinstance(value, unicode):
+                    value = value.encode('utf-8')
+                if not tablename in new_row:
+                    colset = new_row[tablename] = Row()
+                    if tablename not in virtualtables:
+                        virtualtables.append(tablename)
+                else:
+                    colset = new_row[tablename]
+
+                if isinstance(field_type, SQLCustomType):
+                    colset[fieldname] = field_type.decoder(value)
+                    # field_type = field_type.type
+                elif not isinstance(field_type, str) or value is None:
+                    colset[fieldname] = value
+                elif isinstance(field_type, str) and \
+                        field_type.startswith('reference'):
+                    referee = field_type[10:].strip()
+                    if not '.' in referee:
+                        colset[fieldname] = rid = Reference(value)
+                        (rid._table, rid._record) = (db[referee], None)
+                    else: ### reference not by id
+                        colset[fieldname] = value
+                elif field_type == 'boolean':
+                    if value == True or str(value)[:1].lower() == 't':
+                        colset[fieldname] = True
+                    else:
+                        colset[fieldname] = False
+                elif field_type == 'date' \
+                        and (not isinstance(value, datetime.date)\
+                                 or isinstance(value, datetime.datetime)):
+                    (y, m, d) = map(int, str(value)[:10].strip().split('-'))
+                    colset[fieldname] = datetime.date(y, m, d)
+                elif field_type == 'time' \
+                        and not isinstance(value, datetime.time):  #psr pymongo time as datetime
+                    if isinstance(value,datetime.datetime):
+                        colset[fieldname] = value.time()
+                    else:    
+                        time_items = map(int,str(value)[:8].strip().split(':')[:3])
+                        if len(time_items) == 3:
+                            (h, mi, s) = time_items
+                        else:
+                            (h, mi, s) = time_items + [0]
+                        colset[fieldname] = datetime.time(h, mi, s)
+                elif field_type == 'datetime'\
+                        and not isinstance(value, datetime.datetime):
+                    (y, m, d) = map(int,str(value)[:10].strip().split('-'))
+                    time_items = map(int,str(value)[11:19].strip().split(':')[:3])
+                    if len(time_items) == 3:
+                        (h, mi, s) = time_items
+                    else:
+                        (h, mi, s) = time_items + [0]
+                    colset[fieldname] = datetime.datetime(y, m, d, h, mi, s)
+                elif field_type == 'blob' and blob_decode:
+                    colset[fieldname] = base64.b64decode(str(value))
+                elif field_type.startswith('decimal'):
+                    decimals = int(field_type[8:-1].split(',')[-1])
+                    if self.dbengine == 'sqlite':
+                        value = ('%.' + str(decimals) + 'f') % value
+                    if not isinstance(value, decimal.Decimal):
+                        value = decimal.Decimal(str(value))
+                    colset[fieldname] = value
+                elif field_type.startswith('list:integer'):
+                    if not self.dbengine=='google:datastore' and not self.dbengine=='mongodb': #<-- comparation to google datastore is kinda unnessarly
+                        colset[fieldname] = bar_decode_integer(value)
+                    else:
+                        colset[fieldname] = value
+                elif field_type.startswith('list:reference'):
+                    if not self.dbengine=='google:datastore' and not self.dbengine=='mongodb': #<-- comparation to google datastore is kinda unnessarly
+                        colset[fieldname] = bar_decode_integer(value)
+                    else:
+                        colset[fieldname] = value
+                elif field_type.startswith('list:string'):
+                    if not self.dbengine=='google:datastore' and not self.dbengine=='mongodb': #<-- comparation to google datastore is kinda unnessarly
+                        colset[fieldname] = bar_decode_string(value)
+                    else:
+                        colset[fieldname] = value
+                else:
+                    colset[fieldname] = value
+                if field_type == 'id':
+                    id = colset[field.name]
+                    colset.update_record = lambda _ = (colset, table, id), **a: update_record(_, a)
+                    colset.delete_record = lambda t = table, i = id: t._db(t._id==i).delete()
+                    for (referee_table, referee_name) in \
+                            table._referenced_by:
+                        s = db[referee_table][referee_name]
+                        referee_link = db._referee_name and \
+                            db._referee_name % dict(table=referee_table,field=referee_name)
+                        if referee_link and not referee_link in colset:
+                            colset[referee_link] = Set(db, s == id)
+                    colset['id'] = id
+            new_rows.append(new_row)
+        print "table_colnames = %s" % table_colnames
+        rowsobj = Rows(db, new_rows, table_colnames, rawrows=rows)
+
+        for tablename in virtualtables:
+            ### new style virtual fields
+            table = db[tablename]
+            fields_virtual = [(f,v) for (f,v) in table.items() if isinstance(v,FieldVirtual)]
+            fields_lazy = [(f,v) for (f,v) in table.items() if isinstance(v,FieldLazy)]
+            if fields_virtual or fields_lazy:
+                for row in rowsobj.records:
+                    box = row[tablename]
+                    for f,v in fields_virtual:
+                        box[f] = v.f(row)
+                    for f,v in fields_lazy:
+                        box[f] = (v.handler or VirtualCommand)(v.f,row)
+
+            ### old style virtual fields
+            for item in table.virtualfields:
+                try:
+                    rowsobj = rowsobj.setvirtualfields(**{tablename:item})
+                except KeyError:
+                    # to avoid breaking virtualfields when partial select
+                    pass
+        return rowsobj    
+
+    def INVERT(self,first):
+        #print "in invert first=%s" % first
+        return '-%s' % self.expand(first)  
+
+    def drop(self, table, mode=''):
+        ctable = self.connection[table._tablename]
+        ctable.drop()
+    
+    def truncate(self,table,mode):
+        ctable = self.connection[table._tablename]
+        ctable.remove(None, safe=True)
 
     def update(self,tablename,query,fields):
+        if not isinstance(query,Query):
+            raise SyntaxError, "Not Supported"
+        
         raise RuntimeError, "Not implemented"
+
+    def bulk_insert(self, table, items):
+        return [self.insert(table,item) for item in items]
+
+    #TODO This will probably not work:(
+    def NOT(self, first):
+        result = {}
+        result["$not"] = self.expand(first)
+        return result
+
+    def AND(self,first,second):
+        f = self.expand(first)
+        s = self.expand(second)
+        f.update(s)
+        return f
+
+    def OR(self,first,second):
+        # pymongo expects: .find( {'$or' : [{'name':'1'}, {'name':'2'}] } )
+        result = {}
+        f = self.expand(first)
+        s = self.expand(second)
+        result['$or'] = [f,s]
+        return result
+
+    def BELONGS(self, first, second):
+        if isinstance(second, str):
+            return {self.expand(first) : {"$in" : [ second[:-1]]} }
+        elif second==[] or second==():
+            return {1:0}
+        items.append(self.expand(item, first.type) for item in second)
+        return {self.expand(first) : {"$in" : items} }
+
+    def LIKE(self, first, second):
+        #escaping regex operators?
+        return {self.expand(first) : ('%s' % self.expand(second, 'string').replace('%','/'))}
+
+    def STARTSWITH(self, first, second):
+        #escaping regex operators?
+        return {self.expand(first) : ('/^%s/' % self.expand(second, 'string'))}
+
+    def ENDSWITH(self, first, second):
+        #escaping regex operators?
+        return {self.expand(first) : ('/%s^/' % self.expand(second, 'string'))}
+
+    def CONTAINS(self, first, second):
+        #There is a technical difference, but mongodb doesn't support that, but the result will be the same
+        return {self.expand(first) : ('/%s/' % self.expand(second, 'string'))}
+
+    def EQ(self,first,second):
+        result = {}
+        #if second is None:
+            #return '(%s == null)' % self.expand(first)
+        #return '(%s == %s)' % (self.expand(first),self.expand(second,first.type))
+        result[self.expand(first)] = self.expand(second)
+        return result
+    
+    def NE(self, first, second=None):
+        print "in NE"
+        result = {}
+        result[self.expand(first)] = {'$ne': self.expand(second)}
+        return result
+
+    def LT(self,first,second=None):
+        if second is None:
+            raise RuntimeError, "Cannot compare %s < None" % first
+        print "in LT"
+        result = {}
+        result[self.expand(first)] = {'$lt': self.expand(second)}
+        return result
+
+    def LE(self,first,second=None):
+        if second is None:
+            raise RuntimeError, "Cannot compare %s <= None" % first
+        print "in LE"
+        result = {}
+        result[self.expand(first)] = {'$lte': self.expand(second)}
+        return result
+
+    def GT(self,first,second):
+        print "in GT"
+        #import pymongo.objectid
+        result = {}
+        #if expanded_first == '_id':
+            #if expanded_second != 0 and not isinstance(second,pymongo.objectid.ObjectId):
+                #raise SyntaxError, 'second argument must be of type bson.objectid.ObjectId'
+            #elif expanded_second == 0:
+                #expanded_second = pymongo.objectid.ObjectId('000000000000000000000000')
+        result[self.expand(first)] = {'$gt': self.expand(second)}
+        return result
+
+    def GE(self,first,second=None):
+        if second is None:
+            raise RuntimeError, "Cannot compare %s >= None" % first
+        print "in GE"
+        result = {}
+        result[self.expand(first)] = {'$gte': self.expand(second)}
+        return result
+
+    def ADD(self, first, second):
+        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        return '%s + %s' % (self.expand(first), self.expand(second, first.type))
+
+    def SUB(self, first, second):
+        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        return '(%s - %s)' % (self.expand(first), self.expand(second, first.type))
+
+    def MUL(self, first, second):
+        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        return '(%s * %s)' % (self.expand(first), self.expand(second, first.type))
+
+    def DIV(self, first, second):
+        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        return '(%s / %s)' % (self.expand(first), self.expand(second, first.type))
+
+    def MOD(self, first, second):
+        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        return '(%s %% %s)' % (self.expand(first), self.expand(second, first.type))
+
+    def AS(self, first, second):
+        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        return '%s AS %s' % (self.expand(first), second)
+
+    #We could implement an option that simulates a full featured SQL database. But I think the option should be set explicit or implemented as another library.
+    def ON(self, first, second):
+        raise NotSupported, "This is not possible in NoSQL, but can be simulated with a wrapper."
+        return '%s ON %s' % (self.expand(first), self.expand(second))
+
+    def COMMA(self, first, second):
+        return '%s, %s' % (self.expand(first), self.expand(second))
+
 
 
 ########################################################################
