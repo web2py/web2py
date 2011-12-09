@@ -1,4 +1,33 @@
-## 1.99.1
+## 1.99.3
+This is a major recision in peparation for 2.0
+- moved to GitHub and abandoned Lanchpad 
+- new web site layout, thanks Anthony
+- new welcome app using skeleton, thanks Anthony
+- jQuery 1.7.1
+- modernizr 2.0.6 (customized)
+- ``define_table('thing', singluar='thing',plural='things')``
+- CAS 1.0 and 2.0 compliant
+- fixed validate_and_insert and validate_and_update, thanks Anthony
+- request.user_agent().is_mobile etc., thanks Ross and Angelo
+- better router, thanks Jonathan
+- app on/off buttons
+- support for dropbox_login
+- improved markmin recognizes qr code, supports auto audio/video/embed
+- response.optimize_css = 'concat,minify,inline', thanks Ross
+- response.optimize_js = 'concat,minify,inline' thanks Ross
+- db.define_table(...,common_filter=query), thanks Yair
+- db(...,ignore_common_filter=True)
+- support for stripe payments
+- support for DowCommerce payments, thanks Dave
+- experimental PyPy support
+- experimental mongodb support, thanks Mark
+- tickets in db now accessible from admin, thanks Niphlod
+- many grid improvements and bug fixes
+
+
+
+
+## 1.99.1-1.99.2
 - gluon/contrib/simplejsonrpc.py
 - gluon/contrib/redis_cache.py
 - support for A(name,callback=url,target='id',delete='tr')
