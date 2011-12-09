@@ -1,10 +1,13 @@
 # coding: utf8
 
-is_mobile=request.user_agent().is_mobile
-if is_mobile:
-    response.view = response.view.replace(
-        'default/','default.mobile/')
-    response.menu = []
+EXPERIMENTAL_STUFF = False
+
+if EXPERIMENTAL_STUFF:
+    is_mobile=request.user_agent().is_mobile
+    if is_mobile:
+        response.view = response.view.replace(
+            'default/','default.mobile/')
+        response.menu = []
 
 from gluon.admin import *
 from gluon.fileutils import abspath, read_file, write_file
