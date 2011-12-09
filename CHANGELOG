@@ -1,22 +1,22 @@
 ## 1.99.3
-This is a major recision in peparation for 2.0
+This is a major revision in peparation for web2py 2.0
 - moved to GitHub and abandoned Lanchpad 
 - new web site layout, thanks Anthony
 - new welcome app using skeleton, thanks Anthony
 - jQuery 1.7.1
 - modernizr 2.0.6 (customized)
 - ``define_table('thing', singluar='thing',plural='things')``
-- CAS 1.0 and 2.0 compliant
+- CAS 1.0 and 2.0 compliant, thanks Olivier
 - fixed validate_and_insert and validate_and_update, thanks Anthony
-- request.user_agent().is_mobile etc., thanks Ross and Angelo
+- ``request.user_agent().is_mobile`` etc., thanks Ross and Angelo
 - better router, thanks Jonathan
 - app on/off buttons
 - support for dropbox_login
 - improved markmin recognizes qr code, supports auto audio/video/embed
-- response.optimize_css = 'concat,minify,inline', thanks Ross
-- response.optimize_js = 'concat,minify,inline' thanks Ross
-- db.define_table(...,common_filter=query), thanks Yair
-- db(...,ignore_common_filter=True)
+- ``response.optimize_css = 'concat,minify,inline'``, thanks Ross
+- ``response.optimize_js = 'concat,minify,inline'`` thanks Ross
+- ``db.define_table(...,common_filter=query)``, thanks Yair
+- ``db(...,ignore_common_filter=True)``
 - support for stripe payments
 - support for DowCommerce payments, thanks Dave
 - experimental PyPy support
