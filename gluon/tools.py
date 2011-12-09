@@ -1623,7 +1623,7 @@ class Auth(object):
             username = 'username'
         else:
             username = 'email'
-        if 'username' in table_user.fields or not self.settings.login_email_validate:
+        if username in table_user.fields or not self.settings.login_email_validate:
             tmpvalidator = IS_NOT_EMPTY(error_message=self.messages.is_empty)
         else:
             tmpvalidator = IS_EMAIL(error_message=self.messages.invalid_email)
