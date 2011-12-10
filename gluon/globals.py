@@ -18,8 +18,8 @@ from storage import Storage, List
 from streamer import streamer, stream_file_or_304_or_206, DEFAULT_CHUNK_SIZE
 from xmlrpc import handler
 from contenttype import contenttype
-from html import xmlescape, TABLE, TR, PRE
-from http import HTTP
+from html import xmlescape, TABLE, TR, PRE, URL
+from http import HTTP, redirect
 from fileutils import up
 from serializers import json, custom_json
 import settings
@@ -109,6 +109,16 @@ class Request(Storage):
         for key,value in user_agent.items():
             if isinstance(value,dict): user_agent[key] = Storage(value)
         return user_agent
+        
+    def requires_https(self):
+        """
+        If request comes in over HTTP, redirect it to HTTPS
+        and secure the session.
+        """
+        if not global_settings.cronjob and not self.is_https:
+            redirect(URL(scheme='https', args=self.args, vars=self.vars))
+        
+        current.session.secure()
 
     def restful(self):
         def wrapper(action,self=self):
