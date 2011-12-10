@@ -22,7 +22,7 @@ jQuery(document).ready(function(){
 {{block sectionclass}}edit {{filename}}{{end}}
 
 {{if functions:}}
-  <p class="formfield">
+  <p>
 <span style="text-align:left;" id="exposed">
   {{=B(T('exposes:'))}}{{=XML(', '.join([A(f,_href=URL(a=app,c=controller,f=f)).xml() for f in functions]))}}
 </span>
@@ -35,7 +35,7 @@ jQuery(document).ready(function(){
 
 <div id="editor_area">
   <form action="{{=URL('edit',args=filename)}}" method="post" name="editform" id="editform">
-    <a value="save" name="save" onclick="return doClickSave();" class="icon saveicon">
+    <a value="save" name="save" onclick="return doClickSave();">
       {{=IMG(_src=URL('static', 'images/save_icon.png'), _alt=T('Save'))}}
     </a>
     {{=T('Saved file hash:')}}
@@ -46,8 +46,8 @@ jQuery(document).ready(function(){
     {{else:}}
     <textarea cols="80" rows="25" id="body" style="direction:ltr;" name="data">{{=data}}</textarea>
     {{pass}}
-    <button class="editbutton" onclick="window.location.reload(); return false">{{=T('restore')}}</button>
-    <button class="editbutton" type="submit" name="revert">{{=T('revert')}}</button>
+    <button onclick="window.location.reload(); return false">{{=T('restore')}}</button>
+    <button type="submit" name="revert">{{=T('revert')}}</button>
     <br/>
   </form>
 </div>

@@ -1,16 +1,37 @@
-{{extend 'layout.html'}}
+{{extend 'default.mobile/layout.html'}}
 {{
 import os
+def A_info(*a,**b):
+    b['_data-role'] = 'button'
+    b['_data-icon'] = 'info'
+    b['_data-theme'] = 'b'
+    return A(*a,**b)
+
+def A_gear(*a,**b):
+    b['_data-role'] = 'button'
+    b['_data-icon'] = 'gear'
+    return A(*a,**b)
+
+def A_delete(*a,**b):
+    b['_data-role'] = 'button'
+    b['_data-icon'] = 'delete'
+    return A(*a,**b)
+
+def A_check(*a,**b):
+    b['_data-role'] = 'button'
+    b['_data-icon'] = 'check'
+    return A(*a,**b)
+    
 def all(items):
     return reduce(lambda a,b:a and b,items,True)
 def peekfile(path,file):
-    return A(file.replace('\\\\','/'),_href=URL('peek', args=(app, path, file)))
+    return A_info(file.replace('\\\\','/'),_href=URL('peek', args=(app, path, file)))
 def editfile(path,file):
-    return A(SPAN(T('Edit')),_class='button editbutton',_href=URL('edit', args=(app, path, file)))
+    return A_gear(SPAN(T('Edit')),_href=URL('edit', args=(app, path, file)))
 def testfile(path,file):
-    return A(TAG[''](IMG(_src=URL('static', 'images/test_icon.png'), _alt=T('test')), SPAN(T("Run tests in this file"))), _class='icon test tooltip',_href=URL('test', args=(app, file)))
+    return A_check(SPAN(T('Run tests')), _href=URL('test', args=(app, file)))
 def editlanguagefile(path,file):
-    return A(SPAN(T('Edit')),_class='button editbutton',_href=URL('edit_language', args=(app, path, file)))
+    return A_gear(SPAN(T('Edit')),_href=URL('edit_language', args=(app, path, file)))
 def file_upload_form(location):
     form=FORM(T("upload file:")," ",
               INPUT(_type="file",_name="file")," ",T("and rename it:")," ",
@@ -32,7 +53,7 @@ def upload_plugin_form(app):
               INPUT(_type="submit",_value=T("submit")))
     return form
 def deletefile(arglist):
-  return A(TAG[''](IMG(_src=URL('static', 'images/delete_icon.png')), SPAN(T('Delete this file (you will be asked to confirm deletion)'))), _class='icon delete tooltip', _href=URL('delete',args=arglist,vars=dict(sender=request.function+'/'+app)))
+    return A_delete(SPAN(T('Delete')), _href=URL('delete',args=arglist,vars=dict(sender=request.function+'/'+app)))
 }}
 
 {{block sectionclass}}plugin{{end}}
@@ -40,49 +61,33 @@ def deletefile(arglist):
 <h2>
   {{=T('Plugin "%s" in application', request.args(1))}} "{{=app}}"
 </h2>
-<div class="right-full controls">
-  <a class="button special" href="#" onclick="jQuery('h3').click();return false"><span>{{=T("collapse/expand all")}}</span></a>
-  <span class="buttongroup">
-  {{=button("#models", T("models"))}}
-  {{=button("#controllers", T("controllers"))}}
-  {{=button("#views", T("views"))}}
-  {{=button("#static", T("static"))}}
-  {{=button("#modules", T("modules"))}}
-  </span>
-  <span class="buttongroup">
+<div>
+  <div data-role="controlgroup" data-type="horizontal">
   {{=sp_button(URL('plugin',args=app), T("back"))}}
   {{=sp_button(URL('delete_plugin',args=request.args), T("delete plugin"))}}
   {{=sp_button(URL('pack_plugin',args=request.args), T("pack plugin"))}}
-  </span>
+  </div>
 </div>
 
+<div data-role="collapsible-set" data-content-theme="c">
 <!-- MODELS -->
 
-<h3 id="models" onclick="collapse('models_inner');" class="component">
+<div data-role="collapsible" data-content-theme="c">
+<h3 id="models">
   {{=T("Models")}}
 </h3>
-<div id="models_inner" class="component_contents">
+<div id="models_inner" >
   {{if not models:}}
   <p><strong>{{=T("There are no models")}}</strong></p>
   {{pass}}
-  <div class="controls comptools">
-  </div>
-  <ul>
     {{for m in models:}}
-    <li>
-    <span class="filetools controls">
+    <span data-role="controlgroup" data-type="horizontal">
       {{=editfile('models',m)}}
       {{=deletefile([app, 'models', m])}}
-    </span>
-    <span class="file">
       {{=peekfile('models',m)}}
     </span>
-    <span class="extras">
-      {{if len(defines[m]):}}{{=T("defines tables")}} {{pass}}{{=XML(', '.join([B(table).xml() for table in defines[m]]))}}
-    </span>
-    </li>
     {{pass}}
-  </ul>
+</div>
 </div>
 
 <!-- FIND CONTROLLER FUNCTIONS -->
@@ -92,130 +97,110 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 }}
 
 <!-- CONTROLLERS -->
-
-<h3 id="controllers" onclick="collapse('controllers_inner');" class="component">
+<div data-role="collapsible" data-content-theme="c">
+<h3 id="controllers">
   {{=T("Controllers")}}
 </h3>
-<div id="controllers_inner" class="component_contents">
+<div id="controllers_inner">
   {{if not controllers:}}
   <p><strong>{{=T("There are no controllers")}}</strong></p>
   {{pass}}
-  <div class="controls comptools">
-  </div>
-  <ul>
     {{for c in controllers:}}
-    <li>
-    <span class="filetools controls">
+    <span data-role="controlgroup" data-type="horizontal">
       {{=editfile('controllers',c)}}
       {{=deletefile([app,'controllers',c])}}
       {{=testfile('controllers',c)}}
-    </span>
-    <span class="file">
       {{=peekfile('controllers',c)}}
     </span>
-    <span class="extras">
-      {{if functions[c]:}}{{=T("exposes")}} {{pass}}{{=XML(', '.join([A(f,_href=URL(a=app,c=c[:-3],f=f)).xml() for f in functions[c]]))}}
-    </span>
-    </li>
     {{pass}}
-  </ul>
+</div>
 </div>
 
 <!-- VIEWS -->
-
-<h3 id="views" onclick="collapse('views_inner');" class="component">
+<div data-role="collapsible" data-content-theme="c">
+<h3 class="component">
   {{=T("Views")}}
 </h3>
-<div id="views_inner" class="component_contents">
+<div id="views_inner">
   {{if not views:}}
   <p><strong>{{=T("There are no views")}}</strong></p>
   {{pass}}
-  <div class="controls comptools">
-  </div>
-  <ul>
     {{for c in views:}}
-    <li>
-      <span class="filetools controls">
+      <span data-role="controlgroup">
+      {{=peekfile('views',c)}}
       {{=editfile('views',c)}}
       {{=deletefile([app,'views',c])}}
       </span>
-      <span class="file">
-      {{=peekfile('views',c)}}
-      </span>
-      <span class="extras">
-      {{if extend.has_key(c):}}{{=T("extends")}} <b>{{=extend[c]}}</b> {{pass}}
-      {{if include[c]:}}{{=T("includes")}} {{pass}}{{=XML(', '.join([B(f).xml() for f in include[c]]))}}
-      </span>
-    </li>
     {{pass}}
-  </ul>
+</div>
 </div>
 
 <!-- STATIC -->
-
-<h3 id="static" onclick="collapse('static_inner');" class="component">
+<div data-role="collapsible" data-content-theme="c">
+<h3 id="static">
   {{=T("Static files")}}
 </h3>
-<div id="static_inner" class="component_contents">
+<div id="static_inner">
   {{if not statics:}}<p><strong>{{=T("There are no static files")}}</strong></p>{{pass}}
-  <ul>
+  <ul data-role="listview" data-inset="true">
     {{
-    path=[]
+    from collections import OrderedDict
+    tree=OrderedDict()
     for file in statics+['']:
-      items=file.split('/')
-      file_path=items[:-1]
-      filename=items[-1]
-      while path!=file_path:
-          if len(file_path)>=len(path) and all([v==file_path[k] for k,v in enumerate(path)]):
-              path.append(file_path[len(path)])
-              thispath='static__'+'__'.join(path)
-    }}
-    <li class="folder">
-    <a href="javascript:collapse('{{=thispath}}');" class="file">{{=path[-1]}}/</a>
-    <ul id="{{=thispath}}" style="display: none;" class="sublist">{{
-          else:
-              path = path[:-1]
-      }}
-    </ul></li>
-    {{
-              pass
-          pass
-      if filename:
-      }}<li>
-      <span class="filetools controls">
-	{{=editfile('static',file)}} {{=deletefile([app,'static',file])}}
-      </span>
-      <span class="file">
-	<a href="{{=URL(a=app,c='static',f=file)}}">{{=filename}}</a>
-      </span>
-    </li>{{
-          pass
+      items=file.partition('/')
+      if not items[0] in tree:
+        tree[items[0]] = []
+        pass
+      tree[items[0]].append(items[2])
       pass
     }}
+    {{for k, v in tree.iteritems():}}
+    {{if k:}}
+    <li><a>{{=k}}</a>
+        <ul data-theme='c'>
+            </br>
+            {{if len(v) == 1 and v[0] =='':}}
+                <span data-role="controlgroup">
+                  {{=peekfile('static', k)}}
+                  {{=editfile('static', k)}}
+                  {{=deletefile([app, 'static', k])}}
+                  </br>
+                </span>
+                </ul>
+                {{continue}}
+            {{for f in v:}}
+                <span data-role="controlgroup">
+                  {{=peekfile('static/'+k, f)}}
+                  {{=editfile('static/'+k, f)}}
+                  {{=deletefile([app, 'static/'+k, f])}}
+                  </br>
+                </span>
+            {{pass}}
+        </ul>
+    </li>
     {{pass}}
-  </ul>
+    {{pass}}
+    </ul>
+</div>
 </div>
 
 <!-- MODULES -->
-
+<div data-role="collapsible" data-content-theme="c">
 <h3 id="modules" onclick="collapse('modules_inner');" class="component">
   {{=T("Modules")}}
 </h3>
-<div id="modules_inner" class="component_contents">
+<div id="modules_inner">
   {{if not modules:}}
   <p><strong>{{=T("There are no modules")}}</strong></p>
   {{pass}}
-  <div class="controls comptools">
-  </div>
-  <ul>
     {{for m in modules:}}
-    <li>
+    <span data-role="controlgroup">
+    {{=peekfile('modules',m)}}
     {{=editfile('modules',m)}}
     {{if m!='__init__.py':}}<a class="button" href="{{=URL('delete',args=[app,'modules',m],vars=dict(sender=request.function+'/'+app))}}">{{=T("delete")}}</a>{{pass}}
-    {{=peekfile('modules',m)}}
-    </li>
+    </span>
     {{pass}}
-  </ul>
+</div>
 </div>
 
 

@@ -1,4 +1,4 @@
-{{extend 'layout.html'}}
+{{extend 'default.mobile/layout.html'}}
 <script>
 function delkey(id) {
   jQuery('#'+id).hide();
@@ -12,7 +12,7 @@ function delkey(id) {
 
 <h2>{{=T('Editing Language file')}} "{{=filename}}"</h2>
 
-<div class="languageform">
+<div>
   {{=form}}
 </div>
 

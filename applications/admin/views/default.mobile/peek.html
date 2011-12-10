@@ -1,10 +1,10 @@
-{{extend 'layout.html'}}
+{{extend 'default.mobile/layout.html'}}
 
 {{block sectionclass}}peek{{end}}
 
 <h2>{{=T("Peeking at file")}} "{{=filename}}"</h2>
 
-<p class="controls">
+<p>
 {{=button(URL('design',args=request.args[0]), T('back'))}}
 {{=button(URL('edit',args=request.args), T('Edit'))}}
 </p>

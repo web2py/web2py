@@ -1,4 +1,4 @@
-{{extend 'layout.html'}}
+{{extend 'default.mobile/layout.html'}}
 {{import os, stat, time}}
 
 {{block sectionclass}}errors{{end}}
@@ -39,26 +39,28 @@ tr.error_ticket:hover {
 
 <h2>{{=T('Error logs for "%(app)s"',dict(app=app))}}</h2>
 
-<div class="errorform">
+<div>
   <form name="myform" method="post">
+    <div data-role="controlgroup" data-type="horizontal">
     <input name="CheckAll" value="{{=T('check all')}}"
      onclick="check()" type="button">
     <input name="CheckAll" value="{{=T('uncheck all')}}"
      onclick="uncheck()" type="button">
     <input value="{{=T('delete all checked')}}" type="submit"><br><br>
+    </div>
 
     {{ if 'new' in method: }}
     {{base_url = 'db' in method and 'ticketdb' or 'ticket' }}
     <h3>{{=T('Click row to expand traceback')}}</h3>
-    <p class="controls">
+    <p>
     {{if 'db' in method:}}
         source : db
-        <a class="button" href="{{=URL(args=[app, 'new'])}}"><span>switch to : filesystem</span></a>
-        <a class="button" href="{{=URL(args=[app, 'dbold'])}}"><span>lists by ticket</span></a>
+        <a data-role="button" data-inline="true" href="{{=URL(args=[app, 'new'])}}"><span>switch to : filesystem</span></a>
+        <a data-role="button" data-inline="true" href="{{=URL(args=[app, 'dbold'])}}"><span>lists by ticket</span></a>
     {{else:}}
         source : filesystem
-        <a class="button" href="{{=URL(args=[app, 'dbnew'])}}"><span>switch to : db</span></a>
-        <a class="button" href="{{=URL(args=[app, 'old'])}}"><span>lists by ticket</span></a>
+        <a data-role="button" data-inline="true" data-inline="true" href="{{=URL(args=[app, 'dbnew'])}}"><span>switch to : db</span></a>
+        <a data-role="button" data-inline="true" href="{{=URL(args=[app, 'old'])}}"><span>lists by ticket</span></a>
     {{pass}}
     </p>
     <table id="trck_errors" class="sortable">
@@ -94,15 +96,15 @@ tr.error_ticket:hover {
     </table>
     {{ else: }}
     <h3>{{=T('Click row to view a ticket')}}</h3>
-    <p class="controls">
+    <p>
     {{if 'db' in method:}}
         source : db
-        <a class="button" href="{{=URL(args=[app, 'old'])}}"><span>switch to : filesystem</span></a>
-        <a class="button" href="{{=URL(args=[app, 'dbnew'])}}"><span>lists by exception</span></a>
+        <a data-role="button" data-inline="true" href="{{=URL(args=[app, 'old'])}}"><span>switch to : filesystem</span></a>
+        <a data-role="button" data-inline="true" href="{{=URL(args=[app, 'dbnew'])}}"><span>lists by exception</span></a>
     {{else:}}
         source : filesystem
-        <a class="button" href="{{=URL(args=[app, 'dbold'])}}"><span>switch to : db</span></a>
-        <a class="button" href="{{=URL(args=[app, 'new'])}}"><span>lists by exception</span></a>
+        <a data-role="button" data-inline="true" href="{{=URL(args=[app, 'dbold'])}}"><span>switch to : db</span></a>
+        <a data-role="button" data-inline="true" href="{{=URL(args=[app, 'new'])}}"><span>lists by exception</span></a>
     {{pass}}
     </p>
     <table class="sortable">

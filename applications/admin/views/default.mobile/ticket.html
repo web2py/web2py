@@ -1,4 +1,4 @@
-{{extend 'layout.html'}}
+{{extend 'default.mobile/layout.html'}}
 
 {{block sectionclass}}ticket{{end}}
 
@@ -7,7 +7,7 @@
 <p>{{=ticket}}</p>
 {{if output:}}<h4>{{=output}}</h4>{{pass}}
 <h3>{{=T('Version')}}</h3>
-<table class="versions">
+<table>
   <tbody>
     <tr>
       <th>web2py&trade;</th>
@@ -20,7 +20,7 @@
   </tbody>
 </table>
 <h3>{{=T('Traceback')}}</h3>
-<div class="inspect">
+<div>
 {{=traceback}}
 </div>
 
@@ -30,22 +30,21 @@
     <!-- ERROR SNAPSHOT -->
 
     <h3>
-    {{=T('Error snapshot')}}
-    <span class="tooltip">{{=helpicon()}} <span>{{=T('Detailed traceback description')}}</span></span>
+    {{=T('Error snapshot')}}<span>{{=T('Detailed traceback description')}}</span>
     </h3>
 
     <!-- SNAPSHOT LIST -->
 
     <div id="snapshot">
     <!-- Exception details -->
-      <p class="exception_object inspect">
+      <p>
       <code>{{=snapshot['etype']}}({{=snapshot['evalue']}})</code>
       </p>
-      <p class="controls">
-      <a class="button" onclick="collapse('exception_inner');"><span>{{=T('inspect attributes')}}</span></a>
+      <p>
+      <a data-role="button" onclick="collapse('exception_inner');"><span>{{=T('inspect attributes')}}</span></a>
       </p>
-      <div id="exception_inner" class="hide">
-        <div class="inspect">
+      <div id="exception_inner">
+        <div>
           <h5>{{=T("Exception instance attributes")}}</h5>
           <table>
             <tbody>
@@ -68,7 +67,7 @@
       {{for i, frame in enumerate(snapshot['frames']):}}
       <li>
         {{is_hidden = (i != len(snapshot['frames'])-1 and 'hide' or 'inspect')}}
-        <div class="framefile inspect controls">
+        <div>
           <p>
             <strong>File {{="%s in %s at line %s" % (frame['file'], frame['func'], frame['lnum'])}}</strong>
             <a class="button tbbutton" onclick="collapse('{{="%s_code_inner" % i}}');"><span>{{=T("code")}}</span></a>

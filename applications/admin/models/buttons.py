@@ -2,8 +2,17 @@
 
 import os
 
+def A_button(*a,**b):
+    b['_data-role'] = 'button'
+    b['_data-inline'] = 'true'
+    return A(*a,**b)
+
 def button(href, label):
-    return A(SPAN(label),_class='button',_href=href)
+    if request.user_agent().is_mobile:
+        ret = A_button(SPAN(label), _href=href)
+    else:
+        ret = A(SPAN(label),_class='button',_href=href)
+    return ret
 
 def button_enable(href, app):
     if os.path.exists(os.path.join(apath(app,r=request),'DISABLED')):
@@ -14,7 +23,11 @@ def button_enable(href, app):
     return A(label,_class='button',_id=id,callback=href,target=id)
 
 def sp_button(href, label):
-    return A(SPAN(label),_class='button special',_href=href)
+    if request.user_agent().is_mobile:
+        ret = A_button(SPAN(label), _href=href)
+    else:
+        ret = A(SPAN(label),_class='button special',_href=href)
+    return ret
 
 def helpicon():
     return IMG(_src=URL('static', 'images/help.png'), _alt='help')
