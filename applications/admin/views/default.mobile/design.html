@@ -170,8 +170,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
   {{if not statics:}}<p><strong>{{=T("There are no static files")}}</strong></p>{{pass}}
   <ul data-role="listview" data-inset="true">
     {{
-    from collections import OrderedDict
-    tree=OrderedDict()
+    tree={}
     for file in statics+['']:
       items=file.partition('/')
       if not items[0] in tree:
@@ -180,7 +179,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
       tree[items[0]].append(items[2])
       pass
     }}
-    {{for k, v in tree.iteritems():}}
+    {{for k, v in sorted(tree.items()):}}
     {{if k:}}
     <li><a>{{=k}}</a>
         <ul data-theme='c'>
