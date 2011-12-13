@@ -5889,15 +5889,15 @@ class Expression(object):
         return Query(self.db, self.db._adapter.ENDSWITH, self, value)
 
     def contains(self, value, all=False):
-        if isinstance(value,(list,tuple)):
+        if isinstance(value,(list, tuple)):
             subqueries = [self.contains(str(v).strip()) for v in value if str(v).strip()]
             return reduce(all and AND or OR, subqueries)
         if not self.type in ('string', 'text') and not self.type.startswith('list:'):
             raise SyntaxError, "contains used with incompatible field type"
         return Query(self.db, self.db._adapter.CONTAINS, self, value)
 
-    def with_alias(self,alias):
-        return Expression(self.db,self.db._adapter.AS,self,alias,self.type)
+    def with_alias(self, alias):
+        return Expression(self.db, self.db._adapter.AS, self, alias, self.type)
 
     # for use in both Query and sortby
 
@@ -5946,7 +5946,10 @@ class SQLCustomType(object):
         self._class = _class or type
 
     def startswith(self, text=None):
-        return self.type.startswith(self,text)
+        try:
+            return self.type.startswith(self, text)
+        except TypeError:
+            return False
 
     def __getslice__(self, a=0, b=100):
         return None
@@ -5958,11 +5961,11 @@ class SQLCustomType(object):
         return self._class
 
 class FieldVirtual(object):
-    def __init__(self,f):
+    def __init__(self, f):
         self.f = f
 
 class FieldLazy(object):
-    def __init__(self,f,handler=None):
+    def __init__(self, f, handler=None):
         self.f = f
         self.handler = handler
 
