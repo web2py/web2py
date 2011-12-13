@@ -1933,7 +1933,7 @@ class SQLFORM(FORM):
             if nargs>len(args)+1:
                 query = (field == id)
                 if linked_tables is None or referee in linked_tables:
-                    field.represent = lambda id,r=None,referee=referee,rep=field.represent: A(rep(id),_class=trap_class(),_href=URL(args=request.args[:nargs]+['view',referee,id], user_signature=user_signature))
+                    field.represent = lambda id,r=None,referee=referee,rep=field.represent: A(callable(rep) and rep(id) or id,_class=trap_class(),_href=URL(args=request.args[:nargs]+['view',referee,id], user_signature=user_signature))
         except (KeyError,ValueError,TypeError):
             redirect(URL(args=table._tablename))
         if nargs==len(args)+1:
