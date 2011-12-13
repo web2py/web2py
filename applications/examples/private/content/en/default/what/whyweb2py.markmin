@@ -9,12 +9,9 @@
 - **Secure** [[It prevents the most common types of vulnerabilities http://web2py.com/examples/default/security]] including Cross Site Scripting, Injection Flaws, and Malicious File Execution.
 - **Enforces good Software Engineering practices** (Model-View-Controller design, Server-side form validation, postbacks) that make the code more readable, scalable, and maintainable.
 - **Speaks multiple protocols** HTML/XML, RSS/ATOM, RTF, PDF, JSON, AJAX, XML-RPC, CSV, REST, WIKI, Flash/AMF, and Linked Data (RDF). 
-- **Includes** a SSL-enabled and streaming-capable web server, a relational database, a web-based integrated development environment and web-based management interface, a Database Abstraction Layer that writes SQL for you in real time, internationalization support, multiple authentication methods, role based access control, an error logging and ticketing system, multiple caching methods for scalability, the jQuery library for AJAX and effects. [[Read more... http://web2py.com/examples/default/what]]
+- **Includes** a SSL-enabled and streaming-capable web server, a relational database, a web-based integrated development environment and web-based management interface, a Database Abstraction Layer that writes SQL for you in real time, internationalization support, multiple authentication methods, role based access control, an error logging and ticketing system, multiple caching methods for scalability, the jQuery library for AJAX and effects.
 
-The best way to understand web2py is to try it.
-You can try it online [[here http://www.web2py.com/demo_admin]].
-
-This online version is identical to the actual web2py although some functions are disabled for security reasons.
+The best way to understand web2py is to try it. You can try it online [[here http://www.web2py.com/demo_admin]] (this online version is identical to the actual web2py although some functions are disabled for security reasons).
 
 web2py was inspired by Ruby on Rails and, as Rails, it focuses on rapid development and follows a Model View Controller design. web2py differs from Rails because it is based on Python (thus it is faster and more scalable), because it provides a comprehensive web-based administrative interface (thus there is no need to ever type shell commands unless you wish), includes libraries to handle more protocols (for example XML-RPC and RSS feeds), and can run on the Google App Engine.
 

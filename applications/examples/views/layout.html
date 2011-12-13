@@ -55,11 +55,7 @@
   </script>
 
   {{
-  # using sidebars need to know what sidebar you want to use
-  left_sidebar_enabled = globals().get('left_sidebar_enabled',False)
   right_sidebar_enabled = globals().get('right_sidebar_enabled',False)
-  middle_columns = {0:'sixteen',1:'ten',2:'eight'}[
-     (left_sidebar_enabled and 1 or 0)+(right_sidebar_enabled and 1 or 0)]
   }}
 
   <!-- uncomment here to load jquery-ui
@@ -74,39 +70,38 @@
     <div class="header">
       <div class="container">
         <div class="sixteen columns">
-	  <img src="{{=URL('static','images/web2py_logo.png')}}" />
-          <h5>{{=response.subtitle or ''}}</h5>
+	  		<img src="{{=URL('static','images/web2py_logo.png')}}" class="logo" alt="web2py logo" />
+         	<h5>{{=response.subtitle or ''}}</h5>
         </div>
         
         <div class="sixteen columns statusbar">
-	  {{block statusbar}}
-	  {{is_mobile=request.user_agent().is_mobile}}
-          <div id="menu">{{=MENU(response.menu,_class='mobile-menu' if is_mobile else 'sf-menu',mobile=is_mobile)}}
+	  	{{block statusbar}}
+	  	{{is_mobile=request.user_agent().is_mobile}}
+          	<div id="menu" class="clearfix">{{=MENU(response.menu,_class='mobile-menu' if is_mobile else 'sf-menu',mobile=is_mobile)}}
 	    {{end}}
             <!-- AddToAny BEGIN -->
             <div style="float:right;padding-top:6px;" class="a2a_kit a2a_default_style">
             <a class="a2a_dd" href="http://www.addtoany.com/share_save">Share</a></div>
             <script type="text/javascript" src="http://static.addtoany.com/menu/page.js"></script>
             <!-- AddToAny END -->
-          </div>
-	  
-	  <div class="sixteen columns announce">
-	    <a href="http://www.infoworld.com/d/open-source-software/bossie-awards-2011-the-best-open-source-application-development-software-171759-0&current=10&last=1#slideshowTop">2011 BOSSIE AWARD FOR OPEN SOURCE DEVELOPMENT SOFTWARE</a>
-          </div>
-	</div>
+        	</div>
+		</div>
+		<div class="sixteen columns announce">
+	    	<a href="http://www.infoworld.com/d/open-source-software/bossie-awards-2011-the-best-open-source-application-development-software-171759-0&current=10&last=1#slideshowTop">2011 BOSSIE AWARD FOR OPEN SOURCE DEVELOPMENT SOFTWARE</a>
+		</div>
       </div>
     </div>
     <div class="main">
       <div class="container mainbody">	
         <div class="sixteen columns">
-          <div class="{{=middle_columns}} columns center">
+          <div class="{{=right_sidebar_enabled and 'two-thirds column alpha' or 'sixteen columns alpha omega'}}">
             {{block center}}
             {{include}}
             {{end}}
           </div>
           
           {{if right_sidebar_enabled:}}
-          <div class="five columns">
+          <div class="one-third column omega">
             {{block right_sidebar}}
             <h3>Right Sidebar</h3>
             <p></p>
