@@ -1,3 +1,8 @@
+## 1.99.4
+Improved mobile admin, thanks Angelo
+Improved examples page, thanks Anthony
+fixed a SQLCustomField bug
+
 ## 1.99.3
 This is a major revision in peparation for web2py 2.0
 - moved to GitHub and abandoned Lanchpad 

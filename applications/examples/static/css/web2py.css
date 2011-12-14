@@ -16,7 +16,7 @@ center { width:100; text-align: center; vertical-align:middle;}
 label { white-space: nowrap; }
 th, label { font-weight: bold; }
 th, td { text-align: left; vertical-align: top; padding: 2px 5px 2px 5px;}
-form table tr td label { text-align: right; }
+form table tr td label { text-align: left; }
 p, table, ol, ul { padding: 0.5em 0 0.5em 0 }
 p {text-align: justify }
 ol, ul { padding-left: 30px }
