@@ -2610,7 +2610,7 @@ class IS_STRONG(object):
                     failures.append("May not include any numbers")
         if len(failures) == 0:
             return (value, None)
-        if not translate(self.error_message):
+        if not self.error_message:
             from html import XML
             return (value, XML('<br />'.join(failures)))
         else:
