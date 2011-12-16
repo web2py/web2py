@@ -24,7 +24,7 @@ import cStringIO
 from email import MIMEBase, MIMEMultipart, MIMEText, Encoders, Header, message_from_string
 
 from contenttype import contenttype
-from storage import Storage, StorageList, Settings, Messages
+from storage import Storage, PickableStorage, StorageList, Settings, Messages
 from utils import web2py_uuid
 from fileutils import read_file
 from gluon import *
@@ -1494,7 +1494,7 @@ class Auth(object):
         if user:
             password = table_user[passfield].validate(password)[0]
             if not user.registration_key and user[passfield] == password:
-                user = Storage(table_user._filter_fields(user, id=True))
+                user = PickableStorage(user)
                 session.auth = Storage(user=user, last_visit=request.now,
                                        expiration=self.settings.expiration,
                                        hmac_key = web2py_uuid())
@@ -1771,7 +1771,7 @@ class Auth(object):
 
         # process authenticated users
         if user:
-            user = Storage(table_user._filter_fields(user, id=True))
+            user = PickableStorage(user)
 
             # process authenticated users
             # user wants to be logged in for longer

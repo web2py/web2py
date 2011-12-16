@@ -156,6 +156,10 @@ class Storage(dict):
             return value[-1]
         return None
 
+PICKABLE = (str,int,long,float,bool,list,dict,tuple,set)
+def PickableStorage(data):
+    return Storage(dict((k,v) for (k,v) in data.items() if isinstance(v,PICKABLE)))
+
 class StorageList(Storage):
     """
     like Storage but missing elements default to [] instead of None
