@@ -1791,6 +1791,8 @@ class Auth(object):
         if self.settings.login_form == self:
             if accepted_form:
                 callback(onaccept,form)
+                if next == session._auth_next:
+                     session._auth_next = None
                 next = replace_id(next, form)
                 redirect(next)
             table_user[username].requires = old_requires
