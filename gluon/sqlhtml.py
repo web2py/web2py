@@ -1461,8 +1461,7 @@ class SQLFORM(FORM):
         create = wenabled and create
         editable = wenabled and editable
         deletable = wenabled and deletable
-        if search_widget=='default':
-            search_widget = SQLFORM.search_menu
+
         def url(**b):
             b['args'] = args+b.get('args',[])
             b['user_signature'] = user_signature
@@ -1623,16 +1622,18 @@ class SQLFORM(FORM):
         error = None
         search_form = None
         if searchable:
+            if search_widget=='default':
+                search_widget = lambda sfield, url: FORM(
+                    SQLFORM.search_menu(sfields),
+                    INPUT(_name='keywords',_value=request.vars.keywords,
+                          _id='web2py_keywords'),
+                    INPUT(_type='submit',_value=T('Search')),
+                    INPUT(_type='submit',_value=T('Clear'),
+                          _onclick="jQuery('#web2py_keywords').val('');"),
+                    _method="GET",_action=url)
             sfields = reduce(lambda a,b:a+b,
                              [[f for f in t if f.readable] for t in tables])
-            form = FORM(
-                search_widget and search_widget(sfields) or '',
-                INPUT(_name='keywords',_value=request.vars.keywords,
-                      _id='web2py_keywords'),
-                INPUT(_type='submit',_value=T('Search')),
-                INPUT(_type='submit',_value=T('Clear'),
-                      _onclick="jQuery('#web2py_keywords').val('');"),
-                _method="GET",_action=url())
+            form = search_widget and search_widget(sfields,url()) or ''
             search_form = form
             console.append(form)
             keywords = request.vars.get('keywords','')
