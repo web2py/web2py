@@ -1583,7 +1583,9 @@ class INPUT(DIV):
             _value = None
         else:
             _value = str(self['_value'])
-        if t == 'checkbox' and not '_checked' in self.attributes:
+        if '_checked' in self.attributes and not 'value' in self.attributes:
+            pass
+        elif t == 'checkbox':
             if not _value:
                 _value = self['_value'] = 'on'
             if not value:
@@ -1593,7 +1595,7 @@ class INPUT(DIV):
             elif not isinstance(value,(list,tuple)):
                 value = str(value).split('|')
             self['_checked'] = _value in value and 'checked' or None
-        elif t == 'radio' and not '_checked' in self.attributes:
+        elif t == 'radio':
             if str(value) == str(_value):
                 self['_checked'] = 'checked'
             else:
