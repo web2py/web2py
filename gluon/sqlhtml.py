@@ -876,10 +876,10 @@ class SQLFORM(FORM):
                     dspval = ''
             elif field.type == 'blob':
                 continue
-            elif field.type in self.widgets:
-                inp = self.widgets[field.type].widget(field, default)
             else:
-                inp = self.widgets.string.widget(field, default)
+                field_type = widget_class.match(str(field.type)).group()
+                field_type = field_type in self.widgets and field_type or 'string'
+                inp = self.widgets[field_type].widget(field, default)
 
             xfields.append((row_id,label,inp,comment))
             self.custom.dspval[fieldname] = dspval or nbsp
