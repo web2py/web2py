@@ -11,9 +11,9 @@
 .ui-multiselect-header li.ui-multiselect-close { float:right; text-align:right; padding-right:0 }
 
 .ui-multiselect-options { display:none; padding:3px; position:relative; z-index:10000; background: white; border: 1px solid #666666;}
-.ui-multiselect-checkboxes { position:relative /* fixes bug in IE6/7 */; overflow-y:scroll }
+.ui-multiselect-checkboxes { position:relative /* fixes bug in IE6/7 */; overflow-y:scroll; margin-left:0; width:100%; }
 .ui-multiselect-checkboxes label { cursor:default; display:block; border:1px solid transparent; padding:3px }
-.ui-multiselect-checkboxes label input { position:relative; top:1px }
+.ui-multiselect-checkboxes label input { position:relative; top:1px; right:2px; }
 .ui-multiselect-checkboxes li { clear:both; font-size:0.9em; padding-right:3px }
 .ui-multiselect-checkboxes li.ui-multiselect-optgroup-label { text-align:center; font-weight:bold; border-bottom:1px solid }
 .ui-multiselect-checkboxes li.ui-multiselect-optgroup-label a { display:block; padding:3px; margin:1px 0; text-decoration:none }
