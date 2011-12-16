@@ -89,9 +89,6 @@ def ldap_auth(server='ldap', port=None,
                 # In cases where ForestDnsZones and DomainDnsZones are found, 
                 # result will look like the following: 
                 # ['ldap://ForestDnsZones.domain.com/DC=ForestDnsZones,DC=domain,DC=com'] 
-                if not isinstance(result, dict): 
-                    # result should be a dict in the form {'sAMAccountName': [username_bare]} 
-                    return False 
                 if ldap_binddn:
                     # need to search directory with an admin account 1st
                     con.simple_bind_s(ldap_binddn, ldap_bindpw)
@@ -103,6 +100,9 @@ def ldap_auth(server='ldap', port=None,
                 result = con.search_ext_s(
                     ldap_basedn, ldap.SCOPE_SUBTREE,
                     "(&(sAMAccountName=%s)(%s))" % (username_bare, filterstr), ["sAMAccountName"])[0][1]
+                if not isinstance(result, dict): 
+                    # result should be a dict in the form {'sAMAccountName': [username_bare]} 
+                    return False 
                 if ldap_binddn:
                     # We know the user exists & is in the correct OU
                     # so now we just check the password
