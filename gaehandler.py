@@ -76,7 +76,7 @@ logging.basicConfig(level=logging.INFO)
 
 def wsgiapp(env, res):
     """Return the wsgiapp"""
-    env['PATH_INFO'] = env['PATH_INFO'].encode('utf8')
+    env['PATH_INFO'] = env['PATH_INFO'].decode('latin1').encode('utf8')
 
     #this deals with a problem where GAE development server seems to forget
     # the path between requests
