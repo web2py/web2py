@@ -269,10 +269,10 @@ regex_link_popup = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+) popup\]\]')
 regex_link_no_anchor = re.compile('\[\[ +(?P<k>\S+)\]\]')
 regex_qr = re.compile('(?<!["\w\>/=])qr:(?P<k>\w+://[\w\.\-\+\?&%\/\:]+)',re.M)
 regex_embed = re.compile('(?<!["\w\>/=])embed:(?P<k>\w+://[\w\.\-\+\?&%\/\:]+)',re.M)
-regex_auto_image = re.compile('(?<!["\w\>/=])(?P<k>\w+://[\w\.\-\+\?&%\/\:]+\.(jpeg|jpg|gif|png))',re.M)
-regex_auto_video = re.compile('(?<!["\w\>/=])(?P<k>\w+://[\w\.\-\+\?&%\/\:]+\.(mp4|mpeg|mov))',re.M)
-regex_auto_audio = re.compile('(?<!["\w\>/=])(?P<k>\w+://[\w\.\-\+\?&%\/\:]+\.(mp3|wav))',re.M)
-regex_auto = re.compile('(?<!["\w\>/=])(?P<k>\w+://[\w\.\-\+\?&%\/\:]+)',re.M)
+regex_auto_image = re.compile('(?<!["\w\>/=])(?P<k>\w+://\S+\.(jpeg|jpg|gif|png)(\?\S+))',re.M)
+regex_auto_video = re.compile('(?<!["\w\>/=])(?P<k>\w+://\S+\.(mp4|mpeg|mov)(\?\S+))',re.M)
+regex_auto_audio = re.compile('(?<!["\w\>/=])(?P<k>\w+://\S+\.(mp3|wav)(\?\S+))',re.M)
+regex_auto = re.compile('(?<!["\w\>/=])(?P<k>\w+://\S+)',re.M)
 
 def render(text,extra={},allowed={},sep='p'):
     """
@@ -398,9 +398,9 @@ def render(text,extra={},allowed={},sep='p'):
     text = regex_link_popup.sub('<a href="\g<k>" target="_blank">\g<t></a>', text)
     text = regex_link_no_anchor.sub('<a href="\g<k>">\g<k></a>', text)
     text = regex_link.sub('<a href="\g<k>">\g<t></a>', text)
+    text = regex_qr.sub('<img width="80px" src="http://qrcode.kaywa.com/img.php?s=8&amp;d=\g<k>" alt="qr code" />',text)
     text = regex_embed.sub('<iframe src="\g<k>" frameborder="0" allowfullscreen></iframe>', 
                            text)
-    text = regex_qr.sub('<a href="\g<k>"><img width="80px" src="http://qrcode.kaywa.com/img.php?s=8&amp;d=\g<k>" /></a>', text)
     text = regex_auto_image.sub('<img src="\g<k>" controls />', text)
     text = regex_auto_video.sub('<video src="\g<k>" controls></video>', text)
     text = regex_auto_audio.sub('<audio src="\g<k>" controls></audio>', text)
