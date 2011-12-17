@@ -615,8 +615,8 @@ informix://username:password@test\n\
         oCopy.sourcedbType=sourceItems[0]
         oCopy.sourcedbName=sourceItems[1]
         targetItems=string.split(args.targetConnectionString,'://')    
-        oCopy.targetdbType=sourceItems[0]
-        oCopy.targetdbName=sourceItems[1]
+        oCopy.targetdbType=targetItems[0]
+        oCopy.targetdbName=targetItems[1]
     except Exception, err:
         print('EXCEPTION: {0}'.format(err))
 
