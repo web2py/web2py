@@ -1319,13 +1319,14 @@ class SQLFORM(FORM):
             search_options['string'] = ['=','!=','<','>','<=','>=']
             search_options['text'] = ['=','!=','<','>','<=','>=']
         criteria = []
-        selectfields = {'':''}
+        selectfields = []
         for field in fields:
             name = str(field).replace('.','-')
             criterion = []
             options = search_options.get(field.type,None)
             if options:
-                selectfields[T(field.label)] = str(field)
+                label = isinstance(field.label,str) and T(field.label) or field.label
+                selectfields.append((str(field),label))
                 operators = SELECT(*[T(option) for option in options])
                 if field.type=='boolean':
                     value_input = SELECT(
@@ -1346,7 +1347,7 @@ class SQLFORM(FORM):
         criteria.insert(0,SELECT(
                 _id="w2p_query_fields",
                 _onchange="jQuery('.w2p_query_row').hide();jQuery('#w2p_field_'+jQuery(this).val().replace('.','-')).show();",
-                *[OPTION(label, _value=selectfields[label]) for label in selectfields]))
+                *[OPTION(label, _value=fname) for fname,label in selectfields]))
         fadd = SCRIPT("""
         jQuery('#w2p_query_panel input,#w2p_query_panel select').css(
                'width','auto').css('float','left');
