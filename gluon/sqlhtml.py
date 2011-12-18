@@ -1563,7 +1563,7 @@ class SQLFORM(FORM):
             check_authorization()
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(URL('error'))
-            form = SQLFORM(table,record,upload=upload,
+            form = SQLFORM(table,record,upload=upload,ignore_rw=ignore_rw,
                            readonly=True,_class='web2py_form')
             res = DIV(buttons(edit=editable,record=record),form,
                       formfooter,_class=_class)
@@ -1575,7 +1575,7 @@ class SQLFORM(FORM):
             check_authorization()
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(URL('error'))
-            edit_form = SQLFORM(table,record,upload=upload,
+            edit_form = SQLFORM(table,record,upload=upload,ignore_rw=ignore_rw,
                                 deletable=deletable,
                                 _class='web2py_form')
             edit_form.process(formname=formname,
