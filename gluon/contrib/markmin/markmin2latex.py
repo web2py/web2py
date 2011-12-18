@@ -51,7 +51,12 @@ def latex_escape(text,pound=True):
     if pound: text=text.replace('#','\\#')
     return text
 
-def render(text,extra={},allowed={},sep='p',image_mapper=lambda x:x):
+def render(text,
+           extra={},
+           allowed={},
+           sep='p',
+           image_mapper=lambda x:x,
+           chapters=False):
     #############################################################
     # replace all blocks marked with ``...``:class with META
     # store them into segments they will be treated as code
@@ -141,6 +146,11 @@ def render(text,extra={},allowed={},sep='p',image_mapper=lambda x:x):
         text=text[:match.start()]+text[match.start()+1:]
     #text = regex_quote_left.sub('``',text)
     #text = regex_quote_right.sub("''",text)
+
+    if chapters:
+        text=text.replace(r'\section*{',r'\chapter*{')
+        text=text.replace(r'\section{',r'\chapter{')
+        text=text.replace(r'subsection{',r'section{')
 
     #############################################################
     # process all code text
@@ -245,7 +255,7 @@ if __name__ == '__main__':
                       default=False)
     parser.add_option("-n", "--no_wrapper", dest="no_wrapper",
                       action="store_true",default=False)
-    parser.add_option("-1", "--one", dest="one",action="store_true",
+    parser.add_option("-c", "--chapters", dest="chapters",action="store_true",
                       default=False,help="switch section for chapter")
     parser.add_option("-w", "--wrapper", dest="wrapper", default=False,
                       help="latex file containing header and footer")
@@ -275,11 +285,9 @@ if __name__ == '__main__':
             finally:
                 fargs.close()
         content = '\n'.join(content_data)
-        output= markmin2latex(content,wrapper=wrapper)
-        if options.one:
-            output=output.replace(r'\section*{',r'\chapter*{')
-            output=output.replace(r'\section{',r'\chapter{')
-            output=output.replace(r'subsection{',r'section{')
+        output= markmin2latex(content,
+                              wrapper=wrapper,
+                              chapters=options.chapters)
         print output
 
 

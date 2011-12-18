@@ -943,6 +943,11 @@ class BaseAdapter(ConnectionPool):
         return '(%s IN (%s))' % (self.expand(first), items)
 
     def LIKE(self, first, second):
+        "case sensitive like operator"
+        raise NotImplementedError
+
+    def ILIKE(self, first, second):
+        "case in-sensitive like operator"
         return '(%s LIKE %s)' % (self.expand(first), self.expand(second, 'string'))
 
     def STARTSWITH(self, first, second):
@@ -1908,14 +1913,22 @@ class PostgreSQLAdapter(BaseAdapter):
         self.execute("select currval('%s')" % table._sequence_name)
         return int(self.cursor.fetchone()[0])
 
+
     def LIKE(self,first,second):
-        return '(%s ILIKE %s)' % (self.expand(first),self.expand(second,'string'))
+        return '(%s LIKE %s)' % (self.expand(first),
+                                 self.expand(second,'string'))
+
+    def ILIKE(self,first,second):
+        return '(%s ILIKE %s)' % (self.expand(first),
+                                  self.expand(second,'string'))
 
     def STARTSWITH(self,first,second):
-        return '(%s ILIKE %s)' % (self.expand(first),self.expand(second+'%','string'))
+        return '(%s ILIKE %s)' % (self.expand(first),
+                                  self.expand(second+'%','string'))
 
     def ENDSWITH(self,first,second):
-        return '(%s ILIKE %s)' % (self.expand(first),self.expand('%'+second,'string'))
+        return '(%s ILIKE %s)' % (self.expand(first),
+                                  self.expand('%'+second,'string'))
 
     def CONTAINS(self,first,second):
         if first.type in ('string','text'):
@@ -3174,7 +3187,7 @@ class NoSQLAdapter(BaseAdapter):
     def RANDOM(self): raise SyntaxError, "Not supported"
     def SUBSTRING(self,field,parameters):  raise SyntaxError, "Not supported"
     def PRIMARY_KEY(self,key):  raise SyntaxError, "Not supported"
-    def LIKE(self,first,second): raise SyntaxError, "Not supported"
+    def ILIKE(self,first,second): raise SyntaxError, "Not supported"
     def drop(self,table,mode):  raise SyntaxError, "Not supported"
     def alias(self,table,alias): raise SyntaxError, "Not supported"
     def migrate_table(self,*a,**b): raise SyntaxError, "Not supported"
@@ -4174,7 +4187,7 @@ class MongoDBAdapter(NoSQLAdapter):
         items.append(self.expand(item, first.type) for item in second)
         return {self.expand(first) : {"$in" : items} }
 
-    def LIKE(self, first, second):
+    def ILIKE(self, first, second):
         #escaping regex operators?
         return {self.expand(first) : ('%s' % self.expand(second, 'string').replace('%','/'))}
 
@@ -5872,8 +5885,9 @@ class Expression(object):
     def __ge__(self, value):
         return Query(self.db, self.db._adapter.GE, self, value)
 
-    def like(self, value):
-        return Query(self.db, self.db._adapter.LIKE, self, value)
+    def like(self, value, case_sensitive=False):
+        op = case_sensitive and self.db._adapter.LIKE or self.db._adapter.ILIKE
+        return Query(self.db, op, self, value)
 
     def belongs(self, value):
         return Query(self.db, self.db._adapter.BELONGS, self, value)
