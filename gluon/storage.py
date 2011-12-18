@@ -157,7 +157,7 @@ class Storage(dict):
         return None
 
 PICKABLE = (str,int,long,float,bool,list,dict,tuple,set)
-def PickeableStorage(data):
+def PickleableStorage(data):
     return Storage(dict((k,v) for (k,v) in data.items() if isinstance(v,PICKABLE)))
 
 class StorageList(Storage):

@@ -41,8 +41,8 @@ regex_link = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+)\]\]')
 regex_auto = re.compile('(?<!["\w])(?P<k>\w+://[\w\.\-\?&%\:]+)',re.M)
 regex_commas = re.compile('[ ]+(?P<t>[,;\.])')
 regex_noindent = re.compile('\n\n(?P<t>[a-z])')
-regex_quote_left = re.compile('"(?=\w)')
-regex_quote_right = re.compile('(?=\w\.)"')
+#regex_quote_left = re.compile('"(?=\w)')
+#regex_quote_right = re.compile('(?=\w\.)"')
 
 def latex_escape(text,pound=True):
     text=text.replace('\\','{\\textbackslash}')
@@ -139,8 +139,8 @@ def render(text,extra={},allowed={},sep='p',image_mapper=lambda x:x):
         match=regex.search(text)
         if not match: break
         text=text[:match.start()]+text[match.start()+1:]
-    text = regex_quote_left.sub('``',text)
-    text = regex_quote_right.sub("''",text)
+    #text = regex_quote_left.sub('``',text)
+    #text = regex_quote_right.sub("''",text)
 
     #############################################################
     # process all code text
