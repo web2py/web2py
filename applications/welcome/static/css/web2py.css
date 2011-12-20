@@ -30,6 +30,7 @@ small { font-size: 0.8em; }
 textarea { width: 600px; }
 code { font-family: Courier;}
 input[type=text], input[type=password], select { width: 300px; }
+ul { list-style-type: none; margin: 0px; padding: 0px; }
 /** end **/
 
 /* Sticky footer begin */

@@ -135,7 +135,7 @@ class DoubleWidget(StringWidget):
 
 
 class DecimalWidget(StringWidget):
-    _class = 'double'
+    _class = 'decimal'
 
 
 class TimeWidget(StringWidget):
