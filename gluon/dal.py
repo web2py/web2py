@@ -4766,7 +4766,7 @@ class DAL(dict):
             migrate = fake_migrate = False
         adapter = self._adapter
         self._uri_hash = hashlib.md5(adapter.uri).hexdigest()
-        self.tables = SQLCallableList()
+        self._tables = SQLCallableList()
         self.check_reserved = check_reserved
         if self.check_reserved:
             from reserved_sql_keywords import ADAPTERS as RSK
@@ -4777,6 +4777,10 @@ class DAL(dict):
         self._fake_migrate_all = fake_migrate_all
         if auto_import:
             self.import_table_definitions(adapter.folder)
+
+    @property
+    def tables(self):
+        return self._tables
 
     def import_table_definitions(self,path,migrate=False,fake_migrate=False):
         pattern = os.path.join(path,self._uri_hash+'_*.table')
@@ -5374,7 +5378,7 @@ class Table(dict):
         fields = newfields
         self._db = db
         tablename = tablename
-        self.fields = SQLCallableList()
+        self._fields = SQLCallableList()
         self.virtualfields = []
         fields = list(fields)
 
@@ -5420,6 +5424,10 @@ class Table(dict):
                         "primarykey must be a list of fields from table '%s " % tablename
                 else:
                     self[k].notnull = True
+
+    @property
+    def fields(self):
+        return self._fields
 
     def update(self,*args,**kwargs):
         raise RuntimeError, "Syntax Not Supported"
