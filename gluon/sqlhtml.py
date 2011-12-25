@@ -982,11 +982,11 @@ class SQLFORM(FORM):
                 table.append(LI(DIV(a,_class='w2p_fl'),
                                 div_b,
                                 DIV(c,_class='w2p_fc'),_id=id))
-        elif type(self.formstyle) == type(lambda:None):
+        elif callable(self.formstyle):
             table = TABLE()
             for id,a,b,c in xfields:
-                td_b = self.field_parent[id] = TD(b,_class='w2p_fw')
-                newrows = self.formstyle(id,a,td_b,c)
+                raw_b = self.field_parent[id] = b 
+                newrows = self.formstyle(id,a,raw_b,c) 
                 if type(newrows).__name__ != "tuple":
                     newrows = [newrows]
                 for newrow in newrows:
