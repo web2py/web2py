@@ -145,7 +145,7 @@ class IS_MATCH(Validator):
     """
 
     def __init__(self, expression, error_message='invalid expression',
-                 strict=False, search=False):
+                 strict=False, search=False, extract=False):
         if strict or not search:
             if not expression.startswith('^'):
                 expression = '^(%s)' % expression
@@ -154,11 +154,12 @@ class IS_MATCH(Validator):
                 expression = '(%s)$' % expression
         self.regex = re.compile(expression)
         self.error_message = error_message
+        self.extract = extract
 
     def __call__(self, value):
         match = self.regex.search(value)
-        if match:
-            return (match.group(), None)
+        if match is not None:
+            return (self.extract and match.group() or value, None)
         return (value, translate(self.error_message))
 
 
