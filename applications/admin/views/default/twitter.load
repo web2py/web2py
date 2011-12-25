@@ -1,0 +1,34 @@
+{{response.headers['web2py-response-flash']=response.flash}}
+
+{{
+"""
+Tweet attributes
+
+'iso_language_code',
+'to_user_name',
+'to_user_id_str',
+'profile_image_url_https',
+'from_user_id_str',
+'text',
+'from_user_name',
+'in_reply_to_status_id_str',
+'profile_image_url',
+'id',
+'to_user',
+'source',
+'in_reply_to_status_id',
+'id_str',
+'from_user',
+'from_user_id',
+'to_user_id',
+'geo',
+'created_at',
+'metadata'
+"""
+}}
+
+{{ for t in tweets: }}
+  {{ =DIV(H5(t["from_user_name"])) }}
+  {{ =DIV(t["text"]) }}
+  {{ =BR() }}
+{{ pass }}

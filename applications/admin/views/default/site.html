@@ -150,7 +150,7 @@
       <h3>{{=T("%s Recent Tweets"%TWITTER_HASH)}}</h3>
       <div id="tweets">{{=T('loading...')}}</div>
       <script>
-        jQuery(document).ready(function(){jQuery('#tweets').load('{{=URL('twitter')}}')});
+        jQuery(document).ready(function(){jQuery('#tweets').load('{{=URL('twitter.load')}}');});
       </script>
     </div>
     {{pass}}
