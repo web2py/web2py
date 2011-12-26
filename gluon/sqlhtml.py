@@ -1366,7 +1366,7 @@ class SQLFORM(FORM):
         """)
         return CAT(
             INPUT(
-                _value="query",_type="button",_id="w2p_query_trigger",
+                _value=T("Query"),_type="button",_id="w2p_query_trigger",
                 _onclick="jQuery('#w2p_query_fields').val('');jQuery('#w2p_query_panel').slideToggle();"),
             DIV(_id="w2p_query_panel",
                 _style='position:absolute;z-index:1000',
@@ -1924,7 +1924,7 @@ class SQLFORM(FORM):
                     breadcrumbs += [A(T(db[referee]._plural),
                                       _class=trap_class(),
                                       _href=URL(args=request.args[:nargs])),
-                                    ' ',
+                                    ' > ',
                                     A(name,_class=trap_class(),
                                       _href=URL(args=request.args[:nargs]+[
                                     'view',referee,id],user_signature=True)),
