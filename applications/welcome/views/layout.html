@@ -43,8 +43,10 @@
   {{
   response.files.append(URL('static','css/skeleton.css'))
   response.files.append(URL('static','css/web2py.css'))
-  response.files.append(URL('static','css/superfish.css'))
-  response.files.append(URL('static','js/superfish.js'))
+  if response.menu:
+     response.files.append(URL('static','css/superfish.css'))
+     response.files.append(URL('static','js/superfish.js'))
+  pass
   }}
 
   {{include 'web2py_ajax.html'}}
