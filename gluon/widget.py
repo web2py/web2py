@@ -555,9 +555,10 @@ def console():
                       help='timeout on shutdown of server (5 seconds)')
 
     parser.add_option('--socket-timeout',
-                      default=1,
+                      default=60,
+                      type='int',
                       dest='socket_timeout',
-                      help='timeout for socket (1 second)')
+                      help='timeout for socket (60 second)')
 
     parser.add_option('-f',
                       '--folder',
