@@ -43,7 +43,9 @@ def minify(files, path_info, folder, optimize_css, optimize_js,
     - filename (absolute or relative, css or js, actual or temporary) or
     - ('css:inline','...css..')
     - ('js:inline','...js..')    
-    """    
+    """
+    optimize_css = optimize_css or ''
+    optimize_js = optimize_js or ''
     concat_css = 'concat' in optimize_css
     minify_css = 'minify' in optimize_css
     inline_css = 'inline' in optimize_css

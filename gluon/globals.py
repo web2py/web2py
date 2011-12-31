@@ -233,12 +233,15 @@ class Response(Storage):
             # cache for 5 minutes by default
             cache = self.cache_includes or (current.cache.ram, 60*5)
             def call_minify():
-                return minify.minify(files,URL('static','temp'),
+                return minify.minify(files,
+                                     URL('static','temp'),
                                      current.request.folder,
-                                     self.optimize_css,self.optimize_js)
+                                     self.optimize_css,
+                                     self.optimize_js)
             if cache:
                 cache_model, time_expire = cache
-                files = cache_model('response.files.minified',call_minify,
+                files = cache_model('response.files.minified',
+                                    call_minify,
                                     time_expire)
             else:
                 files = call_minify()
