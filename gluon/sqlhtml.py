@@ -986,7 +986,7 @@ class SQLFORM(FORM):
             table = TABLE()
             for id,a,b,c in xfields:
                 raw_b = self.field_parent[id] = b 
-                newrows = self.formstyle(id,a,raw_b,c) 
+                newrows = self.formstyle(id,a,raw_b,c)
                 if type(newrows).__name__ != "tuple":
                     newrows = [newrows]
                 for newrow in newrows:

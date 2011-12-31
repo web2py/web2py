@@ -4074,7 +4074,7 @@ class PluginManager(object):
     True
     """
     instances = {}
-    def __new__(cls,*a,**b):
+    def __new__(cls):
         id = thread.get_ident()
         lock = thread.allocate_lock()
         try:
@@ -4082,7 +4082,7 @@ class PluginManager(object):
             try:
                 return cls.instances[id]
             except KeyError:
-                instance = object.__new__(cls,*a,**b)
+                instance = object.__new__(cls)
                 cls.instances[id] = instance
                 return instance
         finally:
