@@ -551,7 +551,7 @@ class Session(Storage):
 
         (record_id_name, table, record_id, unique_key) = \
             response._dbtable_and_field
-        dd = dict(locked=False, client_ip=request.env.remote_addr,
+        dd = dict(locked=False, client_ip=request.client.replace(':','.'),
                   modified_datetime=request.now,
                   session_data=cPickle.dumps(dict(self)),
                   unique_key=unique_key)
