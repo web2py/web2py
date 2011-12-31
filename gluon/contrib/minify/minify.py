@@ -28,7 +28,7 @@ def fix_links(css,static_path):
 
 def minify(files, path_info, folder, optimize_css, optimize_js,
            ignore_concat = [],
-           ignore_minity = ['/jquery.js', '/anytime.js']):
+           ignore_minify = ['/jquery.js', '/anytime.js']):
 
     """
     Input:
