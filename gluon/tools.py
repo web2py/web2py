@@ -1909,7 +1909,8 @@ class Auth(object):
                     response.flash = self.messages.unable_send_email
                     return form
                 session.flash = self.messages.email_sent
-            if self.settings.registration_requires_approval:
+            if self.settings.registration_requires_approval and \
+               not self.settings.registration_requires_verification:
                 table_user[form.vars.id] = dict(registration_key='pending')
                 session.flash = self.messages.registration_pending
             elif (not self.settings.registration_requires_verification or \
