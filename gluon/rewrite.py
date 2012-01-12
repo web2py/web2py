@@ -143,7 +143,7 @@ def url_out(request, env, application, controller, function, args, other, scheme
             host = True
     if not scheme or scheme is True:
         if request and request.env:
-            scheme = request.env.get('WSGI_URL_SCHEME', 'http').lower()
+            scheme = request.env.get('wsgi_url_scheme', 'http').lower()
         else:
             scheme = 'http' # some reasonable default in case we need it
     if host is not None:
@@ -476,7 +476,7 @@ def regex_uri(e, regexes, tag, default=None):
         host = host[:i]
     key = '%s:%s://%s:%s %s' % \
         (e.get('REMOTE_ADDR','localhost'),
-         e.get('WSGI_URL_SCHEME', 'http').lower(), host,
+         e.get('wsgi.url_scheme', 'http').lower(), host,
          e.get('REQUEST_METHOD', 'get').lower(), path)
     for (regex, value) in regexes:
         if regex.match(key):
@@ -688,7 +688,7 @@ def filter_url(url, method='get', remote='0.0.0.0', out=False, app=False, lang=N
     e = {
          'REMOTE_ADDR': remote,
          'REQUEST_METHOD': method,
-         'WSGI_URL_SCHEME': urlscheme,
+         'wsgi.url_scheme': urlscheme,
          'HTTP_HOST': urlhost,
          'REQUEST_URI': uri,
          'PATH_INFO': path_info,
@@ -812,7 +812,7 @@ class MapUrlIn(object):
 
         # see http://www.python.org/dev/peps/pep-3333/#url-reconstruction for URL composition
         self.remote_addr = self.env.get('REMOTE_ADDR','localhost')
-        self.scheme = self.env.get('WSGI_URL_SCHEME', 'http').lower()
+        self.scheme = self.env.get('wsgi.url_scheme', 'http').lower()
         self.method = self.env.get('REQUEST_METHOD', 'get').lower()
         self.host = self.env.get('HTTP_HOST')
         self.port = None

@@ -845,7 +845,7 @@ class TestRouter(unittest.TestCase):
         r = Storage()
         r.env = Storage()
         r.env.http_host = 'domain.com'
-        r.env.WSGI_URL_SCHEME = 'httpx' # distinguish incoming scheme
+        r.env.wsgi_url_scheme = 'httpx' # distinguish incoming scheme
         self.assertEqual(str(URL(r=r, a='a', c='c', f='f')), "/a/c/f")
         self.assertEqual(str(URL(r=r, a='a', c='c', f='f', host=True)), 
             "httpx://domain.com/a/c/f")
