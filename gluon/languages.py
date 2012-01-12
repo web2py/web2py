@@ -37,11 +37,18 @@ regex_language = \
     re.compile('^[a-zA-Z]{2}(\-[a-zA-Z]{2})?(\-[a-zA-Z]+)?$')
 
 
+class FilenoFile():
+    """ Class to wrap a file descriptor like a file object does. """
+    def __init__(self, fd):
+        self.fd = fd
+
+    def fileno(self):
+        return self.fd
+
 def read_dict_aux(filename):
     fp = open(filename, 'r')
     portalocker.lock(fp, portalocker.LOCK_SH)
     lang_text = fp.read().replace('\r\n', '\n')
-    portalocker.unlock(fp)
     fp.close()
     if not lang_text.strip():
         return {}
@@ -91,19 +98,19 @@ def utf8_repr(s):
 
 def write_dict(filename, contents):
     try:
-        fp = open(filename, 'w')
-    except IOError:
+        fd = os.open(filename, os.O_RDWR | os.O_CREAT)
+    except (IOError, OSError):
         if not is_gae:
             logging.warning('Unable to write to file %s' % filename)
         return
-    portalocker.lock(fp, portalocker.LOCK_EX)
+    portalocker.lock(FilenoFile(fd), portalocker.LOCK_EX)
+    os.ftruncate(fd, 0)
+    fp = os.fdopen(fd, 'w')
     fp.write('# coding: utf8\n{\n')
     for key in sorted(contents):
         fp.write('%s: %s,\n' % (utf8_repr(key), utf8_repr(contents[key])))
     fp.write('}\n')
-    portalocker.unlock(fp)
     fp.close()
-
 
 class lazyT(object):
 
