@@ -513,6 +513,7 @@ class IS_NOT_IN_DB(Validator):
         field,
         error_message='value already in database or empty',
         allowed_override=[],
+        ignore_common_filters=False,
         ):
 
         from dal import Table
@@ -526,7 +527,8 @@ class IS_NOT_IN_DB(Validator):
         self.error_message = error_message
         self.record_id = 0
         self.allowed_override = allowed_override
-
+        self.ignore_common_filters = ignore_common_filters
+        
     def set_self_id(self, id):
         self.record_id = id
 
@@ -538,7 +540,7 @@ class IS_NOT_IN_DB(Validator):
             return (value, None)
         (tablename, fieldname) = str(self.field).split('.')
         field = self.dbset.db[tablename][fieldname]
-        rows = self.dbset(field == value).select(limitby=(0, 1))
+        rows = self.dbset(field == value, ignore_common_filters = self.ignore_common_filters).select(limitby=(0, 1))
         if len(rows) > 0:
             if isinstance(self.record_id, dict):
                 for f in self.record_id:
