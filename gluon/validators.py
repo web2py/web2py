@@ -56,7 +56,9 @@ __all__ = [
     ]
 
 def translate(text):
-    if isinstance(text,(str,unicode)):
+    if text is None:
+        return None
+    elif isinstance(text,(str,unicode)):
         from globals import current
         if hasattr(current,'T'):
             return str(current.T(text))
