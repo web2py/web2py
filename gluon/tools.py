@@ -1775,7 +1775,8 @@ class Auth(object):
             session.auth = Storage(
                 user = user,
                 last_visit = request.now,
-                expiration = self.settings.long_expiration,
+                expiration = request.vars.get("remember",False) and \
+                    self.settings.long_expiration or self.settings.expiration,
                 remember = request.vars.has_key("remember"),
                 hmac_key = web2py_uuid()
                 )
