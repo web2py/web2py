@@ -195,14 +195,14 @@ thread = threading.local()
 # internal representation of tables with field
 #  <table>.<field>, tables and fields may only be [a-zA-Z0-0_]
 
+regex_type = re.compile('^([\w\_\:]+)')
 regex_dbname = re.compile('^(\w+)(\:\w+)*')
-table_field = re.compile('^([\w_]+)\.([\w_]+)$')
+regex_table_field = re.compile('^([\w_]+)\.([\w_]+)$')
 regex_content = re.compile('(?P<table>[\w\-]+)\.(?P<field>[\w\-]+)\.(?P<uuidkey>[\w\-]+)\.(?P<name>\w+)\.\w+$')
 regex_cleanup_fn = re.compile('[\'"\s;]+')
 string_unpack=re.compile('(?<!\|)\|(?!\|)')
 regex_python_keywords = re.compile('^(and|del|from|not|while|as|elif|global|or|with|assert|else|if|pass|yield|break|except|import|print|class|exec|in|raise|continue|finally|is|return|def|for|lambda|try)$')
-
-
+regex_select_as_parser = re.compile("\s+AS\s+(\S+)")
 
 # list of drivers will be built on the fly
 # and lists only what is available
@@ -1141,37 +1141,39 @@ class BaseAdapter(ConnectionPool):
         else:
             raise RuntimeError, "Too many tables selected"
 
-    def _select(self, query, fields, attributes):
-        for key in set(attributes.keys())-set(('orderby', 'groupby', 'limitby',
-                                               'required', 'cache', 'left',
-                                               'distinct', 'having', 'join',
-                                               'for_update')):
-            raise SyntaxError, 'invalid select attribute: %s' % key
-        # ## if no fields specified take them all from the requested tables
+    def expand_all(self, fields, tablenames):
         new_fields = []
         for item in fields:
             if isinstance(item,SQLALL):
                 new_fields += item.table
             else:
                 new_fields.append(item)
-        fields = new_fields
-        tablenames = self.tables(query)
+        # ## if no fields specified take them all from the requested tables
+        if not new_fields:
+            for table in tablenames:
+                for field in self.db[table]:
+                    new_fields.append(field)
+        return new_fields
 
+    def _select(self, query, fields, attributes):
+        for key in set(attributes.keys())-set(('orderby', 'groupby', 'limitby',
+                                               'required', 'cache', 'left',
+                                               'distinct', 'having', 'join',
+                                               'for_update')):
+            raise SyntaxError, 'invalid select attribute: %s' % key
+
+        tablenames = self.tables(query)
+        for field in fields:
+            if isinstance(field, basestring) and regex_table_field.match(field):
+                tn,fn = field.split('.')
+                field = self.db[tn][fn]
+            for tablename in self.tables(field):
+                if not tablename in tablenames:
+                    tablenames.append(tablename)
+        
         if query and not query.ignore_common_filters:
             query = self.common_filter(query,tablenames)
 
-        if not fields:
-            for table in tablenames:
-                for field in self.db[table]:
-                    fields.append(field)
-        else:
-            for field in fields:
-                if isinstance(field, basestring) and table_field.match(field):
-                    tn,fn = field.split('.')
-                    field = self.db[tn][fn]
-                for tablename in self.tables(field):
-                    if not tablename in tablenames:
-                        tablenames.append(tablename)
         if len(tablenames) < 1:
             raise SyntaxError, 'Set: no tables selected'
         sql_f = ', '.join(map(self.expand, fields))
@@ -1289,7 +1291,7 @@ class BaseAdapter(ConnectionPool):
             rows = list(rows)
         limitby = attributes.get('limitby', None) or (0,)
         rows = self.rowslice(rows,limitby[0],None)
-        return self.parse(rows,self._colnames)
+        return self.parse(rows,fields,self._colnames)
 
     def _count(self, query, distinct=None):
         tablenames = self.tables(query)
@@ -1443,7 +1445,97 @@ class BaseAdapter(ConnectionPool):
         """ By default this function does nothing; overload when db does not do slicing. """
         return rows
 
-    def parse(self, rows, colnames, blob_decode=True):
+    def parse_value(self, value, field_type):
+        if field_type != 'blob' and isinstance(value, str):
+            try:
+                value = value.decode(db._db_codec)
+            except Exception:
+                pass        
+        if isinstance(value, unicode):
+            value = value.encode('utf-8')
+        if isinstance(field_type, SQLCustomType):
+            value = field_type.decoder(value)
+        elif not isinstance(field_type, str) or value is None:
+            return value
+        if field_type in ('string', 'text', 'password', 'upload'):
+            return value
+        else:
+            key = regex_type.match(field_type).group(0)
+            return getattr(self,'parse_'+key)(value,field_type)
+
+    def parse_reference(self, value, field_type):
+        referee = field_type[10:].strip()
+        if not '.' in referee:
+            value = Reference(value)
+            value._table, value._record = self.db[referee], None
+        return value
+
+    def parse_boolean(self, value, field_type):
+        return value == True or str(value)[:1].lower() == 't'
+
+    def parse_date(self, value, field_type):
+        if not isinstance(value, (datetime.date,datetime.datetime)):
+            (y, m, d) = map(int, str(value)[:10].strip().split('-'))
+            value = datetime.date(y, m, d)
+        return value
+
+    def parse_time(self, value, field_type):
+        if not isinstance(value, datetime.time):
+            time_items = map(int,str(value)[:8].strip().split(':')[:3])
+            if len(time_items) == 3:
+                (h, mi, s) = time_items
+            else:
+                (h, mi, s) = time_items + [0]
+            value = datetime.time(h, mi, s)
+        return value
+
+    def parse_datetime(self, value, field_type):
+        if not isinstance(value, datetime.datetime):
+            (y, m, d) = map(int,str(value)[:10].strip().split('-'))
+            time_items = map(int,str(value)[11:19].strip().split(':')[:3])
+            if len(time_items) == 3:
+                (h, mi, s) = time_items
+            else:
+                (h, mi, s) = time_items + [0]
+            value = datetime.datetime(y, m, d, h, mi, s)
+        return value
+
+    def parse_blob(self, value, field_type):
+        return base64.b64decode(str(value))
+    
+    def parse_decimal(self, value, field_type):
+        decimals = int(field_type[8:-1].split(',')[-1])
+        if self.dbengine == 'sqlite':
+            value = ('%.' + str(decimals) + 'f') % value
+        if not isinstance(value, decimal.Decimal):
+            value = decimal.Decimal(str(value))
+        return value
+
+    def parse_list_integers(self, value, field_type):
+        if not self.dbengine=='google:datastore':
+            value = bar_decode_integer(value)
+        return value
+
+    def parse_list_references(self, value, field_type):        
+        if not self.dbengine=='google:datastore':
+            value = bar_decode_integer(value)
+        return [self.parse_reference(r, field_type[5:]) for r in value]
+
+    def parse_list_strings(self, value, field_type):
+        if not self.dbengine=='google:datastore':
+            value = bar_decode_string(value)
+        return value
+
+    def parse_id(self, value, field_type):
+        return int(value)
+
+    def parse_integer(self, value, field_type):
+        return int(value)
+
+    def parse_double(self, value, field_type):
+        return float(value)
+
+    def parse(self, rows, fields, colnames, blob_decode=True):
         db = self.db
         virtualtables = []
         new_rows = []
@@ -1451,114 +1543,37 @@ class BaseAdapter(ConnectionPool):
             new_row = Row()
             for j,colname in enumerate(colnames):
                 value = row[j]
-                if not table_field.match(colnames[j]):
+                if not regex_table_field.match(colnames[j]):
                     if not '_extra' in new_row:
                         new_row['_extra'] = Row()
-                    new_row['_extra'][colnames[j]] = value
-                    select_as_parser = re.compile("\s+AS\s+(\S+)")
-                    new_column_name = select_as_parser.search(colnames[j])
+                    new_row['_extra'][colnames[j]] = self.parse_value(value, fields[j].type)
+                    new_column_name = regex_select_as_parser.search(colnames[j])
                     if not new_column_name is None:
                         column_name = new_column_name.groups(0)
                         setattr(new_row,column_name[0],value)
-                    continue
-                (tablename, fieldname) = colname.split('.')
-                table = db[tablename]
-                field = table[fieldname]
-                field_type = field.type
-                if field.type != 'blob' and isinstance(value, str):
-                    try:
-                        value = value.decode(db._db_codec)
-                    except Exception:
-                        pass
-                if isinstance(value, unicode):
-                    value = value.encode('utf-8')
-                if not tablename in new_row:
-                    colset = new_row[tablename] = Row()
-                    if tablename not in virtualtables:
-                        virtualtables.append(tablename)
                 else:
-                    colset = new_row[tablename]
+                    (tablename, fieldname) = colname.split('.')
+                    table = db[tablename]
+                    field = table[fieldname]
+                    if not tablename in new_row:
+                        colset = new_row[tablename] = Row()
+                        if tablename not in virtualtables:
+                            virtualtables.append(tablename)
+                    else:
+                        colset = new_row[tablename]
+                    colset[fieldname] = value = self.parse_value(value,field.type)
 
-                if isinstance(field_type, SQLCustomType):
-                    colset[fieldname] = field_type.decoder(value)
-                    # field_type = field_type.type
-                elif not isinstance(field_type, str) or value is None:
-                    colset[fieldname] = value
-                elif isinstance(field_type, str) and \
-                        field_type.startswith('reference'):
-                    referee = field_type[10:].strip()
-                    if not '.' in referee:
-                        colset[fieldname] = rid = Reference(value)
-                        (rid._table, rid._record) = (db[referee], None)
-                    else: ### reference not by id
-                        colset[fieldname] = value
-                elif field_type == 'boolean':
-                    if value == True or str(value)[:1].lower() == 't':
-                        colset[fieldname] = True
-                    else:
-                        colset[fieldname] = False
-                elif field_type == 'date' \
-                        and (not isinstance(value, datetime.date)\
-                                 or isinstance(value, datetime.datetime)):
-                    (y, m, d) = map(int, str(value)[:10].strip().split('-'))
-                    colset[fieldname] = datetime.date(y, m, d)
-                elif field_type == 'time' \
-                        and not isinstance(value, datetime.time):
-                    time_items = map(int,str(value)[:8].strip().split(':')[:3])
-                    if len(time_items) == 3:
-                        (h, mi, s) = time_items
-                    else:
-                        (h, mi, s) = time_items + [0]
-                    colset[fieldname] = datetime.time(h, mi, s)
-                elif field_type == 'datetime'\
-                        and not isinstance(value, datetime.datetime):
-                    (y, m, d) = map(int,str(value)[:10].strip().split('-'))
-                    time_items = map(int,str(value)[11:19].strip().split(':')[:3])
-                    if len(time_items) == 3:
-                        (h, mi, s) = time_items
-                    else:
-                        (h, mi, s) = time_items + [0]
-                    colset[fieldname] = datetime.datetime(y, m, d, h, mi, s)
-                elif field_type == 'blob' and blob_decode:
-                    colset[fieldname] = base64.b64decode(str(value))
-                elif field_type.startswith('decimal'):
-                    decimals = int(field_type[8:-1].split(',')[-1])
-                    if self.dbengine == 'sqlite':
-                        value = ('%.' + str(decimals) + 'f') % value
-                    if not isinstance(value, decimal.Decimal):
-                        value = decimal.Decimal(str(value))
-                    colset[fieldname] = value
-                elif field_type.startswith('list:integer'):
-                    if not self.dbengine=='google:datastore':
-                        colset[fieldname] = bar_decode_integer(value)
-                    else:
-                        colset[fieldname] = value
-                elif field_type.startswith('list:reference'):
-                    if not self.dbengine=='google:datastore':
-                        colset[fieldname] = bar_decode_integer(value)
-                    else:
-                        colset[fieldname] = value
-                elif field_type.startswith('list:string'):
-                    if not self.dbengine=='google:datastore':
-                        colset[fieldname] = bar_decode_string(value)
-                    else:
-                        colset[fieldname] = value
-                else:
-                    colset[fieldname] = value
-                if field_type == 'id':
-                    id = colset[field.name]
-                    colset.update_record = lambda _ = (colset, table, id), **a: update_record(_, a)
-                    colset.delete_record = lambda t = table, i = id: t._db(t._id==i).delete()
-                    for (referee_table, referee_name) in \
-                            table._referenced_by:
-                        s = db[referee_table][referee_name]
-                        referee_link = db._referee_name and \
-                            db._referee_name % dict(table=referee_table,field=referee_name)
-                        if referee_link and not referee_link in colset:
-                            colset[referee_link] = Set(db, s == id)
-                    colset['id'] = id
+                    if field.type == 'id':
+                        id = value
+                        colset.update_record = lambda _ = (colset, table, id), **a: update_record(_, a)
+                        colset.delete_record = lambda t = table, i = id: t._db(t._id==i).delete()
+                        for (referee_table, referee_name) in table._referenced_by:
+                            s = db[referee_table][referee_name]
+                            referee_link = db._referee_name and \
+                                db._referee_name % dict(table=referee_table,field=referee_name)
+                            if referee_link and not referee_link in colset:
+                                colset[referee_link] = Set(db, s == id)
             new_rows.append(new_row)
-
         rowsobj = Rows(db, new_rows, colnames, rawrows=rows)
 
         for tablename in virtualtables:
@@ -3480,7 +3495,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                           item.key().name()) or getattr(item, t) for t in fields]
             for item in items]
         colnames = ['%s.%s' % (tablename, t) for t in fields]
-        return self.parse(rows, colnames, False)
+        return self.parse(rows, fields, colnames, False)
 
 
     def count(self,query,distinct=None):
@@ -3674,7 +3689,7 @@ class CouchDBAdapter(NoSQLAdapter):
         tablename = colnames[0].split('.')[0]
         ctable = self.connection[tablename]
         rows = [cols['value'] for cols in ctable.query(fn)]
-        return self.parse(rows, colnames, False)
+        return self.parse(rows, fields, colnames, False)
 
     def delete(self,tablename,query):
         if not isinstance(query,Query):
@@ -3967,9 +3982,9 @@ class MongoDBAdapter(NoSQLAdapter):
         #print "colnames = %s" % colnames
         #rows = [row.values() for row in mongo_list_dicts]
         rows = mongo_list_dicts
-        return self.parse(rows, mongofields_dict.keys(), False, tablename)
+        return self.parse(rows, fields, mongofields_dict.keys(), False, tablename)
 
-    def parse(self, rows, colnames, blob_decode=True,tablename=None):
+    def parse(self, rows, fields, colnames, blob_decode=True,tablename=None):
         import pymongo.objectid
         print "in parse"
         print "colnames=%s" % colnames
@@ -4000,118 +4015,39 @@ class MongoDBAdapter(NoSQLAdapter):
                 colname = "%s.%s" % (tablename, colname) # hack to match re (table_field)
                 if i == 0: #only on first row
                     table_colnames.append(colname)
-                if not table_field.match(colname):
+
+
+                if not regex_table_field.match(colnames[j]):
                     if not '_extra' in new_row:
                         new_row['_extra'] = Row()
-                    new_row['_extra'][colnames[j]] = value
-                    select_as_parser = re.compile("\s+AS\s+(\S+)")
-                    new_column_name = select_as_parser.search(colnames[j])
+                    new_row['_extra'][colnames[j]] = self.parse_value(value, fields[j].type)
+                    new_column_name = regex_select_as_parser.search(colnames[j])
                     if not new_column_name is None:
                         column_name = new_column_name.groups(0)
                         setattr(new_row,column_name[0],value)
-                    continue
-                (tablename, fieldname) = colname.split('.')
-                table = db[tablename]
-                field = table[fieldname]
-                field_type = field.type
-                # hack to get past field_type = 'id'
-                #if field_type == 'id': field_type = '_id'
-                print "field = %s, type = %s" % (field, field_type)
-                if field.type != 'blob' and isinstance(value, str):
-                    try:
-                        value = value.decode(db._db_codec)
-                    except Exception:
-                        pass
-                if isinstance(value, unicode):
-                    value = value.encode('utf-8')
-                if not tablename in new_row:
-                    colset = new_row[tablename] = Row()
-                    if tablename not in virtualtables:
-                        virtualtables.append(tablename)
                 else:
-                    colset = new_row[tablename]
+                    (tablename, fieldname) = colname.split('.')
+                    table = db[tablename]
+                    field = table[fieldname]
+                    if not tablename in new_row:
+                        colset = new_row[tablename] = Row()
+                        if tablename not in virtualtables:
+                            virtualtables.append(tablename)
+                    else:
+                        colset = new_row[tablename]
+                    colset[fieldname] = value = self.parse_value(value,field.type)
 
-                if isinstance(field_type, SQLCustomType):
-                    colset[fieldname] = field_type.decoder(value)
-                    # field_type = field_type.type
-                elif not isinstance(field_type, str) or value is None:
-                    colset[fieldname] = value
-                elif isinstance(field_type, str) and \
-                        field_type.startswith('reference'):
-                    referee = field_type[10:].strip()
-                    if not '.' in referee:
-                        colset[fieldname] = rid = Reference(value)
-                        (rid._table, rid._record) = (db[referee], None)
-                    else: ### reference not by id
-                        colset[fieldname] = value
-                elif field_type == 'boolean':
-                    if value == True or str(value)[:1].lower() == 't':
-                        colset[fieldname] = True
-                    else:
-                        colset[fieldname] = False
-                elif field_type == 'date' \
-                        and (not isinstance(value, datetime.date)\
-                                 or isinstance(value, datetime.datetime)):
-                    (y, m, d) = map(int, str(value)[:10].strip().split('-'))
-                    colset[fieldname] = datetime.date(y, m, d)
-                elif field_type == 'time' \
-                        and not isinstance(value, datetime.time):  #psr pymongo time as datetime
-                    if isinstance(value,datetime.datetime):
-                        colset[fieldname] = value.time()
-                    else:    
-                        time_items = map(int,str(value)[:8].strip().split(':')[:3])
-                        if len(time_items) == 3:
-                            (h, mi, s) = time_items
-                        else:
-                            (h, mi, s) = time_items + [0]
-                        colset[fieldname] = datetime.time(h, mi, s)
-                elif field_type == 'datetime'\
-                        and not isinstance(value, datetime.datetime):
-                    (y, m, d) = map(int,str(value)[:10].strip().split('-'))
-                    time_items = map(int,str(value)[11:19].strip().split(':')[:3])
-                    if len(time_items) == 3:
-                        (h, mi, s) = time_items
-                    else:
-                        (h, mi, s) = time_items + [0]
-                    colset[fieldname] = datetime.datetime(y, m, d, h, mi, s)
-                elif field_type == 'blob' and blob_decode:
-                    colset[fieldname] = base64.b64decode(str(value))
-                elif field_type.startswith('decimal'):
-                    decimals = int(field_type[8:-1].split(',')[-1])
-                    if self.dbengine == 'sqlite':
-                        value = ('%.' + str(decimals) + 'f') % value
-                    if not isinstance(value, decimal.Decimal):
-                        value = decimal.Decimal(str(value))
-                    colset[fieldname] = value
-                elif field_type.startswith('list:integer'):
-                    if not self.dbengine=='google:datastore' and not self.dbengine=='mongodb': #<-- comparation to google datastore is kinda unnessarly
-                        colset[fieldname] = bar_decode_integer(value)
-                    else:
-                        colset[fieldname] = value
-                elif field_type.startswith('list:reference'):
-                    if not self.dbengine=='google:datastore' and not self.dbengine=='mongodb': #<-- comparation to google datastore is kinda unnessarly
-                        colset[fieldname] = bar_decode_integer(value)
-                    else:
-                        colset[fieldname] = value
-                elif field_type.startswith('list:string'):
-                    if not self.dbengine=='google:datastore' and not self.dbengine=='mongodb': #<-- comparation to google datastore is kinda unnessarly
-                        colset[fieldname] = bar_decode_string(value)
-                    else:
-                        colset[fieldname] = value
-                else:
-                    colset[fieldname] = value
-                if field_type == 'id':
-                    id = colset[field.name]
-                    colset.update_record = lambda _ = (colset, table, id), **a: update_record(_, a)
-                    colset.delete_record = lambda t = table, i = id: t._db(t._id==i).delete()
-                    for (referee_table, referee_name) in \
-                            table._referenced_by:
-                        s = db[referee_table][referee_name]
-                        referee_link = db._referee_name and \
-                            db._referee_name % dict(table=referee_table,field=referee_name)
-                        if referee_link and not referee_link in colset:
-                            colset[referee_link] = Set(db, s == id)
-                    colset['id'] = id
+                    if field.type == 'id':
+                        id = value
+                        colset.update_record = lambda _ = (colset, table, id), **a: update_record(_, a)
+                        colset.delete_record = lambda t = table, i = id: t._db(t._id==i).delete()
+                        for (referee_table, referee_name) in table._referenced_by:
+                            s = db[referee_table][referee_name]
+                            referee_link = db._referee_name and \
+                                                        db._referee_name % dict(table=referee_table,field=referee_name)
+                            if referee_link and not referee_link in colset:
+                                colset[referee_link] = Set(db, s == id)
+
             new_rows.append(new_row)
         print "table_colnames = %s" % table_colnames
         rowsobj = Rows(db, new_rows, table_colnames, rawrows=rows)
@@ -4433,7 +4369,7 @@ class Row(dict):
 
     def __getitem__(self, key):
         key=str(key)
-        m = table_field.match(key)
+        m = regex_table_field.match(key)
         if key in self.get('_extra',{}):
             return self._extra[key]
         elif m:
@@ -6334,7 +6270,9 @@ class Set(object):
         return self.db._adapter._count(self.query,distinct)
 
     def _select(self, *fields, **attributes):
-        return self.db._adapter._select(self.query,fields,attributes)
+        adapter = self.db._adapter
+        fields = adapter.expand_all(fields, adapter.tables(self.query))
+        return adapter._select(self.query,fields,attributes)
 
     def _delete(self):
         tablename=self.db._adapter.get_table(self.query)
@@ -6351,8 +6289,10 @@ class Set(object):
     def count(self,distinct=None):
         return self.db._adapter.count(self.query,distinct)
 
-    def select(self, *fields, **attributes):
-        return self.db._adapter.select(self.query,fields,attributes)
+    def select(self, *fields, **attributes):        
+        adapter = self.db._adapter
+        fields = adapter.expand_all(fields, adapter.tables(self.query))
+        return adapter.select(self.query,fields,attributes)
 
     def delete(self):
         tablename=self.db._adapter.get_table(self.query)
@@ -6687,7 +6627,7 @@ class Rows(object):
         for record in self:
             row = []
             for col in colnames:
-                if not table_field.match(col):
+                if not regex_table_field.match(col):
                     row.append(record._extra[col])
                 else:
                     (t, f) = col.split('.')
@@ -6722,7 +6662,7 @@ class Rows(object):
         def inner_loop(record, col):
             (t, f) = col.split('.')
             res = None
-            if not table_field.match(col):
+            if not regex_table_field.match(col):
                 key = col
                 res = record._extra[col]
             else:

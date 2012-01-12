@@ -1592,7 +1592,7 @@ class SQLFORM(FORM):
             check_authorization()
             table = db[request.args[-2]]
             if ondelete:
-                ondelete(table,request.args[-1],ret)
+                ondelete(table,request.args[-1])
             ret = db(table.id==request.args[-1]).delete()
             return ret
         elif csv and len(request.args)>0 and request.args[-1]=='csv':
