@@ -51,9 +51,11 @@
 
   {{include 'web2py_ajax.html'}}
 
+  {{if response.menu:}}
   <script type="text/javascript">
     jQuery(function(){ jQuery('ul.sf-menu').supersubs({minWidth:12,maxWidth:30,extraWidth:3}).superfish(); });
   </script>
+  {{pass}}
 
   {{
   # using sidebars need to know what sidebar you want to use
@@ -76,8 +78,11 @@
         <div class="sixteen columns">
           <div id="navbar">{{='auth' in globals() and auth.navbar(separators=(' ',' | ',''))}}</div>
           {{is_mobile=request.user_agent().is_mobile}}
-          <div id="menu">{{=MENU(response.menu, _class='mobile-menu' if is_mobile else 'sf-menu',mobile=is_mobile)}}
+	  {{if response.menu:}}
+          <div id="menu">
+             {{=MENU(response.menu, _class='mobile-menu' if is_mobile else 'sf-menu',mobile=is_mobile)}}
           </div>
+          {{pass}}
         </div>
       </div>
     </div><!-- topbar -->
