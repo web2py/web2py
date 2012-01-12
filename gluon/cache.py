@@ -261,6 +261,8 @@ class CacheOnDisk(CacheAbstract):
                     os.unlink(self.shelve_name)
                 except IOError:
                     logger.warn('unable to delete file %s' % self.shelve_name)
+                except OSError:
+                    logger.warn('unable to delete file %s' % self.shelve_name)
             if locker_locked:
                 portalocker.unlock(locker)
             if locker:
