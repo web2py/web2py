@@ -1461,7 +1461,7 @@ class BaseAdapter(ConnectionPool):
             return value
         else:
             key = regex_type.match(field_type).group(0)
-            return getattr(self,'parse_'+key)(value,field_type)
+            return self.parsemap[key](value,field_type)
 
     def parse_reference(self, value, field_type):
         referee = field_type[10:].strip()
@@ -1535,7 +1535,25 @@ class BaseAdapter(ConnectionPool):
     def parse_double(self, value, field_type):
         return float(value)
 
+    def build_parsemap(self):
+        self.parsemap = {
+            'id':self.parse_id,
+            'integer':self.parse_integer,
+            'double':self.parse_double,
+            'reference':self.parse_reference,
+            'boolean':self.parse_boolean,
+            'date':self.parse_date,
+            'time':self.parse_time,
+            'datetime':self.parse_datetime,
+            'blob':self.parse_blob,
+            'decimal':self.parse_decimal,
+            'list:integer':self.parse_list_integers,
+            'list:reference':self.parse_list_references,     
+            'list:string':self.parse_list_strings,
+            }
+
     def parse(self, rows, fields, colnames, blob_decode=True):
+        self.build_parsemap()
         db = self.db
         virtualtables = []
         new_rows = []
@@ -3985,6 +4003,7 @@ class MongoDBAdapter(NoSQLAdapter):
         return self.parse(rows, fields, mongofields_dict.keys(), False, tablename)
 
     def parse(self, rows, fields, colnames, blob_decode=True,tablename=None):
+        self.build_parsemap()
         import pymongo.objectid
         print "in parse"
         print "colnames=%s" % colnames
