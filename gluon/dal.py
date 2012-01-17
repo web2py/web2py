@@ -2120,8 +2120,8 @@ class OracleAdapter(BaseAdapter):
         self.execute("ALTER SESSION SET NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS';")
     oracle_fix = re.compile("[^']*('[^']*'[^']*)*\:(?P<clob>CLOB\('([^']+|'')*'\))")
 
-    def execute(self, command):
-        args = []
+    def execute(self, command, args=None):
+        args = args or []
         i = 1
         while True:
             m = self.oracle_fix.match(command)
