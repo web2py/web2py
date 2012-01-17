@@ -1882,7 +1882,7 @@ class Auth(object):
                                 repr(request.vars.get(passfield, None)),
                             error_message=self.messages.mismatched_password))
 
-                    addrow(form, self.messages.verify_password + ':',
+                    addrow(form, self.messages.verify_password + self.settings.label_separator,
                            form.custom.widget.password_two,
                            self.messages.verify_password_comment,
                            formstyle,
