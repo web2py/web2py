@@ -31,6 +31,7 @@ including:
 - MongoDB (in progress)
 - Google:nosql
 - Google:sql
+- IMAP (experimental)
 
 Example of usage:
 
@@ -108,6 +109,7 @@ Supported DAL URI strings:
 'google:datastore' # for google app engine datastore
 'google:sql' # for google app engine with sql (mysql compatible)
 'teradata://DSN=dsn;UID=user;PWD=pass' # experimental
+'imap://user:password@server:port' # experimental
 
 For more info:
 help(DAL)
@@ -318,6 +320,12 @@ if not 'google' in drivers:
         drivers.append('mongoDB')
     except:
         logger.debug('no mongoDB driver')
+
+    try:
+        import imaplib
+        drivers.append('IMAP')
+    except:
+        logger.debug('could not import imaplib')
 
 PLURALIZE_RULES = [
     (re.compile('child$'), re.compile('child$'), 'children'),
@@ -3936,7 +3944,7 @@ class MongoDBAdapter(NoSQLAdapter):
         limitby = attributes.get('limitby', False)
         #distinct = attributes.get('distinct', False)
         if orderby:
-            #print "in if orderby %s" % orderby
+            print "in if orderby %s" % orderby
             if isinstance(orderby, (list, tuple)):
                 print "in xorify"
                 orderby = xorify(orderby)
@@ -3948,7 +3956,7 @@ class MongoDBAdapter(NoSQLAdapter):
                     mongosort_list.append((f[1:],-1))
                 else:
                     mongosort_list.append((f,1))
-            print "mongosort_list = %s" % mongosort_list  
+            print "mongosort_list = %s" % mongosort_list
             
         if limitby:
             # a tuple 
@@ -3958,7 +3966,7 @@ class MongoDBAdapter(NoSQLAdapter):
             limitby_limit = 0
 
         #if distinct:
-            #print "in distinct %s" % distinct
+        #    print "in distinct %s" % distinct
         
         mongofields_dict = son.SON()
         mongoqry_dict = {}
@@ -3989,15 +3997,15 @@ class MongoDBAdapter(NoSQLAdapter):
             print "mongoqry_dict=%s" % mongoqry_dict
         except:
             pass
-        print "mongofields_dict=%s" % mongofields_dict
+        # print "mongofields_dict=%s" % mongofields_dict
         ctable = self.connection[tablename]
         mongo_list_dicts = ctable.find(mongoqry_dict,mongofields_dict,skip=limitby_skip, limit=limitby_limit, sort=mongosort_list) # pymongo cursor object 
-        print "mongo_list_dicts=%s" % mongo_list_dicts 
+        print "mongo_list_dicts=%s" % mongo_list_dicts
         #if mongo_list_dicts.count() > 0: #
             #colnames = mongo_list_dicts[0].keys() # assuming all docs have same "shape", grab colnames from first dictionary (aka row)
         #else:    
             #colnames = mongofields_dict.keys()
-        #print "colnames = %s" % colnames
+        print "colnames = %s" % colnames
         #rows = [row.values() for row in mongo_list_dicts]
         rows = mongo_list_dicts
         return self.parse(rows, fields, mongofields_dict.keys(), False, tablename)
@@ -4094,7 +4102,7 @@ class MongoDBAdapter(NoSQLAdapter):
         return rowsobj    
 
     def INVERT(self,first):
-        #print "in invert first=%s" % first
+        print "in invert first=%s" % first
         return '-%s' % self.expand(first)  
 
     def drop(self, table, mode=''):
@@ -4241,6 +4249,555 @@ class MongoDBAdapter(NoSQLAdapter):
         return '%s, %s' % (self.expand(first), self.expand(second))
 
 
+class IMAPAdapter(NoSQLAdapter):
+    """ IMAP server adapter
+    
+      This class is intended as an interface with
+    email IMAP servers to perform simple queries in the
+    web2py DAL query syntax, so email read, search and
+    other related IMAP mail services (as those implemented
+    by brands like Google(r), Hotmail(r) and Yahoo!(r)
+    can be managed from web2py applications.
+
+    The code uses examples by Yuji Tomita on this post:
+    http://yuji.wordpress.com/2011/06/22/python-imaplib-imap-example-with-gmail/#comment-1137
+
+    And IMAP docs for Python imaplib and IETF's RFC2060
+
+    This adapter was tested with a small set of operations with Gmail(r). Other
+    services requests could raise command syntax and response data issues.
+
+    
+    """
+    types = {
+                'string': str,
+                'text': str,
+                'date': datetime.date,
+                'datetime': datetime.datetime,
+                'id': long,
+                'boolean': bool,
+                'integer': int,
+                'blob': str,
+        }
+
+    dbengine = 'imap'
+
+    def __init__(self,
+                 db,
+                 uri,
+                 pool_size=0,
+                 folder=None,
+                 db_codec ='UTF-8',
+                 credential_decoder=lambda x:x,
+                 driver_args={},
+                 adapter_args={}):
+                     
+        # db uri: user@example.com:password@imap.server.com:123
+        uri = uri.split("://")[1]
+        self.db = db
+        self.uri = uri
+        self.pool_size=0
+        self.folder = folder
+        self.db_codec = db_codec
+        self.credential_decoder = credential_decoder
+        self.driver_args = driver_args
+        self.adapter_args = adapter_args
+        self.mailbox_size = None
+        self.mailbox_names = dict()
+        self.encoding = sys.getfilesystemencoding()
+        """ MESSAGE is an identifier for sequence number"""
+
+        self.search_fields = {
+            'id': 'MESSAGE',
+            'created': 'DATE',
+            'uid': 'UID',
+            'sender': 'FROM',
+            'to': 'TO',
+            'content': 'TEXT',
+            'deleted': '\\Deleted',
+            'draft': '\\Draft',
+            'flagged': '\\Flagged',
+            'recent': '\\Recent',
+            'seen': '\\Seen',
+            'subject': 'SUBJECT',
+            'answered': '\\Answered',
+            'mime': None,
+            'email': None,
+            'attachments': None
+            }
+            
+        db['_lastsql'] = ''
+
+        m = re.compile('^(?P<user>[^:]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@/]+)(\:(?P<port>[0-9]+))?$').match(uri)
+        user = m.group('user')
+        password = m.group('password')
+        host = m.group('host')
+        port = int(m.group('port'))
+        over_ssl = False
+        if port==993:
+            over_ssl = True
+
+        driver_args.update(dict(host=host,port=port, password=password, user=user))
+        def connect(driver_args=driver_args):
+            # it is assumed sucessful authentication alLways
+            # TODO: support direct connection and login tests
+            if over_ssl:
+                imap4 = imaplib.IMAP4_SSL
+            else:
+                imap4 = imaplib.IMAP4
+            connection = imap4(driver_args["host"], driver_args["port"])
+            connection.login(driver_args["user"], driver_args["password"])
+            return connection
+
+        self.pool_connection(connect,cursor=False)
+        self.db.define_tables = self.define_tables
+
+    def get_last_message(self, tablename):
+        last_message = None
+        # request mailbox list to the server
+        # if needed
+        if not  len(self.mailbox_names.keys()) > 0:
+            self.get_mailboxes()
+        try:
+            result = self.connection.select(self.mailbox_names[tablename])
+            last_message = int(result[1][0])
+        except (IndexError, ValueError, TypeError, KeyError), e:
+            logger.debug("Error retrieving the last mailbox sequence number. %s" % str(e))
+        return last_message
+
+    def get_uid_bounds(self, tablename):
+        if not  len(self.mailbox_names.keys()) > 0:
+            self.get_mailboxes()
+        # fetch first and last messages
+        # return (first, last) messages uid's
+        last_message = self.get_last_message(tablename)
+        result, data = self.connection.uid("search", None, "(ALL)")
+        uid_list = data[0].strip().split()
+        if len(uid_list) <= 0:
+            return None
+        else:
+            return (uid_list[0], uid_list[-1])
+
+    def convert_date(self, date, add=None):
+        if add is None:
+            add = datetime.timedelta()
+        """ Convert a date object to a string
+        with d-Mon-Y style for IMAP or the inverse
+        case
+
+        add <timedelta> adds to the date object
+        """
+        months = [None, "Jan","Feb","Mar","Apr","May","Jun",
+                  "Jul", "Aug","Sep","Oct","Nov","Dec"]
+        if isinstance(date, basestring):
+            # Prevent unexpected date response format
+            try:
+                dayname, datestring = date.split(",")
+            except (ValueError):
+                logger.debug("Could not parse date text: %s" % date)
+                return None
+            date_list = datestring.strip().split()
+            year = int(date_list[2])
+            month = months.index(date_list[1])
+            day = int(date_list[0])
+            hms = [int(value) for value in date_list[3].split(":")]
+            return datetime.datetime(year, month, day,
+                                     hms[0], hms[1], hms[2]) + add
+        elif isinstance(date, (datetime.datetime, datetime.date)):
+            return (date + add).strftime("%d-%b-%Y")
+
+        else:
+            return None
+
+    def decode_text(self):
+        """ translate encoded text for mail to unicode"""
+        # not implemented
+        pass
+
+    def get_charset(self, message):
+        charset = message.get_content_charset()
+        return charset
+
+    def get_mailboxes(self):
+        mailboxes_list = self.connection.list()
+        mailboxes = list()
+        for item in mailboxes_list[1]:
+            item = item.strip()
+            if not "NOSELECT" in item.upper():
+                sub_items = item.split("\"")
+                sub_items = [sub_item for sub_item in sub_items if len(sub_item.strip()) > 0]
+                mailbox = sub_items[len(sub_items) - 1]
+                # remove unwanted characters and store original names
+                mailbox_name = mailbox.replace("[", "").replace("]", "").replace("/", "_")
+                mailboxes.append(mailbox_name)
+                self.mailbox_names[mailbox_name] = mailbox
+        return mailboxes
+
+    def define_tables(self):
+        """
+        Auto create common IMAP fileds
+
+        This function creates fields definitions "statically"
+        meaning that custom fields as in other adapters should
+        not be supported and definitions handled on a service/mode
+        basis (local syntax for Gmail(r), Ymail(r)
+        """
+        mailboxes = self.get_mailboxes()
+        for mailbox_name in mailboxes:
+            self.db.define_table("%s" % mailbox_name,
+                            Field("uid", "string", writable=False),
+                            Field("answered", "boolean", writable=False),
+                            Field("created", "datetime", writable=False),
+                            Field("content", "list:text", writable=False),
+                            Field("to", "string", writable=False),
+                            Field("deleted", "boolean", writable=False),
+                            Field("draft", "boolean", writable=False),
+                            Field("flagged", "boolean", writable=False),
+                            Field("sender", "string", writable=False),
+                            Field("recent", "boolean", writable=False),
+                            Field("seen", "boolean", writable=False),
+                            Field("subject", "string", writable=False),
+                            Field("mime", "string", writable=False),
+                            Field("email", "text", writable=False),
+                            Field("attachments", "list:text", writable=False),
+                            )
+
+    def create_table(self, *args, **kwargs):
+        # not implemented
+        logger.debug("Create table feature is not implemented for %s" % type(self))
+
+    def _select(self,query,fields,attributes):
+        """  Search and Fetch records and return web2py
+        rows
+        """
+
+        # move this statement elsewhere (upper-level)
+        import email
+        import email.header
+        decode_header = email.header.decode_header
+        # get records from imap server with search + fetch
+        # convert results to a dictionary
+        tablename = None
+        if isinstance(query, (Expression, Query)):
+            tablename = self.get_table(query)
+            mailbox = self.mailbox_names.get(tablename, None)
+            if isinstance(query, Expression):
+                pass
+            elif isinstance(query, Query):
+                if mailbox is not None:
+                    # select with readonly
+                    selected = self.connection.select(mailbox, True)
+                    self.mailbox_size = int(selected[1][0])
+                    search_query = "(%s)" % str(query).strip()
+                    search_result = self.connection.uid("search", None, search_query)
+                    # Normal IMAP response OK is assumed (change this)
+                    if search_result[0] == "OK":
+                        fetch_results = list()
+                        # For "light" remote server responses just get the first
+                        # ten records (change for non-experimental implementation)
+                        # However, light responses are not guaranteed with this
+                        # approach, just fewer messages.
+                        messages_set = search_result[1][0].split()[:10]
+                        # Partial fetches are not used since the email
+                        # library does not seem to support it (it converts
+                        # partial messages to mangled message instances)
+                        imap_fields = "(RFC822)"
+                        if len(messages_set) > 0:
+                            # create fetch results object list
+                            # fetch each remote message and store it in memmory
+                            # (change to multi-fetch command syntax for faster
+                            # transactions)
+                            for uid in messages_set:
+                                typ, data = self.connection.uid("fetch", uid, imap_fields)
+                                fr = {"message": int(data[0][0].split()[0]),
+                                      "uid": int(uid),
+                                      "email": email.message_from_string(data[0][1])
+                                      }
+                                fr["multipart"] = fr["email"].is_multipart()
+                                fetch_results.append(fr)
+
+        elif isinstance(query, basestring):
+            pass
+        else:
+            pass
+        
+        imapqry_dict = {}
+        imapfields_dict = {}
+
+        if len(fields) == 1 and isinstance(fields[0], SQLALL):
+            allfields = True
+        elif len(fields) == 0:
+            allfields = True
+        else:
+            allfields = False
+        if allfields:
+            fieldnames = ["%s.%s" % (tablename, field) for field in self.search_fields.keys()]
+        else:
+            fieldnames = ["%s.%s" % (tablename, field.name) for field in fields]
+
+        for k in fieldnames:
+            imapfields_dict[k] = k
+
+        imapqry_list = list()
+        imapqry_array = list()
+        for fr in fetch_results:
+            n = int(fr["message"])
+            item_dict = dict()
+            message = fr["email"]
+            uid = fr["uid"]
+            charset = self.get_charset(message)
+            # Return messages data mapping static fields
+            # and fetched results. Mapping should be made
+            # outside the select function (with auxiliary
+            # instance methods)
+
+            # pending: search flags states trough the email message
+            # instances for correct output
+            
+            if "%s.id" % tablename in fieldnames:
+                item_dict["%s.id" % tablename] = n
+            if "%s.created" % tablename in fieldnames:
+                item_dict["%s.created" % tablename] = self.convert_date(message["Date"])
+            if "%s.uid" % tablename in fieldnames:
+                item_dict["%s.uid" % tablename] = uid
+            if "%s.sender" % tablename in fieldnames:
+                # If there is no encoding found in the message header
+                # force utf-8 replacing characters (change this to
+                # module's defaults). Applies to .sender and .to fields
+                if charset is not None:
+                    item_dict["%s.sender" % tablename] = unicode(message["From"], charset, "replace")
+                else:
+                    item_dict["%s.sender" % tablename] = unicode(message["From"], "utf-8", "replace")
+            if "%s.to" % tablename in fieldnames:
+                if charset is not None:
+                    item_dict["%s.to" % tablename] = unicode(message["To"], charset, "replace")
+                else:
+                    item_dict["%s.to" % tablename] = unicode(message["To"], "utf-8", "replace")
+            if "%s.content" % tablename in fieldnames:
+                content = []
+                for part in message.walk():
+                    if "text" in part.get_content_maintype():
+                        payload = part.get_payload(decode=True)
+                        content.append(payload)
+                item_dict["%s.content" % tablename] = content
+            if "%s.deleted" % tablename in fieldnames:
+                item_dict["%s.deleted" % tablename] = None
+            if "%s.draft" % tablename in fieldnames:
+                item_dict["%s.draft" % tablename] = None
+            if "%s.flagged" % tablename in fieldnames:
+                item_dict["%s.flagged" % tablename] = None
+            if "%s.recent" % tablename in fieldnames:
+                item_dict["%s.recent" % tablename] = None
+            if "%s.seen" % tablename in fieldnames:
+                item_dict["%s.seen" % tablename] = None
+            if "%s.subject" % tablename in fieldnames:
+                subject = message["Subject"]
+                decoded_subject = decode_header(subject)
+                text = decoded_subject[0][0]
+                encoding = decoded_subject[0][1]
+                if encoding is not None:
+                    text = unicode(text, encoding)
+                item_dict["%s.subject" % tablename] =  text
+            if "%s.answered" % tablename in fieldnames:
+                item_dict["%s.answered" % tablename] = None
+            if "%s.mime" % tablename in fieldnames:
+                item_dict["%s.mime" % tablename] = message.get_content_type()
+                
+            # here goes the whole RFC822 body as an email instance
+            # for controller side custom processing
+            if "%s.email" % tablename in fieldnames:
+                item_dict["%s.email" % tablename] = message
+
+            if "%s.attachments" % tablename in fieldnames:
+                attachments = []
+                for part in message.walk():
+                    if not "text" in part.get_content_maintype():
+                        attachments.append(part.get_payload(decode=True))
+                item_dict["%s.attachments" % tablename] = attachments
+            imapqry_list.append(item_dict)
+
+        # extra object mapping for the sake of rows object
+        # creation (sends an array or lists)
+        for item_dict in imapqry_list:
+            imapqry_array_item = list()
+            for fieldname in fieldnames:
+                imapqry_array_item.append(item_dict[fieldname])
+            imapqry_array.append(imapqry_array_item)
+
+        return tablename, imapqry_array, fieldnames
+
+    def select(self,query,fields,attributes):
+        tablename, imapqry_array , fieldnames = self._select(query,fields,attributes)
+        # parse result and return a rows object
+        colnames = fieldnames
+        result = self.parse(imapqry_array, colnames)
+        return result
+
+    def count(self,query,distinct=None):
+        # not implemented
+        # (count search results without select call)
+        pass
+
+    def BELONGS(self, first, second):
+        result = None
+        name = self.search_fields[first.name]
+        if name == "MESSAGE":
+            values = [str(val) for val in second if str(val).isdigit()]
+            result = "%s" % ",".join(values).strip()
+
+        elif name == "UID":
+            values = [str(val) for val in second if str(val).isdigit()]
+            result = "UID %s" % ",".join(values).strip()
+
+        else:
+            raise Exception("Operation not supported")
+        # result = "(%s %s)" % (self.expand(first), self.expand(second))
+        return result
+
+    def CONTAINS(self, first, second):
+        result = None
+        name = self.search_fields[first.name]
+
+        if name in ("FROM", "TO", "SUBJECT", "TEXT"):
+            result = "%s \"%s\"" % (name, self.expand(second))
+        else:
+            if first.name in ("cc", "bcc"):
+                result = "%s \"%s\"" % (first.name.upper(), self.expand(second))
+            elif first.name == "mime":
+                result = "HEADER Content-Type \"%s\"" % self.expand(second)
+            else:
+                raise Exception("Operation not supported")
+        return result
+
+    def GT(self, first, second):
+        result = None
+        name = self.search_fields[first.name]
+        if name == "MESSAGE":
+            last_message = self.get_last_message(first.tablename)
+            result = "%d:%d" % (int(self.expand(second)) + 1, last_message)
+        elif name == "UID":
+            # GT and LT may not return
+            # expected sets depending on
+            # the uid format implemented
+            try:
+                pedestal, threshold = self.get_uid_bounds(first.tablename)
+            except TypeError, e:
+                logger.debug("Error requesting uid bounds: %s", str(e))
+                return ""
+            try:
+                lower_limit = int(self.expand(second)) + 1
+            except (ValueError, TypeError), e:
+                raise Exception("Operation not supported (non integer UID)")
+            result = "UID %s:%s" % (lower_limit, threshold)
+        elif name == "DATE":
+            result = "SINCE %s" % self.convert_date(second, add=datetime.timedelta(1))
+        else:
+            raise Exception("Operation not supported")
+        return result
+
+    def GE(self, first, second):
+        result = None
+        name = self.search_fields[first.name]
+        if name == "MESSAGE":
+            last_message = self.get_last_message(first.tablename)
+            result = "%s:%s" % (self.expand(second), last_message)
+        elif name == "UID":
+            # GT and LT may not return
+            # expected sets depending on
+            # the uid format implemented
+            try:
+                pedestal, threshold = self.get_uid_bounds(first.tablename)
+            except TypeError, e:
+                logger.debug("Error requesting uid bounds: %s", str(e))
+                return ""
+            lower_limit = self.expand(second)
+            result = "UID %s:%s" % (lower_limit, threshold)
+        elif name == "DATE":
+            result = "SINCE %s" % self.convert_date(second)
+        else:
+            raise Exception("Operation not supported")
+        return result
+
+    def LT(self, first, second):
+        result = None
+        name = self.search_fields[first.name]
+        if name == "MESSAGE":
+            result = "%s:%s" % (1, int(self.expand(second)) - 1)
+        elif name == "UID":
+            try:
+                pedestal, threshold = self.get_uid_bounds(first.tablename)
+            except TypeError, e:
+                logger.debug("Error requesting uid bounds: %s", str(e))
+                return ""
+            try:
+                upper_limit = int(self.expand(second)) - 1
+            except (ValueError, TypeError), e:
+                raise Exception("Operation not supported (non integer UID)")
+            result = "UID %s:%s" % (pedestal, upper_limit)
+        elif name == "DATE":
+            result = "BEFORE %s" % self.convert_date(second)
+        else:
+            raise Exception("Operation not supported")
+        return result
+
+    def LE(self, first, second):
+        result = None
+        name = self.search_fields[first.name]
+        if name == "MESSAGE":
+            result = "%s:%s" % (1, self.expand(second))
+        elif name == "UID":
+            try:
+                pedestal, threshold = self.get_uid_bounds(first.tablename)
+            except TypeError, e:
+                logger.debug("Error requesting uid bounds: %s", str(e))
+                return ""
+            upper_limit = int(self.expand(second))
+            result = "UID %s:%s" % (pedestal, upper_limit)
+        elif name == "DATE":
+            result = "BEFORE %s" % self.convert_date(second, add=datetime.timedelta(1))
+        else:
+            raise Exception("Operation not supported")
+        return result
+
+    def NE(self, first, second):
+        result = self.NOT(self.EQ(first, second))
+        result =  result.replace("NOT NOT", "").strip()
+        return result
+
+    def EQ(self,first,second):
+        name = self.search_fields[first.name]
+        result = None
+        if name is not None:
+            if name == "MESSAGE":
+                # query by message sequence number
+                result = "%s" % self.expand(second)
+            elif name == "UID":
+                result = "UID %s" % self.expand(second)
+            elif name == "DATE":
+                result = "ON %s" % self.convert_date(second)
+                
+            elif name in ('\\Deleted', '\\Draft', '\\Flagged', '\\Recent', '\\Seen', '\\Answered'):
+                if second:
+                    result = "%s" % (name.upper()[1:])
+                else:
+                    result = "NOT %s" % (name.upper()[1:])
+            else:
+                raise Exception("Operation not supported")
+        else:
+            raise Exception("Operation not supported")
+        return result
+
+    def AND(self, first, second):
+        result = "%s %s" % (self.expand(first), self.expand(second))
+        return result
+
+    def OR(self, first, second):
+        result = "OR %s %s" % (self.expand(first), self.expand(second))
+        return "%s" % result.replace("OR OR", "OR")
+
+    def NOT(self, first):
+        result = "NOT %s" % self.expand(first)
+        return result
 
 ########################################################################
 # end of adapters
@@ -4271,6 +4828,7 @@ ADAPTERS = {
     'google:sql': GoogleSQLAdapter,
     'couchdb': CouchDBAdapter,
     'mongodb': MongoDBAdapter,
+    'imap': IMAPAdapter
 }
 
 
@@ -6934,9 +7492,4 @@ DAL.Table = Table  # was necessary in gluon/globals.py session.connect
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-
-
-
-
-
 

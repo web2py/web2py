@@ -702,7 +702,7 @@ class SQLFORM(FORM):
         labels = None,
         col3 = {},
         submit_button = 'Submit',
-        delete_label = 'Check to delete:',
+        delete_label = 'Check to delete',
         showid = True,
         readonly = False,
         comments = True,
@@ -919,7 +919,7 @@ class SQLFORM(FORM):
                             )
             xfields.append((self.FIELDKEY_DELETE_RECORD+SQLFORM.ID_ROW_SUFFIX,
                             LABEL(
-                                delete_label,
+                                delete_label,separator,
                                 _for=self.FIELDKEY_DELETE_RECORD,
                                 _id=self.FIELDKEY_DELETE_RECORD+SQLFORM.ID_LABEL_SUFFIX),
                             widget,
@@ -1577,7 +1577,9 @@ class SQLFORM(FORM):
             record = table(request.args[-1]) or redirect(URL('error'))
             edit_form = SQLFORM(table,record,upload=upload,ignore_rw=ignore_rw,
                                 deletable=deletable,
-                                _class='web2py_form')
+                                _class='web2py_form',
+                                submit_button = T('Submit'),
+                                delete_label = T('Check to delete'))
             edit_form.process(formname=formname,
                               onvalidation=onvalidation,
                               onsuccess=onupdate,
