@@ -1292,7 +1292,7 @@ class SQLFORM(FORM):
     @staticmethod
     def build_query(fields,keywords):
         key = keywords.strip()
-        if key and not ' ' in key:
+        if key and not ' ' in key and not '"' in key and not "'" in key:
             SEARCHABLE_TYPES = ('string','text','list:string')
             parts = [field.contains(key) for field in fields if field.type in SEARCHABLE_TYPES]
         else:

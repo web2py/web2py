@@ -5059,7 +5059,7 @@ def smart_query(fields,text):
     for a,b in [('&','and'),
                 ('|','or'),
                 ('~','not'),
-                ('==','=='),
+                ('==','='),
                 ('<','<'),
                 ('>','>'),
                 ('<=','<='),
@@ -5067,7 +5067,7 @@ def smart_query(fields,text):
                 ('<>','!='),
                 ('=<','<='),
                 ('=>','>='),
-                ('=','=='),
+                ('=','='),
                 (' less or equal than ','<='),
                 (' greater or equal than ','>='),
                 (' equal or less than ','<='),
@@ -5078,18 +5078,19 @@ def smart_query(fields,text):
                 (' equal or greater ','>='),
                 (' not equal to ','!='),
                 (' not equal ','!='),
-                (' equal to ','=='),
-                (' equal ','=='),
+                (' equal to ','='),
+                (' equal ','='),
                 (' equals ','!='),
                 (' less than ','<'),
                 (' greater than ','>'),
                 (' starts with ','startswith'),
                 (' ends with ','endswith'),
-                (' is ','==')]:
+                (' is ','=')]:
         if a[0]==' ':
             text = text.replace(' is'+a,' %s ' % b)
         text = text.replace(a,' %s ' % b)
     text = re.sub('\s+',' ',text).lower()
+    text = re.sub('(?P<a>[\<\>\!\=])\s+(?P<b>[\<\>\!\=])','\g<a>\g<b>',text)
     query = field = neg = op = logic = None
     for item in text.split():
         if field is None:
@@ -5110,12 +5111,13 @@ def smart_query(fields,text):
                 value = constants[item[1:]]
             else:
                 value = item
-                if op == '==': op = 'like'
-            if op == '==': new_query = field==value
+                if op == '=': op = 'like'
+            if op == '=': new_query = field==value
             elif op == '<': new_query = field<value
             elif op == '>': new_query = field>value
             elif op == '<=': new_query = field<=value
             elif op == '>=': new_query = field>=value
+            elif op == '!=': new_query = field!=value
             elif field.type in ('text','string'):
                 if op == 'contains': new_query = field.contains(value)
                 elif op == 'like': new_query = field.like(value)
