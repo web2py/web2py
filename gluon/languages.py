@@ -41,7 +41,7 @@ def read_dict_aux(filename):
     fp = open(filename, 'r')
     portalocker.lock(fp, portalocker.LOCK_SH)
     lang_text = fp.read().replace('\r\n', '\n')
-    # needed? portalocker.unlock(fp)
+    portalocker.unlock(fp)  # needed or test_languages.py fails
     fp.close()
     if not lang_text.strip():
         return {}
