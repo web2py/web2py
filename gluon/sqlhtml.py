@@ -801,12 +801,12 @@ class SQLFORM(FORM):
                 self.custom.inpval.id = ''
                 widget = ''
                 if record:
-                    if showid and 'id' in fields and field.readable:
-                        v = record['id']
+                    if showid and field.name in record and field.readable:
+                        v = record[field.name]
                         widget = SPAN(v, _id=field_id)
                         self.custom.dspval.id = str(v)
                         xfields.append((row_id,label, widget,comment))
-                    self.record_id = str(record['id'])
+                    self.record_id = str(record[field.name])
                 self.custom.widget.id = widget
                 continue
 
@@ -944,7 +944,7 @@ class SQLFORM(FORM):
             if not self['hidden']:
                 self['hidden'] = {}
             if not keyed:
-                self['hidden']['id'] = record['id']
+                self['hidden']['id'] = record[table._id.name]
 
         (begin, end) = self._xml()
         self.custom.begin = XML("<%s %s>" % (self.tag, begin))
