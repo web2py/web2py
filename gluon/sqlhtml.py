@@ -1780,6 +1780,7 @@ class SQLFORM(FORM):
                     if not field.readable: continue
                     if field.type=='blob': continue
                     value = row[field]
+                    maxlength = maxtextlengths.get(str(field),maxtextlength)
                     if field.represent:
                         try:
                             value=field.represent(value,row)
@@ -1800,8 +1801,8 @@ class SQLFORM(FORM):
                                           _href='%s/%s' % (upload, value))
                         else:
                             value = ''
-                    elif isinstance(value,str) and len(value)>maxtextlength:
-                        value=value[:maxtextlengths.get(str(field),maxtextlength)]+'...'
+                    elif isinstance(value,str) and len(value)>maxlength:
+                        value=value[:maxlength]+'...'
                     else:
                         value=field.formatter(value)
                     tr.append(TD(value))
