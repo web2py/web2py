@@ -1461,12 +1461,12 @@ class BaseAdapter(ConnectionPool):
                 pass        
         if isinstance(value, unicode):
             value = value.encode('utf-8')
-        if isinstance(field_type, SQLCustomType):
+        elif isinstance(field_type, SQLCustomType):
             value = field_type.decoder(value)
-        elif not isinstance(field_type, str) or value is None:
+        if not isinstance(field_type, str) or value is None:
             return value
-        if field_type in ('string', 'text', 'password', 'upload'):
-            return value
+        elif field_type in ('string', 'text', 'password', 'upload'):
+            return value        
         else:
             key = regex_type.match(field_type).group(0)
             return self.parsemap[key](value,field_type)
