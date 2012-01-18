@@ -832,7 +832,7 @@ class Auth(object):
         return URL(args=current.request.args,vars=current.request.vars)
 
     def __init__(self, environment=None, db=None, mailer=True,
-                 hmac_key=None, controller='default', cas_provider=None):
+                 hmac_key=None, controller='default', function='user', cas_provider=None):
         """
         auth=Auth(db)
 
@@ -890,8 +890,9 @@ class Auth(object):
         settings.create_user_groups = True
 
         settings.controller = controller
-        settings.login_url = self.url('user', args='login')
-        settings.logged_url = self.url('user', args='profile')
+        settings.function = function
+        settings.login_url = self.url(function, args='login')
+        settings.logged_url = self.url(function, args='profile')
         settings.download_url = self.url('download')
         settings.mailer = (mailer==True) and Mail() or mailer
         settings.login_captcha = None
@@ -905,7 +906,7 @@ class Auth(object):
         settings.allow_basic_login = False
         settings.allow_basic_login_only = False
         settings.on_failed_authorization = \
-            self.url('user',args='not_authorized')
+            self.url(function, args='not_authorized')
 
         settings.on_failed_authentication = lambda x: redirect(x)
 
@@ -954,7 +955,7 @@ class Auth(object):
         settings.register_fields = None
         settings.register_verify_password = True
 
-        settings.verify_email_next = self.url('user', args='login')
+        settings.verify_email_next = self.url(function, args='login')
         settings.verify_email_onaccept = []
 
         settings.profile_next = self.url('index')
@@ -963,8 +964,8 @@ class Auth(object):
         settings.profile_fields = None
         settings.retrieve_username_next = self.url('index')
         settings.retrieve_password_next = self.url('index')
-        settings.request_reset_password_next = self.url('user', args='login')
-        settings.reset_password_next = self.url('user', args='login')
+        settings.request_reset_password_next = self.url(function, args='login')
+        settings.reset_password_next = self.url(function, args='login')
 
         settings.change_password_next = self.url('index')
         settings.change_password_onvalidation = []
@@ -1155,7 +1156,7 @@ class Auth(object):
         if isinstance(prefix,str):
             prefix = T(prefix)
         if not action:
-            action=self.url('user')
+            action=self.url(self.settings.function)
         if prefix:
             prefix = prefix.strip()+' '
         s1,s2,s3 = separators
@@ -1763,7 +1764,7 @@ class Auth(object):
                 return cas.login_form()
             else:
                 # we need to pass through login again before going on
-                next = self.url('user',args='login')
+                next = self.url(self.settings.function, args='login')
                 redirect(cas.login_url(next))
 
         # process authenticated users
@@ -4104,4 +4105,5 @@ class PluginManager(object):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
