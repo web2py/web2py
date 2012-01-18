@@ -95,7 +95,9 @@ Supported DAL URI strings:
 'sqlite:memory'
 'jdbc:sqlite://test.db'
 'mysql://root:none@localhost/test'
-'postgres://mdipierro:none@localhost/test'
+'postgres://mdipierro:password@localhost/test'
+'postgres:psycopg2://mdipierro:password@localhost/test'
+'postgres:pg8000://mdipierro:password@localhost/test'
 'jdbc:postgres://mdipierro:none@localhost/test'
 'mssql://web2py:none@A64X2/web2py_test'
 'mssql2://web2py:none@A64X2/web2py_test' # alternate mappings
@@ -241,9 +243,19 @@ if not 'google' in drivers:
     try:
         import psycopg2
         from psycopg2.extensions import adapt as psycopg2_adapt
-        drivers.append('PostgreSQL')
+        drivers.append('psycopg2')
     except ImportError:
         logger.debug('no psycopg2 driver')
+
+    try:
+        # first try contrib driver, then from site-packages (if installed)
+        try:
+            import contrib.pg8000.dbapi as pg8000
+        except ImportError:
+            import pg8000.dbapi as pg8000
+        drivers.append('pg8000')
+    except ImportError:
+        logger.debug('no pg8000 driver')
 
     try:
         import cx_Oracle
@@ -918,7 +930,7 @@ class BaseAdapter(ConnectionPool):
             self.execute(query)
         except Exception, e:
             if isinstance(e,self.integrity_error_class()):
-                return None
+                return None            
             raise e
         if hasattr(table,'_primarykey'):
             return dict([(k[0].name, k[1]) for k in fields \
@@ -1855,7 +1867,9 @@ class MySQLAdapter(BaseAdapter):
 
 class PostgreSQLAdapter(BaseAdapter):
 
-    driver = globals().get('psycopg2',None)
+    driver = None
+    drivers = {'psycopg2': globals().get('psycopg2', None),
+               'pg8000': globals().get('pg8000', None), }
 
     support_distributed_transaction = True
     types = {
@@ -1909,8 +1923,8 @@ class PostgreSQLAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
+        if not self.drivers.get('psycopg2') and not self.drivers.get('psycopg2'):
+            raise RuntimeError, "Unable to import any drivers (psycopg2 or pg8000)"
         self.db = db
         self.dbengine = "postgres"
         self.uri = uri
@@ -1918,7 +1932,7 @@ class PostgreSQLAdapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        uri = uri.split('://')[1]
+        library, uri = uri.split('://')[:2]
         m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?sslmode=(?P<sslmode>.+))?$').match(uri)
         if not m:
             raise SyntaxError, "Invalid URI string in DAL"
@@ -1937,13 +1951,27 @@ class PostgreSQLAdapter(BaseAdapter):
         port = m.group('port') or '5432'
         sslmode = m.group('sslmode')
         if sslmode:
-            msg = ("dbname='%s' user='%s' host='%s'"
+            msg = ("dbname='%s' user='%s' host='%s' "
                    "port=%s password='%s' sslmode='%s'") \
                    % (db, user, host, port, password, sslmode)
         else:
-            msg = ("dbname='%s' user='%s' host='%s'"
+            msg = ("dbname='%s' user='%s' host='%s' "
                    "port=%s password='%s'") \
                    % (db, user, host, port, password)
+        # choose diver according uri
+        if library == "postgres":
+            if self.drivers.get('psycopg2'):
+                self.driver = self.drivers['psycopg2']
+            elif self.drivers.get('pg8000'):
+                self.driver = drivers['pg8000']
+        elif library == "postgres:psycopg2":
+            self.driver = self.drivers.get('psycopg2')
+        elif library == "postgres:pg8000":
+            self.driver = self.drivers.get('pg8000')        
+        if not self.driver:
+            raise RuntimeError, "%s is not available" % library
+        
+        self.__version__ = "%s %s" % (self.driver.__name__, self.driver.__version__)
         def connect(msg=msg,driver_args=driver_args):
             return self.driver.connect(msg,**driver_args)
         self.pool_connection(connect)
@@ -4808,6 +4836,8 @@ ADAPTERS = {
     'sqlite:memory': SQLiteAdapter,
     'mysql': MySQLAdapter,
     'postgres': PostgreSQLAdapter,
+    'postgres:psycopg2': PostgreSQLAdapter,
+    'postgres:pg8000': PostgreSQLAdapter,
     'oracle': OracleAdapter,
     'mssql': MSSQLAdapter,
     'mssql2': MSSQL2Adapter,
