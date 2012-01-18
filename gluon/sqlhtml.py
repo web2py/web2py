@@ -1564,7 +1564,7 @@ class SQLFORM(FORM):
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(URL('error'))
             form = SQLFORM(table,record,upload=upload,ignore_rw=ignore_rw,
-                           readonly=True,_class='web2py_form')
+                           formstyle=formstyle, readonly=True,_class='web2py_form')
             res = DIV(buttons(edit=editable,record=record),form,
                       formfooter,_class=_class)
             res.create_form = None
@@ -1576,7 +1576,7 @@ class SQLFORM(FORM):
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(URL('error'))
             edit_form = SQLFORM(table,record,upload=upload,ignore_rw=ignore_rw,
-                                deletable=deletable,
+                                formstyle=formstyle,deletable=deletable,
                                 _class='web2py_form',
                                 submit_button = T('Submit'),
                                 delete_label = T('Check to delete'))
