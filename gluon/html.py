@@ -124,6 +124,12 @@ def xmlescape(data, quote = True):
     return data
 
 
+def truncate_string(text, length, dots='...'):
+    text = text.decode('utf-8')
+    if len(text)>length:
+        text = text[:length-len(dots)].encode('utf-8')+dots
+    return text
+
 def URL(
     a=None,
     c=None,

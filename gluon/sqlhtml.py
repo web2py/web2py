@@ -18,7 +18,7 @@ from http import HTTP
 from html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT
 from html import FORM, INPUT, LABEL, OPTION, SELECT, MENU
 from html import TABLE, THEAD, TBODY, TR, TD, TH
-from html import URL
+from html import URL, truncate_string
 from dal import DAL, Table, Row, CALLABLETYPES, smart_query
 from storage import Storage
 from utils import md5_hash
@@ -1800,11 +1800,11 @@ class SQLFORM(FORM):
                                 value = A('File',
                                           _href='%s/%s' % (upload, value))
                         else:
-                            value = ''
-                    elif isinstance(value,str) and len(value)>maxlength:
-                        value=value[:maxlength]+'...'
+                            value = ''                            
+                    elif isinstance(value,str):
+                        value = truncate_string(value,maxlength)
                     else:
-                        value=field.formatter(value)
+                        value = field.formatter(value)
                     tr.append(TD(value))
                 row_buttons = TD(_class='row_buttons')
                 if links and links_in_grid:
@@ -2195,16 +2195,12 @@ class SQLTABLE(TABLE):
                         r = ''
                 elif field.type in ['string','text']:
                     r = str(field.formatter(r))
-                    ur = unicode(r, 'utf8')
                     if headers!={}: #new implement dict
                         if isinstance(headers[colname],dict):
-                            if isinstance(headers[colname]['truncate'], int) \
-                                    and len(ur)>headers[colname]['truncate']:
-                                r = ur[:headers[colname]['truncate'] - 3]
-                                r = r.encode('utf8') + '...'
-                    elif not truncate is None and len(ur) > truncate:
-                        r = ur[:truncate - 3].encode('utf8') + '...'
-
+                            if isinstance(headers[colname]['truncate'], int):
+                                r = truncate_string(r, headers[colname]['truncate'])
+                    elif not truncate is None:
+                        r = truncate_string(r, truncate)
                 attrcol = dict()#new implement dict
                 if headers!={}:
                     if isinstance(headers[colname],dict):
