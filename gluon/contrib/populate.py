@@ -55,7 +55,7 @@ def da_du_ma(n=4):
                      'pa','po','sa','so','ta','to']\
                         [random.randint(0,11)] for i in range(n)])
 
-def populate(table, n, default=True):
+def populate(table, n, default=True, compute=False):
     ell=Learner()
     #ell.learn(open('20417.txt','r').read())
     #ell.save('frequencies.pickle')
@@ -72,6 +72,8 @@ def populate(table, n, default=True):
                 continue
             elif default and field.default:
                 record[fieldname]=field.default
+            elif compute and field.compute:
+                continue
             elif field.type == 'text':
                 record[fieldname]=ell.generate(random.randint(10,100),prefix=None)
             elif field.type == 'boolean':
