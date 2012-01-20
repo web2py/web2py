@@ -1956,12 +1956,13 @@ class SQLFORM(FORM):
                 else:
                     del kwargs[key]
         for tablename,fieldname in table._referenced_by:
+            id_field_name = db[tablename]._id.name
             if linked_tables is None or tablename in linked_tables:
                 args0 = tablename+'.'+fieldname
                 links.append(
                     lambda row,t=T(db[tablename]._plural),nargs=nargs,args0=args0:\
                         A(SPAN(t),_class=trap_class(),_href=URL(
-                            args=request.args[:nargs]+[args0,row.id])))
+                            args=request.args[:nargs]+[args0,row[id_field_name]])))
         grid=SQLFORM.grid(query,args=request.args[:nargs],links=links,
                           links_in_grid=links_in_grid,
                           user_signature=user_signature,**kwargs)
