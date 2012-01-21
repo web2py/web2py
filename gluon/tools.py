@@ -241,6 +241,7 @@ class Mail(object):
         bcc=None,
         reply_to=None,
         encoding='utf-8',
+        raw=False,
         headers={}
         ):
         """
@@ -320,11 +321,29 @@ class Mail(object):
             else:
                 return key
 
+        # encoded or raw text
+        def encoded_or_raw(text):
+            if raw:
+                text = encode_header(text)
+            return text
+
         if not isinstance(self.settings.server, str):
             raise Exception('Server address not specified')
         if not isinstance(self.settings.sender, str):
             raise Exception('Sender address not specified')
-        payload_in = MIMEMultipart.MIMEMultipart('mixed')
+
+        if not raw:
+            payload_in = MIMEMultipart.MIMEMultipart('mixed')
+        else:
+            # no encoding configuration for raw messages
+            if isinstance(message, basestring):
+                text = message.decode(encoding).encode('utf-8')
+            else:
+                text = message.read().decode(encoding).encode('utf-8')
+            # No charset passed to avoid transport encoding
+            # NOTE: some unicode encoded strings will produce
+            # unreadable mail contents.
+            payload_in = MIMEText.MIMEText(text)
         if to:
             if not isinstance(to, (list,tuple)):
                 to = [to]
@@ -346,7 +365,8 @@ class Mail(object):
         else:
             text = message
             html = None
-        if not text is None or not html is None:
+
+        if (not text is None or not html is None) and (not raw):
             attachment = MIMEMultipart.MIMEMultipart('alternative')
             if not text is None:
                 if isinstance(text, basestring):
@@ -361,7 +381,7 @@ class Mail(object):
                     html = html.read().decode(encoding).encode('utf-8')
                 attachment.attach(MIMEText.MIMEText(html, 'html',_charset='utf-8'))
             payload_in.attach(attachment)
-        if attachments is None:
+        if (attachments is None) or raw:
             pass
         elif isinstance(attachments, (list, tuple)):
             for attachment in attachments:
@@ -546,22 +566,23 @@ class Mail(object):
         else:
             # no cryptography process as usual
             payload=payload_in
-        payload['From'] = encode_header(self.settings.sender.decode(encoding))
+
+        payload['From'] = encoded_or_raw(self.settings.sender.decode(encoding))
         origTo = to[:]
         if to:
-            payload['To'] = encode_header(', '.join(to).decode(encoding))
+            payload['To'] = encoded_or_raw(', '.join(to).decode(encoding))
         if reply_to:
-            payload['Reply-To'] = encode_header(reply_to.decode(encoding))
+            payload['Reply-To'] = encoded_or_raw(reply_to.decode(encoding))
         if cc:
-            payload['Cc'] = encode_header(', '.join(cc).decode(encoding))
+            payload['Cc'] = encoded_or_raw(', '.join(cc).decode(encoding))
             to.extend(cc)
         if bcc:
             to.extend(bcc)
-        payload['Subject'] = encode_header(subject.decode(encoding))
+        payload['Subject'] = encoded_or_raw(subject.decode(encoding))
         payload['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S +0000",
                                         time.gmtime())
         for k,v in headers.iteritems():
-            payload[k] = encode_header(v.decode(encoding))
+            payload[k] = encoded_or_raw(v.decode(encoding))
         result = {}
         try:
             if self.settings.server == 'logging':
@@ -576,12 +597,12 @@ class Mail(object):
                 if bcc:
                     xcc['bcc'] = bcc
                 from google.appengine.api import mail
-                attachments = attachments and [(a.my_filename,a.my_payload) for a in attachments]
+                attachments = attachments and [(a.my_filename,a.my_payload) for a in attachments if not raw]
                 if attachments:
                     result = mail.send_mail(sender=self.settings.sender, to=origTo,
                                             subject=subject, body=text, html=html,
                                             attachments=attachments, **xcc)
-                elif html:
+                elif html and (not raw):
                     result = mail.send_mail(sender=self.settings.sender, to=origTo,
                                             subject=subject, body=text, html=html, **xcc)
                 else:
