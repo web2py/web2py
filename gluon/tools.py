@@ -2840,7 +2840,7 @@ class Auth(object):
                              current_record='parent_record'))
 
         """
-        if archive_current and not form.record:
+        if not archive_current and not form.record:
             return None
         table = form.table
         if not archive_table:
