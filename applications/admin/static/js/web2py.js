@@ -87,8 +87,10 @@ function web2py_ajax_page(method,action,data,target) {
       web2py_trap_form(action,target);
       web2py_trap_link(target);
       web2py_ajax_init('#'+target);
-      if(command) eval(command);
-      if(flash) jQuery('.flash').html(flash).slideDown();
+      if(command)
+        eval(decodeURIComponent(escape(command)));
+      if(flash)
+        jQuery('.flash').html(decodeURIComponent(escape(flash))).slideDown();
       }
     });
 }
