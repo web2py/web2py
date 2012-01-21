@@ -1007,7 +1007,7 @@ class Auth(object):
         messages.profile_save_button = 'Save profile'
         messages.submit_button = 'Submit'
         messages.verify_password = 'Verify Password'
-        messages.delete_label = 'Check to delete:'
+        messages.delete_label = 'Check to delete'
         messages.function_disabled = 'Function disabled'
         messages.access_denied = 'Insufficient privileges'
         messages.registration_verifying = 'Registration needs verification'
