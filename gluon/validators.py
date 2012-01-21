@@ -546,7 +546,7 @@ class IS_NOT_IN_DB(Validator):
                 for f in self.record_id:
                     if str(getattr(rows[0], f)) != str(self.record_id[f]):
                         return (value, translate(self.error_message))
-            elif str(rows[0].id) != str(self.record_id):
+            elif str(rows[0]._id) != str(self.record_id):
                 return (value, translate(self.error_message))
         return (value, None)
 
