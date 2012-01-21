@@ -1495,6 +1495,7 @@ class SQLFORM(FORM):
                              _class=trap_class(ui.get('buttontext',''),trap))
         dbset = db(query)
         tablenames = db._adapter.tables(dbset.query)
+        if left!=None: tablenames+=db._adapter.tables(left)
         tables = [db[tablename] for tablename in tablenames]
         if not fields:
             fields = reduce(lambda a,b:a+b,
