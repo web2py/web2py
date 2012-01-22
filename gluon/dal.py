@@ -1901,6 +1901,13 @@ class PostgreSQLAdapter(BaseAdapter):
     def RANDOM(self):
         return 'RANDOM()'
 
+    def ADD(self, first, second):
+        t = first.type
+        if t in ('text','string','password','upload','blob'):
+            return '(%s || %s)' % (self.expand(first), self.expand(second, t))
+        else:
+            return '(%s + %s)' % (self.expand(first), self.expand(second, t))
+
     def distributed_transaction_begin(self,key):
         return
 
