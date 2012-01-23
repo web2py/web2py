@@ -4286,24 +4286,103 @@ class MongoDBAdapter(NoSQLAdapter):
 
 class IMAPAdapter(NoSQLAdapter):
     """ IMAP server adapter
-    
+
       This class is intended as an interface with
     email IMAP servers to perform simple queries in the
     web2py DAL query syntax, so email read, search and
     other related IMAP mail services (as those implemented
-    by brands like Google(r), Hotmail(r) and Yahoo!(r)
+    by brands like Google(r), and Yahoo!(r)
     can be managed from web2py applications.
 
     The code uses examples by Yuji Tomita on this post:
     http://yuji.wordpress.com/2011/06/22/python-imaplib-imap-example-with-gmail/#comment-1137
-
-    And IMAP docs for Python imaplib and IETF's RFC2060
+    and is based in docs for Python imaplib, python email
+    and email IETF's (i.e. RFC2060 and RFC3501)
 
     This adapter was tested with a small set of operations with Gmail(r). Other
     services requests could raise command syntax and response data issues.
 
+    It creates its table and field names "statically",
+    meaning that the developer should leave the table and field
+    definitions to the DAL instance by calling the adapter's
+    .define_tables() method. The tables are defined with the
+    IMAP server mailbox list information.
+
+    Here is a list of supported fields:
+    
+    Field       Type            Description
+    ################################################################
+    uid         string          
+    answered    boolean        Flag
+    created     date            
+    content     list:string    A list of text or html parts
+    to          string          
+    cc          string
+    bcc         string
+    size        integer        the amount of octets of the message*
+    deleted     boolean        Flag
+    draft       boolean        Flag
+    flagged     boolean        Flag
+    sender      string
+    recent      boolean        Flag
+    seen        boolean        Flag
+    subject     string         
+    mime        string         The mime header declaration
+    email       string         The complete RFC822 message**
+    attachments list:string    Each non text decoded part as string
+
+    *At the application side it is measured as the length of the RFC822
+    message string
+
+    WARNING: As row id's are mapped to email sequence numbers,
+    make sure your imap client web2py app does not delete messages
+    during select or update actions, to prevent
+    updating or deleting different messages.
+    Sequence numbers change whenever the mailbox is updated.
+    To avoid this sequence numbers issues, it is recommended the use
+    of uid fields in query references (although the update and delete
+    in separate actions rule still applies).
+
+    # This is the code recommended to start imap support
+    # at the app's model:
+
+    imapdb = DAL("imap://user:password@server:port", pool_size=1) # port 993 for ssl
+    imapdb.define_tables()
+
+    Here is an (incomplete) list of possible imap commands:
+
+    # Count today's unseen messages
+    # smaller than 6000 octets from the
+    # inbox mailbox
+    
+    q = imapdb.INBOX.seen == False
+    q &= imapdb.INBOX.created == datetime.date.today()
+    q &= imapdb.INBOX.size < 6000
+    unread = imapdb(q).count()
+
+    # Fetch last query messages
+    rows = imapdb(q).select()
+
+    # it is also possible to filter query select results with limitby and
+    # sequences of mailbox fields
+
+    set.select(<fields sequence>, limitby=(<int>, <int>))
+
+    # Mark last query messages as seen
+    messages = [row.uid for row in rows]
+    seen = imapdb(imapdb.INBOX.uid.belongs(messages)).update(seen=True)
+
+    # Delete messages in the imap database that have mails from mr. Gumby
+
+    deleted = 0
+    for mailbox in imapdb.tables
+        deleted += imapdb(imapdb[mailbox].sender.contains("gumby")).delete()
+
+    # It is possible also to mark messages for deletion instead of ereasing them
+    # directly with set.update(deleted=True)
     
     """
+
     types = {
                 'string': str,
                 'text': str,
@@ -4313,9 +4392,11 @@ class IMAPAdapter(NoSQLAdapter):
                 'boolean': bool,
                 'integer': int,
                 'blob': str,
+                'list:string': str,
         }
 
     dbengine = 'imap'
+    driver = globals().get('imaplib',None)
 
     def __init__(self,
                  db,
@@ -4326,41 +4407,41 @@ class IMAPAdapter(NoSQLAdapter):
                  credential_decoder=lambda x:x,
                  driver_args={},
                  adapter_args={}):
-                     
+
         # db uri: user@example.com:password@imap.server.com:123
+        # TODO: max size adapter argument for preventing large mail transfers
+
         uri = uri.split("://")[1]
         self.db = db
         self.uri = uri
-        self.pool_size=0
+        self.pool_size=pool_size
         self.folder = folder
         self.db_codec = db_codec
         self.credential_decoder = credential_decoder
         self.driver_args = driver_args
         self.adapter_args = adapter_args
         self.mailbox_size = None
-        self.mailbox_names = dict()
-        self.encoding = sys.getfilesystemencoding()
+        self.charset = sys.getfilesystemencoding()
+        # imap class
+        self.imap4 = None
+
         """ MESSAGE is an identifier for sequence number"""
 
+        self.flags = ['\\Deleted', '\\Draft', '\\Flagged',
+                      '\\Recent', '\\Seen', '\\Answered']
         self.search_fields = {
-            'id': 'MESSAGE',
-            'created': 'DATE',
-            'uid': 'UID',
-            'sender': 'FROM',
-            'to': 'TO',
-            'content': 'TEXT',
-            'deleted': '\\Deleted',
-            'draft': '\\Draft',
-            'flagged': '\\Flagged',
-            'recent': '\\Recent',
-            'seen': '\\Seen',
-            'subject': 'SUBJECT',
-            'answered': '\\Answered',
-            'mime': None,
-            'email': None,
+            'id': 'MESSAGE', 'created': 'DATE',
+            'uid': 'UID', 'sender': 'FROM',
+            'to': 'TO', 'cc': 'CC',
+            'bcc': 'BCC', 'content': 'TEXT',
+            'size': 'SIZE', 'deleted': '\\Deleted',
+            'draft': '\\Draft', 'flagged': '\\Flagged',
+            'recent': '\\Recent', 'seen': '\\Seen',
+            'subject': 'SUBJECT', 'answered': '\\Answered',
+            'mime': None, 'email': None,
             'attachments': None
             }
-            
+
         db['_lastsql'] = ''
 
         m = re.compile('^(?P<user>[^:]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@/]+)(\:(?P<port>[0-9]+))?$').match(uri)
@@ -4377,31 +4458,88 @@ class IMAPAdapter(NoSQLAdapter):
             # it is assumed sucessful authentication alLways
             # TODO: support direct connection and login tests
             if over_ssl:
-                imap4 = imaplib.IMAP4_SSL
+                self.imap4 = self.driver.IMAP4_SSL
             else:
-                imap4 = imaplib.IMAP4
-            connection = imap4(driver_args["host"], driver_args["port"])
-            connection.login(driver_args["user"], driver_args["password"])
+                self.imap4 = self.driver.IMAP4
+            connection = self.imap4(driver_args["host"], driver_args["port"])
+            data = connection.login(driver_args["user"], driver_args["password"])
+            # print "Connected to remote server"
+            # print data
+            # static mailbox list
+            connection.mailbox_names = None
+
+            # dummy cursor function
+            connection.cursor = lambda : True
+
             return connection
 
-        self.pool_connection(connect,cursor=False)
+        self.pool_connection(connect)
         self.db.define_tables = self.define_tables
+
+    def pool_connection(self, f, cursor=True):
+        """
+        IMAP4 Pool connection method
+
+        imap connection lacks of self cursor command.
+        A custom command should be provided as a replacement
+        for connection pooling to prevent uncaught remote session
+        closing
+
+        """
+        # print "Pool Connection"
+        if not self.pool_size:
+            self.connection = f()
+            self.cursor = cursor and self.connection.cursor()
+        else:
+            uri = self.uri
+            # print "uri", self.uri
+            while True:
+                sql_locker.acquire()
+                if not uri in ConnectionPool.pools:
+                    ConnectionPool.pools[uri] = []
+                if ConnectionPool.pools[uri]:
+                    self.connection = ConnectionPool.pools[uri].pop()
+                    sql_locker.release()
+                    self.cursor = cursor and self.connection.cursor()
+                    # print "self.cursor", self.cursor
+                    if self.cursor and self.check_active_connection:
+                        try:
+                            # check if connection is alive or close it
+                            result, data = self.connection.list()
+                            # print "Checked connection"
+                            # print result, data
+                            # self.execute('SELECT 1;')
+                        except:
+                            # Possible connection reset error
+                            # TODO: read exception class
+                            # print "Re-connecting to IMAP server"
+                            self.connection = f()
+                    break
+                else:
+                    sql_locker.release()
+                    self.connection = f()
+                    self.cursor = cursor and self.connection.cursor()
+                    break
+
+        if not hasattr(thread,'instances'):
+            thread.instances = []
+        thread.instances.append(self)
 
     def get_last_message(self, tablename):
         last_message = None
         # request mailbox list to the server
         # if needed
-        if not  len(self.mailbox_names.keys()) > 0:
+        if not isinstance(self.connection.mailbox_names, dict):
             self.get_mailboxes()
         try:
-            result = self.connection.select(self.mailbox_names[tablename])
+            result = self.connection.select(self.connection.mailbox_names[tablename])
             last_message = int(result[1][0])
         except (IndexError, ValueError, TypeError, KeyError), e:
             logger.debug("Error retrieving the last mailbox sequence number. %s" % str(e))
         return last_message
 
     def get_uid_bounds(self, tablename):
-        if not  len(self.mailbox_names.keys()) > 0:
+        if not isinstance(self.connection.mailbox_names, dict):
             self.get_mailboxes()
         # fetch first and last messages
         # return (first, last) messages uid's
@@ -4444,17 +4582,32 @@ class IMAPAdapter(NoSQLAdapter):
         else:
             return None
 
-    def decode_text(self):
-        """ translate encoded text for mail to unicode"""
-        # not implemented
-        pass
+    def encode_text(self, text, charset, errors="replace"):
+        """ convert text for mail to unicode"""
+        if text is None:
+            text = ""
+        else:
+            if isinstance(text, str):
+                if charset is not None:
+                    text = unicode(text, charset, errors)
+                else:
+                    text = unicode(text, "utf-8", errors)
+            else:
+                raise Exception("Unsupported mail text type %s" % type(text))
+        return text.encode("utf-8")
 
     def get_charset(self, message):
         charset = message.get_content_charset()
         return charset
 
+    def reset_mailboxes(self):
+        self.connection.mailbox_names = None
+        self.get_mailboxes()
+
     def get_mailboxes(self):
+        """ Query the mail database for mailbox names """
         mailboxes_list = self.connection.list()
+        self.connection.mailbox_names = dict()
         mailboxes = list()
         for item in mailboxes_list[1]:
             item = item.strip()
@@ -4465,8 +4618,32 @@ class IMAPAdapter(NoSQLAdapter):
                 # remove unwanted characters and store original names
                 mailbox_name = mailbox.replace("[", "").replace("]", "").replace("/", "_")
                 mailboxes.append(mailbox_name)
-                self.mailbox_names[mailbox_name] = mailbox
+                self.connection.mailbox_names[mailbox_name] = mailbox
+        # print "Mailboxes query", mailboxes
         return mailboxes
+
+    def get_query_mailbox(self, query):
+        nofield = True
+        tablename = None
+        attr = query
+        while nofield:
+            if hasattr(attr, "first"):
+                attr = attr.first
+                if isinstance(attr, Field):
+                    return attr.tablename
+                elif isinstance(attr, Query):
+                    pass
+                else:
+                    return None
+            else:
+                return None
+        return tablename
+
+    def is_flag(self, flag):
+        if self.search_fields.get(flag, None) in self.flags:
+            return True
+        else:
+            return False
 
     def define_tables(self):
         """
@@ -4477,24 +4654,29 @@ class IMAPAdapter(NoSQLAdapter):
         not be supported and definitions handled on a service/mode
         basis (local syntax for Gmail(r), Ymail(r)
         """
-        mailboxes = self.get_mailboxes()
+        if not isinstance(self.connection.mailbox_names, dict):
+            self.get_mailboxes()
+        mailboxes = self.connection.mailbox_names.keys()
         for mailbox_name in mailboxes:
             self.db.define_table("%s" % mailbox_name,
                             Field("uid", "string", writable=False),
-                            Field("answered", "boolean", writable=False),
+                            Field("answered", "boolean"),
                             Field("created", "datetime", writable=False),
-                            Field("content", "list:text", writable=False),
+                            Field("content", "list:string", writable=False),
                             Field("to", "string", writable=False),
-                            Field("deleted", "boolean", writable=False),
-                            Field("draft", "boolean", writable=False),
-                            Field("flagged", "boolean", writable=False),
+                            Field("cc", "string", writable=False),
+                            Field("bcc", "string", writable=False),
+                            Field("size", "integer", writable=False),
+                            Field("deleted", "boolean"),
+                            Field("draft", "boolean"),
+                            Field("flagged", "boolean"),
                             Field("sender", "string", writable=False),
                             Field("recent", "boolean", writable=False),
-                            Field("seen", "boolean", writable=False),
+                            Field("seen", "boolean"),
                             Field("subject", "string", writable=False),
                             Field("mime", "string", writable=False),
-                            Field("email", "text", writable=False),
-                            Field("attachments", "list:text", writable=False),
+                            Field("email", "string", writable=False, readable=False),
+                            Field("attachments", "list:string", writable=False, readable=False),
                             )
 
     def create_table(self, *args, **kwargs):
@@ -4506,6 +4688,9 @@ class IMAPAdapter(NoSQLAdapter):
         rows
         """
 
+        if not query.ignore_common_filters:
+            query = self.common_filter(query, [self.get_query_mailbox(query),])
+
         # move this statement elsewhere (upper-level)
         import email
         import email.header
@@ -4513,9 +4698,10 @@ class IMAPAdapter(NoSQLAdapter):
         # get records from imap server with search + fetch
         # convert results to a dictionary
         tablename = None
+        fetch_results = list()
         if isinstance(query, (Expression, Query)):
             tablename = self.get_table(query)
-            mailbox = self.mailbox_names.get(tablename, None)
+            mailbox = self.connection.mailbox_names.get(tablename, None)
             if isinstance(query, Expression):
                 pass
             elif isinstance(query, Query):
@@ -4524,15 +4710,25 @@ class IMAPAdapter(NoSQLAdapter):
                     selected = self.connection.select(mailbox, True)
                     self.mailbox_size = int(selected[1][0])
                     search_query = "(%s)" % str(query).strip()
+                    # print "Query", query
+                    # print "Search query", search_query
                     search_result = self.connection.uid("search", None, search_query)
+                    # print "Search result", search_result
+                    # print search_result
                     # Normal IMAP response OK is assumed (change this)
                     if search_result[0] == "OK":
-                        fetch_results = list()
                         # For "light" remote server responses just get the first
                         # ten records (change for non-experimental implementation)
                         # However, light responses are not guaranteed with this
                         # approach, just fewer messages.
-                        messages_set = search_result[1][0].split()[:10]
+                        # TODO: change limitby single to 2-tuple argument
+                        limitby = attributes.get('limitby', None)
+                        messages_set = search_result[1][0].split()
+                        # descending order
+                        messages_set.reverse()
+                        if limitby is not None:
+                            # TODO: asc/desc attributes
+                            messages_set = messages_set[int(limitby[0]):int(limitby[1])]
                         # Partial fetches are not used since the email
                         # library does not seem to support it (it converts
                         # partial messages to mangled message instances)
@@ -4543,19 +4739,35 @@ class IMAPAdapter(NoSQLAdapter):
                             # (change to multi-fetch command syntax for faster
                             # transactions)
                             for uid in messages_set:
+                                # fetch the RFC822 message body
                                 typ, data = self.connection.uid("fetch", uid, imap_fields)
-                                fr = {"message": int(data[0][0].split()[0]),
-                                      "uid": int(uid),
-                                      "email": email.message_from_string(data[0][1])
-                                      }
-                                fr["multipart"] = fr["email"].is_multipart()
-                                fetch_results.append(fr)
+                                if typ == "OK":
+                                    fr = {"message": int(data[0][0].split()[0]),
+                                        "uid": int(uid),
+                                        "email": email.message_from_string(data[0][1]),
+                                        "raw_message": data[0][1]
+                                        }
+                                    fr["multipart"] = fr["email"].is_multipart()
+                                    # fetch flags for the message
+                                    ftyp, fdata = self.connection.uid("fetch", uid, "(FLAGS)")
+                                    if ftyp == "OK":
+                                        # print "Raw flags", fdata
+                                        fr["flags"] = self.driver.ParseFlags(fdata[0])
+                                        # print "Flags", fr["flags"]
+                                        fetch_results.append(fr)
+                                    else:
+                                        # error retrieving the flags for this message
+                                        pass
+                                else:
+                                    # error retrieving the message body
+                                    pass
 
         elif isinstance(query, basestring):
+            # not implemented
             pass
         else:
             pass
-        
+
         imapqry_dict = {}
         imapfields_dict = {}
 
@@ -4576,11 +4788,16 @@ class IMAPAdapter(NoSQLAdapter):
         imapqry_list = list()
         imapqry_array = list()
         for fr in fetch_results:
+            attachments = []
+            content = []
+            size = 0
             n = int(fr["message"])
             item_dict = dict()
             message = fr["email"]
             uid = fr["uid"]
             charset = self.get_charset(message)
+            flags = fr["flags"]
+            raw_message = fr["raw_message"]
             # Return messages data mapping static fields
             # and fetched results. Mapping should be made
             # outside the select function (with auxiliary
@@ -4588,7 +4805,7 @@ class IMAPAdapter(NoSQLAdapter):
 
             # pending: search flags states trough the email message
             # instances for correct output
-            
+
             if "%s.id" % tablename in fieldnames:
                 item_dict["%s.id" % tablename] = n
             if "%s.created" % tablename in fieldnames:
@@ -4598,57 +4815,75 @@ class IMAPAdapter(NoSQLAdapter):
             if "%s.sender" % tablename in fieldnames:
                 # If there is no encoding found in the message header
                 # force utf-8 replacing characters (change this to
-                # module's defaults). Applies to .sender and .to fields
-                if charset is not None:
-                    item_dict["%s.sender" % tablename] = unicode(message["From"], charset, "replace")
-                else:
-                    item_dict["%s.sender" % tablename] = unicode(message["From"], "utf-8", "replace")
+                # module's defaults). Applies to .sender, .to, .cc and .bcc fields
+                #############################################################################
+                # TODO: External function to manage encoding and decoding of message strings
+                #############################################################################
+                item_dict["%s.sender" % tablename] = self.encode_text(message["From"], charset)
             if "%s.to" % tablename in fieldnames:
-                if charset is not None:
-                    item_dict["%s.to" % tablename] = unicode(message["To"], charset, "replace")
+                item_dict["%s.to" % tablename] = self.encode_text(message["To"], charset)
+            if "%s.cc" % tablename in fieldnames:
+                if "Cc" in message.keys():
+                    # print "cc field found"
+                    item_dict["%s.cc" % tablename] = self.encode_text(message["Cc"], charset)
                 else:
-                    item_dict["%s.to" % tablename] = unicode(message["To"], "utf-8", "replace")
-            if "%s.content" % tablename in fieldnames:
-                content = []
-                for part in message.walk():
-                    if "text" in part.get_content_maintype():
-                        payload = part.get_payload(decode=True)
-                        content.append(payload)
-                item_dict["%s.content" % tablename] = content
+                    item_dict["%s.cc" % tablename] = ""
+            if "%s.bcc" % tablename in fieldnames:
+                if "Bcc" in message.keys():
+                    # print "bcc field found"
+                    item_dict["%s.bcc" % tablename] = self.encode_text(message["Bcc"], charset)
+                else:
+                    item_dict["%s.bcc" % tablename] = ""
             if "%s.deleted" % tablename in fieldnames:
-                item_dict["%s.deleted" % tablename] = None
+                item_dict["%s.deleted" % tablename] = "\\Deleted" in flags
             if "%s.draft" % tablename in fieldnames:
-                item_dict["%s.draft" % tablename] = None
+                item_dict["%s.draft" % tablename] = "\\Draft" in flags
             if "%s.flagged" % tablename in fieldnames:
-                item_dict["%s.flagged" % tablename] = None
+                item_dict["%s.flagged" % tablename] = "\\Flagged" in flags
             if "%s.recent" % tablename in fieldnames:
-                item_dict["%s.recent" % tablename] = None
+                item_dict["%s.recent" % tablename] = "\\Recent" in flags
             if "%s.seen" % tablename in fieldnames:
-                item_dict["%s.seen" % tablename] = None
+                item_dict["%s.seen" % tablename] = "\\Seen" in flags
             if "%s.subject" % tablename in fieldnames:
                 subject = message["Subject"]
                 decoded_subject = decode_header(subject)
                 text = decoded_subject[0][0]
                 encoding = decoded_subject[0][1]
-                if encoding is not None:
-                    text = unicode(text, encoding)
-                item_dict["%s.subject" % tablename] =  text
+                if encoding in (None, ""):
+                    encoding = charset
+                item_dict["%s.subject" % tablename] = self.encode_text(text, encoding)
             if "%s.answered" % tablename in fieldnames:
-                item_dict["%s.answered" % tablename] = None
+                item_dict["%s.answered" % tablename] = "\\Answered" in flags
             if "%s.mime" % tablename in fieldnames:
                 item_dict["%s.mime" % tablename] = message.get_content_type()
-                
-            # here goes the whole RFC822 body as an email instance
+            # Here goes the whole RFC822 body as an email instance
             # for controller side custom processing
+            # The message is stored as a raw string
+            # >> email.message_from_string(raw string)
+            # returns a Message object for enhanced object processing
             if "%s.email" % tablename in fieldnames:
-                item_dict["%s.email" % tablename] = message
-
-            if "%s.attachments" % tablename in fieldnames:
-                attachments = []
-                for part in message.walk():
+                item_dict["%s.email" % tablename] = self.encode_text(raw_message, charset)
+            # Size measure as suggested in a Velocity Reviews post
+            # by Tim Williams: "how to get size of email attachment"
+            # Note: len() and server RFC822.SIZE reports doesn't match
+            # To retrieve the server size for representation would add a new
+            # fetch transaction to the process
+            for part in message.walk():
+                if "%s.attachments" % tablename in fieldnames:
                     if not "text" in part.get_content_maintype():
                         attachments.append(part.get_payload(decode=True))
-                item_dict["%s.attachments" % tablename] = attachments
+                if "%s.content" % tablename in fieldnames:
+                    if "text" in part.get_content_maintype():
+                        payload = self.encode_text(part.get_payload(decode=True), charset)
+                        content.append(payload)
+                if "%s.size" % tablename in fieldnames:
+                    if part is not None:
+                        size += len(str(part))
+
+            item_dict["%s.content" % tablename] = bar_encode(content)
+            item_dict["%s.attachments" % tablename] = bar_encode(attachments)
+            item_dict["%s.size" % tablename] = size
+
             imapqry_list.append(item_dict)
 
         # extra object mapping for the sake of rows object
@@ -4665,13 +4900,88 @@ class IMAPAdapter(NoSQLAdapter):
         tablename, imapqry_array , fieldnames = self._select(query,fields,attributes)
         # parse result and return a rows object
         colnames = fieldnames
-        result = self.parse(imapqry_array, colnames)
+        result = self.parse(imapqry_array, fields, colnames)
         return result
 
+    def update(self, tablename, query, fields):
+        # print "_update"
+
+        if not query.ignore_common_filters:
+            query = self.common_filter(query, [tablename,])
+
+        mark = []
+        unmark = []
+        rowcount = 0
+        query = str(query)
+        if query:
+            for item in fields:
+                field = item[0]
+                name = field.name
+                value = item[1]
+                if self.is_flag(name):
+                    flag = self.search_fields[name]
+                    if (value is not None) and (flag != "\\Recent"):
+                        if value:
+                            mark.append(flag)
+                        else:
+                            unmark.append(flag)
+
+            # print "Selecting mailbox ..."
+            result, data = self.connection.select(self.connection.mailbox_names[tablename])
+            # print "Retrieving sequence numbers remotely"
+            string_query = "(%s)" % query
+            # print "string query", string_query
+            result, data = self.connection.search(None, string_query)
+            store_list = [item.strip() for item in data[0].split() if item.strip().isdigit()]
+            # print "Storing values..."
+            # change marked flags
+            for number in store_list:
+                result = None
+                if len(mark) > 0:
+                    # print "Marking flags ..."
+                    result, data = self.connection.store(number, "+FLAGS", "(%s)" % " ".join(mark))
+                if len(unmark) > 0:
+                    # print "Unmarking flags ..."
+                    result, data = self.connection.store(number, "-FLAGS", "(%s)" % " ".join(unmark))
+                if result == "OK":
+                    rowcount += 1
+        return rowcount
+
     def count(self,query,distinct=None):
-        # not implemented
-        # (count search results without select call)
-        pass
+        counter = 0
+        tablename = self.get_query_mailbox(query)
+        if query and tablename is not None:
+            if not query.ignore_common_filters:
+                query = self.common_filter(query, [tablename,])
+            # print "Selecting mailbox ..."
+            result, data = self.connection.select(self.connection.mailbox_names[tablename])
+            # print "Retrieving sequence numbers remotely"
+            string_query = "(%s)" % query
+            result, data = self.connection.search(None, string_query)
+            store_list = [item.strip() for item in data[0].split() if item.strip().isdigit()]
+            counter = len(store_list)
+        return counter
+
+    def delete(self, tablename, query):
+        counter = 0
+        if query:
+            # print "Selecting mailbox ..."
+            if not query.ignore_common_filters:
+                query = self.common_filter(query, [tablename,])
+            result, data = self.connection.select(self.connection.mailbox_names[tablename])
+            # print "Retrieving sequence numbers remotely"
+            string_query = "(%s)" % query
+            result, data = self.connection.search(None, string_query)
+            store_list = [item.strip() for item in data[0].split() if item.strip().isdigit()]
+            for number in store_list:
+                result, data = self.connection.store(number, "+FLAGS", "(\\Deleted)")
+                # print "Deleting message", result, data
+                if result == "OK":
+                    counter += 1
+            if counter > 0:
+                # print "Ereasing permanently"
+                result, data = self.connection.expunge()
+        return counter
 
     def BELONGS(self, first, second):
         result = None
@@ -4726,6 +5036,8 @@ class IMAPAdapter(NoSQLAdapter):
             result = "UID %s:%s" % (lower_limit, threshold)
         elif name == "DATE":
             result = "SINCE %s" % self.convert_date(second, add=datetime.timedelta(1))
+        elif name == "SIZE":
+            result = "LARGER %s" % self.expand(second)
         else:
             raise Exception("Operation not supported")
         return result
@@ -4771,6 +5083,8 @@ class IMAPAdapter(NoSQLAdapter):
             result = "UID %s:%s" % (pedestal, upper_limit)
         elif name == "DATE":
             result = "BEFORE %s" % self.convert_date(second)
+        elif name == "SIZE":
+            result = "SMALLER %s" % self.expand(second)
         else:
             raise Exception("Operation not supported")
         return result
@@ -4810,8 +5124,8 @@ class IMAPAdapter(NoSQLAdapter):
                 result = "UID %s" % self.expand(second)
             elif name == "DATE":
                 result = "ON %s" % self.convert_date(second)
-                
-            elif name in ('\\Deleted', '\\Draft', '\\Flagged', '\\Recent', '\\Seen', '\\Answered'):
+
+            elif name in self.flags:
                 if second:
                     result = "%s" % (name.upper()[1:])
                 else:
