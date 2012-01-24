@@ -41,39 +41,48 @@ gluon/contrib/pysimplesoap/
 import sys, os, shutil, glob
 
 def main():
+    global REQUIRED, IGNORED
+    
     if len(sys.argv)<2:
         print USAGE
     
     # make target folder
     target = sys.argv[1]
     os.mkdir(target)
+    
+    # change to os specificsep
+    REQUIRED = REQUIRED.replace('/',os.sep)
+    IGNORED = IGNORED.replace('/',os.sep)
+    
 
     # make a list of all files to include
     files = [x.strip() for x in REQUIRED.split('\n') \
                  if x and not x[0]=='#']
     ignore = [x.strip() for x in IGNORED.split('\n') \
                    if x and not x[0]=='#']
+                   
     def accept(filename):
         for p in ignore:
             if filename.startswith(p):
                 return False
         return True
-    pattern = 'gluon/*.py'
+    pattern = os.path.join('gluon','*.py')
     while True:
         newfiles = [x for x in glob.glob(pattern) if accept(x)]
         if not newfiles: break
         files += newfiles
-        pattern = pattern[:-3]+'/*.py'
+        pattern = os.path.join(pattern[:-3],'*.py')
     # copy all files, make missing folder, build default.py
     files.sort()
+    defaultpy = os.path.join('applications','welcome','controllers','default.py')
     for f in files:
         dirs = f.split(os.path.sep)
         for i in range(1,len(dirs)):
-            try: os.mkdir(target+'/'+os.path.join(*dirs[:i]))
+            try: os.mkdir(target+os.sep+os.path.join(*dirs[:i]))
             except OSError: pass
-        if f=='applications/welcome/controllers/default.py':
-            open(target+'/'+f,'w').write('def index(): return "hello"\n')
+        if f==defaultpy:
+            open(os.path.join(target,f),'w').write('def index(): return "hello"\n')
         else:
-            shutil.copyfile(f,target+'/'+f)
+            shutil.copyfile(f,os.path.join(target,f))
         
 if __name__=='__main__': main()
