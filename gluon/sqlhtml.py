@@ -767,6 +767,9 @@ class SQLFORM(FORM):
         self.custom.widget = Storage()
         self.custom.linkto = Storage()
 
+        # default id field name
+        self.id_field_name = table._id.name
+
         sep = separator or ''
 
         for fieldname in self.fields:
@@ -798,6 +801,10 @@ class SQLFORM(FORM):
                 self.custom.dspval.id = nbsp
                 self.custom.inpval.id = ''
                 widget = ''
+
+                # store the id field name (for legacy databases)
+                self.id_field_name = field.name
+
                 if record:
                     if showid and field.name in record and field.readable:
                         v = record[field.name]
@@ -893,7 +900,7 @@ class SQLFORM(FORM):
                     rfld = table._db[rtable][rfield]
                     query = urllib.quote('%s.%s==%s' % (db,rfld,record[rfld.type[10:].split('.')[1]]))
                 else:
-                    query = urllib.quote('%s.%s==%s' % (db,table._db[rtable][rfield],record.id))
+                    query = urllib.quote('%s.%s==%s' % (db,table._db[rtable][rfield],record[self.id_field_name]))
                 lname = olname = '%s.%s' % (rtable, rfield)
                 if ofields and not olname in ofields:
                     continue
@@ -1038,7 +1045,7 @@ class SQLFORM(FORM):
                 record_id = dict((k, request_vars.get(k,None)) \
                                      for k in self.table._primarykey)
             else:
-                (formname_id, record_id) = (self.record.id,
+                (formname_id, record_id) = (self.record[self.id_field_name],
                                             request_vars.get('id', None))
             keepvalues = True
         else:
@@ -1139,7 +1146,7 @@ class SQLFORM(FORM):
                 '%s != %s' % (record_id, self.record_id)
 
         if record_id and dbio and not keyed:
-            self.vars.id = self.record.id
+            self.vars.id = self.record[self.id_field_name]
 
         if self.deleted and self.custom.deletable:
             if dbio:
@@ -1148,7 +1155,7 @@ class SQLFORM(FORM):
                                  [self.table[k] == record_id[k] \
                                       for k in self.table._primarykey])
                 else:
-                    qry = self.table._id == self.record.id
+                    qry = self.table._id == self.record[self.id_field_name]
                 self.table._db(qry).delete()
             self.errors.clear()
             for component in self.elements('input, select, textarea'):
@@ -1259,9 +1266,9 @@ class SQLFORM(FORM):
                         ret = False
             else:
                 if record_id:
-                    self.vars.id = self.record.id
+                    self.vars.id = self.record[self.id_field_name]
                     if fields:
-                        self.table._db(self.table._id == self.record.id).update(**fields)
+                        self.table._db(self.table._id == self.record[self.id_field_name]).update(**fields)
                 else:
                     self.vars.id = self.table.insert(**fields)
         self.accepted = ret
@@ -1595,7 +1602,7 @@ class SQLFORM(FORM):
             table = db[request.args[-2]]
             if ondelete:
                 ondelete(table,request.args[-1])
-            ret = db(table.id==request.args[-1]).delete()
+            ret = db(table[self.id_field_name]==request.args[-1]).delete()
             return ret
         elif csv and len(request.args)>0 and request.args[-1]=='csv':
             if request.vars.keywords:
@@ -2124,7 +2131,7 @@ class SQLTABLE(TABLE):
                 _class = 'odd'
 
             if not selectid is None: #new implement
-                if record.id==selectid:
+                if record[self.id_field_name]==selectid:
                     _class += ' rowselected'
 
             for colname in columns:

@@ -3883,9 +3883,9 @@ class MongoDBAdapter(NoSQLAdapter):
         def connect(uri=self.uri,m=m):
             try:
                 return pymongo.Connection(uri)[m.get('database')]
-            except pymongo.errors.ConnectionFailure as inst:
+            except pymongo.errors.ConnectionFailure, inst:
                 raise SyntaxError, "The connection to " + uri + " could not be made"
-            except Exception as inst:
+            except Exception, inst:
                 if inst == "cannot specify database without a username and password":
                     raise SyntaxError("You are probebly running version 1.1 of pymongo which contains a bug which requires authentication. Update your pymongo.")
                 else:
