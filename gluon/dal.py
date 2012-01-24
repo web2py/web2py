@@ -3820,9 +3820,9 @@ def cleanup(text):
             % text
     return text
 
-
 class MongoDBAdapter(NoSQLAdapter):
     uploads_in_blob = True
+
     types = {
                 'boolean': bool,
                 'string': str,
@@ -3846,6 +3846,20 @@ class MongoDBAdapter(NoSQLAdapter):
                  pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
+        m=None
+        try:
+            #Since version 2
+            import pymongo.uri_parser
+            m = pymongo.uri_parser.parse_uri(uri)
+        except ImportError:
+            try:
+                #before version 2 of pymongo
+                import pymongo.connection
+                m = pymongo.connection._parse_uri(uri)
+            except ImportError:
+                raise ImportError("Uriparser for mongodb is not available")
+        except:
+            raise SyntaxError("This type of uri is not supported by the mongodb uri parser")
         self.db = db
         self.uri = uri
         self.dbengine = 'mongodb'
@@ -3857,22 +3871,26 @@ class MongoDBAdapter(NoSQLAdapter):
         self.minimumreplication = adapter_args.get('minimumreplication',0)
         #by default alle insert and selects are performand asynchronous, but now the default is
         #synchronous, except when overruled by either this default or function parameter
-        self.defaultsafe = adapter_args.get('safe',True)
+        self.safe = adapter_args.get('safe',True)
 
-        m = re.compile('^(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>.+)$').match(self.uri[10:])
-        if not m:
-            raise SyntaxError, "Invalid URI string in DAL: %s" % self.uri
-        host = m.group('host')
-        if not host:
-            raise SyntaxError, 'mongodb: host name required'
-        dbname = m.group('db')
-        if not dbname:
-            raise SyntaxError, 'mongodb: db name required'
-        port = int(m.group('port') or 27017)
-        driver_args.update(dict(host=host,port=port))
-        def connect(dbname=dbname,driver_args=driver_args):
-            return pymongo.Connection(**driver_args)[dbname]
+
+        if isinstance(m,tuple):
+            m = {"database" : m[1]}
+        if m.get('database')==None:
+            raise SyntaxError("Database is required!")
+        def connect(uri=self.uri,m=m):
+            try:
+                return pymongo.Connection(uri)[m.get('database')]
+            except pymongo.errors.ConnectionFailure as inst:
+                raise SyntaxError, "The connection to " + uri + " could not be made"
+            except Exception as inst:
+                if inst == "cannot specify database without a username and password":
+                    raise SyntaxError("You are probebly running version 1.1 of pymongo which contains a bug which requires authentication. Update your pymongo.")
+                else:
+                    raise SyntaxError(Mer("This is not an official Mongodb uri (http://www.mongodb.org/display/DOCS/Connections) Error : %s" % inst))
         self.pool_connection(connect,cursor=False)
+
+
 
     def represent(self, obj, fieldtype):
         value = NoSQLAdapter.represent(self, obj, fieldtype)
@@ -3892,7 +3910,9 @@ class MongoDBAdapter(NoSQLAdapter):
     
     #Safe determines whether a asynchronious request is done or a synchronious action is done
     #For safety, we use by default synchronious requests
-    def insert(self,table,fields,safe=True):
+    def insert(self,table,fields,safe=None):
+        if safe==None:
+            safe=self.safe
         ctable = self.connection[table._tablename]
         values = dict((k.name,self.represent(v,table[k.name].type)) for k,v in fields)
         ctable.insert(values,safe=safe)
@@ -3904,18 +3924,18 @@ class MongoDBAdapter(NoSQLAdapter):
         else:
             pass
     
-    def count(self,query,distinct=None):
+    def count(self,query,distinct=None,snapshot=True):
         if distinct:
             raise RuntimeError, "COUNT DISTINCT not supported"
         if not isinstance(query,Query):
             raise SyntaxError, "Not Supported"
         tablename = self.get_table(query)
-        rows = self.select(query,[self.db[tablename]._id],{})
+        return int(self.select(query,[self.db[tablename]._id],{},count=True,snapshot=snapshot)['count'])
         #Maybe it would be faster if we just implemented the pymongo .count() function which is probably quicker?
         # therefor call __select() connection[table].find(query).count() Since this will probably reduce the return set?
-        return len(rows)
 
     def expand(self, expression, field_type=None):
+        import pymongo.objectid
         #if isinstance(expression,Field):
         #    if expression.type=='id':
         #        return {_id}"
@@ -3979,7 +3999,7 @@ class MongoDBAdapter(NoSQLAdapter):
         limitby = attributes.get('limitby', False)
         #distinct = attributes.get('distinct', False)
         if orderby:
-            print "in if orderby %s" % orderby
+            #print "in if orderby %s" % orderby
             if isinstance(orderby, (list, tuple)):
                 print "in xorify"
                 orderby = xorify(orderby)
@@ -3991,7 +4011,7 @@ class MongoDBAdapter(NoSQLAdapter):
                     mongosort_list.append((f[1:],-1))
                 else:
                     mongosort_list.append((f,1))
-            print "mongosort_list = %s" % mongosort_list
+            print "mongosort_list = %s" % mongosort_list  
             
         if limitby:
             # a tuple 
@@ -4000,8 +4020,11 @@ class MongoDBAdapter(NoSQLAdapter):
             limitby_skip = 0
             limitby_limit = 0
 
+
+
+
         #if distinct:
-        #    print "in distinct %s" % distinct
+            #print "in distinct %s" % distinct
         
         mongofields_dict = son.SON()
         mongoqry_dict = {}
@@ -4025,134 +4048,107 @@ class MongoDBAdapter(NoSQLAdapter):
    
     # need to define all the 'sql' methods gt,lt etc....
 
-    def select(self,query,fields,attributes):
-
+    def select(self,query,fields,attributes,count=False,snapshot=False):
+        withId=False
         tablename, mongoqry_dict , mongofields_dict, mongosort_list, limitby_limit, limitby_skip = self._select(query,fields,attributes)
+        for key in mongofields_dict.keys():
+            if key == 'id':
+                withId =  True
+                break;
         try:
             print "mongoqry_dict=%s" % mongoqry_dict
         except:
             pass
-        # print "mongofields_dict=%s" % mongofields_dict
+        print "mongofields_dict=%s" % mongofields_dict
         ctable = self.connection[tablename]
-        mongo_list_dicts = ctable.find(mongoqry_dict,mongofields_dict,skip=limitby_skip, limit=limitby_limit, sort=mongosort_list) # pymongo cursor object 
-        print "mongo_list_dicts=%s" % mongo_list_dicts
+        if count:
+            return {'count' : ctable.find(mongoqry_dict,mongofields_dict,skip=limitby_skip, limit=limitby_limit, sort=mongosort_list,snapshot=snapshot).count()}
+        else:
+            mongo_list_dicts = ctable.find(mongoqry_dict,mongofields_dict,skip=limitby_skip, limit=limitby_limit, sort=mongosort_list,snapshot=snapshot) # pymongo cursor object
+        print "mongo_list_dicts=%s" % mongo_list_dicts 
         #if mongo_list_dicts.count() > 0: #
             #colnames = mongo_list_dicts[0].keys() # assuming all docs have same "shape", grab colnames from first dictionary (aka row)
         #else:    
             #colnames = mongofields_dict.keys()
-        print "colnames = %s" % colnames
+        #print "colnames = %s" % colnames
         #rows = [row.values() for row in mongo_list_dicts]
-        rows = mongo_list_dicts
-        return self.parse(rows, fields, mongofields_dict.keys(), False, tablename)
-
-    def parse(self, rows, fields, colnames, blob_decode=True,tablename=None):
-        self.build_parsemap()
-        import pymongo.objectid
-        print "in parse"
-        print "colnames=%s" % colnames
-        db = self.db
-        virtualtables = []
-        table_colnames = []
-        new_rows = []
-        for (i,row) in enumerate(rows):
-            print "i,row = %s,%s" % (i,row)
-            new_row = Row()
-            for j,colname in enumerate(colnames):
-                # hack to get past 'id' key error, we seem to need to keep the 'id' key so lets create an id row value 
-                if colname == 'id':
-                    #try:
-                    if isinstance(row['_id'],pymongo.objectid.ObjectId):
-                        row[colname] = int(str(row['_id']),16)
+        rows = []
+        for record in mongo_list_dicts:
+            row=[]
+            for column in record:
+                if withId and (column == '_id'):
+                    if isinstance(record[column],pymongo.objectid.ObjectId):
+                        row.append( int(str(record[column]),16))
                     else:
                         #in case of alternative key
-                        row[colname] = row['_id']
-                    #except:
-                        #an id can also be user defined
-                        #row[colname] = row['_id']
-                        #Alternative solutions are UUID's, counter function in mongo
-                    #del row['_id']
-                    #colnames.append('_id')
-                print "j = %s" % j
-                value = row.get(colname,None) # blob field not implemented, or missing key:value in a mongo document
-                colname = "%s.%s" % (tablename, colname) # hack to match re (table_field)
-                if i == 0: #only on first row
-                    table_colnames.append(colname)
+                        row.append( record[column] )
+                elif not (column == '_id'):
+                    row.append(record[column])
+            rows.append(row)
+                    #else the id is not supposed to be included. Work around error. mongo always sends key:(
 
-
-                if not regex_table_field.match(colnames[j]):
-                    if not '_extra' in new_row:
-                        new_row['_extra'] = Row()
-                    new_row['_extra'][colnames[j]] = self.parse_value(value, fields[j].type)
-                    new_column_name = regex_select_as_parser.search(colnames[j])
-                    if not new_column_name is None:
-                        column_name = new_column_name.groups(0)
-                        setattr(new_row,column_name[0],value)
-                else:
-                    (tablename, fieldname) = colname.split('.')
-                    table = db[tablename]
-                    field = table[fieldname]
-                    if not tablename in new_row:
-                        colset = new_row[tablename] = Row()
-                        if tablename not in virtualtables:
-                            virtualtables.append(tablename)
-                    else:
-                        colset = new_row[tablename]
-                    colset[fieldname] = value = self.parse_value(value,field.type)
-
-                    if field.type == 'id':
-                        id = value
-                        colset.update_record = lambda _ = (colset, table, id), **a: update_record(_, a)
-                        colset.delete_record = lambda t = table, i = id: t._db(t._id==i).delete()
-                        for (referee_table, referee_name) in table._referenced_by:
-                            s = db[referee_table][referee_name]
-                            referee_link = db._referee_name and \
-                                                        db._referee_name % dict(table=referee_table,field=referee_name)
-                            if referee_link and not referee_link in colset:
-                                colset[referee_link] = Set(db, s == id)
-
-            new_rows.append(new_row)
-        print "table_colnames = %s" % table_colnames
-        rowsobj = Rows(db, new_rows, table_colnames, rawrows=rows)
-
-        for tablename in virtualtables:
-            ### new style virtual fields
-            table = db[tablename]
-            fields_virtual = [(f,v) for (f,v) in table.items() if isinstance(v,FieldVirtual)]
-            fields_lazy = [(f,v) for (f,v) in table.items() if isinstance(v,FieldLazy)]
-            if fields_virtual or fields_lazy:
-                for row in rowsobj.records:
-                    box = row[tablename]
-                    for f,v in fields_virtual:
-                        box[f] = v.f(row)
-                    for f,v in fields_lazy:
-                        box[f] = (v.handler or VirtualCommand)(v.f,row)
-
-            ### old style virtual fields
-            for item in table.virtualfields:
-                try:
-                    rowsobj = rowsobj.setvirtualfields(**{tablename:item})
-                except KeyError:
-                    # to avoid breaking virtualfields when partial select
-                    pass
-        return rowsobj    
+        return self.parse(rows,fields,mongofields_dict.keys(),False)
 
     def INVERT(self,first):
-        print "in invert first=%s" % first
+        #print "in invert first=%s" % first
         return '-%s' % self.expand(first)  
 
     def drop(self, table, mode=''):
         ctable = self.connection[table._tablename]
         ctable.drop()
-    
-    def truncate(self,table,mode):
+
+
+    def truncate(self,table,mode,safe=None):
+        if safe==None:
+            safe=self.safe
         ctable = self.connection[table._tablename]
         ctable.remove(None, safe=True)
 
-    def update(self,tablename,query,fields):
+    #the update function should return a string
+    def oupdate(self,tablename,query,fields):
         if not isinstance(query,Query):
             raise SyntaxError, "Not Supported"
-        
-        raise RuntimeError, "Not implemented"
+        filter = None
+        if query:
+            filter = self.expand(query)
+        f_v = []
+
+
+        modify = { '$set' : dict(((k.name,self.represent(v,k.type)) for k,v in fields)) }
+        return modify,filter
+
+    #TODO implement update
+    #TODO implement set operator
+    #TODO implement find and modify
+    #todo implement complex update
+    def update(self,tablename,query,fields,safe=None):
+        if safe==None:
+            safe=self.safe
+        #return amount of adjusted rows or zero, but no exceptions related not finding the result
+        if not isinstance(query,Query):
+            raise RuntimeError, "Not implemented"
+        amount = self.count(query,False)
+        modify,filter = self.oupdate(tablename,query,fields)
+        try:
+            if safe:
+                return self.connection[tablename].update(filter,modify,multi=True,safe=safe).n
+            else:
+                amount =self.count(query)
+                self.connection[tablename].update(filter,modify,multi=True,safe=safe)
+                return amount
+        except:
+            #TODO Reverse update query to verifiy that the query succeded
+            return 0
+    """
+    An special update operator that enables the update of specific field
+    return a dict
+    """
+
+
+
+    #this function returns a dict with the where clause and update fields
+    def _update(self,tablename,query,fields):
+        return str(self.oupdate(tablename,query,fields))
 
     def bulk_insert(self, table, items):
         return [self.insert(table,item) for item in items]
@@ -4185,7 +4181,7 @@ class MongoDBAdapter(NoSQLAdapter):
         items.append(self.expand(item, first.type) for item in second)
         return {self.expand(first) : {"$in" : items} }
 
-    def ILIKE(self, first, second):
+    def LIKE(self, first, second):
         #escaping regex operators?
         return {self.expand(first) : ('%s' % self.expand(second, 'string').replace('%','/'))}
 
@@ -4282,6 +4278,150 @@ class MongoDBAdapter(NoSQLAdapter):
 
     def COMMA(self, first, second):
         return '%s, %s' % (self.expand(first), self.expand(second))
+
+    def bulk_insert(self, table, items):
+        return [self.insert(table,item) for item in items]
+
+    #TODO This will probably not work:(
+    def NOT(self, first):
+        result = {}
+        result["$not"] = self.expand(first)
+        return result
+
+    def AND(self,first,second):
+        f = self.expand(first)
+        s = self.expand(second)
+        f.update(s)
+        return f
+
+    def OR(self,first,second):
+        # pymongo expects: .find( {'$or' : [{'name':'1'}, {'name':'2'}] } )
+        result = {}
+        f = self.expand(first)
+        s = self.expand(second)
+        result['$or'] = [f,s]
+        return result
+
+    def BELONGS(self, first, second):
+        if isinstance(second, str):
+            return {self.expand(first) : {"$in" : [ second[:-1]]} }
+        elif second==[] or second==():
+            return {1:0}
+        items.append(self.expand(item, first.type) for item in second)
+        return {self.expand(first) : {"$in" : items} }
+
+    #TODO verify full compatibilty with official SQL Like operator
+    def LIKE(self, first, second):
+        import re
+        return {self.expand(first) : {'$regex' : re.escape(self.expand(second, 'string')).replace('%','.*')}}
+
+    #TODO verify full compatibilty with official SQL Like operator
+    def STARTSWITH(self, first, second):
+        #TODO  Solve almost the same problem as with endswith
+        import re
+        return {self.expand(first) : {'$regex' : '^' + re.escape(self.expand(second, 'string'))}}
+
+    #TODO verify full compatibilty with official SQL Like operator
+    def ENDSWITH(self, first, second):
+        #escaping regex operators?
+        #TODO if searched for a name like zsa_corbitt and the function is endswith('a') then this is also returned. Aldo it end with a t
+        import re
+        return {self.expand(first) : {'$regex' : re.escape(self.expand(second, 'string')) + '$'}}
+
+    #TODO verify full compatibilty with official oracle contains operator
+    def CONTAINS(self, first, second):
+        #There is a technical difference, but mongodb doesn't support that, but the result will be the same
+        #TODO contains operators need to be transformed to Regex
+        return {self.expand(first) : {' $regex' : ".*" + re.escape(self.expand(second, 'string')) + ".*"}}
+
+    def EQ(self,first,second):
+        result = {}
+        #if second is None:
+            #return '(%s == null)' % self.expand(first)
+        #return '(%s == %s)' % (self.expand(first),self.expand(second,first.type))
+        result[self.expand(first)] = self.expand(second)
+        return result
+    
+    def NE(self, first, second=None):
+        print "in NE"
+        result = {}
+        result[self.expand(first)] = {'$ne': self.expand(second)}
+        return result
+
+    def LT(self,first,second=None):
+        if second is None:
+            raise RuntimeError, "Cannot compare %s < None" % first
+        print "in LT"
+        result = {}
+        result[self.expand(first)] = {'$lt': self.expand(second)}
+        return result
+
+    def LE(self,first,second=None):
+        if second is None:
+            raise RuntimeError, "Cannot compare %s <= None" % first
+        print "in LE"
+        result = {}
+        result[self.expand(first)] = {'$lte': self.expand(second)}
+        return result
+
+    def GT(self,first,second):
+        print "in GT"
+        #import pymongo.objectid
+        result = {}
+        #if expanded_first == '_id':
+            #if expanded_second != 0 and not isinstance(second,pymongo.objectid.ObjectId):
+                #raise SyntaxError, 'second argument must be of type bson.objectid.ObjectId'
+            #elif expanded_second == 0:
+                #expanded_second = pymongo.objectid.ObjectId('000000000000000000000000')
+        result[self.expand(first)] = {'$gt': self.expand(second)}
+        return result
+
+    def GE(self,first,second=None):
+        if second is None:
+            raise RuntimeError, "Cannot compare %s >= None" % first
+        print "in GE"
+        result = {}
+        result[self.expand(first)] = {'$gte': self.expand(second)}
+        return result
+
+    #TODO javascript has math
+    def ADD(self, first, second):
+        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        return '%s + %s' % (self.expand(first), self.expand(second, first.type))
+
+    #TODO javascript has math
+    def SUB(self, first, second):
+        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        return '(%s - %s)' % (self.expand(first), self.expand(second, first.type))
+
+    #TODO javascript has math
+    def MUL(self, first, second):
+        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        return '(%s * %s)' % (self.expand(first), self.expand(second, first.type))
+        #TODO javascript has math
+
+    def DIV(self, first, second):
+        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        return '(%s / %s)' % (self.expand(first), self.expand(second, first.type))
+    #TODO javascript has math
+    def MOD(self, first, second):
+        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        return '(%s %% %s)' % (self.expand(first), self.expand(second, first.type))
+
+    #TODO javascript can do this
+    def AS(self, first, second):
+        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        return '%s AS %s' % (self.expand(first), second)
+
+    #We could implement an option that simulates a full featured SQL database. But I think the option should be set explicit or implemented as another library.
+    def ON(self, first, second):
+        raise NotSupported, "This is not possible in NoSQL, but can be simulated with a wrapper."
+        return '%s ON %s' % (self.expand(first), self.expand(second))
+
+    #TODO is this used in mongodb?
+    def COMMA(self, first, second):
+        return '%s, %s' % (self.expand(first), self.expand(second))
+
 
 
 class IMAPAdapter(NoSQLAdapter):
