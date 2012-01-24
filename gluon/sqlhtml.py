@@ -754,10 +754,8 @@ class SQLFORM(FORM):
 
         self.record_id = record_id
         if keyed:
-            if record:
-                self.record_id = dict([(k,record[k]) for k in table._primarykey])
-            else:
-                self.record_id = dict([(k,None) for k in table._primarykey])
+            self.record_id = dict([(k,record and str(record[k]) or None) \
+                                       for k in table._primarykey])
         self.field_parent = {}
         xfields = []
         self.fields = fields
@@ -1037,7 +1035,8 @@ class SQLFORM(FORM):
                 formname_id = '.'.join(str(self.record[k])
                                        for k in self.table._primarykey
                                        if hasattr(self.record,k))
-                record_id = dict((k, request_vars[k]) for k in self.table._primarykey)
+                record_id = dict((k, request_vars.get(k,None)) \
+                                     for k in self.table._primarykey)
             else:
                 (formname_id, record_id) = (self.record.id,
                                             request_vars.get('id', None))

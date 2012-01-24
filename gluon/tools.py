@@ -3177,8 +3177,7 @@ class Crud(object):
         method: Crud.delete(table, record_id, [next=DEFAULT
             [, message=DEFAULT]])
         """
-        if not (isinstance(table, self.db.Table) or table in self.db.tables) \
-                or not str(record_id).isdigit():
+        if not (isinstance(table, self.db.Table) or table in self.db.tables):
             raise HTTP(404)
         if not isinstance(table, self.db.Table):
             table = self.db[table]
