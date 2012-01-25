@@ -1316,7 +1316,8 @@ class BaseAdapter(ConnectionPool):
     def _count(self, query, distinct=None):
         tablenames = self.tables(query)
         if query:
-            if not query.ignore_common_filters:
+            if hasattr(query,'ignore_common_filters') and \
+                    not query.ignore_common_filters:
                 query = self.common_filter(query, tablenames)
             sql_w = ' WHERE ' + self.expand(query)
         else:
@@ -3503,8 +3504,10 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         else:
             raise SyntaxError, "Unable to determine a tablename"
 
-        if query and not query.ignore_common_filters:
-            query = self.common_filter(query,[tablename])
+        if query:
+            if hasattr(query,'ignore_common_filters') and \
+                    not query.ignore_common_filters:
+                query = self.common_filter(query,[tablename])
 
         tableobj = self.db[tablename]._tableobj
         items = tableobj.all()
@@ -4830,7 +4833,8 @@ class IMAPAdapter(NoSQLAdapter):
         rows
         """
 
-        if not query.ignore_common_filters:
+        if hasattr(query,'ignore_common_filters') and \
+                not query.ignore_common_filters:
             query = self.common_filter(query, [self.get_query_mailbox(query),])
 
         # move this statement elsewhere (upper-level)
@@ -5048,7 +5052,8 @@ class IMAPAdapter(NoSQLAdapter):
     def update(self, tablename, query, fields):
         # print "_update"
 
-        if not query.ignore_common_filters:
+        if hasattr(query,'ignore_common_filters') and \
+                not query.ignore_common_filters:
             query = self.common_filter(query, [tablename,])
 
         mark = []
@@ -5093,7 +5098,8 @@ class IMAPAdapter(NoSQLAdapter):
         counter = 0
         tablename = self.get_query_mailbox(query)
         if query and tablename is not None:
-            if not query.ignore_common_filters:
+            if hasattr(query,'ignore_common_filters') and \
+                    not query.ignore_common_filters:
                 query = self.common_filter(query, [tablename,])
             # print "Selecting mailbox ..."
             result, data = self.connection.select(self.connection.mailbox_names[tablename])
@@ -5108,7 +5114,8 @@ class IMAPAdapter(NoSQLAdapter):
         counter = 0
         if query:
             # print "Selecting mailbox ..."
-            if not query.ignore_common_filters:
+            if hasattr(query,'ignore_common_filters') and \
+                    not query.ignore_common_filters:
                 query = self.common_filter(query, [tablename,])
             result, data = self.connection.select(self.connection.mailbox_names[tablename])
             # print "Retrieving sequence numbers remotely"
