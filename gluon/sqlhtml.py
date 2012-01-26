@@ -1963,7 +1963,7 @@ class SQLFORM(FORM):
                 else:
                     del kwargs[key]
         for tablename,fieldname in table._referenced_by:
-            id_field_name = db[tablename]._id.name
+            id_field_name = table._id.name
             if linked_tables is None or tablename in linked_tables:
                 args0 = tablename+'.'+fieldname
                 links.append(
