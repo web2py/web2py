@@ -1104,7 +1104,7 @@ class BaseAdapter(ConnectionPool):
 
     def _update(self, tablename, query, fields):
         if query:
-            if not query.ignore_common_filters:
+            if use_common_filters(query):
                 query = self.common_filter(query, [tablename])
             sql_w = ' WHERE ' + self.expand(query)
         else:
@@ -1123,7 +1123,7 @@ class BaseAdapter(ConnectionPool):
 
     def _delete(self, tablename, query):
         if query:
-            if not query.ignore_common_filters:
+            if use_common_filters(query):
                 query = self.common_filter(query, [tablename])
             sql_w = ' WHERE ' + self.expand(query)
         else:
@@ -1191,7 +1191,7 @@ class BaseAdapter(ConnectionPool):
                 if not tablename in tablenames:
                     tablenames.append(tablename)
         
-        if query and not query.ignore_common_filters:
+        if use_common_filters(query):
             query = self.common_filter(query,tablenames)
 
         if len(tablenames) < 1:
@@ -1316,8 +1316,7 @@ class BaseAdapter(ConnectionPool):
     def _count(self, query, distinct=None):
         tablenames = self.tables(query)
         if query:
-            if hasattr(query,'ignore_common_filters') and \
-                    not query.ignore_common_filters:
+            if use_common_filters(query):
                 query = self.common_filter(query, tablenames)
             sql_w = ' WHERE ' + self.expand(query)
         else:
@@ -3506,8 +3505,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
             raise SyntaxError, "Unable to determine a tablename"
 
         if query:
-            if hasattr(query,'ignore_common_filters') and \
-                    not query.ignore_common_filters:
+            if use_common_filters(query):
                 query = self.common_filter(query,[tablename])
 
         tableobj = self.db[tablename]._tableobj
@@ -4834,8 +4832,7 @@ class IMAPAdapter(NoSQLAdapter):
         rows
         """
 
-        if hasattr(query,'ignore_common_filters') and \
-                not query.ignore_common_filters:
+        if use_common_filters(query):
             query = self.common_filter(query, [self.get_query_mailbox(query),])
 
         # move this statement elsewhere (upper-level)
@@ -5053,8 +5050,7 @@ class IMAPAdapter(NoSQLAdapter):
     def update(self, tablename, query, fields):
         # print "_update"
 
-        if hasattr(query,'ignore_common_filters') and \
-                not query.ignore_common_filters:
+        if use_common_filters(query):
             query = self.common_filter(query, [tablename,])
 
         mark = []
@@ -5099,8 +5095,7 @@ class IMAPAdapter(NoSQLAdapter):
         counter = 0
         tablename = self.get_query_mailbox(query)
         if query and tablename is not None:
-            if hasattr(query,'ignore_common_filters') and \
-                    not query.ignore_common_filters:
+            if use_common_filters(query):
                 query = self.common_filter(query, [tablename,])
             # print "Selecting mailbox ..."
             result, data = self.connection.select(self.connection.mailbox_names[tablename])
@@ -5115,8 +5110,7 @@ class IMAPAdapter(NoSQLAdapter):
         counter = 0
         if query:
             # print "Selecting mailbox ..."
-            if hasattr(query,'ignore_common_filters') and \
-                    not query.ignore_common_filters:
+            if use_common_filters(query):
                 query = self.common_filter(query, [tablename,])
             result, data = self.connection.select(self.connection.mailbox_names[tablename])
             # print "Retrieving sequence numbers remotely"
@@ -7305,6 +7299,8 @@ def xorify(orderby):
         orderby2 = orderby2 | item
     return orderby2
 
+def use_common_filters(query):
+    return (query and hasattr(query,'ignore_common_filters') and not query.ignore_common_filters)
 
 class Set(object):
 
@@ -7326,8 +7322,8 @@ class Set(object):
     def __init__(self, db, query, ignore_common_filters = None):
         self.db = db
         self._db = db # for backward compatibility
-        if query and not ignore_common_filters is None and \
-                query.ignore_common_filters != ignore_common_filters:
+        if not ignore_common_filters is None and \
+                use_common_filters(query) == ignore_common_filters:
             query = copy.copy(query)
             query.ignore_common_filters = ignore_common_filters
         self.query = query
