@@ -2270,7 +2270,8 @@ class MSSQLAdapter(BaseAdapter):
             except SyntaxError, e:
                 logger.error('NdGpatch error')
                 raise e
-            cnxn = 'DSN=%s' % dsn
+            # was cnxn = 'DSN=%s' % dsn
+            cnxn = dsn
         else:
             m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?(?P<urlargs>.*))?$').match(uri)
             if not m:
