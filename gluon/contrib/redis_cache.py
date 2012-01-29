@@ -4,13 +4,16 @@ Released under web2py license because includes gluon/cache.py source code
 """
 
 import redis
+from redis.exceptions import ConnectionError
 from gluon import current
 from gluon.cache import CacheAbstract
 import cPickle as pickle
 import time
 import re
-
+import logging
 import thread
+
+logger = logging.getLogger("web2py.cache.redis")
 
 locker = thread.allocate_lock()
 
@@ -18,7 +21,7 @@ def RedisCache(*args, **vars):
     """
     Usage example: put in models
 
-    from gluon.contrib.redis import RedisCache
+    from gluon.contrib.redis_cache import RedisCache
     cache.redis = RedisCache('localhost:6379',db=None, debug=True)
 
     cache.redis.stats()
@@ -42,14 +45,17 @@ def RedisCache(*args, **vars):
 class RedisClient(object):
 
     meta_storage = {}
-
+    MAX_RETRIES = 5
+    RETRIES = 0
     def __init__(self, server='localhost:6379', db=None, debug=False):
-        host,port = (address.split(':')+['6379'])[:2]
+        self.server = server
+        self.db = db or 0
+        host,port = (self.server.split(':')+['6379'])[:2]
         port = int(port)
-        self.request=current.request
+        self.request = current.request
         self.debug = debug
-        if request:
-            app = request.application
+        if self.request:
+            app = self.request.application
         else:
             app = ''
 
@@ -61,36 +67,69 @@ class RedisClient(object):
                     }}
         else:
             self.storage = self.meta_storage[app]
-
-        self.r_server = redis.Redis(host=host, port=port, db=db or 0)
+        
+        self.r_server = redis.Redis(host=host, port=port, db=self.db)
 
     def __call__(self, key, f, time_expire=300):
-        if time_expire == None:
-            time_expire = 10**10
-        key = self.__keyFormat__(key)
-        value = None
-        obj = self.r_server.get(key)
-        if obj:
-            if self.debug:
-                self.r_server.incr('web2py_cache_statistics:hit_total')
-            value = pickle.loads(obj)
-        elif f is None:
-            if obj: self.r_server.delete(key)
-        else:
-            if self.debug:
-                self.r_server.incr('web2py_cache_statistics:misses')
-            value = f()
-            self.r_server.setex(key, pickle.dumps(value), time_expire)
-        return value
-
-    def increment(self, key, value=1, time_expire=300):
-        newKey = self.__keyFormat__(key)
-        obj = self.r_server.get(newKey)
-        if obj:
-            return self.r_server.incr(newKey, value)
-        else:
-            self.r_server.setex(newKey, value, time_expire)
+        try:
+            if time_expire == None:
+                time_expire = 24*60*60
+            newKey = self.__keyFormat__(key)
+            value = None
+            obj = self.r_server.get(newKey)
+            ttl = self.r_server.ttl(newKey) or 0
+            if ttl > time_expire:
+                obj = None
+            if obj:
+                if self.debug:
+                    self.r_server.incr('web2py_cache_statistics:hit_total')
+                value = pickle.loads(obj)
+            elif f is None:
+                self.r_server.delete(newKey)
+            else:
+                if self.debug:
+                    self.r_server.incr('web2py_cache_statistics:misses')
+                value = f()
+                if time_expire == 0:
+                    time_expire = 1
+                self.r_server.setex(newKey, pickle.dumps(value), time_expire)
             return value
+        except ConnectionError:
+            return self.retry_call(key, f, time_expire)
+    
+    def retry_call(self, key, f, time_expire):
+        self.RETRIES += 1
+        if self.RETRIES <= self.MAX_RETRIES:
+            logger.error("sleeping %s seconds before reconnecting" % (2 * self.RETRIES))
+            time.sleep(2 * self.RETRIES)
+            self.__init__(self.server, self.db, self.debug)
+            return self.__call__(key, f, time_expire)
+        else:
+            self.RETRIES = 0
+            raise ConnectionError , 'Redis instance is unavailable at %s' % (self.server)
+        
+    def increment(self, key, value=1, time_expire=300):
+        try:
+            newKey = self.__keyFormat__(key)
+            obj = self.r_server.get(newKey)        
+            if obj:
+                return self.r_server.incr(newKey, value)        
+            else:
+                self.r_server.setex(newKey, value, time_expire)
+                return value
+        except ConnectionError:
+            return self.retry_increment(key, value, time_expire)
+            
+    def retry_increment(self, key, value, time_expire):
+        self.RETRIES += 1
+        if self.RETRIES <= self.MAX_RETRIES:
+            logger.error("sleeping some seconds before reconnecting")
+            time.sleep(2 * self.RETRIES)
+            self.__init__(self.server, self.db, self.debug)
+            return self.increment(key, value, time_expire)
+        else:
+            self.RETRIES = 0
+            raise ConnectionError , 'Redis instance is unavailable at %s' % (self.server)
 
     def clear(self, regex):
         """
