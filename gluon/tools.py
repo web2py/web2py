@@ -872,6 +872,7 @@ class Auth(object):
         request = current.request
         session = current.session
         auth = session.auth
+        self.mygroups = auth.mygroups or {}
         if auth and auth.last_visit and auth.last_visit + \
                 datetime.timedelta(days=0, seconds=auth.expiration) > request.now:
             self.user = auth.user
@@ -1517,6 +1518,7 @@ class Auth(object):
                                        expiration=self.settings.expiration,
                                        hmac_key = web2py_uuid())
                 self.user = user
+                self.update_groups()
                 return user
         else:
             # user not in database try other login methods
@@ -1807,6 +1809,8 @@ class Auth(object):
             self.log_event(log, user)
             session.flash = self.messages.logged_in
 
+        self.update_groups()
+            
         # how to continue
         if self.settings.login_form == self:
             if accepted_form:
@@ -1951,7 +1955,8 @@ class Auth(object):
                 session.auth = Storage(user=user, last_visit=request.now,
                                        expiration=self.settings.expiration,
                                        hmac_key = web2py_uuid())
-                self.user = user
+                self.user = user              
+                self.update_groups()
                 session.flash = self.messages.logged_in
             self.log_event(log, form.vars)
             callback(onaccept,form)
@@ -2485,6 +2490,17 @@ class Auth(object):
             return SQLFORM.factory(Field('user_id', 'integer'))
         return self.user
 
+    def update_groups(self):
+        if not self.user:
+            return
+        mygroups = self.mygroups = current.session.auth.mygroups = {}
+        memberships = self.db(self.settings.table_membership.user_id
+                              == self.user.id).select()
+        for membership in memberships:
+            group = self.settings.table_group(membership.group_id)
+            if group:
+                mygroups[membership.group_id] = group.role
+
     def groups(self):
         """
         displays the groups and their roles for the logged in user
@@ -2607,6 +2623,7 @@ class Auth(object):
         self.db(self.settings.table_group.id == group_id).delete()
         self.db(self.settings.table_membership.group_id == group_id).delete()
         self.db(self.settings.table_permission.group_id == group_id).delete()
+        self.update_groups()
         self.log_event(self.messages.del_group_log,dict(group_id=group_id))
 
     def id_group(self, role):
@@ -2669,6 +2686,7 @@ class Auth(object):
             return record.id
         else:
             id = membership.insert(group_id=group_id, user_id=user_id)
+        self.update_groups()
         self.log_event(self.messages.add_membership_log,
                        dict(user_id=user_id, group_id=group_id))
         return id
@@ -2685,9 +2703,11 @@ class Auth(object):
         membership = self.settings.table_membership
         self.log_event(self.messages.del_membership_log,
                        dict(user_id=user_id,group_id=group_id))
-        return self.db(membership.user_id
-                       == user_id)(membership.group_id
-                                   == group_id).delete()
+        ret = self.db(membership.user_id
+                      == user_id)(membership.group_id
+                                  == group_id).delete()
+        self.update_groups()
+        return ret
 
     def has_permission(
         self,
