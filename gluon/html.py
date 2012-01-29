@@ -148,6 +148,7 @@ def URL(
     host=None,
     port=None,
     encode_embedded_slash=False,
+    url_encode=True
     ):
     """
     generate a URL
@@ -178,6 +179,24 @@ def URL(
 
         >>> str(URL(a='a', c='c', f='f', args=['w/x', 'y/z'], encode_embedded_slash=True))
         '/a/c/f/w%2Fx/y%2Fz'
+
+        >>> str(URL(a='a', c='c', f='f', args=['%(id)d'], url_encode=False))
+        '/a/c/f/%(id)d'
+
+        >>> str(URL(a='a', c='c', f='f', args=['%(id)d'], url_encode=True))
+        '/a/c/f/%25%28id%29d'
+
+        >>> str(URL(a='a', c='c', f='f', vars={'id' : '%(id)d' }, url_encode=False))
+        '/a/c/f?id=%(id)d'
+
+        >>> str(URL(a='a', c='c', f='f', vars={'id' : '%(id)d' }, url_encode=True))
+        '/a/c/f?id=%25%28id%29d'
+        
+        >>> str(URL(a='a', c='c', f='f', anchor='%(id)d', url_encode=False))
+        '/a/c/f#%(id)d'
+
+        >>> str(URL(a='a', c='c', f='f', anchor='%(id)d', url_encode=True))
+        '/a/c/f#%25%28id%29d'
 
     generates a url '/a/c/f' corresponding to application a, controller c
     and function f. If r=request is passed, a, c, f are set, respectively,
@@ -251,10 +270,13 @@ def URL(
         args = [args]
 
     if args:
-        if encode_embedded_slash:
-            other = '/' + '/'.join([urllib.quote(str(x), '') for x in args])
+        if url_encode:
+            if encode_embedded_slash:
+                other = '/' + '/'.join([urllib.quote(str(x), '') for x in args])
+            else:
+                other = args and urllib.quote('/' + '/'.join([str(x) for x in args]))
         else:
-            other = args and urllib.quote('/' + '/'.join([str(x) for x in args]))
+            other = args and ('/' + '/'.join([str(x) for x in args]))
     else:
         other = ''
 
@@ -298,9 +320,15 @@ def URL(
         list_vars.append(('_signature', sig))
 
     if list_vars:
-        other += '?%s' % urllib.urlencode(list_vars)
+        if url_encode:
+            other += '?%s' % urllib.urlencode(list_vars)
+        else:
+            other += '?%s' % '&'.join([var[0]+'='+var[1] for var in list_vars])
     if anchor:
-        other += '#' + urllib.quote(str(anchor))
+        if url_encode:
+            other += '#' + urllib.quote(str(anchor))
+        else:
+            other += '#' + (str(anchor))
     if extension:
         function += '.' + extension
 
@@ -2090,7 +2118,8 @@ class MENU(DIV):
                     li['_class'] = li['_class']+' '+self['li_active']
                 else:
                     li['_class'] = self['li_active']
-            ul.append(li)
+            if len(item) <= 4 or item[4] == True:
+                ul.append(li)
         return ul
 
     def serialize_mobile(self, data, select=None, prefix=''):
