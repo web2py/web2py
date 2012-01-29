@@ -1352,12 +1352,12 @@ class SQLFORM(FORM):
                                 _class='w2p_query_row hidden'))
         criteria.insert(0,SELECT(
                 _id="w2p_query_fields",
-                _onchange="jQuery('.w2p_query_row').hide();jQuery('#w2p_field_'+jQuery(this).val().replace('.','-')).show();",
+                _onchange="jQuery('.w2p_query_row').hide();jQuery('#w2p_field_'+jQuery('#w2p_query_fields').val().replace('.','-')).show();",
                 *[OPTION(label, _value=fname) for fname,label in selectfields]))
         fadd = SCRIPT("""
         jQuery('#w2p_query_panel input,#w2p_query_panel select').css(
                'width','auto').css('float','left');
-        jQuery(function(){web2py_ajax_fields();});
+        jQuery(function(){web2py_ajax_fields('#w2p_query_panel');});
         function w2p_build_query(aggregator,a){
           var b=a.replace('.','-');
           var option = jQuery('#w2p_field_'+b+' select').val();
@@ -1366,14 +1366,13 @@ class SQLFORM(FORM):
           var k=jQuery('#web2py_keywords');
           var v=k.val();
           if(aggregator=='new') k.val(s); else k.val((v?(v+' '+ aggregator +' '):'')+s);
-          jQuery('#w2p_query_fields').val('').change();
-          jQuery('#w2p_query_panel').slideUp();
-        }
+          jQuery('#w2p_query_panel').slideUp();          
+        }      
         """)
         return CAT(
             INPUT(
                 _value=T("Query"),_type="button",_id="w2p_query_trigger",
-                _onclick="jQuery('#w2p_query_fields').val('');jQuery('#w2p_query_panel').slideToggle();"),
+                _onclick="jQuery('#w2p_query_fields').change();jQuery('#w2p_query_panel').slideToggle();"),
             DIV(_id="w2p_query_panel",
                 _style='position:absolute;z-index:1000',
                 _class='hidden',
