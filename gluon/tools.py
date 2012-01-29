@@ -872,7 +872,7 @@ class Auth(object):
         request = current.request
         session = current.session
         auth = session.auth
-        self.mygroups = auth.mygroups or {}
+        self.mygroups = auth and auth.mygroups or {}
         if auth and auth.last_visit and auth.last_visit + \
                 datetime.timedelta(days=0, seconds=auth.expiration) > request.now:
             self.user = auth.user
