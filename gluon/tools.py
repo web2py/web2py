@@ -872,7 +872,7 @@ class Auth(object):
         request = current.request
         session = current.session
         auth = session.auth
-        self.mygroups = auth and auth.mygroups or {}
+        self.user_groups = auth and auth.user_groups or {}
         if auth and auth.last_visit and auth.last_visit + \
                 datetime.timedelta(days=0, seconds=auth.expiration) > request.now:
             self.user = auth.user
@@ -1320,7 +1320,7 @@ class Auth(object):
                 Field('role', length=512, default='',
                         label=self.messages.label_role),
                 Field('description', 'text',
-                        label=self.messages.label_description),
+                        label=self.messages.label_description),                
                 *settings.extra_fields.get(settings.table_group_name,[]),
                 **dict(
                     migrate=self.__get_migrate(
@@ -2493,13 +2493,13 @@ class Auth(object):
     def update_groups(self):
         if not self.user:
             return
-        mygroups = self.mygroups = current.session.auth.mygroups = {}
+        user_groups = self.user_groups = current.session.auth.user_groups = {}
         memberships = self.db(self.settings.table_membership.user_id
                               == self.user.id).select()
         for membership in memberships:
             group = self.settings.table_group(membership.group_id)
             if group:
-                mygroups[membership.group_id] = group.role
+                user_groups[membership.group_id] = group.role
 
     def groups(self):
         """
