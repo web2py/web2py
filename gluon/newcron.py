@@ -290,6 +290,7 @@ def crondance(applications_parent, ctype='soft', startup=False):
             w2p_path = fileutils.abspath('web2py.py', gluon=True)
             if os.path.exists(w2p_path):
                 commands.append(w2p_path)
+            commands.append('--') 
             if global_settings.applications_parent != global_settings.gluon_parent:
                 commands.extend(('-f', global_settings.applications_parent))
             citems = [(k in task and not v in task[k]) for k,v in checks]
