@@ -18,9 +18,9 @@ routes.py
 logging.conf
 gluon/tests/VERSION
 gluon/tests/sql.log
-./httpserver.log
-./httpserver.pid
-./parameters*.py
+httpserver.log
+httpserver.pid
+parameters*.py
 ./deposit
 ./benchmark
 ./build
@@ -35,6 +35,7 @@ gluon/tests/sql.log
 ./gluon/*.txt
 ./admin.w2p
 ./examples.w2p
+cron.master
 applications/*
 !applications/welcome
 !applications/welcome/*
@@ -47,6 +48,7 @@ applications/*/sessions/*
 applications/*/errors/*
 applications/*/cache/*
 applications/*/uploads/*
+applications/*/*.py[oc]
 applications/examples/static/epydoc
 applications/examples/static/sphinx
 applications/admin/cron/cron.master
