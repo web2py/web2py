@@ -1297,6 +1297,9 @@ class SQLFORM(FORM):
 
     @staticmethod
     def build_query(fields,keywords):
+        if isinstance(keywords,(tuple,list)):
+           keywords = keywords[0]
+           request.vars.keywords = keywords
         key = keywords.strip()
         if key and not ' ' in key and not '"' in key and not "'" in key:
             SEARCHABLE_TYPES = ('string','text','list:string')
@@ -1647,12 +1650,13 @@ class SQLFORM(FORM):
             console.append(form)
             keywords = request.vars.get('keywords','')
             try:
-                subquery = SQLFORM.build_query(sfields, keywords)
+                if callable(searchable):
+                    subquery = searchable(sfields, keywords)
+                else:
+                    subquery = SQLFORM.build_query(sfields, keywords)
             except RuntimeError:
                 subquery = None
                 error = T('Invalid query')
-        elif callable(searchable):
-            subquery = searchable(keywords,fields)
         else:
             subquery = None
         if subquery:
