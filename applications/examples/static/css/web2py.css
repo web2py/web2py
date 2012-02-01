@@ -30,6 +30,7 @@ small { font-size: 0.8em; }
 textarea { width: 600px; }
 code { font-family: Courier;}
 input[type=text], input[type=password], select { width: 300px; }
+ul { list-style-type: none; margin: 0px; padding: 0px; }
 /** end **/
 
 /* Sticky footer begin */
@@ -193,7 +194,7 @@ div.error {
 .web2py_paginator { border-left: 1px solid #ccc; border-right: 1px solid #ccc; border-bottom: 1px solid #ccc; }
 .web2py_grid a { text-decoration:none;}
 .web2py_grid table { width: 100% }
-.web2py_grid td { white-space:nowrap; }
+.web2py_grid td { white-space:normal; }
 .web2py_grid tbody td {
     padding: 2px 5px 2px 5px;
     line-height: 13.5px;
