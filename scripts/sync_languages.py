@@ -7,7 +7,7 @@ import sys
 import shutil
 import os
 
-from gluon.languages import findT
+from gluon.languages import findT, utf8_repr
 
 sys.path.insert(0, '.')
 
@@ -30,11 +30,12 @@ file1 = os.path.join(path, 'languages', '%s.py' % file)
 
 f = open(file1, 'w')
 try:
+    f.write('# coding: utf8\n')
     f.write('{\n')
     keys = d.keys()
     keys.sort()
     for key in keys:
-        f.write('%s:%s,\n' % (repr(key), repr(str(d[key]))))
+        f.write('%s:%s,\n' % (utf8_repr(key), utf8_repr(str(d[key]))))
     f.write('}\n')
 finally:
     f.close()
