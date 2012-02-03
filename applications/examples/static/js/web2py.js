@@ -23,10 +23,6 @@ function ajax(u,s,t) {
 
 String.prototype.reverse = function () { return this.split('').reverse().join('');};
 function web2py_ajax_fields(target) {
-  jQuery('input.integer', target).keyup(function(){this.value=this.value.reverse().replace(/[^0-9\-]|\-(?=.)/g,'').reverse();});
-  jQuery('input.double,input.decimal', target).keyup(function(){this.value=this.value.reverse().replace(/[^0-9\-\.,]|[\-](?=.)|[\.,](?=[0-9]*[\.,])/g,'').reverse();});
-  var confirm_message = (typeof w2p_ajax_confirm_message != 'undefined') ? w2p_ajax_confirm_message : "Are you sure you want to delete this object?";
-  jQuery("input[type='checkbox'].delete", target).live('click',function(){ if(this.checked) if(!confirm(confirm_message)) this.checked=false; });
   var date_format = (typeof w2p_ajax_date_format != 'undefined') ? w2p_ajax_date_format : "%Y-%m-%d";
   var datetime_format = (typeof w2p_ajax_datetime_format != 'undefined') ? w2p_ajax_datetime_format : "%Y-%m-%d %H:%M:%S";
   jQuery("input.date",target).each(function() {Calendar.setup({inputField:this, ifFormat:date_format, showsTime:false });});
@@ -38,9 +34,16 @@ function web2py_ajax_fields(target) {
 function web2py_ajax_init(target) {
   jQuery('.hidden', target).hide();
   jQuery('.error', target).hide().slideDown('slow');
-  jQuery('.flash', target).click(function(e) { jQuery(this).fadeOut('slow'); e.preventDefault(); });
-  // jQuery('input[type=submit]').click(function(){var t=jQuery(this);t.hide();t.after('<input class="submit_disabled" disabled="disabled" type="submit" name="'+t.attr("name")+'_dummy" value="'+t.val()+'">')});
   web2py_ajax_fields(target);
+};
+
+function web2py_event_handlers() {
+  var doc = jQuery(document)
+  doc.on('click', '.flash', function(e){jQuery(this).fadeOut('slow'); e.preventDefault();});
+  doc.on('keyup', 'input.integer', function(){this.value=this.value.reverse().replace(/[^0-9\-]|\-(?=.)/g,'').reverse();});
+  doc.on('keyup', 'input.double, input.decimal', function(){this.value=this.value.reverse().replace(/[^0-9\-\.,]|[\-](?=.)|[\.,](?=[0-9]*[\.,])/g,'').reverse();});
+  var confirm_message = (typeof w2p_ajax_confirm_message != 'undefined') ? w2p_ajax_confirm_message : "Are you sure you want to delete this object?";
+  doc.on('click', "input[type='checkbox'].delete", function(){if(this.checked) if(!confirm(confirm_message)) this.checked=false;});
 };
 
 jQuery(function() {
@@ -48,7 +51,9 @@ jQuery(function() {
    flash.hide();
    if(flash.html()) flash.slideDown();
    web2py_ajax_init(document);
+   web2py_event_handlers();
 });
+
 function web2py_trap_form(action,target) {
    jQuery('#'+target+' form').each(function(i){
       var form=jQuery(this);
@@ -60,6 +65,7 @@ function web2py_trap_form(action,target) {
       });
    });
 }
+
 function web2py_trap_link(target) {
     jQuery('#'+target+' a.w2p_trap').each(function(i){
 	    var link=jQuery(this);
@@ -70,11 +76,12 @@ function web2py_trap_link(target) {
 		});
 	});
 }
-function web2py_ajax_page(method,action,data,target) {
-  jQuery.ajax({'type':method,'url':action,'data':data,
+
+function web2py_ajax_page(method, action, data, target) {
+  jQuery.ajax({'type':method, 'url':action, 'data':data,
     'beforeSend':function(xhr) {
-      xhr.setRequestHeader('web2py-component-location',document.location);
-      xhr.setRequestHeader('web2py-component-element',target);},
+      xhr.setRequestHeader('web2py-component-location', document.location);
+      xhr.setRequestHeader('web2py-component-element', target);},
     'complete':function(xhr,text){
       var html=xhr.responseText;
       var content=xhr.getResponseHeader('web2py-component-content');
@@ -94,9 +101,11 @@ function web2py_ajax_page(method,action,data,target) {
       }
     });
 }
+
 function web2py_component(action,target) {
-  jQuery(function(){ web2py_ajax_page('get',action,null,target); });
+  jQuery(function(){web2py_ajax_page('get',action,null,target);});
 }
+
 function web2py_comet(url,onmessage,onopen,onclose) {
   if ("WebSocket" in window) {
     var ws = new WebSocket(url);

@@ -20,6 +20,17 @@ from dal import DAL, Field
 from sqlhtml import SQLFORM, SQLTABLE
 from compileapp import LOAD
 
+# Dummy code to enable code completion in IDE's.
+if 0:
+    from globals import Request, Response, Session
+    from cache import Cache
+    from languages import translator
+    request = Request()
+    response = Response()
+    session = Session()
+    cache = Cache(request)
+    T = translator(request)
+
 
 
 

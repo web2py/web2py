@@ -7769,7 +7769,7 @@ def Rows_unpickler(data):
 
 def Rows_pickler(data):
     return Rows_unpickler, \
-        (cPickle.dumps(data.as_list(storage_to_dict=True,
+        (cPickle.dumps(data.as_list(storage_to_dict=False,
                                     datetime_to_str=False)),)
 
 copy_reg.pickle(Rows, Rows_pickler, Rows_unpickler)

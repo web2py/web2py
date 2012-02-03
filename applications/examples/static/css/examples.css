@@ -37,7 +37,7 @@ sup  {
     line-height: 2em; 
     vertical-align: top;
 }
-ul { list-style: circle outside;}
+ul { list-style: circle outside; padding-left: 30px;}
 
 .frame { 
     border: 3px solid #959595; 
