@@ -1297,6 +1297,8 @@ class SQLFORM(FORM):
 
     @staticmethod
     def build_query(fields,keywords):
+        from gluon import current
+        request = current.request
         if isinstance(keywords,(tuple,list)):
            keywords = keywords[0]
            request.vars.keywords = keywords
@@ -1781,7 +1783,13 @@ class SQLFORM(FORM):
                     classtr = 'odd'
                 numrec+=1
                 id = row[field_id]
-                tr = TR(_class=classtr)
+                if row_id:
+                    rid = row_id
+                    if callable(rid):
+                        rid = rid(row)
+                    tr = TR(_id=rid, _class='%s %s' % (classtr, 'with_id'))
+                else:
+                    tr = TR(_class=classtr)
                 if selectable:
                     tr.append(INPUT(_type="checkbox",_name="records",_value=id,
                                     value=request.vars.records))
