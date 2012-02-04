@@ -237,6 +237,12 @@ routes_out = [
             "/welcome/default/f ['', 'arg1']")
         self.assertEqual(filter_url('http://domain.com/welcome/default/f/arg1/arg2'), 
             "/welcome/default/f ['arg1', 'arg2']")
+        self.assertEqual(filter_url('http://domain.com/welcome/default/f/arg1//arg2'), 
+            "/welcome/default/f ['arg1', '', 'arg2']")
+        self.assertEqual(filter_url('http://domain.com/welcome/default/f/arg1//arg3/'), 
+            "/welcome/default/f ['arg1', '', 'arg3']")
+        self.assertEqual(filter_url('http://domain.com/welcome/default/f/arg1//arg3//'), 
+            "/welcome/default/f ['arg1', '', 'arg3', '']")
 
         self.assertEqual(filter_url('http://domain.com/welcome/default/f', out=True), "/f")
         self.assertEqual(regex_filter_out('/welcome/default/f'), "/f")

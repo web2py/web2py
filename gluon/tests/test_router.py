@@ -770,6 +770,12 @@ class TestRouter(unittest.TestCase):
             "/init/default/f ['', 'arg1']")
         self.assertEqual(filter_url('http://domain.com/init/default/f/arg1/arg2'), 
             "/init/default/f ['arg1', 'arg2']")
+        self.assertEqual(filter_url('http://domain.com/init/default/f/arg1//arg2'), 
+            "/init/default/f ['arg1', '', 'arg2']")
+        self.assertEqual(filter_url('http://domain.com/init/default/f/arg1//arg3/'), 
+            "/init/default/f ['arg1', '', 'arg3']")
+        self.assertEqual(filter_url('http://domain.com/init/default/f/arg1//arg3//'), 
+            "/init/default/f ['arg1', '', 'arg3', '']")
 
         self.assertEqual(filter_url('http://domain.com/init/default/f', out=True), "/f")
         self.assertEqual(map_url_out(None, None, 'init', 'default', 'f', None, None, None, None, None), "/f")
