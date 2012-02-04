@@ -1470,7 +1470,7 @@ class Auth(object):
                 checks.append(fieldname)
                 user = user or table_user(**{fieldname:keys[fieldname]})
         # if we think we found the user but registration_id does not match, make new user
-        if user and user.registration_id and user.registration_id!=keys.get('registration_id',None):
+        if 'registration_id' in checks and user and user.registration_id and user.registration_id!=keys.get('registration_id',None):
             user = None # THINK MORE ABOUT THIS? DO WE TRUST OPENID PROVIDER?
         keys['registration_key']=''
         if user:
