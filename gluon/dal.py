@@ -6383,7 +6383,8 @@ class Table(dict):
                 for field in table:
                     if not field.name in fieldnames and not field.type=='id':
                         field = copy.copy(field)
-                        if field.type == 'reference '+table._tablename: # correct self references
+                        # correct self references
+                        if not table._actual and field.type == 'reference '+table._tablename: 
                             field.type = 'reference '+self._tablename
                         newfields.append(field)
                         fieldnames.add(field.name)
