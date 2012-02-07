@@ -6130,6 +6130,7 @@ def index():
         t._format = format
         t._singular = singular
         t._plural = plural
+        t._actual = True
         return t
 
     def __iter__(self):
@@ -6346,6 +6347,7 @@ class Table(dict):
 
         :raises SyntaxError: when a supplied field is of incorrect type.
         """
+        self._actual = False # set to True by define_table()
         self._tablename = tablename
         self._sequence_name = args.get('sequence_name',None) or \
             db and db._adapter.sequence_name(tablename)
@@ -6380,7 +6382,10 @@ class Table(dict):
                 table = field
                 for field in table:
                     if not field.name in fieldnames and not field.type=='id':
-                        newfields.append(copy.copy(field))
+                        field = copy.copy(field)
+                        if field.type == 'reference '+table._tablename: # correct self references
+                            field.type = 'reference '+self._tablename
+                        newfields.append(field)
                         fieldnames.add(field.name)
             else:
                 # let's ignore new fields with duplicated names!!!
