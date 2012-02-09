@@ -1783,9 +1783,9 @@ class SQLFORM(FORM):
                     classtr = 'odd'
                 numrec+=1
                 id = row[field_id]
-                if row_id:
-                    rid = row_id
-                    if callable(rid):
+                if id:
+                    rid = id
+                    if callable(rid): ### can this ever be callable?
                         rid = rid(row)
                     tr = TR(_id=rid, _class='%s %s' % (classtr, 'with_id'))
                 else:
