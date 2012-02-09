@@ -17,7 +17,7 @@ Holds:
 from http import HTTP
 from html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT
 from html import FORM, INPUT, LABEL, OPTION, SELECT, MENU
-from html import TABLE, THEAD, TBODY, TR, TD, TH
+from html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
 from html import URL, truncate_string
 from dal import DAL, Table, Row, CALLABLETYPES, smart_query
 from storage import Storage
