@@ -6914,6 +6914,8 @@ class Expression(object):
         return Query(self.db, op, self, value)
 
     def belongs(self, value):
+        if isinstance(value,Query):
+            value = self.db(value)._select(value.first._table._id)
         return Query(self.db, self.db._adapter.BELONGS, self, value)
 
     def startswith(self, value):
