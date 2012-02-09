@@ -1186,8 +1186,12 @@ class Auth(object):
             next = ''
         else:
             next = '?_next='+urllib.quote(URL(args=request.args,vars=request.vars))
+
+        li_next = '?_next='+urllib.quote(self.settings.login_next)
+        lo_next = '?_next='+urllib.quote(self.settings.logout_next)
+            
         if self.user_id:
-            logout=A(T('Logout'),_href=action+'/logout'+next)
+            logout=A(T('Logout'),_href=action+'/logout'+lo_next)
             profile=A(T('Profile'),_href=action+'/profile'+next)
             password=A(T('Password'),_href=action+'/change_password'+next)
             bar = SPAN(prefix,self.user.first_name,s1, logout,s3,_class='auth_navbar')
@@ -1198,7 +1202,7 @@ class Auth(object):
                 bar.insert(-1, s2)
                 bar.insert(-1, password)
         else:
-            login=A(T('Login'),_href=action+'/login'+next)
+            login=A(T('Login'),_href=action+'/login'+li_next)
             register=A(T('Register'),_href=action+'/register'+next)
             retrieve_username=A(T('forgot username?'),
                             _href=action+'/retrieve_username'+next)
