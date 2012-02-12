@@ -14,6 +14,28 @@ sys.path.insert(0, '.')
 file = sys.argv[1]
 apps = sys.argv[2:]
 
+def sync_language(d, data):
+    ''' this function makes sure a translated string will be prefered over an untranslated 
+    string when syncing languages between apps. when both are translated, it prefers the 
+    latter app, as did the original script
+    '''
+    
+    for key in data:
+        # if this string is not in the allready translated data, add it
+        if key not in d:
+            d[key] = data[key]
+        # see if there is a translated string in the original list, but not in the new list
+        elif ( 
+              ((d[key] != '') or (d[key] != key)) and 
+              ((data[key] == '') or (data[key] == key))
+             ):
+            d[key] = d[key]
+        # any other case (wether there is or there isn't a translated string)
+        else:
+            d[key] = data[key]
+        
+    return d
+
 d = {}
 for app in apps:
     path = 'applications/%s/' % app
@@ -23,7 +45,8 @@ for app in apps:
         data = eval(langfile.read())
     finally:
         langfile.close()
-    d.update(data)
+    
+    d = sync_language(d, data)
 
 path = 'applications/%s/' % apps[-1]
 file1 = os.path.join(path, 'languages', '%s.py' % file)
