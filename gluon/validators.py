@@ -466,7 +466,6 @@ class IS_IN_DB(Validator):
             items.sort(options_sorter)
         if zero and not self.zero is None and not self.multiple:
             items.insert(0,('',self.zero))
-        self.options() #
         return items
 
     def __call__(self, value):
