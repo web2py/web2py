@@ -48,14 +48,13 @@ class DowCommerce:
 
     def process(self):
         encoded_args = urllib.urlencode(self.parameters)
-
         if self.proxy == None:
             results = str(urllib.urlopen(self.url, encoded_args).read()).split(self.delimiter)
         else:
             opener = urllib.FancyURLopener(self.proxy)
             opened = opener.open(self.url, encoded_args)
             try:
-                results += str(opened.read()).split(self.delimiter)
+                results = str(opened.read()).split(self.delimiter)
             finally:
                 opened.close()
 

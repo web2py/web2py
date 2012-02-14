@@ -160,7 +160,9 @@ def executor(queue,task):
             result = dumps(_function(*args,**vars))
         else:
             ### for testing purpose only
-            result = eval(task.function)(*loads(task.args, list_hook),**loads(task.vars, object_hook=_decode_dict))
+            result = eval(task.function)(
+                *loads(task.args, object_hook=_decode_dict),
+                 **loads(task.vars, object_hook=_decode_dict))
         stdout, sys.stdout = sys.stdout, stdout
         queue.put(TaskReport(COMPLETED, result,stdout.getvalue()))
     except BaseException,e:

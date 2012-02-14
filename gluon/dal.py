@@ -1468,7 +1468,7 @@ class BaseAdapter(ConnectionPool):
     def parse_value(self, value, field_type):
         if field_type != 'blob' and isinstance(value, str):
             try:
-                value = value.decode(db._db_codec)
+                value = value.decode(self.db._db_codec)
             except Exception:
                 pass        
         if isinstance(value, unicode):
@@ -3891,7 +3891,7 @@ class MongoDBAdapter(NoSQLAdapter):
                 if inst == "cannot specify database without a username and password":
                     raise SyntaxError("You are probebly running version 1.1 of pymongo which contains a bug which requires authentication. Update your pymongo.")
                 else:
-                    raise SyntaxError(Mer("This is not an official Mongodb uri (http://www.mongodb.org/display/DOCS/Connections) Error : %s" % inst))
+                    raise SyntaxError("This is not an official Mongodb uri (http://www.mongodb.org/display/DOCS/Connections) Error : %s" % inst)
         self.pool_connection(connect,cursor=False)
 
 
@@ -4182,7 +4182,7 @@ class MongoDBAdapter(NoSQLAdapter):
             return {self.expand(first) : {"$in" : [ second[:-1]]} }
         elif second==[] or second==():
             return {1:0}
-        items.append(self.expand(item, first.type) for item in second)
+        items = [self.expand(item, first.type) for item in second]
         return {self.expand(first) : {"$in" : items} }
 
     def LIKE(self, first, second):
@@ -4252,32 +4252,32 @@ class MongoDBAdapter(NoSQLAdapter):
         return result
 
     def ADD(self, first, second):
-        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        raise NotImplementedError, "This must yet be replaced with javescript in order to accomplish this. Sorry"
         return '%s + %s' % (self.expand(first), self.expand(second, first.type))
 
     def SUB(self, first, second):
-        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        raise NotImplementedError, "This must yet be replaced with javescript in order to accomplish this. Sorry"
         return '(%s - %s)' % (self.expand(first), self.expand(second, first.type))
 
     def MUL(self, first, second):
-        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        raise NotImplementedError, "This must yet be replaced with javescript in order to accomplish this. Sorry"
         return '(%s * %s)' % (self.expand(first), self.expand(second, first.type))
 
     def DIV(self, first, second):
-        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        raise NotImplementedError, "This must yet be replaced with javescript in order to accomplish this. Sorry"
         return '(%s / %s)' % (self.expand(first), self.expand(second, first.type))
 
     def MOD(self, first, second):
-        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        raise NotImplementedError, "This must yet be replaced with javescript in order to accomplish this. Sorry"
         return '(%s %% %s)' % (self.expand(first), self.expand(second, first.type))
 
     def AS(self, first, second):
-        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        raise NotImplementedError, "This must yet be replaced with javescript in order to accomplish this. Sorry"
         return '%s AS %s' % (self.expand(first), second)
 
     #We could implement an option that simulates a full featured SQL database. But I think the option should be set explicit or implemented as another library.
     def ON(self, first, second):
-        raise NotSupported, "This is not possible in NoSQL, but can be simulated with a wrapper."
+        raise NotImplementedError, "This is not possible in NoSQL, but can be simulated with a wrapper."
         return '%s ON %s' % (self.expand(first), self.expand(second))
 
     def COMMA(self, first, second):
@@ -4311,7 +4311,7 @@ class MongoDBAdapter(NoSQLAdapter):
             return {self.expand(first) : {"$in" : [ second[:-1]]} }
         elif second==[] or second==():
             return {1:0}
-        items.append(self.expand(item, first.type) for item in second)
+        items = [self.expand(item, first.type) for item in second]
         return {self.expand(first) : {"$in" : items} }
 
     #TODO verify full compatibilty with official SQL Like operator
@@ -4390,36 +4390,36 @@ class MongoDBAdapter(NoSQLAdapter):
 
     #TODO javascript has math
     def ADD(self, first, second):
-        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        raise NotImplementedError, "This must yet be replaced with javescript in order to accomplish this. Sorry"
         return '%s + %s' % (self.expand(first), self.expand(second, first.type))
 
     #TODO javascript has math
     def SUB(self, first, second):
-        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        raise NotImplementedError, "This must yet be replaced with javescript in order to accomplish this. Sorry"
         return '(%s - %s)' % (self.expand(first), self.expand(second, first.type))
 
     #TODO javascript has math
     def MUL(self, first, second):
-        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        raise NotImplementedError, "This must yet be replaced with javescript in order to accomplish this. Sorry"
         return '(%s * %s)' % (self.expand(first), self.expand(second, first.type))
         #TODO javascript has math
 
     def DIV(self, first, second):
-        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        raise NotImplementedError, "This must yet be replaced with javescript in order to accomplish this. Sorry"
         return '(%s / %s)' % (self.expand(first), self.expand(second, first.type))
     #TODO javascript has math
     def MOD(self, first, second):
-        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        raise NotImplementedError, "This must yet be replaced with javescript in order to accomplish this. Sorry"
         return '(%s %% %s)' % (self.expand(first), self.expand(second, first.type))
 
     #TODO javascript can do this
     def AS(self, first, second):
-        raise NotSupported, "This must yet be replaced with javescript in order to accomplish this. Sorry"
+        raise NotImplementedError, "This must yet be replaced with javescript in order to accomplish this. Sorry"
         return '%s AS %s' % (self.expand(first), second)
 
     #We could implement an option that simulates a full featured SQL database. But I think the option should be set explicit or implemented as another library.
     def ON(self, first, second):
-        raise NotSupported, "This is not possible in NoSQL, but can be simulated with a wrapper."
+        raise NotImplementedError, "This is not possible in NoSQL, but can be simulated with a wrapper."
         return '%s ON %s' % (self.expand(first), self.expand(second))
 
     #TODO is this used in mongodb?

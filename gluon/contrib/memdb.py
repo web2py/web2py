@@ -21,6 +21,7 @@ import csv
 import copy
 import gluon.validators as validators
 from gluon.storage import Storage
+from gluon import SQLTABLE
 import random
 
 SQL_DIALECTS = {'memcache': {
@@ -766,10 +767,10 @@ class Rows(object):
 
     def xml(self):
         """
-        serializes the table using sqlhtml.SQLTABLE (if present)
+        serializes the table using SQLTABLE (if present)
         """
 
-        return sqlhtml.SQLTABLE(self).xml()
+        return SQLTABLE(self).xml()
 
 
 def test_all():

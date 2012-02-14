@@ -4,8 +4,8 @@ import re
 import os
 import cPickle
 import gluon.serializers
-from gluon import current
-from gluon.html import markmin_serializer, TAG, HTML, BODY, UL, XML
+from gluon import current, HTTP
+from gluon.html import markmin_serializer, TAG, HTML, BODY, UL, XML, H1
 from gluon.contenttype import contenttype
 from gluon.contrib.pyfpdf import FPDF, HTMLMixin
 from gluon.sanitizer import sanitize
@@ -16,13 +16,13 @@ def wrapper(f):
     def g(data):
         try:
             output = f(data)
-        except (TypeError, ValueError):
-            raise HTTP(405, '%s serialization error' % extension.upper())
-        except ImportError:
-            raise HTTP(405, '%s not available' % extension.upper())
-        except:
-            raise HTTP(405, '%s error' % extension.upper())
-        return XML(ouput)
+            return XML(ouput)
+        except (TypeError, ValueError), e:
+            raise HTTP(405, '%s serialization error' % e)
+        except ImportError, e:
+            raise HTTP(405, '%s not available' % e)
+        except Exception, e:
+            raise HTTP(405, '%s error' % e)
     return g
 
 def latex_from_html(html):
@@ -32,13 +32,13 @@ def latex_from_html(html):
 def pdflatex_from_html(html):
     if os.system('which pdflatex > /dev/null')==0:
         markmin=TAG(html).element('body').flatten(markmin_serializer)
-        out,warning,errors=markmin2pdf(markmin)
+        out,warnings,errors=markmin2pdf(markmin)
         if errors:
             current.response.headers['Content-Type']='text/html'
             raise HTTP(405,HTML(BODY(H1('errors'),
-                                     LU(*errors),
+                                     UL(*errors),
                                      H1('warnings'),
-                                     LU(*warnings))).xml())
+                                     UL(*warnings))).xml())
         else:
             return XML(out)
 

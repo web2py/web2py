@@ -1606,7 +1606,7 @@ class SQLFORM(FORM):
             table = db[request.args[-2]]
             if ondelete:
                 ondelete(table,request.args[-1])
-            ret = db(table[self.id_field_name]==request.args[-1]).delete()
+            ret = db(table[table._id.name]==request.args[-1]).delete()
             return ret
         elif csv and len(request.args)>0 and request.args[-1]=='csv':
             if request.vars.keywords:
