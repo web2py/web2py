@@ -1939,7 +1939,9 @@ class SQLFORM(FORM):
                     previous_tablename,previous_fieldname,previous_id = \
                         tablename,fieldname,id
                     try:
-                        name = db[referee]._format % record
+                        format = db[referee]._format 
+                        if callable(format): name = format(record)
+                        else: name = format % record
                     except TypeError:
                         name = id
                     breadcrumbs += [A(T(db[referee]._plural),
