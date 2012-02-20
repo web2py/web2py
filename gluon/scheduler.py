@@ -375,6 +375,7 @@ class Scheduler(MetaScheduler):
                 (ts.stop_time>now)\
                 (ts.next_run_time<=now)\
                 (ts.enabled==True)\
+                (ts.group_name.belongs(self.group_names))\
                 (ts.assigned_worker_name.belongs((None,'',self.worker_name))) #None?
             number_grabbed = all_available.update(
                 assigned_worker_name=self.worker_name,status=ASSIGNED)
