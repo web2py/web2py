@@ -120,7 +120,9 @@ if session.authorized:
     else:
         session.last_time = t0
 
-if not session.authorized and not \
+if request.controller == "webservices":
+    pass
+elif not session.authorized and not \
     (request.controller == 'default' and \
      request.function in ('index','user')):
 

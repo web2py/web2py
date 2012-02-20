@@ -36,6 +36,14 @@ jQuery(document).ready(function(){
 {{pass}}
 
 <p class="right controls">
+  {{if filetype=='python':}}
+      {{=A(SPAN(T('toggle breakpoint')),
+           _value="breakpoint", _name="breakpoint",
+           _onclick="return doToggleBreakpoint('%s','%s://%s%s');" % (filename, 
+                request.env['wsgi_url_scheme'], request.env['http_host'],
+                URL(c='debug', f='toggle_breakpoint')),
+           _class="button special")}}
+  {{pass}}  
   {{=button(URL('design',args=request.args[0]), T('back'))}}
   {{if edit_controller:}}
   {{=button(edit_controller, T('edit controller'))}}

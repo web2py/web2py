@@ -255,6 +255,7 @@ def highlight(
     counter=1,
     styles=None,
     highlight_line=None,
+    context_lines=None,
     attributes=None,
     ):
     styles = styles or {}
@@ -310,6 +311,14 @@ def highlight(
         if lineno<len(lines):
             lines[lineno] = '<div style="%s">%s</div>' % (linehighlight_style, lines[lineno])
             linenumbers[lineno] = '<div style="%s">%s</div>' % (linehighlight_style, linenumbers[lineno])
+
+        if context_lines:
+            if lineno + context_lines < len(lines):
+                del lines[lineno + context_lines:]
+                del linenumbers[lineno + context_lines:]
+            if lineno -context_lines > 0:
+                del lines[0:lineno - context_lines]
+                del linenumbers[0:lineno - context_lines]
 
     code = '<br/>'.join(lines)
     numbers = '<br/>'.join(linenumbers)

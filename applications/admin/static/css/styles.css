@@ -930,6 +930,19 @@ ul#snapshot > li {
   background-image: url(../images/dim_bullet.gif);
 }
 
+/* Debug */
+
+.debug h3.not_paused {
+  background-image: url(../images/red_bullet.gif);
+}
+
+.debug h3.exception {
+  margin-top: 0.5em;
+  background: url(../images/ticket_section.png) no-repeat;
+  padding: 5px 40px;
+}
+
+
 /* Footer */
 
 #footer {

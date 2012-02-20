@@ -1413,6 +1413,7 @@ class CODE(DIV):
         link = self['link']
         counter = self.attributes.get('counter', 1)
         highlight_line = self.attributes.get('highlight_line', None)
+        context_lines = self.attributes.get('context_lines', None) 
         styles = self['styles'] or {}
         return highlight(
             join(self.components),
@@ -1422,6 +1423,7 @@ class CODE(DIV):
             styles=styles,
             attributes=self.attributes,
             highlight_line=highlight_line,
+            context_lines=context_lines,
             )
 
 

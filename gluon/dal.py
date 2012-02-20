@@ -1970,7 +1970,7 @@ class PostgreSQLAdapter(BaseAdapter):
             if self.drivers.get('psycopg2'):
                 self.driver = self.drivers['psycopg2']
             elif self.drivers.get('pg8000'):
-                self.driver = drivers['pg8000']
+                self.driver = drivers.get('pg8000')
         elif library == "postgres:psycopg2":
             self.driver = self.drivers.get('psycopg2')
         elif library == "postgres:pg8000":

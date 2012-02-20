@@ -490,6 +490,11 @@ def wsgibase(environ, responder):
                 # run controller
                 # ##################################################
 
+                if global_settings.debugging and request.application != "admin":
+                    import gluon.debug
+                    # activate the debugger and wait to reach application code
+                    gluon.debug.dbg.do_debug(mainpyfile=request.folder)
+
                 serve_controller(request, response, session)
 
             except HTTP, http_response:
@@ -591,9 +596,6 @@ def wsgibase(environ, responder):
         if response and hasattr(response, 'session_file') \
                 and response.session_file:
             response.session_file.close()
-#         if global_settings.debugging:
-#             import gluon.debug
-#             gluon.debug.stop_trace()
 
     session._unlock(response)
     http_response, new_environ = rewrite.try_rewrite_on_error(
