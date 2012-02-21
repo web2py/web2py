@@ -13,6 +13,7 @@ import datetime
 import thread
 import logging
 import sys
+import glob
 import os
 import re
 import time
@@ -4145,6 +4146,54 @@ class PluginManager(object):
         return self.__dict__.keys()
     def __contains__(self,key):
         return key in self.__dict__
+
+class Expose(object):
+    def __init__(self,base=None):
+        current.session.forget()
+        base = base or os.path.join(current.request.folder,'static','work')
+        filename = os.path.join(base,'/'.join(current.request.args))
+        if not os.path.isdir(filename):
+            current.response.headers['Content-Type'] = contenttype(filename)
+            raise HTTP(200,open(filename,'rb'),**current.response.headers)
+        self.path = path = os.path.join(filename,'*')        
+        self.folders = [f[len(path)-1:] for f in sorted(glob.glob(path)) \
+                            if os.path.isdir(f) and not self.isprivate(f)]
+        self.filenames = [f[len(path)-1:] for f in sorted(glob.glob(path)) \
+                              if not os.path.isdir(f) and not self.isprivate(f)]
+    def breadcrumbs(self):
+        path = []
+        span = SPAN()
+        span.append(A('base',_href=URL()))
+        span.append('/')
+        args = current.request.args
+        for arg in args:
+            path.append(arg)
+            span.append(A(arg,_href=URL(args='/'.join(path))))
+            span.append('/')
+        return span
+    def table_folders(self):
+        args = current.request.args
+        return TABLE(*[TR(TD(A(folder,_href=URL(args=args+[folder])))) \
+                           for folder in self.folders])    
+    @staticmethod
+    def isprivate(f):
+        return 'private' in f or f.startswith('.') or f.endswith('~')
+    @staticmethod
+    def isimage(f):
+        return f.rsplit('.')[-1].lower() in ('png','jpg','jpeg','gif','tiff')
+    def table_files(self,width=160):
+        args = current.request.args
+        return TABLE(*[TR(TD(A(f,_href=URL(args=args+[f]))),
+                          TD(IMG(_src=URL(args=args+[f]),_style='max-width:%spx' % width) \
+                                 if width and self.isimage(f) else '')) \
+                           for f in self.filenames])
+    def xml(self):
+        return DIV(
+            H2(self.breadcrumbs()),
+            H3('Folders'),
+            self.table_folders(),
+            H3('Files'),
+            self.table_files()).xml()
 
 if __name__ == '__main__':
     import doctest
