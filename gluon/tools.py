@@ -4151,7 +4151,7 @@ class Expose(object):
     def __init__(self,base=None):
         current.session.forget()
         base = base or os.path.join(current.request.folder,'static','work')
-        filename = os.path.join(base,'/'.join(current.request.args))
+        filename = os.path.join(base,*current.request.args)
         if not os.path.isdir(filename):
             current.response.headers['Content-Type'] = contenttype(filename)
             raise HTTP(200,open(filename,'rb'),**current.response.headers)
