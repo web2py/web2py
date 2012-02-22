@@ -930,7 +930,7 @@ class BaseAdapter(ConnectionPool):
             self.execute(query)
         except Exception, e:
             if isinstance(e,self.integrity_error_class()):
-                return None            
+                return None
             raise e
         if hasattr(table,'_primarykey'):
             return dict([(k[0].name, k[1]) for k in fields \
@@ -1190,7 +1190,7 @@ class BaseAdapter(ConnectionPool):
             for tablename in self.tables(field):
                 if not tablename in tablenames:
                     tablenames.append(tablename)
-        
+
         if use_common_filters(query):
             query = self.common_filter(query,tablenames)
 
@@ -1470,7 +1470,7 @@ class BaseAdapter(ConnectionPool):
             try:
                 value = value.decode(self.db._db_codec)
             except Exception:
-                pass        
+                pass
         if isinstance(value, unicode):
             value = value.encode('utf-8')
         elif isinstance(field_type, SQLCustomType):
@@ -1478,7 +1478,7 @@ class BaseAdapter(ConnectionPool):
         if not isinstance(field_type, str) or value is None:
             return value
         elif field_type in ('string', 'text', 'password', 'upload'):
-            return value        
+            return value
         else:
             key = regex_type.match(field_type).group(0)
             return self.parsemap[key](value,field_type)
@@ -1522,7 +1522,7 @@ class BaseAdapter(ConnectionPool):
 
     def parse_blob(self, value, field_type):
         return base64.b64decode(str(value))
-    
+
     def parse_decimal(self, value, field_type):
         decimals = int(field_type[8:-1].split(',')[-1])
         if self.dbengine == 'sqlite':
@@ -1536,7 +1536,7 @@ class BaseAdapter(ConnectionPool):
             value = bar_decode_integer(value)
         return value
 
-    def parse_list_references(self, value, field_type):        
+    def parse_list_references(self, value, field_type):
         if not self.dbengine=='google:datastore':
             value = bar_decode_integer(value)
         return [self.parse_reference(r, field_type[5:]) for r in value]
@@ -1568,7 +1568,7 @@ class BaseAdapter(ConnectionPool):
             'blob':self.parse_blob,
             'decimal':self.parse_decimal,
             'list:integer':self.parse_list_integers,
-            'list:reference':self.parse_list_references,     
+            'list:reference':self.parse_list_references,
             'list:string':self.parse_list_strings,
             }
 
@@ -1974,10 +1974,10 @@ class PostgreSQLAdapter(BaseAdapter):
         elif library == "postgres:psycopg2":
             self.driver = self.drivers.get('psycopg2')
         elif library == "postgres:pg8000":
-            self.driver = self.drivers.get('pg8000')        
+            self.driver = self.drivers.get('pg8000')
         if not self.driver:
             raise RuntimeError, "%s is not available" % library
-        
+
         self.__version__ = "%s %s" % (self.driver.__name__, self.driver.__version__)
         def connect(msg=msg,driver_args=driver_args):
             return self.driver.connect(msg,**driver_args)
@@ -2073,8 +2073,8 @@ class OracleAdapter(BaseAdapter):
         'datetime': 'DATE',
         'id': 'NUMBER PRIMARY KEY',
         'reference': 'NUMBER, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
-        'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s', 
-        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s', 
+        'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
         'list:integer': 'CLOB',
         'list:string': 'CLOB',
         'list:reference': 'CLOB',
@@ -3911,7 +3911,7 @@ class MongoDBAdapter(NoSQLAdapter):
         elif fieldtype == 'list:string' or fieldtype == 'list:integer' or fieldtype == 'list:reference':
             return value #raise SyntaxError, "Not Supported"
         return value
-    
+
     #Safe determines whether a asynchronious request is done or a synchronious action is done
     #For safety, we use by default synchronious requests
     def insert(self,table,fields,safe=None):
@@ -3920,14 +3920,14 @@ class MongoDBAdapter(NoSQLAdapter):
         ctable = self.connection[table._tablename]
         values = dict((k.name,self.represent(v,table[k.name].type)) for k,v in fields)
         ctable.insert(values,safe=safe)
-        return int(str(values['_id']), 16) 
-        
+        return int(str(values['_id']), 16)
+
     def create_table(self, table, migrate=True, fake_migrate=False, polymodel=None, isCapped=False):
         if isCapped:
             raise RuntimeError, "Not implemented"
         else:
             pass
-    
+
     def count(self,query,distinct=None,snapshot=True):
         if distinct:
             raise RuntimeError, "COUNT DISTINCT not supported"
@@ -3966,7 +3966,7 @@ class MongoDBAdapter(NoSQLAdapter):
                             raise SyntaxError, 'second argument must be of type bson.objectid.ObjectId or an objectid representable integer'
                 elif expression.second == 0:
                     expression.second = pymongo.objectid.ObjectId('000000000000000000000000')
-                return expression.op(expression.first, expression.second)   
+                return expression.op(expression.first, expression.second)
         if isinstance(expression, Field):
             if expression.type=='id':
                 return "_id"
@@ -3988,16 +3988,16 @@ class MongoDBAdapter(NoSQLAdapter):
             return ','.join(self.represent(item,field_type) for item in expression)
         else:
             return expression
-    
+
     def _select(self,query,fields,attributes):
         from pymongo import son
 
         for key in set(attributes.keys())-set(('limitby','orderby')):
             raise SyntaxError, 'invalid select attribute: %s' % key
-        
+
         new_fields=[]
         mongosort_list = []
-        
+
         # try an orderby attribute
         orderby = attributes.get('orderby', False)
         limitby = attributes.get('limitby', False)
@@ -4007,7 +4007,7 @@ class MongoDBAdapter(NoSQLAdapter):
             if isinstance(orderby, (list, tuple)):
                 print "in xorify"
                 orderby = xorify(orderby)
-           
+
 
             # !!!! need to add 'random'
             for f in self.expand(orderby).split(','):
@@ -4015,10 +4015,10 @@ class MongoDBAdapter(NoSQLAdapter):
                     mongosort_list.append((f[1:],-1))
                 else:
                     mongosort_list.append((f,1))
-            print "mongosort_list = %s" % mongosort_list  
-            
+            print "mongosort_list = %s" % mongosort_list
+
         if limitby:
-            # a tuple 
+            # a tuple
             limitby_skip,limitby_limit = limitby
         else:
             limitby_skip = 0
@@ -4029,7 +4029,7 @@ class MongoDBAdapter(NoSQLAdapter):
 
         #if distinct:
             #print "in distinct %s" % distinct
-        
+
         mongofields_dict = son.SON()
         mongoqry_dict = {}
         for item in fields:
@@ -4049,7 +4049,7 @@ class MongoDBAdapter(NoSQLAdapter):
         for f in fieldnames:
             mongofields_dict[f.name] = 1  # ie field=1
         return tablename, mongoqry_dict, mongofields_dict, mongosort_list, limitby_limit, limitby_skip
-   
+
     # need to define all the 'sql' methods gt,lt etc....
 
     def select(self,query,fields,attributes,count=False,snapshot=False):
@@ -4069,10 +4069,10 @@ class MongoDBAdapter(NoSQLAdapter):
             return {'count' : ctable.find(mongoqry_dict,mongofields_dict,skip=limitby_skip, limit=limitby_limit, sort=mongosort_list,snapshot=snapshot).count()}
         else:
             mongo_list_dicts = ctable.find(mongoqry_dict,mongofields_dict,skip=limitby_skip, limit=limitby_limit, sort=mongosort_list,snapshot=snapshot) # pymongo cursor object
-        print "mongo_list_dicts=%s" % mongo_list_dicts 
+        print "mongo_list_dicts=%s" % mongo_list_dicts
         #if mongo_list_dicts.count() > 0: #
             #colnames = mongo_list_dicts[0].keys() # assuming all docs have same "shape", grab colnames from first dictionary (aka row)
-        #else:    
+        #else:
             #colnames = mongofields_dict.keys()
         #print "colnames = %s" % colnames
         #rows = [row.values() for row in mongo_list_dicts]
@@ -4095,7 +4095,7 @@ class MongoDBAdapter(NoSQLAdapter):
 
     def INVERT(self,first):
         #print "in invert first=%s" % first
-        return '-%s' % self.expand(first)  
+        return '-%s' % self.expand(first)
 
     def drop(self, table, mode=''):
         ctable = self.connection[table._tablename]
@@ -4208,7 +4208,7 @@ class MongoDBAdapter(NoSQLAdapter):
         #return '(%s == %s)' % (self.expand(first),self.expand(second,first.type))
         result[self.expand(first)] = self.expand(second)
         return result
-    
+
     def NE(self, first, second=None):
         print "in NE"
         result = {}
@@ -4345,7 +4345,7 @@ class MongoDBAdapter(NoSQLAdapter):
         #return '(%s == %s)' % (self.expand(first),self.expand(second,first.type))
         result[self.expand(first)] = self.expand(second)
         return result
-    
+
     def NE(self, first, second=None):
         print "in NE"
         result = {}
@@ -4453,14 +4453,14 @@ class IMAPAdapter(NoSQLAdapter):
     IMAP server mailbox list information.
 
     Here is a list of supported fields:
-    
+
     Field       Type            Description
     ################################################################
-    uid         string          
+    uid         string
     answered    boolean        Flag
-    created     date            
+    created     date
     content     list:string    A list of text or html parts
-    to          string          
+    to          string
     cc          string
     bcc         string
     size        integer        the amount of octets of the message*
@@ -4470,7 +4470,7 @@ class IMAPAdapter(NoSQLAdapter):
     sender      string
     recent      boolean        Flag
     seen        boolean        Flag
-    subject     string         
+    subject     string
     mime        string         The mime header declaration
     email       string         The complete RFC822 message**
     attachments list:string    Each non text decoded part as string
@@ -4498,7 +4498,7 @@ class IMAPAdapter(NoSQLAdapter):
     # Count today's unseen messages
     # smaller than 6000 octets from the
     # inbox mailbox
-    
+
     q = imapdb.INBOX.seen == False
     q &= imapdb.INBOX.created == datetime.date.today()
     q &= imapdb.INBOX.size < 6000
@@ -4524,7 +4524,7 @@ class IMAPAdapter(NoSQLAdapter):
 
     # It is possible also to mark messages for deletion instead of ereasing them
     # directly with set.update(deleted=True)
-    
+
     """
 
     types = {
@@ -6384,7 +6384,7 @@ class Table(dict):
                     if not field.name in fieldnames and not field.type=='id':
                         field = copy.copy(field)
                         # correct self references
-                        if not table._actual and field.type == 'reference '+table._tablename: 
+                        if not table._actual and field.type == 'reference '+table._tablename:
                             field.type = 'reference '+self._tablename
                         newfields.append(field)
                         fieldnames.add(field.name)
@@ -7373,7 +7373,7 @@ class Set(object):
     def count(self,distinct=None):
         return self.db._adapter.count(self.query,distinct)
 
-    def select(self, *fields, **attributes):        
+    def select(self, *fields, **attributes):
         adapter = self.db._adapter
         fields = adapter.expand_all(fields, adapter.tables(self.query))
         return adapter.select(self.query,fields,attributes)
@@ -7623,6 +7623,23 @@ class Rows(object):
         returns a list of sorted elements (not sorted in place)
         """
         return Rows(self.db,sorted(self,key=f,reverse=reverse),self.colnames)
+
+    def group_by_value(self, field):
+        """
+        regroups the rows, by one of the fields
+        """
+        if not self.records:
+            return {}
+        key = str(field)
+        grouped_row_group = dict()
+
+        for row in self:
+            value = row[key]
+            if not value in grouped_row_group:
+                grouped_row_group[value] = [row]
+            else:
+                grouped_row_group[value].append(row)
+        return grouped_row_group
 
     def as_list(self,
                 compact=True,
@@ -7999,4 +8016,5 @@ DAL.Table = Table  # was necessary in gluon/globals.py session.connect
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
