@@ -2498,7 +2498,9 @@ class Auth(object):
     def update_groups(self):
         if not self.user:
             return
-        user_groups = self.user_groups = current.session.auth.user_groups = {}
+        user_groups = self.user_groups = {}
+        if current.session.auth:
+            current.session.auth.user_groups = self.user_groups
         memberships = self.db(self.settings.table_membership.user_id
                               == self.user.id).select()
         for membership in memberships:
