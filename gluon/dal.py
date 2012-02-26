@@ -1303,7 +1303,7 @@ class BaseAdapter(ConnectionPool):
             (cache_model, time_expire) = attributes['cache']
             del attributes['cache']
             key = self.uri + '/' + sql
-            key = (key<=200) and key or hashlib.md5(key).hexdigest()
+            key = (len(key)<=200) and key or hashlib.md5(key).hexdigest()
             rows = cache_model(key, lambda: response(sql), time_expire)
         else:
             rows = response(sql)
