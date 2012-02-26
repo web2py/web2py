@@ -962,6 +962,10 @@ class BaseAdapter(ConnectionPool):
         items = ','.join(self.expand(item, first.type) for item in second)
         return '(%s IN (%s))' % (self.expand(first), items)
 
+    def REGEXP(self, first, second):
+        "regular expression operator"
+        raise NotImplementedError
+
     def LIKE(self, first, second):
         "case sensitive like operator"
         raise NotImplementedError
@@ -1721,6 +1725,10 @@ class SQLiteAdapter(BaseAdapter):
     def lastrowid(self, table):
         return self.cursor.lastrowid
 
+    def REGEXP(self,first,second):
+        return '(%s REGEXP %s)' % (self.expand(first),
+                                   self.expand(second,'string'))
+
     def _select(self, query, fields, attributes):
         """
         Simulate SELECT ... FOR UPDATE with BEGIN IMMEDIATE TRANSACTION.
@@ -1997,6 +2005,10 @@ class PostgreSQLAdapter(BaseAdapter):
     def ILIKE(self,first,second):
         return '(%s ILIKE %s)' % (self.expand(first),
                                   self.expand(second,'string'))
+
+    def REGEXP(self,first,second):
+        return '(%s ~ %s)' % (self.expand(first),
+                              self.expand(second,'string'))
 
     def STARTSWITH(self,first,second):
         return '(%s ILIKE %s)' % (self.expand(first),
@@ -6912,6 +6924,9 @@ class Expression(object):
     def like(self, value, case_sensitive=False):
         op = case_sensitive and self.db._adapter.LIKE or self.db._adapter.ILIKE
         return Query(self.db, op, self, value)
+
+    def regex(self, value):
+        return Query(self.db, self.db._adapter.REGEXP, self, value)
 
     def belongs(self, value):
         if isinstance(value,Query):
