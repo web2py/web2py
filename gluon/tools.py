@@ -2835,7 +2835,7 @@ class Auth(object):
     def archive(form,
                 archive_table=None,
                 current_record='current_record',
-                archive_current=True,
+                archive_current=False,
                 fields=None):
         """
         If you have a table (db.mytable) that needs full revision history you can just do:
