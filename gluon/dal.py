@@ -1399,8 +1399,12 @@ class BaseAdapter(ConnectionPool):
         if fieldtype.startswith('list:'):
             if not obj:
                 obj = []
-            if not isinstance(obj, (list, tuple)):
-                obj = [obj]
+            elif not isinstance(obj, (list, tuple)):
+                obj = [int(obj)]
+            elif fieldtype.startswith('list:string'):
+                obj = [str(item) for item in obj]
+            else:
+                obj = [int(item) for item in obj]
         if isinstance(obj, (list, tuple)):
             obj = bar_encode(obj)
         if obj is None:
