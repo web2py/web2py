@@ -6925,7 +6925,7 @@ class Expression(object):
         op = case_sensitive and self.db._adapter.LIKE or self.db._adapter.ILIKE
         return Query(self.db, op, self, value)
 
-    def regex(self, value):
+    def regexp(self, value):
         return Query(self.db, self.db._adapter.REGEXP, self, value)
 
     def belongs(self, value):
