@@ -233,6 +233,9 @@ def URL(
     controller = None
     function = None
 
+    if not isinstance(args, (list, tuple)):
+        args = [args]
+
     if not r:
         if a and not c and not f: (f,a,c)=(a,c,f)
         elif a and c and not f: (c,f,a)=(a,c,f)
@@ -256,18 +259,19 @@ def URL(
                 function = f.__name__
             else:
                 raise SyntaxError, 'when calling URL, function or function name required'
-        elif '.' in f:
-            function, extension = f.split('.', 1)
+        elif '/' in f:
+            items = f.split('/')
+            function = f = items[0]
+            args = items[1:] + args
         else:
             function = f
+        if '.' in function:
+            function, extension = function.split('.', 1)
 
     function2 = '%s.%s' % (function,extension or 'html')
 
     if not (application and controller and function):
         raise SyntaxError, 'not enough information to build the url'
-
-    if not isinstance(args, (list, tuple)):
-        args = [args]
 
     if args:
         if url_encode:
