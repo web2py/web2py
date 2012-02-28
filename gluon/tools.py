@@ -2699,7 +2699,7 @@ class Auth(object):
                        dict(user_id=user_id, group_id=group_id))
         return id
 
-    def del_membership(self, group_id, user_id=None, role=None):
+    def del_membership(self, group_id=None, user_id=None, role=None):
         """
         revokes membership from group_id to user_id
         if user_id is None than user_id is that of current logged in user
