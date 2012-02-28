@@ -313,7 +313,7 @@ def findT(path, language='en-us'):
     for file in listdir(mp, '.+\.py', 0) + listdir(cp, '.+\.py', 0)\
          + listdir(vp, '.+\.html', 0):
         fp = open(file, 'r')
-        portalocker.lock(fp, portalocker.LOCK_SH)
+        portalocker.lock(fp, portalocker.LOCK_EX)
         data = fp.read()
         portalocker.unlock(fp)
         fp.close()

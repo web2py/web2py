@@ -1473,7 +1473,7 @@ class BaseAdapter(ConnectionPool):
         """ By default this function does nothing; overload when db does not do slicing. """
         return rows
 
-    def parse_value(self, value, field_type):
+    def parse_value(self, value, field_type, blob_decode=True):
         if field_type != 'blob' and isinstance(value, str):
             try:
                 value = value.decode(self.db._db_codec)
