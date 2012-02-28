@@ -108,7 +108,19 @@ class mybuiltin(object):
 
 def LOAD(c=None, f='index', args=None, vars=None,
          extension=None, target=None,ajax=False,ajax_trap=False,
-         url=None,user_signature=False, content='loading...',**attr):
+         url=None,user_signature=False, timeout=None, times=1,
+         content='loading...',**attr):
+    """  LOAD a component into the action's document
+    
+    Timing options:
+    -times: An integer or string ("infinity"/"continuous")
+    specifies how many times the component is requested
+    -timeout (milliseconds): specifies the time to wait before
+    starting the request or the frequency if times is greater than
+    1 or "infinity".
+    Timing options default to the normal behavior. The component
+    is added on page loading without delay.
+    """
     from html import TAG, DIV, URL, SCRIPT, XML
     if args is None: args = []
     vars = Storage(vars or {})
@@ -121,9 +133,29 @@ def LOAD(c=None, f='index', args=None, vars=None,
         url = url or URL(request.application, c, f, r=request,
                          args=args, vars=vars, extension=extension,
                          user_signature=user_signature)
-        script = SCRIPT('web2py_component("%s","%s")' % (url, target),
-                             _type="text/javascript")
+        # timing options
+        if isinstance(times, basestring):
+            if times.upper() in ("INFINITY", "CONTINUOUS"):
+                times = "Infinity"
+            else:
+                raise TypeError("Unsupported times argument %s" % times)
+        elif isinstance(times, int):
+            if times <= 0:
+                raise ValueError("Times argument must be greater than zero, 'Infinity' or None")
+        else:
+            raise TypeError("Unsupported times argument type %s" % type(times))
+        if timeout is not None:
+            if not isinstance(timeout, (int, long)):
+                raise ValueError("Timeout argument must be an integer or None")
+            elif timeout <= 0:
+                raise ValueError("Timeout argument must be greater than zero or None")
+            statement = "web2py_component('%s','%s', %s, %s);" \
+            % (url, target, timeout, times)
+        else:
+            statement = "web2py_component('%s','%s');" % (url, target)
+        script = SCRIPT(statement, _type="text/javascript")
         return TAG[''](script, DIV(content,**attr))
+
     else:
         if not isinstance(args,(list,tuple)):
             args = [args]
