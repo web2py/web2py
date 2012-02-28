@@ -24,6 +24,7 @@
 - new DAL syntax: db(...).select().group_by_value(db.table.field) (thanks Yair)
 - auth.is_impersonating()
 - reponse.delimiters = ('\\[','\\]') (thanks Denes)
+- Teradata support (experimental)
 - 100's of small bug fixes and small improvements
 
 ## 1.99.4

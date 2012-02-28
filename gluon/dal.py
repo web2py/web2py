@@ -31,6 +31,7 @@ including:
 - MongoDB (in progress)
 - Google:nosql
 - Google:sql
+- Teradata
 - IMAP (experimental)
 
 Example of usage:
@@ -110,7 +111,7 @@ Supported DAL URI strings:
 'informixu://user:password@server:3050/database' # unicode informix
 'google:datastore' # for google app engine datastore
 'google:sql' # for google app engine with sql (mysql compatible)
-'teradata://DSN=dsn;UID=user;PWD=pass' # experimental
+'teradata://DSN=dsn;UID=user;PWD=pass; DATABASE=database' # experimental
 'imap://user:password@server:port' # experimental
 
 For more info:
@@ -265,9 +266,9 @@ if not 'google' in drivers:
 
     try:
         import pyodbc
-        drivers.append('MSSQL/DB2')
+        drivers.append('MSSQL/DB2/Teradata')
     except ImportError:
-        logger.debug('no MSSQL/DB2 driver')
+        logger.debug('no MSSQL/DB2/Teradata driver')
 
     try:
         import kinterbasdb
@@ -2752,7 +2753,7 @@ class DB2Adapter(BaseAdapter):
         return rows[minimum:maximum]
 
 
-class TeradataAdapter(DB2Adapter):
+class TeradataAdapter(BaseAdapter):
 
     driver = globals().get('pyodbc',None)
 
@@ -2769,15 +2770,174 @@ class TeradataAdapter(DB2Adapter):
         'date': 'DATE',
         'time': 'TIME',
         'datetime': 'TIMESTAMP',
-        'id': 'INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY NOT NULL',
-        'reference': 'INT, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
-        'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
-        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
+        'id': 'INTEGER GENERATED ALWAYS AS IDENTITY',  # Teradata Specific
+        # Modified Constraint syntax for Teradata.
+        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s)',
         'list:integer': 'CLOB',
         'list:string': 'CLOB',
         'list:reference': 'CLOB',
         }
 
+    def LEFT_JOIN(self):
+        return 'LEFT OUTER JOIN'
+
+    def create_table(self, table,
+                     migrate=True,
+                     fake_migrate=False,
+                     polymodel=None):
+        fields = []
+        sql_fields = {}
+        sql_fields_aux = {}
+        TFK = {}
+        tablename = table._tablename
+        sortable = 0
+        for field in table:
+            sortable += 1
+            k = field.name
+            if isinstance(field.type,SQLCustomType):
+                ftype = field.type.native or field.type.type
+            elif field.type.startswith('reference'):
+                referenced = field.type[10:].strip()
+                constraint_name = self.constraint_name(tablename, field.name)
+                if hasattr(table,'_primarykey'):
+                    rtablename,rfieldname = referenced.split('.')
+                    rtable = table._db[rtablename]
+                    rfield = rtable[rfieldname]
+                    # must be PK reference or unique
+                    if rfieldname in rtable._primarykey or rfield.unique:
+                        ftype = self.types[rfield.type[:9]] % dict(length=rfield.length)
+                        # multicolumn primary key reference?
+                        if not rfield.unique and len(rtable._primarykey)>1 :
+                            # then it has to be a table level FK
+                            if rtablename not in TFK:
+                                TFK[rtablename] = {}
+                            TFK[rtablename][rfieldname] = field.name
+                        else:
+                            ftype = ftype + \
+                                self.types['reference FK'] %dict(\
+                                constraint_name=constraint_name,
+                                table_name=tablename,
+                                field_name=field.name,
+                                foreign_key='%s (%s)'%(rtablename, rfieldname),
+                                on_delete_action=field.ondelete)
+                else:
+                    # make a guess here for circular references
+                    id_fieldname = referenced in table._db and table._db[referenced]._id.name or 'id'
+                    ftype = self.types[field.type[:9]]\
+                        % dict(table_name=tablename,
+                               field_name=field.name,
+                               constraint_name=constraint_name,
+                               foreign_key=referenced + ('(%s)' % id_fieldname),
+                               on_delete_action=field.ondelete)
+            elif field.type.startswith('list:reference'):
+                ftype = self.types[field.type[:14]]
+            elif field.type.startswith('decimal'):
+                precision, scale = map(int,field.type[8:-1].split(','))
+                ftype = self.types[field.type[:7]] % \
+                    dict(precision=precision,scale=scale)
+            elif not field.type in self.types:
+                raise SyntaxError, 'Field: unknown field type: %s for %s' % \
+                    (field.type, field.name)
+            else:
+                ftype = self.types[field.type]\
+                     % dict(length=field.length)
+            if not field.type.startswith('id') and not field.type.startswith('reference'):
+                if field.notnull:
+                    ftype += ' NOT NULL'
+                else:
+                    ftype += self.ALLOW_NULL()
+                if field.unique:
+                    ftype += ' UNIQUE'
+
+            # add to list of fields
+            sql_fields[field.name] = dict(sortable=sortable,
+                                          type=str(field.type),
+                                          sql=ftype)
+
+            if isinstance(field.default,(str,int,float)):
+                # Caveat: sql_fields and sql_fields_aux differ for default values.
+                # sql_fields is used to trigger migrations and sql_fields_aux
+                # is used for create tables.
+                # The reason is that we do not want to trigger a migration simply
+                # because a default value changes.
+                not_null = self.NOT_NULL(field.default, field.type)
+                ftype = ftype.replace('NOT NULL', not_null)
+            sql_fields_aux[field.name] = dict(sql=ftype)
+            fields.append('%s %s' % (field.name, ftype))
+        other = ';'
+
+        fields = ',\n    '.join(fields)
+        for rtablename in TFK:
+            rfields = TFK[rtablename]
+            pkeys = table._db[rtablename]._primarykey
+            fkeys = [ rfields[k] for k in pkeys ]
+            fields = fields + ',\n    ' + \
+                     self.types['reference TFK'] %\
+                     dict(table_name=tablename,
+                     field_name=', '.join(fkeys),
+                     foreign_table=rtablename,
+                     foreign_key=', '.join(pkeys),
+                     on_delete_action=field.ondelete)
+
+        if hasattr(table,'_primarykey'):
+            query = '''CREATE TABLE %s(\n    %s,\n    %s) %s''' % \
+                (tablename, fields, self.PRIMARY_KEY(', '.join(table._primarykey)),other)
+        else:
+            query = '''CREATE TABLE %s(\n    %s\n)%s''' % \
+                (tablename, fields, other)
+
+        if self.uri.startswith('sqlite:///'):
+            path_encoding = sys.getfilesystemencoding() or locale.getdefaultlocale()[1] or 'utf8'
+            dbpath = self.uri[9:self.uri.rfind('/')].decode('utf8').encode(path_encoding)
+        else:
+            dbpath = self.folder
+
+        if not migrate:
+            return query
+        elif self.uri.startswith('sqlite:memory'):
+            table._dbt = None
+        elif isinstance(migrate, str):
+            table._dbt = os.path.join(dbpath, migrate)
+        else:
+            table._dbt = os.path.join(dbpath, '%s_%s.table' \
+                                          % (table._db._uri_hash, tablename))
+        if table._dbt:
+            table._loggername = os.path.join(dbpath, 'sql.log')
+            logfile = self.file_open(table._loggername, 'a')
+        else:
+            logfile = None
+        if not table._dbt or not self.file_exists(table._dbt):
+            if table._dbt:
+                logfile.write('timestamp: %s\n'
+                               % datetime.datetime.today().isoformat())
+                logfile.write(query + '\n')
+            if not fake_migrate:
+                self.create_sequence_and_triggers(query,table)
+                table._db.commit()
+            if table._dbt:
+                tfile = self.file_open(table._dbt, 'w')
+                cPickle.dump(sql_fields, tfile)
+                self.file_close(tfile)
+                if fake_migrate:
+                    logfile.write('faked!\n')
+                else:
+                    logfile.write('success!\n')
+        else:
+            tfile = self.file_open(table._dbt, 'r')
+            try:
+                sql_fields_old = cPickle.load(tfile)
+            except EOFError:
+                self.file_close(tfile)
+                self.file_close(logfile)
+                raise RuntimeError, 'File %s appears corrupted' % table._dbt
+            self.file_close(tfile)
+            if sql_fields != sql_fields_old:
+                self.migrate_table(table,
+                                   sql_fields, sql_fields_old,
+                                   sql_fields_aux, logfile,
+                                   fake_migrate=fake_migrate)
+        self.file_close(logfile)
+        return query
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
@@ -2795,6 +2955,13 @@ class TeradataAdapter(DB2Adapter):
         def connect(cnxn=cnxn,driver_args=driver_args):
             return self.driver.connect(cnxn,**driver_args)
         self.pool_connection(connect)
+
+    # Similar to MSSQL, Teradata can't specify a range (for Pageby)
+    def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
+        if limitby:
+            (lmin, lmax) = limitby
+            sql_s += ' TOP %i' % lmax
+        return 'SELECT %s %s FROM %s%s%s;' % (sql_s, sql_f, sql_t, sql_w, sql_o)
 
 
 INGRES_SEQNAME='ii***lineitemsequence' # NOTE invalid database object name
@@ -6288,7 +6455,6 @@ def index():
                 tablename = line[6:]
                 self[tablename].import_from_csv_file(ifile, id_map, null,
                                                      unique, *args, **kwargs)
-
 
 class SQLALL(object):
     """
