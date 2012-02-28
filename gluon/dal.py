@@ -1693,6 +1693,10 @@ class SQLiteAdapter(BaseAdapter):
         except:
             return None
 
+    @staticmethod
+    def web2py_regexp(expression, item):
+        return re.compile(expression).search(item) is not None
+
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
                  adapter_args={}):
@@ -1719,7 +1723,10 @@ class SQLiteAdapter(BaseAdapter):
         def connect(dbpath=dbpath, driver_args=driver_args):
             return self.driver.Connection(dbpath, **driver_args)
         self.pool_connection(connect)
-        self.connection.create_function('web2py_extract', 2, SQLiteAdapter.web2py_extract)
+        self.connection.create_function('web2py_extract', 2,
+                                        SQLiteAdapter.web2py_extract)
+        self.connection.create_function("REGEXP", 2,
+                                        SQLiteAdapter.web2py_regexp)
 
     def _truncate(self, table, mode=''):
         tablename = table._tablename
