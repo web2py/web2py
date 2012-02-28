@@ -1228,8 +1228,13 @@ class BaseAdapter(ConnectionPool):
                 inner_join = [inner_join]
             ijoint = [t._tablename for t in inner_join if not isinstance(t,Expression)]
             ijoinon = [t for t in inner_join if isinstance(t, Expression)]
+            itables_to_merge={} #issue 490
+            [itables_to_merge.update(dict.fromkeys(self.tables(t))) for t in ijoinon] # issue 490
             ijoinont = [t.first._tablename for t in ijoinon]
-            iexcluded = [t for t in tablenames if not t in ijoint + ijoinont]
+            [itables_to_merge.pop(t) for t in ijoinont if t in itables_to_merge] #issue 490
+            iimportant_tablenames = ijoint + ijoinont + itables_to_merge.keys() # issue 490         
+            #iexcluded = [t for t in tablenames if not t in ijoint + ijoinont] ## issue 490
+            iexcluded = [t for t in tablenames if not t in iimportant_tablenames]
         if left:
             join = attributes['left']
             command = self.LEFT_JOIN()
@@ -1247,7 +1252,8 @@ class BaseAdapter(ConnectionPool):
         def alias(t):
             return str(self.db[t])
         if inner_join and not left:
-            sql_t = ', '.join(alias(t) for t in iexcluded)
+            #sql_t = ', '.join(alias(t) for t in iexcluded) ## issue 490
+            sql_t = ', '.join([alias(t) for t in iexcluded + itables_to_merge.keys()]) # issue 490
             for t in ijoinon:
                 sql_t += ' %s %s' % (icommand, str(t))
         elif not inner_join and left:
@@ -1257,8 +1263,14 @@ class BaseAdapter(ConnectionPool):
             for t in joinon:
                 sql_t += ' %s %s' % (command, str(t))
         elif inner_join and left:
-            sql_t = ','.join([alias(t) for t in excluded + \
-                                  tables_to_merge.keys() if t in iexcluded ])
+            #sql_t = ','.join([alias(t) for t in excluded + \
+            #                      tables_to_merge.keys() if t in iexcluded ]) ## issue 490            
+            all_tables_in_query = set(important_tablenames + \
+                                      iimportant_tablenames + \
+                                      tablenames) # issue 490
+            tables_in_joinon = set(joinont + ijoinont) # issue 490
+            tables_not_in_joinon = all_tables_in_query.difference(tables_in_joinon) # issue 490
+            sql_t = ','.join([alias(t) for t in tables_not_in_joinon]) # issue 490
             for t in ijoinon:
                 sql_t += ' %s %s' % (icommand, str(t))
             if joint:
@@ -7339,7 +7351,8 @@ def xorify(orderby):
     return orderby2
 
 def use_common_filters(query):
-    return (query and hasattr(query,'ignore_common_filters') and not query.ignore_common_filters)
+    return (query and hasattr(query,'ignore_common_filters') and \
+                not query.ignore_common_filters)
 
 class Set(object):
 
