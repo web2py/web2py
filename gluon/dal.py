@@ -1487,6 +1487,8 @@ class BaseAdapter(ConnectionPool):
             return value
         elif field_type in ('string', 'text', 'password', 'upload'):
             return value
+        elif field_type == 'blob' and not blob_decode:
+            return value 
         else:
             key = regex_type.match(field_type).group(0)
             return self.parsemap[key](value,field_type)
@@ -1592,8 +1594,10 @@ class BaseAdapter(ConnectionPool):
                 if not regex_table_field.match(colnames[j]):
                     if not '_extra' in new_row:
                         new_row['_extra'] = Row()
-                    new_row['_extra'][colnames[j]] = self.parse_value(value, fields[j].type)
-                    new_column_name = regex_select_as_parser.search(colnames[j])
+                    new_row['_extra'][colnames[j]] = \
+                        self.parse_value(value, fields[j].type,blob_decode)
+                    new_column_name = \
+                        regex_select_as_parser.search(colnames[j])
                     if not new_column_name is None:
                         column_name = new_column_name.groups(0)
                         setattr(new_row,column_name[0],value)
@@ -1607,7 +1611,8 @@ class BaseAdapter(ConnectionPool):
                             virtualtables.append(tablename)
                     else:
                         colset = new_row[tablename]
-                    colset[fieldname] = value = self.parse_value(value,field.type)
+                    colset[fieldname] = value = \
+                        self.parse_value(value,field.type,blob_decode)
 
                     if field.type == 'id':
                         id = value
