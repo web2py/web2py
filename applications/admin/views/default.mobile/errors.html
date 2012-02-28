@@ -19,6 +19,9 @@ table.sortable thead {
 tr.error_ticket:hover {
   background-color: #eee;
 }
+a.unavailable {
+  color: #ff0000;
+}
 </style>
 
 <script language="JavaScript">
@@ -36,7 +39,13 @@ tr.error_ticket:hover {
   }
   jQuery(document).ready(function() { jQuery('.traceback').hide(); });
 </script>
-
+{{if db_ready['status'] == False:
+    switchurl = db_ready['errmessage']
+    switchbutton = XML("""<a data-role="button" data-inline="true" data-inline="true" href="%(href)s" title="%(title)s" class="unavailable"><span>switch to : db</span></a>""" % dict(href=switchurl, title=db_ready['errmessage']))
+else:
+    switchurl = URL(args=[app, 'dbnew'])
+    switchbutton = XML("""<a data-role="button" data-inline="true" data-inline="true" href="%s"><span>switch to : db</span></a>""" % (switchurl))
+pass}}
 <h2>{{=T('Error logs for "%(app)s"',dict(app=app))}}</h2>
 
 <div>
@@ -59,7 +68,7 @@ tr.error_ticket:hover {
         <a data-role="button" data-inline="true" href="{{=URL(args=[app, 'dbold'])}}"><span>lists by ticket</span></a>
     {{else:}}
         source : filesystem
-        <a data-role="button" data-inline="true" data-inline="true" href="{{=URL(args=[app, 'dbnew'])}}"><span>switch to : db</span></a>
+        {{=switchbutton}}
         <a data-role="button" data-inline="true" href="{{=URL(args=[app, 'old'])}}"><span>lists by ticket</span></a>
     {{pass}}
     </p>
@@ -103,7 +112,7 @@ tr.error_ticket:hover {
         <a data-role="button" data-inline="true" href="{{=URL(args=[app, 'dbnew'])}}"><span>lists by exception</span></a>
     {{else:}}
         source : filesystem
-        <a data-role="button" data-inline="true" href="{{=URL(args=[app, 'dbold'])}}"><span>switch to : db</span></a>
+        {{=switchbutton}}
         <a data-role="button" data-inline="true" href="{{=URL(args=[app, 'new'])}}"><span>lists by exception</span></a>
     {{pass}}
     </p>

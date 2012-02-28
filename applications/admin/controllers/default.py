@@ -1061,7 +1061,10 @@ def errors():
     app = get_app()
 
     method = request.args(1) or 'new'
-
+    db_ready = {}
+    db_ready['status'] = get_ticket_storage(app)
+    db_ready['errmessage'] = "No ticket_storage.txt found under /private folder"
+    db_ready['errlink'] = "http://web2py.com/books/default/chapter/29/13#Collecting-tickets"
 
     if method == 'new':
         errors_path = apath('%s/errors' % app, r=request)
@@ -1104,7 +1107,7 @@ def errors():
         decorated = [(x['count'], x) for x in hash2error.values()]
         decorated.sort(key=operator.itemgetter(0), reverse=True)
 
-        return dict(errors = [x[1] for x in decorated], app=app, method=method)
+        return dict(errors = [x[1] for x in decorated], app=app, method=method, db_ready=db_ready)
 
     elif method == 'dbnew':
         errors_path = apath('%s/errors' % app, r=request)
@@ -1169,16 +1172,16 @@ def errors():
                          key=func,
                          reverse=True)
 
-        return dict(app=app, tickets=tickets, method=method)
+        return dict(app=app, tickets=tickets, method=method, db_ready=db_ready)
 
 def get_ticket_storage(app):
     private_folder = apath('%s/private' % app, r=request)
     ticket_file = os.path.join(private_folder, 'ticket_storage.txt')
-    if os.path.exists(ticket__file):
+    if os.path.exists(ticket_file):
         db_string = open(ticket_file).read()
         db_string = db_string.strip().replace('\r','').replace('\n','')
     else:
-        raise Exception, "No ticket_storage.txt found in /private folder"
+        return False
     tickets_table = 'web2py_ticket'
     tablename = tickets_table + '_' + app
     db_path = apath('%s/databases' % app, r=request)
