@@ -168,6 +168,7 @@ class Response(Storage):
         self.menu = []             # used by the default view layout
         self.files = []            # used by web2py_ajax.html
         self.generic_patterns = [] # patterns to allow generic views
+        self.delimiters = ('{{','}}')
         self._vars = None
         self._caller = lambda f: f()
         self._view_environment = None

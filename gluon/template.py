@@ -228,6 +228,7 @@ class Content(BlockNode):
 
 class TemplateParser(object):
 
+    default_delimiters = ('{{','}}')
     r_tag = re.compile(r'(\{\{.*?\}\})', re.DOTALL)
 
     r_multiline = re.compile(r'(""".*?""")|(\'\'\'.*?\'\'\')', re.DOTALL)
@@ -285,10 +286,13 @@ class TemplateParser(object):
 
         # allow optional alternative delimiters
         self.delimiters = delimiters
-        if delimiters!=('{{','}}'):
+        if delimiters != self.default_delimiters:
             escaped_delimiters = (re.escape(delimiters[0]),re.escape(delimiters[1]))
             self.r_tag = re.compile(r'(%s.*?%s)' % escaped_delimiters, re.DOTALL)
-
+        elif context['response'].delimiters != self.default_delimiters:
+            escaped_delimiters = (re.escape(context['response'].delimiters[0]),
+                                  re.escape(context['response'].delimiters[1]))
+            self.r_tag = re.compile(r'(%s.*?%s)' % escaped_delimiters, re.DOTALL)
 
         # Create a root level Content that everything will go into.
         self.content = Content(name=name)
