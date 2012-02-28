@@ -1,3 +1,30 @@
+## 1.99.5
+- improved markmin auto-links
+- improved ldap support (thanks Omi)
+- added TimeCollector (thanks Caleb)
+- better cpdb.py (thanks pasxidis)
+- db.table.field.like(...,case_sensitive=False) (thanks Floyd)
+- db.table.field.regexp(...) for sqlite and postgres
+- conditional menu items (reponse.menu=[(title,bool,link,[],condition)]
+- out of the box posgresql support with pg8000 diver included (thanks Mariano)
+- db(...,ignore_common_filters=True)
+- DAL IMAP support (thanks Alan Etkin)
+- scripts/services/service.py (thanks Ross)
+- populate can now deal with computed fields (thanks mweissen)
+- admin in Russian (Bulat), Japanese (Omi) and Slovenian (Robert Valentak)
+- sync languages capability (thanks Yair)
+- better mongodb support (still experimental)
+- auth.user_groups stores user groups
+- new rediscache (thanks niphold)
+- login_methods/browserid_account.py (thanks Pai)
+- new DAL syntax: db(db.dog_id.belongs(db.dogs.owner=='james')).select()
+- incuded remote debugger (thanks Mariano)
+- gluon/contrib/htmlmin.py for html minimization (thanks kerncece)
+- def index(): return dict(a=gluon.tools.Expose(folder))
+- new DAL syntax: db(...).select().group_by_value(db.table.field) (thanks Yair)
+- auth.is_impersonating()
+- 100's of small bug fixes and small improvements
+
 ## 1.99.4
 Improved mobile admin, thanks Angelo
 Improved examples page, thanks Anthony

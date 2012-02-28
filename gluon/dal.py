@@ -1233,7 +1233,6 @@ class BaseAdapter(ConnectionPool):
             ijoinont = [t.first._tablename for t in ijoinon]
             [itables_to_merge.pop(t) for t in ijoinont if t in itables_to_merge] #issue 490
             iimportant_tablenames = ijoint + ijoinont + itables_to_merge.keys() # issue 490         
-            #iexcluded = [t for t in tablenames if not t in ijoint + ijoinont] ## issue 490
             iexcluded = [t for t in tablenames if not t in iimportant_tablenames]
         if left:
             join = attributes['left']
@@ -1252,7 +1251,6 @@ class BaseAdapter(ConnectionPool):
         def alias(t):
             return str(self.db[t])
         if inner_join and not left:
-            #sql_t = ', '.join(alias(t) for t in iexcluded) ## issue 490
             sql_t = ', '.join([alias(t) for t in iexcluded + itables_to_merge.keys()]) # issue 490
             for t in ijoinon:
                 sql_t += ' %s %s' % (icommand, str(t))
@@ -1263,8 +1261,6 @@ class BaseAdapter(ConnectionPool):
             for t in joinon:
                 sql_t += ' %s %s' % (command, str(t))
         elif inner_join and left:
-            #sql_t = ','.join([alias(t) for t in excluded + \
-            #                      tables_to_merge.keys() if t in iexcluded ]) ## issue 490            
             all_tables_in_query = set(important_tablenames + \
                                       iimportant_tablenames + \
                                       tablenames) # issue 490
