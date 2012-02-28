@@ -41,7 +41,7 @@ class BrowserID(object):
                 issuer = "browserid.org",
                 verify_url = "https://browserid.org/verify",
                 browserid_js = "https://browserid.org/include.js",
-                browserid_button = "http://browserid.org.cn/css/sign_in_red.png",
+                browserid_button = "https://browserid.org/i/sign_in_red.png",
                 crypto_js = "https://crypto-js.googlecode.com/files/2.2.0-crypto-md5.js",
                 on_login_failure = None,
                 ):
