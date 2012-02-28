@@ -25,6 +25,7 @@
 - auth.is_impersonating()
 - reponse.delimiters = ('\\[','\\]') (thanks Denes)
 - Teradata support (experimental)
+- web2py_component has timeout parameter, thanks Alan
 - 100's of small bug fixes and small improvements
 
 ## 1.99.4
