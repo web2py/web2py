@@ -4153,8 +4153,12 @@ class PluginManager(object):
 class Expose(object):
     def __init__(self,base=None):
         current.session.forget()
-        base = base or os.path.join(current.request.folder,'static','work')
-        filename = os.path.join(base,*current.request.args)
+        base = base or os.path.join(current.request.folder,'static')
+        args = self.args = current.request.raw_args and \
+            current.request.raw_args.split('/') or []
+        filename = os.path.join(base,*args)
+        if not os.path.normpath(filename).startswith(base):
+            raise HTTP(401,"NOT AUTHORIZED")
         if not os.path.isdir(filename):
             current.response.headers['Content-Type'] = contenttype(filename)
             raise HTTP(200,open(filename,'rb'),**current.response.headers)
@@ -4162,21 +4166,21 @@ class Expose(object):
         self.folders = [f[len(path)-1:] for f in sorted(glob.glob(path)) \
                             if os.path.isdir(f) and not self.isprivate(f)]
         self.filenames = [f[len(path)-1:] for f in sorted(glob.glob(path)) \
-                              if not os.path.isdir(f) and not self.isprivate(f)]
+                            if not os.path.isdir(f) and not self.isprivate(f)]
     def breadcrumbs(self):
         path = []
         span = SPAN()
         span.append(A('base',_href=URL()))
         span.append('/')
-        args = current.request.args
+        args = current.request.raw_args and \
+            current.request.raw_args.split('/') or []
         for arg in args:
             path.append(arg)
             span.append(A(arg,_href=URL(args='/'.join(path))))
             span.append('/')
         return span
     def table_folders(self):
-        args = current.request.args
-        return TABLE(*[TR(TD(A(folder,_href=URL(args=args+[folder])))) \
+        return TABLE(*[TR(TD(A(folder,_href=URL(args=self.args+[folder])))) \
                            for folder in self.folders])    
     @staticmethod
     def isprivate(f):
@@ -4185,9 +4189,9 @@ class Expose(object):
     def isimage(f):
         return f.rsplit('.')[-1].lower() in ('png','jpg','jpeg','gif','tiff')
     def table_files(self,width=160):
-        args = current.request.args
-        return TABLE(*[TR(TD(A(f,_href=URL(args=args+[f]))),
-                          TD(IMG(_src=URL(args=args+[f]),_style='max-width:%spx' % width) \
+        return TABLE(*[TR(TD(A(f,_href=URL(args=self.args+[f]))),
+                          TD(IMG(_src=URL(args=self.args+[f]),
+                                 _style='max-width:%spx' % width) \
                                  if width and self.isimage(f) else '')) \
                            for f in self.filenames])
     def xml(self):
