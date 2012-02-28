@@ -1173,14 +1173,15 @@ def errors():
 
 def get_ticket_storage(app):
     private_folder = apath('%s/private' % app, r=request)
-    try:
-        db_string = open(os.path.join(private_folder, 'ticket_storage.txt')).read().replace('\r','').replace('\n','').strip()
-    except IOError:
+    ticket_file = os.path.join(private_folder, 'ticket_storage.txt')
+    if os.path.exists(ticket__file):
+        db_string = open(ticket_file).read()
+        db_string = db_string.strip().replace('\r','').replace('\n','')
+    else:
         raise Exception, "No ticket_storage.txt found in /private folder"
     tickets_table = 'web2py_ticket'
     tablename = tickets_table + '_' + app
     db_path = apath('%s/databases' % app, r=request)
-    from gluon import DAL
     ticketsdb = DAL(db_string, folder=db_path, auto_import=True)
     if not ticketsdb.get(tablename):
         table = ticketsdb.define_table(
