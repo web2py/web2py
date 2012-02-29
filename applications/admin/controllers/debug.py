@@ -58,6 +58,7 @@ def interact():
         lines = {}
 
     if filename:
+        web_debugger.set_burst(2)
         env = web_debugger.do_environment()
         f_locals = env['locals']
         f_globals = {}
