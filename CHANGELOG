@@ -1,30 +1,32 @@
 ## 1.99.5
+- admin in Russian (Bulat), Japanese (Omi) and Slovenian (Robert Valentak)
+- included web-based debugger (experimental, thanks Mariano)
+- def index(): return dict(a=gluon.tools.Expose(folder))
+- db.table.field.like(...,case_sensitive=False) (thanks Floyd)
+- db.table.field.regexp(...) for sqlite and postgres
+- db(...,ignore_common_filters=True)
+- db(db.dog_id.belongs(db.dogs.owner=='james')).select()
+- db(...).select().group_by_value(db.table.field) (thanks Yair)
+- db = DAL('imap://user:password@server:port') support (thanks Alan Etkin)
+- db = DAL('teradata://DSN=dsn;UID=user;PWD=pass; DATABASE=database') (thanks Adrew Willmott)
+- db = DAL('mongodb://127.0.0.1:5984/db') (experimental, thanks Mark Breedveld)
+- db = DAL('cubrid')  (experimental)
+- db = DAL('postgres:pg8000:...') and DAL('postgres:psycopg2:...')
+- pg8000 now ships with web2py )thanks Mariano) 
+- reponse.delimiters = ('\\[','\\]') (thanks Denes)
+- auth.user_groups stores user groups
+- auth.is_impersonating()
+- populate can now deal with computed fields (thanks Tsvi Mostovicz)
+- new rediscache (thanks niphold)
+- sync languages capability (thanks Yair)
 - improved markmin auto-links
 - improved ldap support (thanks Omi)
 - added TimeCollector (thanks Caleb)
 - better cpdb.py (thanks pasxidis)
-- db.table.field.like(...,case_sensitive=False) (thanks Floyd)
-- db.table.field.regexp(...) for sqlite and postgres
 - conditional menu items (reponse.menu=[(title,bool,link,[],condition)]
-- out of the box posgresql support with pg8000 diver included (thanks Mariano)
-- db(...,ignore_common_filters=True)
-- DAL IMAP support (thanks Alan Etkin)
 - scripts/services/service.py (thanks Ross)
-- populate can now deal with computed fields (thanks mweissen)
-- admin in Russian (Bulat), Japanese (Omi) and Slovenian (Robert Valentak)
-- sync languages capability (thanks Yair)
-- better mongodb support (still experimental)
-- auth.user_groups stores user groups
-- new rediscache (thanks niphold)
-- login_methods/browserid_account.py (thanks Pai)
-- new DAL syntax: db(db.dog_id.belongs(db.dogs.owner=='james')).select()
-- incuded remote debugger (thanks Mariano)
+- gluon/contrib/login_methods/browserid_account.py (thanks Pai)
 - gluon/contrib/htmlmin.py for html minimization (thanks kerncece)
-- def index(): return dict(a=gluon.tools.Expose(folder))
-- new DAL syntax: db(...).select().group_by_value(db.table.field) (thanks Yair)
-- auth.is_impersonating()
-- reponse.delimiters = ('\\[','\\]') (thanks Denes)
-- Teradata support (experimental)
 - web2py_component has timeout parameter, thanks Alan
 - 100's of small bug fixes and small improvements
 
