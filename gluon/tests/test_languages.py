@@ -50,8 +50,8 @@ try:
             readwriters = 10
             pool = multiprocessing.Pool(processes = readwriters)
             results = pool.map(read_write, [[self.filename, 10]] * readwriters)
-            #for result in results:
-            #    self.assertTrue(result)
+            for result in results:
+                self.assertTrue(result)
 
 except ImportError:
     logging.warning("Skipped test case, no multiprocessing module.")

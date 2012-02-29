@@ -196,6 +196,7 @@ def restricted(code, environment=None, layer='Unknown'):
     """
     if environment is None: environment = {}
     environment['__file__'] = layer
+    environment['__name__'] = '__restricted__'
     try:
         if type(code) == types.CodeType:
             ccode = code

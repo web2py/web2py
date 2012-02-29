@@ -51,7 +51,7 @@ def read_dict_aux(filename):
         logging.error('Syntax error in %s' % filename)
         return {}
 
-def read_dict(filename):
+def read_dict(filename):    
     return getcfs('language:%s'%filename,filename,
                   lambda filename=filename:read_dict_aux(filename))
 
