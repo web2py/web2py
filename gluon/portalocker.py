@@ -108,22 +108,44 @@ else:
         pass
 
 
-if __name__ == '__main__':
-    from time import time, strftime, localtime
-    import sys
+class LockedFile(object):
+    def __init__(self,filename, mode='rb'):
+        self.filename = filename
+        self.mode = mode
+        self.file = None
+        if 'r' in mode:
+            self.file = open(filename,mode)
+            lock(self.file,LOCK_SH)
+        elif 'w' in mode or 'a' in mode:
+            self.file = open(filename,mode.replace('w','a'))
+            lock(self.file,LOCK_EX)
+            if not 'a' in mode:
+                self.file.seek(0)
+                self.file.truncate()
+        else:
+            raise RuntimeError, "invalid LockedFile(...,mode)"
+    def read(self,size=None):
+        return self.file.read() if size is None else self.file.read(size)
+    def readline(self):
+        return self.file.readline()
+    def readlines(self):
+        return self.file.readlines()
+    def write(self,data):
+        self.file.write(data)
+        self.file.flush()
+    def close(self):
+        if not self.file is None:
+            unlock(self.file)
+            self.file.close()
+            self.file = None
+    def __del__(self):
+        self.close()
 
-    log = open('log.txt', 'a+')
-    lock(log, LOCK_EX)
-
-    timestamp = strftime('%m/%d/%Y %H:%M:%S\n', localtime(time()))
-    log.write(timestamp)
-
-    print 'Wrote lines. Hit enter to release lock.'
-    dummy = sys.stdin.readline()
-
-    log.close()
-
-
-
-
+if __name__=='__main__':
+    f = LockedFile('test.txt',mode='wb')
+    f.write('test ok')
+    f.close()
+    f = LockedFile('test.txt',mode='rb')
+    print f.read()
+    f.close()
 

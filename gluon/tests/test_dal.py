@@ -421,7 +421,10 @@ class TestMigrations(unittest.TestCase):
         db.commit()
 
     def tearDown(self):
-        os.unlink('.storage.db')
+        if os.path.exists('.storage.db'):
+            os.unlink('.storage.db')
+        if os.path.exists('.storage.table'):
+            os.unlink('.storage.table')
 
 class TestReferece(unittest.TestCase):
 

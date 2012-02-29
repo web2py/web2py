@@ -38,10 +38,8 @@ regex_language = \
 
 
 def read_dict_aux(filename):
-    fp = open(filename, 'r')
-    portalocker.lock(fp, portalocker.LOCK_SH)
+    fp = portalocker.LockedFile(filename, 'r')
     lang_text = fp.read().replace('\r\n', '\n')
-    portalocker.unlock(fp)  # needed or test_languages.py fails
     fp.close()
     if not lang_text.strip():
         return {}
@@ -91,17 +89,15 @@ def utf8_repr(s):
 
 def write_dict(filename, contents):
     try:
-        fp = open(filename, 'w')
+        fp = portalocker.LockedFile(filename, 'w')
     except (IOError, OSError):
         if not is_gae:
             logging.warning('Unable to write to file %s' % filename)
         return
-    portalocker.lock(fp, portalocker.LOCK_EX)
     fp.write('# coding: utf8\n{\n')
     for key in sorted(contents):
         fp.write('%s: %s,\n' % (utf8_repr(key), utf8_repr(contents[key])))
     fp.write('}\n')
-    portalocker.unlock(fp)
     fp.close()
 
 
@@ -312,10 +308,8 @@ def findT(path, language='en-us'):
     vp = os.path.join(path, 'views')
     for file in listdir(mp, '.+\.py', 0) + listdir(cp, '.+\.py', 0)\
          + listdir(vp, '.+\.html', 0):
-        fp = open(file, 'r')
-        portalocker.lock(fp, portalocker.LOCK_EX)
+        fp = portalocker.LockedFile(file, 'r')
         data = fp.read()
-        portalocker.unlock(fp)
         fp.close()
         items = regex_translate.findall(data)
         for item in items:

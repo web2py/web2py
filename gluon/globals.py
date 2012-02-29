@@ -437,8 +437,7 @@ class Session(Storage):
                     response.session_file = \
                         open(response.session_filename, 'rb+')
                     try:
-                        portalocker.lock(response.session_file,
-                                portalocker.LOCK_EX)
+                        portalocker.lock(response.session_file,portalocker.LOCK_EX)
                         response.session_locked = True
                         self.update(cPickle.load(response.session_file))
                         response.session_file.seek(0)

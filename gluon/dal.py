@@ -541,24 +541,17 @@ class BaseAdapter(ConnectionPool):
         """
         to be used ONLY for files that on GAE may not be on filesystem
         """
-        fileobj = open(filename, mode)
         if have_portalocker and lock:
-            if mode in ('r','rb'):
-                portalocker.lock(fileobj, portalocker.LOCK_SH)
-            elif mode in ('w','wb','a'):
-                portalocker.lock(fileobj, portalocker.LOCK_EX)
-            else:
-                fileobj.close()
-                raise RuntimeError, "Unsupported file_open mode"
+            fileobj = portalocker.LockedFile(filename,mode)
+        else:
+            fileobj = open(filename,mode)
         return fileobj
 
-    def file_close(self, fileobj, unlock=True):
+    def file_close(self, fileobj):
         """
         to be used ONLY for files that on GAE may not be on filesystem
         """
         if fileobj:
-            if have_portalocker and unlock:
-                portalocker.unlock(fileobj)
             fileobj.close()
 
     def file_delete(self, filename):
@@ -3293,7 +3286,7 @@ class UseDatabaseStoredFile:
     def file_open(self, filename, mode='rb', lock=True):
         return DatabaseStoredFile(self.db,filename,mode)
 
-    def file_close(self, fileobj, unlock=True):
+    def file_close(self, fileobj):
         fileobj.close()
 
     def file_delete(self,filename):
@@ -3503,7 +3496,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
 
     def file_exists(self, filename): pass
     def file_open(self, filename, mode='rb', lock=True): pass
-    def file_close(self, fileobj, unlock=True): pass
+    def file_close(self, fileobj): pass
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
@@ -3854,7 +3847,7 @@ class CouchDBAdapter(NoSQLAdapter):
 
     def file_exists(self, filename): pass
     def file_open(self, filename, mode='rb', lock=True): pass
-    def file_close(self, fileobj, unlock=True): pass
+    def file_close(self, fileobj): pass
 
     def expand(self,expression,field_type=None):
         if isinstance(expression,Field):
