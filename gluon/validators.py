@@ -440,19 +440,21 @@ class IS_IN_DB(Validator):
             self._and.record_id = id
 
     def build_set(self):
+        table = self.dbset.db[self.ktable]
         if self.fields == 'all':
-            fields = [f for f in self.dbset.db[self.ktable]]
+            fields = [f for f in table]
         else:
-            fields = [self.dbset.db[self.ktable][k] for k in self.fields]
+            fields = [table[k] for k in self.fields]
         if self.dbset.db._dbname != 'gae':
             orderby = self.orderby or reduce(lambda a,b:a|b,fields)
             groupby = self.groupby
             dd = dict(orderby=orderby, groupby=groupby, cache=self.cache)
-            records = self.dbset.select(*fields, **dd)
+            records = self.dbset(table).select(*fields, **dd)
         else:
-            orderby = self.orderby or reduce(lambda a,b:a|b,(f for f in fields if not f.name=='id'))
+            orderby = self.orderby or \
+                reduce(lambda a,b:a|b,(f for f in fields if not f.name=='id'))
             dd = dict(orderby=orderby, cache=self.cache)
-            records = self.dbset.select(self.dbset.db[self.ktable].ALL, **dd)
+            records = self.dbset(table).select(table.ALL, **dd)
         self.theset = [str(r[self.kfield]) for r in records]
         if isinstance(self.label,str):
             self.labels = [self.label % dict(r) for r in records]
