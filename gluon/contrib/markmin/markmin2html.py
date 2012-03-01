@@ -396,9 +396,9 @@ def render(text,extra={},allowed={},sep='p'):
         content = item.group('t')
         if ' | ' in content:
             rows = content.replace('\n','</td></tr><tr><td>').replace(' | ','</td><td>')
-            text = text[:item.start()] + '<<table class="%s"><tr><td>'%c + rows + '</td></tr></table>' + text[item.end():]
+            text = text[:item.start()] + '<<table class="%s"><tr><td>'%c + rows + '</td></tr></table>\n' + text[item.end():]
         else:
-            text = text[:item.start()] + '<<blockquote class="%s">'%c + content + '</blockquote>' + text[item.end():]
+            text = text[:item.start()] + '<<blockquote class="%s">'%c + content + '</blockquote>\n' + text[item.end():]
 
     #############################################################
     # deal with images, videos, audios and links
