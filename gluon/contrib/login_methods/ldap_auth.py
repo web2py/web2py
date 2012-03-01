@@ -201,8 +201,6 @@ def ldap_auth( server = 'ldap', port = None,
 
             return True
         except ldap.LDAPError, e:
-            import traceback
-            logging.error( traceback.format_exc() )
             return False
         except IndexError, ex: # for AD membership test
             return False
@@ -264,6 +262,8 @@ def ldap_auth( server = 'ldap', port = None,
         for group_row in group_search_result:
             group = group_row[1]
             ldap_groups_of_the_user.extend( group[group_name_attrib] )
+
+        con.unbind()
 
         #
         # Get all group name where the user is in actually in local db
