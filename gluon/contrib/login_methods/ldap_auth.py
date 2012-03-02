@@ -12,6 +12,7 @@ def ldap_auth( server = 'ldap', port = None,
             base_dn = 'ou=users,dc=domain,dc=com',
             mode = 'uid', secure = False, cert_path = None,
             bind_dn = None, bind_pw = None, filterstr = 'objectClass=*',
+            allowed_groups = None,
             manage_groups = False,
             db = None,
             group_dn = 'ou=groups,dc=domain,dc=com',
@@ -57,7 +58,7 @@ def ldap_auth( server = 'ldap', port = None,
     a rfc4515 search filter string.
     - currently only implemented for mode in ['ad', 'company', 'uid_r']
     
-    If you need group controll from ldap to web2py app's database feel free to set:
+    If you need group control from ldap to web2py app's database feel free to set:
 
         auth.settings.login_methods.append(ldap_auth(...as usual...,
             manage_groups = True,
@@ -76,6 +77,22 @@ def ldap_auth( server = 'ldap', port = None,
         group_member_attrib - the attibute containing the group members name
         group_filterstr - as the filterstr but for group select
     
+    You can restrict login access to specific groups if you specify:
+    
+        auth.settings.login_methods.append(ldap_auth(...as usual...,
+            allowed_groups = [...],
+            group_dn = 'ou=Groups,dc=domain,dc=com',
+            group_name_attrib = 'cn',
+            group_member_attrib = 'memberUid',
+            group_filterstr = 'objectClass=*'
+            ))
+
+        Where:
+        allowed_groups - a list with allowed ldap group names
+        group_dn - the ldap branch of the groups
+        group_name_attrib - the attribute where the group name is stored
+        group_member_attrib - the attibute containing the group members name
+        group_filterstr - as the filterstr but for group select
     """
 
     def ldap_auth_aux( username,
@@ -89,21 +106,13 @@ def ldap_auth( server = 'ldap', port = None,
                       secure = secure,
                       cert_path = cert_path,
                       filterstr = filterstr,
-                      manage_groups = manage_groups ):
+                      manage_groups = manage_groups,
+                      allowed_groups = allowed_groups ):
         try:
-            if secure:
-                if not ldap_port:
-                    ldap_port = 636
-                con = ldap.initialize( 
-                    "ldaps://" + ldap_server + ":" + str( ldap_port ) )
-                if cert_path:
-                    con.set_option( ldap.OPT_X_TLS_CACERTDIR, cert_path )
-            else:
-                if not ldap_port:
-                    ldap_port = 389
-                con = ldap.initialize( 
-                    "ldap://" + ldap_server + ":" + str( ldap_port ) )
-
+            con = init_ldap()
+            if allowed_groups:
+                if not is_user_in_allowed_groups( username ):
+                    return False
             if ldap_mode == 'ad':
                 # Microsoft Active Directory
                 if '@' not in username:
@@ -205,20 +214,28 @@ def ldap_auth( server = 'ldap', port = None,
         except IndexError, ex: # for AD membership test
             return False
 
+    def is_user_in_allowed_groups( username,
+                                  allowed_groups = allowed_groups
+                                  ):
+        '''
+            Figure out if the username is a member of an allowed group in ldap or not
+        '''
+        #
+        # Get all group name where the user is in actually in ldap
+        # #########################################################
+        ldap_groups_of_the_user = get_user_groups_from_ldap( username )
+
+        # search for allowed group names
+        if type( allowed_groups ) != type( list() ):
+            allowed_groups = [allowed_groups]
+        for group in allowed_groups:
+            if ldap_groups_of_the_user.count( group ) > 0:
+                # Match
+                return True
+        # No match
+        return False
+
     def do_manage_groups( username,
-                      ldap_server = server,
-                      ldap_port = port,
-                      ldap_basedn = base_dn,
-                      ldap_mode = mode,
-                      ldap_binddn = bind_dn,
-                      ldap_bindpw = bind_pw,
-                      secure = secure,
-                      cert_path = cert_path,
-                      filterstr = filterstr,
-                      group_dn = group_dn,
-                      group_name_attrib = group_name_attrib,
-                      group_member_attrib = group_member_attrib,
-                      group_filterstr = group_filterstr,
                       db = db,
                       ):
         '''
@@ -231,39 +248,7 @@ def ldap_auth( server = 'ldap', port = None,
         #
         # Get all group name where the user is in actually in ldap
         # #########################################################
-        # Inicialize ldap
-        if secure:
-            if not ldap_port:
-                ldap_port = 636
-            con = ldap.initialize( 
-                "ldaps://" + ldap_server + ":" + str( ldap_port ) )
-            if cert_path:
-                con.set_option( ldap.OPT_X_TLS_CACERTDIR, cert_path )
-        else:
-            if not ldap_port:
-                ldap_port = 389
-            con = ldap.initialize( 
-                "ldap://" + ldap_server + ":" + str( ldap_port ) )
-        if ldap_binddn:
-            # need to search directory with an bind_dn account 1st
-            con.simple_bind_s( ldap_binddn, ldap_bindpw )
-        else:
-            # bind as anonymous
-            con.simple_bind_s( '', '' )
-
-        # search for groups where user is in
-        filter = '(&(%s=%s)(%s))' % ( ldap.filter.escape_filter_chars( group_member_attrib ),
-                                    ldap.filter.escape_filter_chars( username ),
-                                     group_filterstr )
-        group_search_result = con.search_s( group_dn,
-                                                   ldap.SCOPE_SUBTREE,
-                                                   filter, [group_name_attrib] )
-        ldap_groups_of_the_user = list()
-        for group_row in group_search_result:
-            group = group_row[1]
-            ldap_groups_of_the_user.extend( group[group_name_attrib] )
-
-        con.unbind()
+        ldap_groups_of_the_user = get_user_groups_from_ldap( username )
 
         #
         # Get all group name where the user is in actually in local db
@@ -308,6 +293,68 @@ def ldap_auth( server = 'ldap', port = None,
                 db.auth_membership.insert( user_id = db_user_id,
                                           group_id = gid )
 
+    def init_ldap( 
+                      ldap_server = server,
+                      ldap_port = port,
+                      ldap_basedn = base_dn,
+                      ldap_mode = mode,
+                      secure = secure,
+                      cert_path = cert_path,
+                ):
+        '''
+            Inicialize ldap connection
+        '''
+        if secure:
+            if not ldap_port:
+                ldap_port = 636
+            con = ldap.initialize( 
+                "ldaps://" + ldap_server + ":" + str( ldap_port ) )
+            if cert_path:
+                con.set_option( ldap.OPT_X_TLS_CACERTDIR, cert_path )
+        else:
+            if not ldap_port:
+                ldap_port = 389
+            con = ldap.initialize( 
+                "ldap://" + ldap_server + ":" + str( ldap_port ) )
+        return con
+
+    def get_user_groups_from_ldap( username,
+                      ldap_binddn = bind_dn,
+                      ldap_bindpw = bind_pw,
+                      group_dn = group_dn,
+                      group_name_attrib = group_name_attrib,
+                      group_member_attrib = group_member_attrib,
+                      group_filterstr = group_filterstr,
+                      ):
+        '''
+            Get all group names from ldap where the user is in
+        '''
+        #
+        # Get all group name where the user is in actually in ldap
+        # #########################################################
+        # Inicialize ldap
+        con = init_ldap()
+        if ldap_binddn:
+            # need to search directory with an bind_dn account 1st
+            con.simple_bind_s( ldap_binddn, ldap_bindpw )
+        else:
+            # bind as anonymous
+            con.simple_bind_s( '', '' )
+
+        # search for groups where user is in
+        filter = '(&(%s=%s)(%s))' % ( ldap.filter.escape_filter_chars( group_member_attrib ),
+                                    ldap.filter.escape_filter_chars( username ),
+                                     group_filterstr )
+        group_search_result = con.search_s( group_dn,
+                                                   ldap.SCOPE_SUBTREE,
+                                                   filter, [group_name_attrib] )
+        ldap_groups_of_the_user = list()
+        for group_row in group_search_result:
+            group = group_row[1]
+            ldap_groups_of_the_user.extend( group[group_name_attrib] )
+
+        con.unbind()
+        return list( ldap_groups_of_the_user )
 
 
     if filterstr[0] == '(' and filterstr[-1] == ')': # rfc4515 syntax
