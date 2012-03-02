@@ -289,10 +289,11 @@ class TemplateParser(object):
         if delimiters != self.default_delimiters:
             escaped_delimiters = (re.escape(delimiters[0]),re.escape(delimiters[1]))
             self.r_tag = re.compile(r'(%s.*?%s)' % escaped_delimiters, re.DOTALL)
-        elif context['response'].delimiters != self.default_delimiters:
-            escaped_delimiters = (re.escape(context['response'].delimiters[0]),
-                                  re.escape(context['response'].delimiters[1]))
-            self.r_tag = re.compile(r'(%s.*?%s)' % escaped_delimiters, re.DOTALL)
+        elif context.has_key('response'):
+            if context['response'].delimiters != self.default_delimiters:
+                escaped_delimiters = (re.escape(context['response'].delimiters[0]),
+                                      re.escape(context['response'].delimiters[1]))
+                self.r_tag = re.compile(r'(%s.*?%s)' % escaped_delimiters,re.DOTALL)
 
         # Create a root level Content that everything will go into.
         self.content = Content(name=name)
