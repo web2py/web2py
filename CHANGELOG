@@ -12,7 +12,7 @@
 - db = DAL('mongodb://127.0.0.1:5984/db') (experimental, thanks Mark Breedveld)
 - db = DAL('cubrid')  (experimental)
 - db = DAL('postgres:pg8000:...') and DAL('postgres:psycopg2:...')
-- pg8000 now ships with web2py )thanks Mariano) 
+- pg8000 now ships with web2py (thanks Mariano) 
 - reponse.delimiters = ('\\[','\\]') (thanks Denes)
 - auth.user_groups stores user groups
 - auth.is_impersonating()

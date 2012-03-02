@@ -174,7 +174,7 @@ class StorageList(Storage):
 def load_storage(filename):
     fp = None
     try:
-        fp = portalocker.LockFile(filename, 'rb')
+        fp = portalocker.LockedFile(filename, 'rb')
         storage = cPickle.load(fp)
     finally:
         if fp: fp.close()
@@ -184,7 +184,7 @@ def load_storage(filename):
 def save_storage(storage, filename):
     fp = None
     try:
-        fp = portalocker.LockFile(filename, 'wb')
+        fp = portalocker.LockedFile(filename, 'wb')
         cPickle.dump(dict(storage), fp)
     finally:
         if fp: fp.close()
