@@ -122,6 +122,9 @@ def LOAD(c=None, f='index', args=None, vars=None,
     is added on page loading without delay.
     """
     from html import TAG, DIV, URL, SCRIPT, XML
+    create_div = True
+    if target is not None:
+        create_div = False
     if args is None: args = []
     vars = Storage(vars or {})
     target = target or 'c'+str(random.random())[2:]
@@ -154,7 +157,10 @@ def LOAD(c=None, f='index', args=None, vars=None,
         else:
             statement = "web2py_component('%s','%s');" % (url, target)
         script = SCRIPT(statement, _type="text/javascript")
-        return TAG[''](script, DIV(content,**attr))
+        if create_div:
+            return TAG[''](script, DIV(content,**attr))
+        else:
+            return TAG[''](script)
 
     else:
         if not isinstance(args,(list,tuple)):
