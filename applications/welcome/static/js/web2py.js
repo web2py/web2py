@@ -18,7 +18,7 @@ function ajax(u,s,t) {
         }
         if (pcs.length>0){query = pcs.join("&");}
     }
-    jQuery.ajax({type: "POST", url: u, data: query, success: function(msg) { if(t) { if(t==':eval') eval(msg); else jQuery("#" + t).html(msg); } } });
+    jQuery.ajax({type: "POST", url: u, data: query, success: function(msg) { if(t) { if(t==':eval') eval(msg); else if(typeof t=='string') jQuery("#"+t).html(msg); else t(msg); } } });
 }
 
 String.prototype.reverse = function () { return this.split('').reverse().join('');};
