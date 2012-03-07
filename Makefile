@@ -119,4 +119,5 @@ commit:
 push:
 	hg push
 	git push
+	git push mdipierro
 	#bzr push bzr+ssh://mdipierro@bazaar.launchpad.net/~mdipierro/web2py/devel --use-existing-dir
