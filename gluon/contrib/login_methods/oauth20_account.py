@@ -50,9 +50,12 @@ class OAuthAccount(object):
             AUTH_URL="https://graph.facebook.com/oauth/authorize"
             TOKEN_URL="https://graph.facebook.com/oauth/access_token"
 
-            def __init__(self, g):
-               OAuthAccount.__init__(self, g, CLIENT_ID, CLIENT_SECRET,
-                                     self.AUTH_URL, self.TOKEN_URL,
+            def __init__(self):
+               OAuthAccount.__init__(self,
+                                     client_id=CLIENT_ID,
+                                     client_secret=CLIENT_SECRET,
+                                     auth_url=self.AUTH_URL,
+                                     token_url=self.TOKEN_URL,
                                      scope='user_photos,friends_photos')
                self.graph = None
 
@@ -81,6 +84,8 @@ class OAuthAccount(object):
                                username = user['id'])
 
 
+               auth.settings.actions_disabled=['register','change_password','request_reset_password','profile']
+               auth.settings.login_form=FaceBookAccount()
 
 Any optional arg in the constructor will be passed asis to remote
 server for requests.  It can be used for the optional"scope" parameters for Facebook.
@@ -176,11 +181,19 @@ server for requests.  It can be used for the optional"scope" parameters for Face
         current.session.token = None
         return None
 
-    def __init__(self, g, 
-                 client_id, client_secret, auth_url, token_url, **args):
+    def __init__(self, g=None, 
+                 client_id=None, client_secret=None,
+                 auth_url=None, token_url=None, **args):
         """
         first argument is unused. Here only for legacy reasons.
         """
+        if [client_id, client_secret, auth_url, token_url].count(None) > 0:
+            raise RuntimeError("""Following args are mandatory:
+            client_id,
+            client_secret,
+            auth_url,
+            token_url.
+            """)
         self.client_id = client_id
         self.client_secret = client_secret
         self.auth_url = auth_url
