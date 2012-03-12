@@ -121,7 +121,13 @@ if session.authorized:
         session.last_time = t0
 
 if request.controller == "webservices":
-    pass
+    basic = request.env.http_authorization
+    if not basic or not basic[:6].lower() == 'basic ':
+        raise HTTP(401,"Wrong credentials")
+    (username, password) = base64.b64decode(basic[6:]).split(':')
+    if not verify_password(password) or not is_manager():
+        time.sleep(10)
+        raise HTTP(403,"Not authorized")
 elif not session.authorized and not \
     (request.controller == 'default' and \
      request.function in ('index','user')):

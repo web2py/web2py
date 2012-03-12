@@ -125,16 +125,6 @@ def detach_debugger():
     return True
 
 def call():
-    "Entry point. Prevents access to action if not admin password is present"
-
-    basic = request.env.http_authorization
-    if not basic or not basic[:6].lower() == 'basic ':
-        raise HTTP(401,"Wrong credentials")
-    (username, password) = base64.b64decode(basic[6:]).split(':')
-    if not verify_password(password) or not is_manager():
-        time.sleep(10)
-        raise HTTP(403,"Not authorized")
-
     session.forget()
     return service()
 
