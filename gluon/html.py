@@ -268,6 +268,10 @@ def URL(
         if '.' in function:
             function, extension = function.split('.', 1)
 
+        # if the url gets a static resource, don't force extention
+        if controller == 'static':
+            extension = None
+
     function2 = '%s.%s' % (function,extension or 'html')
 
     if not (application and controller and function):
