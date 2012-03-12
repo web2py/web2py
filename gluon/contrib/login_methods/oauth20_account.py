@@ -3,7 +3,7 @@
 
 """
 Written by Michele Comitini <mcm@glisco.it>
-License: GPL v3
+License: LGPL v3
 
 Adds support for  OAuth 2.0 authentication to web2py.
 
@@ -22,7 +22,8 @@ class OAuthAccount(object):
     Login will be done via   OAuth Framework, instead of web2py's
     login form.
 
-    Include in your model (eg db.py)::
+    You need to override the get_user method to match your auth provider needs.
+    Example for facebook in your model (eg db.py)::
         # define the auth_table before call to auth.define_tables()
         auth_table = db.define_table(
            auth.settings.table_user_name,
@@ -41,12 +42,54 @@ class OAuthAccount(object):
         CLIENT_SECRET=\"<put your fb application secret here>\"
         AUTH_URL="http://..."
         TOKEN_URL="http://..."
+        # remember to download and install facebook GraphAPI module in your app
+        from facebook import GraphAPI, GraphAPIError
         from gluon.contrib.login_methods.oauth20_account import OAuthAccount
-        auth.settings.login_form=OAuthAccount(
-           None,CLIENT_ID,CLIENT_SECRET,AUTH_URL, TOKEN_URL, **args)
+        class FaceBookAccount(OAuthAccount):
+            '''OAuth impl for FaceBook'''
+            AUTH_URL="https://graph.facebook.com/oauth/authorize"
+            TOKEN_URL="https://graph.facebook.com/oauth/access_token"
 
-    Any optional arg will be passed as is to remote server for requests.
-    It can be used for the optional "scope" parameters for Facebook.
+            def __init__(self):
+               OAuthAccount.__init__(self,
+                                     client_id=CLIENT_ID,
+                                     client_secret=CLIENT_SECRET,
+                                     auth_url=self.AUTH_URL,
+                                     token_url=self.TOKEN_URL,
+                                     scope='user_photos,friends_photos')
+               self.graph = None
+
+            def get_user(self):
+               '''
+                Returns the user using the Graph API.
+               '''
+
+               if not self.accessToken():
+                  return None
+       
+               if not self.graph:
+                  self.graph = GraphAPI((self.accessToken()))
+
+               user = None
+               try:
+                   user = self.graph.get_object("me")
+               except GraphAPIError, e:
+                   self.session.token = None
+                   self.graph = None
+
+
+               if user:
+                   return dict(first_name = user['first_name'],
+                               last_name = user['last_name'],
+                               username = user['id'])
+
+
+               auth.settings.actions_disabled=['register','change_password','request_reset_password','profile']
+               auth.settings.login_form=FaceBookAccount()
+
+Any optional arg in the constructor will be passed asis to remote
+server for requests.  It can be used for the optional"scope" parameters for Facebook.
+
     """
     def __redirect_uri(self, next=None):
         """
@@ -142,11 +185,19 @@ class OAuthAccount(object):
         current.session.token = None
         return None
 
-    def __init__(self, g, 
-                 client_id, client_secret, auth_url, token_url, **args):
+    def __init__(self, g=None, 
+                 client_id=None, client_secret=None,
+                 auth_url=None, token_url=None, **args):
         """
         first argument is unused. Here only for legacy reasons.
         """
+        if [client_id, client_secret, auth_url, token_url].count(None) > 0:
+            raise RuntimeError("""Following args are mandatory:
+            client_id,
+            client_secret,
+            auth_url,
+            token_url.
+            """)
         self.client_id = client_id
         self.client_secret = client_secret
         self.auth_url = auth_url
@@ -163,13 +214,17 @@ class OAuthAccount(object):
 
     def get_user(self):
         """
-        Returns the user using the Graph API.
+        Override this method by sublcassing the class.
+        
         """
         if not current.session.token: return None
         return dict(first_name = 'Pinco',
                     last_name = 'Pallino',
                     username = 'pincopallino')
         raise NotImplementedError, "Must override get_user()"
+
+        # Following code is never executed.  It can be used as example
+        # for overriding in subclasses.
         if not self.accessToken():
             return None
 
