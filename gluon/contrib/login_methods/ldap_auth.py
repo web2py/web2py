@@ -10,7 +10,7 @@ except Exception, e:
 
 def ldap_auth( server = 'ldap', port = None,
             base_dn = 'ou=users,dc=domain,dc=com',
-            mode = 'uid', secure = False, cert_path = None, cert_file = None,
+            mode = 'uid', secure = False, cert_path = None,
             bind_dn = None, bind_pw = None, filterstr = 'objectClass=*',
             allowed_groups = None,
             manage_user = False,
@@ -55,8 +55,6 @@ def ldap_auth( server = 'ldap', port = None,
             base_dn='ou=Users,dc=domain,dc=com'))
 
     If using secure ldaps:// pass secure=True and cert_path="..."
-    If ldap is using GnuTLS then you need cert_file="..." instead cert_path because
-    cert_path isn't implemented in GnuTLS :(
 
     If you need to bind to the directory with an admin account in order to search it then specify bind_dn & bind_pw to use for this.
     - currently only implemented for Active Directory
@@ -131,7 +129,6 @@ def ldap_auth( server = 'ldap', port = None,
                       ldap_bindpw = bind_pw,
                       secure = secure,
                       cert_path = cert_path,
-                      cert_file = cert_file,
                       filterstr = filterstr,
                       manage_user = manage_user,
                       user_firstname_attrib = user_firstname_attrib,
@@ -439,7 +436,6 @@ def ldap_auth( server = 'ldap', port = None,
                       ldap_mode = mode,
                       secure = secure,
                       cert_path = cert_path,
-                      cert_file = cert_file
                 ):
         '''
             Inicialize ldap connection
@@ -451,8 +447,6 @@ def ldap_auth( server = 'ldap', port = None,
                 "ldaps://" + ldap_server + ":" + str( ldap_port ) )
             if cert_path:
                 con.set_option( ldap.OPT_X_TLS_CACERTDIR, cert_path )
-            if cert_file:
-                con.set_option( ldap.OPT_X_TLS_CACERTFILE, cert_file )
         else:
             if not ldap_port:
                 ldap_port = 389
