@@ -15,19 +15,18 @@ import types
 import urllib
 import base64
 import sanitizer
-import rewrite
 import itertools
 import decoder
 import copy_reg
 import cPickle
 import marshal
+
 from HTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
-from contrib.markmin.markmin2html import render
 
 from storage import Storage
-from highlight import highlight
 from utils import web2py_uuid, hmac_hash
+from highlight import highlight
 
 regex_crlf = re.compile('\r|\n')
 
@@ -227,6 +226,8 @@ def URL(
     :raises SyntaxError: when a CRLF is found in the generated url
     """
 
+    from rewrite import url_out # done here in case used not-in web2py
+
     if args in (None,[]): args = []
     vars = vars or {}
     application = None
@@ -342,8 +343,8 @@ def URL(
 
     if regex_crlf.search(join([application, controller, function, other])):
         raise SyntaxError, 'CRLF Injection Detected'
-    url = rewrite.url_out(r, env, application, controller, function,
-                          args, other, scheme, host, port)
+    url = url_out(r, env, application, controller, function,
+                  args, other, scheme, host, port)
     return url
 
 
@@ -1659,6 +1660,10 @@ class INPUT(DIV):
             return DIV.xml(self) + DIV(self.errors[name], _class='error',
                 errors=None, _id='%s__error' % name).xml()
         else:
+            if self['_class'] and self['_class'].endswith('invalidinput'):
+                self['_class'] = self['_class'][:-12]
+                if self['_class'] == '':
+                    self['_class'] = None
             return DIV.xml(self)
 
 
@@ -2005,7 +2010,7 @@ class BEAUTIFY(DIV):
     example::
 
         >>> BEAUTIFY(['a', 'b', {'hello': 'world'}]).xml()
-        '<div><table><tr><td><div>a</div></td></tr><tr><td><div>b</div></td></tr><tr><td><div><table><tr><td style="font-weight:bold;">hello</td><td valign="top">:</td><td><div>world</div></td></tr></table></div></td></tr></table></div>'
+        '<div><table><tr><td><div>a</div></td></tr><tr><td><div>b</div></td></tr><tr><td><div><table><tr><td style="font-weight:bold;vertical-align:top">hello</td><td valign="top">:</td><td><div>world</div></td></tr></table></div></td></tr></table></div>'
 
     turns any list, dictionary, etc into decent looking html.
     Two special attributes are
@@ -2191,7 +2196,7 @@ def test():
     >>> print form.accepts({'myvar':'34'}, formname=None)
     False
     >>> print form.xml()
-    <form action="" enctype="multipart/form-data" method="post"><input name="myvar" type="text" value="34" /><div class="error" id="myvar__error">invalid expression</div></form>
+    <form action="" enctype="multipart/form-data" method="post"><input class="invalidinput" name="myvar" type="text" value="34" /><div class="error" id="myvar__error">invalid expression</div></form>
     >>> print form.accepts({'myvar':'4'}, formname=None, keepvalues=True)
     True
     >>> print form.xml()
@@ -2205,7 +2210,7 @@ def test():
     >>> print form.accepts({'myvar':'as df'}, formname=None)
     False
     >>> print form.xml()
-    <form action=\"\" enctype=\"multipart/form-data\" method=\"post\"><input name=\"myvar\" type=\"text\" value=\"as df\" /><div class=\"error\" id=\"myvar__error\">only alphanumeric!</div></form>
+    <form action=\"\" enctype=\"multipart/form-data\" method=\"post\"><input class=\"invalidinput\" name=\"myvar\" type=\"text\" value=\"as df\" /><div class=\"error\" id=\"myvar__error\">only alphanumeric!</div></form>
     >>> session={}
     >>> form=FORM(INPUT(value=\"Hello World\", _name=\"var\", requires=IS_MATCH('^\w+$')))
     >>> if form.accepts({}, session,formname=None): print 'passed'
@@ -2326,6 +2331,7 @@ class MARKMIN(XmlComponent):
         """
         calls the gluon.contrib.markmin render function to convert the wiki syntax
         """
+        from contrib.markmin.markmin2html import render
         return render(self.text,extra=self.extra,allowed=self.allowed,sep=self.sep)
 
     def __str__(self):
