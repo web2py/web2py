@@ -1993,10 +1993,12 @@ class PostgreSQLAdapter(BaseAdapter):
                    % (db, user, host, port, password)
         # choose diver according uri
         if library == "postgres":
-            if self.drivers.get('psycopg2'):
+            if 'psycopg2' in self.drivers:
                 self.driver = self.drivers['psycopg2']
-            elif self.drivers.get('pg8000'):
-                self.driver = drivers.get('pg8000')
+            elif 'pg8000' in self.drivers:
+                self.driver = self.drivers['pg8000']
+            else:
+                raise RuntimeError, "No pgsql driver"
         elif library == "postgres:psycopg2":
             self.driver = self.drivers.get('psycopg2')
         elif library == "postgres:pg8000":

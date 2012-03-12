@@ -105,7 +105,6 @@ class OAuthAccount(object):
                         redirect_uri=current.session.redirect_uri,
                         response_type='token', code=current.session.code)
 
-
             if self.args:
                 data.update(self.args)
             open_url = None
@@ -113,22 +112,27 @@ class OAuthAccount(object):
             try:
                 open_url = opener.open(self.token_url, urlencode(data))
             except urllib2.HTTPError, e:
-                raise Exception(e.read())
+                tmp = e.read()
+                print tmp
+                raise Exception(tmp)
             finally:
                 del current.session.code # throw it away
 
             if open_url:
                 try:
-                    tokendata = cgi.parse_qs(open_url.read())
+                    data = open_url.read()
+                    tokendata = cgi.parse_qs(data)
                     current.session.token = \
                         dict([(k,v[-1]) for k,v in tokendata.items()])
                     # set expiration absolute time try to avoid broken
                     # implementations where "expires_in" becomes "expires"
                     if current.session.token.has_key('expires_in'):
                         exps = 'expires_in'
-                    else:
+                    elif current.session.token.has_key('expires'):
                         exps = 'expires'                    
-                    current.session.token['expires'] = \
+                    else:
+                        exps = None
+                    current.session.token['expires'] = exps and \
                         int(current.session.token[exps]) + \
                         time.time()
                 finally:
@@ -161,6 +165,10 @@ class OAuthAccount(object):
         """
         Returns the user using the Graph API.
         """
+        if not current.session.token: return None
+        return dict(first_name = 'Pinco',
+                    last_name = 'Pallino',
+                    username = 'pincopallino')
         raise NotImplementedError, "Must override get_user()"
         if not self.accessToken():
             return None
