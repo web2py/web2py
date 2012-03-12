@@ -47,7 +47,7 @@ def read_dict_aux(filename):
         return eval(lang_text)
     except:
         logging.error('Syntax error in %s' % filename)
-        return {}
+        return {'__corrupted__':True}
 
 def read_dict(filename):    
     return getcfs('language:%s'%filename,filename,
@@ -88,6 +88,8 @@ def utf8_repr(s):
 
 
 def write_dict(filename, contents):
+    if contents.get('__corrupted__',False):
+        return
     try:
         fp = portalocker.LockedFile(filename, 'w')
     except (IOError, OSError):
