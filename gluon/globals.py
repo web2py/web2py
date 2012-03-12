@@ -51,6 +51,8 @@ current = threading.local()  # thread-local storage for request-scope globals
 
 css_template = '<link href="%s" rel="stylesheet" type="text/css" />'
 js_template = '<script src="%s" type="text/javascript"></script>'
+coffee_template = '<script src="%s" type="text/coffee"></script>'
+lass_template = '<link href="%s" rel="styleshee/lesst" type="text/css" />'
 css_inline = '<style type="text/css">\n%s\n</style>'
 js_inline = '<script type="text/javascript">\n%s\n</script>'
 
@@ -252,6 +254,8 @@ class Response(Storage):
                 f = item.lower()
                 if f.endswith('.css'):  s += css_template % item
                 elif f.endswith('.js'): s += js_template % item
+                elif f.endswith('.coffee'): s += coffee_template % item
+                elif f.endswith('.less'): s += less_template % item
             elif isinstance(item,(list,tuple)):
                 f = item[0]
                 if f=='css:inline':     s += css_inline % item[1]
