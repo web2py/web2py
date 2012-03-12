@@ -17,6 +17,7 @@ import glob
 import os
 import re
 import time
+import traceback
 import smtplib
 import urllib
 import urllib2
@@ -3803,11 +3804,14 @@ class Service(object):
         def return_response(id, result):
             return serializers.json({'version': '1.1',
                 'id': id, 'result': result, 'error': None})
-        def return_error(id, code, message):
+        def return_error(id, code, message, data=None):
+            error = {'name': 'JSONRPCError',
+                     'code': code, 'message': message}
+            if data is not None:
+                error['data'] = data
             return serializers.json({'id': id,
                                      'version': '1.1',
-                                     'error': {'name': 'JSONRPCError',
-                                        'code': code, 'message': message}
+                                     'error': error,
                                      })
 
         request = current.request
@@ -3827,7 +3831,10 @@ class Service(object):
             return return_error(id, e.code, e.info)
         except BaseException:
             etype, eval, etb = sys.exc_info()
-            return return_error(id, 100, '%s: %s' % (etype.__name__, eval))
+            code = 100
+            message = '%s: %s' % (etype.__name__, eval)
+            data = request.is_local and traceback.format_tb(etb)
+            return return_error(id, code, message, data)
         except:
             etype, eval, etb = sys.exc_info()
             return return_error(id, 100, 'Exception %s: %s' % (etype, eval))

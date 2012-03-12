@@ -15,7 +15,7 @@
 __author__ = "Mariano Reingart (reingart@gmail.com)"
 __copyright__ = "Copyright (C) 2011 Mariano Reingart"
 __license__ = "LGPL 3.0"
-__version__ = "0.04"
+__version__ = "0.05"
 
 
 import urllib
@@ -34,13 +34,12 @@ except ImportError:
 
 class JSONRPCError(RuntimeError):
     "Error object for remote procedure call fail"
-    def __init__(self, code, message):
+    def __init__(self, code, message, data=None):
+        value = "%s: %s\n%s" % (code, message, '\n'.join(data))
+        RuntimeError.__init__(self, value)
         self.code = code
         self.message = message
-    def __unicode__(self):
-        return u"%s: %s" % (self.code, self.message)
-    def __str__(self):
-        return self.__unicode__().encode("ascii","ignore")
+        self.data = data
 
 
 class JSONDummyParser:
@@ -134,9 +133,14 @@ class ServerProxy(object):
 
         self.error = response.get('error', {})
         if self.error and self.exceptions:
-            raise JSONRPCError(self.error.get('code', 0), self.error.get('message', ''))
+            raise JSONRPCError(self.error.get('code', 0),
+                               self.error.get('message', ''),
+                               self.error.get('data', None))
 
         return response.get('result')
+
+
+ServiceProxy = ServerProxy
 
 
 if __name__ == "__main__":
@@ -144,6 +148,4 @@ if __name__ == "__main__":
     location = "http://www.web2py.com.ar/webservices/sample/call/jsonrpc"
     client = ServerProxy(location, verbose='--verbose' in sys.argv,)
     print client.add(1, 2)
-
-
 
