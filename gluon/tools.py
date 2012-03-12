@@ -998,6 +998,9 @@ class Auth(object):
         settings.retrieve_password_onvalidation = []
         settings.reset_password_onvalidation = []
 
+        settings.email_case_sensitive = True                                   
+        settings.username_case_sensitive = True
+
         settings.hmac_key = hmac_key
         settings.lock_keys = True
 
@@ -1280,8 +1283,11 @@ class Auth(object):
                                                    migrate),
                         fake_migrate=fake_migrate,
                         format='%(username)s'))
-                table.username.requires = (IS_MATCH('[\w\.\-]+'),
-                                           IS_NOT_IN_DB(db, table.username))
+                table.username.requires = \
+                    [IS_MATCH('[\w\.\-]+'),
+                     IS_NOT_IN_DB(db, table.username)]
+                if not self.settings.username_case_sensitive:
+                    table.username.requires.insert(1,IS_LOWER())
             else:
                 table = db.define_table(
                     settings.table_user_name,
@@ -1318,6 +1324,8 @@ class Auth(object):
             table.email.requires = \
                 [IS_EMAIL(error_message=self.messages.invalid_email),
                  IS_NOT_IN_DB(db, table.email)]
+            if not self.settings.email_case_sensitive:
+                table.email.requires.insert(1,IS_LOWER())
             table.registration_key.default = ''
         settings.table_user = db[settings.table_user_name]
         if not settings.table_group_name in db.tables:
