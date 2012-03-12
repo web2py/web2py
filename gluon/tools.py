@@ -4166,9 +4166,10 @@ class PluginManager(object):
         return key in self.__dict__
 
 class Expose(object):
-    def __init__(self,base=None):
+    def __init__(self,base=None,basename='base'):
         current.session.forget()
         base = base or os.path.join(current.request.folder,'static')
+        self.basename = basename
         args = self.args = current.request.raw_args and \
             current.request.raw_args.split('/') or []
         filename = os.path.join(base,*args)
@@ -4182,10 +4183,11 @@ class Expose(object):
                             if os.path.isdir(f) and not self.isprivate(f)]
         self.filenames = [f[len(path)-1:] for f in sorted(glob.glob(path)) \
                             if not os.path.isdir(f) and not self.isprivate(f)]
-    def breadcrumbs(self):
+
+    def breadcrumbs(self, basename):
         path = []
         span = SPAN()
-        span.append(A('base',_href=URL()))
+        span.append(A(basename,_href=URL()))
         span.append('/')
         args = current.request.raw_args and \
             current.request.raw_args.split('/') or []
@@ -4194,15 +4196,18 @@ class Expose(object):
             span.append(A(arg,_href=URL(args='/'.join(path))))
             span.append('/')
         return span
+
     def table_folders(self):
         return TABLE(*[TR(TD(A(folder,_href=URL(args=self.args+[folder])))) \
                            for folder in self.folders])    
     @staticmethod
     def isprivate(f):
         return 'private' in f or f.startswith('.') or f.endswith('~')
+
     @staticmethod
     def isimage(f):
         return f.rsplit('.')[-1].lower() in ('png','jpg','jpeg','gif','tiff')
+
     def table_files(self,width=160):
         return TABLE(*[TR(TD(A(f,_href=URL(args=self.args+[f]))),
                           TD(IMG(_src=URL(args=self.args+[f]),
@@ -4211,11 +4216,12 @@ class Expose(object):
                            for f in self.filenames])
     def xml(self):
         return DIV(
-            H2(self.breadcrumbs()),
+            H2(self.breadcrumbs(self.basename)),
             H3('Folders'),
             self.table_folders(),
             H3('Files'),
             self.table_files()).xml()
+
 
 if __name__ == '__main__':
     import doctest
