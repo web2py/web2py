@@ -1317,7 +1317,8 @@ class BaseAdapter(ConnectionPool):
             rows = list(rows)
         limitby = attributes.get('limitby', None) or (0,)
         rows = self.rowslice(rows,limitby[0],None)
-        return self.parse(rows,fields,self._colnames)
+        processor = attributes.get('processor',self.parse)
+        return processor(rows,fields,self._colnames)
 
     def _count(self, query, distinct=None):
         tablenames = self.tables(query)
@@ -3758,7 +3759,8 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                           item.key().name()) or getattr(item, t) for t in fields]
             for item in items]
         colnames = ['%s.%s' % (tablename, t) for t in fields]
-        return self.parse(rows, fields, colnames, False)
+        processor = attributes.get('processor',self.parse)
+        return processor(rows,fields,colnames,False)
 
 
     def count(self,query,distinct=None):
@@ -3952,7 +3954,8 @@ class CouchDBAdapter(NoSQLAdapter):
         tablename = colnames[0].split('.')[0]
         ctable = self.connection[tablename]
         rows = [cols['value'] for cols in ctable.query(fn)]
-        return self.parse(rows, fields, colnames, False)
+        processor = attributes.get('processor',self.parse)
+        return processor(rows,fields,colnames,False)
 
     def delete(self,tablename,query):
         if not isinstance(query,Query):
@@ -4289,7 +4292,8 @@ class MongoDBAdapter(NoSQLAdapter):
             rows.append(row)
                     #else the id is not supposed to be included. Work around error. mongo always sends key:(
 
-        return self.parse(rows,fields,mongofields_dict.keys(),False)
+        processor = attributes.get('processor',self.parse)
+        return processor(rows,fields,mongofields_dict.keys(),False)
 
     def INVERT(self,first):
         #print "in invert first=%s" % first
@@ -5242,8 +5246,8 @@ class IMAPAdapter(NoSQLAdapter):
         tablename, imapqry_array , fieldnames = self._select(query,fields,attributes)
         # parse result and return a rows object
         colnames = fieldnames
-        result = self.parse(imapqry_array, fields, colnames)
-        return result
+        processor = attributes.get('processor',self.parse)
+        return processor(imapqry_array, fields, colnames)
 
     def update(self, tablename, query, fields):
         # print "_update"
