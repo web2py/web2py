@@ -55,11 +55,16 @@ __all__ = [
     'IS_URL',
     ]
 
+try:
+    from globals import current
+    have_current = True
+except ImportError:
+    have_current = False
+
 def translate(text):
     if text is None:
         return None
-    elif isinstance(text,(str,unicode)):
-        from globals import current
+    elif isinstance(text,(str,unicode)) and have_current:
         if hasattr(current,'T'):
             return str(current.T(text))
     return str(text)
