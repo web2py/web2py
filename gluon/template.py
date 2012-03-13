@@ -289,7 +289,7 @@ class TemplateParser(object):
         if delimiters != self.default_delimiters:
             escaped_delimiters = (re.escape(delimiters[0]),re.escape(delimiters[1]))
             self.r_tag = re.compile(r'(%s.*?%s)' % escaped_delimiters, re.DOTALL)
-        elif context.has_key('response'):
+        elif context.has_key('response') and hasattr(context['response'],'delimiters'):
             if context['response'].delimiters != self.default_delimiters:
                 escaped_delimiters = (re.escape(context['response'].delimiters[0]),
                                       re.escape(context['response'].delimiters[1]))
