@@ -435,7 +435,7 @@ class TemplateParser(object):
         filename = eval(filename, self.context)
 
         # Get the path of the file on the system.
-        filepath = os.path.join(self.path, filename)
+        filepath = self.path and os.path.join(self.path, filename) or filename
 
         # try to read the text.
         try:
