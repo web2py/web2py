@@ -27,6 +27,11 @@ import thread
 import os
 import logging
 import re
+try:
+    import settings
+    have_settings = True
+except ImportError:
+    have_settings = False
 
 logger = logging.getLogger("web2py.cache")
 
@@ -367,8 +372,8 @@ class Cache(object):
             the global request object
         """
         # GAE will have a special caching
-        import settings
-        if settings.global_settings.web2py_runtime_gae:
+        
+        if have_settings and settings.global_settings.web2py_runtime_gae:
             from contrib.gae_memcache import MemcacheClient
             self.ram=self.disk=MemcacheClient(request)
         else:
