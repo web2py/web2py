@@ -816,6 +816,8 @@ class SQLFORM(FORM):
                 self.custom.widget.id = widget
                 continue
 
+            self.readonly = readonly
+
             if readonly and not ignore_rw and not field.readable:
                 continue
 
@@ -1022,6 +1024,8 @@ class SQLFORM(FORM):
         elseif detect_record_change == False than:
           form.record_changed = None
         """
+
+        if self.readonly: return False
 
         if request_vars.__class__.__name__ == 'Request':
             request_vars = request_vars.post_vars
