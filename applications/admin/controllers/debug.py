@@ -166,14 +166,19 @@ def toggle_breakpoint():
     try:
         filename = os.path.join(request.env['applications_parent'], 
                                 'applications', request.vars.filename)
-        start = 0
-        sel_start = int(request.vars.sel_start)
-        for lineno, line in enumerate(request.vars.data.split("\n")):
-            if sel_start <= start:
-                break
-            start += len(line) + 1
+        if not request.vars.data:
+            # ace send us the line number!
+            lineno = int(request.vars.sel_start) + 1
         else:
-            lineno = None
+            # editarea send us the offset, manually check the cursor pos
+            start = 0
+            sel_start = int(request.vars.sel_start)
+            for lineno, line in enumerate(request.vars.data.split("\n")):
+                if sel_start <= start:
+                    break
+                start += len(line) + 1
+            else:
+                lineno = None
         if lineno is not None:
             for bp in qdb_debugger.do_list_breakpoint():
                 no, bp_filename, bp_lineno, temporary, enabled, hits, cond = bp

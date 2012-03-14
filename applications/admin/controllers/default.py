@@ -220,12 +220,15 @@ def site():
 def pack():
     app = get_app()
 
-    if len(request.args) == 1:
-        fname = 'web2py.app.%s.w2p' % app
-        filename = app_pack(app, request)
-    else:
-        fname = 'web2py.app.%s.compiled.w2p' % app
-        filename = app_pack_compiled(app, request)
+    try:
+        if len(request.args) == 1:
+            fname = 'web2py.app.%s.w2p' % app
+            filename = app_pack(app, request, raise_ex=True)
+        else:
+            fname = 'web2py.app.%s.compiled.w2p' % app
+            filename = app_pack_compiled(app, request, raise_ex=True)
+    except Exception, e:
+        filename = None
 
     if filename:
         response.headers['Content-Type'] = 'application/w2p'
@@ -233,7 +236,7 @@ def pack():
         response.headers['Content-Disposition'] = disposition
         return safe_read(filename, 'rb')
     else:
-        session.flash = T('internal error')
+        session.flash = T('internal error: %s' % e)
         redirect(URL('site'))
 
 def pack_plugin():
@@ -479,7 +482,7 @@ def edit():
                 offset = e.offset - (len(e.text) - len(e.text.splitlines()[-1]))
             else:
                 offset = 0
-            highlight = {'start': start, 'end': start + offset + 1}
+            highlight = {'start': start, 'end': start + offset + 1, 'lineno': e.lineno}
             try:
                 ex_name = e.__class__.__name__
             except:

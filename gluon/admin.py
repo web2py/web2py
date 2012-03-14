@@ -38,7 +38,7 @@ def apath(path='', r=None):
     return os.path.join(opath, path).replace('\\', '/')
 
 
-def app_pack(app, request):
+def app_pack(app, request, raise_ex=False):
     """
     Builds a w2p package for the application
 
@@ -59,11 +59,13 @@ def app_pack(app, request):
         filename = apath('../deposit/%s.w2p' % app, request)
         w2p_pack(filename, apath(app, request))
         return filename
-    except Exception:
+    except Exception, e:
+        if raise_ex:
+            raise
         return False
 
 
-def app_pack_compiled(app, request):
+def app_pack_compiled(app, request, raise_ex=False):
     """
     Builds a w2p bytecode-compiled package for the application
 
@@ -84,7 +86,9 @@ def app_pack_compiled(app, request):
         filename = apath('../deposit/%s.w2p' % app, request)
         w2p_pack(filename, apath(app, request), compiled=True)
         return filename
-    except Exception:
+    except Exception, e:
+        if raise_ex:
+            raise
         return None
 
 def app_cleanup(app, request):

@@ -7,6 +7,52 @@
 
 {{if TEXT_EDITOR == 'amy':}}
 {{include 'default/amy_ajax.html'}}
+{{elif TEXT_EDITOR == 'ace':}}
+<script src="{{=URL(r=request,c='static',f='ace/src/ace.js')}}" type="text/javascript" charset="utf-8"></script>
+<script src="{{=URL(r=request,c='static',f='ace/src/theme-%s.js' % TEXT_EDITOR_THEME)}}" type="text/javascript" charset="utf-8"></script>
+<script>var theme = "ace/theme/{{=TEXT_EDITOR_THEME}}";</script>
+    {{if filetype == 'python':}}
+        <script src="{{=URL(r=request,c='static',f='ace/src/mode-python.js')}}" type="text/javascript" charset="utf-8"></script>
+        <script>
+            var mode = require("ace/mode/python").Mode;
+        </script>
+    {{elif filetype in ('html', 'load'):}}
+        <script src="{{=URL(r=request,c='static',f='ace/src/mode-html.js')}}" type="text/javascript" charset="utf-8"></script>
+        <script>
+            var mode = require("ace/mode/html").Mode;
+        </script>
+    {{elif filetype == 'js':}}
+        <script src="{{=URL(r=request,c='static',f='ace/src/mode-javascript.js')}}" type="text/javascript" charset="utf-8"></script>
+        <script>
+            var mode = require("ace/mode/javascript").Mode;
+        </script>
+    {{elif filetype == 'css':}}
+        <script src="{{=URL(r=request,c='static',f='ace/src/mode-css.js')}}" type="text/javascript" charset="utf-8"></script>
+        <script>
+            var mode = require("ace/mode/css").Mode;
+        </script>
+    {{else:}}
+        <script src="{{=URL(r=request,c='static',f='ace/src/mode-text.js')}}" type="text/javascript" charset="utf-8"></script>
+        <script>
+            var mode = require("ace/mode/text").Mode;
+        </script>
+    {{pass}}
+    {{if TEXT_EDITOR_KEYBINDING == 'emacs':}}
+        <script src="{{=URL(r=request,c='static',f='ace/src/keybinding-emacs.js')}}" type="text/javascript" charset="utf-8"></script>
+        <script>
+            var keybinding = require("ace/keyboard/keybinding/emacs").Emacs;
+        </script>
+    {{elif TEXT_EDITOR_KEYBINDING == 'emacs':}}
+        <script src="{{=URL(r=request,c='static',f='ace/src/keybinding-vi.js')}}" type="text/javascript" charset="utf-8"></script>
+        <script>
+            var keybinding = require("ace/keyboard/keybinding/vim").Vim;
+        </script>
+    {{else:}}
+        <script>
+            var keybinding = null;
+        </script>
+    {{pass}}
+<script language="Javascript" type="text/javascript" src="{{=URL('static','js/ajax_editor.js')}}"></script>
 {{else:}}
 <script language="Javascript" type="text/javascript" src="{{=URL(r=request,c='static',f='edit_area/edit_area_full.js')}}"></script><script language="Javascript" type="text/javascript">
 editAreaLoader.init({id: "body",start_highlight: true,allow_resize: "both",allow_toggle: {{=editarea_preferences['ALLOW_TOGGLE']}},language: "en",syntax: "{{=filetype}}",replace_tab_by_spaces: {{=editarea_preferences['REPLACE_TAB_BY_SPACES']}}, font_size: {{=editarea_preferences['FONT_SIZE']}}, fullscreen: {{=editarea_preferences['FULL_SCREEN']}}, display: "{{=editarea_preferences['DISPLAY']}}", show_line_colors: true, word_wrap: true, save_callback: "doClickSave" {{if filetype=='html':}},plugins: "zencoding"{{pass}} });
@@ -65,8 +111,33 @@ jQuery(document).ready(function(){
     {{=T('Saved file hash:')}}
     <input type="input" name="file_hash" value="{{=file_hash}}" readonly="readonly"/>
     {{=T('Last saved on:')}} <input type="input" name="saved_on" value="{{=saved_on}}" readonly="readonly"/>
-    {{if TEXT_EDITOR=='amy':}}
-    <textarea style="width: auto; height:400px;direction:ltr;" rows="58" cols="100" -amy-enabled="true" id="body" name="data">{{=data}}</textarea>
+    {{if TEXT_EDITOR == 'amy':}}
+    <textarea style="width: auto; height:400px;direction:ltr;" rows="58" cols="100" -amy-enabled="true" id="body" name="data"><div id="editor"/>{{=data}}</textarea>
+    {{elif TEXT_EDITOR == 'ace':}}
+    <div id="editor" style="height: 500px; width: auto; position: relative">{{=data}}</div>
+<script>
+window.onload = function() {
+    var editor = ace.edit("editor");
+    editor.setTheme(theme);
+    editor.getSession().setMode(new mode());
+    if (keybinding) {
+        editor.setKeyboardHandler(keybinding);
+    }
+	editor.commands.addCommand({
+		name: 'saveFile',
+		bindKey: {
+			win: 'Ctrl-S',
+			mac: 'Command-S',
+			sender: 'editor|cli'
+		},
+		exec: function(env, args, request) {
+			doClickSave();
+		}
+	});
+    window.ace_editor = editor;
+};
+</script>
+
     {{else:}}
     <textarea cols="80" rows="25" id="body" style="direction:ltr;" name="data">{{=data}}</textarea>
     {{pass}}

@@ -1,4 +1,4 @@
-import os, time
+import base64, os, time
 from gluon import portalocker
 from gluon.admin import apath
 from gluon.fileutils import read_file
@@ -125,7 +125,7 @@ if request.controller == "webservices":
     if not basic or not basic[:6].lower() == 'basic ':
         raise HTTP(401,"Wrong credentials")
     (username, password) = base64.b64decode(basic[6:]).split(':')
-    if not verify_password(password) or not is_manager():
+    if not verify_password(password) or MULTI_USER_MODE:
         time.sleep(10)
         raise HTTP(403,"Not authorized")
 elif not session.authorized and not \
