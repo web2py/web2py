@@ -7615,6 +7615,17 @@ class Set(object):
         ret and [f(self,update_fields) for f in table._after_update]
         return ret
 
+    def update_naive(self, **update_fields):
+        """
+        same as update but does not call table._before_update and _after_update
+        """
+        tablename = self.db._adapter.get_table(self.query)
+        table = self.db[tablename]
+        fields = table._listify(update_fields,update=True)
+        if not fields: raise SyntaxError, "No fields to update"        
+        ret = self.db._adapter.update(tablename,self.query,fields)
+        return ret
+
     def validate_and_update(self, **update_fields):
         tablename = self.db._adapter.get_table(self.query)
         response = Row()
