@@ -7608,10 +7608,9 @@ class Set(object):
     def update(self, **update_fields):
         tablename = self.db._adapter.get_table(self.query)
         table = self.db[tablename]
-        fields = table._listify(update_fields,update=True)
-        if not fields:
-            raise SyntaxError, "No fields to update"        
         [f(self,update_fields) for f in table._before_update]
+        fields = table._listify(update_fields,update=True)
+        if not fields: raise SyntaxError, "No fields to update"        
         ret = self.db._adapter.update(tablename,self.query,fields)
         ret and [f(self,update_fields) for f in table._after_update]
         return ret
@@ -7628,13 +7627,12 @@ class Set(object):
             else:
                 new_fields[key] = value
         table = self.db[tablename]
-        fields = table._listify(new_fields,update=True)
-        if not fields:
-            raise SyntaxError, "No fields to update"
         if response.errors:
             response.updated = None
         else:
             [f(self,new_fields) for f in table._before_update]
+            fields = table._listify(new_fields,update=True)
+            if not fields: raise SyntaxError, "No fields to update"
             ret = self.db._adapter.update(tablename,self.query,fields)
             ret and [f(self,new_fields) for f in table._after_update]
             response.update = ret
