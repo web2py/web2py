@@ -6555,6 +6555,14 @@ class Table(dict):
         self._trigger_name = args.get('trigger_name',None) or \
             db and db._adapter.trigger_name(tablename)
         self._common_filter = args.get('common_filter', None)
+
+        self._before_create = None
+        self._before_update = None
+        self._before_delete = None
+        self._after_create = None
+        self._after_update = None
+        self._after_delete = None
+
         primarykey = args.get('primarykey', None)
         fieldnames,newfields=set(),[]
         if primarykey:
@@ -6831,8 +6839,11 @@ class Table(dict):
     def _insert(self, **fields):
         return self._db._adapter._insert(self,self._listify(fields))
 
-    def insert(self, **fields):
-        return self._db._adapter.insert(self,self._listify(fields))
+    def insert(self, **fields):        
+        self._before_create and self._before_create(fields)
+        ret =  self._db._adapter.insert(self,self._listify(fields))
+        ret and self._before_create and self._after_create(fields)
+        return ret
 
     def validate_and_insert(self,**fields):
         response = Row()
@@ -6867,7 +6878,10 @@ class Table(dict):
         here items is a list of dictionaries
         """
         items = [self._listify(item) for item in items]
-        return self._db._adapter.bulk_insert(self,items)
+        self._before_create and [self._before_create(item) for item in items]
+        ret = self._db._adapter.bulk_insert(self,items)
+        self._after_create and [self._after_create(item) for item in items]
+        return ret
 
     def _truncate(self, mode = None):
         return self._db._adapter._truncate(self, mode)
@@ -7585,16 +7599,25 @@ class Set(object):
 
     def delete(self):
         tablename=self.db._adapter.get_table(self.query)
-        self.delete_uploaded_files()
-        return self.db._adapter.delete(tablename,self.query)
+        table = self.db[tablename]
+        if not(table._before_delete and table._before_delete(self)):
+            self.delete_uploaded_files()
+        ret = self.db._adapter.delete(tablename,self.query)
+        ret and table and table._after_delete and table._after_delete(self)
+        return ret
 
     def update(self, **update_fields):
         tablename = self.db._adapter.get_table(self.query)
-        fields = self.db[tablename]._listify(update_fields,update=True)
+        table = self.db[tablename]
+        fields = table._listify(update_fields,update=True)
         if not fields:
-            raise SyntaxError, "No fields to update"
-        self.delete_uploaded_files(update_fields)
-        return self.db._adapter.update(tablename,self.query,fields)
+            raise SyntaxError, "No fields to update"        
+        if not(table._before_update and
+               table._before_update(self,update_fields)):
+            self.delete_uploaded_files(update_fields)
+        ret = self.db._adapter.update(tablename,self.query,fields)
+        ret and table._after_update and table._after_update(self,update_fields)
+        return ret
 
     def validate_and_update(self, **update_fields):
         tablename = self.db._adapter.get_table(self.query)
@@ -7607,14 +7630,19 @@ class Set(object):
                 response.errors[key] = error
             else:
                 new_fields[key] = value
-        fields = self.db[tablename]._listify(new_fields,update=True)
+        table = self.db[tablename]
+        fields = table._listify(new_fields,update=True)
         if not fields:
             raise SyntaxError, "No fields to update"
         if response.errors:
             response.updated = None
         else:
-            self.delete_uploaded_files(new_fields)
-            response.updated = self.db._adapter.update(tablename,self.query,fields)
+            if not(table._before_update and
+                   table._before_update(self,update_fields)):
+                self.delete_uploaded_files(new_fields)
+            ret = self.db._adapter.update(tablename,self.query,fields)
+            ret and table._after_update and table._after_update(self,update_fields)
+            response.update = ret
         return response
 
     def delete_uploaded_files(self, upload_fields=None):
