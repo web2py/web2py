@@ -6840,7 +6840,7 @@ class Table(dict):
         return self._db._adapter._insert(self,self._listify(fields))
 
     def insert(self, **fields):        
-        [f(fields) for f in self._before_create]
+        if any(f(fields) for f in self._before_create): return 0
         ret =  self._db._adapter.insert(self,self._listify(fields))
         ret and [f(fields) for f in self._before_create]
         return ret
@@ -6878,7 +6878,7 @@ class Table(dict):
         here items is a list of dictionaries
         """
         items = [self._listify(item) for item in items]
-        [[f(item) for item in items] for f in self._before_create]
+        if any(f(item) for item in items for f in self._before_create):return 0
         ret = self._db._adapter.bulk_insert(self,items)
         ret and [[f(item) for item in items] for f in self._after_create]
         return ret
@@ -7600,7 +7600,7 @@ class Set(object):
     def delete(self):
         tablename=self.db._adapter.get_table(self.query)
         table = self.db[tablename]
-        [f(self) for f in table._before_delete]        
+        if any(f(self) for f in table._before_delete): return 0
         ret = self.db._adapter.delete(tablename,self.query)
         ret and [f(self) for f in table._after_delete]
         return ret
@@ -7608,7 +7608,7 @@ class Set(object):
     def update(self, **update_fields):
         tablename = self.db._adapter.get_table(self.query)
         table = self.db[tablename]
-        [f(self,update_fields) for f in table._before_update]
+        if any(f(self,update_fields) for f in table._before_update): return 0
         fields = table._listify(update_fields,update=True)
         if not fields: raise SyntaxError, "No fields to update"        
         ret = self.db._adapter.update(tablename,self.query,fields)
@@ -7630,11 +7630,13 @@ class Set(object):
         if response.errors:
             response.updated = None
         else:
-            [f(self,new_fields) for f in table._before_update]
-            fields = table._listify(new_fields,update=True)
-            if not fields: raise SyntaxError, "No fields to update"
-            ret = self.db._adapter.update(tablename,self.query,fields)
-            ret and [f(self,new_fields) for f in table._after_update]
+            if not any(f(self,new_fields) for f in table._before_update):
+                fields = table._listify(new_fields,update=True)
+                if not fields: raise SyntaxError, "No fields to update"
+                ret = self.db._adapter.update(tablename,self.query,fields)
+                ret and [f(self,new_fields) for f in table._after_update]
+            else:
+                ret = 0
             response.update = ret
         return response
 
@@ -7649,7 +7651,7 @@ class Set(object):
                    and table[f].uploadfield == True
                    and table[f].autodelete]
         if not fields:
-            return
+            return False
         for record in self.select(*[table[f] for f in fields]):
             for fieldname in fields:
                 field = table[fieldname]
@@ -7672,6 +7674,7 @@ class Set(object):
                     oldpath = os.path.join(uploadfolder, oldname)
                     if os.path.exists(oldpath):
                         os.unlink(oldpath)
+        return False
 
 def update_record(pack, a=None):
     (colset, table, id) = pack
