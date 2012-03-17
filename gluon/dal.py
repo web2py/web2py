@@ -6556,10 +6556,10 @@ class Table(dict):
             db and db._adapter.trigger_name(tablename)
         self._common_filter = args.get('common_filter', None)
 
-        self._before_create = []
+        self._before_insert = []
         self._before_update = [lambda self,fs:self.delete_uploaded_files(fs)]
         self._before_delete = [lambda self:self.delete_uploaded_files()]
-        self._after_create = []
+        self._after_insert = []
         self._after_update = []
         self._after_delete = []
 
@@ -6840,9 +6840,9 @@ class Table(dict):
         return self._db._adapter._insert(self,self._listify(fields))
 
     def insert(self, **fields):        
-        if any(f(fields) for f in self._before_create): return 0
+        if any(f(fields) for f in self._before_insert): return 0
         ret =  self._db._adapter.insert(self,self._listify(fields))
-        ret and [f(fields) for f in self._before_create]
+        ret and [f(fields) for f in self._before_insert]
         return ret
 
     def validate_and_insert(self,**fields):
@@ -6878,9 +6878,9 @@ class Table(dict):
         here items is a list of dictionaries
         """
         items = [self._listify(item) for item in items]
-        if any(f(item) for item in items for f in self._before_create):return 0
+        if any(f(item) for item in items for f in self._before_insert):return 0
         ret = self._db._adapter.bulk_insert(self,items)
-        ret and [[f(item) for item in items] for f in self._after_create]
+        ret and [[f(item) for item in items] for f in self._after_insert]
         return ret
 
     def _truncate(self, mode = None):
