@@ -598,6 +598,8 @@ class Mail(object):
                     xcc['cc'] = cc
                 if bcc:
                     xcc['bcc'] = bcc
+                if reply_to:
+                    xcc['reply_to'] = reply_to
                 from google.appengine.api import mail
                 attachments = attachments and [(a.my_filename,a.my_payload) for a in attachments if not raw]
                 if attachments:
