@@ -309,7 +309,7 @@ def render(text,extra={},allowed={},sep='p'):
     >>> render('this is\\n### a subsubsection\\nparagraph')
     '<p>this is</p><h3>a subsubsection</h3><p>paragraph</p>'
     >>> render('**hello world**')
-    '<p><b>hello world</b></p>'
+    '<p><strong>hello world</strong></p>'
     >>> render('``hello world``')
     '<code class="">hello world</code>'
     >>> render('``hello world``:python')
@@ -319,7 +319,7 @@ def render(text,extra={},allowed={},sep='p'):
     >>> render("''hello world''")
     '<p><i>hello world</i></p>'
     >>> render('** hello** **world**')
-    '<p>** hello** <b>world</b></p>'
+    '<p>** hello** <strong>world</strong></p>'
 
     >>> render('- this\\n- is\\n- a list\\n\\nand this\\n- is\\n- another')
     '<ul><li>this</li><li>is</li><li>a list</li></ul><p>and this</p><ul><li>is</li><li>another</li></ul>'
@@ -347,7 +347,7 @@ def render(text,extra={},allowed={},sep='p'):
     '<p><audio src="http://example.com" controls></audio></p>'
 
     >>> render('[[this is a **link** http://example.com]]')
-    '<p><a href="http://example.com">this is a <b>link</b></a></p>'
+    '<p><a href="http://example.com">this is a <strong>link</strong></a></p>'
 
     >>> render("``aaa``:custom",extra=dict(custom=lambda text: 'x'+text+'x'))
     'xaaax'
