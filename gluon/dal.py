@@ -584,6 +584,8 @@ class BaseAdapter(ConnectionPool):
                      fake_migrate=False,
                      polymodel=None):
         fields = []
+        # PostGIS geo fields are added after the table has been created
+        postcreation_fields = [] 
         sql_fields = {}
         sql_fields_aux = {}
         TFK = {}
@@ -633,6 +635,27 @@ class BaseAdapter(ConnectionPool):
                 precision, scale = map(int,field.type[8:-1].split(','))
                 ftype = self.types[field.type[:7]] % \
                     dict(precision=precision,scale=scale)
+            elif field.type.startswith('geo'):
+                srid = self.srid
+                geotype, parms = field.type[:-1].split('(')
+                if not geotype in self.types:
+                    raise SyntaxError, 'Field: unknown field type: %s for %s' % \
+                        (field.type, field.name)
+                ftype = self.types[geotype]
+                if self.dbengine == 'postgres' and geotype == 'geometry':
+                    # parameters: schema, srid, dimension
+                    dimension = 2 # GIS.dimension ???
+                    parms = parms.split(',')
+                    if len(parms) == 3:
+                        schema, srid, dimension = parms
+                    elif len(parms) == 2:
+                        schema, srid = parms
+                    else:
+                        schema = parms[0]
+                    ftype = "SELECT AddGeometryColumn ('%%(schema)s', '%%(tablename)s', '%%(fieldname)s', %%(srid)s, '%s', %%(dimension)s);" % self.types[geotype]
+                    ftype = ftype % dict(schema=schema, tablename=tablename,
+                            fieldname=field.name, srid=srid, dimension=dimension)
+                    postcreation_fields.append(ftype)
             elif not field.type in self.types:
                 raise SyntaxError, 'Field: unknown field type: %s for %s' % \
                     (field.type, field.name)
@@ -661,7 +684,10 @@ class BaseAdapter(ConnectionPool):
                 not_null = self.NOT_NULL(field.default, field.type)
                 ftype = ftype.replace('NOT NULL', not_null)
             sql_fields_aux[field.name] = dict(sql=ftype)
-            fields.append('%s %s' % (field.name, ftype))
+            # Postgres - PostGIS:
+            # geometry fields are added after the table has been created, not now
+            if not (self.dbengine == 'postgres' and field.type.startswith('geom')):
+                fields.append('%s %s' %(field.name, ftype))
         other = ';'
 
         # backend-specific extensions to fields
@@ -718,6 +744,10 @@ class BaseAdapter(ConnectionPool):
             if not fake_migrate:
                 self.create_sequence_and_triggers(query,table)
                 table._db.commit()
+                # Postgres geom fields are added now, after the table has been created
+                for query in postcreation_fields:
+                    self.execute(query)
+                    table._db.commit()
             if table._dbt:
                 tfile = self.file_open(table._dbt, 'w')
                 cPickle.dump(sql_fields, tfile)
@@ -778,7 +808,12 @@ class BaseAdapter(ConnectionPool):
             query = None
             if not key in sql_fields_old:
                 sql_fields_current[key] = sql_fields[key]
-                query = ['ALTER TABLE %s ADD %s %s;' % \
+                if self.dbengine in ('postgres',) and \
+                   sql_fields[key]['type'].startswith('geometry'):
+                    # 'sql' == ftype in sql
+                    query = [ sql_fields[key]['sql'] ]
+                else:
+                    query = ['ALTER TABLE %s ADD %s %s;' % \
                          (tablename, key,
                           sql_fields_aux[key]['sql'].replace(', ', new_add))]
                 metadata_change = True
@@ -788,7 +823,13 @@ class BaseAdapter(ConnectionPool):
                 metadata_change = True
             elif not key in sql_fields:
                 del sql_fields_current[key]
-                if not self.dbengine in ('firebird',):
+                ftype = sql_fields_old[key]['type']
+                if self.dbengine in ('postgres',) and ftype.startswith('geometry'):
+                    geotype, parms = ftype[:-1].split('(')
+                    schema = parms.split(',')[0]
+                    query = [ "SELECT DropGeometryColumn ('%(schema)s', '%(table)s', '%(field)s');" % \
+                        dict(schema=schema, table=tablename, field=key,) ]
+                elif not self.dbengine in ('firebird',):
                     query = ['ALTER TABLE %s DROP COLUMN %s;' % (tablename, key)]
                 else:
                     query = ['ALTER TABLE %s DROP %s;' % (tablename, key)]
@@ -1488,7 +1529,9 @@ class BaseAdapter(ConnectionPool):
             value = field_type.decoder(value)
         if not isinstance(field_type, str) or value is None:
             return value
-        elif field_type in ('string', 'text', 'password', 'upload'):
+        elif field_type in ('string', 'text', 'password', 'upload', 'dict'): # ???
+            return value
+        elif field_type.startswith('geo'):
             return value
         elif field_type == 'blob' and not blob_decode:
             return value 
@@ -1917,6 +1960,8 @@ class PostgreSQLAdapter(BaseAdapter):
         'list:integer': 'TEXT',
         'list:string': 'TEXT',
         'list:reference': 'TEXT',
+        'geometry': 'GEOMETRY',
+        'geography': 'GEOGRAPHY',
         }
 
     def adapt(self,obj):
@@ -1956,7 +2001,7 @@ class PostgreSQLAdapter(BaseAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
-                 adapter_args={}):
+                 adapter_args={}, srid=4326):
         if not self.drivers.get('psycopg2') and not self.drivers.get('pg8000'):
             raise RuntimeError, "Unable to import any drivers (psycopg2 or pg8000)"
         self.db = db
@@ -1965,6 +2010,7 @@ class PostgreSQLAdapter(BaseAdapter):
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self.srid = srid
         self.find_or_make_work_folder()
         library, uri = uri.split('://')[:2]
         m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?sslmode=(?P<sslmode>.+))?$').match(uri)
@@ -2045,7 +2091,94 @@ class PostgreSQLAdapter(BaseAdapter):
         elif first.type.startswith('list:'):
             key = '%|'+str(second).replace('|','||').replace('%','%%')+'|%'
         return '(%s ILIKE %s)' % (self.expand(first),self.expand(key,'string'))
+    
+    # GIS functions
+    
+    def ST_ASGEOJSON(self, first, second):
+        """
+        http://postgis.org/docs/ST_AsGeoJSON.html
+        """
+        return 'ST_AsGeoJSON(%s,%s,%s,%s)' %(second['version'], 
+            self.expand(first), second['precision'], second['options'])
 
+    def ST_ASTEXT(self, first):
+        """
+        http://postgis.org/docs/ST_AsText.html
+        """
+        return 'ST_AsText(%s)' %(self.expand(first))
+        
+#     def ST_CONTAINED(self, first, second):
+#         """
+#         non-standard function based on ST_Contains with parameters reversed
+#         http://postgis.org/docs/ST_Contains.html
+#         """
+#         return 'ST_Contains(%s,%s)' % (self.expand(second, first.type), self.expand(first))
+
+    def ST_CONTAINS(self, first, second):
+        """
+        http://postgis.org/docs/ST_Contains.html
+        """
+        return 'ST_Contains(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+      
+    def ST_DISTANCE(self, first, second):
+        """
+        http://postgis.org/docs/ST_Distance.html
+        """
+        return 'ST_Distance(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+          
+    def ST_EQUALS(self, first, second):
+        """
+        http://postgis.org/docs/ST_Equals.html
+        """
+        return 'ST_Equals(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+     
+    def ST_INTERSECTS(self, first, second):
+        """
+        http://postgis.org/docs/ST_Intersects.html
+        """
+        return 'ST_Intersects(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+    
+    def ST_OVERLAPS(self, first, second):
+        """
+        http://postgis.org/docs/ST_Overlaps.html
+        """
+        return 'ST_Overlaps(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+        
+    def ST_SIMPLIFY(self, first, second):
+        """
+        http://postgis.org/docs/ST_Simplify.html
+        """
+        return 'ST_Simplify(%s,%s)' %(self.expand(first), self.expand(second, 'double'))
+    
+    def ST_TOUCHES(self, first, second):
+        """
+        http://postgis.org/docs/ST_Touches.html
+        """
+        return 'ST_Touches(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+    
+    def ST_WITHIN(self, first, second):
+        """
+        http://postgis.org/docs/ST_Within.html
+        """
+        return 'ST_Within(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+
+    def represent(self, obj, fieldtype):
+        if fieldtype.startswith('geo'):
+            srid = 4326 # postGIS default srid for geometry
+            geotype, parms = fieldtype[:-1].split('(')
+            parms = parms.split(',')
+            if len(parms) >= 2:
+                schema, srid = parms[:2]
+            if fieldtype.startswith('geometry'):
+                value = "ST_GeomFromText('%s',%s)" %(obj, srid)
+            elif fieldtype.startswith('geography'):
+                value = "ST_GeogFromText('SRID=%s;%s')" %(srid, obj)
+#             else:
+#                 raise SyntaxError, 'Invalid field type %s' %fieldtype
+            return value
+        return BaseAdapter.represent(self, obj, fieldtype)
+        
+        
 class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
@@ -2242,6 +2375,8 @@ class MSSQLAdapter(BaseAdapter):
         'list:integer': 'TEXT',
         'list:string': 'TEXT',
         'list:reference': 'TEXT',
+        'geometry': 'geometry',
+        'geography': 'geography',
         }
 
     def EXTRACT(self,field,what):
@@ -2278,7 +2413,7 @@ class MSSQLAdapter(BaseAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=lambda x:x, driver_args={},
-                    adapter_args={}, fake_connect=False):
+                    adapter_args={}, fake_connect=False, srid=4326):
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
         self.db = db
@@ -2287,6 +2422,7 @@ class MSSQLAdapter(BaseAdapter):
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self.srid = srid
         self.find_or_make_work_folder()
         # ## read: http://bytes.com/groups/python/460325-cx_oracle-utf8
         uri = uri.split('://')[1]
@@ -2350,6 +2486,54 @@ class MSSQLAdapter(BaseAdapter):
         if maximum is None:
             return rows[minimum:]
         return rows[minimum:maximum]
+    
+    # GIS functions
+        
+    # No STAsGeoJSON in MSSQL
+             
+    def ST_ASTEXT(self, first):
+        return '%s.STAsText()' %(self.expand(first)) 
+
+    def ST_CONTAINS(self, first, second):
+        return '%s.STContains(%s)=1' %(self.expand(first), self.expand(second, first.type))
+      
+    def ST_DISTANCE(self, first, second):
+        return '%s.STDistance(%s)' %(self.expand(first), self.expand(second, first.type))
+  
+    def ST_EQUALS(self, first, second):
+        return '%s.STEquals(%s)=1' %(self.expand(first), self.expand(second, first.type))
+   
+    def ST_INTERSECTS(self, first, second):
+        return '%s.STIntersects(%s)=1' %(self.expand(first), self.expand(second, first.type))
+    
+    def ST_OVERLAPS(self, first, second):
+        return '%s.STOverlaps(%s)=1' %(self.expand(first), self.expand(second, first.type))
+
+    # no STSimplify in MSSQL
+   
+    def ST_TOUCHES(self, first, second):
+        return '%s.STTouches(%s)=1' %(self.expand(first), self.expand(second, first.type))
+    
+    def ST_WITHIN(self, first, second):
+        return '%s.STWithin(%s)=1' %(self.expand(first), self.expand(second, first.type))
+ 
+    def represent(self, obj, fieldtype):
+        if fieldtype.startswith('geometry'):
+            srid = 0 # MS SQL default srid for geometry
+            geotype, parms = fieldtype[:-1].split('(')
+            if parms:
+                srid = parms
+            return "geometry::STGeomFromText('%s',%s)" %(obj, srid)
+        elif fieldtype == 'geography':
+            srid = 4326 # MS SQL default srid for geography
+            geotype, parms = fieldtype[:-1].split('(')
+            if parms:
+                srid = parms
+            return "geography::STGeomFromText('%s',%s)" %(obj, srid)
+#             else:
+#                 raise SyntaxError, 'Invalid field type %s' %fieldtype
+            return "geometry::STGeomFromText('%s',%s)" %(obj, srid)
+        return BaseAdapter.represent(self, obj, fieldtype)
 
 
 class MSSQL2Adapter(MSSQLAdapter):
@@ -7157,6 +7341,42 @@ class Expression(object):
     def with_alias(self, alias):
         return Expression(self.db, self.db._adapter.AS, self, alias, self.type)
 
+    # GIS functions
+
+    def st_asgeojson(self, precision=15, options=0, version=1):
+        return Expression(self.db, self.db._adapter.ST_ASGEOJSON, self, 
+            dict(precision=precision, options=options, version=version), 'dict')
+        
+    def st_astext(self):
+        return Expression(self.db, self.db._adapter.ST_ASTEXT, self)
+        
+    def st_contained(self, value):
+        return Query(self.db, self.db._adapter.ST_CONTAINS, value, self)          
+    
+    def st_contains(self, value):
+        return Query(self.db, self.db._adapter.ST_CONTAINS, self, value)    
+  
+    def st_distance(self, other):
+        return Expression(self.db,self.db._adapter.ST_DISTANCE,self,other,self.type)
+                   
+    def st_equals(self, value):
+        return Query(self.db, self.db._adapter.ST_EQUALS, self, value)
+
+    def st_intersects(self, value):
+        return Query(self.db, self.db._adapter.ST_INTERSECTS, self, value) 
+            
+    def st_overlaps(self, value):
+        return Query(self.db, self.db._adapter.ST_OVERLAPS, self, value)
+
+    def st_simplify(self, value):
+        return Expression(self.db, self.db._adapter.ST_SIMPLIFY, self, value)
+        
+    def st_touches(self, value):
+        return Query(self.db, self.db._adapter.ST_TOUCHES, self, value)
+        
+    def st_within(self, value):
+        return Query(self.db, self.db._adapter.ST_WITHIN, self, value)  
+ 
     # for use in both Query and sortby
 
 
