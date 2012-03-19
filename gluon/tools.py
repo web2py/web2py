@@ -73,9 +73,11 @@ def call_or_redirect(f,*args):
         redirect(f)
 
 def replace_id(url, form):
-    if url and not url[0] == '/' and url[:4] != 'http':
-        return URL(url.replace('[id]', str(form.vars.id)))
-    return url
+    if url:
+        url = url.replace('[id]', str(form.vars.id))
+        if url[0] == '/' or url[:4] == 'http':
+            return url
+    return URL(url)
 
 class Mail(object):
     """
