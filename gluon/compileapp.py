@@ -577,7 +577,7 @@ def run_controller_in(controller, function, environment):
             vars = p(vars)
     if isinstance(vars,unicode):
         vars = vars.encode('utf8')
-    if hasattr(vars,'xml'):
+    elif hasattr(vars,'xml') and callable(vars.xml):
         vars = vars.xml()
     return vars
 
