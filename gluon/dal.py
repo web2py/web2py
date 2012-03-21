@@ -7026,7 +7026,7 @@ class Table(dict):
     def insert(self, **fields):        
         if any(f(fields) for f in self._before_insert): return 0
         ret =  self._db._adapter.insert(self,self._listify(fields))
-        ret and [f(fields) for f in self._before_insert]
+        ret and [f(fields) for f in self._after_insert]
         return ret
 
     def validate_and_insert(self,**fields):

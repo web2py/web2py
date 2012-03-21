@@ -52,7 +52,7 @@ current = threading.local()  # thread-local storage for request-scope globals
 css_template = '<link href="%s" rel="stylesheet" type="text/css" />'
 js_template = '<script src="%s" type="text/javascript"></script>'
 coffee_template = '<script src="%s" type="text/coffee"></script>'
-lass_template = '<link href="%s" rel="stylesheet/less" type="text/css" />'
+less_template = '<link href="%s" rel="stylesheet/less" type="text/css" />'
 css_inline = '<style type="text/css">\n%s\n</style>'
 js_inline = '<script type="text/javascript">\n%s\n</script>'
 
