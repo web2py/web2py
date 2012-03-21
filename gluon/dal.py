@@ -1444,8 +1444,8 @@ class BaseAdapter(ConnectionPool):
             if not obj:
                 obj = []
             elif not isinstance(obj, (list, tuple)):
-                obj = [int(obj)]
-            elif fieldtype.startswith('list:string'):
+                obj = [obj]
+            if fieldtype.startswith('list:string'):
                 obj = [str(item) for item in obj]
             else:
                 obj = [int(item) for item in obj]
