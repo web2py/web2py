@@ -1001,6 +1001,7 @@ class Auth(object):
 
         settings.retrieve_password_onvalidation = []
         settings.reset_password_onvalidation = []
+        settings.reset_password_onaccept = []
 
         settings.email_case_sensitive = True                                   
         settings.username_case_sensitive = True
