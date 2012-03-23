@@ -259,7 +259,7 @@ regex_maps = [
     (re.compile('[ \t\r]+\n'),'\n'),
     (re.compile('[ \t\r]+\n'),'\n'),
     (re.compile('\*\*(?P<t>[^\s\*]+( +[^\s\*]+)*)\*\*'),'<strong>\g<t></strong>'),
-    (re.compile("''(?P<t>[^\s']+( +[^\s']+)*)''"),'<i>\g<t></i>'),
+    (re.compile("''(?P<t>[^\s']+( +[^\s']+)*)''"),'<em>\g<t></em>'),
     (re.compile('^#{6} (?P<t>[^\n]+)',re.M),'\n\n<<h6>\g<t></h6>\n'),
     (re.compile('^#{5} (?P<t>[^\n]+)',re.M),'\n\n<<h5>\g<t></h5>\n'),
     (re.compile('^#{4} (?P<t>[^\n]+)',re.M),'\n\n<<h4>\g<t></h4>\n'),
@@ -317,7 +317,7 @@ def render(text,extra={},allowed={},sep='p'):
     >>> render('``\\nhello\\nworld\\n``:python')
     '<pre><code class="python">hello\\nworld</code></pre>'
     >>> render("''hello world''")
-    '<p><i>hello world</i></p>'
+    '<p><em>hello world</em></p>'
     >>> render('** hello** **world**')
     '<p>** hello** <strong>world</strong></p>'
 
