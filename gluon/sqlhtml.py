@@ -537,6 +537,12 @@ class AutocompleteWidget(object):
                  orderby=None, limitby=(0,10),
                  keyword='_autocomplete_%(fieldname)s',
                  min_length=2):
+
+        self.help_fields = kwargs.get('help_fields',[])
+        self.help_string = kwargs.get('help_string',None)
+        if self.help_fields and not self.help_string:
+            self.help_string = ' '.join('%%(%s)s' for f in self.help_fields)
+
         self.request = request
         self.keyword = keyword % dict(fieldname=field.name)
         self.db = db or field._db
@@ -554,7 +560,9 @@ class AutocompleteWidget(object):
             self.callback()
         else:
             self.url = request
+
     def callback(self):
+
         if self.keyword in self.request.vars:
             field = self.fields[0]
             rows = self.db(field.like(self.request.vars[self.keyword]+'%'))\
@@ -562,11 +570,15 @@ class AutocompleteWidget(object):
             if rows:
                 if self.is_reference:
                     id_field = self.fields[1]
+                    if self.help_fields:
+                        options = [OPTION(self.help_string % dict([(h.name,s[h.name]) for h in self.fields[:1]+self.help_fields]), 
+                                          _value=s[id_field.name], _selected=(k==0)) for k,s in enumerate(rows)]
+                    else:
+                        options = [OPTION(s[field.name],_value=s[id_field.name],
+                                          _selected=(k==0)) for k,s in enumerate(rows)]
                     raise HTTP(200,SELECT(_id=self.keyword,_class='autocomplete',
                                           _size=len(rows),_multiple=(len(rows)==1),
-                                          *[OPTION(s[field.name],_value=s[id_field.name],
-                                                   _selected=(k==0)) \
-                                                for k,s in enumerate(rows)]).xml())
+                                          *options).xml())
                 else:
                     raise HTTP(200,SELECT(_id=self.keyword,_class='autocomplete',
                                           _size=len(rows),_multiple=(len(rows)==1),
@@ -574,8 +586,8 @@ class AutocompleteWidget(object):
                                                    _selected=(k==0)) \
                                                 for k,s in enumerate(rows)]).xml())
             else:
-
                 raise HTTP(200,'')
+
     def __call__(self,field,value,**attributes):
         default = dict(
             _type = 'text',
