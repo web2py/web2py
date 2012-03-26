@@ -11,3 +11,14 @@
 <div class="license_text legalese">{{=license}}</div>
 </ul>
 
+<script language="javascript" type="text/javascript" src="{{=URL('static','js/jquery.flot.js')}}"></script>
+
+<h3>{{=T('Project Progress')}}</h3>
+<p>
+<center>
+<div id="placeholder" style="width:600px;height:300px;"></div>
+</center>
+<script type="text/javascript">
+jQuery(function () { jQuery.plot(jQuery("#placeholder"), [ {{=progress}} ]); });
+</script>
+</p>
