@@ -1360,14 +1360,16 @@ def reload_routes():
 
 def manage_students():
     if not (MULTI_USER_MODE and is_manager()):
-        raise HTTP(401)
+        session.flash = 'Not Authorized'
+        redirect(URL('site'))
     db.auth_user.registration_key.writable = True
     grid = SQLFORM.grid(db.auth_user)
     return locals()
 
 def bulk_register():
     if not (MULTI_USER_MODE and is_manager()):
-        raise HTTP(401)
+        session.flash = 'Not Authorized'
+        redirect(URL('site'))
     form = SQLFORM.factory(Field('emails','text'))
     if form.process().accepted:
         emails = [x.strip() for x in form.vars.emails.split('\n') if x.strip()]

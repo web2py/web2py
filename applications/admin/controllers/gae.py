@@ -12,6 +12,10 @@ except:
     session.flash='sorry, only on Unix systems'
     redirect(URL(request.application,'default','site'))
 
+if MULTI_USER_MODE and not is_manager():
+    session.flash = 'Not Authorized'
+    redirect(URL('default','site'))
+
 forever=10**8
 
 def kill():

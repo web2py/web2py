@@ -22,7 +22,7 @@ if request.args:
                           URL(_a,'mercurial','commit',args=_t)))
 
 if not session.authorized:
-    response.menu = [(T('Login'), True, '')]
+    response.menu = [(T('Login'), True, URL('site'))]
 else:
     response.menu.append((T('Logout'), False,
                           URL(_a,'default',f='logout')))
