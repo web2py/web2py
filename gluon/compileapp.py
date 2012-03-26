@@ -111,7 +111,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
          url=None,user_signature=False, timeout=None, times=1,
          content='loading...',**attr):
     """  LOAD a component into the action's document
-    
+
     Timing options:
     -times: An integer or string ("infinity"/"continuous")
     specifies how many times the component is requested
@@ -688,6 +688,7 @@ def test():
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

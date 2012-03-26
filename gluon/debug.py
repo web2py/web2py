@@ -103,10 +103,10 @@ def check_interaction(fn):
             interact_lock.release()
     return check_fn
 
-      
+
 class WebDebugger(qdb.Frontend):
     "Qdb web2py interface"
-    
+
     def __init__(self, pipe, completekey='tab', stdin=None, stdout=None):
         qdb.Frontend.__init__(self, pipe)
         self.clear_interaction()
@@ -118,7 +118,7 @@ class WebDebugger(qdb.Frontend):
         self.context = None
 
     # redefine Frontend methods:
-    
+
     def run(self):
         run_lock.acquire()
         try:
@@ -138,7 +138,7 @@ class WebDebugger(qdb.Frontend):
             interact_lock.release()
 
     def exception(self, title, extype, exvalue, trace, request):
-        self.exception_info = {'title': title, 
+        self.exception_info = {'title': title,
                                'extype': extype, 'exvalue': exvalue,
                                'trace': trace, 'request': request}
 
@@ -173,7 +173,7 @@ class WebDebugger(qdb.Frontend):
                 return qdb.Frontend.do_exec(self, statement)
         finally:
             interact_lock.release()
-        
+
 # create the connection between threads:
 
 parent_queue, child_queue = Queue.Queue(), Queue.Queue()
@@ -189,4 +189,5 @@ qdb_debugger.set_params(dict(call_stack=True, environment=True))
 
 import gluon.main
 gluon.main.global_settings.debugging = True
+
 

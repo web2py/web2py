@@ -149,3 +149,4 @@ if __name__ == "__main__":
     client = ServerProxy(location, verbose='--verbose' in sys.argv,)
     print client.add(1, 2)
 
+

@@ -49,7 +49,7 @@ def read_dict_aux(filename):
         logging.error('Syntax error in %s' % filename)
         return {'__corrupted__':True}
 
-def read_dict(filename):    
+def read_dict(filename):
     return getcfs('language:%s'%filename,filename,
                   lambda filename=filename:read_dict_aux(filename))
 
@@ -294,7 +294,7 @@ class translator(object):
             self.t[message] = mt = tokens[0]
             if self.language_file and not is_gae:
                 write_dict(self.language_file, self.t)
-        if symbols or symbols == 0:
+        if symbols or symbols == 0 or symbols == "":
             return mt % symbols
         return mt
 
@@ -346,6 +346,7 @@ def update_all_languages(application_path):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

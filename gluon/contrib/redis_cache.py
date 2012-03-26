@@ -67,7 +67,7 @@ class RedisClient(object):
                     }}
         else:
             self.storage = self.meta_storage[app]
-        
+
         self.r_server = redis.Redis(host=host, port=port, db=self.db)
 
     def __call__(self, key, f, time_expire=300):
@@ -96,7 +96,7 @@ class RedisClient(object):
             return value
         except ConnectionError:
             return self.retry_call(key, f, time_expire)
-    
+
     def retry_call(self, key, f, time_expire):
         self.RETRIES += 1
         if self.RETRIES <= self.MAX_RETRIES:
@@ -107,19 +107,19 @@ class RedisClient(object):
         else:
             self.RETRIES = 0
             raise ConnectionError , 'Redis instance is unavailable at %s' % (self.server)
-        
+
     def increment(self, key, value=1, time_expire=300):
         try:
             newKey = self.__keyFormat__(key)
-            obj = self.r_server.get(newKey)        
+            obj = self.r_server.get(newKey)
             if obj:
-                return self.r_server.incr(newKey, value)        
+                return self.r_server.incr(newKey, value)
             else:
                 self.r_server.setex(newKey, value, time_expire)
                 return value
         except ConnectionError:
             return self.retry_increment(key, value, time_expire)
-            
+
     def retry_increment(self, key, value, time_expire):
         self.RETRIES += 1
         if self.RETRIES <= self.MAX_RETRIES:
@@ -163,5 +163,6 @@ class RedisClient(object):
     def __keyFormat__(self, key):
         return 'w2p:%s:%s' % (self.request.application,
                               key.replace(' ', '_'))
+
 
 

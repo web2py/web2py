@@ -535,7 +535,7 @@ class IS_NOT_IN_DB(Validator):
         self.record_id = 0
         self.allowed_override = allowed_override
         self.ignore_common_filters = ignore_common_filters
-        
+
     def set_self_id(self, id):
         self.record_id = id
 
@@ -547,7 +547,7 @@ class IS_NOT_IN_DB(Validator):
             return (value, None)
         (tablename, fieldname) = str(self.field).split('.')
         table = self.dbset.db[tablename]
-        field = table[fieldname]        
+        field = table[fieldname]
         rows = self.dbset(field == value, ignore_common_filters = self.ignore_common_filters).select(limitby=(0, 1))
         if len(rows) > 0:
             if isinstance(self.record_id, dict):
@@ -2988,6 +2988,7 @@ class IS_IPV4(Validator):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

@@ -1003,7 +1003,7 @@ class Auth(object):
         settings.reset_password_onvalidation = []
         settings.reset_password_onaccept = []
 
-        settings.email_case_sensitive = True                                   
+        settings.email_case_sensitive = True
         settings.username_case_sensitive = True
 
         settings.hmac_key = hmac_key
@@ -1199,7 +1199,7 @@ class Auth(object):
 
         li_next = '?_next='+urllib.quote(self.settings.login_next)
         lo_next = '?_next='+urllib.quote(self.settings.logout_next)
-            
+
         if self.user_id:
             logout=A(T('Logout'),_href=action+'/logout'+lo_next)
             profile=A(T('Profile'),_href=action+'/profile'+next)
@@ -1339,7 +1339,7 @@ class Auth(object):
                 Field('role', length=512, default='',
                         label=self.messages.label_role),
                 Field('description', 'text',
-                        label=self.messages.label_description),                
+                        label=self.messages.label_description),
                 *settings.extra_fields.get(settings.table_group_name,[]),
                 **dict(
                     migrate=self.__get_migrate(
@@ -1829,7 +1829,7 @@ class Auth(object):
             session.flash = self.messages.logged_in
 
         self.update_groups()
-            
+
         # how to continue
         if self.settings.login_form == self:
             if accepted_form:
@@ -1974,7 +1974,7 @@ class Auth(object):
                 session.auth = Storage(user=user, last_visit=request.now,
                                        expiration=self.settings.expiration,
                                        hmac_key = web2py_uuid())
-                self.user = user              
+                self.user = user
                 self.update_groups()
                 session.flash = self.messages.logged_in
             self.log_event(log, form.vars)
@@ -4183,7 +4183,7 @@ class Expose(object):
         if not os.path.isdir(filename):
             current.response.headers['Content-Type'] = contenttype(filename)
             raise HTTP(200,open(filename,'rb'),**current.response.headers)
-        self.path = path = os.path.join(filename,'*')        
+        self.path = path = os.path.join(filename,'*')
         self.folders = [f[len(path)-1:] for f in sorted(glob.glob(path)) \
                             if os.path.isdir(f) and not self.isprivate(f)]
         self.filenames = [f[len(path)-1:] for f in sorted(glob.glob(path)) \
@@ -4204,7 +4204,7 @@ class Expose(object):
 
     def table_folders(self):
         return TABLE(*[TR(TD(A(folder,_href=URL(args=self.args+[folder])))) \
-                           for folder in self.folders])    
+                           for folder in self.folders])
     @staticmethod
     def isprivate(f):
         return 'private' in f or f.startswith('.') or f.endswith('~')
@@ -4231,5 +4231,6 @@ class Expose(object):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 

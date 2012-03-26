@@ -111,7 +111,7 @@ class Request(Storage):
         for key,value in user_agent.items():
             if isinstance(value,dict): user_agent[key] = Storage(value)
         return user_agent
-        
+
     def requires_https(self):
         """
         If request comes in over HTTP, redirect it to HTTPS
@@ -119,7 +119,7 @@ class Request(Storage):
         """
         if not global_settings.cronjob and not self.is_https:
             redirect(URL(scheme='https', args=self.args, vars=self.vars))
-        
+
         current.session.secure()
 
     def restful(self):
@@ -615,6 +615,7 @@ class Session(Storage):
                 del response.session_file
             except:
                 pass
+
 
 
 

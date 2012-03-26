@@ -585,7 +585,7 @@ class BaseAdapter(ConnectionPool):
                      polymodel=None):
         fields = []
         # PostGIS geo fields are added after the table has been created
-        postcreation_fields = [] 
+        postcreation_fields = []
         sql_fields = {}
         sql_fields_aux = {}
         TFK = {}
@@ -1267,7 +1267,7 @@ class BaseAdapter(ConnectionPool):
             [itables_to_merge.update(dict.fromkeys(self.tables(t))) for t in ijoinon] # issue 490
             ijoinont = [t.first._tablename for t in ijoinon]
             [itables_to_merge.pop(t) for t in ijoinont if t in itables_to_merge] #issue 490
-            iimportant_tablenames = ijoint + ijoinont + itables_to_merge.keys() # issue 490         
+            iimportant_tablenames = ijoint + ijoinont + itables_to_merge.keys() # issue 490
             iexcluded = [t for t in tablenames if not t in iimportant_tablenames]
         if left:
             join = attributes['left']
@@ -1534,7 +1534,7 @@ class BaseAdapter(ConnectionPool):
         elif field_type.startswith('geo'):
             return value
         elif field_type == 'blob' and not blob_decode:
-            return value 
+            return value
         else:
             key = regex_type.match(field_type).group(0)
             return self.parsemap[key](value,field_type)
@@ -2091,14 +2091,14 @@ class PostgreSQLAdapter(BaseAdapter):
         elif first.type.startswith('list:'):
             key = '%|'+str(second).replace('|','||').replace('%','%%')+'|%'
         return '(%s ILIKE %s)' % (self.expand(first),self.expand(key,'string'))
-    
+
     # GIS functions
-    
+
     def ST_ASGEOJSON(self, first, second):
         """
         http://postgis.org/docs/ST_AsGeoJSON.html
         """
-        return 'ST_AsGeoJSON(%s,%s,%s,%s)' %(second['version'], 
+        return 'ST_AsGeoJSON(%s,%s,%s,%s)' %(second['version'],
             self.expand(first), second['precision'], second['options'])
 
     def ST_ASTEXT(self, first):
@@ -2106,7 +2106,7 @@ class PostgreSQLAdapter(BaseAdapter):
         http://postgis.org/docs/ST_AsText.html
         """
         return 'ST_AsText(%s)' %(self.expand(first))
-        
+
 #     def ST_CONTAINED(self, first, second):
 #         """
 #         non-standard function based on ST_Contains with parameters reversed
@@ -2119,43 +2119,43 @@ class PostgreSQLAdapter(BaseAdapter):
         http://postgis.org/docs/ST_Contains.html
         """
         return 'ST_Contains(%s,%s)' %(self.expand(first), self.expand(second, first.type))
-      
+
     def ST_DISTANCE(self, first, second):
         """
         http://postgis.org/docs/ST_Distance.html
         """
         return 'ST_Distance(%s,%s)' %(self.expand(first), self.expand(second, first.type))
-          
+
     def ST_EQUALS(self, first, second):
         """
         http://postgis.org/docs/ST_Equals.html
         """
         return 'ST_Equals(%s,%s)' %(self.expand(first), self.expand(second, first.type))
-     
+
     def ST_INTERSECTS(self, first, second):
         """
         http://postgis.org/docs/ST_Intersects.html
         """
         return 'ST_Intersects(%s,%s)' %(self.expand(first), self.expand(second, first.type))
-    
+
     def ST_OVERLAPS(self, first, second):
         """
         http://postgis.org/docs/ST_Overlaps.html
         """
         return 'ST_Overlaps(%s,%s)' %(self.expand(first), self.expand(second, first.type))
-        
+
     def ST_SIMPLIFY(self, first, second):
         """
         http://postgis.org/docs/ST_Simplify.html
         """
         return 'ST_Simplify(%s,%s)' %(self.expand(first), self.expand(second, 'double'))
-    
+
     def ST_TOUCHES(self, first, second):
         """
         http://postgis.org/docs/ST_Touches.html
         """
         return 'ST_Touches(%s,%s)' %(self.expand(first), self.expand(second, first.type))
-    
+
     def ST_WITHIN(self, first, second):
         """
         http://postgis.org/docs/ST_Within.html
@@ -2177,8 +2177,8 @@ class PostgreSQLAdapter(BaseAdapter):
 #                 raise SyntaxError, 'Invalid field type %s' %fieldtype
             return value
         return BaseAdapter.represent(self, obj, fieldtype)
-        
-        
+
+
 class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
@@ -2486,37 +2486,37 @@ class MSSQLAdapter(BaseAdapter):
         if maximum is None:
             return rows[minimum:]
         return rows[minimum:maximum]
-    
+
     # GIS functions
-        
+
     # No STAsGeoJSON in MSSQL
-             
+
     def ST_ASTEXT(self, first):
-        return '%s.STAsText()' %(self.expand(first)) 
+        return '%s.STAsText()' %(self.expand(first))
 
     def ST_CONTAINS(self, first, second):
         return '%s.STContains(%s)=1' %(self.expand(first), self.expand(second, first.type))
-      
+
     def ST_DISTANCE(self, first, second):
         return '%s.STDistance(%s)' %(self.expand(first), self.expand(second, first.type))
-  
+
     def ST_EQUALS(self, first, second):
         return '%s.STEquals(%s)=1' %(self.expand(first), self.expand(second, first.type))
-   
+
     def ST_INTERSECTS(self, first, second):
         return '%s.STIntersects(%s)=1' %(self.expand(first), self.expand(second, first.type))
-    
+
     def ST_OVERLAPS(self, first, second):
         return '%s.STOverlaps(%s)=1' %(self.expand(first), self.expand(second, first.type))
 
     # no STSimplify in MSSQL
-   
+
     def ST_TOUCHES(self, first, second):
         return '%s.STTouches(%s)=1' %(self.expand(first), self.expand(second, first.type))
-    
+
     def ST_WITHIN(self, first, second):
         return '%s.STWithin(%s)=1' %(self.expand(first), self.expand(second, first.type))
- 
+
     def represent(self, obj, fieldtype):
         if fieldtype.startswith('geometry'):
             srid = 0 # MS SQL default srid for geometry
@@ -7023,7 +7023,7 @@ class Table(dict):
     def _insert(self, **fields):
         return self._db._adapter._insert(self,self._listify(fields))
 
-    def insert(self, **fields):        
+    def insert(self, **fields):
         if any(f(fields) for f in self._before_insert): return 0
         ret =  self._db._adapter.insert(self,self._listify(fields))
         ret and [f(fields) for f in self._after_insert]
@@ -7344,39 +7344,39 @@ class Expression(object):
     # GIS functions
 
     def st_asgeojson(self, precision=15, options=0, version=1):
-        return Expression(self.db, self.db._adapter.ST_ASGEOJSON, self, 
+        return Expression(self.db, self.db._adapter.ST_ASGEOJSON, self,
             dict(precision=precision, options=options, version=version), 'dict')
-        
+
     def st_astext(self):
         return Expression(self.db, self.db._adapter.ST_ASTEXT, self)
-        
+
     def st_contained(self, value):
-        return Query(self.db, self.db._adapter.ST_CONTAINS, value, self)          
-    
+        return Query(self.db, self.db._adapter.ST_CONTAINS, value, self)
+
     def st_contains(self, value):
-        return Query(self.db, self.db._adapter.ST_CONTAINS, self, value)    
-  
+        return Query(self.db, self.db._adapter.ST_CONTAINS, self, value)
+
     def st_distance(self, other):
         return Expression(self.db,self.db._adapter.ST_DISTANCE,self,other,self.type)
-                   
+
     def st_equals(self, value):
         return Query(self.db, self.db._adapter.ST_EQUALS, self, value)
 
     def st_intersects(self, value):
-        return Query(self.db, self.db._adapter.ST_INTERSECTS, self, value) 
-            
+        return Query(self.db, self.db._adapter.ST_INTERSECTS, self, value)
+
     def st_overlaps(self, value):
         return Query(self.db, self.db._adapter.ST_OVERLAPS, self, value)
 
     def st_simplify(self, value):
         return Expression(self.db, self.db._adapter.ST_SIMPLIFY, self, value)
-        
+
     def st_touches(self, value):
         return Query(self.db, self.db._adapter.ST_TOUCHES, self, value)
-        
+
     def st_within(self, value):
-        return Query(self.db, self.db._adapter.ST_WITHIN, self, value)  
- 
+        return Query(self.db, self.db._adapter.ST_WITHIN, self, value)
+
     # for use in both Query and sortby
 
 
@@ -7830,7 +7830,7 @@ class Set(object):
         table = self.db[tablename]
         if any(f(self,update_fields) for f in table._before_update): return 0
         fields = table._listify(update_fields,update=True)
-        if not fields: raise SyntaxError, "No fields to update"        
+        if not fields: raise SyntaxError, "No fields to update"
         ret = self.db._adapter.update(tablename,self.query,fields)
         ret and [f(self,update_fields) for f in table._after_update]
         return ret
@@ -7842,7 +7842,7 @@ class Set(object):
         tablename = self.db._adapter.get_table(self.query)
         table = self.db[tablename]
         fields = table._listify(update_fields,update=True)
-        if not fields: raise SyntaxError, "No fields to update"        
+        if not fields: raise SyntaxError, "No fields to update"
         ret = self.db._adapter.update(tablename,self.query,fields)
         return ret
 
@@ -8476,5 +8476,6 @@ DAL.Table = Table  # was necessary in gluon/globals.py session.connect
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 

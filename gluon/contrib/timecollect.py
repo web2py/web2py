@@ -14,10 +14,10 @@ class TimeCollector(object):
         '''Private utility function to clean up this common calculation.'''
         return self.scores[index1].stamp - self.scores[index2].stamp
     def getReportItems(self, orderByCost=True):
-        '''Returns a list of dicts. Each dict has 
-            start (ms), 
-            end (ms), 
-            delta (ms), 
+        '''Returns a list of dicts. Each dict has
+            start (ms),
+            end (ms),
+            delta (ms),
             perc (%),
             tag (str)
         '''
@@ -37,9 +37,9 @@ class TimeCollector(object):
                     delta = delta * 1000,
                     perc = perc,
                     tag = self.scores[i].tag
-                    ) 
+                    )
                 )
-        if orderByCost:    
+        if orderByCost:
             data.sort(key=lambda x: x['perc'], reverse=True)
         return data
     def getReportLines(self, orderByCost=True):
@@ -49,20 +49,20 @@ class TimeCollector(object):
         data = self.getReportItems(orderByCost)
         headerTemplate = '%10s | %10s | %10s | %11s | %-30s'
         headerData = ('Start(ms)', 'End(ms)', 'Delta(ms)', 'Time Cost',
-                      'Description')        
+                      'Description')
         bodyTemplate = '%(start)10.0f | %(end)10.0f | %(delta)10.0f |' \
-          + ' %(perc)10.0f%% | %(tag)-30s' 
+          + ' %(perc)10.0f%% | %(tag)-30s'
         return [headerTemplate % headerData] + [bodyTemplate % d for d in data]
     def getReportText(self, **kwargs):
         return '\n'.join(self.getReportLines(**kwargs))
     def restart(self):
         self.scores = [Score(tag='start',stamp=time.clock())]
-            
+
 if __name__=='__main__':
     print('')
     print('Testing:')
     print('')
-    
+
     # First create the collector
     t = TimeCollector()
     x = [i for i in range(1000)]
@@ -85,7 +85,7 @@ if __name__=='__main__':
     # And once again report results
     print('')
     print(t.getReportText())
-    t.restart()                         
+    t.restart()
     for y in range(1, 200, 20):
         x = [i for i in range(10000)*y]
         t.addStamp('Iteration when y = ' + str(y))
@@ -93,3 +93,4 @@ if __name__=='__main__':
     print('')
     # You can turn off ordering of results
     print(t.getReportText(orderByCost=False))
+

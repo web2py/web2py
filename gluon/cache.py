@@ -372,7 +372,7 @@ class Cache(object):
             the global request object
         """
         # GAE will have a special caching
-        
+
         if have_settings and settings.global_settings.web2py_runtime_gae:
             from contrib.gae_memcache import MemcacheClient
             self.ram=self.disk=MemcacheClient(request)
@@ -434,6 +434,7 @@ class Cache(object):
             return action
 
         return tmp
+
 
 
 
