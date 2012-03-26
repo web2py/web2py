@@ -49,7 +49,8 @@ def safe_write(a, value, b='w'):
 
 def get_app(name=None):
     app = name or request.args(0)
-    if app and (not MULTI_USER_MODE or db(db.app.name==app)(db.app.owner==auth.user.id).count()):
+    if app and (not MULTI_USER_MODE or is_manager() or \
+                    db(db.app.name==app)(db.app.owner==auth.user.id).count()):
         return app
     session.flash = 'App does not exist or your are not authorized'
     redirect(URL('site'))
@@ -158,6 +159,7 @@ def site():
         if app_create(appname, request):
             if MULTI_USER_MODE:
                 db.app.insert(name=appname,owner=auth.user.id)
+            # LOG_PROGRESS
             session.flash = T('new application "%s" created', appname)
             redirect(URL('design',args=appname))
         else:
@@ -190,6 +192,7 @@ def site():
                                     overwrite=request.vars.overwrite_check)
         if f and installed:
             msg = 'application %(appname)s installed with md5sum: %(digest)s'
+            # LOG_PROGRESS
             session.flash = T(msg, dict(appname=appname,
                                         digest=md5_hash(installed)))
         elif f and request.vars.overwrite_check:
@@ -329,6 +332,7 @@ def delete():
     elif 'delete' in request.vars:
         try:
             os.unlink(apath(filename, r=request))
+            # LOG_PROGRESS
             session.flash = T('file "%(filename)s" deleted',
                               dict(filename=filename))
         except Exception:
@@ -461,6 +465,7 @@ def edit():
             safe_write(path + '.bak', data)
             data = request.vars.data.replace('\r\n', '\n').strip() + '\n'
             safe_write(path, data)
+            # LOG_PROGRESS
             file_hash = md5_hash(data)
             saved_on = time.ctime(os.stat(path)[stat.ST_MTIME])
             response.flash = T('file saved on %s', saved_on)
@@ -996,6 +1001,7 @@ def create_file():
             raise SyntaxError
 
         safe_write(full_filename, text)
+        # LOG_PROGRESS
         session.flash = T('file "%(filename)s" created',
                           dict(filename=full_filename[len(path):]))
         redirect(URL('edit',
@@ -1042,6 +1048,7 @@ def upload_file():
             os.makedirs(dirpath)
 
         safe_write(filename, request.vars.file.file.read(), 'wb')
+        # LOG_PROGRESS
         session.flash = T('file "%(filename)s" uploaded',
                           dict(filename=filename[len(path):]))
     except Exception:
@@ -1351,3 +1358,23 @@ def reload_routes():
     redirect(URL('site'))
 
 
+def manage_students():
+    if not (MULTI_USER_MODE and is_manager()):
+        raise HTTP(401)
+    db.auth_user.registration_key.writable = True
+    grid = SQLFORM.grid(db.auth_user)
+    return locals()
+
+def bulk_register():
+    if not (MULTI_USER_MODE and is_manager()):
+        raise HTTP(401)
+    form = SQLFORM.factory(Field('emails','text'))
+    if form.process().accepted:
+        emails = [x.strip() for x in form.vars.emails.split('\n') if x.strip()]
+        n = 0
+        for email in emails:
+            if not db.auth_user(email=email):
+                n += db.auth_user.insert(email = email) and 1 or 0
+        session.flash = T('%s students registered',n)
+        redirect(URL('site'))
+    return locals()

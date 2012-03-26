@@ -38,6 +38,10 @@
         {{=button(URL('uninstall',args=a), T("Uninstall"))}}
     	{{=button_enable(URL('enable',args=a), a)}}
         {{pass}}
+	{{if a=='admin' and MULTI_USER_MODE and is_manager():}}
+	{{=button(URL('default','manage_students'), T('Manage Students'))}}
+	{{=button(URL('default','bulk_register'), T('Bulk Register'))}}
+	{{pass}}
         </p>
       </li>
       {{pass}}
@@ -63,11 +67,12 @@
       <p id="check_version">
         {{=T('Checking for upgrades...')}}
       <script>ajax('{{=URL('check_version')}}',[],'check_version');</script>{{session.check_version=False}}
+      </p>
       {{else:}}
       <p id="check_version">
         {{=button("javascript:ajax('"+URL('check_version')+"',[],'check_version')", T('Check for upgrades'))}}
-      {{pass}}
       </p>
+      {{pass}}
       <div class="formfield">
 	Running on {{=request.env.server_software}}
       </div>
