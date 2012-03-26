@@ -107,11 +107,21 @@ def populate(table, n, default=True, compute=False):
                     for i in range(0, random.randint(0,len(options)-1)/2):
                         vals.append(options[random.randint(0,len(options)-1)][0])
                     record[fieldname] = vals
-            elif field.type in ['integer','double'] or str(field.type).startswith('decimal'):
+            elif field.type =='integer':
                 try:
                     record[fieldname] = random.randint(field.requires.minimum,field.requires.maximum-1)
                 except:
                     record[fieldname] = random.randint(0,1000)
+            elif field.type == 'double' or str(field.type).startswith('decimal'):
+                if hasattr(field.requires,'minimum'):
+                    rand=random.random()
+                    if str(field.type).startswith('decimal'):
+                        import decimal
+                        rand=decimal.Decimal(rand)
+                    record[fieldname] = field.requires.minimum+ \
+                                        rand*(field.requires.maximum-field.requires.minimum)
+                else:
+                    record[fieldname] = random.random()*1000
             elif field.type[:10] == 'reference ':
                 tablename = field.type[10:]
                 if not tablename in ids:
