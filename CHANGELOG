@@ -1,4 +1,4 @@
-## 1.99.5
+## 1.99.5-1.99.7
 - admin in Russian (Bulat), Japanese (Omi) and Slovenian (Robert Valentak)
 - included web-based debugger (experimental, thanks Mariano)
 - def index(): return dict(a=gluon.tools.Expose(folder))
