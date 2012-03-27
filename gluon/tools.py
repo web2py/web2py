@@ -2309,14 +2309,8 @@ class Auth(object):
             elif user.registration_key in ('pending','disabled','blocked'):
                 session.flash = self.messages.registration_pending
                 redirect(self.url(args=request.args))
-            reset_password_key = str(int(time.time()))+'-' + web2py_uuid()
-
-            if self.settings.mailer.send(to=form.vars.email,
-                                         subject=self.messages.reset_password_subject,
-                                         message=self.messages.reset_password % \
-                                             dict(key=reset_password_key)):
+            if self.email_reset_password(user):
                 session.flash = self.messages.email_sent
-                user.update_record(reset_password_key=reset_password_key)
             else:
                 session.flash = self.messages.unable_to_send_email
             self.log_event(log, user)
@@ -2328,6 +2322,16 @@ class Auth(object):
             redirect(next)
         # old_requires = table_user.email.requires
         return form
+
+    def email_reset_password(self,user):
+        reset_password_key = str(int(time.time()))+'-' + web2py_uuid()
+        if self.settings.mailer.send(to=user.email,
+                                     subject=self.messages.reset_password_subject,
+                                     message=self.messages.reset_password % \
+                                         dict(key=reset_password_key)):
+            user.update_record(reset_password_key=reset_password_key)
+            return True
+        return False
 
     def retrieve_password(
         self,
