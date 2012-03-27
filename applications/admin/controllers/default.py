@@ -203,7 +203,7 @@ def site():
                                     overwrite=request.vars.overwrite_check)
         if f and installed:
             msg = 'application %(appname)s installed with md5sum: %(digest)s'
-            log_progress(app)
+            log_progress(appname)
             session.flash = T(msg, dict(appname=appname,
                                         digest=md5_hash(installed)))
         elif f and request.vars.overwrite_check:
