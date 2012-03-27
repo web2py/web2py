@@ -56,7 +56,10 @@ import os
 GAE_APPCFG = os.path.abspath(os.path.join('/usr/local/bin/appcfg.py'))
 
 # To use web2py as a teaching tool, set MULTI_USER_MODE to True
-MULTI_USER_MODE = True
+MULTI_USER_MODE = False
+EMAIL_SERVER    = 'localhost'
+EMAIL_SENDER    = 'professor@example.com'
+EMAIL_LOGIN     = None
 
 # configurable twitterbox, set to None/False to suppress
 TWITTER_HASH = "web2py"
