@@ -203,6 +203,8 @@ def site():
                                     overwrite=request.vars.overwrite_check)
         if f and installed:
             msg = 'application %(appname)s installed with md5sum: %(digest)s'
+            if MULTI_USER_MODE:
+                db.app.insert(name=appname,owner=auth.user.id)
             log_progress(appname)
             session.flash = T(msg, dict(appname=appname,
                                         digest=md5_hash(installed)))
