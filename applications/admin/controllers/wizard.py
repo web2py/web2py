@@ -437,7 +437,10 @@ def create(options):
         redirect(URL('step6'))
     params = dict(session.app['params'])
     app = session.app['name']
-    if not app_create(app,request,force=True,key=params['security_key']):
+    if app_create(app,request,force=True,key=params['security_key']):
+        if MULTI_USER_MODE:
+            db.app.insert(name=app,owner=auth.user.id)
+    else:
         session.flash = 'Failure to create application'
         redirect(URL('step6'))
 
