@@ -226,17 +226,22 @@ except ImportError:
 if not 'google' in drivers:
 
     try:
-        from pysqlite2 import dbapi2 as sqlite3
-        drivers.append('pysqlite2')
-    except ImportError:
+        # first try pysqlite2 else try sqlite3
         try:
+            from pysqlite2 import dbapi2 as sqlite3
+            drivers.append('pysqlite2')
+        except ImportError:
             from sqlite3 import dbapi2 as sqlite3
             drivers.append('SQLite3')
-        except ImportError:
-            logger.debug('no sqlite3 or pysqlite2.dbapi2 driver')
+    except ImportError:
+        logger.debug('no sqlite3 or pysqlite2.dbapi2 driver')
 
     try:
-        import contrib.pymysql as pymysql
+        # first try contrib driver, then from site-packages (if installed)
+        try:
+            import contrib.pymysql as pymysql
+        except ImportError:
+            import pymysql
         drivers.append('pymysql')
     except ImportError:
         logger.debug('no pymysql driver')
