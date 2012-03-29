@@ -163,7 +163,7 @@ class CacheInRam(CacheAbstract):
         self.locker.release()
 
     def __call__(self, key, f,
-                time_expire = DEFAULT_TIME_EXPIRE,
+                 time_expire = DEFAULT_TIME_EXPIRE,
                  destroyer = None):
         """
         Attention! cache.ram does not copy the cached object. It just stores a reference to it.
@@ -394,9 +394,9 @@ class Cache(object):
                 logger.warning('no cache.disk (AttributeError)')
 
     def __call__(self,
-                key = None,
-                time_expire = DEFAULT_TIME_EXPIRE,
-                cache_model = None):
+                 key = None,
+                 time_expire = DEFAULT_TIME_EXPIRE,
+                 cache_model = None):
         """
         Decorator function that can be used to cache any function/method.
 
@@ -432,8 +432,9 @@ class Cache(object):
             cache_model = self.ram
 
         def tmp(func):
-            def action():
-                return cache_model(key, func, time_expire)
+            def action(*a,**b):
+                key2 = key.replace('%(name)s',func.__name__).replace('%(args)s',str(a)).replace('%(vars)s',str(b))
+                return cache_model(key2, lambda a=a,b=b:func(*a,**b), time_expire)
             action.__name___ = func.__name__
             action.__doc__ = func.__doc__
             return action
