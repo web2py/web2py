@@ -163,7 +163,8 @@ class CacheInRam(CacheAbstract):
         self.locker.release()
 
     def __call__(self, key, f,
-                time_expire = DEFAULT_TIME_EXPIRE):
+                time_expire = DEFAULT_TIME_EXPIRE,
+                 destroyer = None):
         """
         Attention! cache.ram does not copy the cached object. It just stores a reference to it.
         Turns out the deepcopying the object has some problems:
@@ -179,6 +180,8 @@ class CacheInRam(CacheAbstract):
         item = self.storage.get(key, None)
         if item and f is None:
             del self.storage[key]
+            if destroyer:
+                destroyer(item[1])
         self.storage[CacheAbstract.cache_stats_name]['hit_total'] += 1
         self.locker.release()
 
@@ -186,6 +189,8 @@ class CacheInRam(CacheAbstract):
             return None
         if item and (dt is None or item[0] > time.time() - dt):
             return item[1]
+        elif item and (item[0] < time.time() - dt) and destroyer:
+            destroyer(item[1])
         value = f()
 
         self.locker.acquire()

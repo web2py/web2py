@@ -2737,9 +2737,6 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
                                    user=credential_decoder(user),
                                    password=credential_decoder(password),
                                    charset=charset))
-        #def connect(driver_args=driver_args):
-        #    return kinterbasdb.connect(**driver_args)
-
         def connect(driver_args=driver_args):
             return self.driver.connect(**driver_args)
         self.pool_connection(connect)
