@@ -536,10 +536,10 @@ class AutocompleteWidget(object):
     def __init__(self, request, field, id_field=None, db=None,
                  orderby=None, limitby=(0,10),
                  keyword='_autocomplete_%(fieldname)s',
-                 min_length=2):
+                 min_length=2, help_fields=None, help_string=None):
 
-        self.help_fields = kwargs.get('help_fields',[])
-        self.help_string = kwargs.get('help_string',None)
+        self.help_fields = help_fields or []
+        self.help_string = help_string
         if self.help_fields and not self.help_string:
             self.help_string = ' '.join('%%(%s)s' for f in self.help_fields)
 
