@@ -7514,7 +7514,7 @@ class Field(Expression):
         compute=None,
         custom_store=None,
         custom_retrieve=None,
-        custom_retrieve_fileproperties=None,
+        custom_retrieve_file_properties=None,
         custom_delete=None,
         ):
         self.db = None
@@ -7560,7 +7560,7 @@ class Field(Expression):
         self.isattachment = True
         self.custom_store = custom_store
         self.custom_retrieve = custom_retrieve
-        self.custom_retrieve_fileproperties = custom_retrieve_fileproperties
+        self.custom_retrieve_file_properties = custom_retrieve_file_properties
         self.custom_delete = custom_delete
         if self.label is None:
             self.label = fieldname.replace('_',' ').title()
@@ -7626,8 +7626,8 @@ class Field(Expression):
         m = regex_content.match(name)
         if not m or not self.isattachment:
             raise TypeError, 'Can\'t retrieve %s' % name
-        fileproperties = self.retrieve_fileproperties(name,path)
-        filename = fileproperties['filename']
+        file_properties = self.retrieve_file_properties(name,path)
+        filename = file_properties['filename']
         if isinstance(self.uploadfield, str):  # ## if file is in DB
             return (filename, cStringIO.StringIO(row[self.uploadfield] or ''))
         elif isinstance(self.uploadfield,Field):
@@ -7637,15 +7637,15 @@ class Field(Expression):
             return (filename, cStringIO.StringIO(data))
         else:
             # ## if file is on filesystem
-            return (filename, open(os.path.join(fileproperties['path'], name), 'rb'))
+            return (filename, open(os.path.join(file_properties['path'], name), 'rb'))
 
-    def retrieve_fileproperties(self, name, path=None):
-        if self.custom_retrieve_fileproperties:
-            return self.custom_retrieve_fileproperties(name, path)
+    def retrieve_file_properties(self, name, path=None):
+        if self.custom_retrieve_file_properties:
+            return self.custom_retrieve_file_properties(name, path)
         try:
             m = regex_content.match(name)
             if not m or not self.isattachment:
-                raise TypeError, 'Can\'t retrieve %s fileproperties' % name
+                raise TypeError, 'Can\'t retrieve %s file properties' % name
             filename = base64.b16decode(m.group('name'), True)
             filename = regex_cleanup_fn.sub('_', filename)
         except (TypeError, AttributeError):
