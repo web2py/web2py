@@ -168,7 +168,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
             other_request[key] = value
         other_request['env'] = Storage()
         for key, value in request.env.items():
-            other_request.env['key'] = value
+            other_request.env[key] = value
         other_request.controller = c
         other_request.function = f
         other_request.extension = extension or request.extension
