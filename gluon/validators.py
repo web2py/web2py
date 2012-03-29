@@ -2157,7 +2157,7 @@ class IS_DATETIME(Validator):
               ('%d','28'),
               ('%m','08'),
               ('%b','Aug'),
-              ('%b','August'),
+              ('%B','August'),
               ('%H','14'),
               ('%I','02'),
               ('%p','PM'),
