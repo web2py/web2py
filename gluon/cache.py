@@ -369,6 +369,8 @@ class Cache(object):
     - self.disk is an instance of CacheOnDisk
     """
 
+    autokey = ':%(name)s:%(args)s:%(vars)s'
+
     def __init__(self, request):
         """
         Parameters
