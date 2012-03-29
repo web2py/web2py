@@ -196,6 +196,7 @@ class Mail(object):
             mail.settings.encrypt = True
             mail.settings.x509_sign_keyfile = None
             mail.settings.x509_sign_certfile = None
+            mail.settings.x509_nocerts = False
             mail.settings.x509_crypt_certfiles = None
 
             cipher_type       : None
@@ -207,6 +208,7 @@ class Mail(object):
                              ... x509 only ...
             x509_sign_keyfile : the signers private key filename (PEM format)
             x509_sign_certfile: the signers certificate filename (PEM format)
+            x509_nocerts      : if True then no attached certificate in mail
             x509_crypt_certfiles: the certificates file to encrypt the messages
                                   with can be a file name or a list of
                                   file names (PEM format)
@@ -229,6 +231,7 @@ class Mail(object):
         settings.encrypt = True
         settings.x509_sign_keyfile = None
         settings.x509_sign_certfile = None
+        settings.x509_nocerts = False
         settings.x509_crypt_certfiles = None
         settings.debug = False
         settings.lock_keys = True
@@ -499,36 +502,47 @@ class Mail(object):
         #######################################################
         elif cipher_type == 'x509':
             if not sign and not encrypt:
-                self.error="No sign and no encrypt is set but cipher type to x509"
+                self.error = "No sign and no encrypt is set but cipher type to x509"
                 return False
-            x509_sign_keyfile=self.settings.x509_sign_keyfile
+            x509_sign_keyfile = self.settings.x509_sign_keyfile
             if self.settings.x509_sign_certfile:
-                x509_sign_certfile=self.settings.x509_sign_certfile
+                x509_sign_certfile = self.settings.x509_sign_certfile
             else:
                 # if there is no sign certfile we'll assume the
                 # cert is in keyfile
-                x509_sign_certfile=self.settings.x509_sign_keyfile
+                x509_sign_certfile = self.settings.x509_sign_keyfile
             # crypt certfiles could be a string or a list
-            x509_crypt_certfiles=self.settings.x509_crypt_certfiles
-
+            x509_crypt_certfiles = self.settings.x509_crypt_certfiles
+            x509_nocerts = self.settings.x509_nocerts
 
             # need m2crypto
-            from M2Crypto import BIO, SMIME, X509
-            msg_bio = BIO.MemoryBuffer(payload_in.as_string())
+            try:
+                from M2Crypto import BIO, SMIME, X509
+            except Exception, e:
+                self.error = "Can't load M2Crypto module"
+                return False
+            msg_bio = BIO.MemoryBuffer( payload_in.as_string() )
             s = SMIME.SMIME()
 
             #                   SIGN
             if sign:
                 #key for signing
                 try:
-                    s.load_key(x509_sign_keyfile, x509_sign_certfile, callback=lambda x: sign_passphrase)
-                    if encrypt:
-                        p7 = s.sign(msg_bio)
+                    s.load_key( x509_sign_keyfile, x509_sign_certfile, callback = lambda x: sign_passphrase )
+                except Exception, e:
+                    self.error = "Something went wrong on certificate / private key loading: <%s>" % str( e )
+                    return False
+                try:
+                    if x509_nocerts:
+                        flags = SMIME.PKCS7_NOCERTS
                     else:
-                        p7 = s.sign(msg_bio,flags=SMIME.PKCS7_DETACHED)
-                    msg_bio = BIO.MemoryBuffer(payload_in.as_string()) # Recreate coz sign() has consumed it.
-                except Exception,e:
-                    self.error="Something went wrong on signing: <%s>" %str(e)
+                        flags = 0
+                    if not encrypt:
+                        flags += SMIME.PKCS7_DETACHED
+                    p7 = s.sign( msg_bio, flags = flags )
+                    msg_bio = BIO.MemoryBuffer( payload_in.as_string() ) # Recreate coz sign() has consumed it.
+                except Exception, e:
+                    self.error = "Something went wrong on signing: <%s> %s" % ( str( e ), str( flags ) )
                     return False
 
             #                   ENCRYPT
