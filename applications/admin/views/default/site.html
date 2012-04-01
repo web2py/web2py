@@ -14,7 +14,10 @@
         <p class="controls">
         {{else:}}
         <h3 class="editableapp">{{=A(a,_href=URL(a,'default','index'))}}</h3>
-	{{if MULTI_USER_MODE and db.app(name=a):}}(created by {{="%(first_name)s %(last_name)s" % db.auth_user[db.app(name=a).owner]}}){{pass}}
+	{{if MULTI_USER_MODE and db.app(name=a):}}{{owner = db.auth_user[db.app(name=a).owner]}}
+          (created by {{="%(first_name)s %(last_name)s" % owner}} 
+          &lt;{{=A(owner.email, _href='mailto:%s' % owner.email)}}&gt;)
+        {{pass}}
         <p class="controls">
         {{if not os.path.exists('applications/%s/compiled' % a):}}
         {{=sp_button(URL('design',args=a), T("Edit"))}}
