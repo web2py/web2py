@@ -17,7 +17,7 @@ Thanks to
 
 This file contains the DAL support for many relational databases,
 including:
-- SQLite
+- SQLite & SpatiaLite
 - MySQL
 - Postgres
 - Oracle
@@ -93,7 +93,9 @@ id string text boolean integer double decimal password upload blob time date dat
 
 Supported DAL URI strings:
 'sqlite://test.db'
+'spatialite://test.db'
 'sqlite:memory'
+'spatialite:memory'
 'jdbc:sqlite://test.db'
 'mysql://root:none@localhost/test'
 'postgres://mdipierro:password@localhost/test'
@@ -721,7 +723,7 @@ class BaseAdapter(ConnectionPool):
             query = '''CREATE TABLE %s(\n    %s\n)%s''' % \
                 (tablename, fields, other)
 
-        if self.uri.startswith('sqlite:///'):
+        if self.uri.startswith('sqlite:///') or self.uri.startswith('spatialite:///'):
             path_encoding = sys.getfilesystemencoding() or locale.getdefaultlocale()[1] or 'utf8'
             dbpath = self.uri[9:self.uri.rfind('/')].decode('utf8').encode(path_encoding)
         else:
@@ -729,7 +731,7 @@ class BaseAdapter(ConnectionPool):
 
         if not migrate:
             return query
-        elif self.uri.startswith('sqlite:memory'):
+        elif self.uri.startswith('sqlite:memory') or self.uri.startswith('spatialite:memory'):
             table._dbt = None
         elif isinstance(migrate, str):
             table._dbt = os.path.join(dbpath, migrate)
@@ -822,7 +824,7 @@ class BaseAdapter(ConnectionPool):
                          (tablename, key,
                           sql_fields_aux[key]['sql'].replace(', ', new_add))]
                 metadata_change = True
-            elif self.dbengine == 'sqlite':
+            elif self.dbengine in ('sqlite', 'spatialite'):
                 if key in sql_fields:
                     sql_fields_current[key] = sql_fields[key]
                 metadata_change = True
@@ -1176,24 +1178,24 @@ class BaseAdapter(ConnectionPool):
 
     def delete(self, tablename, query):
         sql = self._delete(tablename, query)
-        ### special code to handle CASCADE in SQLite
+        ### special code to handle CASCADE in SQLite & SpatiaLite
         db = self.db
         table = db[tablename]
-        if self.dbengine=='sqlite' and table._referenced_by:
+        if self.dbengine in ('sqlite', 'spatialite') and table._referenced_by:
             deleted = [x[table._id.name] for x in db(query).select(table._id)]
-        ### end special code to handle CASCADE in SQLite
+        ### end special code to handle CASCADE in SQLite & SpatiaLite
         self.execute(sql)
         try:
             counter = self.cursor.rowcount
         except:
             counter =  None
-        ### special code to handle CASCADE in SQLite
-        if self.dbengine=='sqlite' and counter:
+        ### special code to handle CASCADE in SQLite & SpatiaLite
+        if self.dbengine in ('sqlite', 'spatialite') and counter:
             for tablename,fieldname in table._referenced_by:
                 f = db[tablename][fieldname]
                 if f.type=='reference '+table._tablename and f.ondelete=='CASCADE':
                     db(db[tablename][fieldname].belongs(deleted)).delete()
-        ### end special code to handle CASCADE in SQLite
+        ### end special code to handle CASCADE in SQLite & SpatiaLite
         return counter
 
     def get_table(self, query):
@@ -1586,7 +1588,7 @@ class BaseAdapter(ConnectionPool):
 
     def parse_decimal(self, value, field_type):
         decimals = int(field_type[8:-1].split(',')[-1])
-        if self.dbengine == 'sqlite':
+        if self.dbengine in ('sqlite', 'spatialite'):
             value = ('%.' + str(decimals) + 'f') % value
         if not isinstance(value, decimal.Decimal):
             value = decimal.Decimal(str(value))
@@ -1806,6 +1808,100 @@ class SQLiteAdapter(BaseAdapter):
         if attributes.get('for_update', False):
             sql = 'BEGIN IMMEDIATE TRANSACTION; ' + sql
         return sql
+
+
+class SpatiaLiteAdapter(SQLiteAdapter):
+
+    import copy
+    types = copy.copy(BaseAdapter.types)
+    types.update({'geometry': 'GEOMETRY'})
+
+    def __init__(self, db, uri, pool_size=0, folder=None, db_codec ='UTF-8',
+                 credential_decoder=lambda x:x, driver_args={},
+                 adapter_args={}, srid=4326):
+        if not self.driver:
+            raise RuntimeError, "Unable to import driver"
+        self.db = db
+        self.dbengine = "spatialite"
+        self.uri = uri
+        self.pool_size = 0
+        self.folder = folder
+        self.db_codec = db_codec
+        self.find_or_make_work_folder()
+        self.srid = srid
+        path_encoding = sys.getfilesystemencoding() or locale.getdefaultlocale()[1] or 'utf8'
+        if uri.startswith('spatialite:memory'):
+            dbpath = ':memory:'
+        else:
+            dbpath = uri.split('://')[1]
+            if dbpath[0] != '/':
+                dbpath = os.path.join(self.folder.decode(path_encoding).encode('utf8'), dbpath)
+        if not 'check_same_thread' in driver_args:
+            driver_args['check_same_thread'] = False
+        if not 'detect_types' in driver_args:
+            driver_args['detect_types'] = self.driver.PARSE_DECLTYPES
+        def connect(dbpath=dbpath, driver_args=driver_args):
+            return self.driver.Connection(dbpath, **driver_args)
+        self.pool_connection(connect)
+        self.connection.enable_load_extension(True)
+        # for Windows, rename libspatialite-2.dll as libspatialite.dll
+        # Linux uses libspatialite.so
+        # Mac OS X uses libspatialite.dylib
+        self.execute(r'SELECT load_extension("libspatialite");')
+
+        self.connection.create_function('web2py_extract', 2,
+                                        SQLiteAdapter.web2py_extract)
+        self.connection.create_function("REGEXP", 2,
+                                        SQLiteAdapter.web2py_regexp)
+
+    # GIS functions
+
+    def ST_ASGEOJSON(self, first, second):
+        return 'AsGeoJSON(%s,%s,%s)' %(self.expand(first),
+            second['precision'], second['options'])
+
+    def ST_ASTEXT(self, first):
+        return 'AsText(%s)' %(self.expand(first))
+
+    def ST_CONTAINS(self, first, second):
+        return 'Contains(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+
+    def ST_DISTANCE(self, first, second):
+        return 'Distance(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+
+    def ST_EQUALS(self, first, second):
+        return 'Equals(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+
+    def ST_INTERSECTS(self, first, second):
+        return 'Intersects(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+
+    def ST_OVERLAPS(self, first, second):
+        return 'Overlaps(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+
+    def ST_SIMPLIFY(self, first, second):
+        return 'Simplify(%s,%s)' %(self.expand(first), self.expand(second, 'double'))
+
+    def ST_TOUCHES(self, first, second):
+        return 'Touches(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+
+    def ST_WITHIN(self, first, second):
+        return 'Within(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+
+    def represent(self, obj, fieldtype):
+        if fieldtype.startswith('geo'):
+            srid = 4326 # Spatialite default srid for geometry
+            geotype, parms = fieldtype[:-1].split('(')
+            parms = parms.split(',')
+            if len(parms) >= 2:
+                schema, srid = parms[:2]
+#             if fieldtype.startswith('geometry'):
+            value = "ST_GeomFromText('%s',%s)" %(obj, srid)
+#             elif fieldtype.startswith('geography'):
+#                 value = "ST_GeogFromText('SRID=%s;%s')" %(srid, obj)
+#             else:
+#                 raise SyntaxError, 'Invalid field type %s' %fieldtype
+            return value
+        return BaseAdapter.represent(self, obj, fieldtype)
 
 
 class JDBCSQLiteAdapter(SQLiteAdapter):
@@ -2737,6 +2833,9 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
                                    user=credential_decoder(user),
                                    password=credential_decoder(password),
                                    charset=charset))
+        #def connect(driver_args=driver_args):
+        #    return kinterbasdb.connect(**driver_args)
+
         def connect(driver_args=driver_args):
             return self.driver.connect(**driver_args)
         self.pool_connection(connect)
@@ -5686,7 +5785,9 @@ class IMAPAdapter(NoSQLAdapter):
 
 ADAPTERS = {
     'sqlite': SQLiteAdapter,
+    'spatialite': SpatiaLiteAdapter,
     'sqlite:memory': SQLiteAdapter,
+    'spatialite:memory': SpatiaLiteAdapter,
     'mysql': MySQLAdapter,
     'postgres': PostgreSQLAdapter,
     'postgres:psycopg2': PostgreSQLAdapter,
@@ -7668,7 +7769,7 @@ class Field(Expression):
                 u = m.group('uuidkey')
                 path = os.path.join(path,"%s.%s" % (t,f),u[:2])
             return dict(path=path,filename=filename)
-        
+
 
     def formatter(self, value):
         if value is None or not self.requires:
