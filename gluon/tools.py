@@ -1884,7 +1884,7 @@ class Auth(object):
             cas_user = cas.get_user()
             if cas_user:
                 next = cas.logout_url(next)
-
+                
         current.session.auth = None
         current.session.flash = self.messages.logged_out
         redirect(next)

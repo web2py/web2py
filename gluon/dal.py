@@ -7129,7 +7129,7 @@ class Table(dict):
     def insert(self, **fields):
         if any(f(fields) for f in self._before_insert): return 0
         ret =  self._db._adapter.insert(self,self._listify(fields))
-        ret and [f(fields) for f in self._after_insert]
+        ret and [f(fields,ret) for f in self._after_insert]
         return ret
 
     def validate_and_insert(self,**fields):
@@ -7167,7 +7167,7 @@ class Table(dict):
         items = [self._listify(item) for item in items]
         if any(f(item) for item in items for f in self._before_insert):return 0
         ret = self._db._adapter.bulk_insert(self,items)
-        ret and [[f(item) for item in items] for f in self._after_insert]
+        ret and [[f(item,ret[k]) for k,item in enumerate(items)] for f in self._after_insert]
         return ret
 
     def _truncate(self, mode = None):

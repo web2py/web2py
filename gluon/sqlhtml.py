@@ -1930,6 +1930,7 @@ class SQLFORM(FORM):
             request.args[:]=args+[table._tablename]
         if links is None: links = {}
         if constraints is None: constraints = {}
+        field = None
         try:
             nargs = len(args)+1
             previous_tablename,previous_fieldname,previous_id = \
@@ -1993,18 +1994,21 @@ class SQLFORM(FORM):
                 else:
                     del kwargs[key]
         for tablename,fieldname in table._referenced_by:
+            tb = db[tablename]
+            if not tb[fieldname].readable: continue
             id_field_name = table._id.name
             if linked_tables is None or tablename in linked_tables:
                 args0 = tablename+'.'+fieldname
                 links.append(
-                    lambda row,t=T(db[tablename]._plural),nargs=nargs,args0=args0:\
+                    lambda row,t=T(tb._plural+' for '+fieldname),nargs=nargs,args0=args0:\
                         A(SPAN(t),_class=trap_class(),_href=URL(
                             args=request.args[:nargs]+[args0,row[id_field_name]])))
         grid=SQLFORM.grid(query,args=request.args[:nargs],links=links,
                           links_in_grid=links_in_grid,
                           user_signature=user_signature,**kwargs)
         if isinstance(grid,DIV):
-            breadcrumbs.append(A(T(table._plural),_class=trap_class(),
+            header = table._plural + (field and ' for '+field.name or '')
+            breadcrumbs.append(A(T(header),_class=trap_class(),
                                  _href=URL(args=request.args[:nargs])))
             grid.insert(0,DIV(H3(*breadcrumbs),_class='web2py_breadcrumbs'))
         return grid
