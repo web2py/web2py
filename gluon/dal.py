@@ -3052,8 +3052,11 @@ class TeradataAdapter(BaseAdapter):
         'time': 'TIME',
         'datetime': 'TIMESTAMP',
         'id': 'INTEGER GENERATED ALWAYS AS IDENTITY',  # Teradata Specific
-        # Modified Constraint syntax for Teradata.
-        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s)',
+        # Modified Constraint syntax for Teradata.  
+        # Teradata does not support ON DELETE.
+        'reference': 'INT', 
+        'reference FK': ' REFERENCES %(foreign_key)s', 
+        'reference TFK': ' FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s)', 
         'list:integer': 'CLOB',
         'list:string': 'CLOB',
         'list:reference': 'CLOB',
