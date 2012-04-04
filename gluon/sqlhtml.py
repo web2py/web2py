@@ -737,6 +737,8 @@ class SQLFORM(FORM):
 
         self.ignore_rw = ignore_rw
         self.formstyle = formstyle
+        self.readonly = readonly
+
         nbsp = XML('&nbsp;') # Firefox2 does not display fields with blanks
         FORM.__init__(self, *[], **attributes)
         ofields = fields
@@ -828,7 +830,6 @@ class SQLFORM(FORM):
                 self.custom.widget.id = widget
                 continue
 
-            self.readonly = readonly
 
             if readonly and not ignore_rw and not field.readable:
                 continue
