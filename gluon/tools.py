@@ -1259,6 +1259,7 @@ class Auth(object):
 
     def enable_record_versioning(self, 
                                  tables,
+                                 db = None,
                                  archive_names='%s_archive',
                                  current_record='current_record'):
         """
@@ -1296,12 +1297,13 @@ class Auth(object):
                 fields[current_record] = row.id
                 archive_table.insert(**fields)
             
+        archive_db = db or self.db
         tables = [table for table in tables]
         for table in tables:
             fieldnames = table.fields()            
             if 'modified_by' in fieldnames and 'modified_on' in fieldnames:
                 archive_name = archive_names % table._tablename
-                archive_table = self.db.define_table(
+                archive_table = archive_db.define_table(
                     archive_name,
                     Field(current_record,table),
                     table)
