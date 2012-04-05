@@ -1255,7 +1255,68 @@ class Auth(object):
         else:
             return True
 
-    def define_tables(self, username=False, migrate=True, fake_migrate=False):
+    def enable_record_versioning(self, 
+                                 tables,
+                                 archive_names='%s_archive',
+                                 current_record='current_record'):
+        """
+        to enable full record vernionioning (including auth tables):
+
+        auth = Auth(db)
+        auth.define_tables(signature=True)
+        # define our own tables
+        db.define_table('mything',Field('name'),auth.signature)
+        auth.enable_record_vernining(tables=db)
+
+        tables can be the db (all table) or a list of tables.
+        only tables with modified_by and modified_on fiels (as created
+        by auth.signature) will have versioning. Old record versions will be 
+        in table 'mything_archive' automatically defined.
+        
+        when you enable enable_record_versioning, records are never
+        deleted but marked with is_active=False.
+
+        enable_record_versioning enables a common_filter for 
+        every table that filters out records with is_active = False
+
+        Important: If you use auth.enable_record_versioning,
+        do not use auth.archive or you will end up with duplicates.
+        auth.archive does explicitely what enable_record_versioning
+        does automatically.
+
+        """
+        def archive(qset,fs,archive_table,current_name):
+            tablenames = qset.db._adapter.tables(qset.query)
+            if len(tablenames)!=1: raise RuntimeError, "cannot update join"
+            table = qset.db[tablenames[0]]
+            for row in qset.select():
+                fields = archive_table._filter_fields(row)
+                fields[current_record] = row.id
+                archive_table.insert(**fields)
+            
+        tables = [table for table in tables]
+        for table in tables:
+            fieldnames = table.fields()            
+            if 'modified_by' in fieldnames and 'modified_on' in fieldnames:
+                archive_name = archive_names % table._tablename
+                archive_table = self.db.define_table(
+                    archive_name,
+                    Field(current_record,table),
+                    table)
+                table._before_update.append(
+                    lambda qset,fs,at=archive_table,cn=current_record:
+                        archive(qset,fs,at,cn))
+            if 'is_active' in fieldnames:
+                table._before_delete.append(
+                    lambda qset: qset.update(is_active=False))
+                newquery = lambda query, t=table: t.is_active == True
+                query = table._common_filter
+                if query:
+                    newquery = query & newquery
+                table._common_filter = newquery
+                
+    def define_tables(self, username=False, signature=None, 
+                      migrate=True, fake_migrate=False):
         """
         to be called unless tables are defined manually
 
@@ -1272,8 +1333,12 @@ class Auth(object):
 
         db = self.db
         settings = self.settings
+        if signature==True: signature = self.signature
+        elif signature==None: signature = []
         if not settings.table_user_name in db.tables:
             passfield = settings.password_field
+            extra_fields = settings.extra_fields.get(
+                settings.table_user_name,[])+[signature]
             if username or settings.cas_provider:
                 table = db.define_table(
                     settings.table_user_name,
@@ -1296,7 +1361,7 @@ class Auth(object):
                     Field('registration_id', length=512,
                           writable=False, readable=False, default='',
                           label=self.messages.label_registration_id),
-                    *settings.extra_fields.get(settings.table_user_name,[]),
+                    *extra_fields,
                     **dict(
                         migrate=self.__get_migrate(settings.table_user_name,
                                                    migrate),
@@ -1327,7 +1392,7 @@ class Auth(object):
                     Field('registration_id', length=512,
                           writable=False, readable=False, default='',
                           label=self.messages.label_registration_id),
-                    *settings.extra_fields.get(settings.table_user_name,[]),
+                    *extra_fields,
                     **dict(
                         migrate=self.__get_migrate(settings.table_user_name,
                                                    migrate),
@@ -1348,13 +1413,15 @@ class Auth(object):
             table.registration_key.default = ''
         settings.table_user = db[settings.table_user_name]
         if not settings.table_group_name in db.tables:
+            extra_fields = settings.extra_fields.get(
+                settings.table_group_name,[])+[signature]
             table = db.define_table(
                 settings.table_group_name,
                 Field('role', length=512, default='',
                         label=self.messages.label_role),
                 Field('description', 'text',
                         label=self.messages.label_description),
-                *settings.extra_fields.get(settings.table_group_name,[]),
+                *extra_fields,
                 **dict(
                     migrate=self.__get_migrate(
                         settings.table_group_name, migrate),
@@ -1364,13 +1431,15 @@ class Auth(object):
                  % settings.table_group_name)
         settings.table_group = db[settings.table_group_name]
         if not settings.table_membership_name in db.tables:
+            extra_fields = settings.extra_fields.get(
+                settings.table_membership_name,[])+[signature]
             table = db.define_table(
                 settings.table_membership_name,
                 Field('user_id', settings.table_user,
                         label=self.messages.label_user_id),
                 Field('group_id', settings.table_group,
                         label=self.messages.label_group_id),
-                *settings.extra_fields.get(settings.table_membership_name,[]),
+                *extra_fields,
                 **dict(
                     migrate=self.__get_migrate(
                         settings.table_membership_name, migrate),
@@ -1383,6 +1452,8 @@ class Auth(object):
                     '%(role)s (%(id)s)')
         settings.table_membership = db[settings.table_membership_name]
         if not settings.table_permission_name in db.tables:
+            extra_fields = settings.extra_fields.get(
+                settings.table_permission_name,[])+[signature]
             table = db.define_table(
                 settings.table_permission_name,
                 Field('group_id', settings.table_group,
@@ -1393,7 +1464,7 @@ class Auth(object):
                         label=self.messages.label_table_name),
                 Field('record_id', 'integer',default=0,
                         label=self.messages.label_record_id),
-                *settings.extra_fields.get(settings.table_permission_name,[]),
+                *extra_fields,
                 **dict(
                     migrate=self.__get_migrate(
                         settings.table_permission_name, migrate),
