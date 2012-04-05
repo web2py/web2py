@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# last tinkered with by szimszon at oregpreshaz.eu on 2012-03-19
+# last tinkered with by korylprince at gmail.com on 2012-04-5
 # 
 
 import sys
@@ -82,8 +82,7 @@ def ldap_auth( server = 'ldap', port = None,
     If you need to restrict the set of allowed users (e.g. to members of a department) then specify
     a rfc4515 search filter string.
     - currently only implemented for mode in ['ad', 'company', 'uid_r']
-
-    You can manage user attribute first name, last name, email from ldap:
+        You can manage user attribute first name, last name, email from ldap:
         auth.settings.login_methods.append(ldap_auth(...as usual...,
             manage_user = True,
             user_firstname_attrib = 'cn:1',
@@ -100,8 +99,8 @@ def ldap_auth( server = 'ldap', port = None,
                                 optionally you can specify parts.
                                 Example: cn: "John Smith" - 'cn:2' = 'Smith'
         user_mail_attrib - the attribure containing the user's email address
-    
-    
+
+
     If you need group control from ldap to web2py app's database feel free to set:
 
         auth.settings.login_methods.append(ldap_auth(...as usual...,
@@ -127,7 +126,7 @@ def ldap_auth( server = 'ldap', port = None,
             allowed_groups = [...],
             group_dn = 'ou=Groups,dc=domain,dc=com',
             group_name_attrib = 'cn',
-            group_member_attrib = 'memberUid',
+            group_member_attrib = 'memberUid', # use 'member' for Active Directory
             group_filterstr = 'objectClass=*'
             ))
 
@@ -137,8 +136,8 @@ def ldap_auth( server = 'ldap', port = None,
         group_name_attrib - the attribute where the group name is stored
         group_member_attrib - the attibute containing the group members name
         group_filterstr - as the filterstr but for group select
-    
-    
+
+        If using Active Directory you must specify bind_dn and bind_pw for allowed_groups unless anonymous bind works.
     You can set the logging level with the "logging_level" parameter, default
     is "error" and can be set to error, warning, info, debug.
     """
@@ -190,9 +189,6 @@ def ldap_auth( server = 'ldap', port = None,
             user_mail_attrib = ldap.filter.escape_filter_chars( user_mail_attrib )
         try:
             con = init_ldap()
-            if allowed_groups:
-                if not is_user_in_allowed_groups( username ):
-                    return False
             if ldap_mode == 'ad':
                 # Microsoft Active Directory
                 if '@' not in username:
@@ -233,6 +229,18 @@ def ldap_auth( server = 'ldap', port = None,
                     # so now we just check the password
                     con.simple_bind_s( username, password )
 
+            if allowed_groups:
+                # We have to use the full string
+                if ldap_mode=='ad':
+                    usercn = con.search_ext_s( 
+                        ldap_basedn, ldap.SCOPE_SUBTREE,
+                        "(&(sAMAccountName=%s)(%s))" % ( ldap.filter.escape_filter_chars( username_bare ), filterstr ), ["cn"] )[0][0]
+                    if not is_user_in_allowed_groups( usercn ):
+                        return False
+                # Just use username for others
+                else:
+                    if not is_user_in_allowed_groups( username ):
+                        return False
             if ldap_mode == 'domino':
                 # Notes Domino
                 if "@" in username:
