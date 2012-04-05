@@ -1259,7 +1259,7 @@ class Auth(object):
 
     def enable_record_versioning(self, 
                                  tables,
-                                 db = None,
+                                 archive_db = None,
                                  archive_names='%s_archive',
                                  current_record='current_record'):
         """
@@ -1297,7 +1297,7 @@ class Auth(object):
                 fields[current_record] = row.id
                 archive_table.insert(**fields)
             
-        archive_db = db or self.db
+        archive_db = archive_db or self.db
         tables = [table for table in tables]
         for table in tables:
             fieldnames = table.fields()            
