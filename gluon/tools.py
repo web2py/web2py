@@ -1260,7 +1260,7 @@ class Auth(object):
     def enable_record_versioning(self, 
                                  tables,
                                  archive_db = None,
-                                 archive_names='%s_archive',
+                                 archive_names='%(tablename)s_archive',
                                  current_record='current_record'):
         """
         to enable full record vernionioning (including auth tables):
@@ -1288,36 +1288,12 @@ class Auth(object):
         does automatically.
 
         """
-        def archive(qset,fs,archive_table,current_name):
-            tablenames = qset.db._adapter.tables(qset.query)
-            if len(tablenames)!=1: raise RuntimeError, "cannot update join"
-            table = qset.db[tablenames[0]]
-            for row in qset.select():
-                fields = archive_table._filter_fields(row)
-                fields[current_record] = row.id
-                archive_table.insert(**fields)
-            
-        archive_db = archive_db or self.db
         tables = [table for table in tables]
-        for table in tables:
-            fieldnames = table.fields()            
-            if 'modified_by' in fieldnames and 'modified_on' in fieldnames:
-                archive_name = archive_names % table._tablename
-                archive_table = archive_db.define_table(
-                    archive_name,
-                    Field(current_record,table),
-                    table)
-                table._before_update.append(
-                    lambda qset,fs,at=archive_table,cn=current_record:
-                        archive(qset,fs,at,cn))
-            if 'is_active' in fieldnames:
-                table._before_delete.append(
-                    lambda qset: qset.update(is_active=False))
-                newquery = lambda query, t=table: t.is_active == True
-                query = table._common_filter
-                if query:
-                    newquery = query & newquery
-                table._common_filter = newquery
+        for table in tables: 
+            table._archive_records(
+                archive_db = archive_db,
+                archive_name = archive_names,
+                current_record = current_record)
                 
     def define_tables(self, username=False, signature=None, 
                       migrate=True, fake_migrate=False):

@@ -6947,6 +6947,30 @@ class Table(dict):
     def update(self,*args,**kwargs):
         raise RuntimeError, "Syntax Not Supported"
 
+    def _archive_records(self,
+                         archive_db=None,
+                         archive_name = '%(tablename)_archive',
+                         current_record = 'current_record'):
+        archive_db = archive_db or self._db
+        fieldnames = self.fields()
+        archive_name = archive_name % dict(tablename=self._tablename)
+        if 'modified_by' in fieldnames and 'modified_on' in fieldnames:
+            archive_table = archive_db.define_table(
+                archive_name,
+                Field(current_record,self),
+                self)
+            self._before_update.append(
+                lambda qset,fs,at=archive_table,cn=current_record:
+                    archive_record(qset,fs,at,cn))
+        if 'is_active' in fieldnames:
+            self._before_delete.append(
+                lambda qset: qset.update(is_active=False))
+            newquery = lambda query, t=self: t.is_active == True
+            query = self._common_filter
+            if query:
+                newquery = query & newquery
+            self._common_filter = newquery
+                
     def _validate(self,**vars):
         errors = Row()
         for key,value in vars.items():
@@ -7281,6 +7305,16 @@ class Table(dict):
     def on(self, query):
         return Expression(self._db,self._db._adapter.ON,self,query)
 
+def archive_record(qset,fs,archive_table,current_record):
+    tablenames = qset.db._adapter.tables(qset.query)
+    if len(tablenames)!=1: raise RuntimeError, "cannot update join"
+    table = qset.db[tablenames[0]]
+    for row in qset.select():
+        fields = archive_table._filter_fields(row)
+        fields[current_record] = row.id
+        archive_table.insert(**fields)
+    return False
+        
 
 
 class Expression(object):
