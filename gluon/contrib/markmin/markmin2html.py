@@ -366,8 +366,7 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None):
         # turns into a digitally signed URL
         def u1(match,URL=URL):
             a,b,c = match.group('a'), match.group('b'), match.group('c')
-            return URL(a,b,args=c.split('/'),
-                       scheme=True,host=True,user_signature=True)
+            return URL(a,b,args=c.split('/'),scheme=True,host=True)
         text = re.compile(
             '@\{(?P<a>\w+)/(?P<b>\w+)/(?P<c>.+?)\}'
             ).sub(u1,text)
