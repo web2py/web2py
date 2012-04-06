@@ -6950,19 +6950,19 @@ class Table(dict):
     def _archive_records(self,
                          archive_db=None,
                          archive_name = '%(tablename)_archive',
-                         current_record = 'current_record'):
+                         current_record = 'current_record',
+                         is_active = 'is_active'):
         archive_db = archive_db or self._db
         fieldnames = self.fields()
         archive_name = archive_name % dict(tablename=self._tablename)
-        if 'modified_by' in fieldnames and 'modified_on' in fieldnames:
-            archive_table = archive_db.define_table(
-                archive_name,
-                Field(current_record,self),
-                self)
-            self._before_update.append(
-                lambda qset,fs,at=archive_table,cn=current_record:
-                    archive_record(qset,fs,at,cn))
-        if 'is_active' in fieldnames:
+        archive_table = archive_db.define_table(
+            archive_name,
+            Field(current_record,self),
+            self)
+        self._before_update.append(
+            lambda qset,fs,at=archive_table,cn=current_record:
+                archive_record(qset,fs,at,cn))
+        if is_active and is_active in fieldnames:
             self._before_delete.append(
                 lambda qset: qset.update(is_active=False))
             newquery = lambda query, t=self: t.is_active == True

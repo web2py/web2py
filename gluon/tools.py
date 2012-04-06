@@ -1290,10 +1290,11 @@ class Auth(object):
         """
         tables = [table for table in tables]
         for table in tables: 
-            table._archive_records(
-                archive_db = archive_db,
-                archive_name = archive_names,
-                current_record = current_record)
+            if 'modifed_on' in table.fields():
+                table._archive_records(
+                    archive_db = archive_db,
+                    archive_name = archive_names,
+                    current_record = current_record)
                 
     def define_tables(self, username=False, signature=None, 
                       migrate=True, fake_migrate=False):
