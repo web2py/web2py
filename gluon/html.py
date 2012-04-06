@@ -2140,7 +2140,7 @@ class MENU(DIV):
 
     def serialize_mobile(self, data, select=None, prefix=''):
         if not select:
-            select = SELECT()
+            select = SELECT(**self.attributes)
         for item in data:
             if item[2]:
                 select.append(OPTION(CAT(prefix, item[0]), _value=item[2], _selected=item[1]))
