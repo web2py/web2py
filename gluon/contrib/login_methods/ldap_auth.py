@@ -188,6 +188,9 @@ def ldap_auth( server = 'ldap', port = None,
             user_lastname_attrib = ldap.filter.escape_filter_chars( user_lastname_attrib )
             user_mail_attrib = ldap.filter.escape_filter_chars( user_mail_attrib )
         try:
+            if allowed_groups:
+                if not is_user_in_allowed_groups( username ):
+                    return False
             con = init_ldap()
             if ldap_mode == 'ad':
                 # Microsoft Active Directory
@@ -229,18 +232,6 @@ def ldap_auth( server = 'ldap', port = None,
                     # so now we just check the password
                     con.simple_bind_s( username, password )
 
-            if allowed_groups:
-                # We have to use the full string
-                if ldap_mode=='ad':
-                    usercn = con.search_ext_s( 
-                        ldap_basedn, ldap.SCOPE_SUBTREE,
-                        "(&(sAMAccountName=%s)(%s))" % ( ldap.filter.escape_filter_chars( username_bare ), filterstr ), ["cn"] )[0][0]
-                    if not is_user_in_allowed_groups( usercn ):
-                        return False
-                # Just use username for others
-                else:
-                    if not is_user_in_allowed_groups( username ):
-                        return False
             if ldap_mode == 'domino':
                 # Notes Domino
                 if "@" in username:
@@ -559,6 +550,7 @@ def ldap_auth( server = 'ldap', port = None,
                       group_name_attrib = group_name_attrib,
                       group_member_attrib = group_member_attrib,
                       group_filterstr = group_filterstr,
+                      ldap_mode = mode
                       ):
         '''
             Get all group names from ldap where the user is in
@@ -571,12 +563,38 @@ def ldap_auth( server = 'ldap', port = None,
         if not group_dn:
             group_dn = base_dn
         con = init_ldap()
-        if ldap_binddn:
-            # need to search directory with an bind_dn account 1st
-            con.simple_bind_s( ldap_binddn, ldap_bindpw )
+        if ldap_mode=='ad':
+            #
+            # Get the AD username
+            # ####################
+            if '@' not in username:
+                domain = []
+                for x in ldap_basedn.split( ',' ):
+                    if "DC=" in x.upper():
+                        domain.append( x.split( '=' )[-1] )
+            username = "%s@%s" % ( username, '.'.join( domain ) )
+            username_bare = username.split( "@" )[0]
+            con.set_option( ldap.OPT_PROTOCOL_VERSION, 3 )
+            # In cases where ForestDnsZones and DomainDnsZones are found, 
+            # result will look like the following: 
+            # ['ldap://ForestDnsZones.domain.com/DC=ForestDnsZones,DC=domain,DC=com'] 
+            if ldap_binddn:
+                # need to search directory with an admin account 1st
+                con.simple_bind_s( ldap_binddn, ldap_bindpw )
+            else:
+                # credentials should be in the form of username@domain.tld
+                con.simple_bind_s( username, password )
+            # We have to use the full string
+            username = con.search_ext_s( 
+                        ldap_basedn, ldap.SCOPE_SUBTREE,
+                        "(&(sAMAccountName=%s)(%s))" % ( ldap.filter.escape_filter_chars( username_bare ), filterstr ), ["cn"] )[0][0]
         else:
-            # bind as anonymous
-            con.simple_bind_s( '', '' )
+            if ldap_binddn:
+                # need to search directory with an bind_dn account 1st
+                con.simple_bind_s( ldap_binddn, ldap_bindpw )
+            else:
+                # bind as anonymous
+                con.simple_bind_s( '', '' )
 
         # search for groups where user is in
         filter = '(&(%s=%s)(%s))' % ( ldap.filter.escape_filter_chars( group_member_attrib ),
