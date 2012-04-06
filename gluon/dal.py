@@ -6838,6 +6838,7 @@ class Table(dict):
 
         :raises SyntaxError: when a supplied field is of incorrect type.
         """
+
         self._actual = False # set to True by define_table()
         self._tablename = tablename
         self._sequence_name = args.get('sequence_name',None) or \

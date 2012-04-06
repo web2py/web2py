@@ -1314,12 +1314,18 @@ class Auth(object):
 
         db = self.db
         settings = self.settings
-        if signature==True: signature = self.signature
-        elif signature==None: signature = []
+        if signature==True:
+            signature_list = [self.signature]
+        elif not signature:
+            signature_list = []
+        elif isinstance(signature,self.db.Table):
+            signature_list = [signature]
+        else:
+            signature_list = signature
         if not settings.table_user_name in db.tables:
             passfield = settings.password_field
             extra_fields = settings.extra_fields.get(
-                settings.table_user_name,[])+[signature]
+                settings.table_user_name,[])+signature_list
             if username or settings.cas_provider:
                 table = db.define_table(
                     settings.table_user_name,
@@ -1395,7 +1401,7 @@ class Auth(object):
         settings.table_user = db[settings.table_user_name]
         if not settings.table_group_name in db.tables:
             extra_fields = settings.extra_fields.get(
-                settings.table_group_name,[])+[signature]
+                settings.table_group_name,[])+signature_list
             table = db.define_table(
                 settings.table_group_name,
                 Field('role', length=512, default='',
@@ -1413,7 +1419,7 @@ class Auth(object):
         settings.table_group = db[settings.table_group_name]
         if not settings.table_membership_name in db.tables:
             extra_fields = settings.extra_fields.get(
-                settings.table_membership_name,[])+[signature]
+                settings.table_membership_name,[])+signature_list
             table = db.define_table(
                 settings.table_membership_name,
                 Field('user_id', settings.table_user,
@@ -1434,7 +1440,7 @@ class Auth(object):
         settings.table_membership = db[settings.table_membership_name]
         if not settings.table_permission_name in db.tables:
             extra_fields = settings.extra_fields.get(
-                settings.table_permission_name,[])+[signature]
+                settings.table_permission_name,[])+signature_list
             table = db.define_table(
                 settings.table_permission_name,
                 Field('group_id', settings.table_group,
