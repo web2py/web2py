@@ -355,15 +355,16 @@ class IS_IN_SET(Validator):
     def __call__(self, value):
         if self.multiple:
             ### if below was values = re.compile("[\w\-:]+").findall(str(value))
-            if isinstance(value, (str,unicode)):
-                values = [value]
+            if not value:
+                values = []
             elif isinstance(value, (tuple, list)):
                 values = value
-            elif not value:
-                values = []
+            else:
+                values = [value]
         else:
             values = [value]
-        failures = [x for x in values if not x in self.theset]
+        thestrset = [str(x) for x in self.theset]
+        failures = [x for x in values if not str(x) in thestrset]
         if failures and self.theset:
             if self.multiple and (value is None or value == ''):
                 return ([], None)
