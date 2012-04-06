@@ -2322,18 +2322,23 @@ class MARKMIN(XmlComponent):
     """
     For documentation: http://web2py.com/examples/static/markmin.html
     """
-    def __init__(self, text, extra=None, allowed=None, sep='p'):
+    def __init__(self, text, extra=None, allowed=None, sep='p',
+                 url=None, environment=None):
         self.text = text
         self.extra = extra or {}
         self.allowed = allowed or {}
         self.sep = sep
+        self.url = URL if url==True else url
+        self.environment = environment
 
     def xml(self):
         """
         calls the gluon.contrib.markmin render function to convert the wiki syntax
         """
         from contrib.markmin.markmin2html import render
-        return render(self.text,extra=self.extra,allowed=self.allowed,sep=self.sep)
+        return render(self.text,extra=self.extra,
+                      allowed=self.allowed,sep=self.sep,
+                      URL=self.url, environment=self.environment)
 
     def __str__(self):
         return self.xml()

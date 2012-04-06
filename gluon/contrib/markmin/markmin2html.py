@@ -290,7 +290,7 @@ regex_auto_video = re.compile('(?<!["\w\>/=])(?P<k>\w+://\S+\.(mp4|mpeg|mov)(\?\
 regex_auto_audio = re.compile('(?<!["\w\>/=])(?P<k>\w+://\S+\.(mp3|wav)(\?\S+)?)',re.M)
 regex_auto = re.compile('(?<!["\w\>/=])(?P<k>\w+://\S+)',re.M)
 
-def render(text,extra={},allowed={},sep='p'):
+def render(text,extra={},allowed={},sep='p',URL=None,environment=None):
     """
     Arguments:
     - text is the text to be processed
@@ -356,6 +356,22 @@ def render(text,extra={},allowed={},sep='p'):
     <img src="http://chart.apis.google.com/chart?cht=tx&chl=\\int_a^b sin(x)dx" />
     """
     text = str(text or '')
+    if environment:
+        def u2(match,environment=environment):
+            a = match.group('a')
+            return str(environment[a])
+        text = re.compile('@\{(?P<a>\w+?)\}').sub(u2,text)
+    if not URL is None:
+        # this is experimental @{controller/index/args}
+        # turns into a digitally signed URL
+        def u1(match,URL=URL):
+            a,b,c = match.group('a'), match.group('b'), match.group('c')
+            return URL(a,b,args=c.split('/'),
+                       scheme=True,host=True,user_signature=True)
+        text = re.compile(
+            '@\{(?P<a>\w+)/(?P<b>\w+)/(?P<c>.+?)\}'
+            ).sub(u1,text)
+                          
     #############################################################
     # replace all blocks marked with ``...``:class with META
     # store them into segments they will be treated as code
