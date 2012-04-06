@@ -6956,9 +6956,10 @@ class Table(dict):
         archive_db = archive_db or self._db
         fieldnames = self.fields()
         archive_name = archive_name % dict(tablename=self._tablename)
+        field_type = self if archive_db is self._db else 'integer'
         archive_table = archive_db.define_table(
             archive_name,
-            Field(current_record,self),
+            Field(current_record,field_type),
             self)
         self._before_update.append(
             lambda qset,fs,at=archive_table,cn=current_record:
