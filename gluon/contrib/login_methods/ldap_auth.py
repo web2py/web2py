@@ -569,7 +569,7 @@ def ldap_auth( server = 'ldap', port = None,
             # ####################
             if '@' not in username:
                 domain = []
-                for x in ldap_basedn.split( ',' ):
+                for x in base_dn.split( ',' ):
                     if "DC=" in x.upper():
                         domain.append( x.split( '=' )[-1] )
             username = "%s@%s" % ( username, '.'.join( domain ) )
@@ -586,7 +586,7 @@ def ldap_auth( server = 'ldap', port = None,
                 con.simple_bind_s( username, password )
             # We have to use the full string
             username = con.search_ext_s( 
-                        ldap_basedn, ldap.SCOPE_SUBTREE,
+                        base_dn, ldap.SCOPE_SUBTREE,
                         "(&(sAMAccountName=%s)(%s))" % ( ldap.filter.escape_filter_chars( username_bare ), filterstr ), ["cn"] )[0][0]
         else:
             if ldap_binddn:
