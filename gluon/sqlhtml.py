@@ -1317,12 +1317,11 @@ class SQLFORM(FORM):
     @staticmethod
     def smartdictform(session,name,filename=None,query=None,**kwargs):
         import os
-        if not name in session:
-            if query:
-                session[name] = db(query).select().first().as_dict()
-            elif os.path.exists(filename):
-                env = {'datetime':datetime}
-                session[name] = eval(open(filename).read(),{},env)
+        if query:
+            session[name] = db(query).select().first().as_dict()
+        elif os.path.exists(filename):
+            env = {'datetime':datetime}
+            session[name] = eval(open(filename).read(),{},env)
         form = SQLFORM.dictform(session[name])
         if form.process().accepted:
             session[name].update(form.vars)
