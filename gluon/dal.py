@@ -6948,11 +6948,11 @@ class Table(dict):
     def update(self,*args,**kwargs):
         raise RuntimeError, "Syntax Not Supported"
 
-    def _archive_records(self,
-                         archive_db=None,
-                         archive_name = '%(tablename)_archive',
-                         current_record = 'current_record',
-                         is_active = 'is_active'):
+    def _enable_record_versioning(self,
+                                  archive_db=None,
+                                  archive_name = '%(tablename)_archive',
+                                  current_record = 'current_record',
+                                  is_active = 'is_active'):
         archive_db = archive_db or self._db
         fieldnames = self.fields()
         archive_name = archive_name % dict(tablename=self._tablename)

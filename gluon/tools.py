@@ -1291,7 +1291,7 @@ class Auth(object):
         tables = [table for table in tables]
         for table in tables: 
             if 'modifed_on' in table.fields():
-                table._archive_records(
+                table._enable_record_versioning(
                     archive_db = archive_db,
                     archive_name = archive_names,
                     current_record = current_record)
