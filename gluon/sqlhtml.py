@@ -19,11 +19,13 @@ from html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT
 from html import FORM, INPUT, LABEL, OPTION, SELECT, MENU
 from html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
 from html import URL, truncate_string
-from dal import DAL, Table, Row, CALLABLETYPES, smart_query
+from dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query
 from storage import Storage
 from utils import md5_hash
-from validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF
+from validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE, \
+    IS_DATETIME, IS_INT_IN_RANGE, IS_FLOAT_IN_RANGE
 
+import datetime
 import urllib
 import re
 import cStringIO
@@ -1022,7 +1024,7 @@ class SQLFORM(FORM):
         request_vars,
         session=None,
         formname='%(tablename)s/%(record_id)s',
-        keepvalues=False,
+        keepvalues=True,
         onvalidation=None,
         dbio=True,
         hideerror=False,
@@ -1291,6 +1293,44 @@ class SQLFORM(FORM):
                     self.vars.id = self.table.insert(**fields)
         self.accepted = ret
         return ret
+
+    AUTOTYPES = {
+        type(''): ('string', None),
+        type(True): ('boolean', None),
+        type(1): ('integer', IS_INT_IN_RANGE(-1e12,+1e12)),
+        type(1.0): ('double', IS_INT_IN_RANGE(-1e12,+1e12)),
+        type([]): ('list:string', None),
+        type(datetime.date.today()): ('date', IS_DATE()),
+        type(datetime.datetime.today()): ('datetime', IS_DATETIME())
+        }
+
+    @staticmethod
+    def dictform(dictionary,**kwargs):
+        fields = []
+        for key,value in sorted(dictionary.items()):
+            t, requires = SQLFORM.AUTOTYPES.get(type(value),(None,None))
+            if t:
+                fields.append(Field(key,t,requires=requires,
+                                    default=value))
+        return SQLFORM.factory(*fields,**kwargs)
+
+    @staticmethod
+    def smartdictform(session,name,filename=None,query=None,**kwargs):
+        import os
+        if not name in session:
+            if query:
+                session[name] = db(query).select().first().as_dict()
+            elif os.path.exists(filename):
+                env = {'datetime':datetime}
+                session[name] = eval(open(filename).read(),{},env)
+        form = SQLFORM.dictform(session[name])
+        if form.process().accepted:
+            session[name].update(form.vars)
+            if query:
+                db(query).update(**form.vars)
+            else:
+                open(filename,'w').write(repr(session[name]))
+        return form
 
     @staticmethod
     def factory(*fields, **attributes):
