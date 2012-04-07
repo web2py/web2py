@@ -6950,7 +6950,7 @@ class Table(dict):
 
     def _enable_record_versioning(self,
                                   archive_db=None,
-                                  archive_name = '%(tablename)_archive',
+                                  archive_name = '%(tablename)s_archive',
                                   current_record = 'current_record',
                                   is_active = 'is_active'):
         archive_db = archive_db or self._db
