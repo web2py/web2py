@@ -515,8 +515,10 @@ def wsgibase(environ, responder):
 
                 if response.do_not_commit is True:
                     BaseAdapter.close_all_instances(None)
-                elif response._custom_commit:
-                    response._custom_commit()
+                # elif response._custom_commit:
+                #     response._custom_commit()
+                elif response.custom_commit:
+                    BaseAdapter.close_all_instances(response.custom_commit)
                 else:
                     BaseAdapter.close_all_instances('commit')
 
