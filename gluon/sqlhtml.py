@@ -16,7 +16,7 @@ Holds:
 
 from http import HTTP
 from html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT
-from html import FORM, INPUT, LABEL, OPTION, SELECT, MENU
+from html import FORM, INPUT, LABEL, OPTION, SELECT
 from html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
 from html import URL, truncate_string
 from dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query
@@ -1477,6 +1477,10 @@ class SQLFORM(FORM):
              search_widget='default',
              ignore_rw = False,
              formstyle = 'table3cols',
+             formargs={},
+             createargs={},
+             editargs={},
+             viewargs={},
             ):
 
         # jQuery UI ThemeRoller classes (empty if ui is disabled)
@@ -1611,18 +1615,21 @@ class SQLFORM(FORM):
             _class='form_footer row_buttons %(header)s %(cornerbottom)s' % ui)
 
         create_form = edit_form = None
+        sqlformargs = dict(formargs)
 
-        if create and len(request.args)>1 and request.args[-2]=='new':
+        if create and len(request.args)>1 and request.args[-2] == 'new':
             check_authorization()
             table = db[request.args[-1]]
+            sqlformargs.update(createargs)
             create_form = SQLFORM(
-                table, ignore_rw = ignore_rw, formstyle = formstyle,
-                _class='web2py_form').process(
-                next=referrer,
-                onvalidation=onvalidation,
-                onsuccess=oncreate,
-                formname=formname)
-            res = DIV(buttons(),create_form,formfooter,_class=_class)
+                table, ignore_rw=ignore_rw, formstyle=formstyle,
+                _class='web2py_form',
+                **sqlformargs)
+            create_form.process(formname=formname,
+                    next=referrer,
+                    onvalidation=onvalidation,
+                    onsuccess=oncreate)
+            res = DIV(buttons(), create_form, formfooter, _class=_class)
             res.create_form = create_form
             res.edit_form = None
             res.update_form = None
@@ -1631,10 +1638,12 @@ class SQLFORM(FORM):
             check_authorization()
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(URL('error'))
-            form = SQLFORM(table,record,upload=upload,ignore_rw=ignore_rw,
-                           formstyle=formstyle, readonly=True,_class='web2py_form')
-            res = DIV(buttons(edit=editable,record=record),form,
-                      formfooter,_class=_class)
+            sqlformargs.update(viewargs)
+            view_form = SQLFORM(table, record, upload=upload, ignore_rw=ignore_rw,
+                           formstyle=formstyle, readonly=True, _class='web2py_form',
+                           **sqlformargs)
+            res = DIV(buttons(edit=editable, record=record), view_form,
+                      formfooter, _class=_class)
             res.create_form = None
             res.edit_form = None
             res.update_form = None
@@ -1643,17 +1652,19 @@ class SQLFORM(FORM):
             check_authorization()
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(URL('error'))
-            edit_form = SQLFORM(table,record,upload=upload,ignore_rw=ignore_rw,
-                                formstyle=formstyle,deletable=deletable,
+            sqlformargs.update(editargs)
+            edit_form = SQLFORM(table, record, upload=upload, ignore_rw=ignore_rw,
+                                formstyle=formstyle, deletable=deletable,
                                 _class='web2py_form',
-                                submit_button = T('Submit'),
-                                delete_label = T('Check to delete'))
+                                submit_button=T('Submit'),
+                                delete_label=T('Check to delete'),
+                                **sqlformargs)
             edit_form.process(formname=formname,
                               onvalidation=onvalidation,
                               onsuccess=onupdate,
                               next=referrer)
-            res = DIV(buttons(view=details,record=record),
-                      edit_form,formfooter,_class=_class)
+            res = DIV(buttons(view=details, record=record),
+                      edit_form, formfooter, _class=_class)
             res.create_form = None
             res.edit_form = edit_form
             res.update_form = None
