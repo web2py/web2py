@@ -261,6 +261,8 @@ def URL(
             else:
                 raise SyntaxError, 'when calling URL, function or function name required'
         elif '/' in f:
+            if f.startswith("/"):
+                f = f[1:]
             items = f.split('/')
             function = f = items[0]
             args = items[1:] + args
@@ -277,7 +279,7 @@ def URL(
     function2 = '%s.%s' % (function,extension or 'html')
 
     if not (application and controller and function):
-        raise SyntaxError, 'not enough information to build the url'
+        raise SyntaxError, 'not enough information to build the url (%s %s %s)' % (application, controller, function)
 
     if args:
         if url_encode:
