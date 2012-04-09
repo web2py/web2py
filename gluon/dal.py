@@ -1579,12 +1579,12 @@ class BaseAdapter(ConnectionPool):
 
     def parse_datetime(self, value, field_type):
         if not isinstance(value, datetime.datetime):
-            (y, m, d) = map(int,str(value)[:10].strip().split('-'))
-            time_items = map(int,str(value)[11:19].strip().split(':')[:3])
-            if len(time_items) == 3:
-                (h, mi, s) = time_items
-            else:
-                (h, mi, s) = time_items + [0]
+            date_part, time_part = (str(value).replace('T',' ')+' ').split(' ',1)
+            (y, m, d) = map(int,date_part.split('-'))
+            time_parts = time_part and time_part.split(':')[:3] or (0,0,0)
+            while len(time_parts)<3: time_parts.append(0)
+            time_items = map(int,time_parts)
+            (h, mi, s) = time_items
             value = datetime.datetime(y, m, d, h, mi, s)
         return value
 
