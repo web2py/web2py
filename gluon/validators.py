@@ -2483,6 +2483,7 @@ class IS_EMPTY_OR(Validator):
         if empty:
             return (self.null, None)
         if isinstance(self.other, (list, tuple)):
+            error = None
             for item in self.other:
                 value, error = item(value)
                 if error: break
