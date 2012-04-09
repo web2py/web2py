@@ -1614,7 +1614,7 @@ class SQLFORM(FORM):
         formfooter = DIV(
             _class='form_footer row_buttons %(header)s %(cornerbottom)s' % ui)
 
-        create_form = edit_form = None
+        create_form = update_form = view_form = None
         sqlformargs = dict(formargs)
 
         if create and len(request.args)>1 and request.args[-2] == 'new':
@@ -1630,9 +1630,6 @@ class SQLFORM(FORM):
                     onvalidation=onvalidation,
                     onsuccess=oncreate)
             res = DIV(buttons(), create_form, formfooter, _class=_class)
-            res.create_form = create_form
-            res.edit_form = None
-            res.update_form = None
             return res
         elif details and len(request.args)>2 and request.args[-3]=='view':
             check_authorization()
@@ -1644,30 +1641,24 @@ class SQLFORM(FORM):
                            **sqlformargs)
             res = DIV(buttons(edit=editable, record=record), view_form,
                       formfooter, _class=_class)
-            res.create_form = None
-            res.edit_form = None
-            res.update_form = None
             return res
         elif editable and len(request.args)>2 and request.args[-3]=='edit':
             check_authorization()
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(URL('error'))
             sqlformargs.update(editargs)
-            edit_form = SQLFORM(table, record, upload=upload, ignore_rw=ignore_rw,
+            update_form = SQLFORM(table, record, upload=upload, ignore_rw=ignore_rw,
                                 formstyle=formstyle, deletable=deletable,
                                 _class='web2py_form',
                                 submit_button=T('Submit'),
                                 delete_label=T('Check to delete'),
                                 **sqlformargs)
-            edit_form.process(formname=formname,
+            update_form.process(formname=formname,
                               onvalidation=onvalidation,
                               onsuccess=onupdate,
                               next=referrer)
             res = DIV(buttons(view=details, record=record),
-                      edit_form, formfooter, _class=_class)
-            res.create_form = None
-            res.edit_form = edit_form
-            res.update_form = None
+                      update_form, formfooter, _class=_class)
             return res
         elif deletable and len(request.args)>2 and request.args[-3]=='delete':
             check_authorization()
@@ -1934,7 +1925,8 @@ class SQLFORM(FORM):
                           "web2py_paginator %(header)s %(cornerbottom)s" % ui),
                   _class='%s %s' % (_class, ui.get('widget','')))
         res.create_form = create_form
-        res.edit_form = edit_form
+        res.update_form = update_form
+        res.view_form = view_form
         res.search_form = search_form
         return res
 
