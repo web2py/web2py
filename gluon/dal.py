@@ -466,6 +466,15 @@ class ConnectionPool(object):
         if False and self.folder and not os.path.exists(self.folder):
             os.mkdir(self.folder)
 
+    def after_connection(self):
+        """ this it is suppoed to be overloaded by adtapters"""
+        pass
+            
+    def reconnect(self):
+        """ allows a thread to re-connect to server or re-pool """
+        self.pool_connection(self._connection_function)
+        self.after_connection()
+
     def pool_connection(self, f, cursor=True):
         """
         this function defines: self.connection and self.cursor (iff cursor is True)
@@ -473,6 +482,7 @@ class ConnectionPool(object):
         if the connection is not active (closed by db server) it will loop
         if not self.pool_size or no active connections in pool makes a new one
         """
+        self._connection_function = f
         if not self.pool_size:
             self.connection = f()
             self.cursor = cursor and self.connection.cursor()
@@ -1786,6 +1796,9 @@ class SQLiteAdapter(BaseAdapter):
         def connect(dbpath=dbpath, driver_args=driver_args):
             return self.driver.Connection(dbpath, **driver_args)
         self.pool_connection(connect)
+        self.after_connection()
+
+    def after_connection(self):
         self.connection.create_function('web2py_extract', 2,
                                         SQLiteAdapter.web2py_extract)
         self.connection.create_function("REGEXP", 2,
@@ -1848,6 +1861,9 @@ class SpatiaLiteAdapter(SQLiteAdapter):
         def connect(dbpath=dbpath, driver_args=driver_args):
             return self.driver.Connection(dbpath, **driver_args)
         self.pool_connection(connect)
+        self.after_connection()
+
+    def after_connection(self):
         self.connection.enable_load_extension(True)
         # for Windows, rename libspatialite-2.dll as libspatialite.dll
         # Linux uses libspatialite.so
@@ -1935,6 +1951,9 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
         def connect(dbpath=dbpath,driver_args=driver_args):
             return self.driver.connect(java.sql.DriverManager.getConnection('jdbc:sqlite:'+dbpath), **driver_args)
         self.pool_connection(connect)
+        self.after_connection()
+
+    def after_connection(self):
         # FIXME http://www.zentus.com/sqlitejdbc/custom_functions.html for UDFs
         self.connection.create_function('web2py_extract', 2, SQLiteAdapter.web2py_extract)
 
@@ -2034,6 +2053,9 @@ class MySQLAdapter(BaseAdapter):
         def connect(driver_args=driver_args):
             return self.driver.connect(**driver_args)
         self.pool_connection(connect)
+        self.after_connection()
+
+    def after_connection(self):
         self.execute('SET FOREIGN_KEY_CHECKS=1;')
         self.execute("SET sql_mode='NO_BACKSLASH_ESCAPES';")
 
@@ -2163,6 +2185,9 @@ class PostgreSQLAdapter(BaseAdapter):
         def connect(msg=msg,driver_args=driver_args):
             return self.driver.connect(msg,**driver_args)
         self.pool_connection(connect)
+        self.after_connection()
+
+    def after_connection(self):
         self.connection.set_client_encoding('UTF8')
         self.execute("SET standard_conforming_strings=on;")
 
@@ -2320,6 +2345,9 @@ class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
         def connect(msg=msg,driver_args=driver_args):
             return self.driver.connect(*msg,**driver_args)
         self.pool_connection(connect)
+        self.after_connection()
+
+    def after_connection(self):
         self.connection.set_client_encoding('UTF8')
         self.execute('BEGIN;')
         self.execute("SET CLIENT_ENCODING TO 'UNICODE';")
@@ -2425,6 +2453,9 @@ class OracleAdapter(BaseAdapter):
         def connect(uri=uri,driver_args=driver_args):
             return self.driver.connect(uri,**driver_args)
         self.pool_connection(connect)
+        self.after_connection()
+
+    def after_connection(self):
         self.execute("ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS';")
         self.execute("ALTER SESSION SET NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS';")
     oracle_fix = re.compile("[^']*('[^']*'[^']*)*\:(?P<clob>CLOB\('([^']+|'')*'\))")
@@ -2579,6 +2610,7 @@ class MSSQLAdapter(BaseAdapter):
             return self.driver.connect(cnxn,**driver_args)
         if not fake_connect:
             self.pool_connection(connect)
+            self.after_connection()
 
     def lastrowid(self,table):
         #self.execute('SELECT @@IDENTITY;')
@@ -2776,6 +2808,7 @@ class FireBirdAdapter(BaseAdapter):
         def connect(driver_args=driver_args):
             return self.driver.connect(**driver_args)
         self.pool_connection(connect)
+        self.after_connection()
 
     def create_sequence_and_triggers(self, query, table, **args):
         tablename = table._tablename
@@ -2844,6 +2877,7 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
         def connect(driver_args=driver_args):
             return self.driver.connect(**driver_args)
         self.pool_connection(connect)
+        self.after_connection()
 
 
 class InformixAdapter(BaseAdapter):
@@ -2944,6 +2978,7 @@ class InformixAdapter(BaseAdapter):
         def connect(dsn=dsn,driver_args=driver_args):
             return self.driver.connect(dsn,**driver_args)
         self.pool_connection(connect)
+        self.after_connection()
 
     def execute(self,command):
         if command[-1:]==';':
@@ -3023,6 +3058,7 @@ class DB2Adapter(BaseAdapter):
         def connect(cnxn=cnxn,driver_args=driver_args):
             return self.driver.connect(cnxn,**driver_args)
         self.pool_connection(connect)
+        self.after_connection()
 
     def execute(self,command):
         if command[-1:]==';':
@@ -3244,6 +3280,7 @@ class TeradataAdapter(BaseAdapter):
         def connect(cnxn=cnxn,driver_args=driver_args):
             return self.driver.connect(cnxn,**driver_args)
         self.pool_connection(connect)
+        self.after_connection()
 
     # Similar to MSSQL, Teradata can't specify a range (for Pageby)
     def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
@@ -3328,6 +3365,7 @@ class IngresAdapter(BaseAdapter):
         def connect(driver_args=driver_args):
             return self.driver.connect(**driver_args)
         self.pool_connection(connect)
+        self.after_connection()
 
     def create_sequence_and_triggers(self, query, table, **args):
         # post create table auto inc code (if needed)
@@ -3455,6 +3493,7 @@ class SAPDBAdapter(BaseAdapter):
             return self.driver.Connection(user, password, database,
                                           host, **driver_args)
         self.pool_connection(connect)
+        self.after_connection()
 
     def lastrowid(self,table):
         self.execute("select %s.NEXTVAL from dual" % table._sequence_name)
@@ -3501,6 +3540,9 @@ class CubridAdapter(MySQLAdapter):
                     user=user,passwd=password,driver_args=driver_args):
             return self.driver.connect(host,port,db,user,passwd,**driver_args)
         self.pool_connection(connect)
+        self.after_connection()
+
+    def after_connection(self):
         self.execute('SET FOREIGN_KEY_CHECKS=1;')
         self.execute("SET sql_mode='NO_BACKSLASH_ESCAPES';")
 
@@ -3609,18 +3651,21 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
         if not m:
             raise SyntaxError, "Invalid URI string in SQLDB: %s" % self._uri
         instance = credential_decoder(m.group('instance'))
-        db = credential_decoder(m.group('db'))
+        self.dbstring = db = credential_decoder(m.group('db'))
         driver_args['instance'] = instance
-        createdb = adapter_args.get('createdb',True)
+        self.createdb = createdb = adapter_args.get('createdb',True)
         if not createdb:
             driver_args['database'] = db
         def connect(driver_args=driver_args):
             return rdbms.connect(**driver_args)
         self.pool_connection(connect)
-        if createdb:
-            # self.execute('DROP DATABASE %s' % db)
-            self.execute('CREATE DATABASE IF NOT EXISTS %s' % db)
-            self.execute('USE %s' % db)
+        self.after_connection()
+
+    def after_connection(self):
+        if self.createdb:
+            # self.execute('DROP DATABASE %s' % self.dbstring)
+            self.execute('CREATE DATABASE IF NOT EXISTS %s' % self.dbstring)
+            self.execute('USE %s' % self.dbstring)
         self.execute("SET FOREIGN_KEY_CHECKS=1;")
         self.execute("SET sql_mode='NO_BACKSLASH_ESCAPES';")
 
@@ -4195,6 +4240,7 @@ class CouchDBAdapter(NoSQLAdapter):
         def connect(url=url,driver_args=driver_args):
             return couchdb.Server(url,**driver_args)
         self.pool_connection(connect,cursor=False)
+        self.after_connection()
 
     def create_table(self, table, migrate=True, fake_migrate=False, polymodel=None):
         if migrate:
@@ -4387,6 +4433,7 @@ class MongoDBAdapter(NoSQLAdapter):
                 else:
                     raise SyntaxError("This is not an official Mongodb uri (http://www.mongodb.org/display/DOCS/Connections) Error : %s" % inst)
         self.pool_connection(connect,cursor=False)
+        self.after_connection()
 
 
 
@@ -5112,8 +5159,9 @@ class IMAPAdapter(NoSQLAdapter):
 
             return connection
 
-        self.pool_connection(connect)
         self.db.define_tables = self.define_tables
+        self.pool_connection(connect)
+        # self.after_connection()
 
     def pool_connection(self, f, cursor=True):
         """
