@@ -124,7 +124,7 @@ class Servers:
         app.run()
 
     @staticmethod
-    def gnuicorn(app,address, **options):
+    def gunicorn(app,address, **options):
         import gunicorn.arbiter
         gunicorn.arbiter.Arbiter(address, 4, app).run()
 

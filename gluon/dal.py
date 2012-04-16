@@ -472,7 +472,7 @@ class ConnectionPool(object):
             
     def reconnect(self):
         """ allows a thread to re-connect to server or re-pool """
-        self.close_all_instances('commit')
+        self.close_all_instances(False)
         self.pool_connection(self._connection_function)
         self.after_connection()
 
