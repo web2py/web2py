@@ -929,7 +929,7 @@ class Auth(object):
         settings.registration_requires_approval = False
         settings.login_after_registration = False
         settings.alternate_requires_registration = False
-        settings.create_user_groups = True
+        settings.create_user_groups = "user_%(id)s"
 
         settings.controller = controller
         settings.function = function
@@ -1572,7 +1572,7 @@ class Auth(object):
             user_id = table_user.insert(**table_user._filter_fields(keys))
             user =  self.user = table_user[user_id]
             if self.settings.create_user_groups:
-                group_id = self.add_group("user_%s" % user_id)
+                group_id = self.add_group(self.settings.create_user_groups % user)
                 self.add_membership(group_id, user_id)
         return user
 
@@ -2015,7 +2015,7 @@ class Auth(object):
                         onvalidation=onvalidation,hideerror=self.settings.hideerror):
             description = self.messages.group_description % form.vars
             if self.settings.create_user_groups:
-                group_id = self.add_group("user_%s" % form.vars.id, description)
+                group_id = self.add_group(self.settings.create_user_groups % form.vars, description)
                 self.add_membership(group_id, form.vars.id)
             if self.settings.registration_requires_verification:
                 if not self.settings.mailer or \
@@ -2738,9 +2738,11 @@ class Auth(object):
         returns the group_id of the group uniquely associated to this user
         i.e. role=user:[user_id]
         """
-        if not user_id and self.user:
-            user_id = self.user.id
-        role = 'user_%s' % user_id
+        if user_id:
+            user = self.settings.table_user[user_id]
+        else:
+            user = self.user
+        role = self.settings.create_user_groups % user
         return self.id_group(role)
 
     def has_membership(self, group_id=None, user_id=None, role=None):
