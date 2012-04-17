@@ -2828,6 +2828,11 @@ class Auth(object):
         if group_id is passed, it checks whether the group has the permission
         """
 
+        if not group_id and self.settings.everybody_group_id and \
+                self.has_permission(
+            name,table_name,record_id,user_id=None,
+            group_id=self.settings.everybody_group_id): return True
+        
         if not user_id and not group_id and self.user:
             user_id = self.user.id
         if user_id:
