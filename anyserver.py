@@ -125,8 +125,16 @@ class Servers:
 
     @staticmethod
     def gunicorn(app,address, **options):
-        import gunicorn.arbiter
-        gunicorn.arbiter.Arbiter(address, 4, app).run()
+        from gunicorn.app.base import Application
+        config = {'bind': "%s:%d" % address}
+        config.update(options)
+        class GunicornApplication(Application):
+            def init(self, parser, opts, args):                
+                return config
+            def load(self):
+                return app
+        g = GunicornApplication()
+        g.run()   
 
     @staticmethod
     def eventlet(app,address, **options):
@@ -293,7 +301,6 @@ def main():
     (options, args) = parser.parse_args()
     print 'starting %s on %s:%s...' % (options.server,options.ip,options.port)
     run(options.server,options.ip,options.port,logging=options.logging,profiler=options.profiler)
-
 
 if __name__=='__main__':
     main()
