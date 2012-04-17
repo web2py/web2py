@@ -2535,6 +2535,11 @@ class MSSQLAdapter(BaseAdapter):
     def PRIMARY_KEY(self,key):
         return 'PRIMARY KEY CLUSTERED (%s)' % key
 
+    def AGGREGATE(self, first, what):
+        if what == 'LENGTH':
+            what = 'LEN'
+        return "%s(%s)" % (what, self.expand(first))
+
     def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
         if limitby:
             (lmin, lmax) = limitby
