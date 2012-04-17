@@ -930,6 +930,7 @@ class Auth(object):
         settings.login_after_registration = False
         settings.alternate_requires_registration = False
         settings.create_user_groups = "user_%(id)s"
+        settings.everybody_group_id = None
 
         settings.controller = controller
         settings.function = function
@@ -1574,6 +1575,8 @@ class Auth(object):
             if self.settings.create_user_groups:
                 group_id = self.add_group(self.settings.create_user_groups % user)
                 self.add_membership(group_id, user_id)
+            if self.settings.everybody_group_id:
+                self.add_membership(self.settings.everybody_group_id, user_id)
         return user
 
     def basic(self):
@@ -2017,6 +2020,8 @@ class Auth(object):
             if self.settings.create_user_groups:
                 group_id = self.add_group(self.settings.create_user_groups % form.vars, description)
                 self.add_membership(group_id, form.vars.id)
+            if self.settings.everybody_group_id:
+                self.add_membership(self.settings.everybody_group_id, form.vars.id)
             if self.settings.registration_requires_verification:
                 if not self.settings.mailer or \
                    not self.settings.mailer.send(to=form.vars.email,
