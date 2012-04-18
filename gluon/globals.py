@@ -251,7 +251,7 @@ class Response(Storage):
         s = ''
         for item in files:
             if isinstance(item,str):
-                f = item.lower()
+                f = item.lower().split('?')[0]
                 if f.endswith('.css'):  s += css_template % item
                 elif f.endswith('.js'): s += js_template % item
                 elif f.endswith('.coffee'): s += coffee_template % item
