@@ -2922,16 +2922,27 @@ class Auth(object):
         """
         if not user_id:
             user_id = self.user_id
-        if self.has_permission(name, table, 0, user_id):
+        if isinstance(table,str) and table in self.db.tables():
+            table = self.db[table]
+        if not isinstance(table,str) and\
+                self.has_permission(name, table, 0, user_id):
             return table.id > 0
         db = self.db
         membership = self.settings.table_membership
         permission = self.settings.table_permission
-        return table.id.belongs(db(membership.user_id == user_id)\
-                           (membership.group_id == permission.group_id)\
-                           (permission.name == name)\
-                           (permission.table_name == table)\
-                           ._select(permission.record_id))
+        query = table.id.belongs(
+            db(membership.user_id == user_id)\
+                (membership.group_id == permission.group_id)\
+                (permission.name == name)\
+                (permission.table_name == table)\
+                ._select(permission.record_id))
+        if self.settings.everybody_group_id:
+            query|=table.id.belongs(
+                db(permission.group_id==self.settings.everybody_group_id)\
+                    (permission.name == name)\
+                    (permission.table_name == table)\
+                    ._select(permission.record_id))
+        return query
 
     @staticmethod
     def archive(form,
