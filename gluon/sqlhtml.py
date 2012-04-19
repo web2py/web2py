@@ -1431,15 +1431,13 @@ class SQLFORM(FORM):
           jQuery('#w2p_query_panel').slideUp();
         }
         """)
-        return CAT(
-            INPUT(
+        return (INPUT(
                 _value=T("Query"),_type="button",_id="w2p_query_trigger",
                 _onclick="jQuery('#w2p_query_fields').change();jQuery('#w2p_query_panel').slideToggle();"),
-            DIV(_id="w2p_query_panel",
-                _style='position:absolute;z-index:1000',
-                _class='hidden',
-                *criteria),
-            fadd)
+                DIV(_id="w2p_query_panel",
+                    _class='hidden',
+                    *criteria),
+                fadd)
 
 
     @staticmethod
@@ -1614,7 +1612,7 @@ class SQLFORM(FORM):
         formfooter = DIV(
             _class='form_footer row_buttons %(header)s %(cornerbottom)s' % ui)
 
-        create_form = update_form = view_form = None
+        create_form = update_form = view_form = search_form = None
         sqlformargs = dict(formargs)
 
         if create and len(request.args)>1 and request.args[-2] == 'new':
@@ -1705,21 +1703,20 @@ class SQLFORM(FORM):
                 user_signature=user_signature)
         console = DIV(_class='web2py_console %(header)s %(cornertop)s' % ui)
         error = None
-        search_form = None
         if searchable:
+            sfields = reduce(lambda a,b:a+b,
+                             [[f for f in t if f.readable] for t in tables])
             if search_widget=='default':
+                mq,mf,ms = SQLFORM.search_menu(sfields)
                 search_widget = lambda sfield, url: FORM(
-                    SQLFORM.search_menu(sfields),
+                    mq,
                     INPUT(_name='keywords',_value=request.vars.keywords,
                           _id='web2py_keywords'),
                     INPUT(_type='submit',_value=T('Search')),
                     INPUT(_type='submit',_value=T('Clear'),
                           _onclick="jQuery('#web2py_keywords').val('');"),
-                    _method="GET",_action=url)
-            sfields = reduce(lambda a,b:a+b,
-                             [[f for f in t if f.readable] for t in tables])
+                    mf,ms,_method="GET",_action=url)                    
             form = search_widget and search_widget(sfields,url()) or ''
-            search_form = form
             console.append(form)
             keywords = request.vars.get('keywords','')
             try:
@@ -2048,16 +2045,24 @@ class SQLFORM(FORM):
                     kwargs[key] = kwargs[key][table._tablename]
                 else:
                     del kwargs[key]
+        check = {}
+        id_field_name = table._id.name
         for tablename,fieldname in table._referenced_by:
+            if db[tablename][fieldname].readable:            
+                check[tablename] = check.get(tablename,[])+[fieldname]
+        for tablename in sorted(check):
+            linked_fieldnames = check[tablename]
             tb = db[tablename]
-            if not tb[fieldname].readable: continue
-            id_field_name = table._id.name
-            if linked_tables is None or tablename in linked_tables:
-                args0 = tablename+'.'+fieldname
-                links.append(
-                    lambda row,t=T(tb._plural+' for '+fieldname),nargs=nargs,args0=args0:\
-                        A(SPAN(t),_class=trap_class(),_href=URL(
-                            args=request.args[:nargs]+[args0,row[id_field_name]])))
+            multiple_links = len(linked_fieldnames)>1
+            for fieldname in linked_fieldnames:                
+                if linked_tables is None or tablename in linked_tables:                
+                    t = T(tb._plural) if not multiple_links else T(tb._plural+'('+fieldname+')')
+                    args0 = tablename+'.'+fieldname
+                    links.append(
+                        lambda row,t=t,nargs=nargs,args0=args0:\
+                            A(SPAN(t),_class=trap_class(),_href=URL(
+                                args=request.args[:nargs]+[args0,row[id_field_name]])))
+                
         grid=SQLFORM.grid(query,args=request.args[:nargs],links=links,
                           links_in_grid=links_in_grid,
                           user_signature=user_signature,**kwargs)
