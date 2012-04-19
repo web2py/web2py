@@ -28,9 +28,9 @@ blockquote, blockquote p, p blockquote { font-style: italic; margin: 0.5em 30px 
 i, em { font-style: italic; }
 strong { font-weight: bold; }
 small { font-size: 0.8em; }
-textarea { width: 600px; }
+textarea { width: 100%; }
 code { font-family: Courier;}
-input[type=text], input[type=password], select { width: 300px; }
+input[type=text], input[type=password], select { width: 300px; margin-right: 5px }
 ul { list-style-type: none; margin: 0px; padding: 0px; }
 .hidden {display:none;visibility:visible}
 /** end **/
@@ -82,7 +82,7 @@ fieldset legend {text-transform:uppercase; font-weight: bold; padding: 4px 16px 
 /* fix ie problem with menu */
 .ie-lte7 .topbar .container {z-index: 2; }
 
-td.w2p_fw {padding-bottom: 1em;}
+td.w2p_fw {padding-bottom: 1px;}
 td.w2p_fl, td.w2p_fw, td.w2p_fc { vertical-align:top; }
 td.w2p_fl { text-align:right; }
 td.w2p_fl,  td.w2p_fw {padding-right: 7px;}
@@ -288,10 +288,6 @@ div.error {
 
 .web2py_paginator .current {
     font-weight: bold;
-}
-
-#w2p_query_trigger {
-        margin-left: 0;
 }
 
 #w2p_query_panel {}
