@@ -1746,7 +1746,7 @@ class SQLFORM(FORM):
                     buttonclass='buttonadd',
                     buttontext=T('Add'),
                     buttonurl=url(args=['new',tablename])))
-        if csv:
+        if csv and nrows:
             search_actions.append(gridbutton(
                     buttonclass='buttonexport',
                     buttontext=T('Export'),
@@ -1837,8 +1837,9 @@ class SQLFORM(FORM):
         except SyntaxError:
             rows = None
             error = T("Query Not Supported")
-        message = error or T('%(nrows)s records found') % dict(nrows=nrows)
-        console.append(DIV(message,_class='web2py_counter'))
+        if nrows:
+            message = error or T('%(nrows)s records found') % dict(nrows=nrows)
+            console.append(DIV(message,_class='web2py_counter'))
 
         if rows:
             htmltable = TABLE(THEAD(head))
