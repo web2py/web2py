@@ -38,10 +38,11 @@
   <!-- All JavaScript at the bottom, except for Modernizr which enables 
 	   HTML5 elements & feature detects -->
   <script src="{{=URL('static','js/modernizr.custom.js')}}"></script>  
+  <script src="{{=URL('static','js/bootstrap.min.js')}}"></script>  
 
   <!-- include stylesheets -->
   {{
-  response.files.append(URL('static','css/skeleton.css'))
+  response.files.append(URL('static','css/bootstrap.min.css'))
   response.files.append(URL('static','css/web2py.css'))
   if response.menu:
      response.files.append(URL('static','css/superfish.css'))
@@ -61,7 +62,7 @@
   # using sidebars need to know what sidebar you want to use
   left_sidebar_enabled = globals().get('left_sidebar_enabled',False)
   right_sidebar_enabled = globals().get('right_sidebar_enabled',False)
-  middle_columns = {0:'sixteen',1:'twelve',2:'eight'}[
+  middle_columns = {0:'span12',1:'span9',2:'span6'}[
      (left_sidebar_enabled and 1 or 0)+(right_sidebar_enabled and 1 or 0)]
   }}
 
@@ -71,94 +72,80 @@
   uncomment to load jquery-ui //-->
 </head>
 <body>
-  <div class="wrapper"><!-- for sticky footer -->
-  
-    <div class="topbar">
-      <div class="container">    
-        <div class="sixteen columns">
-          <div id="navbar">{{='auth' in globals() and auth.navbar(separators=(' ',' | ',''))}}</div>
-          {{is_mobile=request.user_agent().is_mobile}}
-	  {{if response.menu:}}
-          <div id="menu">
-             {{=MENU(response.menu, _class='mobile-menu' if is_mobile else 'sf-menu',mobile=is_mobile)}}
-          </div>
-          {{pass}}
+  <div class="topbar">
+    <div class="container-fluid">    
+      <div class="span12">
+        <div id="navbar">{{='auth' in globals() and auth.navbar(separators=(' ',' | ',''))}}</div>
+        {{is_mobile=request.user_agent().is_mobile}}
+	{{if response.menu:}}
+        <div id="menu">
+          {{=MENU(response.menu, _class='mobile-menu' if is_mobile else 'sf-menu',mobile=is_mobile)}}
         </div>
-      </div>
-    </div><!-- topbar -->
-    
-    <div class="flash">{{=response.flash or ''}}</div>
-    
-    <div class="header">
-      <div class="container">         
-        <div class="sixteen columns">
-          <h1 class="remove-bottom" style="margin-top: .5em;">
-          {{=response.title or request.application}}
-          </h1>
-          <h5>{{=response.subtitle or ''}}</h5>
-        </div>
-        <div class="sixteen columns">
-          <div class="statusbar clearfix">
-            {{block statusbar}}
-            <div class="breadcrumbs">{{=request.function.replace('_', ' ').title()}}</div>
-            {{end}}
-            <!-- AddToAny BEGIN -->
-            <div style="float:right; padding-top: .25em;" class="a2a_kit a2a_default_style">
-            <a class="a2a_dd" href="http://www.addtoany.com/share_save">Share</a></div>
-            <script type="text/javascript" src="http://static.addtoany.com/menu/page.js"></script>
-            <!-- AddToAny END -->
-          </div>
-        </div>
+        {{pass}}
       </div>
     </div>
-
-    <div class="main">
-      <div class="container">                 
-        {{if left_sidebar_enabled:}}
-        <div class="four columns left-sidebar">
-          {{block left_sidebar}}
-          <h3>Left Sidebar</h3>
-          <p></p>
-          {{end}}
-        </div>
-        {{pass}}
-        
-        <div class="{{=middle_columns}} columns center">
-          {{block center}}
-          {{include}}
-          {{end}}
-        </div>
-        
-        {{if right_sidebar_enabled:}}
-        <div class="four columns">
-          {{block right_sidebar}}
-          <h3>Right Sidebar</h3>
-          <p></p>
-          {{end}}
-        </div>    
-        {{pass}}
-        
-      </div><!-- container -->
-    </div><!-- main -->
-    
-    <div class="push"></div>
-  </div><!-- wrapper -->
-
+  </div><!-- topbar -->
+  
+  <div class="flash">{{=response.flash or ''}}</div>
+  
+  <div class="header">
+    <div class="container-fluid">         
+      <div class="span12">
+        <!-- AddToAny BEGIN -->
+        <div style="float:right; padding-top: .25em;" class="a2a_kit a2a_default_style">
+          <a class="a2a_dd" href="http://www.addtoany.com/share_save">Share</a></div>
+        <script type="text/javascript" src="http://static.addtoany.com/menu/page.js"></script>	
+        <h1>
+          {{=response.title or request.application}}
+        </h1>
+        <h5>{{=response.subtitle or ''}}</h5>
+      </div>
+    </div>
+  </div>
+  
+  <div class="main">
+    <div class="container-fluid">                 
+      {{if left_sidebar_enabled:}}
+      <div class="span3 left-sidebar">
+        {{block left_sidebar}}
+        <h3>Left Sidebar</h3>
+        <p></p>
+        {{end}}
+      </div>
+      {{pass}}
+      
+      <div class="{{=middle_columns}} center">
+        {{block center}}
+        {{include}}
+        {{end}}
+      </div>
+      
+      {{if right_sidebar_enabled:}}
+      <div class="span3">
+        {{block right_sidebar}}
+        <h3>Right Sidebar</h3>
+        <p></p>
+        {{end}}
+      </div>    
+      {{pass}}
+      
+    </div><!-- container-fluid -->
+  </div><!-- main -->
+  
   <div class="footer">
-    <div class="container">    
-      <div class="sixteen columns">
+    <div class="container-fluid">    
+      <div class="span12">
         {{block footer}} <!-- this is default footer -->
-        <div class="footer-content clearfix">
+        <div class="footer-content">
           <div class="copyright">{{=T('Copyright')}} &#169; 2011</div>
           <div style="float: right;">
-            <a href="http://www.web2py.com/">
-            <img style="padding-bottom: 0;" src="{{=URL('static','images/poweredby.png')}}"/>
-            </a>
+	    Powered by
+            <a href="http://www.web2py.com/">web2py</a>
           </div>
         </div>
         {{end}}	
       </div>
-    </div><!-- container -->
+    </div><!-- container-fluid -->
   </div><!-- footer -->
   
   <!--[if lt IE 7 ]>
