@@ -1630,6 +1630,10 @@ class SQLFORM(FORM):
                     onvalidation=onvalidation,
                     onsuccess=oncreate)
             res = DIV(buttons(), create_form, formfooter, _class=_class)
+            res.create_form = create_form
+            res.update_form = update_form
+            res.view_form = view_form
+            res.search_form = search_form
             return res
         elif details and len(request.args)>2 and request.args[-3]=='view':
             check_authorization()
@@ -1641,6 +1645,10 @@ class SQLFORM(FORM):
                            **sqlformargs)
             res = DIV(buttons(edit=editable, record=record), view_form,
                       formfooter, _class=_class)
+            res.create_form = create_form
+            res.update_form = update_form
+            res.view_form = view_form
+            res.search_form = search_form
             return res
         elif editable and len(request.args)>2 and request.args[-3]=='edit':
             check_authorization()
@@ -1659,6 +1667,10 @@ class SQLFORM(FORM):
                               next=referrer)
             res = DIV(buttons(view=details, record=record),
                       update_form, formfooter, _class=_class)
+            res.create_form = create_form
+            res.update_form = update_form
+            res.view_form = view_form
+            res.search_form = search_form
             return res
         elif deletable and len(request.args)>2 and request.args[-3]=='delete':
             check_authorization()
