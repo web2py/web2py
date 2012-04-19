@@ -15,7 +15,7 @@ left { float:left; text-align: left; }
 center { width:100; text-align: center; vertical-align:middle;}
 th, label { font-weight: bold; white-space: nowrap; }
 td, th { text-align: left; padding: 2px 5px 2px 5px; }
-th { vertical-align: middle; }
+th { vertical-align: middle; border-right: 1px solid white;}
 td { vertical-align: top; }
 form table tr td label { text-align: left; }
 p, table, ol, ul { padding: 0.5em 0 0.5em 0 }
