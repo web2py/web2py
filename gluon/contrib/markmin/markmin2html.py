@@ -366,10 +366,10 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None):
         # this is experimental @{controller/index/args}
         # turns into a digitally signed URL
         def u1(match,URL=URL):
-            b,c = match.group('a'), match.group('b'), match.group('c')
-            return URL(b,args=c.split('/'),scheme=True,host=True)
+            f,args = match.group('f'), match.group('args')
+            return URL(f,args=args.split('/'),scheme=True,host=True)
         text = re.compile(
-            '@\{(?P<a>\w+)/(?P<b>\w+)/(?P<c>.+?)\}'
+            '@\{(?P<f>\w+)/(?P<args>.+?)\}'
             ).sub(u1,text)
                           
     #############################################################
