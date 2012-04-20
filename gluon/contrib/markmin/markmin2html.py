@@ -285,6 +285,7 @@ regex_link_popup = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+) popup\]\]')
 regex_link_no_anchor = re.compile('\[\[ +(?P<k>\S+)\]\]')
 regex_qr = re.compile('(?<!["\w\>/=])qr:(?P<k>\w+://[\w\.\-\+\?&%\/\:]+)',re.M)
 regex_embed = re.compile('(?<!["\w\>/=])embed:(?P<k>\w+://[\w\.\-\+\?&%\/\:]+)',re.M)
+regex_iframe = re.compile('(?<!["\w\>/=])iframe:(?P<k>\w+://[\w\.\-\+\?&%\/\:]+)',re.M)
 regex_auto_image = re.compile('(?<!["\w\>/=])(?P<k>\w+://\S+\.(jpeg|jpg|gif|png)(\?\S+)?)',re.M)
 regex_auto_video = re.compile('(?<!["\w\>/=])(?P<k>\w+://\S+\.(mp4|mpeg|mov)(\?\S+)?)',re.M)
 regex_auto_audio = re.compile('(?<!["\w\>/=])(?P<k>\w+://\S+\.(mp3|wav)(\?\S+)?)',re.M)
@@ -342,9 +343,9 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None):
     '<p><img src="http://example.com" alt="this is an image" align="left" width="200px" /></p>'
 
     >>> render('[[this is an image http://example.com video]]')
-    '<p><video src="http://example.com" controls></video></p>'
+    '<p><video controls="controls"><source src="http://example.com" /></video></p>'
     >>> render('[[this is an image http://example.com audio]]')
-    '<p><audio src="http://example.com" controls></audio></p>'
+    '<p><audio controls="controls"><source src="http://example.com" /></audio></p>'
 
     >>> render('[[this is a **link** http://example.com]]')
     '<p><a href="http://example.com">this is a <strong>link</strong></a></p>'
@@ -424,14 +425,14 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None):
     text = regex_image_width.sub('<img src="\g<k>" alt="\g<t>" align="\g<p>" width="\g<w>" />', text)
     text = regex_image_center.sub('<p align="center"><img src="\g<k>" alt="\g<t>" /></p>', text)
     text = regex_image.sub('<img src="\g<k>" alt="\g<t>" align="\g<p>" />', text)
-    text = regex_video.sub('<video src="\g<k>" controls></video>', text)
-    text = regex_audio.sub('<audio src="\g<k>" controls></audio>', text)
+    text = regex_video.sub('<video controls="controls"><source src="\g<k>" /></video>', text)
+    text = regex_audio.sub('<audio controls="controls"><source src="\g<k>" /></audio>', text)
     text = regex_link_popup.sub('<a href="\g<k>" target="_blank">\g<t></a>', text)
     text = regex_link_no_anchor.sub('<a href="\g<k>">\g<k></a>', text)
     text = regex_link.sub('<a href="\g<k>">\g<t></a>', text)
     text = regex_qr.sub('<img width="80px" src="http://qrcode.kaywa.com/img.php?s=8&amp;d=\g<k>" alt="qr code" />',text)
-    text = regex_embed.sub('<iframe src="\g<k>" frameborder="0" allowfullscreen></iframe>', 
-                           text)
+    text = regex_iframe.sub('<iframe src="\g<k>" frameborder="0" allowfullscreen></iframe>',text)
+    text = regex_embed.sub('<a href="\g<k>" class="embed">\g<k></a>',text)
     text = regex_auto_image.sub('<img src="\g<k>" controls />', text)
     text = regex_auto_video.sub('<video src="\g<k>" controls></video>', text)
     text = regex_auto_audio.sub('<audio src="\g<k>" controls></audio>', text)
