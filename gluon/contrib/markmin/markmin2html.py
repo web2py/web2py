@@ -252,46 +252,46 @@ As shown in Ref.!`!`mdipierro`!`!:cite
 
 META = 'META'
 LATEX = '<img src="http://chart.apis.google.com/chart?cht=tx&chl=%s" />'
-regex_newlines = re.compile('(\n\r)|(\r\n)')
-regex_dd=re.compile('\$\$(?P<latex>.*?)\$\$')
-regex_code = re.compile('('+META+')|(``(?P<t>.*?)``(:(?P<c>\w+))?)',re.S)
+regex_newlines = re.compile(r'(\n\r)|(\r\n)')
+regex_dd=re.compile(r'\$\$(?P<latex>.*?)\$\$')
+regex_code = re.compile(r'('+META+r')|(``(?P<t>.*?)``(:(?P<c>\w+))?)',re.S)
 regex_maps = [
-    (re.compile('[ \t\r]+\n'),'\n'),
-    (re.compile('[ \t\r]+\n'),'\n'),
-    (re.compile('\*\*(?P<t>[^\s\*]+( +[^\s\*]+)*)\*\*'),'<strong>\g<t></strong>'),
+    (re.compile(r'[ \t\r]+\n'),'\n'),
+    (re.compile(r'[ \t\r]+\n'),'\n'),
+    (re.compile(r'\*\*(?P<t>[^\s*]+( +[^\s*]+)*)\*\*'),'<strong>\g<t></strong>'),
     (re.compile("''(?P<t>[^\s']+( +[^\s']+)*)''"),'<em>\g<t></em>'),
-    (re.compile('^#{6} (?P<t>[^\n]+)',re.M),'\n\n<<h6>\g<t></h6>\n'),
-    (re.compile('^#{5} (?P<t>[^\n]+)',re.M),'\n\n<<h5>\g<t></h5>\n'),
-    (re.compile('^#{4} (?P<t>[^\n]+)',re.M),'\n\n<<h4>\g<t></h4>\n'),
-    (re.compile('^#{3} (?P<t>[^\n]+)',re.M),'\n\n<<h3>\g<t></h3>\n'),
-    (re.compile('^#{2} (?P<t>[^\n]+)',re.M),'\n\n<<h2>\g<t></h2>\n'),
-    (re.compile('^#{1} (?P<t>[^\n]+)',re.M),'\n\n<<h1>\g<t></h1>\n'),
-    (re.compile('^\- +(?P<t>.*)',re.M),'<<ul><li>\g<t></li></ul>'),
-    (re.compile('^\+ +(?P<t>.*)',re.M),'<<ol><li>\g<t></li></ol>'),
-    (re.compile('</ol>\n<<ol>'),''),
-    (re.compile('</ul>\n<<ul>'),''),
-    (re.compile('<<'),'\n\n<<'),
-    (re.compile('\n\s+\n'),'\n\n')]
-regex_table = re.compile('^\-{4,}\n(?P<t>.*?)\n\-{4,}(:(?P<c>\w+))?\n',re.M|re.S)
-regex_anchor = re.compile('\[\[(?P<t>\S+)\]\]')
-regex_image_center_width = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +center +(?P<w>\d+px)\]\]')
-regex_image_width = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +(?P<p>left|right) +(?P<w>\d+px)\]\]')
-regex_image_center = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +center\]\]')
-regex_image = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +(?P<p>left|right|center)\]\]')
-regex_video = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +video\]\]')
-regex_audio = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +audio\]\]')
-regex_link = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+)\]\]')
-regex_link_popup = re.compile('\[\[(?P<t>[^\]]*?) +(?P<k>\S+) popup\]\]')
-regex_link_no_anchor = re.compile('\[\[ +(?P<k>\S+)\]\]')
-regex_qr = re.compile('(?<!["\w\>/=])qr:(?P<k>\w+://[\w\.\-\+\?&%\/\:]+)',re.M)
-regex_embed = re.compile('(?<!["\w\>/=])embed:(?P<k>\w+://[\w\.\-\+\?&%\/\:]+)',re.M)
-regex_iframe = re.compile('(?<!["\w\>/=])iframe:(?P<k>\w+://[\w\.\-\+\?&%\/\:]+)',re.M)
-regex_auto_image = re.compile('(?<!["\w\>/=])(?P<k>\w+://\S+\.(jpeg|jpg|gif|png)(\?\S+)?)',re.M)
-regex_auto_video = re.compile('(?<!["\w\>/=])(?P<k>\w+://\S+\.(mp4|mpeg|mov)(\?\S+)?)',re.M)
-regex_auto_audio = re.compile('(?<!["\w\>/=])(?P<k>\w+://\S+\.(mp3|wav)(\?\S+)?)',re.M)
-regex_auto = re.compile('(?<!["\w\>/=])(?P<k>\w+://\S+)',re.M)
+    (re.compile(r'^#{6} (?P<t>[^\n]+)',re.M),'\n\n<<h6>\g<t></h6>\n'),
+    (re.compile(r'^#{5} (?P<t>[^\n]+)',re.M),'\n\n<<h5>\g<t></h5>\n'),
+    (re.compile(r'^#{4} (?P<t>[^\n]+)',re.M),'\n\n<<h4>\g<t></h4>\n'),
+    (re.compile(r'^#{3} (?P<t>[^\n]+)',re.M),'\n\n<<h3>\g<t></h3>\n'),
+    (re.compile(r'^#{2} (?P<t>[^\n]+)',re.M),'\n\n<<h2>\g<t></h2>\n'),
+    (re.compile(r'^#{1} (?P<t>[^\n]+)',re.M),'\n\n<<h1>\g<t></h1>\n'),
+    (re.compile(r'^\- +(?P<t>.*)',re.M),'<<ul><li>\g<t></li></ul>'),
+    (re.compile(r'^\+ +(?P<t>.*)',re.M),'<<ol><li>\g<t></li></ol>'),
+    (re.compile(r'</ol>\n<<ol>'),''),
+    (re.compile(r'</ul>\n<<ul>'),''),
+    (re.compile(r'<<'),'\n\n<<'),
+    (re.compile(r'\n\s+\n'),'\n\n')]
+regex_table = re.compile(r'^\-{4,}\n(?P<t>.*?)\n\-{4,}(:(?P<c>\w+))?\n',re.M|re.S)
+regex_anchor = re.compile(r'\[\[(?P<t>\S+)\]\]')
+regex_image_center_width = re.compile(r'\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +center +(?P<w>\d+px)\]\]')
+regex_image_width = re.compile(r'\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +(?P<p>left|right) +(?P<w>\d+px)\]\]')
+regex_image_center = re.compile(r'\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +center\]\]')
+regex_image = re.compile(r'\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +(?P<p>left|right|center)\]\]')
+regex_video = re.compile(r'\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +video\]\]')
+regex_audio = re.compile(r'\[\[(?P<t>[^\]]*?) +(?P<k>\S+) +audio\]\]')
+regex_link = re.compile(r'\[\[(?P<t>[^\]]*?) +(?P<k>\S+)\]\]')
+regex_link_popup = re.compile(r'\[\[(?P<t>[^\]]*?) +(?P<k>\S+) popup\]\]')
+regex_link_no_anchor = re.compile(r'\[\[ +(?P<k>\S+)\]\]')
+regex_qr = re.compile(r'(?<!["\w>/=])qr:(?P<k>\w+://[\w.\-+?&%/:]+)',re.M)
+regex_embed = re.compile(r'(?<!["\w>/=])embed:(?P<k>\w+://[\w.\-+?&%/:]+)', re.M)
+regex_iframe = re.compile(r'(?<!["\w>/=])iframe:(?P<k>\w+://[\w.\-+?&%/:]+)', re.M)
+regex_auto_image = re.compile(r'(?<!["\w>/=])(?P<k>\w+://\S+\.(jpeg|jpg|gif|png)(\?\S+)?)',re.M)
+regex_auto_video = re.compile(r'(?<!["\w>/=])(?P<k>\w+://\S+\.(mp4|mpeg|mov)(\?\S+)?)',re.M)
+regex_auto_audio = re.compile(r'(?<!["\w>/=])(?P<k>\w+://\S+\.(mp3|wav)(\?\S+)?)',re.M)
+regex_auto = re.compile(r'(?<!["\w>/=])(?P<k>\w+://\S+)',re.M)
 
-def render(text,extra={},allowed={},sep='p',URL=None,environment=None):
+def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='google'):
     """
     Arguments:
     - text is the text to be processed
@@ -361,7 +361,7 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None):
         def u2(match,environment=environment):
             a = match.group('a')
             return str(environment[a])
-        text = re.compile('@\{(?P<a>\w+?)\}').sub(u2,text)
+        text = re.compile(r'@\{(?P<a>\w+?)\}').sub(u2,text)
     if not URL is None:
         # this is experimental @{controller/index/args}
         # turns into a digitally signed URL
@@ -377,7 +377,8 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None):
     # store them into segments they will be treated as code
     #############################################################
     segments, i = [], 0
-    text = regex_dd.sub('``\g<latex>``:latex ',text)
+    if latex == 'google':
+        text = regex_dd.sub('``\g<latex>``:latex ',text)
     text = regex_newlines.sub('\n',text)
     while True:
         item = regex_code.search(text,i)
