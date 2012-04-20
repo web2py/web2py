@@ -30,6 +30,8 @@ strong { font-weight: bold; }
 small { font-size: 0.8em; }
 textarea { width: 100%; }
 code { font-family: Courier;}
+video { width:400px; }
+audio { width:200px; }
 input[type=text], input[type=password], select { width: 300px; margin-right: 5px }
 ul { list-style-type: none; margin: 0px; padding: 0px; }
 .hidden {display:none;visibility:visible}
