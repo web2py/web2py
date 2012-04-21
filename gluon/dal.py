@@ -7176,6 +7176,8 @@ class Table(dict):
 
     def __str__(self):
         if self.get('_ot', None):
+            if 'Oracle' in str(type(self._db._adapter)):     # <<< patch
+                return '%s %s' % (self._ot, self._tablename) # <<< patch
             return '%s AS %s' % (self._ot, self._tablename)
         return self._tablename
 
