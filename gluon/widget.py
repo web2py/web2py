@@ -21,6 +21,7 @@ import math
 import logging
 import newcron
 import main
+import getpass
 
 from fileutils import w2p_pack, read_file, write_file
 from shell import run, test
@@ -942,7 +943,7 @@ def start(cron=True):
     # ## if no tk and no password, ask for a password
 
     if not root and options.password == '<ask>':
-        options.password = raw_input('choose a password:')
+        options.password = getpass.getpass('choose a password:')
 
     if not options.password and not options.nobanner:
         print 'no password, no admin interface'
