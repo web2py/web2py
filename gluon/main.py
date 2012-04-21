@@ -430,7 +430,7 @@ def wsgibase(environ, responder):
                                    web2py_error='invalid application')
                 elif not request.is_local and \
                         os.path.exists(os.path.join(request.folder,'DISABLED')):
-                    raise HTTP(200, "<html><body><h1>Down for maintenance</h1></body></html>")
+                    raise HTTP(503, "<html><body><h1>Temporarily down for maintenance</h1></body></html>")
                 request.url = Url(r=request, args=request.args,
                                        extension=request.raw_extension)
 
