@@ -859,9 +859,8 @@ class BaseAdapter(ConnectionPool):
                 metadata_change = True
             elif sql_fields[key]['sql'] != sql_fields_old[key]['sql'] \
                   and not isinstance(table[key].type, SQLCustomType) \
-                  and not (table[key].type.startswith('reference') and \
-                      sql_fields[key]['sql'].startswith('INT,') and \
-                      sql_fields_old[key]['sql'].startswith('INT NOT NULL,')):
+                  and not table[key].type.startswith('reference')\
+                  and not table[key].type.startswith('id'):
                 sql_fields_current[key] = sql_fields[key]
                 t = tablename
                 tt = sql_fields_aux[key]['sql'].replace(', ', new_add)
@@ -1981,8 +1980,8 @@ class MySQLAdapter(BaseAdapter):
         'date': 'DATE',
         'time': 'TIME',
         'datetime': 'DATETIME',
-        'id': 'INT AUTO_INCREMENT NOT NULL',
-        'reference': 'INT, INDEX %(field_name)s__idx (%(field_name)s), FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'id': 'BIGINT AUTO_INCREMENT NOT NULL',
+        'reference': 'BIGINT, INDEX %(field_name)s__idx (%(field_name)s), FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'list:integer': 'LONGTEXT',
         'list:string': 'LONGTEXT',
         'list:reference': 'LONGTEXT',
@@ -2084,8 +2083,8 @@ class PostgreSQLAdapter(BaseAdapter):
         'date': 'DATE',
         'time': 'TIME',
         'datetime': 'TIMESTAMP',
-        'id': 'SERIAL PRIMARY KEY',
-        'reference': 'INTEGER REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'id': 'BIGSERIAL PRIMARY KEY',
+        'reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'list:integer': 'TEXT',
         'list:string': 'TEXT',
         'list:reference': 'TEXT',
@@ -2372,8 +2371,8 @@ class OracleAdapter(BaseAdapter):
         'date': 'DATE',
         'time': 'CHAR(8)',
         'datetime': 'DATE',
-        'id': 'NUMBER PRIMARY KEY',
-        'reference': 'NUMBER, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'id': 'BIGINT PRIMARY KEY',
+        'reference': 'BIGINT, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
         'list:integer': 'CLOB',
@@ -2506,8 +2505,8 @@ class MSSQLAdapter(BaseAdapter):
         'date': 'DATETIME',
         'time': 'CHAR(8)',
         'datetime': 'DATETIME',
-        'id': 'INT IDENTITY PRIMARY KEY',
-        'reference': 'INT NULL, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'id': 'BIGINT IDENTITY PRIMARY KEY',
+        'reference': 'BIGINT NULL, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
         'list:integer': 'TEXT',
@@ -2694,8 +2693,8 @@ class MSSQL2Adapter(MSSQLAdapter):
         'date': 'DATETIME',
         'time': 'CHAR(8)',
         'datetime': 'DATETIME',
-        'id': 'INT IDENTITY PRIMARY KEY',
-        'reference': 'INT, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'id': 'BIGINT IDENTITY PRIMARY KEY',
+        'reference': 'BIGINT, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
         'list:integer': 'NTEXT',
@@ -2732,8 +2731,8 @@ class FireBirdAdapter(BaseAdapter):
         'date': 'DATE',
         'time': 'TIME',
         'datetime': 'TIMESTAMP',
-        'id': 'INTEGER PRIMARY KEY',
-        'reference': 'INTEGER REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'id': 'BIGINT PRIMARY KEY',
+        'reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'list:integer': 'BLOB SUB_TYPE 1',
         'list:string': 'BLOB SUB_TYPE 1',
         'list:reference': 'BLOB SUB_TYPE 1',
@@ -2904,7 +2903,7 @@ class InformixAdapter(BaseAdapter):
         'time': 'CHAR(8)',
         'datetime': 'DATETIME',
         'id': 'SERIAL',
-        'reference': 'INTEGER REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'reference FK': 'REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s CONSTRAINT FK_%(table_name)s_%(field_name)s',
         'reference TFK': 'FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s CONSTRAINT TFK_%(table_name)s_%(field_name)s',
         'list:integer': 'BLOB SUB_TYPE 1',
@@ -3015,8 +3014,8 @@ class DB2Adapter(BaseAdapter):
         'date': 'DATE',
         'time': 'TIME',
         'datetime': 'TIMESTAMP',
-        'id': 'INTEGER GENERATED ALWAYS AS IDENTITY PRIMARY KEY NOT NULL',
-        'reference': 'INT, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'id': 'BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY NOT NULL',
+        'reference': 'BIGINT, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
         'list:integer': 'CLOB',
@@ -3098,10 +3097,10 @@ class TeradataAdapter(BaseAdapter):
         'date': 'DATE',
         'time': 'TIME',
         'datetime': 'TIMESTAMP',
-        'id': 'INTEGER GENERATED ALWAYS AS IDENTITY',  # Teradata Specific
+        'id': 'BIGINT GENERATED ALWAYS AS IDENTITY',  # Teradata Specific
         # Modified Constraint syntax for Teradata.  
         # Teradata does not support ON DELETE.
-        'reference': 'INT', 
+        'reference': 'BIGINT', 
         'reference FK': ' REFERENCES %(foreign_key)s', 
         'reference TFK': ' FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s)', 
         'list:integer': 'CLOB',
@@ -3317,8 +3316,8 @@ class IngresAdapter(BaseAdapter):
         'date': 'ANSIDATE',
         'time': 'TIME WITHOUT TIME ZONE',
         'datetime': 'TIMESTAMP WITHOUT TIME ZONE',
-        'id': 'integer4 not null unique with default next value for %s' % INGRES_SEQNAME,
-        'reference': 'integer4, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'id': 'bigint not null unique with default next value for %s' % INGRES_SEQNAME,
+        'reference': 'BIGINT, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s', ## FIXME TODO
         'list:integer': 'CLOB',
@@ -3413,8 +3412,8 @@ class IngresUnicodeAdapter(IngresAdapter):
         'date': 'ANSIDATE',
         'time': 'TIME WITHOUT TIME ZONE',
         'datetime': 'TIMESTAMP WITHOUT TIME ZONE',
-        'id': 'integer4 not null unique with default next value for %s'% INGRES_SEQNAME,
-        'reference': 'integer4, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'id': 'BIGINT not null unique with default next value for %s'% INGRES_SEQNAME,
+        'reference': 'BIGINT, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s', ## FIXME TODO
         'list:integer': 'NCLOB',
@@ -3439,8 +3438,8 @@ class SAPDBAdapter(BaseAdapter):
         'date': 'DATE',
         'time': 'TIME',
         'datetime': 'TIMESTAMP',
-        'id': 'INT PRIMARY KEY',
-        'reference': 'INT, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'id': 'BIGINT PRIMARY KEY',
+        'reference': 'BIGINT, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'list:integer': 'LONG',
         'list:string': 'LONG',
         'list:reference': 'LONG',
