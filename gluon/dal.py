@@ -3639,6 +3639,7 @@ class UseDatabaseStoredFile:
         self.db.commit()
 
 class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
+    uploads_in_blob = True
 
     def __init__(self, db, uri='google:sql://realm:domain/database',
                  pool_size=0, folder=None, db_codec='UTF-8',
