@@ -785,7 +785,10 @@ class SQLFORM(FORM):
         self.custom.linkto = Storage()
 
         # default id field name
-        self.id_field_name = table._id.name
+        if not keyed:
+            self.id_field_name = table._id.name
+        else:
+            self.id_field_name = table._primarykey[0] ### only works if one key
 
         sep = separator or ''
 
