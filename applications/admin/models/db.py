@@ -14,6 +14,8 @@ if MULTI_USER_MODE:
     mail.settings.sender = EMAIL_SENDER
     mail.settings.login =  EMAIL_LOGIN
 
+    auth.settings.extra_fields['auth_user'] = \
+        [Field('is_manager','boolean',default=False,writable=False)]
     auth.define_tables()                           # creates all needed tables
     auth.settings.registration_requires_verification = False
     auth.settings.registration_requires_approval = True
@@ -30,7 +32,7 @@ if not session.authorized and MULTI_USER_MODE:
 def is_manager():
     if not MULTI_USER_MODE:
         return True
-    elif auth.user and auth.user.id==1:
+    elif auth.user and (auth.user.id==1 or auth.user.is_manager):
         return True
     else:
         return False
