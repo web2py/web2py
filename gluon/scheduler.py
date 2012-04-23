@@ -413,7 +413,7 @@ class Scheduler(MetaScheduler):
                 db.commit()
                 break
             except:
-                db.rollback
+                db.rollback()
         logging.info('new task %(id)s "%(task_name)s" %(application_name)s.%(function_name)s' % task)
         return Task(
             app = task.application_name,
