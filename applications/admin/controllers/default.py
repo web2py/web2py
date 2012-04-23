@@ -1132,6 +1132,8 @@ def errors():
                     fullpath_file.close()
             except IOError:
                 continue
+            except EOFError:
+                continue
 
             hash = hashlib.md5(error['traceback']).hexdigest()
 
