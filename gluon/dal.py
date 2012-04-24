@@ -5977,6 +5977,8 @@ def bar_encode(items):
     return '|%s|' % '|'.join(bar_escape(item) for item in items if str(item).strip())
 
 def bar_decode_integer(value):
+    if not hasattr(value,'split') and hasattr(value,'read'):
+        value = value.read()
     return [int(x) for x in value.split('|') if x.strip()]
 
 def bar_decode_string(value):
