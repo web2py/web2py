@@ -94,6 +94,15 @@ class Request(Storage):
         self.is_local = False
         self.global_settings = settings.global_settings
 
+    def intargs(self,n,default=None,url_onerror=None):
+        k = self.args(n) or default
+        try:
+            return int(k)
+        except (ValueError, TypeError):
+            if url_onerror:
+                redirect(url_onerror)
+            raise HTTP(404)
+
     def compute_uuid(self):
         self.uuid = '%s/%s.%s.%s' % (
             self.application,
