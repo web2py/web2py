@@ -25,11 +25,21 @@ class List(list):
     instead of IndexOutOfBounds
     """
 
-    def __call__(self, i, default=None):
+    def __call__(self, i, default=None, cast=None, url_onerror=None):        
         if 0<=i<len(self):
-            return self[i]
+            value = self[i]
         else:
-            return default
+            value = default
+        if cast:
+            try:
+                value = cast(value)
+            except (ValueError, TypeError):
+                from http import HTTP, redirect
+                if url_onerror:
+                    redirect(url_onerror)
+                else:
+                    raise HTTP(404)
+        return value
 
 class Storage(dict):
 
