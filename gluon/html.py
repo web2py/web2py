@@ -2006,6 +2006,8 @@ class FORM(DIV):
         self.validate(**kwargs)
         return self
 
+    def add_button(self,value,url,_class=None):
+        self[0][-1][1].append(INPUT(_type="button",_value=value,_onclick="window.location='%s';return false" % url,_class=_class))
 
 class BEAUTIFY(DIV):
 
