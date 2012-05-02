@@ -7215,10 +7215,24 @@ class Table(dict):
                 raise SyntaxError,'Table: missing required field: %s' % ofield.name
         return new_fields
 
+    def _attempt_upload(self, fields):
+        for field in self:
+            if field.type=='upload' and field.name in fields:
+                value = fields[field.name]
+                if not isinstance(value,str):
+                    if hasattr(value,'file') and hasattr(value,'filename'):
+                        new_name = field.store(value.file,filename=value.filename)
+                    elif hasattr(value,'read') and hasattr(value,'name'):
+                        new_name = field.store(value,filename=value.name)                        
+                    else:
+                        raise RuntimeError, "Unable to handle upload"
+                    fields[field.name] = new_name
+                    
     def _insert(self, **fields):
         return self._db._adapter._insert(self,self._listify(fields))
 
     def insert(self, **fields):
+        self._attempt_upload(fields)
         if any(f(fields) for f in self._before_insert): return 0
         ret =  self._db._adapter.insert(self,self._listify(fields))
         ret and [f(fields,ret) for f in self._after_insert]
@@ -8052,6 +8066,7 @@ class Set(object):
     def update(self, **update_fields):
         tablename = self.db._adapter.get_table(self.query)
         table = self.db[tablename]
+        table._attempt_upload(update_fields)
         if any(f(self,update_fields) for f in table._before_update): return 0
         fields = table._listify(update_fields,update=True)
         if not fields: raise SyntaxError, "No fields to update"
