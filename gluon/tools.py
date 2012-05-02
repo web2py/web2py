@@ -191,6 +191,7 @@ class Mail(object):
         Optionally you can use PGP encryption or X509:
 
             mail.settings.cipher_type = None
+            mail.settings.gpg_home = None
             mail.settings.sign = True
             mail.settings.sign_passphrase = None
             mail.settings.encrypt = True
@@ -202,6 +203,8 @@ class Mail(object):
             cipher_type       : None
                                 gpg - need a python-pyme package and gpgme lib
                                 x509 - smime
+            gpg_home          : you can set a GNUPGHOME environment variable
+                                to specify home of gnupg
             sign              : sign the message (True or False)
             sign_passphrase   : passphrase for key signing
             encrypt           : encrypt the message
@@ -226,6 +229,7 @@ class Mail(object):
         settings.tls = tls
         settings.ssl = False
         settings.cipher_type = None
+        settings.gpg_home = None
         settings.sign = True
         settings.sign_passphrase = None
         settings.encrypt = True
@@ -408,6 +412,10 @@ class Mail(object):
         #                       GPGME                         #
         #######################################################
         if cipher_type == 'gpg':
+            if self.settings.gpg_home:
+                # Set GNUPGHOME environment variable to set home of gnupg
+                import os
+                os.environ['GNUPGHOME'] = self.settings.gpg_home
             if not sign and not encrypt:
                 self.error="No sign and no encrypt is set but cipher type to gpg"
                 return False
