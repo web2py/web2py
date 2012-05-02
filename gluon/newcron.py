@@ -219,8 +219,6 @@ class cronlauncher(threading.Thread):
         threading.Thread.__init__(self)
         if platform.system() == 'Windows':
             shell = False
-        elif isinstance(cmd,list):
-            cmd = ' '.join(cmd)
         self.cmd = cmd
         self.shell = shell
 
