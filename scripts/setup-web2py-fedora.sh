@@ -179,7 +179,6 @@ if [ ! ${RETV} -eq 0 ]; then
 
     # Create the SELinux policy
 cat > httpd.te <<EOF
- EOF
 
 module httpd 1.0;
 
@@ -225,7 +224,6 @@ cd /tmp/setup-web2py
 # Create rules file - based upon
 # http://articles.slicehost.com/assets/2007/9/4/iptables.txt
 cat > iptables.rules <<EOF
- EOF
 *filter
 
 #  Allows all loopback (lo0) traffic
@@ -297,7 +295,6 @@ if [ -e /etc/httpd/conf.d/welcome.conf ]; then
 fi
 
 cat  > /etc/httpd/conf.d/default.conf <<EOF
- EOF
 
 NameVirtualHost *:80
 NameVirtualHost *:443
@@ -403,7 +400,3 @@ cd ${current_directory}
 
 echo " - Complete!"
 echo
-
-EOF
-EOF
-EOF
