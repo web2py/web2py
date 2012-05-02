@@ -2579,38 +2579,39 @@ class IS_STRONG(object):
         failures = []
         if type(self.min) == int and self.min > 0:
             if not len(value) >= self.min:
-                failures.append("Minimum length is %s" % self.min)
+                failures.append(translate("Minimum length is %s") % self.min)
         if type(self.max) == int and self.max > 0:
             if not len(value) <= self.max:
-                failures.append("Maximum length is %s" % self.max)
+                failures.append(translate("Maximum length is %s") % self.max)
         if type(self.special) == int:
             all_special = [ch in value for ch in self.specials]
             if self.special > 0:
                 if not all_special.count(True) >= self.special:
-                    failures.append("Must include at least %s of the following : %s" % (self.special, self.specials))
+                    failures.append(translate("Must include at least %s of the following : %s") \
+                                        % (self.special, self.specials))
         if self.invalid:
             all_invalid = [ch in value for ch in self.invalid]
             if all_invalid.count(True) > 0:
-                failures.append("May not contain any of the following: %s" \
+                failures.append(translate("May not contain any of the following: %s") \
                     % self.invalid)
         if type(self.upper) == int:
             all_upper = re.findall("[A-Z]", value)
             if self.upper > 0:
                 if not len(all_upper) >= self.upper:
-                    failures.append("Must include at least %s upper case" \
+                    failures.append(translate("Must include at least %s upper case") \
                         % str(self.upper))
             else:
                 if len(all_upper) > 0:
-                    failures.append("May not include any upper case letters")
+                    failures.append(translate("May not include any upper case letters"))
         if type(self.lower) == int:
             all_lower = re.findall("[a-z]", value)
             if self.lower > 0:
                 if not len(all_lower) >= self.lower:
-                    failures.append("Must include at least %s lower case" \
+                    failures.append(translate("Must include at least %s lower case") \
                         % str(self.lower))
             else:
                 if len(all_lower) > 0:
-                    failures.append("May not include any lower case letters")
+                    failures.append(translate("May not include any lower case letters"))
         if type(self.number) == int:
             all_number = re.findall("[0-9]", value)
             if self.number > 0:
@@ -2618,11 +2619,11 @@ class IS_STRONG(object):
                 if self.number > 1:
                     numbers = "numbers"
                 if not len(all_number) >= self.number:
-                    failures.append("Must include at least %s %s" \
+                    failures.append(translate("Must include at least %s %s") \
                         % (str(self.number), numbers))
             else:
                 if len(all_number) > 0:
-                    failures.append("May not include any numbers")
+                    failures.append(translate("May not include any numbers"))
         if len(failures) == 0:
             return (value, None)
         if not self.error_message:
