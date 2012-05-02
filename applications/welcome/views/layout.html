@@ -96,10 +96,12 @@
         <div style="float:right; padding-top: .25em;" class="a2a_kit a2a_default_style">
           <a class="a2a_dd" href="http://www.addtoany.com/share_save">Share</a></div>
         <script type="text/javascript" src="http://static.addtoany.com/menu/page.js"></script>	
-        <h1>
-          {{=response.title or request.application}}
-        </h1>
-        <h5>{{=response.subtitle or ''}}</h5>
+        <div class="page-header">
+          <h1>
+            {{=response.title or request.application}}
+            <small>{{=response.subtitle or ''}}</small>
+          </h1>
+        </div>
       </div>
     </div>
   </div>
