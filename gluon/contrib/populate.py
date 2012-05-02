@@ -70,7 +70,7 @@ def populate(table, n, default=True, compute=False):
                 continue
             elif field.type == 'id':
                 continue
-            elif default and field.default:
+            elif default and field.default !=None:
                 record[fieldname]=field.default
             elif compute and field.compute:
                 continue
