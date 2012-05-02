@@ -1812,6 +1812,9 @@ class FORM(DIV):
         self.latest = Storage()
         self.accepted = None # none for not submitted
 
+    def assert_status(self, status, request_vars):
+        return status
+
     def accepts(
         self,
         request_vars,
@@ -1851,6 +1854,7 @@ class FORM(DIV):
                 status = False
                 self.record_changed = True
         status = self._traverse(status,hideerror)
+        status = self.assert_status(status, request_vars)
         if onvalidation:
             if isinstance(onvalidation, dict):
                 onsuccess = onvalidation.get('onsuccess', None)

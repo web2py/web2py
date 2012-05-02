@@ -706,6 +706,25 @@ class SQLFORM(FORM):
     ID_LABEL_SUFFIX = '__label'
     ID_ROW_SUFFIX = '__row'
 
+    def assert_status(self, status, request_vars):
+        if not status and self.record and self.errors:
+            ### if there are errors in update mode
+            # and some errors refers to an already uploaded file
+            # delete error if
+            # - user not trying to upload a new file
+            # - there is existing file and user is not trying to delete it
+            # this is because removing the file may not pass validation
+            for key in self.errors.keys():
+                if key in self.table \
+                        and self.table[key].type == 'upload' \
+                        and request_vars.get(key, None) in (None, '') \
+                        and self.record[key] \
+                        and not key + UploadWidget.ID_DELETE_SUFFIX in request_vars:
+                    del self.errors[key]
+            if not self.errors:
+                status = True
+        return status
+
     def __init__(
         self,
         table,
@@ -1110,23 +1129,6 @@ class SQLFORM(FORM):
             onvalidation,
             hideerror=hideerror,
             )
-
-        if not ret and self.record and self.errors:
-            ### if there are errors in update mode
-            # and some errors refers to an already uploaded file
-            # delete error if
-            # - user not trying to upload a new file
-            # - there is existing file and user is not trying to delete it
-            # this is because removing the file may not pass validation
-            for key in self.errors.keys():
-                if key in self.table \
-                        and self.table[key].type == 'upload' \
-                        and request_vars.get(key, None) in (None, '') \
-                        and self.record[key] \
-                        and not key + UploadWidget.ID_DELETE_SUFFIX in request_vars:
-                    del self.errors[key]
-            if not self.errors:
-                ret = True
 
         self.deleted = \
             request_vars.get(self.FIELDNAME_REQUEST_DELETE, False)
