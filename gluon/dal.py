@@ -533,6 +533,7 @@ class BaseAdapter(ConnectionPool):
         'blob': 'BLOB',
         'upload': 'CHAR(%(length)s)',
         'integer': 'INTEGER',
+        'float':'DOUBLE',
         'double': 'DOUBLE',
         'decimal': 'DOUBLE',
         'date': 'DATE',
@@ -860,6 +861,7 @@ class BaseAdapter(ConnectionPool):
             elif sql_fields[key]['sql'] != sql_fields_old[key]['sql'] \
                   and not isinstance(table[key].type, SQLCustomType) \
                   and not table[key].type.startswith('reference')\
+                  and not table[key].type.startswith('double')\
                   and not table[key].type.startswith('id'):
                 sql_fields_current[key] = sql_fields[key]
                 t = tablename
@@ -1445,10 +1447,15 @@ class BaseAdapter(ConnectionPool):
         self.execute(query)
 
     def log_execute(self, *a, **b):
-        self.db._lastsql = a[0]
+        command = a[0]
+        if self.db._legacyid:
+            if command.startswith('CREATE') or command.startswith('ALTER'):
+                command = command.replace('BIGINT','INT').replace('BIGSERIAL','SERIAL')
+                a = [command]+a[1:]
+        self.db._lastsql = command
         t0 = time.time()
         ret = self.cursor.execute(*a, **b)
-        self.db._timings.append((a[0],time.time()-t0))
+        self.db._timings.append((command,time.time()-t0))
         del self.db._timings[:-TIMINGSSIZE]
         return ret
 
@@ -1637,6 +1644,7 @@ class BaseAdapter(ConnectionPool):
         self.parsemap = {
             'id':self.parse_id,
             'integer':self.parse_integer,
+            'float':self.parse_double,
             'double':self.parse_double,
             'reference':self.parse_reference,
             'boolean':self.parse_boolean,
@@ -1975,6 +1983,7 @@ class MySQLAdapter(BaseAdapter):
         'blob': 'LONGBLOB',
         'upload': 'VARCHAR(%(length)s)',
         'integer': 'INT',
+        'float': 'FLOAT',
         'double': 'DOUBLE',
         'decimal': 'NUMERIC(%(precision)s,%(scale)s)',
         'date': 'DATE',
@@ -2078,6 +2087,7 @@ class PostgreSQLAdapter(BaseAdapter):
         'blob': 'BYTEA',
         'upload': 'VARCHAR(%(length)s)',
         'integer': 'INTEGER',
+        'float': 'FLOAT',
         'double': 'FLOAT8',
         'decimal': 'NUMERIC(%(precision)s,%(scale)s)',
         'date': 'DATE',
@@ -2366,7 +2376,8 @@ class OracleAdapter(BaseAdapter):
         'blob': 'CLOB',
         'upload': 'VARCHAR2(%(length)s)',
         'integer': 'INT',
-        'double': 'FLOAT',
+        'float': 'FLOAT',
+        'double': 'DOUBLE',
         'decimal': 'NUMERIC(%(precision)s,%(scale)s)',
         'date': 'DATE',
         'time': 'CHAR(8)',
@@ -2500,6 +2511,7 @@ class MSSQLAdapter(BaseAdapter):
         'blob': 'IMAGE',
         'upload': 'VARCHAR(%(length)s)',
         'integer': 'INT',
+        'float': 'FLOAT',
         'double': 'FLOAT',
         'decimal': 'NUMERIC(%(precision)s,%(scale)s)',
         'date': 'DATETIME',
@@ -2688,6 +2700,7 @@ class MSSQL2Adapter(MSSQLAdapter):
         'blob': 'IMAGE',
         'upload': 'NVARCHAR(%(length)s)',
         'integer': 'INT',
+        'float': 'FLOAT',
         'double': 'FLOAT',
         'decimal': 'NUMERIC(%(precision)s,%(scale)s)',
         'date': 'DATETIME',
@@ -2726,6 +2739,7 @@ class FireBirdAdapter(BaseAdapter):
         'blob': 'BLOB SUB_TYPE 0',
         'upload': 'VARCHAR(%(length)s)',
         'integer': 'INTEGER',
+        'float': 'FLOAT',
         'double': 'DOUBLE PRECISION',
         'decimal': 'DECIMAL(%(precision)s,%(scale)s)',
         'date': 'DATE',
@@ -2897,7 +2911,8 @@ class InformixAdapter(BaseAdapter):
         'blob': 'BLOB SUB_TYPE 0',
         'upload': 'VARCHAR(%(length)s)',
         'integer': 'INTEGER',
-        'double': 'FLOAT',
+        'float': 'FLOAT',
+        'double': 'DOUBLE PRECISION',
         'decimal': 'NUMERIC(%(precision)s,%(scale)s)',
         'date': 'DATE',
         'time': 'CHAR(8)',
@@ -3009,6 +3024,7 @@ class DB2Adapter(BaseAdapter):
         'blob': 'BLOB',
         'upload': 'VARCHAR(%(length)s)',
         'integer': 'INT',
+        'float': 'REAL',
         'double': 'DOUBLE',
         'decimal': 'NUMERIC(%(precision)s,%(scale)s)',
         'date': 'DATE',
@@ -3092,6 +3108,7 @@ class TeradataAdapter(BaseAdapter):
         'blob': 'BLOB',
         'upload': 'VARCHAR(%(length)s)',
         'integer': 'INT',
+        'float': 'REAL',
         'double': 'DOUBLE',
         'decimal': 'NUMERIC(%(precision)s,%(scale)s)',
         'date': 'DATE',
@@ -3311,6 +3328,7 @@ class IngresAdapter(BaseAdapter):
         'blob': 'BLOB',
         'upload': 'VARCHAR(%(length)s)',  ## FIXME utf8 or nvarchar... or blob? what is this type?
         'integer': 'INTEGER4', # or int8...
+        'float': 'FLOAT',
         'double': 'FLOAT8',
         'decimal': 'NUMERIC(%(precision)s,%(scale)s)',
         'date': 'ANSIDATE',
@@ -3407,6 +3425,7 @@ class IngresUnicodeAdapter(IngresAdapter):
         'blob': 'BLOB',
         'upload': 'VARCHAR(%(length)s)',  ## FIXME utf8 or nvarchar... or blob? what is this type?
         'integer': 'INTEGER4', # or int8...
+        'float': 'FLOAT',
         'double': 'FLOAT8',
         'decimal': 'NUMERIC(%(precision)s,%(scale)s)',
         'date': 'ANSIDATE',
@@ -3433,7 +3452,8 @@ class SAPDBAdapter(BaseAdapter):
         'blob': 'LONG',
         'upload': 'VARCHAR(%(length)s)',
         'integer': 'INT',
-        'double': 'FLOAT',
+        'float': 'FLOAT',
+        'double': 'DOUBLE PRECISION',
         'decimal': 'FIXED(%(precision)s,%(scale)s)',
         'date': 'DATE',
         'time': 'TIME',
@@ -3856,6 +3876,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                 'blob': gae.BlobProperty,
                 'upload': gae.StringProperty,
                 'integer': gae.IntegerProperty,
+                'float': gae.FloatProperty,
                 'double': gae.FloatProperty,
                 'decimal': GAEDecimalProperty,
                 'date': gae.DateProperty,
@@ -4182,6 +4203,7 @@ class CouchDBAdapter(NoSQLAdapter):
                 'blob': str,
                 'upload': str,
                 'integer': long,
+                'float': float,
                 'double': float,
                 'date': datetime.date,
                 'time': datetime.time,
@@ -4381,6 +4403,7 @@ class MongoDBAdapter(NoSQLAdapter):
                 'blob': str,
                 'upload': str,
                 'integer': long,
+                'float': float,
                 'double': float,
                 'date': datetime.date,
                 'time': datetime.time,
@@ -5912,7 +5935,7 @@ def sqlhtml_validators(field):
         requires.append(validators.IS_LENGTH(field_length))
     elif field_type == 'password':
         requires.append(validators.IS_LENGTH(field_length))
-    elif field_type == 'double':
+    elif field_type == 'double' or field_type == 'float':
         requires.append(validators.IS_FLOAT_IN_RANGE(-1e100, 1e100))
     elif field_type == 'integer':
         requires.append(validators.IS_INT_IN_RANGE(-1e100, 1e100))
@@ -6290,6 +6313,7 @@ class DAL(dict):
         self._request_tenant = 'request_tenant'
         self._common_fields = []
         self._referee_name = '%(table)s'
+        self._legacyid = False
         if not str(attempts).isdigit() or attempts < 0:
             attempts = 5
         if uri:
@@ -6434,7 +6458,8 @@ def index():
                     tag += '/{%s.%s}' % (table,field)
                     patterns.append(tag)
                     patterns.append(tag+'/:field')
-                elif f.type.startswith('double') or f.type.startswith('integer'):
+                elif f.type.startswith('float') or \
+                        f.type.startswith('double') or f.type.startswith('integer'):
                     tag += '/{%s.%s.ge}/{%s.%s.lt}' % (table,field,table,field)
                     patterns.append(tag)
                     patterns.append(tag+'/:field')
@@ -7315,7 +7340,7 @@ class Table(dict):
                 value = None
             elif field.type=='blob':
                 value = base64.b64decode(value)
-            elif field.type=='double':
+            elif field.type=='double' or field.type=='float':
                 if not value.strip():
                     value = None
                 else:
@@ -7494,7 +7519,7 @@ class Expression(object):
     def __sub__(self, other):
         if self.type == 'integer':
             result_type = 'integer'
-        elif self.type in ['date','time','datetime','double']:
+        elif self.type in ['date','time','datetime','double','float']:
             result_type = 'double'
         else:
             raise SyntaxError, "subtraction operation not supported for type"
