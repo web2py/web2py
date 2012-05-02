@@ -248,7 +248,7 @@ class CacheOnDisk(CacheAbstract):
             storage = shelve.open(self.shelve_name)
             storage.close = _close.__get__(storage, shelve.Shelf)
             storage.locker = locker
-        except (Exception) as detail:
+        except Exception:
             logger.error('corrupted cache file %s, will try to delete and recreate it!' % (self.shelve_name))
             if storage:
                 storage.close()
