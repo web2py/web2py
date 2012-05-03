@@ -1448,7 +1448,7 @@ class BaseAdapter(ConnectionPool):
 
     def log_execute(self, *a, **b):
         command = a[0]
-        if self.db._legacyid:
+        if not self.db._bigint_id:
             if command.startswith('CREATE') or command.startswith('ALTER'):
                 command = command.replace('BIGINT','INT').replace('BIGSERIAL','SERIAL')
                 a = [command]+a[1:]
@@ -6271,7 +6271,8 @@ class DAL(dict):
                  migrate=True, fake_migrate=False,
                  migrate_enabled=True, fake_migrate_all=False,
                  decode_credentials=False, driver_args=None,
-                 adapter_args=None, attempts=5, auto_import=False):
+                 adapter_args=None, attempts=5, auto_import=False,
+                 bigint_id=True):
         """
         Creates a new Database Abstraction Layer instance.
 
@@ -6313,7 +6314,7 @@ class DAL(dict):
         self._request_tenant = 'request_tenant'
         self._common_fields = []
         self._referee_name = '%(table)s'
-        self._legacyid = False
+        self._bigint_id = bigint_id
         if not str(attempts).isdigit() or attempts < 0:
             attempts = 5
         if uri:
