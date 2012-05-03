@@ -158,7 +158,7 @@ def expand_one(url,cdict):
 def expand_html(html,cdict=None):
     soup = BeautifulSoup(html)
     for txt in soup.findAll(text=True):
-        if txt.parent.name != 'a':
+        if not txt.parent.name in ('a','script','pre','code','embed','object','audio','video'):
             ntxt = regex_link.sub(
                 lambda match: expand_one(match.group(0),cdict), txt)
             txt.replaceWith(BeautifulSoup(ntxt))
