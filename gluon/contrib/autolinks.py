@@ -124,22 +124,19 @@ EXTENSION_MAPS = {
 
 def oembed(url):
     for k,v in EMBED_MAPS:
-        if k.match(url):
-            oembed = v+'?format=json&url='+cgi.escape(url)
+        if k.match(url):            
+            oembed = v+'?format=json&url='+cgi.escape(url)            
             try:
                 return loads(urllib.urlopen(oembed).read())
-            except: pass
+            except:
+                pass
     return {}
 
 def extension(url):
     return url.split('?')[0].split('.')[-1].lower()
 
 def expand_one(url,cdict):
-    # embed images, video, audio files
-    ext = extension(url)
-    if ext in EXTENSION_MAPS:
-        return EXTENSION_MAPS[ext](url)
-    # then try ombed but first check in cache
+    # try ombed but first check in cache
     if cdict and url in cdict:
         r = cdict[url]
     elif cdict:
@@ -149,6 +146,12 @@ def expand_one(url,cdict):
     # if oembed service
     if 'html' in r:
         return '<embed style="max-width:100%%">%s</embed>' % r['html']
+    elif 'url' in r:
+        url = r['url']
+    # embed images, video, audio files
+    ext = extension(url)
+    if ext in EXTENSION_MAPS:
+        return EXTENSION_MAPS[ext](url)
     # else regular link
     return '<a href="%(u)s">%(u)s</a>' % dict(u=url)
 
