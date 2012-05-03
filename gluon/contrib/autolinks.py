@@ -1,9 +1,56 @@
+"""
+Developed by Massimo Di Pierro
+Released under the web2py license (LGPL)
+
+What does it do?
+
+if html is a variable containing HTML text and urls in the text, when you call 
+
+    html = expend_html(html)
+
+it automatically converts the url to links but when possible it embeds the object being linked.
+In particular it can embed images, videos, audio files, documents (it uses the google code player),
+as well as pages to a oembed service.
+
+
+Google Doc Support
+==================
+Microsoft Word (.DOC, .DOCX)
+Microsoft Excel (.XLS and .XLSX)
+Microsoft PowerPoint 2007 / 2010 (.PPTX)
+Apple Pages (.PAGES)
+Adobe PDF (.PDF)
+Adobe Illustrator (.AI)
+Adobe Photoshop (.PSD)
+Autodesk AutoCad (.DXF)
+Scalable Vector Graphics (.SVG)
+PostScript (.EPS, .PS)
+TrueType (.TTF)
+XML Paper Specification (.XPS)
+
+Oembed Support
+==============
+flickr.com
+youtube.com
+hulu.com
+vimeo.com
+slideshare.net
+qik.com
+polleverywhere.com
+wordpress.com
+revision3.com
+viddler.com
+"""
+
 import re, cgi, sys
 from simplejson import loads
-import BeautifulSoup
+from BeautifulSoup import BeautifulSoup
 import urllib
+import uuid
 
-MAPS = [
+regex_link = re.compile('https?://\S+')
+
+EMBED_MAPS = [
     (re.compile('http://\S*?flickr.com/\S*'),
      'http://www.flickr.com/services/oembed/'),
     (re.compile('http://\S*.youtu(\.be|be\.com)/watch\S*'),
@@ -18,22 +65,65 @@ MAPS = [
      'http://qik.com/api/oembed.json'),
     (re.compile('http://www.polleverywhere.com/\w+/\S+'),
      'http://www.polleverywhere.com/services/oembed/'),
-    (re.compile('http://www.slideshare.net/\w+/\S+'),
-     'http://www.slideshare.net/api/oembed/2'),
     (re.compile('http://\S+.wordpress.com/\S+'),
      'http://public-api.wordpress.com/oembed/'),
     (re.compile('http://*.revision3.com/\S+'),
      'http://revision3.com/api/oembed/'),
-    (re.compile('http://www.slideshare.net/\w+/\S+'),
-     'http://api.smugmug.com/services/oembed/'),
     (re.compile('http://\S+.viddler.com/\S+'),
      'http://lab.viddler.com/services/oembed/'),
     ]
 
-regex_link = re.compile('https?://\S+')
+def image(url):
+    return '<img src="%s" />' % url
+
+def audio(url):
+    return '<audio controls="controls"><source src="%s" /></audio>' % url
+
+def video(url):
+    return '<video controls="controls"><source src="%s" /></video>' % url
+
+def googledoc_viewer(url):
+    return '<iframe src="http://docs.google.com/viewer?url=%s&embedded=true"></iframe>' % urllib.quote(url)
+
+def web2py_component(url):
+    code = str(uuid.uuid4())
+    return '<div id="%s"></div><script>\nweb2py_component("%s","%s");\n</script>' % (code,url,code)
+
+EXTENSION_MAPS = {
+    'png': image,
+    'gif': image,
+    'jpg': image,
+    'jpeg': image,
+    'wav': audio,
+    'ogg': audio,
+    'mp3': audio,
+    'mov': video,
+    'mpe': video,
+    'mp4': video,
+    'mpg': video,
+    'mpg2': video,
+    'mpeg': video,
+    'mpeg4': video,
+    'movie': video,
+    'load': web2py_component,
+    'pdf': googledoc_viewer,
+    'doc': googledoc_viewer,
+    'docx': googledoc_viewer,
+    'ppt': googledoc_viewer,
+    'pptx': googledoc_viewer,
+    'xls': googledoc_viewer,
+    'xlsx': googledoc_viewer,
+    'pages': googledoc_viewer,
+    'ai': googledoc_viewer,
+    'psd': googledoc_viewer,
+    'xdf': googledoc_viewer,
+    'svg': googledoc_viewer,
+    'ttf': googledoc_viewer,
+    'xps': googledoc_viewer,
+}
 
 def oembed(url):
-    for k,v in MAPS:
+    for k,v in EMBED_MAPS:
         if k.match(url):
             oembed = v+'?format=json&url='+cgi.escape(url)
             try:
@@ -41,42 +131,53 @@ def oembed(url):
             except: pass
     return {}
 
+def extension(url):
+    return url.split('?')[0].split('.')[-1].lower()
+
 def expand_one(url,cdict):
+    # embed images, video, audio files
+    ext = extension(url)
+    if ext in EXTENSION_MAPS:
+        return EXTENSION_MAPS[ext](url)
+    # then try ombed but first check in cache
     if cdict and url in cdict:
         r = cdict[url]
     elif cdict:
         r = cdict[url] = oembed(url)
     else:
         r = oembed(url)
+    # if oembed service
     if 'html' in r:
         return '<embed>%s</embed>' % r['html']
+    # else regular link
     return '<a href="%(u)s">%(u)s</a>' % dict(u=url)
 
-def expand_all(html,cdict=None):
-    soup = BeautifulSoup.BeautifulSoup(html)
+def expand_html(html,cdict=None):
+    soup = BeautifulSoup(html)
     for txt in soup.findAll(text=True):
         if txt.parent.name != 'a':
             ntxt = regex_link.sub(
                 lambda match: expand_one(match.group(0),cdict), txt)
-            txt.replaceWith(ntxt)
+            txt.replaceWith(BeautifulSoup(ntxt))
     return str(soup)
-
 
 def test():
     example="""
 <h3>Fringilla nisi parturient nullam</h3>
 <p>http://www.youtube.com/watch?v=IWBFiI5RrA0</p>
+<p>http://www.web2py.com/examples/static/images/logo_bw.png</p>
+<p>http://www.web2py.com/examples/default/index.load</p>
+<p>http://www.web2py.com/examples/static/web2py_manual_cutl.pdf</p>
 <p>Elementum sodales est varius magna leo sociis erat. Nascetur pretium non
 ultricies gravida. Condimentum at nascetur tempus. Porttitor viverra ipsum
 accumsan neque aliquet. Ultrices vestibulum tempor quisque eget sem eget.
 Ornare malesuada tempus dolor dolor magna consectetur. Nisl dui non curabitur
 laoreet tortor.</p>
 """
-    return expand_all(example)
-
+    return expand_html(example)
 
 if __name__=="__main__":
     if len(sys.argv)>1:
-        print expand_all(open(sys.argv[1]).read())
+        print expand_html(open(sys.argv[1]).read())
     else:
         print test()
