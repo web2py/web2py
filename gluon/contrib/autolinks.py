@@ -74,16 +74,16 @@ EMBED_MAPS = [
     ]
 
 def image(url):
-    return '<img src="%s" />' % url
+    return '<img src="%s" style="max-width:100%%"/>' % url
 
 def audio(url):
-    return '<audio controls="controls"><source src="%s" /></audio>' % url
+    return '<audio controls="controls" style="max-width:100%%"><source src="%s" /></audio>' % url
 
 def video(url):
-    return '<video controls="controls"><source src="%s" /></video>' % url
+    return '<video controls="controls" style="max-width:100%%"><source src="%s" /></video>' % url
 
 def googledoc_viewer(url):
-    return '<iframe src="http://docs.google.com/viewer?url=%s&embedded=true"></iframe>' % urllib.quote(url)
+    return '<iframe src="http://docs.google.com/viewer?url=%s&embedded=true" style="max-width:100%%"></iframe>' % urllib.quote(url)
 
 def web2py_component(url):
     code = str(uuid.uuid4())
@@ -148,7 +148,7 @@ def expand_one(url,cdict):
         r = oembed(url)
     # if oembed service
     if 'html' in r:
-        return '<embed>%s</embed>' % r['html']
+        return '<embed style="max-width:100%%">%s</embed>' % r['html']
     # else regular link
     return '<a href="%(u)s">%(u)s</a>' % dict(u=url)
 
