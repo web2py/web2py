@@ -134,6 +134,11 @@ DEFAULTLENGTH = {'string':512,
                  'text':2**15,
                  'blob':2**31}
 TIMINGSSIZE = 100
+SPATIALLIBS = {
+    'Windows':'libspatialite',
+    'Linux':'libspatialite.so',
+    'Darwin':'libspatialite.dylib'
+    }
 
 import re
 import sys
@@ -161,6 +166,7 @@ import hashlib
 import uuid
 import glob
 import traceback
+import platform
 
 CALLABLETYPES = (types.LambdaType, types.FunctionType, types.BuiltinFunctionType,
                  types.MethodType, types.BuiltinMethodType)
@@ -1875,8 +1881,9 @@ class SpatiaLiteAdapter(SQLiteAdapter):
         self.connection.enable_load_extension(True)
         # for Windows, rename libspatialite-2.dll as libspatialite.dll
         # Linux uses libspatialite.so
-        # Mac OS X uses libspatialite.dylib
-        self.execute(r'SELECT load_extension("libspatialite");')
+        # Mac OS X uses libspatialite.dylib        
+        libspatialite = SPATIALLIBS[platform.system()]
+        self.execute(r'SELECT load_extension("%s");') % libspatialite
 
         self.connection.create_function('web2py_extract', 2,
                                         SQLiteAdapter.web2py_extract)
