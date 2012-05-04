@@ -53,15 +53,19 @@ import datetime
 import logging
 import optparse
 
+if 'WEB2PY_PATH' in os.environ:
+    sys.path.append(os.environ['WEB2PY_PATH'])
+else:
+    os.environ['WEB2PY_PATH'] = os.getcwd()
+
+if not os.environ['WEB2PY_PATH'] in sys.path:
+    sys.path.append(os.environ['WEB2PY_PATH'])
+
 try:
     from gluon.contrib.simplejson import loads, dumps
 except:
     from simplejson import loads, dumps
 
-if 'WEB2PY_PATH' in os.environ:
-    sys.path.append(os.environ['WEB2PY_PATH'])
-else:
-    os.environ['WEB2PY_PATH'] = os.getcwd()
 
 from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET
 from gluon.utils import web2py_uuid
@@ -175,6 +179,8 @@ class MetaScheduler(threading.Thread):
         threading.Thread.__init__(self)
         self.process = None     # the backround process
         self.have_heartbeat = True   # set to False to kill
+        self.empty_runs = 0
+
     def async(self,task):
         """
         starts the background process and returns:
@@ -256,9 +262,16 @@ class MetaScheduler(threading.Thread):
                 logging.debug('looping...')
                 task = self.pop_task()
                 if task:
+                    self.empty_runs = 0
                     self.report_task(task,self.async(task))
                 else:
+                    self.empty_runs += 1
                     logging.debug('sleeping...')
+                    if self.max_empty_runs <> 0:
+                        logging.debug('empty runs %s/%s', self.empty_runs, self.max_empty_runs)
+                        if self.empty_runs >= self.max_empty_runs:
+                            logging.info('empty runs limit reached, killing myself')
+                            self.die()
                     self.sleep()
         except KeyboardInterrupt:
             self.die()
@@ -294,7 +307,7 @@ class TYPE(object):
 
 class Scheduler(MetaScheduler):
     def __init__(self,db,tasks={},migrate=True,
-                 worker_name=None,group_names=None,heartbeat=HEARTBEAT):
+                 worker_name=None,group_names=None,heartbeat=HEARTBEAT,max_empty_runs=0):
 
         MetaScheduler.__init__(self)
 
@@ -304,6 +317,7 @@ class Scheduler(MetaScheduler):
         self.group_names = group_names or ['main']
         self.heartbeat = heartbeat
         self.worker_name = worker_name or socket.gethostname()+'#'+str(web2py_uuid())
+        self.max_empty_runs = max_empty_runs
 
         from gluon import current
         current._scheduler = self
@@ -495,11 +509,17 @@ def main():
         help="start a worker with name")
     parser.add_option(
         "-b", "--heartbeat",dest="heartbeat", default = 10,
-        help="heartbeat time in seconds (default 10)")
+        type='int', help="heartbeat time in seconds (default 10)")
     parser.add_option(
         "-L", "--logger_level",dest="logger_level",
-        default = 'INFO',
-        help="level of logging (DEBUG, INFO, WARNING, ERROR)")
+        default=30,
+        type='int',
+        help="set debug output level (0-100, 0 means all, 100 means none;default is 30)")
+    parser.add_option("-E", "--empty-runs",
+        dest="max_empty_runs",
+        type='int',
+        default = 0,
+        help="max loops with no grabbed tasks permitted (0 for never check)")
     parser.add_option(
         "-g", "--group_names",dest="group_names",
         default = 'main',
@@ -543,7 +563,8 @@ def main():
                         tasks = tasks,
                         migrate = True,
                         group_names = group_names,
-                        heartbeat = options.heartbeat)
+                        heartbeat = options.heartbeat,
+                        max_empty_runs = options.max_empty_runs)
     print 'starting main worker loop...'
     scheduler.loop()
 
