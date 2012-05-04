@@ -7245,7 +7245,7 @@ class Table(dict):
         for field in self:
             if field.type=='upload' and field.name in fields:
                 value = fields[field.name]
-                if not isinstance(value,str):
+                if value and not isinstance(value,str):
                     if hasattr(value,'file') and hasattr(value,'filename'):
                         new_name = field.store(value.file,filename=value.filename)
                     elif hasattr(value,'read') and hasattr(value,'name'):
