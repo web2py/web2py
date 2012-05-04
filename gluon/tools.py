@@ -2889,9 +2889,15 @@ class Auth(object):
         permission = self.settings.table_permission
         if group_id == 0:
             group_id = self.user_group()
-        id = permission.insert(group_id=group_id, name=name,
-                               table_name=str(table_name),
-                               record_id=long(record_id))
+        record = self.db(permission.group_id==group_id)(permission.name==name)\
+            (permission.table_name==str(table_name))\
+            (permission.record_id==long(record_id)).select().first()
+        if record:
+            id = record.id
+        else:
+            id = permission.insert(group_id=group_id, name=name,
+                                   table_name=str(table_name),
+                                   record_id=long(record_id))
         self.log_event(self.messages.add_permission_log,
                        dict(permission_id=id, group_id=group_id,
                             name=name, table_name=table_name,
