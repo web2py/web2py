@@ -44,7 +44,7 @@ viddler.com
 
 import re, cgi, sys
 from simplejson import loads
-from BeautifulSoup import BeautifulSoup
+from BeautifulSoup import BeautifulSoup, Comment
 import urllib
 import uuid
 
@@ -160,6 +160,8 @@ def expand_one(url,cdict):
 
 def expand_html(html,cdict=None):
     soup = BeautifulSoup(html)
+    comments = soup.findAll(text=lambda text:isinstance(text, Comment))
+    [comment.extract() for comment in comments]
     for txt in soup.findAll(text=True):
         if not txt.parent.name in ('a','script','pre','code','embed','object','audio','video'):
             ntxt = regex_link.sub(
