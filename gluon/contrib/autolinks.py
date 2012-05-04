@@ -145,7 +145,10 @@ def expand_one(url,cdict):
         r = oembed(url)
     # if oembed service
     if 'html' in r:
-        return '<embed style="max-width:100%%">%s</embed>' % r['html']
+        if r['html'].startswith('<object'):
+            return '<embed style="max-width:100%%">%s</embed>' % r['html']
+        else:
+            return r['html']
     elif 'url' in r:
         url = r['url']
     # embed images, video, audio files
