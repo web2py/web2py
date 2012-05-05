@@ -551,6 +551,9 @@ class BaseAdapter(ConnectionPool):
         'list:integer': 'TEXT',
         'list:string': 'TEXT',
         'list:reference': 'TEXT',
+        # the two below only used when DAL(...bigint_id=True) and replace 'id','reference'
+        'big-id': 'BIGINT PRIMARY KEY AUTOINCREMENT',
+        'big-reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         }
 
     def adapt(self, obj):
@@ -1995,11 +1998,13 @@ class MySQLAdapter(BaseAdapter):
         'date': 'DATE',
         'time': 'TIME',
         'datetime': 'DATETIME',
-        'id': 'BIGINT AUTO_INCREMENT NOT NULL',
-        'reference': 'BIGINT, INDEX %(field_name)s__idx (%(field_name)s), FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'id': 'INT AUTO_INCREMENT NOT NULL',
+        'reference': 'INT, INDEX %(field_name)s__idx (%(field_name)s), FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'list:integer': 'LONGTEXT',
         'list:string': 'LONGTEXT',
         'list:reference': 'LONGTEXT',
+        'big-id': 'BIGINT AUTO_INCREMENT NOT NULL',
+        'big-reference': 'BIGINT, INDEX %(field_name)s__idx (%(field_name)s), FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         }
 
     def RANDOM(self):
@@ -2100,13 +2105,15 @@ class PostgreSQLAdapter(BaseAdapter):
         'date': 'DATE',
         'time': 'TIME',
         'datetime': 'TIMESTAMP',
-        'id': 'BIGSERIAL PRIMARY KEY',
-        'reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'id': 'SERIAL PRIMARY KEY',
+        'reference': 'INTEGER REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'list:integer': 'TEXT',
         'list:string': 'TEXT',
         'list:reference': 'TEXT',
         'geometry': 'GEOMETRY',
         'geography': 'GEOGRAPHY',
+        'big-id': 'BIGSERIAL PRIMARY KEY',
+        'big-reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         }
 
     def adapt(self,obj):
@@ -2390,13 +2397,15 @@ class OracleAdapter(BaseAdapter):
         'date': 'DATE',
         'time': 'CHAR(8)',
         'datetime': 'DATE',
-        'id': 'BIGINT PRIMARY KEY',
-        'reference': 'BIGINT, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
-        'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
-        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
+        'id': 'NUMBER PRIMARY KEY',
+        'reference': 'NUMBER, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'list:integer': 'CLOB',
         'list:string': 'CLOB',
         'list:reference': 'CLOB',
+        'big-id': 'BIGINT PRIMARY KEY',
+        'big-reference': 'BIGINT, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
         }
 
     def sequence_name(self,tablename):
@@ -2526,15 +2535,17 @@ class MSSQLAdapter(BaseAdapter):
         'date': 'DATETIME',
         'time': 'CHAR(8)',
         'datetime': 'DATETIME',
-        'id': 'BIGINT IDENTITY PRIMARY KEY',
-        'reference': 'BIGINT NULL, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
-        'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
-        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
+        'id': 'INT IDENTITY PRIMARY KEY',
+        'reference': 'INT NULL, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'list:integer': 'TEXT',
         'list:string': 'TEXT',
         'list:reference': 'TEXT',
         'geometry': 'geometry',
         'geography': 'geography',
+        'big-id': 'BIGINT IDENTITY PRIMARY KEY',
+        'big-reference': 'BIGINT NULL, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
         }
 
     def EXTRACT(self,field,what):
@@ -2716,13 +2727,15 @@ class MSSQL2Adapter(MSSQLAdapter):
         'date': 'DATETIME',
         'time': 'CHAR(8)',
         'datetime': 'DATETIME',
-        'id': 'BIGINT IDENTITY PRIMARY KEY',
-        'reference': 'BIGINT, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
-        'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
-        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
+        'id': 'INT IDENTITY PRIMARY KEY',
+        'reference': 'INT, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'list:integer': 'NTEXT',
         'list:string': 'NTEXT',
         'list:reference': 'NTEXT',
+        'big-id': 'BIGINT IDENTITY PRIMARY KEY',
+        'big-reference': 'BIGINT, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
         }
 
     def represent(self, obj, fieldtype):
@@ -2756,11 +2769,13 @@ class FireBirdAdapter(BaseAdapter):
         'date': 'DATE',
         'time': 'TIME',
         'datetime': 'TIMESTAMP',
-        'id': 'BIGINT PRIMARY KEY',
-        'reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'id': 'INTEGER PRIMARY KEY',
+        'reference': 'INTEGER REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'list:integer': 'BLOB SUB_TYPE 1',
         'list:string': 'BLOB SUB_TYPE 1',
         'list:reference': 'BLOB SUB_TYPE 1',
+        'big-id': 'BIGINT PRIMARY KEY',
+        'big-reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         }
 
     def sequence_name(self,tablename):
@@ -2930,12 +2945,14 @@ class InformixAdapter(BaseAdapter):
         'time': 'CHAR(8)',
         'datetime': 'DATETIME',
         'id': 'SERIAL',
-        'reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
-        'reference FK': 'REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s CONSTRAINT FK_%(table_name)s_%(field_name)s',
-        'reference TFK': 'FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s CONSTRAINT TFK_%(table_name)s_%(field_name)s',
+        'reference': 'INTEGER REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'list:integer': 'BLOB SUB_TYPE 1',
         'list:string': 'BLOB SUB_TYPE 1',
         'list:reference': 'BLOB SUB_TYPE 1',
+        'big-id': 'BIGSERIAL',
+        'big-reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference FK': 'REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s CONSTRAINT FK_%(table_name)s_%(field_name)s',
+        'reference TFK': 'FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s CONSTRAINT TFK_%(table_name)s_%(field_name)s',
         }
 
     def RANDOM(self):
@@ -3043,13 +3060,15 @@ class DB2Adapter(BaseAdapter):
         'date': 'DATE',
         'time': 'TIME',
         'datetime': 'TIMESTAMP',
-        'id': 'BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY NOT NULL',
-        'reference': 'BIGINT, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
-        'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
-        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
+        'id': 'INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY NOT NULL',
+        'reference': 'INT, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'list:integer': 'CLOB',
         'list:string': 'CLOB',
         'list:reference': 'CLOB',
+        'big-id': 'BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY NOT NULL',
+        'big-reference': 'BIGINT, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
         }
 
     def LEFT_JOIN(self):
@@ -3128,15 +3147,17 @@ class TeradataAdapter(BaseAdapter):
         'date': 'DATE',
         'time': 'TIME',
         'datetime': 'TIMESTAMP',
-        'id': 'BIGINT GENERATED ALWAYS AS IDENTITY',  # Teradata Specific
         # Modified Constraint syntax for Teradata.  
         # Teradata does not support ON DELETE.
-        'reference': 'BIGINT', 
-        'reference FK': ' REFERENCES %(foreign_key)s', 
-        'reference TFK': ' FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s)', 
+        'id': 'INT GENERATED ALWAYS AS IDENTITY',  # Teradata Specific
+        'reference': 'INT', 
         'list:integer': 'CLOB',
         'list:string': 'CLOB',
         'list:reference': 'CLOB',
+        'big-id': 'BIGINT GENERATED ALWAYS AS IDENTITY',  # Teradata Specific
+        'big-reference': 'BIGINT', 
+        'reference FK': ' REFERENCES %(foreign_key)s', 
+        'reference TFK': ' FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s)', 
         }
 
     def LEFT_JOIN(self):
@@ -3349,13 +3370,15 @@ class IngresAdapter(BaseAdapter):
         'date': 'ANSIDATE',
         'time': 'TIME WITHOUT TIME ZONE',
         'datetime': 'TIMESTAMP WITHOUT TIME ZONE',
-        'id': 'bigint not null unique with default next value for %s' % INGRES_SEQNAME,
-        'reference': 'BIGINT, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
-        'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
-        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s', ## FIXME TODO
+        'id': 'int not null unique with default next value for %s' % INGRES_SEQNAME,
+        'reference': 'INT, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'list:integer': 'CLOB',
         'list:string': 'CLOB',
         'list:reference': 'CLOB',
+        'big-id': 'bigint not null unique with default next value for %s' % INGRES_SEQNAME,
+        'big-reference': 'BIGINT, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s', ## FIXME TODO
         }
 
     def LEFT_JOIN(self):
@@ -3447,13 +3470,15 @@ class IngresUnicodeAdapter(IngresAdapter):
         'date': 'ANSIDATE',
         'time': 'TIME WITHOUT TIME ZONE',
         'datetime': 'TIMESTAMP WITHOUT TIME ZONE',
-        'id': 'BIGINT not null unique with default next value for %s'% INGRES_SEQNAME,
-        'reference': 'BIGINT, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
-        'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
-        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s', ## FIXME TODO
+        'id': 'INTEGER4 not null unique with default next value for %s'% INGRES_SEQNAME,
+        'reference': 'INTEGER4, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'list:integer': 'NCLOB',
         'list:string': 'NCLOB',
         'list:reference': 'NCLOB',
+        'big-id': 'BIGINT not null unique with default next value for %s'% INGRES_SEQNAME,
+        'big-reference': 'BIGINT, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s', ## FIXME TODO
         }
 
 class SAPDBAdapter(BaseAdapter):
@@ -3475,11 +3500,13 @@ class SAPDBAdapter(BaseAdapter):
         'date': 'DATE',
         'time': 'TIME',
         'datetime': 'TIMESTAMP',
-        'id': 'BIGINT PRIMARY KEY',
-        'reference': 'BIGINT, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'id': 'INT PRIMARY KEY',
+        'reference': 'INT, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'list:integer': 'LONG',
         'list:string': 'LONG',
         'list:reference': 'LONG',
+        'big-id': 'BIGINT PRIMARY KEY',
+        'big-reference': 'BIGINT, FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         }
 
     def sequence_name(self,table):
@@ -6293,7 +6320,7 @@ class DAL(dict):
                  migrate_enabled=True, fake_migrate_all=False,
                  decode_credentials=False, driver_args=None,
                  adapter_args=None, attempts=5, auto_import=False,
-                 bigint_id=True):
+                 bigint_id=False):
         """
         Creates a new Database Abstraction Layer instance.
 
@@ -6356,13 +6383,12 @@ class DAL(dict):
                                 db_codec, credential_decoder,
                                 driver_args or {}, adapter_args or {})
                         self._adapter = ADAPTERS[self._dbname](*args)
-                        if not bigint_id:
+                        if bigint_id:
                             types = ADAPTERS[self._dbname].types
-                            self._adapter.types = copy.copy(types)
-                            for key in ('id','reference'):
-                                self._adapters.types[key] = types[key]\
-                                    .replace('BIGINT','INT')\
-                                    .replace('BIGSERIAL','SERIAL')
+                            self._adapter.types = copy.copy(types) # copy so multiple DAL() possible
+                            if 'big-id' in types and 'reference' in types:
+                                self._adapter.types['id'] = types['big-id']
+                                self._adapter.types['reference'] = types['big-reference']
                         connected = True
                         break
                     except SyntaxError:
