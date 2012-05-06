@@ -4164,10 +4164,11 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
     def select(self,query,fields,attributes):
         (items, tablename, fields) = self.select_raw(query,fields,attributes)
         # self.db['_lastsql'] = self._select(query,fields,attributes)
-        rows = [
-            [t=='id' and (int(item.key().id()) if item.key().id() else
-                          item.key().name()) or getattr(item, t) for t in fields]
-            for item in items]
+        rows = []
+        for item in items:
+            rows.append([
+                    t=='id' and item.key().id_or_name() or getattr(item, t) \
+                        for t in fields])
         colnames = ['%s.%s' % (tablename, t) for t in fields]
         processor = attributes.get('processor',self.parse)
         return processor(rows,fields,colnames,False)
@@ -7178,7 +7179,7 @@ class Table(dict):
             if rows:
                 return rows[0]
             return None
-        elif str(key).isdigit():
+        elif str(key).isdigit() or isinstance(key, Key):
             return self._db(self._id == key).select(limitby=(0,1)).first()
         elif key:
             return dict.__getitem__(self, str(key))
