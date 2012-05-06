@@ -1,5 +1,3 @@
-#### WORK IN PROGRESS... NOT SUPPOSED TO WORK YET
-
 USAGE = """
 ## Example
 
@@ -19,6 +17,8 @@ scheduler = Scheduler(db,dict(demo1=demo1,demo2=demo2))
 ## run worker nodes with:
 
    cd web2py
+   python web2py.py -K myapp
+or
    python gluon/scheduler.py -u sqlite://storage.sqlite \
                              -f applications/myapp/databases/ \
                              -t mytasks.py
@@ -37,7 +37,23 @@ http://127.0.0.1:8000/scheduler/appadmin/select/db?query=db.scheduler_run.id>0
 ## view workers
 http://127.0.0.1:8000/scheduler/appadmin/select/db?query=db.scheduler_worker.id>0
 
-## Comments
+## To install the scheduler as a permanent daemon on Linux (w/ Upstart), put the
+## following into /etc/init/web2py-scheduler.conf:
+## (This assumes your web2py instance is installed in <user>'s home directory,
+## running as <user>, with app <myapp>, on network interface eth0.)
+
+description "web2py task scheduler"
+start on (local-filesystems and net-device-up IFACE=eth0)
+stop on shutdown
+respawn limit 8 60 # Give up if restart occurs 8 times in 60 seconds.
+exec sudo -u <user> python /home/<user>/web2py/web2py.py -K <myapp>
+respawn
+
+## You can then start/stop/restart/check status of the daemon with:
+sudo start web2py-scheduler
+sudo stop web2py-scheduler
+sudo restart web2py-scheduler
+sudo status web2py-scheduler
 """
 
 import os
