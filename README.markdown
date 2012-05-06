@@ -51,3 +51,8 @@ Thats is it!!!
             ...                    > your own apps
         scripts/                   > utility and installation scripts
         site-packages/             > additional optional modules
+
+
+## Issues?
+
+Report issues at http://code.google.com/p/web2py/issues/
