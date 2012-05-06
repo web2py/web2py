@@ -128,8 +128,8 @@ class _DateTrackerImporter(_BaseImporter):
             # Module maybe loaded for the 1st time so we need to set the date
             self._update_dates(name, fromlist)
             return result
-        except Exception, e:
-            raise e  # Don't hide something that went wrong
+        except Exception:
+            raise # Don't hide something that went wrong
         finally:
             if call_begin_end:
                 self.end()
