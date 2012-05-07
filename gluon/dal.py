@@ -4674,9 +4674,9 @@ class MongoDBAdapter(NoSQLAdapter):
         withId=False
         tablename, mongoqry_dict , mongofields_dict, mongosort_list, limitby_limit, limitby_skip = self._select(query,fields,attributes)
         for key in mongofields_dict.keys():
-            if key == 'id'
+            if key == 'id':
                 withId =  True
-                break;
+                break
         try:
             print "mongoqry_dict=%s" % mongoqry_dict
         except:
