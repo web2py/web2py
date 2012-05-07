@@ -4674,7 +4674,7 @@ class MongoDBAdapter(NoSQLAdapter):
         withId=False
         tablename, mongoqry_dict , mongofields_dict, mongosort_list, limitby_limit, limitby_skip = self._select(query,fields,attributes)
         for key in mongofields_dict.keys():
-            if key == 'id':
+            if key == 'id'
                 withId =  True
                 break;
         try:
@@ -4684,21 +4684,21 @@ class MongoDBAdapter(NoSQLAdapter):
         print "mongofields_dict=%s" % mongofields_dict
         ctable = self.connection[tablename]
         if count:
-            return {'count' : ctable.find(mongoqry_dict,mongofields_dict,skip=limitby_skip, limit=limitby_limit, sort=mongosort_list,snapshot=snapshot).count()}
+            return {'count' : ctable.find(mongoqry_dict,mongofields_dict,
+                                          skip=limitby_skip, limit=limitby_limit,
+                                          sort=mongosort_list,snapshot=snapshot).count()}
         else:
-            mongo_list_dicts = ctable.find(mongoqry_dict,mongofields_dict,skip=limitby_skip, limit=limitby_limit, sort=mongosort_list,snapshot=snapshot) # pymongo cursor object
+            mongo_list_dicts = ctable.find(mongoqry_dict,mongofields_dict,
+                                           skip=limitby_skip, limit=limitby_limit,
+                                           sort=mongosort_list,snapshot=snapshot) # pymongo cursor object
         print "mongo_list_dicts=%s" % mongo_list_dicts
-        #if mongo_list_dicts.count() > 0: #
-            #colnames = mongo_list_dicts[0].keys() # assuming all docs have same "shape", grab colnames from first dictionary (aka row)
-        #else:
-            #colnames = mongofields_dict.keys()
-        #print "colnames = %s" % colnames
-        #rows = [row.values() for row in mongo_list_dicts]
         rows = []
+        columns = []
         for record in mongo_list_dicts:
             row=[]
             for column in record:
-                if withId and (column == '_id'):
+                columns.append(column)
+                if withId and (column == '_id'):                    
                     if isinstance(record[column],pymongo.objectid.ObjectId):
                         row.append( int(str(record[column]),16))
                     else:
@@ -4707,10 +4707,8 @@ class MongoDBAdapter(NoSQLAdapter):
                 elif not (column == '_id'):
                     row.append(record[column])
             rows.append(row)
-                    #else the id is not supposed to be included. Work around error. mongo always sends key:(
-
         processor = attributes.get('processor',self.parse)
-        return processor(rows,fields,mongofields_dict.keys(),False)
+        return processor(rows,columns,False)
 
     def INVERT(self,first):
         #print "in invert first=%s" % first
