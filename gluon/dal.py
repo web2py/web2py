@@ -4693,11 +4693,11 @@ class MongoDBAdapter(NoSQLAdapter):
                                            sort=mongosort_list,snapshot=snapshot) # pymongo cursor object
         print "mongo_list_dicts=%s" % mongo_list_dicts
         rows = []
-        columns = []
+        colnames = []
         for record in mongo_list_dicts:
             row=[]
             for column in record:
-                columns.append(column)
+                colnames.append(column)
                 if withId and (column == '_id'):                    
                     if isinstance(record[column],pymongo.objectid.ObjectId):
                         row.append( int(str(record[column]),16))
@@ -4708,7 +4708,7 @@ class MongoDBAdapter(NoSQLAdapter):
                     row.append(record[column])
             rows.append(row)
         processor = attributes.get('processor',self.parse)
-        return processor(rows,columns,False)
+        return processor(rows,fields,colnames,False)
 
     def INVERT(self,first):
         #print "in invert first=%s" % first
