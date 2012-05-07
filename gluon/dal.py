@@ -456,7 +456,7 @@ class ConnectionPool(object):
                     sql_locker.release()
                 if really:
                     getattr(instance, 'close')()
-            
+
         if callable(action):
             action(None)
         return
@@ -475,7 +475,7 @@ class ConnectionPool(object):
     def after_connection(self):
         """ this it is suppoed to be overloaded by adtapters"""
         pass
-            
+
     def reconnect(self):
         """ allows a thread to re-connect to server or re-pool """
         self.close_all_instances(False)
@@ -1882,7 +1882,7 @@ class SpatiaLiteAdapter(SQLiteAdapter):
         self.connection.enable_load_extension(True)
         # for Windows, rename libspatialite-2.dll as libspatialite.dll
         # Linux uses libspatialite.so
-        # Mac OS X uses libspatialite.dylib        
+        # Mac OS X uses libspatialite.dylib
         libspatialite = SPATIALLIBS[platform.system()]
         self.execute(r'SELECT load_extension("%s");') % libspatialite
 
@@ -3147,17 +3147,17 @@ class TeradataAdapter(BaseAdapter):
         'date': 'DATE',
         'time': 'TIME',
         'datetime': 'TIMESTAMP',
-        # Modified Constraint syntax for Teradata.  
+        # Modified Constraint syntax for Teradata.
         # Teradata does not support ON DELETE.
         'id': 'INT GENERATED ALWAYS AS IDENTITY',  # Teradata Specific
-        'reference': 'INT', 
+        'reference': 'INT',
         'list:integer': 'CLOB',
         'list:string': 'CLOB',
         'list:reference': 'CLOB',
         'big-id': 'BIGINT GENERATED ALWAYS AS IDENTITY',  # Teradata Specific
-        'big-reference': 'BIGINT', 
-        'reference FK': ' REFERENCES %(foreign_key)s', 
-        'reference TFK': ' FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s)', 
+        'big-reference': 'BIGINT',
+        'reference FK': ' REFERENCES %(foreign_key)s',
+        'reference TFK': ' FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s)',
         }
 
     def LEFT_JOIN(self):
@@ -7113,7 +7113,7 @@ class Table(dict):
             if query:
                 newquery = query & newquery
             self._common_filter = newquery
-                
+
     def _validate(self,**vars):
         errors = Row()
         for key,value in vars.items():
@@ -7179,7 +7179,7 @@ class Table(dict):
             if rows:
                 return rows[0]
             return None
-        elif str(key).isdigit() or isinstance(key, Key):
+        elif str(key).isdigit() or 'google' in drivers and isinstance(key, Key):
             return self._db(self._id == key).select(limitby=(0,1)).first()
         elif key:
             return dict.__getitem__(self, str(key))
@@ -7303,11 +7303,11 @@ class Table(dict):
                     if hasattr(value,'file') and hasattr(value,'filename'):
                         new_name = field.store(value.file,filename=value.filename)
                     elif hasattr(value,'read') and hasattr(value,'name'):
-                        new_name = field.store(value,filename=value.name)                        
+                        new_name = field.store(value,filename=value.name)
                     else:
                         raise RuntimeError, "Unable to handle upload"
                     fields[field.name] = new_name
-                    
+
     def _insert(self, **fields):
         return self._db._adapter._insert(self,self._listify(fields))
 
@@ -7473,7 +7473,7 @@ def archive_record(qset,fs,archive_table,current_record):
         fields[current_record] = row.id
         archive_table.insert(**fields)
     return False
-        
+
 
 
 class Expression(object):
