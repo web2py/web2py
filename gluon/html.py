@@ -2126,7 +2126,7 @@ class MENU(DIV):
         for item in data:
             (name, active, link) = item[:3]
             if isinstance(link,DIV):
-                li = LI(name)
+                li = LI(link)
             elif 'no_link_url' in self.attributes and self['no_link_url']==link:
                 li = LI(DIV(name))
             elif link:
