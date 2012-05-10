@@ -4694,10 +4694,11 @@ class MongoDBAdapter(NoSQLAdapter):
         print "mongo_list_dicts=%s" % mongo_list_dicts
         rows = []
         colnames = []
-        for record in mongo_list_dicts:
+        for k,record in enumerate(mongo_list_dicts):
             row=[]
             for column in record:
-                colnames.append(column)
+                if k==0:
+                    colnames.append(column)
                 if withId and (column == '_id'):                    
                     if isinstance(record[column],pymongo.objectid.ObjectId):
                         row.append( int(str(record[column]),16))
