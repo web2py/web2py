@@ -4661,7 +4661,7 @@ class MongoDBAdapter(NoSQLAdapter):
     # need to define all the 'sql' methods gt,lt etc....
 
     def select(self,query,fields,attributes,count=False,snapshot=False):
-        tablename, mongoqry_dict, mongofields_dict, 
+        tablename, mongoqry_dict, mongofields_dict, \
         mongosort_list, limitby_limit, limitby_skip = \
             self._select(query,fields,attributes)
         ctable = self.connection[tablename]
