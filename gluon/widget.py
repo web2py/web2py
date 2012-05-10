@@ -55,6 +55,23 @@ if not sys.version[:3] in ['2.4', '2.5', '2.6', '2.7']:
 
 logger = logging.getLogger("web2py")
 
+def run_system_tests():
+    major_version = sys.version_info[0]
+    minor_version = sys.version_info[1]
+    print "minor_version = %r" % minor_version
+    if major_version == 2:
+        if minor_version in (5, 6):
+            print "Python 2.5 or 2.6"
+            os.system("PYTHONPATH=. unit2 -v gluon.tests")
+        elif minor_version in (7,):
+            print "Python 2.7"
+            os.system("PYTHONPATH=. python -m unittest -v gluon.tests")
+        else:
+            print "unknown python 2.x version"
+    else:
+        print "Only Python 2.x supported."
+
+
 class IO(object):
     """   """
 
@@ -735,6 +752,14 @@ def console():
                       default=None,
                       help=msg)
 
+
+    msg = 'runs web2py tests'
+    parser.add_option('--run_system_tests',
+                      action='store_true',
+                      dest='run_system_tests',
+                      default=False,
+                      help=msg)
+
     if '-A' in sys.argv: k = sys.argv.index('-A')
     elif '--args' in sys.argv: k = sys.argv.index('--args')
     else: k=len(sys.argv)
@@ -743,6 +768,10 @@ def console():
     options.args = [options.run] + other_args
     global_settings.cmd_options = options
     global_settings.cmd_args = args
+
+    if options.run_system_tests:
+        run_system_tests()
+        sys.exit(0)
 
     if options.quiet:
         capture = cStringIO.StringIO()
