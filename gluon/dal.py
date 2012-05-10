@@ -4623,9 +4623,7 @@ class MongoDBAdapter(NoSQLAdapter):
         if orderby:
             #print "in if orderby %s" % orderby
             if isinstance(orderby, (list, tuple)):
-                print "in xorify"
                 orderby = xorify(orderby)
-
 
             # !!!! need to add 'random'
             for f in self.expand(orderby).split(','):
@@ -4633,20 +4631,11 @@ class MongoDBAdapter(NoSQLAdapter):
                     mongosort_list.append((f[1:],-1))
                 else:
                     mongosort_list.append((f,1))
-            print "mongosort_list = %s" % mongosort_list
 
         if limitby:
-            # a tuple
-            limitby_skip,limitby_limit = limitby
+            limitby_skip, limitby_limit = limitby
         else:
-            limitby_skip = 0
-            limitby_limit = 0
-
-
-
-
-        #if distinct:
-            #print "in distinct %s" % distinct
+            limitby_skip = limitby_limit = 0
 
         mongofields_dict = son.SON()
         mongoqry_dict = {}
@@ -4662,52 +4651,51 @@ class MongoDBAdapter(NoSQLAdapter):
             tablename = fields[0].tablename
         else:
             raise SyntaxError, "The table name could not be found in the query nor from the select statement."
-        fieldnames = [f for f in (fields or self.db[tablename])]  # ie table.field
         mongoqry_dict = self.expand(query)
-        for f in fieldnames:
-            mongofields_dict[f.name] = 1  # ie field=1
-        return tablename, mongoqry_dict, mongofields_dict, mongosort_list, limitby_limit, limitby_skip
+        fields = fields or self.db[tablename]
+        for field in fields:
+            mongofields_dict[field.name] = 1
+        return tablename, mongoqry_dict, mongofields_dict, \
+            mongosort_list, limitby_limit, limitby_skip
 
     # need to define all the 'sql' methods gt,lt etc....
 
     def select(self,query,fields,attributes,count=False,snapshot=False):
-        withId=False
-        tablename, mongoqry_dict , mongofields_dict, mongosort_list, limitby_limit, limitby_skip = self._select(query,fields,attributes)
-        for key in mongofields_dict.keys():
-            if key == 'id':
-                withId =  True
-                break
-        try:
-            print "mongoqry_dict=%s" % mongoqry_dict
-        except:
-            pass
-        print "mongofields_dict=%s" % mongofields_dict
+        tablename, mongoqry_dict, mongofields_dict, 
+        mongosort_list, limitby_limit, limitby_skip = \
+            self._select(query,fields,attributes)
         ctable = self.connection[tablename]
         if count:
-            return {'count' : ctable.find(mongoqry_dict,mongofields_dict,
-                                          skip=limitby_skip, limit=limitby_limit,
-                                          sort=mongosort_list,snapshot=snapshot).count()}
+            return {'count' : ctable.find(
+                    mongoqry_dict, mongofields_dict,
+                    skip=limitby_skip, limit=limitby_limit,
+                    sort=mongosort_list, snapshot=snapshot).count()}
         else:
-            mongo_list_dicts = ctable.find(mongoqry_dict,mongofields_dict,
-                                           skip=limitby_skip, limit=limitby_limit,
-                                           sort=mongosort_list,snapshot=snapshot) # pymongo cursor object
+            mongo_list_dicts = ctable.find(
+                mongoqry_dict, mongofields_dict,
+                skip=limitby_skip, limit=limitby_limit,
+                sort=mongosort_list, snapshot=snapshot) # pymongo cursor object
         print "mongo_list_dicts=%s" % mongo_list_dicts
         rows = []
-        colnames = []
+        ### populate row in proper order
+        if mongo_list_dicts:
+            def fix(id): return 'id' if id=='_id' else id
+            colnames = [fix(column) for column in mongo_list_dicts[0]]
+        else:
+            colnames = []
         for k,record in enumerate(mongo_list_dicts):
             row=[]
             for column in record:
-                if k==0:
-                    colnames.append(column)
-                if withId and (column == '_id'):                    
-                    if isinstance(record[column],pymongo.objectid.ObjectId):
-                        row.append( int(str(record[column]),16))
-                    else:
-                        #in case of alternative key
-                        row.append( record[column] )
-                elif not (column == '_id'):
-                    row.append(record[column])
+                if column == '_id' and \
+                        isinstance(record[column],pymongo.objectid.ObjectId):
+                    value = int(str(record[column]),16)
+                elif column != '_id':
+                    value = record[column]
+                row.append(value)
             rows.append(row)
+
+        table = self.db[tablename]
+        fields = [table[colname] for colname in colnames]
         processor = attributes.get('processor',self.parse)
         return processor(rows,fields,colnames,False)
 
