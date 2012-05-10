@@ -308,8 +308,9 @@ def findT(path, language='en-us'):
     mp = os.path.join(path, 'models')
     cp = os.path.join(path, 'controllers')
     vp = os.path.join(path, 'views')
+    mop = os.path.join(path, 'modules')
     for file in listdir(mp, '.+\.py', 0) + listdir(cp, '.+\.py', 0)\
-         + listdir(vp, '.+\.html', 0):
+         + listdir(vp, '.+\.html', 0) + listdir(mop, '.+\.py', 0):
         fp = portalocker.LockedFile(file, 'r')
         data = fp.read()
         fp.close()

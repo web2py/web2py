@@ -6,12 +6,17 @@ function delkey(id) {
   jQuery('#'+id+' TEXTAREA').val(String.fromCharCode(127));
   return false;
 }
+function hideShowTranslated(){
+	jQuery(".translated").closest("p").toggle();
+}
 </script>
 
 {{block sectionclass}}edit_language{{end}}
 
 <h2>{{=T('Editing Language file')}} "{{=filename}}"</h2>
-
+<a class="button" href="#" onclick="hideShowTranslated(this);">
+<span>{{=T('Hide/Show Translated strings')}}</span>
+</a>
 <div class="languageform">
   {{=form}}
 </div>
