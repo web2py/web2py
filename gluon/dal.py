@@ -3188,7 +3188,7 @@ class TeradataAdapter(BaseAdapter):
             sql_s += ' TOP %i' % lmax
         return 'SELECT %s %s FROM %s%s%s;' % (sql_s, sql_f, sql_t, sql_w, sql_o)
 
-   def _truncate(self, table, mode=''):
+    def _truncate(self, table, mode=''):
         tablename = table._tablename
         return ['DELETE FROM %s ALL;' % (tablename)]
 
