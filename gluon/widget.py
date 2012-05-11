@@ -1000,7 +1000,7 @@ def start(cron=True):
     (ip, port) = (options.ip, int(options.port))
 
     # Check for non default value for ssl inputs
-    if (len(self.options.ssl_certificate) > 0) or (len(self.options.ssl_private_key) > 0):
+    if (len(options.ssl_certificate) > 0) or (len(options.ssl_private_key) > 0):
         proto = 'https'
     else:
         proto = 'http'
