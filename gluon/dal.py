@@ -6859,7 +6859,8 @@ def index():
 
     def import_from_csv_file(self, ifile, id_map=None, null='<NULL>',
                              unique='uuid', *args, **kwargs):
-        if id_map is None: id_map={}
+        #if id_map is None: id_map={}
+        id_offset = {} # only used if id_map is None
         for line in ifile:
             line = line.strip()
             if not line:
@@ -6871,7 +6872,7 @@ def index():
             else:
                 tablename = line[6:]
                 self[tablename].import_from_csv_file(ifile, id_map, null,
-                                                     unique, *args, **kwargs)
+                                                     unique, id_offset, *args, **kwargs)
 
 class SQLALL(object):
     """
@@ -7355,6 +7356,7 @@ class Table(dict):
         id_map=None,
         null='<NULL>',
         unique='uuid',
+        id_offset={}, # id_offset only used when id_map is None
         *args, **kwargs
         ):
         """
@@ -7363,11 +7365,19 @@ class Table(dict):
         the 'table.' prefix is ignored.
         'unique' argument is a field which must be unique
         (typically a uuid field)
-        """
+        'restore' argument is default False. If set True will remove old values
+        in table first.
+        'id_map' If set to None will not map id. The import will keep the id numbers
+        in the restored table. This assumes that there is an field of type id that 
+        is integer and in incrementing order. Will keep the id numbers in restored table.
+      """
 
         delimiter = kwargs.get('delimiter', ',')
         quotechar = kwargs.get('quotechar', '"')
         quoting = kwargs.get('quoting', csv.QUOTE_MINIMAL)
+        restore = kwargs.get('restore', False)
+        if restore:
+            self._db[self].truncate()
 
         reader = csv.reader(csvfile, delimiter=delimiter, quotechar=quotechar, quoting=quoting)
         colnames = None
@@ -7376,7 +7386,7 @@ class Table(dict):
                 id_map[self._tablename] = {}
             id_map_self = id_map[self._tablename]
 
-        def fix(field, value, id_map):
+        def fix(field, value, id_map, id_offset):
             list_reference_s='list:reference'
             if value == null:
                 value = None
@@ -7405,6 +7415,11 @@ class Table(dict):
                     value = id_map[field.type[9:].strip()][int(value)]
                 except KeyError:
                     pass
+            elif id_offset and field.type.startswith('reference'):
+                try:
+                    value = id_offset[field.type[9:].strip()]+int(value)
+                except KeyError:
+                    pass
             return (field.name, value)
 
         def is_id(colname):
@@ -7413,6 +7428,7 @@ class Table(dict):
             else:
                 return False
 
+        first = True
         for line in reader:
             if not line:
                 break
@@ -7427,11 +7443,31 @@ class Table(dict):
                     if colname == unique:
                         unique_idx = i
             else:
-                items = [fix(self[colnames[i]], line[i], id_map) \
+                items = [fix(self[colnames[i]], line[i], id_map, id_offset) \
                              for i in cols if colnames[i] in self.fields]
+                if not id_map:
+                    csv_id = int(line[cid])
+                    curr_id = self.insert(**dict(items))
+                    del_id = curr_id
+                    if first:
+                        first = False
+                        #First curr_id is bigger than csv_id, then we are not restoring but
+                        #extending db table with csv db table
+                        if curr_id>csv_id:
+                            id_offset[self._tablename] = curr_id-csv_id
+                        else:
+                            id_offset[self._tablename] = 0
+                    # create new id until we get the same as old_id
+                    while curr_id<csv_id+id_offset[self._tablename]:
+                        curr_id = self.insert(**dict(items))
+                    # remove ids that are not used
+                    while del_id<csv_id:
+                        query = self._db[self][colnames[cid]] == del_id
+                        self._db(query).delete()
+                        del_id += 1
                 # Validation. Check for duplicate of 'unique' &,
                 # if present, update instead of insert.
-                if not unique or unique not in colnames:
+                elif not unique or unique not in colnames:
                     new_id = self.insert(**dict(items))
                 else:
                     unique_value = line[unique_idx]
