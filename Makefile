@@ -116,6 +116,7 @@ commit:
 	hg commit -m "$(S)"
 	#bzr commit -m "$(S)"
 	git commit -a -m "$(S)"
+	python web2py.py --run_system_tests
 push:
 	hg push
 	git push
