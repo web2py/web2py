@@ -405,7 +405,6 @@ class web2pyDialog(object):
 
         if not self.server_ready():
             self.button_start.configure(state='normal')
-            tkMessageBox.showerror('web2py start server', 'server didn\'t start - check console')
             return
 
         self.button_stop.configure(state='normal')
