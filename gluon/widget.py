@@ -100,12 +100,13 @@ def try_start_browser(url):
         print 'warning: unable to detect your browser'
 
 
-def start_browser(ip, port):
+def start_browser(proto, ip, port):
     """ Starts the default browser """
     print 'please visit:'
-    print '\thttp://%s:%s' % (ip, port)
+    url = '%s://%s:%s' % (proto, ip, port)
+    print '\t', url
     print 'starting browser...'
-    try_start_browser('http://%s:%s' % (ip, port))
+    try_start_browser(url)
 
 
 def presentation(root):
@@ -366,10 +367,16 @@ class web2pyDialog(object):
         except:
             return self.error('invalid port number')
 
-        self.url = 'http://%s:%s' % (ip, port)
+        # Check for non default value for ssl inputs
+        if (len(self.options.ssl_certificate) > 0) or (len(self.options.ssl_private_key) > 0):
+            proto = 'https'
+        else:
+            proto = 'http'
+        
+        self.url = '%s://%s:%s' % (proto, ip, port)
         self.connect_pages()
         self.button_start.configure(state='disabled')
-
+        
         try:
             options = self.options
             req_queue_size = options.request_queue_size
@@ -399,7 +406,7 @@ class web2pyDialog(object):
         self.button_stop.configure(state='normal')
 
         if not options.taskbar:
-            thread.start_new_thread(start_browser, (ip, port))
+            thread.start_new_thread(start_browser, (proto, ip, port))
 
         self.password.configure(state='readonly')
         self.ip.configure(state='readonly')
@@ -981,9 +988,16 @@ def start(cron=True):
 
     (ip, port) = (options.ip, int(options.port))
 
+    # Check for non default value for ssl inputs
+    if (len(self.options.ssl_certificate) > 0) or (len(self.options.ssl_private_key) > 0):
+        proto = 'https'
+    else:
+        proto = 'http'
+    url = '%s://%s:%s' % (proto, ip, port)
+
     if not options.nobanner:
         print 'please visit:'
-        print '\thttp://%s:%s' % (ip, port)
+        print '\t', url
         print 'use "kill -SIGTERM %i" to shutdown the web2py server' % os.getpid()
 
     server = main.HttpServer(ip=ip,
