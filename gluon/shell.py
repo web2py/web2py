@@ -186,7 +186,7 @@ def run(
 
     if c:
         import_models = True
-    _env = env(a, c=c, import_models=import_models)
+    _env = env(a, c=c, f=f, import_models=import_models)
     if c:
         cfile = os.path.join('applications', a, 'controllers', c + '.py')
         if not os.path.isfile(cfile):
