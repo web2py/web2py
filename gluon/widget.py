@@ -403,6 +403,11 @@ class web2pyDialog(object):
             self.button_start.configure(state='normal')
             return self.error(str(e))
 
+        if not self.server_ready():
+            self.button_start.configure(state='normal')
+            tkMessageBox.showerror('web2py start server', 'server didn\'t start - check console')
+            return
+
         self.button_stop.configure(state='normal')
 
         if not options.taskbar:
@@ -414,6 +419,13 @@ class web2pyDialog(object):
 
         if self.tb:
             self.tb.SetServerRunning()
+
+    def server_ready(self):
+        for listener in self.server.server.listeners:
+            if listener.ready:
+                return True
+
+        return False
 
     def stop(self):
         """ Stop web2py server """
