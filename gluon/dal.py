@@ -4523,24 +4523,23 @@ class MongoDBAdapter(NoSQLAdapter):
         print "mongo_list_dicts=%s" % mongo_list_dicts
         rows = []
         ### populate row in proper order
-        if mongo_list_dicts:
-            def fix(id): return 'id' if id=='_id' else id
-            colnames = [fix(column) for column in mongo_list_dicts[0]]
-        else:
-            colnames = []
+        colnames = [field.name for field in fields]
         for k,record in enumerate(mongo_list_dicts):
             row=[]
-            for column in record:
-                if column == '_id' and \
-                        isinstance(record[column],pymongo.objectid.ObjectId):
-                    value = int(str(record[column]),16)
-                elif column != '_id':
-                    value = record[column]
+            for colname in colnames:
+                column = '_id' if colname=='id' else colname
+                if column in record:
+                    if column == '_id' and isinstance(
+                        record[column],pymongo.objectid.ObjectId):
+                        value = int(str(record[column]),16)
+                    elif column != '_id':
+                        value = record[column]
+                    else:
+                        value = None
+                else:
+                    value = None
                 row.append(value)
             rows.append(row)
-
-        table = self.db[tablename]
-        fields = [table[colname] for colname in colnames]
         processor = attributes.get('processor',self.parse)
         return processor(rows,fields,colnames,False)
 
