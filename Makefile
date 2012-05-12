@@ -23,10 +23,11 @@ epydoc:
 	epydoc --config epydoc.conf
 	cp applications/examples/static/title.png applications/examples/static/epydoc
 tests:
-	cd gluon/tests; ./test.sh 1>tests.log 2>&1 
+	python web2py.py --run_system_tests
 update:
 	wget -O gluon/contrib/feedparser.py http://feedparser.googlecode.com/svn/trunk/feedparser/feedparser.py
 	wget -O gluon/contrib/simplejsonrpc.py http://rad2py.googlecode.com/hg/ide2py/simplejsonrpc.py
+	echo "remember that pymysql was tweaked"
 src:
 	echo 'Version 2.00.0 ('`date +%Y-%m-%d\ %H:%M:%S`') dev' > VERSION
 	### rm -f all junk files
