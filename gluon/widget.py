@@ -62,15 +62,17 @@ def run_system_tests():
     if major_version == 2:
         if minor_version in (5, 6):
             print "Python 2.5 or 2.6"
-            os.system("PYTHONPATH=. unit2 -v gluon.tests")
+            ret = os.system("PYTHONPATH=. unit2 -v gluon.tests")
         elif minor_version in (7,):
             print "Python 2.7"
-            os.system("PYTHONPATH=. python -m unittest -v gluon.tests")
+            ret = os.system("PYTHONPATH=. python -m unittest -v gluon.tests")
         else:
             print "unknown python 2.x version"
+            ret = 256
     else:
         print "Only Python 2.x supported."
-
+        ret = 256
+    sys.exit(ret or 1)
 
 class IO(object):
     """   """
@@ -789,7 +791,6 @@ def console():
 
     if options.run_system_tests:
         run_system_tests()
-        sys.exit(0)
 
     if options.quiet:
         capture = cStringIO.StringIO()
