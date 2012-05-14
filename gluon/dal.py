@@ -7212,7 +7212,7 @@ class Table(dict):
         'restore' argument is default False. If set True will remove old values
         in table first.
         'id_map' If set to None will not map id. The import will keep the id numbers
-        in the restored table. This assumes that there is an field of type id that 
+        in the restored table. This assumes that there is an field of type id that
         is integer and in incrementing order. Will keep the id numbers in restored table.
       """
 
@@ -7289,7 +7289,7 @@ class Table(dict):
             else:
                 items = [fix(self[colnames[i]], line[i], id_map, id_offset) \
                              for i in cols if colnames[i] in self.fields]
-                if not id_map:
+                if not id_map and cid:
                     csv_id = int(line[cid])
                     curr_id = self.insert(**dict(items))
                     del_id = curr_id
