@@ -72,7 +72,7 @@ def run_system_tests():
     else:
         print "Only Python 2.x supported."
         ret = 256
-    sys.exit(ret or 1)
+    sys.exit(ret and 1)
 
 class IO(object):
     """   """
