@@ -896,11 +896,12 @@ def start(cron=True):
             if hasattr(options,key):
                 setattr(options,key,getattr(options2,key))
 
-    #if not os.path.exists('logging.conf'):
-    #    import shutil
-    #    sys.stdout.write("Copying logging.conf.example to logging.conf ... ")
-    #    shutil.copyfile('logging.example.conf', 'logging.conf')
-    #    sys.stdout.write("OK\n")
+    if not os.path.exists('logging.conf') and \
+            os.path.exists('logging.example.conf'):
+        import shutil
+        sys.stdout.write("Copying logging.conf.example to logging.conf ... ")
+        shutil.copyfile('logging.example.conf', 'logging.conf')
+        sys.stdout.write("OK\n")
 
     # ## if -T run doctests (no cron)
     if hasattr(options,'test') and options.test:
