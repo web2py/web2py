@@ -896,7 +896,7 @@ def start(cron=True):
             if hasattr(options,key):
                 setattr(options,key,getattr(options2,key))
 
-    if not os.path.exists('logging.conf') and \
+    if False and not os.path.exists('logging.conf') and \
             os.path.exists('logging.example.conf'):
         import shutil
         sys.stdout.write("Copying logging.conf.example to logging.conf ... ")
