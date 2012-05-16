@@ -6164,7 +6164,8 @@ def smart_query(fields,text):
                 value = constants[item[1:]]
             else:
                 value = item
-                if op == '=': op = 'like'
+                if field.type in ('text','string'): 
+                    if op == '=': op = 'like'
             if op == '=': new_query = field==value
             elif op == '<': new_query = field<value
             elif op == '>': new_query = field>value
