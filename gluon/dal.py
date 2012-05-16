@@ -284,6 +284,12 @@ if not 'google' in drivers:
         logger.debug('no MSSQL/DB2/Teradata driver')
 
     try:
+        import Sybase
+        drivers.append('Sybase')
+    except ImportError:
+        logger.debug('no Sybase driver')
+
+    try:
         import kinterbasdb
         drivers.append('Interbase')
     except ImportError:
@@ -2746,6 +2752,101 @@ class MSSQL2Adapter(MSSQLAdapter):
 
     def execute(self,a):
         return self.log_execute(a.decode('utf8'))
+
+class SybaseAdapter(MSSQLAdapter):
+
+    driver = globals().get('Sybase',None)
+
+    types = {
+        'boolean': 'BIT',
+        'string': 'CHAR VARYING(%(length)s)',
+        'text': 'TEXT',
+        'password': 'CHAR VARYING(%(length)s)',
+        'blob': 'IMAGE',
+        'upload': 'CHAR VARYING(%(length)s)',
+        'integer': 'INT',
+        'bigint': 'BIGINT',
+        'float': 'FLOAT',
+        'double': 'FLOAT',
+        'decimal': 'NUMERIC(%(precision)s,%(scale)s)',
+        'date': 'DATETIME',
+        'time': 'CHAR(8)',
+        'datetime': 'DATETIME',
+        'id': 'INT IDENTITY PRIMARY KEY',
+        'reference': 'INT NULL, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'list:integer': 'TEXT',
+        'list:string': 'TEXT',
+        'list:reference': 'TEXT',
+        'geometry': 'geometry',
+        'geography': 'geography',
+        'big-id': 'BIGINT IDENTITY PRIMARY KEY',
+        'big-reference': 'BIGINT NULL, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
+        }
+
+
+    def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
+                 credential_decoder=lambda x:x, driver_args={},
+                    adapter_args={}, fake_connect=False, srid=4326):
+        ### Fix this for sybase
+        if not self.driver:
+            raise RuntimeError, "Unable to import driver"
+        self.db = db
+        self.dbengine = "sybase"
+        self.uri = uri
+        self.pool_size = pool_size
+        self.folder = folder
+        self.db_codec = db_codec
+        self.srid = srid
+        self.find_or_make_work_folder()
+        # ## read: http://bytes.com/groups/python/460325-cx_oracle-utf8
+        uri = uri.split('://')[1]
+        if '@' not in uri:
+            try:
+                m = re.compile('^(?P<dsn>.+)$').match(uri)
+                if not m:
+                    raise SyntaxError, \
+                        'Parsing uri string(%s) has no result' % self.uri
+                dsn = m.group('dsn')
+                if not dsn:
+                    raise SyntaxError, 'DSN required'
+            except SyntaxError, e:
+                logger.error('NdGpatch error')
+                raise e
+        else:
+            m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?(?P<urlargs>.*))?$').match(uri)
+            if not m:
+                raise SyntaxError, \
+                    "Invalid URI string in DAL: %s" % uri
+            user = credential_decoder(m.group('user'))
+            if not user:
+                raise SyntaxError, 'User required'
+            password = credential_decoder(m.group('password'))
+            if not password:
+                password = ''
+            host = m.group('host')
+            if not host:
+                raise SyntaxError, 'Host name required'
+            db = m.group('db')
+            if not db:
+                raise SyntaxError, 'Database name required'
+            port = m.group('port') or '1433'
+
+            dsn = 'sybase:host=%s:%s;dbname=%s' % (host,port,db)
+
+            driver_args.update(dict(user = credential_decoder(user),
+                                    password = credential_decoder(password),
+                                    locale = charset))
+
+        def connect(dsn=dsn,driver_args=driver_args):
+            return self.driver.connect(dsn,**driver_args)
+        if not fake_connect:
+            self.pool_connection(connect)
+            self.after_connection()
+
+    def integrity_error_class(self):
+        return RuntimeError # FIX THIS
 
 
 class FireBirdAdapter(BaseAdapter):
@@ -5760,6 +5861,7 @@ ADAPTERS = {
     'oracle': OracleAdapter,
     'mssql': MSSQLAdapter,
     'mssql2': MSSQL2Adapter,
+    'sybase': SybaseAdapter,
     'db2': DB2Adapter,
     'teradata': TeradataAdapter,
     'informix': InformixAdapter,
