@@ -7479,6 +7479,9 @@ class Expression(object):
     def len(self):
         return Expression(self.db, self.db._adapter.AGGREGATE, self, 'LENGTH', 'integer')
 
+    def avg(self):
+        return Expression(self.db, self.db._adapter.AGGREGATE, self, 'AVG', self.type)
+
     def lower(self):
         return Expression(self.db, self.db._adapter.LOWER, self, None, self.type)
 
