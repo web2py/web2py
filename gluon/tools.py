@@ -861,14 +861,14 @@ class Auth(object):
     """
 
     @staticmethod
-    def get_or_create_key(filename=None):
+    def get_or_create_key(filename=None, alg='sha512'):
         request = current.request
         if not filename:
             filename = os.path.join(request.folder,'private','auth.key')
         if os.path.exists(filename):
             key = open(filename,'r').read().strip()
         else:
-            key = web2py_uuid()
+            key = alg+web2py_uuid()
             open(filename,'w').write(key)
         return key
 
