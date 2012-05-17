@@ -868,7 +868,7 @@ class Auth(object):
         if os.path.exists(filename):
             key = open(filename,'r').read().strip()
         else:
-            key = alg+web2py_uuid()
+            key = alg+':'+web2py_uuid()
             open(filename,'w').write(key)
         return key
 
