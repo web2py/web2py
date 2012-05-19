@@ -1016,13 +1016,16 @@ class MapUrlIn(object):
         self.request.args = self.args
         if self.language:
             self.request.uri_language = self.language
-        uri = '/%s/%s/%s' % (self.application, self.controller, self.function)
+        uri = '/%s/%s' % (self.controller, self.function)
+        app = self.application
         if self.map_hyphen:
             uri = uri.replace('_', '-')
+            app = app.replace('_', '-')
         if self.extension != 'html':
             uri += '.' + self.extension
         if self.language:
             uri = '/%s%s' % (self.language, uri)
+        uri = '/%s%s' % (app, uri)
         uri += self.args and urllib.quote('/' + '/'.join([str(x) for x in self.args])) or ''
         uri += (self.query and ('?' + self.query) or '')
         self.env['REQUEST_URI'] = uri
