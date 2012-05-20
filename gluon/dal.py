@@ -6615,7 +6615,8 @@ def index():
                     except ValueError:
                         return Row({'status':400,'pattern':pattern,
                                     'error':'invalid path','response':None})
-                    return Row({'status':200,'response':response,'pattern':pattern})
+                    return Row({'status':200,'response':response,
+                                'pattern':pattern,'count':count})
         return Row({'status':400,'error':'no matching pattern','response':None})
 
 
