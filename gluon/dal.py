@@ -1130,7 +1130,9 @@ class BaseAdapter(ConnectionPool):
             elif not isinstance(expression.op, str):
                 return expression.op()
             else:
-                return '(%s)' % expression.op
+                op = expression.op
+                if op.endswith(';'): op=op[:-1]
+                return '(%s)' % op
         elif field_type:
             return str(self.represent(expression,field_type))
         elif isinstance(expression,(list,tuple)):
@@ -7981,8 +7983,6 @@ class Field(Expression):
             return '<no table>.%s' % self.name
 
 
-def raw(s): return Expression(None,s)
-
 class Query(object):
 
     """
@@ -8071,7 +8071,7 @@ class Set(object):
         if isinstance(query,Table):
             query = query._id>0
         elif isinstance(query,str):
-            query = raw(query)
+            query = Expression(self.db,query)
         elif isinstance(query,Field):
             query = query!=None
         if self.query:
@@ -8108,6 +8108,9 @@ class Set(object):
         adapter = self.db._adapter
         fields = adapter.expand_all(fields, adapter.tables(self.query))
         return adapter.select(self.query,fields,attributes)
+
+    def nested_select(self,*fields,**attributes):
+        return Expression(self.db,self._select(*fields,**attributes))
 
     def delete(self):
         tablename=self.db._adapter.get_table(self.query)
