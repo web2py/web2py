@@ -1323,7 +1323,7 @@ class SQLFORM(FORM):
     def smartdictform(session,name,filename=None,query=None,**kwargs):
         import os
         if query:
-            session[name] = db(query).select().first().as_dict()
+            session[name] = query.db(query).select().first().as_dict()
         elif os.path.exists(filename):
             env = {'datetime':datetime}
             session[name] = eval(open(filename).read(),{},env)
@@ -1331,7 +1331,7 @@ class SQLFORM(FORM):
         if form.process().accepted:
             session[name].update(form.vars)
             if query:
-                db(query).update(**form.vars)
+                query.db(query).update(**form.vars)
             else:
                 open(filename,'w').write(repr(session[name]))
         return form
