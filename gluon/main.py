@@ -68,6 +68,13 @@ create_missing_folders()
 # set up logging for subsequent imports
 import logging
 import logging.config
+
+# This needed to prevent exception on Python 2.5:
+# NameError: name 'gluon' is not defined
+# See http://bugs.python.org/issue1436
+import gluon.messageboxhandler
+logging.gluon = gluon
+
 logpath = abspath("logging.conf")
 if os.path.exists(logpath):
     logging.config.fileConfig(abspath("logging.conf"))

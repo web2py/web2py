@@ -1323,7 +1323,7 @@ class SQLFORM(FORM):
     def smartdictform(session,name,filename=None,query=None,**kwargs):
         import os
         if query:
-            session[name] = db(query).select().first().as_dict()
+            session[name] = query.db(query).select().first().as_dict()
         elif os.path.exists(filename):
             env = {'datetime':datetime}
             session[name] = eval(open(filename).read(),{},env)
@@ -1331,7 +1331,7 @@ class SQLFORM(FORM):
         if form.process().accepted:
             session[name].update(form.vars)
             if query:
-                db(query).update(**form.vars)
+                query.db(query).update(**form.vars)
             else:
                 open(filename,'w').write(repr(session[name]))
         return form
@@ -1546,27 +1546,27 @@ class SQLFORM(FORM):
                        buttonurl=url(args=[]),callback=None,delete=None,trap=True):
             if showbuttontext:
                 if callback:
-                    return A(SPAN(_class=ui.get(buttonclass,'')),
+                    return A(SPAN(_class=ui.get(buttonclass)),
                              SPAN(T(buttontext),_title=buttontext,
-                                  _class=ui.get('buttontext','')),
+                                  _class=ui.get('buttontext')),
                              callback=callback,delete=delete,
-                             _class=trap_class(ui.get('button',''),trap))
+                             _class=trap_class(ui.get('button'),trap))
                 else:
-                    return A(SPAN(_class=ui.get(buttonclass,'')),
+                    return A(SPAN(_class=ui.get(buttonclass)),
                              SPAN(T(buttontext),_title=buttontext,
-                                  _class=ui.get('buttontext','')),
+                                  _class=ui.get('buttontext')),
                              _href=buttonurl,
-                             _class=trap_class(ui.get('button',''),trap))
+                             _class=trap_class(ui.get('button'),trap))
             else:
                 if callback:
-                    return A(SPAN(_class=ui.get(buttonclass,'')),
+                    return A(SPAN(_class=ui.get(buttonclass)),
                              callback=callback,delete=delete,
                              _title=buttontext,
-                             _class=trap_class(ui.get('buttontext',''),trap))
+                             _class=trap_class(ui.get('buttontext'),trap))
                 else:
-                    return A(SPAN(_class=ui.get(buttonclass,'')),
+                    return A(SPAN(_class=ui.get(buttonclass)),
                              _href=buttonurl,_title=buttontext,
-                             _class=trap_class(ui.get('buttontext',''),trap))
+                             _class=trap_class(ui.get('buttontext'),trap))
         dbset = db(query)
         tablenames = db._adapter.tables(dbset.query)
         if left!=None: tablenames+=db._adapter.tables(left)
@@ -1772,9 +1772,9 @@ class SQLFORM(FORM):
                 else:
                     orderby = (order[:1]=='~' and ~sort_field) or sort_field
 
-        head = TR(_class=ui.get('header',''))
+        head = TR(_class=ui.get('header'))
         if selectable:
-            head.append(TH(_class=ui.get('default','')))
+            head.append(TH(_class=ui.get('default')))
         for field in fields:
             if columns and not str(field) in columns: continue
             if not field.readable: continue
@@ -1791,19 +1791,19 @@ class SQLFORM(FORM):
                 header = A(header,marker,_href=url(vars=dict(
                             keywords=request.vars.keywords or '',
                             order=key)),_class=trap_class())
-            head.append(TH(header, _class=ui.get('default','')))
+            head.append(TH(header, _class=ui.get('default')))
 
         if links and links_in_grid:
             for link in links:
                 if isinstance(link,dict):
-                    head.append(TH(link['header'], _class=ui.get('default','')))
+                    head.append(TH(link['header'], _class=ui.get('default')))
 
         # Include extra column for buttons if needed.
         include_buttons_column = (details or editable or deletable or
             (links and links_in_grid and
              not all([isinstance(link, dict) for link in links])))
         if include_buttons_column:
-            head.append(TH(_class=ui.get('default','')))
+            head.append(TH(_class=ui.get('default')))
 
         paginator = UL()
         if paginate and paginate<nrows:
@@ -1938,7 +1938,7 @@ class SQLFORM(FORM):
                   DIV(htmltable,_class="web2py_table"),
                   DIV(paginator,_class=\
                           "web2py_paginator %(header)s %(cornerbottom)s" % ui),
-                  _class='%s %s' % (_class, ui.get('widget','')))
+                  _class='%s %s' % (_class, ui.get('widget')))
         res.create_form = create_form
         res.update_form = update_form
         res.view_form = view_form

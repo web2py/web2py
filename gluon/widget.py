@@ -896,7 +896,7 @@ def start(cron=True):
             if hasattr(options,key):
                 setattr(options,key,getattr(options2,key))
 
-    if not os.path.exists('logging.conf') and \
+    if False and not os.path.exists('logging.conf') and \
             os.path.exists('logging.example.conf'):
         import shutil
         sys.stdout.write("Copying logging.conf.example to logging.conf ... ")
@@ -983,6 +983,17 @@ def start(cron=True):
 
     if root:
         root.focus_force()
+
+        # Mac OS X - make the GUI window rise to the top
+        if os.path.exists("/usr/bin/osascript"):
+            applescript = """
+tell application "System Events"
+    set proc to first process whose unix id is %d
+    set frontmost of proc to true
+end tell
+""" % (os.getpid())
+            os.system("/usr/bin/osascript -e '%s'" % applescript)
+
         if not options.quiet:
             presentation(root)
         master = web2pyDialog(root, options)

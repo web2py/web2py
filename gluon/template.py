@@ -47,8 +47,8 @@ class SuperNode(Node):
         if self.value:
             return str(self.value)
         else:
-            raise SyntaxError("Undefined parent block ``%s``. \n" % self.name + \
-"You must define a block before referencing it.\nMake sure you have not left out an ``{{end}}`` tag." )
+            # raise SyntaxError("Undefined parent block ``%s``. \n" % self.name + "You must define a block before referencing it.\nMake sure you have not left out an ``{{end}}`` tag." )
+            return ''
 
     def __repr__(self):
         return "%s->%s" % (self.name, self.value)
