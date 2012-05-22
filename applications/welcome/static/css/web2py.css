@@ -127,7 +127,7 @@ div.error {
 }
 
 .topbar {
-    padding: 10px 10px;
+    padding: 10px 0;
     width:100%;
     color: #959595;
     vertical-align: middle;
@@ -171,6 +171,7 @@ div.error {
 .breadcrumbs { float: left; }
 
 .copyright {float: left;}
+#poweredBy {float: right;}
 
 /* #MEDIA QUERIES SECTION */
 
