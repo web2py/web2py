@@ -74,15 +74,17 @@
 </head>
 <body>
   <div class="topbar">
-    <div class="container-fluid">    
-      <div class="span12">
-        <div id="navbar">{{='auth' in globals() and auth.navbar(separators=(' ',' | ',''))}}</div>
-        {{is_mobile=request.user_agent().is_mobile}}
-	{{if response.menu:}}
-        <div id="menu">
-          {{=MENU(response.menu, _class='mobile-menu' if is_mobile else 'sf-menu',mobile=is_mobile)}}
+    <div class="container">
+      <div class="row">
+        <div class="span12">
+          <div id="navbar">{{='auth' in globals() and auth.navbar(separators=(' ',' | ',''))}}</div>
+          {{is_mobile=request.user_agent().is_mobile}}
+          {{if response.menu:}}
+          <div id="menu">
+            {{=MENU(response.menu, _class='mobile-menu' if is_mobile else 'sf-menu',mobile=is_mobile)}}
+          </div>
+          {{pass}}
         </div>
-        {{pass}}
       </div>
     </div>
   </div><!-- topbar -->
@@ -90,63 +92,69 @@
   <div class="flash">{{=response.flash or ''}}</div>
   
   <div class="header">
-    <div class="container-fluid">         
-      <div class="span12">
-        <!-- AddToAny BEGIN -->
-        <div style="float:right; padding-top: .25em;" class="a2a_kit a2a_default_style">
-          <a class="a2a_dd" href="http://www.addtoany.com/share_save">Share</a></div>
-        <script type="text/javascript" src="http://static.addtoany.com/menu/page.js"></script>	
-        <div class="page-header">
-          <h1>
-            {{=response.title or request.application}}
-            <small>{{=response.subtitle or ''}}</small>
-          </h1>
+    <div class="container>
+      <div class="row">
+        <div class="span12">
+          <!-- AddToAny BEGIN -->
+          <div style="float:right; padding-top: .25em;" class="a2a_kit a2a_default_style">
+            <a class="a2a_dd" href="http://www.addtoany.com/share_save">Share</a>
+          <script type="text/javascript" src="http://static.addtoany.com/menu/page.js"></script>
+          </div> <!-- AddToAny END -->
+          <div class="page-header">
+            <h1>
+              {{=response.title or request.application}}
+              <small>{{=response.subtitle or ''}}</small>
+            </h1>
+          </div>
         </div>
       </div>
     </div>
   </div>
   
   <div class="main">
-    <div class="container-fluid">                 
-      {{if left_sidebar_enabled:}}
-      <div class="span3 left-sidebar">
-        {{block left_sidebar}}
-        <h3>Left Sidebar</h3>
-        <p></p>
-        {{end}}
+    <div class="container">
+      <div class="row">
+        {{if left_sidebar_enabled:}}
+        <div class="span3 left-sidebar">
+          {{block left_sidebar}}
+          <h3>Left Sidebar</h3>
+          <p></p>
+          {{end}}
+        </div>
+        {{pass}}
+      
+        <div class="{{=middle_columns}}">
+          {{block center}}
+          {{include}}
+          {{end}}
+        </div>
+      
+        {{if right_sidebar_enabled:}}
+        <div class="span3">
+          {{block right_sidebar}}
+          <h3>Right Sidebar</h3>
+          <p></p>
+          {{end}}
+        </div>    
+        {{pass}}
       </div>
-      {{pass}}
-      
-      <div class="{{=middle_columns}} center">
-        {{block center}}
-        {{include}}
-        {{end}}
-      </div>
-      
-      {{if right_sidebar_enabled:}}
-      <div class="span3">
-        {{block right_sidebar}}
-        <h3>Right Sidebar</h3>
-        <p></p>
-        {{end}}
-      </div>    
-      {{pass}}
-      
-    </div><!-- container-fluid -->
+    </div><!-- container -->
   </div><!-- main -->
   
   <div class="footer">
-    <div class="container-fluid">    
-      <div class="span12">
-        {{block footer}} <!-- this is default footer -->
-        <div class="footer-content">
-          <div class="copyright">{{=T('Copyright')}} &#169; 2011</div>
-          <div style="float: right;">
-	    Powered by
-            <a href="http://www.web2py.com/">web2py</a>
+    <div class="container">
+      <div class="row">
+        <div class="span12">
+          {{block footer}} <!-- this is default footer -->
+          <div class="footer-content">
+            <div class="copyright">{{=T('Copyright')}} &#169; 2011</div>
+            <div id="poweredBy">
+              Powered by
+              <a href="http://www.web2py.com/">web2py</a>
+            </div>
           </div>
+        {{end}}
         </div>
-        {{end}}	
       </div>
     </div><!-- container-fluid -->
   </div><!-- footer -->
