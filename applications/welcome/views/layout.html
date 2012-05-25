@@ -63,12 +63,12 @@
 	<script>
 	  jQuery(function(){
              jQuery('.nav>li>a').each(function(){	        
-                if(jQuery(this).parent().find('ul'))
-                   jQuery(this).attr({'class':'dropdown-toggle','data-toggle':'dropdown'}).append('<b class="caret"><b>');
+                if(jQuery(this).parent().find('ul').length)
+                   jQuery(this).attr({'class':'dropdown-toggle','data-toggle':'dropdown'}).append('<b class="caret"></b>');
    	     });
              jQuery('.nav li').each(function(){	        
-                if(jQuery(this).find('ul'))
-                    var a=jQuery(this).children('a').before('<i class="icon-chevron-right"></i>'); 
+                if(jQuery(this).find('ul').length)
+                    var a=jQuery(this).children('a').contents().before('<i class="icon-chevron-right"></i>'); 
              });
           });
 	</script>
