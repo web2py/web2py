@@ -2271,10 +2271,10 @@ class web2pyHTMLParser(HTMLParser):
                 data = data.decode('latin1')
         self.parent.append(data.encode('utf8','xmlcharref'))
     def handle_charref(self,name):
-        if name[1].lower()=='x':
-            self.parent.append(unichr(int(name[2:], 16)).encode('utf8'))
+        if name.startswith('x'):
+            self.parent.append(unichr(int(name[1:], 16)).encode('utf8'))
         else:
-            self.parent.append(unichr(int(name[1:], 10)).encode('utf8'))
+            self.parent.append(unichr(int(name)).encode('utf8'))
     def handle_entityref(self,name):
         self.parent.append(unichr(name2codepoint[name]).encode('utf8'))
     def handle_endtag(self, tagname):
