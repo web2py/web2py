@@ -66,7 +66,7 @@
                 if(jQuery(this).parent().find('ul').length)
                    jQuery(this).attr({'class':'dropdown-toggle','data-toggle':'dropdown'}).append('<b class="caret"></b>');
    	     });
-             jQuery('.nav li').each(function(){	        
+             jQuery('.nav li li').each(function(){	        
                 if(jQuery(this).find('ul').length)
                     var a=jQuery(this).children('a').contents().before('<i class="icon-chevron-right"></i>'); 
              });
