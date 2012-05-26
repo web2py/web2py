@@ -101,7 +101,7 @@ def rss(feed):
                     lastBuildDate = feed.get('created_on', now),
                     items = [rss2.RSSItem(
                 title=entry.get('title','(notitle)'),
-                link=entry('link',None),
+                link=entry.get('link',None),
                 description=entry.get('description',''),
                 pubDate=entry.get('created_on', now)
                 ) for entry in feed.get('entries',[])])
