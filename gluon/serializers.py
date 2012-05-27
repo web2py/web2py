@@ -68,7 +68,7 @@ def ics(events, title=None, link=None, timeshift=0):
     import datetime
     title = title or '(unkown)'
     if link and not callable(link):
-        link = lambda item,prefix=link: prefix.replace('[id]',item['id'])
+        link = lambda item,prefix=link: prefix.replace('[id]',str(item['id']))
     s = 'BEGIN:VCALENDAR'
     s += '\nVERSION:2.0'
     s += '\nX-WR-CALNAME:%s' % title
