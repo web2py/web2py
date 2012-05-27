@@ -64,7 +64,7 @@ def json(value,default=custom_json):
 def csv(value):
     return ''
 
-def ics(events, title=None, link=None, timeshift=0):
+def ics(events, title=None, link=None, timeshift=0, **ignored):
     import datetime
     title = title or '(unkown)'
     if link and not callable(link):
