@@ -2054,7 +2054,7 @@ class MySQLAdapter(BaseAdapter):
         self.db_codec = db_codec
         self.find_or_make_work_folder()
         uri = uri.split('://')[1]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^?]+)(\?set_encoding=(?P<charset>\w+))?$').match(uri)
+        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/+(?P<db>[^?]+)(\?set_encoding=(?P<charset>\w+))?$').match(uri)
         if not m:
             raise SyntaxError, \
                 "Invalid URI string in DAL: %s" % self.uri
@@ -2173,7 +2173,7 @@ class PostgreSQLAdapter(BaseAdapter):
         self.srid = srid
         self.find_or_make_work_folder()
         library, uri = uri.split('://')[:2]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?sslmode=(?P<sslmode>.+))?$').match(uri)
+        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@]+)(\:(?P<port>[0-9]+))?/+(?P<db>[^\?]+)(\?sslmode=(?P<sslmode>.+))?$').match(uri)
         if not m:
             raise SyntaxError, "Invalid URI string in DAL"
         user = credential_decoder(m.group('user'))
