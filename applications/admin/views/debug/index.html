@@ -64,14 +64,14 @@
 </style-->
 
 <div id="wrapper">
-  <textarea id="output" readonly="readonly">web2py Debugger {{=request.env.web2py_version}}{{=data}}</textarea>
+  <textarea id="output" readonly="readonly">{{=T('web2py Debugger')}} {{=request.env.web2py_version}}{{=data}}</textarea>
 
   <form id="form" action="{{=URL(r=request,f='callback',args=app)}}" method="get">
     <div id="shellwrapper">
       <div id="caret">&gt;&gt;&gt;</div>
       <div class="tooltip">
         <textarea class="prompt" name="statement" id="statement"></textarea>
-        <span>Type PDB debugger command in here and hit Return (Enter) to execute it.</span>
+        <span>{{=T('Type PDB debugger command in here and hit Return (Enter) to execute it.')}}</span>
       </div>
     </div>
   </form>
@@ -79,7 +79,7 @@
 
 <div class="help">
   <ul>
-    <li>Using the shell may lock the database to other users of this app.</li>
+    <li>{{=T('Using the shell may lock the database to other users of this app.')}}</li>
   </ul>
 </div>
 
