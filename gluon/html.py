@@ -80,6 +80,7 @@ __all__ = [
     'OPTGROUP',
     'SELECT',
     'SPAN',
+    'STRONG',
     'STYLE',
     'TABLE',
     'TAG',
@@ -1318,6 +1319,11 @@ class P(DIV):
         if self['cr2br']:
             text = text.replace('\n', '<br />')
         return text
+
+
+class STRONG(DIV):
+
+    tag = 'strong'
 
 
 class B(DIV):
