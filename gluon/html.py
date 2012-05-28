@@ -2055,6 +2055,9 @@ class BEAUTIFY(DIV):
         if level == 0:
             return
         for c in self.components:
+            if hasattr(c,'value') and not callable(c.value):
+                if c.value:
+                    components.append(c.value)
             if hasattr(c,'xml') and callable(c.xml):
                 components.append(c)
                 continue
