@@ -7,6 +7,8 @@ h1,h2,h3,h4,h5,h6 {font-family: inherit;}
 
 li {margin-bottom: 0;} /*bootswatch*/
 
+.auth_navbar, .navbar .btn-group{padding:0;}
+
 @media only screen and (max-width: 320px) {
   .navbar-inner{position:relative;}
   #navbar{float:none;position:absolute;bottom:-10px;left:4px;}
