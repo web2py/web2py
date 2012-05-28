@@ -205,7 +205,7 @@ def run(
         exec ('print %s()' % f, _env)
         return
 
-    _env.update(exec_pythonrc())
+    _env.update(exec_pythonrc() or {})
     if startfile:
         try:
             execfile(startfile, _env)
