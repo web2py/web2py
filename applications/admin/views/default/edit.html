@@ -111,6 +111,7 @@ jQuery(document).ready(function(){
     {{=T('Saved file hash:')}}
     <input type="input" name="file_hash" value="{{=file_hash}}" readonly="readonly"/>
     {{=T('Last saved on:')}} <input type="input" name="saved_on" value="{{=saved_on}}" readonly="readonly"/>
+    <br><hr>
     {{if TEXT_EDITOR == 'amy':}}
     <textarea style="width: auto; height:400px;direction:ltr;" rows="58" cols="100" -amy-enabled="true" id="body" name="data"><div id="editor"/>{{=data}}</textarea>
     {{elif TEXT_EDITOR == 'ace':}}
