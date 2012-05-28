@@ -72,7 +72,7 @@ jQuery(document).ready(function(){
 {{if functions:}}
   <p class="formfield">
 <span style="text-align:left;" id="exposed">
-  {{=B(T('exposes:'))}}{{=XML(', '.join([A(f,_href=URL(a=app,c=controller,f=f)).xml() for f in functions]))}}
+  {{=B(T('exposes:'))}} {{=XML(', '.join([A(f,_href=URL(a=app,c=controller,f=f)).xml() for f in functions]))}}
 </span>
   {{if editviewlinks:}}<br/>
   {{=B(T('edit views:'))}}
@@ -150,23 +150,23 @@ window.onload = function() {
 
 {{if filetype=='html':}}
 <div class="help">
-  <h3>Key bindings for ZenCoding Plugin</h3>
+  <h3>{{=T('Key bindings for ZenCoding Plugin')}}</h3>
   <ul>
-    {{=shortcut('Ctrl+S', 'Save via Ajax')}}
-    {{=shortcut('Ctrl+,', 'Expand Abbreviation')}}
-    {{=shortcut('Ctrl+M', 'Match Pair')}}
-    {{=shortcut('Ctrl+H', 'Wrap with Abbreviation')}}
-    {{=shortcut('Shift+Ctrl+M', 'Merge Lines')}}
-    {{=shortcut('Ctrl+Shift+←', 'Previous Edit Point')}}
-    {{=shortcut('Ctrl+Shift+→', 'Next Edit Point')}}
-    {{=shortcut('Ctrl+Shift+↑', 'Go to Matching Pair')}}
+    {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
+    {{=shortcut('Ctrl+,', T('Expand Abbreviation'))}}
+    {{=shortcut('Ctrl+M', T('Match Pair'))}}
+    {{=shortcut('Ctrl+H', T('Wrap with Abbreviation'))}}
+    {{=shortcut('Shift+Ctrl+M', T('Merge Lines'))}}
+    {{=shortcut('Ctrl+Shift+←', T('Previous Edit Point'))}}
+    {{=shortcut('Ctrl+Shift+→', T('Next Edit Point'))}}
+    {{=shortcut('Ctrl+Shift+↑', T('Go to Matching Pair'))}}
   </ul>
 </div>
 {{else:}}
 <div class="help">
-  <h3>Key bindings</h3>
+  <h3>{{=T("Key bindings")}}</h3>
   <ul>
-    {{=shortcut('Ctrl+S', 'Save via Ajax')}}
+    {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
   </ul>
 </div>
 {{pass}}

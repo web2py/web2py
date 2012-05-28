@@ -63,7 +63,7 @@ def get_app(name=None):
     if app and (not MULTI_USER_MODE or is_manager() or \
                     db(db.app.name==app)(db.app.owner==auth.user.id).count()):
         return app
-    session.flash = 'App does not exist or your are not authorized'
+    session.flash = T('App does not exist or your are not authorized')
     redirect(URL('site'))
 
 def index():
@@ -1108,7 +1108,7 @@ def errors():
     method = request.args(1) or 'new'
     db_ready = {}
     db_ready['status'] = get_ticket_storage(app)
-    db_ready['errmessage'] = "No ticket_storage.txt found under /private folder"
+    db_ready['errmessage'] = T("No ticket_storage.txt found under /private folder")
     db_ready['errlink'] = "http://web2py.com/books/default/chapter/29/13#Collecting-tickets"
 
     if method == 'new':
@@ -1397,7 +1397,7 @@ def reload_routes():
 
 def manage_students():
     if not (MULTI_USER_MODE and is_manager()):
-        session.flash = 'Not Authorized'
+        session.flash = T('Not Authorized')
         redirect(URL('site'))
     db.auth_user.registration_key.writable = True
     grid = SQLFORM.grid(db.auth_user)
@@ -1405,7 +1405,7 @@ def manage_students():
 
 def bulk_register():
     if not (MULTI_USER_MODE and is_manager()):
-        session.flash = 'Not Authorized'
+        session.flash = T('Not Authorized')
         redirect(URL('site'))
     form = SQLFORM.factory(Field('emails','text'))
     if form.process().accepted:
