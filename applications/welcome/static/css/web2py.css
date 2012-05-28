@@ -146,8 +146,6 @@ div.error {
 }
 
 #navbar {float: right; padding: 5px; /* same as superfish */}
-#navbar {padding: 9px;}
-#navbar a {color: inherit;}
 
 .right {
        width:100%;
