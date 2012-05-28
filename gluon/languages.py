@@ -272,8 +272,8 @@ class translator(object):
                     language = lang_sampling(match_language,
                                              self.current_languages)
                     if language:
-                    self.accepted_language = language
-                    break
+                        self.accepted_language = language
+                        break
                     language = lang_sampling(match_language, possible_languages)
                     if language:
                         filename = os.path.join(self.folder,
