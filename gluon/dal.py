@@ -1137,6 +1137,8 @@ class BaseAdapter(ConnectionPool):
             return str(self.represent(expression,field_type))
         elif isinstance(expression,(list,tuple)):
             return ','.join(self.represent(item,field_type) for item in expression)
+        elif isinstance(expression, bool):
+            return '1' if expression else '0'
         else:
             return str(expression)
 
