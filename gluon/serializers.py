@@ -95,14 +95,14 @@ def rss(feed):
     if not 'entries' in feed and 'items' in feed:
         feed['entries'] = feed['items']
     now=datetime.datetime.now()
-    rss = rss2.RSS2(title = feed.get('title','(notitle)'),
-                    link = feed.get('link',None),
-                    description = feed.get('description',''),
+    rss = rss2.RSS2(title = str(feed.get('title','(notitle)')),
+                    link = str(feed.get('link',None)),
+                    description = str(feed.get('description','')),
                     lastBuildDate = feed.get('created_on', now),
                     items = [rss2.RSSItem(
-                title=entry.get('title','(notitle)'),
-                link=entry.get('link',None),
-                description=entry.get('description',''),
+                title=str(entry.get('title','(notitle)')),
+                link=str(entry.get('link',None)),
+                description=str(entry.get('description','')),
                 pubDate=entry.get('created_on', now)
                 ) for entry in feed.get('entries',[])])
     return rss2.dumps(rss)
