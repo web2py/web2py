@@ -146,7 +146,8 @@ def exec_pythonrc():
         try:
             return execfile_getlocals(pythonrc)
         except NameError:
-            return dict()
+            pass
+    return dict()
 
 
 def run(
@@ -205,7 +206,7 @@ def run(
         exec ('print %s()' % f, _env)
         return
 
-    _env.update(exec_pythonrc() or {})
+    _env.update(exec_pythonrc())
     if startfile:
         try:
             execfile(startfile, _env)
