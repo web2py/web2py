@@ -276,14 +276,13 @@ class translator(object):
                         break
                     language = lang_sampling(match_language, possible_languages)
                     if language:
-                        filename = os.path.join(self.folder,
-                                                'languages/',
-                                                language + '.py')
-                if os.path.exists(filename):
-                    self.accepted_language = language
-                    self.language_file = filename
-                    self.t = read_dict(filename)
-                    return languages
+                        filename = os.path.join(
+                            self.folder,'languages/',language + '.py')
+                        if os.path.exists(filename):
+                            self.accepted_language = language
+                            self.language_file = filename
+                            self.t = read_dict(filename)
+                            return languages
         self.language_file = None
         self.t = {}  # ## no language by default
         return languages
