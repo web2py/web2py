@@ -7750,6 +7750,7 @@ class Field(Expression):
                                  # True - put uploaded file in
                                  #   <uploaddir>/<tablename>.<fieldname>/uuid_key[:2]
                                  #        directory)
+            uploadfs=None     # a pyfilesystem where to store upload
 
     to be used as argument of DAL.define_table
 
@@ -7786,6 +7787,7 @@ class Field(Expression):
         represent=None,
         uploadfolder=None,
         uploadseparate=False,
+        uploadfs=None,
         compute=None,
         custom_store=None,
         custom_retrieve=None,
@@ -7817,6 +7819,7 @@ class Field(Expression):
         self.uploadfield = uploadfield
         self.uploadfolder = uploadfolder
         self.uploadseparate = uploadseparate
+        self.uploadfs = uploadfs
         self.widget = widget
         if label is DEFAULT:
             self.label = fieldname.replace('_', ' ').title()
@@ -7874,13 +7877,20 @@ class Field(Expression):
             elif self.db._adapter.folder:
                 path = os.path.join(self.db._adapter.folder, '..', 'uploads')
             else:
-                raise RuntimeError, "you must specify a Field(...,uploadfolder=...)"
+                raise RuntimeError,\
+                    "you must specify a Field(...,uploadfolder=...)"
             if self.uploadseparate:
-                path = os.path.join(path,"%s.%s" % (self._tablename, self.name),uuid_key[:2])
+                if self.uploadfs:
+                    raise RuntimeError, "not supported"
+                path = os.path.join(path,"%s.%s" %(self._tablename, self.name),
+                                    uuid_key[:2])
             if not os.path.exists(path):
                 os.makedirs(path)
             pathfilename = os.path.join(path, newfilename)
-            dest_file = open(pathfilename, 'wb')
+            if self.uploadfs:
+                dest_file = self.uploadfs.open(newfilename, 'wb')
+            else:
+                dest_file = open(pathfilename, 'wb')
             try:
                 shutil.copyfileobj(file, dest_file)
             except IOError:
@@ -7904,15 +7914,19 @@ class Field(Expression):
         file_properties = self.retrieve_file_properties(name,path)
         filename = file_properties['filename']
         if isinstance(self.uploadfield, str):  # ## if file is in DB
-            return (filename, cStringIO.StringIO(row[self.uploadfield] or ''))
+            stream = cStringIO.StringIO(row[self.uploadfield] or '')
         elif isinstance(self.uploadfield,Field):
             blob_uploadfield_name = self.uploadfield.uploadfield
             query = self.uploadfield == name
             data = self.uploadfield.table(query)[blob_uploadfield_name]
-            return (filename, cStringIO.StringIO(data))
+            stream = cStringIO.StringIO(data)
+        elif self.uploadfs:
+            # ## if file is on pyfilesystem
+            stream = self.uploadfs.open(name, 'rb')
         else:
-            # ## if file is on filesystem
-            return (filename, open(os.path.join(file_properties['path'], name), 'rb'))
+            # ## if file is on regular filesystem
+            stream = open(os.path.join(file_properties['path'], name), 'rb')
+        return (filename, stream)
 
     def retrieve_file_properties(self, name, path=None):
         if self.custom_retrieve_file_properties:
