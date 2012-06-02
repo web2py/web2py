@@ -6584,6 +6584,10 @@ def index():
                     # # print 're3:'+tag
                     field = args[i]
                     if not field in db[table]: break
+                    # hand-built patterns should respect .readable=False as well
+                    if not db[table][field].readable:
+                        return Row({'status':418,'pattern':pattern,
+                                    'error':'I\'m a teapot','response':None})
                     try:
                         item =  dbset.select(db[table][field],limitby=(0,1)).first()
                     except ValueError:
