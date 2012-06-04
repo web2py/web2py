@@ -42,7 +42,7 @@
         <script>
             var keybinding = require("ace/keyboard/keybinding/emacs").Emacs;
         </script>
-    {{elif TEXT_EDITOR_KEYBINDING == 'emacs':}}
+    {{elif TEXT_EDITOR_KEYBINDING == 'vi':}}
         <script src="{{=URL(r=request,c='static',f='ace/src/keybinding-vi.js')}}" type="text/javascript" charset="utf-8"></script>
         <script>
             var keybinding = require("ace/keyboard/keybinding/vim").Vim;
@@ -128,7 +128,7 @@ window.onload = function() {
 		name: 'saveFile',
 		bindKey: {
 			win: 'Ctrl-S',
-			mac: 'Command-S',
+			mac: 'Ctrl-S',
 			sender: 'editor|cli'
 		},
 		exec: function(env, args, request) {
