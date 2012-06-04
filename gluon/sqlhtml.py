@@ -1949,6 +1949,7 @@ class SQLFORM(FORM):
     def smartgrid(table, constraints=None, linked_tables=None,
                   links=None, links_in_grid=True,
                   args=None, user_signature=True,
+                  divider='>', breadcrumbs_class='',
                   **kwargs):
         """
         @auth.requires_login()
@@ -1979,7 +1980,7 @@ class SQLFORM(FORM):
         linked_tables is a optional list of tablenames of tables
         to be linked
         """
-        from gluon import current, A, URL, DIV, H3, redirect
+        from gluon import current, A, URL, DIV, H3, UL, LI, SPAN, redirect
         request, T = current.request, current.T
         if args is None: args = []
         db = table._db
@@ -2020,14 +2021,14 @@ class SQLFORM(FORM):
                         else: name = format % record
                     except TypeError:
                         name = id
-                    breadcrumbs += [A(T(db[referee]._plural),
+                    breadcrumbs += [LI(A(T(db[referee]._plural),
                                       _class=trap_class(),
                                       _href=URL(args=request.args[:nargs])),
-                                    ' > ',
-                                    A(name,_class=trap_class(),
+                                    SPAN(divider,_class='divider')),
+                                    LI(A(name,_class=trap_class(),
                                       _href=URL(args=request.args[:nargs]+[
                                     'view',referee,id],user_signature=True)),
-                                    ' > ']
+                                    SPAN(divider,_class='divider'))]
                     nargs+=2
                 else:
                     break
@@ -2074,9 +2075,9 @@ class SQLFORM(FORM):
                           user_signature=user_signature,**kwargs)
         if isinstance(grid,DIV):
             header = table._plural + (field and ' for '+field.name or '')
-            breadcrumbs.append(A(T(header),_class=trap_class(),
-                                 _href=URL(args=request.args[:nargs])))
-            grid.insert(0,DIV(H3(*breadcrumbs),_class='web2py_breadcrumbs'))
+            breadcrumbs.append(LI(A(T(header),_class=trap_class(),
+                                 _href=URL(args=request.args[:nargs])), _class='active'))
+            grid.insert(0,DIV(UL(*breadcrumbs, _class=breadcrumbs_class), _class='web2py_breadcrumbs'))
         return grid
 
 

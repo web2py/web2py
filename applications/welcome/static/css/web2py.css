@@ -290,5 +290,14 @@ div.error {
 
 #w2p_query_panel {}
 
+.web2py_breadcrumbs ul {
+    list-style: none;
+    margin-bottom: 18px;
+}
+
+.web2py_breadcrumbs ul li {
+    display: inline-block;
+}
+
 .ie9 #query_panel {padding-bottom:2px;}
 
