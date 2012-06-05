@@ -5330,7 +5330,7 @@ class IMAPAdapter(NoSQLAdapter):
                 sub_items = [sub_item for sub_item in sub_items if len(sub_item.strip()) > 0]
                 mailbox = sub_items[len(sub_items) - 1]
                 # remove unwanted characters and store original names
-                mailbox_name = mailbox.replace("[", "").replace("]", "").replace("/", "_")
+                mailbox_name = re.sub('[^_\w]','',re.sub('[/ ]','_',mailbox))
                 mailboxes.append(mailbox_name)
                 self.connection.mailbox_names[mailbox_name] = mailbox
         # print "Mailboxes query", mailboxes
