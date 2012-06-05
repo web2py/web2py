@@ -642,7 +642,7 @@ class BaseAdapter(ConnectionPool):
                     referenced = tablename
                 constraint_name = self.constraint_name(tablename, field.name)
                 if not '.' in referenced \
-                        and referenced != tablename) \
+                        and referenced != tablename \
                         and hasattr(table,'_primarykey'):
                     ftype = self.types['integer']
                 else:
