@@ -2077,7 +2077,8 @@ class SQLFORM(FORM):
             header = table._plural + (field and ' for '+field.name or '')
             breadcrumbs.append(LI(A(T(header),_class=trap_class(),
                                  _href=URL(args=request.args[:nargs])), _class='active'))
-            grid.insert(0,DIV(UL(*breadcrumbs, _class=breadcrumbs_class), _class='web2py_breadcrumbs'))
+            grid.insert(0,DIV(UL(*breadcrumbs, **{'_class':breadcrumbs_class}),
+                              _class='web2py_breadcrumbs'))
         return grid
 
 
