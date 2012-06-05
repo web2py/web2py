@@ -1482,7 +1482,10 @@ class BaseAdapter(ConnectionPool):
         if isinstance(obj, CALLABLETYPES):
             obj = obj()
         if isinstance(fieldtype, SQLCustomType):
-            return fieldtype.encoder(obj)
+            value = fieldtype.encoder(obj)
+            if fieldtype.native in ('string','text'):
+                return self.adapt(value)
+            return value
         if isinstance(obj, (Expression, Field)):
             return str(obj)
         if fieldtype.startswith('list:'):
