@@ -6038,6 +6038,10 @@ class Row(dict):
     def __setattr__(self, key, value):
         self[key] = value
 
+    def __str__(self):
+        ### this could be made smarter
+        return '<Row ' + dict.__repr__(self) + '>'
+
     def __repr__(self):
         return '<Row ' + dict.__repr__(self) + '>'
 
