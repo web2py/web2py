@@ -638,37 +638,47 @@ class BaseAdapter(ConnectionPool):
                 ftype = field.type.native or field.type.type
             elif field.type.startswith('reference'):
                 referenced = field.type[10:].strip()
+                if referenced == '.':
+                    referenced = tablename
                 constraint_name = self.constraint_name(tablename, field.name)
-                if hasattr(table,'_primarykey'):
-                    rtablename,rfieldname = referenced.split('.')
-                    rtable = table._db[rtablename]
-                    rfield = rtable[rfieldname]
-                    # must be PK reference or unique
-                    if rfieldname in rtable._primarykey or rfield.unique:
-                        ftype = self.types[rfield.type[:9]] % dict(length=rfield.length)
-                        # multicolumn primary key reference?
-                        if not rfield.unique and len(rtable._primarykey)>1 :
-                            # then it has to be a table level FK
-                            if rtablename not in TFK:
-                                TFK[rtablename] = {}
-                            TFK[rtablename][rfieldname] = field.name
-                        else:
-                            ftype = ftype + \
-                                self.types['reference FK'] %dict(\
+                if not '.' in referenced \
+                        and referenced != tablename) \
+                        and hasattr(table,'_primarykey'):
+                    ftype = self.types['integer']
+                else:
+                    if hasattr(table,'_primarykey'):
+                        rtablename,rfieldname = referenced.split('.')
+                        rtable = table._db[rtablename]
+                        rfield = rtable[rfieldname]
+                        # must be PK reference or unique
+                        if rfieldname in rtable._primarykey or rfield.unique:
+                            ftype = self.types[rfield.type[:9]] % \
+                                dict(length=rfield.length)
+                            # multicolumn primary key reference?
+                            if not rfield.unique and len(rtable._primarykey)>1:
+                                # then it has to be a table level FK
+                                if rtablename not in TFK:
+                                    TFK[rtablename] = {}
+                                TFK[rtablename][rfieldname] = field.name
+                            else:
+                                ftype = ftype + self.types['reference FK'] \
+                                    % dict(
                                 constraint_name=constraint_name,
                                 table_name=tablename,
                                 field_name=field.name,
                                 foreign_key='%s (%s)'%(rtablename, rfieldname),
                                 on_delete_action=field.ondelete)
-                else:
-                    # make a guess here for circular references
-                    id_fieldname = referenced in table._db and table._db[referenced]._id.name or 'id'
-                    ftype = self.types[field.type[:9]]\
-                        % dict(table_name=tablename,
-                               field_name=field.name,
-                               constraint_name=constraint_name,
-                               foreign_key=referenced + ('(%s)' % id_fieldname),
-                               on_delete_action=field.ondelete)
+                    else:
+                        # make a guess here for circular references
+                        id_fieldname = referenced in table._db \
+                            and table._db[referenced]._id.name or 'id'
+                        ftype = self.types[field.type[:9]] % \
+                            dict(table_name=tablename,
+                        field_name=field.name,
+                                 constraint_name=constraint_name,
+                                 foreign_key=referenced + \
+                                     ('(%s)' % id_fieldname),
+                                 on_delete_action=field.ondelete)
             elif field.type.startswith('list:reference'):
                 ftype = self.types[field.type[:14]]
             elif field.type.startswith('decimal'):
@@ -679,8 +689,8 @@ class BaseAdapter(ConnectionPool):
                 srid = self.srid
                 geotype, parms = field.type[:-1].split('(')
                 if not geotype in self.types:
-                    raise SyntaxError, 'Field: unknown field type: %s for %s' % \
-                        (field.type, field.name)
+                    raise SyntaxError, 'Field: unknown field type: %s for %s' \
+                        % (field.type, field.name)
                 ftype = self.types[geotype]
                 if self.dbengine == 'postgres' and geotype == 'geometry':
                     # parameters: schema, srid, dimension
