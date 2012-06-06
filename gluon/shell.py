@@ -140,10 +140,14 @@ def env(
 def exec_pythonrc():
     pythonrc = os.environ.get('PYTHONSTARTUP')
     if pythonrc and os.path.isfile(pythonrc):
+        def execfile_getlocals(file):
+            execfile(file)
+            return locals()
         try:
-            execfile(pythonrc)
+            return execfile_getlocals(pythonrc)
         except NameError:
             pass
+    return dict()
 
 
 def run(
@@ -200,8 +204,10 @@ def run(
 
     if f:
         exec ('print %s()' % f, _env)
-    elif startfile:
-        exec_pythonrc()
+        return
+
+    _env.update(exec_pythonrc())
+    if startfile:
         try:
             execfile(startfile, _env)
             if import_models: BaseAdapter.close_all_instances('commit')
@@ -209,7 +215,6 @@ def run(
             print traceback.format_exc()
             if import_models: BaseAdapter.close_all_instances('rollback')
     elif python_code:
-        exec_pythonrc()
         try:
             exec(python_code, _env)
             if import_models: BaseAdapter.close_all_instances('commit')
@@ -253,7 +258,6 @@ def run(
         else:
             readline.set_completer(rlcompleter.Completer(_env).complete)
             readline.parse_and_bind('tab:complete')
-        exec_pythonrc()
         code.interact(local=_env)
 
 

@@ -80,6 +80,7 @@ __all__ = [
     'OPTGROUP',
     'SELECT',
     'SPAN',
+    'STRONG',
     'STYLE',
     'TABLE',
     'TAG',
@@ -1320,6 +1321,11 @@ class P(DIV):
         return text
 
 
+class STRONG(DIV):
+
+    tag = 'strong'
+
+
 class B(DIV):
 
     tag = 'b'
@@ -2049,6 +2055,9 @@ class BEAUTIFY(DIV):
         if level == 0:
             return
         for c in self.components:
+            if hasattr(c,'value') and not callable(c.value):
+                if c.value:
+                    components.append(c.value)
             if hasattr(c,'xml') and callable(c.xml):
                 components.append(c)
                 continue
@@ -2271,10 +2280,10 @@ class web2pyHTMLParser(HTMLParser):
                 data = data.decode('latin1')
         self.parent.append(data.encode('utf8','xmlcharref'))
     def handle_charref(self,name):
-        if name[1].lower()=='x':
-            self.parent.append(unichr(int(name[2:], 16)).encode('utf8'))
+        if name.startswith('x'):
+            self.parent.append(unichr(int(name[1:], 16)).encode('utf8'))
         else:
-            self.parent.append(unichr(int(name[1:], 10)).encode('utf8'))
+            self.parent.append(unichr(int(name)).encode('utf8'))
     def handle_entityref(self,name):
         self.parent.append(unichr(name2codepoint[name]).encode('utf8'))
     def handle_endtag(self, tagname):
