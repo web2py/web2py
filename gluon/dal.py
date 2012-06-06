@@ -1493,7 +1493,7 @@ class BaseAdapter(ConnectionPool):
             obj = obj()
         if isinstance(fieldtype, SQLCustomType):
             value = fieldtype.encoder(obj)
-            if fieldtype.native in ('string','text'):
+            if fieldtype.type in ('string','text'):
                 return self.adapt(value)
             return value
         if isinstance(obj, (Expression, Field)):
