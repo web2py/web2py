@@ -104,8 +104,8 @@ function web2py_ajax_page(method, action, data, target) {
 
 function web2py_component(action, target, timeout, times){
   jQuery(function(){
-    var element = $("#" + target).get(0);
-    var statement = "$('#" + target + "').get(0).reload();";
+    var element = jQuery("#" + target).get(0);
+    var statement = "jQuery('#" + target + "').get(0).reload();";
     element.reload = function (){
         // Continue if times is Infinity or
         // the times limit is not reached
