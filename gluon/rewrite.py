@@ -397,6 +397,16 @@ def load_routers(all_apps):
             router.languages = set(router.languages)
         else:
             router.languages = set()
+        if router.functions:
+            if isinstance(router.functions, (set, tuple, list)):
+                functions = set(router.functions)
+                if isinstance(router.default_function, str):
+                    functions.add(router.default_function)  # legacy compatibility
+                router.functions = { router.default_controller: functions }
+            for controller in router.functions:
+                router.functions[controller] = set(router.functions[controller])
+        else:
+            router.functions = dict()
         if app != 'BASE':
             for base_only in ROUTER_BASE_KEYS:
                 router.pop(base_only, None)
@@ -412,16 +422,6 @@ def load_routers(all_apps):
             if router.controllers:
                 router.controllers.add('static')
                 router.controllers.add(router.default_controller)
-            if router.functions:
-                if isinstance(router.functions, (set, tuple, list)):
-                    functions = set(router.functions)
-                    if isinstance(router.default_function, str):
-                        functions.add(router.default_function)  # legacy compatibility
-                    router.functions = { router.default_controller: functions }
-                for controller in router.functions:
-                    router.functions[controller] = set(router.functions[controller])
-            else:
-                router.functions = dict()
 
     if isinstance(routers.BASE.applications, str) and routers.BASE.applications == 'ALL':
         routers.BASE.applications = list(all_apps)

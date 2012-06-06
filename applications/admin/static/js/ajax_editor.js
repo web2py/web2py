@@ -71,7 +71,7 @@ function doClickSave() {
 	  success: function(json,text,xhr){
 
 	        // show flash message (if any)
-	        var flash=xhr.getResponseHeader('web2py-component-flash');
+	        var flash=decodeURIComponent(xhr.getResponseHeader('web2py-component-flash'));
             if (flash) jQuery('.flash').html(flash).slideDown();
             else jQuery('.flash').hide();
 
@@ -149,7 +149,7 @@ function doToggleBreakpoint(filename, url) {
 	  success: function(json,text,xhr){
 
 	        // show flash message (if any)
-	        var flash=xhr.getResponseHeader('web2py-component-flash');
+	        var flash=decodeURIComponent(xhr.getResponseHeader('web2py-component-flash'));
             if (flash) jQuery('.flash').html(flash).slideDown();
             else jQuery('.flash').hide();
 		    try {

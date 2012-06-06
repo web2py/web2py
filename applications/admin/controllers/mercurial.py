@@ -45,7 +45,7 @@ def commit():
                 INPUT(_type='submit',_value='Commit'))
     if form.accepts(request.vars,session):
         oldid = repo[repo.lookup('.')]
-        scmutil.addremove(repo)
+        addremove(repo)
         repo.commit(text=form.vars.comment)
         if repo[repo.lookup('.')] == oldid:
             response.flash = 'no changes'

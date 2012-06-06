@@ -12,7 +12,7 @@ $(document).ready(function() {
 });
 </script>
 
-<h2>Google App Engine Deployment Interface</h2>
+<h2>{{=T("Google App Engine Deployment Interface")}}</h2>
 
 <p class="help">{{=T("This page can upload your application to the Google App Engine computing cloud. Mind that you must first create indexes locally and this is done by installing the Google appserver and running the app locally with it once, or there will be errors when selecting records. Attention: deployment may take long time, depending on the network speed. Attention: it will overwrite your app.yaml. DO NOT SUBMIT TWICE.")}}</p>
 
@@ -20,10 +20,10 @@ $(document).ready(function() {
 <h3>Command</h3>
 <button onclick="$.get('{{=URL(r=request,f='kill')}}');">kill process</button>
 {{=CODE(command)}}
-<h3>GAE Output</h3>
+<h3>{{=T("GAE Output")}}</h3>
 <pre id="target"></pre>
 {{else:}}
-<h3>Deployment form</h3>
+<h3>{{=T("Deployment form")}}</h3>
 <div class="deploy_form form">
 {{=form}}
 </div>

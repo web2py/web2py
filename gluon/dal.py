@@ -638,37 +638,47 @@ class BaseAdapter(ConnectionPool):
                 ftype = field.type.native or field.type.type
             elif field.type.startswith('reference'):
                 referenced = field.type[10:].strip()
+                if referenced == '.':
+                    referenced = tablename
                 constraint_name = self.constraint_name(tablename, field.name)
-                if hasattr(table,'_primarykey'):
-                    rtablename,rfieldname = referenced.split('.')
-                    rtable = table._db[rtablename]
-                    rfield = rtable[rfieldname]
-                    # must be PK reference or unique
-                    if rfieldname in rtable._primarykey or rfield.unique:
-                        ftype = self.types[rfield.type[:9]] % dict(length=rfield.length)
-                        # multicolumn primary key reference?
-                        if not rfield.unique and len(rtable._primarykey)>1 :
-                            # then it has to be a table level FK
-                            if rtablename not in TFK:
-                                TFK[rtablename] = {}
-                            TFK[rtablename][rfieldname] = field.name
-                        else:
-                            ftype = ftype + \
-                                self.types['reference FK'] %dict(\
+                if not '.' in referenced \
+                        and referenced != tablename \
+                        and hasattr(table,'_primarykey'):
+                    ftype = self.types['integer']
+                else:
+                    if hasattr(table,'_primarykey'):
+                        rtablename,rfieldname = referenced.split('.')
+                        rtable = table._db[rtablename]
+                        rfield = rtable[rfieldname]
+                        # must be PK reference or unique
+                        if rfieldname in rtable._primarykey or rfield.unique:
+                            ftype = self.types[rfield.type[:9]] % \
+                                dict(length=rfield.length)
+                            # multicolumn primary key reference?
+                            if not rfield.unique and len(rtable._primarykey)>1:
+                                # then it has to be a table level FK
+                                if rtablename not in TFK:
+                                    TFK[rtablename] = {}
+                                TFK[rtablename][rfieldname] = field.name
+                            else:
+                                ftype = ftype + self.types['reference FK'] \
+                                    % dict(
                                 constraint_name=constraint_name,
                                 table_name=tablename,
                                 field_name=field.name,
                                 foreign_key='%s (%s)'%(rtablename, rfieldname),
                                 on_delete_action=field.ondelete)
-                else:
-                    # make a guess here for circular references
-                    id_fieldname = referenced in table._db and table._db[referenced]._id.name or 'id'
-                    ftype = self.types[field.type[:9]]\
-                        % dict(table_name=tablename,
-                               field_name=field.name,
-                               constraint_name=constraint_name,
-                               foreign_key=referenced + ('(%s)' % id_fieldname),
-                               on_delete_action=field.ondelete)
+                    else:
+                        # make a guess here for circular references
+                        id_fieldname = referenced in table._db \
+                            and table._db[referenced]._id.name or 'id'
+                        ftype = self.types[field.type[:9]] % \
+                            dict(table_name=tablename,
+                        field_name=field.name,
+                                 constraint_name=constraint_name,
+                                 foreign_key=referenced + \
+                                     ('(%s)' % id_fieldname),
+                                 on_delete_action=field.ondelete)
             elif field.type.startswith('list:reference'):
                 ftype = self.types[field.type[:14]]
             elif field.type.startswith('decimal'):
@@ -679,8 +689,8 @@ class BaseAdapter(ConnectionPool):
                 srid = self.srid
                 geotype, parms = field.type[:-1].split('(')
                 if not geotype in self.types:
-                    raise SyntaxError, 'Field: unknown field type: %s for %s' % \
-                        (field.type, field.name)
+                    raise SyntaxError, 'Field: unknown field type: %s for %s' \
+                        % (field.type, field.name)
                 ftype = self.types[geotype]
                 if self.dbengine == 'postgres' and geotype == 'geometry':
                     # parameters: schema, srid, dimension
@@ -1137,6 +1147,8 @@ class BaseAdapter(ConnectionPool):
             return str(self.represent(expression,field_type))
         elif isinstance(expression,(list,tuple)):
             return ','.join(self.represent(item,field_type) for item in expression)
+        elif isinstance(expression, bool):
+            return '1' if expression else '0'
         else:
             return str(expression)
 
@@ -1480,7 +1492,10 @@ class BaseAdapter(ConnectionPool):
         if isinstance(obj, CALLABLETYPES):
             obj = obj()
         if isinstance(fieldtype, SQLCustomType):
-            return fieldtype.encoder(obj)
+            value = fieldtype.encoder(obj)
+            if fieldtype.type in ('string','text'):
+                return self.adapt(value)
+            return value
         if isinstance(obj, (Expression, Field)):
             return str(obj)
         if fieldtype.startswith('list:'):
@@ -2173,7 +2188,7 @@ class PostgreSQLAdapter(BaseAdapter):
         self.srid = srid
         self.find_or_make_work_folder()
         library, uri = uri.split('://')[:2]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?sslmode=(?P<sslmode>.+))?$').match(uri)
+        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?sslmode=(?P<sslmode>.+))?$').match(uri)
         if not m:
             raise SyntaxError, "Invalid URI string in DAL"
         user = credential_decoder(m.group('user'))
@@ -3490,7 +3505,7 @@ class SAPDBAdapter(BaseAdapter):
         self.db_codec = db_codec
         self.find_or_make_work_folder()
         uri = uri.split('://')[1]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?sslmode=(?P<sslmode>.+))?$').match(uri)
+        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?sslmode=(?P<sslmode>.+))?$').match(uri)
         if not m:
             raise SyntaxError, "Invalid URI string in DAL"
         user = credential_decoder(m.group('user'))
@@ -4112,11 +4127,9 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
     def select(self,query,fields,attributes):
         (items, tablename, fields) = self.select_raw(query,fields,attributes)
         # self.db['_lastsql'] = self._select(query,fields,attributes)
-        rows = []
-        for item in items:
-            rows.append([
-                    t=='id' and item.key().id_or_name() or getattr(item, t) \
-                        for t in fields])
+        rows = [[(t=='id' and item.key().id_or_name()) or \  
+                 (t=='nativeRef' and item) or getattr(item, t) \
+                     for t in fields] for item in items]
         colnames = ['%s.%s' % (tablename, t) for t in fields]
         processor = attributes.get('processor',self.parse)
         return processor(rows,fields,colnames,False)
@@ -5142,7 +5155,7 @@ class IMAPAdapter(NoSQLAdapter):
 
         db['_lastsql'] = ''
 
-        m = re.compile('^(?P<user>[^:]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@/]+)(\:(?P<port>[0-9]+))?$').match(uri)
+        m = re.compile('^(?P<user>[^:]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@]+)(\:(?P<port>[0-9]+))?$').match(uri)
         user = m.group('user')
         password = m.group('password')
         host = m.group('host')
@@ -5315,7 +5328,7 @@ class IMAPAdapter(NoSQLAdapter):
                 sub_items = [sub_item for sub_item in sub_items if len(sub_item.strip()) > 0]
                 mailbox = sub_items[len(sub_items) - 1]
                 # remove unwanted characters and store original names
-                mailbox_name = mailbox.replace("[", "").replace("]", "").replace("/", "_")
+                mailbox_name = re.sub('[^_\w]','',re.sub('[/ ]','_',mailbox))
                 mailboxes.append(mailbox_name)
                 self.connection.mailbox_names[mailbox_name] = mailbox
         # print "Mailboxes query", mailboxes
@@ -6023,6 +6036,10 @@ class Row(dict):
     def __setattr__(self, key, value):
         self[key] = value
 
+    def __str__(self):
+        ### this could be made smarter
+        return '<Row ' + dict.__repr__(self) + '>'
+
     def __repr__(self):
         return '<Row ' + dict.__repr__(self) + '>'
 
@@ -6582,6 +6599,10 @@ def index():
                     # # print 're3:'+tag
                     field = args[i]
                     if not field in db[table]: break
+                    # hand-built patterns should respect .readable=False as well
+                    if not db[table][field].readable:
+                        return Row({'status':418,'pattern':pattern,
+                                    'error':'I\'m a teapot','response':None})
                     try:
                         item =  dbset.select(db[table][field],limitby=(0,1)).first()
                     except ValueError:
@@ -7748,6 +7769,7 @@ class Field(Expression):
                                  # True - put uploaded file in
                                  #   <uploaddir>/<tablename>.<fieldname>/uuid_key[:2]
                                  #        directory)
+            uploadfs=None     # a pyfilesystem where to store upload
 
     to be used as argument of DAL.define_table
 
@@ -7784,6 +7806,7 @@ class Field(Expression):
         represent=None,
         uploadfolder=None,
         uploadseparate=False,
+        uploadfs=None,
         compute=None,
         custom_store=None,
         custom_retrieve=None,
@@ -7815,6 +7838,7 @@ class Field(Expression):
         self.uploadfield = uploadfield
         self.uploadfolder = uploadfolder
         self.uploadseparate = uploadseparate
+        self.uploadfs = uploadfs
         self.widget = widget
         if label is DEFAULT:
             self.label = fieldname.replace('_', ' ').title()
@@ -7872,13 +7896,20 @@ class Field(Expression):
             elif self.db._adapter.folder:
                 path = os.path.join(self.db._adapter.folder, '..', 'uploads')
             else:
-                raise RuntimeError, "you must specify a Field(...,uploadfolder=...)"
+                raise RuntimeError,\
+                    "you must specify a Field(...,uploadfolder=...)"
             if self.uploadseparate:
-                path = os.path.join(path,"%s.%s" % (self._tablename, self.name),uuid_key[:2])
+                if self.uploadfs:
+                    raise RuntimeError, "not supported"
+                path = os.path.join(path,"%s.%s" %(self._tablename, self.name),
+                                    uuid_key[:2])
             if not os.path.exists(path):
                 os.makedirs(path)
             pathfilename = os.path.join(path, newfilename)
-            dest_file = open(pathfilename, 'wb')
+            if self.uploadfs:
+                dest_file = self.uploadfs.open(newfilename, 'wb')
+            else:
+                dest_file = open(pathfilename, 'wb')
             try:
                 shutil.copyfileobj(file, dest_file)
             except IOError:
@@ -7902,15 +7933,19 @@ class Field(Expression):
         file_properties = self.retrieve_file_properties(name,path)
         filename = file_properties['filename']
         if isinstance(self.uploadfield, str):  # ## if file is in DB
-            return (filename, cStringIO.StringIO(row[self.uploadfield] or ''))
+            stream = cStringIO.StringIO(row[self.uploadfield] or '')
         elif isinstance(self.uploadfield,Field):
             blob_uploadfield_name = self.uploadfield.uploadfield
             query = self.uploadfield == name
             data = self.uploadfield.table(query)[blob_uploadfield_name]
-            return (filename, cStringIO.StringIO(data))
+            stream = cStringIO.StringIO(data)
+        elif self.uploadfs:
+            # ## if file is on pyfilesystem
+            stream = self.uploadfs.open(name, 'rb')
         else:
-            # ## if file is on filesystem
-            return (filename, open(os.path.join(file_properties['path'], name), 'rb'))
+            # ## if file is on regular filesystem
+            stream = open(os.path.join(file_properties['path'], name), 'rb')
+        return (filename, stream)
 
     def retrieve_file_properties(self, name, path=None):
         if self.custom_retrieve_file_properties:

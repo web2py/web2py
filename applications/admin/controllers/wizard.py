@@ -166,7 +166,7 @@ def step3():
         try:
             tables=sort_tables(session.app['tables'])
         except RuntimeError:
-            response.flash=T('invalid circual reference')
+            response.flash=T('invalid circular reference')
         else:
             if n<m-1:
                 redirect(URL('step3',args=n+1))
