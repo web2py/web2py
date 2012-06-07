@@ -287,14 +287,14 @@ class _Web2pyImporter(_BaseImporter):
                         return super(_Web2pyImporter, self) \
                             .__call__(modules_prefix+"."+name,
                                     globals, locals, fromlist, level)
-                except ImportError:
-                    pass
+                except ImportError, e:
+                    try:
+                        return super(_Web2pyImporter, self).__call__(name, globals, locals,
+                                                    fromlist, level)
+                    except ImportError, e1:
+                        raise e
         return super(_Web2pyImporter, self).__call__(name, globals, locals,
                                                     fromlist, level)
-        #except Exception, e:
-        #    raise e  # Don't hide something that went wrong
-        #finally:
-        self.end()
 
     def __import__dot(self, prefix, name, globals, locals, fromlist,
                       level):
@@ -312,8 +312,8 @@ class _Web2pyImporter(_BaseImporter):
                                                         locals, [name], level)
             try:
                 result = result or new_mod.__dict__[name]
-            except KeyError:
-                raise ImportError()
+            except KeyError, e:
+                raise ImportError, ('Cannot import module %s' % str(e),)
             prefix += "." + name
         return result
 
