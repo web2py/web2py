@@ -4083,6 +4083,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         tableobj = self.db[tablename]._tableobj
         items = tableobj.all()
         filters = self.expand(query)
+        projection = [field.name for field in fields]
         for filter in filters:
             if filter.name=='__key__' and filter.op=='>' and filter.value==0:
                 continue
@@ -4090,17 +4091,19 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                 if filter.value==0:
                     items = []
                 elif isinstance(filter.value, Key):
-                    item = tableobj.get(filter.value)
+                    item = tableobj.get(filter.value,projection=projection)
                     items = (item and [item]) or []
                 else:
-                    item = tableobj.get_by_id(filter.value)
+                    item = tableobj.get_by_id(filter.value) ## FIX projection?
                     items = (item and [item]) or []
             elif isinstance(items,list): # i.e. there is a single record!
-                items = [i for i in items if filter.apply(getattr(item,filter.name),
-                                                          filter.value)]
+                items = [i for i in items if filter.apply(
+                        getattr(item,filter.name),filter.value)]
             else:
-                if filter.name=='__key__': items.order('__key__')
-                items = items.filter('%s %s' % (filter.name,filter.op),filter.value)
+                if filter.name=='__key__':
+                    items.order('__key__')
+                items = items.filter('%s %s' % (filter.name,filter.op),
+                                     filter.value,projection=projection)
         if not isinstance(items,list):
             if attributes.get('left', None):
                 raise SyntaxError, 'Set: no left join in appengine'
@@ -4120,9 +4123,8 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
             if attributes.get('limitby', None):
                 (lmin, lmax) = attributes['limitby']
                 (limit, offset) = (lmax - lmin, lmin)
-                items = items.fetch(limit, offset=offset)
-        fields = self.db[tablename].fields
-        return (items, tablename, fields)
+                items = items.fetch(limit,offset=offset,projection=projection)
+        return (items, tablename, projection)
 
     def select(self,query,fields,attributes):
         (items, tablename, fields) = self.select_raw(query,fields,attributes)
