@@ -224,7 +224,7 @@ class cronlauncher(threading.Thread):
 
     def run(self):
         import subprocess
-        proc = subprocess.Popen(self.cmd,
+        proc = subprocess.Popen(self.cmd.split(),
                                 stdin=subprocess.PIPE,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
