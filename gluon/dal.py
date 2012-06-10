@@ -4080,10 +4080,21 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
             if use_common_filters(query):
                 query = self.common_filter(query,[tablename])
 
+        if len(self.db[tablename].fields) == len(fields):
+            #getting all fields, not a projection query
+            projection = None
+        else:
+            projection = [f.name for f in fields]
+
+        #tableobj is a GAE Model class (or subclass)
         tableobj = self.db[tablename]._tableobj
-        items = tableobj.all()
         filters = self.expand(query)
-        projection = [field.name for field in fields]
+
+        #projection's can't include 'id'.  it will be added to the result later
+        query_projection = [p for p in projection if p != 'id'] if projection \
+                           else None
+        items = gae.Query(tableobj, projection=query_projection)
+        
         for filter in filters:
             if filter.name=='__key__' and filter.op=='>' and filter.value==0:
                 continue
@@ -4091,10 +4102,14 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                 if filter.value==0:
                     items = []
                 elif isinstance(filter.value, Key):
-                    item = tableobj.get(filter.value,projection=projection)
+                    #key qeuries return a class instance, can't use projection
+                    #  extra values will be ignored in post-processing later
+                    item = tableobj.get(filter.value)
                     items = (item and [item]) or []
                 else:
-                    item = tableobj.get_by_id(filter.value) ## FIX projection?
+                    #key qeuries return a class instance, can't use projection
+                    #  extra values will be ignored in post-processing later
+                    item = tableobj.get_by_id(filter.value)
                     items = (item and [item]) or []
             elif isinstance(items,list): # i.e. there is a single record!
                 items = [i for i in items if filter.apply(
@@ -4103,7 +4118,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                 if filter.name=='__key__':
                     items.order('__key__')
                 items = items.filter('%s %s' % (filter.name,filter.op),
-                                     filter.value,projection=projection)
+                                     filter.value)
         if not isinstance(items,list):
             if attributes.get('left', None):
                 raise SyntaxError, 'Set: no left join in appengine'
@@ -4123,8 +4138,8 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
             if attributes.get('limitby', None):
                 (lmin, lmax) = attributes['limitby']
                 (limit, offset) = (lmax - lmin, lmin)
-                items = items.fetch(limit,offset=offset,projection=projection)
-        return (items, tablename, projection)
+                items = items.fetch(limit,offset=offset)
+        return (items, tablename, projection or self.db[tablename].fields)
 
     def select(self,query,fields,attributes):
         (items, tablename, fields) = self.select_raw(query,fields,attributes)
@@ -4135,7 +4150,6 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         colnames = ['%s.%s' % (tablename, t) for t in fields]
         processor = attributes.get('processor',self.parse)
         return processor(rows,fields,colnames,False)
-
 
     def count(self,query,distinct=None):
         if distinct:
