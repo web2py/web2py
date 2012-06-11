@@ -1513,7 +1513,7 @@ class Auth(object):
                     *settings.extra_fields.get(settings.table_cas_name,[]),
                     **dict(
                         migrate=self.__get_migrate(
-                            settings.table_event_name, migrate),
+                            settings.table_cas_name, migrate),
                         fake_migrate=fake_migrate))
                 table.user_id.requires = IS_IN_DB(db, '%s.id' % \
                     settings.table_user_name,
