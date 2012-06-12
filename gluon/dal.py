@@ -4585,7 +4585,7 @@ class MongoDBAdapter(NoSQLAdapter):
             return expression
 
     def _select(self,query,fields,attributes):
-        from pymongo import son
+        from pymongo.son import SON
 
         for key in set(attributes.keys())-set(('limitby','orderby')):
             raise SyntaxError, 'invalid select attribute: %s' % key
@@ -4614,7 +4614,7 @@ class MongoDBAdapter(NoSQLAdapter):
         else:
             limitby_skip = limitby_limit = 0
 
-        mongofields_dict = son.SON()
+        mongofields_dict = SON()
         mongoqry_dict = {}
         for item in fields:
             if isinstance(item,SQLALL):
