@@ -361,7 +361,7 @@ class Scheduler(MetaScheduler):
             Field('enabled','boolean',default=True),
             Field('start_time','datetime',default=now),
             Field('next_run_time','datetime',default=now),
-            Field('stop_time','datetime',default=now+datetime.timedelta(days=1)),
+            Field('stop_time','datetime',default=None),
             Field('repeats','integer',default=1,comment="0=unlimted"),
             Field('period','integer',default=60,comment='seconds'),
             Field('timeout','integer',default=60,comment='seconds'),
@@ -542,7 +542,7 @@ class Scheduler(MetaScheduler):
         all_available = db(ts.status.belongs((QUEUED,ASSIGNED)))\
                 ((ts.times_run<ts.repeats)|(ts.repeats==0))\
                 (ts.start_time<=now)\
-                (ts.stop_time>now)\
+                ((ts.stop_time==None) | (ts.stop_time>now))\
                 (ts.next_run_time<=now)\
                 (ts.enabled==True)\
                 (ts.group_name.belongs(self.group_names)) #\

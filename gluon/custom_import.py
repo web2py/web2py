@@ -313,7 +313,7 @@ class _Web2pyImporter(_BaseImporter):
             try:
                 result = result or new_mod.__dict__[name]
             except KeyError, e:
-                raise ImportError, ('Cannot import module %s' % str(e),)
+                raise ImportError, 'Cannot import module %s' % str(e)
             prefix += "." + name
         return result
 

@@ -17,6 +17,11 @@ import gluon.widget
 
 # Start Web2py and Web2py cron service!
 if __name__ == '__main__':
+    try:
+        from multiprocessing import freeze_support
+        freeze_support()
+    except:
+        sys.stderr.write('Sorry, -K only supported for python 2.6-2.7\n')
     gluon.widget.start(cron=True)
 
 

@@ -93,7 +93,7 @@
 					<span class="icon-bar"></span>
 				</a>
 				<a class="brand" href="#">web2py&trade;&nbsp;</a>
-				<div id="navbar">{{='auth' in globals() and auth.navbar(separators=(' ',' ',''))}}</div>
+				<div id="navbar">{{='auth' in globals() and auth.navbar(separators=(' ',' ','')) or ''}}</div>
 				<div class="nav-collapse">
 					{{is_mobile=request.user_agent().is_mobile}}
 					{{if response.menu:}}
