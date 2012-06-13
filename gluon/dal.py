@@ -4088,7 +4088,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         if len(self.db[tablename].fields) == len(fields):
             #getting all fields, not a projection query
             projection = None
-        elif attributes.get('withprojection') == True:
+        elif attributes.get('projection') == True:
             projection = []
             for f in fields:
                 if f.type in ['text', 'blob']:
@@ -4104,7 +4104,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         items = gae.Query(tableobj, projection=query_projection)
         
         for filter in filters:
-            if attributes.get('withprojection') == True and \
+            if attributes.get('projection') == True and \
                filter.name in query_projection and \
                filter.op in ['=', '<=', '>=']:
                 raise SyntaxError, \
@@ -4160,7 +4160,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
          - db['_lastsql'] is not set because there is not SQL statement string
            for a GAE query
          - 'nativeRef' is a magical fieldname used for self references on GAE
-         - optional attribute 'withprojection' when set to True will trigger
+         - optional attribute 'projection' when set to True will trigger
            use of the GAE projection queries.  note that there are rules for
            what is accepted imposed by GAE: each field must be indexed,
            projection queries cannot contain blob or text fields, and you
