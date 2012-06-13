@@ -4610,7 +4610,10 @@ class MongoDBAdapter(NoSQLAdapter):
             return expression
 
     def _select(self,query,fields,attributes):
-        from pymongo.son import SON
+        try:
+            from bson.son import SON
+        except ImportError:
+            from pymongo.son import SON
 
         for key in set(attributes.keys())-set(('limitby','orderby')):
             raise SyntaxError, 'invalid select attribute: %s' % key
