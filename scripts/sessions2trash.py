@@ -22,6 +22,7 @@ Typical usage:
     python web2py.py -S app -M -R scripts/sessions2trash.py -A -o -x 0
 """
 
+from __future__ import with_statement
 from gluon.storage import Storage
 from optparse import OptionParser
 import cPickle
