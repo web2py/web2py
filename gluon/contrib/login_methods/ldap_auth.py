@@ -189,7 +189,7 @@ def ldap_auth( server = 'ldap', port = None,
             user_mail_attrib = ldap.filter.escape_filter_chars( user_mail_attrib )
         try:
             if allowed_groups:
-                if not is_user_in_allowed_groups( username ):
+                if not is_user_in_allowed_groups( username, password ):
                     return False
             con = init_ldap()
             if ldap_mode == 'ad':
@@ -231,6 +231,7 @@ def ldap_auth( server = 'ldap', port = None,
                     # We know the user exists & is in the correct OU
                     # so now we just check the password
                     con.simple_bind_s( username, password )
+		username=username_bare
 
             if ldap_mode == 'domino':
                 # Notes Domino
@@ -400,7 +401,7 @@ def ldap_auth( server = 'ldap', port = None,
             con.unbind()
 
             if manage_groups:
-                if not do_manage_groups( username ):
+                if not do_manage_groups( username,password ):
                     return False
             return True
         except ldap.LDAPError, e:
@@ -415,6 +416,7 @@ def ldap_auth( server = 'ldap', port = None,
             return False
 
     def is_user_in_allowed_groups( username,
+                                  password = None,
                                   allowed_groups = allowed_groups
                                   ):
         '''
@@ -423,7 +425,7 @@ def ldap_auth( server = 'ldap', port = None,
         #
         # Get all group name where the user is in actually in ldap
         # #########################################################
-        ldap_groups_of_the_user = get_user_groups_from_ldap( username )
+        ldap_groups_of_the_user = get_user_groups_from_ldap( username, password )
 
         # search for allowed group names
         if type( allowed_groups ) != type( list() ):
@@ -436,6 +438,7 @@ def ldap_auth( server = 'ldap', port = None,
         return False
 
     def do_manage_groups( username,
+                      password = None,
                       db = db,
                       ):
         '''
@@ -450,7 +453,7 @@ def ldap_auth( server = 'ldap', port = None,
             #
             # Get all group name where the user is in actually in ldap
             # #########################################################
-            ldap_groups_of_the_user = get_user_groups_from_ldap( username )
+            ldap_groups_of_the_user = get_user_groups_from_ldap( username, password )
 
             #
             # Get all group name where the user is in actually in local db
@@ -543,6 +546,7 @@ def ldap_auth( server = 'ldap', port = None,
         return con
 
     def get_user_groups_from_ldap( username,
+                      password = None,
                       base_dn = base_dn,
                       ldap_binddn = bind_dn,
                       ldap_bindpw = bind_pw,
@@ -563,6 +567,7 @@ def ldap_auth( server = 'ldap', port = None,
         if not group_dn:
             group_dn = base_dn
         con = init_ldap()
+	logger.debug('Username init: [%s]'%username)
         if ldap_mode=='ad':
             #
             # Get the AD username
@@ -572,7 +577,7 @@ def ldap_auth( server = 'ldap', port = None,
                 for x in base_dn.split( ',' ):
                     if "DC=" in x.upper():
                         domain.append( x.split( '=' )[-1] )
-            username = "%s@%s" % ( username, '.'.join( domain ) )
+                username = "%s@%s" % ( username, '.'.join( domain ) )
             username_bare = username.split( "@" )[0]
             con.set_option( ldap.OPT_PROTOCOL_VERSION, 3 )
             # In cases where ForestDnsZones and DomainDnsZones are found, 
@@ -581,9 +586,11 @@ def ldap_auth( server = 'ldap', port = None,
             if ldap_binddn:
                 # need to search directory with an admin account 1st
                 con.simple_bind_s( ldap_binddn, ldap_bindpw )
+                logger.debug('Ldap bind connect...')
             else:
                 # credentials should be in the form of username@domain.tld
                 con.simple_bind_s( username, password )
+                logger.debug('Ldap username connect...')
             # We have to use the full string
             username = con.search_ext_s( 
                         base_dn, ldap.SCOPE_SUBTREE,
@@ -609,6 +616,7 @@ def ldap_auth( server = 'ldap', port = None,
             ldap_groups_of_the_user.extend( group[group_name_attrib] )
 
         con.unbind()
+        logger.debug('User groups: %s' % ldap_groups_of_the_user )
         return list( ldap_groups_of_the_user )
 
 
