@@ -1221,7 +1221,7 @@ class Auth(object):
         if URL() == action:
             next = ''
         else:
-            next = '?_next='+urllib.quote(URL(args=request.args,vars=request.vars))
+            next = '?_next='+urllib.quote(URL(args=request.args,vars=request.get_vars))
 
         li_next = '?_next='+urllib.quote(self.settings.login_next)
         lo_next = '?_next='+urllib.quote(self.settings.logout_next)
