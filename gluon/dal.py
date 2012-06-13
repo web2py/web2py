@@ -4080,22 +4080,35 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
             if use_common_filters(query):
                 query = self.common_filter(query,[tablename])
 
-        if len(self.db[tablename].fields) == len(fields):
-            #getting all fields, not a projection query
-            projection = None
-        else:
-            projection = [f.name for f in fields]
-
         #tableobj is a GAE Model class (or subclass)
         tableobj = self.db[tablename]._tableobj
         filters = self.expand(query)
 
+        projection = None
+        if len(self.db[tablename].fields) == len(fields):
+            #getting all fields, not a projection query
+            projection = None
+        elif attributes.get('withprojection') == True:
+            projection = []
+            for f in fields:
+                if f.type in ['text', 'blob']:
+                    raise SyntaxError, \
+                    "text and blob field types not allowed in projection queries"
+                else:
+                    projection.append(f.name)
+
         #projection's can't include 'id'.  it will be added to the result later
-        query_projection = [p for p in projection if p != 'id'] if projection \
-                           else None
+        query_projection = [p for p in projection if \
+                            p != self.db[tablename]._id.name] if projection \
+                            else None
         items = gae.Query(tableobj, projection=query_projection)
         
         for filter in filters:
+            if attributes.get('withprojection') == True and \
+               filter.name in query_projection and \
+               filter.op in ['=', '<=', '>=']:
+                raise SyntaxError, \
+                "projection fields cannot have equality filters"
             if filter.name=='__key__' and filter.op=='>' and filter.value==0:
                 continue
             elif filter.name=='__key__' and filter.op=='=':
@@ -4142,9 +4155,21 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         return (items, tablename, projection or self.db[tablename].fields)
 
     def select(self,query,fields,attributes):
+        """
+        This is the GAE version of select.  some notes to consider:
+         - db['_lastsql'] is not set because there is not SQL statement string
+           for a GAE query
+         - 'nativeRef' is a magical fieldname used for self references on GAE
+         - optional attribute 'withprojection' when set to True will trigger
+           use of the GAE projection queries.  note that there are rules for
+           what is accepted imposed by GAE: each field must be indexed,
+           projection queries cannot contain blob or text fields, and you
+           cannot use == and also select that same field.  see https://developers.google.com/appengine/docs/python/datastore/queries#Query_Projection
+        """
+        
         (items, tablename, fields) = self.select_raw(query,fields,attributes)
         # self.db['_lastsql'] = self._select(query,fields,attributes)
-        rows = [[(t=='id' and item.key().id_or_name()) or \
+        rows = [[(t==self.db[tablename]._id.name and item.key().id_or_name()) or \
                  (t=='nativeRef' and item) or getattr(item, t) \
                      for t in fields] for item in items]
         colnames = ['%s.%s' % (tablename, t) for t in fields]
