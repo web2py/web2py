@@ -25,7 +25,7 @@ from HTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
 
 from storage import Storage
-from utils import web2py_uuid, hmac_hash
+from utils import web2py_uuid, hmac_hash, compare
 from highlight import highlight
 
 regex_crlf = re.compile('\r|\n')
@@ -455,7 +455,8 @@ def verifyURL(request, hmac_key=None, hash_vars=True, salt=None, user_signature=
 
     # return whether or not the signature in the request matched the one we just generated
     # (I.E. was the message the same as the one we originally signed)
-    return original_sig == sig
+    
+    return compare(original_sig, sig)
 
 URL.verify = verifyURL
 
