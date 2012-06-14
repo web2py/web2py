@@ -2357,6 +2357,55 @@ class PostgreSQLAdapter(BaseAdapter):
             return value
         return BaseAdapter.represent(self, obj, fieldtype)
 
+class NewPostgreSQLAdapter(PostgreSQLAdapter):
+    types = {
+        'boolean': 'CHAR(1)',
+        'string': 'VARCHAR(%(length)s)',
+        'text': 'TEXT',
+        'password': 'VARCHAR(%(length)s)',
+        'blob': 'BYTEA',
+        'upload': 'VARCHAR(%(length)s)',
+        'integer': 'INTEGER',
+        'bigint': 'BIGINT',
+        'float': 'FLOAT',
+        'double': 'FLOAT8',
+        'decimal': 'NUMERIC(%(precision)s,%(scale)s)',
+        'date': 'DATE',
+        'time': 'TIME',
+        'datetime': 'TIMESTAMP',
+        'id': 'SERIAL PRIMARY KEY',
+        'reference': 'INTEGER REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'list:integer': 'BIGINT[]',
+        'list:string': 'TEXT[]',
+        'list:reference': 'BIGINT[]',
+        'geometry': 'GEOMETRY',
+        'geography': 'GEOGRAPHY',
+        'big-id': 'BIGSERIAL PRIMARY KEY',
+        'big-reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        }
+
+    def parse_list_integers(self, value, field_type):
+        return value
+
+    def parse_list_references(self, value, field_type):
+        return [self.parse_reference(r, field_type[5:]) for r in value]
+
+    def parse_list_strings(self, value, field_type):
+        return value
+
+    def represent(self, obj, fieldtype):
+        if fieldtype.startswith('list:'):
+            if not obj:
+                obj = []
+            elif not isinstance(obj, (list, tuple)):
+                obj = [obj]
+            if fieldtype.startswith('list:string'):
+                obj = [str(item) for item in obj]
+            else:
+                obj = [int(item) for item in obj]        
+            return 'ARRAY[%s]' % ','.join(repr(item) for item in obj)
+        return BaseAdapter.represent(self, obj, fieldtype)
+
 
 class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
 
@@ -5918,6 +5967,8 @@ ADAPTERS = {
     'postgres': PostgreSQLAdapter,
     'postgres:psycopg2': PostgreSQLAdapter,
     'postgres:pg8000': PostgreSQLAdapter,
+    'postgres2:psycopg2': NewPostgreSQLAdapter,
+    'postgres2:pg8000': NewPostgreSQLAdapter,
     'oracle': OracleAdapter,
     'mssql': MSSQLAdapter,
     'mssql2': MSSQL2Adapter,
