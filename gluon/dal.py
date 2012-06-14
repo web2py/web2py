@@ -1583,7 +1583,7 @@ class BaseAdapter(ConnectionPool):
                 pass
         if isinstance(value, unicode):
             value = value.encode('utf-8')
-        elif isinstance(field_type, SQLCustomType):
+        if isinstance(field_type, SQLCustomType):
             value = field_type.decoder(value)
         if not isinstance(field_type, str) or value is None:
             return value
