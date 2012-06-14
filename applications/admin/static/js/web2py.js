@@ -86,7 +86,7 @@ function web2py_ajax_page(method, action, data, target) {
       var html=xhr.responseText;
       var content=xhr.getResponseHeader('web2py-component-content');
       var command=xhr.getResponseHeader('web2py-component-command');
-      var flash=decodeURIComponent(xhr.getResponseHeader('web2py-component-flash'));
+      var flash=xhr.getResponseHeader('web2py-component-flash');
       var t = jQuery('#'+target);
       if(content=='prepend') t.prepend(html);
       else if(content=='append') t.append(html);
