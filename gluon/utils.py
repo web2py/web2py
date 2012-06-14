@@ -21,7 +21,12 @@ logger = logging.getLogger("web2py")
 
 def compare(a,b):
     """ compares two strings and not vulnerable to timing attacks """
-    return len(a)==len(b) and all(x==b[i] for i,x in enumerate(a))
+    if len(a) != len(b):
+        return False
+    result = 0
+    for x, y in zip(a, b):
+        result |= ord(x) ^ ord(y)
+    return result == 0
 
 def md5_hash(text):
     """ Generate a md5 hash with the given text """
