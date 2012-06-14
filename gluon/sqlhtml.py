@@ -1455,6 +1455,7 @@ class SQLFORM(FORM):
              left=None,
              headers={},
              orderby=None,
+             groupby=None,
              searchable=True,
              sortable=True,
              paginate=20,
@@ -1740,8 +1741,9 @@ class SQLFORM(FORM):
         if subquery:
             dbset = dbset(subquery)
         try:
-            if left:
-                nrows = dbset.select('count(*)',left=left).first()['count(*)']
+            if left or groupby:
+                c = 'count(*)'
+                nrows = dbset.select(c,left=left,groupby=groupby).first()[c]
             else:
                 nrows = dbset.count()
         except:
@@ -1841,7 +1843,7 @@ class SQLFORM(FORM):
 
         try:
             table_fields = [f for f in fields if f._tablename in tablenames]
-            rows = dbset.select(left=left,orderby=orderby,limitby=limitby,*table_fields)
+            rows = dbset.select(left=left,orderby=orderby,groupby=groupby,limitby=limitby,*table_fields)
         except SyntaxError:
             rows = None
             error = T("Query Not Supported")
