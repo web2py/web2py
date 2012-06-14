@@ -1,3 +1,42 @@
+## 2.00.0
+
+- request.args(0,default=0, cast=int, url_onerror=URL(...)), thanks Anthony
+- generic.ics
+- generic.map
+- geodal and spatialite, thanks Denes and Fran
+- auth.enable_record_versioning(...db=...)
+- db.table._before_insert, _after_insert, _before_update, _after_update, _before_delete. _after_delete
+- db(...).update_naive(...) same as update but ignores table._before_update and table._after_update
+- SQLFORM.smartdictform
+- form.add_button(value,link)
+- db.table.insert(uploadfield=open(....))
+- DAL BIGINT support and DAL(...,bigint_id=True)
+- auth.settings.everybody_group_id
+- ace text web editor in admin
+- -E -b -L options for scheduler
+- coffee and less support in response.fields, thanks Sam Sheftel
+- ldap certificate support
+- pg8000 postgresql driver support
+- portable html.py
+- <i> to <em> in markmin
+- new admin pages: manage_students, bulk_regsiter, and progress reports
+- @cache('%(name)s%(args)s%(vars)s',5) and cache.autokey
+- added tox.ini, thanks Marc
+- better mongodb support (still experimental) thanks Mark
+- web2py.py --run_system_tests, thanks Marc Abramowitz
+- teradata adapter, thanks Andrew Willimott
+- experimental Sybase Adapter
+- added db.table.field.avg()
+- db(db.a)._update(name=db(db.b.a==db.a.id).nested_select(db.b.id))
+- new layout based on bootstrap and bootswatch
+- Ukrainian translations, thanks Vladyslav Kozlovskyy
+- Romanian translation for welcome, thanks ionel
+- support for mercurial 2.6, thanks Vlad
+- GAE projections
+- SQLFORM.grid(groupby=...')
+- db.table.field.filter_in, filter_out
+- allowed storage of uploads on any PyFileSystem (including amazon)
+
 ## 1.99.5-1.99.7
 - admin in Russian (Bulat), Japanese (Omi) and Slovenian (Robert Valentak)
 - included web-based debugger (experimental, thanks Mariano)
