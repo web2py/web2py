@@ -28,7 +28,7 @@ import socket
 import tempfile
 import random
 import string
-import urllib2
+
 from fileutils import abspath, write_file, parse_version
 from settings import global_settings
 from admin import add_path_first, create_missing_folders, create_missing_app_folders
@@ -544,7 +544,7 @@ def wsgibase(environ, responder):
                 if request.cid:
                     if response.flash and not 'web2py-component-flash' in http_response.headers:
                         http_response.headers['web2py-component-flash'] = \
-                            urllib2.quote(str(response.flash).replace('\n',''))
+                            str(response.flash).replace('\n','')
                     if response.js and not 'web2py-component-command' in http_response.headers:
                         http_response.headers['web2py-component-command'] = \
                             response.js.replace('\n','')
