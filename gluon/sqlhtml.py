@@ -1046,7 +1046,7 @@ class SQLFORM(FORM):
         request_vars,
         session=None,
         formname='%(tablename)s/%(record_id)s',
-        keepvalues=True,
+        keepvalues=None,
         onvalidation=None,
         dbio=True,
         hideerror=False,
@@ -1061,6 +1061,9 @@ class SQLFORM(FORM):
         elseif detect_record_change == False than:
           form.record_changed = None
         """
+
+        if keepvalues is None:
+            keepvalues = True if self.record else False
 
         if self.readonly: return False
 
