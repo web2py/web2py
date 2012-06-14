@@ -1717,8 +1717,9 @@ class BaseAdapter(ConnectionPool):
                             virtualtables.append(tablename)
                     else:
                         colset = new_row[tablename]
-                    colset[fieldname] = value = \
-                        self.parse_value(value,field.type,blob_decode)
+                    value = self.parse_value(value,field.type,blob_decode)
+                    if field.filter_out: value = field.filter_out(value)
+                    colset[fieldname] = value
 
                     if field.type == 'id':
                         id = value
@@ -7280,7 +7281,10 @@ class Table(dict):
                 if name != 'id':
                     raise SyntaxError, 'Field %s does not belong to the table' % name
             else:
-                new_fields.append((self[name],fields[name]))
+                field = self[name]
+                value = fields[name]
+                if field.filter_in: value = field.filter_in(value)
+                new_fields.append((field,value))
                 new_fields_names.append(name)
         for ofield in self:
             if not ofield.name in new_fields_names:
@@ -7856,6 +7860,8 @@ class Field(Expression):
         custom_retrieve=None,
         custom_retrieve_file_properties=None,
         custom_delete=None,
+        filter_in = None,
+        filter_out = None,
         ):
         self.db = None
         self.op = None
@@ -7903,6 +7909,8 @@ class Field(Expression):
         self.custom_retrieve = custom_retrieve
         self.custom_retrieve_file_properties = custom_retrieve_file_properties
         self.custom_delete = custom_delete
+        self.filter_in = filter_in
+        self.filter_out = filter_out
         if self.label is None:
             self.label = fieldname.replace('_',' ').title()
         if requires is None:
