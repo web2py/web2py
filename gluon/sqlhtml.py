@@ -2271,7 +2271,7 @@ class SQLTABLE(TABLE):
                     except TypeError:
                         href = '%s/%s/%s' % (linkto, tablename, r_old)
                     r = A(r, _href=href)
-                elif field.type.startswith('reference'):
+                elif isinstance(field.type, str) and field.type.startswith('reference'):
                     if linkto:
                         ref = field.type[10:]
                         try:
@@ -2294,7 +2294,7 @@ class SQLTABLE(TABLE):
                                  (k, record[tablename][k])) or (k, record[k]) \
                                     for k in field._table._primarykey ] ))
                     r = A(r, _href='%s/%s?%s' % (linkto, tablename, key))
-                elif field.type.startswith('list:'):
+                elif isinstance(field.type, str) and field.type.startswith('list:'):
                     r = represent(field,r or [],record)
                 elif field.represent:
                     r = represent(field,r,record)
