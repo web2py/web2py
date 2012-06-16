@@ -1661,10 +1661,7 @@ class BaseAdapter(ConnectionPool):
         return value
 
     def parse_id(self, value, field_type):
-        if isinstance(self, GoogleDatastoreAdapter) :
-            return value
-        else:
-            return int(value)
+        return int(value)
 
     def parse_integer(self, value, field_type):
         return int(value)
@@ -1725,7 +1722,9 @@ class BaseAdapter(ConnectionPool):
                     colset[fieldname] = value
 
                     if field.type == 'id':
-                        if isinstance(self, GoogleDatastoreAdapter) :
+                        # temporary hack to deal with GoogleDatastoreAdapter
+                        # references
+                        if isinstance(self, GoogleDatastoreAdapter):
                             id = value.key().id_or_name()
                             colset[fieldname] = id
                             colset.gae_item = value
@@ -3965,6 +3964,9 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         if match:
             namespace_manager.set_namespace(match.group('namespace'))
 
+    def parse_id(self, value, field_type):
+        return value
+        
     def create_table(self,table,migrate=True,fake_migrate=False, polymodel=None):
         myfields = {}
         for k in table.fields:
