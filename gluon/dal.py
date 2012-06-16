@@ -1661,7 +1661,10 @@ class BaseAdapter(ConnectionPool):
         return value
 
     def parse_id(self, value, field_type):
-        return int(value)
+        if isinstance(self, GoogleDatastoreAdapter) :
+            return value
+        else:
+            return int(value)
 
     def parse_integer(self, value, field_type):
         return int(value)
@@ -1722,7 +1725,12 @@ class BaseAdapter(ConnectionPool):
                     colset[fieldname] = value
 
                     if field.type == 'id':
-                        id = value
+                        if isinstance(self, GoogleDatastoreAdapter) :
+                            id = value.key().id_or_name()
+                            colset[fieldname] = id
+                            colset.gae_item = value
+                        else:
+                            id = value
                         colset.update_record = lambda _ = (colset, table, id), **a: update_record(_, a)
                         colset.delete_record = lambda t = table, i = id: t._db(t._id==i).delete()
                         for (referee_table, referee_name) in table._referenced_by:
@@ -4219,7 +4227,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         
         (items, tablename, fields) = self.select_raw(query,fields,attributes)
         # self.db['_lastsql'] = self._select(query,fields,attributes)
-        rows = [[(t==self.db[tablename]._id.name and item.key().id_or_name()) or \
+        rows = [[(t==self.db[tablename]._id.name and item) or \
                  (t=='nativeRef' and item) or getattr(item, t) \
                      for t in fields] for item in items]
         colnames = ['%s.%s' % (tablename, t) for t in fields]
@@ -4274,7 +4282,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         tmp = table._tableobj(**dfields)
         tmp.put()
         rid = Reference(tmp.key().id())
-        (rid._table, rid._record) = (table, None)
+        (rid._table, rid._record, rid._gaekey) = (table, None, tmp.key())
         return rid
 
     def bulk_insert(self,table,items):
