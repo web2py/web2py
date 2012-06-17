@@ -1518,7 +1518,7 @@ class SQLFORM(FORM):
                       cornertop='',
                       cornerbottom='',
                       button='button btn',
-                      buttontext='buttontext button btn',
+                      buttontext='buttontext button',
                       buttonadd='icon plus icon-plus',
                       buttonback='icon leftarrow icon-arrow-left',
                       buttonexport='icon downarrow icon-download',
