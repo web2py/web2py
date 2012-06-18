@@ -83,3 +83,14 @@ li {margin-bottom: 0;} /*bootswatch*/
   margin-top: 7px;
   float:right;
 }
+
+.open > .dropdown-menu  ul { /* fix menu issue when BS2.0.4 is applied */ 
+	display: block; 
+}
+
+#navbar{padding-top:9px;}
+#navbar .auth_navbar, #navbar .auth_navbar a {color:inherit;}
+.ie-lte7 #navbar .auth_navbar, #navbar .auth_navbar a {color:expression(this.parentNode.currentStyle['color']); /* ie7 doesn't support inherit */}
+
+#navbar .auth_navbar a:hover {color:white;text-decoration:none;} /* this overwrites bootswatch theme */
+
