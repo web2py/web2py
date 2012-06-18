@@ -68,7 +68,7 @@
       });
       jQuery('.nav li li').each(function(){	        
         if(jQuery(this).find('ul').length)
-          jQuery(this).children('a').contents().before('<i class="icon-chevron-right"></i>'); 
+          jQuery(this).children('a').contents().before('<i class="chevron-right"></i>'); 
       });
     });
   </script>
@@ -87,12 +87,12 @@
 	  <span class="icon-bar"></span>
 	</a>
 	<a class="brand" href="#">web2py&trade;&nbsp;</a>
+	<div id="navbar">{{='auth' in globals() and auth.navbar(separators=(' ',' | ','')) or ''}}</div>
 	<div class="nav-collapse">
 	  {{is_mobile=request.user_agent().is_mobile}}
 	  {{if response.menu:}}
 	  {{=MENU(response.menu, _class='mobile-menu nav' if is_mobile else 'nav',mobile=is_mobile,li_class='dropdown',ul_class='dropdown-menu')}}
 	  {{pass}}
-	  <div class="nav pull-right" id="navbar">{{='auth' in globals() and auth.navbar(separators=(' ',' | ','')) or ''}}</div>
 	</div><!--/.nav-collapse -->
       </div>
     </div>
@@ -102,7 +102,7 @@
 
   <div class="container">
     <!-- Masthead ================================================== -->
-    <header class="jumbotron subhead" id="overview">
+    <header class="mastheader" id="header">
       <div class="page-header">
 	<h1>
 	  {{=response.title or request.application}}
