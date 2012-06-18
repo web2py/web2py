@@ -14,7 +14,7 @@ li {margin-bottom: 0;} /*bootswatch*/
   #navbar{float:none;position:absolute;bottom:-10px;left:4px;}
 }
 
-.jumbotron h1 {
+.mastheader h1 {
   margin-bottom: 9px;
   font-size: 81px;
   font-weight: bold;
@@ -22,11 +22,11 @@ li {margin-bottom: 0;} /*bootswatch*/
   line-height: 1;
 }
 
-.subhead h1 {
+.mastheader h1 {
   font-size: 54px;
 }
 
-.jumbotron small {
+.mastheader small {
   font-size: 20px;
   font-weight: 300;
 }
@@ -68,7 +68,7 @@ li {margin-bottom: 0;} /*bootswatch*/
   display:inline-block;
 }
 
-.icon-chevron-right {
+.chevron-right {
   border-left: 4px solid #000;
   border-right: 4px solid transparent;
   border-bottom: 4px solid transparent;
@@ -92,5 +92,7 @@ li {margin-bottom: 0;} /*bootswatch*/
 #navbar .auth_navbar, #navbar .auth_navbar a {color:inherit;}
 .ie-lte7 #navbar .auth_navbar, #navbar .auth_navbar a {color:expression(this.parentNode.currentStyle['color']); /* ie7 doesn't support inherit */}
 
-#navbar .auth_navbar a:hover {color:white;text-decoration:none;} /* this overwrites bootswatch theme */
+#navbar .auth_navbar a:hover {color:white;text-decoration:none;} /* this overwrite bootswatch */
 
+[class^="icon-"],[class*=" icon-"]{background-image:url("../images/glyphicons-halflings.png")} /* right folder for bootstrap black images/icons */
+.icon-white{background-image:url("../images/glyphicons-halflings-white.png");} /* right folder for bootstrap white images/icons */
