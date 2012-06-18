@@ -3567,13 +3567,12 @@ def fetch(url, data=None, headers=None,
     return html
 
 regex_geocode = \
-    re.compile('\<coordinates\>(?P<la>[^,]*),(?P<lo>[^,]*).*?\</coordinates\>')
-
+    re.compile(r"""<geometry>[\W]*?<location>[\W]*?<lat>(?P<la>[^<]*)</lat>[\W]*?<lng>(?P<lo>[^<]*)</lng>[\W]*?</location>""")
 
 def geocode(address):
     try:
         a = urllib.quote(address)
-        txt = fetch('http://maps.google.com/maps/geo?q=%s&output=xml'
+        txt = fetch('http://maps.googleapis.com/maps/api/geocode/xml?sensor=false&address=%s'
                      % a)
         item = regex_geocode.search(txt)
         (la, lo) = (float(item.group('la')), float(item.group('lo')))
