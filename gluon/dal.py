@@ -7735,7 +7735,18 @@ class Expression(object):
     def regexp(self, value):
         return Query(self.db, self.db._adapter.REGEXP, self, value)
 
-    def belongs(self, value):
+    def belongs(self, *value):
+        '''
+        Accepts the following inputs:
+           field.belongs(1,2)
+           field.belongs((1,2))
+           field.belongs(query)
+
+        Does NOT accept:
+           field.belongs(1)
+        '''
+        if len(value) == 1:
+            value = value[0]
         if isinstance(value,Query):
             value = self.db(value)._select(value.first._table._id)
         return Query(self.db, self.db._adapter.BELONGS, self, value)
