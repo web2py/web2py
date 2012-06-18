@@ -4161,7 +4161,11 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         query_projection = [p for p in projection if \
                             p != self.db[tablename]._id.name] if projection \
                             else None
-        items = gae.Query(tableobj, projection=query_projection)
+
+        cursor = None
+        if isinstance(attributes.get('reusecursor'), str):
+            cursor = attributes.get('reusecursor')
+        items = gae.Query(tableobj, projection=query_projection, cursor=cursor)
         
         for filter in filters:
             if attributes.get('projection') == True and \
@@ -4211,7 +4215,12 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
             if attributes.get('limitby', None):
                 (lmin, lmax) = attributes['limitby']
                 (limit, offset) = (lmax - lmin, lmin)
-                items = items.fetch(limit,offset=offset)
+                rows = items.fetch(limit,offset=offset)
+                #cursor is only useful if there was a limit and we didn't return
+                # all results
+                if attributes.get('reusecursor'):
+                    self.db['_lastcursor'] = items.cursor()
+                items = rows
         return (items, tablename, projection or self.db[tablename].fields)
 
     def select(self,query,fields,attributes):
@@ -4225,6 +4234,12 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
            what is accepted imposed by GAE: each field must be indexed,
            projection queries cannot contain blob or text fields, and you
            cannot use == and also select that same field.  see https://developers.google.com/appengine/docs/python/datastore/queries#Query_Projection
+         - optional attribute 'reusecursor' allows use of cursor with queries
+           that have the limitby attribute.  Set the attribute to True for the
+           first query, set it to the value of db['_lastcursor'] to continue
+           a previous query.  The user must save the cursor value between
+           requests, and the filters must be identical.  It is up to the user
+           to follow google's limitations: https://developers.google.com/appengine/docs/python/datastore/queries#Query_Cursors
         """
         
         (items, tablename, fields) = self.select_raw(query,fields,attributes)
