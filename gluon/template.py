@@ -20,8 +20,12 @@ import cgi
 import cStringIO
 import logging
 try:
+    # have web2py
     from restricted import RestrictedError
-except:
+    from globals import current
+except ImportError:
+    # do not have web2py
+    current = None
     def RestrictedError(a,b,c):
         logging.error(str(a)+':'+str(b)+':'+str(c))
         return RuntimeError
@@ -430,9 +434,14 @@ class TemplateParser(object):
         if not filename.strip():
             self._raise_error('Invalid template filename')
 
+        # Allow Views to include other views dynamically
+        context = self.context
+        if current and not "response" in context:
+            context["response"] = current.response
+
         # Get the filename; filename looks like ``"template.html"``.
         # We need to eval to remove the quotes and get the string type.
-        filename = eval(filename, self.context)
+        filename = eval(filename, context)
 
         # Get the path of the file on the system.
         filepath = self.path and os.path.join(self.path, filename) or filename
