@@ -5137,6 +5137,11 @@ class IMAPAdapter(NoSQLAdapter):
     .define_tables() method. The tables are defined with the
     IMAP server mailbox list information.
 
+    .define_tables() returns a dictionary mapping dal tablenames
+    to the server mailbox names with the following structure:
+    
+    {<tablename>: str <server mailbox name>}
+
     Here is a list of supported fields:
 
     Field       Type            Description
@@ -5209,6 +5214,15 @@ class IMAPAdapter(NoSQLAdapter):
 
     # It is possible also to mark messages for deletion instead of ereasing them
     # directly with set.update(deleted=True)
+
+
+    # This objects give access
+    # to the adapter auto mailbox
+    # mapped names (which native
+    # mailbox has what table name)
+
+    db.mailboxes <dict> # tablename, server native name
+    db.mailbox_names <dict> # server native name, tablename
 
     """
 
@@ -5293,8 +5307,7 @@ class IMAPAdapter(NoSQLAdapter):
                 self.imap4 = self.driver.IMAP4
             connection = self.imap4(driver_args["host"], driver_args["port"])
             data = connection.login(driver_args["user"], driver_args["password"])
-            # print "Connected to remote server"
-            # print data
+            
             # static mailbox list
             connection.mailbox_names = None
 
@@ -5317,13 +5330,11 @@ class IMAPAdapter(NoSQLAdapter):
         closing
 
         """
-        # print "Pool Connection"
         if not self.pool_size:
             self.connection = f()
             self.cursor = cursor and self.connection.cursor()
         else:
             uri = self.uri
-            # print "uri", self.uri
             while True:
                 sql_locker.acquire()
                 if not uri in ConnectionPool.pools:
@@ -5332,18 +5343,13 @@ class IMAPAdapter(NoSQLAdapter):
                     self.connection = ConnectionPool.pools[uri].pop()
                     sql_locker.release()
                     self.cursor = cursor and self.connection.cursor()
-                    # print "self.cursor", self.cursor
                     if self.cursor and self.check_active_connection:
                         try:
                             # check if connection is alive or close it
                             result, data = self.connection.list()
-                            # print "Checked connection"
-                            # print result, data
-                            # self.execute('SELECT 1;')
                         except:
                             # Possible connection reset error
                             # TODO: read exception class
-                            # print "Re-connecting to IMAP server"
                             self.connection = f()
                     break
                 else:
@@ -5440,17 +5446,21 @@ class IMAPAdapter(NoSQLAdapter):
         mailboxes_list = self.connection.list()
         self.connection.mailbox_names = dict()
         mailboxes = list()
+        x = 0
         for item in mailboxes_list[1]:
+            x = x + 1
             item = item.strip()
             if not "NOSELECT" in item.upper():
                 sub_items = item.split("\"")
-                sub_items = [sub_item for sub_item in sub_items if len(sub_item.strip()) > 0]
+                sub_items = [sub_item for sub_item in sub_items \
+                if len(sub_item.strip()) > 0]
                 mailbox = sub_items[len(sub_items) - 1]
                 # remove unwanted characters and store original names
-                mailbox_name = re.sub('[^_\w]','',re.sub('[/ ]','_',mailbox))
+                # Don't allow leading non alphabetic characters
+                mailbox_name = re.sub('^[_0-9]*', '', re.sub('[^_\w]','',re.sub('[/ ]','_',mailbox)))
                 mailboxes.append(mailbox_name)
                 self.connection.mailbox_names[mailbox_name] = mailbox
-        # print "Mailboxes query", mailboxes
+
         return mailboxes
 
     def get_query_mailbox(self, query):
@@ -5484,6 +5494,9 @@ class IMAPAdapter(NoSQLAdapter):
         meaning that custom fields as in other adapters should
         not be supported and definitions handled on a service/mode
         basis (local syntax for Gmail(r), Ymail(r)
+
+        Returns a dictionary with tablename, server native mailbox name
+        pairs.
         """
         if not isinstance(self.connection.mailbox_names, dict):
             self.get_mailboxes()
@@ -5509,6 +5522,8 @@ class IMAPAdapter(NoSQLAdapter):
                             Field("email", "string", writable=False, readable=False),
                             Field("attachments", "list:string", writable=False, readable=False),
                             )
+                            
+        return self.connection.mailbox_names
 
     def create_table(self, *args, **kwargs):
         # not implemented
@@ -5541,11 +5556,7 @@ class IMAPAdapter(NoSQLAdapter):
                     selected = self.connection.select(mailbox, True)
                     self.mailbox_size = int(selected[1][0])
                     search_query = "(%s)" % str(query).strip()
-                    # print "Query", query
-                    # print "Search query", search_query
                     search_result = self.connection.uid("search", None, search_query)
-                    # print "Search result", search_result
-                    # print search_result
                     # Normal IMAP response OK is assumed (change this)
                     if search_result[0] == "OK":
                         # For "light" remote server responses just get the first
@@ -5582,9 +5593,7 @@ class IMAPAdapter(NoSQLAdapter):
                                     # fetch flags for the message
                                     ftyp, fdata = self.connection.uid("fetch", uid, "(FLAGS)")
                                     if ftyp == "OK":
-                                        # print "Raw flags", fdata
                                         fr["flags"] = self.driver.ParseFlags(fdata[0])
-                                        # print "Flags", fr["flags"]
                                         fetch_results.append(fr)
                                     else:
                                         # error retrieving the flags for this message
@@ -5655,13 +5664,11 @@ class IMAPAdapter(NoSQLAdapter):
                 item_dict["%s.to" % tablename] = self.encode_text(message["To"], charset)
             if "%s.cc" % tablename in fieldnames:
                 if "Cc" in message.keys():
-                    # print "cc field found"
                     item_dict["%s.cc" % tablename] = self.encode_text(message["Cc"], charset)
                 else:
                     item_dict["%s.cc" % tablename] = ""
             if "%s.bcc" % tablename in fieldnames:
                 if "Bcc" in message.keys():
-                    # print "bcc field found"
                     item_dict["%s.bcc" % tablename] = self.encode_text(message["Bcc"], charset)
                 else:
                     item_dict["%s.bcc" % tablename] = ""
@@ -5735,8 +5742,6 @@ class IMAPAdapter(NoSQLAdapter):
         return processor(imapqry_array, fields, colnames)
 
     def update(self, tablename, query, fields):
-        # print "_update"
-
         if use_common_filters(query):
             query = self.common_filter(query, [tablename,])
 
@@ -5757,22 +5762,16 @@ class IMAPAdapter(NoSQLAdapter):
                         else:
                             unmark.append(flag)
 
-            # print "Selecting mailbox ..."
             result, data = self.connection.select(self.connection.mailbox_names[tablename])
-            # print "Retrieving sequence numbers remotely"
             string_query = "(%s)" % query
-            # print "string query", string_query
             result, data = self.connection.search(None, string_query)
             store_list = [item.strip() for item in data[0].split() if item.strip().isdigit()]
-            # print "Storing values..."
             # change marked flags
             for number in store_list:
                 result = None
                 if len(mark) > 0:
-                    # print "Marking flags ..."
                     result, data = self.connection.store(number, "+FLAGS", "(%s)" % " ".join(mark))
                 if len(unmark) > 0:
-                    # print "Unmarking flags ..."
                     result, data = self.connection.store(number, "-FLAGS", "(%s)" % " ".join(unmark))
                 if result == "OK":
                     rowcount += 1
@@ -5784,9 +5783,7 @@ class IMAPAdapter(NoSQLAdapter):
         if query and tablename is not None:
             if use_common_filters(query):
                 query = self.common_filter(query, [tablename,])
-            # print "Selecting mailbox ..."
             result, data = self.connection.select(self.connection.mailbox_names[tablename])
-            # print "Retrieving sequence numbers remotely"
             string_query = "(%s)" % query
             result, data = self.connection.search(None, string_query)
             store_list = [item.strip() for item in data[0].split() if item.strip().isdigit()]
@@ -5796,21 +5793,17 @@ class IMAPAdapter(NoSQLAdapter):
     def delete(self, tablename, query):
         counter = 0
         if query:
-            # print "Selecting mailbox ..."
             if use_common_filters(query):
                 query = self.common_filter(query, [tablename,])
             result, data = self.connection.select(self.connection.mailbox_names[tablename])
-            # print "Retrieving sequence numbers remotely"
             string_query = "(%s)" % query
             result, data = self.connection.search(None, string_query)
             store_list = [item.strip() for item in data[0].split() if item.strip().isdigit()]
             for number in store_list:
                 result, data = self.connection.store(number, "+FLAGS", "(\\Deleted)")
-                # print "Deleting message", result, data
                 if result == "OK":
                     counter += 1
             if counter > 0:
-                # print "Ereasing permanently"
                 result, data = self.connection.expunge()
         return counter
 
