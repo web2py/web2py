@@ -399,6 +399,7 @@ class IS_IN_DB(Validator):
         error_message='value not in database',
         orderby=None,
         groupby=None,
+        distinct=None,
         cache=None,
         multiple=False,
         zero='',
@@ -435,6 +436,7 @@ class IS_IN_DB(Validator):
         self.theset = None
         self.orderby = orderby
         self.groupby = groupby
+        self.distinct = distinct
         self.cache = cache
         self.multiple = multiple
         self.zero = zero
@@ -454,7 +456,9 @@ class IS_IN_DB(Validator):
         if self.dbset.db._dbname != 'gae':
             orderby = self.orderby or reduce(lambda a,b:a|b,fields)
             groupby = self.groupby
-            dd = dict(orderby=orderby, groupby=groupby, cache=self.cache)
+            distinct = self.distinct
+            dd = dict(orderby=orderby, groupby=groupby, 
+                      distinct=distinct, cache=self.cache)
             records = self.dbset(table).select(*fields, **dd)
         else:
             orderby = self.orderby or \
