@@ -1667,8 +1667,11 @@ class INPUT(DIV):
                 and self.errors.get(name, None) \
                 and self['hideerror'] != True:
             self['_class'] = (self['_class'] and self['_class']+' ' or '')+'invalidinput'
-            return DIV.xml(self) + DIV(self.errors[name], _class='error',
-                errors=None, _id='%s__error' % name).xml()
+            return DIV.xml(self) + DIV(
+                DIV(
+                    self.errors[name], _class='error',
+                    errors=None, _id='%s__error' % name),
+                _class='error_wrapper').xml()
         else:
             if self['_class'] and self['_class'].endswith('invalidinput'):
                 self['_class'] = self['_class'][:-12]
