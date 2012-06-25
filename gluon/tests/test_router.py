@@ -619,9 +619,11 @@ class TestRouter(unittest.TestCase):
            BASE = dict(
                default_application = 'init',
                    applications = 'INIT',
-               default_controller = 'default',
+           ),
+           init = dict(
+               #default_controller = 'default',
                    controllers = ['default', 'ctr'],
-               default_function = 'index',
+               #default_function = 'index',
                    functions = ['index','user','register','basicRegister',
                        'download','call','data','error']
            ),
@@ -639,6 +641,7 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(str(URL(a='init', c='ctr', f='index', args=['arg'])), "/ctr/index/arg")
         self.assertEqual(str(URL(a='init', c='ctr', f='ctrf1', args=['arg'])), "/ctr/ctrf1/arg")
         self.assertEqual(str(URL(a='init', c='ctr', f='ctrf1', args=['ctrf2'])), "/ctr/ctrf1/ctrf2")
+        self.assertEqual(str(URL(a='init', c='default', f='register')), "/register")
 
         # inbound
         self.assertEqual(filter_url('http://d.com/arg'), "/init/default/index ['arg']")
