@@ -846,7 +846,7 @@ def start_schedulers(options):
         sys.stderr.write('Sorry, -K only supported for python 2.6-2.7\n')
         return
     processes = []
-    code = "from gluon import current; current._scheduler.loop()"
+    code = "from gluon import current;current._scheduler.loop()"
     for app in apps:
         print 'starting scheduler for "%s"...' % app
         args = (app,True,True,None,False,code)
@@ -859,10 +859,13 @@ def start_schedulers(options):
     for p in processes:
         try:
             p.join()
-        except KeyboardInterrupt:
+        except (KeyboardInterrupt, SystemExit):
+            print "Processes stopped"
+            raise
+        except:
             p.terminate()
             p.join()
-
+ 
 
 def start(cron=True):
     """ Start server  """
