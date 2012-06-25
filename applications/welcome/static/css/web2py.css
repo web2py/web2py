@@ -116,10 +116,12 @@ div.flash {
 }
 div.flash {z-index:2000;}
 
+div.error_wrapper { display: block; }
 div.error {
     background-color: red;
     color: white;
     padding: 3px;
+    display: inline-block;	
 }
 
 .topbar {
