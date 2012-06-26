@@ -536,7 +536,7 @@ class AutocompleteWidget(object):
     _class = 'string'
 
     def __init__(self, request, field, id_field=None, db=None,
-                 orderby=None, limitby=(0,10),
+                 orderby=None, limitby=(0,10), distinct=False,
                  keyword='_autocomplete_%(fieldname)s',
                  min_length=2, help_fields=None, help_string=None):
 
@@ -550,6 +550,7 @@ class AutocompleteWidget(object):
         self.db = db or field._db
         self.orderby = orderby
         self.limitby = limitby
+        self.distinct = distinct
         self.min_length = min_length
         self.fields=[field]
         if id_field:
@@ -568,7 +569,8 @@ class AutocompleteWidget(object):
         if self.keyword in self.request.vars:
             field = self.fields[0]
             rows = self.db(field.like(self.request.vars[self.keyword]+'%'))\
-                .select(orderby=self.orderby,limitby=self.limitby,*self.fields)
+                .select(orderby=self.orderby,limitby=self.limitby,
+                            distinct=self.distinct,*self.fields)
             if rows:
                 if self.is_reference:
                     id_field = self.fields[1]
