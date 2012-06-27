@@ -1374,6 +1374,8 @@ class Worker(Thread):
                     d = d.decode('ISO-8859-1')
         except socket.timeout:
             raise SocketTimeout("Socket timed out before request.")
+        except TypeError:
+            raise SocketTimeout("Socket timed out before request.")
 
         d = d.strip()
 
