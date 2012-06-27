@@ -1375,7 +1375,7 @@ class Worker(Thread):
         except socket.timeout:
             raise SocketTimeout("Socket timed out before request.")
         except TypeError:
-            raise SocketTimeout("Socket timed out before request.")
+            raise SocketClosed("ssl bug caused closer of socket, upgrade to python 2.7")
 
         d = d.strip()
 
