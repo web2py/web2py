@@ -303,6 +303,7 @@ NameVirtualHost *:443
   WSGIDaemonProcess web2py user=apache group=apache
   WSGIProcessGroup web2py
   WSGIScriptAlias / /opt/web-apps/web2py/wsgihandler.py
+  WSGIPassAuthorization On
 
   <Directory /opt/web-apps/web2py>
     AllowOverride None
@@ -339,8 +340,8 @@ NameVirtualHost *:443
   SSLCertificateKeyFile /etc/httpd/ssl/self_signed.key
 
   WSGIProcessGroup web2py
-
   WSGIScriptAlias / /opt/web-apps/web2py/wsgihandler.py
+  WSGIPassAuthorization On
 
   <Directory /opt/web-apps/web2py>
     AllowOverride None
