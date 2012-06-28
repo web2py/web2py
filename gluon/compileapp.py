@@ -128,7 +128,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
     attr['_id']=target
     request = current.request
     if '.' in f:
-        f, extension = f.split('.',1)
+        f, extension = f.rsplit('.',1)
     if url or ajax:
         url = url or URL(request.application, c, f, r=request,
                          args=args, vars=vars, extension=extension,
@@ -235,7 +235,7 @@ class LoadFactory(object):
         attr['_id']=target
         request = self.environment['request']
         if '.' in f:
-            f, extension = f.split('.',1)
+            f, extension = f.rsplit('.',1)
         if url or ajax:
             url = url or html.URL(request.application, c, f, r=request,
                                   args=args, vars=vars, extension=extension,

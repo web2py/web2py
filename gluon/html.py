@@ -275,7 +275,7 @@ def URL(
             extension = None
 
         if '.' in function:
-            function, extension = function.split('.', 1)
+            function, extension = function.rsplit('.', 1)
 
     function2 = '%s.%s' % (function,extension or 'html')
 
