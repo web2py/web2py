@@ -7,6 +7,7 @@ Utility functions for the Admin application
 ===========================================
 """
 import os
+import site
 import sys
 import traceback
 import zipfile
@@ -434,6 +435,7 @@ def upgrade(request, url='http://web2py.com'):
 
 def add_path_first(path):
     sys.path = [path]+[p for p in sys.path if (not p==path and not p==(path+'/'))]
+    site.addsitedir(path)
 
 def create_missing_folders():
     if not global_settings.web2py_runtime_gae:
