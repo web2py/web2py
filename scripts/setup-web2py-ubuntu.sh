@@ -87,6 +87,7 @@ NameVirtualHost *:443
   WSGIDaemonProcess web2py user=www-data group=www-data
   WSGIProcessGroup web2py
   WSGIScriptAlias / /home/www-data/web2py/wsgihandler.py
+  WSGIPassAuthorization On
 
   <Directory /home/www-data/web2py>
     AllowOverride None
@@ -123,8 +124,8 @@ NameVirtualHost *:443
   SSLCertificateKeyFile /etc/apache2/ssl/self_signed.key
 
   WSGIProcessGroup web2py
-
   WSGIScriptAlias / /home/www-data/web2py/wsgihandler.py
+  WSGIPassAuthorization On
 
   <Directory /home/www-data/web2py>
     AllowOverride None
