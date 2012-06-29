@@ -1,3 +1,110 @@
+Sun, 27 Nov 2011 18:15:32 -0700  Sean Reifschneider  <jafo@tummy.com>
+
+   * Bug #745633: Values of maximum size are not stored
+   API inconsistency, max value length was tested for <= while max KEY
+   length was <.  So I picked that keys and values *LONGER* than the
+   specified max value are what is used, and added documentation and tests
+   to that effect.  The test for max value tested that length plus 4, so
+   I've changed that to be that value plus 1.  Issue found by matt-quru.
+
+   * Bug #713488: Issues Invalid "delete" command.
+   Protocol has changed so that the "delete" operation no longer takes a
+   "time" argument.  It seems that some servers will refuse a "delete key
+   0" while others will accept it, but the official server will NOT accept
+   "delete key 1".  So I've changed it so that if no "time" argument is
+   specified, no time argument is sent to the server.
+
+   * Bug #713451: server.expect("END") needs to be in a finally block
+   Expect an "END" when the _recv_value() raises an exception.
+   Patch by Jay Farrimond.
+
+   * Bug: #741090: cas cache can grow unbounded.  Default now is that the
+   cache is not used, unless the "Client()" object is created with
+   "cache_cas=True".  In that case, you need to have your own cas clearing
+   code, a simple one would be to use Client().reset_cas() to completely
+   clear the cas_ids cache.  Problem pointed out by Shaun Cutts.
+
+   * Bug #728359: Make python-memcache work on memcache restarts.
+   Patch by Tarek Ziade', reviewed and further patches submitted by Hugo
+   Beauze'e-Luysse and Neganov Alexandr.
+
+   * Bug #798342: If memcached server sends unknown flag in response for
+   "get", results in:
+      "UnboundLocalError: local variable 'val' referenced before assignment"
+   Now returns "None" instead.  Patch by Sharoon Thomas
+
+Mon, 20 Dec 2010 19:14:17 -0700  Sean Reifschneider  <jafo@tummy.com>
+
+   * Bug #680359: useOldServerHashFunction() is broken.  It now correctly
+     switches back to the old memcache hash function.
+
+Thu, 16 Dec 2010 02:07:40 -0700  Sean Reifschneider  <jafo@tummy.com>
+
+   * Bug #471727: Changed the delete() code to explicitly check for both
+     NOT_FOUND and DELETED as the responses and return successful for both.
+     It also logs an error if one of these two responses is not found.
+     Also added a test to ensure that delete() works.
+
+   * When using set_multi and one value is too big, traceback
+     TypeError: 'int' object is unsubscriptable
+     Patch by Orjan Persson
+
+   * Fixing Bug #529855: Server host can now be bare host without ":<port>".
+     Fix proposed by Roger Binns.
+
+   * Fixing Bug #491164: Typo fix, "compession" -> "compRession".
+
+   * Fixing Bug #509712: "TypeError: 'NoneType' object is unsubscriptable"
+     Also fixed some other similar code to not have issues with that.
+
+   * Also related to 509712 and 628339: readline() now returns '' instead
+     of None when a server dies.  This should be safer.  Patch suggested by
+     Denis Otkidach.
+
+   * Fixing Bug #628339: Read from server sometimes fails.  Patch by Jeremy
+     Cowles.
+
+   * Fixing Bug #633553: Add stat arguments support to get_stats().  Patch
+     by Ryan Lane.
+
+   * Changing the license to the PSF License.
+
+   * Removing Evan's e-mail address at his request, changing authorship to
+     Sean.
+
+Sat, 28 Nov 2009 01:07:42 -0700  Sean Reifschneider  <jafo@tummy.com>
+
+   * Version 1.45
+
+   * Per-connection max server key length.  Patch by Nicolas Delaby
+
+   * Patches to make memcached more garbage-collectable.  Removes
+     "debugfunc" argument from _Host objects and changed to "debug"
+     boolean.  Patches by John McFarlane and Aryeh Katz.
+
+   * Switching to a cmemcache compatible hash function.  Implemented by
+     André Cru and Ludvig Ericson.  To switch back to the old style, use:
+
+        memcached.useOldServerHashFunction()
+
+   * Rejecting keys that have spaces in them.  Patch by Etienne Posthumus.
+
+   * Fixing exception raising syntax.  Patch by Samuel Stauffer.
+
+   * Optimizations in read code.  Patch by Samuel Stauffer.
+
+   * Changing classes to be newstyle.  Patch by Samuel Stauffer.
+
+   * Changed "has_key" to "in".  Patch by Samuel Stauffer.
+
+   * incr/decr were raising ValueError if the key did not exist, the
+     docstring said it returned none.  Patch by Chihiro Sakatoku.
+
+   * Adding cas method, submitted by Ben Gutierrez.
+
+   * Fix in the docstring for how to use the "set" method.  Found and fixed
+     by William McVey
+
 Thu, 02 Apr 2009 13:37:49 -0600  Sean Reifschneider  <jafo@tummy.com>
 
    * Version 1.44
