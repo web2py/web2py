@@ -1717,6 +1717,8 @@ class SQLFORM(FORM):
         if searchable:
             sfields = reduce(lambda a,b:a+b,
                              [[f for f in t if f.readable] for t in tables])
+            if isinstance(search_widget,dict):
+                search_widget = search_widget[tablename]
             if search_widget=='default':
                 mq,mf,ms = SQLFORM.search_menu(sfields)
                 search_widget = lambda sfield, url: FORM(
