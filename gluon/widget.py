@@ -20,12 +20,12 @@ import signal
 import math
 import logging
 import newcron
-import main
 import getpass
+import main
 
 from fileutils import w2p_pack, read_file, write_file
-from shell import run, test
 from settings import global_settings
+from shell import run, test
 
 try:
     import Tkinter, tkMessageBox

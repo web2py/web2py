@@ -61,7 +61,7 @@ def exec_environment(
             appname = mo.group('appname')
             request.folder = os.path.join('applications', appname)
         else:
-            request.folder = ''
+            request.folder = ''    
     env = build_environment(request, response, session, store_current=False)
     if pyfile:
         pycfile = pyfile + 'c'
@@ -123,7 +123,7 @@ def env(
         return True
 
     fileutils.check_credentials = check_credentials
-
+    
     environment = build_environment(request, response, session)
 
     if import_models:
@@ -205,6 +205,9 @@ def run(
     if f:
         exec ('print %s()' % f, _env)
         return
+
+    # "woodoo magic" workaround: reinitialize main.py
+    g={}; exec "import main" in g; del g
 
     _env.update(exec_pythonrc())
     if startfile:
