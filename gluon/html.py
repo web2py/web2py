@@ -505,9 +505,10 @@ class XML(XmlComponent):
             'img/',
             'h1','h2','h3','h4','h5','h6',
             'table','tr','td','div',
+            'strong',
             ],
         allowed_attributes = {
-            'a': ['href', 'title'],
+            'a': ['href', 'title', 'target'],
             'img': ['src', 'alt'],
             'blockquote': ['type'],
             'td': ['colspan'],
