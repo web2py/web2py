@@ -291,9 +291,9 @@ def state():
 
 def ccache():
     form = FORM(
-        P(TAG.BUTTON("Clear CACHE?", _type="submit", _name="yes", _value="yes")),
-        P(TAG.BUTTON("Clear RAM", _type="submit", _name="ram", _value="ram")),
-        P(TAG.BUTTON("Clear DISK", _type="submit", _name="disk", _value="disk")),
+        P(TAG.BUTTON(T("Clear CACHE?"), _type="submit", _name="yes", _value="yes")),
+        P(TAG.BUTTON(T("Clear RAM"), _type="submit", _name="ram", _value="ram")),
+        P(TAG.BUTTON(T("Clear DISK"), _type="submit", _name="disk", _value="disk")),
     )
 
     if form.accepts(request.vars, session):
@@ -309,10 +309,10 @@ def ccache():
 
         if clear_ram:
             cache.ram.clear()
-            session.flash += "Ram Cleared "
+            session.flash += T("Ram Cleared")
         if clear_disk:
             cache.disk.clear()
-            session.flash += "Disk Cleared"
+            session.flash += T("Disk Cleared")
 
         redirect(URL(r=request))
 
@@ -414,7 +414,7 @@ def ccache():
 
     def key_table(keys):
         return TABLE(
-            TR(TD(B('Key')), TD(B('Time in Cache (h:m:s)'))),
+            TR(TD(B(T('Key'))), TD(B(T('Time in Cache (h:m:s)')))),
             *[TR(TD(k[0]), TD('%02d:%02d:%02d' % k[1])) for k in keys],
             **dict(_class='cache-keys',
                    _style="border-collapse: separate; border-spacing: .5em;"))
