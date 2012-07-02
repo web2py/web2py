@@ -337,6 +337,7 @@ def load(routes='routes.py', app=None, data=None, rdict=None):
 
 regex_at = re.compile(r'(?<!\\)\$[a-zA-Z]\w*')
 regex_anything = re.compile(r'(?<!\\)\$anything')
+regex_redirect = re.compile(r'(\d+)->(.*)')
 
 def compile_regex(k, v):
     """
@@ -513,6 +514,9 @@ def regex_filter_in(e):
     e['WEB2PY_ORIGINAL_URI'] = e['PATH_INFO'] + (query and ('?' + query) or '')
     if thread.routes.routes_in:
         path = regex_uri(e, thread.routes.routes_in, "routes_in", e['PATH_INFO'])
+        rmatch = regex_redirect.match(path)
+        if rmatch:
+            raise HTTP(int(rmatch.group(1)),location=rmatch.group(2))
         items = path.split('?', 1)
         e['PATH_INFO'] = items[0]
         if len(items) > 1:
