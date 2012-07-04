@@ -719,6 +719,8 @@ class BaseAdapter(ConnectionPool):
                     ftype += self.ALLOW_NULL()
                 if field.unique:
                     ftype += ' UNIQUE'
+				if field.custom_qualifier:
+					ftype += (' %s' % field.custom_qualifier)
 
             # add to list of fields
             sql_fields[field.name] = dict(sortable=sortable,
@@ -7942,6 +7944,7 @@ class Field(Expression):
         custom_delete=None,
         filter_in = None,
         filter_out = None,
+		custom_qualifier = None,
         ):
         self.db = None
         self.op = None
@@ -7991,6 +7994,7 @@ class Field(Expression):
         self.custom_delete = custom_delete
         self.filter_in = filter_in
         self.filter_out = filter_out
+		self.custom_qualifier = custom_qualifier
         if self.label is None:
             self.label = fieldname.replace('_',' ').title()
         if requires is None:
