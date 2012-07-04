@@ -145,6 +145,7 @@ function web2py_component(action, target, timeout, times){
         }
     } else {
         // run once (no timeout specified)
+	element.reload_counter = Infinity;
         web2py_ajax_page('get', action, null, target);
     } }); }
 
