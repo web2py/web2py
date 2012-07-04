@@ -619,6 +619,9 @@ class BaseAdapter(ConnectionPool):
     def trigger_name(self,tablename):
         return '%s_sequence' % tablename
 
+    def varquote(self,name):
+        return name
+
     def create_table(self, table,
                      migrate=True,
                      fake_migrate=False,
@@ -661,24 +664,24 @@ class BaseAdapter(ConnectionPool):
                                     TFK[rtablename] = {}
                                 TFK[rtablename][rfieldname] = field.name
                             else:
-                                ftype = ftype + self.types['reference FK'] \
-                                    % dict(
-                                constraint_name=constraint_name,
-                                table_name=tablename,
-                                field_name=field.name,
-                                foreign_key='%s (%s)'%(rtablename, rfieldname),
-                                on_delete_action=field.ondelete)
+                                ftype = ftype + self.types['reference FK'] % dict(
+                                    constraint_name = constraint_name, # should be quoted
+                                    table_name=self.varquote(tablename),
+                                    field_name=self.varquote(field.name),
+                                    foreign_key = '%s (%s)' % (self.varquote(rtablename),
+                                                               self.varquote(rfieldname)),
+                                    on_delete_action=field.ondelete)
                     else:
                         # make a guess here for circular references
                         id_fieldname = referenced in table._db \
                             and table._db[referenced]._id.name or 'id'
-                        ftype = self.types[field.type[:9]] % \
-                            dict(table_name=tablename,
-                        field_name=field.name,
-                                 constraint_name=constraint_name,
-                                 foreign_key=referenced + \
-                                     ('(%s)' % id_fieldname),
-                                 on_delete_action=field.ondelete)
+                        ftype = self.types[field.type[:9]] % dict( 
+                            index_name = self.varquote(tablename+'__idx'),
+                            field_name = self.varquote(field.name),
+                            constraint_name = self.varquote(constraint_name),
+                            foreign_key = '%s (%s)' % (self.varquote(referenced),
+                                                       self.varquote(id_fieldname)),
+                            on_delete_action=field.ondelete)
             elif field.type.startswith('list:reference'):
                 ftype = self.types[field.type[:14]]
             elif field.type.startswith('decimal'):
@@ -737,13 +740,13 @@ class BaseAdapter(ConnectionPool):
             # Postgres - PostGIS:
             # geometry fields are added after the table has been created, not now
             if not (self.dbengine == 'postgres' and field.type.startswith('geom')):
-                fields.append('%s %s' %(field.name, ftype))
+                fields.append('%s %s' % (self.varquote(field.name), ftype))
         other = ';'
 
         # backend-specific extensions to fields
         if self.dbengine == 'mysql':
             if not hasattr(table, "_primarykey"):
-                fields.append('PRIMARY KEY(%s)' % table._id.name)
+                fields.append('PRIMARY KEY(%s)' % self.varquote(table._id.name))
             other = ' ENGINE=InnoDB CHARACTER SET utf8;'
 
         fields = ',\n    '.join(fields)
@@ -752,12 +755,12 @@ class BaseAdapter(ConnectionPool):
             pkeys = table._db[rtablename]._primarykey
             fkeys = [ rfields[k] for k in pkeys ]
             fields = fields + ',\n    ' + \
-                     self.types['reference TFK'] %\
-                     dict(table_name=tablename,
-                     field_name=', '.join(fkeys),
-                     foreign_table=rtablename,
-                     foreign_key=', '.join(pkeys),
-                     on_delete_action=field.ondelete)
+                     self.types['reference TFK'] % dict(
+                table_name = tablename,
+                field_name=', '.join(fkeys),
+                foreign_table = rtablename,
+                foreign_key = ', '.join(pkeys),
+                on_delete_action = field.ondelete)
 
         if hasattr(table,'_primarykey'):
             query = '''CREATE TABLE %s(\n    %s,\n    %s) %s''' % \
@@ -1005,7 +1008,7 @@ class BaseAdapter(ConnectionPool):
             logfile.write('success!\n')
 
     def _insert(self, table, fields):
-        keys = ','.join(f.name for f,v in fields)
+        keys = ','.join(self.varquote(f.name) for f,v in fields)
         values = ','.join(self.expand(v,f.type) for f,v in fields)
         return 'INSERT INTO %s(%s) VALUES (%s);' % (table, keys, values)
 
@@ -2030,13 +2033,16 @@ class MySQLAdapter(BaseAdapter):
         'time': 'TIME',
         'datetime': 'DATETIME',
         'id': 'INT AUTO_INCREMENT NOT NULL',
-        'reference': 'INT, INDEX %(field_name)s__idx (%(field_name)s), FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference': 'INT, INDEX %(index_name)s (%(field_name)s), FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'list:integer': 'LONGTEXT',
         'list:string': 'LONGTEXT',
         'list:reference': 'LONGTEXT',
         'big-id': 'BIGINT AUTO_INCREMENT NOT NULL',
-        'big-reference': 'BIGINT, INDEX %(field_name)s__idx (%(field_name)s), FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'big-reference': 'BIGINT, INDEX %(index_name)s (%(field_name)s), FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         }
+
+    def varquote(self,name):
+        return '`%`' % name
 
     def RANDOM(self):
         return 'RAND()'
@@ -8144,10 +8150,11 @@ class Field(Expression):
         return True
 
     def __str__(self):
+        quote = self.db._adapter.varquote
         try:
-            return '%s.%s' % (self.tablename, self.name)
+            return '%s.%s' % (varquote(self.tablename), quote(self.name))
         except:
-            return '<no table>.%s' % self.name
+            return '<no table>.%s' % quote(self.name)
 
 
 class Query(object):
