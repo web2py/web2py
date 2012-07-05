@@ -387,6 +387,8 @@ def OR(a,b):
 def AND(a,b):
     return a&b
 
+def IDENTITY(x): return x
+
 if 'google' in drivers:
 
     is_jdbc = False
@@ -598,7 +600,7 @@ class BaseAdapter(ConnectionPool):
         os.unlink(filename)
 
     def __init__(self, db,uri,pool_size=0, folder=None, db_codec='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
         self.db = db
         self.dbengine = "None"
@@ -1820,7 +1822,7 @@ class SQLiteAdapter(BaseAdapter):
         return re.compile(expression).search(item) is not None
 
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec ='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
@@ -1884,7 +1886,7 @@ class SpatiaLiteAdapter(SQLiteAdapter):
     types.update({'geometry': 'GEOMETRY'})
 
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec ='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}, srid=4326):
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
@@ -1980,7 +1982,7 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
     driver = globals().get('zxJDBC', None)
 
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
@@ -2071,7 +2073,7 @@ class MySQLAdapter(BaseAdapter):
         return '; ALTER TABLE %s ADD ' % table
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
@@ -2189,7 +2191,7 @@ class PostgreSQLAdapter(BaseAdapter):
         self.execute(query)
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}, srid=4326):
         if not self.drivers.get('psycopg2') and not self.drivers.get('pg8000'):
             raise RuntimeError, "Unable to import any drivers (psycopg2 or pg8000)"
@@ -2423,7 +2425,7 @@ class NewPostgreSQLAdapter(PostgreSQLAdapter):
 class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
@@ -2550,7 +2552,7 @@ class OracleAdapter(BaseAdapter):
         return None
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
@@ -2672,7 +2674,7 @@ class MSSQLAdapter(BaseAdapter):
         return None
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                     adapter_args={}, fake_connect=False, srid=4326):
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
@@ -2867,7 +2869,7 @@ class SybaseAdapter(MSSQLAdapter):
 
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                     adapter_args={}, fake_connect=False, srid=4326):
         ### Fix this for sybase
         if not self.driver:
@@ -2989,7 +2991,7 @@ class FireBirdAdapter(BaseAdapter):
                 'SET GENERATOR %s TO 0;' % table._sequence_name]
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
         if adapter_args.has_key('driver_name'):
             if adapter_args['driver_name'] == 'kinterbasdb':
@@ -3054,7 +3056,7 @@ class FireBirdAdapter(BaseAdapter):
 class FireBirdEmbeddedAdapter(FireBirdAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
 
         if adapter_args.has_key('driver_name'):
@@ -3173,7 +3175,7 @@ class InformixAdapter(BaseAdapter):
         return None
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
@@ -3277,7 +3279,7 @@ class DB2Adapter(BaseAdapter):
         return None
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
@@ -3342,7 +3344,7 @@ class TeradataAdapter(BaseAdapter):
         }
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
@@ -3425,7 +3427,7 @@ class IngresAdapter(BaseAdapter):
         return 'SELECT %s %s FROM %s%s%s;' % (sql_s, sql_f, sql_t, sql_w, sql_o)
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
@@ -3556,7 +3558,7 @@ class SAPDBAdapter(BaseAdapter):
         self.execute(query)
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
@@ -3599,7 +3601,7 @@ class CubridAdapter(MySQLAdapter):
     driver = globals().get('cubriddb', None)
 
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
@@ -3732,7 +3734,7 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
 
     def __init__(self, db, uri='google:sql://realm:domain/database',
                  pool_size=0, folder=None, db_codec='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
 
         self.db = db
@@ -3936,7 +3938,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
     def file_close(self, fileobj): pass
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
         self.types.update({
                 'boolean': gae.BooleanProperty,
@@ -4384,7 +4386,7 @@ class CouchDBAdapter(NoSQLAdapter):
 
     def __init__(self,db,uri='couchdb://127.0.0.1:5984',
                  pool_size=0,folder=None,db_codec ='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
         self.db = db
         self.uri = uri
@@ -4548,7 +4550,7 @@ class MongoDBAdapter(NoSQLAdapter):
 
     def __init__(self,db,uri='mongodb://127.0.0.1:5984/db',
                  pool_size=0,folder=None,db_codec ='UTF-8',
-                 credential_decoder=lambda x:x, driver_args={},
+                 credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
         m=None
         try:
@@ -5254,7 +5256,7 @@ class IMAPAdapter(NoSQLAdapter):
                  pool_size=0,
                  folder=None,
                  db_codec ='UTF-8',
-                 credential_decoder=lambda x:x,
+                 credential_decoder=IDENTITY,
                  driver_args={},
                  adapter_args={}):
 
@@ -8150,7 +8152,7 @@ class Field(Expression):
         return True
 
     def __str__(self):
-        quote = self.db._adapter and self.db._adapter.varquote or lambda x:x
+        quote = self.db._adapter and self.db._adapter.varquote or IDENTITY
         try:
             return '%s.%s' % (quote(self.tablename), quote(self.name))
         except:
