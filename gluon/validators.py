@@ -2539,6 +2539,8 @@ class LazyCrypt(object):
         if self.crypted:
             return self.crypted
         if self.crypt.salt:
+            if not self.crypt.key:
+                raise RuntimeError, "CRYPT has salt but not key"
             if self.crypt.salt == True:                
                 salt = str(web2py_uuid()).replace('-','')[-16:]                                                     
             else:
