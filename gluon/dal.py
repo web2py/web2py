@@ -8152,7 +8152,7 @@ class Field(Expression):
     def __str__(self):
         quote = self.db._adapter.varquote
         try:
-            return '%s.%s' % (varquote(self.tablename), quote(self.name))
+            return '%s.%s' % (quote(self.tablename), quote(self.name))
         except:
             return '<no table>.%s' % quote(self.name)
 

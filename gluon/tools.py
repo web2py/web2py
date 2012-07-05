@@ -880,7 +880,7 @@ class Auth(object):
     def here(self):
         return URL(args=current.request.args,vars=current.request.vars)
 
-    def __init__(self, environment=None, db=None, mailer=True,
+    def __init__(self, environment=None, db=None, mailer=True, salt = False,
                  hmac_key=None, controller='default', function='user', cas_provider=None):
         """
         auth=Auth(db)
@@ -922,6 +922,7 @@ class Auth(object):
 
         settings.hideerror = False
         settings.password_min_length = 4
+        settings.salt = salt
         settings.cas_domains = [request.env.http_host]
         settings.cas_provider = cas_provider
         settings.cas_actions = {'login':'login',
@@ -1367,7 +1368,7 @@ class Auth(object):
                 table.username.requires = \
                     [IS_MATCH('[\w\.\-]+'),
                      IS_NOT_IN_DB(db, table.username)]
-                if not self.settings.username_case_sensitive:
+                if not settings.username_case_sensitive:
                     table.username.requires.insert(1,IS_LOWER())
             else:
                 table = db.define_table(
@@ -1400,12 +1401,12 @@ class Auth(object):
             table.last_name.requires = \
                 IS_NOT_EMPTY(error_message=self.messages.is_empty)
             table[passfield].requires = [
-                CRYPT(key=settings.hmac_key,
-                      min_length=self.settings.password_min_length)]
+                CRYPT(key=settings.hmac_key,salt=settings.salt,
+                      min_length=settings.password_min_length)]
             table.email.requires = \
                 [IS_EMAIL(error_message=self.messages.invalid_email),
                  IS_NOT_IN_DB(db, table.email)]
-            if not self.settings.email_case_sensitive:
+            if not settings.email_case_sensitive:
                 table.email.requires.insert(1,IS_LOWER())
             table.registration_key.default = ''
         settings.table_user = db[settings.table_user_name]
@@ -1523,16 +1524,16 @@ class Auth(object):
             settings.actions_disabled = \
                 ['profile','register','change_password','request_reset_password']
             from gluon.contrib.login_methods.cas_auth import CasAuth
-            maps = self.settings.cas_maps
+            maps = settings.cas_maps
             if not maps:
                 maps = dict((name,lambda v,n=name:v.get(n,None)) for name in \
                                 settings.table_user.fields if name!='id' \
                                 and settings.table_user[name].readable)
                 maps['registration_id'] = \
                     lambda v,p=settings.cas_provider:'%s/%s' % (p,v['user'])
-            actions = [self.settings.cas_actions['login'],
-                       self.settings.cas_actions['servicevalidate'],
-                       self.settings.cas_actions['logout']]
+            actions = [settings.cas_actions['login'],
+                       settings.cas_actions['servicevalidate'],
+                       settings.cas_actions['logout']]
             settings.login_form = CasAuth(
                 casversion = 2,
                 urlbase = settings.cas_provider,
@@ -1615,7 +1616,7 @@ class Auth(object):
         user = self.db(table_user[userfield] == username).select().first()
         if user:
             password = table_user[passfield].validate(password)[0]
-            if not user.registration_key and user[passfield] == password:
+            if not user.registration_key and password == user[passfield]:
                 user = Storage(table_user._filter_fields(user, id=True))
                 session.auth = Storage(user=user, last_visit=request.now,
                                        expiration=self.settings.expiration,
@@ -1855,7 +1856,7 @@ class Auth(object):
                         # alternates have failed, maybe because service inaccessible
                         if self.settings.login_methods[0] == self:
                             # try logging in locally using cached credentials
-                            if temp_user[passfield] == form.vars.get(passfield, ''):
+                            if form.vars.get(passfield, '') == temp_user[passfield]:
                                 # success
                                 user = temp_user
                 else:
@@ -2262,7 +2263,7 @@ class Auth(object):
                 redirect(self.url(args=request.args))
             password = self.random_password()
             passfield = self.settings.password_field
-            d = {passfield: table_user[passfield].validate(password)[0],
+            d = {passfield: str(table_user[passfield].validate(password)[0]),
                  'registration_key': ''}
             user.update_record(**d)
             if self.settings.mailer and \
@@ -2329,7 +2330,7 @@ class Auth(object):
             separator=self.settings.label_separator
         )
         if form.accepts(request,session,hideerror=self.settings.hideerror):
-            user.update_record(**{passfield:form.vars.new_password,
+            user.update_record(**{passfield:str(form.vars.new_password),
                                   'registration_key':'',
                                   'reset_password_key':''})
             session.flash = self.messages.password_changed
@@ -2466,10 +2467,7 @@ class Auth(object):
         form = SQLFORM.factory(
             Field('old_password', 'password',
                 label=self.messages.old_password,
-                requires=validators(
-                     table_user[passfield].requires,
-                     IS_IN_DB(s, '%s.%s' % (usern, passfield),
-                              error_message=self.messages.invalid_password))),
+                requires=table_user[passfield].requires),
             Field('new_password', 'password',
                 label=self.messages.new_password,
                 requires=table_user[passfield].requires),
@@ -2486,15 +2484,19 @@ class Auth(object):
                         formname='change_password',
                         onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
-            d = {passfield: form.vars.new_password}
-            s.update(**d)
-            session.flash = self.messages.password_changed
-            self.log_event(log, self.user)
-            callback(onaccept,form)
-            if not next:
-                next = self.url(args=request.args)
+
+            if not form.vars['old_password'] == s.select().first()[passfield]:
+                form.errors['old_password'] = self.messages.invalid_password
             else:
-                next = replace_id(next, form)
+                d = {passfield: str(form.vars.new_password)}
+                s.update(**d)
+                session.flash = self.messages.password_changed
+                self.log_event(log, self.user)
+                callback(onaccept,form)
+                if not next:
+                    next = self.url(args=request.args)
+                else:
+                    next = replace_id(next, form)
             redirect(next)
         return form
 
