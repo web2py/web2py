@@ -2045,7 +2045,7 @@ class MySQLAdapter(BaseAdapter):
         }
 
     def varquote(self,name):
-        return '`%`' % name
+        return '`%s`' % name
 
     def RANDOM(self):
         return 'RAND()'
