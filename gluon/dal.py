@@ -853,7 +853,7 @@ class BaseAdapter(ConnectionPool):
             if not key in keys:
                 keys.append(key)
         if self.dbengine == 'mssql':
-            new_add = '; ALTER TABLE %s ADD ' % tablename
+            new_add = '; ALTER TABLE %s ADD ' % self.varquote(tablename)
         else:
             new_add = ', ADD '
 
@@ -869,7 +869,7 @@ class BaseAdapter(ConnectionPool):
                     query = [ sql_fields[key]['sql'] ]
                 else:
                     query = ['ALTER TABLE %s ADD %s %s;' % \
-                         (tablename, key,
+                         (self.varquote(tablename), key,
                           sql_fields_aux[key]['sql'].replace(', ', new_add))]
                 metadata_change = True
             elif self.dbengine in ('sqlite', 'spatialite'):
@@ -885,9 +885,9 @@ class BaseAdapter(ConnectionPool):
                     query = [ "SELECT DropGeometryColumn ('%(schema)s', '%(table)s', '%(field)s');" % \
                         dict(schema=schema, table=tablename, field=key,) ]
                 elif not self.dbengine in ('firebird',):
-                    query = ['ALTER TABLE %s DROP COLUMN %s;' % (tablename, key)]
+                    query = ['ALTER TABLE %s DROP COLUMN %s;' % (self.varquote(tablename), self.varquote(key))]
                 else:
-                    query = ['ALTER TABLE %s DROP %s;' % (tablename, key)]
+                    query = ['ALTER TABLE %s DROP %s;' % (self.varquote(tablename), self.varquote(key))]
                 metadata_change = True
             elif sql_fields[key]['sql'] != sql_fields_old[key]['sql'] \
                   and not isinstance(table[key].type, SQLCustomType) \
@@ -898,19 +898,19 @@ class BaseAdapter(ConnectionPool):
                 t = tablename
                 tt = sql_fields_aux[key]['sql'].replace(', ', new_add)
                 if not self.dbengine in ('firebird',):
-                    query = ['ALTER TABLE %s ADD %s__tmp %s;' % (t, key, tt),
-                             'UPDATE %s SET %s__tmp=%s;' % (t, key, key),
-                             'ALTER TABLE %s DROP COLUMN %s;' % (t, key),
-                             'ALTER TABLE %s ADD %s %s;' % (t, key, tt),
-                             'UPDATE %s SET %s=%s__tmp;' % (t, key, key),
-                             'ALTER TABLE %s DROP COLUMN %s__tmp;' % (t, key)]
+                    query = ['ALTER TABLE %s ADD %s__tmp %s;' % (self.varquote(t), key, tt),
+                             'UPDATE %s SET %s__tmp=%s;' % (self.varquote(t), key, key),
+                             'ALTER TABLE %s DROP COLUMN %s;' % (self.varquote(t), key),
+                             'ALTER TABLE %s ADD %s %s;' % (self.varquote(t), key, tt),
+                             'UPDATE %s SET %s=%s__tmp;' % (self.varquote(t), key, key),
+                             'ALTER TABLE %s DROP COLUMN %s__tmp;' % (self.varquote(t), key)]
                 else:
-                    query = ['ALTER TABLE %s ADD %s__tmp %s;' % (t, key, tt),
-                             'UPDATE %s SET %s__tmp=%s;' % (t, key, key),
-                             'ALTER TABLE %s DROP %s;' % (t, key),
-                             'ALTER TABLE %s ADD %s %s;' % (t, key, tt),
-                             'UPDATE %s SET %s=%s__tmp;' % (t, key, key),
-                             'ALTER TABLE %s DROP %s__tmp;' % (t, key)]
+                    query = ['ALTER TABLE %s ADD %s__tmp %s;' % (self.varquote(t), key, tt),
+                             'UPDATE %s SET %s__tmp=%s;' % (self.varquote(t), key, key),
+                             'ALTER TABLE %s DROP %s;' % (self.varquote(t), key),
+                             'ALTER TABLE %s ADD %s %s;' % (self.varquote(t), key, tt),
+                             'UPDATE %s SET %s=%s__tmp;' % (self.varquote(t), key, key),
+                             'ALTER TABLE %s DROP %s__tmp;' % (self.varquote(t), key)]
                 metadata_change = True
             elif sql_fields[key]['type'] != sql_fields_old[key]['type']:
                 sql_fields_current[key] = sql_fields[key]
@@ -1136,7 +1136,8 @@ class BaseAdapter(ConnectionPool):
 
     def expand(self, expression, field_type=None):
         if isinstance(expression, Field):
-            return str(expression)
+            return '%s.%s' % (self.varquote(expression.tablename),
+                              self.varquote(expression.name))
         elif isinstance(expression, (Expression, Query)):
             if not expression.second is None:
                 return expression.op(expression.first, expression.second)
@@ -8158,11 +8159,10 @@ class Field(Expression):
         return True
 
     def __str__(self):
-        quote = self.db and self.db._adapter.varquote or IDENTITY
         try:
-            return '%s.%s' % (quote(self.tablename), quote(self.name))
+            return '%s.%s' % (self.tablename, self.name)
         except:
-            return '<no table>.%s' % quote(self.name)
+            return '<no table>.%s' % self.name
 
 
 class Query(object):
