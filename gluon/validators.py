@@ -2519,6 +2519,49 @@ class CLEANUP(Validator):
         v = self.regex.sub('',str(value).strip())
         return (v, None)
 
+class LazyCrypt(object):
+    """
+    Stores a lazy password hash
+    """
+    def __init__(self,crypt,password):
+        """
+        crypt is an instance of the CRYPT validator,
+        password is the password as inserted by the user
+        """
+        self.crypt = crypt
+        self.password = password
+        self.crypted = None
+    def __str__(self):
+        """
+        Encrypted self.password and caches it in self.crypted.
+        If self.crypt.salt the output is in the format <algorithm>$<salt>$<hash>
+        """
+        if self.crypted:
+            return self.crypted
+        if self.crypt.salt:
+            if self.crypt.salt == True:                
+                salt = str(web2py_uuid()).replace('-','')[-16:]                                                     
+            else:
+                salt = self.crypt.salt
+            self.crypted = '%s$%s$%s' % \
+                (self.crypt.digest_alg, salt, 
+                 simple_hash(self.password+salt, self.crypt.digest_alg))
+        elif self.crypt.key:
+            self.crypted = hmac_hash(self.password, self.crypt.key, self.crypt.digest_alg)
+        else:
+            self.crypted = simple_hash(self.password, self.crypt.digest_alg)
+        return self.crypted
+    def __eq__(self, stored_password):        
+        """
+        compares the current lazy crypted password with a stored password
+        """
+        if self.crypt.salt and stored_password.count('$')==2:
+            (algorithm, salt, hash) = stored_password.split('$')                                                      
+            temp_pass = '%s$%s$%s' % (algorithm, salt, simple_hash(self.password+salt, algorithm))
+        else:
+            temp_pass = str(self)
+        return temp_pass == stored_password
+    
 
 class CRYPT(object):
     """
@@ -2539,21 +2582,34 @@ class CRYPT(object):
 
     Notice that an empty password is accepted but invalid. It will not allow login back.
     Stores junk as hashed password.
+
+    Specify an algorithm or by default we will use sha512.                                                                      
+
+    Typical available algorithms:                                                                                               
+      md5, sha1, sha224, sha256, sha384, sha512                                                                            
+
+    If salt, it hashes a password with a salt.
+    If salt is True, this method will automatically generate one. 
+    Either case it returns an encrypted password string in the following format:
+
+      <algorithm>$<salt>$<hash> 
+
+    Important: hashed password is returned as a LazyCrypt object and computed only if needed.
+    The LasyCrypt object also knows how to compare itself with an existing salted password
+
     """
 
-    def __init__(self, key=None, digest_alg='md5', min_length=0, error_message='too short'):
+    def __init__(self, key=None, digest_alg='md5', min_length=0, error_message='too short', salt=None):
         self.key = key
         self.digest_alg = digest_alg
         self.min_length = min_length
         self.error_message = error_message
+        self.salt = salt
 
     def __call__(self, value):
         if len(value)<self.min_length:
             return ('', translate(self.error_message))
-        if self.key:
-            return (hmac_hash(value, self.key, self.digest_alg), None)
-        else:
-            return (simple_hash(value, self.digest_alg), None)
+        return (LazyCrypt(self,value),None)
 
 
 class IS_STRONG(object):
