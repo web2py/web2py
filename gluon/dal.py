@@ -4104,7 +4104,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
     def CONTAINS(self,first,second):
         if not first.type.startswith('list:'):
             raise SyntaxError, "Not supported"
-        return [GAEF(first.name,'=',self.expand(second,first.type[5:]),lambda a,b:a in b)]
+        return [GAEF(first.name,'=',self.expand(second,first.type[5:]),lambda a,b:b in a)]
 
     def NOT(self,first):
         nops = { self.EQ: self.NE,
