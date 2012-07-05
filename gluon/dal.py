@@ -8150,7 +8150,7 @@ class Field(Expression):
         return True
 
     def __str__(self):
-        quote = self.db._adapter.varquote
+        quote = self.db._adapter and self.db._adapter.varquote or lambda x:x
         try:
             return '%s.%s' % (quote(self.tablename), quote(self.name))
         except:
