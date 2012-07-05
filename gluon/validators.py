@@ -2543,9 +2543,11 @@ class LazyCrypt(object):
                 salt = str(web2py_uuid()).replace('-','')[-16:]                                                     
             else:
                 salt = self.crypt.salt
-            self.crypted = '%s$%s$%s' % \
-                (self.crypt.digest_alg, salt, 
-                 simple_hash(self.password+salt, self.crypt.digest_alg))
+            if ':' in self.crypt.key:
+                alg = self.crypt.key.split(':')[0]
+            else:
+                alg = self.crypt.digest_alg
+            self.crypted = '%s$%s$%s' % (alg, salt, hmac_hash(self.password+salt, self.crypt.key, alg))
         elif self.crypt.key:
             self.crypted = hmac_hash(self.password, self.crypt.key, self.crypt.digest_alg)
         else:
@@ -2556,8 +2558,8 @@ class LazyCrypt(object):
         compares the current lazy crypted password with a stored password
         """
         if self.crypt.salt and stored_password.count('$')==2:
-            (algorithm, salt, hash) = stored_password.split('$')                                                      
-            temp_pass = '%s$%s$%s' % (algorithm, salt, simple_hash(self.password+salt, algorithm))
+            (algorithm, salt, hash) = stored_password.split('$')
+            temp_pass = '%s$%s$%s' % (algorithm, salt, hmac_hash(self.password+salt, self.crypt.key, algorithm))
         else:
             temp_pass = str(self)
         return temp_pass == stored_password
