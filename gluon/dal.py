@@ -173,7 +173,7 @@ CALLABLETYPES = (types.LambdaType, types.FunctionType, types.BuiltinFunctionType
 
 
 ###################################################################################
-# following checks allows running of dal without web2py as a standalone module
+# following checks allow the use of dal without web2py, as a standalone module
 ###################################################################################
 try:
     from utils import web2py_uuid
@@ -559,7 +559,7 @@ class BaseAdapter(ConnectionPool):
         'list:integer': 'TEXT',
         'list:string': 'TEXT',
         'list:reference': 'TEXT',
-        # the two below only used when DAL(...bigint_id=True) and replace 'id','reference'
+        # the two below are only used when DAL(...bigint_id=True) and replace 'id','reference'
         'big-id': 'BIGINT PRIMARY KEY AUTOINCREMENT',
         'big-reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         }
@@ -678,7 +678,7 @@ class BaseAdapter(ConnectionPool):
                         id_fieldname = referenced in table._db \
                             and table._db[referenced]._id.name or 'id'
                         ftype = self.types[field.type[:9]] % dict( 
-                            index_name = self.varquote(tablename+'__idx'),
+                            index_name = self.varquote(field.name+'__idx'),
                             field_name = self.varquote(field.name),
                             constraint_name = self.varquote(constraint_name),
                             foreign_key = '%s (%s)' % (self.varquote(referenced),
@@ -724,6 +724,8 @@ class BaseAdapter(ConnectionPool):
                     ftype += self.ALLOW_NULL()
                 if field.unique:
                     ftype += ' UNIQUE'
+                if field.custom_qualifier:
+                    ftype += ' %s' % field.custom_qualifier
 
             # add to list of fields
             sql_fields[field.name] = dict(sortable=sortable,
@@ -1484,6 +1486,8 @@ class BaseAdapter(ConnectionPool):
 
     def log_execute(self, *a, **b):
         command = a[0]
+        if self.db._debug:
+            logger.debug('SQL: %s' % command)
         self.db._lastsql = command
         t0 = time.time()
         ret = self.cursor.execute(*a, **b)
@@ -1917,7 +1921,7 @@ class SpatiaLiteAdapter(SQLiteAdapter):
 
     def after_connection(self):
         self.connection.enable_load_extension(True)
-        # for Windows, rename libspatialite-2.dll as libspatialite.dll
+        # for Windows, rename libspatialite-2.dll to libspatialite.dll
         # Linux uses libspatialite.so
         # Mac OS X uses libspatialite.dylib
         libspatialite = SPATIALLIBS[platform.system()]
@@ -2041,7 +2045,7 @@ class MySQLAdapter(BaseAdapter):
         'list:string': 'LONGTEXT',
         'list:reference': 'LONGTEXT',
         'big-id': 'BIGINT AUTO_INCREMENT NOT NULL',
-        'big-reference': 'BIGINT, INDEX %(index_name)s (%(field_name)s), FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'big-reference': 'BIGINT, INDEX %(index_name`)s (%(field_name)s), FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         }
 
     def varquote(self,name):
@@ -4280,7 +4284,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         """
         This function was changed on 2010-05-04 because according to
         http://code.google.com/p/googleappengine/issues/detail?id=3119
-        GAE no longer support deleting more than 1000 records.
+        GAE no longer supports deleting more than 1000 records.
         """
         # self.db['_lastsql'] = self._delete(tablename,query)
         (items, tablename, fields) = self.select_raw(query)
@@ -4664,7 +4668,7 @@ class MongoDBAdapter(NoSQLAdapter):
                 if expression.second != 0 and not isinstance(expression.second,pymongo.objectid.ObjectId):
                     if isinstance(expression.second,int):
                         try:
-                            #Cause the reference field is by default an integer and therefor this must be an integer to be able to work with other databases
+                            #Because the reference field is by default an integer and therefore this must be an integer to be able to work with other databases
                             expression.second = pymongo.objectid.ObjectId(("%X" % expression.second))
                         except:
                             raise SyntaxError, 'The second argument must by an integer that can represent an objectid.'
@@ -6218,8 +6222,8 @@ copy_reg.pickle(Row, Row_pickler, Row_unpickler)
 
 
 ################################################################################
-# Everything below should be independent on the specifics of the
-# database and should for RDBMs and some NoSQL databases
+# Everything below should be independent of the specifics of the database 
+# and should work for RDBMs and some NoSQL databases
 ################################################################################
 
 class SQLCallableList(list):
@@ -6403,7 +6407,7 @@ class DAL(dict):
                  migrate_enabled=True, fake_migrate_all=False,
                  decode_credentials=False, driver_args=None,
                  adapter_args=None, attempts=5, auto_import=False,
-                 bigint_id=False):
+                 bigint_id=False,debug=False):
         """
         Creates a new Database Abstraction Layer instance.
 
@@ -6446,6 +6450,7 @@ class DAL(dict):
         self._common_fields = []
         self._referee_name = '%(table)s'
         self._bigint_id = bigint_id
+        self._debug = debug
         if not str(attempts).isdigit() or attempts < 0:
             attempts = 5
         if uri:
@@ -7962,6 +7967,7 @@ class Field(Expression):
         custom_delete=None,
         filter_in = None,
         filter_out = None,
+        custom_qualifier = None,
         ):
         self.db = None
         self.op = None
@@ -8011,6 +8017,7 @@ class Field(Expression):
         self.custom_delete = custom_delete
         self.filter_in = filter_in
         self.filter_out = filter_out
+        self.custom_qualifier = custom_qualifier
         if self.label is None:
             self.label = fieldname.replace('_',' ').title()
         if requires is None:
