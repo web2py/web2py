@@ -329,7 +329,6 @@ class Response(Storage):
         downloads from http://..../download/filename
         """
 
-        import contenttype as c
         if not request.args:
             raise HTTP(404)
         name = request.args[-1]
@@ -343,7 +342,7 @@ class Response(Storage):
             (filename, stream) = field.retrieve(name)
         except IOError:
             raise HTTP(404)
-        self.headers['Content-Type'] = c.contenttype(name)
+        self.headers['Content-Type'] = contenttype(name)
         if attachment:
             self.headers['Content-Disposition'] = \
                 "attachment; filename=%s" % filename
