@@ -1,9 +1,13 @@
 import os
 from distutils import dir_util
-from git import *
+try:
+    from git import *
+except ImportError:
+    session.flash = 'requires python-git, but not installed'
+    redirect(URL('deafult','site'))
 
 def deploy():
-    apps = sorted(file for file in os.listdir(apath(r=request)))#if regex.match(file))
+    apps = sorted(file for file in os.listdir(apath(r=request)))
     form = SQLFORM.factory(
         Field('osrepo',default='/tmp',label='Path to local openshift repo root.',
               requires=EXISTS(error_message=T('directory not found'))),
@@ -19,8 +23,7 @@ def deploy():
         except:
             pass
         
-        ignore_apps = [item for item in apps \
-                           if not item in form.vars.applications]
+        ignore_apps = [item for item in apps if not item in form.vars.applications]
         regex = re.compile('\(applications/\(.*')
         w2p_origin = os.getcwd()
         osrepo = form.vars.osrepo
@@ -36,7 +39,7 @@ def deploy():
             dir_util.copy_tree(appsrc,appdest)
             #shutil.copytree(appsrc,appdest)
             index.add(['wsgi/'+osname+'/applications/'+i])
-            new_commit = index.commit("Deploy from Web2py IDE")                             #<--- COMMIT WORKED.. Next.. on to actual push.
+            new_commit = index.commit("Deploy from Web2py IDE")
         
         origin = repo.remotes.origin
         origin.push
