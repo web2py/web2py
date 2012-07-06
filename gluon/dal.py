@@ -173,7 +173,7 @@ CALLABLETYPES = (types.LambdaType, types.FunctionType, types.BuiltinFunctionType
 
 
 ###################################################################################
-# following checks allows running of dal without web2py as a standalone module
+# following checks allow the use of dal without web2py, as a standalone module
 ###################################################################################
 try:
     from utils import web2py_uuid
@@ -559,7 +559,7 @@ class BaseAdapter(ConnectionPool):
         'list:integer': 'TEXT',
         'list:string': 'TEXT',
         'list:reference': 'TEXT',
-        # the two below only used when DAL(...bigint_id=True) and replace 'id','reference'
+        # the two below are only used when DAL(...bigint_id=True) and replace 'id','reference'
         'big-id': 'BIGINT PRIMARY KEY AUTOINCREMENT',
         'big-reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         }
@@ -1919,7 +1919,7 @@ class SpatiaLiteAdapter(SQLiteAdapter):
 
     def after_connection(self):
         self.connection.enable_load_extension(True)
-        # for Windows, rename libspatialite-2.dll as libspatialite.dll
+        # for Windows, rename libspatialite-2.dll to libspatialite.dll
         # Linux uses libspatialite.so
         # Mac OS X uses libspatialite.dylib
         libspatialite = SPATIALLIBS[platform.system()]
@@ -4282,7 +4282,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         """
         This function was changed on 2010-05-04 because according to
         http://code.google.com/p/googleappengine/issues/detail?id=3119
-        GAE no longer support deleting more than 1000 records.
+        GAE no longer supports deleting more than 1000 records.
         """
         # self.db['_lastsql'] = self._delete(tablename,query)
         (items, tablename, fields) = self.select_raw(query)
@@ -4666,7 +4666,7 @@ class MongoDBAdapter(NoSQLAdapter):
                 if expression.second != 0 and not isinstance(expression.second,pymongo.objectid.ObjectId):
                     if isinstance(expression.second,int):
                         try:
-                            #Cause the reference field is by default an integer and therefor this must be an integer to be able to work with other databases
+                            #Because the reference field is by default an integer and therefore this must be an integer to be able to work with other databases
                             expression.second = pymongo.objectid.ObjectId(("%X" % expression.second))
                         except:
                             raise SyntaxError, 'The second argument must by an integer that can represent an objectid.'
@@ -6220,8 +6220,8 @@ copy_reg.pickle(Row, Row_pickler, Row_unpickler)
 
 
 ################################################################################
-# Everything below should be independent on the specifics of the
-# database and should for RDBMs and some NoSQL databases
+# Everything below should be independent of the specifics of the database 
+# and should work for RDBMs and some NoSQL databases
 ################################################################################
 
 class SQLCallableList(list):
