@@ -14,10 +14,7 @@
         <p class="controls">
         {{else:}}
         <h3 class="editableapp">{{=A(a,_href=URL(a,'default','index'))}}</h3>
-	{{if MULTI_USER_MODE and db.app(name=a):}}{{owner = db.auth_user[db.app(name=a).owner]}}
-          (created by {{="%(first_name)s %(last_name)s" % owner}} 
-          &lt;{{=A(owner.email, _href='mailto:%s' % owner.email)}}&gt;)
-        {{pass}}
+    {{if MULTI_USER_MODE and db.app(name=a):}}(created by {{="%(first_name)s %(last_name)s" % db.auth_user[db.app(name=a).owner]}}){{pass}}
         <p class="controls">
         {{if not os.path.exists('applications/%s/compiled' % a):}}
         {{=sp_button(URL('design',args=a), T("Edit"))}}
@@ -39,12 +36,8 @@
         {{pass}}
         {{if a!=request.application:}}
         {{=button(URL('uninstall',args=a), T("Uninstall"))}}
-    	{{=button_enable(URL('enable',args=a), a)}}
+        {{=button_enable(URL('enable',args=a), a)}}
         {{pass}}
-	{{if a=='admin' and MULTI_USER_MODE and is_manager():}}
-	{{=button(URL('default','manage_students'), T('Manage Students'))}}
-	{{=button(URL('default','bulk_register'), T('Bulk Register'))}}
-	{{pass}}
         </p>
       </li>
       {{pass}}
@@ -65,19 +58,18 @@
     <!-- VERSION -->
     {{if is_manager():}}
     <div class="box">
-      <h3>{{=T("Version %s.%s.%s (%s) %s") % myversion}}</h3>
+      <h3>{{="Version %s.%s.%s (%s) %s" % myversion}}</h3>
       {{if session.check_version:}}
       <p id="check_version">
         {{=T('Checking for upgrades...')}}
       <script>ajax('{{=URL('check_version')}}',[],'check_version');</script>{{session.check_version=False}}
-      </p>
       {{else:}}
       <p id="check_version">
         {{=button("javascript:ajax('"+URL('check_version')+"',[],'check_version')", T('Check for upgrades'))}}
-      </p>
       {{pass}}
+      </p>
       <div class="formfield">
-	Running on {{=request.env.server_software}}
+    Running on {{=request.env.server_software}}
       </div>
       <p>{{=button(URL('default','reload_routes'), T('Reload routes'))}}</p>
     </div>
@@ -105,46 +97,46 @@
       <h3>{{=T("Upload and install packed application")}}</h3>
       <form action="" enctype="multipart/form-data" method="post">
         <div class="formfield">
-	  <table>
+      <table>
             <tr>
-	      <td>
-		{{=LABEL(T("Application name:"), _form='upload_filename')}}
-	      </td>
-	      <td>
-		<input id="appname" name="filename" type="text" id="upload_filename" />
-	      </td>
-	    </tr>
-	    <tr>
-	      <td>
-		{{=LABEL(T("Upload a package:"), _for='upload_file')}}
-	      </td>
-	      <td>
-		<input id="file" name="file" type="file" id="upload_file" />
-		<b>OR</b>
-	      </td>
+          <td>
+        {{=LABEL(T("Application name:"), _form='upload_filename')}}
+          </td>
+          <td>
+        <input id="appname" name="filename" type="text" id="upload_filename" />
+          </td>
+        </tr>
+        <tr>
+          <td>
+        {{=LABEL(T("Upload a package:"), _for='upload_file')}}
+          </td>
+          <td>
+        <input id="file" name="file" type="file" id="upload_file" />
+        <b>OR</b>
+          </td>
             </tr>
-	    <tr>
+        <tr>
               <td>
-		{{=LABEL(T("Get from URL:"), _for='upload_url')}}
-	      </td>
-	      <td>
-		<input id="appurl" name="appurl" type="text" id="upload_url"/>
-	      </td>
-	    </tr>
-	    <tr>
-	      <td></td>
+        {{=LABEL(T("Get from URL:"), _for='upload_url')}}
+          </td>
+          <td>
+        <input id="appurl" name="appurl" type="text" id="upload_url"/>
+          </td>
+        </tr>
+        <tr>
+          <td></td>
               <td>
-		<input type="checkbox" name="overwrite_check" id="upload_overwrite" />
-		{{=LABEL(T("Overwrite installed app"), _for='upload_overwrite')}}
-	      </td>
-	    </tr>
-	    <tr>
-	      <td></td>
-	      <td>
-		<button type="submit">{{=T('Install')}}</button>
-	      </td>
-	    </tr>
-	  </table>
+        <input type="checkbox" name="overwrite_check" id="upload_overwrite" />
+        {{=LABEL(T("Overwrite installed app"), _for='upload_overwrite')}}
+          </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>
+        <button type="submit">{{=T('Install')}}</button>
+          </td>
+        </tr>
+      </table>
         </div>
       </form>
     </div>
@@ -152,6 +144,11 @@
     <div class="box">
       <h3>{{=T("Deploy on Google App Engine")}}</h3>
       <p>{{=button(URL('gae','deploy'), T('Deploy'))}}</p>
+    </div><br/>
+    <!-- DEPLOY ON OPENSHIFT -->
+    <div class="box">
+      <h3>{{=T("Deploy to OpenShift")}}</h3>
+      <p>{{=button(URL('openshift','deploy'),T('Deploy'))}}</p>
     </div><br/>
     {{if TWITTER_HASH:}}
     <div class="box">
@@ -164,4 +161,3 @@
     {{pass}}
   </div>
 </div>
-
