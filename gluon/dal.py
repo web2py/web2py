@@ -1486,6 +1486,8 @@ class BaseAdapter(ConnectionPool):
 
     def log_execute(self, *a, **b):
         command = a[0]
+        if self.db._debug:
+            logger.debug('SQL: %s' % command)
         self.db._lastsql = command
         t0 = time.time()
         ret = self.cursor.execute(*a, **b)
@@ -6405,7 +6407,7 @@ class DAL(dict):
                  migrate_enabled=True, fake_migrate_all=False,
                  decode_credentials=False, driver_args=None,
                  adapter_args=None, attempts=5, auto_import=False,
-                 bigint_id=False):
+                 bigint_id=False,debug=False):
         """
         Creates a new Database Abstraction Layer instance.
 
@@ -6448,6 +6450,7 @@ class DAL(dict):
         self._common_fields = []
         self._referee_name = '%(table)s'
         self._bigint_id = bigint_id
+        self._debug = debug
         if not str(attempts).isdigit() or attempts < 0:
             attempts = 5
         if uri:
