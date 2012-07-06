@@ -6891,6 +6891,11 @@ def index():
     def rollback(self):
         self._adapter.rollback()
 
+    def close(self):
+        if self._adapter in thread.instances:
+            thread.instances.remove(self._adapter)
+        self._adapter.close()
+
     def executesql(self, query, placeholders=None, as_dict=False):
         """
         placeholders is optional and will always be None when using DAL.
