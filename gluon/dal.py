@@ -210,6 +210,7 @@ thread = threading.local()
 
 regex_type = re.compile('^([\w\_\:]+)')
 regex_dbname = re.compile('^(\w+)(\:\w+)*')
+regex_safe = re.compile('^[\w_]+$')
 regex_table_field = re.compile('^([\w_]+)\.([\w_]+)$')
 regex_content = re.compile('(?P<table>[\w\-]+)\.(?P<field>[\w\-]+)\.(?P<uuidkey>[\w\-]+)\.(?P<name>\w+)\.\w+$')
 regex_cleanup_fn = re.compile('[\'"\s;]+')
@@ -388,6 +389,9 @@ def AND(a,b):
     return a&b
 
 def IDENTITY(x): return x
+
+def varquote_aux(name,quotestr='%s'):
+    return name if regex_safe.match(name) else quotestr % name
 
 if 'google' in drivers:
 
@@ -668,21 +672,19 @@ class BaseAdapter(ConnectionPool):
                             else:
                                 ftype = ftype + self.types['reference FK'] % dict(
                                     constraint_name = constraint_name, # should be quoted
-                                    table_name=self.varquote(tablename),
-                                    field_name=self.varquote(field.name),
-                                    foreign_key = '%s (%s)' % (self.varquote(rtablename),
-                                                               self.varquote(rfieldname)),
+                                    foreign_key = '%s (%s)' % (rtablename,
+                                                               rfieldname),
                                     on_delete_action=field.ondelete)
                     else:
                         # make a guess here for circular references
                         id_fieldname = referenced in table._db \
                             and table._db[referenced]._id.name or 'id'
                         ftype = self.types[field.type[:9]] % dict( 
-                            index_name = self.varquote(field.name+'__idx'),
-                            field_name = self.varquote(field.name),
-                            constraint_name = self.varquote(constraint_name),
-                            foreign_key = '%s (%s)' % (self.varquote(referenced),
-                                                       self.varquote(id_fieldname)),
+                            index_name = field.name+'__idx',
+                            field_name = field.name,
+                            constraint_name = constraint_name,
+                            foreign_key = '%s (%s)' % (referenced,
+                                                       id_fieldname),
                             on_delete_action=field.ondelete)
             elif field.type.startswith('list:reference'):
                 ftype = self.types[field.type[:14]]
@@ -744,13 +746,13 @@ class BaseAdapter(ConnectionPool):
             # Postgres - PostGIS:
             # geometry fields are added after the table has been created, not now
             if not (self.dbengine == 'postgres' and field.type.startswith('geom')):
-                fields.append('%s %s' % (self.varquote(field.name), ftype))
+                fields.append('%s %s' % (field.name, ftype))
         other = ';'
 
         # backend-specific extensions to fields
         if self.dbengine == 'mysql':
             if not hasattr(table, "_primarykey"):
-                fields.append('PRIMARY KEY(%s)' % self.varquote(table._id.name))
+                fields.append('PRIMARY KEY(%s)' % table._id.name)
             other = ' ENGINE=InnoDB CHARACTER SET utf8;'
 
         fields = ',\n    '.join(fields)
@@ -855,7 +857,7 @@ class BaseAdapter(ConnectionPool):
             if not key in keys:
                 keys.append(key)
         if self.dbengine == 'mssql':
-            new_add = '; ALTER TABLE %s ADD ' % self.varquote(tablename)
+            new_add = '; ALTER TABLE %s ADD ' % tablename
         else:
             new_add = ', ADD '
 
@@ -871,7 +873,7 @@ class BaseAdapter(ConnectionPool):
                     query = [ sql_fields[key]['sql'] ]
                 else:
                     query = ['ALTER TABLE %s ADD %s %s;' % \
-                         (self.varquote(tablename), key,
+                         (tablename, key,
                           sql_fields_aux[key]['sql'].replace(', ', new_add))]
                 metadata_change = True
             elif self.dbengine in ('sqlite', 'spatialite'):
@@ -887,9 +889,9 @@ class BaseAdapter(ConnectionPool):
                     query = [ "SELECT DropGeometryColumn ('%(schema)s', '%(table)s', '%(field)s');" % \
                         dict(schema=schema, table=tablename, field=key,) ]
                 elif not self.dbengine in ('firebird',):
-                    query = ['ALTER TABLE %s DROP COLUMN %s;' % (self.varquote(tablename), self.varquote(key))]
+                    query = ['ALTER TABLE %s DROP COLUMN %s;' % (tablename, key)]
                 else:
-                    query = ['ALTER TABLE %s DROP %s;' % (self.varquote(tablename), self.varquote(key))]
+                    query = ['ALTER TABLE %s DROP %s;' % (tablename, key)]
                 metadata_change = True
             elif sql_fields[key]['sql'] != sql_fields_old[key]['sql'] \
                   and not isinstance(table[key].type, SQLCustomType) \
@@ -900,19 +902,19 @@ class BaseAdapter(ConnectionPool):
                 t = tablename
                 tt = sql_fields_aux[key]['sql'].replace(', ', new_add)
                 if not self.dbengine in ('firebird',):
-                    query = ['ALTER TABLE %s ADD %s__tmp %s;' % (self.varquote(t), key, tt),
-                             'UPDATE %s SET %s__tmp=%s;' % (self.varquote(t), key, key),
-                             'ALTER TABLE %s DROP COLUMN %s;' % (self.varquote(t), key),
-                             'ALTER TABLE %s ADD %s %s;' % (self.varquote(t), key, tt),
-                             'UPDATE %s SET %s=%s__tmp;' % (self.varquote(t), key, key),
-                             'ALTER TABLE %s DROP COLUMN %s__tmp;' % (self.varquote(t), key)]
+                    query = ['ALTER TABLE %s ADD %s__tmp %s;' % (t, key, tt),
+                             'UPDATE %s SET %s__tmp=%s;' % (t, key, key),
+                             'ALTER TABLE %s DROP COLUMN %s;' % (t, key),
+                             'ALTER TABLE %s ADD %s %s;' % (t, key, tt),
+                             'UPDATE %s SET %s=%s__tmp;' % (t, key, key),
+                             'ALTER TABLE %s DROP COLUMN %s__tmp;' % (t, key)]
                 else:
-                    query = ['ALTER TABLE %s ADD %s__tmp %s;' % (self.varquote(t), key, tt),
-                             'UPDATE %s SET %s__tmp=%s;' % (self.varquote(t), key, key),
-                             'ALTER TABLE %s DROP %s;' % (self.varquote(t), key),
-                             'ALTER TABLE %s ADD %s %s;' % (self.varquote(t), key, tt),
-                             'UPDATE %s SET %s=%s__tmp;' % (self.varquote(t), key, key),
-                             'ALTER TABLE %s DROP %s__tmp;' % (self.varquote(t), key)]
+                    query = ['ALTER TABLE %s ADD %s__tmp %s;' % (t, key, tt),
+                             'UPDATE %s SET %s__tmp=%s;' % (t, key, key),
+                             'ALTER TABLE %s DROP %s;' % (t, key),
+                             'ALTER TABLE %s ADD %s %s;' % (t, key, tt),
+                             'UPDATE %s SET %s=%s__tmp;' % (t, key, key),
+                             'ALTER TABLE %s DROP %s__tmp;' % (t, key)]
                 metadata_change = True
             elif sql_fields[key]['type'] != sql_fields_old[key]['type']:
                 sql_fields_current[key] = sql_fields[key]
@@ -1012,7 +1014,7 @@ class BaseAdapter(ConnectionPool):
             logfile.write('success!\n')
 
     def _insert(self, table, fields):
-        keys = ','.join(self.varquote(f.name) for f,v in fields)
+        keys = ','.join(f.name for f,v in fields)
         values = ','.join(self.expand(v,f.type) for f,v in fields)
         return 'INSERT INTO %s(%s) VALUES (%s);' % (table, keys, values)
 
@@ -1138,8 +1140,7 @@ class BaseAdapter(ConnectionPool):
 
     def expand(self, expression, field_type=None):
         if isinstance(expression, Field):
-            return '%s.%s' % (self.varquote(expression.tablename),
-                              self.varquote(expression.name))
+            return '%s.%s' % (expression.tablename, expression.name)
         elif isinstance(expression, (Expression, Query)):
             if not expression.second is None:
                 return expression.op(expression.first, expression.second)
@@ -2049,7 +2050,7 @@ class MySQLAdapter(BaseAdapter):
         }
 
     def varquote(self,name):
-        return '`%s`' % name
+        return varquote_aux(name,'`%s`')
 
     def RANDOM(self):
         return 'RAND()'
@@ -2161,7 +2162,7 @@ class PostgreSQLAdapter(BaseAdapter):
         }
 
     def varquote(self,name):
-        return '"%s"' % name
+        return varquote_aux(name,'"%s"')
 
     def adapt(self,obj):
         return psycopg2_adapt(obj).getquoted()
@@ -2645,7 +2646,7 @@ class MSSQLAdapter(BaseAdapter):
         }
 
     def varquote(self,name):
-        return '[%s]' % name
+        return varquote_aux(name,'[%s]')
 
     def EXTRACT(self,field,what):
         return "DATEPART(%s,%s)" % (what, self.expand(field))
