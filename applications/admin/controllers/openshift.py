@@ -4,7 +4,7 @@ try:
     from git import *
 except ImportError:
     session.flash = 'requires python-git, but not installed'
-    redirect(URL('deafult','site'))
+    redirect(URL('default','site'))
 
 def deploy():
     apps = sorted(file for file in os.listdir(apath(r=request)))
