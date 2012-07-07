@@ -363,7 +363,7 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
             return str(environment[a])
         text = re.compile(r'@\{(?P<a>\w+?)\}').sub(u2,text)
     if not URL is None:
-        # this is experimental @{controller/index/args}
+        # this is experimental @{function/args}
         # turns into a digitally signed URL
         def u1(match,URL=URL):
             f,args = match.group('f'), match.group('args')

@@ -169,16 +169,21 @@ def executor(queue,task):
     try:
         if task.app:
             os.chdir(os.environ['WEB2PY_PATH'])
-            from gluon.shell import env
+            from gluon.shell import env, parse_path_info
             from gluon.dal import BaseAdapter
             from gluon import current
             level = logging.getLogger().getEffectiveLevel()
             logging.getLogger().setLevel(logging.WARN)
-            _env = env(task.app,import_models=True)
+            # Get controller-specific subdirectory if task.app is of
+            # form 'app/controller'
+            (a,c,f) = parse_path_info(task.app)
+            _env = env(a=a,c=c,import_models=True)
             logging.getLogger().setLevel(level)
             scheduler = current._scheduler
-            scheduler_tasks = current._scheduler.tasks
-            _function = scheduler_tasks[task.function]
+            f = task.function
+            # First look for the func in tasks, else look in models
+            _function = current._scheduler.tasks.get(f) or _env.get(f)
+            assert _function, 'Function %s not found in scheduler\'s environmen
             globals().update(_env)
             args = loads(task.args)
             vars = loads(task.vars, object_hook=_decode_dict)
@@ -353,6 +358,7 @@ class Scheduler(MetaScheduler):
 
     def define_tables(self,db,migrate):
         from gluon import current
+        from gluon.dal import DEFAULT
         logging.debug('defining tables (migrate=%s)' % migrate)
         now = datetime.datetime.now()
         db.define_table(
@@ -364,7 +370,8 @@ class Scheduler(MetaScheduler):
             Field('status',requires=IS_IN_SET(TASK_STATUS),
                   default=QUEUED,writable=False),
             Field('function_name',
-                  requires=IS_IN_SET(sorted(self.tasks.keys()))),
+                  requires=IS_IN_SET(sorted(self.tasks.keys())) \
+                      if self.tasks else DEFAULT),
             Field('args','text',default='[]',requires=TYPE(list)),
             Field('vars','text',default='{}',requires=TYPE(dict)),
             Field('enabled','boolean',default=True),
@@ -379,8 +386,9 @@ class Scheduler(MetaScheduler):
             Field('assigned_worker_name',default='',writable=False),
             migrate=migrate,format='%(task_name)s')
         if hasattr(current,'request'):
-            db.scheduler_task.application_name.default=current.request.application
-
+            db.scheduler_task.application_name.default = \
+                '%s/%s' % (current.request.application,                       
+                           current.request.controller) 
         db.define_table(
             'scheduler_run',
             Field('scheduler_task','reference scheduler_task'),
