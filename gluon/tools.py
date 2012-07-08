@@ -1212,10 +1212,7 @@ class Auth(object):
     def navbar(self, prefix='Welcome', action=None,
                separators=(' [ ',' | ',' ] '),
                referrer_actions=DEFAULT):
-        if referrer_actions == DEFAULT:
-            referrer_actions = ['login','logout','profile',
-                                'register','change_password',
-                                'retrieve_username','request_reset_password']
+        referrer_actions = [] if not referrer_actions else referrer_actions
         request = current.request
         T = current.T
         if isinstance(prefix,str):
@@ -1228,23 +1225,17 @@ class Auth(object):
         if URL() == action:
             next = ''
         else:
-            next = '?_next='+urllib.quote(URL(args=request.args,vars=request.get_vars))
-
-        pr_next = next if 'profile' in referrer_actions else ''
-        pa_next = next if 'change_password' in referrer_actions else ''
-        re_next = next if 'register' in referrer_actions else ''
-        ru_next = next if 'retrieve_username' in referrer_actions else ''
-        rp_next = next if 'request_reset_password' in referrer_actions else ''
-        li_next = '?_next='+urllib.quote(self.settings.login_next) \
-             if 'login' in referrer_actions else ''
-        lo_next = '?_next='+urllib.quote(self.settings.logout_next) \
-            if 'logout' in referrer_actions else ''
+            next = '?_next=' + urllib.quote(URL(args=request.args, vars=request.get_vars))
+        
+        href = lambda function: '%s/%s%s' % (action, function,
+            next if referrer_actions is DEFAULT or function in referrer_actions else '')
         
         if self.user_id:
-            logout=A(T('Logout'),_href=action+'/logout'+lo_next)
-            profile=A(T('Profile'),_href=action+'/profile'+pr_next)
-            password=A(T('Password'),_href=action+'/change_password'+pa_next)
-            bar = SPAN(prefix,self.user.first_name,s1, logout,s3,_class='auth_navbar')
+            logout = A(T('Logout'), _href='%s/logout?_next=%s' %
+                      (action, urllib.quote(self.settings.logout_next)))
+            profile = A(T('Profile'), _href=href('profile'))
+            password = A(T('Password'), _href=href('change_password'))
+            bar = SPAN(prefix,self.user.first_name,s1, logout, s3, _class='auth_navbar')
             if not 'profile' in self.settings.actions_disabled:
                 bar.insert(4, s2)
                 bar.insert(5, profile)
@@ -1252,12 +1243,10 @@ class Auth(object):
                 bar.insert(-1, s2)
                 bar.insert(-1, password)
         else:
-            login=A(T('Login'),_href=action+'/login'+li_next)
-            register=A(T('Register'),_href=action+'/register'+re_next)
-            retrieve_username=A(T('forgot username?'),
-                            _href=action+'/retrieve_username'+ru_next)
-            lost_password=A(T('Lost password?'),
-                            _href=action+'/request_reset_password'+ru_next)
+            login = A(T('Login'), _href=href('login'))
+            register = A(T('Register'), _href=href('register'))
+            retrieve_username = A(T('Forgot username?'), _href=href('retrieve_username'))
+            lost_password = A(T('Lost password?'), _href=href('request_reset_password'))
             bar = SPAN(s1, login, s3, _class='auth_navbar')
 
             if not 'register' in self.settings.actions_disabled:
