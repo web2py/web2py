@@ -29,6 +29,7 @@ import datetime
 import urllib
 import re
 import cStringIO
+from gluon.html import INPUT
 
 table_field = re.compile('[\w_]+\.[\w_]+')
 widget_class = re.compile('^\w*')
@@ -1486,6 +1487,7 @@ class SQLFORM(FORM):
              search_widget='default',
              ignore_rw = False,
              formstyle = 'table3cols',
+             exportclasses = None,
              formargs={},
              createargs={},
              editargs={},
@@ -1703,6 +1705,62 @@ class SQLFORM(FORM):
             raise HTTP(200,str(dbset.select()),
                        **{'Content-Type':'text/csv',
                           'Content-Disposition':'attachment;filename=rows.csv;'})
+            
+        #==============================================================================
+        
+        exportManager = dict(csv_with_hidden_cols=(ExporterCsv,'csv with hidden cols'),
+                             csv=ExporterCsv,
+                             html=ExporterHtml)
+        if not exportclasses is None:
+            exportManager.update(exportclasses)
+            
+        if len(request.args)>0 and request.args[-1]=='export':
+            export_type = request.vars.export_type
+            order = request.vars.order or ''
+            if sortable:
+                if order and not order=='None':
+                    if order[:1]=='~':
+                        sign, rorder = '~', order[1:]
+                    else:
+                        sign, rorder = '', order
+                    tablename,fieldname = rorder.split('.',1)
+                    if sign=='~':
+                        orderby=~db[tablename][fieldname]
+                    else:
+                        orderby=db[tablename][fieldname]
+            
+            table_fields = [f for f in fields if f._tablename in tablenames]
+            if export_type =='csv_with_hidden_cols':
+                if request.vars.keywords:
+                    try:
+                        dbset=dbset(SQLFORM.build_query(
+                                fields,
+                                request.vars.get('keywords','')))
+                    except:
+                        raise HTTP(400)
+                    check_authorization()
+                rows = dbset.select()
+            else:
+                rows = dbset.select(left=left,orderby=orderby,*columns)
+            
+            if not export_type is None:
+                if exportManager.has_key(export_type):
+                    value = exportManager[export_type]
+                    if hasattr(value, '__getitem__'):
+                        clazz = value[0]
+                    else:
+                        clazz = value
+                    oExp = clazz(rows)
+                    filename = '.'.join(('rows', oExp.file_ext))
+                    response.headers['Content-Type'] = oExp.content_type
+                    response.headers['Content-Disposition'] = \
+                'attachment;filename='+filename+';'
+            
+                    raise HTTP(200, oExp.export(),
+                       **{'Content-Type':oExp.content_type,
+                          'Content-Disposition':'attachment;filename='+filename+';'})
+        #================================================================================
+        
         elif request.vars.records and not isinstance(
             request.vars.records,list):
             request.vars.records=[request.vars.records]
@@ -1767,6 +1825,23 @@ class SQLFORM(FORM):
                     trap = False,
                     buttonurl=url(args=['csv'],
                                   vars=dict(keywords=request.vars.keywords or ''))))
+            
+        #================================================================
+            options =[]
+            for k,v in exportManager.items():
+                if hasattr(v, "__getitem__"):
+                    label = v[1]
+                else:
+                    label = k
+                options.append(OPTION(T(label),_value=k))
+            f = FORM(SELECT(options, _name="export_type"), 
+                     INPUT(_type="submit", _value="export"),
+                     INPUT(_type="hidden", _name="order", _value=request.vars.order),
+                     INPUT(_type="hidden", _name="keywords", _value=request.vars.keywords or ''),
+                     _method="GET", 
+                     _action=url(args=['export']))
+            search_actions.append(f)
+        #================================================================
 
         console.append(search_actions)
 
@@ -2374,7 +2449,43 @@ class SQLTABLE(TABLE):
 form_factory = SQLFORM.factory # for backward compatibility, deprecated
 
 
+class ExportClass(object):
+    file_ext = None
+    content_type = None
+    
+    def __init__(self, rows):
+        self.rows = rows
+    
+    def export(self):
+        raise NotImplementedError
 
+class ExporterCsv(ExportClass):
+    file_ext = "csv"
+    content_type = "text/csv"
+    
+    def __init__(self, rows):
+        ExportClass.__init__(self, rows)
+    
+    def export(self):
+        return str(self.rows)
+
+class ExporterHtml(ExportClass):
+    file_ext = "html"
+    content_type = "text/html"
+    
+    def __init__(self, rows):
+        ExportClass.__init__(self, rows)
+    
+    def export(self):
+        out = cStringIO.StringIO()
+        out.write('<html>\n<body>\n<table>\n')
+        for cols in self.rows:
+            out.write('<tr>\n')
+            for colname,value in cols.items():
+                out.write('<td>'+str(value)+'</td>\n')
+            out.write('</tr>\n')
+        out.write('</table>\n</body>\n</html>')
+        return str(out.getvalue())
 
 
 
