@@ -47,7 +47,7 @@ class extcron(threading.Thread):
         threading.Thread.__init__(self)
         self.setDaemon(False)
         self.path = applications_parent
-        crondance(self.path, 'external', startup=True)
+        # crondance(self.path, 'external', startup=True)
 
     def run(self):
         if not _cron_stopping:
