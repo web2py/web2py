@@ -1281,7 +1281,7 @@ class BaseAdapter(ConnectionPool):
         for key in set(attributes.keys())-set(('orderby', 'groupby', 'limitby',
                                                'required', 'cache', 'left',
                                                'distinct', 'having', 'join',
-                                               'for_update')):
+                                               'for_update', 'processor')):
             raise SyntaxError, 'invalid select attribute: %s' % key
 
         tablenames = self.tables(query)
@@ -4434,7 +4434,7 @@ class CouchDBAdapter(NoSQLAdapter):
             raise SyntaxError, "Not Supported"
         for key in set(attributes.keys())-set(('orderby','groupby','limitby',
                                                'required','cache','left',
-                                               'distinct','having')):
+                                               'distinct', 'having', 'processor')):
             raise SyntaxError, 'invalid select attribute: %s' % key
         new_fields=[]
         for item in fields:
