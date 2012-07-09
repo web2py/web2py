@@ -43,16 +43,17 @@ def stopcron():
 
 class extcron(threading.Thread):
 
-    def __init__(self, applications_parent):
+    def __init__(self, applications_parent, apps=None):
         threading.Thread.__init__(self)
         self.setDaemon(False)
         self.path = applications_parent
-        # crondance(self.path, 'external', startup=True)
+        self.apps = apps
+        # crondance(self.path, 'external', startup=True, apps=self.apps)
 
     def run(self):
         if not _cron_stopping:
             logger.debug('external cron invocation')
-            crondance(self.path, 'external', startup=False)
+            crondance(self.path, 'external', startup=False, apps=self.apps)
 
 class hardcron(threading.Thread):
 
@@ -80,7 +81,7 @@ class softcron(threading.Thread):
     def __init__(self, applications_parent):
         threading.Thread.__init__(self)
         self.path = applications_parent
-        crondance(self.path, 'soft', startup=True)
+        # crondance(self.path, 'soft', startup=True)
 
     def run(self):
         if not _cron_stopping:
@@ -242,7 +243,7 @@ class cronlauncher(threading.Thread):
             logger.debug('WEB2PY CRON Call returned success:\n%s' \
                               % stdoutdata)
 
-def crondance(applications_parent, ctype='soft', startup=False):
+def crondance(applications_parent, ctype='soft', startup=False, apps=None):
     apppath = os.path.join(applications_parent,'applications')
     cron_path = os.path.join(applications_parent)
     token = Token(cron_path)
@@ -256,8 +257,9 @@ def crondance(applications_parent, ctype='soft', startup=False):
             ('dom',now_s.tm_mday),
             ('dow',(now_s.tm_wday+1)%7))
 
-    apps = [x for x in os.listdir(apppath)
-            if os.path.isdir(os.path.join(apppath, x))]
+    if apps is None:
+        apps = [x for x in os.listdir(apppath)
+                if os.path.isdir(os.path.join(apppath, x))]
 
     full_apath_links = set()
 
