@@ -6982,8 +6982,8 @@ def index():
                 raise SyntaxError, 'invalid file format'
             else:
                 tablename = line[6:]
-                self[tablename].import_from_csv_file(ifile, id_map, null,
-                                                     unique, id_offset, *args, **kwargs)
+                self[tablename].import_from_csv_file(
+                    ifile, id_map, null, unique, id_offset, *args, **kwargs)
 
 class SQLALL(object):
     """
@@ -7143,7 +7143,9 @@ class Table(dict):
                 if isinstance(field, Field) and field.type == 'upload'\
                         and field.uploadfield is True:
                     tmp = field.uploadfield = '%s_blob' % field.name
-                    fields.append(self._db.Field(tmp, 'blob', default=''))
+        if isinstance(field.uploadfield,str) and \
+                not [f for f in fields if f.name==field.uploadfield]:
+            fields.append(self._db.Field(field.uplaodfield,'blob',default='')
 
         lower_fieldnames = set()
         reserved = dir(Table) + ['fields']
@@ -7479,11 +7481,14 @@ class Table(dict):
         the 'table.' prefix is ignored.
         'unique' argument is a field which must be unique
         (typically a uuid field)
-        'restore' argument is default False. If set True will remove old values
+        'restore' argument is default False.
+        If set True will remove old values
         in table first.
-        'id_map' If set to None will not map id. The import will keep the id numbers
-        in the restored table. This assumes that there is an field of type id that
-        is integer and in incrementing order. Will keep the id numbers in restored table.
+        'id_map' If set to None will not map id.
+        The import will keep the id numbers in the restored table. 
+        This assumes that there is an field of type id that
+        is integer and in incrementing order. 
+        Will keep the id numbers in restored table.
       """
 
         delimiter = kwargs.get('delimiter', ',')
@@ -7493,7 +7498,8 @@ class Table(dict):
         if restore:
             self._db[self].truncate()
 
-        reader = csv.reader(csvfile, delimiter=delimiter, quotechar=quotechar, quoting=quoting)
+        reader = csv.reader(csvfile, delimiter=delimiter,
+                            quotechar=quotechar, quoting=quoting)
         colnames = None
         if isinstance(id_map, dict):
             if not self._tablename in id_map:
@@ -7565,8 +7571,9 @@ class Table(dict):
                     del_id = curr_id
                     if first:
                         first = False
-                        #First curr_id is bigger than csv_id, then we are not restoring but
-                        #extending db table with csv db table
+                        # First curr_id is bigger than csv_id, 
+                        # then we are not restoring but
+                        # extending db table with csv db table
                         if curr_id>csv_id:
                             id_offset[self._tablename] = curr_id-csv_id
                         else:
