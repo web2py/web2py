@@ -1875,7 +1875,7 @@ class Auth(object):
                                 user = self.get_or_create_user(form.vars)
                                 break
                 if not user:
-                    self.log_event(self.settings.login_failed_log,
+                    self.log_event(self.messages.login_failed_log,
                                    request.post_vars)
                     # invalid login
                     session.flash = self.messages.invalid_login
