@@ -7145,7 +7145,7 @@ class Table(dict):
                     tmp = field.uploadfield = '%s_blob' % field.name
         if isinstance(field.uploadfield,str) and \
                 not [f for f in fields if f.name==field.uploadfield]:
-            fields.append(self._db.Field(field.uplaodfield,'blob',default='')
+            fields.append(self._db.Field(field.uplaodfield,'blob',default=''))
 
         lower_fieldnames = set()
         reserved = dir(Table) + ['fields']
