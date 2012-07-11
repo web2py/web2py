@@ -1357,10 +1357,12 @@ class A(DIV):
                 (self['component'],self['target'] or '',d)
             self['_href'] = self['_href'] or '#null'
         elif self['callback']:
+            returnfalse="var e = arguments[0] || window.event; e.cancelBubble=true; if (e.stopPropagation) e.stopPropagation();" 
             if d:
-                self['_onclick']="if(confirm(w2p_ajax_confirm_message||'Are you sure you want o delete this object?')){ajax('%s',[],'%s');%s};return false;" % (self['callback'],self['target'] or '',d)
+                self['_onclick']="if(confirm(w2p_ajax_confirm_message||'Are you sure you want o delete this object?')){ajax('%s',[],'%s');%s};%s" % \
+                    (self['callback'],self['target'] or '',d, returnfalse)
             else:
-                self['_onclick']="ajax('%s',[],'%s');%sreturn false;" % \
+                self['_onclick']="ajax('%s',[],'%s');%sreturn false" % \
                     (self['callback'],self['target'] or '',d)
             self['_href'] = self['_href'] or '#null'
         elif self['cid']:
