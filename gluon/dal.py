@@ -769,10 +769,10 @@ class BaseAdapter(ConnectionPool):
                 on_delete_action = field.ondelete)
 
         if hasattr(table,'_primarykey'):
-            query = '''CREATE TABLE %s(\n    %s,\n    %s) %s''' % \
+            query = "CREATE TABLE %s(\n    %s,\n    %s) %s" % \
                 (tablename, fields, self.PRIMARY_KEY(', '.join(table._primarykey)),other)
         else:
-            query = '''CREATE TABLE %s(\n    %s\n)%s''' % \
+            query = "CREATE TABLE %s(\n    %s\n)%s" % \
                 (tablename, fields, other)
 
         if self.uri.startswith('sqlite:///') or self.uri.startswith('spatialite:///'):
@@ -841,6 +841,8 @@ class BaseAdapter(ConnectionPool):
         logfile,
         fake_migrate=False,
         ):
+        table._migrated = True
+        table._db._migrate.append(table._tablename)
         tablename = table._tablename
         def fix(item):
             k,v=item
@@ -6452,6 +6454,7 @@ class DAL(dict):
         self._referee_name = '%(table)s'
         self._bigint_id = bigint_id
         self._debug = debug
+        self._migrated = []
         if not str(attempts).isdigit() or attempts < 0:
             attempts = 5
         if uri:
@@ -7086,6 +7089,7 @@ class Table(dict):
         self._trigger_name = args.get('trigger_name',None) or \
             db and db._adapter.trigger_name(tablename)
         self._common_filter = args.get('common_filter', None)
+        self._migrated = False
 
         self._before_insert = []
         self._before_update = [lambda self,fs:self.delete_uploaded_files(fs)]
@@ -7762,7 +7766,7 @@ class Expression(object):
         return Query(self.db, self.db._adapter.REGEXP, self, value)
 
     def belongs(self, *value):
-        '''
+        """
         Accepts the following inputs:
            field.belongs(1,2)
            field.belongs((1,2))
@@ -7770,7 +7774,7 @@ class Expression(object):
 
         Does NOT accept:
            field.belongs(1)
-        '''
+        """
         if len(value) == 1:
             value = value[0]
         if isinstance(value,Query):
