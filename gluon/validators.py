@@ -2546,10 +2546,14 @@ class LazyCrypt(object):
             else:
                 salt = self.crypt.salt
             if ':' in self.crypt.key:
-                alg = self.crypt.key.split(':')[0]
+                (alg, hash_key) = self.crypt.key.split(':')
             else:
-                alg = self.crypt.digest_alg
-            self.crypted = '%s$%s$%s' % (alg, salt, hmac_hash(self.password+salt, self.crypt.key, alg))
+                (alg, hash_key) = self.crypt.digest_alg, None
+            if hash_key:
+                h = hmac_hash(self.password+salt, self.crypt.key, alg)
+            else:
+                h = imple_hash(self.password+salt, alg)
+            self.crypted = '%s$%s$%s' % (alg, salt, h)
         elif self.crypt.key:
             self.crypted = hmac_hash(self.password, self.crypt.key, self.crypt.digest_alg)
         else:
@@ -2560,8 +2564,16 @@ class LazyCrypt(object):
         compares the current lazy crypted password with a stored password
         """
         if self.crypt.salt and stored_password.count('$')==2:
+            if ':' in self.crypt.key:
+                hash_key = self.crypt.key.split(':')[1]
+            else:
+                hash_key = None
             (algorithm, salt, hash) = stored_password.split('$')
-            temp_pass = '%s$%s$%s' % (algorithm, salt, hmac_hash(self.password+salt, self.crypt.key, algorithm))
+            if hash_key:
+                h = hmac_hash(self.password+salt, self.crypt.key, algorithm)
+            else:
+                h = simple_hash(self.password+salt, algorithm)
+            temp_pass = '%s$%s$%s' % (algorithm, salt, h)            
         else:
             temp_pass = str(self)
         return temp_pass == stored_password
