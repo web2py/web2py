@@ -103,11 +103,8 @@ def populate(table, n, default=True, compute=False):
             elif field.type=='list:integer' and hasattr(field.requires,'options'):
                 options=field.requires.options(zero=False)
                 if len(options) > 0:
-                    vals = []
-                    for i in range(0, random.randint(0,len(options)-1)/2):
-                        vals.append(options[random.randint(0,len(options)-1)][0])
-                    record[fieldname] = vals
-            elif field.type =='integer':
+                    record[fieldname] = [item[0] for item in random.sample(options, random.randint(0,len(options)-1)/2)]
+            elif field.type == 'integer':
                 try:
                     record[fieldname] = random.randint(field.requires.minimum,field.requires.maximum-1)
                 except:
@@ -143,19 +140,13 @@ def populate(table, n, default=True, compute=False):
                         ids[tablename] = [x.id for x in table._db(table._db[field.type[15:]].id>0).select()]
                 n = len(ids[tablename])
                 if n:
-                    vals = []
-                    for i in range(0, random.randint(0,n-1)/2):
-                        vals.append(ids[tablename][random.randint(0,n-1)])
-                    record[fieldname] = vals
+                    record[fieldname] = [item[0] for item in random.sample(ids[tablename], random.randint(0,n-1)/2)]
                 else:
                     record[fieldname] = 0
             elif field.type=='list:string' and hasattr(field.requires,'options'):
                 options=field.requires.options(zero=False)
                 if len(options) > 0:
-                    vals = []
-                    for i in range(0, random.randint(0,len(options)-1)/2):
-                        vals.append(options[random.randint(0,len(options)-1)][0])
-                    record[fieldname] = vals
+                    record[fieldname] = [item[0] for item in random.sample(options, random.randint(0,len(options)-1)/2)]
             elif field.type=='string' and hasattr(field.requires,'options'):
                 options=field.requires.options(zero=False)
                 record[fieldname] = options[random.randint(0,len(options)-1)][0]
