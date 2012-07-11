@@ -842,7 +842,7 @@ class BaseAdapter(ConnectionPool):
         fake_migrate=False,
         ):
         table._migrated = True
-        table._db._migrate.append(table._tablename)
+        table._db._migrated.append(table._tablename)
         tablename = table._tablename
         def fix(item):
             k,v=item
