@@ -841,7 +841,6 @@ class BaseAdapter(ConnectionPool):
         logfile,
         fake_migrate=False,
         ):
-        table._migrated = True
         table._db._migrated.append(table._tablename)
         tablename = table._tablename
         def fix(item):
@@ -7089,7 +7088,6 @@ class Table(dict):
         self._trigger_name = args.get('trigger_name',None) or \
             db and db._adapter.trigger_name(tablename)
         self._common_filter = args.get('common_filter', None)
-        self._migrated = False
 
         self._before_insert = []
         self._before_update = [lambda self,fs:self.delete_uploaded_files(fs)]
