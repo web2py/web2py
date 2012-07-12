@@ -13,7 +13,6 @@ FOR INTERNAL USE ONLY
 """
 
 import os
-import stat
 import thread
 from fileutils import read_file
 
@@ -28,13 +27,15 @@ def getcfs(key, filename, filter=None):
 
     :param key: the cache key
     :param filename: the file to cache
-    :param filter: is the function used for filtering. Normally `filename` is a
-        .py file and `filter` is a function that bytecode compiles the file.
-        In this way the bytecode compiled file is cached. (Default = None)
+    :param filter: is the function used for filtering. Previous stored data
+        (or None) are passed to this function as a parameter (READONLY!!).
+        Normally `filename` is a .py file and `filter` is a function that
+        bytecode compiles the file. In this way the bytecode compiled file
+        is cached. (Default = None)
 
     This is used on Google App Engine since pyc files cannot be saved.
     """
-    t = os.stat(filename)[stat.ST_MTIME]
+    t = os.stat(filename).st_mtime
     cfs_lock.acquire()
     item = cfs.get(key, None)
     cfs_lock.release()
@@ -43,7 +44,7 @@ def getcfs(key, filename, filter=None):
     if not filter:
         data = read_file(filename)
     else:
-        data = filter()
+        data = filter(item[1] if item else None)
     cfs_lock.acquire()
     cfs[key] = (t, data)
     cfs_lock.release()
