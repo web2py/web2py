@@ -62,10 +62,10 @@ def stream_file_or_304_or_206(
     fsize = stat_file[stat.ST_SIZE]
     mtime = time.strftime('%a, %d %b %Y %H:%M:%S GMT',
                           time.gmtime(stat_file[stat.ST_MTIME]))
-    headers['Content-Type'] = contenttype(static_file)
-    headers['Last-Modified'] = mtime
-    headers['Pragma'] = 'cache'
-    headers['Cache-Control'] = 'private'
+    headers.setdefault('Content-Type', contenttype(static_file))
+    headers.setdefault('Last-Modified', mtime)
+    headers.setdefault('Pragma', 'cache')
+    headers.setdefault('Cache-Control', 'private')
 
     if request and request.env.http_if_modified_since == mtime:
         raise HTTP(304, **{'Content-Type': headers['Content-Type']})
