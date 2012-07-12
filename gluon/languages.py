@@ -192,7 +192,9 @@ def read_possible_languages(path):
                    lambda: read_possible_languages_aux(lang_path))
 
 def utf8_repr(s):
-    r''' # note that we use raw strings to avoid having to use double back slashes below
+    r""" 
+    
+    # note that we use raw strings to avoid having to use double back slashes below
 
     utf8_repr() works same as repr() when processing ascii string
     >>> utf8_repr('abc') == utf8_repr("abc") == repr('abc') == repr("abc") == "'abc'"
@@ -217,7 +219,7 @@ def utf8_repr(s):
     True
     >>> utf8_repr('中\r\n文') == "'中\\r\\n文'" != repr('中\r\n文') # Test for \r, \n
     True
-    '''
+    """
     if (s.find("'") >= 0) and (s.find('"') < 0): # only single quote exists
         s = ''.join(['"', s, '"']) # s = ''.join(['"', s.replace('"','\\"'), '"'])
     else:
@@ -312,8 +314,6 @@ class translator(object):
     this class is instantiated by gluon.compileapp.build_environment
     as the T object
 
-    ::
-
         T.force(None) # turns off translation
         T.force('fr, it') # forces web2py to translate using fr.py or it.py
 
@@ -340,7 +340,6 @@ class translator(object):
             self.default_language_file = os.path.join(self.folder,'languages','')
             self.default_t = {}
         self.cache = tcache.setdefault(self.default_language_file, ({}, allocate_lock()))
-        self.mcache = tcache.setdefault('@'+self.default_language_file, ({}, allocate_lock()))
         self.current_languages = [self.get_possible_languages_info('default')[0]]
         self.accepted_language = None # filed in self.force()
         self.language_file = None # filed in self.force()
@@ -350,7 +349,8 @@ class translator(object):
         self.otherTs = {}
 
     def get_possible_languages_info(self, lang=None):
-        """ return info for selected language or dictionary with all
+        """
+        returns info for selected language or dictionary with all
             possible languages info from APP/languages/*.py
         args:
             *lang* (str): language
@@ -376,9 +376,10 @@ class translator(object):
                      | set(self.current_languages))
 
     def set_current_languages(self, *languages):
-        """ set current AKA "default" languages
-            setting one of this languages makes force() function
-            turn translation off to use default language
+        """
+        set current AKA "default" languages
+        setting one of this languages makes force() function
+        turn translation off to use default language
         """
         if len(languages) == 1 and isinstance(languages[0], (tuple, list)):
             languages = languages[0]
@@ -386,15 +387,17 @@ class translator(object):
         self.force(self.http_accept_language)
 
     def force(self, *languages):
-        """ select language(s) for translation
+        """
 
-            if a list of languages is passed as a parameter,
-            first language from this list that matches the ones
-            from the possible_languages dictionary will be
-            selected
+        select language(s) for translation
 
-            default language will be selected if none
-            of them matches possible_languages.
+        if a list of languages is passed as a parameter,
+        first language from this list that matches the ones
+        from the possible_languages dictionary will be
+        selected
+        
+        default language will be selected if none
+        of them matches possible_languages.
         """
         global tcache
         if not languages or languages[0] is None:
@@ -429,20 +432,18 @@ class translator(object):
                         if os.path.exists(self.language_file):
                             self.t = read_dict(self.language_file)
                             self.accepted_language = language
-                            self.cache = tcache.setdefault(self.language_file, ({},allocate_lock()))
-                            self.mcache = tcache.setdefault('@'+self.language_file, ({},allocate_lock()))
+                            self.cache = tcache.setdefault(
+                                self.language_file, ({},allocate_lock()))
                             return languages
         self.language_file = self.default_language_file
         self.cache = tcache[self.language_file]
-        self.mcache = tcache['@'+self.language_file]
         self.t = self.default_t
         return languages
 
     def __call__(self, message, symbols={}, language=None, lazy=None, filter=None):
-        """ get cached translated plain text message with inserted
-            parameters(symbols)
-
-            if lazy==True lazyT object is returned
+        """
+        get cached translated plain text message with inserted parameters(symbols)
+        if lazy==True lazyT object is returned
         """
         lazy = lazy or self.lazy
         if not language and lazy:
@@ -485,14 +486,17 @@ class translator(object):
         return mt
 
     def params_substitution(self, message, symbols):
-        """ substitute parameters from symbols into message using %.
-            also parse %%{} placeholders for plural-forms processing.
-            returns: string with parameters
+        """
+        substitute parameters from symbols into message using %.
+        also parse %%{} placeholders for plural-forms processing.
+        returns: string with parameters
         """
         return message % symbols
 
     def translate(self, message, symbols, filter=None):
-        """ get cached translated message with inserted parameters(symbols) """
+        """
+        get cached translated message with inserted parameters(symbols)
+        """
         message = get_from_cache(self.cache, (message, filter), 
                                  lambda: self.get_t(message,filter))
         if symbols or symbols == 0 or symbols == "":
@@ -530,11 +534,11 @@ def findT(path, language='en'):
             except:
                 pass
     if not '!langcode!' in sentences:
-        sentences['!langcode!'] = ('en' if language in ('default', 'en')
-                                  else language)
+        sentences['!langcode!'] = (
+            'en' if language in ('default', 'en') else language)
     if not '!langname!' in sentences:
-        sentences['!langname!'] = ('English' if language in ('default', 'en')
-                                  else sentences['!langcode!'])
+        sentences['!langname!'] = (
+            'English' if language in ('default', 'en') else sentences['!langcode!'])
     write_dict(filename, sentences)
 
 ### important to allow safe session.flash=T(....)
