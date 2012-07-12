@@ -1,5 +1,7 @@
 # coding: utf8
 {
+'!langcode!': 'zh-cn',
+'!langname!': '中文',
 '"browse"': '游览',
 '"save"': '"保存"',
 '"submit"': '"提交"',

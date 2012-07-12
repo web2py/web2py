@@ -1,5 +1,7 @@
 # coding: utf8
 {
+'!langcode!': 'zh-tw',
+'!langname!': '台灣中文',
 '"update" is an optional expression like "field1=\'newvalue\'". You cannot update or delete the results of a JOIN': '"更新" 是選擇性的條件式, 格式就像 "欄位1=\'值\'". 但是 JOIN 的資料不可以使用 update 或是 delete"',
 '%Y-%m-%d': '%Y-%m-%d',
 '%Y-%m-%d %H:%M:%S': '%Y-%m-%d %H:%M:%S',
