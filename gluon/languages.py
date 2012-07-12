@@ -17,6 +17,8 @@ import copy_reg
 from fileutils import listdir
 import settings
 from cfs import getcfs
+from thread import allocate_lock
+from html import XML, xmlescape
 
 __all__ = ['translator', 'findT', 'update_all_languages']
 
@@ -30,17 +32,86 @@ PY_STRING_LITERAL_RE = r'(?<=[^\w]T\()(?P<name>'\
      + r'(?:"(?:[^"\\]|\\.)*"))'
 
 regex_translate = re.compile(PY_STRING_LITERAL_RE, re.DOTALL)
+regex_param=re.compile(r'(?P<b>(?<!\\)(?:\\\\)*){(?P<s>.+?(?<!\\)(?:\\\\)*)}')
 
 # patter for a valid accept_language
 
 regex_language = \
     re.compile('^([a-zA-Z]{2})(\-[a-zA-Z]{2})?(\-[a-zA-Z]+)?$')
+regex_langfile = re.compile('^[a-zA-Z]{2}(-[a-zA-Z]{2})?\.py$')
+regex_langinfo = re.compile("^[^'\"]*['\"]([^'\"]*)['\"]\s*:\s*['\"]([^'\"]*)['\"].*$")
+
+# cache of translated messages:
+# of structure:
+# { 'languages/xx.py':
+#     ( {"def-message": "xx-message",
+#        ...
+#        "def-message": "xx-message"}, lock_object )
+#  'languages/yy.py': ( {dict}, lock_object )
+#  ...
+# }
+tcache={}
+
+def get_from_cache(cache, val, fun):
+    lock=cache[1]
+    lock.acquire()
+    try:
+        result=cache[0].get(val);
+    finally:
+        lock.release()
+    if result:
+        return result
+    lock.acquire()
+    try:
+        result=cache[0].setdefault(val, fun())
+    finally:
+        lock.release()
+    return result
+
+def clear_cache(cache):
+    cache[1].acquire()
+    try:
+        cache[0].clear();
+    finally:
+        cache[1].release()
+
+
+def lang_sampling(lang_tuple, langlist):
+    """ search lang_tuple in langlist
+    Args:
+        lang_tuple (tuple of strings): ('aa'[[,'-bb'],'-cc'])
+        langlist   (list of strings): [available languages]
+    Returns:
+        language from langlist or None
+    """
+    # step 1:
+    # compare "aa-bb-cc" | "aa-bb" | "aa" from lang_tuple
+    # with strings from langlist. Return appropriate string
+    # from langlist:
+    tries = range(len(lang_tuple),0,-1)
+    for i in tries:
+        language="".join(lang_tuple[:i])
+        if language in langlist:
+            return language
+    # step 2 (if not found in step 1):
+    # compare "aa-bb-cc" | "aa-bb" | "aa" from lang_tuple
+    # with left part of a string from langlist. Return
+    # appropriate string from langlist
+    for i in tries:
+        lang="".join(lang_tuple[:i])
+        for language in langlist:
+            if language.startswith(lang):
+                return language
+    return None
 
 
 def read_dict_aux(filename):
     fp = portalocker.LockedFile(filename, 'r')
     lang_text = fp.read().replace('\r\n', '\n')
     fp.close()
+    # clear cache of translated messages:
+    clear_cache(tcache.setdefault(filename, ({}, allocate_lock())))
+    clear_cache(tcache.setdefault('@'+filename, ({}, allocate_lock())))
     if not lang_text.strip():
         return {}
     try:
@@ -50,8 +121,75 @@ def read_dict_aux(filename):
         return {'__corrupted__':True}
 
 def read_dict(filename):
-    return getcfs('language:%s'%filename,filename,
-                  lambda filename=filename:read_dict_aux(filename))
+    """ return dictionary with translation messages
+    """
+    return getcfs('lang:'+filename, filename,
+                lambda:read_dict_aux(filename))
+
+
+def get_lang_info(lang, langdir):
+    """retrieve lang information from *langdir*/*lang*.py file.
+       Read few strings from lang.py file until keys !langname!,
+       !langcode! or keys greater then '!*' were found
+
+    args:
+        lang (str): lang-code or 'default'
+        langdir (str): path to 'languages' directory in web2py app dir
+
+    returns:
+        tuple(langcode, langname, langfile_mtime)
+        e.g.: ('en', 'English', 1338549043.0)
+    """
+    filename = os.path.join(langdir, lang+'.py')
+    langcode=''
+    langname=''
+    f = portalocker.LockedFile(filename, 'r')
+    try:
+        while not (langcode and langname):
+            line = f.readline()
+            if not line:
+               break
+            match=regex_langinfo.match(line)
+            if match:
+                if match.group(1) == '!langname!':
+                    langname=match.group(2)
+                elif match.group(1) == '!langcode!':
+                    langcode=match.group(2)
+                elif match.group(1)[0] > '!':
+                    break
+    finally:
+        f.close()
+    if not langcode:
+        langcode = lang if lang != 'default' else 'en'
+    return langcode, langname or langcode, os.stat(filename).st_mtime
+
+def read_possible_languages_aux(langdir, item=None):
+    if not item: item = {}
+    langs = {}
+    # scan languages directory for langfiles:
+    for langfile in (listdir(langdir, regex_langfile) +
+                            listdir(langdir, '^default\.py$')):
+        lang=langfile[:-3]
+        if (lang in item and item[lang][2] ==
+                   os.stat(os.path.join(langdir, langfile)).st_mtime):
+            # if langfile's mtime wasn't changed - use previous value:
+            langs[lang]=item[lang]
+        else:
+            # otherwise, reread langfile:
+            langs[lang]=get_lang_info(lang, langdir)
+    if 'default' not in langs:
+        # if default.py is not found, add default value:
+        langs['default'] = ('en', 'English', 0)
+    deflang=langs['default']
+    if deflang[0] not in langs:
+        # create language from default.py:
+        langs[deflang[0]] = (deflang[0], deflang[1], 0)
+    return langs
+
+def read_possible_languages(path):
+    lang_path = os.path.join(path, 'languages')
+    return getcfs('langs:'+path.rstrip(os.path.sep), lang_path,
+                   lambda: read_possible_languages_aux(lang_path))
 
 def utf8_repr(s):
     r''' # note that we use raw strings to avoid having to use double back slashes below
@@ -108,26 +246,16 @@ class lazyT(object):
     """
     never to be called explicitly, returned by translator.__call__
     """
+    m = s = T = None
 
-    m = None
-    s = None
-    T = None
-
-    def __init__(
-        self,
-        message,
-        symbols = {},
-        T = None,
-        ):
-        self.m = message
-        self.s = symbols
-        self.T = T
+    def __init__(self, message, symbols = {}, T = None, filter=None):
+        self.m, self.s, self.T, self.f = message, symbols, T, filter
 
     def __repr__(self):
         return "<lazyT %s>" % (repr(str(self.m)), )
 
     def __str__(self):
-        return self.T.translate(self.m, self.s)
+        return self.T.translate(self.m, self.s, self.f)
 
     def __eq__(self, other):
         return self.T.translate(self.m, self.s) == other
@@ -175,7 +303,7 @@ class lazyT(object):
         return str(self)
 
     def __mod__(self, symbols):
-        return self.T.translate(self.m, symbols)
+        return self.T.translate(self.m, symbols, filter=self.f)
 
 
 class translator(object):
@@ -192,65 +320,83 @@ class translator(object):
         T(\"Hello World\") # translates \"Hello World\" using the selected file
 
     notice 1: there is no need to force since, by default, T uses
-    accept_language to determine a translation file.
+    http_accept_language to determine a translation file.
 
     notice 2: en and en-en are considered different languages!
+
+    notice 3: if language xx-yy is not found force() probes other similar
+    languages using such algorithm: xx-yy.py -> xx.py -> xx-yy*.py -> xx*.py
     """
 
     def __init__(self, request):
+        global tcache
         self.request = request
         self.folder = request.folder
-        self.current_languages = ['en']
-        self.accepted_language = None
-        self.language_file = None
+        default = os.path.join(self.folder,'languages','default.py')
+        if os.path.exists(default):
+            self.default_language_file = default
+            self.default_t = read_dict(default)
+        else: # languages/default.py is not found
+            self.default_language_file = os.path.join(self.folder,'languages','')
+            self.default_t = {}
+        self.cache = tcache.setdefault(self.default_language_file, ({}, allocate_lock()))
+        self.mcache = tcache.setdefault('@'+self.default_language_file, ({}, allocate_lock()))
+        self.current_languages = [self.get_possible_languages_info('default')[0]]
+        self.accepted_language = None # filed in self.force()
+        self.language_file = None # filed in self.force()
         self.http_accept_language = request.env.http_accept_language
         self.requested_languages = self.force(self.http_accept_language)
         self.lazy = True
         self.otherTs = {}
 
+    def get_possible_languages_info(self, lang=None):
+        """ return info for selected language or dictionary with all
+            possible languages info from APP/languages/*.py
+        args:
+            *lang* (str): language
+        returns:
+            if *lang* is defined:
+               return tuple(langcode, langname, langfile_mtime) or None
+
+            if *lang* is NOT defined:
+               returns dictionary with all possible languages:
+            { langcode(from filename): ( langcode(from !langcode! key),
+                                         langname(from !langname! key),
+                                         langfile_mtime ) }
+        """
+        if lang:
+            return read_possible_languages(self.folder).get(lang)
+        return read_possible_languages(self.folder)
+
     def get_possible_languages(self):
-        possible_languages = [lang for lang in self.current_languages]
-        file_ending = re.compile("\.py$")
-        for langfile in os.listdir(os.path.join(self.folder,'languages')):
-            if file_ending.search(langfile):
-                possible_languages.append(file_ending.sub('',langfile))
-        return possible_languages
+        """ get list of all possible languages for current applications """
+        return sorted( set(lang for lang in
+                           read_possible_languages(self.folder).iterkeys()
+                           if lang != 'default')
+                     | set(self.current_languages))
 
     def set_current_languages(self, *languages):
+        """ set current AKA "default" languages
+            setting one of this languages makes force() function
+            turn translation off to use default language
+        """
         if len(languages) == 1 and isinstance(languages[0], (tuple, list)):
             languages = languages[0]
         self.current_languages = languages
         self.force(self.http_accept_language)
 
     def force(self, *languages):
-        def lang_sampling(lang_tuple, langlist):
-            """ search lang_tuple in langlist
-            Args:
-                lang_tuple (tuple of strings): ('aa'[[,'-bb'],'-cc'])
-                langlist   (list of strings): [available languages]
-            Returns:
-                language from langlist or None
-            """
-            # step 1:
-            # compare "aa-bb-cc" | "aa-bb" | "aa" from lang_tuple
-            # with strings from langlist. Return appropriate string
-            # from langlist:
-            tries = range(len(lang_tuple),0,-1)
-            for i in tries:
-                language="".join(lang_tuple[:i])
-                if language in langlist:
-                    return language
-            # step 2 (if not found in step 1):
-            # compare "aa-bb-cc" | "aa-bb" | "aa" from lang_tuple
-            # with left part of a string from langlist. Return
-            # appropriate string from langlist
-            for i in tries:
-                lang="".join(lang_tuple[:i])
-                for language in langlist:
-                    if language.startswith(lang):
-                        return language
-            return None
+        """ select language(s) for translation
 
+            if a list of languages is passed as a parameter,
+            first language from this list that matches the ones
+            from the possible_languages dictionary will be
+            selected
+
+            default language will be selected if none
+            of them matches possible_languages.
+        """
+        global tcache
         if not languages or languages[0] is None:
             languages = []
         if len(languages) == 1 and isinstance(languages[0], (str, unicode)):
@@ -260,7 +406,8 @@ class translator(object):
             if isinstance(languages, (str, unicode)):
                 parts = languages.split(';')
                 languages = []
-                [languages.extend(al.split(',')) for al in parts]
+                for al in parts:
+                    languages.extend(al.split(','))
 
             possible_languages = self.get_possible_languages()
             for language in languages:
@@ -276,79 +423,94 @@ class translator(object):
                         break
                     language = lang_sampling(match_language, possible_languages)
                     if language:
-                        filename = os.path.join(
-                            self.folder,'languages/',language + '.py')
-                        if os.path.exists(filename):
+                        self.language_file = os.path.join(self.folder,
+                                                           'languages',
+                                                           language + '.py')
+                        if os.path.exists(self.language_file):
+                            self.t = read_dict(self.language_file)
                             self.accepted_language = language
-                            self.language_file = filename
-                            self.t = read_dict(filename)
+                            self.cache = tcache.setdefault(self.language_file, ({},allocate_lock()))
+                            self.mcache = tcache.setdefault('@'+self.language_file, ({},allocate_lock()))
                             return languages
-        self.language_file = None
-        self.t = {}  # ## no language by default
+        self.language_file = self.default_language_file
+        self.cache = tcache[self.language_file]
+        self.mcache = tcache['@'+self.language_file]
+        self.t = self.default_t
         return languages
 
-    def __call__(self, message, symbols={}, language=None, lazy=None):
-        if lazy is None:
-            lazy = self.lazy
-        if not language:
-            if lazy:
-                return lazyT(message, symbols, self)
-            else:
-                return self.translate(message, symbols)
-        else:
-            try:
-                otherT = self.otherTs[language]
-            except KeyError:
-                otherT = self.otherTs[language] = translator(self.request)
-                otherT.force(language)
-            return otherT(message, symbols, lazy=lazy)
+    def __call__(self, message, symbols={}, language=None, lazy=None, filter=None):
+        """ get cached translated plain text message with inserted
+            parameters(symbols)
 
-    def translate(self, message, symbols):
+            if lazy==True lazyT object is returned
+        """
+        lazy = lazy or self.lazy
+        if not language and lazy:
+            return lazyT(message, symbols, self, filter=filter)
+        elif not language:
+            return self.translate(message, symbols, filter=filter)
+        elif language in self.otherTs:
+            otherT = self.otherTs[language]
+        else:
+            otherT = self.otherTs[language] = translator(self.request)
+            otherT.force(language)
+        return otherT(message, symbols, lazy=lazy, filter=filter)
+
+
+    def get_t(self, message, filter=None, startwith_templ='##'):
         """
         user ## to add a comment into a translation string
         the comment can be useful do discriminate different possible
         translations for the same string (for example different locations)
 
         T(' hello world ') -> ' hello world '
-        T(' hello world ## token') -> 'hello world'
-        T('hello ## world ## token') -> 'hello ## world'
+        T(' hello world ## token') -> ' hello world '
+        T('hello ## world## token') -> 'hello ## world'
 
         the ## notation is ignored in multiline strings and strings that
         start with ##. this is to allow markmin syntax to be translated
         """
-        #for some reason languages.py gets executed before gaehandler.py
-        # is able to set web2py_runtime_gae, so re-check here
-        is_gae = settings.global_settings.web2py_runtime_gae
-        if not message.startswith('#') and not '\n' in message:
-            tokens = message.rsplit('##', 1)
-        else:
-            # this allows markmin syntax in translations
-            tokens = [message]
-        if len(tokens) == 2:
-            tokens[0] = tokens[0].strip()
-            message = tokens[0] + '##' + tokens[1].strip()
         mt = self.t.get(message, None)
         if mt is None:
-            self.t[message] = mt = tokens[0]
-            if self.language_file and not is_gae:
+            if not message.startswith(startwith_templ) and not '\n' in message:
+                tokens = message.rsplit('##', 1)
+            else:
+                # this allows markmin syntax in translations
+                tokens = [message]
+            self.t[message] = mt = self.default_t.get(message, tokens[0])
+            if (self.language_file != self.default_language_file and not is_gae):
                 write_dict(self.language_file, self.t)
-        if symbols or symbols == 0 or symbols == "":
-            return mt % symbols
+        if filter:
+            mt = filter(mt)
         return mt
 
+    def params_substitution(self, message, symbols):
+        """ substitute parameters from symbols into message using %.
+            also parse %%{} placeholders for plural-forms processing.
+            returns: string with parameters
+        """
+        return message % symbols
 
-def findT(path, language='en-us'):
+    def translate(self, message, symbols, filter=None):
+        """ get cached translated message with inserted parameters(symbols) """
+        message = get_from_cache(self.cache, message, 
+                                 lambda: self.get_t(message,filter))
+        if symbols or symbols == 0 or symbols == "":
+            return self.params_substitution(message, symbols)        
+        return message
+
+def findT(path, language='en'):
     """
     must be run by the admin app
     """
-    filename = os.path.join(path, 'languages', '%s.py' % language)
+    filename = os.path.join(path, 'languages', language +'.py')
     sentences = read_dict(filename)
     mp = os.path.join(path, 'models')
     cp = os.path.join(path, 'controllers')
     vp = os.path.join(path, 'views')
     mop = os.path.join(path, 'modules')
-    for file in listdir(mp, '.+\.py', 0) + listdir(cp, '.+\.py', 0)\
-         + listdir(vp, '.+\.html', 0) + listdir(mop, '.+\.py', 0):
+    for file in listdir(mp, '^.+\.py$', 0) + listdir(cp, '^.+\.py$', 0)\
+         + listdir(vp, '^.+\.html$', 0) + listdir(mop, '^.+\.py$', 0):
         fp = portalocker.LockedFile(file, 'r')
         data = fp.read()
         fp.close()
@@ -367,6 +529,12 @@ def findT(path, language='en-us'):
                     sentences[message] = message
             except:
                 pass
+    if not '!langcode!' in sentences:
+        sentences['!langcode!'] = ('en' if language in ('default', 'en')
+                                  else language)
+    if not '!langname!' in sentences:
+        sentences['!langname!'] = ('English' if language in ('default', 'en')
+                                  else sentences['!langcode!'])
     write_dict(filename, sentences)
 
 ### important to allow safe session.flash=T(....)
@@ -376,18 +544,14 @@ def lazyT_pickle(data):
     return lazyT_unpickle, (marshal.dumps(str(data)),)
 copy_reg.pickle(lazyT, lazyT_pickle, lazyT_unpickle)
 
+
 def update_all_languages(application_path):
     path = os.path.join(application_path, 'languages/')
-    for language in listdir(path, '^\w+(\-\w+)?\.py$'):
+    for language in listdir(path, regex_langfile):
         findT(application_path, language[:-3])
 
 
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-
-
-
-
-
 
