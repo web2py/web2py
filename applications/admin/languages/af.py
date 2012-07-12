@@ -1,5 +1,7 @@
 # coding: utf8
 {
+'!langcode!': 'af',
+'!langname!': 'Afrikaanse',
 '%Y-%m-%d': '%Y-%m-%d',
 '%Y-%m-%d %H:%M:%S': '%Y-%m-%d %H:%M:%S',
 '(requires internet access)': '(vereis internet toegang)',
