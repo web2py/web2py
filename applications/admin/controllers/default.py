@@ -526,8 +526,8 @@ def edit():
             except:
                 ex_name = 'unknown exception!'
             response.flash = DIV(T('failed to compile file because:'), BR(),
-                                 B(ex_name), T(' at line %s') % e.lineno,
-                                 offset and T(' at char %s') % offset or '',
+                                 B(ex_name), ' '+T('at line %s', e.lineno),
+                                 offset and ' '+T('at char %s', offset) or '',
                                  PRE(str(e)))
 
     if data_or_revert and request.args[1] == 'modules':
@@ -568,7 +568,7 @@ def edit():
             for v in viewlist:
                 vf = os.path.split(v)[-1]
                 vargs = "/".join([viewpath.replace(os.sep,"/"),vf])
-                editviewlinks.append(A(T(vf.split(".")[0]),\
+                editviewlinks.append(A(vf.split(".")[0],\
                     _href=URL('edit',args=[vargs])))
 
     if len(request.args) > 2 and request.args[1] == 'controllers':
@@ -794,7 +794,10 @@ def design():
     statics.sort()
 
     # Get all languages
-    languages = listdir(apath('%s/languages/' % app, r=request), '[\w-]*\.py')
+    languages = sorted([lang+'.py' for lang, info in
+                    T.get_possible_languages_info().iteritems()
+                    if info[2]!=0]) # info[2] is langfile_mtime:
+                                    # get only existed files
 
     #Get crontab
     cronfolder = apath('%s/cron' % app, r=request)
@@ -988,13 +991,12 @@ def create_file():
             if len(filename) == 5:
                 raise SyntaxError
 
-            msg = T('This is the %(filename)s template',
-                    dict(filename=filename))
+            msg = T('This is the %(filename)s template', dict(filename=filename))
             if extension == 'html':
                 text = dedent("""
                    {{extend 'layout.html'}}
                    <h1>%s</h1>
-                   {{=BEAUTIFY(response._vars)}}""" % msg)
+                   {{=BEAUTIFY(response._vars)}}""" % msg)[1:]
             else:
                 generic = os.path.join(path,'generic.'+extension)
                 if os.path.exists(generic):
@@ -1015,7 +1017,7 @@ def create_file():
             text = dedent("""
                    #!/usr/bin/env python
                    # coding: utf8
-                   from gluon import *\n""")
+                   from gluon import *\n""")[1:]
 
         elif path[-8:] == '/static/':
             if request.vars.plugin and not filename.startswith('plugin_%s/' % request.vars.plugin):
@@ -1368,7 +1370,7 @@ def twitter():
     try:
         if TWITTER_HASH:
             page = urllib.urlopen("http://search.twitter.com/search.json?q=%%40%s" % TWITTER_HASH).read()
-            data = sj.loads(page  , encoding="utf-8")['results']
+            data = sj.loads(page, encoding="utf-8")['results']
             d = dict()
             for e in data:
                 d[e["id"]] = e
