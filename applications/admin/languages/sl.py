@@ -1,5 +1,7 @@
 # coding: utf8
 {
+'!langcode!': 'sl',
+'!langname!': 'Slovenski',
 '"update" is an optional expression like "field1=\'newvalue\'". You cannot update or delete the results of a JOIN': '"Popravi" je izbirni izraz kot npr.: "stolpec1 = \'novavrednost\'". Rezultatov JOIN operacije ne morete popravljati ali brisati',
 '%Y-%m-%d': '%Y-%m-%d',
 '%Y-%m-%d %H:%M:%S': '%Y-%m-%d %H:%M:%S',

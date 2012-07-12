@@ -1,5 +1,7 @@
 # coding: utf8
 {
+'!langcode!': 'ja-jp',
+'!langname!': '日本語',
 '%Y-%m-%d %H:%M:%S': '%Y-%m-%d %H:%M:%S',
 '%Y-%m-%d': '%Y-%m-%d',
 '(requires internet access)': '(インターネットアクセスが必要)',
