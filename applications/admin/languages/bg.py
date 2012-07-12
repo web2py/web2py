@@ -144,6 +144,7 @@
 'Use an url:': 'Use an url:',
 'Version': 'Version',
 'Views': 'Views',
+'Web Framework': 'Web Framework',
 'Welcome to web2py': 'Добре дошъл в web2py',
 'YES': 'YES',
 'additional code for your application': 'additional code for your application',

@@ -909,7 +909,10 @@ def plugin():
     statics.sort()
 
     # Get all languages
-    languages = listdir(apath('%s/languages/' % app, r=request), '[\w-]*\.py')
+    languages = sorted([lang+'.py' for lang, info in
+                    T.get_possible_languages_info().iteritems()
+                    if info[2]!=0]) # info[2] is langfile_mtime:
+                                    # get only existed files
 
     #Get crontab
     crontab = apath('%s/cron/crontab' % app, r=request)
