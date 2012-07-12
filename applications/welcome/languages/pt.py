@@ -1,5 +1,7 @@
 # coding: utf8
 {
+'!langcode!': 'pt',
+'!langname!': 'Português',
 '"update" is an optional expression like "field1=\'newvalue\'". You cannot update or delete the results of a JOIN': '"update" é uma expressão opcional como "field1=\'newvalue\'". Não pode actualizar ou eliminar os resultados de um JOIN',
 '%Y-%m-%d': '%Y-%m-%d',
 '%Y-%m-%d %H:%M:%S': '%Y-%m-%d %H:%M:%S',

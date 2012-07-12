@@ -1,6 +1,8 @@
 # coding: utf8
 {
 '!=': '!=',
+'!langcode!': 'ro',
+'!langname!': 'Română',
 '"update" is an optional expression like "field1=\'newvalue\'". You cannot update or delete the results of a JOIN': '"update" (actualizează) este o expresie opțională precum "câmp1=\'valoare_nouă\'". Nu puteți actualiza sau șterge rezultatele unui JOIN',
 '%(nrows)s records found': '%(nrows)s înregistrări găsite',
 '%Y-%m-%d': '%Y-%m-%d',

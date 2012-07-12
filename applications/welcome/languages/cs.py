@@ -1,6 +1,8 @@
 # cs-cz.py pro web2py
 # coding: utf8
 {
+'!langcode!': 'cs-cz',
+'!langname!': 'Český',
 '"update" is an optional expression like "field1=\'newvalue\'". You cannot update or delete the results of a JOIN': '"update" je voliteľný výraz ako "field1=\'newvalue\'". Nemôžete upravovať alebo zmazať výsledky JOINu',
 '%Y-%m-%d': '%d.%m.%Y',
 '%Y-%m-%d %H:%M:%S': '%d.%m.%Y %H:%M:%S',
