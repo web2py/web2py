@@ -69,7 +69,7 @@
       {{pass}}
       </p>
       <div class="formfield">
-    Running on {{=request.env.server_software}}
+	{{=T("Running on %s", request.env.server_software)}}
       </div>
       <p>{{=button(URL('default','reload_routes'), T('Reload routes'))}}</p>
     </div>
