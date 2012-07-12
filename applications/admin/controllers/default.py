@@ -794,11 +794,8 @@ def design():
     statics.sort()
 
     # Get all languages
-    languages = sorted([lang+'.py' for lang, info in
-                    T.get_possible_languages_info().iteritems()
-                    if info[2]!=0]) # info[2] is langfile_mtime:
-                                    # get only existed files
-
+    languages = listdir(apath('%s/languages/' % app, r=request), '[\w-]*\.py')
+    
     #Get crontab
     cronfolder = apath('%s/cron' % app, r=request)
     if not os.path.exists(cronfolder): os.mkdir(cronfolder)
