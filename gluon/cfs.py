@@ -44,7 +44,7 @@ def getcfs(key, filename, filter=None):
     if not filter:
         data = read_file(filename)
     else:
-        data = filter(item[1] if item else None)
+        data = filter(item[1]) if item else filter()
     cfs_lock.acquire()
     cfs[key] = (t, data)
     cfs_lock.release()
