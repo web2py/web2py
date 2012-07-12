@@ -1,5 +1,5 @@
-from gluon.contrib.pymysql.tests import base
-from gluon.contrib.pymysql import util
+from pymysql.tests import base
+from pymysql import util
 
 import time
 import datetime
@@ -55,6 +55,31 @@ class TestConversion(base.PyMySQLTestCase):
         finally:
             c.execute("drop table test_dict")
 
+    def test_string(self):
+        conn = self.connections[0]
+        c = conn.cursor()
+        c.execute("create table test_dict (a text)")
+        test_value = "I am a test string"
+        try:
+            c.execute("insert into test_dict (a) values (%s)", test_value)
+            c.execute("select a from test_dict")
+            self.assertEqual((test_value,), c.fetchone())
+        finally:
+            c.execute("drop table test_dict")
+
+    def test_integer(self):
+        conn = self.connections[0]
+        c = conn.cursor()
+        c.execute("create table test_dict (a integer)")
+        test_value = 12345
+        try:
+            c.execute("insert into test_dict (a) values (%s)", test_value)
+            c.execute("select a from test_dict")
+            self.assertEqual((test_value,), c.fetchone())
+        finally:
+            c.execute("drop table test_dict")
+
+
     def test_big_blob(self):
         """ test tons of data """
         conn = self.connections[0]
@@ -67,6 +92,26 @@ class TestConversion(base.PyMySQLTestCase):
             self.assertEqual(data.encode(conn.charset), c.fetchone()[0])
         finally:
             c.execute("drop table test_big_blob")
+    
+    def test_untyped(self):
+        """ test conversion of null, empty string """
+        conn = self.connections[0]
+        c = conn.cursor()
+        c.execute("select null,''")
+        self.assertEqual((None,u''), c.fetchone())
+        c.execute("select '',null")
+        self.assertEqual((u'',None), c.fetchone())
+    
+    def test_datetime(self):
+        """ test conversion of null, empty string """
+        conn = self.connections[0]
+        c = conn.cursor()
+        c.execute("select time('12:30'), time('23:12:59'), time('23:12:59.05100')")
+        self.assertEqual((datetime.timedelta(0, 45000),
+                          datetime.timedelta(0, 83579),
+                          datetime.timedelta(0, 83579, 51000)),
+                         c.fetchone())
+
 
 class TestCursor(base.PyMySQLTestCase):
     # this test case does not work quite right yet, however,
@@ -133,6 +178,33 @@ class TestCursor(base.PyMySQLTestCase):
             self.assertEqual(None, c.fetchone())
         finally:
             c.execute("drop table test_nr")
+
+    def test_aggregates(self):
+        """ test aggregate functions """
+        conn = self.connections[0]
+        c = conn.cursor()
+        try:
+            c.execute('create table test_aggregates (i integer)')
+            for i in xrange(0, 10):
+                c.execute('insert into test_aggregates (i) values (%s)', (i,))
+            c.execute('select sum(i) from test_aggregates')
+            r, = c.fetchone()
+            self.assertEqual(sum(range(0,10)), r)
+        finally:
+            c.execute('drop table test_aggregates')
+
+    def test_single_tuple(self):
+        """ test a single tuple """
+        conn = self.connections[0]
+        c = conn.cursor()
+        try:
+            c.execute("create table mystuff (id integer primary key)")
+            c.execute("insert into mystuff (id) values (1)")
+            c.execute("insert into mystuff (id) values (2)")
+            c.execute("select id from mystuff where id in %s", ((1,),))
+            self.assertEqual([(1,)], list(c.fetchall()))
+        finally:
+            c.execute("drop table mystuff")
 
 __all__ = ["TestConversion","TestCursor"]
 

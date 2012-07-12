@@ -1,9 +1,12 @@
 import re
 import datetime
 import time
+import sys
 
 from constants import FIELD_TYPE, FLAG
 from charset import charset_by_id
+
+PYTHON3 = sys.version_info[0] > 2
 
 try:
     set
@@ -22,12 +25,12 @@ def escape_item(val, charset):
         return escape_sequence(val, charset)
     if type(val) is dict:
         return escape_dict(val, charset)
-    if hasattr(val, "decode") and not isinstance(val, unicode):
+    if PYTHON3 and hasattr(val, "decode") and not isinstance(val, unicode):
         # deal with py3k bytes
         val = val.decode(charset)
     encoder = encoders[type(val)]
     val = encoder(val)
-    if type(val) is str:
+    if type(val) in [str, int]:
         return val
     val = val.encode(charset)
     return val
@@ -44,7 +47,7 @@ def escape_sequence(val, charset):
     for item in val:
         quoted = escape_item(item, charset)
         n.append(quoted)
-    return tuple(n)
+    return "(" + ",".join(n) + ")"
 
 def escape_set(val, charset):
     val = map(lambda x: escape_item(x, charset), val)
@@ -56,7 +59,10 @@ def escape_bool(value):
 def escape_object(value):
     return str(value)
 
-escape_int = escape_long = escape_object
+def escape_int(value):
+    return value
+
+escape_long = escape_object
 
 def escape_float(value):
     return ('%.15g' % value)
@@ -142,16 +148,19 @@ def convert_timedelta(connection, field, obj):
     can accept values as (+|-)DD HH:MM:SS. The latter format will not
     be parsed correctly by this function.
     """
-    from math import modf
     try:
+        microseconds = 0
         if not isinstance(obj, unicode):
             obj = obj.decode(connection.charset)
-        hours, minutes, seconds = tuple([int(x) for x in obj.split(':')])
+        if "." in obj:
+            (obj, tail) = obj.split('.')
+            microseconds = int(tail)
+        hours, minutes, seconds = obj.split(':')
         tdelta = datetime.timedelta(
             hours = int(hours),
             minutes = int(minutes),
             seconds = int(seconds),
-            microseconds = int(modf(float(seconds))[0]*1000000),
+            microseconds = microseconds
             )
         return tdelta
     except ValueError:
@@ -179,12 +188,14 @@ def convert_time(connection, field, obj):
     to be treated as time-of-day and not a time offset, then you can
     use set this function as the converter for FIELD_TYPE.TIME.
     """
-    from math import modf
     try:
-        hour, minute, second = obj.split(':')
-        return datetime.time(hour=int(hour), minute=int(minute),
-                             second=int(second),
-                             microsecond=int(modf(float(second))[0]*1000000))
+        microseconds = 0
+        if "." in obj:
+            (obj, tail) = obj.split('.')
+            microseconds = int(tail)
+        hours, minutes, seconds = obj.split(':')
+        return datetime.time(hour=int(hours), minute=int(minutes),
+                             second=int(seconds), microsecond=microseconds)
     except ValueError:
         return None
 
@@ -267,8 +278,6 @@ def convert_characters(connection, field, data):
     elif connection.charset != field_charset:
         data = data.decode(field_charset)
         data = data.encode(connection.charset)
-    else:
-        data = data.decode(connection.charset)
     return data
 
 def convert_int(connection, field, data):
@@ -334,6 +343,7 @@ try:
     # python version > 2.3
     from decimal import Decimal
     def convert_decimal(connection, field, data):
+        data = data.decode(connection.charset)
         return Decimal(data)
     decoders[FIELD_TYPE.DECIMAL] = convert_decimal
     decoders[FIELD_TYPE.NEWDECIMAL] = convert_decimal
@@ -344,4 +354,3 @@ try:
 
 except ImportError:
     pass
-

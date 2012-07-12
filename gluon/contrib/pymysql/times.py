@@ -14,4 +14,3 @@ def TimeFromTicks(ticks):
 
 def TimestampFromTicks(ticks):
     return datetime(*localtime(ticks)[:6])
-

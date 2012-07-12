@@ -1,5 +1,6 @@
-from gluon.contrib import pymysql
-from gluon.contrib.pymysql.tests import base
+import pymysql
+from pymysql.tests import base
+import unittest
 
 import sys
 
@@ -10,6 +11,10 @@ except AttributeError:
     pass
 
 import datetime
+
+# backwards compatibility:
+if not hasattr(unittest, "skip"):
+    unittest.skip = lambda message: lambda f: f
 
 class TestOldIssues(base.PyMySQLTestCase):
     def test_issue_3(self):
@@ -89,15 +94,15 @@ KEY (`station`,`dh`,`echeance`)) ENGINE=MyISAM DEFAULT CHARSET=latin1;""")
         """ can't handle large result fields """
         conn = self.connections[0]
         cur = conn.cursor()
-        cur.execute("create table issue13 (t text)")
         try:
+            cur.execute("create table issue13 (t text)")
             # ticket says 18k
             size = 18*1024
             cur.execute("insert into issue13 (t) values (%s)", ("x" * size,))
             cur.execute("select t from issue13")
-            # use assert_ so that obscenely huge error messages don't print
+            # use assertTrue so that obscenely huge error messages don't print
             r = cur.fetchone()[0]
-            self.assert_("x" * size == r)
+            self.assertTrue("x" * size == r)
         finally:
             cur.execute("drop table issue13")
 
@@ -115,7 +120,7 @@ KEY (`station`,`dh`,`echeance`)) ENGINE=MyISAM DEFAULT CHARSET=latin1;""")
         c = conn.cursor()
         c.execute("create table issue15 (t varchar(32))")
         try:
-            c.execute("insert into issue15 (t) values (%s)", (u'\xe4\xf6\xfc'))
+            c.execute("insert into issue15 (t) values (%s)", (u'\xe4\xf6\xfc',))
             c.execute("select t from issue15")
             self.assertEqual(u'\xe4\xf6\xfc', c.fetchone()[0])
         finally:
@@ -133,6 +138,7 @@ KEY (`station`,`dh`,`echeance`)) ENGINE=MyISAM DEFAULT CHARSET=latin1;""")
         finally:
             c.execute("drop table issue16")
 
+    @unittest.skip("test_issue_17() requires a custom, legacy MySQL configuration and will not be run.")
     def test_issue_17(self):
         """ could not connect mysql use passwod """
         conn = self.connections[0]
@@ -181,23 +187,22 @@ class TestNewIssues(base.PyMySQLTestCase):
         finally:
             c.execute(_uni("drop table hei\xc3\x9fe", "utf8"))
 
-    # Will fail without manual intervention:
-    #def test_issue_35(self):
-    #
-    #    conn = self.connections[0]
-    #    c = conn.cursor()
-    #    print "sudo killall -9 mysqld within the next 10 seconds"
-    #    try:
-    #        c.execute("select sleep(10)")
-    #        self.fail()
-    #    except pymysql.OperationalError, e:
-    #        self.assertEqual(2013, e.args[0])
+    @unittest.skip("This test requires manual intervention")
+    def test_issue_35(self):
+        conn = self.connections[0]
+        c = conn.cursor()
+        print "sudo killall -9 mysqld within the next 10 seconds"
+        try:
+            c.execute("select sleep(10)")
+            self.fail()
+        except pymysql.OperationalError, e:
+            self.assertEqual(2013, e.args[0])
 
     def test_issue_36(self):
         conn = self.connections[0]
         c = conn.cursor()
         # kill connections[0]
-        original_count = c.execute("show processlist")
+        c.execute("show processlist")
         kill_id = None
         for id,user,host,db,command,time,state,info in c.fetchall():
             if info == "show processlist":
@@ -212,8 +217,13 @@ class TestNewIssues(base.PyMySQLTestCase):
         except:
             pass
         # check the process list from the other connection
-        self.assertEqual(original_count - 1, self.connections[1].cursor().execute("show processlist"))
-        del self.connections[0]
+        try:
+            c = self.connections[1].cursor()
+            c.execute("show processlist")
+            ids = [row[0] for row in c.fetchall()]
+            self.assertFalse(kill_id in ids)
+        finally:
+            del self.connections[0]
 
     def test_issue_37(self):
         conn = self.connections[0]
@@ -230,10 +240,38 @@ class TestNewIssues(base.PyMySQLTestCase):
         
         try:
             c.execute("create table issue38 (id integer, data mediumblob)")
-            c.execute("insert into issue38 values (1, %s)", datum)
+            c.execute("insert into issue38 values (1, %s)", (datum,))
         finally:
             c.execute("drop table issue38")
-__all__ = ["TestOldIssues", "TestNewIssues"]
+
+    def disabled_test_issue_54(self):
+        conn = self.connections[0]
+        c = conn.cursor()
+        big_sql = "select * from issue54 where "
+        big_sql += " and ".join("%d=%d" % (i,i) for i in xrange(0, 100000))
+
+        try:
+            c.execute("create table issue54 (id integer primary key)")
+            c.execute("insert into issue54 (id) values (7)")
+            c.execute(big_sql)
+            self.assertEqual(7, c.fetchone()[0])
+        finally:
+            c.execute("drop table issue54")
+
+class TestGitHubIssues(base.PyMySQLTestCase):
+    def test_issue_66(self):
+        conn = self.connections[0]
+        c = conn.cursor()
+        self.assertEqual(0, conn.insert_id())
+        try:
+            c.execute("create table issue66 (id integer primary key auto_increment, x integer)")
+            c.execute("insert into issue66 (x) values (1)")
+            c.execute("insert into issue66 (x) values (1)")
+            self.assertEqual(2, conn.insert_id())
+        finally:
+            c.execute("drop table issue66")
+
+__all__ = ["TestOldIssues", "TestNewIssues", "TestGitHubIssues"]
 
 if __name__ == "__main__":
     import unittest

@@ -1,5 +1,5 @@
-from gluon.contrib import pymysql
-from gluon.contrib.pymysql.tests import base
+import pymysql
+from pymysql.tests import base
 
 class TestExample(base.PyMySQLTestCase):
     def test_example(self):
