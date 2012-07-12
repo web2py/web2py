@@ -493,7 +493,7 @@ class translator(object):
 
     def translate(self, message, symbols, filter=None):
         """ get cached translated message with inserted parameters(symbols) """
-        message = get_from_cache(self.cache, message, 
+        message = get_from_cache(self.cache, (message, filter), 
                                  lambda: self.get_t(message,filter))
         if symbols or symbols == 0 or symbols == "":
             return self.params_substitution(message, symbols)        
