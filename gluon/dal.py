@@ -958,6 +958,9 @@ class BaseAdapter(ConnectionPool):
     def UPPER(self, first):
         return 'UPPER(%s)' % self.expand(first)
 
+    def COUNT(self, first, distinct=None):
+        return 'COUNT()' if not distinct else 'COUNT(DISTINCT %s)' % self.expand(first)
+
     def EXTRACT(self, first, what):
         return "EXTRACT(%s FROM %s)" % (what, self.expand(first))
 
@@ -8174,8 +8177,8 @@ class Field(Expression):
                 return (value, error)
         return (value, None)
 
-    def count(self):
-        return Expression(self.db, self.db._adapter.AGGREGATE, self, 'COUNT', 'integer')
+    def count(self, expression=None):
+        return Expression(self.db, self.db._adapter.COUNT, self, expression, self.type)
 
     def __nonzero__(self):
         return True
