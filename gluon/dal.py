@@ -959,7 +959,8 @@ class BaseAdapter(ConnectionPool):
         return 'UPPER(%s)' % self.expand(first)
 
     def COUNT(self, first, distinct=None):
-        return 'COUNT()' if not distinct else 'COUNT(DISTINCT %s)' % self.expand(first)
+        return ('COUNT(%s)' if not distinct else 'COUNT(DISTINCT %s)') \
+            % self.expand(first)
 
     def EXTRACT(self, first, what):
         return "EXTRACT(%s FROM %s)" % (what, self.expand(first))
