@@ -41,7 +41,7 @@ except ImportError:
     except:
         import contrib.simplejson as json_parser    # fallback to pure-Python module
 
-__all__ = ['Mail', 'Auth', 'Recaptcha', 'Crud', 'Service',
+__all__ = ['Mail', 'Auth', 'Recaptcha', 'Crud', 'Service', 'Wiki',
            'PluginManager', 'fetch', 'geocode', 'prettydate']
 
 ### mind there are two loggers here (logger and crud.settings.logger)!
@@ -4344,6 +4344,106 @@ class Expose(object):
             H3('Files'),
             self.table_files()).xml()
 
+class Wiki(object):
+    def __init__(self,auth):
+        self.auth = auth
+        db = auth.db
+        db.define_table(
+            'wiki_page',
+            db.Field('slug',requires=[IS_SLUG(),IS_NOT_IN_DB(db,'wiki_page.slug')],
+                     readable=False,writable=False),
+            db.Field('title',unique=True),
+            db.Field('body','text',notnull=True),
+            db.Field('menu'),
+            db.Field('html','text',readable=False,writable=False,
+                     compute= lambda t: MARKMIN(t.body).xml()),
+            auth.signature)
+        db.define_table(
+            'wiki_media',
+            db.Field('title',required=True),
+            db.Field('file','upload',required=True),
+            auth.signature)
+    def getslug(self,args):
+        if not args: return 'index'
+        return '/'.join(args)
+    def __call__(self):
+        if current.request.args(0)=='_edit':
+            return self.edit(self.getslug(current.request.args[1:]))
+        elif current.request.args(0)=='_pages':
+            return self.pages()
+        elif current.request.args(0)=='_media':
+            return self.media()
+        else:
+            return self.read(self.getslug(current.request.args))
+    def read(self,slug):
+        page = self.auth.db.wiki_page(slug=slug)
+        if not page: 
+            url = URL(args=('_edit',slug))
+            return dict(content=A('Create page "%s"' % slug,_href=url,_class="btn"))
+        else:
+            return dict(content=XML(page.html))
+    def check_authorization(self,act=False):
+        if not self.auth.user:
+            if not act: return False
+            redirect(self.auth.settings.login_url)
+        elif not self.auth.has_membership('wiki_editor'):
+            if not act: return False
+            raise HTTP(401, "Not Authorized")          
+        return True
+    def edit(self,slug):
+        self.check_authorization()
+        auth = self.auth
+        db = auth.db
+        page = db.wiki_page(slug=slug)
+        title_guess = ' '.join(c.capitalize() for c in slug.split('-'))
+        db.wiki_page.title.default = title_guess
+        db.wiki_page.slug.default = slug
+        db.wiki_page.menu.default = slug
+        db.wiki_page.body.default = '## %s\n\npage content' % title_guess            
+        form = SQLFORM(db.wiki_page,page,deletable=True,showid=False).process()
+        if form.accepted:
+            current.session.flash = 'page created'
+            redirect(URL(args=slug))
+        return dict(content=form)
+    def pages(self):
+        self.check_authorization()
+        self.auth.db.wiki_page.slug.writable = True
+        content=SQLFORM.grid(self.auth.db.wiki_page,args=['_pages'])
+        return dict(content=content)
+    def media(self):
+        self.check_authorization()
+        content=SQLFORM.grid(self.auth.db.wiki_media,args=['_media'])
+        return dict(content=content)
+    def menu(self,controller,function):
+        db = self.auth.db
+        request = current.request
+        rows = db().select(db.wiki_page.menu,db.wiki_page.title,db.wiki_page.slug,
+                           orderby = db.wiki_page.menu)
+        menu = []
+        tree = {'.':menu}
+        for row in rows:
+            key = './'+row.menu
+            base = key.rsplit('/',1)[0]
+            subtree = tree[key] = []
+            tree[base].append((current.T(row.title),
+                               request.args(0)==row.slug,
+                               URL(controller,function,args=row.slug),
+                               subtree))
+        if self.check_authorization(act=False):            
+            submenu = []
+            if URL() == URL(controller,function) and \
+                    not str(request.args(0)).startswith('_'):
+                submenu.append((current.T('Edit'),None,
+                                URL(controller,function,
+                                    args=('_edit',self.getslug(request.args)))))
+            submenu.append((current.T('Manage Pages'),None,
+                                      URL(controller,function,args=('_pages'))))
+            submenu.append((current.T('Manage Madia'),None,
+                             URL(controller,function,args=('_media'))))
+            menu.append((current.T('[Wiki]'),None,None,submenu))
+        return menu
+                           
+                                 
 
 if __name__ == '__main__':
     import doctest
