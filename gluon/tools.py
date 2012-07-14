@@ -4414,7 +4414,7 @@ class Wiki(object):
         self.check_authorization()
         content=SQLFORM.grid(self.auth.db.wiki_media,args=['_media'])
         return dict(content=content)
-    def menu(self,controller,function):
+    def menu(self,controller='default',function='index'):
         db = self.auth.db
         request = current.request
         rows = db().select(db.wiki_page.menu,db.wiki_page.title,db.wiki_page.slug,
@@ -4425,10 +4425,11 @@ class Wiki(object):
             key = './'+row.menu
             base = key.rsplit('/',1)[0]
             subtree = tree[key] = []
-            tree[base].append((current.T(row.title),
-                               request.args(0)==row.slug,
-                               URL(controller,function,args=row.slug),
-                               subtree))
+            if base in tree:
+                tree[base].append((current.T(row.title),
+                                   request.args(0)==row.slug,
+                                   URL(controller,function,args=row.slug),
+                                   subtree))
         if self.check_authorization(act=False):            
             submenu = []
             if URL() == URL(controller,function) and \
@@ -4442,7 +4443,6 @@ class Wiki(object):
                              URL(controller,function,args=('_media'))))
             menu.append((current.T('[Wiki]'),None,None,submenu))
         return menu
-
 
 if __name__ == '__main__':
     import doctest
