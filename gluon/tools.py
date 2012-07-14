@@ -4345,6 +4345,7 @@ class Expose(object):
             self.table_files()).xml()
 
 class Wiki(object):
+    regex_redirect = re.compile('redirect\s+(\w+\://\S+)\s*')
     def __init__(self,auth):
         self.auth = auth
         db = auth.db
@@ -4356,31 +4357,30 @@ class Wiki(object):
             db.Field('body','text',notnull=True),
             db.Field('menu'),
             db.Field('html','text',readable=False,writable=False,
-                     compute= lambda t: MARKMIN(t.body).xml()),
+                     compute=lambda t: MARKMIN(t.body).xml()),
             auth.signature)
         db.define_table(
             'wiki_media',
             db.Field('title',required=True),
             db.Field('file','upload',required=True),
             auth.signature)
-    def getslug(self,args):
-        if not args: return 'index'
-        return '/'.join(args)
     def __call__(self):
         if current.request.args(0)=='_edit':
-            return self.edit(self.getslug(current.request.args[1:]))
+            return self.edit(current.request.args(1) or 'index')
         elif current.request.args(0)=='_pages':
             return self.pages()
         elif current.request.args(0)=='_media':
             return self.media()
         else:
-            return self.read(self.getslug(current.request.args))
+            return self.read(current.request.args(0) or 'index')
     def read(self,slug):
         page = self.auth.db.wiki_page(slug=slug)
         if not page: 
             url = URL(args=('_edit',slug))
             return dict(content=A('Create page "%s"' % slug,_href=url,_class="btn"))
         else:
+            match = self.regex_redirect.match(page.body)
+            if match: redirect(match.group(1))
             return dict(content=XML(page.html))
     def check_authorization(self,act=False):
         if not self.auth.user:
@@ -4435,15 +4435,14 @@ class Wiki(object):
                     not str(request.args(0)).startswith('_'):
                 submenu.append((current.T('Edit'),None,
                                 URL(controller,function,
-                                    args=('_edit',self.getslug(request.args)))))
+                                    args=('_edit',request.args(0) or 'index'))))
             submenu.append((current.T('Manage Pages'),None,
                                       URL(controller,function,args=('_pages'))))
             submenu.append((current.T('Manage Madia'),None,
                              URL(controller,function,args=('_media'))))
             menu.append((current.T('[Wiki]'),None,None,submenu))
         return menu
-                           
-                                 
+
 
 if __name__ == '__main__':
     import doctest
