@@ -847,7 +847,7 @@ class DIV(XmlComponent):
 
         # get the xml for the inner components
         co = join([xmlescape(component) for component in
-                     self.components])
+                   self.components])
 
         return (fa, co)
 

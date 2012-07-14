@@ -771,7 +771,8 @@ class SQLFORM(FORM):
         # if no fields are provided, build it from the provided table
         # will only use writable or readable fields, unless forced to ignore
         if fields is None:
-            fields = [f.name for f in table if (ignore_rw or f.writable or f.readable) and not f.compute]
+            fields = [f.name for f in table if (
+                    ignore_rw or f.writable or f.readable) and not f.compute]
         self.fields = fields
 
         # make sure we have an id
@@ -1586,6 +1587,7 @@ class SQLFORM(FORM):
             field_id = tables[0]._id
         columns = [str(field) for field in fields \
                        if field._tablename in tablenames]
+
         if not str(field_id) in [str(f) for f in fields]:
             fields.append(field_id)
         table = field_id.table
@@ -1816,12 +1818,12 @@ class SQLFORM(FORM):
         if create:
             search_actions.append(gridbutton(
                     buttonclass='buttonadd',
-                    buttontext=T('Add'),
+                    buttontext='Add',
                     buttonurl=url(args=['new',tablename])))
         if csv and nrows:
             search_actions.append(gridbutton(
                     buttonclass='buttonexport',
-                    buttontext=T('Export'),
+                    buttontext='Export',
                     trap = False,
                     buttonurl=url(args=['csv'],
                                   vars=dict(keywords=request.vars.keywords or ''))))

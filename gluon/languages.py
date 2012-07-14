@@ -53,17 +53,12 @@ regex_langinfo = re.compile("^[^'\"]*['\"]([^'\"]*)['\"]\s*:\s*['\"]([^'\"]*)['\
 tcache={}
 
 def get_from_cache(cache, val, fun):
-    lock=cache[1]
+    lock = cache[1]
     lock.acquire()
     try:
-        result=cache[0].get(val);
-    finally:
-        lock.release()
-    if result:
-        return result
-    lock.acquire()
-    try:
-        result=cache[0].setdefault(val, fun())
+        result = cache[0].get(val);
+        if not result:
+            result = cache[0].setdefault(val, fun())
     finally:
         lock.release()
     return result
@@ -497,6 +492,8 @@ class translator(object):
         """
         get cached translated message with inserted parameters(symbols)
         """
+        if isinstance(message,lazyT):
+            message = str(message)
         message = get_from_cache(self.cache, (message, filter), 
                                  lambda: self.get_t(message,filter))
         if symbols or symbols == 0 or symbols == "":
