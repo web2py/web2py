@@ -8310,6 +8310,8 @@ class Set(object):
         return self.db._adapter.count(self.query,distinct)
 
     def select(self, *fields, **attributes):
+        if self.query is None:# and fields[0]._table._common_filter != None:
+            return self(fields[0]._table).select(*fields,**attributes)
         adapter = self.db._adapter
         fields = adapter.expand_all(fields, adapter.tables(self.query))
         return adapter.select(self.query,fields,attributes)
