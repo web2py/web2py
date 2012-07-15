@@ -197,7 +197,7 @@ def select():
                 _name='update_fields', _value=request.vars.update_fields
                  or '')), TR(T('Delete:'), INPUT(_name='delete_check',
                 _class='delete', _type='checkbox', value=False), ''),
-                TR('', '', INPUT(_type='submit', _value='submit'))),
+                TR('', '', INPUT(_type='submit', _value=T('submit')))),
                 _action=URL(r=request,args=request.args))
     if request.vars.csvfile != None:
         try:

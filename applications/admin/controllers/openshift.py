@@ -3,15 +3,15 @@ from distutils import dir_util
 try:
     from git import *
 except ImportError:
-    session.flash = 'requires python-git, but not installed'
+    session.flash = T('requires python-git, but not installed')
     redirect(URL('default','site'))
 
 def deploy():
     apps = sorted(file for file in os.listdir(apath(r=request)))
     form = SQLFORM.factory(
-        Field('osrepo',default='/tmp',label='Path to local openshift repo root.',
+        Field('osrepo',default='/tmp',label=T('Path to local openshift repo root.'),
               requires=EXISTS(error_message=T('directory not found'))),
-        Field('osname',default='web2py',label='WSGI reference name'),
+        Field('osname',default='web2py',label=T('WSGI reference name')),
         Field('applications','list:string',
               requires=IS_IN_SET(apps,multiple=True),
               label=T('web2py apps to deploy')))
