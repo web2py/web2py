@@ -90,7 +90,7 @@ jQuery(document).ready(function(){
                 URL(c='debug', f='toggle_breakpoint')),
            _class="button special")}}
   {{pass}}  
-  {{=button(URL('design',args=request.args[0]), T('back'))}}
+  {{=button(URL('design',args=request.vars.app if request.vars.app else request.args[0], anchor=request.vars.id), T('back'))}}
   {{if edit_controller:}}
   {{=button(edit_controller, T('edit controller'))}}
   {{pass}}

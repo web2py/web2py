@@ -20,6 +20,11 @@ from cfs import getcfs
 from thread import allocate_lock
 from html import XML, xmlescape
 
+try:
+    from gluon.html import MARKMIN
+except ImportError:
+    MARKMIN = None
+
 __all__ = ['translator', 'findT', 'update_all_languages']
 
 is_gae = settings.global_settings.web2py_runtime_gae
