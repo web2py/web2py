@@ -58,7 +58,7 @@
     <!-- VERSION -->
     {{if is_manager():}}
     <div class="box">
-      <h3>{{="Version %s.%s.%s (%s) %s" % myversion}}</h3>
+      <h3>{{=T("Version %s.%s.%s (%s) %s", myversion)}}</h3>
       {{if session.check_version:}}
       <p id="check_version">
         {{=T('Checking for upgrades...')}}
