@@ -4422,14 +4422,15 @@ class Wiki(object):
         menu = []
         tree = {'.':menu}
         for row in rows:
-            key = './'+row.menu
-            base = key.rsplit('/',1)[0]
-            subtree = tree[key] = []
-            if base in tree:
-                tree[base].append((current.T(row.title),
-                                   request.args(0)==row.slug,
-                                   URL(controller,function,args=row.slug),
-                                   subtree))
+            if row.menu:
+                key = './'+row.menu
+                base = key.rsplit('/',1)[0]
+                subtree = tree[key] = []
+                if base in tree:
+                    tree[base].append((current.T(row.title),
+                                       request.args(0)==row.slug,
+                                       URL(controller,function,args=row.slug),
+                                       subtree))
         if self.check_authorization(act=False):            
             submenu = []
             if URL() == URL(controller,function) and \
