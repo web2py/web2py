@@ -4366,10 +4366,11 @@ class Wiki(object):
             db.Field('menu'),
             db.Field('html','text',readable=False,writable=False,
                      compute=lambda t,env=self.env: \
-                         MARKMIN(t.body,url=True,env=env).xml()),
+                         MARKMIN(t.body,url=True,environment=env).xml()),
             auth.signature,format='%(title)s')
         db.define_table(
             'wiki_media',
+            db.Field('wiki_page',db.wiki_page),
             db.Field('title',required=True),
             db.Field('file','upload',required=True),
             auth.signature,format='%(title)s')
@@ -4382,7 +4383,7 @@ class Wiki(object):
         elif current.request.args(0)=='_pages':
             return self.pages()
         elif current.request.args(0)=='_media':
-            return self.media()
+            return self.media(current.request.args(1,cast=int))
         else:
             return self.read(current.request.args(0) or 'index')
     def read(self,slug):
@@ -4420,14 +4421,20 @@ class Wiki(object):
     def pages(self):
         self.check_authorization()
         self.auth.db.wiki_page.slug.writable = True
-        content=SQLFORM.grid(self.auth.db.wiki_page,args=['_pages'],
-                             orderby = self.auth.db.wiki_page.title)
+        content=SQLFORM.smartgrid(
+            self.auth.db.wiki_page,
+            args=['_pages'],
+            orderby = {'wiki_page':self.auth.db.wiki_page.title,
+                       'wiki_media':self.auth.db.wiki_media.title})
         return dict(content=content)
-    def media(self):
-        self.check_authorization()
-        content=SQLFORM.grid(self.auth.db.wiki_media,args=['_media'],
-                             orderby = self.auth.db.wiki_media.title)
-        return dict(content=content)
+    def media(self, id):
+        request, db = current.request, self.auth.db
+        media = db.wiki_media(id)
+        if media:
+            request.args = [media.file]
+            return current.response.download(request,db)
+        else:
+            raise HTTP(404)
     def menu(self,controller='default',function='index'):
         db = self.auth.db
         request = current.request
@@ -4454,8 +4461,6 @@ class Wiki(object):
                                     args=('_edit',request.args(0) or 'index'))))
             submenu.append((current.T('Manage Pages'),None,
                                       URL(controller,function,args=('_pages'))))
-            submenu.append((current.T('Manage Madia'),None,
-                             URL(controller,function,args=('_media'))))
             menu.append((current.T('[Wiki]'),None,None,submenu))
         return menu
 
