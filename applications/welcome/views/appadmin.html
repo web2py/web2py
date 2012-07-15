@@ -63,7 +63,7 @@
     <br/><br/><h3>{{=T("Import/Export")}}</h3><br/>
     [ <a href="{{=URL('csv',args=request.args[0],vars=dict(query=query))}}">{{=T("export as csv file")}}</a> ]
   {{if table:}}
-    {{=FORM(str(T('or import from csv file'))+" ",INPUT(_type='file',_name='csvfile'),INPUT(_type='hidden',_value=table,_name='table'),INPUT(_type='submit',_value='import'))}}
+    {{=FORM(str(T('or import from csv file'))+" ",INPUT(_type='file',_name='csvfile'),INPUT(_type='hidden',_value=table,_name='table'),INPUT(_type='submit',_value=T('import')))}}
   {{pass}}
 
 

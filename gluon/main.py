@@ -52,15 +52,7 @@ from custom_import import custom_import_install
 #  The two are identical unless web2py_path is changed via the web2py.py -f folder option
 #  main.web2py_path is the same as applications_parent (for backward compatibility)
 
-if not hasattr(os, 'mkdir'):
-    global_settings.db_sessions = True
-if global_settings.db_sessions is not True:
-    global_settings.db_sessions = set()
-global_settings.gluon_parent = os.environ.get('web2py_path', os.getcwd())
-global_settings.applications_parent = global_settings.gluon_parent
 web2py_path = global_settings.applications_parent # backward compatibility
-global_settings.app_folders = set()
-global_settings.debugging = False
 
 custom_import_install(web2py_path)
 
@@ -107,11 +99,7 @@ requests = 0    # gc timer
 
 # pattern used to validate client address
 regex_client = re.compile('[\w\-:]+(\.[\w\-]+)*\.?')  # ## to account for IPV6
-
-version_info = open(abspath('VERSION', gluon=True), 'r')
-web2py_version = parse_version(version_info.read().strip())
-version_info.close()
-global_settings.web2py_version = web2py_version
+web2py_version = global_settings.web2py_version
 
 try:
     import rocket

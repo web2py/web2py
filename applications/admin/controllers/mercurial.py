@@ -42,7 +42,7 @@ def commit():
     path = apath(app, r=request)
     repo = hg_repo(path)
     form = FORM('Comment:',INPUT(_name='comment',requires=IS_NOT_EMPTY()),
-                INPUT(_type='submit',_value='Commit'))
+                INPUT(_type='submit',_value=T('Commit')))
     if form.accepts(request.vars,session):
         oldid = repo[repo.lookup('.')]
         addremove(repo)
@@ -69,7 +69,7 @@ def revision():
     repo = hg_repo(path)
     revision = request.args(1)
     ctx=repo.changectx(revision)
-    form=FORM(INPUT(_type='submit',_value='revert'))
+    form=FORM(INPUT(_type='submit',_value=T('Revert')))
     if form.accepts(request.vars):
         hg.update(repo, revision)
         session.flash = "reverted to revision %s" % ctx.rev()

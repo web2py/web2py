@@ -758,6 +758,8 @@ class SQLFORM(FORM):
                labels={'name': 'Your name'},
                linkto=URL(f='table/db/')
         """
+        from gluon import current
+        T = current.T
 
         self.ignore_rw = ignore_rw
         self.formstyle = formstyle
@@ -980,7 +982,7 @@ class SQLFORM(FORM):
         if not readonly:
             if 'submit' in buttons:
                 widget = self.custom.submit = INPUT(_type='submit',
-                               _value=submit_button)
+                               _value=T(submit_button))
             elif buttons:
                 widget = self.custom.submit = DIV(*buttons)
             if self.custom.submit:
