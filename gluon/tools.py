@@ -3044,6 +3044,12 @@ class Auth(object):
                 new_record[key] = value
         id = archive_table.insert(**new_record)
         return id
+    def wiki(self,slug=None,env=None):
+        if not hasattr(self,'_wiki'):
+            self._wiki = Wiki(self,env=env)
+        else:
+            self._wiki.env.update(env or {})
+        return self._wiki.read(slug)['content'] if slug else self._wiki()
 
 class Crud(object):
 
@@ -4346,8 +4352,10 @@ class Expose(object):
 
 class Wiki(object):
     regex_redirect = re.compile('redirect\s+(\w+\://\S+)\s*')
-    def __init__(self,auth):
+    def __init__(self,auth,env=None,automenu=True):
         self.auth = auth
+        self.env = env or {}
+        self.automenu = automenu
         db = auth.db
         db.define_table(
             'wiki_page',
@@ -4357,14 +4365,18 @@ class Wiki(object):
             db.Field('body','text',notnull=True),
             db.Field('menu'),
             db.Field('html','text',readable=False,writable=False,
-                     compute=lambda t: MARKMIN(t.body).xml()),
-            auth.signature)
+                     compute=lambda t,env=self.env: \
+                         MARKMIN(t.body,url=True,env=env).xml()),
+            auth.signature,format='%(title)s')
         db.define_table(
             'wiki_media',
             db.Field('title',required=True),
             db.Field('file','upload',required=True),
-            auth.signature)
+            auth.signature,format='%(title)s')
     def __call__(self):
+        if self.automenu:
+            current.response.menu = self.menu(current.request.controller,
+                                              current.request.function)
         if current.request.args(0)=='_edit':
             return self.edit(current.request.args(1) or 'index')
         elif current.request.args(0)=='_pages':
@@ -4408,11 +4420,13 @@ class Wiki(object):
     def pages(self):
         self.check_authorization()
         self.auth.db.wiki_page.slug.writable = True
-        content=SQLFORM.grid(self.auth.db.wiki_page,args=['_pages'])
+        content=SQLFORM.grid(self.auth.db.wiki_page,args=['_pages'],
+                             orderby = self.auth.db.wiki_page.title)
         return dict(content=content)
     def media(self):
         self.check_authorization()
-        content=SQLFORM.grid(self.auth.db.wiki_media,args=['_media'])
+        content=SQLFORM.grid(self.auth.db.wiki_media,args=['_media'],
+                             orderby = self.auth.db.wiki_media.title)
         return dict(content=content)
     def menu(self,controller='default',function='index'):
         db = self.auth.db
