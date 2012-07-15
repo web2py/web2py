@@ -8414,7 +8414,7 @@ def update_record(pack, a=None):
     (colset, table, id) = pack
     b = a or dict(colset)
     c = dict([(k,v) for (k,v) in b.items() if k in table.fields and table[k].type!='id'])
-    table._db(table._id==id).update(**c)
+    table._db(table._id==id,ignore_common_filters=True).update(**c)
     for (k, v) in c.items():
         colset[k] = v
 
