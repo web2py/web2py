@@ -1,5 +1,4 @@
 /** these MUST stay **/
-body { margin: 0; padding:0; border: 0; }
 a { text-decoration:none; white-space: nowrap;}
 a:hover {text-decoration: underline}
 a.button {text-decoration: none}
@@ -38,9 +37,7 @@ ul { list-style-type: none; margin: 0px; padding: 0px; }
 /** end **/
 
 /* Sticky footer begin */
-html, body {
-  height: 100%;
-}
+
 .wrapper {
   min-height: 100%;
   height: auto !important;
