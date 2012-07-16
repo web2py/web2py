@@ -1272,7 +1272,7 @@ class BaseAdapter(ConnectionPool):
         new_fields = []
         for item in fields:
             if isinstance(item,SQLALL):
-                new_fields += item.table
+                new_fields += item._table
             else:
                 new_fields.append(item)
         # ## if no fields specified take them all from the requested tables
@@ -4149,7 +4149,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         new_fields = []
         for item in fields:
             if isinstance(item,SQLALL):
-                new_fields += item.table
+                new_fields += item._table
             else:
                 new_fields.append(item)
         fields = new_fields
@@ -4444,7 +4444,7 @@ class CouchDBAdapter(NoSQLAdapter):
         new_fields=[]
         for item in fields:
             if isinstance(item,SQLALL):
-                new_fields += item.table
+                new_fields += item._table
             else:
                 new_fields.append(item)
         def uid(fd):
@@ -4746,7 +4746,7 @@ class MongoDBAdapter(NoSQLAdapter):
         mongoqry_dict = {}
         for item in fields:
             if isinstance(item,SQLALL):
-                new_fields += item.table
+                new_fields += item._table
             else:
                 new_fields.append(item)
         fields = new_fields
@@ -7000,10 +7000,10 @@ class SQLALL(object):
     """
 
     def __init__(self, table):
-        self.table = table
+        self._table = table
 
     def __str__(self):
-        return ', '.join([str(field) for field in self.table])
+        return ', '.join([str(field) for field in self._table])
 
 
 class Reference(int):
