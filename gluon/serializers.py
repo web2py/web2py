@@ -4,6 +4,7 @@ Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
 License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
 import datetime
+import decimal
 from storage import Storage
 from html import TAG
 from html import xmlescape
@@ -27,6 +28,8 @@ def custom_json(o):
         return o.isoformat()[:19].replace('T',' ')
     elif isinstance(o, (int, long)):
         return int(o)
+    elif isinstance(o, decimal.Decimal):
+        return str(o)
     elif isinstance(o, lazyT):
         return str(o)
     elif hasattr(o,'as_list') and callable(o.as_list):
