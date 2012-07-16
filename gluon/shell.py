@@ -172,8 +172,13 @@ def run(
         die(errmsg)
     adir = os.path.join('applications', a)
     if not os.path.exists(adir):
-        if raw_input('application %s does not exist, create (y/n)?'
-                      % a).lower() in ['y', 'yes']:
+        if sys.stdin and not sys.stdin.name == '/dev/null':
+            c = raw_input('application %s does not exist, create (y/n)?' % a)
+        else:
+            logging.warn('application does not exist and will not be created')
+            return
+        if c.lower() in ['y', 'yes']:
+                
             os.mkdir(adir)
             w2p_unpack('welcome.w2p', adir)
             for subfolder in ['models','views','controllers', 'databases',
