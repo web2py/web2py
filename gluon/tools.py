@@ -4352,28 +4352,44 @@ class Expose(object):
 
 class Wiki(object):
     regex_redirect = re.compile('redirect\s+(\w+\://\S+)\s*')
-    def __init__(self,auth,env=None,automenu=True):
-        self.auth = auth
+    def __init__(self,auth,env=None,automenu=True,render='markmin'):
         self.env = env or {}
+        if render == 'markmin':
+            render = lambda t,env=self.env: \
+                MARKMIN(t.body,url=True,environment=env).xml()
+        self.auth = auth
         self.automenu = automenu
         db = auth.db
         db.define_table(
             'wiki_page',
-            db.Field('slug',requires=[IS_SLUG(),IS_NOT_IN_DB(db,'wiki_page.slug')],
+            Field('slug',requires=[IS_SLUG(),IS_NOT_IN_DB(db,'wiki_page.slug')],
                      readable=False,writable=False),
-            db.Field('title',unique=True),
-            db.Field('body','text',notnull=True),
-            db.Field('menu'),
-            db.Field('html','text',readable=False,writable=False,
-                     compute=lambda t,env=self.env: \
-                         MARKMIN(t.body,url=True,environment=env).xml()),
+            Field('title',unique=True),
+            Field('body','text',notnull=True),
+            Field('menu'),
+            Field('tags'),
+            Field('html','text',readable=False,writable=False,compute=render),
             auth.signature,format='%(title)s')
         db.define_table(
+            'wiki_tag',
+            Field('name'),
+            Field('wiki_page',db.wiki_page),
+            auth.signature,format='%(name)s')
+        db.define_table(
             'wiki_media',
-            db.Field('wiki_page',db.wiki_page),
-            db.Field('title',required=True),
-            db.Field('file','upload',required=True),
+            Field('wiki_page',db.wiki_page),
+            Field('title',required=True),
+            Field('file','upload',required=True),
             auth.signature,format='%(title)s')
+        """
+        def update_tags(page,db=db):
+            db(db.wiki_tag.wiki_page==page.id).delete()
+            for tags in page.tags.split(','):
+                tag = tag.strip().lower()
+                if tag: db.wiki_tag.insert(tag=tag,wiki_page=page.id)
+        db.wiki_page._after_insert.append(update_tags)
+        db.wiki_page._after_update.append(update_tags)
+        """
     def __call__(self):
         if self.automenu:
             current.response.menu = self.menu(current.request.controller,
@@ -4395,11 +4411,11 @@ class Wiki(object):
             match = self.regex_redirect.match(page.body)
             if match: redirect(match.group(1))
             return dict(content=XML(page.html))
-    def check_authorization(self,act=False):
+    def check_authorization(self,role='wiki_editor',act=False):
         if not self.auth.user:
             if not act: return False
             redirect(self.auth.settings.login_url)
-        elif not self.auth.has_membership('wiki_editor'):
+        elif not self.auth.has_membership(role):
             if not act: return False
             raise HTTP(401, "Not Authorized")          
         return True
@@ -4422,10 +4438,12 @@ class Wiki(object):
         self.check_authorization()
         self.auth.db.wiki_page.slug.writable = True
         content=SQLFORM.smartgrid(
-            self.auth.db.wiki_page,
-            args=['_pages'],
+            self.auth.db.wiki_page,            
+            linked_tables = 'wiki_media', 
             orderby = {'wiki_page':self.auth.db.wiki_page.title,
-                       'wiki_media':self.auth.db.wiki_media.title})
+                       'wiki_media':self.auth.db.wiki_media.title},
+            args=['_pages'],
+            user_signature=False)
         return dict(content=content)
     def media(self, id):
         request, db = current.request, self.auth.db
