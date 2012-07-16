@@ -35,7 +35,7 @@ except ImportError:
 
 logger = logging.getLogger("web2py.cache")
 
-__all__ = ['Cache']
+__all__ = ['Cache', 'lazy_lazy_cache']
 
 
 DEFAULT_TIME_EXPIRE = 300
@@ -379,6 +379,26 @@ class CacheOnDisk(CacheAbstract):
                 storage.close()
         return value
 
+class CacheAction(object):
+    def __init__(self,func,key,time_expire,cache,cache_model):
+        self.func = func
+        self.key = key
+        self.time_expire = time_expire
+        self.cache = cache
+        self.cache_model = cache_model
+    def __call__(self,*a,**b):
+        if not self.key:
+            key2 = self.func.__name__+':'+repr(a)+':'+repr(b)
+        else:
+            key2 = self.key.replace('%(name)s',self.func.__name__)\
+                .replace('%(args)s',str(a)).replace('%(vars)s',str(b))
+        cache_model = self.cache_model
+        if not cache_model or isinstance(cache_model,str):
+            cache_model = getattr(self.cache,cache_model or 'ram')        
+        return cache_model(key2,
+                           lambda a=a,b=b:self.func(*a,**b), 
+                           self.time_expire)
+
 
 class Cache(object):
     """
@@ -437,8 +457,8 @@ class Cache(object):
 
         :param key: the key of the object to be store or retrieved
         :param time_expire: expiration of the cache in microseconds
-        :param cache_model: `cache.ram`, `cache.disk`, or other
-            (like `cache.memcache` if defined). It defaults to `cache.ram`.
+        :param cache_model: "ram", "disk", or other
+            (like "memcache" if defined). It defaults to "ram".
 
         Notes
         -----
@@ -451,20 +471,22 @@ class Cache(object):
         If the function `f` is an action, we suggest using
         `request.env.path_info` as key.
         """
-        if not cache_model:
-            cache_model = self.ram
 
-        def tmp(func):
-            def action(*a,**b):
-                key2 = key.replace('%(name)s',func.__name__).replace('%(args)s',str(a)).replace('%(vars)s',str(b))
-                return cache_model(key2, lambda a=a,b=b:func(*a,**b), time_expire)
+        def tmp(func,cache=self,cache_model=cache_model):
+            action = CacheAction(func,key,time_expire,self,cache_model)
             action.__name___ = func.__name__
             action.__doc__ = func.__doc__
             return action
 
         return tmp
 
-
-
-
+def lazy_lazy_cache(key=None,time_expire=None,cache_model='ram'):
+    def decorator(f,key=key,time_expire=time_expire,cache_model=cache_model):
+        key = key or repr(f)
+        def g(*c,**d):
+            from gluon import current
+            return current.cache(key,time_expire,cache_model)(f)(*c,**d)
+        g.__name__ = f.__name__
+        return g
+    return decorator
 
