@@ -268,7 +268,10 @@ def parse_get_post_vars(request, environ):
         request.vars[key] = request.get_vars[key]
 
     # parse POST variables on POST, PUT, BOTH only in post_vars
-    request.body = copystream_progress(request) ### stores request body
+    try:
+        request.body = copystream_progress(request) ### stores request body
+    except IOError:
+        raise HTTP(400,"Bad Request - HTTP body is incomplete")
     if (request.body and request.env.request_method in ('POST', 'PUT', 'BOTH')):
         dpost = cgi.FieldStorage(fp=request.body,environ=environ,keep_blank_values=1)
         # The same detection used by FieldStorage to detect multipart POSTs
