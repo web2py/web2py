@@ -42,10 +42,13 @@ def sort_key(s):
         sort_key() function
     """
     global sort_key
-    from contrib.pyuca import unicode_collator
-    unicode_sort_key = unicode_collator.sort_key
-    sort_key=lambda s: unicode_sort_key(
+    try:
+        from contrib.pyuca import unicode_collator
+        unicode_sort_key = unicode_collator.sort_key
+        sort_key=lambda s: unicode_sort_key(
                 unicode(s, 'utf-8') if isinstance(s, str) else s)
+    except:
+        sort_key=lambda s: (unicode(s, 'utf-8') if isinstance(s, str) else s).lower()
     return sort_key(s)
 
 
