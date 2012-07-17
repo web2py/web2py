@@ -1878,17 +1878,15 @@ class SQLiteAdapter(BaseAdapter):
         return '(%s REGEXP %s)' % (self.expand(first),
                                    self.expand(second,'string'))
 
-    def _select(self, query, fields, attributes):
+    def select(self, query, fields, attributes):
         """
         Simulate SELECT ... FOR UPDATE with BEGIN IMMEDIATE TRANSACTION.
         Note that the entire database, rather than one record, is locked
         (it will be locked eventually anyway by the following UPDATE).
         """
-        sql = super(SQLiteAdapter, self)._select(query, fields, attributes)
-        if attributes.get('for_update', False):
-            sql = 'BEGIN IMMEDIATE TRANSACTION; ' + sql
-        return sql
-
+        if attributes.get('for_update', False) and not 'cache' in attributes:
+            self.execute('BEGIN IMMEDIATE TRANSACTION;')
+        return super(SQLiteAdapter, self).select(query, fields, attributes)
 
 class SpatiaLiteAdapter(SQLiteAdapter):
 
