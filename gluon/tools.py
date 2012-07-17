@@ -1130,37 +1130,10 @@ class Auth(object):
 
         # for "remember me" option
         response = current.response
-        if auth  and  auth.remember: #when user wants to be logged in for longer
+        if auth  and  auth.remember: 
+            # when user wants to be logged in for longer
             response.cookies[response.session_id_name]["expires"] = \
                 auth.expiration
-
-        def lazy_user (auth = self): return auth.user_id
-        reference_user = 'reference %s' % settings.table_user_name
-        def represent(id,record=None,s=settings):
-            try:
-                user = s.table_user(id)
-                return '%(first_name)s %(last_name)s' % user
-            except: return id
-        self.signature = db.Table(self.db,'auth_signature',
-                                  Field('is_active','boolean',
-                                        default=True,
-                                        readable=False, writable=False),
-                                  Field('created_on','datetime',
-                                        default=request.now,
-                                        writable=False, readable=False),
-                                  Field('created_by',
-                                        reference_user,
-                                        default=lazy_user, represent=represent,
-                                        writable=False, readable=False,
-                                        ),
-                                  Field('modified_on','datetime',
-                                        update=request.now,default=request.now,
-                                        writable=False,readable=False),
-                                  Field('modified_by',
-                                        reference_user,represent=represent,
-                                        default=lazy_user,update=lazy_user,
-                                        writable=False,readable=False))
-
 
 
     def _get_user_id(self):
@@ -1308,7 +1281,39 @@ class Auth(object):
                     archive_db = archive_db,
                     archive_name = archive_names,
                     current_record = current_record)
-                
+
+    def define_signature(self):
+        db = self.db
+        settings = self.settings
+        request = current.request
+        def lazy_user (auth = self): return auth.user_id
+        reference_user = 'reference %s' % settings.table_user_name
+        def represent(id,record=None,s=settings):
+            try:
+                user = s.table_user(id)
+                return '%(first_name)s %(last_name)s' % user
+            except: return id
+        self.signature = db.Table(self.db,'auth_signature',
+                                  Field('is_active','boolean',
+                                        default=True,
+                                        readable=False, writable=False),
+                                  Field('created_on','datetime',
+                                        default=request.now,
+                                        writable=False, readable=False),
+                                  Field('created_by',
+                                        reference_user,
+                                        default=lazy_user, represent=represent,
+                                        writable=False, readable=False,
+                                        ),
+                                  Field('modified_on','datetime',
+                                        update=request.now,default=request.now,
+                                        writable=False,readable=False),
+                                  Field('modified_by',
+                                        reference_user,represent=represent,
+                                        default=lazy_user,update=lazy_user,
+                                        writable=False,readable=False))
+
+
     def define_tables(self, username=False, signature=None, 
                       migrate=True, fake_migrate=False):
         """
@@ -1327,6 +1332,7 @@ class Auth(object):
 
         db = self.db
         settings = self.settings
+        self.define_signature()
         if signature==True:
             signature_list = [self.signature]
         elif not signature:
