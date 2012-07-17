@@ -2170,6 +2170,8 @@ class PostgreSQLAdapter(BaseAdapter):
         return varquote_aux(name,'"%s"')
 
     def adapt(self,obj):
+        #if self.driver == self.drivers.get('pg8000'):
+        #    obj = str(obj).replace('%','%%')            
         return psycopg2_adapt(obj).getquoted()
 
     def sequence_name(self,table):

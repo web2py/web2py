@@ -381,6 +381,8 @@ class CacheOnDisk(CacheAbstract):
 
 class CacheAction(object):
     def __init__(self,func,key,time_expire,cache,cache_model):
+        self.__name__ = func.__name__
+        self.__doc__ = func.__doc__
         self.func = func
         self.key = key
         self.time_expire = time_expire
@@ -388,9 +390,9 @@ class CacheAction(object):
         self.cache_model = cache_model
     def __call__(self,*a,**b):
         if not self.key:
-            key2 = self.func.__name__+':'+repr(a)+':'+repr(b)
+            key2 = self.__name__+':'+repr(a)+':'+repr(b)
         else:
-            key2 = self.key.replace('%(name)s',self.func.__name__)\
+            key2 = self.key.replace('%(name)s',self.__name__)\
                 .replace('%(args)s',str(a)).replace('%(vars)s',str(b))
         cache_model = self.cache_model
         if not cache_model or isinstance(cache_model,str):
@@ -473,11 +475,7 @@ class Cache(object):
         """
 
         def tmp(func,cache=self,cache_model=cache_model):
-            action = CacheAction(func,key,time_expire,self,cache_model)
-            action.__name___ = func.__name__
-            action.__doc__ = func.__doc__
-            return action
-
+            return CacheAction(func,key,time_expire,self,cache_model)
         return tmp
 
 def lazy_lazy_cache(key=None,time_expire=None,cache_model='ram'):
