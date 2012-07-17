@@ -1840,13 +1840,16 @@ class SQLFORM(FORM):
                 else:
                     label = k
                 options.append(OPTION(T(label),_value=k))
-            f = FORM(SELECT(options, _name="export_type"), 
-                     INPUT(_type="submit", _value="export"),
-                     INPUT(_type="hidden", _name="order", _value=request.vars.order),
-                     INPUT(_type="hidden", _name="keywords", _value=request.vars.keywords or ''),
-                     _method="GET", 
-                     _action=url(args=['export']))
+            f = FORM(BUTTON(SPAN(_class="icon downarrow icon-download"),
+                            "Export", _type="submit", _class="btn button"),
+                     SELECT(options, _name="export_type"), 
+                     INPUT(_type="hidden", _name="order",
+                           _value=request.vars.order),
+                     INPUT(_type="hidden", _name="keywords",
+                           _value=request.vars.keywords or ''),
+                     _method="GET", _action=url(args=['export']))
             search_actions.append(f)
+
         #================================================================
 
         console.append(search_actions)
