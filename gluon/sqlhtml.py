@@ -1714,7 +1714,9 @@ class SQLFORM(FORM):
         
         exportManager = dict(csv_with_hidden_cols=(ExporterCsv,'csv with hidden cols'),
                              csv=ExporterCsv,
-                             html=ExporterHtml)
+                             html=ExporterHtml,
+                             tsv_with_hidden_cols=(ExporterTsv, 'tsv with hidden cols'),
+                             tsv=ExporterTsv)
         if not exportclasses is None:
             exportManager.update(exportclasses)
             
@@ -1734,7 +1736,7 @@ class SQLFORM(FORM):
                         orderby=db[tablename][fieldname]
             
             table_fields = [f for f in fields if f._tablename in tablenames]
-            if export_type =='csv_with_hidden_cols':
+            if export_type in ('csv_with_hidden_cols','tsv_with_hidden_cols'):
                 if request.vars.keywords:
                     try:
                         dbset=dbset(SQLFORM.build_query(
@@ -1832,7 +1834,7 @@ class SQLFORM(FORM):
             
         #================================================================
             options =[]
-            for k,v in exportManager.items():
+            for k,v in sorted(exportManager.items()):
                 if hasattr(v, "__getitem__"):
                     label = v[1]
                 else:
@@ -2463,6 +2465,19 @@ class ExportClass(object):
     def export(self):
         raise NotImplementedError
 
+class ExporterTsv(ExportClass):
+    file_ext = "tsv"
+    content_type = "text/tab-separated-values"
+    
+    def __init__(self, rows):
+        ExportClass.__init__(self, rows)
+    
+    def export(self):
+        out = cStringIO.StringIO()
+        self.rows.export_to_csv_file(out, delimiter='\t', represent=True)
+        return str(out.getvalue())
+        
+
 class ExporterCsv(ExportClass):
     file_ext = "csv"
     content_type = "text/csv"
@@ -2483,10 +2498,11 @@ class ExporterHtml(ExportClass):
     def export(self):
         out = cStringIO.StringIO()
         out.write('<html>\n<body>\n<table>\n')
-        for cols in self.rows:
+        colnames = [a.split('.') for a in self.rows.colnames]
+        for row in self.rows.records:
             out.write('<tr>\n')
-            for colname,value in cols.items():
-                out.write('<td>'+str(value)+'</td>\n')
+            for col in colnames:
+                out.write('<td>'+str(row[col[0]][col[1]])+'</td>\n')
             out.write('</tr>\n')
         out.write('</table>\n</body>\n</html>')
         return str(out.getvalue())
