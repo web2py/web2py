@@ -838,6 +838,10 @@ def console():
 
     return (options, args)
 
+def check_existent_app(options,appname):
+    if os.path.isdir(os.path.join(options.folder, 'applications', appname)):
+        return True
+
 def start_schedulers(options):
     apps = [app.strip() for app in options.scheduler.split(',')]
     try:
@@ -848,9 +852,12 @@ def start_schedulers(options):
     processes = []
     code = "from gluon import current;current._scheduler.loop()"
     for app in apps:
+        if not check_existent_app(options, app):
+            print "Application '%s' doesn't exist, skipping" % (app)
+            continue
         print 'starting scheduler for "%s"...' % app
         args = (app,True,True,None,False,code)
-        logging.getLogger().setLevel(logging.DEBUG)
+        logging.getLogger().setLevel(options.debuglevel)
         p = Process(target=run, args=args)
         processes.append(p)
         print "Currently running %s scheduler processes" % (len(processes))
@@ -861,7 +868,6 @@ def start_schedulers(options):
             p.join()
         except (KeyboardInterrupt, SystemExit):
             print "Processes stopped"
-            raise
         except:
             p.terminate()
             p.join()
@@ -925,7 +931,7 @@ def start(cron=True):
         logger.debug('Starting extcron...')
         global_settings.web2py_crontype = 'external'
         if options.scheduler:   # -K
-            apps = [app.strip() for app in options.scheduler.split(',')]
+            apps = [app.strip() for app in options.scheduler.split(',') if check_existent_app(options, app.strip())]
         else:
             apps = None
         extcron = newcron.extcron(options.folder, apps=apps)
