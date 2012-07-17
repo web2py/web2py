@@ -225,8 +225,12 @@ div.error {
 
 .web2py_console form {
     width:100%;
+    display: inline;
 }
 
+.web2py_console form select {
+    margin: 0;
+}
 
 .web2py_search_actions{
     float:left;
