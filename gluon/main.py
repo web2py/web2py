@@ -386,8 +386,9 @@ def wsgibase(environ, responder):
 
                 local_hosts = [http_host,'::1','127.0.0.1','::ffff:127.0.0.1']
                 if not global_settings.web2py_runtime_gae:
-                    local_hosts += [socket.gethostname(),
-                                    socket.gethostbyname(http_host)]
+                    local_hosts.append(socket.gethostname())
+                    try: local_hosts.append(socket.gethostbyname(http_host))
+                    except socket.gaierror: pass
                 request.client = get_client(request.env)
                 request.folder = abspath('applications',
                                          request.application) + os.sep
