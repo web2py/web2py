@@ -3029,9 +3029,10 @@ class Auth(object):
             if archive_table_name in table._db:
                 archive_table = table._db[archive_table_name]
             else:
-                archive_table = table._db.define_table(archive_table_name,
-                                                       Field(current_record,table),
-                                                       table)
+                archive_table = table._db.define_table(
+                    archive_table_name,
+                    Field(current_record,table),
+                    *[field.close(unique=False) for field in table])
         new_record = {current_record:form.vars.id}
         for fieldname in archive_table.fields:
             if not fieldname in ['id',current_record]:
