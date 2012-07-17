@@ -7130,10 +7130,8 @@ class Table(dict):
                 table = field
                 for field in table:
                     if not field.name in fieldnames and not field.type=='id':
-                        field = copy.copy(field)
-                        # correct self references
-                        if not table._actual and field.type == 'reference '+table._tablename:
-                            field.type = 'reference '+self._tablename
+                        t2 = not table._actual and self._tablename
+                        field = field.clone(point_self_references_to=t2)
                         newfields.append(field)
                         fieldnames.add(field.name)
             else:
@@ -7210,7 +7208,7 @@ class Table(dict):
         archive_table = archive_db.define_table(
             archive_name,
             Field(current_record,field_type),
-            self)
+            *[field.close(unique=False) for field in self])
         self._before_update.append(
             lambda qset,fs,at=archive_table,cn=current_record:
                 archive_record(qset,fs,at,cn))
@@ -8037,6 +8035,14 @@ class Field(Expression):
             self.requires = []
         else:
             self.requires = requires
+
+    def clone(self,point_self_references_to=False,**args):
+        field = copy.copy(self)
+        if point_self_references_to and \
+                field.type == 'reference %s'+field._tablename:
+            field.type = 'reference %s' % point_self_references_to
+        field.__dict__.update(args)
+        return field
 
     def store(self, file, filename=None, path=None):
         if self.custom_store:
