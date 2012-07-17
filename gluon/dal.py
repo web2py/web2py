@@ -7208,7 +7208,7 @@ class Table(dict):
         archive_table = archive_db.define_table(
             archive_name,
             Field(current_record,field_type),
-            *[field.close(unique=False) for field in self])
+            *[field.clone(unique=False) for field in self])
         self._before_update.append(
             lambda qset,fs,at=archive_table,cn=current_record:
                 archive_record(qset,fs,at,cn))
