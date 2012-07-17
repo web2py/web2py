@@ -507,14 +507,14 @@ regex_URL=re.compile(r'@\{(?P<f>\w+)/(?P<args>.+?)\}')
 regex_env=re.compile(r'@\{(?P<a>\w+?)\}')
 regex_expand_meta = re.compile('('+META+'|'+DISABLED_META+')')
 regex_dd=re.compile(r'\$\$(?P<latex>.*?)\$\$')
-regex_code = re.compile('('+META+'|'+DISABLED_META+r')|(``(?P<t>.+?)``(?::(?P<c>[a-zA-Z][_a-zA-Z\-\d]*)(?:\[(?P<p>[^\]]*)\])?)?)',re.S)
+regex_code = re.compile('('+META+'|'+DISABLED_META+r')|(``(?P<t>.+?)``(?::(?P<c>\w+)(?:\[(?P<p>\S+?)\])?)?)',re.S)
 regex_strong=re.compile(r'\*\*(?P<t>[^\s*]+( +[^\s*]+)*)\*\*')
 regex_del=re.compile(r'~~(?P<t>[^\s*]+( +[^\s*]+)*)~~')
 regex_em=re.compile(r"''(?P<t>[^\s']+(?: +[^\s']+)*)''")
 regex_num=re.compile(r"^\s*[+-]?((\d+(\.\d*)?)|\.\d+)([eE][+-]?[0-9]+)?\s*$")
 regex_list=re.compile('^(?:(#{1,6}|\.+|\++|\-+)(\.)?\s+)?(.*)$')
 regex_bq_headline=re.compile('^(?:(\.+|\++|\-+)(\.)?\s+)?(-{3}-*)$')
-regex_tq=re.compile('^(-{3}-*)(?::(?P<c>[a-zA-Z][_a-zA-Z\-\d]*)(?:\[(?P<p>[a-zA-Z][_a-zA-Z\-\d]*)\])?)?$')
+regex_tq=re.compile('^(-{3}-*)(?::(?P<c>\S+?)(?:\[(?P<p>\S+)\])?)?$')
 regex_qr = re.compile(r'(?<!["\w>/=])qr:(?P<k>\w+://[\w\d\-+?&%/:.]+)',re.M)
 regex_embed = re.compile(r'(?<!["\w>/=])embed:(?P<k>\w+://[\w\d\-+_=?%&/:.]+)', re.M)
 regex_iframe = re.compile(r'(?<!["\w>/=])iframe:(?P<k>\w+://[\w\d\-+=?%&/:.]+)', re.M)
@@ -536,7 +536,7 @@ def markmin_escape(text):
    """ insert \\ before markmin control characters: '`:*~[]{}@$ """
    return regex_markmin_escape.sub(lambda m: '\\'+m.group(0).replace('\\','\\\\'), text)
 
-def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='google',auto=True,class_prefix='',id_prefix='markmin_'):
+def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='google',auto=True):
     """
     Arguments:
     - text is the text to be processed
@@ -564,13 +564,13 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
     >>> render('``\\nhello\\nworld\\n``:python')
     '<pre><code class="python">hello\\nworld</code></pre>'
     >>> render('``hello world``:python[test_id]')
-    '<code class="python" id="markmin_test_id">hello world</code>'
+    '<code class="python" id="test_id">hello world</code>'
     >>> render('``hello world``:id[test_id]')
-    '<code id="markmin_test_id">hello world</code>'
+    '<code id="test_id">hello world</code>'
     >>> render('``\\nhello\\nworld\\n``:python[test_id]')
-    '<pre><code class="python" id="markmin_test_id">hello\\nworld</code></pre>'
+    '<pre><code class="python" id="test_id">hello\\nworld</code></pre>'
     >>> render('``\\nhello\\nworld\\n``:id[test_id]')
-    '<pre><code id="markmin_test_id">hello\\nworld</code></pre>'
+    '<pre><code id="test_id">hello\\nworld</code></pre>'
     >>> render("''hello world''")
     '<p><em>hello world</em></p>'
     >>> render('** hello** **world**')
@@ -699,7 +699,7 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
     >>> render("the [[link \\[**without** ``<b>title</b>``:red\\] http://www.example.com]]")
     '<p>the <a href="http://www.example.com">link [<strong>without</strong> <span style="color: red">&lt;b&gt;title&lt;/b&gt;</span>]</a></p>'
 
-    >>> render("aaa-META-``code``:text[]-LINK-[[link http://www.example.com]]-LINK-[[image http://www.picture.com img]]-end")
+    >>> render("aaa-META-``code``:text-LINK-[[link http://www.example.com]]-LINK-[[image http://www.picture.com img]]-end")
     '<p>aaa-META-<code class="text">code</code>-LINK-<a href="http://www.example.com">link</a>-LINK-<img src="http://www.picture.com" alt="image" />-end</p>'
 
     >>> render("[[<a>test</a> [<a>test2</a>] <a>text3</a>]]")
@@ -930,8 +930,8 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
                                                 ) for f in s.split('|')])+'</tr>')
                     lineno+=1
 
-                t_cls = ' class="%s%s"'%(class_prefix, t_cls) if t_cls and t_cls != 'id' else ''
-                t_id  = ' id="%s%s"'%(id_prefix, t_id) if t_id else ''
+                t_cls = ' class="%s"'%t_cls if t_cls and t_cls != 'id' else ''
+                t_id  = ' id="%s"'%t_id if t_id else ''
                 s = ''
                 if thead:
                     s += '<thead>'+''.join([l for l in thead])+'</thead>'
@@ -974,8 +974,8 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
 
                     lineno+=1
 
-                t_cls = ' class="%s%s"'%(class_prefix,t_cls) if t_cls and t_cls != 'id' else ''
-                t_id  = ' id="%s%s"'%(id_prefix,t_id) if t_id else ''
+                t_cls = ' class="%s"'%t_cls if t_cls and t_cls != 'id' else ''
+                t_id  = ' id="%s"'%t_id if t_id else ''
                 s = '<blockquote%s%s>%s</blockquote>' \
                          % (t_cls,
                             t_id,
@@ -1166,8 +1166,8 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
              bg='background-color: %s;' % c[1] if len(c)>1 and c[1] else ''
              return '<span style="%s%s">%s</span>' \
                  % (fg, bg, render(code,{},{},'br', URL, environment, latex, auto))
-        cls = ' class="%s%s"'%(class_prefix,b) if b and b != 'id' else ''
-        id  = ' id="%s%s"'%(id_prefix,escape(p)) if p else ''
+        cls = ' class="%s"'%b if b and b != 'id' else ''
+        id  = ' id="%s"'%escape(p) if p else ''
         if code[:1]=='\n' and code[-1:]=='\n':
             return '<pre><code%s%s>%s</code></pre>' % (cls, id, escape(code[1:-1]))
         return '<code%s%s>%s</code>' \
