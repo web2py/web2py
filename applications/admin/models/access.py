@@ -2,6 +2,7 @@ import base64, os, time
 from gluon import portalocker
 from gluon.admin import apath
 from gluon.fileutils import read_file
+from gluon.utils import web2py_uuid
 # ###########################################################
 # ## make sure administrator is on localhost or https
 # ###########################################################
@@ -152,5 +153,11 @@ if request.controller=='appadmin' and DEMO_MODE:
     session.flash = 'Appadmin disabled in demo mode'
     redirect(URL('default','sites'))
 
-
+# extra protection, csrf protection for every admin interaction
+response.cookies['token'] = session.token = session.token or web2py_uuid()
+if request.post_vars and not (
+    'token' in request.cookies and 
+    request.cookies['token'].value == session.token):
+    raise HTTP(401,"Not Authorized")
+# end extra secruity measures 
 
