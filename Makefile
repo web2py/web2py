@@ -114,12 +114,12 @@ pip:
 run:
 	python2.5 web2py.py -a hello
 commit:
+	python web2py.py --run_system_tests
 	make src
 	echo '' > NEWINSTALL
 	hg commit -m "$(S)"
 	#bzr commit -m "$(S)"
 	git commit -a -m "$(S)"
-	python web2py.py --run_system_tests
 push:
 	hg push
 	git push
