@@ -457,9 +457,7 @@ class lazyT(object):
         return str(self)
 
     def __mod__(self, symbols):
-        return (self.T.apply_filter(self.m, self.s, self.f, self.t) if self.M else
-                self.T.translate(self.m, self.s))
-
+        return lazyT(self.m,symbols,self.T,self.f,self.t,self.M)
 
 class translator(object):
 
