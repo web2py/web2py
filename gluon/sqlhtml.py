@@ -15,9 +15,9 @@ Holds:
 """
 
 from http import HTTP
-from html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT
-from html import FORM, INPUT, LABEL, OPTION, SELECT
-from html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
+from html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR
+from html import FORM, INPUT, LABEL, OPTION, SELECT, BUTTON, IMG
+from html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE, SCRIPT
 from html import URL, truncate_string
 from dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query
 from storage import Storage
