@@ -148,7 +148,7 @@ window.onload = function() {
   </form>
 </div>
 
-{{if filetype=='html':}}
+{{if TEXT_EDITOR == 'edit_area' and filetype=='html':}}
 <div class="help">
   <h3>{{=T('Key bindings for ZenCoding Plugin')}}</h3>
   <ul>
