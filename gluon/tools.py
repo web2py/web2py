@@ -4388,15 +4388,19 @@ class Wiki(object):
             Field('title',required=True),
             Field('file','upload',required=True),
             auth.signature,format='%(title)s')
-        """
-        def update_tags(page,db=db):
-            db(db.wiki_tag.wiki_page==page.id).delete()
-            for tags in page.tags.split(','):
+        def update_tags_insert(page,id,db=db):
+            print page
+            for tag in page.tags.split(','):
                 tag = tag.strip().lower()
-                if tag: db.wiki_tag.insert(tag=tag,wiki_page=page.id)
-        db.wiki_page._after_insert.append(update_tags)
-        db.wiki_page._after_update.append(update_tags)
-        """
+                if tag: db.wiki_tag.insert(name=tag,wiki_page=id)
+        def update_tags_update(dbset,page,db=db):
+            page = dbset.select().first()
+            db(db.wiki_tag.wiki_page==page.id).delete()            
+            for tag in page.tags.split(','):
+                tag = tag.strip().lower()
+                if tag: db.wiki_tag.insert(name=tag,wiki_page=page.id)
+        db.wiki_page._after_insert.append(update_tags_insert)
+        db.wiki_page._after_update.append(update_tags_update)
     def __call__(self):
         if self.automenu:
             current.response.menu = self.menu(current.request.controller,
