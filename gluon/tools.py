@@ -4411,9 +4411,15 @@ class Wiki(object):
             return self.pages()
         elif current.request.args(0)=='_media':
             return self.media(current.request.args(1,cast=int))
+        elif current.request.args(0)=='_search':
+            return self.search()
+        elif current.request.args(0)=='_cloud':
+            return self.cloud()
         else:
             return self.read(current.request.args(0) or 'index')
     def read(self,slug):
+        if slug in '_cloud':
+            return self.cloud()
         page = self.auth.db.wiki_page(slug=slug)
         if not page: 
             url = URL(args=('_edit',slug))
@@ -4439,7 +4445,7 @@ class Wiki(object):
         db.wiki_page.title.default = title_guess
         db.wiki_page.slug.default = slug
         db.wiki_page.menu.default = slug
-        db.wiki_page.body.default = '## %s\n\npage content' % title_guess            
+        db.wiki_page.body.default = '## %s\n\npage content' % title_guess
         form = SQLFORM(db.wiki_page,page,deletable=True,showid=False).process()
         if form.accepted:
             current.session.flash = 'page created'
@@ -4449,7 +4455,7 @@ class Wiki(object):
         self.check_authorization()
         self.auth.db.wiki_page.slug.writable = True
         content=SQLFORM.smartgrid(
-            self.auth.db.wiki_page,            
+            self.auth.db.wiki_page,
             linked_tables = 'wiki_media', 
             orderby = {'wiki_page':self.auth.db.wiki_page.title,
                        'wiki_media':self.auth.db.wiki_media.title},
@@ -4489,10 +4495,55 @@ class Wiki(object):
                                 URL(controller,function,
                                     args=('_edit',request.args(0) or 'index'))))
             submenu.append((current.T('Manage Pages'),None,
-                                      URL(controller,function,args=('_pages'))))
+                            URL(controller,function,args=('_pages'))))
+            submenu.append((current.T('Search Pages'),None,
+                            URL(controller,function,args=('_search'))))
+            submenu.append((current.T('Tag Cloud'),None,
+                            URL(controller,function,args=('_cloud'))))
             menu.append((current.T('[Wiki]'),None,None,submenu))
         return menu
-
+    def search(self,tags=None):
+        form = SQLFORM.factory(Field('tags',requires=IS_NOT_EMPTY(),
+                                     default=tags,label=current.T('Search')))
+        if form.process(keepvalues=True).accepted:
+            tags = [v.strip() for v in form.vars.tags.split(',')]
+            tags = [v for v in tags if v]
+        content = CAT()
+        content.append(DIV(form,_class='w2p_wiki_form'))
+        if tags:
+            db = self.auth.db
+            count = db.wiki_tag.wiki_page.count()
+            ids = db(db.wiki_tag.name.belongs(tags))._select(
+                db.wiki_tag.wiki_page,
+                groupby=db.wiki_tag.wiki_page,
+                orderby=~count,limitby=(0,100))
+            pages = db(db.wiki_page.id.belongs(ids)).select(                   
+                db.wiki_page.slug,db.wiki_page.title,db.wiki_page.tags)        
+            if not pages:
+                content.append(DIV(T("No results",_class='w2p_wiki_form')))
+            else:
+                items = [DIV(A(p.title,_href=URL(args=p.slug)),BR(),
+                             SPAN(p.tags,_class='w2p_wiki_tags')) 
+                         for p in pages]
+                content.append(DIV(_class='w2p_wiki_pages',*items))
+        return dict(content=content)
+    def cloud(self):
+        db = self.auth.db
+        count = db.wiki_tag.wiki_page.count(distinct=True)
+        ids = db(db.wiki_tag).select(
+            db.wiki_tag.name,count,
+            groupby=db.wiki_tag.name,
+            orderby=~count,limitby=(0,20))
+        if ids:
+            a,b = ids[0](count), ids[-1](count)
+        def scale(c):
+            return '%.2f' % (3.0*(c-b)/max(a-b,1)+1)
+        items = [SPAN(item.wiki_tag.name,_class='w2p_cloud_tag',
+                      _style='padding-right:0.2em;font-size:%sem' \
+                          % scale(item(count))) 
+                 for item in ids]
+        return dict(content=DIV(_class='w2p_cloud',*items))
+        
 if __name__ == '__main__':
     import doctest
     doctest.testmod()

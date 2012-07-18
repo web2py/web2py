@@ -8183,8 +8183,8 @@ class Field(Expression):
                 return (value, error)
         return (value, None)
 
-    def count(self, expression=None):
-        return Expression(self.db, self.db._adapter.COUNT, self, expression, self.type)
+    def count(self, distinct=None):
+        return Expression(self.db, self.db._adapter.COUNT, self, distinct, self.type)
 
     def __nonzero__(self):
         return True
