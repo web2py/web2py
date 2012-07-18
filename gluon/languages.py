@@ -17,7 +17,6 @@ from cgi import escape
 import portalocker
 import logging
 import marshal
-import numbers
 import copy_reg
 from fileutils import abspath, listdir
 import settings
@@ -33,6 +32,8 @@ __all__ = ['translator', 'findT', 'update_all_languages']
 markmin = lambda s: render( regex_param.sub(
                        lambda m: '{' + markmin_escape(m.group('s')) + '}',
                           s ), sep='br', auto=False )
+
+NUMBERS = (int,long,float)
 
 # pattern to find T(blah blah blah) expressions
 PY_STRING_LITERAL_RE = r'(?<=[^\w]T\()(?P<name>'\
@@ -145,7 +146,7 @@ def read_dict_aux(filename):
         return {}
     try:
         return eval(lang_text)
-    except Exception as e:
+    except Exception, e:
         status='Syntax error in %s (%s)' % (filename, e)
         logging.error(status)
         return {'__corrupted__':status}
@@ -238,7 +239,7 @@ def read_plural_rules_aux(filename):
         construct_plural_form=locals().get('construct_plural_form',
                                default_construct_plural_form)
         status='ok'
-    except Exception as e:
+    except Exception, e:
         nplurals=default_nplurals
         get_plural_id=default_get_plural_id
         construct_plural_form=default_construct_plural_form
@@ -325,7 +326,7 @@ def read_plural_dict_aux(filename):
         return {}
     try:
         return eval(lang_text)
-    except Exception as e:
+    except Exception, e:
         status='Syntax error in %s (%s)' % (filename, e)
         logging.error(status)
         return {'__corrupted__':status}
@@ -701,11 +702,11 @@ class translator(object):
             if isinstance(symbols, dict):
                 symbols.update( (key, xmlescape(value).translate(ttab_in))
                                 for key, value in symbols.iteritems()
-                                 if not isinstance(value, numbers.Number) )
+                                 if not isinstance(value, NUMBERS) )
             else:
                 if not isinstance(symbols, tuple):
                     symbols = (symbols,)
-                symbols = tuple(value if isinstance(value, numbers.Number)
+                symbols = tuple(value if isinstance(value, NUMBERS)
                                     else xmlescape(value).translate(ttab_in)
                                      for value in symbols)
             message = self.params_substitution(message, symbols)
@@ -857,11 +858,11 @@ class translator(object):
             if isinstance(symbols, dict):
                 symbols.update( (key, str(value).translate(ttab_in))
                                 for key, value in symbols.iteritems()
-                                 if not isinstance(value, numbers.Number) )
+                                 if not isinstance(value, NUMBERS) )
             else:
                 if not isinstance(symbols, tuple):
                     symbols = (symbols,)
-                symbols = tuple(value if isinstance(value, numbers.Number)
+                symbols = tuple(value if isinstance(value, NUMBERS)
                                     else str(value).translate(ttab_in)
                                      for value in symbols)
 

@@ -2535,45 +2535,55 @@ class LazyCrypt(object):
         """
         Encrypted self.password and caches it in self.crypted.
         If self.crypt.salt the output is in the format <algorithm>$<salt>$<hash>
+
+        Try get the digest_alg from the key (if it exists)
+        else assume the default digest_alg. If not key at all, set key=''
+
+        If a salt is specified use it, if salt is True, set salt to uuid
+
+        masterkey is the key (as specified in argument) + salt
+        if masterkey is '' then simple_hash does not do HMAC
+        else simple_hash calls hmac_hash
+        (this should all be backward compatible)
+
+        Options:
+        key = 'uuid'
+        key = 'md5:uuid'
+        key = 'sha512:uuid'
+        ...
+        key = 'pbkdf2(100,64):uuid' 100 iterations and 64 chars length
         """
         if self.crypted:
-            return self.crypted
+            return self.crypted                
+        if self.crypt.key:            
+            if ':' in self.crypt.key:
+                digest_alg, key = self.crypt.key.split(':',1)
+            else:
+                digest_alg, key = self.crypt.digest_alg, self.crypt.key
+        else:
+            digest_alg, key = self.crypt.digest_alg, ''
         if self.crypt.salt:
-            if not self.crypt.key:
-                raise RuntimeError, "CRYPT has salt but not key"
             if self.crypt.salt == True:                
-                salt = str(web2py_uuid()).replace('-','')[-16:]                                                     
+                salt = str(web2py_uuid()).replace('-','')[-16:]
             else:
                 salt = self.crypt.salt
-            if ':' in self.crypt.key:
-                (alg, hash_key) = self.crypt.key.split(':')
-            else:
-                (alg, hash_key) = self.crypt.digest_alg, None
-            if hash_key:
-                h = hmac_hash(self.password+salt, self.crypt.key, alg)
-            else:
-                h = imple_hash(self.password+salt, alg)
-            self.crypted = '%s$%s$%s' % (alg, salt, h)
-        elif self.crypt.key:
-            self.crypted = hmac_hash(self.password, self.crypt.key, self.crypt.digest_alg)
         else:
-            self.crypted = simple_hash(self.password, self.crypt.digest_alg)
+            salt = ''
+        masterkey = key+salt
+        h = simple_hash(self.password, masterkey, digest_alg)
+        self.crypted = '%s$%s$%s' % (digest_alg, salt, h)
         return self.crypted
+
     def __eq__(self, stored_password):        
         """
         compares the current lazy crypted password with a stored password
         """
         if self.crypt.salt and stored_password.count('$')==2:
-            if ':' in self.crypt.key:
-                hash_key = self.crypt.key.split(':')[1]
-            else:
-                hash_key = None
-            (algorithm, salt, hash) = stored_password.split('$')
-            if hash_key:
-                h = hmac_hash(self.password+salt, self.crypt.key, algorithm)
-            else:
-                h = simple_hash(self.password+salt, algorithm)
-            temp_pass = '%s$%s$%s' % (algorithm, salt, h)            
+            key = self.crypt.key.split(':')[1] if ':' in self.crypt.key else ''
+            (digest_alg, salt, hash) = stored_password.split('$')
+            masterkey = key+salt
+            h = simple_hash(self.password, masterkey, digest_alg)
+            temp_pass = '%s$%s$%s' % (digest_alg, salt, h)            
         else:
             temp_pass = str(self)
         return temp_pass == stored_password
