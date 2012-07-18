@@ -15,8 +15,9 @@ from glob import glob
 import shutil
 import platform
 from gluon.languages import (regex_language, read_possible_languages,
-                             lang_sampling, read_dict, write_dict)
-                             
+                             read_possible_plurals, lang_sampling,
+                             read_dict, write_dict, read_plural_dict,
+                             write_plural_dict)
 
 if DEMO_MODE and request.function in ['change_password','pack','pack_plugin','upgrade_web2py','uninstall','cleanup','compile_app','remove_compiled_app','delete','delete_plugin','create_file','upload_file','update_languages','reload_routes']:
     session.flash = T('disabled in demo mode')
@@ -435,7 +436,7 @@ def search():
     files2 = glob(os.path.join(path,'*/*.html'))
     files3 = glob(os.path.join(path,'*/*/*.html'))
     files=[x[len(path)+1:].replace('\\','/') for x in files1+files2+files3 if match(x,keywords)]
-    return response.json(dict(files=files, message=T('@Searching: **%s** %%{file}', len(files))))
+    return response.json(dict(files=files, message=T.M('Searching: **%s** %%{file}', len(files))))
 
 def edit():
     """ File edit handler """
@@ -692,21 +693,27 @@ def edit_language():
 
     for key in keys:
         name = md5_hash(key)
-        if key==strings[key]:
-            _class='untranslated'
+        s = strings[key]
+        (prefix, sep, key) = key.partition('\x01')
+        if sep:
+            prefix = SPAN(prefix+': ', _style='color: blue;')
+            k = key
         else:
-            _class='translated'
+            (k, prefix) = (prefix, '')
+
+        _class='untranslated' if k==s else 'translated'
+
         if len(key) <= 40:
-            elem = INPUT(_type='text', _name=name,value=strings[key],
+            elem = INPUT(_type='text', _name=name, value=s,
                          _size=70,_class=_class)
         else:
-            elem = TEXTAREA(_name=name, value=strings[key], _cols=70,
+            elem = TEXTAREA(_name=name, value=s, _cols=70,
                             _rows=5, _class=_class)
 
         # Making the short circuit compatible with <= python2.4
-        k = (strings[key] != key) and key or B(key)
+        k = (s != k) and k or B(k)
 
-        rows.append(P(k, BR(), elem, TAG.BUTTON(T('delete'),
+        rows.append(P(prefix, k, BR(), elem, TAG.BUTTON(T('delete'),
                             _onclick='return delkey("%s")' % name), _id=name))
 
     rows.append(INPUT(_type='submit', _value=T('update')))
@@ -722,8 +729,7 @@ def edit_language():
         redirect(URL(r=request,args=request.args))
     return dict(app=request.args[0], filename=filename, form=form)
 
-
-def edit_plurals():    
+def edit_plurals():
     """ Edit plurals file """
     #import ipdb; ipdb.set_trace()
     app = get_app()
@@ -854,17 +860,14 @@ def design():
     statics.sort()
 
     # Get all languages
-    all_languages = dict([(lang+'.py',info[0]) for lang,info
-                          in read_possible_languages(apath(app, r=request)).iteritems()
-                          if info[2]!=0]) # info[2] is langfile_mtime:
-                                          # get only existing files
+    all_languages=dict([(lang+'.py',info[0]) for lang,info
+                        in read_possible_languages(apath(app, r=request)).iteritems()
+                        if info[2]!=0]) # info[2] is langfile_mtime:
+                                        # get only existed files
     languages = sorted(all_languages)
 
-    plural_rules = {}
-    try:
-        all_plurals = read_possible_plurals()
-    except:
-        all_plurals = {} # not implemented yet
+    plural_rules={}
+    all_plurals=read_possible_plurals()
     for langfile,lang in all_languages.iteritems():
         lang=lang.strip()
         match_language = regex_language.match(lang)

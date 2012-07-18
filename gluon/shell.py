@@ -211,9 +211,6 @@ def run(
         exec ('print %s()' % f, _env)
         return
 
-    # "woodoo magic" workaround: reinitialize main.py
-    g={}; exec "import main" in g; del g
-
     _env.update(exec_pythonrc())
     if startfile:
         try:
