@@ -73,8 +73,9 @@ def get_digest(value):
 
 def hmac_hash(value, salt, digest_alg='md5'):
     if isinstance(digest_alg,str) and digest_alg.startswith('pbkdf2'):
-        iterations, keylen = digest_alg[7:-1].split(',')
-        return pbkdf2_hex(value, salt, int(iterations), int(keylen))
+        iterations, keylen, alg = digest_alg[7:-1].split(',')
+        return pbkdf2_hex(value, salt, int(iterations),
+                          int(keylen),get_digest(alg))
     digest_alg = get_digest(digest_alg)
     d = hmac.new(salt,value,digest_alg)
     return d.hexdigest()
