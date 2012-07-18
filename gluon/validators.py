@@ -2570,8 +2570,11 @@ class LazyCrypt(object):
         else:
             salt = ''
         masterkey = key+salt
-        h = simple_hash(self.password, masterkey, digest_alg)
-        self.crypted = '%s$%s$%s' % (digest_alg, salt, h)
+        hashed = simple_hash(self.password, masterkey, digest_alg)
+        if salt:
+            self.crypted = '%s$%s$%s' % (digest_alg, salt, hashed)
+        else:
+            self.crypted = hashed
         return self.crypted
 
     def __eq__(self, stored_password):        
