@@ -1,0 +1,16 @@
+{{extend 'layout.html'}}
+<script>
+function delkey(id) {
+  jQuery('#'+id).hide();
+  jQuery('#'+id+' INPUT').val(String.fromCharCode(127));
+  return false;
+}
+</script>
+
+{{block sectionclass}}edit_language{{end}}
+
+<h2>{{=T("Editing Plural Forms File")}} "{{=filename}}"</h2>
+<div class="pluralsform">
+  {{=form}}
+</div>
+
