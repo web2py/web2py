@@ -166,6 +166,12 @@ class Storage(dict):
             return value[-1]
         return None
 
+    def __getinitargs__(self):
+        return ()
+
+    def __getnewargs__(self):
+        return ()
+
 PICKABLE = (str,int,long,float,bool,list,dict,tuple,set)
 def PickleableStorage(data):
     return Storage(dict((k,v) for (k,v) in data.items() if isinstance(v,PICKABLE)))
