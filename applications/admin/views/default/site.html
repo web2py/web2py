@@ -25,6 +25,10 @@
         {{pass}}
         {{=button(URL('errors',args=a), T("Errors"))}}
         {{=button(URL('cleanup',args=a), T("Clean"))}}
+        {{if os.path.exists(os.path.join(apath(r=request),a,'.git')): }}
+        {{=button(URL('git_pull',args=a), T("Git Pull"))}}
+        {{=button(URL('git_push',args=a), T("Git Push"))}}
+        {{pass}}
         {{=button(URL('pack',args=a), T("Pack all"))}}
         {{if not os.path.exists('applications/%s/compiled' % a):}}
         {{=button(URL('compile_app',args=a), T("Compile"))}}
@@ -140,6 +144,38 @@
         </div>
       </form>
     </div>
+    <!-- Git Clone -->
+    <div class="box">
+      <h3>{{=T("Import from Git Repo")}}</h3>
+            <form action="" enctype="multipart/form-data" method="post">
+        <div class="formfield">
+      <table>
+            <tr>
+          <td>
+        {{=LABEL(T("Application Name:"), _form='clone_git')}}
+          </td>
+          <td>
+          <input id="git_name" name="git_name" type="text" id="git_import"/>
+          </td>
+          </tr>
+          <tr>
+          <td>
+        {{=LABEL(T("Git URL:"), _for='git_import')}}
+          </td>
+          <td>
+        <input id="git_url" name="git_url" type="text" id="git_import" />
+          </td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>
+        <button type="submit">{{=T('Import')}}</button>
+          </td>
+        </tr>
+      </table>
+        </div>
+      </form>
+    </div><br/>
     <!-- DEPLOY ON GAE -->
     <div class="box">
       <h3>{{=T("Deploy on Google App Engine")}}</h3>

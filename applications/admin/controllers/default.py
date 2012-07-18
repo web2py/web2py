@@ -13,6 +13,13 @@ from gluon.fileutils import abspath, read_file, write_file
 from glob import glob
 import shutil
 import platform
+if (request.vars.git_url) or (request.function == 'git_pull') or (request.function == 'git_push'):
+    try:                                                                                                                                                                                                              
+        from git import *
+    except ImportError:                                                                                                                                                                                               
+        session.flash = 'requires python-git, but not installed'                                                                                                                                                      
+    
+
 
 if DEMO_MODE and request.function in ['change_password','pack','pack_plugin','upgrade_web2py','uninstall','cleanup','compile_app','remove_compiled_app','delete','delete_plugin','create_file','upload_file','update_languages','reload_routes']:
     session.flash = T('disabled in demo mode')
@@ -157,7 +164,6 @@ def site():
     """ Site handler """
 
     myversion = request.env.web2py_version
-
     # Shortcut to make the elif statements more legible
     file_or_appurl = 'file' in request.vars or 'appurl' in request.vars
 
@@ -167,6 +173,7 @@ def site():
     elif request.vars.filename and not 'file' in request.vars:
         # create a new application
         appname = cleanpath(request.vars.filename).replace('.', '_')
+        
         if app_create(appname, request):
             if MULTI_USER_MODE:
                 db.app.insert(name=appname,owner=auth.user.id)
@@ -219,6 +226,26 @@ def site():
         redirect(URL(r=request))
 
     regex = re.compile('^\w+$')
+    
+    if request.vars.git_url:
+        if request.vars.git_name:
+            target = os.path.join(apath(r=request),request.vars.git_name)
+            if os.path.exists(target):
+                session.flash = 'Application by that name already exists.'
+            else:
+                try:
+                    new_repo = Repo.clone_from(request.vars.git_url,target)
+                    session.flash = T('new application "%s" imported',request.vars.git_name)
+                except GitCommandError, err:
+                    print err
+                    session.flash = T('Invalid git repository specified.')
+        else:
+            session.flash = 'Application Name required for git import.'
+        redirect(URL(r=request))
+    else:
+        pass
+
+    
 
     if is_manager():
         apps = [f for f in os.listdir(apath(r=request)) if regex.match(f)]
@@ -1045,6 +1072,26 @@ def create_file():
 
     redirect(request.vars.sender)
 
+def git_pull():
+    """ Git Pull handler """
+    app = get_app()
+    if 'pull' in request.vars:
+        repo = Repo(os.path.join(apath(r=request),app))
+        index = repo.index
+        assert repo.bare == False
+        origin = repo.remotes.origin
+        origin.fetch()
+        origin.pull(origin.refs[0].remote_head)
+        session.flash = T('Application "%(app)" updated', app)
+        redirect(URL('site'))
+    elif 'cancel' in request.vars:
+        redirect(URL('site'))
+    
+    return dict(app=app)
+
+
+    
+
 
 def upload_file():
     """ File uploading handler """
@@ -1417,4 +1464,3 @@ def bulk_register():
         session.flash = T('%s students registered',n)
         redirect(URL('site'))
     return locals()
-
