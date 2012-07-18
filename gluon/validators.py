@@ -2551,7 +2551,7 @@ class LazyCrypt(object):
         key = 'md5:uuid'
         key = 'sha512:uuid'
         ...
-        key = 'pbkdf2(100,64):uuid' 100 iterations and 64 chars length
+        key = 'pbkdf2(1000,64,sha512):uuid' 1000 iterations and 64 chars length
         """
         if self.crypted:
             return self.crypted                
