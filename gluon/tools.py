@@ -4453,14 +4453,18 @@ class Wiki(object):
         return dict(content=form)
     def pages(self):
         self.check_authorization()
-        self.auth.db.wiki_page.slug.writable = True
+        self.auth.db.wiki_page.title.represent = lambda title,row: \
+            A(title,_href=URL(args=row.slug))
         content=SQLFORM.smartgrid(
             self.auth.db.wiki_page,
-            linked_tables = 'wiki_media', 
+            linked_tables = 'wiki_media',
+            details={'wiki_page':False,'wiki_media':True},
+            editable={'wiki_page':False,'wiki_media':True},
+            deletable={'wiki_page':False,'wiki_media':True},
             orderby = {'wiki_page':self.auth.db.wiki_page.title,
                        'wiki_media':self.auth.db.wiki_media.title},
             args=['_pages'],
-            user_signature=False)
+            user_signature=True)
         return dict(content=content)
     def media(self, id):
         request, db = current.request, self.auth.db
@@ -4502,14 +4506,17 @@ class Wiki(object):
                             URL(controller,function,args=('_cloud'))))
             menu.append((current.T('[Wiki]'),None,None,submenu))
         return menu
-    def search(self,tags=None):
-        form = SQLFORM.factory(Field('tags',requires=IS_NOT_EMPTY(),
-                                     default=tags,label=current.T('Search')))
-        if form.process(keepvalues=True).accepted:
-            tags = [v.strip() for v in form.vars.tags.split(',')]
-            tags = [v for v in tags if v]
+    def search(self,tags=None,cloud=True):        
         content = CAT()
-        content.append(DIV(form,_class='w2p_wiki_form'))
+        if not tags:
+            request = current.request
+            form = SQLFORM.factory(Field('tags',requires=IS_NOT_EMPTY(),
+                                         default=request.vars.tags,
+                                         label=current.T('Search')))
+            if request.vars:
+                tags = [v.strip() for v in request.vars.tags.split(',')]
+                tags = [v for v in tags if v]
+            content.append(DIV(form,_class='w2p_wiki_form'))
         if tags:
             db = self.auth.db
             count = db.wiki_tag.wiki_page.count()
@@ -4522,10 +4529,16 @@ class Wiki(object):
             if not pages:
                 content.append(DIV(T("No results",_class='w2p_wiki_form')))
             else:
-                items = [DIV(A(p.title,_href=URL(args=p.slug)),BR(),
-                             SPAN(p.tags,_class='w2p_wiki_tags')) 
+                def link(t):
+                    return A(t,_href=URL(args='_search',vars=dict(tags=t)))
+                items = [DIV(H3(A(p.title,_href=URL(args=p.slug))),
+                             SPAN(*[link(t.strip()) for t in \
+                                        p.tags.split(',') if t.strip()]),
+                             _class='w2p_wiki_tags')
                          for p in pages]
                 content.append(DIV(_class='w2p_wiki_pages',*items))
+        elif cloud:
+            content.append(self.cloud()['content'])
         return dict(content=content)
     def cloud(self):
         db = self.auth.db
@@ -4538,9 +4551,11 @@ class Wiki(object):
             a,b = ids[0](count), ids[-1](count)
         def scale(c):
             return '%.2f' % (3.0*(c-b)/max(a-b,1)+1)
-        items = [SPAN(item.wiki_tag.name,_class='w2p_cloud_tag',
+        items = [A(item.wiki_tag.name,_class='w2p_cloud_tag',
                       _style='padding-right:0.2em;font-size:%sem' \
-                          % scale(item(count))) 
+                          % scale(item(count)),
+                   _href=URL(args='_search',
+                             vars=dict(tags=item.wiki_tag.name)))
                  for item in ids]
         return dict(content=DIV(_class='w2p_cloud',*items))
         
