@@ -80,7 +80,7 @@ from http import HTTP, redirect
 from globals import Request, Response, Session
 from compileapp import build_environment, run_models_in, \
     run_controller_in, run_view_in
-from fileutils import copystream
+from fileutils import copystream, parse_version
 from contenttype import contenttype
 from dal import BaseAdapter
 from settings import global_settings
@@ -99,6 +99,18 @@ requests = 0    # gc timer
 
 # pattern used to validate client address
 regex_client = re.compile('[\w\-:]+(\.[\w\-]+)*\.?')  # ## to account for IPV6
+
+try:
+    version_info = open(os.path.join(global_settings.gluon_parent, 'VERSION'), 'r')
+    raw_version_string = version_info.read().strip()
+    version_info.close()
+    global_settings.web2py_version = parse_version(raw_version_string)
+except:
+    # when VERSION file is not found,
+    # when VERSION file is empty,
+    # when VERSION file is incorrect:
+    global_settings.web2py_version = parse_version()
+
 web2py_version = global_settings.web2py_version
 
 try:
