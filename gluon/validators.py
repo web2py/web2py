@@ -19,7 +19,7 @@ import struct
 import decimal
 import unicodedata
 from cStringIO import StringIO
-from utils import simple_hash, hmac_hash, web2py_uuid
+from utils import simple_hash, hmac_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 
 __all__ = [
     'CLEANUP',
@@ -2531,6 +2531,7 @@ class LazyCrypt(object):
         self.crypt = crypt
         self.password = password
         self.crypted = None
+
     def __str__(self):
         """
         Encrypted self.password and caches it in self.crypted.
@@ -2555,7 +2556,7 @@ class LazyCrypt(object):
         """
         if self.crypted:
             return self.crypted                
-        if self.crypt.key:            
+        if self.crypt.key:
             if ':' in self.crypt.key:
                 digest_alg, key = self.crypt.key.split(':',1)
             else:
@@ -2571,24 +2572,26 @@ class LazyCrypt(object):
             salt = ''
         masterkey = key+salt
         hashed = simple_hash(self.password, masterkey, digest_alg)
-        if salt:
-            self.crypted = '%s$%s$%s' % (digest_alg, salt, hashed)
-        else:
-            self.crypted = hashed
+        self.crypted = '%s$%s$%s' % (digest_alg, salt, hashed)
         return self.crypted
 
     def __eq__(self, stored_password):        
         """
         compares the current lazy crypted password with a stored password
         """
-        if self.crypt.salt and stored_password.count('$')==2:
-            key = self.crypt.key.split(':')[1] if ':' in self.crypt.key else ''
+        key = self.crypt.key.split(':')[1] if ':' in self.crypt.key else ''
+        if stored_password.count('$')==2:
             (digest_alg, salt, hash) = stored_password.split('$')
             masterkey = key+salt
             h = simple_hash(self.password, masterkey, digest_alg)
             temp_pass = '%s$%s$%s' % (digest_alg, salt, h)            
-        else:
-            temp_pass = str(self)
+        else: # no salting
+            # guess digest_alg
+            digest_alg = DIGEST_ALG_BY_SIZE.get(len(stored_password),None)
+            if not digest_alg:   
+                return False
+            else:
+                temp_pass = simple_hash(self.password, key, digest_alg)
         return temp_pass == stored_password
     
 
@@ -2628,7 +2631,10 @@ class CRYPT(object):
 
     """
 
-    def __init__(self, key=None, digest_alg='md5', min_length=0, 
+    def __init__(self, 
+                 key=None, 
+                 digest_alg='md5',
+                 min_length=0, 
                  error_message='too short', salt=None):
         """
         important, digest_alg='md5' is not the default hashing algorithm for
