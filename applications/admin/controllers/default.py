@@ -1080,15 +1080,33 @@ def git_pull():
         #index = repo.index
         #assert repo.bare == False
         origin = repo.remotes.origin
-        #origin.fetch
+        origin.fetch()
         origin.pull()
-        session.flash = T('Application "%(app)" updated', app)
+        session.flash = T("Application updated via git pull")
         redirect(URL('site'))
     elif 'cancel' in request.vars:
         redirect(URL('site'))
     
     return dict(app=app)
 
+def git_push():
+    """ Git Push handler """
+    app = get_app()
+    if 'push' in request.vars:
+        repo = Repo(os.path.join(apath(r=request),app))
+        index = repo.index
+        os.chdir(os.path.join(apath(r=request),app))
+        index.add('*')
+        new_commit = index.commit("Deploy from Web2py IDE")
+        origin = repo.remotes.origin
+        origin.push()
+        session.flash = T("Git repo updated with latest application changes.")
+        redirect(URL('site'))
+    elif 'cancel' in request.vars:
+        redirect(URL('site'))
+    os.chdir(apath(r=request))
+    
+    return dict(app=app)
 
     
 
