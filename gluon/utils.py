@@ -71,6 +71,15 @@ def get_digest(value):
     else:
         raise ValueError("Invalid digest algorithm")
 
+DIGEST_ALG_BY_SIZE = {
+    128/16: 'md5',
+    160/16: 'sha1',
+    224/16: 'sha224',
+    256/16: 'sha256',
+    384/16: 'sha384',
+    512/16: 'sha512',
+    }
+
 def hmac_hash(value, salt, digest_alg='md5'):
     if isinstance(digest_alg,str) and digest_alg.startswith('pbkdf2'):
         iterations, keylen, alg = digest_alg[7:-1].split(',')
