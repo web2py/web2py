@@ -106,10 +106,7 @@ try:
     version_info.close()
     global_settings.web2py_version = parse_version(raw_version_string)
 except:
-    # when VERSION file is not found,
-    # when VERSION file is empty,
-    # when VERSION file is incorrect:
-    global_settings.web2py_version = parse_version()
+    raise RuntimeError, "Cannot determine web2py version"
 
 web2py_version = global_settings.web2py_version
 
