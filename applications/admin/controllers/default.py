@@ -1077,11 +1077,11 @@ def git_pull():
     app = get_app()
     if 'pull' in request.vars:
         repo = Repo(os.path.join(apath(r=request),app))
-        index = repo.index
-        assert repo.bare == False
+        #index = repo.index
+        #assert repo.bare == False
         origin = repo.remotes.origin
-        origin.fetch()
-        origin.pull(origin.refs[0].remote_head)
+        #origin.fetch
+        origin.pull()
         session.flash = T('Application "%(app)" updated', app)
         redirect(URL('site'))
     elif 'cancel' in request.vars:
