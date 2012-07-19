@@ -18,7 +18,7 @@ if not hasattr(os, 'mkdir'):
 if global_settings.db_sessions is not True:
     global_settings.db_sessions = set()
 
-global_settings.gluon_parent = os.environ.get('web2py_path', __file__.partition("gluon")[0])
+global_settings.gluon_parent = os.environ.get('web2py_path', os.getcwd())
 
 global_settings.applications_parent = global_settings.gluon_parent
 
