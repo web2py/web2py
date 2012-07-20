@@ -880,7 +880,7 @@ class Auth(object):
     def here(self):
         return URL(args=current.request.args,vars=current.request.vars)
 
-    def __init__(self, environment=None, db=None, mailer=True, salt = False,
+    def __init__(self, environment=None, db=None, mailer=True,
                  hmac_key=None, controller='default', function='user', cas_provider=None):
         """
         auth=Auth(db)
@@ -922,7 +922,6 @@ class Auth(object):
 
         settings.hideerror = False
         settings.password_min_length = 4
-        settings.salt = salt
         settings.cas_domains = [request.env.http_host]
         settings.cas_provider = cas_provider
         settings.cas_actions = {'login':'login',
@@ -1410,7 +1409,7 @@ class Auth(object):
             table.last_name.requires = \
                 IS_NOT_EMPTY(error_message=self.messages.is_empty)
             table[passfield].requires = [
-                CRYPT(key=settings.hmac_key,salt=settings.salt,
+                CRYPT(key=settings.hmac_key,
                       min_length=settings.password_min_length)]
             table.email.requires = \
                 [IS_EMAIL(error_message=self.messages.invalid_email),

@@ -40,7 +40,7 @@ response.generic_patterns = ['*'] if request.is_local else []
 #########################################################################
 
 from gluon.tools import Auth, Crud, Service, PluginManager, prettydate
-auth = Auth(db, hmac_key=Auth.get_or_create_key(), salt=True)
+auth = Auth(db)
 crud, service, plugins = Crud(db), Service(), PluginManager()
 
 ## create all tables needed by auth if not custom tables
