@@ -130,7 +130,7 @@ class IS_MATCH(Validator):
         ('hello', None)
 
         >>> IS_MATCH('hell')('hello')
-        ('hello', 'invalid expression')
+        ('hello', None)
 
         >>> IS_MATCH('hell.*', strict=False)('hello')
         ('hello', None)
@@ -139,10 +139,10 @@ class IS_MATCH(Validator):
         ('shello', 'invalid expression')
 
         >>> IS_MATCH('hello', search=True)('shello')
-        ('hello', None)
+        ('shello', None)
 
         >>> IS_MATCH('hello', search=True, strict=False)('shellox')
-        ('hello', None)
+        ('shellox', None)
 
         >>> IS_MATCH('.*hello.*', search=True, strict=False)('shellox')
         ('shellox', None)
@@ -2579,7 +2579,13 @@ class LazyCrypt(object):
         """
         compares the current lazy crypted password with a stored password
         """
-        key = self.crypt.key.split(':')[1] if ':' in self.crypt.key else ''
+        if self.crypt.key:
+            if ':' in self.crypt.key:
+                key = self.crypt.key.split(':')[1] 
+            else:
+                key = self.crypt.key
+        else:
+            key = ''
         if stored_password.count('$')==2:
             (digest_alg, salt, hash) = stored_password.split('$')
             masterkey = key+salt
@@ -2629,13 +2635,55 @@ class CRYPT(object):
     Important: hashed password is returned as a LazyCrypt object and computed only if needed.
     The LasyCrypt object also knows how to compare itself with an existing salted password
 
+    Supports standard algorithms
+
+    >>> for alg in ('md5','sha1','sha256','sha384','sha512'): 
+    ...     print str(CRYPT(digest_alg=alg,salt=True)('test')[0])
+    md5$...$...
+    sha1$...$...
+    sha256$...$...
+    sha384$...$...
+    sha512$...$...
+
+    The syntax is always alg$salt$hash
+
+    Supports for pbkdf2
+
+    >>> alg = 'pbkdf2(1000,20,sha512)'
+    >>> print str(CRYPT(digest_alg=alg,salt=True)('test')[0])
+    pbkdf2(1000,20,sha512)$...$...
+
+    An optional hmac_key can be specified and it is used as salt prefix
+
+    >>> a = str(CRYPT(digest_alg='md5',key='mykey',salt=True)('test')[0])
+    >>> print a
+    md5$...$...
+
+    Even if the algorithm changes the hash can still be validated
+
+    >>> CRYPT(digest_alg='sha1',key='mykey',salt=True)('test')[0] == a
+    True
+
+    If no salt is specified CRYPT can guess the algorithms from length:
+
+    >>> a = str(CRYPT(digest_alg='sha1',salt=False)('test')[0])
+    >>> a
+    'sha1$$a94a8fe5ccb19ba61c4c0873d391e987982fbbd3'
+    >>> CRYPT(digest_alg='sha1',salt=False)('test')[0] == a
+    True
+    >>> CRYPT(digest_alg='sha1',salt=False)('test')[0] == a[6:]
+    True
+    >>> CRYPT(digest_alg='md5',salt=False)('test')[0] == a
+    True
+    >>> CRYPT(digest_alg='md5',salt=False)('test')[0] == a[6:]
+    True
     """
 
     def __init__(self, 
                  key=None, 
-                 digest_alg='md5',
+                 digest_alg='pbkdf2(1000,20,sha512)',
                  min_length=0, 
-                 error_message='too short', salt=None):
+                 error_message='too short', salt=True):
         """
         important, digest_alg='md5' is not the default hashing algorithm for
         web2py. This is only an example of usage of this function.
@@ -3093,7 +3141,8 @@ class IS_IPV4(Validator):
 
 if __name__ == '__main__':
     import doctest
-    doctest.testmod()
+    doctest.testmod(optionflags=doctest.NORMALIZE_WHITESPACE|doctest.ELLIPSIS)
+
 
 
 

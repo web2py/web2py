@@ -16,7 +16,7 @@ import random
 import time
 import os
 import logging
-from gluon.contrib.pbkdf2 import pbkdf2_hex
+from contrib.pbkdf2 import pbkdf2_hex
 
 logger = logging.getLogger("web2py")
 
@@ -69,15 +69,15 @@ def get_digest(value):
     elif value == "sha512":
         return hashlib.sha512
     else:
-        raise ValueError("Invalid digest algorithm")
+        raise ValueError("Invalid digest algorithm: %s" % value) 
 
 DIGEST_ALG_BY_SIZE = {
-    128/16: 'md5',
-    160/16: 'sha1',
-    224/16: 'sha224',
-    256/16: 'sha256',
-    384/16: 'sha384',
-    512/16: 'sha512',
+    128/4: 'md5',
+    160/4: 'sha1',
+    224/4: 'sha224',
+    256/4: 'sha256',
+    384/4: 'sha384',
+    512/4: 'sha512',
     }
 
 def hmac_hash(value, salt, digest_alg='md5'):

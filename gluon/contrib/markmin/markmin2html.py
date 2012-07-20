@@ -667,19 +667,19 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
     '<p>[[probe]]</p>'
 
     >>> render(r"\\\\[[probe]]")
-    '<p>\\\\<span id="probe"></span></p>'
+    '<p>\\\\<a name="markmin_probe"></a></p>'
 
     >>> render(r"\\\\\\[[probe]]")
     '<p>\\\\[[probe]]</p>'
 
     >>> render(r"\\\\\\\\[[probe]]")
-    '<p>\\\\\\\\<span id="probe"></span></p>'
+    '<p>\\\\\\\\<a name="markmin_probe"></a></p>'
 
     >>> render(r"\\\\\\\\\[[probe]]")
     '<p>\\\\\\\\[[probe]]</p>'
 
     >>> render(r"\\\\\\\\\\\[[probe]]")
-    '<p>\\\\\\\\\\\\<span id="probe"></span></p>'
+    '<p>\\\\\\\\\\\\<a name="markmin_probe"></a></p>'
 
     >>> render("``[[ [\\[[probe\]\\]] URL\\[x\\]]]``:red[dummy_params]")
     '<span style="color: red"><a href="URL[x]" title="[[probe]]">URL[x]</a></span>'
@@ -725,6 +725,10 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
 
     >>> render("**@{probe}**", environment=dict(probe="this is a test"))
     '<p><strong>this is a test</strong></p>'
+
+    >>> render('[[id1 [span **messag** in ''markmin''] ]] ... [[**link** to id [link\\\'s title] #mark1]]')
+    '<p><a name="markmin_id1">span <strong>messag</strong> in markmin</a> ... <a href="#markmin_mark1" title="link\\\'s title"><strong>link</strong> to id</a></p>'
+
     """
     text = str(text or '')
     text = regex_backslash.sub(lambda m: m.group(1).translate(ttab_in), text)
@@ -855,7 +859,7 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
         """ paragraphs in lists """
         lent=len(t)
         if lent>lev:
-            return parse_list(t, '.', s, 'ul', lev, mtag)
+            return parse_list(t, '.', s, 'ul', lev, mtag, lineno)
         elif lent<lev:
             while ltags[-1]>lent:
                 ltags.pop()
@@ -986,7 +990,9 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
                                    URL,
                                    environment,
                                    latex,
-                                   auto)
+                                   auto,
+                                   class_prefix,
+                                   id_prefix)
                            )
                 mtag='q'
         else:
@@ -1100,7 +1106,8 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
         elif p in ('left','right'):
             style = ' style="float:%s"' % p
         if p in ('video','audio'):
-            t = render(t, {}, {}, 'br', URL, environment, latex, auto)
+            t = render(t, {}, {}, 'br', URL, environment, latex,
+                       auto, class_prefix, id_prefix)
             return '<%(p)s controls="controls"%(title)s%(width)s><source src="%(k)s" />%(t)s</%(p)s>' \
                     % dict(p=p, title=title, width=width, k=k, t=t)
         alt = ' alt="%s"'%escape(t).replace(META, DISABLED_META) if t else ''
@@ -1115,13 +1122,19 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
         t = t or ''
         a = escape(a) if a else ''
         if k:
+            if k.startswith('#'):
+                k = '#'+id_prefix+k[1:]
             k = escape(k)
             title = ' title="%s"' % a.replace(META, DISABLED_META) if a else ''
             target = ' target="_blank"' if p == 'popup' else ''
-            t = render(t, {}, {}, 'br', URL, environment, latex, auto) if t else k
+            t = render(t, {}, {}, 'br', URL, environment, latex, auto,
+                       class_prefix, id_prefix) if t else k
             return '<a href="%(k)s"%(title)s%(target)s>%(t)s</a>' \
                    % dict(k=k, title=title, target=target, t=t)
-        return '<span id="%s">%s</span>' % (escape(t),a)
+        return '<a name="%s">%s</a>' % (escape(id_prefix+t),
+                                        render(a, {},{},'br', URL,
+                                               environment, latex, auto,
+                                               class_prefix, id_prefix))
 
     parts = text.split(LINK)
     text = parts[0]
@@ -1183,21 +1196,36 @@ def markmin2html(text, extra={}, allowed={}, sep='p', auto=True):
 if __name__ == '__main__':
     import sys
     import doctest
+    from textwrap import dedent
+
+    html=dedent("""
+         <!doctype html>
+         <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+         <head>
+         <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+         %(style)s
+         <title>%(title)s</title>
+         </head>
+         <body>
+         %(body)s
+         </body>
+         </html>""")[1:]
+
     if sys.argv[1:2] == ['-h']:
-        print """<html><body>
-                 <style>
-                   blockquote { background-color: lime; }
-                   thead { color: white; background-color: gray; text-align: center; }
-                   tfoot { color: white; background-color: gray; }
+        style=dedent("""
+              <style>
+                blockquote { background-color: lime; }
+                thead { color: white; background-color: gray; text-align: center; }
+                tfoot { color: white; background-color: gray; }
+                .tableclass1 { background-color: yellow; }
+                .tableclass1 thead { color: yellow; background-color: green; }
+                .tableclass1 tfoot { color: yellow; background-color: green; }
 
-                   .tableclass1 { background-color: yellow; }
-                   .tableclass1 thead { color: yellow; background-color: green; }
-                   .tableclass1 tfoot { color: yellow; background-color: green; }
+                td.num { text-align: right; }
+                pre { background-color: #E0E0E0; }
+              </style>""")[1:]
 
-                   td.num { text-align: right; }
-                   pre { background-color: #E0E0E0; }
-                 </style>
-              """+markmin2html(__doc__)+'</body></html>'
+        print html % dict(title="Markmin markup language", style=style, body=markmin2html(__doc__))
     elif sys.argv[1:2] == ['-t']:
         from timeit import Timer
         loops=1000
@@ -1208,7 +1236,7 @@ if __name__ == '__main__':
     elif len(sys.argv) > 1:
         fargv = open(sys.argv[1],'r')
         try:
-            print '<html><body>'+markmin2html(fargv.read())+'</body></html>'
+            print html % dict(title=sys.argv[1], style='', body=markmin2html(fargv.read()))
         finally:
             fargv.close()
     else:
