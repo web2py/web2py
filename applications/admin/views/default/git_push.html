@@ -1,9 +1,19 @@
 {{extend 'layout.html'}}
 
 <center>
-<h2>{{=T('This will push changes for application to the original remote repo "%s"?', app)}}</h2>
-<table><tr>
-<td>{{=FORM(INPUT(_type='submit',_name='cancel',_value=T('Cancel')))}}</td>
-<td>{{=FORM(INPUT(_type='submit',_name='push',_value=T('Push')))}}</td>
-</tr></table>
+<h2>{{=T('This will push changes to the remote repo for application "%s".', app)}}</h2>
+<table>
+<tr>
+<td>
+    <form action="" enctype="multipart/form-data" method="post">
+        <div class="formfield">
+          {{=FORM(INPUT(_type='text',_name='git_comments',_value='commit comments here'),
+                  INPUT(_type='submit',_name='push',_value=T('Push')),
+                  INPUT(_type='submit',_name='cancel',_value=T('Cancel')))}}
+        </div>
+        <div class="hidden"></div>
+    </form>
+</td>
+</tr>
+</table>
 </center>

@@ -1076,14 +1076,30 @@ def git_pull():
     """ Git Pull handler """
     app = get_app()
     if 'pull' in request.vars:
-        repo = Repo(os.path.join(apath(r=request),app))
-        #index = repo.index
-        #assert repo.bare == False
-        origin = repo.remotes.origin
-        origin.fetch()
-        origin.pull()
-        session.flash = T("Application updated via git pull")
-        redirect(URL('site'))
+        try:
+            repo = Repo(os.path.join(apath(r=request),app))
+            origin = repo.remotes.origin
+            origin.fetch()
+            origin.pull()
+            session.flash = T("Application updated via git pull")
+            redirect(URL('site'))
+        except CheckoutError, message:
+            print message
+            session.flash = T("Pull failed, certain files could not be checked out. Check logs for details.")
+            redirect(URL('site'))
+        except UnmergedEntriesError:
+            session.flash = T("Pull is not possible because you have unmerged files. Fix them up in the work tree, and then try again.")
+            redirect(URL('site'))
+        except AssertionError:
+            session.flash = T("Pull is not possible because you have unmerged files. Fix them up in the work tree, and then try again.")
+            redirect(URL('site'))
+        except GitCommandError, status:
+            print status
+            session.flash = T("Pull failed, git exited abnormally. See logs for details.")
+            redirect(URL('site'))
+        except:
+            print "Unexpected error:", sys.exc_info()[0]
+            raise
     elif 'cancel' in request.vars:
         redirect(URL('site'))
     
@@ -1091,25 +1107,35 @@ def git_pull():
 
 def git_push():
     """ Git Push handler """
+    print request.vars
     app = get_app()
     if 'push' in request.vars:
-        repo = Repo(os.path.join(apath(r=request),app))
-        index = repo.index
-        os.chdir(os.path.join(apath(r=request),app))
-        index.add('*')
-        new_commit = index.commit("Deploy from Web2py IDE")
-        origin = repo.remotes.origin
-        origin.push()
-        session.flash = T("Git repo updated with latest application changes.")
-        redirect(URL('site'))
+        try:
+            repo = Repo(os.path.join(apath(r=request),app))
+            index = repo.index
+            os.chdir(os.path.join(apath(r=request),app))
+            index.add('*')
+            new_commit = index.commit(request.vars.git_comments)
+            origin = repo.remotes.origin
+            origin.push()
+            session.flash = T("Git repo updated with latest application changes.")
+            redirect(URL('site'))
+        except UnmergedEntriesError:
+            session.flash = T("Push failed, there are unmerged entries in the cache. Resolve merge issues manually and try again.")
+            redirect(URL('site'))
+        except GitCommandError, status:
+            print status
+            session.flash = T("Push failed, git exited abnormally. See logs for details.")
+            redirect(URL('site'))
+        except:
+            print "Unexpected error:", sys.exc_info()[0]
+            raise
+
     elif 'cancel' in request.vars:
         redirect(URL('site'))
     os.chdir(apath(r=request))
     
     return dict(app=app)
-
-    
-
 
 def upload_file():
     """ File uploading handler """
