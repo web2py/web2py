@@ -15,7 +15,7 @@ import __builtin__
 __all__ = ['Utf8']
 
 repr_escape_tab={}
-for i in xrange(1,32): repr_escape_tab[i]=ur'\x%02i'%i
+for i in range(1,32): repr_escape_tab[i]=ur'\x%02x'%i
 repr_escape_tab[7]=u'\\a'
 repr_escape_tab[8]=u'\\b'
 repr_escape_tab[9]=u'\\t'
@@ -70,6 +70,24 @@ def size(string):
               string is returned for unicode string
     """
     return Utf8(string).__size__()
+
+def truncate(string, length, dots='...'):
+    """ returns string of length < *length* or truncate
+        string with adding *dots* suffix to the string's end
+
+    args:
+         length (int): max length of string
+         dots (str or unicode): string suffix, when string is cutted
+
+     returns:
+         (utf8-str): original or cutted string
+    """
+    text = unicode(string, 'utf-8')
+    dots = unicode(dots, 'utf-8') if isinstance(dots, str) else dots
+    if len(text) > length:
+        text = text[:length-len(dots)] + dots
+    return str.__new__(Utf8, text.encode('utf-8'))
+
 
 class Utf8(str):
    """
@@ -130,23 +148,6 @@ class Utf8(str):
            return '"'+unicode(self, 'utf-8').translate(repr_escape_tab).encode('utf-8')+'"'
        else:
            return "'"+unicode(self, 'utf-8').translate(repr_escape_tab2).encode('utf-8')+"'"
-
-   def truncate(self, length, dots='...'):
-       """ returns string of length < *length* or truncate
-           string with adding *dots* suffix to the string's end
-
-       args:
-            length (int): max length of string
-            dots (str or unicode): string suffix, when string is cutted
-
-        returns:
-            (utf8-str): original or cutted string
-       """
-       text = unicode(self, 'utf-8')
-       dots = unicode(dots, 'utf-8') if isinstance(dots, str) else dots
-       if len(text) > length:
-           text = text[:length-len(dots)] + dots
-       return str.__new__(Utf8, text.encode('utf-8'))
 
    def __size__(self):
        """ length of utf-8 string in bytes """
@@ -419,15 +420,15 @@ if __name__ == '__main__':
        'прОБА є prOBE'
        >>> type(s.swapcase())
        <class '__main__.Utf8'>
-       >>> s.truncate(10)
+       >>> truncate(s, 10)
        'ПРоба Є...'
-       >>> s.truncate(20)
+       >>> truncate(s, 20)
        'ПРоба Є PRobe'
-       >>> s.truncate(10, '•••') # utf-8 string as *dots*
+       >>> truncate(s, 10, '•••') # utf-8 string as *dots*
        'ПРоба Є•••'
-       >>> s.truncate(10, u'®') # you can use unicode string as *dots*
+       >>> truncate(s, 10, u'®') # you can use unicode string as *dots*
        'ПРоба Є P®'
-       >>> type(s.truncate(10))
+       >>> type(truncate(s, 10))
        <class '__main__.Utf8'>
        >>> Utf8(s.encode('koi8-u'), 'koi8-u')
        'ПРоба Є PRobe'
