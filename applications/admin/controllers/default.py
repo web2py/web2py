@@ -392,7 +392,7 @@ def peek():
     app = get_app(request.vars.app)
     filename = '/'.join(request.args)
     if request.vars.app:
-        path = abspath(filename, gluon=False)
+        path = abspath(filename)
     else:
         path = apath(filename, r=request)
     try:
@@ -696,7 +696,7 @@ def edit_language():
         s = strings[key]
         (prefix, sep, key) = key.partition('\x01')
         if sep:
-            prefix = SPAN(prefix+': ', _style='color: blue;')
+            prefix = SPAN(prefix+': ', _class='tm_ftag')
             k = key
         else:
             (k, prefix) = (prefix, '')
@@ -1034,7 +1034,7 @@ def create_file():
         anchor='#'+request.vars.id if request.vars.id else ''
         if request.vars.app:
             app = get_app(request.vars.app)
-            path = abspath(request.vars.location, gluon=False)
+            path = abspath(request.vars.location)
         else:
             app = get_app(name=request.vars.location.split('/')[0])
             path = apath(request.vars.location, r=request)
