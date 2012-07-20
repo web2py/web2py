@@ -9,6 +9,7 @@ License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 The widget is called from web2py.
 """
 
+import datetime
 import sys
 import cStringIO
 import time
@@ -41,7 +42,7 @@ except NameError:
     BaseException = Exception
 
 ProgramName = 'web2py Web Framework'
-ProgramAuthor = 'Created by Massimo Di Pierro, Copyright 2007-2011'
+ProgramAuthor = 'Created by Massimo Di Pierro, Copyright 2007-' + str(datetime.datetime.now().year)
 ProgramVersion = read_file('VERSION').strip()
 
 ProgramInfo = '''%s
