@@ -1800,6 +1800,7 @@ class BaseAdapter(ConnectionPool):
                         query = query & newquery
         return query
 
+
 ###################################################################################
 # List of all the available adapters; they all extend BaseAdapter.
 ###################################################################################
@@ -8593,7 +8594,10 @@ class Rows(object):
         """
         returns a list of sorted elements (not sorted in place)
         """
-        return Rows(self.db,sorted(self,key=f,reverse=reverse),self.colnames)
+        rows = Rows(self.db,[],self.colnames,compact=False)
+        rows.records = sorted(self,key=f,reverse=reverse)
+        return rows
+
 
     def group_by_value(self, field):
         """
