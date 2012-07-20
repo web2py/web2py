@@ -2579,7 +2579,13 @@ class LazyCrypt(object):
         """
         compares the current lazy crypted password with a stored password
         """
-        key = self.crypt.key.split(':')[1] if ':' in self.crypt.key else ''
+        if self.crypt.key:
+            if ':' in self.crypt.key:
+                key = self.crypt.key.split(':')[1] 
+            else:
+                key = self.crypt.key
+        else:
+            key = ''
         if stored_password.count('$')==2:
             (digest_alg, salt, hash) = stored_password.split('$')
             masterkey = key+salt
@@ -2629,6 +2635,19 @@ class CRYPT(object):
     Important: hashed password is returned as a LazyCrypt object and computed only if needed.
     The LasyCrypt object also knows how to compare itself with an existing salted password
 
+    Some tests:
+
+    >>> a = str(CRYPT(digest_alg='sha1',salt=False)('test')[0])
+    >>> a
+    'sha1$$a94a8fe5ccb19ba61c4c0873d391e987982fbbd3'
+    >>> CRYPT(digest_alg='sha1',salt=False)('test')[0] == a
+    True
+    >>> CRYPT(digest_alg='sha1',salt=False)('test')[0] == a[6:]
+    True
+    >>> CRYPT(digest_alg='md5',salt=False)('test')[0] == a
+    True
+    >>> CRYPT(digest_alg='md5',salt=False)('test')[0] == a[6:]
+    True
     """
 
     def __init__(self, 
