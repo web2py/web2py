@@ -2681,9 +2681,9 @@ class CRYPT(object):
 
     def __init__(self, 
                  key=None, 
-                 digest_alg='md5',
+                 digest_alg='pbkdf2(1000,20,sh512)',
                  min_length=0, 
-                 error_message='too short', salt=None):
+                 error_message='too short', salt=True):
         """
         important, digest_alg='md5' is not the default hashing algorithm for
         web2py. This is only an example of usage of this function.
