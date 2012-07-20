@@ -25,7 +25,7 @@ class X509Auth(object):
     from gluon.contrib.login_methods.x509_auth import X509Account
     auth.settings.actions_disabled=['register','change_password',
                                     'request_reset_password','profile']
-    auth.settings.login_form = X509Account()
+    auth.settings.login_form = X509Auth()
 
     """
 
