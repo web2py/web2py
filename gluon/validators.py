@@ -2681,7 +2681,7 @@ class CRYPT(object):
 
     def __init__(self, 
                  key=None, 
-                 digest_alg='pbkdf2(1000,20,sh512)',
+                 digest_alg='pbkdf2(1000,20,sha512)',
                  min_length=0, 
                  error_message='too short', salt=True):
         """
