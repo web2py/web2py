@@ -52,15 +52,7 @@ from custom_import import custom_import_install
 #  The two are identical unless web2py_path is changed via the web2py.py -f folder option
 #  main.web2py_path is the same as applications_parent (for backward compatibility)
 
-if not hasattr(os, 'mkdir'):
-    global_settings.db_sessions = True
-if global_settings.db_sessions is not True:
-    global_settings.db_sessions = set()
-global_settings.gluon_parent = os.environ.get('web2py_path', os.getcwd())
-global_settings.applications_parent = global_settings.gluon_parent
 web2py_path = global_settings.applications_parent # backward compatibility
-global_settings.app_folders = set()
-global_settings.debugging = False
 
 custom_import_install(web2py_path)
 
@@ -88,7 +80,7 @@ from http import HTTP, redirect
 from globals import Request, Response, Session
 from compileapp import build_environment, run_models_in, \
     run_controller_in, run_view_in
-from fileutils import copystream
+from fileutils import copystream, parse_version
 from contenttype import contenttype
 from dal import BaseAdapter
 from settings import global_settings
@@ -108,10 +100,15 @@ requests = 0    # gc timer
 # pattern used to validate client address
 regex_client = re.compile('[\w\-:]+(\.[\w\-]+)*\.?')  # ## to account for IPV6
 
-version_info = open(abspath('VERSION', gluon=True), 'r')
-web2py_version = parse_version(version_info.read().strip())
-version_info.close()
-global_settings.web2py_version = web2py_version
+try:
+    version_info = open(os.path.join(global_settings.gluon_parent, 'VERSION'), 'r')
+    raw_version_string = version_info.read().strip()
+    version_info.close()
+    global_settings.web2py_version = parse_version(raw_version_string)
+except:
+    raise RuntimeError, "Cannot determine web2py version"
+
+web2py_version = global_settings.web2py_version
 
 try:
     import rocket
@@ -280,7 +277,10 @@ def parse_get_post_vars(request, environ):
         request.vars[key] = request.get_vars[key]
 
     # parse POST variables on POST, PUT, BOTH only in post_vars
-    request.body = copystream_progress(request) ### stores request body
+    try:
+        request.body = copystream_progress(request) ### stores request body
+    except IOError:
+        raise HTTP(400,"Bad Request - HTTP body is incomplete")
     if (request.body and request.env.request_method in ('POST', 'PUT', 'BOTH')):
         dpost = cgi.FieldStorage(fp=request.body,environ=environ,keep_blank_values=1)
         # The same detection used by FieldStorage to detect multipart POSTs
@@ -398,8 +398,9 @@ def wsgibase(environ, responder):
 
                 local_hosts = [http_host,'::1','127.0.0.1','::ffff:127.0.0.1']
                 if not global_settings.web2py_runtime_gae:
-                    local_hosts += [socket.gethostname(),
-                                    socket.gethostbyname(http_host)]
+                    local_hosts.append(socket.gethostname())
+                    try: local_hosts.append(socket.gethostbyname(http_host))
+                    except socket.gaierror: pass
                 request.client = get_client(request.env)
                 request.folder = abspath('applications',
                                          request.application) + os.sep

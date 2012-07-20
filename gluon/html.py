@@ -327,8 +327,8 @@ def URL(
 
         # re-assembling the same way during hash authentication
         message = h_args + '?' + urllib.urlencode(sorted(h_vars))
-
-        sig = hmac_hash(message, hmac_key, digest_alg='sha1', salt=salt)
+        sig = hmac_hash(message, (hmac_key or '')+(salt or ''), 
+                        digest_alg='sha1')
         # add the signature into vars
         list_vars.append(('_signature', sig))
 
@@ -447,7 +447,7 @@ def verifyURL(request, hmac_key=None, hash_vars=True, salt=None, user_signature=
     message = h_args + '?' + urllib.urlencode(sorted(h_vars))
 
     # hash with the hmac_key provided
-    sig = hmac_hash(message, str(hmac_key), digest_alg='sha1', salt=salt)
+    sig = hmac_hash(message, str(hmac_key)+(salt or ''), digest_alg='sha1')
 
     # put _signature back in get_vars just in case a second call to URL.verify is performed
     # (otherwise it'll immediately return false)
@@ -455,7 +455,7 @@ def verifyURL(request, hmac_key=None, hash_vars=True, salt=None, user_signature=
 
     # return whether or not the signature in the request matched the one we just generated
     # (I.E. was the message the same as the one we originally signed)
-    
+
     return compare(original_sig, sig)
 
 URL.verify = verifyURL
@@ -847,7 +847,7 @@ class DIV(XmlComponent):
 
         # get the xml for the inner components
         co = join([xmlescape(component) for component in
-                     self.components])
+                   self.components])
 
         return (fa, co)
 
@@ -1357,10 +1357,12 @@ class A(DIV):
                 (self['component'],self['target'] or '',d)
             self['_href'] = self['_href'] or '#null'
         elif self['callback']:
+            returnfalse="var e = arguments[0] || window.event; e.cancelBubble=true; if (e.stopPropagation) e.stopPropagation();"
             if d:
-                self['_onclick']="if(confirm(w2p_ajax_confirm_message||'Are you sure you want o delete this object?')){ajax('%s',[],'%s');%s};return false;" % (self['callback'],self['target'] or '',d)
+                self['_onclick']="if(confirm(w2p_ajax_confirm_message||'Are you sure you want o delete this object?')){ajax('%s',[],'%s');%s};%s" % \
+                    (self['callback'],self['target'] or '',d, returnfalse)
             else:
-                self['_onclick']="ajax('%s',[],'%s');%sreturn false;" % \
+                self['_onclick']="ajax('%s',[],'%s');%sreturn false" % \
                     (self['callback'],self['target'] or '',d)
             self['_href'] = self['_href'] or '#null'
         elif self['cid']:
@@ -2145,6 +2147,8 @@ class MENU(DIV):
                 li = LI(DIV(name))
             elif link:
                 li = LI(A(name, _href=link))
+            elif not link and isinstance(name,A):
+                li = LI(name)
             else:
                 li = LI(A(name, _href='#',
                           _onclick='javascript:void(0);return false;'))
@@ -2164,7 +2168,7 @@ class MENU(DIV):
         if not select:
             select = SELECT(**self.attributes)
         for item in data:
-            if len(item) <= 4 or item[4] == True: 
+            if len(item) <= 4 or item[4] == True:
                 if item[2]:
                     select.append(OPTION(CAT(prefix, item[0]), _value=item[2], _selected=item[1]))
                     if len(item)>3 and len(item[3]):

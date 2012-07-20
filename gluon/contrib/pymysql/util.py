@@ -17,4 +17,3 @@ def join_bytes(bs):
         for b in bs[1:]:
             rv += b
         return rv
-

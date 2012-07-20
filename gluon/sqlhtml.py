@@ -13,13 +13,17 @@ Holds:
 - form_factory: provides a SQLFORM for an non-db backed table
 
 """
-
+try:
+    from urlparse import parse_qs as psq
+except ImportError:
+    from cgi import parse_qs as psq
 from http import HTTP
 from html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT
-from html import FORM, INPUT, LABEL, OPTION, SELECT
+from html import FORM, INPUT, LABEL, OPTION, SELECT, BUTTON
 from html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
 from html import URL, truncate_string
-from dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query
+from dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
+    bar_encode, regex_table_field, Reference
 from storage import Storage
 from utils import md5_hash
 from validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE, \
@@ -29,6 +33,7 @@ import datetime
 import urllib
 import re
 import cStringIO
+from gluon.html import INPUT
 
 table_field = re.compile('[\w_]+\.[\w_]+')
 widget_class = re.compile('^\w*')
@@ -757,6 +762,8 @@ class SQLFORM(FORM):
                labels={'name': 'Your name'},
                linkto=URL(f='table/db/')
         """
+        from gluon import current
+        T = current.T
 
         self.ignore_rw = ignore_rw
         self.formstyle = formstyle
@@ -770,7 +777,8 @@ class SQLFORM(FORM):
         # if no fields are provided, build it from the provided table
         # will only use writable or readable fields, unless forced to ignore
         if fields is None:
-            fields = [f.name for f in table if (ignore_rw or f.writable or f.readable) and not f.compute]
+            fields = [f.name for f in table if (
+                    ignore_rw or f.writable or f.readable) and not f.compute]
         self.fields = fields
 
         # make sure we have an id
@@ -978,7 +986,7 @@ class SQLFORM(FORM):
         if not readonly:
             if 'submit' in buttons:
                 widget = self.custom.submit = INPUT(_type='submit',
-                               _value=submit_button)
+                               _value=T(submit_button))
             elif buttons:
                 widget = self.custom.submit = DIV(*buttons)
             if self.custom.submit:
@@ -1486,6 +1494,7 @@ class SQLFORM(FORM):
              search_widget='default',
              ignore_rw = False,
              formstyle = 'table3cols',
+             exportclasses = None,
              formargs={},
              createargs={},
              editargs={},
@@ -1584,6 +1593,7 @@ class SQLFORM(FORM):
             field_id = tables[0]._id
         columns = [str(field) for field in fields \
                        if field._tablename in tablenames]
+
         if not str(field_id) in [str(f) for f in fields]:
             fields.append(field_id)
         table = field_id.table
@@ -1688,21 +1698,85 @@ class SQLFORM(FORM):
                 ondelete(table,request.args[-1])
             ret = db(table[table._id.name]==request.args[-1]).delete()
             return ret
-        elif csv and len(request.args)>0 and request.args[-1]=='csv':
-            if request.vars.keywords:
-                try:
-                    dbset=dbset(SQLFORM.build_query(
-                            fields,
-                            request.vars.get('keywords','')))
-                except:
-                    raise HTTP(400)
-            check_authorization()
-            response.headers['Content-Type'] = 'text/csv'
-            response.headers['Content-Disposition'] = \
-                'attachment;filename=rows.csv;'
-            raise HTTP(200,str(dbset.select()),
-                       **{'Content-Type':'text/csv',
-                          'Content-Disposition':'attachment;filename=rows.csv;'})
+
+        #elif csv and len(request.args)>0 and request.args[-1]=='csv':
+        #    if request.vars.keywords:
+        #        try:
+        #            dbset=dbset(SQLFORM.build_query(
+        #                    fields,
+        #                    request.vars.get('keywords','')))
+        #        except:
+        #            raise HTTP(400)
+        #    check_authorization()
+        #    response.headers['Content-Type'] = 'text/csv'
+        #    response.headers['Content-Disposition'] = \
+        #        'attachment;filename=rows.csv;'
+        #    raise HTTP(200,str(dbset.select()),
+        #               **{'Content-Type':'text/csv',
+        #                  'Content-Disposition':'attachment;filename=rows.csv;'})
+
+        #==============================================================================
+
+        exportManager = dict(csv_with_hidden_cols=(ExporterCsv,'csv, hidden cols'),
+                             csv=ExporterCsv,
+                             html=ExporterHtml,
+                             tsv_with_hidden_cols=(ExporterTsv, 'tsv (Excel compatible), hidden cols'),
+                             tsv=(ExporterTsv, 'tsv (Excel compatible)')
+                             )
+        if not exportclasses is None:
+            exportManager.update(exportclasses)
+
+        if len(request.args)>0 and request.args[-1]=='export':
+            export_type = request.vars.export_type
+            order = request.vars.order or ''
+            if sortable:
+                if order and not order=='None':
+                    if order[:1]=='~':
+                        sign, rorder = '~', order[1:]
+                    else:
+                        sign, rorder = '', order
+                    tablename,fieldname = rorder.split('.',1)
+                    if sign=='~':
+                        orderby=~db[tablename][fieldname]
+                    else:
+                        orderby=db[tablename][fieldname]
+
+            table_fields = [f for f in fields if f._tablename in tablenames]
+            if export_type in ('csv_with_hidden_cols','tsv_with_hidden_cols'):
+                if request.vars.keywords:
+                    try:
+                        dbset=dbset(SQLFORM.build_query(
+                                fields,
+                                request.vars.get('keywords','')))
+                    except:
+                        raise HTTP(400)
+                rows = dbset.select()
+            else:
+                rows = dbset.select(left=left,orderby=orderby,*columns)
+            ##FIXME ?
+            #check_authorization()
+            if user_signature:
+                if not URL.verify(request,user_signature=user_signature,hash_vars=False):
+                    session.flash = T('not authorized')
+                    redirect(referrer)
+            if not export_type is None:
+                if exportManager.has_key(export_type):
+                    value = exportManager[export_type]
+                    if hasattr(value, '__getitem__'):
+                        clazz = value[0]
+                    else:
+                        clazz = value
+                    oExp = clazz(rows)
+                    filename = '.'.join(('rows', oExp.file_ext))
+                    response.headers['Content-Type'] = oExp.content_type
+                    response.headers['Content-Disposition'] = \
+                'attachment;filename='+filename+';'
+
+                    raise HTTP(200, oExp.export(),
+                       **{'Content-Type':oExp.content_type,
+                          'Content-Disposition':'attachment;filename='+filename+';'})
+        #================================================================================
+
         elif request.vars.records and not isinstance(
             request.vars.records,list):
             request.vars.records=[request.vars.records]
@@ -1728,7 +1802,7 @@ class SQLFORM(FORM):
                     INPUT(_type='submit',_value=T('Search')),
                     INPUT(_type='submit',_value=T('Clear'),
                           _onclick="jQuery('#web2py_keywords').val('');"),
-                    mf,ms,_method="GET",_action=url)                    
+                    mf,ms,_method="GET",_action=url)
             form = search_widget and search_widget(sfields,url()) or ''
             console.append(form)
             keywords = request.vars.get('keywords','')
@@ -1758,15 +1832,40 @@ class SQLFORM(FORM):
         if create:
             search_actions.append(gridbutton(
                     buttonclass='buttonadd',
-                    buttontext=T('Add'),
+                    buttontext='Add',
                     buttonurl=url(args=['new',tablename])))
         if csv and nrows:
-            search_actions.append(gridbutton(
-                    buttonclass='buttonexport',
-                    buttontext=T('Export'),
-                    trap = False,
-                    buttonurl=url(args=['csv'],
-                                  vars=dict(keywords=request.vars.keywords or ''))))
+            #search_actions.append(gridbutton(
+            #        buttonclass='buttonexport',
+            #        buttontext='Export',
+            #        trap = False,
+            #        buttonurl=url(args=['csv'],
+            #                      vars=dict(keywords=request.vars.keywords or ''))))
+
+        #================================================================
+            options =[]
+            for k,v in sorted(exportManager.items()):
+                if hasattr(v, "__getitem__"):
+                    label = v[1]
+                else:
+                    label = k
+                options.append(OPTION(T(label),_value=k))
+            ##FIXME ?
+            mysignature = url(args=['export']).split('?', 1)
+            mysignature = psq(mysignature[-1]).get('_signature', [None])[-1]
+            f = FORM(BUTTON(SPAN(_class=ui.get('buttonexport')),
+                            "Export", _type="submit", _class=ui.get('button')),
+                     SELECT(options, _name="export_type"),
+                     INPUT(_type="hidden", _name="order",
+                           _value=request.vars.order),
+                     INPUT(_type="hidden", _name="_signature",
+                            _value=mysignature),
+                     INPUT(_type="hidden", _name="keywords",
+                           _value=request.vars.keywords or ''),
+                     _method="GET", _action=url(args=['export']))
+            search_actions.append(f)
+
+        #================================================================
 
         console.append(search_actions)
 
@@ -2064,21 +2163,21 @@ class SQLFORM(FORM):
         check = {}
         id_field_name = table._id.name
         for tablename,fieldname in table._referenced_by:
-            if db[tablename][fieldname].readable:            
+            if db[tablename][fieldname].readable:
                 check[tablename] = check.get(tablename,[])+[fieldname]
         for tablename in sorted(check):
             linked_fieldnames = check[tablename]
             tb = db[tablename]
             multiple_links = len(linked_fieldnames)>1
-            for fieldname in linked_fieldnames:                
-                if linked_tables is None or tablename in linked_tables:                
+            for fieldname in linked_fieldnames:
+                if linked_tables is None or tablename in linked_tables:
                     t = T(tb._plural) if not multiple_links else T(tb._plural+'('+fieldname+')')
                     args0 = tablename+'.'+fieldname
                     links.append(
                         lambda row,t=t,nargs=nargs,args0=args0:\
                             A(SPAN(t),_class=trap_class(),_href=URL(
                                 args=request.args[:nargs]+[args0,row[id_field_name]])))
-                
+
         grid=SQLFORM.grid(query,args=request.args[:nargs],links=links,
                           links_in_grid=links_in_grid,
                           user_signature=user_signature,**kwargs)
@@ -2374,7 +2473,118 @@ class SQLTABLE(TABLE):
 form_factory = SQLFORM.factory # for backward compatibility, deprecated
 
 
+class ExportClass(object):
+    file_ext = None
+    content_type = None
 
+    def __init__(self, rows):
+        self.rows = rows
+
+    def represented(self):
+        def none_exception(value):
+            """
+            returns a cleaned up value that can be used for csv export:
+            - unicode text is encoded as such
+            - None values are replaced with the given representation (default <NULL>)
+            """
+            if value is None:
+                return '<NULL>'
+            elif isinstance(value, unicode):
+                return value.encode('utf8')
+            elif isinstance(value,Reference):
+                return int(value)
+            elif hasattr(value, 'isoformat'):
+                return value.isoformat()[:19].replace('T', ' ')
+            elif isinstance(value, (list,tuple)): # for type='list:..'
+                return bar_encode(value)
+            return value
+
+        represented = []
+        for record in self.rows:
+            row = []
+            for col in self.rows.colnames:
+                if not regex_table_field.match(col):
+                    row.append(record._extra[col])
+                else:
+                    (t, f) = col.split('.')
+                    field = self.rows.db[t][f]
+                    if isinstance(record.get(t, None), (Row,dict)):
+                        value = record[t][f]
+                    else:
+                        value = record[f]
+                    if field.type=='blob' and not value is None:
+                        value = ''
+                    elif field.represent:
+                        value = field.represent(value, record)
+                    row.append(none_exception(value))
+
+            represented.append(row)
+        return represented
+
+    def export(self):
+        raise NotImplementedError
+
+class ExporterTsv(ExportClass):
+
+    file_ext = "csv"
+    content_type = "text/tab-separated-values"
+
+    def __init__(self, rows):
+        ExportClass.__init__(self, rows)
+
+    def export(self):
+
+        out = cStringIO.StringIO()
+        final = cStringIO.StringIO()
+        import csv
+        writer = csv.writer(out, delimiter='\t')
+        import codecs
+        final.write(codecs.BOM_UTF16)
+        colnames = [a.split('.') for a in self.rows.colnames]
+        writer.writerow([unicode(col).encode("utf8") for col in self.rows.colnames])
+        data = out.getvalue().decode("utf8")
+        data = data.encode("utf-16")
+        data = data[2:]
+        final.write(data)
+        out.truncate(0)
+        records = self.represented()
+        for row in records:
+            writer.writerow([str(col).decode('utf8').encode("utf-8") for col in row])
+            data = out.getvalue().decode("utf8")
+            data = data.encode("utf-16")
+            data = data[2:]
+            final.write(data)
+            out.truncate(0)
+        return str(final.getvalue())
+
+class ExporterCsv(ExportClass):
+    file_ext = "csv"
+    content_type = "text/csv"
+
+    def __init__(self, rows):
+        ExportClass.__init__(self, rows)
+
+    def export(self):
+        return str(self.rows)
+
+class ExporterHtml(ExportClass):
+    file_ext = "html"
+    content_type = "text/html"
+
+    def __init__(self, rows):
+        ExportClass.__init__(self, rows)
+
+    def export(self):
+        out = cStringIO.StringIO()
+        out.write('<html>\n<body>\n<table>\n')
+        colnames = [a.split('.') for a in self.rows.colnames]
+        for row in self.rows.records:
+            out.write('<tr>\n')
+            for col in colnames:
+                out.write('<td>'+str(row[col[0]][col[1]])+'</td>\n')
+            out.write('</tr>\n')
+        out.write('</table>\n</body>\n</html>')
+        return str(out.getvalue())
 
 
 

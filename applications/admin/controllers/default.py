@@ -8,11 +8,16 @@ if EXPERIMENTAL_STUFF:
         response.view = response.view.replace('default/','default.mobile/')
         response.menu = []
 
+import re
 from gluon.admin import *
 from gluon.fileutils import abspath, read_file, write_file
 from glob import glob
 import shutil
 import platform
+from gluon.languages import (regex_language, read_possible_languages,
+                             read_possible_plurals, lang_sampling,
+                             read_dict, write_dict, read_plural_dict,
+                             write_plural_dict)
 
 if DEMO_MODE and request.function in ['change_password','pack','pack_plugin','upgrade_web2py','uninstall','cleanup','compile_app','remove_compiled_app','delete','delete_plugin','create_file','upload_file','update_languages','reload_routes']:
     session.flash = T('disabled in demo mode')
@@ -186,14 +191,14 @@ def site():
     elif file_or_appurl and request.vars.filename:
         # fetch an application via URL or file upload
         f = None
-        if request.vars.appurl is not '':
+        if request.vars.appurl:
             try:
                 f = urllib.urlopen(request.vars.appurl)
             except Exception, e:
                 session.flash = DIV(T('Unable to download app because:'),PRE(str(e)))
                 redirect(URL(r=request))
             fname = request.vars.appurl
-        elif request.vars.file is not '':
+        elif request.vars.file:
             f = request.vars.file.file
             fname = request.vars.file.filename
 
@@ -247,7 +252,7 @@ def report_progress(app):
         counter += int(m[1])
         events.append([days,counter])
     return events
-                       
+
 
 def pack():
     app = get_app()
@@ -357,7 +362,7 @@ def delete():
         sender = sender[0]
 
     if 'nodelete' in request.vars:
-        redirect(URL(sender))
+        redirect(URL(sender, anchor=request.vars.id))
     elif 'delete' in request.vars:
         try:
             full_path = apath(filename, r=request)
@@ -369,7 +374,7 @@ def delete():
         except Exception:
             session.flash = T('unable to delete file "%(filename)s"',
                               dict(filename=filename))
-        redirect(URL(sender))
+        redirect(URL(sender, anchor=request.vars.id2))
     return dict(filename=filename, sender=sender)
 
 def enable():
@@ -384,21 +389,24 @@ def enable():
 
 def peek():
     """ Visualize object code """
-    app = get_app()
+    app = get_app(request.vars.app)
     filename = '/'.join(request.args)
+    if request.vars.app:
+        path = abspath(filename, gluon=False)
+    else:
+        path = apath(filename, r=request)
     try:
-        data = safe_read(apath(filename, r=request)).replace('\r','')
+        data = safe_read(path).replace('\r','')
     except IOError:
         session.flash = T('file does not exist')
         redirect(URL('site'))
 
     extension = filename[filename.rfind('.') + 1:].lower()
 
-    return dict(app=request.args[0],
+    return dict(app=app,
                 filename=filename,
                 data=data,
                 extension=extension)
-
 
 def test():
     """ Execute controller tests """
@@ -428,14 +436,18 @@ def search():
     files2 = glob(os.path.join(path,'*/*.html'))
     files3 = glob(os.path.join(path,'*/*/*.html'))
     files=[x[len(path)+1:].replace('\\','/') for x in files1+files2+files3 if match(x,keywords)]
-    return response.json({'files':files})
+    return response.json(dict(files=files, message=T.M('Searching: **%s** %%{file}', len(files))))
 
 def edit():
     """ File edit handler """
     # Load json only if it is ajax edited...
-    app = get_app()
+    app = get_app(request.vars.app)
     filename = '/'.join(request.args)
-    # Try to discover the file type
+    if request.vars.app:
+        path = abspath(filename)
+    else:
+        path = apath(filename, r=request)
+     # Try to discover the file type
     if filename[-3:] == '.py':
         filetype = 'python'
     elif filename[-5:] == '.html':
@@ -450,9 +462,6 @@ def edit():
         filetype = 'html'
 
     # ## check if file is not there
-
-    path = apath(filename, r=request)
-
     if ('revert' in request.vars) and os.path.exists(path + '.bak'):
         try:
             data = safe_read(path + '.bak')
@@ -526,8 +535,8 @@ def edit():
             except:
                 ex_name = 'unknown exception!'
             response.flash = DIV(T('failed to compile file because:'), BR(),
-                                 B(ex_name), T(' at line %s') % e.lineno,
-                                 offset and T(' at char %s') % offset or '',
+                                 B(ex_name), ' '+T('at line %s', e.lineno),
+                                 offset and ' '+T('at char %s', offset) or '',
                                  PRE(str(e)))
 
     if data_or_revert and request.args[1] == 'modules':
@@ -568,7 +577,7 @@ def edit():
             for v in viewlist:
                 vf = os.path.split(v)[-1]
                 vargs = "/".join([viewpath.replace(os.sep,"/"),vf])
-                editviewlinks.append(A(T(vf.split(".")[0]),\
+                editviewlinks.append(A(vf.split(".")[0],\
                     _href=URL('edit',args=[vargs])))
 
     if len(request.args) > 2 and request.args[1] == 'controllers':
@@ -672,29 +681,39 @@ def edit_language():
     """ Edit language file """
     app = get_app()
     filename = '/'.join(request.args)
-    from gluon.languages import read_dict, write_dict
     strings = read_dict(apath(filename, r=request))
-    keys = sorted(strings.keys(),lambda x,y: cmp(x.lower(), y.lower()))
+
+    if '__corrupted__' in strings:
+       form = SPAN(strings['__corrupted__'],_class='error')
+       return dict(filename=filename, form=form)
+
+    keys = sorted(strings.keys(),lambda x,y: cmp(unicode(x,'utf-8').lower(), unicode(y,'utf-8').lower()))
     rows = []
     rows.append(H2(T('Original/Translation')))
 
     for key in keys:
         name = md5_hash(key)
-        if key==strings[key]:
-            _class='untranslated'
+        s = strings[key]
+        (prefix, sep, key) = key.partition('\x01')
+        if sep:
+            prefix = SPAN(prefix+': ', _style='color: blue;')
+            k = key
         else:
-            _class='translated'
+            (k, prefix) = (prefix, '')
+
+        _class='untranslated' if k==s else 'translated'
+
         if len(key) <= 40:
-            elem = INPUT(_type='text', _name=name,value=strings[key],
+            elem = INPUT(_type='text', _name=name, value=s,
                          _size=70,_class=_class)
         else:
-            elem = TEXTAREA(_name=name, value=strings[key], _cols=70,
+            elem = TEXTAREA(_name=name, value=s, _cols=70,
                             _rows=5, _class=_class)
 
         # Making the short circuit compatible with <= python2.4
-        k = (strings[key] != key) and key or B(key)
+        k = (s != k) and k or B(k)
 
-        rows.append(P(k, BR(), elem, TAG.BUTTON(T('delete'),
+        rows.append(P(prefix, k, BR(), elem, TAG.BUTTON(T('delete'),
                             _onclick='return delkey("%s")' % name), _id=name))
 
     rows.append(INPUT(_type='submit', _value=T('update')))
@@ -708,6 +727,53 @@ def edit_language():
         write_dict(apath(filename, r=request), strs)
         session.flash = T('file saved on %(time)s', dict(time=time.ctime()))
         redirect(URL(r=request,args=request.args))
+    return dict(app=request.args[0], filename=filename, form=form)
+
+def edit_plurals():
+    """ Edit plurals file """
+    #import ipdb; ipdb.set_trace()
+    app = get_app()
+    filename = '/'.join(request.args)
+    plurals = read_plural_dict(apath(filename, r=request)) # plural forms dictionary
+    nplurals = int(request.vars.nplurals)-1 # plural forms quantity
+    xnplurals = xrange(nplurals)
+
+    if '__corrupted__' in plurals:
+       # show error message and exit
+       form = SPAN(plurals['__corrupted__'],_class='error')
+       return dict(filename=filename, form=form)
+
+    keys = sorted(plurals.keys(),lambda x,y: cmp(unicode(x,'utf-8').lower(), unicode(y,'utf-8').lower()))
+    rows = []
+
+    row=[T("Singular Form")]
+    row.extend([T("Plural Form #%s", n+1) for n in xnplurals])
+    table=TABLE(THEAD(TR(row)))
+
+    for key in keys:
+        name = md5_hash(key)
+        forms = plurals[key]
+
+        if len(forms) < nplurals:
+            forms.extend(None for i in xrange(nplurals-len(forms)))
+
+        row = [B(key)]
+        row.extend([INPUT(_type='text', _name=name+'_'+str(n), value=forms[n], _size=20) for n in xnplurals])
+        row.append(TD(TAG.BUTTON(T('delete'), _onclick='return delkey("%s")' % name)))
+        rows.append(TR(row, _id=name))
+    if rows:
+        table.append(TBODY(rows))
+    rows=[table, INPUT(_type='submit', _value=T('update'))]
+    form = FORM(*rows)
+    if form.accepts(request.vars, keepvalues=True):
+        new_plurals = dict()
+        for key in keys:
+            name = md5_hash(key)
+            if form.vars[name+'_0']==chr(127): continue
+            new_plurals[key] = [form.vars[name+'_'+str(n)] for n in xnplurals]
+        write_plural_dict(apath(filename, r=request), new_plurals)
+        session.flash = T('file saved on %(time)s', dict(time=time.ctime()))
+        redirect(URL(r=request, args=request.args, vars=dict(nplurals=request.vars.nplurals)))
     return dict(app=request.args[0], filename=filename, form=form)
 
 
@@ -794,7 +860,30 @@ def design():
     statics.sort()
 
     # Get all languages
-    languages = listdir(apath('%s/languages/' % app, r=request), '[\w-]*\.py')
+    all_languages=dict([(lang+'.py',info[0]) for lang,info
+                        in read_possible_languages(apath(app, r=request)).iteritems()
+                        if info[2]!=0]) # info[2] is langfile_mtime:
+                                        # get only existed files
+    languages = sorted(all_languages)
+
+    plural_rules={}
+    all_plurals=read_possible_plurals()
+    for langfile,lang in all_languages.iteritems():
+        lang=lang.strip()
+        match_language = regex_language.match(lang)
+        if match_language:
+            match_language = tuple(part
+                                   for part in match_language.groups()
+                                   if part)
+            plang = lang_sampling(match_language, all_plurals.keys())
+            if plang:
+               plural=all_plurals[plang]
+               plural_rules[langfile]=(plural[0],plang,plural[1],plural[3])
+            else:
+               plural_rules[langfile]=(0,lang,'plural_rules-%s.py'%lang,'')
+
+    plurals = listdir(apath('%s/languages/' % app, r=request),
+                      '^plural-[\w-]+\.py$')
 
     #Get crontab
     cronfolder = apath('%s/cron' % app, r=request)
@@ -821,6 +910,8 @@ def design():
                 include=include,
                 statics=filter_plugins(statics,plugins),
                 languages=languages,
+                plurals=plurals,
+                plural_rules=plural_rules,
                 crontab=crontab,
                 plugins=plugins)
 
@@ -830,7 +921,7 @@ def delete_plugin():
     plugin = request.args(1)
     plugin_name='plugin_'+plugin
     if 'nodelete' in request.vars:
-        redirect(URL('design',args=app))
+        redirect(URL('design', args=app, anchor=request.vars.id))
     elif 'delete' in request.vars:
         try:
             for folder in ['models','views','controllers','static','modules']:
@@ -847,7 +938,7 @@ def delete_plugin():
         except Exception:
             session.flash = T('unable to delete file plugin "%(plugin)s"',
                               dict(plugin=plugin))
-        redirect(URL('design',args=request.args(0)))
+        redirect(URL('design', args=request.args(0), anchor=request.vars.id2))
     return dict(plugin=plugin)
 
 def plugin():
@@ -909,7 +1000,10 @@ def plugin():
     statics.sort()
 
     # Get all languages
-    languages = listdir(apath('%s/languages/' % app, r=request), '[\w-]*\.py')
+    languages = sorted([lang+'.py' for lang, info in
+                    T.get_possible_languages_info().iteritems()
+                    if info[2]!=0]) # info[2] is langfile_mtime:
+                                    # get only existed files
 
     #Get crontab
     crontab = apath('%s/cron/crontab' % app, r=request)
@@ -937,24 +1031,56 @@ def plugin():
 def create_file():
     """ Create files handler """
     try:
-        app = get_app(name=request.vars.location.split('/')[0])
-        path = apath(request.vars.location, r=request)
+        anchor='#'+request.vars.id if request.vars.id else ''
+        if request.vars.app:
+            app = get_app(request.vars.app)
+            path = abspath(request.vars.location, gluon=False)
+        else:
+            app = get_app(name=request.vars.location.split('/')[0])
+            path = apath(request.vars.location, r=request)
         filename = re.sub('[^\w./-]+', '_', request.vars.filename)
+        if path[-7:] == '/rules/':
+            # Handle plural rules files
+            if len(filename) == 0:
+                raise SyntaxError
+            if not filename[-3:] == '.py':
+                filename += '.py'
+            lang = re.match('^plural_rules-(.*)\.py$',filename).group(1)
+            langinfo = read_possible_languages(apath(app, r=request))[lang]
+            text = dedent("""
+                   #!/usr/bin/env python
+                   # -*- coding: utf8 -*-
+                   # Plural-Forms for %(lang)s (%(langname)s)
 
-        if path[-11:] == '/languages/':
+                   nplurals=2  # for example, English language has 2 forms:
+                               # 1 singular and 1 plural
+
+                   # Determine plural_id for number *n* as sequence of positive
+                   # integers: 0,1,...
+                   # NOTE! For singular form ALWAYS return plural_id = 0
+                   get_plural_id = lambda n: int(n != 1)
+
+                   # Construct and return plural form of *word* using
+                   # *plural_id* (which ALWAYS>0). This function will be executed
+                   # for words (or phrases) not found in plural_dict dictionary.
+                   # By default this function simply returns word in singular:
+                   construct_plural_form = lambda word, plural_id: word
+                   """)[1:] % dict(lang=langinfo[0], langname=langinfo[1])
+
+        elif path[-11:] == '/languages/':
             # Handle language files
             if len(filename) == 0:
                 raise SyntaxError
             if not filename[-3:] == '.py':
                 filename += '.py'
-            app = path.split('/')[-3]
             path=os.path.join(apath(app, r=request),'languages',filename)
             if not os.path.exists(path):
                 safe_write(path, '')
+            # create language xx[-yy].py file:
             findT(apath(app, r=request), filename[:-3])
             session.flash = T('language file "%(filename)s" created/updated',
-                              dict(filename=filename))
-            redirect(request.vars.sender)
+                               dict(filename=filename))
+            redirect(request.vars.sender+anchor)
 
         elif path[-8:] == '/models/':
             # Handle python models
@@ -988,13 +1114,12 @@ def create_file():
             if len(filename) == 5:
                 raise SyntaxError
 
-            msg = T('This is the %(filename)s template',
-                    dict(filename=filename))
+            msg = T('This is the %(filename)s template', dict(filename=filename))
             if extension == 'html':
                 text = dedent("""
                    {{extend 'layout.html'}}
                    <h1>%s</h1>
-                   {{=BEAUTIFY(response._vars)}}""" % msg)
+                   {{=BEAUTIFY(response._vars)}}""" % msg)[1:]
             else:
                 generic = os.path.join(path,'generic.'+extension)
                 if os.path.exists(generic):
@@ -1015,14 +1140,14 @@ def create_file():
             text = dedent("""
                    #!/usr/bin/env python
                    # coding: utf8
-                   from gluon import *\n""")
+                   from gluon import *\n""")[1:]
 
         elif path[-8:] == '/static/':
             if request.vars.plugin and not filename.startswith('plugin_%s/' % request.vars.plugin):
                 filename = 'plugin_%s/%s' % (request.vars.plugin, filename)
             text = ''
         else:
-            redirect(request.vars.sender)
+            redirect(request.vars.sender+anchor)
 
         full_filename = os.path.join(path, filename)
         dirpath = os.path.dirname(full_filename)
@@ -1037,18 +1162,20 @@ def create_file():
         log_progress(app,'CREATE',filename)
         session.flash = T('file "%(filename)s" created',
                           dict(filename=full_filename[len(path):]))
+        vars={}
+        if request.vars.id: vars['id']=request.vars.id
+        if request.vars.app: vars['app']=request.vars.app
         redirect(URL('edit',
-                 args=[os.path.join(request.vars.location, filename)]))
+                 args=[os.path.join(request.vars.location, filename)], vars=vars))
     except Exception, e:
         if not isinstance(e,HTTP):
             session.flash = T('cannot create file')
 
-    redirect(request.vars.sender)
+    redirect(request.vars.sender+anchor)
 
 
 def upload_file():
     """ File uploading handler """
-
     try:
         filename = None
         app = get_app(name=request.vars.location.split('/')[0])
@@ -1121,7 +1248,7 @@ def errors():
 
         hash2error = dict()
 
-        for fn in listdir(errors_path, '^\w.*'):
+        for fn in listdir(errors_path, '^[a-fA-F0-9.\-]+$'):
             fullpath = os.path.join(errors_path, fn)
             if not os.path.isfile(fullpath): continue
             try:
@@ -1368,7 +1495,7 @@ def twitter():
     try:
         if TWITTER_HASH:
             page = urllib.urlopen("http://search.twitter.com/search.json?q=%%40%s" % TWITTER_HASH).read()
-            data = sj.loads(page  , encoding="utf-8")['results']
+            data = sj.loads(page, encoding="utf-8")['results']
             d = dict()
             for e in data:
                 d[e["id"]] = e

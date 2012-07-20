@@ -261,7 +261,7 @@ def load(routes='routes.py', app=None, data=None, rdict=None):
                 return
             data = read_file(path).replace('\r\n','\n')
 
-        symbols = {}
+        symbols = dict(app=app)
         try:
             exec (data + '\n') in symbols
         except SyntaxError, e:
@@ -385,15 +385,15 @@ def load_routers(all_apps):
             all_apps.append(app)
             router = Storage(routers.BASE)   # new copy
             if app != 'BASE':
-                for key in routers[app].keys():
-                    if key in ROUTER_BASE_KEYS:
-                        raise SyntaxError, "BASE-only key '%s' in router '%s'" % (key, app)
+                keys = set(routers[app]).intersection(ROUTER_BASE_KEYS)
+                if keys:
+                    raise SyntaxError, "BASE-only key(s) %s in router '%s'" % (tuple(keys), app)
             router.update(routers[app])
             routers[app] = router
         router = routers[app]
-        for key in router.keys():
-            if key not in ROUTER_KEYS:
-                raise SyntaxError, "unknown key '%s' in router '%s'" % (key, app)
+        keys = set(router).difference(ROUTER_KEYS)
+        if keys:
+            raise SyntaxError, "unknown key(s) %s in router '%s'" % (tuple(keys), app)
         if not router.controllers:
             router.controllers = set()
         elif not isinstance(router.controllers, str):

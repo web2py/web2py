@@ -197,7 +197,7 @@ def select():
                 _name='update_fields', _value=request.vars.update_fields
                  or '')), TR(T('Delete:'), INPUT(_name='delete_check',
                 _class='delete', _type='checkbox', value=False), ''),
-                TR('', '', INPUT(_type='submit', _value='submit'))),
+                TR('', '', INPUT(_type='submit', _value=T('submit')))),
                 _action=URL(r=request,args=request.args))
     if request.vars.csvfile != None:
         try:
@@ -218,10 +218,10 @@ def select():
             if form.vars.update_check and form.vars.update_fields:
                 db(query).update(**eval_in_global_env('dict(%s)'
                                   % form.vars.update_fields))
-                response.flash = T('%s rows updated', nrows)
+                response.flash = T('%s %%{row} updated', nrows)
             elif form.vars.delete_check:
                 db(query).delete()
-                response.flash = T('%s rows deleted', nrows)
+                response.flash = T('%s %%{row} deleted', nrows)
             nrows = db(query).count()
             if orderby:
                 rows = db(query,ignore_common_filters=True).select(limitby=(start, stop), orderby=eval_in_global_env(orderby))

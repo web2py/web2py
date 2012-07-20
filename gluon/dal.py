@@ -769,10 +769,10 @@ class BaseAdapter(ConnectionPool):
                 on_delete_action = field.ondelete)
 
         if hasattr(table,'_primarykey'):
-            query = '''CREATE TABLE %s(\n    %s,\n    %s) %s''' % \
+            query = "CREATE TABLE %s(\n    %s,\n    %s) %s" % \
                 (tablename, fields, self.PRIMARY_KEY(', '.join(table._primarykey)),other)
         else:
-            query = '''CREATE TABLE %s(\n    %s\n)%s''' % \
+            query = "CREATE TABLE %s(\n    %s\n)%s" % \
                 (tablename, fields, other)
 
         if self.uri.startswith('sqlite:///') or self.uri.startswith('spatialite:///'):
@@ -841,6 +841,7 @@ class BaseAdapter(ConnectionPool):
         logfile,
         fake_migrate=False,
         ):
+        table._db._migrated.append(table._tablename)
         tablename = table._tablename
         def fix(item):
             k,v=item
@@ -956,6 +957,10 @@ class BaseAdapter(ConnectionPool):
 
     def UPPER(self, first):
         return 'UPPER(%s)' % self.expand(first)
+
+    def COUNT(self, first, distinct=None):
+        return ('COUNT(%s)' if not distinct else 'COUNT(DISTINCT %s)') \
+            % self.expand(first)
 
     def EXTRACT(self, first, what):
         return "EXTRACT(%s FROM %s)" % (what, self.expand(first))
@@ -1267,7 +1272,7 @@ class BaseAdapter(ConnectionPool):
         new_fields = []
         for item in fields:
             if isinstance(item,SQLALL):
-                new_fields += item.table
+                new_fields += item._table
             else:
                 new_fields.append(item)
         # ## if no fields specified take them all from the requested tables
@@ -1281,7 +1286,7 @@ class BaseAdapter(ConnectionPool):
         for key in set(attributes.keys())-set(('orderby', 'groupby', 'limitby',
                                                'required', 'cache', 'left',
                                                'distinct', 'having', 'join',
-                                               'for_update')):
+                                               'for_update', 'processor')):
             raise SyntaxError, 'invalid select attribute: %s' % key
 
         tablenames = self.tables(query)
@@ -1873,17 +1878,15 @@ class SQLiteAdapter(BaseAdapter):
         return '(%s REGEXP %s)' % (self.expand(first),
                                    self.expand(second,'string'))
 
-    def _select(self, query, fields, attributes):
+    def select(self, query, fields, attributes):
         """
         Simulate SELECT ... FOR UPDATE with BEGIN IMMEDIATE TRANSACTION.
         Note that the entire database, rather than one record, is locked
         (it will be locked eventually anyway by the following UPDATE).
         """
-        sql = super(SQLiteAdapter, self)._select(query, fields, attributes)
-        if attributes.get('for_update', False):
-            sql = 'BEGIN IMMEDIATE TRANSACTION; ' + sql
-        return sql
-
+        if attributes.get('for_update', False) and not 'cache' in attributes:
+            self.execute('BEGIN IMMEDIATE TRANSACTION;')
+        return super(SQLiteAdapter, self).select(query, fields, attributes)
 
 class SpatiaLiteAdapter(SQLiteAdapter):
 
@@ -2165,6 +2168,8 @@ class PostgreSQLAdapter(BaseAdapter):
         return varquote_aux(name,'"%s"')
 
     def adapt(self,obj):
+        #if self.driver == self.drivers.get('pg8000'):
+        #    obj = str(obj).replace('%','%%')            
         return psycopg2_adapt(obj).getquoted()
 
     def sequence_name(self,table):
@@ -2487,9 +2492,9 @@ class OracleAdapter(BaseAdapter):
         'blob': 'CLOB',
         'upload': 'VARCHAR2(%(length)s)',
         'integer': 'INT',
-        'bigint': 'BIGINT',
+        'bigint': 'NUMBER',
         'float': 'FLOAT',
-        'double': 'DOUBLE',
+        'double': 'BINARY_DOUBLE',
         'decimal': 'NUMERIC(%(precision)s,%(scale)s)',
         'date': 'DATE',
         'time': 'CHAR(8)',
@@ -2499,8 +2504,8 @@ class OracleAdapter(BaseAdapter):
         'list:integer': 'CLOB',
         'list:string': 'CLOB',
         'list:reference': 'CLOB',
-        'big-id': 'BIGINT PRIMARY KEY',
-        'big-reference': 'BIGINT, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'big-id': 'NUMBER PRIMARY KEY',
+        'big-reference': 'NUMBER, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
         }
@@ -4144,7 +4149,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         new_fields = []
         for item in fields:
             if isinstance(item,SQLALL):
-                new_fields += item.table
+                new_fields += item._table
             else:
                 new_fields.append(item)
         fields = new_fields
@@ -4434,12 +4439,12 @@ class CouchDBAdapter(NoSQLAdapter):
             raise SyntaxError, "Not Supported"
         for key in set(attributes.keys())-set(('orderby','groupby','limitby',
                                                'required','cache','left',
-                                               'distinct','having')):
+                                               'distinct', 'having', 'processor')):
             raise SyntaxError, 'invalid select attribute: %s' % key
         new_fields=[]
         for item in fields:
             if isinstance(item,SQLALL):
-                new_fields += item.table
+                new_fields += item._table
             else:
                 new_fields.append(item)
         def uid(fd):
@@ -4741,7 +4746,7 @@ class MongoDBAdapter(NoSQLAdapter):
         mongoqry_dict = {}
         for item in fields:
             if isinstance(item,SQLALL):
-                new_fields += item.table
+                new_fields += item._table
             else:
                 new_fields.append(item)
         fields = new_fields
@@ -6452,6 +6457,7 @@ class DAL(dict):
         self._referee_name = '%(table)s'
         self._bigint_id = bigint_id
         self._debug = debug
+        self._migrated = []
         if not str(attempts).isdigit() or attempts < 0:
             attempts = 5
         if uri:
@@ -6982,8 +6988,8 @@ def index():
                 raise SyntaxError, 'invalid file format'
             else:
                 tablename = line[6:]
-                self[tablename].import_from_csv_file(ifile, id_map, null,
-                                                     unique, id_offset, *args, **kwargs)
+                self[tablename].import_from_csv_file(
+                    ifile, id_map, null, unique, id_offset, *args, **kwargs)
 
 class SQLALL(object):
     """
@@ -6994,10 +7000,10 @@ class SQLALL(object):
     """
 
     def __init__(self, table):
-        self.table = table
+        self._table = table
 
     def __str__(self):
-        return ', '.join([str(field) for field in self.table])
+        return ', '.join([str(field) for field in self._table])
 
 
 class Reference(int):
@@ -7122,10 +7128,8 @@ class Table(dict):
                 table = field
                 for field in table:
                     if not field.name in fieldnames and not field.type=='id':
-                        field = copy.copy(field)
-                        # correct self references
-                        if not table._actual and field.type == 'reference '+table._tablename:
-                            field.type = 'reference '+self._tablename
+                        t2 = not table._actual and self._tablename
+                        field = field.clone(point_self_references_to=t2)
                         newfields.append(field)
                         fieldnames.add(field.name)
             else:
@@ -7143,7 +7147,9 @@ class Table(dict):
                 if isinstance(field, Field) and field.type == 'upload'\
                         and field.uploadfield is True:
                     tmp = field.uploadfield = '%s_blob' % field.name
-                    fields.append(self._db.Field(tmp, 'blob', default=''))
+        if isinstance(field.uploadfield,str) and \
+                not [f for f in fields if f.name==field.uploadfield]:
+            fields.append(self._db.Field(field.uploadfield,'blob',default=''))
 
         lower_fieldnames = set()
         reserved = dir(Table) + ['fields']
@@ -7200,7 +7206,7 @@ class Table(dict):
         archive_table = archive_db.define_table(
             archive_name,
             Field(current_record,field_type),
-            self)
+            *[field.clone(unique=False) for field in self])
         self._before_update.append(
             lambda qset,fs,at=archive_table,cn=current_record:
                 archive_record(qset,fs,at,cn))
@@ -7388,11 +7394,8 @@ class Table(dict):
                 elif update and not ofield.update is None:
                     new_fields.append((ofield,ofield.update))
         for ofield in self:
-            if not ofield.name in new_fields_names and ofield.compute:
-                try:
-                    new_fields.append((ofield,ofield.compute(Row(fields))))
-                except KeyError:
-                    pass
+            if ofield.compute:
+                new_fields.append((ofield,ofield.compute(Row(fields))))
             if not update and ofield.required and not ofield.name in new_fields_names:
                 raise SyntaxError,'Table: missing required field: %s' % ofield.name
         return new_fields
@@ -7417,7 +7420,9 @@ class Table(dict):
         self._attempt_upload(fields)
         if any(f(fields) for f in self._before_insert): return 0
         ret =  self._db._adapter.insert(self,self._listify(fields))
-        ret and [f(fields,ret) for f in self._after_insert]
+        if ret and self._after_insert:
+            fields = Row(fields)
+            [f(fields,ret) for f in self._after_insert]
         return ret
 
     def validate_and_insert(self,**fields):
@@ -7479,11 +7484,14 @@ class Table(dict):
         the 'table.' prefix is ignored.
         'unique' argument is a field which must be unique
         (typically a uuid field)
-        'restore' argument is default False. If set True will remove old values
+        'restore' argument is default False.
+        If set True will remove old values
         in table first.
-        'id_map' If set to None will not map id. The import will keep the id numbers
-        in the restored table. This assumes that there is an field of type id that
-        is integer and in incrementing order. Will keep the id numbers in restored table.
+        'id_map' If set to None will not map id.
+        The import will keep the id numbers in the restored table. 
+        This assumes that there is an field of type id that
+        is integer and in incrementing order. 
+        Will keep the id numbers in restored table.
       """
 
         delimiter = kwargs.get('delimiter', ',')
@@ -7493,7 +7501,8 @@ class Table(dict):
         if restore:
             self._db[self].truncate()
 
-        reader = csv.reader(csvfile, delimiter=delimiter, quotechar=quotechar, quoting=quoting)
+        reader = csv.reader(csvfile, delimiter=delimiter,
+                            quotechar=quotechar, quoting=quoting)
         colnames = None
         if isinstance(id_map, dict):
             if not self._tablename in id_map:
@@ -7565,8 +7574,9 @@ class Table(dict):
                     del_id = curr_id
                     if first:
                         first = False
-                        #First curr_id is bigger than csv_id, then we are not restoring but
-                        #extending db table with csv db table
+                        # First curr_id is bigger than csv_id, 
+                        # then we are not restoring but
+                        # extending db table with csv db table
                         if curr_id>csv_id:
                             id_offset[self._tablename] = curr_id-csv_id
                         else:
@@ -7755,7 +7765,7 @@ class Expression(object):
         return Query(self.db, self.db._adapter.REGEXP, self, value)
 
     def belongs(self, *value):
-        '''
+        """
         Accepts the following inputs:
            field.belongs(1,2)
            field.belongs((1,2))
@@ -7763,7 +7773,7 @@ class Expression(object):
 
         Does NOT accept:
            field.belongs(1)
-        '''
+        """
         if len(value) == 1:
             value = value[0]
         if isinstance(value,Query):
@@ -8026,6 +8036,14 @@ class Field(Expression):
         else:
             self.requires = requires
 
+    def clone(self,point_self_references_to=False,**args):
+        field = copy.copy(self)
+        if point_self_references_to and \
+                field.type == 'reference %s'+field._tablename:
+            field.type = 'reference %s' % point_self_references_to
+        field.__dict__.update(args)
+        return field
+
     def store(self, file, filename=None, path=None):
         if self.custom_store:
             return self.custom_store(file,filename,path)
@@ -8165,8 +8183,8 @@ class Field(Expression):
                 return (value, error)
         return (value, None)
 
-    def count(self):
-        return Expression(self.db, self.db._adapter.AGGREGATE, self, 'COUNT', 'integer')
+    def count(self, distinct=None):
+        return Expression(self.db, self.db._adapter.COUNT, self, distinct, self.type)
 
     def __nonzero__(self):
         return True
@@ -8300,6 +8318,8 @@ class Set(object):
         return self.db._adapter.count(self.query,distinct)
 
     def select(self, *fields, **attributes):
+        if self.query is None:# and fields[0]._table._common_filter != None:
+            return self(fields[0]._table).select(*fields,**attributes)
         adapter = self.db._adapter
         fields = adapter.expand_all(fields, adapter.tables(self.query))
         return adapter.select(self.query,fields,attributes)
@@ -8402,7 +8422,7 @@ def update_record(pack, a=None):
     (colset, table, id) = pack
     b = a or dict(colset)
     c = dict([(k,v) for (k,v) in b.items() if k in table.fields and table[k].type!='id'])
-    table._db(table._id==id).update(**c)
+    table._db(table._id==id,ignore_common_filters=True).update(**c)
     for (k, v) in c.items():
         colset[k] = v
 

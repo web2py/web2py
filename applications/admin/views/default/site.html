@@ -58,7 +58,7 @@
     <!-- VERSION -->
     {{if is_manager():}}
     <div class="box">
-      <h3>{{="Version %s.%s.%s (%s) %s" % myversion}}</h3>
+      <h3>{{=T("Version %s.%s.%s (%s) %s", myversion)}}</h3>
       {{if session.check_version:}}
       <p id="check_version">
         {{=T('Checking for upgrades...')}}
@@ -69,7 +69,7 @@
       {{pass}}
       </p>
       <div class="formfield">
-    Running on {{=request.env.server_software}}
+	{{=T("Running on %s", request.env.server_software)}}
       </div>
       <p>{{=button(URL('default','reload_routes'), T('Reload routes'))}}</p>
     </div>

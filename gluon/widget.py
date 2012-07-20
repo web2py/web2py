@@ -838,6 +838,10 @@ def console():
 
     return (options, args)
 
+def check_existent_app(options,appname):
+    if os.path.isdir(os.path.join(options.folder, 'applications', appname)):
+        return True
+
 def start_schedulers(options):
     apps = [app.strip() for app in options.scheduler.split(',')]
     try:
@@ -848,9 +852,12 @@ def start_schedulers(options):
     processes = []
     code = "from gluon import current;current._scheduler.loop()"
     for app in apps:
+        if not check_existent_app(options, app):
+            print "Application '%s' doesn't exist, skipping" % (app)
+            continue
         print 'starting scheduler for "%s"...' % app
         args = (app,True,True,None,False,code)
-        logging.getLogger().setLevel(logging.DEBUG)
+        logging.getLogger().setLevel(options.debuglevel)
         p = Process(target=run, args=args)
         processes.append(p)
         print "Currently running %s scheduler processes" % (len(processes))
@@ -861,7 +868,6 @@ def start_schedulers(options):
             p.join()
         except (KeyboardInterrupt, SystemExit):
             print "Processes stopped"
-            raise
         except:
             p.terminate()
             p.join()
@@ -911,14 +917,6 @@ def start(cron=True):
         test(options.test, verbose=options.verbose)
         return
 
-    # ## if -K
-    if options.scheduler:
-        try:
-            start_schedulers(options)
-        except KeyboardInterrupt:
-            pass
-        return
-
     # ## if -S start interactive shell (also no cron)
     if options.shell:
         if not options.args is None:
@@ -928,21 +926,35 @@ def start(cron=True):
         return
 
     # ## if -C start cron run (extcron) and exit
-    # ## if -N or not cron disable cron in this *process*
-    # ## if --softcron use softcron
-    # ## use hardcron in all other cases
+    # ##    -K specifies optional apps list (overloading scheduler)
     if options.extcron:
-        print 'Starting extcron...'
+        logger.debug('Starting extcron...')
         global_settings.web2py_crontype = 'external'
-        extcron = newcron.extcron(options.folder)
+        if options.scheduler:   # -K
+            apps = [app.strip() for app in options.scheduler.split(',') if check_existent_app(options, app.strip())]
+        else:
+            apps = None
+        extcron = newcron.extcron(options.folder, apps=apps)
         extcron.start()
         extcron.join()
         return
-    elif cron and not options.nocron and options.softcron:
+
+    # ## if -K
+    if options.scheduler:
+        try:
+            start_schedulers(options)
+        except KeyboardInterrupt:
+            pass
+        return
+
+    # ## if -N or not cron disable cron in this *process*
+    # ## if --softcron use softcron
+    # ## use hardcron in all other cases
+    if cron and not options.nocron and options.softcron:
         print 'Using softcron (but this is not very efficient)'
         global_settings.web2py_crontype = 'soft'
     elif cron and not options.nocron:
-        print 'Starting hardcron...'
+        logger.debug('Starting hardcron...')
         global_settings.web2py_crontype = 'hard'
         newcron.hardcron(options.folder).start()
 

@@ -172,4 +172,3 @@ def charset_by_name(name):
 def charset_by_id(id):
     return _charsets.by_id(id)
 
-

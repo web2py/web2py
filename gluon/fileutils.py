@@ -16,7 +16,6 @@ import time
 import datetime
 from http import HTTP
 from gzip import open as gzopen
-from settings import global_settings
 
 
 __all__ = [
@@ -70,16 +69,6 @@ def write_file(filename, value, mode='w'):
 def readlines_file(filename, mode='r'):
     "applies .split('\n') to the output of read_file()"
     return read_file(filename, mode).split('\n')
-
-def abspath(*relpath, **base):
-    "convert relative path to absolute path based (by default) on applications_parent"
-    path = os.path.join(*relpath)
-    gluon = base.get('gluon', False)
-    if os.path.isabs(path):
-        return path
-    if gluon:
-        return os.path.join(global_settings.gluon_parent, path)
-    return os.path.join(global_settings.applications_parent, path)
 
 
 def mktree(path):
@@ -396,6 +385,15 @@ def make_fake_file_like_object():
     return LogFile()
 
 
-
-
+from settings import global_settings # we need to import settings here because
+                                     # settings imports fileutils too
+def abspath(*relpath, **base):
+    "convert relative path to absolute path based (by default) on applications_parent"
+    path = os.path.join(*relpath)
+    gluon = base.get('gluon', False)
+    if os.path.isabs(path):
+        return path
+    if gluon:
+        return os.path.join(global_settings.gluon_parent, path)
+    return os.path.join(global_settings.applications_parent, path)
 

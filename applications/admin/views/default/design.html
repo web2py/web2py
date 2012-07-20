@@ -2,36 +2,43 @@
 {{
 def all(items):
     return reduce(lambda a,b:a and b,items,True)
-def peekfile(path,file):
-    return A(file.replace('\\\\','/'),_href=URL('peek', args=(app, path, file)))
-def editfile(path,file):
-    return A(SPAN(T('Edit')),_class='button editbutton',_href=URL('edit', args=(app, path, file)))
+def peekfile(path,file,vars={},title=None):
+    args=(path,file) if 'app' in vars else (app,path,file)
+    return A(file.replace('\\\\','/'),_title=title,_href=URL('peek', args=args, vars=vars))
+def editfile(path,file,vars={}):
+    args=(path,file) if 'app' in vars else (app,path,file)
+    return A(SPAN(T('Edit')),_class='button editbutton',_href=URL('edit', args=args, vars=vars))
 def testfile(path,file):
     return A(TAG[''](IMG(_src=URL('static', 'images/test_icon.png'), _alt=T('test')), SPAN(T("Run tests in this file (to run all files, you may also use the button labelled 'test')"))), _class='icon test tooltip',_href=URL('test', args=(app, file)))
-def editlanguagefile(path,file):
-    return A(SPAN(T('Edit')),_class='button editbutton',_href=URL('edit_language', args=(app, path, file)))
-def file_upload_form(location):
+def editlanguagefile(path,file,vars={}):
+    return A(SPAN(T('Edit')),_class='button editbutton',_href=URL('edit_language', args=(app, path, file), vars=vars))
+def editpluralsfile(path,file,vars={}):
+    return A(SPAN(T('Edit')),_class='button editbutton',_href=URL('edit_plurals', args=(app, path, file), vars=vars))
+def file_upload_form(location, anchor=None):
     form=FORM(T("upload file:")," ",
               INPUT(_type="file",_name="file")," ",T("and rename it:")," ",
               INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY),
               INPUT(_type="hidden",_name="location",_value=location),
-              INPUT(_type="hidden",_name="sender",_value=URL('design',args=app)),
+              INPUT(_type="hidden",_name="sender",_value=URL('design',args=app, anchor=anchor)),
               INPUT(_type="submit",_value=T("upload")),_action=URL('upload_file'))
     return form
-def file_create_form(location):
+def file_create_form(location, anchor=None):
     form=FORM(T("create file with filename:")," ",
               INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY),
               INPUT(_type="hidden",_name="location",_value=location),
               INPUT(_type="hidden",_name="sender",_value=URL('design',args=app)),
+              INPUT(_type="hidden",_name="id",_value=anchor),
               INPUT(_type="submit",_value=T("Create")),_action=URL('create_file'))
     return form
-def upload_plugin_form(app):
+def upload_plugin_form(app, anchor=None):
     form=FORM(T("upload plugin file:")," ",
               INPUT(_type="file",_name="pluginfile"),
+              INPUT(_type="hidden",_name="id",_value=anchor),
               INPUT(_type="submit",_value=T("upload")))
     return form
-def deletefile(arglist):
-  return A(TAG[''](IMG(_src=URL('static', 'images/delete_icon.png')), SPAN(T('Delete this file (you will be asked to confirm deletion)'))), _class='icon delete tooltip', _href=URL('delete',args=arglist,vars=dict(sender=request.function+'/'+app)))
+def deletefile(arglist, vars={}):
+  vars.update({'sender':request.function+'/'+app})
+  return A(TAG[''](IMG(_src=URL('static', 'images/delete_icon.png')), SPAN(T('Delete this file (you will be asked to confirm deletion)'))), _class='icon delete tooltip', _href=URL('delete',args=arglist,vars=vars))
 }}
 
 {{block sectionclass}}design{{end}}
@@ -73,13 +80,14 @@ def deletefile(arglist):
 
   <ul>
     {{for m in models:}}
-    <li id="models__{{=m.replace('.','__')}}">
+    {{id="models__"+m.replace('.','__')}}
+    <li id="{{=id}}">
     <span class="filetools controls">
-      {{=editfile('models',m)}}
-      {{=deletefile([app, 'models', m])}}
+      {{=editfile('models',m, dict(id=id))}}
+      {{=deletefile([app, 'models', m], dict(id=id, id2='models'))}}
     </span>
     <span class="file">
-      {{=peekfile('models',m)}}
+      {{=peekfile('models',m, dict(id=id))}}
     </span>
     <span class="extras">
       {{if len(defines[m]):}}{{=T("defines tables")}} {{pass}}{{=XML(', '.join([B(table).xml() for table in defines[m]]))}}
@@ -87,7 +95,7 @@ def deletefile(arglist):
     </li>
     {{pass}}
   </ul>
-  <div class="controls formfield">{{=file_create_form('%s/models/' % app)}}</div>
+  <div class="controls formfield">{{=file_create_form('%s/models/' % app, 'models')}}</div>
 </div>
 
 <!-- FIND CONTROLLER FUNCTIONS -->
@@ -112,14 +120,15 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
   {{pass}}
   <ul>
     {{for c in controllers:}}
-    <li id="controllers__{{=c.replace('.','__')}}">
+    {{id="controllers__"+c.replace('.','__')}}
+    <li id="{{=id}}">
     <span class="filetools controls">
-      {{=editfile('controllers',c)}}
-      {{=deletefile([app, 'controllers', c])}}
+      {{=editfile('controllers',c, dict(id=id))}}
+      {{=deletefile([app, 'controllers', c], dict(id=id, id2='controllers'))}}
       {{=testfile('controllers',c)}}
     </span>
     <span class="file">
-      {{=peekfile('controllers',c)}}
+      {{=peekfile('controllers',c, dict(id=id))}}
     </span>
     <span class="extras">
       {{if functions[c]:}}{{=T("exposes")}} {{pass}}{{=XML(', '.join([A(f,_href=URL(a=app,c=c[:-3],f=f)).xml() for f in functions[c]]))}}
@@ -127,7 +136,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     </li>
     {{pass}}
   </ul>
-  <div class="controls formfield">{{=file_create_form('%s/controllers/' % app)}}</div>
+  <div class="controls formfield">{{=file_create_form('%s/controllers/' % app, 'controllers')}}</div>
 </div>
 
 <!-- VIEWS -->
@@ -143,13 +152,14 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
   {{if not views:}}<p><strong>{{=T("There are no views")}}</strong></p>{{pass}}
   <ul>
     {{for c in views:}}
-    <li id="views__{{=c.replace('/','__').replace('.','__')}}">
+    {{id="views__"+c.replace('/','__').replace('.','__')}}
+    <li id="{{=id}}">
     <span class="filetools controls">
-      {{=editfile('views',c)}}
-      {{=deletefile([app, 'views', c])}}
+      {{=editfile('views',c, dict(id=id))}}
+      {{=deletefile([app, 'views', c], dict(id=id, id2='views'))}}
     </span>
     <span class="file">
-      {{=peekfile('views',c)}}
+      {{=peekfile('views',c, dict(id=id))}}
     </span>
     <span class="extras">
       {{if extend.has_key(c):}}{{=T("extends")}} <b>{{=extend[c]}}</b> {{pass}}
@@ -158,7 +168,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     </li>
     {{pass}}
   </ul>
-  <div class="controls formfield">{{=file_create_form('%s/views/' % app)}}</div>
+  <div class="controls formfield">{{=file_create_form('%s/views/' % app, 'views')}}</div>
 </div>
 
 <!-- LANGUAGES -->
@@ -172,20 +182,60 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     {{=button(URL('update_languages/'+app), T('update all languages'))}}
   </div>
   {{if not languages:}}<p><strong>{{=T("There are no translators, only default language is supported")}}</strong></p>{{pass}}
-  <ul>
+  <table>
     {{for file in languages:}}
-    <li id="languages__{{=file.replace('.','__')}}">
+    {{id="languages__"+file.replace('.','__')}}
+    <tr id="{{=id}}">
+    <td>
     <span class="filetools controls">
       {{=editlanguagefile('languages',file)}}
-      {{=deletefile([app, 'languages', file])}}
+      {{=deletefile([app, 'languages', file], dict(id=id, id2='languages'))}}
     </span>
     <span class="file">
-      {{=peekfile('languages',file)}}
+      {{=peekfile('languages',file, dict(id=id))}}
     </span>
-    </li>
+    </td>
+    <td>
+    &nbsp;
+    (
+    {{=T("Plural-Forms:")}}
+    {{p=plural_rules[file]}}
+    {{if p[0] == 0:}}
+       <b>{{=T("rules are not defined")}}</b>,
+       <span class="controls comptools">
+       {{=button(URL('create_file', vars=dict(filename=p[2], location='gluon/contrib/rules/', sender=URL('design', args=app), id=id, app=app)), T('Create rules'))}}
+       </span>
+    {{else:}}
+      {{if p[0] == 1:}}
+        {{if p[3] == 'ok':}}
+           {{=B(T("are not used"))}},
+        {{else:}}
+           <span class='error'>{{=B(T("rules parsed with errors"))}}</span>,
+        {{pass}}
+      {{else:}}
+        {{pfile='plural-%s.py'%p[1]}}
+        {{if pfile in plurals:}}
+          <span class="filetools controls">
+            {{=editpluralsfile('languages',pfile,dict(nplurals=p[0]))}}
+          </span>
+          <span class="file">
+            {{=peekfile('languages',pfile,dict(id=id))}},
+          </span>
+        {{else:}}
+          <b>{{=T("are not used yet")}}</b>,
+        {{pass}}
+      {{pass}}
+      {{=T("rules:")}}
+        <span class="file{{=' error' if p[3]!='ok' else ''}}">
+          {{=peekfile('gluon/contrib/rules', p[2], dict(app=app, id=id), p[3] if p[3]!='ok' else None)}}
+        </span>
     {{pass}}
-  </ul>
-  <div class="controls formfield">{{=file_create_form('%s/languages/' % app)}}{{=T('(something like "it-it")')}}</div>
+    )
+    </td>
+    </tr>
+    {{pass}}
+  </table>
+  <div class="controls formfield">{{=file_create_form('%s/languages/' % app, 'languages')}}{{=T('(something like "it-it")')}}</div>
 </div>
 
 <!-- STATIC -->
@@ -223,10 +273,10 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
       if filename:
       }}<li>
       <span class="filetools controls">
-	{{=editfile('static',file)}} {{=deletefile([app,'static',file])}}
+    {{=editfile('static',file, dict(id="static"))}} {{=deletefile([app,'static',file], dict(id="static",id2="static"))}}
       </span>
       <span class="file">
-	<a href="{{=URL(a=app,c='static',f=file)}}">{{=filename}}</a>
+    <a href="{{=URL(a=app,c='static',f=file)}}">{{=filename}}</a>
       </span>
     </li>{{
           pass
@@ -234,8 +284,8 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     }}
     {{pass}}
   </ul>
-  <div class="controls formfield">{{=file_create_form('%s/static/' % app)}}
-  {{=file_upload_form('%s/static/' % app)}}</div>
+  <div class="controls formfield">{{=file_create_form('%s/static/' % app, 'static')}}
+  {{=file_upload_form('%s/static/' % app, 'static')}}</div>
 </div>
 
 <!-- MODULES -->
@@ -250,19 +300,22 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
   {{if not modules:}}<p><strong>{{=T("There are no modules")}}</strong></p>{{pass}}
   <ul>
     {{for m in modules:}}
-    <li id="modules__{{=m.replace('/','__').replace('.','__')}}">
+    {{id="modules__"+m.replace('/','__').replace('.','__')}}
+    <li id="{{=id}}">
     <span class="filetols controls">
-      {{=editfile('modules',m)}}
-      {{if m!='__init__.py':}}{{=deletefile([app, 'modules', m])}}{{pass}}
+      {{=editfile('modules',m,dict(id=id))}}
+      {{if m!='__init__.py':}}
+         {{=deletefile([app, 'modules', m], dict(id=id, id2='modules'))}}
+      {{pass}}
     </span>
     <span class="file">
-      {{=peekfile('modules',m)}}
+      {{=peekfile('modules',m, dict(id=id))}}
     </span>
     </li>
     {{pass}}
   </ul>
-  <div class="controls formfield">{{=file_create_form('%s/modules/' % app)}}
-  {{=file_upload_form('%s/modules/' % app)}}</div>
+  <div class="controls formfield">{{=file_create_form('%s/modules/' % app, 'modules')}}
+  {{=file_upload_form('%s/modules/' % app, 'modules')}}</div>
 </div>
 
 <!-- PLUGINS -->
@@ -280,15 +333,16 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
   {{if plugins:}}
   <ul>
       {{for plugin in plugins:}}
-      <li>
-      {{=A('plugin_%s' % plugin, _class='file', _href=URL('plugin', args=[app, plugin]))}}
+      {{id="plugins__"+plugin.replace('/','__').replace('.','__')}}
+      <li id="{{=id}}">
+      {{=A('plugin_%s' % plugin, _class='file', _href=URL('plugin', args=[app, plugin], vars=dict(id=id, id2='plugins')))}}
       </li>
       {{pass}}
   </ul>
   {{else:}}
   <p><strong>{{=T('There are no plugins')}}</strong></p>
   {{pass}}
-  <div class="controls formfield">{{=upload_plugin_form(app)}}</div>
+  <div class="controls formfield">{{=upload_plugin_form(app, 'plugins')}}</div>
 </div>
 
 
@@ -299,11 +353,12 @@ jQuery(document).ready(function(){
       if(code==13 && jQuery('#search').val()){
         jQuery.getJSON('{{=URL('search',args=request.args)}}?keywords='+escape(jQuery('#search').val()),null,function(data, textStatus, xhr){
           jQuery('.component_contents li, .formfield, .comptools').hide();
-		  files=data['files'];
+          files=data['files'];
+          message=data['message'];
           for(var i=0; i<files.length; i++)
             jQuery('li#'+files[i].replace(/\//g,'__').replace('.','__')).slideDown();
-          jQuery('.flash').html('{{=T("Searching:")}} '+files.length+' {{=T("files")}}').slideDown();
-		  });
+          jQuery('.flash').html(message).slideDown();
+          });
       } else if(code==13) {
           jQuery('.component_contents li, .formfield, .comptools').slideDown();
           jQuery('.flash').html('').hide();

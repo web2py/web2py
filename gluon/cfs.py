@@ -13,7 +13,6 @@ FOR INTERNAL USE ONLY
 """
 
 import os
-import stat
 import thread
 from fileutils import read_file
 
@@ -34,7 +33,7 @@ def getcfs(key, filename, filter=None):
 
     This is used on Google App Engine since pyc files cannot be saved.
     """
-    t = os.stat(filename)[stat.ST_MTIME]
+    t = os.stat(filename).st_mtime
     cfs_lock.acquire()
     item = cfs.get(key, None)
     cfs_lock.release()
