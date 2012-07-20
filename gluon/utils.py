@@ -69,7 +69,7 @@ def get_digest(value):
     elif value == "sha512":
         return hashlib.sha512
     else:
-        raise ValueError("Invalid digest algorithm")
+        raise ValueError("Invalid digest algorithm: %s" % value) 
 
 DIGEST_ALG_BY_SIZE = {
     128/4: 'md5',
