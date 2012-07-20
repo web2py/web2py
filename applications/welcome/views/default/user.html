@@ -1,0 +1,19 @@
+{{extend 'layout.html'}}
+<h2>{{=T( request.args(0).replace('_',' ').capitalize() )}}</h2>
+<div id="web2py_user_form">
+{{
+if request.args(0)=='login':
+    if not 'register' in auth.settings.actions_disabled:
+        form.add_button(T('Register'),URL(args='register'))
+    pass
+    if not 'request_reset_password' in auth.settings.actions_disabled:
+        form.add_button(T('Lost Password'),URL(args='request_reset_password'))
+    pass
+pass
+=form
+}}
+</div>
+<script language="javascript"><!--
+      jQuery("#web2py_user_form input:visible:enabled:first").focus();
+      //--></script>
+
