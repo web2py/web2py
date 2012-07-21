@@ -854,6 +854,11 @@ def design():
     modules = modules=[x.replace('\\','/') for x in modules]
     modules.sort()
 
+    # Get all private files
+    privates = listdir(apath('%s/private/' % app, r=request), '[^\.#].*')
+    privates = [x.replace('\\','/') for x in privates]
+    privates.sort()
+
     # Get all static files
     statics = listdir(apath('%s/static/' % app, r=request), '[^\.#].*')
     statics = [x.replace('\\','/') for x in statics]
@@ -908,6 +913,7 @@ def design():
                 modules=filter_plugins(modules,plugins),
                 extend=extend,
                 include=include,
+                privates=filter_plugins(privates,plugins),
                 statics=filter_plugins(statics,plugins),
                 languages=languages,
                 plurals=plurals,
@@ -924,7 +930,7 @@ def delete_plugin():
         redirect(URL('design', args=app, anchor=request.vars.id))
     elif 'delete' in request.vars:
         try:
-            for folder in ['models','views','controllers','static','modules']:
+            for folder in ['models','views','controllers','static','modules', 'private']:
                 path=os.path.join(apath(app,r=request),folder)
                 for item in os.listdir(path):
                     if item.rsplit('.',1)[0] == plugin_name:
@@ -994,6 +1000,11 @@ def plugin():
     modules = modules=[x.replace('\\','/') for x in modules]
     modules.sort()
 
+    # Get all private files
+    privates = listdir(apath('%s/private/' % app, r=request), '[^\.#].*')
+    privates = [x.replace('\\','/') for x in privates]
+    privates.sort()
+
     # Get all static files
     statics = listdir(apath('%s/static/' % app, r=request), '[^\.#].*')
     statics = [x.replace('\\','/') for x in statics]
@@ -1023,6 +1034,7 @@ def plugin():
                 modules=filter_plugins(modules),
                 extend=extend,
                 include=include,
+                privates=filter_plugins(privates),
                 statics=filter_plugins(statics),
                 languages=languages,
                 crontab=crontab)
@@ -1142,10 +1154,11 @@ def create_file():
                    # coding: utf8
                    from gluon import *\n""")[1:]
 
-        elif path[-8:] == '/static/':
+        elif (path[-8:] == '/static/') or (path[-9:] == '/private/'):
             if request.vars.plugin and not filename.startswith('plugin_%s/' % request.vars.plugin):
                 filename = 'plugin_%s/%s' % (request.vars.plugin, filename)
             text = ''
+            
         else:
             redirect(request.vars.sender+anchor)
 
