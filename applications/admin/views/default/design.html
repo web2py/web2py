@@ -57,6 +57,7 @@ def deletefile(arglist, vars={}):
     {{=button('#languages', T("languages"))}}
     {{=button('#static', T("static"))}}
     {{=button('#modules', T("modules"))}}
+    {{=button('#private', T("private files"))}}
     {{=button('#plugins', T("plugins"))}}
     </span>
   </p>
@@ -317,6 +318,57 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
   <div class="controls formfield">{{=file_create_form('%s/modules/' % app, 'modules')}}
   {{=file_upload_form('%s/modules/' % app, 'modules')}}</div>
 </div>
+
+<!-- PRIVATE -->
+
+<h3 id="private" onclick="collapse('private_inner');" class="component">
+  {{=T("Private files")}}
+  <span class="tooltip">{{=helpicon()}} <span>{{=T("These files are not served, they are only available from within your app")}}</span></span>
+</h3>
+<div id="private_inner" class="component_contents">
+  <div class="controls comptools">
+  </div>
+  {{if not privates:}}<p><strong>{{=T("There are no private files")}}</strong></p>{{pass}}
+  <ul>
+    {{
+    path=[]
+    for file in privates+['']:
+      items=file.split('/')
+      file_path=items[:-1]
+      filename=items[-1]
+      while path!=file_path:
+          if len(file_path)>=len(path) and all([v==file_path[k] for k,v in enumerate(path)]):
+              path.append(file_path[len(path)])
+              thispath='private__'+'__'.join(path)
+    }}
+    <li class="folder">
+    <a href="javascript:collapse('{{=thispath}}');" class="file">{{=path[-1]}}/</a>
+    <ul id="{{=thispath}}" style="display: none;" class="sublist">{{
+          else:
+              path = path[:-1]
+      }}
+    </ul></li>
+    {{
+              pass
+          pass
+      if filename:
+      }}<li>
+      <span class="filetools controls">
+    {{=editfile('private',file, dict(id="private"))}} {{=deletefile([app,'private',file], dict(id="private",id2="private"))}}
+      </span>
+      <span class="file">
+      {{=filename}}
+      </span>
+    </li>{{
+          pass
+      pass
+    }}
+    {{pass}}
+  </ul>
+  <div class="controls formfield">{{=file_create_form('%s/private/' % app, 'private')}}
+  {{=file_upload_form('%s/private/' % app, 'private')}}</div>
+</div>
+
 
 <!-- PLUGINS -->
 
