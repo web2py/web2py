@@ -14,14 +14,23 @@ from gluon.fileutils import abspath, read_file, write_file
 from glob import glob
 import shutil
 import platform
+try:                                                                                      
+    from git import *                                                                     
+    have_git = True
+except ImportError:                                                                       
+    have_git = False
+    GIT_MISSING = 'requires python-git module, but not installed'
+
 from gluon.languages import (regex_language, read_possible_languages,
                              read_possible_plurals, lang_sampling,
                              read_dict, write_dict, read_plural_dict,
                              write_plural_dict)
 
-if DEMO_MODE and request.function in ['change_password','pack','pack_plugin','upgrade_web2py','uninstall','cleanup','compile_app','remove_compiled_app','delete','delete_plugin','create_file','upload_file','update_languages','reload_routes']:
+
+if DEMO_MODE and request.function in ['change_password','pack','pack_plugin','upgrade_web2py','uninstall','cleanup','compile_app','remove_compiled_app','delete','delete_plugin','create_file','upload_file','update_languages','reload_routes','git_push','git_pull']:
     session.flash = T('disabled in demo mode')
     redirect(URL('site'))
+
 
 if not is_manager() and request.function in ['change_password','upgrade_web2py']:
     session.flash = T('disabled in multi user mode')
@@ -187,6 +196,23 @@ def site():
         # can't do anything without an app name
         msg = 'you must specify a name for the uploaded application'
         response.flash = T(msg)
+
+    elif (request.vars.appurl or '').endswith('.git') and request.vars.filename:
+        if not have_git:
+	   session.flash = GIT_MISSING
+        elif request.vars.filename:
+            target = os.path.join(apath(r=request),request.vars.filename)
+            if os.path.exists(target):
+                session.flash = 'Application by that name already exists.'
+            else:
+                try:
+                    new_repo = Repo.clone_from(request.vars.appurl,target)
+                    session.flash = T('new application "%s" imported',request.vars.filename)
+                except GitCommandError, err:
+                    session.flash = T('Invalid git repository specified.')
+        else:
+            session.flash = 'Application Name required for git import.'
+        redirect(URL(r=request))
 
     elif file_or_appurl and request.vars.filename:
         # fetch an application via URL or file upload
@@ -1557,4 +1583,77 @@ def bulk_register():
         session.flash = T('%s students registered',n)
         redirect(URL('site'))
     return locals()
+
+### Begin experimental stuff need fixes:
+# 1) should run in its own process - cannot os.chdir
+# 2) should not prompt user at console
+# 3) should give option to force commit and not reuqire manual merge
+
+def git_pull():
+    """ Git Pull handler """
+    app = get_app()
+    if not have_git:
+        session.flash = GIT_MISSING
+        redirect(URL('site'))
+    if 'pull' in request.vars:
+        try:
+            repo = Repo(os.path.join(apath(r=request),app))
+            origin = repo.remotes.origin
+            origin.fetch()
+            origin.pull()
+            session.flash = T("Application updated via git pull")
+            redirect(URL('site'))
+        except CheckoutError, message:
+            logging.error(message)
+            session.flash = T("Pull failed, certain files could not be checked out. Check logs for details.")
+            redirect(URL('site'))
+        except UnmergedEntriesError:
+            session.flash = T("Pull is not possible because you have unmerged files. Fix them up in the work tree, and then try again.")
+            redirect(URL('site'))
+        except AssertionError:
+            session.flash = T("Pull is not possible because you have unmerged files. Fix them up in the work tree, and then try again.")
+            redirect(URL('site'))
+        except GitCommandError, status:
+            logging.error(str(status))
+            session.flash = T("Pull failed, git exited abnormally. See logs for details.")
+            redirect(URL('site'))
+        except Exception,e:
+            logging.error("Unexpected error:", sys.exc_info()[0])
+            session.flash = T("Pull failed, git exited abnormally. See logs for details.")
+            redirect(URL('site'))
+    elif 'cancel' in request.vars:
+        redirect(URL('site'))
+    return dict(app=app)
+
+
+def git_push():
+    """ Git Push handler """
+    app = get_app()
+    if not have_git:
+        session.flash = GIT_MISSING
+        redirect(URL('site'))
+    form = SQLFORM.factory(Field('changelog',requires=IS_NOT_EMPTY()))
+    form.element('input[type=submit]')['_value']=T('Push')
+    form.add_button(T('Cancel'),URL('site'))
+    form.process()
+    if form.accepted:
+        try:
+            repo = Repo(os.path.join(apath(r=request),app))
+            index = repo.index
+            os.chdir(os.path.join(apath(r=request),app))
+            index.add('*')
+            new_commit = index.commit(form.vars.changelog)
+            origin = repo.remotes.origin
+            origin.push()
+            session.flash = T("Git repo updated with latest application changes.")
+            redirect(URL('site'))
+        except UnmergedEntriesError:
+            session.flash = T("Push failed, there are unmerged entries in the cache. Resolve merge issues manually and try again.")
+            redirect(URL('site'))
+        except Exception, e:
+            logging.error("Unexpected error:", sys.exc_info()[0])
+            session.flash = T("Push failed, git exited abnormally. See logs for details.")
+            redirect(URL('site'))
+    os.chdir(apath(r=request))
+    return dict(app=app,form=form)
 
