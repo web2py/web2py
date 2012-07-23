@@ -1640,8 +1640,7 @@ def git_push():
         try:
             repo = Repo(os.path.join(apath(r=request),app))
             index = repo.index
-            os.chdir(os.path.join(apath(r=request),app))
-            index.add('*')
+            index.add(apath(r=request)+app+'/*')
             new_commit = index.commit(form.vars.changelog)
             origin = repo.remotes.origin
             origin.push()
@@ -1654,6 +1653,5 @@ def git_push():
             logging.error("Unexpected error:", sys.exc_info()[0])
             session.flash = T("Push failed, git exited abnormally. See logs for details.")
             redirect(URL('site'))
-    os.chdir(apath(r=request))
     return dict(app=app,form=form)
 
