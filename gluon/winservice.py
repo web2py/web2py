@@ -90,7 +90,7 @@ class Web2pyService(Service):
                 cls = _winreg.QueryValue(h, 'PythonClass')
             finally:
                 _winreg.CloseKey(h)
-            dir = os.path.dirname(cls)
+            dir = os.path.dirname(cls)            
             os.chdir(dir)
             return True
         except:
@@ -149,15 +149,18 @@ class Web2pyService(Service):
 
 def web2py_windows_service_handler(argv=None, opt_file='options'):
     path = os.path.dirname(__file__)
-    classstring = os.path.normpath(os.path.join(up(path),
-                                   'gluon.winservice.Web2pyService'))
+    web2py_path = iup(path)
+    os.chdir(web2py_path)
+    global_settings.gluon_parent = web2py_path
+    custom_import_install(web2py_path)
+    classstring = os.path.normpath(
+        os.path.join(web2py_path,'gluon.winservice.Web2pyService'))
     if opt_file:
         Web2pyService._exe_args_ = opt_file
         win32serviceutil.HandleCommandLine(Web2pyService,
                 serviceClassString=classstring, argv=['', 'install'])
     win32serviceutil.HandleCommandLine(Web2pyService,
             serviceClassString=classstring, argv=argv)
-
 
 if __name__ == '__main__':
     web2py_windows_service_handler()
