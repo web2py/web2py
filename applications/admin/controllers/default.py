@@ -1640,7 +1640,7 @@ def git_push():
         try:
             repo = Repo(os.path.join(apath(r=request),app))
             index = repo.index
-            index.add(apath(r=request)+app+'/*')
+            index.add([apath(r=request)+app+'/*'])
             new_commit = index.commit(form.vars.changelog)
             origin = repo.remotes.origin
             origin.push()
