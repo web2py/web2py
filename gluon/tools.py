@@ -881,7 +881,8 @@ class Auth(object):
         return URL(args=current.request.args,vars=current.request.vars)
 
     def __init__(self, environment=None, db=None, mailer=True,
-                 hmac_key=None, controller='default', function='user', cas_provider=None):
+                 hmac_key=None, controller='default', function='user',
+                 cas_provider=None, signature=True):
         """
         auth=Auth(db)
 
@@ -1133,7 +1134,10 @@ class Auth(object):
             # when user wants to be logged in for longer
             response.cookies[response.session_id_name]["expires"] = \
                 auth.expiration
-
+        if signature:
+            self.define_signature()
+        else:
+            self.signature = None
 
     def _get_user_id(self):
        "accessor for auth.user_id"
@@ -1332,7 +1336,8 @@ class Auth(object):
 
         db = self.db
         settings = self.settings
-        self.define_signature()
+        if not self.signature:
+            self.define_signature()
         if signature==True:
             signature_list = [self.signature]
         elif not signature:
