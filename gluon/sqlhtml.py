@@ -1241,7 +1241,8 @@ class SQLFORM(FORM):
                     ### do not know why this happens, it should not
                     (source_file, original_filename) = \
                         (cStringIO.StringIO(f), 'file.txt')
-                newfilename = field.store(source_file, original_filename, field.uploadfolder)
+                newfilename = field.store(source_file, original_filename, 
+                                          field.uploadfolder)
                 # this line is for backward compatibility only
                 self.vars['%s_newfilename' % fieldname] = newfilename
                 fields[fieldname] = newfilename
