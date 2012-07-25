@@ -35,7 +35,7 @@ except ImportError:
 
 logger = logging.getLogger("web2py.cache")
 
-__all__ = ['Cache', 'lazy_lazy_cache']
+__all__ = ['Cache', 'lazy_cache']
 
 
 DEFAULT_TIME_EXPIRE = 300
@@ -478,7 +478,7 @@ class Cache(object):
             return CacheAction(func,key,time_expire,self,cache_model)
         return tmp
 
-def lazy_lazy_cache(key=None,time_expire=None,cache_model='ram'):
+def lazy_cache(key=None,time_expire=None,cache_model='ram'):
     def decorator(f,key=key,time_expire=time_expire,cache_model=cache_model):
         key = key or repr(f)
         def g(*c,**d):
