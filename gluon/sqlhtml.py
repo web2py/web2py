@@ -410,8 +410,11 @@ class CheckboxesWidget(OptionsWidget):
                                        LABEL(v,_for='%s%s' % (field.name,k))))
             opts.append(child(tds))
 
+
         if opts:
-            opts[-1][0][0]['hideerror'] = False
+            opts.append(INPUT(_class="hidden", requires=attr.get('requires', None), 
+                              _disabled="disabled", _name=field.name,
+                              hideerror=False))        
         return parent(*opts, **attr)
 
 
