@@ -479,6 +479,13 @@ class Cache(object):
         return tmp
 
 def lazy_cache(key=None,time_expire=None,cache_model='ram'):
+    """
+    can be used to cache any function including in modules,
+    as long as the cached function is only called within a web2py request
+    if a key is not provided, one is generated from the function name
+    the time_expire defaults to None (no cache expiration)
+    if cache_model is "ram" then the model is current.cache.ram, etc.
+    """
     def decorator(f,key=key,time_expire=time_expire,cache_model=cache_model):
         key = key or repr(f)
         def g(*c,**d):
