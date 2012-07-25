@@ -1173,8 +1173,7 @@ class SQLFORM(FORM):
                     row_id = '%s_%s%s' % (self.table, fieldname, SQLFORM.ID_ROW_SUFFIX)
                     widget = field.widget(field, value)
                     self.field_parent[row_id].components = [ widget ]
-                    if not field.type.startswith('list:'):
-                        self.field_parent[row_id]._traverse(False, hideerror)
+                    self.field_parent[row_id]._traverse(False, hideerror)
                     self.custom.widget[ fieldname ] = widget
             self.accepted = ret
             return ret
