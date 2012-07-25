@@ -472,7 +472,8 @@ class XmlComponent(object):
 
     def xml(self):
         raise NotImplementedError
-
+    def __mul__(self,n):
+        return CAT(*[self for i in range(n)])
 
 class XML(XmlComponent):
     """
