@@ -3397,6 +3397,8 @@ class Crud(object):
             query = table.id > 0
         if not fields:
             fields = [field for field in table if field.readable]
+        else:
+            fields = [table[f] if isinstance(f,str) else f for f in fields]
         rows = self.db(query).select(*fields,**dict(orderby=orderby,
                                                     limitby=limitby))
         return rows
