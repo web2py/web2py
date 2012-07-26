@@ -474,6 +474,16 @@ class XmlComponent(object):
         raise NotImplementedError
     def __mul__(self,n):
         return CAT(*[self for i in range(n)])
+    def __add__(self,other):
+        if isinstance(self,CAT):
+            components = self.components
+        else:
+            components = [self]
+        if isinstance(other,CAT):
+            components += other.components
+        else:
+            components += [other]
+        return CAT(*components)
 
 class XML(XmlComponent):
     """
