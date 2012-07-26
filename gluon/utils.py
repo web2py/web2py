@@ -16,6 +16,7 @@ import random
 import time
 import os
 import logging
+import socket
 from contrib.pbkdf2 import pbkdf2_hex
 
 logger = logging.getLogger("web2py")
@@ -69,7 +70,7 @@ def get_digest(value):
     elif value == "sha512":
         return hashlib.sha512
     else:
-        raise ValueError("Invalid digest algorithm: %s" % value) 
+        raise ValueError("Invalid digest algorithm: %s" % value)
 
 DIGEST_ALG_BY_SIZE = {
     128/4: 'md5',
@@ -146,6 +147,25 @@ def web2py_uuid():
     bytes = ''.join(chr(c ^ ctokens[i]) for i,c in enumerate(bytes))
     return str(uuid.UUID(bytes=bytes, version=4))
 
+def is_valid_ip_address(address):
+    """
+    >>> is_valid_ip_address('127.0')
+    False
+    >>> is_valid_ip_address('127.0.0.1')
+    True
+    >>> is_valid_ip_address('2001:660::1')
+    True
+    """
+    try:
+        if address.count('.')==3:
+            addr = socket.inet_aton(address)
+        else:
+            addr = socket.inet_pton(socket.AF_INET6, address)
+    except AttributeError: # no socket.inet_pton
+        return False
+    except socket.error:
+        return False
+    return True
 
 
 
