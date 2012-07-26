@@ -85,7 +85,7 @@ app:
 	mv ../web2py_osx/web2py_osx.zip .
 win:
 	echo 'did you uncomment import_all in gluon/main.py?'
-	python2.5 -c 'import compileall; compileall.compile_dir("gluon/")'
+	python2.7 -c 'import compileall; compileall.compile_dir("gluon/")'
 	find gluon -path '*.pyc' -exec cp {} ../web2py_win/library/{} \;
 	cd ../web2py_win/library/; unzip ../library.zip
 	cd ../web2py_win/library/; zip -r ../library.zip *
