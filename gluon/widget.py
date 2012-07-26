@@ -222,12 +222,15 @@ class web2pyDialog(object):
                                                  sticky=sticky)
         self.ips = {}
         self.selected_ip = Tkinter.StringVar()
-        for row,ip in enumerate(self.options.ips):
+        row=0
+        for ip,legend in (('127.0.0.1','Local'),('0.0.0.0','Public')):
             self.ips[ip] = Tkinter.Radiobutton(
-                self.root,text=ip, variable=self.selected_ip, value=ip)
-            self.ips[ip].grid(row=row, column=1, sticky=sticky)
+                self.root,text='%s (%s)' % (legend,ip),
+                variable=self.selected_ip, value=ip)
+            self.ips[ip].grid(row=row, column=1, sticky=sticky)            
             if row==0: self.ips[ip].select()
-        shift = len(self.options.ips)
+            row+=1
+        shift = row
         # Port
         Tkinter.Label(self.root,
                       text='Server Port:',
@@ -420,7 +423,7 @@ class web2pyDialog(object):
             thread.start_new_thread(start_browser, (proto, ip, port))
 
         self.password.configure(state='readonly')
-        self.ip.configure(state='readonly')
+        [ip.configure(state='disabled') for ip in self.ips.values()]
         self.port_number.configure(state='readonly')
 
         if self.tb:
@@ -439,7 +442,7 @@ class web2pyDialog(object):
         self.button_start.configure(state='normal')
         self.button_stop.configure(state='disabled')
         self.password.configure(state='normal')
-        self.ip.configure(state='normal')
+        [ip.configure(state='normal') for ip in self.ips.values()]
         self.port_number.configure(state='normal')
         self.server.stop()
 
@@ -793,9 +796,6 @@ def console():
     options.args = [options.run] + other_args
     global_settings.cmd_options = options
     global_settings.cmd_args = args
-
-    # detect all ips:
-    options.ips = ['127.0.0.1']+[ip for ip in socket.gethostbyname_ex('')[2] if not ip.startswith("127.")]+['0.0.0.0']
 
     if options.run_system_tests:
         run_system_tests()
