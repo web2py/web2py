@@ -223,7 +223,10 @@ class web2pyDialog(object):
         self.ips = {}
         self.selected_ip = Tkinter.StringVar()
         row=0
-        for ip,legend in (('127.0.0.1','Local'),('0.0.0.0','Public')):
+        ips = [('127.0.0.1','Local')] + \
+            [(ip,'Public') for ip in options.ips] + \
+            [('0.0.0.0','Public')]
+        for ip,legend in ips:
             self.ips[ip] = Tkinter.Radiobutton(
                 self.root,text='%s (%s)' % (legend,ip),
                 variable=self.selected_ip, value=ip)
@@ -796,6 +799,9 @@ def console():
     options.args = [options.run] + other_args
     global_settings.cmd_options = options
     global_settings.cmd_args = args
+
+    options.ips = [ip for ip in socket.gethostbyname_ex(socket.getfqdn())[2]
+                   if ip!='127.0.0.1']
 
     if options.run_system_tests:
         run_system_tests()
