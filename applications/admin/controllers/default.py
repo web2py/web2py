@@ -403,6 +403,32 @@ def delete():
         redirect(URL(sender, anchor=request.vars.id2))
     return dict(filename=filename, sender=sender)
 
+def delete():
+    """ Object delete handler """
+    app = get_app()
+    filename = '/'.join(request.args)
+    sender = request.vars.sender
+
+    if isinstance(sender, list):  # ## fix a problem with Vista
+        sender = sender[0]
+
+    dialog = FORM.dialog(T('Delete'),
+                         {T('Cancel'):URL(sender, anchor=request.vars.id)})
+
+    if dialog.accepted:
+        try:
+            full_path = apath(filename, r=request)
+            lineno = count_lines(open(full_path,'r').read())
+            os.unlink(full_path)
+            log_progress(app,'DELETE',filename,progress=-lineno)
+            session.flash = T('file "%(filename)s" deleted',
+                              dict(filename=filename))
+        except Exception:
+            session.flash = T('unable to delete file "%(filename)s"',
+                              dict(filename=filename))
+        redirect(URL(sender, anchor=request.vars.id2))
+    return dict(dialog=dialog,filename=filename)
+
 def enable():
     app = get_app()
     filename = os.path.join(apath(app, r=request),'DISABLED')
