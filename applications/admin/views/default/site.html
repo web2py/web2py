@@ -148,13 +148,11 @@
     </div>
     <!-- DEPLOY ON GAE -->
     <div class="box">
-      <h3>{{=T("Deploy on Google App Engine")}}</h3>
-      <p>{{=button(URL('gae','deploy'), T('Deploy'))}}</p>
-    </div><br/>
-    <!-- DEPLOY ON OPENSHIFT -->
-    <div class="box">
-      <h3>{{=T("Deploy to OpenShift")}}</h3>
-      <p>{{=button(URL('openshift','deploy'),T('Deploy'))}}</p>
+      <h3>{{=T("Deploy")}}</h3>
+      <p>
+	{{=button(URL('gae','deploy'), T('Deploy on Google App Engine'))}}
+	{{=button(URL('openshift','deploy'),T('Deploy to OpenShift'))}}
+      </p>
     </div><br/>
     {{if TWITTER_HASH:}}
     <div class="box">
