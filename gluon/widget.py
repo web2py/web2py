@@ -220,44 +220,48 @@ class web2pyDialog(object):
                       justify=Tkinter.LEFT).grid(row=0,
                                                  column=0,
                                                  sticky=sticky)
-        self.ip = Tkinter.Entry(self.root)
-        self.ip.insert(Tkinter.END, self.options.ip)
-        self.ip.grid(row=0, column=1, sticky=sticky)
-
+        self.ips = {}
+        self.selected_ip = Tkinter.StringVar()
+        for row,ip in enumerate(self.options.ips):
+            self.ips[ip] = Tkinter.Radiobutton(
+                self.root,text=ip, variable=self.selected_ip, value=ip)
+            self.ips[ip].grid(row=row, column=1, sticky=sticky)
+            if row==0: self.ips[ip].select()
+        shift = len(self.options.ips)
         # Port
         Tkinter.Label(self.root,
                       text='Server Port:',
-                      justify=Tkinter.LEFT).grid(row=1,
+                      justify=Tkinter.LEFT).grid(row=shift,
                                                  column=0,
                                                  sticky=sticky)
 
         self.port_number = Tkinter.Entry(self.root)
         self.port_number.insert(Tkinter.END, self.options.port)
-        self.port_number.grid(row=1, column=1, sticky=sticky)
+        self.port_number.grid(row=shift, column=1, sticky=sticky)
 
         # Password
         Tkinter.Label(self.root,
                       text='Choose Password:',
-                      justify=Tkinter.LEFT).grid(row=2,
+                      justify=Tkinter.LEFT).grid(row=shift+1,
                                                  column=0,
                                                  sticky=sticky)
 
         self.password = Tkinter.Entry(self.root, show='*')
         self.password.bind('<Return>', lambda e: self.start())
         self.password.focus_force()
-        self.password.grid(row=2, column=1, sticky=sticky)
+        self.password.grid(row=shift+1, column=1, sticky=sticky)
 
         # Prepare the canvas
         self.canvas = Tkinter.Canvas(self.root,
                                      width=300,
                                      height=100,
                                      bg='black')
-        self.canvas.grid(row=3, column=0, columnspan=2)
+        self.canvas.grid(row=shift+2, column=0, columnspan=2)
         self.canvas.after(1000, self.update_canvas)
 
         # Prepare the frame
         frame = Tkinter.Frame(self.root)
-        frame.grid(row=4, column=0, columnspan=2)
+        frame.grid(row=shift+3, column=0, columnspan=2)
 
         # Start button
         self.button_start = Tkinter.Button(frame,
@@ -359,7 +363,7 @@ class web2pyDialog(object):
         if not password:
             self.error('no password, no web admin interface')
 
-        ip = self.ip.get()
+        ip = self.selected_ip.get()
 
         regexp = '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
         if ip and not re.compile(regexp).match(ip):
@@ -789,6 +793,9 @@ def console():
     options.args = [options.run] + other_args
     global_settings.cmd_options = options
     global_settings.cmd_args = args
+
+    # detect all ips:
+    options.ips = ['127.0.0.1']+[ip for ip in socket.gethostbyname_ex('')[2] if not ip.startswith("127.")]+['0.0.0.0']
 
     if options.run_system_tests:
         run_system_tests()
