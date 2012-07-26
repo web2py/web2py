@@ -7112,6 +7112,9 @@ class Table(dict):
                     "primarykey must be a list of fields from table '%s'" \
                     % tablename
             self._primarykey = primarykey
+            if len(primarykey)==1:
+                self._id = [f for f in fields if isinstance(f,Field) \
+                                and f.name==primarykey[0]][0]
         elif not [f for f in fields if isinstance(f,Field) and f.type=='id']:
             field = Field('id', 'id')
             newfields.append(field)
