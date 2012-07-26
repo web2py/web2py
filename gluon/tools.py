@@ -1627,7 +1627,7 @@ class Auth(object):
             userfield = 'email'
         passfield = self.settings.password_field
         user = self.db(table_user[userfield] == username).select().first()
-        if user:
+        if user and user.get(passfield,False):
             password = table_user[passfield].validate(password)[0]
             if not user.registration_key and password == user[passfield]:
                 user = Storage(table_user._filter_fields(user, id=True))
