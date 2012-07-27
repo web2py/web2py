@@ -662,13 +662,24 @@ class Mail(object):
 
 class Recaptcha(DIV):
 
+    """
+    Usage:
+
+        form = FORM(Recaptcha(public_key='...',private_key='...'))
+     
+    or 
+
+        form = SQLFORM(...)
+        form.append(Recaptcha(public_key='...',private_key='...'))
+    """
+
     API_SSL_SERVER = 'https://www.google.com/recaptcha/api'
     API_SERVER = 'http://www.google.com/recaptcha/api'
     VERIFY_SERVER = 'http://www.google.com/recaptcha/api/verify'
 
     def __init__(
         self,
-        request,
+        request=None,
         public_key='',
         private_key='',
         use_ssl=False,
@@ -677,6 +688,7 @@ class Recaptcha(DIV):
         label = 'Verify:',
         options = ''
         ):
+        self.request_vars = request and request.vars or current.request.vars
         self.remote_addr = request.env.remote_addr
         self.public_key = public_key
         self.private_key = private_key
