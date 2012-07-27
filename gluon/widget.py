@@ -800,8 +800,12 @@ def console():
     global_settings.cmd_options = options
     global_settings.cmd_args = args
 
-    options.ips = [ip for ip in socket.gethostbyname_ex(socket.getfqdn())[2]
-                   if ip!='127.0.0.1']
+    try:
+        options.ips = [
+            ip for ip in socket.gethostbyname_ex(socket.getfqdn())[2]
+            if ip!='127.0.0.1']
+    except socket.gaierror:
+        options.ips = []
 
     if options.run_system_tests:
         run_system_tests()
