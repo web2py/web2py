@@ -87,6 +87,7 @@ from settings import global_settings
 from validators import CRYPT
 from cache import Cache
 from html import URL as Url
+from utils import is_valid_ip_address
 import newcron
 import rewrite
 
@@ -402,6 +403,8 @@ def wsgibase(environ, responder):
                     try: local_hosts.append(socket.gethostbyname(http_host))
                     except socket.gaierror: pass
                 request.client = get_client(request.env)
+                if not is_valid_ip_address(request.client):
+                    raise HTTP(400,"Bad Request")
                 request.folder = abspath('applications',
                                          request.application) + os.sep
                 x_req_with = str(request.env.http_x_requested_with).lower()

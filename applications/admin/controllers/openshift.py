@@ -34,7 +34,7 @@ def deploy():
         assert repo.bare == False
 
         for i in form.vars.applications:
-            appsrc = os.path.join(os.getcwd(),'applications',i)
+            appsrc = os.path.join(apath(r=request),i)
             appdest = os.path.join(osrepo,'wsgi',osname,'applications',i)
             dir_util.copy_tree(appsrc,appdest)
             #shutil.copytree(appsrc,appdest)

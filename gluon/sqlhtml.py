@@ -410,8 +410,11 @@ class CheckboxesWidget(OptionsWidget):
                                        LABEL(v,_for='%s%s' % (field.name,k))))
             opts.append(child(tds))
 
+
         if opts:
-            opts[-1][0][0]['hideerror'] = False
+            opts.append(INPUT(_class="hidden", requires=attr.get('requires', None), 
+                              _disabled="disabled", _name=field.name,
+                              hideerror=False))        
         return parent(*opts, **attr)
 
 
@@ -1173,8 +1176,7 @@ class SQLFORM(FORM):
                     row_id = '%s_%s%s' % (self.table, fieldname, SQLFORM.ID_ROW_SUFFIX)
                     widget = field.widget(field, value)
                     self.field_parent[row_id].components = [ widget ]
-                    if not field.type.startswith('list:'):
-                        self.field_parent[row_id]._traverse(False, hideerror)
+                    self.field_parent[row_id]._traverse(False, hideerror)
                     self.custom.widget[ fieldname ] = widget
             self.accepted = ret
             return ret
@@ -1241,7 +1243,8 @@ class SQLFORM(FORM):
                     ### do not know why this happens, it should not
                     (source_file, original_filename) = \
                         (cStringIO.StringIO(f), 'file.txt')
-                newfilename = field.store(source_file, original_filename, field.uploadfolder)
+                newfilename = field.store(source_file, original_filename, 
+                                          field.uploadfolder)
                 # this line is for backward compatibility only
                 self.vars['%s_newfilename' % fieldname] = newfilename
                 fields[fieldname] = newfilename

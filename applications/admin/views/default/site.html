@@ -34,6 +34,10 @@
         {{=button(URL('remove_compiled_app',args=a), T("Remove compiled"))}}
         {{pass}}
         {{pass}}
+	{{if os.path.exists(os.path.join(apath(r=request),a,'.git')): }}
+        {{=button(URL('git_pull',args=a), T("Git Pull"))}}
+        {{=button(URL('git_push',args=a), T("Git Push"))}}
+        {{pass}}
         {{if a!=request.application:}}
         {{=button(URL('uninstall',args=a), T("Uninstall"))}}
         {{=button_enable(URL('enable',args=a), a)}}
@@ -117,16 +121,18 @@
             </tr>
         <tr>
               <td>
-        {{=LABEL(T("Get from URL:"), _for='upload_url')}}
+		{{=LABEL(T("Get from URL:"), _for='upload_url')}}
           </td>
           <td>
-        <input id="appurl" name="appurl" type="text" id="upload_url"/>
+        <input id="appurl" name="appurl" type="text" id="upload_url"/><br/>
           </td>
         </tr>
         <tr>
-          <td></td>
-              <td>
-        <input type="checkbox" name="overwrite_check" id="upload_overwrite" />
+          <td>
+	    ({{=T('can be a git repo')}})
+	  </td>
+          <td>
+            <input type="checkbox" name="overwrite_check" id="upload_overwrite" />
         {{=LABEL(T("Overwrite installed app"), _for='upload_overwrite')}}
           </td>
         </tr>
@@ -142,13 +148,11 @@
     </div>
     <!-- DEPLOY ON GAE -->
     <div class="box">
-      <h3>{{=T("Deploy on Google App Engine")}}</h3>
-      <p>{{=button(URL('gae','deploy'), T('Deploy'))}}</p>
-    </div><br/>
-    <!-- DEPLOY ON OPENSHIFT -->
-    <div class="box">
-      <h3>{{=T("Deploy to OpenShift")}}</h3>
-      <p>{{=button(URL('openshift','deploy'),T('Deploy'))}}</p>
+      <h3>{{=T("Deploy")}}</h3>
+      <p>
+	{{=button(URL('gae','deploy'), T('Deploy on Google App Engine'))}}
+	{{=button(URL('openshift','deploy'),T('Deploy to OpenShift'))}}
+      </p>
     </div><br/>
     {{if TWITTER_HASH:}}
     <div class="box">

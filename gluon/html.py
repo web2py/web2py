@@ -472,7 +472,18 @@ class XmlComponent(object):
 
     def xml(self):
         raise NotImplementedError
-
+    def __mul__(self,n):
+        return CAT(*[self for i in range(n)])
+    def __add__(self,other):
+        if isinstance(self,CAT):
+            components = self.components
+        else:
+            components = [self]
+        if isinstance(other,CAT):
+            components += other.components
+        else:
+            components += [other]
+        return CAT(*components)
 
 class XML(XmlComponent):
     """
@@ -2023,8 +2034,28 @@ class FORM(DIV):
         self.validate(**kwargs)
         return self
 
+    REDIRECT_JS = "window.location='%s';return false"
+    
     def add_button(self,value,url,_class=None):
-        self[0][-1][1].append(INPUT(_type="button",_value=value,_onclick="window.location='%s';return false" % url,_class=_class))
+        self[0][-1][1].append(INPUT(_type="button",_value=value,_class=_class,
+                                    _onclick=self.REDIRECT_JS % url))
+                                    
+
+    @staticmethod
+    def dialog(text='OK',buttons=None,hidden=None):
+        if not buttons: buttons = {}
+        if not hidden: hidden={}
+        inputs = [INPUT(_type='button',
+                        _value=name,
+                        _onclick=FORM.REDIRECT_JS % link) \
+                      for name,link in buttons.items()]
+        inputs += [INPUT(_type='hidden',
+                         _name=name,
+                         _value=value)
+                   for name,value in hidden.items()]        
+        form = FORM(INPUT(_type='submit',_value=text),*inputs)
+        form.process()
+        return form
 
 class BEAUTIFY(DIV):
 
