@@ -4663,7 +4663,10 @@ class MongoDBAdapter(NoSQLAdapter):
         # therefor call __select() connection[table].find(query).count() Since this will probably reduce the return set?
 
     def expand(self, expression, field_type=None):
-        import pymongo.objectid
+        try:
+            from pymongo.objectid import ObjectId
+        except ImportError:
+            from bson.objectid import ObjectId
         #if isinstance(expression,Field):
         #    if expression.type=='id':
         #        return {_id}"
@@ -4675,21 +4678,21 @@ class MongoDBAdapter(NoSQLAdapter):
             #   if second arg is 0 convert to objectid
             if isinstance(expression.first,Field) and expression.first.type == 'id':
                 expression.first.name = '_id'
-                if expression.second != 0 and not isinstance(expression.second,pymongo.objectid.ObjectId):
+                if expression.second != 0 and not isinstance(expression.second,ObjectId):
                     if isinstance(expression.second,int):
                         try:
                             #Because the reference field is by default an integer and therefore this must be an integer to be able to work with other databases
-                            expression.second = pymongo.objectid.ObjectId(("%X" % expression.second))
+                            expression.second = ObjectId(("%X" % expression.second))
                         except:
                             raise SyntaxError, 'The second argument must by an integer that can represent an objectid.'
                     else:
                         try:
                             #But a direct id is also possible
-                            expression.second = pymongo.objectid.ObjectId(expression.second)
+                            expression.second = ObjectId(expression.second)
                         except:
-                            raise SyntaxError, 'second argument must be of type bson.objectid.ObjectId or an objectid representable integer'
+                            raise SyntaxError, 'second argument must be of type ObjectId or an objectid representable integer'
                 elif expression.second == 0:
-                    expression.second = pymongo.objectid.ObjectId('000000000000000000000000')
+                    expression.second = ObjectId('000000000000000000000000')
                 return expression.op(expression.first, expression.second)
         if isinstance(expression, Field):
             if expression.type=='id':
@@ -4794,7 +4797,7 @@ class MongoDBAdapter(NoSQLAdapter):
                 column = '_id' if colname=='id' else colname
                 if column in record:
                     if column == '_id' and isinstance(
-                        record[column],pymongo.objectid.ObjectId):
+                        record[column],ObjectId):
                         value = int(str(record[column]),16)
                     elif column != '_id':
                         value = record[column]
@@ -4947,13 +4950,7 @@ class MongoDBAdapter(NoSQLAdapter):
 
     def GT(self,first,second):
         print "in GT"
-        #import pymongo.objectid
         result = {}
-        #if expanded_first == '_id':
-            #if expanded_second != 0 and not isinstance(second,pymongo.objectid.ObjectId):
-                #raise SyntaxError, 'second argument must be of type bson.objectid.ObjectId'
-            #elif expanded_second == 0:
-                #expanded_second = pymongo.objectid.ObjectId('000000000000000000000000')
         result[self.expand(first)] = {'$gt': self.expand(second)}
         return result
 
@@ -5084,13 +5081,7 @@ class MongoDBAdapter(NoSQLAdapter):
 
     def GT(self,first,second):
         print "in GT"
-        #import pymongo.objectid
         result = {}
-        #if expanded_first == '_id':
-            #if expanded_second != 0 and not isinstance(second,pymongo.objectid.ObjectId):
-                #raise SyntaxError, 'second argument must be of type bson.objectid.ObjectId'
-            #elif expanded_second == 0:
-                #expanded_second = pymongo.objectid.ObjectId('000000000000000000000000')
         result[self.expand(first)] = {'$gt': self.expand(second)}
         return result
 
