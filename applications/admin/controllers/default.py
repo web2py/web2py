@@ -167,6 +167,7 @@ def change_password():
             redirect(URL('site'))
     return dict(form=form)
 
+
 def site():
     """ Site handler """
 
@@ -175,12 +176,32 @@ def site():
     # Shortcut to make the elif statements more legible
     file_or_appurl = 'file' in request.vars or 'appurl' in request.vars
 
+    class IS_VALID_APPNAME(object):
+        def __call__(self,value):
+            if not re.compile('[\w_]+').match(value):
+                return (value,T('Invalid application name'))
+            if not request.vars.overwrite and \
+                    os.path.exists(os.path.join(apath(r=request),value)):
+                return (value,T('Application exists already'))
+            return (value,None)
+
+    is_appname = IS_VALID_APPNAME()
+    form_create = SQLFORM.factory(Field('name',requires=is_appname),
+                                  table_name='appcreate')
+    form_update = SQLFORM.factory(Field('name',requires=is_appname),
+                                  Field('file','upload',uploadfield=False),
+                                  Field('url'),
+                                  Field('overwrite','boolean'),
+                                  table_name='appupdate')
+    form_create.process()
+    form_update.process()
+
     if DEMO_MODE:
         pass
 
-    elif request.vars.filename and not 'file' in request.vars:
+    elif form_create.accepted:
         # create a new application
-        appname = cleanpath(request.vars.filename).replace('.', '_')
+        appname = cleanpath(form_create.vars.name)
         if app_create(appname, request):
             if MULTI_USER_MODE:
                 db.app.insert(name=appname,owner=auth.user.id)
@@ -189,65 +210,57 @@ def site():
             redirect(URL('design',args=appname))
         else:
             session.flash = \
-                T('unable to create application "%s" (it may exist already)', request.vars.filename)
+                T('unable to create application "%s" (it may exist already)', 
+                  form_create.vars.name)
         redirect(URL(r=request))
 
-    elif file_or_appurl and not request.vars.filename:
-        # can't do anything without an app name
-        msg = 'you must specify a name for the uploaded application'
-        response.flash = T(msg)
-
-    elif (request.vars.appurl or '').endswith('.git') and request.vars.filename:
-        if not have_git:
-	   session.flash = GIT_MISSING
-        elif request.vars.filename:
-            target = os.path.join(apath(r=request),request.vars.filename)
-            if os.path.exists(target):
-                session.flash = 'Application by that name already exists.'
-            else:
-                try:
-                    new_repo = Repo.clone_from(request.vars.appurl,target)
-                    session.flash = T('new application "%s" imported',request.vars.filename)
-                except GitCommandError, err:
-                    session.flash = T('Invalid git repository specified.')
-        else:
-            session.flash = 'Application Name required for git import.'
-        redirect(URL(r=request))
-
-    elif file_or_appurl and request.vars.filename:
-        # fetch an application via URL or file upload
-        f = None
-        if request.vars.appurl:
+    elif form_update.accepted:
+        if (form_update.vars.url or '').endswith('.git'):
+            if not have_git:
+                session.flash = GIT_MISSING
+            target = os.path.join(apath(r=request),form_update.vars.name)
             try:
-                f = urllib.urlopen(request.vars.appurl)
-            except Exception, e:
-                session.flash = DIV(T('Unable to download app because:'),PRE(str(e)))
-                redirect(URL(r=request))
-            fname = request.vars.appurl
-        elif request.vars.file:
-            f = request.vars.file.file
-            fname = request.vars.file.filename
+                new_repo = Repo.clone_from(form_update.vars.url,target)
+                session.flash = T('new application "%s" imported',
+                                  form_update.vars.name)
+            except GitCommandError, err:
+                session.flash = T('Invalid git repository specified.')
+            redirect(URL(r=request))
 
-        if f:
-            appname = cleanpath(request.vars.filename).replace('.', '_')
-            installed = app_install(appname, f, request, fname,
-                                    overwrite=request.vars.overwrite_check)
-        if f and installed:
-            msg = 'application %(appname)s installed with md5sum: %(digest)s'
-            if MULTI_USER_MODE:
-                db.app.insert(name=appname,owner=auth.user.id)
-            log_progress(appname)
-            session.flash = T(msg, dict(appname=appname,
-                                        digest=md5_hash(installed)))
-        elif f and request.vars.overwrite_check:
-            msg = 'unable to install application "%(appname)s"'
-            session.flash = T(msg, dict(appname=request.vars.filename))
+        elif form_update.vars.url:
+            # fetch an application via URL or file upload
+            if form_update.vars.url:
+                try:
+                    form_update.vars.file = \
+                        urllib.urlopen(form_update.vars.url)
+                except Exception, e:
+                    session.flash = \
+                        DIV(T('Unable to download app because:'),PRE(str(e)))
+                    redirect(URL(r=request))
+                fname = form_update.vars.url
+                
+        elif form_update.accepted and form_update.vars.file:
+            fname = form_update.vars.file.filename
+            appname = cleanpath(form_update.vars.name)
+            installed = app_install(appname, form_update.vars.file.file, 
+                                    request, fname,
+                                    overwrite=form_update.vars.overwrite)
+            if f and installed:
+                msg = 'application %(appname)s installed with md5sum: %(digest)s'
+                if MULTI_USER_MODE:
+                    db.app.insert(name=appname,owner=auth.user.id)
+                log_progress(appname)
+                session.flash = T(msg, dict(appname=appname,
+                                            digest=md5_hash(installed)))
+            elif f and form_update.vars.overwrite:
+                msg = 'unable to install application "%(appname)s"'
+                session.flash = T(msg, dict(appname=form_update.vars.name))
 
-        else:
-            msg = 'unable to install application "%(appname)s"'
-            session.flash = T(msg, dict(appname=request.vars.filename))
+            else:
+                msg = 'unable to install application "%(appname)s"'
+                session.flash = T(msg, dict(appname=form_update.vars.name))
 
-        redirect(URL(r=request))
+            redirect(URL(r=request))
 
     regex = re.compile('^\w+$')
 
@@ -261,7 +274,8 @@ def site():
 
     apps = sorted(apps,lambda a,b:cmp(a.upper(),b.upper()))
 
-    return dict(app=None, apps=apps, myversion=myversion)
+    return dict(app=None, apps=apps, myversion=myversion, 
+                form_create=form_create, form_update=form_update)
 
 
 def report_progress(app):

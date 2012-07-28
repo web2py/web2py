@@ -70,12 +70,12 @@
       {{else:}}
       <p id="check_version">
         {{=button("javascript:ajax('"+URL('check_version')+"',[],'check_version')", T('Check for upgrades'))}}
-      {{pass}}
+	{{=button(URL('default','reload_routes'), T('Reload routes'))}}
       </p>
-      <div class="formfield">
+      {{pass}}
+      <p>
 	{{=T("Running on %s", request.env.server_software)}}
-      </div>
-      <p>{{=button(URL('default','reload_routes'), T('Reload routes'))}}</p>
+      </p>
     </div>
     {{pass}}
     <!-- APP WIZARD -->
@@ -87,64 +87,42 @@
     <!-- SCAFFOLD APP -->
     <div class="box">
       <h3>{{=T("New simple application")}}</h3>
-      <form action="" enctype="multipart/form-data" method="post">
-        <div class="formfield">
-          {{=LABEL(T("Application name:"), _for="scaffold_filename")}}
-          <input name="filename" type="text" id="scaffold_filename" />
-          <button type="submit" class="button">{{=T('Create')}}</button>
-        </div>
-        <div class="hidden"></div>
-      </form>
+      {{=form_create.custom.begin}}
+      <table><tr><td>
+	    {{=LABEL(T("Application name:"))}}
+	  </td><td>
+	    {{=form_create.custom.widget.name}}
+	  </td><td>
+	    <button type="submit">{{=T('Create')}}</button>
+      </td></tr></table>
+      {{=form_create.custom.end}}
     </div>
     <!-- UPLOAD PACKAGE -->
     <div class="box">
       <h3>{{=T("Upload and install packed application")}}</h3>
-      <form action="" enctype="multipart/form-data" method="post">
-        <div class="formfield">
-      <table>
-            <tr>
-          <td>
-        {{=LABEL(T("Application name:"), _form='upload_filename')}}
-          </td>
-          <td>
-        <input id="appname" name="filename" type="text" id="upload_filename" />
-          </td>
-        </tr>
-        <tr>
-          <td>
-        {{=LABEL(T("Upload a package:"), _for='upload_file')}}
-          </td>
-          <td>
-        <input id="file" name="file" type="file" id="upload_file" />
-        <b>OR</b>
-          </td>
-            </tr>
-        <tr>
-              <td>
-		{{=LABEL(T("Get from URL:"), _for='upload_url')}}
-          </td>
-          <td>
-        <input id="appurl" name="appurl" type="text" id="upload_url"/><br/>
-          </td>
-        </tr>
-        <tr>
-          <td>
+      {{=form_update.custom.begin}}
+      <table><tr><td>
+	    {{=LABEL(T("Application name:"))}}
+	  </td><td>
+	    {{=form_update.custom.widget.name}}
+	</td></tr><tr><td>
+	    {{=LABEL(T("Upload a package:"))}}
+	  </td><td>
+	    {{=form_update.custom.widget.file}}
+	</td></tr><tr><td>
+	    {{=LABEL('Or ',T("Get from URL:"))}}
+	  </td><td>
+	    {{=form_update.custom.widget.url}}
+	</td></tr><tr><td>
 	    ({{=T('can be a git repo')}})
-	  </td>
-          <td>
-            <input type="checkbox" name="overwrite_check" id="upload_overwrite" />
-        {{=LABEL(T("Overwrite installed app"), _for='upload_overwrite')}}
-          </td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>
-        <button type="submit">{{=T('Install')}}</button>
-          </td>
-        </tr>
-      </table>
-        </div>
-      </form>
+	  </td><td>
+	    {{=form_update.custom.widget.overwrite}}
+	    {{=LABEL(T("Overwrite installed app"))}}
+	</td></tr><tr><td>
+	  </td><td>
+	    <button type="submit">{{=T('Install')}}</button>	  
+      </td></tr></table>
+      {{=form_update.custom.end}}
     </div>
     <!-- DEPLOY ON GAE -->
     <div class="box">
