@@ -317,20 +317,24 @@ def pack_plugin():
         redirect(URL('plugin',args=request.args))
 
 def upgrade_web2py():
-    if 'upgrade' in request.vars:
+    dialog = FORM.dialog(T('Upgrade'),
+                         {T('Cancel'):URL('site')})    
+    if dialog.accepted:
         (success, error) = upgrade(request)
         if success:
             session.flash = T('web2py upgraded; please restart it')
         else:
             session.flash = T('unable to upgrade because "%s"', error)
         redirect(URL('site'))
-    elif 'noupgrade' in request.vars:
-        redirect(URL('site'))
-    return dict()
+    return dict(dialog=dialog)
 
 def uninstall():
     app = get_app()
-    if 'delete' in request.vars:
+
+    dialog = FORM.dialog(T('Uninstall'),
+                         {T('Cancel'):URL('site')})
+    
+    if dialog.accepted:
         if MULTI_USER_MODE:
             if is_manager() and db(db.app.name==app).delete():
                 pass
@@ -344,9 +348,7 @@ def uninstall():
         else:
             session.flash = T('unable to uninstall "%s"', app)
         redirect(URL('site'))
-    elif 'nodelete' in request.vars:
-        redirect(URL('site'))
-    return dict(app=app)
+    return dict(app=app, dialog=dialog)
 
 
 def cleanup():
@@ -978,9 +980,12 @@ def delete_plugin():
     app=request.args(0)
     plugin = request.args(1)
     plugin_name='plugin_'+plugin
-    if 'nodelete' in request.vars:
-        redirect(URL('design', args=app, anchor=request.vars.id))
-    elif 'delete' in request.vars:
+
+    dialog = FORM.dialog(
+        T('Delete'),
+        {T('Cancel'):URL('design', args=app)})
+
+    if dialog.accepted:
         try:
             for folder in ['models','views','controllers','static','modules', 'private']:
                 path=os.path.join(apath(app,r=request),folder)
@@ -997,7 +1002,7 @@ def delete_plugin():
             session.flash = T('unable to delete file plugin "%(plugin)s"',
                               dict(plugin=plugin))
         redirect(URL('design', args=request.args(0), anchor=request.vars.id2))
-    return dict(plugin=plugin)
+    return dict(dialog=dialog,plugin=plugin)
 
 def plugin():
     """ Application design handler """
@@ -1585,7 +1590,6 @@ def reload_routes():
     import gluon.rewrite
     gluon.rewrite.load()
     redirect(URL('site'))
-
 
 def manage_students():
     if not (MULTI_USER_MODE and is_manager()):
