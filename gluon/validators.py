@@ -264,11 +264,13 @@ class IS_LENGTH(Validator):
 
     def __call__(self, value):
         if isinstance(value, cgi.FieldStorage):
-            if value.file:
+            if not value:
+                length = 0
+            elif value.file:
                 value.file.seek(0, os.SEEK_END)
                 length = value.file.tell()
                 value.file.seek(0, os.SEEK_SET)
-            else:
+            elif hasattr(value,'value'):
                 val = value.value
                 if val:
                     length = len(val)
