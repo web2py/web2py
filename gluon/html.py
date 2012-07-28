@@ -2041,8 +2041,9 @@ class FORM(DIV):
                                     _onclick=self.REDIRECT_JS % url))
                                     
 
+
     @staticmethod
-    def dialog(text='OK',buttons=None,hidden=None):
+    def confim(text='OK',buttons=None,hidden=None):
         if not buttons: buttons = {}
         if not hidden: hidden={}
         inputs = [INPUT(_type='button',

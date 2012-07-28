@@ -317,7 +317,7 @@ def pack_plugin():
         redirect(URL('plugin',args=request.args))
 
 def upgrade_web2py():
-    dialog = FORM.dialog(T('Upgrade'),
+    dialog = FORM.confim(T('Upgrade'),
                          {T('Cancel'):URL('site')})    
     if dialog.accepted:
         (success, error) = upgrade(request)
@@ -331,7 +331,7 @@ def upgrade_web2py():
 def uninstall():
     app = get_app()
 
-    dialog = FORM.dialog(T('Uninstall'),
+    dialog = FORM.confim(T('Uninstall'),
                          {T('Cancel'):URL('site')})
     
     if dialog.accepted:
@@ -414,7 +414,7 @@ def delete():
     if isinstance(sender, list):  # ## fix a problem with Vista
         sender = sender[0]
 
-    dialog = FORM.dialog(T('Delete'),
+    dialog = FORM.confim(T('Delete'),
                          {T('Cancel'):URL(sender, anchor=request.vars.id)})
 
     if dialog.accepted:
@@ -981,7 +981,7 @@ def delete_plugin():
     plugin = request.args(1)
     plugin_name='plugin_'+plugin
 
-    dialog = FORM.dialog(
+    dialog = FORM.confim(
         T('Delete'),
         {T('Cancel'):URL('design', args=app)})
 
