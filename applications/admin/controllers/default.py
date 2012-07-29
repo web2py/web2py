@@ -11,6 +11,7 @@ if EXPERIMENTAL_STUFF:
 import re
 from gluon.admin import *
 from gluon.fileutils import abspath, read_file, write_file
+from gluon.utils import web2py_uuid
 from glob import glob
 import shutil
 import platform
@@ -39,6 +40,9 @@ if not is_manager() and request.function in ['change_password','upgrade_web2py']
 if FILTER_APPS and request.args(0) and not request.args(0) in FILTER_APPS:
     session.flash = T('disabled in demo mode')
     redirect(URL('site'))
+
+
+if not session.token: session.token = web2py_uuid()
 
 def count_lines(data):
     return len([line for line in data.split('\n') if line.strip() and not line.startswith('#')])
@@ -862,6 +866,9 @@ def design():
         msg = T('ATTENTION: you cannot edit the running application!')
         response.flash = msg
 
+    if request.vars and not request.vars.token==session.token:
+        redirect(URL('logout'))
+
     if request.vars.pluginfile!=None and not isinstance(request.vars.pluginfile,str):
         filename=os.path.basename(request.vars.pluginfile.filename)
         if plugin_install(app, request.vars.pluginfile.file,
@@ -1113,6 +1120,8 @@ def plugin():
 
 def create_file():
     """ Create files handler """
+    if request.vars and not request.vars.token==session.token:
+        redirect(URL('logout'))
     try:
         anchor='#'+request.vars.id if request.vars.id else ''
         if request.vars.app:
@@ -1260,6 +1269,8 @@ def create_file():
 
 def upload_file():
     """ File uploading handler """
+    if request.vars and not request.vars.token==session.token:
+        redirect(URL('logout'))
     try:
         filename = None
         app = get_app(name=request.vars.location.split('/')[0])
@@ -1639,7 +1650,9 @@ def git_pull():
     if not have_git:
         session.flash = GIT_MISSING
         redirect(URL('site'))
-    if 'pull' in request.vars:
+    dialog = FORM.confim(T('Pull'),
+                         {T('Cancel'):URL('site')})    
+    if dialog.accepted:
         try:
             repo = Repo(os.path.join(apath(r=request),app))
             origin = repo.remotes.origin
@@ -1667,7 +1680,7 @@ def git_pull():
             redirect(URL('site'))
     elif 'cancel' in request.vars:
         redirect(URL('site'))
-    return dict(app=app)
+    return dict(app=app,dialog=dialog)
 
 
 def git_push():

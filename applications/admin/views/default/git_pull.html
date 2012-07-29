@@ -1,9 +1,5 @@
 {{extend 'layout.html'}}
 
-<center>
+<div class="center">
 <h2>{{=T('This will pull changes from the remote repo for application "%s"?', app)}}</h2>
-<table><tr>
-<td>{{=FORM(INPUT(_type='submit',_name='cancel',_value=T('Cancel')))}}</td>
-<td>{{=FORM(INPUT(_type='submit',_name='pull',_value=T('Pull')))}}</td>
-</tr></table>
-</center>
+{{=dialog}}

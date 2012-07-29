@@ -16,6 +16,7 @@ def file_upload_form(location):
               INPUT(_type="file",_name="file")," ",T("and rename it:")," ",
               INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY),
               INPUT(_type="hidden",_name="location",_value=location),
+              INPUT(_type="hidden",_name="token",_value=session.token),
               INPUT(_type="hidden",_name="sender",_value=URL('design/'+app)),
               INPUT(_type="submit",_value=T("submit")),_action=URL('upload_file'))
     return form
@@ -23,13 +24,9 @@ def file_create_form(location):
     form=FORM(T("create file with filename:")," ",
               INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY),
               INPUT(_type="hidden",_name="location",_value=location),
+              INPUT(_type="hidden",_name="token",_value=session.token),
               INPUT(_type="hidden",_name="sender",_value=URL('design/'+app)),
               INPUT(_type="submit",_value=T("submit")),_action=URL('create_file'))
-    return form
-def upload_plugin_form(app):
-    form=FORM(T("upload plugin file:")," ",
-              INPUT(_type="file",_name="pluginfile"),
-              INPUT(_type="submit",_value=T("submit")))
     return form
 def deletefile(arglist):
   return A(TAG[''](IMG(_src=URL('static', 'images/delete_icon.png')), SPAN(T('Delete this file (you will be asked to confirm deletion)'))), _class='icon delete tooltip', _href=URL('delete',args=arglist,vars=dict(sender=request.function+'/'+app)))
