@@ -240,19 +240,19 @@ def site():
                 fname = form_update.vars.url
                 
         elif form_update.accepted and form_update.vars.file:
-            fname = form_update.vars.file.filename
+            fname = request.vars.file.filename
             appname = cleanpath(form_update.vars.name)
-            installed = app_install(appname, form_update.vars.file.file, 
+            installed = app_install(appname, request.vars.file.file, 
                                     request, fname,
                                     overwrite=form_update.vars.overwrite)
-            if f and installed:
+            if installed:
                 msg = 'application %(appname)s installed with md5sum: %(digest)s'
                 if MULTI_USER_MODE:
                     db.app.insert(name=appname,owner=auth.user.id)
                 log_progress(appname)
                 session.flash = T(msg, dict(appname=appname,
                                             digest=md5_hash(installed)))
-            elif f and form_update.vars.overwrite:
+            elif form_update.vars.overwrite:
                 msg = 'unable to install application "%(appname)s"'
                 session.flash = T(msg, dict(appname=form_update.vars.name))
 

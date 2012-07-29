@@ -6099,7 +6099,14 @@ def sqlhtml_validators(field):
         def list_ref_repr(ids, row=None, r=referenced, f=ff):
             if not ids:
                 return None
-            refs = r._db(r._id.belongs(ids)).select(r._id)
+            if isinstance(r._db._adapter, GoogleDatastoreAdapter):
+                for i in xrange(0, len(ids), 30):
+                    if not refs:
+                        refs = r._db(r._id.belongs(ids[i:i+30])).select(r._id)
+                    else:
+                        refs = refs & r._db(r._id.belongs(ids[i:i+30])).select(r._id)
+            else:
+                refs = r._db(r._id.belongs(ids)).select(r._id)
             return (refs and ', '.join(str(f(r,ref.id)) for ref in refs) or '')
         field.represent = field.represent or list_ref_repr
         if hasattr(referenced, '_format') and referenced._format:
