@@ -43,11 +43,11 @@ src:
 	rm -f applications/admin/uploads/*                 
 	rm -f applications/welcome/uploads/*               
 	rm -f applications/examples/uploads/*             
-	### make admin layout and appadmin the default
-	cp applications/admin/views/appadmin.html applications/welcome/views
-	cp applications/admin/views/appadmin.html applications/examples/views
-	cp applications/admin/controllers/appadmin.py applications/welcome/controllers
-	cp applications/admin/controllers/appadmin.py applications/examples/controllers	
+	### make welcome layout and appadmin the default
+	cp applications/welcome/views/appadmin.html applications/admin/views
+	cp applications/welcome/views/appadmin.html applications/examples/views
+	cp applications/welcome/controllers/appadmin.py applications/admin/controllers
+	cp applications/welcome/controllers/appadmin.py applications/examples/controllers	
 	### build web2py_src.zip
 	echo '' > NEWINSTALL
 	mv web2py_src.zip web2py_src_old.zip | echo 'no old'
