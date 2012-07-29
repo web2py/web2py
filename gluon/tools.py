@@ -4557,7 +4557,7 @@ class Wiki(object):
             db = self.auth.db
             count = db.wiki_tag.wiki_page.count()
             fields = [db.wiki_page.id,db.wiki_page.slug,
-                      db.wiki_page.title,db.wiki_page.tags,count]
+                      db.wiki_page.title,db.wiki_page.tags]
             if preview:
                 fields.append(db.wiki_page.body)
             pages = db(db.wiki_page.id==db.wiki_tag.wiki_page) \
