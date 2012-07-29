@@ -263,10 +263,12 @@ class IS_LENGTH(Validator):
         self.error_message = error_message
 
     def __call__(self, value):
-        if isinstance(value, cgi.FieldStorage):
-            if not value:
-                length = 0
-            elif value.file:
+        if value is None:
+            length = 0
+            if self.minsize <= length <= self.maxsize:
+                return (value, None)            
+        elif isinstance(value, cgi.FieldStorage):
+            if value.file:
                 value.file.seek(0, os.SEEK_END)
                 length = value.file.tell()
                 value.file.seek(0, os.SEEK_SET)
