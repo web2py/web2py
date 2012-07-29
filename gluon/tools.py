@@ -4524,7 +4524,7 @@ class Wiki(object):
                             URL(controller,function,args=('_cloud'))))
             menu.append((current.T('[Wiki]'),None,None,submenu))
         return menu
-    def search(self,tags=None,cloud=True):        
+    def search(self,tags=None,cloud=True,preview=True,limitby=(0,100),orderby=None):        
         content = CAT()
         if not tags:
             request = current.request
@@ -4538,20 +4538,25 @@ class Wiki(object):
         if tags:
             db = self.auth.db
             count = db.wiki_tag.wiki_page.count()
-            ids = db(db.wiki_tag.name.belongs(tags))._select(
-                db.wiki_tag.wiki_page,
-                groupby=db.wiki_tag.wiki_page,
-                orderby=~count,limitby=(0,100))
-            pages = db(db.wiki_page.id.belongs(ids)).select(                   
-                db.wiki_page.slug,db.wiki_page.title,db.wiki_page.tags)        
+            fields = [db.wiki_page.slug,db.wiki_page.title,
+                      db.wiki_page.tags,count]
+            if preview:
+                fields.append(db.wiki_page.body)
+            pages = db(db.wiki_page.id==db.wiki_tag.wiki_page) \
+                (db.wiki_tag.name.belongs(tags)).select(
+                    *fields,**dict(orderby=orderby or ~count,limitby=limitby))
             if not pages:
                 content.append(DIV(T("No results",_class='w2p_wiki_form')))
             else:
                 def link(t):
                     return A(t,_href=URL(args='_search',vars=dict(tags=t)))
-                items = [DIV(H3(A(p.title,_href=URL(args=p.slug))),
+                items = [DIV(H3(A(p.wiki_page.title,
+                                  _href=URL(args=p.wiki_page.slug))),
                              SPAN(*[link(t.strip()) for t in \
-                                        p.tags.split(',') if t.strip()]),
+                                        p.wiki_page.tags.split(',') \
+                                        if t.strip()]),
+                             MARKMIN(p.wiki_page.body.split('\n\n')[0]) \
+                                 if preview else '',
                              _class='w2p_wiki_tags')
                          for p in pages]
                 content.append(DIV(_class='w2p_wiki_pages',*items))
