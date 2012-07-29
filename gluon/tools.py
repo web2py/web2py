@@ -4375,6 +4375,12 @@ class Expose(object):
             H3('Files'),
             self.table_files()).xml()
 
+def first_paragraph(mm):
+    mm = mm.replace('\r','')
+    ps = [p for p in mm.split('\n\n') if not p.startswith('#') and p.strip()]
+    if ps: return ps[0]
+    return ''
+
 class Wiki(object):
     regex_redirect = re.compile('redirect\s+(\w+\://\S+)\s*')
     def __init__(self,auth,env=None,automenu=True,render='markmin'):
@@ -4439,13 +4445,24 @@ class Wiki(object):
         if slug in '_cloud':
             return self.cloud()
         page = self.auth.db.wiki_page(slug=slug)
-        if not page: 
-            url = URL(args=('_edit',slug))
-            return dict(content=A('Create page "%s"' % slug,_href=url,_class="btn"))
+        if current.request.extension == 'html':
+            if not page: 
+                url = URL(args=('_edit',slug))
+                return dict(content=A('Create page "%s"' % slug,_href=url,_class="btn"))
+            else:
+                match = self.regex_redirect.match(page.body)
+                if match: redirect(match.group(1))
+                return dict(content=XML(page.html))        
         else:
-            match = self.regex_redirect.match(page.body)
-            if match: redirect(match.group(1))
-            return dict(content=XML(page.html))
+            if not page:
+                raise HTTP(404)
+            else:
+                return dict(title=page.title,
+                            slug=page.slug,
+                            content=page.body,
+                            tags=page.tags,
+                            created_on=page.created_on,
+                            modified_on=page.modified_on)
     def check_authorization(self,role='wiki_editor',act=False):
         if not self.auth.user:
             if not act: return False
@@ -4524,42 +4541,48 @@ class Wiki(object):
                             URL(controller,function,args=('_cloud'))))
             menu.append((current.T('[Wiki]'),None,None,submenu))
         return menu
-    def search(self,tags=None,cloud=True,preview=True,limitby=(0,100),orderby=None):        
+    def search(self,tags=None,cloud=True,preview=True,
+               limitby=(0,100),orderby=None):        
         content = CAT()
         if not tags:
             request = current.request
             form = SQLFORM.factory(Field('tags',requires=IS_NOT_EMPTY(),
                                          default=request.vars.tags,
                                          label=current.T('Search')))
+            content.append(DIV(form,_class='w2p_wiki_form'))
             if request.vars:
                 tags = [v.strip() for v in request.vars.tags.split(',')]
                 tags = [v for v in tags if v]
-            content.append(DIV(form,_class='w2p_wiki_form'))
         if tags:
             db = self.auth.db
             count = db.wiki_tag.wiki_page.count()
-            fields = [db.wiki_page.slug,db.wiki_page.title,
-                      db.wiki_page.tags,count]
+            fields = [db.wiki_page.id,db.wiki_page.slug,
+                      db.wiki_page.title,db.wiki_page.tags,count]
             if preview:
                 fields.append(db.wiki_page.body)
             pages = db(db.wiki_page.id==db.wiki_tag.wiki_page) \
                 (db.wiki_tag.name.belongs(tags)).select(
-                    *fields,**dict(orderby=orderby or ~count,limitby=limitby))
-            if not pages:
-                content.append(DIV(T("No results",_class='w2p_wiki_form')))
-            else:
+                    *fields,**dict(orderby=orderby or ~count,
+                                   groupby=db.wiki_page.id,
+                                   limitby=limitby))
+            if request.extension=='html':
+                if not pages:
+                    content.append(DIV(T("No results",_class='w2p_wiki_form')))
                 def link(t):
                     return A(t,_href=URL(args='_search',vars=dict(tags=t)))
                 items = [DIV(H3(A(p.wiki_page.title,
                                   _href=URL(args=p.wiki_page.slug))),
+                             MARKMIN(first_paragraph(p.wiki_page.body)) \
+                                 if preview else '',
                              SPAN(*[link(t.strip()) for t in \
                                         p.wiki_page.tags.split(',') \
                                         if t.strip()]),
-                             MARKMIN(p.wiki_page.body.split('\n\n')[0]) \
-                                 if preview else '',
                              _class='w2p_wiki_tags')
                          for p in pages]
                 content.append(DIV(_class='w2p_wiki_pages',*items))
+            else:
+                cloud=False
+                content = [p.as_dict() for p in pages]
         elif cloud:
             content.append(self.cloud()['content'])
         return dict(content=content)
