@@ -46,9 +46,9 @@ def _router_default():
         domains = None,
         exclusive_domain = False,
         map_hyphen = False,
-        acfe_match = r'\w+$',              # legal app/ctlr/fcn/ext
-        file_match = r'([-+=@$%\w]+[./]?)+$',   # legal static file (path) name
-        args_match = r'([\w@ -]+[=.]?)*$', # legal arg in args
+        acfe_match = r'\w+$',                   # legal app/ctlr/fcn/ext
+        file_match = r'([-+=@$%\w]+[./]?)+$',   # legal static subpath
+        args_match = r'([\w@ -]+[=.]?)*$',      # legal arg in args
     )
     return router
 
@@ -966,6 +966,7 @@ class MapUrlIn(object):
             for name in self.args:
                 bad_static = bad_static or name in ('', '.', '..') or not self.router._file_match.match(name)
         if bad_static:
+            log_rewrite('bad static path=%s' % file)
             raise HTTP(400, thread.routes.error_message % 'invalid request',
                        web2py_error='invalid static file')
         #
