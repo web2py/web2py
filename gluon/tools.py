@@ -4453,6 +4453,8 @@ class Wiki(object):
                 match = self.regex_redirect.match(page.body)
                 if match: redirect(match.group(1))
                 return dict(content=XML(page.html))        
+        elif current.request.extension == 'load':
+            return page.html if page else ''
         else:
             if not page:
                 raise HTTP(404)
@@ -4565,17 +4567,16 @@ class Wiki(object):
                     *fields,**dict(orderby=orderby or ~count,
                                    groupby=db.wiki_page.id,
                                    limitby=limitby))
-            if request.extension=='html':
+            if request.extension in ('html','load'):
                 if not pages:
                     content.append(DIV(T("No results",_class='w2p_wiki_form')))
                 def link(t):
                     return A(t,_href=URL(args='_search',vars=dict(tags=t)))
-                items = [DIV(H3(A(p.wiki_page.title,
-                                  _href=URL(args=p.wiki_page.slug))),
-                             MARKMIN(first_paragraph(p.wiki_page.body)) \
+                items = [DIV(H3(A(p.title,_href=URL(args=p.slug))),
+                             MARKMIN(first_paragraph(p.body)) \
                                  if preview else '',
                              SPAN(*[link(t.strip()) for t in \
-                                        p.wiki_page.tags.split(',') \
+                                        p.tags.split(',') \
                                         if t.strip()]),
                              _class='w2p_wiki_tags')
                          for p in pages]
@@ -4584,7 +4585,9 @@ class Wiki(object):
                 cloud=False
                 content = [p.as_dict() for p in pages]
         elif cloud:
-            content.append(self.cloud()['content'])
+            content.append(self.cloud()['content'])        
+        if request.extension=='load':
+            return content
         return dict(content=content)
     def cloud(self):
         db = self.auth.db
