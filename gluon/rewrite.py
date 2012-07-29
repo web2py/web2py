@@ -47,7 +47,7 @@ def _router_default():
         exclusive_domain = False,
         map_hyphen = False,
         acfe_match = r'\w+$',              # legal app/ctlr/fcn/ext
-        file_match = r'(\w+[-=./]?)+$',    # legal file (path) name
+        file_match = r'([-+=@$%\w]+[./]?)+$',   # legal static file (path) name
         args_match = r'([\w@ -]+[=.]?)*$', # legal arg in args
     )
     return router
@@ -900,6 +900,7 @@ class MapUrlIn(object):
         self.map_hyphen = self.router.map_hyphen
         self.exclusive_domain = self.router.exclusive_domain
         self._acfe_match = self.router._acfe_match
+        self.file_match = self.router.file_match
         self._file_match = self.router._file_match
         self._args_match = self.router._args_match
 
@@ -954,7 +955,17 @@ class MapUrlIn(object):
         if self.controller != 'static':
             return None
         file = '/'.join(self.args)
-        if not self.router._file_match.match(file):
+        if len(self.args) == 0:
+            bad_static = True   # require a file name
+        elif '/' in self.file_match:
+            # match the path
+            bad_static = not self.router._file_match.match(file)
+        else:
+            # match path elements
+            bad_static = False
+            for name in self.args:
+                bad_static = bad_static or name in ('', '.', '..') or not self.router._file_match.match(name)
+        if bad_static:
             raise HTTP(400, thread.routes.error_message % 'invalid request',
                        web2py_error='invalid static file')
         #
