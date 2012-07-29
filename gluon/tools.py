@@ -2778,13 +2778,16 @@ class Auth(object):
         returns the group_id of the group uniquely associated to this user
         i.e. role=user:[user_id]
         """
+        return self.id_group(self.user_group_role(user_id))
+
+    def user_group_role(self, user_id=None):
         if user_id:
             user = self.settings.table_user[user_id]
         else:
             user = self.user
-        role = self.settings.create_user_groups % user
-        return self.id_group(role)
-
+        return self.settings.create_user_groups % user
+        
+    
     def has_membership(self, group_id=None, user_id=None, role=None):
         """
         checks if user is member of group_id or role
@@ -4382,14 +4385,18 @@ def first_paragraph(mm):
     return ''
 
 class Wiki(object):
+    everybody = 'everybody'
     regex_redirect = re.compile('redirect\s+(\w+\://\S+)\s*')
-    def __init__(self,auth,env=None,automenu=True,render='markmin'):
+    def __init__(self,auth,env=None,automenu=True,render='markmin',
+                 manage_permissions=False,force_prefix=None):
         self.env = env or {}
         if render == 'markmin':
             render = lambda t,env=self.env: \
                 MARKMIN(t.body,url=True,environment=env).xml()
         self.auth = auth
         self.automenu = automenu
+        perms = self.manage_permissions = manage_permissions
+        self.force_prefix = force_prefix
         db = auth.db
         db.define_table(
             'wiki_page',
@@ -4398,7 +4405,12 @@ class Wiki(object):
             Field('title',unique=True),
             Field('body','text',notnull=True),
             Field('menu'),
-            Field('tags'),
+            Field('tags','list:string'),
+            Field('can_read','list:string',writable=perms,readable=perms,
+                  default=[Wiki.everybody]),
+            Field('can_edit','list:string',writable=perms,readable=perms,
+                  default=[Wiki.everybody]),
+            Field('changelog'),
             Field('html','text',readable=False,writable=False,compute=render),
             auth.signature,format='%(title)s')
         db.define_table(
@@ -4413,14 +4425,13 @@ class Wiki(object):
             Field('file','upload',required=True),
             auth.signature,format='%(title)s')
         def update_tags_insert(page,id,db=db):
-            print page
-            for tag in page.tags.split(','):
+            for tag in page.tags:
                 tag = tag.strip().lower()
                 if tag: db.wiki_tag.insert(name=tag,wiki_page=id)
         def update_tags_update(dbset,page,db=db):
             page = dbset.select().first()
             db(db.wiki_tag.wiki_page==page.id).delete()            
-            for tag in page.tags.split(','):
+            for tag in page.tags:
                 tag = tag.strip().lower()
                 if tag: db.wiki_tag.insert(name=tag,wiki_page=page.id)
         db.wiki_page._after_insert.append(update_tags_insert)
@@ -4441,10 +4452,20 @@ class Wiki(object):
             return self.cloud()
         else:
             return self.read(current.request.args(0) or 'index')
+    def check_permission(self,page,field='can_read'):
+        if not self.manage_permissions:
+            return True
+        groups = set(page.get(field,None) or [])
+        if Wiki.everybody in groups or \
+                self.auth.user and groups.intersect(self.auth.user_groups.values()):
+            return True
+        return False
     def read(self,slug):
         if slug in '_cloud':
             return self.cloud()
         page = self.auth.db.wiki_page(slug=slug)
+        #if page and not self.check_permission(page,'can_read'):
+        #    raise HTTP(401)
         if current.request.extension == 'html':
             if not page: 
                 url = URL(args=('_edit',slug))
@@ -4465,7 +4486,7 @@ class Wiki(object):
                             tags=page.tags,
                             created_on=page.created_on,
                             modified_on=page.modified_on)
-    def check_authorization(self,role='wiki_editor',act=False):
+    def check_editor(self,role='wiki_editor',act=False):
         if not self.auth.user:
             if not act: return False
             redirect(self.auth.settings.login_url)
@@ -4474,22 +4495,29 @@ class Wiki(object):
             raise HTTP(401, "Not Authorized")          
         return True
     def edit(self,slug):
-        self.check_authorization()
+        self.check_editor()
         auth = self.auth
         db = auth.db
         page = db.wiki_page(slug=slug)
         title_guess = ' '.join(c.capitalize() for c in slug.split('-'))
-        db.wiki_page.title.default = title_guess
-        db.wiki_page.slug.default = slug
-        db.wiki_page.menu.default = slug
-        db.wiki_page.body.default = '## %s\n\npage content' % title_guess
+        if not page:
+            if not slug.startswith(self.force_prefix):
+                raise HTTP(401)
+            db.wiki_page.can_read = [Wiki.everybody]
+            db.wiki_page.can_edit = [auth.user_group_role()]
+            db.wiki_page.title.default = title_guess
+            db.wiki_page.slug.default = slug
+            db.wiki_page.menu.default = slug
+            db.wiki_page.body.default = '## %s\n\npage content' % title_guess
+        elif not self.check_permission(page,'can_edit'):
+            raise HTTP(401)
         form = SQLFORM(db.wiki_page,page,deletable=True,showid=False).process()
         if form.accepted:
             current.session.flash = 'page created'
             redirect(URL(args=slug))
         return dict(content=form)
     def pages(self):
-        self.check_authorization()
+        self.check_editor()
         self.auth.db.wiki_page.title.represent = lambda title,row: \
             A(title,_href=URL(args=row.slug))
         content=SQLFORM.smartgrid(
@@ -4528,7 +4556,7 @@ class Wiki(object):
                                        request.args(0)==row.slug,
                                        URL(controller,function,args=row.slug),
                                        subtree))
-        if self.check_authorization(act=False):            
+        if self.check_editor(act=False):            
             submenu = []
             if URL() == URL(controller,function) and \
                     not str(request.args(0)).startswith('_'):
