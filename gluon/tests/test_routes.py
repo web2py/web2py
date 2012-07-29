@@ -13,6 +13,7 @@ if os.path.isdir('gluon'):
     sys.path.append(os.path.realpath('gluon')) # running from web2py base
 else:
     sys.path.append(os.path.realpath('../')) # running from gluon/tests/
+    os.environ['web2py_path'] = os.path.realpath('../../')  # for settings
 
 from rewrite import load, filter_url, filter_err, get_effective_router, regex_filter_out, regex_select
 from html import URL

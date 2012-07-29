@@ -64,7 +64,9 @@
 #  map_static: By default, the default application is not stripped from static URLs.
 #       Set map_static=True to override this policy.
 #  acfe_match: regex for valid application, controller, function, extension /a/c/f.e
-#  file_match: regex for valid file (used for static file names)
+#  file_match: regex for valid subpath (used for static file paths)
+#              if file_match does not contain '/', it is uses to validate each element of a static file subpath,
+#              rather than the entire subpath.
 #  args_match: regex for valid args
 #       This validation provides a measure of security.
 #       If it is changed, the application perform its own validation.
@@ -84,9 +86,9 @@
 #         root_static = ['favicon.ico', 'robots.txt'],
 #         domains = None,
 #         map_hyphen = False,
-#         acfe_match = r'\w+$',              # legal app/ctlr/fcn/ext
-#         file_match = r'(\w+[-=./]?)+$',    # legal file (path) name
-#         args_match = r'([\w@ -]+[=.]?)+$', # legal arg in args
+#         acfe_match = r'\w+$',                 # legal app/ctlr/fcn/ext
+#         file_match = r'([-+=@$%\w]+[./]?)+$', # legal static subpath
+#         args_match = r'([\w@ -]+[=.]?)+$',    # legal arg in args
 #     )
 #
 #  See rewrite.map_url_in() and rewrite.map_url_out() for implementation details.
