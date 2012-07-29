@@ -71,6 +71,12 @@
         if(jQuery(this).find('ul').length)
           jQuery(this).children('a').contents().before('<i class="chevron-right"></i>'); 
       });
+      jQuery('ul.nav li.dropdown').hover(function() {
+          jQuery(this).find('.dropdown-menu').stop(true, true).delay(200).fadeIn(); 
+      }, function() {
+          jQuery(this).find('.dropdown-menu').stop(true, true).delay(200).fadeOut(); 
+      });
+      jQuery('ul.nav li.dropdown a').click(function(){window.location=jQuery(this).attr('href');});
     });
   </script>
   <noscript><link href="{{=URL('static', 'css/bootswatch_nojs.css')}}" rel="stylesheet" type="text/css" /></noscript>
