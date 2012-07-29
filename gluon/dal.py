@@ -6199,8 +6199,12 @@ class Row(dict):
     def __copy__(self):
         return Row(dict(self))
 
-    def as_dict(self,datetime_to_str=False):
-        SERIALIZABLE_TYPES = (str,unicode,int,long,float,bool,list)
+    def as_dict(self, datetime_to_str=False, custom_types=None):
+        SERIALIZABLE_TYPES = [str, unicode, int, long, float, bool, list, dict]
+        if isinstance(custom_types,(list,tuple,set)):
+            SERIALIZABLE_TYPES += custom_types
+        elif custom_types:
+            SERIALIZABLE_TYPES.append(custom_types)
         d = dict(self)
         for k in copy.copy(d.keys()):
             v=d[k]
@@ -6215,7 +6219,7 @@ class Row(dict):
             elif isinstance(v, (datetime.date, datetime.datetime, datetime.time)):
                 if datetime_to_str:
                     d[k] = v.isoformat().replace('T',' ')[:19]
-            elif not isinstance(v,SERIALIZABLE_TYPES):
+            elif not isinstance(v,tuple(SERIALIZABLE_TYPES)):
                 del d[k]
         return d
 
@@ -8623,7 +8627,8 @@ class Rows(object):
     def as_list(self,
                 compact=True,
                 storage_to_dict=True,
-                datetime_to_str=True):
+                datetime_to_str=True,
+                custom_types=None):
         """
         returns the data as a list or dictionary.
         :param storage_to_dict: when True returns a dict, otherwise a list(default True)
@@ -8631,7 +8636,7 @@ class Rows(object):
         """
         (oc, self.compact) = (self.compact, compact)
         if storage_to_dict:
-            items = [item.as_dict(datetime_to_str) for item in self]
+            items = [item.as_dict(datetime_to_str, custom_types) for item in self]
         else:
             items = [item for item in self]
         self.compact = compact
@@ -8642,7 +8647,8 @@ class Rows(object):
                 key='id',
                 compact=True,
                 storage_to_dict=True,
-                datetime_to_str=True):
+                datetime_to_str=True,
+                custom_types=None):
         """
         returns the data as a dictionary of dictionaries (storage_to_dict=True) or records (False)
 
@@ -8651,7 +8657,7 @@ class Rows(object):
         :param storage_to_dict: when True returns a dict, otherwise a list(default True)
         :param datetime_to_str: convert datetime fields as strings (default True)
         """
-        rows = self.as_list(compact, storage_to_dict, datetime_to_str)
+        rows = self.as_list(compact, storage_to_dict, datetime_to_str, custom_types)
         if isinstance(key,str) and key.count('.')==1:
             (table, field) = key.split('.')
             return dict([(r[table][field],r) for r in rows])
