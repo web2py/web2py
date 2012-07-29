@@ -2582,8 +2582,7 @@ class Auth(object):
         return form
 
     def is_impersonating(self):
-        if not current.session.auth: return None
-        return current.session.auth.get('impersonator',None)
+        return 'impersonator' in current.session.auth
 
     def impersonate(self, user_id=DEFAULT):
         """
