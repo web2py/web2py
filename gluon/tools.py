@@ -4396,7 +4396,7 @@ class Wiki(object):
         self.auth = auth
         self.automenu = automenu
         perms = self.manage_permissions = manage_permissions
-        self.force_prefix = force_prefix
+        self.force_prefix = force_prefix or ''
         db = auth.db
         db.define_table(
             'wiki_page',
@@ -4502,7 +4502,8 @@ class Wiki(object):
         title_guess = ' '.join(c.capitalize() for c in slug.split('-'))
         if not page:
             if not slug.startswith(self.force_prefix):
-                raise HTTP(401)
+                session.flash='slug bust have "%s" prefix' % self.force_prefix
+                redirect(URL(args=('_edit',force_prefix+slug)))
             db.wiki_page.can_read = [Wiki.everybody]
             db.wiki_page.can_edit = [auth.user_group_role()]
             db.wiki_page.title.default = title_guess
