@@ -4386,6 +4386,7 @@ def first_paragraph(mm):
 
 class Wiki(object):
     everybody = 'everybody'
+    rows_page = 25
     regex_redirect = re.compile('redirect\s+(\w+\://\S+)\s*')
     def __init__(self,auth,env=None,automenu=True,render='markmin',
                  manage_permissions=False,force_prefix=None):
@@ -4425,33 +4426,42 @@ class Wiki(object):
             Field('file','upload',required=True),
             auth.signature,format='%(title)s')
         def update_tags_insert(page,id,db=db):
-            for tag in page.tags:
+            for tag in page.tags or []:
                 tag = tag.strip().lower()
                 if tag: db.wiki_tag.insert(name=tag,wiki_page=id)
         def update_tags_update(dbset,page,db=db):
             page = dbset.select().first()
             db(db.wiki_tag.wiki_page==page.id).delete()            
-            for tag in page.tags:
+            for tag in page.tags or []:
                 tag = tag.strip().lower()
                 if tag: db.wiki_tag.insert(name=tag,wiki_page=page.id)
         db.wiki_page._after_insert.append(update_tags_insert)
         db.wiki_page._after_update.append(update_tags_update)
     def __call__(self):
+        request =  current.request
         if self.automenu:
-            current.response.menu = self.menu(current.request.controller,
-                                              current.request.function)
-        if current.request.args(0)=='_edit':
-            return self.edit(current.request.args(1) or 'index')
-        elif current.request.args(0)=='_pages':
+            current.response.menu = self.menu(request.controller,
+                                              request.function)
+        if request.args(0)=='_edit':
+            return self.edit(request.args(1) or 'index')
+        elif request.args(0)=='_pages':
             return self.pages()
-        elif current.request.args(0)=='_media':
-            return self.media(current.request.args(1,cast=int))
-        elif current.request.args(0)=='_search':
+        elif request.args(0)=='_media':
+            return self.media(request.args(1,cast=int))
+        elif request.args(0)=='_search':
             return self.search()
-        elif current.request.args(0)=='_cloud':
+        elif request.args(0)=='_recent':
+            ipage = int(request.vars.page or 0)
+            query = self.auth.db.wiki_page.created_by==request.args(1,cast=int)
+            return self.search(query=query,
+                               orderby=~self.auth.db.wiki_page.created_on,
+                               limitby=(ipage*self.rows_page,
+                                        (ipage+1)*self.rows_page),
+                               )
+        elif request.args(0)=='_cloud':
             return self.cloud()
         else:
-            return self.read(current.request.args(0) or 'index')
+            return self.read(request.args(0) or 'index')
     def check_permission(self,page,field='can_read'):
         if not self.manage_permissions:
             return True
@@ -4543,8 +4553,9 @@ class Wiki(object):
     def menu(self,controller='default',function='index'):
         db = self.auth.db
         request = current.request
-        rows = db().select(db.wiki_page.menu,db.wiki_page.title,db.wiki_page.slug,
-                           orderby = db.wiki_page.menu)
+        rows = db((db.wiki_page.menu!=None)|(db.wiki_page.menu!=''))\
+            .select(db.wiki_page.menu,db.wiki_page.title,db.wiki_page.slug,
+                    orderby = db.wiki_page.menu)
         menu = []
         tree = {'.':menu}
         for row in rows:
@@ -4572,11 +4583,11 @@ class Wiki(object):
                             URL(controller,function,args=('_cloud'))))
             menu.append((current.T('[Wiki]'),None,None,submenu))
         return menu
-    def search(self,tags=None,cloud=True,preview=True,
+    def search(self,tags=None,query=None,cloud=True,preview=True,
                limitby=(0,100),orderby=None):        
+        request = current.request
         content = CAT()
-        if not tags:
-            request = current.request
+        if tags is None and query is None:
             form = SQLFORM.factory(Field('tags',requires=IS_NOT_EMPTY(),
                                          default=request.vars.tags,
                                          label=current.T('Search')))
@@ -4584,18 +4595,20 @@ class Wiki(object):
             if request.vars:
                 tags = [v.strip() for v in request.vars.tags.split(',')]
                 tags = [v for v in tags if v]
-        if tags:
+        if tags or not query is None:
             db = self.auth.db
             count = db.wiki_tag.wiki_page.count()
             fields = [db.wiki_page.id,db.wiki_page.slug,
                       db.wiki_page.title,db.wiki_page.tags]
             if preview:
                 fields.append(db.wiki_page.body)
-            pages = db(db.wiki_page.id==db.wiki_tag.wiki_page) \
-                (db.wiki_tag.name.belongs(tags)).select(
-                    *fields,**dict(orderby=orderby or ~count,
-                                   groupby=db.wiki_page.id,
-                                   limitby=limitby))
+            if query is None:
+                query = (db.wiki_page.id==db.wiki_tag.wiki_page)&\
+                    (db.wiki_tag.name.belongs(tags))
+            pages = db(query).select(
+                *fields,**dict(orderby=orderby or ~count,
+                               groupby=db.wiki_page.id,
+                               limitby=limitby))        
             if request.extension in ('html','load'):
                 if not pages:
                     content.append(DIV(T("No results",_class='w2p_wiki_form')))
@@ -4605,8 +4618,7 @@ class Wiki(object):
                              MARKMIN(first_paragraph(p.body)) \
                                  if preview else '',
                              SPAN(*[link(t.strip()) for t in \
-                                        p.tags.split(',') \
-                                        if t.strip()]),
+                                        p.tags or [] if t.strip()]),
                              _class='w2p_wiki_tags')
                          for p in pages]
                 content.append(DIV(_class='w2p_wiki_pages',*items))
