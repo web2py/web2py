@@ -1229,6 +1229,7 @@ class SQLFORM(FORM):
                 continue  # do not update if password was not changed
             elif field.type == 'upload':
                 f = self.vars[fieldname]
+                f = f or self.table[fieldname].default or f
                 fd = '%s__delete' % fieldname
                 if f == '' or f is None:
                     if self.vars.get(fd, False) or not self.record:
@@ -1240,9 +1241,8 @@ class SQLFORM(FORM):
                 elif hasattr(f, 'file'):
                     (source_file, original_filename) = (f.file, f.filename)
                 elif isinstance(f, (str, unicode)):
-                    ### do not know why this happens, it should not
-                    (source_file, original_filename) = \
-                        (cStringIO.StringIO(f), 'file.txt')
+                    # warning: possible IOError exception
+                    (source_file, original_filename) = (open(f, 'rb'), f)
                 newfilename = field.store(source_file, original_filename, 
                                           field.uploadfolder)
                 # this line is for backward compatibility only
