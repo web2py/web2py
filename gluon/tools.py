@@ -4378,11 +4378,6 @@ class Expose(object):
             H3('Files'),
             self.table_files()).xml()
 
-def first_paragraph(mm):
-    mm = mm.replace('\r','')
-    ps = [p for p in mm.split('\n\n') if not p.startswith('#') and p.strip()]
-    if ps: return ps[0]
-    return ''
 
 class Wiki(object):
     everybody = 'everybody'
@@ -4437,6 +4432,7 @@ class Wiki(object):
                 if tag: db.wiki_tag.insert(name=tag,wiki_page=page.id)
         db.wiki_page._after_insert.append(update_tags_insert)
         db.wiki_page._after_update.append(update_tags_update)
+
     def __call__(self):
         request =  current.request
         if self.automenu:
@@ -4462,6 +4458,16 @@ class Wiki(object):
             return self.cloud()
         else:
             return self.read(request.args(0) or 'index')
+
+    def first_paragraph(self,mm):
+        if self.manage_permissions:
+            return ''
+        mm = mm.replace('\r','')
+        ps = [p for p in mm.split('\n\n') \
+                  if not p.startswith('#') and p.strip()]
+        if ps: return ps[0]
+        return ''
+
     def check_permission(self,page,field='can_read'):
         if not self.manage_permissions:
             return True
@@ -4615,7 +4621,7 @@ class Wiki(object):
                 def link(t):
                     return A(t,_href=URL(args='_search',vars=dict(tags=t)))
                 items = [DIV(H3(A(p.title,_href=URL(args=p.slug))),
-                             MARKMIN(first_paragraph(p.body)) \
+                             MARKMIN(self.first_paragraph(p.body)) \
                                  if preview else '',
                              SPAN(*[link(t.strip()) for t in \
                                         p.tags or [] if t.strip()]),
