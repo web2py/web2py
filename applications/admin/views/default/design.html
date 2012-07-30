@@ -360,7 +360,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     {{=editfile('private',file, dict(id="private"))}} {{=deletefile([app,'private',file], dict(id="private",id2="private"))}}
       </span>
       <span class="file">
-      {{=filename}}
+      {{=peekfile('private',file, dict(id="private"))}}
       </span>
     </li>{{
           pass
