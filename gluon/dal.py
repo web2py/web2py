@@ -7453,6 +7453,8 @@ class Table(dict):
     def update_or_insert(self, _key=DEFAULT, **values):
         if _key is DEFAULT:
             record = self(**values)
+        elif isinstance(_key,dict):
+            record = self(**_key)
         else:
             record = self(_key)
         if record:
