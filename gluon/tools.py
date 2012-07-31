@@ -49,6 +49,15 @@ logger = logging.getLogger("web2py")
 
 DEFAULT = lambda: None
 
+def getarg(position,default=None):
+    args = current.request.args
+    if position<0 and len(args)>=-position:
+        return args[position]
+    elif position>=0 and len(args)>position:
+        return args[position]
+    else:
+        return default
+
 def callback(actions,form,tablename=None):
     if actions:
         if tablename and isinstance(actions,dict):
@@ -2122,7 +2131,7 @@ class Auth(object):
 
         """
 
-        key = current.request.args[-1]
+        key = getarg(-1)
         table_user = self.settings.table_user
         user = self.db(table_user.registration_key == key).select().first()
         if not user:
@@ -2332,7 +2341,7 @@ class Auth(object):
         if next is DEFAULT:
             next = self.next or self.settings.reset_password_next
         try:
-            key = request.vars.key or request.args[-1]
+            key = request.vars.key or getarg(-1)
             t0 = int(key.split('-')[0])
             if time.time()-t0 > 60*60*24: raise Exception
             user = self.db(table_user.reset_password_key == key).select().first()
