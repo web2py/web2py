@@ -152,12 +152,12 @@ def expand_one(url,cdict):
             return html
     elif 'url' in r:
         url = r['url'].encode('utf8')
-        # embed images, video, audio files
-        ext = extension(url)
-        if ext in EXTENSION_MAPS:
-            return EXTENSION_MAPS[ext](url)
-        # else regular link
-        return '<a href="%(u)s">%(u)s</a>' % dict(u=url)
+    # embed images, video, audio files
+    ext = extension(url)
+    if ext in EXTENSION_MAPS:
+        return EXTENSION_MAPS[ext](url)
+    # else regular link
+    return '<a href="%(u)s">%(u)s</a>' % dict(u=url)
 
 def expand_html(html,cdict=None):
     soup = BeautifulSoup(html)
