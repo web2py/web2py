@@ -145,18 +145,19 @@ def expand_one(url,cdict):
         r = oembed(url)
     # if oembed service
     if 'html' in r:
-        if r['html'].startswith('<object'):
-            return '<embed style="max-width:100%%">%s</embed>' % r['html']
+        html = r['html'].encode('utf8')
+        if html.startswith('<object'):
+            return '<embed style="max-width:100%%">%s</embed>' % html
         else:
-            return r['html']
+            return html
     elif 'url' in r:
-        url = r['url']
-    # embed images, video, audio files
-    ext = extension(url)
-    if ext in EXTENSION_MAPS:
-        return EXTENSION_MAPS[ext](url)
-    # else regular link
-    return '<a href="%(u)s">%(u)s</a>' % dict(u=url)
+        url = r['url'].encode('utf8')
+        # embed images, video, audio files
+        ext = extension(url)
+        if ext in EXTENSION_MAPS:
+            return EXTENSION_MAPS[ext](url)
+        # else regular link
+        return '<a href="%(u)s">%(u)s</a>' % dict(u=url)
 
 def expand_html(html,cdict=None):
     soup = BeautifulSoup(html)
