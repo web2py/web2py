@@ -72,7 +72,7 @@ function doClickSave() {
 
 	        // show flash message (if any)
 	        var flash=xhr.getResponseHeader('web2py-component-flash');
-            if (flash) jQuery('.flash').html(flash).slideDown();
+            if (flash) jQuery('.flash').html(decodeURIComponent(flash)).slideDown();
             else jQuery('.flash').hide();
 
             // reenable disabled submit button
@@ -149,8 +149,8 @@ function doToggleBreakpoint(filename, url) {
 	  success: function(json,text,xhr){
 
 	        // show flash message (if any)
-	        var flash=decodeURIComponent(xhr.getResponseHeader('web2py-component-flash'));
-            if (flash) jQuery('.flash').html(flash).slideDown();
+	        var flash=xhr.getResponseHeader('web2py-component-flash');
+            if (flash) jQuery('.flash').html(decodeURIComponent(flash)).slideDown();
             else jQuery('.flash').hide();
 		    try {
 			if (json.error) {
