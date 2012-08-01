@@ -29,7 +29,7 @@
              {{pass}}
       {{pass}}
       <h3>
-	{{=A("%s.%s" % (db,table),_href=URL('select',args=[db],vars=dict(query=qry)))}}
+    {{=A("%s.%s" % (db,table),_href=URL('select',args=[db],vars=dict(query=qry)))}}
       </h3>
       [ {{=A(str(T('insert new'))+' '+table,_href=URL('insert',args=[db,table]))}} ]
     <br /><br />
@@ -50,7 +50,7 @@
       {{=T('Use (...)&(...) for AND, (...)|(...) for OR, and ~(...)  for NOT to build more complex queries.')}}<br/>
       {{=T('"update" is an optional expression like "field1=\'newvalue\'". You cannot update or delete the results of a JOIN')}}</p>
     <br/><br/>
-    <h4>{{=nrows}} {{=T("selected")}}</h4>
+    <h4>{{=T("%s selected", nrows)}}</h4>
     {{if start>0:}}[ {{=A(T('previous 100 rows'),_href=URL('select',args=request.args[0],vars=dict(start=start-100)))}} ]{{pass}}
     {{if stop<nrows:}}[ {{=A(T('next 100 rows'),_href=URL('select',args=request.args[0],vars=dict(start=start+100)))}} ]{{pass}}    
     {{if rows:}}
@@ -105,40 +105,34 @@
 
 
 {{elif request.function == 'ccache':}}
-<h2>Cache</h2>
+<h2>{{T("Cache")}}</h2>
 <div class="list">
 
   <div class="list-header">
-    <h3>Statistics</h3>
+    <h3>{{T("Statistics")}}</h3>
   </div>
 
   <div class="content">
-    <h4>Overview</h4>
-    <p>Number of entries: <strong>{{=total['entries']}}</strong>
-      {{if total['entries'] > 0:}}
-    </p>
+    <h4>{{=T("Overview")}}</h4>
+    <p>{{=T.M("Number of entries: **%s**", total['entries'])}}</p>
+    {{if total['entries'] > 0:}}
+      <p>{{=T.M("Hit Ratio: **%(ratio)s%%** (**%(hits)s** %%{hit(hits)} and **%(misses)s** %%{miss(misses})",
+              dict(ratio=total['ratio'], hits=total['hits'], misses=total['misses']))}}
+     </p>
     <p>
-      Hit Ratio: 
-      <strong>{{=total['ratio']}}%</strong> 
-      (<strong>{{=total['hits']}}</strong> hits 
-      and <strong>{{=total['misses']}}</strong> misses)
-    </p>
-    <p>
-      Size of cache: 
+      {{=T("Size of cache:")}} 
       {{if object_stats:}}
-      <strong>{{=total['objects']}}</strong> items, 
-      <strong>{{=total['bytes']}}</strong> bytes 
-      {{if total['bytes'] > 524287:}}
-      (<strong>{{="%.0d" % (total['bytes'] / 1048576)}} MB</strong>)
-      {{pass}}
-      {{else:}} <strong>not available</strong> (requires the Python <a href="http://pypi.python.org/pypi/guppy/" target="_blank">guppy</a> library)
+        {{=T.M("**%(items)s** %%{item(items)}, **%(bytes)s** %%{byte(bytes)}", dict(items=total['objects'], bytes=total['bytes']))}}
+        {{if total['bytes'] > 524287:}}
+          {{=T.M("(**%.0d MB**)", total['bytes'] / 1048576)}}
+        {{pass}}
+      {{else:}}
+        {{=T.M("**not available** (requires the Python [[guppy http://pypi.python.org/pypi/guppy/ popup]] library)")}}
       {{pass}}
     </p>
     <p>
-      Cache contains items up to 
-      <strong>{{="%02d" % total['oldest'][0]}}</strong> hours 
-      <strong>{{="%02d" % total['oldest'][1]}}</strong> minutes 
-      <strong>{{="%02d" % total['oldest'][2]}}</strong> seconds old.
+      {{=T.M("Cache contains items up to **%(hours)02d** %%{hour(hours)} **%(min)02d** %%{minute(min)} **%(sec)02d** %%{second(sec)} old.",
+              dict(hours=total['oldest'][0], min=total['oldest'][1], sec=total['oldest'][2]))}}
     </p>
     {{=BUTTON(T('Cache Keys'), _onclick='jQuery("#all_keys").toggle();')}}
     <div class="hidden" id="all_keys">
@@ -147,31 +141,26 @@
     <br />
     {{pass}}
         
-    <h4>RAM</h4>
-    <p>Number of entries: <strong>{{=ram['entries']}}</strong>
-        {{if ram['entries'] > 0:}}</p>
-    <p>
-      Hit Ratio: 
-      <strong>{{=ram['ratio']}}%</strong> 
-      (<strong>{{=ram['hits']}}</strong> hits 
-      and <strong>{{=ram['misses']}}</strong> misses)
+    <h4>{{=T("RAM")}}</h4>
+    <p>{{=T.M("Number of entries: **%s**", ram['entries'])}}</p>
+    {{if ram['entries'] > 0:}}
+    <p>{{=T.M("Hit Ratio: **%(ratio)s%%** (**%(hits)s** %{hit(hits)} and **%(misses)s** %%{miss(misses)})",
+             dict( ratio=ram['ratio'], hits=ram['hits'], misses=ram['misses']))}}
     </p>
     <p>
-      Size of cache: 
+      {{=T("Size of cache:")}}
       {{if object_stats:}}
-      <strong>{{=ram['objects']}}</strong> items, 
-      <strong>{{=ram['bytes']}}</strong> bytes 
-      {{if ram['bytes'] > 524287:}}
-      (<strong>{{=ram['bytes'] / 1048576}} MB</strong>)
-      {{pass}}
-      {{else:}} <strong>not available</strong> (requires the Python <a href="http://pypi.python.org/pypi/guppy/" target="_blank">guppy</a> library)
+        {{=T.M("**%(items)s** items, **%(bytes)s** %%{byte(bytes)}", dict(items=ram['objects'], bytes=ram['bytes']))}}
+        {{if ram['bytes'] > 524287:}}
+          {{=T.M("(**%.0d MB**)", ram['bytes'] / 10485576)}}
+        {{pass}}
+      {{else:}}
+        {{=T.M("``**not available**``:red (requires the Python [[guppy http://pypi.python.org/pypi/guppy/ popup]] library)")}}
       {{pass}}
     </p>
     <p>
-      RAM contains items up to 
-      <strong>{{="%02d" % ram['oldest'][0]}}</strong> hours 
-      <strong>{{="%02d" % ram['oldest'][1]}}</strong> minutes 
-      <strong>{{="%02d" % ram['oldest'][2]}}</strong> seconds old.
+      {{=T.M("RAM contains items up to **%(hours)02d** %%{hour(hours)} **%(min)02d** %%{minute(min)} **%(sec)02d** %%{second(sec)} old.",
+              dict(hours=ram['oldest'][0], min=ram['oldest'][1], sec=ram['oldest'][2]))}}
     </p>
     {{=BUTTON(T('RAM Cache Keys'), _onclick='jQuery("#ram_keys").toggle();')}}
     <div class="hidden" id="ram_keys">
@@ -180,43 +169,38 @@
     <br />
     {{pass}}
     
-    <h4>DISK</h4>
-    <p>Number of entries: <strong>{{=disk['entries']}}</strong>
-      {{if disk['entries'] > 0:}}
-    </p>
-    <p>
-      Hit Ratio: 
-      <strong>{{=disk['ratio']}}%</strong> 
-      (<strong>{{=disk['hits']}}</strong> hits 
-      and <strong>{{=disk['misses']}}</strong> misses)
-    </p>
-    <p>
-      Size of cache: 
+    <h4>{{=T("DISK")}}</h4>
+    <p>{{=T.M("Number of entries: **%s**", disk['entries'])}}</p>
+    {{if disk['entries'] > 0:}}
+      <p>
+      {{=T.M("Hit Ratio: **%(ratio)s%%** (**%(hits)s** %%{hit(hits)} and **%(misses)s** %%{miss(misses)})",
+            dict(ratio=disk['ratio'], hits=disk['hits'], misses=disk['misses']))}} 
+      </p>
+      <p>
+      {{=T("Size of cache:")}} 
       {{if object_stats:}}
-      <strong>{{=disk['objects']}}</strong> items, 
-      <strong>{{=disk['bytes']}}</strong> bytes 
-      {{if disk['bytes'] > 524287:}}
-      (<strong>{{=disk['bytes'] / 1048576}} MB</strong>)
+        {{=T.M("**%(items)s** %%{item(items)}, **%(bytes)s** %%{byte(bytes)}", dict( items=disk['objects'], bytes=disk['bytes']))}}
+        {{if disk['bytes'] > 524287:}}
+          {{=T.M("(**%.0d MB**)", disk['bytes'] / 1048576)}}
+        {{pass}}
+      {{else:}}
+        {{=T.M("``**not available**``:red (requires the Python [[guppy http://pypi.python.org/pypi/guppy/ popup]] library)")}}
       {{pass}}
-      {{else:}} <strong>not available</strong> (requires the Python <a href="http://pypi.python.org/pypi/guppy/" target="_blank">guppy</a> library)
-      {{pass}}
-    </p>
-    <p>
-      DISK contains items up to 
-      <strong>{{="%02d" % disk['oldest'][0]}}</strong> hours 
-      <strong>{{="%02d" % disk['oldest'][1]}}</strong> minutes 
-      <strong>{{="%02d" % disk['oldest'][2]}}</strong> seconds old.
-    </p>
-    {{=BUTTON(T('Disk Cache Keys'), _onclick='jQuery("#disk_keys").toggle();')}}
-    <div class="hidden" id="disk_keys">
+      </p>
+      <p>
+      {{=T.M("DISK contains items up to **%(hours)02d** %%{hour(hours)} **%(min)02d** %%{minute(min)} **%(sec)02d** %%{second(sec)} old.",
+                dict(hours=disk['oldest'][0], min=disk['oldest'][1], sec=disk['oldest'][2]))}}
+      </p>
+      {{=BUTTON(T('Disk Cache Keys'), _onclick='jQuery("#disk_keys").toggle();')}}
+      <div class="hidden" id="disk_keys">
       {{=disk['keys']}}
-    </div>
-    <br />
+      </div>
+      <br />
     {{pass}}
   </div>
     
   <div class="list-header">
-    <h3>Manage Cache</h3>
+    <h3>{{=T("Manage Cache")}}</h3>
   </div>
   
   <div class="content">
