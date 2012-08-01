@@ -6179,6 +6179,7 @@ def sqlhtml_validators(field):
         def list_ref_repr(ids, row=None, r=referenced, f=ff):
             if not ids:
                 return None
+            refs = None
             if isinstance(r._db._adapter, GoogleDatastoreAdapter):
                 for i in xrange(0, len(ids), 30):
                     if not refs:
