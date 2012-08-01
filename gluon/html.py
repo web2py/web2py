@@ -336,7 +336,7 @@ def URL(
         if url_encode:
             other += '?%s' % urllib.urlencode(list_vars)
         else:
-            other += '?%s' % '&'.join([var[0]+'='+var[1] for var in list_vars])
+            other += '?%s' % '&'.join(['%s=%s' % var[:2] for var in list_vars])
     if anchor:
         if url_encode:
             other += '#' + urllib.quote(str(anchor))
