@@ -7290,8 +7290,10 @@ class Table(dict):
                                   current_record = 'current_record',
                                   is_active = 'is_active'):
         archive_db = archive_db or self._db
-        fieldnames = self.fields()
         archive_name = archive_name % dict(tablename=self._tablename)
+        if archive_name in archive_db.tables():
+            return # do not try define the archive if already exists
+        fieldnames = self.fields()        
         field_type = self if archive_db is self._db else 'bigint'
         archive_table = archive_db.define_table(
             archive_name,
