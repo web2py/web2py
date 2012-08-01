@@ -7566,24 +7566,24 @@ class Table(dict):
         id_map=None,
         null='<NULL>',
         unique='uuid',
-        id_offset={}, # id_offset only used when id_map is None
+        id_offset=None, # id_offset used only when id_map is None
         *args, **kwargs
         ):
         """
-        import records from csv file. Column headers must have same names as
-        table fields. field 'id' is ignored. If column names read 'table.file'
-        the 'table.' prefix is ignored.
-        'unique' argument is a field which must be unique
-        (typically a uuid field)
-        'restore' argument is default False.
-        If set True will remove old values
-        in table first.
-        'id_map' If set to None will not map id.
+        Import records from csv file. 
+        Column headers must have same names as table fields. 
+        Field 'id' is ignored.
+        If column names read 'table.file' the 'table.' prefix is ignored.
+        'unique' argument is a field which must be unique 
+            (typically a uuid field)
+        'restore' argument is default False;
+            if set True will remove old values in table first.
+        'id_map' ff set to None will not map ids.
         The import will keep the id numbers in the restored table. 
         This assumes that there is an field of type id that
         is integer and in incrementing order. 
         Will keep the id numbers in restored table.
-      """
+        """
 
         delimiter = kwargs.get('delimiter', ',')
         quotechar = kwargs.get('quotechar', '"')
@@ -7643,12 +7643,13 @@ class Table(dict):
                 return False
 
         first = True
+        unique_idx = None
         for line in reader:
             if not line:
                 break
             if not colnames:
                 colnames = [x.split('.',1)[-1] for x in line][:len(line)]
-                cols, cid = [], []
+                cols, cid = [], None
                 for i,colname in enumerate(colnames):
                     if is_id(colname):
                         cid = i
@@ -7659,10 +7660,10 @@ class Table(dict):
             else:
                 items = [fix(self[colnames[i]], line[i], id_map, id_offset) \
                              for i in cols if colnames[i] in self.fields]
-                if not id_map and cid:
+
+                if not id_map and cid is not None and id_offset is not None and not unique_idx:
                     csv_id = int(line[cid])
                     curr_id = self.insert(**dict(items))
-                    del_id = curr_id
                     if first:
                         first = False
                         # First curr_id is bigger than csv_id, 
@@ -7672,17 +7673,13 @@ class Table(dict):
                             id_offset[self._tablename] = curr_id-csv_id
                         else:
                             id_offset[self._tablename] = 0
-                    # create new id until we get the same as old_id
+                    # create new id until we get the same as old_id+offset
                     while curr_id<csv_id+id_offset[self._tablename]:
+                        self._db(self._db[self][colnames[cid]] == curr_id).delete()
                         curr_id = self.insert(**dict(items))
-                    # remove ids that are not used
-                    while del_id<csv_id:
-                        query = self._db[self][colnames[cid]] == del_id
-                        self._db(query).delete()
-                        del_id += 1
                 # Validation. Check for duplicate of 'unique' &,
                 # if present, update instead of insert.
-                elif not unique or unique not in colnames:
+                elif not unique_idx:
                     new_id = self.insert(**dict(items))
                 else:
                     unique_value = line[unique_idx]
@@ -7693,7 +7690,7 @@ class Table(dict):
                         new_id = record[self._id.name]
                     else:
                         new_id = self.insert(**dict(items))
-                if id_map and cid != []:
+                if id_map and cid is not None:
                     id_map_self[int(line[cid])] = new_id
 
     def with_alias(self, alias):
