@@ -3079,9 +3079,10 @@ class Auth(object):
                 new_record[key] = value
         id = archive_table.insert(**new_record)
         return id
-    def wiki(self,slug=None,env=None):
+    def wiki(self,slug=None,env=None,manage_permissions=False,force_prefix=''):
         if not hasattr(self,'_wiki'):
-            self._wiki = Wiki(self,env=env)
+            self._wiki = Wiki(self,manage_permissions=manage_permissions,
+                              force_prefix=force_prefix,env=env)
         else:
             self._wiki.env.update(env or {})
         return self._wiki.read(slug)['content'] if slug else self._wiki()
@@ -4393,15 +4394,18 @@ class Wiki(object):
     rows_page = 25
     regex_redirect = re.compile('redirect\s+(\w+\://\S+)\s*')
     def __init__(self,auth,env=None,automenu=True,render='markmin',
-                 manage_permissions=False,force_prefix=None):
+                 manage_permissions=False,force_prefix=''):
         self.env = env or {}
         if render == 'markmin':
             render = lambda t,env=self.env: \
                 MARKMIN(t.body,url=True,environment=env).xml()
         self.auth = auth
         self.automenu = automenu
+        if self.auth.user:
+            self.force_prefix = force_prefix % self.auth.user
+        else:
+            self.force_prefix = force_prefix
         perms = self.manage_permissions = manage_permissions
-        self.force_prefix = force_prefix or ''
         db = auth.db
         db.define_table(
             'wiki_page',
@@ -4441,7 +4445,33 @@ class Wiki(object):
                 if tag: db.wiki_tag.insert(name=tag,wiki_page=page.id)
         db.wiki_page._after_insert.append(update_tags_insert)
         db.wiki_page._after_update.append(update_tags_update)
-
+    # WIKI ACCESS POLICY
+    def not_authorized(self,page=None):
+        raise HTTH(401)
+    def can_read(self,page):
+        if 'everybody' in page.can_read or not self.manage_permissions:
+            return True
+        elif self.auth.user:
+            groups = self.auth.user_groups.values()
+            if ('wiki_editor' in groups or                 
+                set(groups).intersection(set(page.can_read+page.can_edit)) or
+                page.created_by==self.auth.user.id): return True
+        return False
+    def can_edit(self,page=None):
+        if not self.auth.user: redirect(self.auth.settings.login_url)
+        groups = self.auth.user_groups.values()
+        return ('wiki_editor' in groups or
+                (page is None and 'wiki_author' in groups) or
+                not page is None and (
+                set(groups).intersection(set(page.can_edit)) or 
+                page.created_by==self.auth.user.id))
+    def can_manage(self):
+        if not self.auth.user: redirect(self.auth.settings.login_url)
+        groups = self.auth.user_groups.values()
+        return 'wiki_editor' in groups
+    def can_search(self):
+        return True
+    ### END POLICY
     def __call__(self):
         request =  current.request
         if self.automenu:
@@ -4468,29 +4498,19 @@ class Wiki(object):
         else:
             return self.read(request.args(0) or 'index')
 
-    def first_paragraph(self,mm):
-        if self.manage_permissions:
-            return ''
-        mm = mm.replace('\r','')
-        ps = [p for p in mm.split('\n\n') \
-                  if not p.startswith('#') and p.strip()]
-        if ps: return ps[0]
+    def first_paragraph(self,page):
+        if not self.can_read(page):
+            mm = page.body.replace('\r','')
+            ps = [p for p in mm.split('\n\n') \
+                      if not p.startswith('#') and p.strip()]
+            if ps: return ps[0]
         return ''
 
-    def check_permission(self,page,field='can_read'):
-        if not self.manage_permissions:
-            return True
-        groups = set(page.get(field,None) or [])
-        if Wiki.everybody in groups or \
-                self.auth.user and groups.intersect(self.auth.user_groups.values()):
-            return True
-        return False
     def read(self,slug):
         if slug in '_cloud':
             return self.cloud()
         page = self.auth.db.wiki_page(slug=slug)
-        #if page and not self.check_permission(page,'can_read'):
-        #    raise HTTP(401)
+        if not self.can_read(page): return self.not_authorized(page)
         if current.request.extension == 'html':
             if not page: 
                 url = URL(args=('_edit',slug))
@@ -4520,30 +4540,31 @@ class Wiki(object):
             raise HTTP(401, "Not Authorized")          
         return True
     def edit(self,slug):
-        self.check_editor()
         auth = self.auth
         db = auth.db
         page = db.wiki_page(slug=slug)
+        if not self.can_edit(page): return self.not_authorized(page)
         title_guess = ' '.join(c.capitalize() for c in slug.split('-'))
         if not page:
             if not slug.startswith(self.force_prefix):
-                session.flash='slug bust have "%s" prefix' % self.force_prefix
-                redirect(URL(args=('_edit',force_prefix+slug)))
-            db.wiki_page.can_read = [Wiki.everybody]
-            db.wiki_page.can_edit = [auth.user_group_role()]
+                current.session.flash='slug must have "%s" prefix' \
+                    % self.force_prefix
+                redirect(URL(args=('_edit',self.force_prefix+slug)))
+            db.wiki_page.can_read.default = [Wiki.everybody]
+            db.wiki_page.can_edit.default = [auth.user_group_role()]
             db.wiki_page.title.default = title_guess
             db.wiki_page.slug.default = slug
             db.wiki_page.menu.default = slug
             db.wiki_page.body.default = '## %s\n\npage content' % title_guess
-        elif not self.check_permission(page,'can_edit'):
-            raise HTTP(401)
         form = SQLFORM(db.wiki_page,page,deletable=True,showid=False).process()
         if form.accepted:
             current.session.flash = 'page created'
             redirect(URL(args=slug))
+        elif form.deleted:
+            redirect(URL())
         return dict(content=form)
     def pages(self):
-        self.check_editor()
+        if not self.can_manage(): return self.not_authorized()
         self.auth.db.wiki_page.title.represent = lambda title,row: \
             A(title,_href=URL(args=row.slug))
         content=SQLFORM.smartgrid(
@@ -4561,6 +4582,9 @@ class Wiki(object):
         request, db = current.request, self.auth.db
         media = db.wiki_media(id)
         if media:
+            if self.manage_permissions:
+                page = db.wiki_page(media.page)
+                if not self.can_read(page): return self.not_authorized(page)
             request.args = [media.file]
             return current.response.download(request,db)
         else:
@@ -4573,9 +4597,10 @@ class Wiki(object):
                     orderby = db.wiki_page.menu)
         menu = []
         tree = {'.':menu}
+        regex = re.compile('\d\:')
         for row in rows:
             if row.menu:
-                key = './'+row.menu
+                key = './'+regex.sub('',row.menu)
                 base = key.rsplit('/',1)[0]
                 subtree = tree[key] = []
                 if base in tree:
@@ -4583,23 +4608,27 @@ class Wiki(object):
                                        request.args(0)==row.slug,
                                        URL(controller,function,args=row.slug),
                                        subtree))
-        if self.check_editor(act=False):            
+        #if self.auth.user:
+        if True:
             submenu = []
+            menu.append((current.T('[Wiki]'),None,None,submenu))
             if URL() == URL(controller,function) and \
                     not str(request.args(0)).startswith('_'):
                 submenu.append((current.T('Edit'),None,
                                 URL(controller,function,
                                     args=('_edit',request.args(0) or 'index'))))
+        # if self.can_manage():
             submenu.append((current.T('Manage Pages'),None,
-                            URL(controller,function,args=('_pages'))))
+                                URL(controller,function,args=('_pages'))))
+        # if self.can_search():
             submenu.append((current.T('Search Pages'),None,
                             URL(controller,function,args=('_search'))))
             submenu.append((current.T('Tag Cloud'),None,
                             URL(controller,function,args=('_cloud'))))
-            menu.append((current.T('[Wiki]'),None,None,submenu))
         return menu
     def search(self,tags=None,query=None,cloud=True,preview=True,
                limitby=(0,100),orderby=None):        
+        if not self.can_search(): return self.not_authorized()
         request = current.request
         content = CAT()
         if tags is None and query is None:
@@ -4630,7 +4659,7 @@ class Wiki(object):
                 def link(t):
                     return A(t,_href=URL(args='_search',vars=dict(tags=t)))
                 items = [DIV(H3(A(p.title,_href=URL(args=p.slug))),
-                             MARKMIN(self.first_paragraph(p.body)) \
+                             MARKMIN(self.first_paragraph(p)) \
                                  if preview else '',
                              SPAN(*[link(t.strip()) for t in \
                                         p.tags or [] if t.strip()]),
