@@ -14,6 +14,7 @@ import sys
 import cStringIO
 import time
 import thread
+import threading
 import re
 import os
 import socket
@@ -173,6 +174,7 @@ class web2pyDialog(object):
         root.title('web2py server')
         self.root = Tkinter.Toplevel(root)
         self.options = options
+        self.scheduler_processes = {}
         self.menu = Tkinter.Menu(self.root)
         servermenu = Tkinter.Menu(self.menu, tearoff=0)
         httplog = os.path.join(self.options.folder, 'httpserver.log')
@@ -189,6 +191,12 @@ class web2pyDialog(object):
 
         self.pagesmenu = Tkinter.Menu(self.menu, tearoff=0)
         self.menu.add_cascade(label='Pages', menu=self.pagesmenu)
+
+        #scheduler menu
+        self.schedmenu = Tkinter.Menu(self.menu, tearoff=0)
+        self.menu.add_cascade(label='Scheduler', menu=self.schedmenu)
+        #start and register schedulers from options
+        self.update_schedulers(start=True)
 
         helpmenu = Tkinter.Menu(self.menu, tearoff=0)
 
@@ -230,7 +238,7 @@ class web2pyDialog(object):
             self.ips[ip] = Tkinter.Radiobutton(
                 self.root,text='%s (%s)' % (legend,ip),
                 variable=self.selected_ip, value=ip)
-            self.ips[ip].grid(row=row, column=1, sticky=sticky)            
+            self.ips[ip].grid(row=row, column=1, sticky=sticky)
             if row==0: self.ips[ip].select()
             row+=1
         shift = row
@@ -295,6 +303,63 @@ class web2pyDialog(object):
         else:
             self.tb = None
 
+    def update_schedulers(self, start=False):
+        x = 0
+        apps = []
+        available_apps = [arq for arq in os.listdir('applications/')]
+        available_apps = [arq for arq in available_apps
+            if os.path.exists('applications/%s/models/scheduler.py' % arq)]
+        if start:
+            #the widget takes care of starting the scheduler
+            if self.options.scheduler and self.options.with_scheduler:
+                apps = [app.strip() for app in self.options.scheduler.split(',')
+                            if app in available_apps]
+        for app in apps:
+            self.try_start_scheduler(app)
+
+        #reset the menu
+        self.schedmenu.delete(0, len(available_apps))
+        for arq in available_apps:
+            if arq not in self.scheduler_processes:
+                item = lambda u = arq: self.try_start_scheduler(u)
+                self.schedmenu.add_command(label="start %s" % arq,
+                                            command=item)
+            if arq in self.scheduler_processes:
+                item = lambda u = arq: self.try_stop_scheduler(u)
+                self.schedmenu.add_command(label="stop %s" % arq,
+                                            command=item)
+
+    def start_schedulers(self, app):
+        try:
+            from multiprocessing import Process
+        except:
+            sys.stderr.write('Sorry, -K only supported for python 2.6-2.7\n')
+            return
+        code = "from gluon import current;current._scheduler.loop()"
+        print 'starting scheduler from widget for "%s"...' % app
+        args = (app,True,True,None,False,code)
+        logging.getLogger().setLevel(self.options.debuglevel)
+        p = Process(target=run, args=args)
+        self.scheduler_processes[app] = p
+        self.update_schedulers()
+        print "Currently running %s scheduler processes" % (len(self.scheduler_processes))
+        p.start()
+        print "Processes started"
+
+    def try_stop_scheduler(self, app):
+        if app in self.scheduler_processes:
+            p = self.scheduler_processes[app]
+            del self.scheduler_processes[app]
+            p.terminate()
+            p.join()
+        self.update_schedulers()
+
+    def try_start_scheduler(self, app):
+        if app not in self.scheduler_processes:
+            t = threading.Thread(target=self.start_schedulers, args=(app,))
+            t.start()
+
+
     def checkTaskBar(self):
         """ Check taskbar status """
 
@@ -339,15 +404,19 @@ class web2pyDialog(object):
 
     def quit(self, justHide=False):
         """ Finish the program execution """
-
         if justHide:
             self.root.withdraw()
         else:
             try:
+                scheds = self.scheduler_processes.keys()
+                for t in scheds:
+                    self.try_stop_scheduler(t)
+            except:
+                pass
+            try:
                 self.server.stop()
             except:
                 pass
-
             try:
                 self.tb.Destroy()
             except:
@@ -385,11 +454,11 @@ class web2pyDialog(object):
             proto = 'https'
         else:
             proto = 'http'
-        
+
         self.url = '%s://%s:%s' % (proto, ip, port)
         self.connect_pages()
         self.button_start.configure(state='disabled')
-        
+
         try:
             options = self.options
             req_queue_size = options.request_queue_size
@@ -692,6 +761,14 @@ def console():
                       default=None,
                       help=msg)
 
+    msg = 'run schedulers alongside webserver'
+    parser.add_option('-X',
+                      '--with-scheduler',
+                      action='store_true',
+                      default=False,
+                      dest='with_scheduler',
+                      help=msg)
+
     msg = 'run doctests in web2py environment; ' +\
         'TEST_PATH like a/c/f (c,f optional)'
     parser.add_option('-T',
@@ -889,7 +966,7 @@ def start_schedulers(options):
         except:
             p.terminate()
             p.join()
- 
+
 
 def start(cron=True):
     """ Start server  """
@@ -958,12 +1035,13 @@ def start(cron=True):
         return
 
     # ## if -K
-    if options.scheduler:
+    if options.scheduler and not options.with_scheduler:
         try:
             start_schedulers(options)
         except KeyboardInterrupt:
             pass
         return
+
 
     # ## if -N or not cron disable cron in this *process*
     # ## if --softcron use softcron
@@ -1047,6 +1125,11 @@ end tell
     if not options.password and not options.nobanner:
         print 'no password, no admin interface'
 
+    # ##-X (if no tk, the widget takes care of it himself)
+    if not root and options.scheduler and options.with_scheduler:
+        t = threading.Thread(target=start_schedulers, args=(options,))
+        t.start()
+
     # ## start server
 
     (ip, port) = (options.ip, int(options.port))
@@ -1086,7 +1169,13 @@ end tell
         server.start()
     except KeyboardInterrupt:
         server.stop()
+        try:
+            t.join()
+        except:
+            pass
     logging.shutdown()
+
+
 
 
 
