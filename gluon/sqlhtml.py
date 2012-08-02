@@ -17,6 +17,7 @@ try:
     from urlparse import parse_qs as psq
 except ImportError:
     from cgi import parse_qs as psq
+import os
 from http import HTTP
 from html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT
 from html import FORM, INPUT, LABEL, OPTION, SELECT, BUTTON
@@ -33,7 +34,7 @@ import datetime
 import urllib
 import re
 import cStringIO
-from gluon.html import INPUT
+from gluon import current, redirect, A, URL, DIV, H3, UL, LI, SPAN, INPUT
 
 table_field = re.compile('[\w_]+\.[\w_]+')
 widget_class = re.compile('^\w*')
@@ -765,7 +766,6 @@ class SQLFORM(FORM):
                labels={'name': 'Your name'},
                linkto=URL(f='table/db/')
         """
-        from gluon import current
         T = current.T
 
         self.ignore_rw = ignore_rw
@@ -1241,8 +1241,10 @@ class SQLFORM(FORM):
                 elif hasattr(f, 'file'):
                     (source_file, original_filename) = (f.file, f.filename)
                 elif isinstance(f, (str, unicode)):
-                    # warning: possible IOError exception
-                    (source_file, original_filename) = (open(f, 'rb'), f)
+                    f = os.path.join(current.request.folder,
+                                     os.path.normpath(f))
+                    source_file = open(f, 'rb')
+                    original_filename  = os.path.split(f)[1]
                 newfilename = field.store(source_file, original_filename, 
                                           field.uploadfolder)
                 # this line is for backward compatibility only
@@ -1375,7 +1377,6 @@ class SQLFORM(FORM):
 
     @staticmethod
     def build_query(fields,keywords):
-        from gluon import current
         request = current.request
         if isinstance(keywords,(tuple,list)):
            keywords = keywords[0]
@@ -1393,7 +1394,6 @@ class SQLFORM(FORM):
 
     @staticmethod
     def search_menu(fields,search_options=None):
-        from gluon import current
         T = current.T
         search_options = search_options or {
             'string':['=','!=','<','>','<=','>=','starts with','contains'],
@@ -1544,7 +1544,6 @@ class SQLFORM(FORM):
         elif not isinstance(ui,dict):
             raise RuntimeError,'SQLFORM.grid ui argument must be a dictionary'
 
-        from gluon import current, redirect
         db = query._db
         T = current.T
         request = current.request
@@ -2091,7 +2090,6 @@ class SQLFORM(FORM):
         linked_tables is a optional list of tablenames of tables
         to be linked
         """
-        from gluon import current, A, URL, DIV, H3, UL, LI, SPAN, redirect
         request, T = current.request, current.T
         if args is None: args = []
         db = table._db
