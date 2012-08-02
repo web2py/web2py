@@ -2382,7 +2382,11 @@ class MARKMIN(XmlComponent):
     For documentation: http://web2py.com/examples/static/markmin.html
     """
     def __init__(self, text, extra=None, allowed=None, sep='p',
-                 url=None, environment=None, latex='google'):
+                 url=None, environment=None, latex='google',
+                 autolinks='default',
+                 protolinks='default',
+                 class_prefix='',
+                 id_prefix='markmin_'):                 
         self.text = text
         self.extra = extra or {}
         self.allowed = allowed or {}
@@ -2390,6 +2394,10 @@ class MARKMIN(XmlComponent):
         self.url = URL if url==True else url
         self.environment = environment
         self.latex = latex
+        self.autolinks = autolinks
+        self.protolinks = protolinks
+        self.class_prefix = class_prefix
+        self.id_prefix = id_prefix
 
     def xml(self):
         """
@@ -2398,7 +2406,9 @@ class MARKMIN(XmlComponent):
         from contrib.markmin.markmin2html import render
         return render(self.text,extra=self.extra,
                       allowed=self.allowed,sep=self.sep,latex=self.latex,
-                      URL=self.url, environment=self.environment)
+                      URL=self.url, environment=self.environment,
+                      autolinks=self.autolinks,protolinks=self.protolinks,
+                      class_prefix=self.class_prefix,id_prefix=self.id_prefix)
 
     def __str__(self):
         return self.xml()

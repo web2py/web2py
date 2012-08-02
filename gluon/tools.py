@@ -30,6 +30,7 @@ from storage import Storage, StorageList, Settings, Messages
 from utils import web2py_uuid
 from fileutils import read_file
 from gluon import *
+from gluon.contrib.autolinks import expand_one
 
 import serializers
 
@@ -4393,12 +4394,13 @@ class Wiki(object):
     everybody = 'everybody'
     rows_page = 25
     regex_redirect = re.compile('redirect\s+(\w+\://\S+)\s*')
+    def markmin_render(self,page):        
+        return MARKMIN(page.body,url=True,environment=self.env,
+                       autolinks=lambda link: expand_one(link,{})).xml()
     def __init__(self,auth,env=None,automenu=True,render='markmin',
                  manage_permissions=False,force_prefix=''):
         self.env = env or {}
-        if render == 'markmin':
-            render = lambda t,env=self.env: \
-                MARKMIN(t.body,url=True,environment=env).xml()
+        if render == 'markmin': render=self.markmin_render
         self.auth = auth
         self.automenu = automenu
         if self.auth.user:
@@ -4479,6 +4481,8 @@ class Wiki(object):
                                               request.function)
         if request.args(0)=='_edit':
             return self.edit(request.args(1) or 'index')
+        elif request.args(0)=='_editmedia':
+            return self.editmedia(request.args(1) or 'index')
         elif request.args(0)=='_pages':
             return self.pages()
         elif request.args(0)=='_media':
@@ -4557,26 +4561,43 @@ class Wiki(object):
             db.wiki_page.menu.default = slug
             db.wiki_page.body.default = '## %s\n\npage content' % title_guess
         form = SQLFORM(db.wiki_page,page,deletable=True,showid=False).process()
-        if form.accepted:
+        if form.deleted:
+            current.session.flash = 'page deleted'
+            redirect(URL())
+        elif form.accepted:
             current.session.flash = 'page created'
             redirect(URL(args=slug))
-        elif form.deleted:
-            redirect(URL())
         return dict(content=form)
+
+    def editmedia(self,slug):
+        auth = self.auth
+        db = auth.db
+        page = db.wiki_page(slug=slug)
+        if not (page and self.can_edit(page)): return self.not_authorized(page)
+        self.auth.db.wiki_media.wiki_page.default = page.id
+        self.auth.db.wiki_media.wiki_page.writable = False
+        content = SQLFORM.grid(
+            self.auth.db.wiki_media.wiki_page==page.id,
+            orderby = self.auth.db.wiki_media.title,
+            args=['_editmedia',slug],
+            user_signature=False)
+        return dict(content=content)
+
     def pages(self):
         if not self.can_manage(): return self.not_authorized()
         self.auth.db.wiki_page.title.represent = lambda title,row: \
             A(title,_href=URL(args=row.slug))
-        content=SQLFORM.smartgrid(
+        content=SQLFORM.grid(
             self.auth.db.wiki_page,
-            linked_tables = 'wiki_media',
-            details={'wiki_page':False,'wiki_media':True},
-            editable={'wiki_page':False,'wiki_media':True},
-            deletable={'wiki_page':False,'wiki_media':True},
-            orderby = {'wiki_page':self.auth.db.wiki_page.title,
-                       'wiki_media':self.auth.db.wiki_media.title},
+            links = [
+                lambda row: \
+                    A('edit',_href=URL(args=('_edit',row.slug))),
+                lambda row: \
+                    A('media',_href=URL(args=('_editmedia',row.slug)))],
+            details=False,editable=False,deletable=False,
+            orderby=self.auth.db.wiki_page.title,
             args=['_pages'],
-            user_signature=True)
+            user_signature=False)
         return dict(content=content)
     def media(self, id):
         request, db = current.request, self.auth.db
@@ -4612,19 +4633,34 @@ class Wiki(object):
         if True:
             submenu = []
             menu.append((current.T('[Wiki]'),None,None,submenu))
-            if URL() == URL(controller,function) and \
-                    not str(request.args(0)).startswith('_'):
-                submenu.append((current.T('Edit'),None,
-                                URL(controller,function,
-                                    args=('_edit',request.args(0) or 'index'))))
+            if URL() == URL(controller,function):
+                if not str(request.args(0)).startswith('_'):
+                    slug = request.args(0) or 'index'
+                    mode=1
+                elif request.args(0)=='_edit':
+                    slug = request.args(1) or 'index'
+                    mode=2
+                elif request.args(0)=='_editmedia':
+                    slug = request.args(1) or 'index'
+                    mode=3
+                else:
+                    mode=0
+                if mode in (2,3):
+                    submenu.append((current.T('View Page'),None,
+                    URL(controller,function,args=slug)))
+                if mode in (1,3):
+                    submenu.append((current.T('Edit Page'),None,
+                    URL(controller,function,args=('_edit',slug))))
+                if mode in (1,2):
+                    submenu.append((current.T('Edit Page Media'),None,
+                    URL(controller,function,args=('_editmedia',slug))))
+                                    
         # if self.can_manage():
             submenu.append((current.T('Manage Pages'),None,
                                 URL(controller,function,args=('_pages'))))
         # if self.can_search():
             submenu.append((current.T('Search Pages'),None,
                             URL(controller,function,args=('_search'))))
-            submenu.append((current.T('Tag Cloud'),None,
-                            URL(controller,function,args=('_cloud'))))
         return menu
     def search(self,tags=None,query=None,cloud=True,preview=True,
                limitby=(0,100),orderby=None):        
@@ -4643,7 +4679,8 @@ class Wiki(object):
             db = self.auth.db
             count = db.wiki_tag.wiki_page.count()
             fields = [db.wiki_page.id,db.wiki_page.slug,
-                      db.wiki_page.title,db.wiki_page.tags]
+                      db.wiki_page.title,db.wiki_page.tags,
+                      db.wiki_page.can_read]
             if preview:
                 fields.append(db.wiki_page.body)
             if query is None:

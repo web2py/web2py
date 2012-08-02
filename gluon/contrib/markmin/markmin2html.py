@@ -537,7 +537,7 @@ def markmin_escape(text):
    """ insert \\ before markmin control characters: '`:*~[]{}@$ """
    return regex_markmin_escape.sub(lambda m: '\\'+m.group(0).replace('\\','\\\\'), text)
 
-def autolinks(url):
+def autolinks_simple(url):
     """
     it automatically converts the url to link,
     image, video or audio tag
@@ -551,7 +551,7 @@ def autolinks(url):
         return '<audio src="%s" controls></audio>' % url
     return '<a href="%s">%s</a>' % (url,url)
 
-def protolinks(proto, url):
+def protolinks_simple(proto, url):
     """
     it converts url to html-string using appropriate proto-prefix:
     Uses for construction "proto:url", e.g.:
@@ -575,8 +575,8 @@ def render(text,
            URL=None,
            environment=None,
            latex='google',
-           autolinks=autolinks,
-           protolinks=protolinks,
+           autolinks='default',
+           protolinks='default',
            class_prefix='',
            id_prefix='markmin_'):
     """
@@ -791,6 +791,8 @@ def render(text,
     '<p><a name="markmin_id1">span <strong>messag</strong> in markmin</a> ... <a href="#markmin_mark1" title="link\\\'s title"><strong>link</strong> to id</a></p>'
 
     """
+    if autolinks=="default": autolinks = autolinks_simple
+    if protolinks=="default": protolinks = protolinks_simple
     text = str(text or '')
     text = regex_backslash.sub(lambda m: m.group(1).translate(ttab_in), text)
 
@@ -1256,8 +1258,10 @@ def render(text,
     text = text.translate(ttab_out)
     return text
 
-def markmin2html(text, extra={}, allowed={}, sep='p', autolinks=autolinks, protolinks=protolinks):
-    return render(text, extra, allowed, sep, autolinks=autolinks, protolinks=protolinks)
+def markmin2html(text, extra={}, allowed={}, sep='p', 
+                 autolinks='default',protolinks='default'):                 
+    return render(text, extra, allowed, sep, 
+                  autolinks=autolinks, protolinks=protolinks)
 
 if __name__ == '__main__':
     import sys
