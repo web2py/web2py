@@ -44,9 +44,13 @@ viddler.com
 
 import re, cgi, sys
 from simplejson import loads
-from BeautifulSoup import BeautifulSoup, Comment
 import urllib
 import uuid
+try:
+    from BeautifulSoup import BeautifulSoup, Comment
+    have_soup = True
+except ImportError:
+    have_soup = False
 
 regex_link = re.compile('https?://\S+')
 
@@ -160,6 +164,8 @@ def expand_one(url,cdict):
     return '<a href="%(u)s">%(u)s</a>' % dict(u=url)
 
 def expand_html(html,cdict=None):
+    if not have_soup:
+        raise RuntimeError, "Missing BeautifulSoup"
     soup = BeautifulSoup(html)
     comments = soup.findAll(text=lambda text:isinstance(text, Comment))
     [comment.extract() for comment in comments]
