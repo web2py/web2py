@@ -4550,7 +4550,7 @@ class Wiki(object):
         if not self.can_edit(page): return self.not_authorized(page)
         title_guess = ' '.join(c.capitalize() for c in slug.split('-'))
         if not page:
-            if not slug.startswith(self.force_prefix):
+            if not (self.can_manage() or slug.startswith(self.force_prefix)):
                 current.session.flash='slug must have "%s" prefix' \
                     % self.force_prefix
                 redirect(URL(args=('_edit',self.force_prefix+slug)))
