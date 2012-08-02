@@ -4411,8 +4411,9 @@ class Wiki(object):
         db = auth.db
         db.define_table(
             'wiki_page',
-            Field('slug',requires=[IS_SLUG(),IS_NOT_IN_DB(db,'wiki_page.slug')],
-                     readable=False,writable=False),
+            Field('slug',
+                  requires=[IS_SLUG(),IS_NOT_IN_DB(db,'wiki_page.slug')],
+                  readable=False,writable=False),
             Field('title',unique=True),
             Field('body','text',notnull=True),
             Field('menu'),
@@ -4479,17 +4480,22 @@ class Wiki(object):
         if self.automenu:
             current.response.menu = self.menu(request.controller,
                                               request.function)
-        if request.args(0)=='_edit':
-            return self.edit(request.args(1) or 'index')
-        elif request.args(0)=='_editmedia':
-            return self.editmedia(request.args(1) or 'index')
-        elif request.args(0)=='_pages':
-            return self.pages()
-        elif request.args(0)=='_media':
+        zero = request.args(0)
+        if zero=='_media':
             return self.media(request.args(1,cast=int))
-        elif request.args(0)=='_search':
+        elif not zero or not zero.startswith('_'):
+            return self.read(zero or 'index')
+        elif zero=='_edit':
+            return self.edit(request.args(1) or 'index')
+        elif zero=='_editmedia':
+            return self.editmedia(request.args(1) or 'index')
+        elif zero=='_create':
+            return self.create()
+        elif zero=='_pages':
+            return self.pages()
+        elif zero=='_search':
             return self.search()
-        elif request.args(0)=='_recent':
+        elif zero=='_recent':
             ipage = int(request.vars.page or 0)
             query = self.auth.db.wiki_page.created_by==request.args(1,cast=int)
             return self.search(query=query,
@@ -4497,10 +4503,9 @@ class Wiki(object):
                                limitby=(ipage*self.rows_page,
                                         (ipage+1)*self.rows_page),
                                )
-        elif request.args(0)=='_cloud':
+        elif zero=='_cloud':
             return self.cloud()
-        else:
-            return self.read(request.args(0) or 'index')
+        
 
     def first_paragraph(self,page):
         if not self.can_read(page):
@@ -4514,6 +4519,8 @@ class Wiki(object):
         if slug in '_cloud':
             return self.cloud()
         page = self.auth.db.wiki_page(slug=slug)
+        if not page:
+            redirect(URL(args=('_create',slug)))
         if not self.can_read(page): return self.not_authorized(page)
         if current.request.extension == 'html':
             if not page: 
@@ -4582,7 +4589,16 @@ class Wiki(object):
             args=['_editmedia',slug],
             user_signature=False)
         return dict(content=content)
-
+    def create(self):
+        if not self.can_edit(): return self.not_authorized()
+        db = self.auth.db
+        form = SQLFORM.factory(
+            Field('slug',default=current.request.args(1),
+                  label = 'New Page',
+                  requires=(IS_SLUG(),IS_NOT_IN_DB(db,db.wiki_page.slug))))
+        if form.process().accepted:
+            redirect(URL(args=('_edit',form.vars.slug)))
+        return dict(content=form)
     def pages(self):
         if not self.can_manage(): return self.not_authorized()
         self.auth.db.wiki_page.title.represent = lambda title,row: \
@@ -4594,7 +4610,7 @@ class Wiki(object):
                     A('edit',_href=URL(args=('_edit',row.slug))),
                 lambda row: \
                     A('media',_href=URL(args=('_editmedia',row.slug)))],
-            details=False,editable=False,deletable=False,
+            details=False,editable=False,deletable=False,create=False,
             orderby=self.auth.db.wiki_page.title,
             args=['_pages'],
             user_signature=False)
@@ -4655,9 +4671,11 @@ class Wiki(object):
                     submenu.append((current.T('Edit Page Media'),None,
                     URL(controller,function,args=('_editmedia',slug))))
                                     
+            submenu.append((current.T('Create New Page'),None,
+                            URL(controller,function,args=('_create'))))
         # if self.can_manage():
             submenu.append((current.T('Manage Pages'),None,
-                                URL(controller,function,args=('_pages'))))
+                            URL(controller,function,args=('_pages'))))
         # if self.can_search():
             submenu.append((current.T('Search Pages'),None,
                             URL(controller,function,args=('_search'))))
