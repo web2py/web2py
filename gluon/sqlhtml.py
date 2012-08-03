@@ -1229,7 +1229,7 @@ class SQLFORM(FORM):
                 continue  # do not update if password was not changed
             elif field.type == 'upload':
                 f = self.vars[fieldname]
-                f = f or self.table[fieldname].default or f
+                f = f if not f in (None,'') else self.table[fieldname].default
                 fd = '%s__delete' % fieldname
                 if f == '' or f is None:
                     if self.vars.get(fd, False) or not self.record:
