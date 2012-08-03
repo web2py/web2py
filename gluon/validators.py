@@ -485,6 +485,7 @@ class IS_IN_DB(Validator):
         return items
 
     def __call__(self, value):
+        table = self.dbset.db[self.ktable]
         if self.multiple:
             if isinstance(value,list):
                 values=value
@@ -495,7 +496,7 @@ class IS_IN_DB(Validator):
             if isinstance(self.multiple,(tuple,list)) and \
                     not self.multiple[0]<=len(values)<self.multiple[1]:
                 return (values, translate(self.error_message))
-            if not [x for x in values if not str(x) in self.theset]:
+            if self.dbset(self.field.belongs(values)).count()==len(values):
                 return (values, None)
         elif self.theset:
             if str(value) in self.theset:
