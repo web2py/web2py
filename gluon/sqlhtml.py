@@ -1229,16 +1229,22 @@ class SQLFORM(FORM):
                 continue  # do not update if password was not changed
             elif field.type == 'upload':
                 f = self.vars[fieldname]
-                f = f if not f in (None,'') else self.table[fieldname].default
                 fd = '%s__delete' % fieldname
                 if f == '' or f is None:
-                    if self.vars.get(fd, False) or not self.record:
-                        fields[fieldname] = ''
+                    if self.vars.get(fd, False):
+                        f = self.table[fieldname].default or ''
+                        fields[fieldname] = f
+                    elif self.record:
+                        if self.record[fieldname]:
+                            fields[fieldname] = self.record[fieldname]
+                        else:
+                            f = self.table[fieldname].default or ''
+                            fields[fieldname] = f
                     else:
-                        fields[fieldname] = self.record[fieldname]
+                        fields[fieldname] = ''
                     self.vars[fieldname] = fields[fieldname]
-                    continue
-                elif hasattr(f, 'file'):
+                    if not f: continue
+                if hasattr(f, 'file'):
                     (source_file, original_filename) = (f.file, f.filename)
                 elif isinstance(f, (str, unicode)):
                     f = os.path.join(current.request.folder,
