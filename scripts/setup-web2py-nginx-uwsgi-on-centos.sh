@@ -9,7 +9,7 @@
 # https://groups.google.com/forum/?fromgroups#!topic/web2py/O4c4Jfr18tM
 
 # There are lots of subtleties of ownership, and one has to take care
-# when installing python 2.7 not to stop the systems python2.4 from working.
+# when installing python 2.6 not to stop the systems python2.4 from working.
 
 # NOTE: The only thing that should need changing for
 # each installation is the $BASEARCH (base architecture) of the machine.
@@ -22,38 +22,64 @@ echo 'Install development tools (it should take a while)'
 yum install gcc gdbm-devel readline-devel ncurses-devel zlib-devel \
 bzip2-devel sqlite-devel db4-devel openssl-devel tk-devel bluez-libs-devel
 
-echo 'Install python 2.7 without overwriting python 2.4 (no, really, this will take a while too)'
+echo 'Install python 2.6 without overwriting python 2.4 (no, really, this will take a while too)'
 
-VERSION=2.7.3
-cd ~
-curl -O http://www.python.org/ftp/python/2.7.3/Python-2.7.3.tgz
-tar -xvfz Python-2.7.3.tgz
-cd Python-2.7.3
-./configure --prefix=/opt/python2.7 --with-threads --enable-shared
+#=================================
+
+VERSION=2.6.8
+
+mkdir ~/src
+
+chmod 777 ~/src
+
+cd ~/src
+
+wget http://www.python.org/ftp/python/$VERSION/Python-$VERSION.tgz
+
+tar xvfz Python-2.6.8.tgz
+
+cd Python-2.6.8
+
+./configure --prefix=/opt/python2.6 --with-threads --enable-shared
+
 make
 
-echo 'The altinstall ensures that python2.4 is left okay'
+
+
+#The altinstall ensures that python2.4 is left okay
+
 make altinstall
-echo "/opt/python2.7/lib">/etc/ld.so.conf.d/opt-python2.7.conf
+
+echo "/opt/python2.6/lib">/etc/ld.so.conf.d/opt-python2.6.conf
+	
 ldconfig
 
-echo 'Create alias so that python 2.7 can be run with python2.7'
-alias -p python2.7="/opt/python2.7/bin/python2.7"
-ln -s /opt/python2.7/bin/python2.7 /usr/bin/python2.7
+
+
+#create alias so that python 2.6 can be run with 'python2.6'
+
+alias -p python2.6="/opt/python2.6/bin/python2.6"
+
+ln -s /opt/python2.6/bin/python2.6 /usr/bin/python2.6
+
 
 echo 'Install uwsgi'
 
 version=uwsgi-1.2.3
 cd ~
 curl -O http://projects.unbit.it/downloads/$version.tar.gz
-tar -zxvf $version.tar.gz
+tar zxvf $version.tar.gz
 mkdir /opt/uwsgi-python
-cp -R ./$version/* /opt/uwsgi-python/*
+cp -R ./$version/* /opt/uwsgi-python
 cd /opt/uwsgi-python
 
-echo 'build using python 2.7'
-python2.7 setup.py build
-python2.7 uwsgiconfig.py --build
+echo 'build using python 2.6'
+
+python2.6 setup.py build
+
+python2.6 uwsgiconfig.py --build
+
+
 useradd uwsgi
 
 echo 'Create and own uwsgi log'
@@ -215,12 +241,6 @@ reload () {
   echo
 }
 
-force-reload () {
-  echo "Reloading $NAME"
-  killproc $PROG -TERM
-  RETVAL=$?
-  echo
-}
 
 restart () {
     stop
