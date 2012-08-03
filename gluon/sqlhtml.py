@@ -1243,14 +1243,19 @@ class SQLFORM(FORM):
                     else:
                         fields[fieldname] = ''
                     self.vars[fieldname] = fields[fieldname]
-                    if not f: continue
-                if hasattr(f, 'file'):
+                    if not f:
+                        continue
+                    else:
+                        f = os.path.join(current.request.folder,
+                                         os.path.normpath(f))
+                        source_file = open(f, 'rb')
+                        original_filename  = os.path.split(f)[1]                        
+                elif hasattr(f, 'file'):
                     (source_file, original_filename) = (f.file, f.filename)
                 elif isinstance(f, (str, unicode)):
-                    f = os.path.join(current.request.folder,
-                                     os.path.normpath(f))
-                    source_file = open(f, 'rb')
-                    original_filename  = os.path.split(f)[1]
+                    ### do not know why this happens, it should not
+		    (source_file, original_filename) = \
+		        (cStringIO.StringIO(f), 'file.txt')
                 newfilename = field.store(source_file, original_filename, 
                                           field.uploadfolder)
                 # this line is for backward compatibility only
