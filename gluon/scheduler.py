@@ -63,6 +63,7 @@ import os
 import time
 import multiprocessing
 import sys
+import signal
 import cStringIO
 import threading
 import traceback
@@ -89,6 +90,7 @@ except:
 
 from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB
 from gluon.utils import web2py_uuid
+
 
 QUEUED = 'QUEUED'
 ASSIGNED = 'ASSIGNED'
@@ -435,6 +437,7 @@ class Scheduler(MetaScheduler):
         db.commit()
 
     def loop(self,worker_name=None):
+        signal.signal(signal.SIGTERM, lambda signum, stack_frame: sys.exit(1))
         try:
             self.start_heartbeats()
             while True and self.have_heartbeat:
@@ -782,6 +785,7 @@ def main():
                         group_names = group_names,
                         heartbeat = options.heartbeat,
                         max_empty_runs = options.max_empty_runs)
+    signal.signal(signal.SIGTERM, lambda signum, stack_frame: sys.exit(1))
     print 'starting main worker loop...'
     scheduler.loop()
 
