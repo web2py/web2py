@@ -2591,8 +2591,9 @@ class Auth(object):
             redirect(next)
         return form
 
-    def is_impersonating(self):
-        return 'impersonator' in current.session.auth
+    def is_impersonating(self):        
+        return current.session.auth and \
+            'impersonator' in current.session.auth
 
     def impersonate(self, user_id=DEFAULT):
         """
