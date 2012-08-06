@@ -28,7 +28,7 @@
             </div>
         </div>
         <div id="footer" class="fixed">
-            {{=T('Powered by')}} {{=A('web2py', _href='http://www.web2py.com')}}&trade; {{=T('created by')}} Massimo Di Pierro &copy;2007-2012 -
+            {{=T('Powered by')}} {{=A('web2py', _href='http://www.web2py.com')}}&trade; {{=T('created by')}} Massimo Di Pierro &copy;2007-{{=request.now.year}} -
         {{if hasattr(T,'get_possible_languages_info'):}}
         <span>
           {{=T('Admin language')}}
