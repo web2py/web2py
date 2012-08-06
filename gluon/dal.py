@@ -2686,8 +2686,26 @@ class OracleAdapter(BaseAdapter):
         sequence_name = table._sequence_name
         trigger_name = table._trigger_name
         self.execute(query)
-        self.execute('CREATE SEQUENCE %s START WITH 1 INCREMENT BY 1 NOMAXVALUE;' % sequence_name)
-        self.execute('CREATE OR REPLACE TRIGGER %s BEFORE INSERT ON %s FOR EACH ROW BEGIN SELECT %s.nextval INTO :NEW.id FROM DUAL; END;\n' % (trigger_name, tablename, sequence_name))
+        self.execute('CREATE SEQUENCE %s START WITH 1 INCREMENT BY 1 NOMAXVALUE MINVALUE -1;' % sequence_name)
+        self.execute("""
+            CREATE OR REPLACE TRIGGER {trigger_name} BEFORE INSERT ON {tablename} FOR EACH ROW
+            DECLARE
+                curr_val NUMBER;
+                diff_val NUMBER;
+                PRAGMA autonomous_transaction;
+            BEGIN
+                IF :NEW.id IS NOT NULL THEN
+                    EXECUTE IMMEDIATE 'SELECT {sequence_name}.nextval FROM dual' INTO curr_val;
+                    diff_val := :NEW.id - curr_val - 1;
+                    IF diff_val != 0 THEN
+                      EXECUTE IMMEDIATE 'alter sequence {sequence_name} increment by '|| diff_val;
+                      EXECUTE IMMEDIATE 'SELECT {sequence_name}.nextval FROM dual' INTO curr_val;
+                      EXECUTE IMMEDIATE 'alter sequence {sequence_name} increment by 1';
+                    END IF;
+                END IF;
+                SELECT {sequence_name}.nextval INTO :NEW.id FROM DUAL;
+            END;
+        """.format(trigger_name=trigger_name, tablename=tablename, sequence_name=sequence_name))
 
     def lastrowid(self,table):
         sequence_name = table._sequence_name
