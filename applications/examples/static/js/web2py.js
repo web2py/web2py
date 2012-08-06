@@ -97,7 +97,7 @@ function web2py_ajax_page(method, action, data, target) {
       if(command)
 	  eval(decodeURIComponent(command));
       if(flash)
-	  jQuery('.flash').html(decodeURIComponent(flash)).slideDown();
+	  jQuery('.flash').html(flash).slideDown();
       }
     });
 }
