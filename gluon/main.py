@@ -87,7 +87,7 @@ from dal import BaseAdapter
 from settings import global_settings
 from validators import CRYPT
 from cache import Cache
-from html import URL as Url
+from html import URL as Url, xmlescape
 from utils import is_valid_ip_address
 import newcron
 import rewrite
@@ -547,10 +547,13 @@ def wsgibase(environ, responder):
                 # ##################################################
 
                 if request.cid:
-                    if response.flash and not 'web2py-component-flash' in http_response.headers:
+                    if response.flash and not 'web2py-component-flash' \
+                            in http_response.headers:
                         http_response.headers['web2py-component-flash'] = \
-                            urllib2.quote(str(response.flash).replace('\n',''))
-                    if response.js and not 'web2py-component-command' in http_response.headers:
+                            urllib2.quote(xmlescape(response.flash)\
+                                              .replace('\n',''))
+                    if response.js and not 'web2py-component-command' \
+                            in http_response.headers:
                         http_response.headers['web2py-component-command'] = \
                             response.js.replace('\n','')
                 if session._forget and \
