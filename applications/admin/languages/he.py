@@ -11,7 +11,6 @@
 '(something like "it-it")': '(למשל "it-it")',
 '@markmin\x01Searching: **%s** %%{file}': 'Searching: **%s** files',
 'A new version of web2py is available: %s': 'גירסא חדשה של web2py זמינה: %s',
-'A new version of web2py is available: Version 1.85.3 (2010-09-18 07:07:46)\n': 'A new version of web2py is available: Version 1.85.3 (2010-09-18 07:07:46)\r\n',
 'ATTENTION: Login requires a secure (HTTPS) connection or running on localhost.': 'לתשומת ליבך: ניתן להתחבר רק בערוץ מאובטח (HTTPS) או מlocalhost',
 'ATTENTION: TESTING IS NOT THREAD SAFE SO DO NOT PERFORM MULTIPLE TESTS CONCURRENTLY.': 'לתשומת ליבך: אין לערוך מספר בדיקות במקביל, שכן הן עשויות להפריע זו לזו',
 'ATTENTION: you cannot edit the running application!': 'לתשומת ליבך: לא ניתן לערוך אפליקציה בזמן הרצתה',
