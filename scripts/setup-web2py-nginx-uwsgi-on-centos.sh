@@ -18,54 +18,53 @@
 # Retrieve base architecture
 BASEARCH=$(uname -i)
 
+# Get Web2py Admin Password
+echo -e "Enter a password for web2py admin app: \c "
+read  PW
+
 echo 'Install development tools (it should take a while)'
 yum install gcc gdbm-devel readline-devel ncurses-devel zlib-devel \
 bzip2-devel sqlite-devel db4-devel openssl-devel tk-devel bluez-libs-devel
 
-echo 'Install python 2.6 without overwriting python 2.4 (no, really, this will take a while too)'
-
 #=================================
 
-VERSION=2.6.8
+# You can change Python and uWSGI options
+# to fit your deployment needs.
+
+# Python options
+PREFIX=2.7
+VERSION=2.7.3
+
+# uWSGI options
+version=uwsgi-1.2.4
+
+echo "Install python $PREFIX without overwriting python 2.4 (no, really, this will take a while too)"
 
 mkdir ~/src
-
 chmod 777 ~/src
-
 cd ~/src
-
 wget http://www.python.org/ftp/python/$VERSION/Python-$VERSION.tgz
+tar xvfz Python-$VERSION.tgz
+cd Python-$VERSION
 
-tar xvfz Python-2.6.8.tgz
+echo "Applying patch for sqlite3 bug from post http://bugs.python.org/msg161076"
+curl -sk https://raw.github.com/gist/2727063/ | patch -p1
 
-cd Python-2.6.8
-
-./configure --prefix=/opt/python2.6 --with-threads --enable-shared
-
+./configure --prefix=/opt/python$PREFIX --with-threads --enable-shared
 make
-
-
 
 #The altinstall ensures that python2.4 is left okay
 
 make altinstall
-
-echo "/opt/python2.6/lib">/etc/ld.so.conf.d/opt-python2.6.conf
-	
+echo "/opt/python$PREFIX/lib">/etc/ld.so.conf.d/opt-python$PREFIX.conf
 ldconfig
 
+#create alias so that python 2.x can be run with 'python2.x'
 
+alias -p python$PREFIX="/opt/python$/bin/python$PREFIX"
+ln -s /opt/python$PREFIX/bin/python$PREFIX /usr/bin/python$PREFIX
 
-#create alias so that python 2.6 can be run with 'python2.6'
-
-alias -p python2.6="/opt/python2.6/bin/python2.6"
-
-ln -s /opt/python2.6/bin/python2.6 /usr/bin/python2.6
-
-
-echo 'Install uwsgi'
-
-version=uwsgi-1.2.3
+echo 'Install uwsgi' $version
 cd ~
 curl -O http://projects.unbit.it/downloads/$version.tar.gz
 tar zxvf $version.tar.gz
@@ -73,22 +72,18 @@ mkdir /opt/uwsgi-python
 cp -R ./$version/* /opt/uwsgi-python
 cd /opt/uwsgi-python
 
-echo 'build using python 2.6'
+echo "build using python $PREFIX"
 
-python2.6 setup.py build
-
-python2.6 uwsgiconfig.py --build
-
-
+python$PREFIX uwsgiconfig.py --build
 useradd uwsgi
 
-echo 'Create and own uwsgi log'
+echo "Create and own uwsgi log"
 # Note this log will need emptying from time to time
 
 touch /var/log/uwsgi.log
 chown uwsgi /var/log/uwsgi.log
 
-echo 'Install web2py'
+echo "Install web2py"
 
 cd /opt
 mkdir ./web-apps
@@ -96,12 +91,15 @@ cd ./web-apps
 curl -O http://www.web2py.com/examples/static/web2py_src.zip
 unzip web2py_src.zip
 
-echo 'Set the ownership for web2py application to uwsgi'
-cd /opt/web-apps/web2py
+echo "Set the ownership for web2py application to uwsgi"
 chown -R uwsgi /opt/web-apps/web2py
+cd /opt/web-apps/web2py
 chmod -R u+rwx ./applications
 
-echo 'Now install nginx'
+echo "Now creating the admin password and creating the scaffolding app package"
+sudo -u uwsgi python$PREFIX -c "from gluon.main import save_password;from gluon import widget;save_password('$PW',443);widget.console()"
+
+echo "Now install nginx"
 cd /etc/yum.repos.d
 echo "[nginx]">nginx.repo
 
@@ -115,15 +113,15 @@ cd /etc/nginx/conf.d
 mv default.conf default.conf.o
 mv example_ssl.conf example_ssl.conf.o
 
-echo '
+echo "
 The following configuration files are also needed
 The options for uwsgi are in the following file.
 Other options could be included.
-'
+"
 
-echo 'uwsgi_for_nginx.conf'
+echo "uwsgi_for_nginx.conf"
 
-echo '
+echo "
 [uwsgi]
 uuid=uwsgi
 pythonpath = /opt/web-apps/web2py
@@ -133,18 +131,18 @@ harakiri 60
 harakiri-verbose
 enable-threads
 daemonize = /var/log/uwsgi.log
-' > /opt/uwsgi-python/uwsgi_for_nginx.conf
+" > /opt/uwsgi-python/uwsgi_for_nginx.conf
 
 chmod 755 /opt/uwsgi-python/uwsgi_for_nginx.conf
 
-echo '
+echo "
 The next configuration file is for nginx, and goes in /etc/nginx/conf.d
 It serves the static directory of applications directly. I have not set up
 ssl because I access web2py admin by using ssh tunneling and the web2py rocket server.
 It should be straightforward to set up the ssl server however.
-'
+"
 
-echo 'web2py.conf'
+echo "web2py.conf"
 
 echo '
 server {
@@ -174,7 +172,7 @@ server {
 ' > /etc/nginx/conf.d/web2py.conf
 
 
-echo 'Auto-signed ssl certs'
+echo "Auto-signed ssl certs"
 mkdir /etc/nginx/ssl
 echo "creating a self signed certificate"
 echo "=================================="
@@ -183,7 +181,7 @@ chmod 400 /etc/nginx/ssl/web2py.key
 openssl req -new -x509 -nodes -sha1 -days 365 -key /etc/nginx/ssl/web2py.key > /etc/nginx/ssl/web2py.cert
 openssl x509 -noout -fingerprint -text < /etc/nginx/ssl/web2py.cert > /etc/nginx/ssl/web2py.info
 
-echo 'uwsgi as service'
+echo "uwsgi as service"
 
 echo '
 #!/bin/bash
@@ -241,7 +239,6 @@ reload () {
   echo
 }
 
-
 restart () {
     stop
     start
@@ -286,7 +283,7 @@ chmod 755 /etc/init.d/uwsgi
 chkconfig --add uwsgi
 chkconfig uwsgi on
 
-echo '
+echo "
 You can test it with
 
 service uwsgi start
@@ -302,16 +299,19 @@ You should find the web2py welcome app will be displayed at your web address.
 As they are both services, they should automatically start on a system reboot.
 If you already had a server running, such as apache, you would need to stop
 that and turn its service off before running nginx.
-'
+"
 
-echo 'Turning off apache service'
+echo "Turning off apache service"
+
 service httpd stop
 chkconfig httpd off
+cd ~
 
-echo '
+echo "
 Installation complete. You might want to restart your server running
 
 reboot
 
 as superuser
-'
+"
+
