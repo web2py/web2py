@@ -12,7 +12,6 @@
 '@markmin\x01Searching: **%s** %%{file}': 'Searching: **%s** files',
 'A new version of web2py is available': 'Eine neue Version von web2py ist verfügbar',
 'A new version of web2py is available: %s': 'Eine neue Version von web2py ist verfügbar: %s',
-'A new version of web2py is available: Version 1.85.3 (2010-09-18 07:07:46)\n': 'Eine neue Version von web2py ist verfügbar: Version 1.85.3 (2010-09-18 07:07:46)\n',
 'ATTENTION: Login requires a secure (HTTPS) connection or running on localhost.': 'ACHTUNG: Die Einwahl benötigt eine sichere (HTTPS) Verbindung. Es sei denn sie läuft Lokal(localhost).',
 'ATTENTION: TESTING IS NOT THREAD SAFE SO DO NOT PERFORM MULTIPLE TESTS CONCURRENTLY.': 'ACHTUNG: Testen ist nicht threadsicher. Führen sie also nicht mehrere Tests gleichzeitig aus.',
 'ATTENTION: This is an experimental feature and it needs more testing.': 'ACHTUNG: Dies ist eine experimentelle Funktion und benötigt noch weitere Tests.',
