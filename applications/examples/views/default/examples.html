@@ -593,7 +593,6 @@ def cache_db_select():
     return dict(records=records)
     """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}
     <p>The results of a select are complex unpickleable objects that cannot be cached using the previous method, but the select command takes an argument <tt>cache=(cache_model,time_expire)</tt> and will cache the result of the query accordingly. Notice that the key is not necessary since key is generated based on the database name and the select string.
-    <br/>Try it here: <a href="/{{=request.application}}/cache_examples/cache_db_select">cache_db_select</a></p>
 
     <h2 id="ajax_examples">Ajax Examples</h2>
 
