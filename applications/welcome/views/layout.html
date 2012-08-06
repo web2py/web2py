@@ -70,6 +70,12 @@
   <div class="navbar navbar-fixed-top">
     <div class="navbar-inner">
       <div class="container">
+	<!-- the next tag is necessary for bootstrap menus, do not remove -->
+	<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </a>
 	<a class="brand" href="#">web2py&trade;&nbsp;</a>
 	<div id="navbar">{{='auth' in globals() and auth.navbar(separators=(' ',' | ','')) or ''}}</div>
 	<div class="nav-collapse">
