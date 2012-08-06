@@ -354,7 +354,7 @@ def form():
 
     <p>You can find more examples of the web2py Database Abstraction Layer <a href="http://www.web2py.com/book/default/chapter/06">here</a></p>
 
-    <p>Let's create a simple model with users, dogs, products and purchases (the database of an animal store). Users can have many dogs (ONE TO MANY), can buy many products and every product can have many buyers (MANY TO MANY).</p>
+    <p>Let's create a simple model with users, products (sold by users) and purchases (the database of an animal store). Each user can sell many products (ONE TO MANY). A user can buy many products and each product can have many buyers (MANY TO MANY).</p>
 
     <h3>Example {{=c}}{{c+=1}}</h3><b>in model: db.py</b>
     {{=CODE("""
@@ -364,21 +364,14 @@ db.define_table(
     Field('email'),
     format = '%(name)s')
 
-# ONE (person) TO MANY (dogs)
-
-db.define_table(
-    'dog',
-    Field('owner_id', db.person),
-    Field('name'),
-    Field('type'),
-    Field('vaccinated', 'boolean', default=False),
-    Field('picture', 'upload', default=''),
-    format = '%(name)s')
+# ONE (person) TO MANY (products)
 
 db.define_table(
     'product',
+    Field('seller_id',db_person),
     Field('name'),
     Field('description', 'text'),
+    Field('picture', 'upload', default=''),
     format = '%(name)s')
 
 # MANY (persons) TO MANY (purchases)
@@ -396,8 +389,7 @@ purchased = \
 
 db.person.name.requires = IS_NOT_EMPTY()
 db.person.email.requires = [IS_EMAIL(), IS_NOT_IN_DB(db, 'person.email')]
-db.dog.name.requires = IS_NOT_EMPTY()
-db.dog.type.requires = IS_IN_SET(('small', 'medium', 'large'))
+db.product.name.requires = IS_NOT_EMPTY()
 db.purchase.quantity.requires = IS_INT_IN_RANGE(0, 10)
     """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}
     <p>
@@ -407,20 +399,18 @@ db.purchase.quantity.requires = IS_INT_IN_RANGE(0, 10)
     <br/><br/>
     define_tables creates the table and attempts a migration if table has changed or if database name has changed since last time. If you know you already have the table in the database and you do not want to attempt a migration add one last argument to define_table <tt>migrate=False</tt>.</p>
 
-
     <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: database_examples.py </b>
     {{=CODE("""
 response.menu = [['Register Person', False, URL('register_person')],
-                 ['Register Dog', False, URL('register_dog')],
                  ['Register Product', False, URL('register_product')],
                  ['Buy product', False, URL('buy')]]
 
 def register_person():
     # create an insert form from the table
-    form = SQLFORM(db.person)
+    form = SQLFORM(db.person).process()
 
     # if form correct perform the insert
-    if form.process().accepted:
+    if form.accepted:
         response.flash = 'new record inserted'
 
     # and get a list of all persons
@@ -432,39 +422,21 @@ def register_person():
     <p>This is a simple user registration form. SQLFORM takes a table and returns the corresponding entry form with validators, etc. SQLFORM.accepts is similar to FORM.accepts but, if form is validated, the corresponding insert is also performed. SQLFORM can also do update and edit if a record is passed as its second argument.
     SQLTABLE instead turns a set of records (result of a select) into an HTML table with links as specified by its optional parameters.
     The response.menu on top is just a variable used by the layout to make the navigation menu for all functions in this controller.<br/>
-    Try it here: <a href="/{{=request.application}}/database_examples/register_person">register_person</a></p>
-
-    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: database_examples.py </b>
-    {{=CODE("""
-
-
-def register_dog():
-    form = SQLFORM(db.dog)
-    if form.process().accepted:
-        response.flash = 'new record inserted'
-    download = URL('download')  # to see the picture
-    records = SQLTABLE(db().select(db.dog.ALL), upload=download,
-                       headers='fieldname:capitalize')
-    return dict(form=form, records=records)
-
-    """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}<b>and view: database_examples/register_dog.html</b>
-    {{=CODE(open(os.path.join(request.folder,'views/database_examples/register_dog.html'),'r').read(),language='html',link=URL('global','vars'),_class='boxCode')}}
-    <p>Here is a dog registration form. Notice that the "image" (type "upload") field is rendered into a &lt;INPUT type="file"&gt; html tag. SQLFORM.accepts(...) handles the upload of the file into the uploads/ folder.
-    <br/>Try it here: <a href="/{{=request.application}}/database_examples/register_dog">register_dog</a></p>
 
     <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: database_examples.py </b>
     {{=CODE("""
 def register_product():
-    form = SQLFORM(db.product)
-    if form.process().accepted:
+    form = SQLFORM(db.product).process()
+    if form.accepted:
         response.flash = 'new record inserted'
-    records = SQLTABLE(db().select(db.product.ALL),headers='fieldname:capitalize')
+    records = SQLTABLE(db().select(db.product.ALL),
+                       upload = URL('download'), # allows pics preview
+                       headers='fieldname:capitalize')
     return dict(form=form, records=records)
 
     """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}<b>and view: database_examples/register_product.html</b>
     {{=CODE(open(os.path.join(request.folder,'views/database_examples/register_product.html'),'r').read(),language='html',link=URL('global','vars'),_class='boxCode')}}
     <p>Nothing new here.
-    <br/>Try it here: <a href="/{{=request.application}}/database_examples/register_product">register_product</a></p>
 
     <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: database_examples.py </b>
     {{=CODE("""
@@ -473,8 +445,8 @@ def buy():
     form = SQLFORM.factory(
         Field('buyer_id',requires=IS_IN_DB(db,db.person.id,'%(name)s')),
         Field('product_id',requires=IS_IN_DB(db,db.product.id,'%(name)s')),
-        Field('quantity','integer',requires=IS_INT_IN_RANGE(1,100)))
-    if form.process().accepted:
+        Field('quantity','integer',requires=IS_INT_IN_RANGE(1,100))).process()
+    if form.accepted:
         # get previous purchese for same product
         purchase = db((db.purchase.buyer_id == form.vars.buyer_id)&
             (db.purchase.product_id==form.vars.product_id)).select().first()
@@ -498,22 +470,25 @@ def buy():
     """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}<b>and view: database_examples/buy.html</b>
     {{=CODE(open(os.path.join(request.folder,'views/database_examples/buy.html'),'r').read(),language='html',link=URL('global','vars'),_class='boxCode')}}
     <p>Here is a rather sophisticated buy form. It checks that the buyer and the product are in the database and updates the corresponding record or inserts a new purchase. It also does a JOIN to list all purchases.
-    <br/>Try it here: <a href="/{{=request.application}}/database_examples/buy">buy</a></p>
-
-    <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: database_examples.py</b>
-    {{=CODE("""
-def delete_purchased():
-    db(db.purchase.id > 0).delete()
-    redirect(URL('buy'))
-    """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}Try it here: <a href="/{{=request.application}}/database_examples/delete_purchased">delete_purchased</a>
 
     <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: database_examples.py</b>
     {{=CODE("""
 def download():
     return response.download(request,db)
     """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}
-    <p>This controller allows users to download the uploaded pictures of the dogs.
-    Remember the upload=URL(...'download'...) statement in the register_dog function. Notice that in the URL path /application/controller/function/a/b/etc a, b, etc are passed to the controller as request.args[0], request.args[1], etc. Since the URL is validated request.args[] always contain valid filenames and no '~' or '..' etc. This is useful to allow visitors to link uploaded files.</p>
+    <p>This controller allows users to download the uploaded pictures of products.
+    Remember the upload=URL('download') statement in the register_product function. Notice that in the URL path /application/controller/function/a/b/etc a, b, etc are passed to the controller as request.args[0], request.args[1], etc. Since the URL is validated request.args[] always contain valid filenames and no '~' or '..' etc. This is useful to allow visitors to link uploaded files.</p>
+
+    <h3>Example {{=c}}{{c+=1}}</h3><b>Using a Smartgrid</b>
+    <p>All of the above database examples can be condensed in one simple command using the SQLFORM.smartgrid:</p>
+    {{=CODE("""
+def manage_transactions():
+    grid = SQLFORM.smartgrid(db.person,linked_tables=['product','purchase'],
+                             user_signature=False)
+    return dict(grid=grid)
+    """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}
+
+    The SQLFORM.smartgrid allows to create/read/delete persons as well as records in the linked tables (product and purchase). It also allows searching with pagination. It can be highly customized. The user_signature=False disables grid access control features which are beyond this simple example.
 
     <h2 id="cache_examples">Cache Examples</h2>
 
