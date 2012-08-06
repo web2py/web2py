@@ -220,9 +220,9 @@ class Response(Storage):
         return page
 
     def include_meta(self):
-        s = ''
+        s = '\n'
         for key,value in (self.meta or {}).items():
-            s += '<meta name="%s" content="%s" />' % (key,xmlescape(value))
+            s += '<meta name="%s" content="%s" />\n' % (key,xmlescape(value))
         self.write(s,escape=False)
 
     def include_files(self):
