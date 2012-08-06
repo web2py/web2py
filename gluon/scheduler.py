@@ -360,7 +360,7 @@ class Scheduler(MetaScheduler):
         self.tasks = tasks
         self.group_names = group_names or ['main']
         self.heartbeat = heartbeat
-        self.worker_name = worker_name or socket.gethostname()+'#'+str(web2py_uuid())
+        self.worker_name = worker_name or socket.gethostname()+'#'+str(os.getpid())
         self.worker_status = RUNNING, 1 #tuple containing status as recorded in
                                         #the table, plus a boost parameter for
                                         #hibernation (i.e. when someone stop the
@@ -403,7 +403,7 @@ class Scheduler(MetaScheduler):
             Field('start_time','datetime',default=now),
             Field('next_run_time','datetime',default=now),
             Field('stop_time','datetime'),
-            Field('repeat','integer',default=1,comment="0=unlimited"),
+            Field('repeats','integer',default=1,comment="0=unlimited"),
             Field('retry_failed', 'integer', default=0, comment="-1=unlimited"),
             Field('period','integer',default=60,comment='seconds'),
             Field('timeout','integer',default=60,comment='seconds'),
@@ -497,7 +497,7 @@ class Scheduler(MetaScheduler):
             return None
         next_run_time = task.last_run_time + datetime.timedelta(seconds=task.period)
         times_run = task.times_run + 1
-        if times_run < task.repeat or task.repeat==0:
+        if times_run < task.repeats or task.repeats==0:
             run_again = True
         else:
             run_again = False
@@ -676,7 +676,7 @@ class Scheduler(MetaScheduler):
         db(ts.status.belongs((QUEUED,ASSIGNED)))(ts.stop_time<now).update(status=EXPIRED)
 
         all_available = db(ts.status.belongs((QUEUED,ASSIGNED)))\
-                ((ts.times_run<ts.repeat)|(ts.repeat==0))\
+                ((ts.times_run<ts.repeats)|(ts.repeats==0))\
                 (ts.start_time<=now)\
                 ((ts.stop_time==None) | (ts.stop_time>now))\
                 (ts.next_run_time<=now)\
