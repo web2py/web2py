@@ -207,7 +207,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     {{if p[0] == 0:}}
        <b>{{=T("rules are not defined")}}</b>,
        <span class="controls comptools">
-       {{=button(URL('create_file', vars=dict(filename=p[2], location='gluon/contrib/rules/', sender=URL('design', args=app), id=id, app=app)), T('Create rules'))}}
+       {{=button(URL('create_file', vars=dict(filename=p[2], location='gluon/contrib/rules/', sender=URL('design', args=app), id=id, app=app, token=session.token)), T('Create rules'))}}
        </span>
     {{else:}}
       {{if p[0] == 1:}}
