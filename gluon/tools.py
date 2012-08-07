@@ -1312,6 +1312,7 @@ class Auth(object):
         db = self.db
         settings = self.settings
         request = current.request
+        T = current.T
         def lazy_user (auth = self): return auth.user_id
         reference_user = 'reference %s' % settings.table_user_name
         def represent(id,record=None,s=settings):
@@ -1322,22 +1323,26 @@ class Auth(object):
         self.signature = db.Table(self.db,'auth_signature',
                                   Field('is_active','boolean',
                                         default=True,
-                                        readable=False, writable=False),
+                                        readable=False, writable=False,
+                                        label=T('Is Active')),
                                   Field('created_on','datetime',
                                         default=request.now,
-                                        writable=False, readable=False),
+                                        writable=False, readable=False,
+                                        label=T('Created On')),
                                   Field('created_by',
                                         reference_user,
                                         default=lazy_user, represent=represent,
                                         writable=False, readable=False,
-                                        ),
+                                        label=T('Created By')),
                                   Field('modified_on','datetime',
                                         update=request.now,default=request.now,
-                                        writable=False,readable=False),
+                                        writable=False,readable=False,
+                                        label=T('Modified On')),
                                   Field('modified_by',
                                         reference_user,represent=represent,
                                         default=lazy_user,update=lazy_user,
-                                        writable=False,readable=False))
+                                        writable=False,readable=False,
+                                        label=T('Modified By')))
 
 
     def define_tables(self, username=False, signature=None, 
