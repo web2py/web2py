@@ -2125,6 +2125,7 @@ class IS_DATE(Validator):
                  error_message='enter date as %(format)s'):
         self.format = translate(format)
         self.error_message = str(error_message)
+        self.extremes = {}
 
     def __call__(self, value):
         if isinstance(value,datetime.date):
@@ -2135,7 +2136,8 @@ class IS_DATE(Validator):
             value = datetime.date(y, m, d)
             return (value, None)
         except:
-            return (value, translate(self.error_message) % IS_DATETIME.nice(self.format))
+            self.extremes.update(IS_DATETIME.nice(self.format))
+            return (value, translate(self.error_message) % self.extremes)
 
     def formatter(self, value):
         format = self.format
@@ -2181,6 +2183,7 @@ class IS_DATETIME(Validator):
                  error_message='enter date and time as %(format)s'):
         self.format = translate(format)
         self.error_message = str(error_message)
+        self.extremes = {}
 
     def __call__(self, value):
         if isinstance(value,datetime.datetime):
@@ -2191,7 +2194,9 @@ class IS_DATETIME(Validator):
             value = datetime.datetime(y, m, d, hh, mm, ss)
             return (value, None)
         except:
-            return (value, translate(self.error_message) % IS_DATETIME.nice(self.format))
+            self.extremes.update(IS_DATETIME.nice(self.format))
+            return (value, translate(self.error_message) % self.extremes)
+
 
     def formatter(self, value):
         format = self.format
@@ -2201,7 +2206,8 @@ class IS_DATETIME(Validator):
         format = format.replace('%Y',y)
         if year<1900:
             year = 2000
-        d = datetime.datetime(year,value.month,value.day,value.hour,value.minute,value.second)
+        d = datetime.datetime(year,value.month,value.day,
+                              value.hour,value.minute,value.second)
         return d.strftime(format)
 
 class IS_DATE_IN_RANGE(IS_DATE):
@@ -2239,19 +2245,19 @@ class IS_DATE_IN_RANGE(IS_DATE):
                 error_message = "enter date on or after %(min)s"
             else:
                 error_message = "enter date in range %(min)s %(max)s"
-        extremes = dict(min=minimum, max=maximum)
         IS_DATE.__init__(self,
                          format = format,
-                         error_message = translate(error_message) % extremes)
+                         error_message = error_message)
+        self.extremes = dict(min=minimum, max=maximum)
 
     def __call__(self, value):
         (value, msg) = IS_DATE.__call__(self,value)
         if msg is not None:
             return (value, msg)
         if self.minimum and self.minimum > value:
-            return (value, self.error_message)
+            return (value, translate(self.error_message) % self.extremes)
         if self.maximum and value > self.maximum:
-            return (value, self.error_message)
+            return (value, translate(self.error_message) % self.extremes)
         return (value, None)
 
 
@@ -2289,19 +2295,19 @@ class IS_DATETIME_IN_RANGE(IS_DATETIME):
                 error_message = "enter date and time on or after %(min)s"
             else:
                 error_message = "enter date and time in range %(min)s %(max)s"
-        extremes = dict(min = minimum, max = maximum)
         IS_DATETIME.__init__(self,
                          format = format,
-                         error_message = translate(error_message) % extremes)
+                         error_message = error_message)
+        self.extremes = dict(min = minimum, max = maximum)
 
     def __call__(self, value):
         (value, msg) = IS_DATETIME.__call__(self, value)
         if msg is not None:
             return (value, msg)
         if self.minimum and self.minimum > value:
-            return (value, self.error_message)
+            return (value, translate(self.error_message) % self.extremes)
         if self.maximum and value > self.maximum:
-            return (value, self.error_message)
+            return (value, translate(self.error_message) % self.extremes)
         return (value, None)
 
 
