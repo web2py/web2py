@@ -394,13 +394,15 @@ class web2pyDialog(object):
 
     def connect_pages(self):
         """ Connect pages """
-
-        for arq in os.listdir('applications/'):
-            if os.path.exists('applications/%s/__init__.py' % arq):
-                url = self.url + '/' + arq
-                start_browser = lambda u = url: try_start_browser(u)
-                self.pagesmenu.add_command(label=url,
-                                           command=start_browser)
+        #reset the menu
+        available_apps = [arq for arq in os.listdir('applications/')
+                          if os.path.exists('applications/%s/__init__.py' % arq)]
+        self.pagesmenu.delete(0, len(available_apps))
+        for arq in available_apps:
+            url = self.url + '/' + arq
+            start_browser = lambda u = url: try_start_browser(u)
+            self.pagesmenu.add_command(label=url,
+                                       command=start_browser)
 
     def quit(self, justHide=False):
         """ Finish the program execution """
