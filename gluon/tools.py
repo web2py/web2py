@@ -1,4 +1,4 @@
-!/bin/python
+#!/bin/python
 # -*- coding: utf-8 -*-
 
 """
@@ -2679,7 +2679,7 @@ class Auth(object):
             raise HTTP(403,'ACCESS DENIED')
         return 'ACCESS DENIED'
 
-    def requires(self, condition, requires_login=True):
+    def requires(self, condition, requires_login=True, otherwise=None):
         """
         decorator that prevents access to action if not logged in
         """
@@ -2692,7 +2692,9 @@ class Auth(object):
                 user = user or self.user
                 if requires_login:
                     if not user:
-                        if self.settings.allow_basic_login_only or \
+                        if not otherwise is None:
+                            return otherwise
+                        elif self.settings.allow_basic_login_only or \
                                 basic_accepted or current.request.is_restful:
                             raise HTTP(403,"Not authorized")
                         elif current.request.ajax:
@@ -2721,37 +2723,41 @@ class Auth(object):
 
         return decorator
 
-    def requires_login(self):
+    def requires_login(self,otherwise=None):
         """
         decorator that prevents access to action if not logged in
         """
-        return self.requires(True)
+        return self.requires(True,otherwise=otherwise)
 
-    def requires_membership(self, role=None, group_id=None):
+    def requires_membership(self, role=None, group_id=None,otherwise=None):
         """
         decorator that prevents access to action if not logged in or
         if user logged in is not a member of group_id.
         If role is provided instead of group_id then the
         group_id is calculated.
         """
-        return self.requires(lambda: self.has_membership(group_id=group_id, role=role))
+        return self.requires(lambda: self.has_membership(
+                group_id=group_id, role=role),otherwise=otherwise)
 
-    def requires_permission(self, name, table_name='', record_id=0):
+    def requires_permission(self, name, table_name='', record_id=0,
+                            otherwise=None):
         """
         decorator that prevents access to action if not logged in or
         if user logged in is not a member of any group (role) that
         has 'name' access to 'table_name', 'record_id'.
         """
-        return self.requires(lambda: self.has_permission(name, table_name, record_id))
+        return self.requires(lambda: self.has_permission(
+                name, table_name, record_id),otherwise=otherwise)
 
-    def requires_signature(self):
+    def requires_signature(self,otherwise=None):
         """
         decorator that prevents access to action if not logged in or
         if user logged in is not a member of group_id.
         If role is provided instead of group_id then the
         group_id is calculated.
         """
-        return self.requires(lambda: URL.verify(current.request,user_signature=True))
+        return self.requires(lambda: URL.verify(
+                current.request,user_signature=True),otherwise=otherwise)
 
     def add_group(self, role, description=''):
         """
