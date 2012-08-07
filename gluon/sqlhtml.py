@@ -2014,9 +2014,9 @@ class SQLFORM(FORM):
                                           _href='%s/%s' % (upload, value))
                         else:
                             value = ''
-                    elif isinstance(value,str):
+                    if isinstance(value,str):
                         value = truncate_string(value,maxlength)
-                    else:
+                    elif not isinstance(value,DIV):
                         value = field.formatter(value)
                     tr.append(TD(value))
                 row_buttons = TD(_class='row_buttons')
