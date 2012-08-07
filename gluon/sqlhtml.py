@@ -2141,14 +2141,18 @@ class SQLFORM(FORM):
                         else: name = format % record
                     except TypeError:
                         name = id
-                    breadcrumbs += [LI(A(T(db[referee]._plural),
-                                      _class=trap_class(),
-                                      _href=URL(args=request.args[:nargs])),
-                                    SPAN(divider,_class='divider')),
-                                    LI(A(name,_class=trap_class(),
-                                      _href=URL(args=request.args[:nargs]+[
+                    nameLink = 'view'
+                    breadcrumbs.append(
+                        LI(A(T(db[referee]._plural),
+                             _class=trap_class(),
+                             _href=URL(args=request.args[:nargs])),
+                           SPAN(divider,_class='divider')))
+                    if kwargs.get('details',True):
+                        breadcrumbs.append(
+                            LI(A(name,_class=trap_class(),
+                                 _href=URL(args=request.args[:nargs]+[
                                     'view',referee,id],user_signature=True)),
-                                    SPAN(divider,_class='divider'))]
+                               SPAN(divider,_class='divider')))
                     nargs+=2
                 else:
                     break
