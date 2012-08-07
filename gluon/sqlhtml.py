@@ -1258,8 +1258,8 @@ class SQLFORM(FORM):
 		        (cStringIO.StringIO(f), 'file.txt')
                 newfilename = field.store(source_file, original_filename, 
                                           field.uploadfolder)
-                # this line is for backward compatibility only
-                self.vars['%s_newfilename' % fieldname] = newfilename
+                # this line was for backward compatibility but problematic
+                # self.vars['%s_newfilename' % fieldname] = newfilename
                 fields[fieldname] = newfilename
                 if isinstance(field.uploadfield, str):
                     fields[field.uploadfield] = source_file.read()
