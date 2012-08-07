@@ -1207,18 +1207,20 @@ class Auth(object):
         else:
             raise HTTP(404)
 
-    def navbar(self, prefix='Welcome', action=None,
+    def navbar(self, prefix='Welcome %(first_name)s', action=None,
                separators=(' [ ',' | ',' ] '),
                referrer_actions=DEFAULT):
         referrer_actions = [] if not referrer_actions else referrer_actions
         request = current.request
         T = current.T
-        if isinstance(prefix,str):
-            prefix = T(prefix)
+        if isinstance(prefix,str) and self.user:
+            # backward compatibility
+            if not '%' in prefix: prefix+' %(first_name)s'
+            prefix_str = (T(prefix) % self.user).strip()+' '
+        else:
+            prefix_str = str(prefix or '')
         if not action:
             action=self.url(self.settings.function)
-        if prefix:
-            prefix = prefix.strip()+' '
         s1,s2,s3 = separators
         if URL() == action:
             next = ''
@@ -1234,7 +1236,8 @@ class Auth(object):
                       (action, urllib.quote(self.settings.logout_next)))
             profile = A(T('Profile'), _href=href('profile'))
             password = A(T('Password'), _href=href('change_password'))
-            bar = SPAN(prefix,self.user.first_name,s1, logout, s3, _class='auth_navbar')
+            bar = SPAN(prefix_str,
+                       s1, logout, s3, _class='auth_navbar')
             if not 'profile' in self.settings.actions_disabled:
                 bar.insert(4, s2)
                 bar.insert(5, profile)
