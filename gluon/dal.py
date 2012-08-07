@@ -4799,7 +4799,8 @@ class MongoDBAdapter(NoSQLAdapter):
             from pymongo.son import SON
 
         for key in set(attributes.keys())-set(('limitby','orderby')):
-            raise SyntaxError, 'invalid select attribute: %s' % key
+            if attributes[key]!=None:
+                raise SyntaxError, 'invalid select attribute: %s' % key
 
         new_fields=[]
         mongosort_list = []
