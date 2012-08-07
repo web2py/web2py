@@ -253,6 +253,11 @@ if not 'google' in drivers:
         # first try contrib driver, then from site-packages (if installed)
         try:
             import contrib.pymysql as pymysql
+            # monkeypatch pymysql because they havent fixed the bug:
+            # https://github.com/petehunt/PyMySQL/issues/86
+            pymysql.ESCAPE_REGEX = re.compile("'")
+            pymysql.ESCAPE_MAP = {"'": "''"}
+            # end monkeypatch
         except ImportError:
             import pymysql
         drivers.append('pymysql')
