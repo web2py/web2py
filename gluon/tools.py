@@ -1600,7 +1600,7 @@ class Auth(object):
         self.settings.table_event.insert(description=description % vars,
                                          origin=origin, user_id=user_id)
 
-    def get_or_create_user(self, keys, update_fields=[]):
+    def get_or_create_user(self, keys, update_fields=['email']):
         """
         Used for alternate login methods:
             If the user exists already then password is updated.
