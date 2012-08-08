@@ -43,6 +43,7 @@ def _router_default():
         default_language = None,
             languages = None,
         root_static = ['favicon.ico', 'robots.txt'],
+        map_static = None,
         domains = None,
         exclusive_domain = False,
         map_hyphen = False,
@@ -1083,6 +1084,7 @@ class MapUrlOut(object):
         self.env = env
         self.application = application
         self.controller = controller
+        self.is_static = (controller == 'static' or controller.startswith('static/'))
         self.function = function
         self.args = args
         self.other = other
@@ -1188,7 +1190,7 @@ class MapUrlOut(object):
         #  handle static as a special case
         #  (easier for external static handling)
         #
-        if self.controller == 'static' or self.controller.startswith('static/'):
+        if self.is_static:
             if not self.map_static:
                 self.omit_application = False
                 if self.language:
@@ -1206,10 +1208,14 @@ class MapUrlOut(object):
                 self.function = self.function.replace('_', '-')
         if not self.omit_application:
             acf += '/' + self.application
-        if not self.omit_language:
-            acf += '/' + self.language
-        if not self.omit_controller:
-            acf += '/' + self.controller
+        # handle case of flipping lang/static/file to static/lang/file for external rewrite
+        if self.is_static and self.map_static is False and not self.omit_language:
+            acf += '/' + self.controller + '/' + self.language
+        else:
+            if not self.omit_language:
+                acf += '/' + self.language
+            if not self.omit_controller:
+                acf += '/' + self.controller
         if not self.omit_function:
             acf += '/' + self.function
         if self.path_prefix:
@@ -1249,9 +1255,21 @@ def map_url_in(request, env, app=False):
     root_static_file = map.map_root_static() # handle root-static files
     if root_static_file:
         return (root_static_file, map.env)
-    map.map_language()
-    map.map_controller()
+    # handle mapping of lang/static to static/lang in externally-rewritten URLs
+    # in case we have to handle them ourselves
+    if map.languages and map.map_static is False and map.arg0 == 'static' and map.args(1) in map.languages:
+        if 'es' in map.languages:
+            print 'handle static/lang %s' % map.args(1)
+        map.map_controller()
+        map.map_language()
+    else:
+        if 'es' in map.languages:
+            print 'NO handle static/lang %s' % map.args(1)
+        map.map_language()
+        map.map_controller()
     static_file = map.map_static()
+    if 'es' in map.languages:
+        print 'static_file=%s' % static_file
     if static_file:
         return (static_file, map.env)
     map.map_function()
