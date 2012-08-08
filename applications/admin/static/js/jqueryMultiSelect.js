@@ -45,11 +45,8 @@ if(jQuery) (function($){
 				html += '<div class="multiSelectOptions" style="position: absolute; z-index: 99999; display: none;">';
 				if( o.selectAll ) html += '<label class="selectAll"><input type="checkbox" class="selectAll" />' + o.selectAllText + '</label>';
 				$(select).find('OPTION').each( function() {
-					if( $(this).val() != '' ) {
-						html += '<label><input type="checkbox" name="' + $(select).attr('name') + '" value="' + $(this).val() + '"';
-						if( $(this).attr('selected') ) html += ' checked="checked"';
-						html += ' />' + $(this).html() + '</label>';
-					}
+					if( $(this).val() != '' )
+					    html += '<label for="'+$(select).attr('name')+'">'+$(this).html() + '</label><input type="checkbox" name="' + $(select).attr('name') + '" value="' + $(this).val() + '"'+($(this).attr('selected')?' checked="checked"':'')+' />';
 				});
 				html += '</div>';
 				$(select).after(html);
