@@ -1600,7 +1600,7 @@ class Auth(object):
         self.settings.table_event.insert(description=description % vars,
                                          origin=origin, user_id=user_id)
 
-    def get_or_create_user(self, keys):
+    def get_or_create_user(self, keys, update_fields=[]):
         """
         Used for alternate login methods:
             If the user exists already then password is updated.
@@ -1613,20 +1613,36 @@ class Auth(object):
         for fieldname in ['registration_id','username','email']:
             if fieldname in table_user.fields() and keys.get(fieldname,None):
                 checks.append(fieldname)
-                user = user or table_user(**{fieldname:keys[fieldname]})
-        # if we think we found the user but registration_id does not match, make new user
-        if 'registration_id' in checks and user and user.registration_id and user.registration_id!=keys.get('registration_id',None):
+                value = keys[fieldname]
+                user = user or table_user._db(
+                    (table_user.registration_id==value)|
+                    (table_user[fieldname]==value)).select().first()
+        if not checks:
+            return None
+        if not 'registration_id' in keys:
+            keys['registration_id'] = keys[checks[0]]
+        # if we think we found the user but registration_id does not match,
+        # make new user
+        if 'registration_id' in checks \
+                and user \
+                and user.registration_id \
+                and user.registration_id!=keys.get('registration_id',None):
             user = None # THINK MORE ABOUT THIS? DO WE TRUST OPENID PROVIDER?
-        keys['registration_key']=''
         if user:
-            user.update_record(**table_user._filter_fields(keys))
+            update_keys = dict(registration_id=keys['registration_id'])
+            for key in update_fields:
+                if key in vars:
+                    update_keys[key] = vars[key]
+            user.update_record(**update_keys)
         elif checks:
             if not 'first_name' in keys and 'first_name' in table_user.fields:
-                keys['first_name'] = keys.get('username',keys.get('email','anonymous')).split('@')[0]
+                guess = keys.get('email','anonymous').split('@')[0]
+                keys['first_name'] = keys.get('username',guess)
             user_id = table_user.insert(**table_user._filter_fields(keys))
             user =  self.user = table_user[user_id]
             if self.settings.create_user_groups:
-                group_id = self.add_group(self.settings.create_user_groups % user)
+                group_id = self.add_group(
+                    self.settings.create_user_groups % user)
                 self.add_membership(group_id, user_id)
             if self.settings.everybody_group_id:
                 self.add_membership(self.settings.everybody_group_id, user_id)
