@@ -1216,7 +1216,7 @@ class Auth(object):
         if isinstance(prefix,str) and self.user:
             # backward compatibility
             if not '%' in prefix: prefix+' %(first_name)s'
-            prefix_str = (T(prefix) % self.user).strip()+' '
+            prefix_str = (T(prefix) % self.user).strip()
         else:
             prefix_str = str(prefix or '')
         if not action:
@@ -1239,8 +1239,8 @@ class Auth(object):
             bar = SPAN(prefix_str,
                        s1, logout, s3, _class='auth_navbar')
             if not 'profile' in self.settings.actions_disabled:
-                bar.insert(4, s2)
-                bar.insert(5, profile)
+                bar.insert(-1, s2)
+                bar.insert(-1, profile)
             if not 'change_password' in self.settings.actions_disabled:
                 bar.insert(-1, s2)
                 bar.insert(-1, password)
@@ -1252,8 +1252,8 @@ class Auth(object):
             bar = SPAN(s1, login, s3, _class='auth_navbar')
 
             if not 'register' in self.settings.actions_disabled:
-                bar.insert(2, s2)
-                bar.insert(3, register)
+                bar.insert(-1, s2)
+                bar.insert(-1, register)
             if 'username' in self.settings.table_user.fields() and \
                     not 'retrieve_username' in self.settings.actions_disabled:
                 bar.insert(-1, s2)
