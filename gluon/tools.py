@@ -1487,7 +1487,7 @@ class Auth(object):
                     fake_migrate=fake_migrate))
             table.user_id.requires = IS_IN_DB(db, '%s.id' %
                     settings.table_user_name,
-                    '%(first_name)s %(last_name)s (%(id)s)')
+                    settings.table_user._format)
             table.group_id.requires = IS_IN_DB(db, '%s.id' %
                     settings.table_group_name,
                     '%(role)s (%(id)s)')
@@ -1539,7 +1539,7 @@ class Auth(object):
                     fake_migrate=fake_migrate))
             table.user_id.requires = IS_IN_DB(db, '%s.id' %
                     settings.table_user_name,
-                    '%(first_name)s %(last_name)s (%(id)s)')
+                    settings.table_user._format)
             table.origin.requires = IS_NOT_EMPTY(error_message=self.messages.is_empty)
             table.description.requires = IS_NOT_EMPTY(error_message=self.messages.is_empty)
         settings.table_event = db[settings.table_event_name]
@@ -1561,7 +1561,7 @@ class Auth(object):
                         fake_migrate=fake_migrate))
                 table.user_id.requires = IS_IN_DB(db, '%s.id' % \
                     settings.table_user_name,
-                    '%(first_name)s %(last_name)s (%(id)s)')
+                    settings.table_user._format)
             settings.table_cas = db[settings.table_cas_name]
         if settings.cas_provider:
             settings.actions_disabled = \
