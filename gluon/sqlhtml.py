@@ -546,7 +546,7 @@ class AutocompleteWidget(object):
 
     def __init__(self, request, field, id_field=None, db=None,
                  orderby=None, limitby=(0,10), distinct=False,
-                 keyword='_autocomplete_%(fieldname)s',
+                 keyword='_autocomplete_%(tablename)s_%(fieldname)s',
                  min_length=2, help_fields=None, help_string=None):
 
         self.help_fields = help_fields or []
@@ -555,7 +555,8 @@ class AutocompleteWidget(object):
             self.help_string = ' '.join('%%(%s)s' for f in self.help_fields)
 
         self.request = request
-        self.keyword = keyword % dict(fieldname=field.name)
+        self.keyword = keyword % dict(tablename=field.tablename,
+                                      fieldname=field.name)
         self.db = db or field._db
         self.orderby = orderby
         self.limitby = limitby
@@ -574,7 +575,6 @@ class AutocompleteWidget(object):
             self.url = request
 
     def callback(self):
-
         if self.keyword in self.request.vars:
             field = self.fields[0]
             rows = self.db(field.like(self.request.vars[self.keyword]+'%'))\
@@ -619,7 +619,7 @@ class AutocompleteWidget(object):
             value = attr['value']
             record = self.db(self.fields[1]==value).select(self.fields[0]).first()
             attr['value'] = record and record[self.fields[0].name]
-            attr['_onblur']="jQuery('#%(div_id)s').delay(3000).fadeOut('slow');" % \
+            attr['_onblur']="jQuery('#%(div_id)s').delay(1000).fadeOut('slow');" % \
                 dict(div_id=div_id,u='F'+self.keyword)
             attr['_onkeyup'] = "jQuery('#%(key3)s').val('');var e=event.which?event.which:event.keyCode; function %(u)s(){jQuery('#%(id)s').val(jQuery('#%(key)s :selected').text());jQuery('#%(key3)s').val(jQuery('#%(key)s').val())}; if(e==39) %(u)s(); else if(e==40) {if(jQuery('#%(key)s option:selected').next().length)jQuery('#%(key)s option:selected').attr('selected',null).next().attr('selected','selected'); %(u)s();} else if(e==38) {if(jQuery('#%(key)s option:selected').prev().length)jQuery('#%(key)s option:selected').attr('selected',null).prev().attr('selected','selected'); %(u)s();} else if(jQuery('#%(id)s').val().length>=%(min_length)s) jQuery.get('%(url)s?%(key)s='+escape(jQuery('#%(id)s').val()),function(data){if(data=='')jQuery('#%(key3)s').val('');else{jQuery('#%(id)s').next('.error').hide();jQuery('#%(div_id)s').html(data).show().focus();jQuery('#%(div_id)s select').css('width',jQuery('#%(id)s').css('width'));jQuery('#%(key3)s').val(jQuery('#%(key)s').val());jQuery('#%(key)s').change(%(u)s);jQuery('#%(key)s').click(%(u)s);};}); else jQuery('#%(div_id)s').fadeOut('slow');" % \
                 dict(url=self.url,min_length=self.min_length,
@@ -632,7 +632,7 @@ class AutocompleteWidget(object):
                            DIV(_id=div_id,_style='position:absolute;'))
         else:
             attr['_name']=field.name
-            attr['_onblur']="jQuery('#%(div_id)s').delay(3000).fadeOut('slow');" % \
+            attr['_onblur']="jQuery('#%(div_id)s').delay(1000).fadeOut('slow');" % \
                 dict(div_id=div_id,u='F'+self.keyword)
             attr['_onkeyup'] = "var e=event.which?event.which:event.keyCode; function %(u)s(){jQuery('#%(id)s').val(jQuery('#%(key)s').val())}; if(e==39) %(u)s(); else if(e==40) {if(jQuery('#%(key)s option:selected').next().length)jQuery('#%(key)s option:selected').attr('selected',null).next().attr('selected','selected'); %(u)s();} else if(e==38) {if(jQuery('#%(key)s option:selected').prev().length)jQuery('#%(key)s option:selected').attr('selected',null).prev().attr('selected','selected'); %(u)s();} else if(jQuery('#%(id)s').val().length>=%(min_length)s) jQuery.get('%(url)s?%(key)s='+escape(jQuery('#%(id)s').val()),function(data){jQuery('#%(id)s').next('.error').hide();jQuery('#%(div_id)s').html(data).show().focus();jQuery('#%(div_id)s select').css('width',jQuery('#%(id)s').css('width'));jQuery('#%(key)s').change(%(u)s);jQuery('#%(key)s').click(%(u)s);}); else jQuery('#%(div_id)s').fadeOut('slow');" % \
                 dict(url=self.url,min_length=self.min_length,
