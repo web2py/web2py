@@ -15,6 +15,7 @@ import uuid
 import random
 import time
 import os
+import re
 import logging
 import socket
 from contrib.pbkdf2 import pbkdf2_hex
@@ -147,6 +148,8 @@ def web2py_uuid():
     bytes = ''.join(chr(c ^ ctokens[i]) for i,c in enumerate(bytes))
     return str(uuid.UUID(bytes=bytes, version=4))
 
+REGEX_IPv4 = re.compile('(\d+)\.(\d+)\.(\d+)\.(\d+)')
+
 def is_valid_ip_address(address):
     """
     >>> is_valid_ip_address('127.0')
@@ -155,17 +158,33 @@ def is_valid_ip_address(address):
     True
     >>> is_valid_ip_address('2001:660::1')
     True
-    """
-    try:
-        if address.count('.')==3: # guess IPv4
-            addr = socket.inet_aton(address)
-        else: # guess IPv6
-            addr = socket.inet_pton(socket.AF_INET6, address)
-    except socket.error: # invalid address
-        return False 
-    except AttributeError: # no socket.inet_pton
+    """    
+    # deal with special cases
+    if address.lower() in ('127.0.0.1','localhost','::1','::ffff:127.0.0.1'):
+        return True
+    elif address.lower() in ('unkown',''):
         return False
-    return True
+    elif address.count('.')==3: # assume IPv4
+        if hasattr(socket,'inet_aton'): # try validate using the OS
+            try:
+                addr = socket.inet_aton(address)
+                return True
+            except socket.error: # invalid address
+                return False 
+        else: # try validate using Regex
+            match = REGEX_IPv4.match(address)
+            if match and all(0<=int(math.group(i))<256 for i in (1,2,3,4)):
+                return True
+            return False
+    elif hasattr(socket,'inet_pton'): # assume IPv6, try using the OS
+        try:
+            addr = socket.inet_pton(socket.AF_INET6, address)
+            return True
+        except socket.error: # invalid address
+            return False 
+    else: # do not know what to do? assume it is a valid address
+        return True
+
 
 
 
