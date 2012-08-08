@@ -1207,18 +1207,16 @@ class Auth(object):
         else:
             raise HTTP(404)
 
-    def navbar(self, prefix='Welcome %(first_name)s', action=None,
-               separators=(' [ ',' | ',' ] '),
+    def navbar(self, prefix='Welcome', action=None,
+               separators=(' [ ',' | ',' ] '), user_identifier=DEFAULT,
                referrer_actions=DEFAULT):
         referrer_actions = [] if not referrer_actions else referrer_actions
         request = current.request
         T = current.T
-        if isinstance(prefix,str) and self.user:
-            # backward compatibility
-            if not '%' in prefix: prefix+' %(first_name)s'
-            prefix_str = (T(prefix) % self.user).strip()
-        else:
-            prefix_str = str(prefix or '')
+        if isinstance(prefix, str):
+            prefix = T(prefix)
+        if prefix:
+            prefix = prefix.strip() + ' '
         if not action:
             action=self.url(self.settings.function)
         s1,s2,s3 = separators
@@ -1232,12 +1230,21 @@ class Auth(object):
             next if referrer_actions is DEFAULT or function in referrer_actions else '')
         
         if self.user_id:
+            if user_identifier is DEFAULT:
+                user_identifier = '%(first_name)s'
+            if callable(user_identifier):
+                user_identifier = user_identifier(self.user)
+            elif ((isinstance(user_identifier, str) or
+                  type(user_identifier).__name__ == 'lazyT') and
+                  re.search(r'%\(.+\)s', user_identifier)):
+                user_identifier = user_identifier % self.user
+            if not user_identifier:
+                user_identifier = ''
             logout = A(T('Logout'), _href='%s/logout?_next=%s' %
                       (action, urllib.quote(self.settings.logout_next)))
             profile = A(T('Profile'), _href=href('profile'))
             password = A(T('Password'), _href=href('change_password'))
-            bar = SPAN(prefix_str,
-                       s1, logout, s3, _class='auth_navbar')
+            bar = SPAN(prefix, user_identifier, s1, logout, s3, _class='auth_navbar')
             if not 'profile' in self.settings.actions_disabled:
                 bar.insert(-1, s2)
                 bar.insert(-1, profile)
