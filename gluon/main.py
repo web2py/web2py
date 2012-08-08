@@ -405,7 +405,8 @@ def wsgibase(environ, responder):
                     except socket.gaierror: pass
                 request.client = get_client(request.env)
                 if not is_valid_ip_address(request.client):
-                    raise HTTP(400,"Bad Request")
+                    raise HTTP(400,"Bad Request (request.client=%s)" % \
+                                   request.client)
                 request.folder = abspath('applications',
                                          request.application) + os.sep
                 x_req_with = str(request.env.http_x_requested_with).lower()

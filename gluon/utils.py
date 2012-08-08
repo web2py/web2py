@@ -157,13 +157,13 @@ def is_valid_ip_address(address):
     True
     """
     try:
-        if address.count('.')==3:
+        if address.count('.')==3: # guess IPv4
             addr = socket.inet_aton(address)
-        else:
+        else: # guess IPv6
             addr = socket.inet_pton(socket.AF_INET6, address)
+    except socket.error: # invalid address
+        return False 
     except AttributeError: # no socket.inet_pton
-        return False
-    except socket.error:
         return False
     return True
 
