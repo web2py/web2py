@@ -139,7 +139,7 @@ def step2():
                     if not name in session.app['pages']:
                         session.app['pages'].append(name)
                         session.app['page_'+name] = \
-                            '## Manage %s\n{{=form}}' % (table)
+                            '## Manage %s\n\n{{=form}}' % (table)
             if session.app['tables']:
                 redirect(URL('step3',args=0))
             else:
