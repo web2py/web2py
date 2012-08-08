@@ -1631,8 +1631,8 @@ class Auth(object):
         if user:
             update_keys = dict(registration_id=keys['registration_id'])
             for key in update_fields:
-                if key in vars:
-                    update_keys[key] = vars[key]
+                if key in keys:
+                    update_keys[key] = keys[key]
             user.update_record(**update_keys)
         elif checks:
             if not 'first_name' in keys and 'first_name' in table_user.fields:
