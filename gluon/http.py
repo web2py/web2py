@@ -119,19 +119,16 @@ class HTTP(BaseException):
         return self.message
 
 
-def redirect(location, how=303, type='http'):
-    if type=='auto':
-        from gluon import current
-        type = 'client' if current.request.ajax else 'http'
-    if not location:
-        return
-    location = location.replace('\r', '%0D').replace('\n', '%0A')
-    if type == 'client':
-        raise HTTP(200, **{'web2py-redirect-location': location})
-    else:
-        raise HTTP(how,
-                   'You are being redirected <a href="%s">here</a>' % location,
-                   Location=location)
+def redirect(location, how=303, client_side=False):
+    if location:
+        from gluon import current    
+        loc = location.replace('\r', '%0D').replace('\n', '%0A')
+        if client_side and current.request.ajax:
+            raise HTTP(200, **{'web2py-redirect-location': loc})
+        else:
+            raise HTTP(how,
+                       'You are being redirected <a href="%s">here</a>' % loc,
+                       Location=loc)
 
 
 
