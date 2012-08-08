@@ -2455,10 +2455,11 @@ class Auth(object):
 
     def email_reset_password(self,user):
         reset_password_key = str(int(time.time()))+'-' + web2py_uuid()
-        if self.settings.mailer.send(to=user.email,
-                                     subject=self.messages.reset_password_subject,
-                                     message=self.messages.reset_password % \
-                                         dict(key=reset_password_key)):
+        if self.settings.mailer.send(
+            to=user.email,
+            subject=self.messages.reset_password_subject,
+            message=self.messages.reset_password % \
+                dict(key=reset_password_key)):
             user.update_record(reset_password_key=reset_password_key)
             return True
         return False
