@@ -1258,8 +1258,8 @@ class SQLFORM(FORM):
 		        (cStringIO.StringIO(f), 'file.txt')
                 newfilename = field.store(source_file, original_filename, 
                                           field.uploadfolder)
-                # this line is for backward compatibility only
-                self.vars['%s_newfilename' % fieldname] = newfilename
+                # this line was for backward compatibility but problematic
+                # self.vars['%s_newfilename' % fieldname] = newfilename
                 fields[fieldname] = newfilename
                 if isinstance(field.uploadfield, str):
                     fields[field.uploadfield] = source_file.read()
@@ -2014,9 +2014,9 @@ class SQLFORM(FORM):
                                           _href='%s/%s' % (upload, value))
                         else:
                             value = ''
-                    elif isinstance(value,str):
+                    if isinstance(value,str):
                         value = truncate_string(value,maxlength)
-                    else:
+                    elif not isinstance(value,DIV):
                         value = field.formatter(value)
                     tr.append(TD(value))
                 row_buttons = TD(_class='row_buttons')
@@ -2141,14 +2141,18 @@ class SQLFORM(FORM):
                         else: name = format % record
                     except TypeError:
                         name = id
-                    breadcrumbs += [LI(A(T(db[referee]._plural),
-                                      _class=trap_class(),
-                                      _href=URL(args=request.args[:nargs])),
-                                    SPAN(divider,_class='divider')),
-                                    LI(A(name,_class=trap_class(),
-                                      _href=URL(args=request.args[:nargs]+[
+                    nameLink = 'view'
+                    breadcrumbs.append(
+                        LI(A(T(db[referee]._plural),
+                             _class=trap_class(),
+                             _href=URL(args=request.args[:nargs])),
+                           SPAN(divider,_class='divider')))
+                    if kwargs.get('details',True):
+                        breadcrumbs.append(
+                            LI(A(name,_class=trap_class(),
+                                 _href=URL(args=request.args[:nargs]+[
                                     'view',referee,id],user_signature=True)),
-                                    SPAN(divider,_class='divider'))]
+                               SPAN(divider,_class='divider')))
                     nargs+=2
                 else:
                     break

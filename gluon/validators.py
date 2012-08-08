@@ -19,7 +19,7 @@ import struct
 import decimal
 import unicodedata
 from cStringIO import StringIO
-from utils import simple_hash, hmac_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
+from utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 
 __all__ = [
     'CLEANUP',
@@ -417,8 +417,7 @@ class IS_IN_DB(Validator):
             self.dbset = dbset()
         else:
             self.dbset = dbset
-        self.field = field
-        (ktable, kfield) = str(self.field).split('.')
+        (ktable, kfield) = str(field).split('.')
         if not label:
             label = '%%(%s)s' % kfield
         if isinstance(label,str):
@@ -486,6 +485,7 @@ class IS_IN_DB(Validator):
 
     def __call__(self, value):
         table = self.dbset.db[self.ktable]
+        field = table[self.kfield]
         if self.multiple:
             if isinstance(value,list):
                 values=value
@@ -496,7 +496,7 @@ class IS_IN_DB(Validator):
             if isinstance(self.multiple,(tuple,list)) and \
                     not self.multiple[0]<=len(values)<self.multiple[1]:
                 return (values, translate(self.error_message))
-            if self.dbset(self.field.belongs(values)).count()==len(values):
+            if self.dbset(field.belongs(values)).count()==len(values):
                 return (values, None)
         elif self.theset:
             if str(value) in self.theset:
@@ -505,8 +505,6 @@ class IS_IN_DB(Validator):
                 else:
                     return (value, None)
         else:
-            (ktable, kfield) = str(self.field).split('.')
-            field = self.dbset.db[ktable][kfield]
             if self.dbset(field == value).count():
                 if self._and:
                     return self._and(value)
@@ -2125,6 +2123,7 @@ class IS_DATE(Validator):
                  error_message='enter date as %(format)s'):
         self.format = translate(format)
         self.error_message = str(error_message)
+        self.extremes = {}
 
     def __call__(self, value):
         if isinstance(value,datetime.date):
@@ -2135,7 +2134,8 @@ class IS_DATE(Validator):
             value = datetime.date(y, m, d)
             return (value, None)
         except:
-            return (value, translate(self.error_message) % IS_DATETIME.nice(self.format))
+            self.extremes.update(IS_DATETIME.nice(self.format))
+            return (value, translate(self.error_message) % self.extremes)
 
     def formatter(self, value):
         format = self.format
@@ -2181,6 +2181,7 @@ class IS_DATETIME(Validator):
                  error_message='enter date and time as %(format)s'):
         self.format = translate(format)
         self.error_message = str(error_message)
+        self.extremes = {}
 
     def __call__(self, value):
         if isinstance(value,datetime.datetime):
@@ -2191,7 +2192,9 @@ class IS_DATETIME(Validator):
             value = datetime.datetime(y, m, d, hh, mm, ss)
             return (value, None)
         except:
-            return (value, translate(self.error_message) % IS_DATETIME.nice(self.format))
+            self.extremes.update(IS_DATETIME.nice(self.format))
+            return (value, translate(self.error_message) % self.extremes)
+
 
     def formatter(self, value):
         format = self.format
@@ -2201,7 +2204,8 @@ class IS_DATETIME(Validator):
         format = format.replace('%Y',y)
         if year<1900:
             year = 2000
-        d = datetime.datetime(year,value.month,value.day,value.hour,value.minute,value.second)
+        d = datetime.datetime(year,value.month,value.day,
+                              value.hour,value.minute,value.second)
         return d.strftime(format)
 
 class IS_DATE_IN_RANGE(IS_DATE):
@@ -2239,19 +2243,19 @@ class IS_DATE_IN_RANGE(IS_DATE):
                 error_message = "enter date on or after %(min)s"
             else:
                 error_message = "enter date in range %(min)s %(max)s"
-        extremes = dict(min=minimum, max=maximum)
         IS_DATE.__init__(self,
                          format = format,
-                         error_message = translate(error_message) % extremes)
+                         error_message = error_message)
+        self.extremes = dict(min=minimum, max=maximum)
 
     def __call__(self, value):
         (value, msg) = IS_DATE.__call__(self,value)
         if msg is not None:
             return (value, msg)
         if self.minimum and self.minimum > value:
-            return (value, self.error_message)
+            return (value, translate(self.error_message) % self.extremes)
         if self.maximum and value > self.maximum:
-            return (value, self.error_message)
+            return (value, translate(self.error_message) % self.extremes)
         return (value, None)
 
 
@@ -2289,19 +2293,19 @@ class IS_DATETIME_IN_RANGE(IS_DATETIME):
                 error_message = "enter date and time on or after %(min)s"
             else:
                 error_message = "enter date and time in range %(min)s %(max)s"
-        extremes = dict(min = minimum, max = maximum)
         IS_DATETIME.__init__(self,
                          format = format,
-                         error_message = translate(error_message) % extremes)
+                         error_message = error_message)
+        self.extremes = dict(min = minimum, max = maximum)
 
     def __call__(self, value):
         (value, msg) = IS_DATETIME.__call__(self, value)
         if msg is not None:
             return (value, msg)
         if self.minimum and self.minimum > value:
-            return (value, self.error_message)
+            return (value, translate(self.error_message) % self.extremes)
         if self.maximum and value > self.maximum:
-            return (value, self.error_message)
+            return (value, translate(self.error_message) % self.extremes)
         return (value, None)
 
 
@@ -2546,10 +2550,6 @@ class LazyCrypt(object):
         else assume the default digest_alg. If not key at all, set key=''
 
         If a salt is specified use it, if salt is True, set salt to uuid
-
-        masterkey is the key (as specified in argument) + salt
-        if masterkey is '' then simple_hash does not do HMAC
-        else simple_hash calls hmac_hash
         (this should all be backward compatible)
 
         Options:
@@ -2575,8 +2575,7 @@ class LazyCrypt(object):
                 salt = self.crypt.salt
         else:
             salt = ''
-        masterkey = key+salt
-        hashed = simple_hash(self.password, masterkey, digest_alg)
+        hashed = simple_hash(self.password, key, salt, digest_alg)
         self.crypted = '%s$%s$%s' % (digest_alg, salt, hashed)
         return self.crypted
 
@@ -2593,8 +2592,7 @@ class LazyCrypt(object):
             key = ''
         if stored_password.count('$')==2:
             (digest_alg, salt, hash) = stored_password.split('$')
-            masterkey = key+salt
-            h = simple_hash(self.password, masterkey, digest_alg)
+            h = simple_hash(self.password, key, salt, digest_alg)
             temp_pass = '%s$%s$%s' % (digest_alg, salt, h)            
         else: # no salting
             # guess digest_alg
@@ -2602,7 +2600,7 @@ class LazyCrypt(object):
             if not digest_alg:   
                 return False
             else:
-                temp_pass = simple_hash(self.password, key, digest_alg)
+                temp_pass = simple_hash(self.password, key, '', digest_alg)
         return temp_pass == stored_password
     
 

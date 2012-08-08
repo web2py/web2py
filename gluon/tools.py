@@ -1207,18 +1207,20 @@ class Auth(object):
         else:
             raise HTTP(404)
 
-    def navbar(self, prefix='Welcome', action=None,
+    def navbar(self, prefix='Welcome %(first_name)s', action=None,
                separators=(' [ ',' | ',' ] '),
                referrer_actions=DEFAULT):
         referrer_actions = [] if not referrer_actions else referrer_actions
         request = current.request
         T = current.T
-        if isinstance(prefix,str):
-            prefix = T(prefix)
+        if isinstance(prefix,str) and self.user:
+            # backward compatibility
+            if not '%' in prefix: prefix+' %(first_name)s'
+            prefix_str = (T(prefix) % self.user).strip()+' '
+        else:
+            prefix_str = str(prefix or '')
         if not action:
             action=self.url(self.settings.function)
-        if prefix:
-            prefix = prefix.strip()+' '
         s1,s2,s3 = separators
         if URL() == action:
             next = ''
@@ -1234,7 +1236,8 @@ class Auth(object):
                       (action, urllib.quote(self.settings.logout_next)))
             profile = A(T('Profile'), _href=href('profile'))
             password = A(T('Password'), _href=href('change_password'))
-            bar = SPAN(prefix,self.user.first_name,s1, logout, s3, _class='auth_navbar')
+            bar = SPAN(prefix_str,
+                       s1, logout, s3, _class='auth_navbar')
             if not 'profile' in self.settings.actions_disabled:
                 bar.insert(4, s2)
                 bar.insert(5, profile)
@@ -1312,6 +1315,7 @@ class Auth(object):
         db = self.db
         settings = self.settings
         request = current.request
+        T = current.T
         def lazy_user (auth = self): return auth.user_id
         reference_user = 'reference %s' % settings.table_user_name
         def represent(id,record=None,s=settings):
@@ -1322,22 +1326,26 @@ class Auth(object):
         self.signature = db.Table(self.db,'auth_signature',
                                   Field('is_active','boolean',
                                         default=True,
-                                        readable=False, writable=False),
+                                        readable=False, writable=False,
+                                        label=T('Is Active')),
                                   Field('created_on','datetime',
                                         default=request.now,
-                                        writable=False, readable=False),
+                                        writable=False, readable=False,
+                                        label=T('Created On')),
                                   Field('created_by',
                                         reference_user,
                                         default=lazy_user, represent=represent,
                                         writable=False, readable=False,
-                                        ),
+                                        label=T('Created By')),
                                   Field('modified_on','datetime',
                                         update=request.now,default=request.now,
-                                        writable=False,readable=False),
+                                        writable=False,readable=False,
+                                        label=T('Modified On')),
                                   Field('modified_by',
                                         reference_user,represent=represent,
                                         default=lazy_user,update=lazy_user,
-                                        writable=False,readable=False))
+                                        writable=False,readable=False,
+                                        label=T('Modified By')))
 
 
     def define_tables(self, username=False, signature=None, 
@@ -1479,7 +1487,7 @@ class Auth(object):
                     fake_migrate=fake_migrate))
             table.user_id.requires = IS_IN_DB(db, '%s.id' %
                     settings.table_user_name,
-                    '%(first_name)s %(last_name)s (%(id)s)')
+                    settings.table_user._format)
             table.group_id.requires = IS_IN_DB(db, '%s.id' %
                     settings.table_group_name,
                     '%(role)s (%(id)s)')
@@ -1531,7 +1539,7 @@ class Auth(object):
                     fake_migrate=fake_migrate))
             table.user_id.requires = IS_IN_DB(db, '%s.id' %
                     settings.table_user_name,
-                    '%(first_name)s %(last_name)s (%(id)s)')
+                    settings.table_user._format)
             table.origin.requires = IS_NOT_EMPTY(error_message=self.messages.is_empty)
             table.description.requires = IS_NOT_EMPTY(error_message=self.messages.is_empty)
         settings.table_event = db[settings.table_event_name]
@@ -1553,7 +1561,7 @@ class Auth(object):
                         fake_migrate=fake_migrate))
                 table.user_id.requires = IS_IN_DB(db, '%s.id' % \
                     settings.table_user_name,
-                    '%(first_name)s %(last_name)s (%(id)s)')
+                    settings.table_user._format)
             settings.table_cas = db[settings.table_cas_name]
         if settings.cas_provider:
             settings.actions_disabled = \
@@ -2679,7 +2687,7 @@ class Auth(object):
             raise HTTP(403,'ACCESS DENIED')
         return 'ACCESS DENIED'
 
-    def requires(self, condition, requires_login=True):
+    def requires(self, condition, requires_login=True, otherwise=None):
         """
         decorator that prevents access to action if not logged in
         """
@@ -2692,7 +2700,9 @@ class Auth(object):
                 user = user or self.user
                 if requires_login:
                     if not user:
-                        if self.settings.allow_basic_login_only or \
+                        if not otherwise is None:
+                            return otherwise
+                        elif self.settings.allow_basic_login_only or \
                                 basic_accepted or current.request.is_restful:
                             raise HTTP(403,"Not authorized")
                         elif current.request.ajax:
@@ -2721,37 +2731,41 @@ class Auth(object):
 
         return decorator
 
-    def requires_login(self):
+    def requires_login(self,otherwise=None):
         """
         decorator that prevents access to action if not logged in
         """
-        return self.requires(True)
+        return self.requires(True,otherwise=otherwise)
 
-    def requires_membership(self, role=None, group_id=None):
+    def requires_membership(self, role=None, group_id=None,otherwise=None):
         """
         decorator that prevents access to action if not logged in or
         if user logged in is not a member of group_id.
         If role is provided instead of group_id then the
         group_id is calculated.
         """
-        return self.requires(lambda: self.has_membership(group_id=group_id, role=role))
+        return self.requires(lambda: self.has_membership(
+                group_id=group_id, role=role),otherwise=otherwise)
 
-    def requires_permission(self, name, table_name='', record_id=0):
+    def requires_permission(self, name, table_name='', record_id=0,
+                            otherwise=None):
         """
         decorator that prevents access to action if not logged in or
         if user logged in is not a member of any group (role) that
         has 'name' access to 'table_name', 'record_id'.
         """
-        return self.requires(lambda: self.has_permission(name, table_name, record_id))
+        return self.requires(lambda: self.has_permission(
+                name, table_name, record_id),otherwise=otherwise)
 
-    def requires_signature(self):
+    def requires_signature(self,otherwise=None):
         """
         decorator that prevents access to action if not logged in or
         if user logged in is not a member of group_id.
         If role is provided instead of group_id then the
         group_id is calculated.
         """
-        return self.requires(lambda: URL.verify(current.request,user_signature=True))
+        return self.requires(lambda: URL.verify(
+                current.request,user_signature=True),otherwise=otherwise)
 
     def add_group(self, role, description=''):
         """

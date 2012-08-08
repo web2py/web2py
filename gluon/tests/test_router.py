@@ -542,7 +542,7 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(filter_url('https://domain.com/init/static/file', out=True), "/static/file")
         self.assertEqual(filter_url('https://domain.com/init/static/index', out=True), "/static/index")
 
-        router_out['init']['map_static'] = False
+        router_out['init']['map_static'] = None
         load(rdict=router_out)
         self.assertEqual(filter_url('https://domain.com/init/static/file', out=True), "/init/static/file")
         self.assertEqual(filter_url('https://domain.com/init/static/index', out=True), "/init/static/index")
@@ -743,6 +743,28 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(filter_url('https://domain.com/admin/static/file', lang='it-it', out=True), "/it-it/static/file")
         self.assertEqual(filter_url('https://domain.com/welcome/ctr/fcn', lang='it', out=True), "/welcome/ctr/fcn")
         self.assertEqual(filter_url('https://domain.com/welcome/ctr/fcn', lang='es', out=True), "/welcome/ctr/fcn")        
+
+        router_lang['admin']['map_static'] = False
+        router_lang['examples']['map_static'] = False
+        load(rdict=router_lang)
+        self.assertEqual(filter_url('https://domain.com/admin/ctr/fcn', lang='en', out=True), "/ctr/fcn")
+        self.assertEqual(filter_url('https://domain.com/admin/ctr/fcn', lang='it', out=True), "/it/ctr/fcn")
+        self.assertEqual(filter_url('https://domain.com/admin/ctr/fcn', lang='it-it', out=True), "/it-it/ctr/fcn")
+        self.assertEqual(filter_url('https://domain.com/admin/static/file', lang='en', out=True), "/admin/static/en/file")
+        self.assertEqual(filter_url('https://domain.com/admin/static/file', lang='it', out=True), "/admin/static/it/file")
+        self.assertEqual(filter_url('https://domain.com/admin/static/file', lang='it-it', out=True), "/admin/static/it-it/file")
+        self.assertEqual(filter_url('https://domain.com/welcome/ctr/fcn', lang='it', out=True), "/welcome/ctr/fcn")
+        self.assertEqual(filter_url('https://domain.com/welcome/ctr/fcn', lang='es', out=True), "/welcome/ctr/fcn")        
+        self.assertEqual(filter_url('http://domain.com/static/file'), "%s/applications/admin/static/file" % root)
+        self.assertEqual(filter_url('http://domain.com/en/static/file'), "%s/applications/admin/static/file" % root)
+        self.assertEqual(filter_url('http://domain.com/examples/en/static/file'), "%s/applications/examples/static/en/file" % root)
+        self.assertEqual(filter_url('http://domain.com/examples/static/file'), "%s/applications/examples/static/en/file" % root)
+        self.assertEqual(filter_url('http://domain.com/examples/it/static/file'), "%s/applications/examples/static/it/file" % root)
+        self.assertEqual(filter_url('http://domain.com/examples/it-it/static/file'), "%s/applications/examples/static/file" % root)
+
+        self.assertEqual(filter_url('http://domain.com/examples/static/en/file'), "%s/applications/examples/static/en/file" % root)
+        self.assertEqual(filter_url('http://domain.com/examples/static/it/file'), "%s/applications/examples/static/it/file" % root)
+        self.assertEqual(filter_url('http://domain.com/examples/static/it-it/file'), "%s/applications/examples/static/it-it/file" % root)
 
     def test_router_get_effective(self):
         '''
