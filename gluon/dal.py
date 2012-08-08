@@ -4502,7 +4502,8 @@ class CouchDBAdapter(NoSQLAdapter):
             return repr(str(int(value)))
         elif fieldtype in ('date','time','datetime','boolean'):
             return serializers.json(value)
-        return repr(not isinstance(value,unicode) and value or value.encode('utf8'))
+        return repr(not isinstance(value,unicode) and value \
+                        or value and value.encode('utf8'))
 
     def __init__(self,db,uri='couchdb://127.0.0.1:5984',
                  pool_size=0,folder=None,db_codec ='UTF-8',
