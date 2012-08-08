@@ -2171,7 +2171,7 @@ class SQLFORM(FORM):
             query = query & constraints[table._tablename]
         if isinstance(links,dict):
             links = links.get(table._tablename,[])
-        for key in 'columns,orderby,searchable,sortable,paginate,deletable,editable,details,selectable,create'.split(','):
+        for key in 'columns,orderby,searchable,sortable,paginate,deletable,editable,details,selectable,create,fields'.split(','):
             if isinstance(kwargs.get(key,None),dict):
                 if table._tablename in kwargs[key]:
                     kwargs[key] = kwargs[key][table._tablename]
