@@ -119,9 +119,10 @@ class HTTP(BaseException):
         return self.message
 
 
-def redirect(location, how=303, type=None):
-    from gluon import current
-    type = type or ('client' if current.request.ajax else 'http')
+def redirect(location, how=303, type='http'):
+    if type=='auto':
+        from gluon import current
+        type = 'client' if current.request.ajax else 'http'
     if not location:
         return
     location = location.replace('\r', '%0D').replace('\n', '%0A')
