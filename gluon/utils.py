@@ -34,7 +34,7 @@ def md5_hash(text):
     """ Generate a md5 hash with the given text """
     return hashlib.md5(text).hexdigest()
 
-def simple_hash(text, salt = '', digest_alg = 'md5'):
+def simple_hash(text, key='', salt = '', digest_alg = 'md5'):
     """
     Generates hash with the given text using the specified
     digest hashing algorithm
@@ -42,12 +42,12 @@ def simple_hash(text, salt = '', digest_alg = 'md5'):
     if not digest_alg:
         raise RuntimeError, "simple_hash with digest_alg=None"
     elif not isinstance(digest_alg,str):
-        h = digest_alg(text)
-    elif salt:
-        return hmac_hash(text, salt, digest_alg)
-    else:
+        h = digest_alg(text+key+salt)
+    elif key+salt: # backward compatile
+        return hmac_hash(text, key+salt, digest_alg)
+    else: # compatible with third party systems
         h = hashlib.new(digest_alg)
-        h.update(text)
+        h.update(text+salt)
     return h.hexdigest()
 
 def get_digest(value):

@@ -61,8 +61,9 @@
 #  map_hyphen: If True (default is False), hyphens in incoming /a/c/f fields are converted
 #       to underscores, and back to hyphens in outgoing URLs.
 #       Language, args and the query string are not affected.
-#  map_static: By default, the default application is not stripped from static URLs.
+#  map_static: By default (None), the default application is not stripped from static URLs.
 #       Set map_static=True to override this policy.
+#       Set map_static=False to map lang/static/file to static/lang/file
 #  acfe_match: regex for valid application, controller, function, extension /a/c/f.e
 #  file_match: regex for valid subpath (used for static file paths)
 #              if file_match does not contain '/', it is uses to validate each element of a static file subpath,
@@ -84,6 +85,7 @@
 #         default_language = None,
 #             languages = None,
 #         root_static = ['favicon.ico', 'robots.txt'],
+#         map_static = None,
 #         domains = None,
 #         map_hyphen = False,
 #         acfe_match = r'\w+$',                 # legal app/ctlr/fcn/ext
