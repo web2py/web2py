@@ -417,8 +417,7 @@ class IS_IN_DB(Validator):
             self.dbset = dbset()
         else:
             self.dbset = dbset
-        self.field = field
-        (ktable, kfield) = str(self.field).split('.')
+        (ktable, kfield) = str(field).split('.')
         if not label:
             label = '%%(%s)s' % kfield
         if isinstance(label,str):
@@ -486,6 +485,7 @@ class IS_IN_DB(Validator):
 
     def __call__(self, value):
         table = self.dbset.db[self.ktable]
+        field = table[self.kfield]
         if self.multiple:
             if isinstance(value,list):
                 values=value
@@ -496,7 +496,7 @@ class IS_IN_DB(Validator):
             if isinstance(self.multiple,(tuple,list)) and \
                     not self.multiple[0]<=len(values)<self.multiple[1]:
                 return (values, translate(self.error_message))
-            if self.dbset(self.field.belongs(values)).count()==len(values):
+            if self.dbset(field.belongs(values)).count()==len(values):
                 return (values, None)
         elif self.theset:
             if str(value) in self.theset:
@@ -505,8 +505,6 @@ class IS_IN_DB(Validator):
                 else:
                     return (value, None)
         else:
-            (ktable, kfield) = str(self.field).split('.')
-            field = self.dbset.db[ktable][kfield]
             if self.dbset(field == value).count():
                 if self._and:
                     return self._and(value)
