@@ -577,9 +577,10 @@ class AutocompleteWidget(object):
     def callback(self):
         if self.keyword in self.request.vars:
             field = self.fields[0]
-            rows = self.db(field.like(self.request.vars[self.keyword]+'%'))\
-                .select(orderby=self.orderby,limitby=self.limitby,
-                            distinct=self.distinct,*self.fields)
+            if settings.global_settings.web2py_runtime_gae:
+                rows = self.db(field.__ge__(self.request.vars[self.keyword])&field.__lt__(self.request.vars[self.keyword]+ u'\ufffd')).select(orderby=self.orderby,limitby=self.limitby,*self.fields)
+            else:
+                rows = self.db(field.like(self.request.vars[self.keyword]+'%')).select(orderby=self.orderby,limitby=self.limitby,distinct=self.distinct,*self.fields)
             if rows:
                 if self.is_reference:
                     id_field = self.fields[1]
