@@ -1179,7 +1179,7 @@ class BaseAdapter(ConnectionPool):
     def COMMA(self, first, second):
         return '%s, %s' % (self.expand(first), self.expand(second))
 
-    def expand(self, expression, field_type=None):
+    def expand(self, expression, field_type=None):        
         if isinstance(expression, Field):
             return '%s.%s' % (expression.tablename, expression.name)
         elif isinstance(expression, (Expression, Query)):
@@ -1312,6 +1312,12 @@ class BaseAdapter(ConnectionPool):
         for item in fields:
             if isinstance(item,SQLALL):
                 new_fields += item._table
+            elif isinstance(item,str):
+                if regex_table_field.match(item):
+                    tablename,fieldname = item.split('.')
+                    new_fields.append(self.db[tablename][fieldname])
+                else:
+                    new_fields.append(Expression(self.db,item))
             else:
                 new_fields.append(item)
         # ## if no fields specified take them all from the requested tables
@@ -8436,7 +8442,7 @@ class Set(object):
     def count(self,distinct=None):
         return self.db._adapter.count(self.query,distinct)
 
-    def select(self, *fields, **attributes):
+    def select(self, *fields, **attributes):        
         if self.query is None:# and fields[0]._table._common_filter != None:
             return self(fields[0]._table).select(*fields,**attributes)
         adapter = self.db._adapter
