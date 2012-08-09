@@ -4489,7 +4489,7 @@ class Wiki(object):
         db.wiki_page._after_update.append(update_tags_update)
     # WIKI ACCESS POLICY
     def not_authorized(self,page=None):
-        raise HTTH(401)
+        raise HTTP(401)
     def can_read(self,page):
         if 'everybody' in page.can_read or not self.manage_permissions:
             return True
