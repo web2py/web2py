@@ -248,8 +248,11 @@ def sort_tables(tables):
     def append(table,trail=[]):
         if table in trail:
             raise RuntimeError
-        for t in d[table]: append(t,trail=trail+[table])
-        if not table in tables: tables.append(table)
+        for t in d[table]:
+            # if not t==table: (problem, no dropdown for self references)
+            append(t,trail=trail+[table])
+        if not table in tables:
+            tables.append(table)
     for table in d: append(table)
     return tables
 
