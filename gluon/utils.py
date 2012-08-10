@@ -42,10 +42,15 @@ def simple_hash(text, key='', salt = '', digest_alg = 'md5'):
     """
     if not digest_alg:
         raise RuntimeError, "simple_hash with digest_alg=None"
-    elif not isinstance(digest_alg,str):
+    elif not isinstance(digest_alg,str): # manual approach
         h = digest_alg(text+key+salt)
-    elif key+salt: # backward compatile
-        return hmac_hash(text, key+salt, digest_alg)
+    elif digest_alg.startswith('pbkdf2'): # latest and coolest!
+        iterations, keylen, alg = digest_alg[7:-1].split(',')
+        return pbkdf2_hex(text, salt, int(iterations),
+                          int(keylen),get_digest(alg))    
+    elif key: # use hmac
+        digest_alg = get_digest(digest_alg)
+        h = hmac.new(key+salt,value,digest_alg)
     else: # compatible with third party systems
         h = hashlib.new(digest_alg)
         h.update(text+salt)
@@ -81,15 +86,6 @@ DIGEST_ALG_BY_SIZE = {
     384/4: 'sha384',
     512/4: 'sha512',
     }
-
-def hmac_hash(value, salt, digest_alg='md5'):
-    if isinstance(digest_alg,str) and digest_alg.startswith('pbkdf2'):
-        iterations, keylen, alg = digest_alg[7:-1].split(',')
-        return pbkdf2_hex(value, salt, int(iterations),
-                          int(keylen),get_digest(alg))
-    digest_alg = get_digest(digest_alg)
-    d = hmac.new(salt,value,digest_alg)
-    return d.hexdigest()
 
 
 ### compute constant ctokens
