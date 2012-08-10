@@ -44,7 +44,7 @@ def simple_hash(text, key='', salt = '', digest_alg = 'md5'):
         raise RuntimeError, "simple_hash with digest_alg=None"
     elif not isinstance(digest_alg,str):
         h = digest_alg(text+key+salt)
-    elif key+salt: # backward compatile
+    elif key: # backward compatile
         return hmac_hash(text, key+salt, digest_alg)
     else: # compatible with third party systems
         h = hashlib.new(digest_alg)

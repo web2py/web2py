@@ -45,6 +45,10 @@
   response.files.append(URL('static','css/web2py.css'))
   response.files.append(URL('static','css/bootswatch.css'))
   }}
+  <!-- Makes bootswatch working on IE 7/8 -->
+  <!--[if (lt IE 9)]>
+  <link rel="stylesheet" href="{{=URL('static','css/bootswatch_ie.css')}}">
+  <![endif]-->
 
   {{include 'web2py_ajax.html'}}
   
