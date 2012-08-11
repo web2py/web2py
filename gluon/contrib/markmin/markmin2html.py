@@ -519,7 +519,7 @@ regex_strong=re.compile(r'\*\*(?P<t>[^\s*]+( +[^\s*]+)*)\*\*')
 regex_del=re.compile(r'~~(?P<t>[^\s*]+( +[^\s*]+)*)~~')
 regex_em=re.compile(r"''(?P<t>[^\s']+(?: +[^\s']+)*)''")
 regex_num=re.compile(r"^\s*[+-]?((\d+(\.\d*)?)|\.\d+)([eE][+-]?[0-9]+)?\s*$")
-regex_list=re.compile('^(?:(#{1,6}|\.+|\++|\-+)(\.)?\s+)?(.*)$')
+regex_list=re.compile('^(?:(#{1,6}|\.+ |\++ |\++\. |\-+ |\-+\. )\s*)?(.*)$')
 regex_bq_headline=re.compile('^(?:(\.+|\++|\-+)(\.)?\s+)?(-{3}-*)$')
 regex_tq=re.compile('^(-{3}-*)(?::(?P<c>[a-zA-Z][_a-zA-Z\-\d]*)(?:\[(?P<p>[a-zA-Z][_a-zA-Z\-\d]*)\])?)?$')
 regex_proto = re.compile(r'(?<!["\w>/=])(?P<p>\w+):(?P<k>\w+://[\w\d\-+=?%&/:.]+)', re.M)
@@ -1099,9 +1099,13 @@ def render(text,
         c0=s[:1]
         if c0: # for non empty strings
             if c0 in "#+-.": # first character is one of: # + - .
-                (t,p,s) = regex_list.findall(s)[0] # t - tag ("###", "+++", "---", "...")
-                                                   # p - paragraph point ('.')->for "++." or "--."
-                                                   # s - other part of string
+                match = regex_list.search(s)
+                (t,p,s) = match.group(1), None, match.group(2)
+                t = (t or '').strip()
+                if t.endswith('.'): t, p = t[:-1], '.'
+                # t - tag ("###", "+++", "---", "...")
+                # p - paragraph point ('.')->for "++." or "--."
+                # s - other part of string
                 if t:
                     # headers and lists:
                     if c0 == '#': # headers
