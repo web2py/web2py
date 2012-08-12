@@ -1770,7 +1770,8 @@ class SQLFORM(FORM):
             ##FIXME ?
             #check_authorization()
             if user_signature:
-                if not URL.verify(request,user_signature=user_signature,hash_vars=False):
+                if not URL.verify(request,user_signature=user_signature,
+                                  hash_vars=False):
                     session.flash = T('not authorized')
                     redirect(referrer)
             if not export_type is None:
@@ -2146,13 +2147,15 @@ class SQLFORM(FORM):
                     breadcrumbs.append(
                         LI(A(T(db[referee]._plural),
                              _class=trap_class(),
-                             _href=URL(args=request.args[:nargs])),
+                             _href=URL(args=request.args[:nargs],
+                                       user_signature=user_signature)),
                            SPAN(divider,_class='divider')))
                     if kwargs.get('details',True):
                         breadcrumbs.append(
                             LI(A(name,_class=trap_class(),
                                  _href=URL(args=request.args[:nargs]+[
-                                    'view',referee,id],user_signature=True)),
+                                    'view',referee,id],
+                                           user_signature=user_signature)),
                                SPAN(divider,_class='divider')))
                     nargs+=2
                 else:
@@ -2193,7 +2196,8 @@ class SQLFORM(FORM):
                     links.append(
                         lambda row,t=t,nargs=nargs,args0=args0:\
                             A(SPAN(t),_class=trap_class(),_href=URL(
-                                args=request.args[:nargs]+[args0,row[id_field_name]])))
+                                args=request.args[:nargs]+[args0,row[id_field_name]],
+                                user_signature=user_signature)))
 
         grid=SQLFORM.grid(query,args=request.args[:nargs],links=links,
                           links_in_grid=links_in_grid,
@@ -2201,7 +2205,9 @@ class SQLFORM(FORM):
         if isinstance(grid,DIV):
             header = table._plural + (field and ' for '+field.name or '')
             breadcrumbs.append(LI(A(T(header),_class=trap_class(),
-                                 _href=URL(args=request.args[:nargs])), _class='active'))
+                                 _href=URL(args=request.args[:nargs],
+                                           user_signature=user_signature)), 
+                                  _class='active'))
             grid.insert(0,DIV(UL(*breadcrumbs, **{'_class':breadcrumbs_class}),
                               _class='web2py_breadcrumbs'))
         return grid
