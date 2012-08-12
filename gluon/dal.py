@@ -1317,7 +1317,7 @@ class BaseAdapter(ConnectionPool):
                     tablename,fieldname = item.split('.')
                     new_fields.append(self.db[tablename][fieldname])
                 else:
-                    new_fields.append(Expression(self.db,item))
+                    new_fields.append(Expression(self.db,lambda:item))
             else:
                 new_fields.append(item)
         # ## if no fields specified take them all from the requested tables
