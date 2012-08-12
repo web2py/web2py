@@ -25,7 +25,7 @@ from HTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
 
 from storage import Storage
-from utils import web2py_uuid, hmac_hash, compare
+from utils import web2py_uuid, simple_hash, compare
 from highlight import highlight
 
 regex_crlf = re.compile('\r|\n')
@@ -327,8 +327,7 @@ def URL(
 
         # re-assembling the same way during hash authentication
         message = h_args + '?' + urllib.urlencode(sorted(h_vars))
-        sig = hmac_hash(message, (hmac_key or '')+(salt or ''), 
-                        digest_alg='sha1')
+        sig = simple_hash(message, hmac_key or '',salt or '',digest_alg='sha1')
         # add the signature into vars
         list_vars.append(('_signature', sig))
 
@@ -447,7 +446,7 @@ def verifyURL(request, hmac_key=None, hash_vars=True, salt=None, user_signature=
     message = h_args + '?' + urllib.urlencode(sorted(h_vars))
 
     # hash with the hmac_key provided
-    sig = hmac_hash(message, str(hmac_key)+(salt or ''), digest_alg='sha1')
+    sig = simple_hash(message, str(hmac_key), salt or '', digest_alg='sha1')
 
     # put _signature back in get_vars just in case a second call to URL.verify is performed
     # (otherwise it'll immediately return false)

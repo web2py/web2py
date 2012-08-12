@@ -45,6 +45,10 @@
   response.files.append(URL('static','css/web2py.css'))
   response.files.append(URL('static','css/bootswatch.css'))
   }}
+  <!-- Makes bootswatch working on IE 7/8 -->
+  <!--[if (lt IE 9)]>
+  <link rel="stylesheet" href="{{=URL('static','css/bootswatch_ie.css')}}">
+  <![endif]-->
 
   {{include 'web2py_ajax.html'}}
   
@@ -156,11 +160,14 @@
         if(jQuery(this).find('ul').length)
           jQuery(this).children('a').contents().before('<i class="chevron-right"></i>'); 
       });
-      jQuery('ul.nav li.dropdown').hover(function() {
+
+      if(jQuery(document).width()>=980) {
+        jQuery('ul.nav li.dropdown').hover(function() {
           jQuery(this).find('.dropdown-menu').stop(true, true).delay(200).fadeIn(); 
-      }, function() {
+        }, function() {
           jQuery(this).find('.dropdown-menu').stop(true, true).delay(200).fadeOut(); 
-      });
+        });
+      }
       jQuery('ul.nav li.dropdown a').click(function(){window.location=jQuery(this).attr('href');});
     });
   </script>  
