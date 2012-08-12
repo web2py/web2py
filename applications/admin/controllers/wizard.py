@@ -354,7 +354,7 @@ def make_table(table,fields):
         s+="""
 db.auth_user.first_name.requires = IS_NOT_EMPTY(error_message=auth.messages.is_empty)
 db.auth_user.last_name.requires = IS_NOT_EMPTY(error_message=auth.messages.is_empty)
-db.auth_user.password.requires = CRYPT(key=auth.settings.hmac_key)
+db.auth_user.password.requires = CRYPT(key=auth.settings.hmac_key, min_length=4)
 db.auth_user.username.requires = IS_NOT_IN_DB(db, db.auth_user.username)
 db.auth_user.email.requires = (IS_EMAIL(error_message=auth.messages.invalid_email),
                                IS_NOT_IN_DB(db, db.auth_user.email))
