@@ -63,11 +63,18 @@ class HTTP(BaseException):
         self,
         status,
         body='',
+        cookies=None,
         **headers
         ):
         self.status = status
         self.body = body
         self.headers = headers
+        self.cookies2headers(cookies)
+
+    def cookies2headers(self,cookies):
+        if cookies and len(cookies)>0:
+            self.headers['Set-Cookie'] = [
+                str(cookie)[11:] for cookie in cookies.values()]
 
     def to(self, responder):
         if self.status in defined_status:
