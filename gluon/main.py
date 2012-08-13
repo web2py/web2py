@@ -562,9 +562,8 @@ def wsgibase(environ, responder):
                     del response.cookies[response.session_id_name]
                 elif session._secure:
                     response.cookies[response.session_id_name]['secure'] = True
-                if len(response.cookies)>0:
-                    http_response.headers['Set-Cookie'] = \
-                        [str(cookie)[11:] for cookie in response.cookies.values()]
+                
+                http_response.cookies2headers(response.cookies)
                 ticket=None
 
             except RestrictedError, e:
