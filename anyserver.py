@@ -128,6 +128,7 @@ class Servers:
         from gunicorn.app.base import Application
         config = {'bind': "%s:%d" % address}
         config.update(options)
+        sys.argv = ['anyserver.py']
         class GunicornApplication(Application):
             def init(self, parser, opts, args):                
                 return config
