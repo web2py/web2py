@@ -3864,7 +3864,6 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
         self.dbengine = "mysql"
         self.uri = uri
         self.pool_size = pool_size
-        self.folder = folder
         self.db_codec = db_codec
         self.folder = folder or '$HOME'+os.sep+thread.folder.split(
             os.sep+'applications'+os.sep,1)[1]
