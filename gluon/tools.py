@@ -2056,6 +2056,27 @@ class Auth(object):
         if log is DEFAULT:
             log = self.messages.register_log
 
+        table_user = self.settings.table_user
+        if 'username' in table_user.fields:
+            username = 'username'
+        else:
+            username = 'email'
+        
+        # Ensure the username field is unique.
+        unique_validator = IS_NOT_IN_DB(self.db, table_user[username])
+        if not table_user[username].requires:
+            table_user[username].requires = unique_validator
+        elif isinstance(table_user[username].requires, (list, tuple)):
+            if not any([isinstance(validator, IS_NOT_IN_DB) for validator in
+                        table_user[username].requires]):
+                if isinstance(table_user[username].requires, list):
+                    table_user[username].requires.append(unique_validator)
+                else:
+                    table_user[username].requires += (unique_validator, )
+        elif not isinstance(table_user[username].requires, IS_NOT_IN_DB):
+            table_user[username].requires = [table_user[username].requires,
+                unique_validator]
+            
         passfield = self.settings.password_field
         formstyle = self.settings.formstyle
         form = SQLFORM(table_user,
@@ -2117,11 +2138,6 @@ class Auth(object):
                 if not self.settings.registration_requires_verification:
                     table_user[form.vars.id] = dict(registration_key='')
                 session.flash = self.messages.registration_successful
-                table_user = self.settings.table_user
-                if 'username' in table_user.fields:
-                    username = 'username'
-                else:
-                    username = 'email'
                 user = self.db(table_user[username] == form.vars[username]).select().first()
                 user = Storage(table_user._filter_fields(user, id=True))
                 session.auth = Storage(user=user, last_visit=request.now,
