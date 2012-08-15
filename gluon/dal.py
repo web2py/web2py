@@ -8309,7 +8309,7 @@ class Field(Expression):
         return (value, None)
 
     def count(self, distinct=None):
-        return Expression(self.db, self.db._adapter.COUNT, self, distinct, self.type)
+        return Expression(self.db, self.db._adapter.COUNT, self, distinct, 'integer')
 
     def __nonzero__(self):
         return True
