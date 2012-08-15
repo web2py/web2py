@@ -139,7 +139,7 @@ def render(text,
     text = regex_noindent.sub('\n\\\\noindent \g<t>',text)
 
     ### fix paths in images
-    regex=re.compile('\\\\_[\w_]*\.(eps|png|jpg|gif)')
+    regex=re.compile('\\\\_\w*\.(eps|png|jpg|gif)')
     while True:
         match=regex.search(text)
         if not match: break

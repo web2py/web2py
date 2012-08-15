@@ -210,12 +210,12 @@ sql_locker = threading.RLock()
 thread = threading.local()
 
 # internal representation of tables with field
-#  <table>.<field>, tables and fields may only be [a-zA-Z0-0_]
+#  <table>.<field>, tables and fields may only be [a-zA-Z0-9_]
 
 regex_type = re.compile('^([\w\_\:]+)')
 regex_dbname = re.compile('^(\w+)(\:\w+)*')
-regex_safe = re.compile('^[\w_]+$')
-regex_table_field = re.compile('^([\w_]+)\.([\w_]+)$')
+regex_safe = re.compile('^\w+$')
+regex_table_field = re.compile('^(\w+)\.(\w+)$')
 regex_content = re.compile('(?P<table>[\w\-]+)\.(?P<field>[\w\-]+)\.(?P<uuidkey>[\w\-]+)\.(?P<name>\w+)\.\w+$')
 regex_cleanup_fn = re.compile('[\'"\s;]+')
 string_unpack=re.compile('(?<!\|)\|(?!\|)')

@@ -381,7 +381,7 @@ class IS_IN_SET(Validator):
         return (value, None)
 
 
-regex1 = re.compile('[\w_]+\.[\w_]+')
+regex1 = re.compile('\w+\.\w+')
 regex2 = re.compile('%\((?P<name>[^\)]+)\)s')
 
 
