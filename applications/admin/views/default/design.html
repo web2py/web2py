@@ -402,10 +402,8 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 
 
 <script>
-jQuery(document).ready(function(){
-   jQuery('#search').keyup(function(e){
-      var code = (e.keyCode ? e.keyCode : e.which);
-      if(code==13 && jQuery('#search').val()){
+function filter_files() {
+      if(jQuery('#search').val()){
         jQuery.getJSON('{{=URL('search',args=request.args)}}?keywords='+escape(jQuery('#search').val()),null,function(data, textStatus, xhr){
           jQuery('.component_contents li, .formfield, .comptools').hide();
           files=data['files'];
@@ -414,11 +412,17 @@ jQuery(document).ready(function(){
             jQuery('li#'+files[i].replace(/\//g,'__').replace('.','__')).slideDown();
           jQuery('.flash').html(message).slideDown();
           });
-      } else if(code==13) {
+      } else {
           jQuery('.component_contents li, .formfield, .comptools').slideDown();
           jQuery('.flash').html('').hide();
       }
+}
+jQuery(document).ready(function(){
+   jQuery('#search').keyup(function(e){
+      var code = (e.keyCode ? e.keyCode : e.which);
+      if(code==13) filter_files();
    });
+   jQuery('#search_start').click(function(e){ filter_files(); });
 });
 </script>
 
