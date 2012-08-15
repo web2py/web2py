@@ -44,30 +44,28 @@ class MemcacheClientObj(Client):
             self.storage = self.meta_storage[app]
 
     def __call__(self, key, f,
-                 time_expire=DEFAULT_TIME_EXPIRE,
-                 destroyer = None):
+                 time_expire=DEFAULT_TIME_EXPIRE):
         if time_expire == None:
             time_expire = self.max_time_expire
         # this must be commented because get and set are redefined
         # key = self.__keyFormat__(key)
         now = time.time() 
         value = None
-        if f is None:
+        if f is None: # force deletion of value
             self.delete(key)
-        elif time_expire==0:
-            value = f()
-            self.set(key, value, self.max_time_expire)
-            self.set(key+':time()', now, self.max_time_expire)
+            return None
+        elif time_expire==0: # value forced expired
+            item = None # value to be computed
         else:
-            value = self.get(key)
-            t0 = self.get(key+':time()')
-            if value and t0:
-                if (t0 < now - dt) and destroyer:
-                    destroyer(value)
-            else:
-                value = f()
-                self.set(key, value, self.max_time_expire)
-                self.set(key+':time()', now, self.max_time_expire)
+            item = self.get(key)
+            if item:
+                if (item[0] < now - dt): # value expired
+                    item = None # value to be computed
+                else:
+                    value = item[1]
+        if not item:
+            value = f()
+            self.set(key, (now,value), self.max_time_expire)
         return value
 
     def increment(self, key, value=1, time_expire=DEFAULT_TIME_EXPIRE):
