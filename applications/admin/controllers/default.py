@@ -182,7 +182,7 @@ def site():
 
     class IS_VALID_APPNAME(object):
         def __call__(self,value):
-            if not re.compile('[\w_]+').match(value):
+            if not re.compile('\w+').match(value):
                 return (value,T('Invalid application name'))
             if not request.vars.overwrite and \
                     os.path.exists(os.path.join(apath(r=request),value)):

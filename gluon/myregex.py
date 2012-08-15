@@ -12,7 +12,7 @@ import re
 # pattern to find defined tables
 
 regex_tables = re.compile(\
-    """^[\w]+\.define_table\(\s*[\'\"](?P<name>[\w_]+)[\'\"]""",
+    """^[\w]+\.define_table\(\s*[\'\"](?P<name>\w+)[\'\"]""",
     flags=re.M)
 
 # pattern to find exposed functions in controller
