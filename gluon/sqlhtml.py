@@ -1080,7 +1080,7 @@ class SQLFORM(FORM):
     def createform(self, xfields):
         if isinstance(self.formstyle, basestring):
             if self.formstyle in self.formstyles:
-                self.formstyle = self.formstyles[self.formstyle]
+                self.formstyle = SQLFORM.formstyles[self.formstyle]
             else:
                 raise RuntimeError, 'formstyle not found'
 
