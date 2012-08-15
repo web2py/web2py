@@ -4326,7 +4326,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                 items = [i for i in items if filter.apply(
                         getattr(item,filter.name),filter.value)]
             else:
-                if filter.name=='__key__':
+                if filter.name=='__key__' and filter.op != 'in':
                     items.order('__key__')
                 items = items.filter('%s %s' % (filter.name,filter.op),
                                      filter.value)
