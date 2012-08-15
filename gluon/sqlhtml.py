@@ -22,7 +22,7 @@ from http import HTTP
 from html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT
 from html import FORM, INPUT, LABEL, OPTION, SELECT, BUTTON
 from html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
-from html import URL, truncate_string
+from html import URL, truncate_string, FIELDSET
 from dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
     bar_encode, regex_table_field, Reference
 from storage import Storage
@@ -35,6 +35,7 @@ import urllib
 import re
 import cStringIO
 from gluon import current, redirect, A, URL, DIV, H3, UL, LI, SPAN, INPUT
+import inspect
 
 table_field = re.compile('[\w_]+\.[\w_]+')
 widget_class = re.compile('^\w*')
@@ -642,6 +643,62 @@ class AutocompleteWidget(object):
                 attr['_onfocus'] = attr['_onkeyup']
             return TAG[''](INPUT(**attr),DIV(_id=div_id,_style='position:absolute;'))
 
+def formstyle_table3cols(form, fields):
+    ''' 3 column table - default '''
+    table = TABLE()
+    for id, label, controls, help in fields:
+        _help = TD(help, _class='w2p_fc')
+        _controls = TD(controls, _class='w2p_fw')
+        _label = TD(label, _class='w2p_fl')
+        table.append(TR(_label, _controls, _help, _id=id))
+    return table
+
+def formstyle_table2cols(form, fields):
+    ''' 2 column table '''
+    table = TABLE()
+    for id, label, controls, help in fields:
+        _help = TD(help, _class='w2p_fc', _width='50%')
+        _controls = TD(controls, _class='w2p_fw', _colspan='2')
+        _label = TD(label, _class='w2p_fl', _width='50%')
+        table.append(TR(_label, _help,  _id=id+'1', _class='even'))
+        table.append(TR(_controls, _id=id+'2', _class='odd'))
+    return table
+
+def formstyle_divs(form, fields):
+    ''' divs only '''
+    table = TAG['']()
+    for id, label, controls, help in fields:
+        _help = DIV(help, _class='w2p_fc')
+        _controls = DIV(controls, _class='w2p_fw')
+        _label = DIV(label, _class='w2p_fl')
+        table.append(DIV(_label, _controls, _help, _id=id))
+    return table
+
+def formstyle_ul(form, fields):
+    ''' unordered list '''
+    table = UL()
+    for id, label, controls, help in fields:
+        _help = DIV(help, _class='w2p_fc')
+        _controls = DIV(controls, _class='w2p_fw')
+        _label = DIV(label, _class='w2p_fl')
+        table.append(LI(_label, _controls, _help, _id=id))
+    return table
+
+def formstyle_bootstrap(form, fields):
+    ''' bootstrap format form layout '''
+    form['_class'] = 'form-horizontal'
+    table = FIELDSET()
+    for id, label, controls, help in fields:
+        if isinstance(controls, (INPUT, SELECT, TEXTAREA)):
+            controls['_class'] = 'input-xlarge'
+        if isinstance(label, LABEL):
+            label['_class'] = 'control-label'
+        # styles
+        _help = DIV(help, _class='help-block')
+        # embed _help into _controls don't wrap label
+        _controls = DIV(controls, _help, _class='controls')
+        table.append(DIV(label, _controls, _class='control-group'))
+    return table
 
 class SQLFORM(FORM):
 
@@ -711,6 +768,15 @@ class SQLFORM(FORM):
         checkboxes = CheckboxesWidget,
         autocomplete = AutocompleteWidget,
         list = ListWidget,
+        ))
+
+
+    formstyles = Storage(dict(
+        table3cols = formstyle_table3cols,
+        table2cols = formstyle_table2cols,
+        divs = formstyle_divs,
+        ul = formstyle_ul,
+        bootstrap = formstyle_bootstrap,
         ))
 
     FIELDNAME_REQUEST_DELETE = 'delete_this_record'
@@ -1012,48 +1078,30 @@ class SQLFORM(FORM):
         self.components = [table]
 
     def createform(self, xfields):
-        if self.formstyle == 'table3cols':
-            table = TABLE()
-            for id,a,b,c in xfields:
-                td_b = self.field_parent[id] = TD(b,_class='w2p_fw')
-                table.append(TR(TD(a,_class='w2p_fl'),
-                                td_b,
-                                TD(c,_class='w2p_fc'),_id=id))
-        elif self.formstyle == 'table2cols':
-            table = TABLE()
-            for id,a,b,c in xfields:
-                td_b = self.field_parent[id] = TD(b,_class='w2p_fw',_colspan="2")
-                table.append(TR(TD(a,_class='w2p_fl'),
-                                TD(c,_class='w2p_fc'),_id=id
-                                +'1',_class='even'))
-                table.append(TR(td_b,_id=id+'2',_class='odd'))
-        elif self.formstyle == 'divs':
-            table = TAG['']()
-            for id,a,b,c in xfields:
-                div_b = self.field_parent[id] = DIV(b,_class='w2p_fw')
-                table.append(DIV(DIV(a,_class='w2p_fl'),
-                                 div_b,
-                                 DIV(c,_class='w2p_fc'),_id=id))
-        elif self.formstyle == 'ul':
-            table = UL()
-            for id,a,b,c in xfields:
-                div_b = self.field_parent[id] = DIV(b,_class='w2p_fw')
-                table.append(LI(DIV(a,_class='w2p_fl'),
-                                div_b,
-                                DIV(c,_class='w2p_fc'),_id=id))
-        elif callable(self.formstyle):
-            table = TABLE()
-            for id,a,b,c in xfields:
-                raw_b = self.field_parent[id] = b
-                newrows = self.formstyle(id,a,raw_b,c)
-                if type(newrows).__name__ != "tuple":
-                    newrows = [newrows]
-                for newrow in newrows:
-                    table.append(newrow)
+        if isinstance(self.formstyle, basestring):
+            if self.formstyle in self.formstyles:
+                self.formstyle = self.formstyles[self.formstyle]
+            else:
+                raise RuntimeError, 'formstyle not found'
+
+        if callable(self.formstyle):
+            # backward compatibility, 4 argument function is the old style
+            if len(inspect.getargspec(self.formstyle)[0]) == 4:
+                table = TABLE()
+                for id,a,b,c in xfields:
+                    raw_b = self.field_parent[id] = b
+                    newrows = self.formstyle(id,a,raw_b,c)
+                    if type(newrows).__name__ != "tuple":
+                        newrows = [newrows]
+                    for newrow in newrows:
+                        table.append(newrow)
+            else:
+                for id,a,b,c in xfields:
+                    self.field_parent[id] = b
+                table = self.formstyle(self, xfields)
         else:
             raise RuntimeError, 'formstyle not supported'
         return table
-
 
     def accepts(
         self,
