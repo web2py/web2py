@@ -59,7 +59,9 @@ class MemcacheClientObj(Client):
         else:
             item = self.get(key)
             if item:
-                if (item[0] < now - dt): # value expired
+                if not isinstance(item,(list,tuple)):
+                    value = item
+                elif (item[0] < now - dt): # value expired
                     item = None # value to be computed
                 else:
                     value = item[1]
@@ -73,7 +75,13 @@ class MemcacheClientObj(Client):
         newKey = self.__keyFormat__(key)
         obj = Client.get(self, newKey)
         if obj:
-            return Client.incr(self, newKey, value)
+            if isinstance(obj,(int,double,long)):
+                return Client.incr(self, newKey, value)
+            else:
+                value += obj[1]
+                Client.set(self,newKey,(time.time(),value),
+                           self.max_time_expire)
+                return value
         else:
             Client.set(self, newKey, value, self.max_time_expire)
             return value
