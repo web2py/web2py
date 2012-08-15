@@ -175,6 +175,7 @@ class CacheInRam(CacheAbstract):
         """
 
         dt = time_expire
+        now = time.time()
 
         self.locker.acquire()
         item = self.storage.get(key, None)
@@ -187,14 +188,14 @@ class CacheInRam(CacheAbstract):
 
         if f is None:
             return None
-        if item and (dt is None or item[0] > time.time() - dt):
+        if item and (dt is None or item[0] > now - dt):
             return item[1]
-        elif item and (item[0] < time.time() - dt) and destroyer:
+        elif item and (item[0] < now - dt) and destroyer:
             destroyer(item[1])
         value = f()
 
         self.locker.acquire()
-        self.storage[key] = (time.time(), value)
+        self.storage[key] = (now, value)
         self.storage[CacheAbstract.cache_stats_name]['misses'] += 1
         self.locker.release()
         return value
@@ -345,15 +346,16 @@ class CacheOnDisk(CacheAbstract):
             if storage:
                 storage.close()
 
+        now = time.time()
         if f is None:
             return None
-        if item and (dt is None or item[0] > time.time() - dt):
+        if item and (dt is None or item[0] > now - dt):
             return item[1]
         value = f()
 
         storage = self._open_shelf_with_lock()
         try:
-            storage[key] = (time.time(), value)
+            storage[key] = (now, value)
 
             storage[CacheAbstract.cache_stats_name] = {
                 'hit_total': storage[CacheAbstract.cache_stats_name]['hit_total'],
