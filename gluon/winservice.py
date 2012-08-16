@@ -90,7 +90,7 @@ class Web2pyService(Service):
                 cls = _winreg.QueryValue(h, 'PythonClass')
             finally:
                 _winreg.CloseKey(h)
-            dir = os.path.dirname(cls)            
+            dir = os.path.dirname(cls)
             os.chdir(dir)
             from gluon.settings import global_settings
             global_settings.gluon_parent = dir
@@ -166,6 +166,7 @@ def web2py_windows_service_handler(argv=None, opt_file='options'):
 
 if __name__ == '__main__':
     web2py_windows_service_handler()
+
 
 
 

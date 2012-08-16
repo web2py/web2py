@@ -27,7 +27,7 @@ class Node:
         self.onchange = onchange
         self.size = 4
         self.locked = False
-        
+
     def xml(self):
         return """<input name="%s" id="%s" value="%s" size="%s"
         onkeyup="ajax('%s/keyup',['%s'], ':eval');"
@@ -44,7 +44,7 @@ class Node:
 class Sheet:
     """
     Basic class for creating web spreadsheets
-    
+
     New features:
 
     -dal spreadsheets:
@@ -105,32 +105,32 @@ class Sheet:
     more details)
 
     client JavaScript objects:
-    
+
     -var w2p_spreadsheet_data
     Stores cell updates by key and
     Used for updated cells control
-    
+
     -var w2p_spreadsheet_update_button
     Stores the id of the update command
     Used for event binding (update click)
-    
+
     var w2p_spreadsheet_update_result
       object attributes:
         modified - n updated records
         errors - n errors
         message - a message for feedback and errors
-        
+
     Stores the ajax db update call returned stats
     and the db_callback string js
     Used after calling w2p_spreadsheet_update_db()
-    
+
     -function w2p_spreadsheet_update_cell(a)
     Used for responding to normal cell events
     (encapsulates old behavior)
-    
+
     -function w2p_spreadsheet_update_db_callback(result)
     Called after a background db update
-    
+
     -function w2p_spreadsheet_update_db()
     Called for updating the database with
     client data
@@ -182,7 +182,7 @@ class Sheet:
     Second method: Sending data updates with .ajax()
 
     -spreadsheet page's view:
-    
+
     {{
     =INPUT(_type="button", _value="update data",
              _id="w2p_spreadsheet_update_data")
@@ -223,9 +223,9 @@ class Sheet:
     # -Delete checkbox columns for each table and default
     # -Deletable=True option for showing/hiding delete checkboxes
     # -process() method support for db I/O
-    
+
     """
-    
+
     regex = re.compile('(?<!\w)[a-zA-Z_]\w*')
     pregex = re.compile('\d+')
     re_strings = re.compile(r'(?P<name>'
@@ -315,7 +315,7 @@ class Sheet:
                 changes[tablename][row_id][fieldname] = value
 
         return changes
-    
+
 
     def process(self, request, db=None, db_callback=None):
         """
@@ -429,7 +429,7 @@ class Sheet:
         self.readonly = readonly
 
         self.update_button = update_button
-        
+
         self.client = {
                         "columns": {},
                         "colnames": {},
@@ -439,14 +439,14 @@ class Sheet:
                         "modified": {},
                         "headers": headers
                         }
-                        
+
         # if db and query:
         if self.data is not None:
             # retrieve row columns length
             self.rows = len(self.data)
             # retrieve rows length
             self.cols = len(self.data.colnames)
-            
+
             # map row data to rncn values
             for x, colname in enumerate(self.data.colnames):
                 self.client["columns"][colname] = x
@@ -557,7 +557,7 @@ class Sheet:
         # one column example:
         # {"0": {"value":1.0, "readonly":False, "active":True, "onchange":None}}
         # value: common value for all cells
-        
+
         attributes = self.get_attributes(kwarg)
         if attributes is not None:
             self.tr_attributes[str(row)] = attributes
@@ -593,10 +593,10 @@ class Sheet:
         # arg: value pairs
         # one row example:
         # {"0": {"value":1.0, "readonly":False, "active":True, "onchange":None}}
-        # value: common value for all cells        
+        # value: common value for all cells
         """
         attributes = self.get_attributes(kwarg)
-        
+
         if isinstance(cells, dict):
             for row, data in cells.iteritems():
                 key = "r%sc%s" % (row, col)
@@ -610,7 +610,7 @@ class Sheet:
                           onchange=onchange, **attributes)
         else:
             active, onchange, readonly, all_value = \
-            self.get_cell_arguments(kwarg) 
+            self.get_cell_arguments(kwarg)
             for row, cell_value in enumerate(cells):
                 key = "r%sc%s" % (row, col)
                 if value is None:
@@ -626,7 +626,7 @@ class Sheet:
         Insert a n x n matrix or a set of cells
         # starts: upper left cell
         # ends: lower right cell
-        
+
         # cells: a sequence of value sequences
         # or a dict with "rncn" keys
         # Example 1 cells:
@@ -637,7 +637,7 @@ class Sheet:
         # value: common value for all cells
         """
         attributes = self.get_attributes(kwarg)
-        
+
         starts_r, starts_c = self.position(starts)
         ends_r, ends_c = None, None
         if ends is not None:
@@ -832,7 +832,7 @@ class Sheet:
             jQuery(function(){
               jQuery(".%(name)s input").change(w2p_spreadsheet_update_cell);
             });
-            
+
             if (w2p_spreadsheet_update_button != ""){
               jQuery(function(){
                 jQuery("#" + w2p_spreadsheet_update_button).click(w2p_spreadsheet_update_db);
@@ -855,7 +855,7 @@ class Sheet:
 
             sorted_headers = [TH(),] + \
             [TH(header[1]) for header in sorted(unsorted_headers)]
-            table.insert(0, TR(*sorted_headers, 
+            table.insert(0, TR(*sorted_headers,
                                 **{_class:"%s_fieldnames" % \
                                        attributes["_class"]}))
         else:
@@ -877,4 +877,5 @@ if __name__ == '__main__':
     s.cell('b', value="=sin(a)")
     s.cell('c', value="=cos(a)**2+b*b")
     print s['c'].computed_value
+
 

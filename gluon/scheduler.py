@@ -108,7 +108,7 @@ SECONDS = 1
 HEARTBEAT = 3*SECONDS
 MAXHIBERNATION = 10
 
-CALLABLETYPES = (types.LambdaType, types.FunctionType, 
+CALLABLETYPES = (types.LambdaType, types.FunctionType,
                  types.BuiltinFunctionType,
                  types.MethodType, types.BuiltinMethodType)
 
@@ -801,3 +801,4 @@ def main():
 
 if __name__=='__main__':
     main()
+

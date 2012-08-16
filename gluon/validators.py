@@ -266,7 +266,7 @@ class IS_LENGTH(Validator):
         if value is None:
             length = 0
             if self.minsize <= length <= self.maxsize:
-                return (value, None)            
+                return (value, None)
         elif isinstance(value, cgi.FieldStorage):
             if value.file:
                 value.file.seek(0, os.SEEK_END)
@@ -460,7 +460,7 @@ class IS_IN_DB(Validator):
             orderby = self.orderby or reduce(lambda a,b:a|b,fields)
             groupby = self.groupby
             distinct = self.distinct
-            dd = dict(orderby=orderby, groupby=groupby, 
+            dd = dict(orderby=orderby, groupby=groupby,
                       distinct=distinct, cache=self.cache)
             records = self.dbset(table).select(*fields, **dd)
         else:
@@ -2560,7 +2560,7 @@ class LazyCrypt(object):
         key = 'pbkdf2(1000,64,sha512):uuid' 1000 iterations and 64 chars length
         """
         if self.crypted:
-            return self.crypted                
+            return self.crypted
         if self.crypt.key:
             if ':' in self.crypt.key:
                 digest_alg, key = self.crypt.key.split(':',1)
@@ -2569,7 +2569,7 @@ class LazyCrypt(object):
         else:
             digest_alg, key = self.crypt.digest_alg, ''
         if self.crypt.salt:
-            if self.crypt.salt == True:                
+            if self.crypt.salt == True:
                 salt = str(web2py_uuid()).replace('-','')[-16:]
             else:
                 salt = self.crypt.salt
@@ -2579,13 +2579,13 @@ class LazyCrypt(object):
         self.crypted = '%s$%s$%s' % (digest_alg, salt, hashed)
         return self.crypted
 
-    def __eq__(self, stored_password):        
+    def __eq__(self, stored_password):
         """
         compares the current lazy crypted password with a stored password
         """
         if self.crypt.key:
             if ':' in self.crypt.key:
-                key = self.crypt.key.split(':')[1] 
+                key = self.crypt.key.split(':')[1]
             else:
                 key = self.crypt.key
         else:
@@ -2593,16 +2593,16 @@ class LazyCrypt(object):
         if stored_password.count('$')==2:
             (digest_alg, salt, hash) = stored_password.split('$')
             h = simple_hash(self.password, key, salt, digest_alg)
-            temp_pass = '%s$%s$%s' % (digest_alg, salt, h)            
+            temp_pass = '%s$%s$%s' % (digest_alg, salt, h)
         else: # no salting
             # guess digest_alg
             digest_alg = DIGEST_ALG_BY_SIZE.get(len(stored_password),None)
-            if not digest_alg:   
+            if not digest_alg:
                 return False
             else:
                 temp_pass = simple_hash(self.password, key, '', digest_alg)
         return temp_pass == stored_password
-    
+
 
 class CRYPT(object):
     """
@@ -2624,23 +2624,23 @@ class CRYPT(object):
     Notice that an empty password is accepted but invalid. It will not allow login back.
     Stores junk as hashed password.
 
-    Specify an algorithm or by default we will use sha512.                                                                      
+    Specify an algorithm or by default we will use sha512.
 
-    Typical available algorithms:                                                                                               
-      md5, sha1, sha224, sha256, sha384, sha512                                                                            
+    Typical available algorithms:
+      md5, sha1, sha224, sha256, sha384, sha512
 
     If salt, it hashes a password with a salt.
-    If salt is True, this method will automatically generate one. 
+    If salt is True, this method will automatically generate one.
     Either case it returns an encrypted password string in the following format:
 
-      <algorithm>$<salt>$<hash> 
+      <algorithm>$<salt>$<hash>
 
     Important: hashed password is returned as a LazyCrypt object and computed only if needed.
     The LasyCrypt object also knows how to compare itself with an existing salted password
 
     Supports standard algorithms
 
-    >>> for alg in ('md5','sha1','sha256','sha384','sha512'): 
+    >>> for alg in ('md5','sha1','sha256','sha384','sha512'):
     ...     print str(CRYPT(digest_alg=alg,salt=True)('test')[0])
     md5$...$...
     sha1$...$...
@@ -2682,17 +2682,17 @@ class CRYPT(object):
     True
     """
 
-    def __init__(self, 
-                 key=None, 
+    def __init__(self,
+                 key=None,
                  digest_alg='pbkdf2(1000,20,sha512)',
-                 min_length=0, 
+                 min_length=0,
                  error_message='too short', salt=True):
         """
         important, digest_alg='md5' is not the default hashing algorithm for
         web2py. This is only an example of usage of this function.
 
         The actual hash algorithm is determined from the key which is
-        generated by web2py in tools.py. This defaults to hmac+sha512.       
+        generated by web2py in tools.py. This defaults to hmac+sha512.
         """
         self.key = key
         self.digest_alg = digest_alg
@@ -3145,6 +3145,7 @@ class IS_IPV4(Validator):
 if __name__ == '__main__':
     import doctest
     doctest.testmod(optionflags=doctest.NORMALIZE_WHITESPACE|doctest.ELLIPSIS)
+
 
 
 

@@ -414,9 +414,9 @@ class CheckboxesWidget(OptionsWidget):
 
 
         if opts:
-            opts.append(INPUT(_class="hidden", requires=attr.get('requires', None), 
+            opts.append(INPUT(_class="hidden", requires=attr.get('requires', None),
                               _disabled="disabled", _name=field.name,
-                              hideerror=False))        
+                              hideerror=False))
         return parent(*opts, **attr)
 
 
@@ -1298,14 +1298,14 @@ class SQLFORM(FORM):
                         f = os.path.join(current.request.folder,
                                          os.path.normpath(f))
                         source_file = open(f, 'rb')
-                        original_filename  = os.path.split(f)[1]                        
+                        original_filename  = os.path.split(f)[1]
                 elif hasattr(f, 'file'):
                     (source_file, original_filename) = (f.file, f.filename)
                 elif isinstance(f, (str, unicode)):
                     ### do not know why this happens, it should not
-		    (source_file, original_filename) = \
-		        (cStringIO.StringIO(f), 'file.txt')
-                newfilename = field.store(source_file, original_filename, 
+                    (source_file, original_filename) = \
+                        (cStringIO.StringIO(f), 'file.txt')
+                newfilename = field.store(source_file, original_filename,
                                           field.uploadfolder)
                 # this line was for backward compatibility but problematic
                 # self.vars['%s_newfilename' % fieldname] = newfilename
@@ -1890,7 +1890,7 @@ class SQLFORM(FORM):
                     label = k
                 options.append(OPTION(T(label),_value=k))
             items = url2().split('?', 1)
-            myurl = items[0] 
+            myurl = items[0]
             if len(items)>1:
                 mysignature = psq(items[1]).get('_signature', [None])[-1]
             else:
@@ -2634,6 +2634,7 @@ class ExporterHtml(ExportClass):
             out.write('</tr>\n')
         out.write('</table>\n</body>\n</html>')
         return str(out.getvalue())
+
 
 
 

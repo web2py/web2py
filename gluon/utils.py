@@ -47,7 +47,7 @@ def simple_hash(text, key='', salt = '', digest_alg = 'md5'):
     elif digest_alg.startswith('pbkdf2'): # latest and coolest!
         iterations, keylen, alg = digest_alg[7:-1].split(',')
         return pbkdf2_hex(text, salt, int(iterations),
-                          int(keylen),get_digest(alg))    
+                          int(keylen),get_digest(alg))
     elif key: # use hmac
         digest_alg = get_digest(digest_alg)
         h = hmac.new(key+salt,text,digest_alg)
@@ -154,7 +154,7 @@ def is_valid_ip_address(address):
     True
     >>> is_valid_ip_address('2001:660::1')
     True
-    """    
+    """
     # deal with special cases
     if address.lower() in ('127.0.0.1','localhost','::1','::ffff:127.0.0.1'):
         return True
@@ -166,7 +166,7 @@ def is_valid_ip_address(address):
                 addr = socket.inet_aton(address)
                 return True
             except socket.error: # invalid address
-                return False 
+                return False
         else: # try validate using Regex
             match = REGEX_IPv4.match(address)
             if match and all(0<=int(math.group(i))<256 for i in (1,2,3,4)):
@@ -177,9 +177,10 @@ def is_valid_ip_address(address):
             addr = socket.inet_pton(socket.AF_INET6, address)
             return True
         except socket.error: # invalid address
-            return False 
+            return False
     else: # do not know what to do? assume it is a valid address
         return True
+
 
 
 

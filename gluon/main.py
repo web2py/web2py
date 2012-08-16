@@ -562,7 +562,7 @@ def wsgibase(environ, responder):
                     del response.cookies[response.session_id_name]
                 elif session._secure:
                     response.cookies[response.session_id_name]['secure'] = True
-                
+
                 http_response.cookies2headers(response.cookies)
                 ticket=None
 
@@ -846,6 +846,7 @@ class HttpServer(object):
             os.unlink(self.pid_filename)
         except:
             pass
+
 
 
 
