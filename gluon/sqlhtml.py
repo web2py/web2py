@@ -1616,8 +1616,26 @@ class SQLFORM(FORM):
 
         def url(**b):
             b['args'] = args+b.get('args',[])
+            b['hash_vars']=False
             b['user_signature'] = user_signature
             return URL(**b)
+
+        def url2(**b):
+            b['args'] = request.args+b.get('args',[])
+            b['hash_vars']=False
+            b['user_signature'] = user_signature
+            return URL(**b)
+
+        referrer = session.get('_web2py_grid_referrer_'+formname, url())
+        if user_signature:
+            if (args != request.args and \
+                    not URL.verify(request,user_signature=user_signature)) or \
+                    (not auth.user and \
+                         ('edit' in request.args or \
+                              'create' in request.args or \
+                              'delete' in request.args)):
+                session.flash = T('not authorized')
+                redirect(referrer)
 
         def gridbutton(buttonclass='buttonadd',buttontext='Add',
                        buttonurl=url(args=[]),callback=None,delete=None,trap=True):
@@ -1660,16 +1678,9 @@ class SQLFORM(FORM):
             fields.append(field_id)
         table = field_id.table
         tablename = table._tablename
-        referrer = session.get('_web2py_grid_referrer_'+formname, url())
-        def check_authorization():
-            if user_signature:
-                if not URL.verify(request,user_signature=user_signature):
-                    session.flash = T('not authorized')
-                    redirect(referrer)
         if upload=='<default>':
             upload = lambda filename: url(args=['download',filename])
             if len(request.args)>1 and request.args[-2]=='download':
-                check_authorization()
                 stream = response.download(request,db)
                 raise HTTP(200,stream,**response.headers)
 
@@ -1699,7 +1710,6 @@ class SQLFORM(FORM):
         sqlformargs = dict(formargs)
 
         if create and len(request.args)>1 and request.args[-2] == 'new':
-            check_authorization()
             table = db[request.args[-1]]
             sqlformargs.update(createargs)
             create_form = SQLFORM(
@@ -1716,8 +1726,8 @@ class SQLFORM(FORM):
             res.view_form = view_form
             res.search_form = search_form
             return res
+
         elif details and len(request.args)>2 and request.args[-3]=='view':
-            check_authorization()
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(URL('error'))
             sqlformargs.update(viewargs)
@@ -1732,7 +1742,6 @@ class SQLFORM(FORM):
             res.search_form = search_form
             return res
         elif editable and len(request.args)>2 and request.args[-3]=='edit':
-            check_authorization()
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(URL('error'))
             sqlformargs.update(editargs)
@@ -1754,42 +1763,24 @@ class SQLFORM(FORM):
             res.search_form = search_form
             return res
         elif deletable and len(request.args)>2 and request.args[-3]=='delete':
-            check_authorization()
             table = db[request.args[-2]]
             if ondelete:
                 ondelete(table,request.args[-1])
             ret = db(table[table._id.name]==request.args[-1]).delete()
             return ret
 
-        #elif csv and len(request.args)>0 and request.args[-1]=='csv':
-        #    if request.vars.keywords:
-        #        try:
-        #            dbset=dbset(SQLFORM.build_query(
-        #                    fields,
-        #                    request.vars.get('keywords','')))
-        #        except:
-        #            raise HTTP(400)
-        #    check_authorization()
-        #    response.headers['Content-Type'] = 'text/csv'
-        #    response.headers['Content-Disposition'] = \
-        #        'attachment;filename=rows.csv;'
-        #    raise HTTP(200,str(dbset.select()),
-        #               **{'Content-Type':'text/csv',
-        #                  'Content-Disposition':'attachment;filename=rows.csv;'})
-
-        #==============================================================================
-
-        exportManager = dict(csv_with_hidden_cols=(ExporterCsv,'csv, hidden cols'),
-                             csv=ExporterCsv,
-                             html=ExporterHtml,
-                             tsv_with_hidden_cols=(ExporterTsv, 'tsv (Excel compatible), hidden cols'),
-                             tsv=(ExporterTsv, 'tsv (Excel compatible)')
-                             )
+        exportManager = dict(
+            csv_with_hidden_cols=(ExporterCsv,'csv, hidden cols'),
+            csv=ExporterCsv,
+            html=ExporterHtml,
+            tsv_with_hidden_cols=(ExporterTsv,
+                                  'tsv (Excel compatible), hidden cols'),
+            tsv=(ExporterTsv, 'tsv (Excel compatible)'))
         if not exportclasses is None:
             exportManager.update(exportclasses)
 
-        if len(request.args)>0 and request.args[-1]=='export':
-            export_type = request.vars.export_type
+        export_type = request.vars._export_type
+        if export_type:
             order = request.vars.order or ''
             if sortable:
                 if order and not order=='None':
@@ -1807,21 +1798,17 @@ class SQLFORM(FORM):
             if export_type in ('csv_with_hidden_cols','tsv_with_hidden_cols'):
                 if request.vars.keywords:
                     try:
-                        dbset=dbset(SQLFORM.build_query(
-                                fields,
-                                request.vars.get('keywords','')))
-                    except:
-                        raise HTTP(400)
-                rows = dbset.select()
+                        dbset = dbset(SQLFORM.build_query(
+                                fields,request.vars.get('keywords','')))
+                        rows = dbset.select()
+                    except Exception, e:
+                        response.flash = T('Internal Error')
+                        rows = []
+                else:
+                    rows = dbset.select()
             else:
                 rows = dbset.select(left=left,orderby=orderby,*columns)
-            ##FIXME ?
-            #check_authorization()
-            if user_signature:
-                if not URL.verify(request,user_signature=user_signature,
-                                  hash_vars=False):
-                    session.flash = T('not authorized')
-                    redirect(referrer)
+
             if not export_type is None:
                 if exportManager.has_key(export_type):
                     value = exportManager[export_type]
@@ -1833,12 +1820,11 @@ class SQLFORM(FORM):
                     filename = '.'.join(('rows', oExp.file_ext))
                     response.headers['Content-Type'] = oExp.content_type
                     response.headers['Content-Disposition'] = \
-                'attachment;filename='+filename+';'
+                        'attachment;filename='+filename+';'
 
                     raise HTTP(200, oExp.export(),
                        **{'Content-Type':oExp.content_type,
                           'Content-Disposition':'attachment;filename='+filename+';'})
-        #================================================================================
 
         elif request.vars.records and not isinstance(
             request.vars.records,list):
@@ -1846,9 +1832,7 @@ class SQLFORM(FORM):
         elif not request.vars.records:
             request.vars.records=[]
 
-        session['_web2py_grid_referrer_'+formname] = \
-            URL(args=request.args,vars=request.vars,
-                user_signature=user_signature)
+        session['_web2py_grid_referrer_'+formname] = url2(vars=request.vars)
         console = DIV(_class='web2py_console %(header)s %(cornertop)s' % ui)
         error = None
         if searchable:
@@ -1898,14 +1882,6 @@ class SQLFORM(FORM):
                     buttontext='Add',
                     buttonurl=url(args=['new',tablename])))
         if csv and nrows:
-            #search_actions.append(gridbutton(
-            #        buttonclass='buttonexport',
-            #        buttontext='Export',
-            #        trap = False,
-            #        buttonurl=url(args=['csv'],
-            #                      vars=dict(keywords=request.vars.keywords or ''))))
-
-        #================================================================
             options =[]
             for k,v in sorted(exportManager.items()):
                 if hasattr(v, "__getitem__"):
@@ -1913,22 +1889,23 @@ class SQLFORM(FORM):
                 else:
                     label = k
                 options.append(OPTION(T(label),_value=k))
-            ##FIXME ?
-            mysignature = url(args=['export']).split('?', 1)
-            mysignature = psq(mysignature[-1]).get('_signature', [None])[-1]
+            items = url2().split('?', 1)
+            myurl = items[0] 
+            if len(items)>1:
+                mysignature = psq(items[1]).get('_signature', [None])[-1]
+            else:
+                mysignature = ''
             f = FORM(BUTTON(SPAN(_class=ui.get('buttonexport')),
                             "Export", _type="submit", _class=ui.get('button')),
-                     SELECT(options, _name="export_type"),
+                     SELECT(options, _name="_export_type"),
                      INPUT(_type="hidden", _name="order",
                            _value=request.vars.order),
                      INPUT(_type="hidden", _name="_signature",
                             _value=mysignature),
                      INPUT(_type="hidden", _name="keywords",
                            _value=request.vars.keywords or ''),
-                     _method="GET", _action=url(args=['export']))
+                     _method="GET", _action=myurl)
             search_actions.append(f)
-
-        #================================================================
 
         console.append(search_actions)
 
@@ -2153,6 +2130,13 @@ class SQLFORM(FORM):
         """
         request, T = current.request, current.T
         if args is None: args = []
+
+        def url(**b):
+            b['args'] = request.args[:nargs]+b.get('args',[])
+            b['hash_vars']=False
+            b['user_signature'] = user_signature
+            return URL(**b)
+
         db = table._db
         breadcrumbs = []
         if request.args(len(args)) != table._tablename:
@@ -2195,15 +2179,12 @@ class SQLFORM(FORM):
                     breadcrumbs.append(
                         LI(A(T(db[referee]._plural),
                              _class=trap_class(),
-                             _href=URL(args=request.args[:nargs],
-                                       user_signature=user_signature)),
+                             _href=url()),
                            SPAN(divider,_class='divider')))
                     if kwargs.get('details',True):
                         breadcrumbs.append(
                             LI(A(name,_class=trap_class(),
-                                 _href=URL(args=request.args[:nargs]+[
-                                    'view',referee,id],
-                                           user_signature=user_signature)),
+                                 _href=url(args=['view',referee,id])),
                                SPAN(divider,_class='divider')))
                     nargs+=2
                 else:
@@ -2211,7 +2192,7 @@ class SQLFORM(FORM):
             if nargs>len(args)+1:
                 query = (field == id)
                 if linked_tables is None or referee in linked_tables:
-                    field.represent = lambda id,r=None,referee=referee,rep=field.represent: A(callable(rep) and rep(id) or id,_class=trap_class(),_href=URL(args=request.args[:nargs]+['view',referee,id], user_signature=user_signature))
+                    field.represent = lambda id,r=None,referee=referee,rep=field.represent: A(callable(rep) and rep(id) or id,_class=trap_class(),_href=url(args=['view',referee,id]))
         except (KeyError,ValueError,TypeError):
             redirect(URL(args=table._tablename))
         if nargs==len(args)+1:
@@ -2243,9 +2224,8 @@ class SQLFORM(FORM):
                     args0 = tablename+'.'+fieldname
                     links.append(
                         lambda row,t=t,nargs=nargs,args0=args0:\
-                            A(SPAN(t),_class=trap_class(),_href=URL(
-                                args=request.args[:nargs]+[args0,row[id_field_name]],
-                                user_signature=user_signature)))
+                            A(SPAN(t),_class=trap_class(),_href=url(
+                                args=[args0,row[id_field_name]])))
 
         grid=SQLFORM.grid(query,args=request.args[:nargs],links=links,
                           links_in_grid=links_in_grid,
@@ -2253,9 +2233,7 @@ class SQLFORM(FORM):
         if isinstance(grid,DIV):
             header = table._plural + (field and ' for '+field.name or '')
             breadcrumbs.append(LI(A(T(header),_class=trap_class(),
-                                 _href=URL(args=request.args[:nargs],
-                                           user_signature=user_signature)), 
-                                  _class='active'))
+                                 _href=url()),_class='active'))
             grid.insert(0,DIV(UL(*breadcrumbs, **{'_class':breadcrumbs_class}),
                               _class='web2py_breadcrumbs'))
         return grid
