@@ -398,9 +398,9 @@ class CacheAction(object):
                 .replace('%(args)s',str(a)).replace('%(vars)s',str(b))
         cache_model = self.cache_model
         if not cache_model or isinstance(cache_model,str):
-            cache_model = getattr(self.cache,cache_model or 'ram')        
+            cache_model = getattr(self.cache,cache_model or 'ram')
         return cache_model(key2,
-                           lambda a=a,b=b:self.func(*a,**b), 
+                           lambda a=a,b=b:self.func(*a,**b),
                            self.time_expire)
 
 
@@ -496,4 +496,5 @@ def lazy_cache(key=None,time_expire=None,cache_model='ram'):
         g.__name__ = f.__name__
         return g
     return decorator
+
 

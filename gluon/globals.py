@@ -428,9 +428,9 @@ class Session(Storage):
         if not masterapp:
             masterapp = request.application
         response.session_id_name = 'session_id_%s' % masterapp.lower()
-                
+
         # Load session data from cookie
-        
+
         if cookie_key:
             response.session_cookie_key = cookie_key
             response.session_cookie_key2 = hashlib.md5(cookie_key).digest()
@@ -523,25 +523,25 @@ class Session(Storage):
                     migrate=table_migrate,
                     )
             try:
-	
-			# Get session data out of the database
-			
-			# Key comes from the cookie
+
+                        # Get session data out of the database
+
+                        # Key comes from the cookie
                 key = request.cookies[response.session_id_name].value
                 (record_id, unique_key) = key.split(':')
                 if record_id == '0':
                     raise Exception, 'record_id == 0'
-			# Select from database.
+                        # Select from database.
                 rows = db(table.id == record_id).select()
 
-			# Make sure the session data exists in the database
+                        # Make sure the session data exists in the database
                 if len(rows) == 0 or rows[0].unique_key != unique_key:
                     raise Exception, 'No record'
 
                  # rows[0].update_record(locked=True)
 
 
-		    # Unpickle the data
+                    # Unpickle the data
                 session_data = cPickle.loads(rows[0].session_data)
                 self.update(session_data)
             except Exception:
@@ -665,6 +665,7 @@ class Session(Storage):
                 del response.session_file
             except:
                 pass
+
 
 
 

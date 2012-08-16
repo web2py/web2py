@@ -128,7 +128,7 @@ class HTTP(BaseException):
 
 def redirect(location, how=303, client_side=False):
     if location:
-        from gluon import current    
+        from gluon import current
         loc = location.replace('\r', '%0D').replace('\n', '%0A')
         if client_side and current.request.ajax:
             raise HTTP(200, **{'web2py-redirect-location': loc})
@@ -136,6 +136,7 @@ def redirect(location, how=303, client_side=False):
             raise HTTP(how,
                        'You are being redirected <a href="%s">here</a>' % loc,
                        Location=loc)
+
 
 
 
