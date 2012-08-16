@@ -697,7 +697,7 @@ def formstyle_bootstrap(form, fields):
         _help = DIV(help, _class='help-block')
         # embed _help into _controls don't wrap label
         _controls = DIV(controls, _help, _class='controls')
-        table.append(DIV(label, _controls, _class='control-group'))
+        table.append(DIV(label, _controls, _class='control-group',_id=id))
     return table
 
 class SQLFORM(FORM):
