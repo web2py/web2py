@@ -4251,10 +4251,14 @@ def completion(callback):
     return _completion
 
 def prettydate(d,T=lambda x:x):
-    try:
+    if isinstance(d,datetime.datetime):
         dt = datetime.datetime.now() - d
-    except:
+    elif isinstance(d,datetime.date):
+        dt = datetime.date.today() - d
+    elif not d:
         return ''
+    else:
+        return '[invalid date]'
     if dt.days >= 2*365:
         return T('%d years ago') % int(dt.days / 365)
     elif dt.days >= 365:
