@@ -2723,6 +2723,13 @@ class OracleAdapter(BaseAdapter):
         self.execute('SELECT %s.currval FROM dual;' % sequence_name)
         return int(self.cursor.fetchone()[0])
 
+    def parse_value(self, value, field_type, blob_decode=True):
+        if self.types[field_type] == "CLOB" and blob_decode:
+            value = value.read()
+        return BaseAdapter.parse_value(self, value, field_type, blob_decode)
+
+
+
 
 class MSSQLAdapter(BaseAdapter):
 
