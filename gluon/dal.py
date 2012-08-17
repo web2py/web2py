@@ -2724,7 +2724,7 @@ class OracleAdapter(BaseAdapter):
         return int(self.cursor.fetchone()[0])
 
     def parse_value(self, value, field_type, blob_decode=True):
-        if self.types[field_type] == "CLOB" and blob_decode:
+        if blob_decode and isinstance(value, cx_Oracle.LOB):
             value = value.read()
         return BaseAdapter.parse_value(self, value, field_type, blob_decode)
 
