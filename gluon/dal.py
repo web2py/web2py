@@ -6531,7 +6531,7 @@ class DAL(dict):
                  migrate_enabled=True, fake_migrate_all=False,
                  decode_credentials=False, driver_args=None,
                  adapter_args=None, attempts=5, auto_import=False,
-                 bigint_id=False,debug=False):
+                 bigint_id=False,debug=False,lazy_tables=False):
         """
         Creates a new Database Abstraction Layer instance.
 
@@ -6576,6 +6576,8 @@ class DAL(dict):
         self._bigint_id = bigint_id
         self._debug = debug
         self._migrated = []
+        self._LAZY = {}
+        self._lazy_tables = lazy_tables
         if not str(attempts).isdigit() or attempts < 0:
             attempts = 5
         if uri:
@@ -6901,8 +6903,29 @@ def index():
                                 'pattern':pattern,'count':count})
         return Row({'status':400,'error':'no matching pattern','response':None})
 
-
     def define_table(
+        self,
+        tablename,
+        *fields,
+        **args
+        ):
+        if tablename.startswith('_') or hasattr(self,tablename) or \
+                regex_python_keywords.match(tablename):
+            raise SyntaxError, 'invalid table name: %s' % tablename
+        elif tablename in self.tables:
+            raise SyntaxError, 'table already defined: %s' % tablename
+        elif self.check_reserved:
+            self.check_reserved_keyword(tablename)
+
+        if self._lazy_tables and not tablename in self._LAZY:
+            self._LAZY[tablename] = (fields,args)
+            self.tables.append(tablename)    
+        else:
+            t = self._define_table(tablename,*fields,**args)
+            self.tables.append(tablename)
+            return t
+
+    def _define_table(
         self,
         tablename,
         *fields,
@@ -6941,14 +6964,6 @@ def index():
         plural = args.get('plural',pluralize(singular.lower()).capitalize())
         lowertablename = tablename.lower()
 
-        if tablename.startswith('_') or hasattr(self,lowertablename) or \
-                regex_python_keywords.match(tablename):
-            raise SyntaxError, 'invalid table name: %s' % tablename
-        elif lowertablename in self.tables:
-            raise SyntaxError, 'table already defined: %s' % tablename
-        elif self.check_reserved:
-            self.check_reserved_keyword(tablename)
-
         if self._common_fields:
             fields = [f for f in fields] + [f for f in self._common_fields]
 
@@ -6976,7 +6991,6 @@ def index():
                 sql_locker.release()
         else:
             t._dbt = None
-        self.tables.append(tablename)
         t._format = format
         t._singular = singular
         t._plural = plural
@@ -6988,7 +7002,11 @@ def index():
             yield self[tablename]
 
     def __getitem__(self, key):
-        return dict.__getitem__(self, str(key))
+        tablename = str(key)
+        if not tablename is '_LAZY' and tablename in self._LAZY:
+            fields, args = self._LAZY.pop(tablename)
+            return self._define_table(tablename,*fields,**args)
+        return dict.__getitem__(self, tablename)
 
     def __setitem__(self, key, value):
         dict.__setitem__(self, str(key), value)
