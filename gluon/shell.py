@@ -61,7 +61,7 @@ def exec_environment(
             appname = mo.group('appname')
             request.folder = os.path.join('applications', appname)
         else:
-            request.folder = ''    
+            request.folder = ''
     env = build_environment(request, response, session, store_current=False)
     if pyfile:
         pycfile = pyfile + 'c'
@@ -123,7 +123,7 @@ def env(
         return True
 
     fileutils.check_credentials = check_credentials
-    
+
     environment = build_environment(request, response, session)
 
     if import_models:
@@ -178,7 +178,7 @@ def run(
             logging.warn('application does not exist and will not be created')
             return
         if c.lower() in ['y', 'yes']:
-                
+
             os.mkdir(adir)
             w2p_unpack('welcome.w2p', adir)
             for subfolder in ['models','views','controllers', 'databases',
@@ -425,6 +425,7 @@ def execute_from_command_line(argv=None):
 
 if __name__ == '__main__':
     execute_from_command_line()
+
 
 
 

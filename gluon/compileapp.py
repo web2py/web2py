@@ -358,7 +358,7 @@ def build_environment(request, response, session, store_current=True):
     """
     Build the environment dictionary into which web2py files are executed.
     """
-    
+
     environment = {}
     for key in html.__all__:
         environment[key] = getattr(html, key)
@@ -685,6 +685,7 @@ def test():
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

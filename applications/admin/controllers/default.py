@@ -182,7 +182,7 @@ def site():
 
     class IS_VALID_APPNAME(object):
         def __call__(self,value):
-            if not re.compile('[\w_]+').match(value):
+            if not re.compile('\w+').match(value):
                 return (value,T('Invalid application name'))
             if not request.vars.overwrite and \
                     os.path.exists(os.path.join(apath(r=request),value)):
@@ -233,38 +233,39 @@ def site():
 
         elif form_update.vars.url:
             # fetch an application via URL or file upload
-            if form_update.vars.url:
-                try:
-                    form_update.vars.file = \
-                        urllib.urlopen(form_update.vars.url)
-                except Exception, e:
-                    session.flash = \
-                        DIV(T('Unable to download app because:'),PRE(str(e)))
-                    redirect(URL(r=request))
-                fname = form_update.vars.url
+            try:
+                f = urllib.urlopen(form_update.vars.url)
+                if f.code == 404:
+                    raise Exception("404 file not found")
+            except Exception, e:
+                session.flash = \
+                    DIV(T('Unable to download app because:'),PRE(str(e)))
+                redirect(URL(r=request))
+            fname = form_update.vars.url
                 
         elif form_update.accepted and form_update.vars.file:
             fname = request.vars.file.filename
+            f = request.vars.file.file
+            
+        if f:
             appname = cleanpath(form_update.vars.name)
-            installed = app_install(appname, request.vars.file.file, 
+            installed = app_install(appname, f, 
                                     request, fname,
                                     overwrite=form_update.vars.overwrite)
-            if installed:
-                msg = 'application %(appname)s installed with md5sum: %(digest)s'
-                if MULTI_USER_MODE:
-                    db.app.insert(name=appname,owner=auth.user.id)
-                log_progress(appname)
-                session.flash = T(msg, dict(appname=appname,
-                                            digest=md5_hash(installed)))
-            elif form_update.vars.overwrite:
-                msg = 'unable to install application "%(appname)s"'
-                session.flash = T(msg, dict(appname=form_update.vars.name))
-
-            else:
-                msg = 'unable to install application "%(appname)s"'
-                session.flash = T(msg, dict(appname=form_update.vars.name))
-
-            redirect(URL(r=request))
+        if f and installed:
+            msg = 'application %(appname)s installed with md5sum: %(digest)s'
+            if MULTI_USER_MODE:
+                db.app.insert(name=appname,owner=auth.user.id)
+            log_progress(appname)
+            session.flash = T(msg, dict(appname=appname,
+                                        digest=md5_hash(installed)))
+        elif f and form_update.vars.overwrite:
+            msg = 'unable to install application "%(appname)s"'
+            session.flash = T(msg, dict(appname=form_update.vars.name))
+        else:
+            msg = 'unable to install application "%(appname)s"'
+            session.flash = T(msg, dict(appname=form_update.vars.name))
+        redirect(URL(r=request))
 
     regex = re.compile('^\w+$')
 
