@@ -1,6 +1,11 @@
 ## 2.00.0
 
-- request.args(0,default=0, cast=int, url_onerror=URL(...)), thanks Anthony
+- redirect(...,type='auto') will be handled properly in ajax responses
+- experimental MongoDB support in DAL
+- FORM.confirm('Confirm?',{'Back':URL(...)})
+- @auth.requires_login(otherwise=URL(...))
+- request.args(0,default=0, cast=int, otherwise=URL(...)), thanks Anthony
+- better memcache support
 - generic.ics
 - generic.map
 - geodal and spatialite, thanks Denes and Fran
@@ -11,6 +16,23 @@
 - form.add_button(value,link)
 - db.table.insert(uploadfield=open(....))
 - DAL BIGINT support and DAL(...,bigint_id=True)
+- IS_IN_DB distinct
+- more secure SQLFORM.grid and SQLFORM.smartgrid
+- more export options in SQLFORM.grid and SQLFORM.smartgrid
+- more secure admin against CSRF
+- improved spreadsheet, thanks Alan
+- routes in can redirect outside with routes_in=[('/path','303->http://..')]
+- auth supports salt and compatible with third party data, thanks Dave Stoll
+- CRYPT now defaults to pbkdf2(1000,20,sha1)
+- experimental GIT integration
+- experimental OpenShift deployment
+- new makrmin with supports for nested lists, <i>, <em>, autolinks
+- new interantionalization engine
+- multi-language pluralization engine 
+- db.table.field.count(True)
+- auth.wiki()
+- new syntax BR()*5
+- gluon.cache.lazy_cache decorator
 - auth.settings.everybody_group_id
 - ace text web editor in admin
 - -E -b -L options for scheduler
@@ -18,7 +40,6 @@
 - ldap certificate support
 - pg8000 postgresql driver support
 - portable html.py
-- <i> to <em> in markmin
 - new admin pages: manage_students, bulk_regsiter, and progress reports
 - @cache('%(name)s%(args)s%(vars)s',5) and cache.autokey
 - added tox.ini, thanks Marc
@@ -36,6 +57,12 @@
 - SQLFORM.grid(groupby=...')
 - db.table.field.filter_in, filter_out
 - allowed storage of uploads on any PyFileSystem (including amazon)
+- new scheduler can now handle 10k tasks with 20 concurrent workers and no known issues (thanks to niphlod, ykessler, dhx, toomim)
+- shceduler: tasks can be found in the environment (no need to define the tasks parameter)
+- scheduler: max_empty_runs kills the workers automatically if no new tasks are found in queue (nice for "spikes" of processing power), discard_results to completely discard the results (if you don't need the output of the task), utc_time enables datetime calculations with UTC time, task_name is no longer required (filled automatically with function_name if found empty), uuid makes easy to coordinate scheduler_task maintenance (filled automatically if not provided), stop_time has no default (previously was today+1), retry_failed to requeue automatically failed tasks, sync_output refreshes automatically the output (nice to report percentages)
+- scheduler tasks can be DISABLED (put to sleep and do nothing if not sending the heartbeat every 30 seconds), TERMINATE (complete the current task and then die), KILL (kill ASAP), EXPIRED (if stop_time passed)
+- web2py.py -K myapp -X starts the myapp scheduler alongside the webserver
+
 
 ## 1.99.5-1.99.7
 - admin in Russian (Bulat), Japanese (Omi) and Slovenian (Robert Valentak)

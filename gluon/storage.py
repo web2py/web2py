@@ -25,7 +25,11 @@ class List(list):
     instead of IndexOutOfBounds
     """
 
-    def __call__(self, i, default=None, cast=None, url_onerror=None):
+    def __call__(self, i, default=None, cast=None, otherwise=None):
+        """
+        request.args(0,default=0,cast=int,otherwise='http://error_url')
+        request.args(0,default=0,cast=int,otherwise=lambda:...)
+        """
         n = len(self)
         if 0<=i<n or -n<=i<0:
             value = self[i]
@@ -36,10 +40,14 @@ class List(list):
                 value = cast(value)
             except (ValueError, TypeError):
                 from http import HTTP, redirect
-                if url_onerror:
-                    redirect(url_onerror)
-                else:
+                if otherwise is None:
                     raise HTTP(404)
+                elif isinstance(otherwise,str):
+                    redirect(otherwise)
+                elif callable(otherwise):
+                    return otherwise()
+                else:
+                    raise RuntimeError, "invalid otherwise"
         return value
 
 class Storage(dict):

@@ -2741,7 +2741,9 @@ class Auth(object):
                 if requires_login:
                     if not user:
                         if not otherwise is None:
-                            return otherwise
+                            if callable(otherwise):
+                                return otherwise()
+                            redirect(otherwise)
                         elif self.settings.allow_basic_login_only or \
                                 basic_accepted or current.request.is_restful:
                             raise HTTP(403,"Not authorized")
