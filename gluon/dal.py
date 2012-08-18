@@ -7228,11 +7228,8 @@ class Table(dict):
             fieldnames.add('id')
             self._id = field
         for field in fields:
-            if not isinstance(field, (Field, Table)):
-                raise SyntaxError, \
-                    'define_table argument is not a Field or Table: %s' % field
-            elif isinstance(field, Field) and not field.name in fieldnames:
-                if hasattr(field, '_db'):
+            if isinstance(field, Field) and not field.name in fieldnames:
+                if field.db is not None:
                     field = copy.copy(field)
                 newfields.append(field)
                 fieldnames.add(field.name)
@@ -7246,9 +7243,9 @@ class Table(dict):
                         field = field.clone(point_self_references_to=t2)
                         newfields.append(field)
                         fieldnames.add(field.name)
-            else:
-                # let's ignore new fields with duplicated names!!!
-                pass
+            elif not isinstance(field, (Field, Table)):
+                raise SyntaxError, \
+                    'define_table argument is not a Field or Table: %s' % field
         fields = newfields
         self._db = db
         tablename = tablename
@@ -8026,6 +8023,9 @@ class FieldLazy(object):
         self.handler = handler
 
 
+def list_represent(x,r=None):
+    return ', '.join(str(y) for y in x or [])
+
 class Field(Expression):
 
     Virtual = FieldVirtual
@@ -8072,13 +8072,13 @@ class Field(Expression):
         length=None,
         default=DEFAULT,
         required=False,
-        requires=DEFAULT,
+        requires=None,
         ondelete='CASCADE',
         notnull=False,
         unique=False,
         uploadfield=True,
         widget=None,
-        label=DEFAULT,
+        label=None,
         comment=None,
         writable=True,
         readable=True,
@@ -8098,24 +8098,17 @@ class Field(Expression):
         filter_out = None,
         custom_qualifier = None,
         ):
-        self.db = None
+        self._db = self.db = None # both for backward compatibility
         self.op = None
         self.first = None
         self.second = None
-        if not isinstance(fieldname,str):
-            raise SyntaxError, "missing field name"
         self.name = fieldname = cleanup(fieldname)
-        if hasattr(Table,fieldname) or fieldname[0] == '_' or \
-                regex_python_keywords.match(fieldname):
+        if not isinstance(fieldname,str) or hasattr(Table,fieldname) or \
+                fieldname[0] == '_' or regex_python_keywords.match(fieldname):
             raise SyntaxError, 'Field: invalid field name: %s' % fieldname
-        if isinstance(type, Table):
-            type = 'reference ' + type._tablename
-        self.type = type  # 'string', 'integer'
-        self.length = (length is None) and DEFAULTLENGTH.get(type,512) or length
-        if default is DEFAULT:
-            self.default = update or None
-        else:
-            self.default = default
+        self.type = type if not isinstance(type, Table) else 'reference %s' % type
+        self.length = length if not length is None else DEFAULTLENGTH.get(self.type,512)
+        self.default = default if default!=DEFAULT else (update or None)
         self.required = required  # is this field required
         self.ondelete = ondelete.upper()  # this is for reference fields only
         self.notnull = notnull
@@ -8125,19 +8118,14 @@ class Field(Expression):
         self.uploadseparate = uploadseparate
         self.uploadfs = uploadfs
         self.widget = widget
-        if label is DEFAULT:
-            self.label = fieldname.replace('_', ' ').title()
-        else:
-            self.label = label or ''
         self.comment = comment
         self.writable = writable
         self.readable = readable
         self.update = update
         self.authorize = authorize
         self.autodelete = autodelete
-        if not represent and type in ('list:integer','list:string'):
-            represent=lambda x,r=None: ', '.join(str(y) for y in x or [])
-        self.represent = represent
+        self.represent = list_represent if \
+            represent==None and type in ('list:integer','list:string') else represent
         self.compute = compute
         self.isattachment = True
         self.custom_store = custom_store
@@ -8147,12 +8135,8 @@ class Field(Expression):
         self.filter_in = filter_in
         self.filter_out = filter_out
         self.custom_qualifier = custom_qualifier
-        if self.label is None:
-            self.label = fieldname.replace('_',' ').title()
-        if requires is None:
-            self.requires = []
-        else:
-            self.requires = requires
+        self.label = label if label!=None else fieldname.replace('_',' ').title()
+        self.requires = requires if requires!=None else []
 
     def clone(self,point_self_references_to=False,**args):
         field = copy.copy(self)
