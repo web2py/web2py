@@ -2435,7 +2435,6 @@ class Auth(object):
             [, onvalidation=DEFAULT [, onaccept=DEFAULT [, log=DEFAULT]]]])
 
         """
-
         table_user = self.settings.table_user
         request = current.request
         response = current.response
@@ -2468,7 +2467,7 @@ class Auth(object):
                        separator=self.settings.label_separator
                        )
         if captcha:
-            addrow(form, captcha.label, captcha, captcha.comment, self.settings.formstyle,'captcha__row')
+            addrow(form, captcha.label, captcha, captcha.comment, self.settings.formstyle,'captcha__row')        
         if form.accepts(request, session,
                         formname='reset_password', dbio=False,
                         onvalidation=onvalidation,
@@ -4459,9 +4458,19 @@ class Wiki(object):
     def markmin_render(self,page):
         return MARKMIN(page.body,url=True,environment=self.env,
                        autolinks=lambda link: expand_one(link,{})).xml()
+    @staticmethod
+    def component(text):
+        """
+        In wiki docs allows @{component:controller/function/args}
+        which renders as a LOAD(..., ajax=True)
+        """
+        items = text.split('/')
+        controller, function, args = items[0], items[1], items[2:]
+        return LOAD(controller, function, args=args, ajax=True).xml()
     def __init__(self,auth,env=None,automenu=True,render='markmin',
                  manage_permissions=False,force_prefix=''):
         self.env = env or {}
+        self.env['component'] = Wiki.component
         if render == 'markmin': render=self.markmin_render
         self.auth = auth
         self.automenu = automenu
