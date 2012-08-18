@@ -4552,8 +4552,8 @@ class Wiki(object):
             current.response.menu = self.menu(request.controller,
                                               request.function)
         zero = request.args(0)
-        if zero=='_media':
-            return self.media(request.args(1,cast=int))
+        if zero and zero.isdigit():
+            return self.media(int(zero))
         elif not zero or not zero.startswith('_'):
             return self.read(zero or 'index')
         elif zero=='_edit':
@@ -4649,9 +4649,13 @@ class Wiki(object):
 
     def editmedia(self,slug):
         auth = self.auth
-        db = auth.db
+        db = auth.db        
         page = db.wiki_page(slug=slug)
         if not (page and self.can_edit(page)): return self.not_authorized(page)
+        self.auth.db.wiki_media.id.represent = lambda id,row:\
+            SPAN('@{////%i/%s.%s}' % \
+                     (id,IS_SLUG.urlify(row.title.split('.')[0]),
+                      row.file.split('.')[-1]))
         self.auth.db.wiki_media.wiki_page.default = page.id
         self.auth.db.wiki_media.wiki_page.writable = False
         content = SQLFORM.grid(
@@ -4672,6 +4676,7 @@ class Wiki(object):
         return dict(content=form)
     def pages(self):
         if not self.can_manage(): return self.not_authorized()
+        self.auth.db.wiki_page.id.represent = lambda id,row:SPAN('@{////%s}' % row.slug)
         self.auth.db.wiki_page.title.represent = lambda title,row: \
             A(title,_href=URL(args=row.slug))
         content=SQLFORM.grid(
@@ -4691,7 +4696,7 @@ class Wiki(object):
         media = db.wiki_media(id)
         if media:
             if self.manage_permissions:
-                page = db.wiki_page(media.page)
+                page = db.wiki_page(media.wiki_page)
                 if not self.can_read(page): return self.not_authorized(page)
             request.args = [media.file]
             return current.response.download(request,db)

@@ -510,7 +510,7 @@ META = '\x06'
 LINK = '\x07'
 DISABLED_META = '\x08'
 LATEX = '<img src="http://chart.apis.google.com/chart?cht=tx&chl=%s" />'
-regex_URL=re.compile(r'@\{(?P<f>\w+)/(?P<args>.*?)\}')
+regex_URL=re.compile(r'@\{/(?P<a>\w*)/(?P<c>\w*)/(?P<f>\w*(\.\w+)?)(/(?P<args>[\w\.\-/]+))?\}')
 regex_env=re.compile(r'@\{(?P<a>[\w\-\.]+?)(\:(?P<b>.*?))?\}')
 regex_expand_meta = re.compile('('+META+'|'+DISABLED_META+')')
 regex_dd=re.compile(r'\$\$(?P<latex>.*?)\$\$')
@@ -801,8 +801,9 @@ def render(text,
         # this is experimental @{function/args}
         # turns into a digitally signed URL
         def u1(match,URL=URL):
-            f,args = match.group('f','args')            
-            return URL(f,args=args.split('/'), scheme=True, host=True)
+            a,c,f,args = match.group('a','c','f','args')                        
+            return URL(a=a or None,c=c or None,f = f or None,
+                       args=args.split('/'), scheme=True, host=True)
         text = regex_URL.sub(u1,text)
 
     if latex == 'google':
