@@ -510,7 +510,7 @@ META = '\x06'
 LINK = '\x07'
 DISABLED_META = '\x08'
 LATEX = '<img src="http://chart.apis.google.com/chart?cht=tx&chl=%s" />'
-regex_URL=re.compile(r'@\{/(?P<a>\w*)/(?P<c>\w*)/(?P<f>\w*(\.\w+)?)(/(?P<args>[\w\.\-/]+))?\}')
+regex_URL=re.compile(r'@/(?P<a>\w*)/(?P<c>\w*)/(?P<f>\w*(\.\w+)?)(/(?P<args>[\w\.\-/]+))?')
 regex_env=re.compile(r'@\{(?P<a>[\w\-\.]+?)(\:(?P<b>.*?))?\}')
 regex_expand_meta = re.compile('('+META+'|'+DISABLED_META+')')
 regex_dd=re.compile(r'\$\$(?P<latex>.*?)\$\$')

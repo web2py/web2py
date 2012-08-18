@@ -4653,7 +4653,7 @@ class Wiki(object):
         page = db.wiki_page(slug=slug)
         if not (page and self.can_edit(page)): return self.not_authorized(page)
         self.auth.db.wiki_media.id.represent = lambda id,row:\
-            SPAN('@{////%i/%s.%s}' % \
+            SPAN('@////%i/%s.%s' % \
                      (id,IS_SLUG.urlify(row.title.split('.')[0]),
                       row.file.split('.')[-1]))
         self.auth.db.wiki_media.wiki_page.default = page.id
@@ -4676,7 +4676,7 @@ class Wiki(object):
         return dict(content=form)
     def pages(self):
         if not self.can_manage(): return self.not_authorized()
-        self.auth.db.wiki_page.id.represent = lambda id,row:SPAN('@{////%s}' % row.slug)
+        self.auth.db.wiki_page.id.represent = lambda id,row:SPAN('@////%s' % row.slug)
         self.auth.db.wiki_page.title.represent = lambda title,row: \
             A(title,_href=URL(args=row.slug))
         content=SQLFORM.grid(
