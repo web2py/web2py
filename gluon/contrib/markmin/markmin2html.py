@@ -511,7 +511,7 @@ LINK = '\x07'
 DISABLED_META = '\x08'
 LATEX = '<img src="http://chart.apis.google.com/chart?cht=tx&chl=%s" />'
 regex_URL=re.compile(r'@\{(?P<f>\w+)/(?P<args>.+?)\}')
-regex_env=re.compile(r'@\{(?P<a>\w+?)\}')
+regex_env=re.compile(r'@\{(?P<a>[\w\-\.]+?)(\:(?P<b>.*?))?\}')
 regex_expand_meta = re.compile('('+META+'|'+DISABLED_META+')')
 regex_dd=re.compile(r'\$\$(?P<latex>.*?)\$\$')
 regex_code = re.compile('('+META+'|'+DISABLED_META+r')|(``(?P<t>.+?)``(?::(?P<c>[a-zA-Z][_a-zA-Z\-\d]*)(?:\[(?P<p>[^\]]*)\])?)?)',re.S)
@@ -534,8 +534,9 @@ ttab_in  = maketrans("'`:*~\\[]{}@$+-.#", '\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\
 ttab_out = maketrans('\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b',"'`:*~\\[]{}@$+-.#")
 
 def markmin_escape(text):
-   """ insert \\ before markmin control characters: '`:*~[]{}@$ """
-   return regex_markmin_escape.sub(lambda m: '\\'+m.group(0).replace('\\','\\\\'), text)
+    """ insert \\ before markmin control characters: '`:*~[]{}@$ """
+    return regex_markmin_escape.sub(
+       lambda m: '\\'+m.group(0).replace('\\','\\\\'), text)
 
 def autolinks_simple(url):
     """
@@ -784,8 +785,8 @@ def render(text,
     >>> render("this is ``a green text``:color[green:]")
     '<p>this is <span style="color: green;">a green text</span></p>'
 
-    >>> render("**@{probe}**", environment=dict(probe="this is a test"))
-    '<p><strong>this is a test</strong></p>'
+    >>> render("**@{probe:1}**", environment=dict(probe=lambda t:"test %s" % t))
+    '<p><strong>test 1</strong></p>'
 
     >>> render('[[id1 [span **messag** in ''markmin''] ]] ... [[**link** to id [link\\\'s title] #mark1]]')
     '<p><a name="markmin_id1">span <strong>messag</strong> in markmin</a> ... <a href="#markmin_mark1" title="link\\\'s title"><strong>link</strong> to id</a></p>'
@@ -798,7 +799,13 @@ def render(text,
 
     if environment:
         def u2(match, environment=environment):
-            return str(environment.get(match.group('a'), match.group(0)))
+            f = environment.get(match.group('a'), match.group(0))
+            if callable(f):
+                try:
+                    f = f(match.group('b')) 
+                except Exception, e:
+                    f = 'ERROR: %s' % e
+            return str(f)
         text = regex_env.sub(u2, text)
 
     if URL is not None:
