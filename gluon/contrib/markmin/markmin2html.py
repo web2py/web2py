@@ -510,7 +510,7 @@ META = '\x06'
 LINK = '\x07'
 DISABLED_META = '\x08'
 LATEX = '<img src="http://chart.apis.google.com/chart?cht=tx&chl=%s" />'
-regex_URL=re.compile(r'@\{(?P<f>\w+)/(?P<args>.+?)\}')
+regex_URL=re.compile(r'@\{(?P<f>\w+)/(?P<args>.*?)\}')
 regex_env=re.compile(r'@\{(?P<a>[\w\-\.]+?)(\:(?P<b>.*?))?\}')
 regex_expand_meta = re.compile('('+META+'|'+DISABLED_META+')')
 regex_dd=re.compile(r'\$\$(?P<latex>.*?)\$\$')
@@ -797,22 +797,11 @@ def render(text,
     text = str(text or '')
     text = regex_backslash.sub(lambda m: m.group(1).translate(ttab_in), text)
 
-    if environment:
-        def u2(match, environment=environment):
-            f = environment.get(match.group('a'), match.group(0))
-            if callable(f):
-                try:
-                    f = f(match.group('b')) 
-                except Exception, e:
-                    f = 'ERROR: %s' % e
-            return str(f)
-        text = regex_env.sub(u2, text)
-
     if URL is not None:
         # this is experimental @{function/args}
         # turns into a digitally signed URL
         def u1(match,URL=URL):
-            f,args = match.group('f','args')
+            f,args = match.group('f','args')            
             return URL(f,args=args.split('/'), scheme=True, host=True)
         text = regex_URL.sub(u1,text)
 
@@ -1265,8 +1254,21 @@ def render(text,
         if beg and end:
             return '<pre><code%s%s>%s</code></pre>' % (cls, id, escape(code[1:-1]))
         return '<code%s%s>%s</code>' % (cls, id, escape(code[beg:end]))
+
     text = regex_expand_meta.sub(expand_meta, text)
     text = text.translate(ttab_out)
+
+    if environment:
+        def u2(match, environment=environment):
+            f = environment.get(match.group('a'), match.group(0))
+            if callable(f):
+                try:
+                    f = f(match.group('b')) 
+                except Exception, e:
+                    f = 'ERROR: %s' % e
+            return str(f)
+        text = regex_env.sub(u2, text)
+
     return text
 
 def markmin2html(text, extra={}, allowed={}, sep='p', 

@@ -83,6 +83,8 @@ class Storage(object):
         setattr(self,key,value)
     def __delitem__(self,key):
         delattr(self,key)
+    def __nonzero__(self):
+        return len(self.__dict__)>0
     def pop(self,key,default=None):
         if key in self:
             default = getattr(self,key)
