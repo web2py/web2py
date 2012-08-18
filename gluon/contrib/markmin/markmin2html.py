@@ -544,11 +544,11 @@ def autolinks_simple(url):
     image, video or audio tag
     """
     u_url=url.lower()
-    if u_url.endswith(('jpg','jpeg','gif','png')):
+    if u_url.endswith(('.jpg','.jpeg','.gif','.png')):
         return '<img src="%s" controls />' % url
-    elif u_url.endswith(('mp4','mpeg','mov','ogv')):
+    elif u_url.endswith(('.mp4','.mpeg','.mov','.ogv')):
         return '<video src="%s" controls></video>' % url
-    elif u_url.endswith(('mp3','wav','ogg')):
+    elif u_url.endswith(('.mp3','.wav','.ogg')):
         return '<audio src="%s" controls></audio>' % url
     return '<a href="%s">%s</a>' % (url,url)
 
