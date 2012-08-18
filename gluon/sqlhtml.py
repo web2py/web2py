@@ -842,7 +842,7 @@ class SQLFORM(FORM):
         nbsp = XML('&nbsp;') # Firefox2 does not display fields with blanks
         FORM.__init__(self, *[], **attributes)
         ofields = fields
-        keyed = hasattr(table,'_primarykey')
+        keyed = table._primarykey
 
         # if no fields are provided, build it from the provided table
         # will only use writable or readable fields, unless forced to ignore
@@ -1132,7 +1132,7 @@ class SQLFORM(FORM):
         if request_vars.__class__.__name__ == 'Request':
             request_vars = request_vars.post_vars
 
-        keyed = hasattr(self.table, '_primarykey')
+        keyed = self.table._primarykey
 
         # implement logic to detect whether record exist but has been modified
         # server side
@@ -2432,12 +2432,12 @@ class SQLTABLE(TABLE):
                             href = '%s/%s/%s' % (linkto, ref, r_old)
                             if ref.find('.') >= 0:
                                 tref,fref = ref.split('.')
-                                if hasattr(sqlrows.db[tref],'_primarykey'):
+                                if sqlrows.db[tref]._primarykey:
                                     href = '%s/%s?%s' % (linkto, tref, urllib.urlencode({fref:r}))
                         r = A(represent(field,r,record), _href=str(href))
                     elif field.represent:
                         r = represent(field,r,record)
-                elif linkto and hasattr(field._table,'_primarykey') and fieldname in field._table._primarykey:
+                elif linkto and fieldname in field._table._primarykey:
                     # have to test this with multi-key tables
                     key = urllib.urlencode(dict( [ \
                                 ((tablename in record \

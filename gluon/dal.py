@@ -174,7 +174,7 @@ import platform
 CALLABLETYPES = (types.LambdaType, types.FunctionType,
                  types.BuiltinFunctionType,
                  types.MethodType, types.BuiltinMethodType)
-
+TABLE_ARGS = ('migrate','primarykey','fake_migrate','format','singular','plural','trigger_name','sequence_name','common_filter','polymodel','table_class')
 
 ###################################################################################
 # following checks allow the use of dal without web2py, as a standalone module
@@ -664,10 +664,10 @@ class BaseAdapter(ConnectionPool):
                 constraint_name = self.constraint_name(tablename, field.name)
                 if not '.' in referenced \
                         and referenced != tablename \
-                        and hasattr(table,'_primarykey'):
+                        and table._primarykey:
                     ftype = self.types['integer']
                 else:
-                    if hasattr(table,'_primarykey'):
+                    if table._primarykey:
                         rtablename,rfieldname = referenced.split('.')
                         rtable = table._db[rtablename]
                         rfield = rtable[rfieldname]
@@ -783,7 +783,7 @@ class BaseAdapter(ConnectionPool):
                 foreign_key = ', '.join(pkeys),
                 on_delete_action = field.ondelete)
 
-        if hasattr(table,'_primarykey'):
+        if table._primarykey:
             query = "CREATE TABLE %s(\n    %s,\n    %s) %s" % \
                 (tablename, fields,
                  self.PRIMARY_KEY(', '.join(table._primarykey)),other)
@@ -1053,7 +1053,7 @@ class BaseAdapter(ConnectionPool):
             if isinstance(e,self.integrity_error_class()):
                 return None
             raise e
-        if hasattr(table,'_primarykey'):
+        if table._primarykey:
             return dict([(k[0].name, k[1]) for k in fields \
                              if k[0].name in table._primarykey])
         id = self.lastrowid(table)
@@ -1449,7 +1449,7 @@ class BaseAdapter(ConnectionPool):
                 sql_o += ' ORDER BY %s' % self.expand(orderby)
         if limitby:
             if not orderby and tablenames:
-                sql_o += ' ORDER BY %s' % ', '.join(['%s.%s'%(t,x) for t in tablenames for x in ((hasattr(self.db[t], '_primarykey') and self.db[t]._primarykey) or [self.db[t]._id.name])])
+                sql_o += ' ORDER BY %s' % ', '.join(['%s.%s'%(t,x) for t in tablenames for x in (self.db[t]._primarykey or [self.db[t]._id.name])])
             # oracle does not support limitby
         sql = self.select_limitby(sql_s, sql_f, sql_t, sql_w, sql_o, limitby)
         if for_update and self.can_select_for_update is True:
@@ -3583,7 +3583,7 @@ class IngresAdapter(BaseAdapter):
         # post create table auto inc code (if needed)
         # modify table to btree for performance....
         # Older Ingres releases could use rule/trigger like Oracle above.
-        if hasattr(table,'_primarykey'):
+        if table._primarykey:
             modify_tbl_sql = 'modify %s to btree unique on %s' % \
                 (table._tablename,
                  ', '.join(["'%s'" % x for x in table.primarykey]))
@@ -6576,7 +6576,7 @@ class DAL(dict):
         self._bigint_id = bigint_id
         self._debug = debug
         self._migrated = []
-        self._LAZY = {}
+        self._LAZY_TABLES = {}
         self._lazy_tables = lazy_tables
         if not str(attempts).isdigit() or attempts < 0:
             attempts = 5
@@ -6908,105 +6908,76 @@ def index():
         tablename,
         *fields,
         **args
-        ):
-        if tablename.startswith('_') or hasattr(self,tablename) or \
+        ):       
+        if not isinstance(tablename,str):
+            raise SyntaxError, "missing table name"
+        elif tablename.startswith('_') or hasattr(self,tablename) or \
                 regex_python_keywords.match(tablename):
             raise SyntaxError, 'invalid table name: %s' % tablename
         elif tablename in self.tables:
             raise SyntaxError, 'table already defined: %s' % tablename
         elif self.check_reserved:
             self.check_reserved_keyword(tablename)
-
-        if self._lazy_tables and not tablename in self._LAZY:
-            self._LAZY[tablename] = (fields,args)
-            self.tables.append(tablename)    
         else:
-            t = self._define_table(tablename,*fields,**args)
-            self.tables.append(tablename)
-            return t
+            invalid_args = [key for key in args if not key in TABLE_ARGS]
+            if invalid_args:
+                raise SyntaxError, 'invalid table "%s" attributes: %s' \
+                    % (tablename,invalid_args)         
+        if self._lazy_tables and not tablename in self._LAZY_TABLES:
+            self._LAZY_TABLES[tablename] = (tablename,fields,args)
+            table = None
+        else:
+            table = self.lazy_define_table(tablename,*fields,**args)
+        self.tables.append(tablename)
+        return table
 
-    def _define_table(
+    def lazy_define_table(
         self,
         tablename,
         *fields,
         **args
         ):
-
-        for key in args:
-            if key not in [
-                    'migrate',
-                    'primarykey',
-                    'fake_migrate',
-                    'format',
-                    'singular',
-                    'plural',
-                    'trigger_name',
-                    'sequence_name',
-                    'common_filter',
-                    'polymodel',
-                    'table_class']:
-                raise SyntaxError, 'invalid table "%s" attribute: %s' \
-                    % (tablename, key)
-        if not isinstance(tablename,str):
-            raise SyntaxError, "missing table name"
-        tablename = cleanup(tablename)
-        migrate = self._migrate_enabled and args.get('migrate',
-                                                     self._migrate)
-        fake_migrate = self._fake_migrate_all or args.get('fake_migrate',
-                                                          self._fake_migrate)
-        table_class = args.get('table_class',Table)
-        format = args.get('format',None)
-        trigger_name = args.get('trigger_name', None)
-        sequence_name = args.get('sequence_name', None)
-        primarykey =args.get('primarykey',None)
-        polymodel = args.get('polymodel',None)
-        singular = args.get('singular',tablename.replace('_',' ').capitalize())
-        plural = args.get('plural',pluralize(singular.lower()).capitalize())
-        lowertablename = tablename.lower()
-
         if self._common_fields:
-            fields = [f for f in fields] + [f for f in self._common_fields]
+            fields = fields + self._common_fields
 
-        common_filter = args.get('common_filter', None)
-
-        t = self[tablename] = table_class(self, tablename, *fields,
-                                          **dict(primarykey=primarykey,
-                                                 trigger_name=trigger_name,
-                                                 sequence_name=sequence_name,
-                                                 common_filter=common_filter))
-
+        table_class = args.get('table_class',Table)
+        table = table_class(self, tablename, *fields, **args)
+        table._actual = True
+        self[tablename] = table
+        
         # db magic
         if self._uri in (None,'None'):
-            return t
+            return table
 
-        t._create_references()
+        table._create_references()
 
+        migrate = self._migrate_enabled and args.get(
+            'migrate',self._migrate)
         if migrate or self._adapter.dbengine=='google:datastore':
+            fake_migrate = self._fake_migrate_all or args.get(
+                'fake_migrate',self._fake_migrate)
+            polymodel = args.get('polymodel',None)
             try:
                 sql_locker.acquire()
-                self._adapter.create_table(t,migrate=migrate,
+                self._adapter.create_table(table,migrate=migrate,
                                            fake_migrate=fake_migrate,
                                            polymodel=polymodel)
             finally:
                 sql_locker.release()
         else:
-            t._dbt = None
-        t._format = format
-        t._singular = singular
-        t._plural = plural
-        t._actual = True
-        return t
+            table._dbt = None
+        return table
 
     def __iter__(self):
         for tablename in self.tables:
             yield self[tablename]
 
     def __getitem__(self, key):
-        tablename = str(key)
-        if not tablename is '_LAZY' and tablename in self._LAZY:
-            fields, args = self._LAZY.pop(tablename)
-            return self._define_table(tablename,*fields,**args)
-        return dict.__getitem__(self, tablename)
+        key = str(key)
+        if not key is '_LAZY_TABLES' and key in self._LAZY_TABLES:
+            tablename, fields, args = self._LAZY_TABLES.pop(key)
+            return self.lazy_define_table(tablename,*fields,**args)
+        return dict.__getitem__(self, key)
 
     def __setitem__(self, key, value):
         dict.__setitem__(self, str(key), value)
@@ -7228,6 +7199,12 @@ class Table(dict):
         self._trigger_name = args.get('trigger_name',None) or \
             db and db._adapter.trigger_name(tablename)
         self._common_filter = args.get('common_filter', None)
+        self._format = args.get('format',None)
+        self._singular = args.get(
+            'singular',tablename.replace('_',' ').capitalize())
+        self._plural = args.get(
+            'plural',pluralize(self._singular.lower()).capitalize())
+        self._primarykey = args.get('primarykey', None)
 
         self._before_insert = []
         self._before_update = [lambda self,fs:self.delete_uploaded_files(fs)]
@@ -7236,17 +7213,15 @@ class Table(dict):
         self._after_update = []
         self._after_delete = []
 
-        primarykey = args.get('primarykey', None)
         fieldnames,newfields=set(),[]
-        if primarykey:
-            if not isinstance(primarykey,list):
+        if self._primarykey:
+            if not isinstance(self._primarykey,list):
                 raise SyntaxError, \
                     "primarykey must be a list of fields from table '%s'" \
                     % tablename
-            self._primarykey = primarykey
-            if len(primarykey)==1:
+            if len(self._primarykey)==1:
                 self._id = [f for f in fields if isinstance(f,Field) \
-                                and f.name==primarykey[0]][0]
+                                and f.name==self._primarykey[0]][0]
         elif not [f for f in fields if isinstance(f,Field) and f.type=='id']:
             field = Field('id', 'id')
             newfields.append(field)
@@ -7318,7 +7293,7 @@ class Table(dict):
                 field.requires = sqlhtml_validators(field)
         self.ALL = SQLALL(self)
 
-        if hasattr(self,'_primarykey'):
+        if self._primarykey:
             for k in self._primarykey:
                 if k not in self.fields:
                     raise SyntaxError, \
@@ -7385,7 +7360,7 @@ class Table(dict):
                 rtable = self._db[rtablename]
                 if len(refs)==2:
                     rfieldname = refs[1]
-                    if not hasattr(rtable,'_primarykey'):
+                    if not rtable._primarykey:
                         raise SyntaxError,\
                             'keyed tables can only reference other keyed tables (for now)'
                     if rfieldname not in rtable.fields:
