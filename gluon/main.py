@@ -297,6 +297,7 @@ def parse_get_post_vars(request, environ):
         except TypeError:
             keys = []
         for key in keys:
+            if key is None: continue # not sure why cgi.FieldStorage returns None key
             dpk = dpost[key]
             # if en element is not a file replace it with its value else leave it alone
             if isinstance(dpk, list):

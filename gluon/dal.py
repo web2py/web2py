@@ -664,15 +664,15 @@ class BaseAdapter(ConnectionPool):
                 constraint_name = self.constraint_name(tablename, field.name)
                 if not '.' in referenced \
                         and referenced != tablename \
-                        and table._primarykey:
+                        and hasattr(table,'_primarykey'):
                     ftype = self.types['integer']
                 else:
-                    if table._primarykey:
+                    if hasattr(table,'_primarykey'):
                         rtablename,rfieldname = referenced.split('.')
                         rtable = table._db[rtablename]
                         rfield = rtable[rfieldname]
                         # must be PK reference or unique
-                        if rfieldname in rtable._primarykey or rfield.unique:
+                        if rfieldname in hasattr(rtable,'_primarykey') or rfield.unique:
                             ftype = self.types[rfield.type[:9]] % \
                                 dict(length=rfield.length)
                             # multicolumn primary key reference?
@@ -783,7 +783,7 @@ class BaseAdapter(ConnectionPool):
                 foreign_key = ', '.join(pkeys),
                 on_delete_action = field.ondelete)
 
-        if table._primarykey:
+        if hasattr(table,'_primarykey'):
             query = "CREATE TABLE %s(\n    %s,\n    %s) %s" % \
                 (tablename, fields,
                  self.PRIMARY_KEY(', '.join(table._primarykey)),other)
@@ -1053,7 +1053,7 @@ class BaseAdapter(ConnectionPool):
             if isinstance(e,self.integrity_error_class()):
                 return None
             raise e
-        if table._primarykey:
+        if hasattr(table,'_primarykey'):
             return dict([(k[0].name, k[1]) for k in fields \
                              if k[0].name in table._primarykey])
         id = self.lastrowid(table)
@@ -1449,7 +1449,7 @@ class BaseAdapter(ConnectionPool):
                 sql_o += ' ORDER BY %s' % self.expand(orderby)
         if limitby:
             if not orderby and tablenames:
-                sql_o += ' ORDER BY %s' % ', '.join(['%s.%s'%(t,x) for t in tablenames for x in (self.db[t]._primarykey or [self.db[t]._id.name])])
+                sql_o += ' ORDER BY %s' % ', '.join(['%s.%s'%(t,x) for t in tablenames for x in (hasattr(self.db[t],'_primarykey') and self.db[t]._primarykey or [self.db[t]._id.name])])
             # oracle does not support limitby
         sql = self.select_limitby(sql_s, sql_f, sql_t, sql_w, sql_o, limitby)
         if for_update and self.can_select_for_update is True:
@@ -3583,7 +3583,7 @@ class IngresAdapter(BaseAdapter):
         # post create table auto inc code (if needed)
         # modify table to btree for performance....
         # Older Ingres releases could use rule/trigger like Oracle above.
-        if table._primarykey:
+        if hasattr(table,'_primarykey'):
             modify_tbl_sql = 'modify %s to btree unique on %s' % \
                 (table._tablename,
                  ', '.join(["'%s'" % x for x in table.primarykey]))
@@ -7199,7 +7199,9 @@ class Table(dict):
             'singular',tablename.replace('_',' ').capitalize())
         self._plural = args.get(
             'plural',pluralize(self._singular.lower()).capitalize())
-        self._primarykey = args.get('primarykey', None)
+        # horrible but for backard compatibility of appamdin:
+        if 'primarykey' in args and args['primarykey']:
+            self._primarykey = args.get('primarykey', None)
 
         self._before_insert = []
         self._before_update = [lambda self,fs:self.delete_uploaded_files(fs)]
@@ -7209,7 +7211,7 @@ class Table(dict):
         self._after_delete = []
 
         fieldnames,newfields=set(),[]
-        if self._primarykey:
+        if hasattr(self,'_primarykey'):
             if not isinstance(self._primarykey,list):
                 raise SyntaxError, \
                     "primarykey must be a list of fields from table '%s'" \
@@ -7285,7 +7287,7 @@ class Table(dict):
                 field.requires = sqlhtml_validators(field)
         self.ALL = SQLALL(self)
 
-        if self._primarykey:
+        if hasattr(self,'_primarykey'):
             for k in self._primarykey:
                 if k not in self.fields:
                     raise SyntaxError, \
@@ -7352,7 +7354,7 @@ class Table(dict):
                 rtable = self._db[rtablename]
                 if len(refs)==2:
                     rfieldname = refs[1]
-                    if not rtable._primarykey:
+                    if not hasattr(rtable,'_primarykey'):
                         raise SyntaxError,\
                             'keyed tables can only reference other keyed tables (for now)'
                     if rfieldname not in rtable.fields:
