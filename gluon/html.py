@@ -1358,6 +1358,8 @@ class A(DIV):
     tag = 'a'
 
     def xml(self):
+        if not self.components and self['_href']:
+            self.append(self['_href'])
         if self['delete']:
             d = "jQuery(this).closest('%s').remove();" % self['delete']
         else:
