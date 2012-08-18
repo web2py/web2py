@@ -6943,19 +6943,14 @@ def index():
         table_class = args.get('table_class',Table)
         table = table_class(self, tablename, *fields, **args)
         table._actual = True
-        self[tablename] = table
-        
-        # db magic
-        if self._uri in (None,'None'):
-            return table
+        self[tablename] = table        
+        table._create_references() # must follow above line to handle self references
 
-        table._create_references()
-
-        migrate = self._migrate_enabled and args.get(
-            'migrate',self._migrate)
-        if migrate or self._adapter.dbengine=='google:datastore':
-            fake_migrate = self._fake_migrate_all or args.get(
-                'fake_migrate',self._fake_migrate)
+        migrate = self._migrate_enabled and args.get('migrate',self._migrate)
+        if migrate and not self._uri in (None,'None') \
+                or self._adapter.dbengine=='google:datastore':
+            fake_migrate = self._fake_migrate_all or \
+                args.get('fake_migrate',self._fake_migrate)
             polymodel = args.get('polymodel',None)
             try:
                 sql_locker.acquire()
