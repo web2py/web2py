@@ -12,7 +12,6 @@
 '@markmin\x01Searching: **%s** %%{file}': 'Найдено: **%s** %%{файл}',
 'A new version of web2py is available': 'Доступна новая версия web2py',
 'A new version of web2py is available: %s': 'Доступна новая версия web2py: %s',
-'A new version of web2py is available: Version 1.85.3 (2010-09-18 07:07:46)\n': 'Доступна новая версия web2py: Версия 1.85.3 (2010-09-18 07:07:46)\n',
 'Abort': 'Отмена',
 'About': 'О',
 'About application': 'О приложении',

@@ -19,7 +19,7 @@ import struct
 import decimal
 import unicodedata
 from cStringIO import StringIO
-from utils import simple_hash, hmac_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
+from utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 
 __all__ = [
     'CLEANUP',
@@ -263,12 +263,16 @@ class IS_LENGTH(Validator):
         self.error_message = error_message
 
     def __call__(self, value):
-        if isinstance(value, cgi.FieldStorage):
+        if value is None:
+            length = 0
+            if self.minsize <= length <= self.maxsize:
+                return (value, None)
+        elif isinstance(value, cgi.FieldStorage):
             if value.file:
                 value.file.seek(0, os.SEEK_END)
                 length = value.file.tell()
                 value.file.seek(0, os.SEEK_SET)
-            else:
+            elif hasattr(value,'value'):
                 val = value.value
                 if val:
                     length = len(val)
@@ -377,7 +381,7 @@ class IS_IN_SET(Validator):
         return (value, None)
 
 
-regex1 = re.compile('[\w_]+\.[\w_]+')
+regex1 = re.compile('\w+\.\w+')
 regex2 = re.compile('%\((?P<name>[^\)]+)\)s')
 
 
@@ -413,8 +417,7 @@ class IS_IN_DB(Validator):
             self.dbset = dbset()
         else:
             self.dbset = dbset
-        self.field = field
-        (ktable, kfield) = str(self.field).split('.')
+        (ktable, kfield) = str(field).split('.')
         if not label:
             label = '%%(%s)s' % kfield
         if isinstance(label,str):
@@ -457,7 +460,7 @@ class IS_IN_DB(Validator):
             orderby = self.orderby or reduce(lambda a,b:a|b,fields)
             groupby = self.groupby
             distinct = self.distinct
-            dd = dict(orderby=orderby, groupby=groupby, 
+            dd = dict(orderby=orderby, groupby=groupby,
                       distinct=distinct, cache=self.cache)
             records = self.dbset(table).select(*fields, **dd)
         else:
@@ -481,6 +484,8 @@ class IS_IN_DB(Validator):
         return items
 
     def __call__(self, value):
+        table = self.dbset.db[self.ktable]
+        field = table[self.kfield]
         if self.multiple:
             if isinstance(value,list):
                 values=value
@@ -491,7 +496,7 @@ class IS_IN_DB(Validator):
             if isinstance(self.multiple,(tuple,list)) and \
                     not self.multiple[0]<=len(values)<self.multiple[1]:
                 return (values, translate(self.error_message))
-            if not [x for x in values if not str(x) in self.theset]:
+            if self.dbset(field.belongs(values)).count()==len(values):
                 return (values, None)
         elif self.theset:
             if str(value) in self.theset:
@@ -500,8 +505,6 @@ class IS_IN_DB(Validator):
                 else:
                     return (value, None)
         else:
-            (ktable, kfield) = str(self.field).split('.')
-            field = self.dbset.db[ktable][kfield]
             if self.dbset(field == value).count():
                 if self._and:
                     return self._and(value)
@@ -2120,6 +2123,7 @@ class IS_DATE(Validator):
                  error_message='enter date as %(format)s'):
         self.format = translate(format)
         self.error_message = str(error_message)
+        self.extremes = {}
 
     def __call__(self, value):
         if isinstance(value,datetime.date):
@@ -2130,7 +2134,8 @@ class IS_DATE(Validator):
             value = datetime.date(y, m, d)
             return (value, None)
         except:
-            return (value, translate(self.error_message) % IS_DATETIME.nice(self.format))
+            self.extremes.update(IS_DATETIME.nice(self.format))
+            return (value, translate(self.error_message) % self.extremes)
 
     def formatter(self, value):
         format = self.format
@@ -2176,6 +2181,7 @@ class IS_DATETIME(Validator):
                  error_message='enter date and time as %(format)s'):
         self.format = translate(format)
         self.error_message = str(error_message)
+        self.extremes = {}
 
     def __call__(self, value):
         if isinstance(value,datetime.datetime):
@@ -2186,7 +2192,9 @@ class IS_DATETIME(Validator):
             value = datetime.datetime(y, m, d, hh, mm, ss)
             return (value, None)
         except:
-            return (value, translate(self.error_message) % IS_DATETIME.nice(self.format))
+            self.extremes.update(IS_DATETIME.nice(self.format))
+            return (value, translate(self.error_message) % self.extremes)
+
 
     def formatter(self, value):
         format = self.format
@@ -2196,7 +2204,8 @@ class IS_DATETIME(Validator):
         format = format.replace('%Y',y)
         if year<1900:
             year = 2000
-        d = datetime.datetime(year,value.month,value.day,value.hour,value.minute,value.second)
+        d = datetime.datetime(year,value.month,value.day,
+                              value.hour,value.minute,value.second)
         return d.strftime(format)
 
 class IS_DATE_IN_RANGE(IS_DATE):
@@ -2234,19 +2243,19 @@ class IS_DATE_IN_RANGE(IS_DATE):
                 error_message = "enter date on or after %(min)s"
             else:
                 error_message = "enter date in range %(min)s %(max)s"
-        extremes = dict(min=minimum, max=maximum)
         IS_DATE.__init__(self,
                          format = format,
-                         error_message = translate(error_message) % extremes)
+                         error_message = error_message)
+        self.extremes = dict(min=minimum, max=maximum)
 
     def __call__(self, value):
         (value, msg) = IS_DATE.__call__(self,value)
         if msg is not None:
             return (value, msg)
         if self.minimum and self.minimum > value:
-            return (value, self.error_message)
+            return (value, translate(self.error_message) % self.extremes)
         if self.maximum and value > self.maximum:
-            return (value, self.error_message)
+            return (value, translate(self.error_message) % self.extremes)
         return (value, None)
 
 
@@ -2284,19 +2293,19 @@ class IS_DATETIME_IN_RANGE(IS_DATETIME):
                 error_message = "enter date and time on or after %(min)s"
             else:
                 error_message = "enter date and time in range %(min)s %(max)s"
-        extremes = dict(min = minimum, max = maximum)
         IS_DATETIME.__init__(self,
                          format = format,
-                         error_message = translate(error_message) % extremes)
+                         error_message = error_message)
+        self.extremes = dict(min = minimum, max = maximum)
 
     def __call__(self, value):
         (value, msg) = IS_DATETIME.__call__(self, value)
         if msg is not None:
             return (value, msg)
         if self.minimum and self.minimum > value:
-            return (value, self.error_message)
+            return (value, translate(self.error_message) % self.extremes)
         if self.maximum and value > self.maximum:
-            return (value, self.error_message)
+            return (value, translate(self.error_message) % self.extremes)
         return (value, None)
 
 
@@ -2541,10 +2550,6 @@ class LazyCrypt(object):
         else assume the default digest_alg. If not key at all, set key=''
 
         If a salt is specified use it, if salt is True, set salt to uuid
-
-        masterkey is the key (as specified in argument) + salt
-        if masterkey is '' then simple_hash does not do HMAC
-        else simple_hash calls hmac_hash
         (this should all be backward compatible)
 
         Options:
@@ -2555,7 +2560,7 @@ class LazyCrypt(object):
         key = 'pbkdf2(1000,64,sha512):uuid' 1000 iterations and 64 chars length
         """
         if self.crypted:
-            return self.crypted                
+            return self.crypted
         if self.crypt.key:
             if ':' in self.crypt.key:
                 digest_alg, key = self.crypt.key.split(':',1)
@@ -2564,42 +2569,40 @@ class LazyCrypt(object):
         else:
             digest_alg, key = self.crypt.digest_alg, ''
         if self.crypt.salt:
-            if self.crypt.salt == True:                
+            if self.crypt.salt == True:
                 salt = str(web2py_uuid()).replace('-','')[-16:]
             else:
                 salt = self.crypt.salt
         else:
             salt = ''
-        masterkey = key+salt
-        hashed = simple_hash(self.password, masterkey, digest_alg)
+        hashed = simple_hash(self.password, key, salt, digest_alg)
         self.crypted = '%s$%s$%s' % (digest_alg, salt, hashed)
         return self.crypted
 
-    def __eq__(self, stored_password):        
+    def __eq__(self, stored_password):
         """
         compares the current lazy crypted password with a stored password
         """
         if self.crypt.key:
             if ':' in self.crypt.key:
-                key = self.crypt.key.split(':')[1] 
+                key = self.crypt.key.split(':')[1]
             else:
                 key = self.crypt.key
         else:
             key = ''
         if stored_password.count('$')==2:
             (digest_alg, salt, hash) = stored_password.split('$')
-            masterkey = key+salt
-            h = simple_hash(self.password, masterkey, digest_alg)
-            temp_pass = '%s$%s$%s' % (digest_alg, salt, h)            
+            h = simple_hash(self.password, key, salt, digest_alg)
+            temp_pass = '%s$%s$%s' % (digest_alg, salt, h)
         else: # no salting
             # guess digest_alg
             digest_alg = DIGEST_ALG_BY_SIZE.get(len(stored_password),None)
-            if not digest_alg:   
+            if not digest_alg:
                 return False
             else:
-                temp_pass = simple_hash(self.password, key, digest_alg)
+                temp_pass = simple_hash(self.password, key, '', digest_alg)
         return temp_pass == stored_password
-    
+
 
 class CRYPT(object):
     """
@@ -2621,23 +2624,23 @@ class CRYPT(object):
     Notice that an empty password is accepted but invalid. It will not allow login back.
     Stores junk as hashed password.
 
-    Specify an algorithm or by default we will use sha512.                                                                      
+    Specify an algorithm or by default we will use sha512.
 
-    Typical available algorithms:                                                                                               
-      md5, sha1, sha224, sha256, sha384, sha512                                                                            
+    Typical available algorithms:
+      md5, sha1, sha224, sha256, sha384, sha512
 
     If salt, it hashes a password with a salt.
-    If salt is True, this method will automatically generate one. 
+    If salt is True, this method will automatically generate one.
     Either case it returns an encrypted password string in the following format:
 
-      <algorithm>$<salt>$<hash> 
+      <algorithm>$<salt>$<hash>
 
     Important: hashed password is returned as a LazyCrypt object and computed only if needed.
     The LasyCrypt object also knows how to compare itself with an existing salted password
 
     Supports standard algorithms
 
-    >>> for alg in ('md5','sha1','sha256','sha384','sha512'): 
+    >>> for alg in ('md5','sha1','sha256','sha384','sha512'):
     ...     print str(CRYPT(digest_alg=alg,salt=True)('test')[0])
     md5$...$...
     sha1$...$...
@@ -2679,17 +2682,17 @@ class CRYPT(object):
     True
     """
 
-    def __init__(self, 
-                 key=None, 
+    def __init__(self,
+                 key=None,
                  digest_alg='pbkdf2(1000,20,sha512)',
-                 min_length=0, 
+                 min_length=0,
                  error_message='too short', salt=True):
         """
         important, digest_alg='md5' is not the default hashing algorithm for
         web2py. This is only an example of usage of this function.
 
         The actual hash algorithm is determined from the key which is
-        generated by web2py in tools.py. This defaults to hmac+sha512.       
+        generated by web2py in tools.py. This defaults to hmac+sha512.
         """
         self.key = key
         self.digest_alg = digest_alg
@@ -3142,6 +3145,7 @@ class IS_IPV4(Validator):
 if __name__ == '__main__':
     import doctest
     doctest.testmod(optionflags=doctest.NORMALIZE_WHITESPACE|doctest.ELLIPSIS)
+
 
 
 

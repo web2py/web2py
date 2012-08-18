@@ -28,6 +28,7 @@ import socket
 import tempfile
 import random
 import string
+import urllib2
 
 from fileutils import abspath, write_file, parse_version
 from settings import global_settings
@@ -86,7 +87,7 @@ from dal import BaseAdapter
 from settings import global_settings
 from validators import CRYPT
 from cache import Cache
-from html import URL as Url
+from html import URL as Url, xmlescape
 from utils import is_valid_ip_address
 import newcron
 import rewrite
@@ -296,6 +297,7 @@ def parse_get_post_vars(request, environ):
         except TypeError:
             keys = []
         for key in keys:
+            if key is None: continue # not sure why cgi.FieldStorage returns None key
             dpk = dpost[key]
             # if en element is not a file replace it with its value else leave it alone
             if isinstance(dpk, list):
@@ -404,7 +406,8 @@ def wsgibase(environ, responder):
                     except socket.gaierror: pass
                 request.client = get_client(request.env)
                 if not is_valid_ip_address(request.client):
-                    raise HTTP(400,"Bad Request")
+                    raise HTTP(400,"Bad Request (request.client=%s)" % \
+                                   request.client)
                 request.folder = abspath('applications',
                                          request.application) + os.sep
                 x_req_with = str(request.env.http_x_requested_with).lower()
@@ -546,10 +549,13 @@ def wsgibase(environ, responder):
                 # ##################################################
 
                 if request.cid:
-                    if response.flash and not 'web2py-component-flash' in http_response.headers:
+                    if response.flash and not 'web2py-component-flash' \
+                            in http_response.headers:
                         http_response.headers['web2py-component-flash'] = \
-                            str(response.flash).replace('\n','')
-                    if response.js and not 'web2py-component-command' in http_response.headers:
+                            urllib2.quote(xmlescape(response.flash)\
+                                              .replace('\n',''))
+                    if response.js and not 'web2py-component-command' \
+                            in http_response.headers:
                         http_response.headers['web2py-component-command'] = \
                             response.js.replace('\n','')
                 if session._forget and \
@@ -557,9 +563,8 @@ def wsgibase(environ, responder):
                     del response.cookies[response.session_id_name]
                 elif session._secure:
                     response.cookies[response.session_id_name]['secure'] = True
-                if len(response.cookies)>0:
-                    http_response.headers['Set-Cookie'] = \
-                        [str(cookie)[11:] for cookie in response.cookies.values()]
+
+                http_response.cookies2headers(response.cookies)
                 ticket=None
 
             except RestrictedError, e:
@@ -842,6 +847,7 @@ class HttpServer(object):
             os.unlink(self.pid_filename)
         except:
             pass
+
 
 
 

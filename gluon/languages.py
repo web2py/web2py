@@ -28,10 +28,10 @@ from string import maketrans
 
 __all__ = ['translator', 'findT', 'update_all_languages']
 
-# used as a default filter i translator.M()
+# used as default filter in translator.M()
 markmin = lambda s: render( regex_param.sub(
                        lambda m: '{' + markmin_escape(m.group('s')) + '}',
-                          s ), sep='br', auto=False )
+                          s ), sep='br', autolinks=None, id_prefix='' )
 
 NUMBERS = (int,long,float)
 
@@ -377,7 +377,8 @@ class lazyT(object):
     never to be called explicitly, returned by
     translator.__call__() or translator.M()
     """
-    m = s = T = f = t = M = None
+    m = s = T = f = t = None
+    M = is_copy = False
 
     def __init__(
         self,
@@ -388,34 +389,35 @@ class lazyT(object):
         ftag = None,
         M = False
         ):
-        self.M = M
         if isinstance(message, lazyT):
             self.m = message.m
-            self.s = symbols or message.s
-            self.T = T or message.T
-            self.f = filter or message.f
-            self.t = ftag or message.t
+            self.s = message.s
+            self.T = message.T
+            self.f = message.f
+            self.t = message.t
+            self.M = message.M
+            self.is_copy = True
         else:
             self.m = message
             self.s = symbols
             self.T = T
             self.f = filter
             self.t = ftag
+            self.M = M
+            self.is_copy = False
 
     def __repr__(self):
-        return "<lazyT %s>" % (repr(str(self.m)), )
+        return "<lazyT %s>" % (repr(Utf8(self.m)), )
 
     def __str__(self):
         return str(self.T.apply_filter(self.m, self.s, self.f, self.t) if self.M else
                    self.T.translate(self.m, self.s))
 
     def __eq__(self, other):
-        return (self.T.apply_filter(self.m, self.s, self.f, self.t) if self.M else
-                   self.T.translate(self.m, self.s)) == other
+        return str(self) == str(other)
 
     def __ne__(self, other):
-        return (self.T.apply_filter(self.m, self.s, self.f, self.t) if self.M else
-                   self.T.translate(self.m, self.s)) != other
+        return str(self) != str(other)
 
     def __add__(self, other):
         return '%s%s' % (self, other)
@@ -423,14 +425,17 @@ class lazyT(object):
     def __radd__(self, other):
         return '%s%s' % (other, self)
 
+    def __mul__(self, other):
+        return str(self) * other
+
     def __cmp__(self,other):
-        return cmp(str(self),str(other))
+        return cmp(str(self), str(other))
 
     def __hash__(self):
         return hash(str(self))
 
     def __getattr__(self, name):
-        return getattr(str(self),name)
+        return getattr(str(self), name)
 
     def __getitem__(self, i):
         return str(self)[i]
@@ -457,7 +462,8 @@ class lazyT(object):
         return str(self)
 
     def __mod__(self, symbols):
-        return lazyT(self.m,symbols,self.T,self.f,self.t,self.M)
+        if self.is_copy: return lazyT(self)
+        return lazyT(self.m, symbols, self.T, self.f, self.t, self.M)
 
 class translator(object):
 
@@ -787,18 +793,21 @@ class translator(object):
                 """
                 w,i = m.group('w','i')
                 c = w[0]
-                word = w[c=='\\':]
                 if c not in '!?':
-                    return self.plural(word, symbols[int(i or 0)])
+                    return self.plural(w, symbols[int(i or 0)])
                 elif c == '?':
-                    part2 = w[max(1,w.find('?',1)+1):]
+                    (p1, sep, p2) = w[1:].partition("?")
+                    part1 = p1 if sep else ""
+                    (part2, sep, part3) = (p2 if sep else p1).partition("?")
+                    if not sep: part3 = part2
                     if i is None:
-                        # ?[word]?number or ?number
-                        num = part2
+                       # ?[word]?number[?number] or ?number
+                       if not part2: return m.group(0)
+                       num = int(part2)
                     else:
-                        # ?[word]?word2[number], ?word2[number] or ?word2[number]
-                        num = symbols[int(i or 0)]
-                    return w[1:abs(w.find('?',1))] if int(num) == 1 else part2
+                       # ?[word]?word2[?word3][number]
+                       num = int(symbols[int(i or 0)])
+                    return part1 if num==1 else part3 if num==0 else part2
                 elif w.startswith('!!!'):
                     word = w[3:]
                     fun = upper_fun
@@ -815,16 +824,22 @@ class translator(object):
             def sub_dict(m):
                 """ word(var), !word(var), !!word(var), !!!word(var)
                     word(num), !word(num), !!word(num), !!!word(num)
+                    ?word2(var), ?word1?word2(var), ?word1?word2?word0(var)
+                    ?word2(num), ?word1?word2(num), ?word1?word2?word0(num)
                 """
                 w,n = m.group('w','n')
                 c = w[0]
-                word = w[c=='\\':]
                 n = int(n) if n.isdigit() else symbols[n]
                 if c not in '!?':
-                    return self.plural(word, n)
+                    return self.plural(w, n)
                 elif c == '?':
-                    # ?[word]?word2(var or num), ?word2(var or num) or ?word2(var or num)
-                    return w[1:abs(w.find('?',1))] if int(n) == 1 else w[max(1,w.find('?',1)+1):]
+                    # ?[word1]?word2[?word0](var or num), ?[word1]?word2(var or num) or ?word2(var or num)
+                    (p1, sep, p2) = w[1:].partition("?")
+                    part1 = p1 if sep else ""
+                    (part2, sep, part3) = (p2 if sep else p1).partition("?")
+                    if not sep: part3 = part2
+                    num = int(n)
+                    return part1 if num==1 else part3 if num==0 else part2
                 elif w.startswith('!!!'):
                     word = w[3:]
                     fun = upper_fun
@@ -922,4 +937,5 @@ def update_all_languages(application_path):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 

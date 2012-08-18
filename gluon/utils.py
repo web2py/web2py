@@ -15,6 +15,7 @@ import uuid
 import random
 import time
 import os
+import re
 import logging
 import socket
 from contrib.pbkdf2 import pbkdf2_hex
@@ -34,20 +35,25 @@ def md5_hash(text):
     """ Generate a md5 hash with the given text """
     return hashlib.md5(text).hexdigest()
 
-def simple_hash(text, salt = '', digest_alg = 'md5'):
+def simple_hash(text, key='', salt = '', digest_alg = 'md5'):
     """
     Generates hash with the given text using the specified
     digest hashing algorithm
     """
     if not digest_alg:
         raise RuntimeError, "simple_hash with digest_alg=None"
-    elif not isinstance(digest_alg,str):
-        h = digest_alg(text)
-    elif salt:
-        return hmac_hash(text, salt, digest_alg)
-    else:
+    elif not isinstance(digest_alg,str): # manual approach
+        h = digest_alg(text+key+salt)
+    elif digest_alg.startswith('pbkdf2'): # latest and coolest!
+        iterations, keylen, alg = digest_alg[7:-1].split(',')
+        return pbkdf2_hex(text, salt, int(iterations),
+                          int(keylen),get_digest(alg))
+    elif key: # use hmac
+        digest_alg = get_digest(digest_alg)
+        h = hmac.new(key+salt,text,digest_alg)
+    else: # compatible with third party systems
         h = hashlib.new(digest_alg)
-        h.update(text)
+        h.update(text+salt)
     return h.hexdigest()
 
 def get_digest(value):
@@ -80,15 +86,6 @@ DIGEST_ALG_BY_SIZE = {
     384/4: 'sha384',
     512/4: 'sha512',
     }
-
-def hmac_hash(value, salt, digest_alg='md5'):
-    if isinstance(digest_alg,str) and digest_alg.startswith('pbkdf2'):
-        iterations, keylen, alg = digest_alg[7:-1].split(',')
-        return pbkdf2_hex(value, salt, int(iterations),
-                          int(keylen),get_digest(alg))
-    digest_alg = get_digest(digest_alg)
-    d = hmac.new(salt,value,digest_alg)
-    return d.hexdigest()
 
 
 ### compute constant ctokens
@@ -147,6 +144,8 @@ def web2py_uuid():
     bytes = ''.join(chr(c ^ ctokens[i]) for i,c in enumerate(bytes))
     return str(uuid.UUID(bytes=bytes, version=4))
 
+REGEX_IPv4 = re.compile('(\d+)\.(\d+)\.(\d+)\.(\d+)')
+
 def is_valid_ip_address(address):
     """
     >>> is_valid_ip_address('127.0')
@@ -156,16 +155,33 @@ def is_valid_ip_address(address):
     >>> is_valid_ip_address('2001:660::1')
     True
     """
-    try:
-        if address.count('.')==3:
-            addr = socket.inet_aton(address)
-        else:
+    # deal with special cases
+    if address.lower() in ('127.0.0.1','localhost','::1','::ffff:127.0.0.1'):
+        return True
+    elif address.lower() in ('unkown',''):
+        return False
+    elif address.count('.')==3: # assume IPv4
+        if hasattr(socket,'inet_aton'): # try validate using the OS
+            try:
+                addr = socket.inet_aton(address)
+                return True
+            except socket.error: # invalid address
+                return False
+        else: # try validate using Regex
+            match = REGEX_IPv4.match(address)
+            if match and all(0<=int(math.group(i))<256 for i in (1,2,3,4)):
+                return True
+            return False
+    elif hasattr(socket,'inet_pton'): # assume IPv6, try using the OS
+        try:
             addr = socket.inet_pton(socket.AF_INET6, address)
-    except AttributeError: # no socket.inet_pton
-        return False
-    except socket.error:
-        return False
-    return True
+            return True
+        except socket.error: # invalid address
+            return False
+    else: # do not know what to do? assume it is a valid address
+        return True
+
+
 
 
 

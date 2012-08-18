@@ -12,7 +12,6 @@
 '@markmin\x01Searching: **%s** %%{file}': 'Iskanje: **%s** datoteke',
 'A new version of web2py is available': 'Nova različica web2py je na voljo',
 'A new version of web2py is available: %s': 'Nova različica web2py je na voljo: %s',
-'A new version of web2py is available: Version 1.85.3 (2010-09-18 07:07:46)\n': 'Nova različica web2py je na voljo: Različica 1.85.3 (2010-09-18 07:07:46)\n',
 'ATTENTION: Login requires a secure (HTTPS) connection or running on localhost.': 'POZOR: Prijava zahteva varno povezavo (HTTPS) ali lokalni (localhost) dostop.',
 'ATTENTION: TESTING IS NOT THREAD SAFE SO DO NOT PERFORM MULTIPLE TESTS CONCURRENTLY.': 'POZOR: Testiranje ni večopravilno, zato ne poganjajte več testov hkrati.',
 'ATTENTION: This is an experimental feature and it needs more testing.': 'POZOR: To je preizkusni fazi in potrebuje več testiranja.',

@@ -62,6 +62,7 @@
 }
 
 </style-->
+<script src="{{=URL('static', 'js/autoscroll.js')}}"></script>
 
 <div id="wrapper">
   <textarea id="output" readonly="readonly">{{=T('web2py Debugger')}} {{=request.env.web2py_version}}{{=data}}</textarea>
@@ -69,6 +70,7 @@
   <form id="form" action="{{=URL(r=request,f='callback',args=app)}}" method="get">
     <div id="shellwrapper">
       <div id="caret">&gt;&gt;&gt;</div>
+      <div id="autoscroll" style="cursor:pointer;float:right;">autoscroll</div>
       <div class="tooltip">
         <textarea class="prompt" name="statement" id="statement"></textarea>
         <span>{{=T('Type PDB debugger command in here and hit Return (Enter) to execute it.')}}</span>

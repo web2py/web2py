@@ -49,14 +49,3 @@ def cache_controller_and_view():
     return response.render(d)
 
 
-def cache_db_select():
-    """cache the database select in ram for 5 seconds"""
-
-    db.users.insert(name='somebody', email='gluon@mdp.cti.depaul.edu')
-    records = db().select(db.users.ALL, cache=(cache.ram, 5))
-    if len(records) > 20:
-        db(dba.users.id > 0).delete()
-    return dict(records=records)
-
-
-

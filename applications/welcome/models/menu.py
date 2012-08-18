@@ -13,7 +13,6 @@ response.meta.author = 'Your Name <you@example.com>'
 response.meta.description = 'a cool new app'
 response.meta.keywords = 'web2py, python, framework'
 response.meta.generator = 'Web2py Web Framework'
-response.meta.copyright = 'Copyright 2011'
 
 ## your http://google.com/analytics id
 response.google_analytics_id = None
@@ -36,7 +35,7 @@ def _():
     ctr = request.controller
     # useful links to internal and external resources
     response.menu+=[
-        (SPAN('web2py',_style='color:yellow'),False, None, [
+        (SPAN('web2py',_style='color:yellow'),False, 'http://web2py.com', [
                 (T('My Sites'),False,URL('admin','default','site')),
                 (T('This App'),False,URL('admin','default','design/%s' % app), [
                         (T('Controller'),False,

@@ -63,11 +63,18 @@ class HTTP(BaseException):
         self,
         status,
         body='',
+        cookies=None,
         **headers
         ):
         self.status = status
         self.body = body
         self.headers = headers
+        self.cookies2headers(cookies)
+
+    def cookies2headers(self,cookies):
+        if cookies and len(cookies)>0:
+            self.headers['Set-Cookie'] = [
+                str(cookie)[11:] for cookie in cookies.values()]
 
     def to(self, responder):
         if self.status in defined_status:
@@ -119,13 +126,17 @@ class HTTP(BaseException):
         return self.message
 
 
-def redirect(location, how=303):
-    if not location:
-        return
-    location = location.replace('\r', '%0D').replace('\n', '%0A')
-    raise HTTP(how,
-               'You are being redirected <a href="%s">here</a>' % location,
-               Location=location)
+def redirect(location, how=303, client_side=False):
+    if location:
+        from gluon import current
+        loc = location.replace('\r', '%0D').replace('\n', '%0A')
+        if client_side and current.request.ajax:
+            raise HTTP(200, **{'web2py-redirect-location': loc})
+        else:
+            raise HTTP(how,
+                       'You are being redirected <a href="%s">here</a>' % loc,
+                       Location=loc)
+
 
 
 

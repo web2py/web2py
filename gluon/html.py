@@ -25,7 +25,7 @@ from HTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
 
 from storage import Storage
-from utils import web2py_uuid, hmac_hash, compare
+from utils import web2py_uuid, simple_hash, compare
 from highlight import highlight
 
 regex_crlf = re.compile('\r|\n')
@@ -327,8 +327,7 @@ def URL(
 
         # re-assembling the same way during hash authentication
         message = h_args + '?' + urllib.urlencode(sorted(h_vars))
-        sig = hmac_hash(message, (hmac_key or '')+(salt or ''), 
-                        digest_alg='sha1')
+        sig = simple_hash(message, hmac_key or '',salt or '',digest_alg='sha1')
         # add the signature into vars
         list_vars.append(('_signature', sig))
 
@@ -336,7 +335,7 @@ def URL(
         if url_encode:
             other += '?%s' % urllib.urlencode(list_vars)
         else:
-            other += '?%s' % '&'.join([var[0]+'='+var[1] for var in list_vars])
+            other += '?%s' % '&'.join(['%s=%s' % var[:2] for var in list_vars])
     if anchor:
         if url_encode:
             other += '#' + urllib.quote(str(anchor))
@@ -447,7 +446,7 @@ def verifyURL(request, hmac_key=None, hash_vars=True, salt=None, user_signature=
     message = h_args + '?' + urllib.urlencode(sorted(h_vars))
 
     # hash with the hmac_key provided
-    sig = hmac_hash(message, str(hmac_key)+(salt or ''), digest_alg='sha1')
+    sig = simple_hash(message, str(hmac_key), salt or '', digest_alg='sha1')
 
     # put _signature back in get_vars just in case a second call to URL.verify is performed
     # (otherwise it'll immediately return false)
@@ -1669,7 +1668,7 @@ class INPUT(DIV):
                 self['_checked'] = 'checked'
             else:
                 self['_checked'] = None
-        elif t == 'text' or t == 'hidden':
+        elif not t == 'submit':
             if value is None:
                 self['value'] = _value
             else:
@@ -2035,14 +2034,15 @@ class FORM(DIV):
         return self
 
     REDIRECT_JS = "window.location='%s';return false"
-    
+
     def add_button(self,value,url,_class=None):
         self[0][-1][1].append(INPUT(_type="button",_value=value,_class=_class,
                                     _onclick=self.REDIRECT_JS % url))
-                                    
+
+
 
     @staticmethod
-    def dialog(text='OK',buttons=None,hidden=None):
+    def confim(text='OK',buttons=None,hidden=None):
         if not buttons: buttons = {}
         if not hidden: hidden={}
         inputs = [INPUT(_type='button',
@@ -2052,7 +2052,7 @@ class FORM(DIV):
         inputs += [INPUT(_type='hidden',
                          _name=name,
                          _value=value)
-                   for name,value in hidden.items()]        
+                   for name,value in hidden.items()]
         form = FORM(INPUT(_type='submit',_value=text),*inputs)
         form.process()
         return form
@@ -2381,7 +2381,11 @@ class MARKMIN(XmlComponent):
     For documentation: http://web2py.com/examples/static/markmin.html
     """
     def __init__(self, text, extra=None, allowed=None, sep='p',
-                 url=None, environment=None, latex='google'):
+                 url=None, environment=None, latex='google',
+                 autolinks='default',
+                 protolinks='default',
+                 class_prefix='',
+                 id_prefix='markmin_'):
         self.text = text
         self.extra = extra or {}
         self.allowed = allowed or {}
@@ -2389,6 +2393,10 @@ class MARKMIN(XmlComponent):
         self.url = URL if url==True else url
         self.environment = environment
         self.latex = latex
+        self.autolinks = autolinks
+        self.protolinks = protolinks
+        self.class_prefix = class_prefix
+        self.id_prefix = id_prefix
 
     def xml(self):
         """
@@ -2397,7 +2405,9 @@ class MARKMIN(XmlComponent):
         from contrib.markmin.markmin2html import render
         return render(self.text,extra=self.extra,
                       allowed=self.allowed,sep=self.sep,latex=self.latex,
-                      URL=self.url, environment=self.environment)
+                      URL=self.url, environment=self.environment,
+                      autolinks=self.autolinks,protolinks=self.protolinks,
+                      class_prefix=self.class_prefix,id_prefix=self.id_prefix)
 
     def __str__(self):
         return self.xml()
@@ -2419,6 +2429,7 @@ class MARKMIN(XmlComponent):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

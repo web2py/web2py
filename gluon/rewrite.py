@@ -43,12 +43,13 @@ def _router_default():
         default_language = None,
             languages = None,
         root_static = ['favicon.ico', 'robots.txt'],
+        map_static = None,
         domains = None,
         exclusive_domain = False,
         map_hyphen = False,
-        acfe_match = r'\w+$',              # legal app/ctlr/fcn/ext
-        file_match = r'(\w+[-=./]?)+$',    # legal file (path) name
-        args_match = r'([\w@ -]+[=.]?)*$', # legal arg in args
+        acfe_match = r'\w+$',                   # legal app/ctlr/fcn/ext
+        file_match = r'([-+=@$%\w]+[./]?)+$',   # legal static subpath
+        args_match = r'([\w@ -]+[=.]?)*$',      # legal arg in args
     )
     return router
 
@@ -900,6 +901,7 @@ class MapUrlIn(object):
         self.map_hyphen = self.router.map_hyphen
         self.exclusive_domain = self.router.exclusive_domain
         self._acfe_match = self.router._acfe_match
+        self.file_match = self.router.file_match
         self._file_match = self.router._file_match
         self._args_match = self.router._args_match
 
@@ -954,7 +956,18 @@ class MapUrlIn(object):
         if self.controller != 'static':
             return None
         file = '/'.join(self.args)
-        if not self.router._file_match.match(file):
+        if len(self.args) == 0:
+            bad_static = True   # require a file name
+        elif '/' in self.file_match:
+            # match the path
+            bad_static = not self.router._file_match.match(file)
+        else:
+            # match path elements
+            bad_static = False
+            for name in self.args:
+                bad_static = bad_static or name in ('', '.', '..') or not self.router._file_match.match(name)
+        if bad_static:
+            log_rewrite('bad static path=%s' % file)
             raise HTTP(400, thread.routes.error_message % 'invalid request',
                        web2py_error='invalid static file')
         #
@@ -1071,6 +1084,7 @@ class MapUrlOut(object):
         self.env = env
         self.application = application
         self.controller = controller
+        self.is_static = (controller == 'static' or controller.startswith('static/'))
         self.function = function
         self.args = args
         self.other = other
@@ -1176,7 +1190,7 @@ class MapUrlOut(object):
         #  handle static as a special case
         #  (easier for external static handling)
         #
-        if self.controller == 'static' or self.controller.startswith('static/'):
+        if self.is_static:
             if not self.map_static:
                 self.omit_application = False
                 if self.language:
@@ -1194,10 +1208,14 @@ class MapUrlOut(object):
                 self.function = self.function.replace('_', '-')
         if not self.omit_application:
             acf += '/' + self.application
-        if not self.omit_language:
-            acf += '/' + self.language
-        if not self.omit_controller:
-            acf += '/' + self.controller
+        # handle case of flipping lang/static/file to static/lang/file for external rewrite
+        if self.is_static and self.map_static is False and not self.omit_language:
+            acf += '/' + self.controller + '/' + self.language
+        else:
+            if not self.omit_language:
+                acf += '/' + self.language
+            if not self.omit_controller:
+                acf += '/' + self.controller
         if not self.omit_function:
             acf += '/' + self.function
         if self.path_prefix:
@@ -1237,9 +1255,21 @@ def map_url_in(request, env, app=False):
     root_static_file = map.map_root_static() # handle root-static files
     if root_static_file:
         return (root_static_file, map.env)
-    map.map_language()
-    map.map_controller()
+    # handle mapping of lang/static to static/lang in externally-rewritten URLs
+    # in case we have to handle them ourselves
+    if map.languages and map.map_static is False and map.arg0 == 'static' and map.args(1) in map.languages:
+        if 'es' in map.languages:
+            print 'handle static/lang %s' % map.args(1)
+        map.map_controller()
+        map.map_language()
+    else:
+        if 'es' in map.languages:
+            print 'NO handle static/lang %s' % map.args(1)
+        map.map_language()
+        map.map_controller()
     static_file = map.map_static()
+    if 'es' in map.languages:
+        print 'static_file=%s' % static_file
     if static_file:
         return (static_file, map.env)
     map.map_function()
@@ -1281,6 +1311,7 @@ def get_effective_router(appname):
     if not routers or appname not in routers:
         return None
     return Storage(routers[appname])  # return a copy
+
 
 
 

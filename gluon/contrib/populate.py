@@ -140,7 +140,7 @@ def populate(table, n, default=True, compute=False):
                         ids[tablename] = [x.id for x in table._db(table._db[field.type[15:]].id>0).select()]
                 n = len(ids[tablename])
                 if n:
-                    record[fieldname] = [item[0] for item in random.sample(ids[tablename], random.randint(0,n-1)/2)]
+                    record[fieldname] = [item for item in random.sample(ids[tablename], random.randint(0,n-1)/2)]
                 else:
                     record[fieldname] = 0
             elif field.type=='list:string' and hasattr(field.requires,'options'):
@@ -165,6 +165,7 @@ if __name__ == '__main__':
     ell=Learner()
     ell.loadd(eval(IUP))
     print ell.generate(1000,prefix=None)
+
 
 
 

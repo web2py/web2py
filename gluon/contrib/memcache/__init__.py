@@ -10,21 +10,19 @@ cache.memcache = MemcacheClient(request,[127.0.0.1:11211],debug=true)
 
 import cPickle as pickle
 import thread
+from gluon import current
 
-locker = thread.allocate_lock()
+DEFAULT_TIME_EXPIRE = 300 # seconds (must be the same as cache.ram)
 
 def MemcacheClient(*a, **b):
-    locker.acquire()
-    try:
-        if not hasattr(MemcacheClient, '__mc_instance'):
-            MemcacheClient.__mc_instance = _MemcacheClient(*a, **b)
-    finally:
-        locker.release()
-    return MemcacheClient.__mc_instance
+    if not hasattr(current,'__mc_instance'):
+        current.__memcache_client = MemcacheClientObj(*a, **b)
+    return current.__memecache_client
 
-class _MemcacheClient(Client):
+class MemcacheClientObj(Client):
 
     meta_storage = {}
+    max_time_expire = 24*3600
 
     def __init__(self, request, servers, debug=0, pickleProtocol=0,
                  pickler=pickle.Pickler, unpickler=pickle.Unpickler,
@@ -45,33 +43,50 @@ class _MemcacheClient(Client):
         else:
             self.storage = self.meta_storage[app]
 
-
-    def __call__(self, key, f, time_expire=300):
+    def __call__(self, key, f,
+                 time_expire=DEFAULT_TIME_EXPIRE):
         if time_expire == None:
-            time_expire = 10**10
+            time_expire = self.max_time_expire
         # this must be commented because get and set are redefined
         # key = self.__keyFormat__(key)
+        now = time.time() 
         value = None
-        obj = self.get(key)
-        if obj:
-            value = obj
-        elif f is None:
-            if obj: self.delete(key)
+        if f is None: # force deletion of value
+            self.delete(key)
+            return None
+        elif time_expire==0: # value forced expired
+            item = None # value to be computed
         else:
+            item = self.get(key)
+            if item:
+                if not isinstance(item,(list,tuple)):
+                    value = item
+                elif (item[0] < now - dt): # value expired
+                    item = None # value to be computed
+                else:
+                    value = item[1]
+        if not item:
             value = f()
-            self.set(key, value, time_expire)
+            self.set(key, (now,value), self.max_time_expire)
         return value
 
-    def increment(self, key, value=1, time_expire=300):
+    def increment(self, key, value=1, time_expire=DEFAULT_TIME_EXPIRE):
+        """ time_expire is ignored """
         newKey = self.__keyFormat__(key)
         obj = Client.get(self, newKey)
         if obj:
-            return Client.incr(self, newKey, value)
+            if isinstance(obj,(int,double,long)):
+                return Client.incr(self, newKey, value)
+            else:
+                value += obj[1]
+                Client.set(self,newKey,(time.time(),value),
+                           self.max_time_expire)
+                return value
         else:
-            Client.set(self, newKey, value, time_expire)
+            Client.set(self, newKey, value, self.max_time_expire)
             return value
 
-    def set(self, key, value, time_expire=300):
+    def set(self, key, value, time_expire=DEFAULT_TIME_EXPIRE):
         newKey = self.__keyFormat__(key)
         return Client.set(self, newKey, value, time_expire)
 

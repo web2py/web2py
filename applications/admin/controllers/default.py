@@ -11,6 +11,7 @@ if EXPERIMENTAL_STUFF:
 import re
 from gluon.admin import *
 from gluon.fileutils import abspath, read_file, write_file
+from gluon.utils import web2py_uuid
 from glob import glob
 import shutil
 import platform
@@ -39,6 +40,9 @@ if not is_manager() and request.function in ['change_password','upgrade_web2py']
 if FILTER_APPS and request.args(0) and not request.args(0) in FILTER_APPS:
     session.flash = T('disabled in demo mode')
     redirect(URL('site'))
+
+
+if not session.token: session.token = web2py_uuid()
 
 def count_lines(data):
     return len([line for line in data.split('\n') if line.strip() and not line.startswith('#')])
@@ -167,6 +171,7 @@ def change_password():
             redirect(URL('site'))
     return dict(form=form)
 
+
 def site():
     """ Site handler """
 
@@ -175,12 +180,32 @@ def site():
     # Shortcut to make the elif statements more legible
     file_or_appurl = 'file' in request.vars or 'appurl' in request.vars
 
+    class IS_VALID_APPNAME(object):
+        def __call__(self,value):
+            if not re.compile('\w+').match(value):
+                return (value,T('Invalid application name'))
+            if not request.vars.overwrite and \
+                    os.path.exists(os.path.join(apath(r=request),value)):
+                return (value,T('Application exists already'))
+            return (value,None)
+
+    is_appname = IS_VALID_APPNAME()
+    form_create = SQLFORM.factory(Field('name',requires=is_appname),
+                                  table_name='appcreate')
+    form_update = SQLFORM.factory(Field('name',requires=is_appname),
+                                  Field('file','upload',uploadfield=False),
+                                  Field('url'),
+                                  Field('overwrite','boolean'),
+                                  table_name='appupdate')
+    form_create.process()
+    form_update.process()
+
     if DEMO_MODE:
         pass
 
-    elif request.vars.filename and not 'file' in request.vars:
+    elif form_create.accepted:
         # create a new application
-        appname = cleanpath(request.vars.filename).replace('.', '_')
+        appname = cleanpath(form_create.vars.name)
         if app_create(appname, request):
             if MULTI_USER_MODE:
                 db.app.insert(name=appname,owner=auth.user.id)
@@ -189,49 +214,44 @@ def site():
             redirect(URL('design',args=appname))
         else:
             session.flash = \
-                T('unable to create application "%s" (it may exist already)', request.vars.filename)
+                T('unable to create application "%s" (it may exist already)', 
+                  form_create.vars.name)
         redirect(URL(r=request))
 
-    elif file_or_appurl and not request.vars.filename:
-        # can't do anything without an app name
-        msg = 'you must specify a name for the uploaded application'
-        response.flash = T(msg)
-
-    elif (request.vars.appurl or '').endswith('.git') and request.vars.filename:
-        if not have_git:
-	   session.flash = GIT_MISSING
-        elif request.vars.filename:
-            target = os.path.join(apath(r=request),request.vars.filename)
-            if os.path.exists(target):
-                session.flash = 'Application by that name already exists.'
-            else:
-                try:
-                    new_repo = Repo.clone_from(request.vars.appurl,target)
-                    session.flash = T('new application "%s" imported',request.vars.filename)
-                except GitCommandError, err:
-                    session.flash = T('Invalid git repository specified.')
-        else:
-            session.flash = 'Application Name required for git import.'
-        redirect(URL(r=request))
-
-    elif file_or_appurl and request.vars.filename:
-        # fetch an application via URL or file upload
-        f = None
-        if request.vars.appurl:
+    elif form_update.accepted:
+        if (form_update.vars.url or '').endswith('.git'):
+            if not have_git:
+                session.flash = GIT_MISSING
+            target = os.path.join(apath(r=request),form_update.vars.name)
             try:
-                f = urllib.urlopen(request.vars.appurl)
-            except Exception, e:
-                session.flash = DIV(T('Unable to download app because:'),PRE(str(e)))
-                redirect(URL(r=request))
-            fname = request.vars.appurl
-        elif request.vars.file:
-            f = request.vars.file.file
-            fname = request.vars.file.filename
+                new_repo = Repo.clone_from(form_update.vars.url,target)
+                session.flash = T('new application "%s" imported',
+                                  form_update.vars.name)
+            except GitCommandError, err:
+                session.flash = T('Invalid git repository specified.')
+            redirect(URL(r=request))
 
+        elif form_update.vars.url:
+            # fetch an application via URL or file upload
+            try:
+                f = urllib.urlopen(form_update.vars.url)
+                if f.code == 404:
+                    raise Exception("404 file not found")
+            except Exception, e:
+                session.flash = \
+                    DIV(T('Unable to download app because:'),PRE(str(e)))
+                redirect(URL(r=request))
+            fname = form_update.vars.url
+                
+        elif form_update.accepted and form_update.vars.file:
+            fname = request.vars.file.filename
+            f = request.vars.file.file
+            
         if f:
-            appname = cleanpath(request.vars.filename).replace('.', '_')
-            installed = app_install(appname, f, request, fname,
-                                    overwrite=request.vars.overwrite_check)
+            appname = cleanpath(form_update.vars.name)
+            installed = app_install(appname, f, 
+                                    request, fname,
+                                    overwrite=form_update.vars.overwrite)
         if f and installed:
             msg = 'application %(appname)s installed with md5sum: %(digest)s'
             if MULTI_USER_MODE:
@@ -239,14 +259,12 @@ def site():
             log_progress(appname)
             session.flash = T(msg, dict(appname=appname,
                                         digest=md5_hash(installed)))
-        elif f and request.vars.overwrite_check:
+        elif f and form_update.vars.overwrite:
             msg = 'unable to install application "%(appname)s"'
-            session.flash = T(msg, dict(appname=request.vars.filename))
-
+            session.flash = T(msg, dict(appname=form_update.vars.name))
         else:
             msg = 'unable to install application "%(appname)s"'
-            session.flash = T(msg, dict(appname=request.vars.filename))
-
+            session.flash = T(msg, dict(appname=form_update.vars.name))
         redirect(URL(r=request))
 
     regex = re.compile('^\w+$')
@@ -261,7 +279,8 @@ def site():
 
     apps = sorted(apps,lambda a,b:cmp(a.upper(),b.upper()))
 
-    return dict(app=None, apps=apps, myversion=myversion)
+    return dict(app=None, apps=apps, myversion=myversion, 
+                form_create=form_create, form_update=form_update)
 
 
 def report_progress(app):
@@ -317,20 +336,24 @@ def pack_plugin():
         redirect(URL('plugin',args=request.args))
 
 def upgrade_web2py():
-    if 'upgrade' in request.vars:
+    dialog = FORM.confim(T('Upgrade'),
+                         {T('Cancel'):URL('site')})    
+    if dialog.accepted:
         (success, error) = upgrade(request)
         if success:
             session.flash = T('web2py upgraded; please restart it')
         else:
             session.flash = T('unable to upgrade because "%s"', error)
         redirect(URL('site'))
-    elif 'noupgrade' in request.vars:
-        redirect(URL('site'))
-    return dict()
+    return dict(dialog=dialog)
 
 def uninstall():
     app = get_app()
-    if 'delete' in request.vars:
+
+    dialog = FORM.confim(T('Uninstall'),
+                         {T('Cancel'):URL('site')})
+    
+    if dialog.accepted:
         if MULTI_USER_MODE:
             if is_manager() and db(db.app.name==app).delete():
                 pass
@@ -344,9 +367,7 @@ def uninstall():
         else:
             session.flash = T('unable to uninstall "%s"', app)
         redirect(URL('site'))
-    elif 'nodelete' in request.vars:
-        redirect(URL('site'))
-    return dict(app=app)
+    return dict(app=app, dialog=dialog)
 
 
 def cleanup():
@@ -412,7 +433,7 @@ def delete():
     if isinstance(sender, list):  # ## fix a problem with Vista
         sender = sender[0]
 
-    dialog = FORM.dialog(T('Delete'),
+    dialog = FORM.confim(T('Delete'),
                          {T('Cancel'):URL(sender, anchor=request.vars.id)})
 
     if dialog.accepted:
@@ -846,6 +867,9 @@ def design():
         msg = T('ATTENTION: you cannot edit the running application!')
         response.flash = msg
 
+    if request.vars and not request.vars.token==session.token:
+        redirect(URL('logout'))
+
     if request.vars.pluginfile!=None and not isinstance(request.vars.pluginfile,str):
         filename=os.path.basename(request.vars.pluginfile.filename)
         if plugin_install(app, request.vars.pluginfile.file,
@@ -978,9 +1002,12 @@ def delete_plugin():
     app=request.args(0)
     plugin = request.args(1)
     plugin_name='plugin_'+plugin
-    if 'nodelete' in request.vars:
-        redirect(URL('design', args=app, anchor=request.vars.id))
-    elif 'delete' in request.vars:
+
+    dialog = FORM.confim(
+        T('Delete'),
+        {T('Cancel'):URL('design', args=app)})
+
+    if dialog.accepted:
         try:
             for folder in ['models','views','controllers','static','modules', 'private']:
                 path=os.path.join(apath(app,r=request),folder)
@@ -997,7 +1024,7 @@ def delete_plugin():
             session.flash = T('unable to delete file plugin "%(plugin)s"',
                               dict(plugin=plugin))
         redirect(URL('design', args=request.args(0), anchor=request.vars.id2))
-    return dict(plugin=plugin)
+    return dict(dialog=dialog,plugin=plugin)
 
 def plugin():
     """ Application design handler """
@@ -1094,6 +1121,8 @@ def plugin():
 
 def create_file():
     """ Create files handler """
+    if request.vars and not request.vars.token==session.token:
+        redirect(URL('logout'))
     try:
         anchor='#'+request.vars.id if request.vars.id else ''
         if request.vars.app:
@@ -1241,6 +1270,8 @@ def create_file():
 
 def upload_file():
     """ File uploading handler """
+    if request.vars and not request.vars.token==session.token:
+        redirect(URL('logout'))
     try:
         filename = None
         app = get_app(name=request.vars.location.split('/')[0])
@@ -1586,7 +1617,6 @@ def reload_routes():
     gluon.rewrite.load()
     redirect(URL('site'))
 
-
 def manage_students():
     if not (MULTI_USER_MODE and is_manager()):
         session.flash = T('Not Authorized')
@@ -1621,7 +1651,9 @@ def git_pull():
     if not have_git:
         session.flash = GIT_MISSING
         redirect(URL('site'))
-    if 'pull' in request.vars:
+    dialog = FORM.confim(T('Pull'),
+                         {T('Cancel'):URL('site')})    
+    if dialog.accepted:
         try:
             repo = Repo(os.path.join(apath(r=request),app))
             origin = repo.remotes.origin
@@ -1649,7 +1681,7 @@ def git_pull():
             redirect(URL('site'))
     elif 'cancel' in request.vars:
         redirect(URL('site'))
-    return dict(app=app)
+    return dict(app=app,dialog=dialog)
 
 
 def git_push():
@@ -1666,8 +1698,7 @@ def git_push():
         try:
             repo = Repo(os.path.join(apath(r=request),app))
             index = repo.index
-            os.chdir(os.path.join(apath(r=request),app))
-            index.add('*')
+            index.add([apath(r=request)+app+'/*'])
             new_commit = index.commit(form.vars.changelog)
             origin = repo.remotes.origin
             origin.push()
@@ -1680,6 +1711,5 @@ def git_push():
             logging.error("Unexpected error:", sys.exc_info()[0])
             session.flash = T("Push failed, git exited abnormally. See logs for details.")
             redirect(URL('site'))
-    os.chdir(apath(r=request))
     return dict(app=app,form=form)
 
