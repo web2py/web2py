@@ -484,12 +484,12 @@ class UploadWidget(FormWidget):
             requires = attr["requires"]
             if requires == [] or isinstance(requires, IS_EMPTY_OR):
                 inp = DIV(inp, '[',
-                          A(UploadWidget.GENERIC_DESCRIPTION, _href = url),
+                          A(current.T(UploadWidget.GENERIC_DESCRIPTION), _href = url),
                           '|',
                           INPUT(_type='checkbox',
                                 _name=field.name + cls.ID_DELETE_SUFFIX,
                                 _id=field.name + cls.ID_DELETE_SUFFIX),
-                                LABEL(cls.DELETE_FILE,
+                                LABEL(current.T(cls.DELETE_FILE),
                                      _for=field.name + cls.ID_DELETE_SUFFIX),
                                 ']', br, image)
             else:
@@ -842,7 +842,7 @@ class SQLFORM(FORM):
         nbsp = XML('&nbsp;') # Firefox2 does not display fields with blanks
         FORM.__init__(self, *[], **attributes)
         ofields = fields
-        keyed = hasattr(table,'_primarykey')
+        keyed = hasattr(table,'_primarykey') # for backward compatibility
 
         # if no fields are provided, build it from the provided table
         # will only use writable or readable fields, unless forced to ignore
@@ -1132,7 +1132,7 @@ class SQLFORM(FORM):
         if request_vars.__class__.__name__ == 'Request':
             request_vars = request_vars.post_vars
 
-        keyed = hasattr(self.table, '_primarykey')
+        keyed = hasattr(self.table,'_primarykey')
 
         # implement logic to detect whether record exist but has been modified
         # server side
@@ -1479,16 +1479,21 @@ class SQLFORM(FORM):
                 operators = SELECT(*[T(option) for option in options])
                 if field.type=='boolean':
                     value_input = SELECT(
-                        OPTION(T("True"),_value="T"),OPTION(T("False"),_value="F"),
+                        OPTION(T("True"),_value="T"),
+                        OPTION(T("False"),_value="F"),
                         _id="w2p_value_"+name)
                 else:
-                    value_input = INPUT(_type='text',_id="w2p_value_"+name,_class=field.type)
-                new_button = INPUT(_type="button", _value=T('New'),
-                                  _onclick="w2p_build_query('new','"+str(field)+"')")
-                and_button = INPUT(_type="button", _value=T('And'),
-                                   _onclick="w2p_build_query('and','"+str(field)+"')")
-                or_button = INPUT(_type="button", _value=T('Or'),
-                                  _onclick="w2p_build_query('or','"+str(field)+"')")
+                    value_input = INPUT(_type='text',_id="w2p_value_"+name,
+                                        _class=field.type)
+                new_button = INPUT(
+                    _type="button", _value=T('New'),_class="btn",
+                        _onclick="w2p_build_query('new','"+str(field)+"')")
+                and_button = INPUT(
+                    _type="button", _value=T('And'),_class="btn",
+                    _onclick="w2p_build_query('and','"+str(field)+"')")
+                or_button = INPUT(
+                    _type="button", _value=T('Or'),_class="btn",
+                    _onclick="w2p_build_query('or','"+str(field)+"')")
 
                 criterion.extend([operators,value_input,new_button,and_button,or_button])
             criteria.append(DIV(criterion, _id='w2p_field_%s' % name,
@@ -1512,13 +1517,7 @@ class SQLFORM(FORM):
           jQuery('#w2p_query_panel').slideUp();
         }
         """)
-        return (INPUT(
-                _value=T("Query"),_type="button",_id="w2p_query_trigger",
-                _onclick="jQuery('#w2p_query_fields').change();jQuery('#w2p_query_panel').slideToggle();"),
-                DIV(_id="w2p_query_panel",
-                    _class='hidden',
-                    *criteria),
-                fadd)
+        return CAT(DIV(_id="w2p_query_panel",_class='hidden',*criteria),fadd)
 
 
     @staticmethod
@@ -1628,9 +1627,9 @@ class SQLFORM(FORM):
 
         referrer = session.get('_web2py_grid_referrer_'+formname, url())
         if user_signature:
-            if (args != request.args and \
+            if (args != request.args and user_signature and \
                     not URL.verify(request,user_signature=user_signature)) or \
-                    (not auth.user and \
+                    (not session.auth.user and \
                          ('edit' in request.args or \
                               'create' in request.args or \
                               'delete' in request.args)):
@@ -1770,12 +1769,13 @@ class SQLFORM(FORM):
             return ret
 
         exportManager = dict(
-            csv_with_hidden_cols=(ExporterCsv,'csv, hidden cols'),
-            csv=ExporterCsv,
-            html=ExporterHtml,
-            tsv_with_hidden_cols=(ExporterTsv,
-                                  'tsv (Excel compatible), hidden cols'),
-            tsv=(ExporterTsv, 'tsv (Excel compatible)'))
+            csv_with_hidden_cols=(ExporterCSV,'CSV (hidden cols)'),
+            csv=(ExporterCSV,'CSV'),
+            xml=(ExporterXML, 'XML'),
+            html=(ExporterHTML, 'HTML'),
+            tsv_with_hidden_cols=\
+                (ExporterTSV,'TSV (Excel compatible, hidden cols)'),
+            tsv=(ExporterTSV, 'TSV (Excel compatible)'))
         if not exportclasses is None:
             exportManager.update(exportclasses)
 
@@ -1789,10 +1789,9 @@ class SQLFORM(FORM):
                     else:
                         sign, rorder = '', order
                     tablename,fieldname = rorder.split('.',1)
+                    orderby=db[tablename][fieldname]
                     if sign=='~':
-                        orderby=~db[tablename][fieldname]
-                    else:
-                        orderby=db[tablename][fieldname]
+                        orderby=~orderby
 
             table_fields = [f for f in fields if f._tablename in tablenames]
             if export_type in ('csv_with_hidden_cols','tsv_with_hidden_cols'):
@@ -1809,22 +1808,15 @@ class SQLFORM(FORM):
             else:
                 rows = dbset.select(left=left,orderby=orderby,*columns)
 
-            if not export_type is None:
-                if exportManager.has_key(export_type):
-                    value = exportManager[export_type]
-                    if hasattr(value, '__getitem__'):
-                        clazz = value[0]
-                    else:
-                        clazz = value
-                    oExp = clazz(rows)
-                    filename = '.'.join(('rows', oExp.file_ext))
-                    response.headers['Content-Type'] = oExp.content_type
-                    response.headers['Content-Disposition'] = \
-                        'attachment;filename='+filename+';'
-
-                    raise HTTP(200, oExp.export(),
-                       **{'Content-Type':oExp.content_type,
-                          'Content-Disposition':'attachment;filename='+filename+';'})
+            if exportManager.has_key(export_type):
+                value = exportManager[export_type]
+                clazz = value[0] if hasattr(value, '__getitem__') else value
+                oExp = clazz(rows)
+                filename = '.'.join(('rows', oExp.file_ext))
+                response.headers['Content-Type'] = oExp.content_type
+                response.headers['Content-Disposition'] = \
+                    'attachment;filename='+filename+';'                
+                raise HTTP(200, oExp.export(),**response.headers)
 
         elif request.vars.records and not isinstance(
             request.vars.records,list):
@@ -1834,6 +1826,12 @@ class SQLFORM(FORM):
 
         session['_web2py_grid_referrer_'+formname] = url2(vars=request.vars)
         console = DIV(_class='web2py_console %(header)s %(cornertop)s' % ui)
+        if create:
+            console.append(gridbutton(
+                    buttonclass='buttonadd',
+                    buttontext='Add',
+                    buttonurl=url(args=['new',tablename])))
+
         error = None
         if searchable:
             sfields = reduce(lambda a,b:a+b,
@@ -1841,15 +1839,14 @@ class SQLFORM(FORM):
             if isinstance(search_widget,dict):
                 search_widget = search_widget[tablename]
             if search_widget=='default':
-                mq,mf,ms = SQLFORM.search_menu(sfields)
+                search_menu = SQLFORM.search_menu(sfields)
                 search_widget = lambda sfield, url: FORM(
-                    mq,
                     INPUT(_name='keywords',_value=request.vars.keywords,
-                          _id='web2py_keywords'),
-                    INPUT(_type='submit',_value=T('Search')),
-                    INPUT(_type='submit',_value=T('Clear'),
+                          _id='web2py_keywords',_onfocus="jQuery('#w2p_query_fields').change();jQuery('#w2p_query_panel').slideDown();"),
+                    INPUT(_type='submit',_value=T('Search'),_class="btn"),
+                    INPUT(_type='submit',_value=T('Clear'),_class="btn",
                           _onclick="jQuery('#web2py_keywords').val('');"),
-                    mf,ms,_method="GET",_action=url)
+                    search_menu,_method="GET",_action=url)
             form = search_widget and search_widget(sfields,url()) or ''
             console.append(form)
             keywords = request.vars.get('keywords','')
@@ -1874,40 +1871,6 @@ class SQLFORM(FORM):
         except:
             nrows = 0
             error = T('Unsupported query')
-
-        search_actions = DIV(_class='web2py_search_actions')
-        if create:
-            search_actions.append(gridbutton(
-                    buttonclass='buttonadd',
-                    buttontext='Add',
-                    buttonurl=url(args=['new',tablename])))
-        if csv and nrows:
-            options =[]
-            for k,v in sorted(exportManager.items()):
-                if hasattr(v, "__getitem__"):
-                    label = v[1]
-                else:
-                    label = k
-                options.append(OPTION(T(label),_value=k))
-            items = url2().split('?', 1)
-            myurl = items[0]
-            if len(items)>1:
-                mysignature = psq(items[1]).get('_signature', [None])[-1]
-            else:
-                mysignature = ''
-            f = FORM(BUTTON(SPAN(_class=ui.get('buttonexport')),
-                            "Export", _type="submit", _class=ui.get('button')),
-                     SELECT(options, _name="_export_type"),
-                     INPUT(_type="hidden", _name="order",
-                           _value=request.vars.order),
-                     INPUT(_type="hidden", _name="_signature",
-                            _value=mysignature),
-                     INPUT(_type="hidden", _name="keywords",
-                           _value=request.vars.keywords or ''),
-                     _method="GET", _action=myurl)
-            search_actions.append(f)
-
-        console.append(search_actions)
 
         order = request.vars.order or ''
         if sortable:
@@ -2035,9 +1998,9 @@ class SQLFORM(FORM):
                     elif field.type=='upload':
                         if value:
                             if callable(upload):
-                                value = A('File', _href=upload(value))
+                                value = A(current.T('file'), _href=upload(value))
                             elif upload:
-                                value = A('File',
+                                value = A(current.T('file'),
                                           _href='%s/%s' % (upload, value))
                         else:
                             value = ''
@@ -2082,11 +2045,27 @@ class SQLFORM(FORM):
                     redirect(referrer)
         else:
             htmltable = DIV(T('No records found'))
+
+        if csv and nrows:
+            export_links =[]
+            for k,v in sorted(exportManager.items()):
+                label = v[1] if hasattr(v, "__getitem__") else k
+                link = url2(vars=dict(
+                        order=request.vars.order or '',
+                        _export_type=k,
+                        keywords=request.vars.keywords or ''))
+                export_links.append(A(T(label),_href=link))
+            export_menu = \
+                DIV(T('Export:'),_class="w2p_export_menu",*export_links)
+        else:
+            export_menu = None
+
         res = DIV(console,
                   DIV(htmltable,_class="web2py_table"),
                   DIV(paginator,_class=\
                           "web2py_paginator %(header)s %(cornerbottom)s" % ui),
                   _class='%s %s' % (_class, ui.get('widget')))
+        if export_menu: res.append(export_menu)
         res.create_form = create_form
         res.update_form = update_form
         res.view_form = view_form
@@ -2437,7 +2416,8 @@ class SQLTABLE(TABLE):
                         r = A(represent(field,r,record), _href=str(href))
                     elif field.represent:
                         r = represent(field,r,record)
-                elif linkto and hasattr(field._table,'_primarykey') and fieldname in field._table._primarykey:
+                elif linkto and hasattr(field._table,'_primarykey')\
+                        and fieldname in field._table._primarykey:
                     # have to test this with multi-key tables
                     key = urllib.urlencode(dict( [ \
                                 ((tablename in record \
@@ -2454,9 +2434,9 @@ class SQLTABLE(TABLE):
                     r = 'DATA'
                 elif field.type == 'upload':
                     if upload and r:
-                        r = A('file', _href='%s/%s' % (upload, r))
+                        r = A(current.T('file'), _href='%s/%s' % (upload, r))
                     elif r:
-                        r = 'file'
+                        r = current.T('file')
                     else:
                         r = ''
                 elif field.type in ['string','text']:
@@ -2523,6 +2503,7 @@ form_factory = SQLFORM.factory # for backward compatibility, deprecated
 
 
 class ExportClass(object):
+    label = None
     file_ext = None
     content_type = None
 
@@ -2573,8 +2554,9 @@ class ExportClass(object):
     def export(self):
         raise NotImplementedError
 
-class ExporterTsv(ExportClass):
+class ExporterTSV(ExportClass):
 
+    label = 'TSV'
     file_ext = "csv"
     content_type = "text/tab-separated-values"
 
@@ -2606,7 +2588,8 @@ class ExporterTsv(ExportClass):
             out.truncate(0)
         return str(final.getvalue())
 
-class ExporterCsv(ExportClass):
+class ExporterCSV(ExportClass):
+    label = 'CSV'
     file_ext = "csv"
     content_type = "text/csv"
 
@@ -2616,7 +2599,8 @@ class ExporterCsv(ExportClass):
     def export(self):
         return str(self.rows)
 
-class ExporterHtml(ExportClass):
+class ExporterHTML(ExportClass):
+    label = 'HTML'
     file_ext = "html"
     content_type = "text/html"
 
@@ -2633,6 +2617,27 @@ class ExporterHtml(ExportClass):
                 out.write('<td>'+str(row[col[0]][col[1]])+'</td>\n')
             out.write('</tr>\n')
         out.write('</table>\n</body>\n</html>')
+        return str(out.getvalue())
+
+
+class ExporterXML(ExportClass):
+    label = 'XML'
+    file_ext = "xml"
+    content_type = "text/xml"
+
+    def __init__(self, rows):
+        ExportClass.__init__(self, rows)
+
+    def export(self):
+        out = cStringIO.StringIO()
+        out.write('<rows>\n')
+        colnames = [a.split('.') for a in self.rows.colnames]
+        for row in self.rows.records:
+            out.write('<row>\n')
+            for col in colnames:
+                out.write('<%s>'%col+str(row[col[0]][col[1]])+'</%s>\n'%col)
+            out.write('</row>\n')
+        out.write('</rows>')
         return str(out.getvalue())
 
 
