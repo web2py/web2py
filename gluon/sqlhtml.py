@@ -1770,12 +1770,13 @@ class SQLFORM(FORM):
             return ret
 
         exportManager = dict(
-            csv_with_hidden_cols=(ExporterCsv,'csv, hidden cols'),
-            csv=ExporterCsv,
-            html=ExporterHtml,
-            tsv_with_hidden_cols=(ExporterTsv,
-                                  'tsv (Excel compatible), hidden cols'),
-            tsv=(ExporterTsv, 'tsv (Excel compatible)'))
+            csv_with_hidden_cols=(ExporterCSV,'CSV (hidden cols)'),
+            csv=(ExporterCSV,'CSV'),
+            xml=(ExporterXML, 'XML'),
+            html=(ExporterHTML, 'HTML'),
+            tsv_with_hidden_cols=\
+                (ExporterTSV,'TSV (Excel compatible, hidden cols)'),
+            tsv=(ExporterTSV, 'TSV (Excel compatible)'))
         if not exportclasses is None:
             exportManager.update(exportclasses)
 
@@ -1789,10 +1790,9 @@ class SQLFORM(FORM):
                     else:
                         sign, rorder = '', order
                     tablename,fieldname = rorder.split('.',1)
+                    orderby=db[tablename][fieldname]
                     if sign=='~':
-                        orderby=~db[tablename][fieldname]
-                    else:
-                        orderby=db[tablename][fieldname]
+                        orderby=~orderby
 
             table_fields = [f for f in fields if f._tablename in tablenames]
             if export_type in ('csv_with_hidden_cols','tsv_with_hidden_cols'):
@@ -1809,22 +1809,15 @@ class SQLFORM(FORM):
             else:
                 rows = dbset.select(left=left,orderby=orderby,*columns)
 
-            if not export_type is None:
-                if exportManager.has_key(export_type):
-                    value = exportManager[export_type]
-                    if hasattr(value, '__getitem__'):
-                        clazz = value[0]
-                    else:
-                        clazz = value
-                    oExp = clazz(rows)
-                    filename = '.'.join(('rows', oExp.file_ext))
-                    response.headers['Content-Type'] = oExp.content_type
-                    response.headers['Content-Disposition'] = \
-                        'attachment;filename='+filename+';'
-
-                    raise HTTP(200, oExp.export(),
-                       **{'Content-Type':oExp.content_type,
-                          'Content-Disposition':'attachment;filename='+filename+';'})
+            if exportManager.has_key(export_type):
+                value = exportManager[export_type]
+                clazz = value[0] if hasattr(value, '__getitem__') else value
+                oExp = clazz(rows)
+                filename = '.'.join(('rows', oExp.file_ext))
+                response.headers['Content-Type'] = oExp.content_type
+                response.headers['Content-Disposition'] = \
+                    'attachment;filename='+filename+';'                
+                raise HTTP(200, oExp.export(),**response.headers)
 
         elif request.vars.records and not isinstance(
             request.vars.records,list):
@@ -1882,31 +1875,18 @@ class SQLFORM(FORM):
                     buttontext='Add',
                     buttonurl=url(args=['new',tablename])))
         if csv and nrows:
-            options =[]
+            export_links =[]
             for k,v in sorted(exportManager.items()):
-                if hasattr(v, "__getitem__"):
-                    label = v[1]
-                else:
-                    label = k
-                options.append(OPTION(T(label),_value=k))
-            items = url2().split('?', 1)
-            myurl = items[0]
-            if len(items)>1:
-                mysignature = psq(items[1]).get('_signature', [None])[-1]
-            else:
-                mysignature = ''
-            f = FORM(BUTTON(SPAN(_class=ui.get('buttonexport')),
-                            "Export", _type="submit", _class=ui.get('button')),
-                     SELECT(options, _name="_export_type"),
-                     INPUT(_type="hidden", _name="order",
-                           _value=request.vars.order),
-                     INPUT(_type="hidden", _name="_signature",
-                            _value=mysignature),
-                     INPUT(_type="hidden", _name="keywords",
-                           _value=request.vars.keywords or ''),
-                     _method="GET", _action=myurl)
-            search_actions.append(f)
-
+                label = v[1] if hasattr(v, "__getitem__") else k
+                link = url2(vars=dict(
+                        order=request.vars.order or '',
+                        _export_type=k,
+                        keywords=request.vars.keywords or ''))
+                export_links.append(A(T(label),_href=link))
+            export_menu = \
+                DIV(T('Export:'),_class="w2p_export_menu",*export_links)
+        else:
+            export_menu = None
         console.append(search_actions)
 
         order = request.vars.order or ''
@@ -2087,6 +2067,7 @@ class SQLFORM(FORM):
                   DIV(paginator,_class=\
                           "web2py_paginator %(header)s %(cornerbottom)s" % ui),
                   _class='%s %s' % (_class, ui.get('widget')))
+        if export_menu: res.append(export_menu)
         res.create_form = create_form
         res.update_form = update_form
         res.view_form = view_form
@@ -2524,6 +2505,7 @@ form_factory = SQLFORM.factory # for backward compatibility, deprecated
 
 
 class ExportClass(object):
+    label = None
     file_ext = None
     content_type = None
 
@@ -2574,8 +2556,9 @@ class ExportClass(object):
     def export(self):
         raise NotImplementedError
 
-class ExporterTsv(ExportClass):
+class ExporterTSV(ExportClass):
 
+    label = 'TSV'
     file_ext = "csv"
     content_type = "text/tab-separated-values"
 
@@ -2607,7 +2590,8 @@ class ExporterTsv(ExportClass):
             out.truncate(0)
         return str(final.getvalue())
 
-class ExporterCsv(ExportClass):
+class ExporterCSV(ExportClass):
+    label = 'CSV'
     file_ext = "csv"
     content_type = "text/csv"
 
@@ -2617,7 +2601,8 @@ class ExporterCsv(ExportClass):
     def export(self):
         return str(self.rows)
 
-class ExporterHtml(ExportClass):
+class ExporterHTML(ExportClass):
+    label = 'HTML'
     file_ext = "html"
     content_type = "text/html"
 
@@ -2634,6 +2619,27 @@ class ExporterHtml(ExportClass):
                 out.write('<td>'+str(row[col[0]][col[1]])+'</td>\n')
             out.write('</tr>\n')
         out.write('</table>\n</body>\n</html>')
+        return str(out.getvalue())
+
+
+class ExporterXML(ExportClass):
+    label = 'XML'
+    file_ext = "xml"
+    content_type = "text/xml"
+
+    def __init__(self, rows):
+        ExportClass.__init__(self, rows)
+
+    def export(self):
+        out = cStringIO.StringIO()
+        out.write('<rows>\n')
+        colnames = [a.split('.') for a in self.rows.colnames]
+        for row in self.rows.records:
+            out.write('<row>\n')
+            for col in colnames:
+                out.write('<%s>'%col+str(row[col[0]][col[1]])+'</%s>\n'%col)
+            out.write('</row>\n')
+        out.write('</rows>')
         return str(out.getvalue())
 
 
