@@ -83,6 +83,8 @@ td.w2p_fl,td.w2p_fw,td.w2p_fc {vertical-align:top}
 td.w2p_fl {text-align:right}
 td.w2p_fl, td.w2p_fw {padding-right:7px}
 td.w2p_fl,td.w2p_fc {padding-top:4px}
+div.w2p_export_menu {margin:5px 0}
+div.w2p_export_menu a {margin-left:5px; padding:2px 5px; background-color:#f1f1f1; border-radius:5px; -moz-border-radius:5px; -webkit-border-radius:5px;}
 
 /* tr#submit_record__row {border-top:1px solid #E5E5E5} */
 #submit_record__row td {padding-top:.5em}
@@ -218,8 +220,10 @@ div.error {
 */
 
 .web2py_console form {
-    width:100%;
-    display:inline;
+    width: 100%;
+    display: inline;
+    vertical-align: middle;
+    margin: 0 0 0 5px;
 }
 
 .web2py_console form select {
@@ -284,8 +288,6 @@ div.error {
 .web2py_paginator .current {
     font-weight:bold;
 }
-
-#w2p_query_panel {}
 
 .web2py_breadcrumbs ul {
     list-style:none;

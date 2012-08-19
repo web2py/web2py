@@ -1383,11 +1383,12 @@ class Auth(object):
             signature_list = [signature]
         else:
             signature_list = signature
+        lazy_tables, db._lazy_tables = db._lazy_tables, False
         if not settings.table_user_name in db.tables:
             passfield = settings.password_field
             extra_fields = settings.extra_fields.get(
                 settings.table_user_name,[])+signature_list
-            if username or settings.cas_provider:
+            if username or settings.cas_provider:                
                 table = db.define_table(
                     settings.table_user_name,
                     Field('first_name', length=128, default='',
@@ -1570,6 +1571,7 @@ class Auth(object):
                     settings.table_user_name,
                     settings.table_user._format)
             settings.table_cas = db[settings.table_cas_name]
+        db._lazy_tables = lazy_tables
         if settings.cas_provider:
             settings.actions_disabled = \
                 ['profile','register','change_password','request_reset_password']
@@ -2433,7 +2435,6 @@ class Auth(object):
             [, onvalidation=DEFAULT [, onaccept=DEFAULT [, log=DEFAULT]]]])
 
         """
-
         table_user = self.settings.table_user
         request = current.request
         response = current.response
@@ -2466,7 +2467,7 @@ class Auth(object):
                        separator=self.settings.label_separator
                        )
         if captcha:
-            addrow(form, captcha.label, captcha, captcha.comment, self.settings.formstyle,'captcha__row')
+            addrow(form, captcha.label, captcha, captcha.comment, self.settings.formstyle,'captcha__row')        
         if form.accepts(request, session,
                         formname='reset_password', dbio=False,
                         onvalidation=onvalidation,
@@ -2741,7 +2742,9 @@ class Auth(object):
                 if requires_login:
                     if not user:
                         if not otherwise is None:
-                            return otherwise
+                            if callable(otherwise):
+                                return otherwise()
+                            redirect(otherwise)
                         elif self.settings.allow_basic_login_only or \
                                 basic_accepted or current.request.is_restful:
                             raise HTTP(403,"Not authorized")
@@ -3116,13 +3119,12 @@ class Auth(object):
         table = form.table
         if not archive_table:
             archive_table_name = '%s_archive' % table
-            if archive_table_name in table._db:
-                archive_table = table._db[archive_table_name]
-            else:
-                archive_table = table._db.define_table(
+            if not archive_table_name in table._db:
+                table._db.define_table(
                     archive_table_name,
                     Field(current_record,table),
                     *[field.clone(unique=False) for field in table])
+            archive_table = table._db[archive_table_name]    
         new_record = {current_record:form.vars.id}
         for fieldname in archive_table.fields:
             if not fieldname in ['id',current_record]:
@@ -4456,9 +4458,19 @@ class Wiki(object):
     def markmin_render(self,page):
         return MARKMIN(page.body,url=True,environment=self.env,
                        autolinks=lambda link: expand_one(link,{})).xml()
+    @staticmethod
+    def component(text):
+        """
+        In wiki docs allows @{component:controller/function/args}
+        which renders as a LOAD(..., ajax=True)
+        """
+        items = text.split('/')
+        controller, function, args = items[0], items[1], items[2:]
+        return LOAD(controller, function, args=args, ajax=True).xml()
     def __init__(self,auth,env=None,automenu=True,render='markmin',
                  manage_permissions=False,force_prefix=''):
         self.env = env or {}
+        self.env['component'] = Wiki.component
         if render == 'markmin': render=self.markmin_render
         self.auth = auth
         self.automenu = automenu
@@ -4540,8 +4552,8 @@ class Wiki(object):
             current.response.menu = self.menu(request.controller,
                                               request.function)
         zero = request.args(0)
-        if zero=='_media':
-            return self.media(request.args(1,cast=int))
+        if zero and zero.isdigit():
+            return self.media(int(zero))
         elif not zero or not zero.startswith('_'):
             return self.read(zero or 'index')
         elif zero=='_edit':
@@ -4637,9 +4649,13 @@ class Wiki(object):
 
     def editmedia(self,slug):
         auth = self.auth
-        db = auth.db
+        db = auth.db        
         page = db.wiki_page(slug=slug)
         if not (page and self.can_edit(page)): return self.not_authorized(page)
+        self.auth.db.wiki_media.id.represent = lambda id,row:\
+            SPAN('@////%i/%s.%s' % \
+                     (id,IS_SLUG.urlify(row.title.split('.')[0]),
+                      row.file.split('.')[-1]))
         self.auth.db.wiki_media.wiki_page.default = page.id
         self.auth.db.wiki_media.wiki_page.writable = False
         content = SQLFORM.grid(
@@ -4660,6 +4676,7 @@ class Wiki(object):
         return dict(content=form)
     def pages(self):
         if not self.can_manage(): return self.not_authorized()
+        self.auth.db.wiki_page.id.represent = lambda id,row:SPAN('@////%s' % row.slug)
         self.auth.db.wiki_page.title.represent = lambda title,row: \
             A(title,_href=URL(args=row.slug))
         content=SQLFORM.grid(
@@ -4679,7 +4696,7 @@ class Wiki(object):
         media = db.wiki_media(id)
         if media:
             if self.manage_permissions:
-                page = db.wiki_page(media.page)
+                page = db.wiki_page(media.wiki_page)
                 if not self.can_read(page): return self.not_authorized(page)
             request.args = [media.file]
             return current.response.download(request,db)
