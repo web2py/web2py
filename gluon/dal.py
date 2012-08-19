@@ -174,7 +174,7 @@ import platform
 CALLABLETYPES = (types.LambdaType, types.FunctionType,
                  types.BuiltinFunctionType,
                  types.MethodType, types.BuiltinMethodType)
-
+TABLE_ARGS = ('migrate','primarykey','fake_migrate','format','singular','plural','trigger_name','sequence_name','common_filter','polymodel','table_class')
 
 ###################################################################################
 # following checks allow the use of dal without web2py, as a standalone module
@@ -672,7 +672,7 @@ class BaseAdapter(ConnectionPool):
                         rtable = table._db[rtablename]
                         rfield = rtable[rfieldname]
                         # must be PK reference or unique
-                        if rfieldname in rtable._primarykey or rfield.unique:
+                        if rfieldname in hasattr(rtable,'_primarykey') or rfield.unique:
                             ftype = self.types[rfield.type[:9]] % \
                                 dict(length=rfield.length)
                             # multicolumn primary key reference?
@@ -1449,7 +1449,7 @@ class BaseAdapter(ConnectionPool):
                 sql_o += ' ORDER BY %s' % self.expand(orderby)
         if limitby:
             if not orderby and tablenames:
-                sql_o += ' ORDER BY %s' % ', '.join(['%s.%s'%(t,x) for t in tablenames for x in ((hasattr(self.db[t], '_primarykey') and self.db[t]._primarykey) or [self.db[t]._id.name])])
+                sql_o += ' ORDER BY %s' % ', '.join(['%s.%s'%(t,x) for t in tablenames for x in (hasattr(self.db[t],'_primarykey') and self.db[t]._primarykey or [self.db[t]._id.name])])
             # oracle does not support limitby
         sql = self.select_limitby(sql_s, sql_f, sql_t, sql_w, sql_o, limitby)
         if for_update and self.can_select_for_update is True:
@@ -4573,7 +4573,7 @@ class CouchDBAdapter(NoSQLAdapter):
         fieldnames = [f.name for f in (fields or self.db[tablename])]
         colnames = ['%s.%s' % (tablename,k) for k in fieldnames]
         fields = ','.join(['%s.%s' % (tablename,uid(f)) for f in fieldnames])
-        fn="function(%(t)s){if(%(query)s)emit(%(order)s,[%(fields)s]);}" %\
+        fn="(function(%(t)s){if(%(query)s)emit(%(order)s,[%(fields)s]);})" %\
             dict(t=tablename,
                  query=self.expand(query),
                  order='%s._id' % tablename,
@@ -6538,7 +6538,7 @@ class DAL(dict):
                  migrate_enabled=True, fake_migrate_all=False,
                  decode_credentials=False, driver_args=None,
                  adapter_args=None, attempts=5, auto_import=False,
-                 bigint_id=False,debug=False):
+                 bigint_id=False,debug=False,lazy_tables=False):
         """
         Creates a new Database Abstraction Layer instance.
 
@@ -6583,6 +6583,8 @@ class DAL(dict):
         self._bigint_id = bigint_id
         self._debug = debug
         self._migrated = []
+        self._LAZY_TABLES = {}
+        self._lazy_tables = lazy_tables
         if not str(attempts).isdigit() or attempts < 0:
             attempts = 5
         if uri:
@@ -6908,94 +6910,76 @@ def index():
                                 'pattern':pattern,'count':count})
         return Row({'status':400,'error':'no matching pattern','response':None})
 
-
     def define_table(
         self,
         tablename,
         *fields,
         **args
-        ):
-
-        for key in args:
-            if key not in [
-                    'migrate',
-                    'primarykey',
-                    'fake_migrate',
-                    'format',
-                    'singular',
-                    'plural',
-                    'trigger_name',
-                    'sequence_name',
-                    'common_filter',
-                    'polymodel',
-                    'table_class']:
-                raise SyntaxError, 'invalid table "%s" attribute: %s' \
-                    % (tablename, key)
+        ):       
         if not isinstance(tablename,str):
             raise SyntaxError, "missing table name"
-        tablename = cleanup(tablename)
-        migrate = self._migrate_enabled and args.get('migrate',
-                                                     self._migrate)
-        fake_migrate = self._fake_migrate_all or args.get('fake_migrate',
-                                                          self._fake_migrate)
-        table_class = args.get('table_class',Table)
-        format = args.get('format',None)
-        trigger_name = args.get('trigger_name', None)
-        sequence_name = args.get('sequence_name', None)
-        primarykey =args.get('primarykey',None)
-        polymodel = args.get('polymodel',None)
-        singular = args.get('singular',tablename.replace('_',' ').capitalize())
-        plural = args.get('plural',pluralize(singular.lower()).capitalize())
-        lowertablename = tablename.lower()
-
-        if tablename.startswith('_') or hasattr(self,lowertablename) or \
+        elif tablename.startswith('_') or hasattr(self,tablename) or \
                 regex_python_keywords.match(tablename):
             raise SyntaxError, 'invalid table name: %s' % tablename
-        elif lowertablename in self.tables:
+        elif tablename in self.tables:
             raise SyntaxError, 'table already defined: %s' % tablename
         elif self.check_reserved:
             self.check_reserved_keyword(tablename)
+        else:
+            invalid_args = [key for key in args if not key in TABLE_ARGS]
+            if invalid_args:
+                raise SyntaxError, 'invalid table "%s" attributes: %s' \
+                    % (tablename,invalid_args)         
+        if self._lazy_tables and not tablename in self._LAZY_TABLES:
+            self._LAZY_TABLES[tablename] = (tablename,fields,args)
+            table = None
+        else:
+            table = self.lazy_define_table(tablename,*fields,**args)
+        self.tables.append(tablename)
+        return table
 
+    def lazy_define_table(
+        self,
+        tablename,
+        *fields,
+        **args
+        ):
         if self._common_fields:
-            fields = [f for f in fields] + [f for f in self._common_fields]
+            fields = fields + self._common_fields
 
-        common_filter = args.get('common_filter', None)
+        table_class = args.get('table_class',Table)
+        table = table_class(self, tablename, *fields, **args)
+        table._actual = True
+        self[tablename] = table        
+        table._create_references() # must follow above line to handle self references
 
-        t = self[tablename] = table_class(self, tablename, *fields,
-                                          **dict(primarykey=primarykey,
-                                                 trigger_name=trigger_name,
-                                                 sequence_name=sequence_name,
-                                                 common_filter=common_filter))
-
-        # db magic
-        if self._uri in (None,'None'):
-            return t
-
-        t._create_references()
-
-        if migrate or self._adapter.dbengine=='google:datastore':
+        migrate = self._migrate_enabled and args.get('migrate',self._migrate)
+        if migrate and not self._uri in (None,'None') \
+                or self._adapter.dbengine=='google:datastore':
+            fake_migrate = self._fake_migrate_all or \
+                args.get('fake_migrate',self._fake_migrate)
+            polymodel = args.get('polymodel',None)
             try:
                 sql_locker.acquire()
-                self._adapter.create_table(t,migrate=migrate,
+                self._adapter.create_table(table,migrate=migrate,
                                            fake_migrate=fake_migrate,
                                            polymodel=polymodel)
             finally:
                 sql_locker.release()
         else:
-            t._dbt = None
-        self.tables.append(tablename)
-        t._format = format
-        t._singular = singular
-        t._plural = plural
-        t._actual = True
-        return t
+            table._dbt = None
+        return table
 
     def __iter__(self):
         for tablename in self.tables:
             yield self[tablename]
 
     def __getitem__(self, key):
-        return dict.__getitem__(self, str(key))
+        key = str(key)
+        if not key is '_LAZY_TABLES' and key in self._LAZY_TABLES:
+            tablename, fields, args = self._LAZY_TABLES.pop(key)
+            return self.lazy_define_table(tablename,*fields,**args)
+        return dict.__getitem__(self, key)
 
     def __setitem__(self, key, value):
         dict.__setitem__(self, str(key), value)
@@ -7217,6 +7201,14 @@ class Table(dict):
         self._trigger_name = args.get('trigger_name',None) or \
             db and db._adapter.trigger_name(tablename)
         self._common_filter = args.get('common_filter', None)
+        self._format = args.get('format',None)
+        self._singular = args.get(
+            'singular',tablename.replace('_',' ').capitalize())
+        self._plural = args.get(
+            'plural',pluralize(self._singular.lower()).capitalize())
+        # horrible but for backard compatibility of appamdin:
+        if 'primarykey' in args and args['primarykey']:
+            self._primarykey = args.get('primarykey', None)
 
         self._before_insert = []
         self._before_update = [lambda self,fs:self.delete_uploaded_files(fs)]
@@ -7225,28 +7217,23 @@ class Table(dict):
         self._after_update = []
         self._after_delete = []
 
-        primarykey = args.get('primarykey', None)
         fieldnames,newfields=set(),[]
-        if primarykey:
-            if not isinstance(primarykey,list):
+        if hasattr(self,'_primarykey'):
+            if not isinstance(self._primarykey,list):
                 raise SyntaxError, \
                     "primarykey must be a list of fields from table '%s'" \
                     % tablename
-            self._primarykey = primarykey
-            if len(primarykey)==1:
+            if len(self._primarykey)==1:
                 self._id = [f for f in fields if isinstance(f,Field) \
-                                and f.name==primarykey[0]][0]
+                                and f.name==self._primarykey[0]][0]
         elif not [f for f in fields if isinstance(f,Field) and f.type=='id']:
             field = Field('id', 'id')
             newfields.append(field)
             fieldnames.add('id')
             self._id = field
         for field in fields:
-            if not isinstance(field, (Field, Table)):
-                raise SyntaxError, \
-                    'define_table argument is not a Field or Table: %s' % field
-            elif isinstance(field, Field) and not field.name in fieldnames:
-                if hasattr(field, '_db'):
+            if isinstance(field, Field) and not field.name in fieldnames:
+                if field.db is not None:
                     field = copy.copy(field)
                 newfields.append(field)
                 fieldnames.add(field.name)
@@ -7260,9 +7247,9 @@ class Table(dict):
                         field = field.clone(point_self_references_to=t2)
                         newfields.append(field)
                         fieldnames.add(field.name)
-            else:
-                # let's ignore new fields with duplicated names!!!
-                pass
+            elif not isinstance(field, (Field, Table)):
+                raise SyntaxError, \
+                    'define_table argument is not a Field or Table: %s' % field
         fields = newfields
         self._db = db
         tablename = tablename
@@ -7333,13 +7320,13 @@ class Table(dict):
             return # do not try define the archive if already exists
         fieldnames = self.fields()
         field_type = self if archive_db is self._db else 'bigint'
-        archive_table = archive_db.define_table(
+        archive_db.define_table(
             archive_name,
             Field(current_record,field_type),
             *[field.clone(unique=False) for field in self])
         self._before_update.append(
-            lambda qset,fs,at=archive_table,cn=current_record:
-                archive_record(qset,fs,at,cn))
+            lambda qset,fs,db=archive_db,an=archive_name,cn=current_record:
+                archive_record(qset,fs,db[an],cn))
         if is_active and is_active in fieldnames:
             self._before_delete.append(
                 lambda qset: qset.update(is_active=False))
@@ -8040,6 +8027,9 @@ class FieldLazy(object):
         self.handler = handler
 
 
+def list_represent(x,r=None):
+    return ', '.join(str(y) for y in x or [])
+
 class Field(Expression):
 
     Virtual = FieldVirtual
@@ -8086,13 +8076,13 @@ class Field(Expression):
         length=None,
         default=DEFAULT,
         required=False,
-        requires=DEFAULT,
+        requires=None,
         ondelete='CASCADE',
         notnull=False,
         unique=False,
         uploadfield=True,
         widget=None,
-        label=DEFAULT,
+        label=None,
         comment=None,
         writable=True,
         readable=True,
@@ -8112,24 +8102,17 @@ class Field(Expression):
         filter_out = None,
         custom_qualifier = None,
         ):
-        self.db = None
+        self._db = self.db = None # both for backward compatibility
         self.op = None
         self.first = None
         self.second = None
-        if not isinstance(fieldname,str):
-            raise SyntaxError, "missing field name"
         self.name = fieldname = cleanup(fieldname)
-        if hasattr(Table,fieldname) or fieldname[0] == '_' or \
-                regex_python_keywords.match(fieldname):
+        if not isinstance(fieldname,str) or hasattr(Table,fieldname) or \
+                fieldname[0] == '_' or regex_python_keywords.match(fieldname):
             raise SyntaxError, 'Field: invalid field name: %s' % fieldname
-        if isinstance(type, Table):
-            type = 'reference ' + type._tablename
-        self.type = type  # 'string', 'integer'
-        self.length = (length is None) and DEFAULTLENGTH.get(type,512) or length
-        if default is DEFAULT:
-            self.default = update or None
-        else:
-            self.default = default
+        self.type = type if not isinstance(type, Table) else 'reference %s' % type
+        self.length = length if not length is None else DEFAULTLENGTH.get(self.type,512)
+        self.default = default if default!=DEFAULT else (update or None)
         self.required = required  # is this field required
         self.ondelete = ondelete.upper()  # this is for reference fields only
         self.notnull = notnull
@@ -8139,19 +8122,14 @@ class Field(Expression):
         self.uploadseparate = uploadseparate
         self.uploadfs = uploadfs
         self.widget = widget
-        if label is DEFAULT:
-            self.label = fieldname.replace('_', ' ').title()
-        else:
-            self.label = label or ''
         self.comment = comment
         self.writable = writable
         self.readable = readable
         self.update = update
         self.authorize = authorize
         self.autodelete = autodelete
-        if not represent and type in ('list:integer','list:string'):
-            represent=lambda x,r=None: ', '.join(str(y) for y in x or [])
-        self.represent = represent
+        self.represent = list_represent if \
+            represent==None and type in ('list:integer','list:string') else represent
         self.compute = compute
         self.isattachment = True
         self.custom_store = custom_store
@@ -8161,12 +8139,8 @@ class Field(Expression):
         self.filter_in = filter_in
         self.filter_out = filter_out
         self.custom_qualifier = custom_qualifier
-        if self.label is None:
-            self.label = fieldname.replace('_',' ').title()
-        if requires is None:
-            self.requires = []
-        else:
-            self.requires = requires
+        self.label = label if label!=None else fieldname.replace('_',' ').title()
+        self.requires = requires if requires!=None else []
 
     def clone(self,point_self_references_to=False,**args):
         field = copy.copy(self)

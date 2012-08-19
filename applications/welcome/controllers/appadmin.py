@@ -222,14 +222,15 @@ def select():
             (rows, nrows) = ([], 0)
             response.flash = DIV(T('Invalid Query'),PRE(str(e)))
     # begin handle upload csv
-    if table:
+    csv_table = table or request.vars.table
+    if csv_table:
         formcsv = FORM(str(T('or import from csv file'))+" ",
                        INPUT(_type='file',_name='csvfile'),
-                       INPUT(_type='hidden',_value=table,_name='table'),
+                       INPUT(_type='hidden',_value=csv_table,_name='table'),
                        INPUT(_type='submit',_value=T('import')))
     else:
         formcsv = None
-    if formcsv and formcsv.process().accepted and request.vars.csvfile:
+    if formcsv and formcsv.process().accepted:
         try:
             import_csv(db[request.vars.table],
                        request.vars.csvfile.file)
