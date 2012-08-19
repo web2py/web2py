@@ -1102,7 +1102,7 @@ def plugin():
 
     def filter_plugins(items):
         regex=re.compile('^plugin_'+plugin+'(/.*|\..*)?$')
-        return [item for item in items if regex.match(item)]
+        return [item for item in items if item and regex.match(item)]
 
     return dict(app=app,
                 models=filter_plugins(models),
