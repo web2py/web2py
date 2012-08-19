@@ -484,12 +484,12 @@ class UploadWidget(FormWidget):
             requires = attr["requires"]
             if requires == [] or isinstance(requires, IS_EMPTY_OR):
                 inp = DIV(inp, '[',
-                          A(UploadWidget.GENERIC_DESCRIPTION, _href = url),
+                          A(current.T(UploadWidget.GENERIC_DESCRIPTION), _href = url),
                           '|',
                           INPUT(_type='checkbox',
                                 _name=field.name + cls.ID_DELETE_SUFFIX,
                                 _id=field.name + cls.ID_DELETE_SUFFIX),
-                                LABEL(cls.DELETE_FILE,
+                                LABEL(current.T(cls.DELETE_FILE),
                                      _for=field.name + cls.ID_DELETE_SUFFIX),
                                 ']', br, image)
             else:
@@ -2035,9 +2035,9 @@ class SQLFORM(FORM):
                     elif field.type=='upload':
                         if value:
                             if callable(upload):
-                                value = A('File', _href=upload(value))
+                                value = A(current.T('file'), _href=upload(value))
                             elif upload:
-                                value = A('File',
+                                value = A(current.T('file'),
                                           _href='%s/%s' % (upload, value))
                         else:
                             value = ''
@@ -2455,9 +2455,9 @@ class SQLTABLE(TABLE):
                     r = 'DATA'
                 elif field.type == 'upload':
                     if upload and r:
-                        r = A('file', _href='%s/%s' % (upload, r))
+                        r = A(current.T('file'), _href='%s/%s' % (upload, r))
                     elif r:
-                        r = 'file'
+                        r = current.T('file')
                     else:
                         r = ''
                 elif field.type in ['string','text']:
