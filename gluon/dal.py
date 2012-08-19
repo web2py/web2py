@@ -4566,7 +4566,7 @@ class CouchDBAdapter(NoSQLAdapter):
         fieldnames = [f.name for f in (fields or self.db[tablename])]
         colnames = ['%s.%s' % (tablename,k) for k in fieldnames]
         fields = ','.join(['%s.%s' % (tablename,uid(f)) for f in fieldnames])
-        fn="function(%(t)s){if(%(query)s)emit(%(order)s,[%(fields)s]);}" %\
+        fn="(function(%(t)s){if(%(query)s)emit(%(order)s,[%(fields)s]);})" %\
             dict(t=tablename,
                  query=self.expand(query),
                  order='%s._id' % tablename,
