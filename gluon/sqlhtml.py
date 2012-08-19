@@ -1479,16 +1479,21 @@ class SQLFORM(FORM):
                 operators = SELECT(*[T(option) for option in options])
                 if field.type=='boolean':
                     value_input = SELECT(
-                        OPTION(T("True"),_value="T"),OPTION(T("False"),_value="F"),
+                        OPTION(T("True"),_value="T"),
+                        OPTION(T("False"),_value="F"),
                         _id="w2p_value_"+name)
                 else:
-                    value_input = INPUT(_type='text',_id="w2p_value_"+name,_class=field.type)
-                new_button = INPUT(_type="button", _value=T('New'),
-                                  _onclick="w2p_build_query('new','"+str(field)+"')")
-                and_button = INPUT(_type="button", _value=T('And'),
-                                   _onclick="w2p_build_query('and','"+str(field)+"')")
-                or_button = INPUT(_type="button", _value=T('Or'),
-                                  _onclick="w2p_build_query('or','"+str(field)+"')")
+                    value_input = INPUT(_type='text',_id="w2p_value_"+name,
+                                        _class=field.type)
+                new_button = INPUT(
+                    _type="button", _value=T('New'),_class="btn",
+                        _onclick="w2p_build_query('new','"+str(field)+"')")
+                and_button = INPUT(
+                    _type="button", _value=T('And'),_class="btn",
+                    _onclick="w2p_build_query('and','"+str(field)+"')")
+                or_button = INPUT(
+                    _type="button", _value=T('Or'),_class="btn",
+                    _onclick="w2p_build_query('or','"+str(field)+"')")
 
                 criterion.extend([operators,value_input,new_button,and_button,or_button])
             criteria.append(DIV(criterion, _id='w2p_field_%s' % name,
@@ -1512,13 +1517,7 @@ class SQLFORM(FORM):
           jQuery('#w2p_query_panel').slideUp();
         }
         """)
-        return (INPUT(
-                _value=T("Query"),_type="button",_id="w2p_query_trigger",
-                _onclick="jQuery('#w2p_query_fields').change();jQuery('#w2p_query_panel').slideToggle();"),
-                DIV(_id="w2p_query_panel",
-                    _class='hidden',
-                    *criteria),
-                fadd)
+        return CAT(DIV(_id="w2p_query_panel",_class='hidden',*criteria),fadd)
 
 
     @staticmethod
@@ -1827,6 +1826,12 @@ class SQLFORM(FORM):
 
         session['_web2py_grid_referrer_'+formname] = url2(vars=request.vars)
         console = DIV(_class='web2py_console %(header)s %(cornertop)s' % ui)
+        if create:
+            console.append(gridbutton(
+                    buttonclass='buttonadd',
+                    buttontext='Add',
+                    buttonurl=url(args=['new',tablename])))
+
         error = None
         if searchable:
             sfields = reduce(lambda a,b:a+b,
@@ -1834,15 +1839,14 @@ class SQLFORM(FORM):
             if isinstance(search_widget,dict):
                 search_widget = search_widget[tablename]
             if search_widget=='default':
-                mq,mf,ms = SQLFORM.search_menu(sfields)
+                search_menu = SQLFORM.search_menu(sfields)
                 search_widget = lambda sfield, url: FORM(
-                    mq,
                     INPUT(_name='keywords',_value=request.vars.keywords,
-                          _id='web2py_keywords'),
-                    INPUT(_type='submit',_value=T('Search')),
-                    INPUT(_type='submit',_value=T('Clear'),
+                          _id='web2py_keywords',_onfocus="jQuery('#w2p_query_fields').change();jQuery('#w2p_query_panel').slideDown();"),
+                    INPUT(_type='submit',_value=T('Search'),_class="btn"),
+                    INPUT(_type='submit',_value=T('Clear'),_class="btn",
                           _onclick="jQuery('#web2py_keywords').val('');"),
-                    mf,ms,_method="GET",_action=url)
+                    search_menu,_method="GET",_action=url)
             form = search_widget and search_widget(sfields,url()) or ''
             console.append(form)
             keywords = request.vars.get('keywords','')
@@ -1867,27 +1871,6 @@ class SQLFORM(FORM):
         except:
             nrows = 0
             error = T('Unsupported query')
-
-        search_actions = DIV(_class='web2py_search_actions')
-        if create:
-            search_actions.append(gridbutton(
-                    buttonclass='buttonadd',
-                    buttontext='Add',
-                    buttonurl=url(args=['new',tablename])))
-        if csv and nrows:
-            export_links =[]
-            for k,v in sorted(exportManager.items()):
-                label = v[1] if hasattr(v, "__getitem__") else k
-                link = url2(vars=dict(
-                        order=request.vars.order or '',
-                        _export_type=k,
-                        keywords=request.vars.keywords or ''))
-                export_links.append(A(T(label),_href=link))
-            export_menu = \
-                DIV(T('Export:'),_class="w2p_export_menu",*export_links)
-        else:
-            export_menu = None
-        console.append(search_actions)
 
         order = request.vars.order or ''
         if sortable:
@@ -2062,6 +2045,21 @@ class SQLFORM(FORM):
                     redirect(referrer)
         else:
             htmltable = DIV(T('No records found'))
+
+        if csv and nrows:
+            export_links =[]
+            for k,v in sorted(exportManager.items()):
+                label = v[1] if hasattr(v, "__getitem__") else k
+                link = url2(vars=dict(
+                        order=request.vars.order or '',
+                        _export_type=k,
+                        keywords=request.vars.keywords or ''))
+                export_links.append(A(T(label),_href=link))
+            export_menu = \
+                DIV(T('Export:'),_class="w2p_export_menu",*export_links)
+        else:
+            export_menu = None
+
         res = DIV(console,
                   DIV(htmltable,_class="web2py_table"),
                   DIV(paginator,_class=\
