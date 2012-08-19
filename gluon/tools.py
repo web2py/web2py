@@ -28,7 +28,7 @@ from email import MIMEBase, MIMEMultipart, MIMEText, Encoders, Header, message_f
 from contenttype import contenttype
 from storage import Storage, StorageList, Settings, Messages
 from utils import web2py_uuid
-from fileutils import read_file
+from fileutils import read_file, check_credentials
 from gluon import *
 from gluon.contrib.autolinks import expand_one
 
@@ -4519,6 +4519,11 @@ class Wiki(object):
                 if tag: db.wiki_tag.insert(name=tag,wiki_page=page.id)
         db.wiki_page._after_insert.append(update_tags_insert)
         db.wiki_page._after_update.append(update_tags_update)
+        if check_credentials(current.request) and \
+                not 'wiki_editor' in auth.user_groups.values():
+            group = db.auth_group(role='wiki_editor')
+            gid = group.id if group else db.auth_group.insert(role='wiki_editor')
+            auth.add_membership(gid)            
     # WIKI ACCESS POLICY
     def not_authorized(self,page=None):
         raise HTTP(401)
