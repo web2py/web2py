@@ -73,14 +73,14 @@ class Storage(object):
 
     """
 
-    def __init__(self,d=None,**values):
-        self.__dict__.update(d or {},**values)
-    def __getattr__(self,key):        
+    def __init__(self, __d__=None, **values): 
+        self.__dict__.update(__d__ or {},**values)
+    def __getattr__(self,key):
         return getattr(self,key) if key in self else None
     def __getitem__(self,key):
-        return getattr(self,key) if key in self else None
+        return self.__dict__.get(key,None)
     def __setitem__(self,key,value):
-        setattr(self,key,value)
+        self.__dict__[key] = value
     def __delitem__(self,key):
         delattr(self,key)
     def __nonzero__(self):
@@ -96,6 +96,8 @@ class Storage(object):
         return '<Storage %s>' % self.__dict__ 
     def keys(self):
         return self.__dict__.keys()
+    def values(self):
+        return self.__dict__.values()
     def items(self):
         return self.__dict__.items()
     def __iter__(self):
