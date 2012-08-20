@@ -51,7 +51,7 @@ class List(list):
         return value
 
 class Storage(object):
-
+    __class__ = dict
     """
     A Storage object is like a dictionary except `obj.foo` can be used
     in addition to `obj['foo']`, and setting obj.foo = None deletes item foo.
@@ -100,6 +100,8 @@ class Storage(object):
         return self.__dict__.values()
     def items(self):
         return self.__dict__.items()
+    def len(self):
+        return len(self.__dict__)
     def __iter__(self):
         return self.__dict__.__iter__()
     def has_key(self,key):
