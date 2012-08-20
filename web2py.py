@@ -4,11 +4,13 @@
 import os
 import sys
 
-if getattr(sys, 'frozen', None):
-    path = os.getcwd() # Seems necessary for py2exe
-else:
+if '__file__' in globals():
     path = os.path.dirname(os.path.abspath(__file__))
-    os.chdir(path)
+elif hasattr(sys, 'frozen'):
+    path = os.path.dirname(os.path.abspath(sys.executable)) # for py2exe
+else: #should never happen
+     path = os.getcwd()
+os.chdir(path)
 
 sys.path = [path]+[p for p in sys.path if not p==path]
 
