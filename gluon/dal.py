@@ -4880,6 +4880,10 @@ class MongoDBAdapter(NoSQLAdapter):
     # need to define all the 'sql' methods gt,lt etc....
 
     def select(self,query,fields,attributes,count=False,snapshot=False):
+        try:
+            from pymongo.objectid import ObjectId
+        except ImportError:
+            from bson.objectid import ObjectId
         tablename, mongoqry_dict, mongofields_dict, \
         mongosort_list, limitby_limit, limitby_skip = \
             self._select(query,fields,attributes)
