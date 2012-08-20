@@ -4470,7 +4470,7 @@ class Wiki(object):
     def __init__(self,auth,env=None,automenu=True,render='markmin',
                  manage_permissions=False,force_prefix=''):
         self.env = env or {}
-        self.env['component'] = Wiki.component
+        self.env['component'] = Wiki.component        
         if render == 'markmin': render=self.markmin_render
         self.auth = auth
         self.automenu = automenu
@@ -4478,6 +4478,7 @@ class Wiki(object):
             self.force_prefix = force_prefix % self.auth.user
         else:
             self.force_prefix = force_prefix
+        self.host = current.request.env.http_host
         perms = self.manage_permissions = manage_permissions
         db = auth.db
         db.define_table(
@@ -4591,6 +4592,9 @@ class Wiki(object):
             if ps: return ps[0]
         return ''
 
+    def fix_hostname(self,body):
+        return body.replace('://HOSTNAME','://%s' % self.host)
+    
     def read(self,slug):
         if slug in '_cloud':
             return self.cloud()
@@ -4605,9 +4609,9 @@ class Wiki(object):
             else:
                 match = self.regex_redirect.match(page.body)
                 if match: redirect(match.group(1))
-                return dict(content=XML(page.html))
+                return dict(content=XML(self.fix_hostname(page.html)))
         elif current.request.extension == 'load':
-            return page.html if page else ''
+            return self.fix_hostname(page.html) if page else ''
         else:
             if not page:
                 raise HTTP(404)
@@ -4643,6 +4647,9 @@ class Wiki(object):
             db.wiki_page.slug.default = slug
             db.wiki_page.menu.default = slug
             db.wiki_page.body.default = '## %s\n\npage content' % title_guess
+        vars = current.request.post_vars
+        if vars.body:
+            vars.body=vars.body.replace('://%s' % self.host,'://HOSTNAME')
         form = SQLFORM(db.wiki_page,page,deletable=True,showid=False).process()
         if form.deleted:
             current.session.flash = 'page deleted'
