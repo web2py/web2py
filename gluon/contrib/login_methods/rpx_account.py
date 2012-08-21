@@ -120,7 +120,7 @@ def use_janrain(auth,filename='private/janrain.key',**kwargs):
         request = current.request
         domain,key = open(path,'r').read().strip().split(':')
         host = current.request.env.http_host
-        url = "http://%s/%s/default/user/login" % (host,request.application)
+        url = '%s' % URL(r=request, c='default', f='user', args=['login'], scheme=True)
         auth.settings.actions_disabled = \
             ['register','change_password','request_reset_password']
         auth.settings.login_form = RPXAccount(
