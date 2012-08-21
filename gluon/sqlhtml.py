@@ -2182,12 +2182,12 @@ class SQLFORM(FORM):
                         LI(A(T(db[referee]._plural),
                              _class=trap_class(),
                              _href=url()),
-                           SPAN(divider,_class='divider')))
+                           SPAN(divider,_class='divider'),_class='w2p_grid_breadcrumb_elem'))
                     if kwargs.get('details',True):
                         breadcrumbs.append(
                             LI(A(name,_class=trap_class(),
                                  _href=url(args=['view',referee,id])),
-                               SPAN(divider,_class='divider')))
+                               SPAN(divider,_class='divider'),_class='w2p_grid_breadcrumb_elem'))
                     nargs+=2
                 else:
                     break
@@ -2235,7 +2235,7 @@ class SQLFORM(FORM):
         if isinstance(grid,DIV):
             header = table._plural + (field and ' for '+field.name or '')
             breadcrumbs.append(LI(A(T(header),_class=trap_class(),
-                                 _href=url()),_class='active'))
+                                 _href=url()),_class='active w2p_grid_breadcrumb_elem'))
             grid.insert(0,DIV(UL(*breadcrumbs, **{'_class':breadcrumbs_class}),
                               _class='web2py_breadcrumbs'))
         return grid
