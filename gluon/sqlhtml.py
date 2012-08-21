@@ -1086,7 +1086,8 @@ class SQLFORM(FORM):
 
         if callable(self.formstyle):
             # backward compatibility, 4 argument function is the old style
-            if len(inspect.getargspec(self.formstyle)[0]) == 4:
+            args, varargs, keywords, defaults = inspect.getargspec(self.formstyle)
+            if defaults and len(args) - len(defaults) == 4 or len(args) == 4:
                 table = TABLE()
                 for id,a,b,c in xfields:
                     raw_b = self.field_parent[id] = b
@@ -1815,7 +1816,7 @@ class SQLFORM(FORM):
                 filename = '.'.join(('rows', oExp.file_ext))
                 response.headers['Content-Type'] = oExp.content_type
                 response.headers['Content-Disposition'] = \
-                    'attachment;filename='+filename+';'                
+                    'attachment;filename='+filename+';'
                 raise HTTP(200, oExp.export(),**response.headers)
 
         elif request.vars.records and not isinstance(
