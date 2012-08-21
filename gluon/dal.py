@@ -6281,6 +6281,9 @@ class Row(dict):
     this is only used to store a Row
     """
 
+    def __init__(self):
+        self.__dict__ = self
+
     def __getitem__(self, key):
         key=str(key)
         m = regex_table_field.match(key)
@@ -6298,12 +6301,6 @@ class Row(dict):
 
     def __setitem__(self, key, value):
         dict.__setitem__(self, str(key), value)
-
-    def __getattr__(self, key):
-        return self[key]
-
-    def __setattr__(self, key, value):
-        self[key] = value
 
     def __str__(self):
         ### this could be made smarter
@@ -6574,6 +6571,7 @@ class DAL(dict):
         :fake_migrate_all (defaults to False). If sets to True fake migrates ALL tables
         :attempts (defaults to 5). Number of times to attempt connecting
         """
+        self.__dict__ = self
         if not decode_credentials:
             credential_decoder = lambda cred: cred
         else:
@@ -6993,14 +6991,11 @@ def index():
     def __setitem__(self, key, value):
         dict.__setitem__(self, str(key), value)
 
-    def __getattr__(self, key):
-        return self[key]
-
     def __setattr__(self, key, value):
         if key[:1]!='_' and key in self:
             raise SyntaxError, \
                 'Object %s exists and cannot be redefined' % key
-        self[key] = value
+        dict.__setattr__(self,key,value)
 
     def __repr__(self):
         return '<DAL ' + dict.__repr__(self) + '>'
@@ -7202,7 +7197,7 @@ class Table(dict):
 
         :raises SyntaxError: when a supplied field is of incorrect type.
         """
-
+        self.__dict__ = self
         self._actual = False # set to True by define_table()
         self._tablename = tablename
         self._sequence_name = args.get('sequence_name',None) or \
@@ -7273,7 +7268,7 @@ class Table(dict):
                     tmp = field.uploadfield = '%s_blob' % field.name
         if isinstance(field.uploadfield,str) and \
                 not [f for f in fields if f.name==field.uploadfield]:
-            fields.append(self._db.Field(field.uploadfield,'blob',default=''))
+            fields.append(Field(field.uploadfield,'blob',default=''))
 
         lower_fieldnames = set()
         reserved = dir(Table) + ['fields']
@@ -7472,13 +7467,10 @@ class Table(dict):
         elif not str(key).isdigit() or not self._db(self._id == key).delete():
             raise SyntaxError, 'No such record: %s' % key
 
-    def __getattr__(self, key):
-        return self[key]
-
     def __setattr__(self, key, value):
         if key[:1]!='_' and key in self:
             raise SyntaxError, 'Object exists and cannot be redefined: %s' % key
-        self[key] = value
+        dict.__setattr__(self,key,value)
 
     def __iter__(self):
         for fieldname in self.fields:
