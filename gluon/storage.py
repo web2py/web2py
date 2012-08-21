@@ -25,11 +25,7 @@ class List(list):
     instead of IndexOutOfBounds
     """
 
-    def __call__(self, i, default=None, cast=None, otherwise=None):
-        """
-        request.args(0,default=0,cast=int,otherwise='http://error_url')
-        request.args(0,default=0,cast=int,otherwise=lambda:...)
-        """
+    def __call__(self, i, default=None, cast=None, url_onerror=None):        
         n = len(self)
         if 0<=i<n or -n<=i<0:
             value = self[i]
@@ -40,17 +36,14 @@ class List(list):
                 value = cast(value)
             except (ValueError, TypeError):
                 from http import HTTP, redirect
-                if otherwise is None:
-                    raise HTTP(404)
-                elif isinstance(otherwise,str):
-                    redirect(otherwise)
-                elif callable(otherwise):
-                    return otherwise()
+                if url_onerror:
+                    redirect(url_onerror)
                 else:
-                    raise RuntimeError, "invalid otherwise"
+                    raise HTTP(404)
         return value
 
 class Storage(dict):
+
     """
     A Storage object is like a dictionary except `obj.foo` can be used
     in addition to `obj['foo']`, and setting obj.foo = None deletes item foo.
@@ -68,22 +61,41 @@ class Storage(dict):
 
         >>> del o.a
         >>> print o.a
-        
+        None
+
     """
-    def __init__(self, *args, **kwargs): 
-        self.__dict__ = self
-        dict.__init__(self, *args, **kwargs)
-    def __getattr__(self,key):
-        return getattr(self,key) if key in self else None
-    def __getitem__(self,key):
-        return dict.get(self,key,None)
-    def copy(self):
-        return Storage(self)
+
+    def __getattr__(self, key):
+        return dict.get(self, key, None)
+
+    def __setattr__(self, key, value):
+        if value is None:
+            if key in self:
+                del self[key]
+        else:
+            self[key] = value
+
+    def __delattr__(self, key):
+        if key in self:
+            del self[key]
+        else:
+            raise AttributeError, "missing key=%s" % key
+
+    def __getitem__(self, key):
+        return dict.get(self, key, None)
+
     def __repr__(self):
-        return '<Storage %s>' % self.__dict__ 
-    def getlist(self,key):
-        """
-        Return a Storage value as a list.
+        return '<Storage ' + dict.__repr__(self) + '>'
+
+    def __getstate__(self):
+        return dict(self)
+
+    def __setstate__(self, value):
+        for (k, v) in value.items():
+            self[k] = v
+
+    def getlist(self, key):
+        """Return a Storage value as a list.
 
         If the value is a list it will be returned as-is.
         If object is None, an empty list will be returned.
@@ -100,13 +112,17 @@ class Storage(dict):
         ['abc', 'def']
         >>> request.vars.getlist('z')
         []
+
         """
-        value = getattr(self,key,[])
-        return value if not value else \
-            value if isinstance(value,(list,tuple)) else [value]
-    def getfirst(self,key,default=None):
-        """
-        Return the first or only value when given a request.vars-style key.
+        value = self.get(key, None)
+        if isinstance(value, (list, tuple)):
+            return value
+        elif value is None:
+            return []
+        return [value]
+
+    def getfirst(self, key):
+        """Return the first or only value when given a request.vars-style key.
 
         If the value is a list, its first item will be returned;
         otherwise, the value will be returned as-is.
@@ -121,13 +137,15 @@ class Storage(dict):
         >>> request.vars.getfirst('y')
         'abc'
         >>> request.vars.getfirst('z')
+
         """
-        values = self.getlist(default)
-        return values[0] if values else default
-    def getlast(self,key,default=None):
-        """
-        Returns the last or only single value when 
-        given a request.vars-style key.
+        value = self.getlist(key)
+        if len(value):
+            return value[0]
+        return None
+
+    def getlast(self, key):
+        """Returns the last or only single value when given a request.vars-style key.
 
         If the value is a list, the last item will be returned;
         otherwise, the value will be returned as-is.
@@ -142,30 +160,33 @@ class Storage(dict):
         >>> request.vars.getlast('y')
         'def'
         >>> request.vars.getlast('z')
+
         """
-        values = self.getlist(default)
-        return values[0] if values else default
+        value = self.getlist(key)
+        if len(value):
+            return value[-1]
+        return None
 
-    
-# import _abcoll
-# _abcoll.MutableMapping.register(Storage)
+    def __getinitargs__(self):
+        return ()
 
+    def __getnewargs__(self):
+        return ()
 
 PICKABLE = (str,int,long,float,bool,list,dict,tuple,set)
+def PickleableStorage(data):
+    return Storage(dict((k,v) for (k,v) in data.items() if isinstance(v,PICKABLE)))
 
 class StorageList(Storage):
     """
     like Storage but missing elements default to [] instead of None
     """
-    def __getitem__(self,key):
-        return self.__gteattr__(key)
     def __getattr__(self, key):
         if key in self:
-            return getattr(self,key)
+            return self[key]
         else:
-            r = []
-            setattr(self,key,r)
-            return r
+            self[key] = []
+            return self[key]
 
 def load_storage(filename):
     fp = None
@@ -176,6 +197,7 @@ def load_storage(filename):
         if fp: fp.close()
     return Storage(storage)
 
+
 def save_storage(storage, filename):
     fp = None
     try:
@@ -185,35 +207,38 @@ def save_storage(storage, filename):
         if fp: fp.close()
 
 class Settings(Storage):
+
     def __setattr__(self, key, value):
-        if key != 'lock_keys' and self.lock_keys and not key in self:
+        if key != 'lock_keys' and self.get('lock_keys', None)\
+             and not key in self:
             raise SyntaxError, 'setting key \'%s\' does not exist' % key
-        if key != 'lock_values' and self.lock_values:
+        if key != 'lock_values' and self.get('lock_values', None):
             raise SyntaxError, 'setting value cannot be changed: %s' % key
-        Storage.__setattr__(self,key,value)
+        self[key] = value
+
 
 class Messages(Storage):
+
     def __init__(self, T):
-        self.T = T
+        self['T'] = T
 
     def __setattr__(self, key, value):
-        if key != 'lock_keys' and self.lock_keys and not key in self:
+        if key != 'lock_keys' and self.get('lock_keys', None)\
+             and not key in self:
             raise SyntaxError, 'setting key \'%s\' does not exist' % key
-        if key != 'lock_values' and self.lock_values:
+        if key != 'lock_values' and self.get('lock_values', None):
             raise SyntaxError, 'setting value cannot be changed: %s' % key
-        Storage.__setattr__(self,key,value)
+        self[key] = value
 
     def __getattr__(self, key):
-        value = Storage.__getattr__(self,key)
+        value = self[key]
         if isinstance(value, str):
-            return str(self.T(value))
+            return str(self['T'](value))
         return value
-
 
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-
 
 
 
