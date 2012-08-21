@@ -274,6 +274,8 @@ class Response(Storage):
         stream,
         chunk_size = DEFAULT_CHUNK_SIZE,
         request=None,
+        attachment=False,
+        filename=None
         ):
         """
         if a controller function::
@@ -281,7 +283,28 @@ class Response(Storage):
             return response.stream(file, 100)
 
         the file content will be streamed at 100 bytes at the time
+
+        Optional kwargs:
+            (for custom stream calls)
+            attachment=True # Send as attachment. Usually creates a
+                            # pop-up download window on browsers
+            filename=None # The name for the attachment
+
+        Note: for using the stream name (filename) with attachments
+        the option must be explicitly set as function parameter(will
+        default to the last request argument otherwise)
         """
+
+        # for attachment settings and backward compatibility
+        keys = [item.lower() for item in self.headers]
+        if attachment:
+            if filename is None:
+                attname = ""
+            else:
+                attname = filename
+            self.headers["Content-Disposition"] = \
+                "attachment;filename=%s" % attname
+
         if not request:
             request = current.request
         if isinstance(stream, (str, unicode)):
@@ -291,12 +314,9 @@ class Response(Storage):
                                       headers=self.headers)
 
         # ## the following is for backward compatibility
-
         if hasattr(stream, 'name'):
             filename = stream.name
-        else:
-            filename = None
-        keys = [item.lower() for item in self.headers]
+
         if filename and not 'content-type' in keys:
             self.headers['Content-Type'] = contenttype(filename)
         if filename and not 'content-length' in keys:
