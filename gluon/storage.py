@@ -70,8 +70,8 @@ class Storage(dict):
         
     """
     def __init__(self, *args, **kwargs): 
-        self.__dict__ = self
         dict.__init__(self, *args, **kwargs)
+        self.__dict__ = self
     def __getattr__(self,key):
         return getattr(self,key) if key in self else None
     def __getitem__(self,key):
@@ -87,8 +87,10 @@ class Storage(dict):
         return dict(self)
     def __setstate__(self, sdict):
         dict.__init__(self, sdict)
+        self.__dict__ = self
     def update(self, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
+        self.__dict__ = self
     def getlist(self,key):
         """
         Return a Storage value as a list.
