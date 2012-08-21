@@ -687,18 +687,40 @@ def formstyle_ul(form, fields):
 def formstyle_bootstrap(form, fields):
     ''' bootstrap format form layout '''
     form['_class'] = 'form-horizontal'
-    table = FIELDSET()
+    parent = FIELDSET()
     for id, label, controls, help in fields:
-        if isinstance(controls, (INPUT, SELECT, TEXTAREA)):
+        # wrappers
+        _help = SPAN(help, _class='help-inline')
+        # embed _help into _controls
+        _controls = DIV(controls, _help, _class='controls')
+        # submit unflag by default
+        _submit = False
+
+        if isinstance(controls, INPUT):
             controls['_class'] = 'input-xlarge'
+            if controls['_type'] == 'submit':
+                # flag submit button
+                _submit = True
+                controls['_class'] = 'btn btn-primary'
+
+        if isinstance(controls, SELECT):
+            controls['_class'] = 'input-xlarge'
+
+        if isinstance(controls, TEXTAREA):
+            controls['_class'] = 'input-xlarge'
+
         if isinstance(label, LABEL):
             label['_class'] = 'control-label'
-        # styles
-        _help = DIV(help, _class='help-block')
-        # embed _help into _controls don't wrap label
-        _controls = DIV(controls, _help, _class='controls')
-        table.append(DIV(label, _controls, _class='control-group',_id=id))
-    return table
+
+        if _submit:
+            # submit button has unwrapped label and controls, different class
+            parent.append(DIV(label, controls, _class='form-actions'))
+            # unflag submit (possible side effect)
+            _submit = False
+        else:
+            # unwrapped label
+            parent.append(DIV(label, _controls, _class='control-group'))
+    return parent
 
 class SQLFORM(FORM):
 
