@@ -6281,7 +6281,8 @@ class Row(dict):
     this is only used to store a Row
     """
 
-    def __init__(self):
+    def __init__(self,*args,**kwargs):
+        dict.__init__(self,*args,**kwargs)
         self.__dict__ = self
 
     def __getitem__(self, key):
