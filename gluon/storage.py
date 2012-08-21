@@ -50,7 +50,7 @@ class List(list):
                     raise RuntimeError, "invalid otherwise"
         return value
 
-class Storage(object):
+class Storage(dict):
     """
     A Storage object is like a dictionary except `obj.foo` can be used
     in addition to `obj['foo']`, and setting obj.foo = None deletes item foo.
@@ -71,10 +71,8 @@ class Storage(object):
         None
 
     """
-    __class__ = dict
-
     def __init__(self, __d__=None, **values): 
-        self.__dict__.update(__d__ or {},**values)
+        self.update(__d__ or {},**values)
     def __getattr__(self,key):
         return getattr(self,key) if key in self else None
     def __getitem__(self,key):
@@ -100,6 +98,28 @@ class Storage(object):
         return self.__dict__.values()
     def items(self):
         return self.__dict__.items()
+    def iterkeys(self):
+        return self.__dict__.iterkeys()
+    def itervalues(self):
+        return self.__dict__.itervalues()
+    def iteritems(self):
+        return self.__dict__.iteritems()
+    def viewkeys(self):
+        return self.__dict__.viewkeys()
+    def viewvalues(self):
+        return self.__dict__.viewvalues()
+    def viewitems(self):
+        return self.__dict__.viewitems()
+    def fromkeys(self,S,v=None):
+        return self.__dict__.fromkeys(S,v)
+    def setdefault(self, key, default=None):
+        try:
+            return getattr(self,key)
+        except AttributeError:
+            setattr(self,key,default)
+            return default
+    def clear(self):
+        self.__dict__.clear()
     def len(self):
         return len(self.__dict__)
     def __iter__(self):
@@ -182,9 +202,8 @@ class Storage(object):
         values = self.getlist(default)
         return values[0] if values else default
 
+
 PICKABLE = (str,int,long,float,bool,list,dict,tuple,set)
-def PickleableStorage(data):
-    return Storage(dict((k,v) for (k,v) in data.items() if isinstance(v,PICKABLE)))
 
 class StorageList(Storage):
     """
