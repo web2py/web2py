@@ -83,6 +83,7 @@ class Request(Storage):
     """
 
     def __init__(self):
+        Storage.__init__(self)
         self.wsgi = Storage() # hooks to environ and start_response
         self.env = Storage()
         self.cookies = Cookie.SimpleCookie()
@@ -100,7 +101,7 @@ class Request(Storage):
         self.is_https = False
         self.is_local = False
         self.global_settings = settings.global_settings
-
+        
     def compute_uuid(self):
         self.uuid = '%s/%s.%s.%s' % (
             self.application,
@@ -165,6 +166,7 @@ class Response(Storage):
     """
 
     def __init__(self):
+        Storage.__init__(self)
         self.status = 200
         self.headers = dict()
         self.headers['X-Powered-By'] = 'web2py'
