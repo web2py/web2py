@@ -13,6 +13,7 @@ if os.path.isdir('gluon'):
     sys.path.append(os.path.realpath('gluon')) # running from web2py base
 else:
     sys.path.append(os.path.realpath('../')) # running from gluon/tests/
+    os.environ['web2py_path'] = os.path.realpath('../../')  # for settings
 
 from rewrite import load, filter_url, filter_err, get_effective_router, map_url_out
 from html import URL
@@ -541,7 +542,7 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(filter_url('https://domain.com/init/static/file', out=True), "/static/file")
         self.assertEqual(filter_url('https://domain.com/init/static/index', out=True), "/static/index")
 
-        router_out['init']['map_static'] = False
+        router_out['init']['map_static'] = None
         load(rdict=router_out)
         self.assertEqual(filter_url('https://domain.com/init/static/file', out=True), "/init/static/file")
         self.assertEqual(filter_url('https://domain.com/init/static/index', out=True), "/init/static/index")
@@ -743,6 +744,28 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(filter_url('https://domain.com/welcome/ctr/fcn', lang='it', out=True), "/welcome/ctr/fcn")
         self.assertEqual(filter_url('https://domain.com/welcome/ctr/fcn', lang='es', out=True), "/welcome/ctr/fcn")        
 
+        router_lang['admin']['map_static'] = False
+        router_lang['examples']['map_static'] = False
+        load(rdict=router_lang)
+        self.assertEqual(filter_url('https://domain.com/admin/ctr/fcn', lang='en', out=True), "/ctr/fcn")
+        self.assertEqual(filter_url('https://domain.com/admin/ctr/fcn', lang='it', out=True), "/it/ctr/fcn")
+        self.assertEqual(filter_url('https://domain.com/admin/ctr/fcn', lang='it-it', out=True), "/it-it/ctr/fcn")
+        self.assertEqual(filter_url('https://domain.com/admin/static/file', lang='en', out=True), "/admin/static/en/file")
+        self.assertEqual(filter_url('https://domain.com/admin/static/file', lang='it', out=True), "/admin/static/it/file")
+        self.assertEqual(filter_url('https://domain.com/admin/static/file', lang='it-it', out=True), "/admin/static/it-it/file")
+        self.assertEqual(filter_url('https://domain.com/welcome/ctr/fcn', lang='it', out=True), "/welcome/ctr/fcn")
+        self.assertEqual(filter_url('https://domain.com/welcome/ctr/fcn', lang='es', out=True), "/welcome/ctr/fcn")        
+        self.assertEqual(filter_url('http://domain.com/static/file'), "%s/applications/admin/static/file" % root)
+        self.assertEqual(filter_url('http://domain.com/en/static/file'), "%s/applications/admin/static/file" % root)
+        self.assertEqual(filter_url('http://domain.com/examples/en/static/file'), "%s/applications/examples/static/en/file" % root)
+        self.assertEqual(filter_url('http://domain.com/examples/static/file'), "%s/applications/examples/static/en/file" % root)
+        self.assertEqual(filter_url('http://domain.com/examples/it/static/file'), "%s/applications/examples/static/it/file" % root)
+        self.assertEqual(filter_url('http://domain.com/examples/it-it/static/file'), "%s/applications/examples/static/file" % root)
+
+        self.assertEqual(filter_url('http://domain.com/examples/static/en/file'), "%s/applications/examples/static/en/file" % root)
+        self.assertEqual(filter_url('http://domain.com/examples/static/it/file'), "%s/applications/examples/static/it/file" % root)
+        self.assertEqual(filter_url('http://domain.com/examples/static/it-it/file'), "%s/applications/examples/static/it-it/file" % root)
+
     def test_router_get_effective(self):
         '''
         Test get_effective_router
@@ -793,6 +816,49 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(filter_err(200), 200)
         self.assertEqual(filter_err(399), 399)
         self.assertEqual(filter_err(400), 400)
+
+    def test_router_static_path(self):
+        '''
+        Test validation of static paths
+        Stock pattern: file_match = r'([-+=@$%\w]+[./]?)+$'
+
+        '''
+        load(rdict=dict())
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/static'), "%s/applications/welcome/static/path/to/static" % root)
+        self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/to/st~tic')
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to--/static'), "%s/applications/welcome/static/path/to--/static" % root)
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/==to--/static'), "%s/applications/welcome/static/path/==to--/static" % root)
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/-+=@$%/static'), "%s/applications/welcome/static/path/-+=@$%%/static" % root)
+        self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/to/.static')
+        self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/to/s..tatic')
+        self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/to//static')
+        self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/to/#static')
+
+        router_static = dict(
+            BASE = dict(
+                file_match = r'([-+=@$%#\w]+[./]?)+$',   # legal static path
+            ),
+        )
+        load(rdict=router_static)
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/#static'), "%s/applications/welcome/static/path/to/#static" % root)
+
+        router_static = dict(
+            BASE = dict(
+                file_match = r'[-+=@$%#.\w]+$',   # legal static path element
+            ),
+        )
+        load(rdict=router_static)
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/static'), "%s/applications/welcome/static/path/to/static" % root)
+        self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/to/st~tic')
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to--/static'), "%s/applications/welcome/static/path/to--/static" % root)
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/==to--/static'), "%s/applications/welcome/static/path/==to--/static" % root)
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/-+=@$%/static'), "%s/applications/welcome/static/path/-+=@$%%/static" % root)
+        self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/to//static')
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/#static'), "%s/applications/welcome/static/path/to/#static" % root)
+        self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/./static')
+        self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/../static')
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/.../static'), "%s/applications/welcome/static/path/.../static" % root)
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/.static'), "%s/applications/welcome/static/path/to/.static" % root)
 
     def test_router_args(self):
         '''

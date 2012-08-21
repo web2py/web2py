@@ -26,7 +26,8 @@ class List(list):
     """
 
     def __call__(self, i, default=None, cast=None, url_onerror=None):        
-        if 0<=i<len(self):
+        n = len(self)
+        if 0<=i<n or -n<=i<0:
             value = self[i]
         else:
             value = default
@@ -165,6 +166,12 @@ class Storage(dict):
         if len(value):
             return value[-1]
         return None
+
+    def __getinitargs__(self):
+        return ()
+
+    def __getnewargs__(self):
+        return ()
 
 PICKABLE = (str,int,long,float,bool,list,dict,tuple,set)
 def PickleableStorage(data):

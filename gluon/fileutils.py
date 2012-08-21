@@ -338,7 +338,6 @@ def check_credentials(request, other_application='admin', expiration = 60*60):
         s = get_session(request, other_application)
         return (s.authorized and s.last_time and s.last_time > dt)
 
-
 def fix_newlines(path):
     regex = re.compile(r'''(\r
 |\r|
@@ -396,4 +395,5 @@ def abspath(*relpath, **base):
     if gluon:
         return os.path.join(global_settings.gluon_parent, path)
     return os.path.join(global_settings.applications_parent, path)
+
 

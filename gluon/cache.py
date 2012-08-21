@@ -35,7 +35,7 @@ except ImportError:
 
 logger = logging.getLogger("web2py.cache")
 
-__all__ = ['Cache']
+__all__ = ['Cache', 'lazy_cache']
 
 
 DEFAULT_TIME_EXPIRE = 300
@@ -175,6 +175,7 @@ class CacheInRam(CacheAbstract):
         """
 
         dt = time_expire
+        now = time.time()
 
         self.locker.acquire()
         item = self.storage.get(key, None)
@@ -187,14 +188,14 @@ class CacheInRam(CacheAbstract):
 
         if f is None:
             return None
-        if item and (dt is None or item[0] > time.time() - dt):
+        if item and (dt is None or item[0] > now - dt):
             return item[1]
-        elif item and (item[0] < time.time() - dt) and destroyer:
+        elif item and (item[0] < now - dt) and destroyer:
             destroyer(item[1])
         value = f()
 
         self.locker.acquire()
-        self.storage[key] = (time.time(), value)
+        self.storage[key] = (now, value)
         self.storage[CacheAbstract.cache_stats_name]['misses'] += 1
         self.locker.release()
         return value
@@ -345,15 +346,16 @@ class CacheOnDisk(CacheAbstract):
             if storage:
                 storage.close()
 
+        now = time.time()
         if f is None:
             return None
-        if item and (dt is None or item[0] > time.time() - dt):
+        if item and (dt is None or item[0] > now - dt):
             return item[1]
         value = f()
 
         storage = self._open_shelf_with_lock()
         try:
-            storage[key] = (time.time(), value)
+            storage[key] = (now, value)
 
             storage[CacheAbstract.cache_stats_name] = {
                 'hit_total': storage[CacheAbstract.cache_stats_name]['hit_total'],
@@ -378,6 +380,28 @@ class CacheOnDisk(CacheAbstract):
             if storage:
                 storage.close()
         return value
+
+class CacheAction(object):
+    def __init__(self,func,key,time_expire,cache,cache_model):
+        self.__name__ = func.__name__
+        self.__doc__ = func.__doc__
+        self.func = func
+        self.key = key
+        self.time_expire = time_expire
+        self.cache = cache
+        self.cache_model = cache_model
+    def __call__(self,*a,**b):
+        if not self.key:
+            key2 = self.__name__+':'+repr(a)+':'+repr(b)
+        else:
+            key2 = self.key.replace('%(name)s',self.__name__)\
+                .replace('%(args)s',str(a)).replace('%(vars)s',str(b))
+        cache_model = self.cache_model
+        if not cache_model or isinstance(cache_model,str):
+            cache_model = getattr(self.cache,cache_model or 'ram')
+        return cache_model(key2,
+                           lambda a=a,b=b:self.func(*a,**b),
+                           self.time_expire)
 
 
 class Cache(object):
@@ -437,8 +461,8 @@ class Cache(object):
 
         :param key: the key of the object to be store or retrieved
         :param time_expire: expiration of the cache in microseconds
-        :param cache_model: `cache.ram`, `cache.disk`, or other
-            (like `cache.memcache` if defined). It defaults to `cache.ram`.
+        :param cache_model: "ram", "disk", or other
+            (like "memcache" if defined). It defaults to "ram".
 
         Notes
         -----
@@ -451,20 +475,26 @@ class Cache(object):
         If the function `f` is an action, we suggest using
         `request.env.path_info` as key.
         """
-        if not cache_model:
-            cache_model = self.ram
 
-        def tmp(func):
-            def action(*a,**b):
-                key2 = key.replace('%(name)s',func.__name__).replace('%(args)s',str(a)).replace('%(vars)s',str(b))
-                return cache_model(key2, lambda a=a,b=b:func(*a,**b), time_expire)
-            action.__name___ = func.__name__
-            action.__doc__ = func.__doc__
-            return action
-
+        def tmp(func,cache=self,cache_model=cache_model):
+            return CacheAction(func,key,time_expire,self,cache_model)
         return tmp
 
-
-
+def lazy_cache(key=None,time_expire=None,cache_model='ram'):
+    """
+    can be used to cache any function including in modules,
+    as long as the cached function is only called within a web2py request
+    if a key is not provided, one is generated from the function name
+    the time_expire defaults to None (no cache expiration)
+    if cache_model is "ram" then the model is current.cache.ram, etc.
+    """
+    def decorator(f,key=key,time_expire=time_expire,cache_model=cache_model):
+        key = key or repr(f)
+        def g(*c,**d):
+            from gluon import current
+            return current.cache(key,time_expire,cache_model)(f)(*c,**d)
+        g.__name__ = f.__name__
+        return g
+    return decorator
 
 

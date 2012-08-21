@@ -166,7 +166,7 @@ class Response(Storage):
 
     def __init__(self):
         self.status = 200
-        self.headers = Storage()
+        self.headers = dict()
         self.headers['X-Powered-By'] = 'web2py'
         self.body = cStringIO.StringIO()
         self.session_id = None
@@ -220,9 +220,9 @@ class Response(Storage):
         return page
 
     def include_meta(self):
-        s = ''
+        s = '\n'
         for key,value in (self.meta or {}).items():
-            s += '<meta name="%s" content="%s" />' % (key,xmlescape(value))
+            s += '<meta name="%s" content="%s" />\n' % (key,xmlescape(value))
         self.write(s,escape=False)
 
     def include_files(self):
@@ -274,6 +274,8 @@ class Response(Storage):
         stream,
         chunk_size = DEFAULT_CHUNK_SIZE,
         request=None,
+        attachment=False,
+        filename=None
         ):
         """
         if a controller function::
@@ -281,7 +283,28 @@ class Response(Storage):
             return response.stream(file, 100)
 
         the file content will be streamed at 100 bytes at the time
+
+        Optional kwargs:
+            (for custom stream calls)
+            attachment=True # Send as attachment. Usually creates a
+                            # pop-up download window on browsers
+            filename=None # The name for the attachment
+
+        Note: for using the stream name (filename) with attachments
+        the option must be explicitly set as function parameter(will
+        default to the last request argument otherwise)
         """
+
+        # for attachment settings and backward compatibility
+        keys = [item.lower() for item in self.headers]
+        if attachment:
+            if filename is None:
+                attname = ""
+            else:
+                attname = filename
+            self.headers["Content-Disposition"] = \
+                "attachment;filename=%s" % attname
+
         if not request:
             request = current.request
         if isinstance(stream, (str, unicode)):
@@ -291,12 +314,9 @@ class Response(Storage):
                                       headers=self.headers)
 
         # ## the following is for backward compatibility
-
         if hasattr(stream, 'name'):
             filename = stream.name
-        else:
-            filename = None
-        keys = [item.lower() for item in self.headers]
+
         if filename and not 'content-type' in keys:
             self.headers['Content-Type'] = contenttype(filename)
         if filename and not 'content-length' in keys:
@@ -428,9 +448,9 @@ class Session(Storage):
         if not masterapp:
             masterapp = request.application
         response.session_id_name = 'session_id_%s' % masterapp.lower()
-                
+
         # Load session data from cookie
-        
+
         if cookie_key:
             response.session_cookie_key = cookie_key
             response.session_cookie_key2 = hashlib.md5(cookie_key).digest()
@@ -523,25 +543,25 @@ class Session(Storage):
                     migrate=table_migrate,
                     )
             try:
-	
-			# Get session data out of the database
-			
-			# Key comes from the cookie
+
+                        # Get session data out of the database
+
+                        # Key comes from the cookie
                 key = request.cookies[response.session_id_name].value
                 (record_id, unique_key) = key.split(':')
                 if record_id == '0':
                     raise Exception, 'record_id == 0'
-			# Select from database.
+                        # Select from database.
                 rows = db(table.id == record_id).select()
 
-			# Make sure the session data exists in the database
+                        # Make sure the session data exists in the database
                 if len(rows) == 0 or rows[0].unique_key != unique_key:
                     raise Exception, 'No record'
 
                  # rows[0].update_record(locked=True)
 
 
-		    # Unpickle the data
+                    # Unpickle the data
                 session_data = cPickle.loads(rows[0].session_data)
                 self.update(session_data)
             except Exception:
@@ -665,6 +685,7 @@ class Session(Storage):
                 del response.session_file
             except:
                 pass
+
 
 
 

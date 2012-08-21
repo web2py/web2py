@@ -33,7 +33,10 @@ def getcfs(key, filename, filter=None):
 
     This is used on Google App Engine since pyc files cannot be saved.
     """
-    t = os.stat(filename).st_mtime
+    try:
+        t = os.stat(filename).st_mtime
+    except OSError:
+        return filter()
     cfs_lock.acquire()
     item = cfs.get(key, None)
     cfs_lock.release()
@@ -47,6 +50,7 @@ def getcfs(key, filename, filter=None):
     cfs[key] = (t, data)
     cfs_lock.release()
     return data
+
 
 
 

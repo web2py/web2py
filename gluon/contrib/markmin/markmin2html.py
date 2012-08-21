@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/bin/env python
 # -*- coding: utf-8 -*-
 # created by Massimo Di Pierro
 # recreated by Vladyslav Kozlovskyy
@@ -71,15 +71,22 @@ a list with tables in it:
 -----------:blockquoteclass[blockquoteid]
 
 This this a new paragraph
-with a table. Table has header and footer:
+with a table. Table has header, footer, sections, odd and even rows:
 -------------------------------
 **Title 1**|**Title 2**|**Title 3**
 ==============================
 data 1     | data 2    |  2.00
-data 4     |data5(long)| 23.00
-           |data 8     | 33.50
+data 3     |data4(long)| 23.00
+           |data 5     | 33.50
 ==============================
-Total:     | 3 items   | 58.50
+New section|New data   |  5.00
+data 1     |data2(long)|100.45
+           |data 3     | 12.50
+data 4     | data 5    |   .33
+data 6     |data7(long)|  8.01
+           |data 8     |   514
+==============================
+Total:     | 9 items   |698,79
 ------------------------------:tableclass1[tableid2]
 
 ## Multilevel
@@ -503,26 +510,20 @@ META = '\x06'
 LINK = '\x07'
 DISABLED_META = '\x08'
 LATEX = '<img src="http://chart.apis.google.com/chart?cht=tx&chl=%s" />'
-regex_URL=re.compile(r'@\{(?P<f>\w+)/(?P<args>.+?)\}')
-regex_env=re.compile(r'@\{(?P<a>\w+?)\}')
+regex_URL=re.compile(r'@/(?P<a>\w*)/(?P<c>\w*)/(?P<f>\w*(\.\w+)?)(/(?P<args>[\w\.\-/]+))?')
+regex_env=re.compile(r'@\{(?P<a>[\w\-\.]+?)(\:(?P<b>.*?))?\}')
 regex_expand_meta = re.compile('('+META+'|'+DISABLED_META+')')
 regex_dd=re.compile(r'\$\$(?P<latex>.*?)\$\$')
-regex_code = re.compile('('+META+'|'+DISABLED_META+r')|(``(?P<t>.+?)``(?::(?P<c>\w+)(?:\[(?P<p>\S+?)\])?)?)',re.S)
+regex_code = re.compile('('+META+'|'+DISABLED_META+r')|(``(?P<t>.+?)``(?::(?P<c>[a-zA-Z][_a-zA-Z\-\d]*)(?:\[(?P<p>[^\]]*)\])?)?)',re.S)
 regex_strong=re.compile(r'\*\*(?P<t>[^\s*]+( +[^\s*]+)*)\*\*')
 regex_del=re.compile(r'~~(?P<t>[^\s*]+( +[^\s*]+)*)~~')
 regex_em=re.compile(r"''(?P<t>[^\s']+(?: +[^\s']+)*)''")
 regex_num=re.compile(r"^\s*[+-]?((\d+(\.\d*)?)|\.\d+)([eE][+-]?[0-9]+)?\s*$")
-regex_list=re.compile('^(?:(#{1,6}|\.+|\++|\-+)(\.)?\s+)?(.*)$')
+regex_list=re.compile('^(?:(#{1,6}|\.+ |\++ |\++\. |\-+ |\-+\. )\s*)?(.*)$')
 regex_bq_headline=re.compile('^(?:(\.+|\++|\-+)(\.)?\s+)?(-{3}-*)$')
-regex_tq=re.compile('^(-{3}-*)(?::(?P<c>\S+?)(?:\[(?P<p>\S+)\])?)?$')
-regex_qr = re.compile(r'(?<!["\w>/=])qr:(?P<k>\w+://[\w\d\-+?&%/:.]+)',re.M)
-regex_embed = re.compile(r'(?<!["\w>/=])embed:(?P<k>\w+://[\w\d\-+_=?%&/:.]+)', re.M)
-regex_iframe = re.compile(r'(?<!["\w>/=])iframe:(?P<k>\w+://[\w\d\-+=?%&/:.]+)', re.M)
-regex_auto_image = re.compile(r'(?<!["\w>/=])(?P<k>\w+://[\w\d\-+_=%&/:.]+\.(jpeg|JPEG|jpg|JPG|gif|GIF|png|PNG)(\?[\w\d/\-+_=%&:.]+)?)',re.M)
-regex_auto_video = re.compile(r'(?<!["\w>/=])(?P<k>\w+://[\w\d\-+_=%&/:.]+\.(mp4|MP4|mpeg|MPEG|mov|MOV|ogv|OGV)(\?[\w\d/\-+_=%&:.]+)?)',re.M)
-regex_auto_audio = re.compile(r'(?<!["\w>/=])(?P<k>\w+://[\w\d\-+_=%&/:.]+\.(mp3|MP3|wav|WAV|ogg|OGG)(\?[\w\d/\-+_=%&:.]+)?)',re.M)
+regex_tq=re.compile('^(-{3}-*)(?::(?P<c>[a-zA-Z][_a-zA-Z\-\d]*)(?:\[(?P<p>[a-zA-Z][_a-zA-Z\-\d]*)\])?)?$')
+regex_proto = re.compile(r'(?<!["\w>/=])(?P<p>\w+):(?P<k>\w+://[\w\d\-+=?%&/:.]+)', re.M)
 regex_auto = re.compile(r'(?<!["\w>/=])(?P<k>\w+://[\w\d\-+_=?%&/:.]+)',re.M)
-
 regex_link=re.compile(r'('+LINK+r')|\[\[(?P<s>.+?)\]\]')
 regex_link_level2=re.compile(r'^(?P<t>\S.*?)?(?:\s+\[(?P<a>.+?)\])?(?:\s+(?P<k>\S+))?(?:\s+(?P<p>popup))?\s*$')
 regex_media_level2=re.compile(r'^(?P<t>\S.*?)?(?:\s+\[(?P<a>.+?)\])?(?:\s+(?P<k>\S+))?\s+(?P<p>img|IMG|left|right|center|video|audio)(?:\s+(?P<w>\d+px))?\s*$')
@@ -533,10 +534,52 @@ ttab_in  = maketrans("'`:*~\\[]{}@$+-.#", '\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\
 ttab_out = maketrans('\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b',"'`:*~\\[]{}@$+-.#")
 
 def markmin_escape(text):
-   """ insert \\ before markmin control characters: '`:*~[]{}@$ """
-   return regex_markmin_escape.sub(lambda m: '\\'+m.group(0).replace('\\','\\\\'), text)
+    """ insert \\ before markmin control characters: '`:*~[]{}@$ """
+    return regex_markmin_escape.sub(
+       lambda m: '\\'+m.group(0).replace('\\','\\\\'), text)
 
-def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='google',auto=True):
+def autolinks_simple(url):
+    """
+    it automatically converts the url to link,
+    image, video or audio tag
+    """
+    u_url=url.lower()
+    if u_url.endswith(('.jpg','.jpeg','.gif','.png')):
+        return '<img src="%s" controls />' % url
+    elif u_url.endswith(('.mp4','.mpeg','.mov','.ogv')):
+        return '<video src="%s" controls></video>' % url
+    elif u_url.endswith(('.mp3','.wav','.ogg')):
+        return '<audio src="%s" controls></audio>' % url
+    return '<a href="%s">%s</a>' % (url,url)
+
+def protolinks_simple(proto, url):
+    """
+    it converts url to html-string using appropriate proto-prefix:
+    Uses for construction "proto:url", e.g.:
+        "iframe:http://www.example.com/path" will call protolinks()
+        with parameters:
+            proto="iframe"
+            url="http://www.example.com/path"
+    """
+    if proto in ('iframe','embed'): #== 'iframe':
+        return '<iframe src="%s" frameborder="0" allowfullscreen></iframe>'%url
+    #elif proto == 'embed':  # NOTE: embed is a synonym to iframe now
+    #    return '<a href="%s" class="%sembed">%s></a>'%(url,class_prefix,url)
+    elif proto == 'qr':
+        return '<img width="80px" src="http://qrcode.kaywa.com/img.php?s=8&amp;d=%s" alt="qr code" />'%url
+    return proto+':'+url
+
+def render(text,
+           extra={},
+           allowed={},
+           sep='p',
+           URL=None,
+           environment=None,
+           latex='google',
+           autolinks='default',
+           protolinks='default',
+           class_prefix='',
+           id_prefix='markmin_'):
     """
     Arguments:
     - text is the text to be processed
@@ -546,8 +589,18 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
       allowed = dict(code=('python','cpp','java'))
     - sep can be 'p' to separate text in <p>...</p>
       or can be 'br' to separate text using <br />
-    - auto is a True/False value (default is True) -
-      enables auto links processing for iframe,embed,qr,url,image,video,audio
+    - URL -
+    - environment is a dictionary of environment variables (can be accessed with @{variable}
+    - latex -
+    - autolinks is a function to convert auto urls to html-code (default is autolinks(url) )
+    - protolinks is a function to convert proto-urls (e.g."proto:url") to html-code
+      (default is protolinks(proto,url))
+    - class_prefix is a prefix for ALL classes in markmin text. E.g. if class_prefix='my_'
+      then for ``test``:cls class will be changed to "my_cls" (default value is '')
+    - id_prefix is prefix for ALL ids in markmin text (default value is 'markmin_'). E.g.:
+        -- [[id]] will be converted to <a name="markmin_id"></a>
+        -- [[link #id]] will be converted to <a href="#markmin_id">link</a>
+        -- ``test``:cls[id] will be converted to <code class="cls" id="markmin_id">test</code>
 
     >>> render('this is\\n# a section\\n\\nparagraph')
     '<p>this is</p><h1>a section</h1><p>paragraph</p>'
@@ -564,13 +617,13 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
     >>> render('``\\nhello\\nworld\\n``:python')
     '<pre><code class="python">hello\\nworld</code></pre>'
     >>> render('``hello world``:python[test_id]')
-    '<code class="python" id="test_id">hello world</code>'
+    '<code class="python" id="markmin_test_id">hello world</code>'
     >>> render('``hello world``:id[test_id]')
-    '<code id="test_id">hello world</code>'
+    '<code id="markmin_test_id">hello world</code>'
     >>> render('``\\nhello\\nworld\\n``:python[test_id]')
-    '<pre><code class="python" id="test_id">hello\\nworld</code></pre>'
+    '<pre><code class="python" id="markmin_test_id">hello\\nworld</code></pre>'
     >>> render('``\\nhello\\nworld\\n``:id[test_id]')
-    '<pre><code id="test_id">hello\\nworld</code></pre>'
+    '<pre><code id="markmin_test_id">hello\\nworld</code></pre>'
     >>> render("''hello world''")
     '<p><em>hello world</em></p>'
     >>> render('** hello** **world**')
@@ -583,7 +636,7 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
     '<ol><li>this</li><li>is</li><li>a list</li></ol><p>and this</p><ol><li>is</li><li>another</li></ol>'
 
     >>> render("----\\na | b\\nc | d\\n----\\n")
-    '<table><tbody><tr><td>a</td><td>b</td></tr><tr><td>c</td><td>d</td></tr></tbody></table>'
+    '<table><tbody><tr class="first"><td>a</td><td>b</td></tr><tr class="even"><td>c</td><td>d</td></tr></tbody></table>'
 
     >>> render("----\\nhello world\\n----\\n")
     '<blockquote>hello world</blockquote>'
@@ -630,6 +683,15 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
     >>> render("auto-image: (http://example.com/image.jpeg)")
     '<p>auto-image: (<img src="http://example.com/image.jpeg" controls />)</p>'
 
+    >>> render("qr: (qr:http://example.com/image.jpeg)")
+    '<p>qr: (<img width="80px" src="http://qrcode.kaywa.com/img.php?s=8&amp;d=http://example.com/image.jpeg" alt="qr code" />)</p>'
+
+    >>> render("embed: (embed:http://example.com/page)")
+    '<p>embed: (<iframe src="http://example.com/page" frameborder="0" allowfullscreen></iframe>)</p>'
+
+    >>> render("iframe: (iframe:http://example.com/page)")
+    '<p>iframe: (<iframe src="http://example.com/page" frameborder="0" allowfullscreen></iframe>)</p>'
+
     >>> render("title1: [[test message [simple \[test\] title] http://example.com ]] test")
     '<p>title1: <a href="http://example.com" title="simple [test] title">test message</a> test</p>'
 
@@ -667,19 +729,19 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
     '<p>[[probe]]</p>'
 
     >>> render(r"\\\\[[probe]]")
-    '<p>\\\\<span id="probe"></span></p>'
+    '<p>\\\\<a name="markmin_probe"></a></p>'
 
     >>> render(r"\\\\\\[[probe]]")
     '<p>\\\\[[probe]]</p>'
 
     >>> render(r"\\\\\\\\[[probe]]")
-    '<p>\\\\\\\\<span id="probe"></span></p>'
+    '<p>\\\\\\\\<a name="markmin_probe"></a></p>'
 
     >>> render(r"\\\\\\\\\[[probe]]")
     '<p>\\\\\\\\[[probe]]</p>'
 
     >>> render(r"\\\\\\\\\\\[[probe]]")
-    '<p>\\\\\\\\\\\\<span id="probe"></span></p>'
+    '<p>\\\\\\\\\\\\<a name="markmin_probe"></a></p>'
 
     >>> render("``[[ [\\[[probe\]\\]] URL\\[x\\]]]``:red[dummy_params]")
     '<span style="color: red"><a href="URL[x]" title="[[probe]]">URL[x]</a></span>'
@@ -699,7 +761,7 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
     >>> render("the [[link \\[**without** ``<b>title</b>``:red\\] http://www.example.com]]")
     '<p>the <a href="http://www.example.com">link [<strong>without</strong> <span style="color: red">&lt;b&gt;title&lt;/b&gt;</span>]</a></p>'
 
-    >>> render("aaa-META-``code``:text-LINK-[[link http://www.example.com]]-LINK-[[image http://www.picture.com img]]-end")
+    >>> render("aaa-META-``code``:text[]-LINK-[[link http://www.example.com]]-LINK-[[image http://www.picture.com img]]-end")
     '<p>aaa-META-<code class="text">code</code>-LINK-<a href="http://www.example.com">link</a>-LINK-<img src="http://www.picture.com" alt="image" />-end</p>'
 
     >>> render("[[<a>test</a> [<a>test2</a>] <a>text3</a>]]")
@@ -723,23 +785,25 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
     >>> render("this is ``a green text``:color[green:]")
     '<p>this is <span style="color: green;">a green text</span></p>'
 
-    >>> render("**@{probe}**", environment=dict(probe="this is a test"))
-    '<p><strong>this is a test</strong></p>'
+    >>> render("**@{probe:1}**", environment=dict(probe=lambda t:"test %s" % t))
+    '<p><strong>test 1</strong></p>'
+
+    >>> render('[[id1 [span **messag** in ''markmin''] ]] ... [[**link** to id [link\\\'s title] #mark1]]')
+    '<p><a name="markmin_id1">span <strong>messag</strong> in markmin</a> ... <a href="#markmin_mark1" title="link\\\'s title"><strong>link</strong> to id</a></p>'
+
     """
+    if autolinks=="default": autolinks = autolinks_simple
+    if protolinks=="default": protolinks = protolinks_simple
     text = str(text or '')
     text = regex_backslash.sub(lambda m: m.group(1).translate(ttab_in), text)
-
-    if environment:
-        def u2(match, environment=environment):
-            return str(environment.get(match.group('a'), match.group(0)))
-        text = regex_env.sub(u2, text)
 
     if URL is not None:
         # this is experimental @{function/args}
         # turns into a digitally signed URL
         def u1(match,URL=URL):
-            f,args = match.group('f','args')
-            return URL(f,args=args.split('/'), scheme=True, host=True)
+            a,c,f,args = match.group('a','c','f','args')                        
+            return URL(a=a or None,c=c or None,f = f or None,
+                       args=args.split('/'), scheme=True, host=True)
         text = regex_URL.sub(u1,text)
 
     if latex == 'google':
@@ -776,14 +840,11 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
     text = regex_link.sub(mark_link, text)
     text = escape(text)
 
-    if auto:
-        text = regex_iframe.sub('<iframe src="\g<k>" frameborder="0" allowfullscreen></iframe>',text)
-        text = regex_embed.sub('<a href="\g<k>" class="embed">\g<k></a>',text)
-        text = regex_qr.sub('<img width="80px" src="http://qrcode.kaywa.com/img.php?s=8&amp;d=\g<k>" alt="qr code" />',text)
-        text = regex_auto_image.sub('<img src="\g<k>" controls />', text)
-        text = regex_auto_video.sub('<video src="\g<k>" controls></video>', text)
-        text = regex_auto_audio.sub('<audio src="\g<k>" controls></audio>', text)
-        text = regex_auto.sub('<a href="\g<k>">\g<k></a>', text)
+    if protolinks:
+        text = regex_proto.sub(lambda m: protolinks(*m.group('p','k')), text)
+
+    if autolinks:
+        text = regex_auto.sub(lambda m: autolinks(m.group('k')), text)
 
     #############################################################
     # normalize spaces
@@ -855,7 +916,7 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
         """ paragraphs in lists """
         lent=len(t)
         if lent>lev:
-            return parse_list(t, '.', s, 'ul', lev, mtag)
+            return parse_list(t, '.', s, 'ul', lev, mtag, lineno)
         elif lent<lev:
             while ltags[-1]>lent:
                 ltags.pop()
@@ -900,6 +961,7 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
                 tout=[]
                 thead=[]
                 tbody=[]
+                rownum=0
                 t_id = ''
                 t_cls = ''
 
@@ -910,9 +972,10 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
                         if s.count('=')==len(s) and len(s)>3:  # header or footer
                             if not thead: # if thead list is empty:
                                 thead = tout
-                            else: # if tbody list is empty:
+                            else:
                                 tbody.extend(tout)
                             tout = []
+                            rownum=0
                             lineno+=1
                             continue
 
@@ -922,16 +985,21 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
                         t_id = m.group('p') or ''
                         break
 
-                    tout.append('<tr>'+''.join(['<td%s>%s</td>'% \
-                                                (' class="num"'
-                                                    if regex_num.match(f)
-                                                    else '',
-                                                 f.strip()
-                                                ) for f in s.split('|')])+'</tr>')
+                    if rownum % 2:
+                       tr = '<tr class="even">'
+                    else:
+                       tr = '<tr class="first">' if rownum == 0 else '<tr>'
+                    tout.append(tr+''.join(['<td%s>%s</td>'% \
+                                              (' class="num"'
+                                                  if regex_num.match(f)
+                                                  else '',
+                                               f.strip()
+                                              ) for f in s.split('|')])+'</tr>')
+                    rownum+=1
                     lineno+=1
 
-                t_cls = ' class="%s"'%t_cls if t_cls and t_cls != 'id' else ''
-                t_id  = ' id="%s"'%t_id if t_id else ''
+                t_cls = ' class="%s%s"'%(class_prefix, t_cls) if t_cls and t_cls != 'id' else ''
+                t_id  = ' id="%s%s"'%(id_prefix, t_id) if t_id else ''
                 s = ''
                 if thead:
                     s += '<thead>'+''.join([l for l in thead])+'</thead>'
@@ -974,8 +1042,8 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
 
                     lineno+=1
 
-                t_cls = ' class="%s"'%t_cls if t_cls and t_cls != 'id' else ''
-                t_id  = ' id="%s"'%t_id if t_id else ''
+                t_cls = ' class="%s%s"'%(class_prefix,t_cls) if t_cls and t_cls != 'id' else ''
+                t_id  = ' id="%s%s"'%(id_prefix,t_id) if t_id else ''
                 s = '<blockquote%s%s>%s</blockquote>' \
                          % (t_cls,
                             t_id,
@@ -986,7 +1054,10 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
                                    URL,
                                    environment,
                                    latex,
-                                   auto)
+                                   autolinks,
+                                   protolinks,
+                                   class_prefix,
+                                   id_prefix)
                            )
                 mtag='q'
         else:
@@ -1025,9 +1096,13 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
         c0=s[:1]
         if c0: # for non empty strings
             if c0 in "#+-.": # first character is one of: # + - .
-                (t,p,s) = regex_list.findall(s)[0] # t - tag ("###", "+++", "---", "...")
-                                                   # p - paragraph point ('.')->for "++." or "--."
-                                                   # s - other part of string
+                match = regex_list.search(s)
+                (t,p,s) = match.group(1), None, match.group(2)
+                t = (t or '').strip()
+                if t.endswith('.'): t, p = t[:-1], '.'
+                # t - tag ("###", "+++", "---", "...")
+                # p - paragraph point ('.')->for "++." or "--."
+                # s - other part of string
                 if t:
                     # headers and lists:
                     if c0 == '#': # headers
@@ -1100,7 +1175,8 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
         elif p in ('left','right'):
             style = ' style="float:%s"' % p
         if p in ('video','audio'):
-            t = render(t, {}, {}, 'br', URL, environment, latex, auto)
+            t = render(t, {}, {}, 'br', URL, environment, latex,
+                       autolinks, protolinks, class_prefix, id_prefix)
             return '<%(p)s controls="controls"%(title)s%(width)s><source src="%(k)s" />%(t)s</%(p)s>' \
                     % dict(p=p, title=title, width=width, k=k, t=t)
         alt = ' alt="%s"'%escape(t).replace(META, DISABLED_META) if t else ''
@@ -1115,13 +1191,19 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
         t = t or ''
         a = escape(a) if a else ''
         if k:
+            if k.startswith('#'):
+                k = '#'+id_prefix+k[1:]
             k = escape(k)
             title = ' title="%s"' % a.replace(META, DISABLED_META) if a else ''
             target = ' target="_blank"' if p == 'popup' else ''
-            t = render(t, {}, {}, 'br', URL, environment, latex, auto) if t else k
+            t = render(t, {}, {}, 'br', URL, environment, latex, autolinks,
+                       protolinks, class_prefix, id_prefix) if t else k
             return '<a href="%(k)s"%(title)s%(target)s>%(t)s</a>' \
                    % dict(k=k, title=title, target=target, t=t)
-        return '<span id="%s">%s</span>' % (escape(t),a)
+        return '<a name="%s">%s</a>' % (escape(id_prefix+t),
+                                        render(a, {},{},'br', URL,
+                                               environment, latex, autolinks,
+                                               protolinks, class_prefix, id_prefix))
 
     parts = text.split(LINK)
     text = parts[0]
@@ -1159,45 +1241,78 @@ def render(text,extra={},allowed={},sep='p',URL=None,environment=None,latex='goo
             return LATEX % code.replace('"','\"').replace('\n',' ')
         elif b in html_colors:
             return '<span style="color: %s">%s</span>' \
-                  % (b, render(code,{},{},'br',URL,environment,latex,auto))
+                  % (b, render(code,{},{},'br',URL,environment,latex,autolinks, protolinks))
         elif b in ('c', 'color') and p:
              c=p.split(':')
              fg='color: %s;' % c[0] if c[0] else ''
              bg='background-color: %s;' % c[1] if len(c)>1 and c[1] else ''
              return '<span style="%s%s">%s</span>' \
-                 % (fg, bg, render(code,{},{},'br', URL, environment, latex, auto))
-        cls = ' class="%s"'%b if b and b != 'id' else ''
-        id  = ' id="%s"'%escape(p) if p else ''
-        if code[:1]=='\n' and code[-1:]=='\n':
+                 % (fg, bg, render(code,{},{},'br', URL, environment, latex, autolinks, protolinks))
+        cls = ' class="%s%s"'%(class_prefix,b) if b and b != 'id' else ''
+        id  = ' id="%s%s"'%(id_prefix,escape(p)) if p else ''
+        beg=(code[:1]=='\n')
+        end=[None,-1][code[-1:]=='\n']
+        if beg and end:
             return '<pre><code%s%s>%s</code></pre>' % (cls, id, escape(code[1:-1]))
-        return '<code%s%s>%s</code>' \
-                         % (cls, id, escape(code[ (code[:1]=='\n')
-                                                : [None,-1][code[-1:]=='\n']]))
+        return '<code%s%s>%s</code>' % (cls, id, escape(code[beg:end]))
+
     text = regex_expand_meta.sub(expand_meta, text)
     text = text.translate(ttab_out)
+
+    if environment:
+        def u2(match, environment=environment):
+            f = environment.get(match.group('a'), match.group(0))
+            if callable(f):
+                try:
+                    f = f(match.group('b')) 
+                except Exception, e:
+                    f = 'ERROR: %s' % e
+            return str(f)
+        text = regex_env.sub(u2, text)
+
     return text
 
-def markmin2html(text, extra={}, allowed={}, sep='p', auto=True):
-    return render(text, extra, allowed, sep, auto=auto)
+def markmin2html(text, extra={}, allowed={}, sep='p', 
+                 autolinks='default',protolinks='default'):                 
+    return render(text, extra, allowed, sep, 
+                  autolinks=autolinks, protolinks=protolinks)
 
 if __name__ == '__main__':
     import sys
     import doctest
+    from textwrap import dedent
+
+    html=dedent("""
+         <!doctype html>
+         <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+         <head>
+         <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+         %(style)s
+         <title>%(title)s</title>
+         </head>
+         <body>
+         %(body)s
+         </body>
+         </html>""")[1:]
+
     if sys.argv[1:2] == ['-h']:
-        print """<html><body>
-                 <style>
-                   blockquote { background-color: lime; }
-                   thead { color: white; background-color: gray; text-align: center; }
-                   tfoot { color: white; background-color: gray; }
+        style=dedent("""
+              <style>
+                blockquote { background-color: #FFFAAE; padding: 7px; }
+                table { border-collapse: collapse; }
+                thead td { border-bottom: 1px solid; }
+                tfoot td { border-top: 1px solid; }
+                .tableclass1 { background-color: lime; }
+                .tableclass1 thead { color: yellow; background-color: green; }
+                .tableclass1 tfoot { color: yellow; background-color: green; }
+                .tableclass1 .even td { background-color: #80FF7F; }
+                .tableclass1 .first td {border-top: 1px solid; }
 
-                   .tableclass1 { background-color: yellow; }
-                   .tableclass1 thead { color: yellow; background-color: green; }
-                   .tableclass1 tfoot { color: yellow; background-color: green; }
+                td.num { text-align: right; }
+                pre { background-color: #E0E0E0; padding: 5px; }
+              </style>""")[1:]
 
-                   td.num { text-align: right; }
-                   pre { background-color: #E0E0E0; }
-                 </style>
-              """+markmin2html(__doc__)+'</body></html>'
+        print html % dict(title="Markmin markup language", style=style, body=markmin2html(__doc__))
     elif sys.argv[1:2] == ['-t']:
         from timeit import Timer
         loops=1000
@@ -1208,9 +1323,29 @@ if __name__ == '__main__':
     elif len(sys.argv) > 1:
         fargv = open(sys.argv[1],'r')
         try:
-            print '<html><body>'+markmin2html(fargv.read())+'</body></html>'
+            markmin_text=fargv.read()
+
+            # embed css file from second parameter into html file
+            if len(sys.argv) > 2:
+                if sys.argv[2].startswith('@'):
+                    markmin_style = '<link rel="stylesheet" href="'+sys.argv[2][1:]+'"/>'
+                else:
+                    fargv2 = open(sys.argv[2],'r')
+                    try:
+                        markmin_style = "<style>\n" + fargv2.read() + "</style>"
+                    finally:
+                        fargv2.close()
+            else:
+                markmin_style = ""
+
+            print html % dict(title=sys.argv[1], style=markmin_style, body=markmin2html(markmin_text))
         finally:
             fargv.close()
-    else:
-        doctest.testmod()
 
+    else:
+        print "Usage: "+sys.argv[0]+" -h | -t | file.markmin [file.css|@path_to/css]"
+        print "where: -h  - print __doc__"
+        print "       -t  - timeit __doc__ (for testing purpuse only)"
+        print "       file.markmin  [file.css] - process file.markmin + built in file.css (optional)"
+        print "       file.markmin  [@path_to/css] - process file.markmin + link path_to/css (optional)"
+        doctest.testmod()

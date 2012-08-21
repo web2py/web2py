@@ -92,6 +92,10 @@ class Web2pyService(Service):
                 _winreg.CloseKey(h)
             dir = os.path.dirname(cls)
             os.chdir(dir)
+            from gluon.settings import global_settings
+            global_settings.gluon_parent = dir
+            from gluon.custom_import import custom_import_install
+            custom_import_install(dir)
             return True
         except:
             self.log("Can't change to web2py working path; server is stopped")
@@ -149,8 +153,10 @@ class Web2pyService(Service):
 
 def web2py_windows_service_handler(argv=None, opt_file='options'):
     path = os.path.dirname(__file__)
-    classstring = os.path.normpath(os.path.join(up(path),
-                                   'gluon.winservice.Web2pyService'))
+    web2py_path = up(path)
+    os.chdir(web2py_path)
+    classstring = os.path.normpath(
+        os.path.join(web2py_path,'gluon.winservice.Web2pyService'))
     if opt_file:
         Web2pyService._exe_args_ = opt_file
         win32serviceutil.HandleCommandLine(Web2pyService,
@@ -158,9 +164,9 @@ def web2py_windows_service_handler(argv=None, opt_file='options'):
     win32serviceutil.HandleCommandLine(Web2pyService,
             serviceClassString=classstring, argv=argv)
 
-
 if __name__ == '__main__':
     web2py_windows_service_handler()
+
 
 
 

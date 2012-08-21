@@ -4,8 +4,9 @@ Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
 License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
 import datetime
+import decimal
 from storage import Storage
-from html import TAG
+from html import TAG, XmlComponent
 from html import xmlescape
 from languages import lazyT
 import contrib.rss2 as rss2
@@ -27,7 +28,11 @@ def custom_json(o):
         return o.isoformat()[:19].replace('T',' ')
     elif isinstance(o, (int, long)):
         return int(o)
+    elif isinstance(o, decimal.Decimal):
+        return str(o)
     elif isinstance(o, lazyT):
+        return str(o)
+    elif isinstance(o,XmlComponent):
         return str(o)
     elif hasattr(o,'as_list') and callable(o.as_list):
         return o.as_list()
@@ -106,6 +111,7 @@ def rss(feed):
                 pubDate=entry.get('created_on', now)
                 ) for entry in feed.get('entries',[])])
     return rss2.dumps(rss)
+
 
 
 

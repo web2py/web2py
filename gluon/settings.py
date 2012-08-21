@@ -33,12 +33,4 @@ global_settings.is_jython = 'java' in sys.platform.lower() or \
                             hasattr(sys, 'JYTHON_JAR') or \
                             str(sys.copyright).find('Jython') > 0
 
-version_info = open(os.path.join(global_settings.gluon_parent, 'VERSION'), 'r')
-raw_version_string = version_info.read().strip()
-version_info.close()
-
-from fileutils import parse_version # we need fileutils import here, because
-                                    # fileutils also imports settings
-global_settings.web2py_version = parse_version(raw_version_string)
-
 

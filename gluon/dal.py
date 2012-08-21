@@ -39,7 +39,8 @@ Example of usage:
 >>> # from dal import DAL, Field
 
 ### create DAL connection (and create DB if it doesn't exist)
->>> db = DAL(('mysql://a:b@localhost/x', 'sqlite://storage.sqlite'), folder=None)
+>>> db = DAL(('mysql://a:b@localhost/x', 'sqlite://storage.sqlite'),
+... folder=None)
 
 ### define a table 'person' (create/alter as necessary)
 >>> person = db.define_table('person',Field('name','string'))
@@ -69,7 +70,8 @@ Example of usage:
 0
 
 ### retrieve multiple records (rows)
->>> people = db(person).select(orderby=person.name, groupby=person.name, limitby=(0,100))
+>>> people = db(person).select(orderby=person.name,
+... groupby=person.name, limitby=(0,100))
 
 ### further filter them
 >>> james = people.find(lambda row: row.name == 'James').first()
@@ -89,7 +91,8 @@ Example of usage:
 >>> person.drop()
 
 Supported field types:
-id string text boolean integer double decimal password upload blob time date datetime
+id string text boolean integer double decimal password upload
+blob time date datetime
 
 Supported DAL URI strings:
 'sqlite://test.db'
@@ -168,9 +171,10 @@ import glob
 import traceback
 import platform
 
-CALLABLETYPES = (types.LambdaType, types.FunctionType, types.BuiltinFunctionType,
+CALLABLETYPES = (types.LambdaType, types.FunctionType,
+                 types.BuiltinFunctionType,
                  types.MethodType, types.BuiltinMethodType)
-
+TABLE_ARGS = ('migrate','primarykey','fake_migrate','format','singular','plural','trigger_name','sequence_name','common_filter','polymodel','table_class')
 
 ###################################################################################
 # following checks allow the use of dal without web2py, as a standalone module
@@ -206,12 +210,12 @@ sql_locker = threading.RLock()
 thread = threading.local()
 
 # internal representation of tables with field
-#  <table>.<field>, tables and fields may only be [a-zA-Z0-0_]
+#  <table>.<field>, tables and fields may only be [a-zA-Z0-9_]
 
 regex_type = re.compile('^([\w\_\:]+)')
 regex_dbname = re.compile('^(\w+)(\:\w+)*')
-regex_safe = re.compile('^[\w_]+$')
-regex_table_field = re.compile('^([\w_]+)\.([\w_]+)$')
+regex_safe = re.compile('^\w+$')
+regex_table_field = re.compile('^(\w+)\.(\w+)$')
 regex_content = re.compile('(?P<table>[\w\-]+)\.(?P<field>[\w\-]+)\.(?P<uuidkey>[\w\-]+)\.(?P<name>\w+)\.\w+$')
 regex_cleanup_fn = re.compile('[\'"\s;]+')
 string_unpack=re.compile('(?<!\|)\|(?!\|)')
@@ -226,7 +230,7 @@ try:
     from new import classobj
     from google.appengine.ext import db as gae
     from google.appengine.api import namespace_manager, rdbms
-    from google.appengine.api.datastore_types import Key  ### needed for belongs on ID
+    from google.appengine.api.datastore_types import Key  ### for belongs on ID
     from google.appengine.ext.db.polymodel import PolyModel
     drivers.append('google')
 except ImportError:
@@ -249,6 +253,11 @@ if not 'google' in drivers:
         # first try contrib driver, then from site-packages (if installed)
         try:
             import contrib.pymysql as pymysql
+            # monkeypatch pymysql because they havent fixed the bug:
+            # https://github.com/petehunt/PyMySQL/issues/86
+            pymysql.ESCAPE_REGEX = re.compile("'")
+            pymysql.ESCAPE_MAP = {"'": "''"}
+            # end monkeypatch
         except ImportError:
             import pymysql
         drivers.append('pymysql')
@@ -411,7 +420,8 @@ if 'google' in drivers:
             self.round = decimal.Decimal(d)
 
         def get_value_for_datastore(self, model_instance):
-            value = super(GAEDecimalProperty, self).get_value_for_datastore(model_instance)
+            value = super(GAEDecimalProperty, self)\
+                .get_value_for_datastore(model_instance)
             if value is None or value == '':
                 return None
             else:
@@ -429,7 +439,8 @@ if 'google' in drivers:
                 return value
             elif isinstance(value, basestring):
                 return decimal.Decimal(value)
-            raise gae.BadValueError("Property %s must be a Decimal or string." % self.name)
+            raise gae.BadValueError("Property %s must be a Decimal or string."\
+                                        % self.name)
 
 ###################################################################################
 # class that handles connection pooling (all adapters are derived from this one)
@@ -496,7 +507,8 @@ class ConnectionPool(object):
 
     def pool_connection(self, f, cursor=True):
         """
-        this function defines: self.connection and self.cursor (iff cursor is True)
+        this function defines: self.connection and self.cursor
+        (iff cursor is True)
         if self.pool_size>0 it will try pull the connection from the pool
         if the connection is not active (closed by db server) it will loop
         if not self.pool_size or no active connections in pool makes a new one
@@ -660,7 +672,7 @@ class BaseAdapter(ConnectionPool):
                         rtable = table._db[rtablename]
                         rfield = rtable[rfieldname]
                         # must be PK reference or unique
-                        if rfieldname in rtable._primarykey or rfield.unique:
+                        if rfieldname in hasattr(rtable,'_primarykey') or rfield.unique:
                             ftype = self.types[rfield.type[:9]] % \
                                 dict(length=rfield.length)
                             # multicolumn primary key reference?
@@ -679,7 +691,7 @@ class BaseAdapter(ConnectionPool):
                         # make a guess here for circular references
                         id_fieldname = referenced in table._db \
                             and table._db[referenced]._id.name or 'id'
-                        ftype = self.types[field.type[:9]] % dict( 
+                        ftype = self.types[field.type[:9]] % dict(
                             index_name = field.name+'__idx',
                             field_name = field.name,
                             constraint_name = constraint_name,
@@ -711,7 +723,8 @@ class BaseAdapter(ConnectionPool):
                         schema = parms[0]
                     ftype = "SELECT AddGeometryColumn ('%%(schema)s', '%%(tablename)s', '%%(fieldname)s', %%(srid)s, '%s', %%(dimension)s);" % self.types[geotype]
                     ftype = ftype % dict(schema=schema, tablename=tablename,
-                            fieldname=field.name, srid=srid, dimension=dimension)
+                                         fieldname=field.name, srid=srid,
+                                         dimension=dimension)
                     postcreation_fields.append(ftype)
             elif not field.type in self.types:
                 raise SyntaxError, 'Field: unknown field type: %s for %s' % \
@@ -719,7 +732,8 @@ class BaseAdapter(ConnectionPool):
             else:
                 ftype = self.types[field.type]\
                      % dict(length=field.length)
-            if not field.type.startswith('id') and not field.type.startswith('reference'):
+            if not field.type.startswith('id') and \
+                    not field.type.startswith('reference'):
                 if field.notnull:
                     ftype += ' NOT NULL'
                 else:
@@ -735,11 +749,12 @@ class BaseAdapter(ConnectionPool):
                                           sql=ftype)
 
             if isinstance(field.default,(str,int,float)):
-                # Caveat: sql_fields and sql_fields_aux differ for default values.
+                # Caveat: sql_fields and sql_fields_aux
+                # differ for default values.
                 # sql_fields is used to trigger migrations and sql_fields_aux
                 # is used for create tables.
-                # The reason is that we do not want to trigger a migration simply
-                # because a default value changes.
+                # The reason is that we do not want to trigger
+                # a migration simply because a default value changes.
                 not_null = self.NOT_NULL(field.default, field.type)
                 ftype = ftype.replace('NOT NULL', not_null)
             sql_fields_aux[field.name] = dict(sql=ftype)
@@ -770,20 +785,25 @@ class BaseAdapter(ConnectionPool):
 
         if hasattr(table,'_primarykey'):
             query = "CREATE TABLE %s(\n    %s,\n    %s) %s" % \
-                (tablename, fields, self.PRIMARY_KEY(', '.join(table._primarykey)),other)
+                (tablename, fields,
+                 self.PRIMARY_KEY(', '.join(table._primarykey)),other)
         else:
             query = "CREATE TABLE %s(\n    %s\n)%s" % \
                 (tablename, fields, other)
 
-        if self.uri.startswith('sqlite:///') or self.uri.startswith('spatialite:///'):
-            path_encoding = sys.getfilesystemencoding() or locale.getdefaultlocale()[1] or 'utf8'
-            dbpath = self.uri[9:self.uri.rfind('/')].decode('utf8').encode(path_encoding)
+        if self.uri.startswith('sqlite:///') \
+                or self.uri.startswith('spatialite:///'):
+            path_encoding = sys.getfilesystemencoding() \
+                or locale.getdefaultlocale()[1] or 'utf8'
+            dbpath = self.uri[9:self.uri.rfind('/')]\
+                .decode('utf8').encode(path_encoding)
         else:
             dbpath = self.folder
 
         if not migrate:
             return query
-        elif self.uri.startswith('sqlite:memory') or self.uri.startswith('spatialite:memory'):
+        elif self.uri.startswith('sqlite:memory')\
+                or self.uri.startswith('spatialite:memory'):
             table._dbt = None
         elif isinstance(migrate, str):
             table._dbt = os.path.join(dbpath, migrate)
@@ -803,7 +823,8 @@ class BaseAdapter(ConnectionPool):
             if not fake_migrate:
                 self.create_sequence_and_triggers(query,table)
                 table._db.commit()
-                # Postgres geom fields are added now, after the table has been created
+                # Postgres geom fields are added now,
+                # after the table has been created
                 for query in postcreation_fields:
                     self.execute(query)
                     table._db.commit()
@@ -884,13 +905,14 @@ class BaseAdapter(ConnectionPool):
             elif not key in sql_fields:
                 del sql_fields_current[key]
                 ftype = sql_fields_old[key]['type']
-                if self.dbengine in ('postgres',) and ftype.startswith('geometry'):
+                if self.dbengine in ('postgres',) \
+                        and ftype.startswith('geometry'):
                     geotype, parms = ftype[:-1].split('(')
                     schema = parms.split(',')[0]
-                    query = [ "SELECT DropGeometryColumn ('%(schema)s', '%(table)s', '%(field)s');" % \
-                        dict(schema=schema, table=tablename, field=key,) ]
+                    query = [ "SELECT DropGeometryColumn ('%(schema)s', '%(table)s', '%(field)s');" % dict(schema=schema, table=tablename, field=key,) ]
                 elif not self.dbengine in ('firebird',):
-                    query = ['ALTER TABLE %s DROP COLUMN %s;' % (tablename, key)]
+                    query = ['ALTER TABLE %s DROP COLUMN %s;'
+                             % (tablename, key)]
                 else:
                     query = ['ALTER TABLE %s DROP %s;' % (tablename, key)]
                 metadata_change = True
@@ -1071,13 +1093,16 @@ class BaseAdapter(ConnectionPool):
 
     def ILIKE(self, first, second):
         "case in-sensitive like operator"
-        return '(%s LIKE %s)' % (self.expand(first), self.expand(second, 'string'))
+        return '(%s LIKE %s)' % (self.expand(first),
+                                 self.expand(second, 'string'))
 
     def STARTSWITH(self, first, second):
-        return '(%s LIKE %s)' % (self.expand(first), self.expand(second+'%', 'string'))
+        return '(%s LIKE %s)' % (self.expand(first),
+                                 self.expand(second+'%', 'string'))
 
     def ENDSWITH(self, first, second):
-        return '(%s LIKE %s)' % (self.expand(first), self.expand('%'+second, 'string'))
+        return '(%s LIKE %s)' % (self.expand(first),
+                                 self.expand('%'+second, 'string'))
 
     def CONTAINS(self, first, second):
         if first.type in ('string', 'text'):
@@ -1089,47 +1114,58 @@ class BaseAdapter(ConnectionPool):
     def EQ(self, first, second=None):
         if second is None:
             return '(%s IS NULL)' % self.expand(first)
-        return '(%s = %s)' % (self.expand(first), self.expand(second, first.type))
+        return '(%s = %s)' % (self.expand(first),
+                              self.expand(second, first.type))
 
     def NE(self, first, second=None):
         if second is None:
             return '(%s IS NOT NULL)' % self.expand(first)
-        return '(%s <> %s)' % (self.expand(first), self.expand(second, first.type))
+        return '(%s <> %s)' % (self.expand(first),
+                               self.expand(second, first.type))
 
     def LT(self,first,second=None):
         if second is None:
             raise RuntimeError, "Cannot compare %s < None" % first
-        return '(%s < %s)' % (self.expand(first),self.expand(second,first.type))
+        return '(%s < %s)' % (self.expand(first),
+                              self.expand(second,first.type))
 
     def LE(self,first,second=None):
         if second is None:
             raise RuntimeError, "Cannot compare %s <= None" % first
-        return '(%s <= %s)' % (self.expand(first),self.expand(second,first.type))
+        return '(%s <= %s)' % (self.expand(first),
+                               self.expand(second,first.type))
 
     def GT(self,first,second=None):
         if second is None:
             raise RuntimeError, "Cannot compare %s > None" % first
-        return '(%s > %s)' % (self.expand(first),self.expand(second,first.type))
+        return '(%s > %s)' % (self.expand(first),
+                              self.expand(second,first.type))
 
     def GE(self,first,second=None):
         if second is None:
             raise RuntimeError, "Cannot compare %s >= None" % first
-        return '(%s >= %s)' % (self.expand(first),self.expand(second,first.type))
+        return '(%s >= %s)' % (self.expand(first),
+                               self.expand(second,first.type))
 
     def ADD(self, first, second):
-        return '(%s + %s)' % (self.expand(first), self.expand(second, first.type))
+        return '(%s + %s)' % (self.expand(first),
+                              self.expand(second, first.type))
 
     def SUB(self, first, second):
-        return '(%s - %s)' % (self.expand(first), self.expand(second, first.type))
+        return '(%s - %s)' % (self.expand(first),
+                              self.expand(second, first.type))
 
     def MUL(self, first, second):
-        return '(%s * %s)' % (self.expand(first), self.expand(second, first.type))
+        return '(%s * %s)' % (self.expand(first),
+                              self.expand(second, first.type))
 
     def DIV(self, first, second):
-        return '(%s / %s)' % (self.expand(first), self.expand(second, first.type))
+        return '(%s / %s)' % (self.expand(first),
+                              self.expand(second, first.type))
 
     def MOD(self, first, second):
-        return '(%s %% %s)' % (self.expand(first), self.expand(second, first.type))
+        return '(%s %% %s)' % (self.expand(first),
+                               self.expand(second, first.type))
 
     def AS(self, first, second):
         return '%s AS %s' % (self.expand(first), second)
@@ -1160,7 +1196,8 @@ class BaseAdapter(ConnectionPool):
         elif field_type:
             return str(self.represent(expression,field_type))
         elif isinstance(expression,(list,tuple)):
-            return ','.join(self.represent(item,field_type) for item in expression)
+            return ','.join(self.represent(item,field_type) \
+                                for item in expression)
         elif isinstance(expression, bool):
             return '1' if expression else '0'
         else:
@@ -1216,7 +1253,8 @@ class BaseAdapter(ConnectionPool):
             sql_w = ' WHERE ' + self.expand(query)
         else:
             sql_w = ''
-        sql_v = ','.join(['%s=%s' % (field.name, self.expand(value, field.type)) \
+        sql_v = ','.join(['%s=%s' % (field.name,
+                                     self.expand(value, field.type)) \
                               for (field, value) in fields])
         return 'UPDATE %s SET %s%s;' % (tablename, sql_v, sql_w)
 
@@ -1254,7 +1292,8 @@ class BaseAdapter(ConnectionPool):
         if self.dbengine in ('sqlite', 'spatialite') and counter:
             for tablename,fieldname in table._referenced_by:
                 f = db[tablename][fieldname]
-                if f.type=='reference '+table._tablename and f.ondelete=='CASCADE':
+                if f.type=='reference '+table._tablename \
+                        and f.ondelete=='CASCADE':
                     db(db[tablename][fieldname].belongs(deleted)).delete()
         ### end special code to handle CASCADE in SQLite & SpatiaLite
         return counter
@@ -1272,7 +1311,13 @@ class BaseAdapter(ConnectionPool):
         new_fields = []
         for item in fields:
             if isinstance(item,SQLALL):
-                new_fields += item.table
+                new_fields += item._table
+            elif isinstance(item,str):
+                if regex_table_field.match(item):
+                    tablename,fieldname = item.split('.')
+                    new_fields.append(self.db[tablename][fieldname])
+                else:
+                    new_fields.append(Expression(self.db,item))
             else:
                 new_fields.append(item)
         # ## if no fields specified take them all from the requested tables
@@ -1291,7 +1336,8 @@ class BaseAdapter(ConnectionPool):
 
         tablenames = self.tables(query)
         for field in fields:
-            if isinstance(field, basestring) and regex_table_field.match(field):
+            if isinstance(field, basestring) \
+                    and regex_table_field.match(field):
                 tn,fn = field.split('.')
                 field = self.db[tn][fn]
             for tablename in self.tables(field):
@@ -1329,36 +1375,45 @@ class BaseAdapter(ConnectionPool):
             icommand = self.JOIN()
             if not isinstance(inner_join, (tuple, list)):
                 inner_join = [inner_join]
-            ijoint = [t._tablename for t in inner_join if not isinstance(t,Expression)]
+            ijoint = [t._tablename for t in inner_join
+                      if not isinstance(t,Expression)]
             ijoinon = [t for t in inner_join if isinstance(t, Expression)]
             itables_to_merge={} #issue 490
-            [itables_to_merge.update(dict.fromkeys(self.tables(t))) for t in ijoinon] # issue 490
+            [itables_to_merge.update(
+                    dict.fromkeys(self.tables(t))) for t in ijoinon]
             ijoinont = [t.first._tablename for t in ijoinon]
-            [itables_to_merge.pop(t) for t in ijoinont if t in itables_to_merge] #issue 490
-            iimportant_tablenames = ijoint + ijoinont + itables_to_merge.keys() # issue 490
-            iexcluded = [t for t in tablenames if not t in iimportant_tablenames]
+            [itables_to_merge.pop(t) for t in ijoinont
+             if t in itables_to_merge] #issue 490
+            iimportant_tablenames = ijoint + ijoinont + itables_to_merge.keys()
+            iexcluded = [t for t in tablenames
+                         if not t in iimportant_tablenames]
         if left:
             join = attributes['left']
             command = self.LEFT_JOIN()
             if not isinstance(join, (tuple, list)):
                 join = [join]
-            joint = [t._tablename for t in join if not isinstance(t, Expression)]
+            joint = [t._tablename for t in join
+                     if not isinstance(t, Expression)]
             joinon = [t for t in join if isinstance(t, Expression)]
             #patch join+left patch (solves problem with ordering in left joins)
             tables_to_merge={}
-            [tables_to_merge.update(dict.fromkeys(self.tables(t))) for t in joinon]
+            [tables_to_merge.update(
+                    dict.fromkeys(self.tables(t))) for t in joinon]
             joinont = [t.first._tablename for t in joinon]
             [tables_to_merge.pop(t) for t in joinont if t in tables_to_merge]
             important_tablenames = joint + joinont + tables_to_merge.keys()
-            excluded = [t for t in tablenames if not t in important_tablenames ]
+            excluded = [t for t in tablenames
+                        if not t in important_tablenames ]
         def alias(t):
             return str(self.db[t])
         if inner_join and not left:
-            sql_t = ', '.join([alias(t) for t in iexcluded + itables_to_merge.keys()]) # issue 490
+            sql_t = ', '.join([alias(t) for t in iexcluded + \
+                                   itables_to_merge.keys()])
             for t in ijoinon:
                 sql_t += ' %s %s' % (icommand, str(t))
         elif not inner_join and left:
-            sql_t = ', '.join([alias(t) for t in excluded + tables_to_merge.keys()])
+            sql_t = ', '.join([alias(t) for t in excluded + \
+                                   tables_to_merge.keys()])
             if joint:
                 sql_t += ' %s %s' % (command, ','.join([t for t in joint]))
             for t in joinon:
@@ -1366,10 +1421,11 @@ class BaseAdapter(ConnectionPool):
         elif inner_join and left:
             all_tables_in_query = set(important_tablenames + \
                                       iimportant_tablenames + \
-                                      tablenames) # issue 490
-            tables_in_joinon = set(joinont + ijoinont) # issue 490
-            tables_not_in_joinon = all_tables_in_query.difference(tables_in_joinon) # issue 490
-            sql_t = ','.join([alias(t) for t in tables_not_in_joinon]) # issue 490
+                                      tablenames)
+            tables_in_joinon = set(joinont + ijoinont)
+            tables_not_in_joinon = \
+                all_tables_in_query.difference(tables_in_joinon)
+            sql_t = ','.join([alias(t) for t in tables_not_in_joinon])
             for t in ijoinon:
                 sql_t += ' %s %s' % (icommand, str(t))
             if joint:
@@ -1393,7 +1449,7 @@ class BaseAdapter(ConnectionPool):
                 sql_o += ' ORDER BY %s' % self.expand(orderby)
         if limitby:
             if not orderby and tablenames:
-                sql_o += ' ORDER BY %s' % ', '.join(['%s.%s'%(t,x) for t in tablenames for x in ((hasattr(self.db[t], '_primarykey') and self.db[t]._primarykey) or [self.db[t]._id.name])])
+                sql_o += ' ORDER BY %s' % ', '.join(['%s.%s'%(t,x) for t in tablenames for x in (hasattr(self.db[t],'_primarykey') and self.db[t]._primarykey or [self.db[t]._id.name])])
             # oracle does not support limitby
         sql = self.select_limitby(sql_s, sql_f, sql_t, sql_w, sql_o, limitby)
         if for_update and self.can_select_for_update is True:
@@ -1404,7 +1460,8 @@ class BaseAdapter(ConnectionPool):
         if limitby:
             (lmin, lmax) = limitby
             sql_o += ' LIMIT %i OFFSET %i' % (lmax - lmin, lmin)
-        return 'SELECT %s %s FROM %s%s%s;' % (sql_s, sql_f, sql_t, sql_w, sql_o)
+        return 'SELECT %s %s FROM %s%s%s;' % \
+            (sql_s, sql_f, sql_t, sql_w, sql_o)
 
     def select(self, query, fields, attributes):
         """
@@ -1442,7 +1499,8 @@ class BaseAdapter(ConnectionPool):
             if isinstance(distinct,(list, tuple)):
                 distinct = xorify(distinct)
             sql_d = self.expand(distinct)
-            return 'SELECT count(DISTINCT %s) FROM %s%s;' % (sql_d, sql_t, sql_w)
+            return 'SELECT count(DISTINCT %s) FROM %s%s;' % \
+                (sql_d, sql_t, sql_w)
         return 'SELECT count(*) FROM %s%s;' % (sql_t, sql_w)
 
     def count(self, query, distinct=None):
@@ -1588,7 +1646,10 @@ class BaseAdapter(ConnectionPool):
         return type(None)
 
     def rowslice(self, rows, minimum=0, maximum=None):
-        """ By default this function does nothing; overload when db does not do slicing. """
+        """
+        By default this function does nothing;
+        overload when db does not do slicing.
+        """
         return rows
 
     def parse_value(self, value, field_type, blob_decode=True):
@@ -1603,7 +1664,7 @@ class BaseAdapter(ConnectionPool):
             value = field_type.decoder(value)
         if not isinstance(field_type, str) or value is None:
             return value
-        elif field_type in ('string', 'text', 'password', 'upload', 'dict'): # ???
+        elif field_type in ('string', 'text', 'password', 'upload', 'dict'):
             return value
         elif field_type.startswith('geo'):
             return value
@@ -1641,13 +1702,26 @@ class BaseAdapter(ConnectionPool):
 
     def parse_datetime(self, value, field_type):
         if not isinstance(value, datetime.datetime):
-            date_part, time_part = (str(value).replace('T',' ')+' ').split(' ',1)
+            if '+' in value:
+                value,tz = value.split('+')
+                h,m = tz.split(':')
+                dt = datetime.timedelta(seconds=3600*int(h)+60*int(m))
+            elif '-' in value:
+                value,tz = value.split('-')
+                h,m = tz.split(':')
+                dt = -datetime.timedelta(seconds=3600*int(h)+60*int(m))
+            else:
+                dt = None
+            date_part, time_part = (
+                str(value).replace('T',' ')+' ').split(' ',1)
             (y, m, d) = map(int,date_part.split('-'))
             time_parts = time_part and time_part.split(':')[:3] or (0,0,0)
             while len(time_parts)<3: time_parts.append(0)
             time_items = map(int,time_parts)
             (h, mi, s) = time_items
             value = datetime.datetime(y, m, d, h, mi, s)
+            if dt:
+                value = value + dt
         return value
 
     def parse_blob(self, value, field_type):
@@ -1746,8 +1820,12 @@ class BaseAdapter(ConnectionPool):
                             colset.gae_item = value
                         else:
                             id = value
-                        colset.update_record = lambda _ = (colset, table, id), **a: update_record(_, a)
-                        colset.delete_record = lambda t = table, i = id: t._db(t._id==i).delete()
+                        colset.update_record = (
+                            lambda _ = (colset, table, id), **a:
+                            update_record(_, a))
+                        colset.delete_record = (
+                            lambda t = table, i = id:
+                            t._db(t._id==i).delete())
                         for (referee_table, referee_name) in table._referenced_by:
                             s = db[referee_table][referee_name]
                             referee_link = db._referee_name and \
@@ -1760,8 +1838,10 @@ class BaseAdapter(ConnectionPool):
         for tablename in virtualtables:
             ### new style virtual fields
             table = db[tablename]
-            fields_virtual = [(f,v) for (f,v) in table.items() if isinstance(v,FieldVirtual)]
-            fields_lazy = [(f,v) for (f,v) in table.items() if isinstance(v,FieldLazy)]
+            fields_virtual = [(f,v) for (f,v) in table.items()
+                              if isinstance(v,FieldVirtual)]
+            fields_lazy = [(f,v) for (f,v) in table.items()
+                           if isinstance(v,FieldLazy)]
             if fields_virtual or fields_lazy:
                 for row in rowsobj.records:
                     box = row[tablename]
@@ -1799,6 +1879,7 @@ class BaseAdapter(ConnectionPool):
                     else:
                         query = query & newquery
         return query
+
 
 ###################################################################################
 # List of all the available adapters; they all extend BaseAdapter.
@@ -1844,13 +1925,15 @@ class SQLiteAdapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        path_encoding = sys.getfilesystemencoding() or locale.getdefaultlocale()[1] or 'utf8'
+        path_encoding = sys.getfilesystemencoding() \
+            or locale.getdefaultlocale()[1] or 'utf8'
         if uri.startswith('sqlite:memory'):
             dbpath = ':memory:'
         else:
             dbpath = uri.split('://')[1]
             if dbpath[0] != '/':
-                dbpath = os.path.join(self.folder.decode(path_encoding).encode('utf8'), dbpath)
+                dbpath = os.path.join(
+                    self.folder.decode(path_encoding).encode('utf8'), dbpath)
         if not 'check_same_thread' in driver_args:
             driver_args['check_same_thread'] = False
         if not 'detect_types' in driver_args:
@@ -1878,17 +1961,15 @@ class SQLiteAdapter(BaseAdapter):
         return '(%s REGEXP %s)' % (self.expand(first),
                                    self.expand(second,'string'))
 
-    def _select(self, query, fields, attributes):
+    def select(self, query, fields, attributes):
         """
         Simulate SELECT ... FOR UPDATE with BEGIN IMMEDIATE TRANSACTION.
         Note that the entire database, rather than one record, is locked
         (it will be locked eventually anyway by the following UPDATE).
         """
-        sql = super(SQLiteAdapter, self)._select(query, fields, attributes)
-        if attributes.get('for_update', False):
-            sql = 'BEGIN IMMEDIATE TRANSACTION; ' + sql
-        return sql
-
+        if attributes.get('for_update', False) and not 'cache' in attributes:
+            self.execute('BEGIN IMMEDIATE TRANSACTION;')
+        return super(SQLiteAdapter, self).select(query, fields, attributes)
 
 class SpatiaLiteAdapter(SQLiteAdapter):
 
@@ -1909,13 +1990,15 @@ class SpatiaLiteAdapter(SQLiteAdapter):
         self.db_codec = db_codec
         self.find_or_make_work_folder()
         self.srid = srid
-        path_encoding = sys.getfilesystemencoding() or locale.getdefaultlocale()[1] or 'utf8'
+        path_encoding = sys.getfilesystemencoding() \
+            or locale.getdefaultlocale()[1] or 'utf8'
         if uri.startswith('spatialite:memory'):
             dbpath = ':memory:'
         else:
             dbpath = uri.split('://')[1]
             if dbpath[0] != '/':
-                dbpath = os.path.join(self.folder.decode(path_encoding).encode('utf8'), dbpath)
+                dbpath = os.path.join(
+                    self.folder.decode(path_encoding).encode('utf8'), dbpath)
         if not 'check_same_thread' in driver_args:
             driver_args['check_same_thread'] = False
         if not 'detect_types' in driver_args:
@@ -1948,28 +2031,36 @@ class SpatiaLiteAdapter(SQLiteAdapter):
         return 'AsText(%s)' %(self.expand(first))
 
     def ST_CONTAINS(self, first, second):
-        return 'Contains(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+        return 'Contains(%s,%s)' %(self.expand(first),
+                                   self.expand(second, first.type))
 
     def ST_DISTANCE(self, first, second):
-        return 'Distance(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+        return 'Distance(%s,%s)' %(self.expand(first),
+                                   self.expand(second, first.type))
 
     def ST_EQUALS(self, first, second):
-        return 'Equals(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+        return 'Equals(%s,%s)' %(self.expand(first),
+                                 self.expand(second, first.type))
 
     def ST_INTERSECTS(self, first, second):
-        return 'Intersects(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+        return 'Intersects(%s,%s)' %(self.expand(first),
+                                     self.expand(second, first.type))
 
     def ST_OVERLAPS(self, first, second):
-        return 'Overlaps(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+        return 'Overlaps(%s,%s)' %(self.expand(first),
+                                   self.expand(second, first.type))
 
     def ST_SIMPLIFY(self, first, second):
-        return 'Simplify(%s,%s)' %(self.expand(first), self.expand(second, 'double'))
+        return 'Simplify(%s,%s)' %(self.expand(first),
+                                   self.expand(second, 'double'))
 
     def ST_TOUCHES(self, first, second):
-        return 'Touches(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+        return 'Touches(%s,%s)' %(self.expand(first),
+                                  self.expand(second, first.type))
 
     def ST_WITHIN(self, first, second):
-        return 'Within(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+        return 'Within(%s,%s)' %(self.expand(first),
+                                 self.expand(second, first.type))
 
     def represent(self, obj, fieldtype):
         if fieldtype.startswith('geo'):
@@ -2004,21 +2095,26 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        path_encoding = sys.getfilesystemencoding() or locale.getdefaultlocale()[1] or 'utf8'
+        path_encoding = sys.getfilesystemencoding() \
+            or locale.getdefaultlocale()[1] or 'utf8'
         if uri.startswith('sqlite:memory'):
             dbpath = ':memory:'
         else:
             dbpath = uri.split('://')[1]
             if dbpath[0] != '/':
-                dbpath = os.path.join(self.folder.decode(path_encoding).encode('utf8'), dbpath)
+                dbpath = os.path.join(
+                    self.folder.decode(path_encoding).encode('utf8'), dbpath)
         def connect(dbpath=dbpath,driver_args=driver_args):
-            return self.driver.connect(java.sql.DriverManager.getConnection('jdbc:sqlite:'+dbpath), **driver_args)
+            return self.driver.connect(
+                java.sql.DriverManager.getConnection('jdbc:sqlite:'+dbpath),
+                **driver_args)
         self.pool_connection(connect)
         self.after_connection()
 
     def after_connection(self):
         # FIXME http://www.zentus.com/sqlitejdbc/custom_functions.html for UDFs
-        self.connection.create_function('web2py_extract', 2, SQLiteAdapter.web2py_extract)
+        self.connection.create_function('web2py_extract', 2,
+                                        SQLiteAdapter.web2py_extract)
 
     def execute(self, a):
         return self.log_execute(a)
@@ -2061,11 +2157,13 @@ class MySQLAdapter(BaseAdapter):
         return 'RAND()'
 
     def SUBSTRING(self,field,parameters):
-        return 'SUBSTRING(%s,%s,%s)' % (self.expand(field), parameters[0], parameters[1])
+        return 'SUBSTRING(%s,%s,%s)' % (self.expand(field),
+                                        parameters[0], parameters[1])
 
     def _drop(self,table,mode):
         # breaks db integrity but without this mysql does not drop table
-        return ['SET FOREIGN_KEY_CHECKS=0;','DROP TABLE %s;' % table,'SET FOREIGN_KEY_CHECKS=1;']
+        return ['SET FOREIGN_KEY_CHECKS=0;','DROP TABLE %s;' % table,
+                'SET FOREIGN_KEY_CHECKS=1;']
 
     def distributed_transaction_begin(self,key):
         self.execute('XA START;')
@@ -2170,6 +2268,8 @@ class PostgreSQLAdapter(BaseAdapter):
         return varquote_aux(name,'"%s"')
 
     def adapt(self,obj):
+        #if self.driver == self.drivers.get('pg8000'):
+        #    obj = str(obj).replace('%','%%')
         return psycopg2_adapt(obj).getquoted()
 
     def sequence_name(self,table):
@@ -2431,7 +2531,7 @@ class NewPostgreSQLAdapter(PostgreSQLAdapter):
             if fieldtype.startswith('list:string'):
                 obj = [str(item) for item in obj]
             else:
-                obj = [int(item) for item in obj]        
+                obj = [int(item) for item in obj]
             return 'ARRAY[%s]' % ','.join(repr(item) for item in obj)
         return BaseAdapter.represent(self, obj, fieldtype)
 
@@ -2609,8 +2709,26 @@ class OracleAdapter(BaseAdapter):
         sequence_name = table._sequence_name
         trigger_name = table._trigger_name
         self.execute(query)
-        self.execute('CREATE SEQUENCE %s START WITH 1 INCREMENT BY 1 NOMAXVALUE;' % sequence_name)
-        self.execute('CREATE OR REPLACE TRIGGER %s BEFORE INSERT ON %s FOR EACH ROW BEGIN SELECT %s.nextval INTO :NEW.id FROM DUAL; END;\n' % (trigger_name, tablename, sequence_name))
+        self.execute('CREATE SEQUENCE %s START WITH 1 INCREMENT BY 1 NOMAXVALUE MINVALUE -1;' % sequence_name)
+        self.execute("""
+            CREATE OR REPLACE TRIGGER %(trigger_name)s BEFORE INSERT ON %(tablename)s FOR EACH ROW
+            DECLARE
+                curr_val NUMBER;
+                diff_val NUMBER;
+                PRAGMA autonomous_transaction;
+            BEGIN
+                IF :NEW.id IS NOT NULL THEN
+                    EXECUTE IMMEDIATE 'SELECT %(sequence_name)s.nextval FROM dual' INTO curr_val;
+                    diff_val := :NEW.id - curr_val - 1;
+                    IF diff_val != 0 THEN
+                      EXECUTE IMMEDIATE 'alter sequence %(sequence_name)s increment by '|| diff_val;
+                      EXECUTE IMMEDIATE 'SELECT %(sequence_name)s.nextval FROM dual' INTO curr_val;
+                      EXECUTE IMMEDIATE 'alter sequence %(sequence_name)s increment by 1';
+                    END IF;
+                END IF;
+                SELECT %(sequence_name)s.nextval INTO :NEW.id FROM DUAL;
+            END;
+        """ % dict(trigger_name=trigger_name, tablename=tablename, sequence_name=sequence_name))
 
     def lastrowid(self,table):
         sequence_name = table._sequence_name
@@ -3758,9 +3876,9 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
         self.dbengine = "mysql"
         self.uri = uri
         self.pool_size = pool_size
-        self.folder = folder
         self.db_codec = db_codec
-        self.folder = folder or '$HOME/'+thread.folder.split('/applications/',1)[1]
+        self.folder = folder or os.path.join('$HOME',thread.folder.split(
+                os.sep+'applications'+os.sep,1)[1])
 
         m = re.compile('^(?P<instance>.*)/(?P<db>.*)$').match(self.uri[len('google:sql://'):])
         if not m:
@@ -3783,6 +3901,9 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
             self.execute('USE %s' % self.dbstring)
         self.execute("SET FOREIGN_KEY_CHECKS=1;")
         self.execute("SET sql_mode='NO_BACKSLASH_ESCAPES';")
+
+    def execute(self,a):
+        return self.log_execute(a.decode('utf8'))
 
 class NoSQLAdapter(BaseAdapter):
     can_select_for_update = False
@@ -3991,7 +4112,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
 
     def parse_id(self, value, field_type):
         return value
-        
+
     def create_table(self,table,migrate=True,fake_migrate=False, polymodel=None):
         myfields = {}
         for k in table.fields:
@@ -4149,7 +4270,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         new_fields = []
         for item in fields:
             if isinstance(item,SQLALL):
-                new_fields += item.table
+                new_fields += item._table
             else:
                 new_fields.append(item)
         fields = new_fields
@@ -4191,7 +4312,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         if isinstance(attributes.get('reusecursor'), str):
             cursor = attributes.get('reusecursor')
         items = gae.Query(tableobj, projection=query_projection, cursor=cursor)
-        
+
         for filter in filters:
             if attributes.get('projection') == True and \
                filter.name in query_projection and \
@@ -4217,7 +4338,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                 items = [i for i in items if filter.apply(
                         getattr(item,filter.name),filter.value)]
             else:
-                if filter.name=='__key__':
+                if filter.name=='__key__' and filter.op != 'in':
                     items.order('__key__')
                 items = items.filter('%s %s' % (filter.name,filter.op),
                                      filter.value)
@@ -4266,7 +4387,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
            requests, and the filters must be identical.  It is up to the user
            to follow google's limitations: https://developers.google.com/appengine/docs/python/datastore/queries#Query_Cursors
         """
-        
+
         (items, tablename, fields) = self.select_raw(query,fields,attributes)
         # self.db['_lastsql'] = self._select(query,fields,attributes)
         rows = [[(t==self.db[tablename]._id.name and item) or \
@@ -4399,7 +4520,8 @@ class CouchDBAdapter(NoSQLAdapter):
             return repr(str(int(value)))
         elif fieldtype in ('date','time','datetime','boolean'):
             return serializers.json(value)
-        return repr(not isinstance(value,unicode) and value or value.encode('utf8'))
+        return repr(not isinstance(value,unicode) and value \
+                        or value and value.encode('utf8'))
 
     def __init__(self,db,uri='couchdb://127.0.0.1:5984',
                  pool_size=0,folder=None,db_codec ='UTF-8',
@@ -4444,7 +4566,7 @@ class CouchDBAdapter(NoSQLAdapter):
         new_fields=[]
         for item in fields:
             if isinstance(item,SQLALL):
-                new_fields += item.table
+                new_fields += item._table
             else:
                 new_fields.append(item)
         def uid(fd):
@@ -4456,7 +4578,7 @@ class CouchDBAdapter(NoSQLAdapter):
         fieldnames = [f.name for f in (fields or self.db[tablename])]
         colnames = ['%s.%s' % (tablename,k) for k in fieldnames]
         fields = ','.join(['%s.%s' % (tablename,uid(f)) for f in fieldnames])
-        fn="function(%(t)s){if(%(query)s)emit(%(order)s,[%(fields)s]);}" %\
+        fn="(function(%(t)s){if(%(query)s)emit(%(order)s,[%(fields)s]);})" %\
             dict(t=tablename,
                  query=self.expand(query),
                  order='%s._id' % tablename,
@@ -4659,7 +4781,10 @@ class MongoDBAdapter(NoSQLAdapter):
         # therefor call __select() connection[table].find(query).count() Since this will probably reduce the return set?
 
     def expand(self, expression, field_type=None):
-        import pymongo.objectid
+        try:
+            from pymongo.objectid import ObjectId
+        except ImportError:
+            from bson.objectid import ObjectId
         #if isinstance(expression,Field):
         #    if expression.type=='id':
         #        return {_id}"
@@ -4671,21 +4796,21 @@ class MongoDBAdapter(NoSQLAdapter):
             #   if second arg is 0 convert to objectid
             if isinstance(expression.first,Field) and expression.first.type == 'id':
                 expression.first.name = '_id'
-                if expression.second != 0 and not isinstance(expression.second,pymongo.objectid.ObjectId):
+                if expression.second != 0 and not isinstance(expression.second,ObjectId):
                     if isinstance(expression.second,int):
                         try:
                             #Because the reference field is by default an integer and therefore this must be an integer to be able to work with other databases
-                            expression.second = pymongo.objectid.ObjectId(("%X" % expression.second))
+                            expression.second = ObjectId(("%X" % expression.second))
                         except:
                             raise SyntaxError, 'The second argument must by an integer that can represent an objectid.'
                     else:
                         try:
                             #But a direct id is also possible
-                            expression.second = pymongo.objectid.ObjectId(expression.second)
+                            expression.second = ObjectId(expression.second)
                         except:
-                            raise SyntaxError, 'second argument must be of type bson.objectid.ObjectId or an objectid representable integer'
+                            raise SyntaxError, 'second argument must be of type ObjectId or an objectid representable integer'
                 elif expression.second == 0:
-                    expression.second = pymongo.objectid.ObjectId('000000000000000000000000')
+                    expression.second = ObjectId('000000000000000000000000')
                 return expression.op(expression.first, expression.second)
         if isinstance(expression, Field):
             if expression.type=='id':
@@ -4716,7 +4841,8 @@ class MongoDBAdapter(NoSQLAdapter):
             from pymongo.son import SON
 
         for key in set(attributes.keys())-set(('limitby','orderby')):
-            raise SyntaxError, 'invalid select attribute: %s' % key
+            if attributes[key]!=None:
+                raise SyntaxError, 'invalid select attribute: %s' % key
 
         new_fields=[]
         mongosort_list = []
@@ -4746,7 +4872,7 @@ class MongoDBAdapter(NoSQLAdapter):
         mongoqry_dict = {}
         for item in fields:
             if isinstance(item,SQLALL):
-                new_fields += item.table
+                new_fields += item._table
             else:
                 new_fields.append(item)
         fields = new_fields
@@ -4766,6 +4892,10 @@ class MongoDBAdapter(NoSQLAdapter):
     # need to define all the 'sql' methods gt,lt etc....
 
     def select(self,query,fields,attributes,count=False,snapshot=False):
+        try:
+            from pymongo.objectid import ObjectId
+        except ImportError:
+            from bson.objectid import ObjectId
         tablename, mongoqry_dict, mongofields_dict, \
         mongosort_list, limitby_limit, limitby_skip = \
             self._select(query,fields,attributes)
@@ -4790,7 +4920,7 @@ class MongoDBAdapter(NoSQLAdapter):
                 column = '_id' if colname=='id' else colname
                 if column in record:
                     if column == '_id' and isinstance(
-                        record[column],pymongo.objectid.ObjectId):
+                        record[column],ObjectId):
                         value = int(str(record[column]),16)
                     elif column != '_id':
                         value = record[column]
@@ -4943,13 +5073,7 @@ class MongoDBAdapter(NoSQLAdapter):
 
     def GT(self,first,second):
         print "in GT"
-        #import pymongo.objectid
         result = {}
-        #if expanded_first == '_id':
-            #if expanded_second != 0 and not isinstance(second,pymongo.objectid.ObjectId):
-                #raise SyntaxError, 'second argument must be of type bson.objectid.ObjectId'
-            #elif expanded_second == 0:
-                #expanded_second = pymongo.objectid.ObjectId('000000000000000000000000')
         result[self.expand(first)] = {'$gt': self.expand(second)}
         return result
 
@@ -5080,13 +5204,7 @@ class MongoDBAdapter(NoSQLAdapter):
 
     def GT(self,first,second):
         print "in GT"
-        #import pymongo.objectid
         result = {}
-        #if expanded_first == '_id':
-            #if expanded_second != 0 and not isinstance(second,pymongo.objectid.ObjectId):
-                #raise SyntaxError, 'second argument must be of type bson.objectid.ObjectId'
-            #elif expanded_second == 0:
-                #expanded_second = pymongo.objectid.ObjectId('000000000000000000000000')
         result[self.expand(first)] = {'$gt': self.expand(second)}
         return result
 
@@ -5164,7 +5282,7 @@ class IMAPAdapter(NoSQLAdapter):
 
     .define_tables() returns a dictionary mapping dal tablenames
     to the server mailbox names with the following structure:
-    
+
     {<tablename>: str <server mailbox name>}
 
     Here is a list of supported fields:
@@ -5332,7 +5450,7 @@ class IMAPAdapter(NoSQLAdapter):
                 self.imap4 = self.driver.IMAP4
             connection = self.imap4(driver_args["host"], driver_args["port"])
             data = connection.login(driver_args["user"], driver_args["password"])
-            
+
             # static mailbox list
             connection.mailbox_names = None
 
@@ -5547,7 +5665,7 @@ class IMAPAdapter(NoSQLAdapter):
                             Field("email", "string", writable=False, readable=False),
                             Field("attachments", "list:string", writable=False, readable=False),
                             )
-                            
+
         return self.connection.mailbox_names
 
     def create_table(self, *args, **kwargs):
@@ -5787,17 +5905,21 @@ class IMAPAdapter(NoSQLAdapter):
                         else:
                             unmark.append(flag)
 
-            result, data = self.connection.select(self.connection.mailbox_names[tablename])
+            result, data = self.connection.select(
+                self.connection.mailbox_names[tablename])
             string_query = "(%s)" % query
             result, data = self.connection.search(None, string_query)
-            store_list = [item.strip() for item in data[0].split() if item.strip().isdigit()]
+            store_list = [item.strip() for item in data[0].split()
+                          if item.strip().isdigit()]
             # change marked flags
             for number in store_list:
                 result = None
                 if len(mark) > 0:
-                    result, data = self.connection.store(number, "+FLAGS", "(%s)" % " ".join(mark))
+                    result, data = self.connection.store(
+                        number, "+FLAGS", "(%s)" % " ".join(mark))
                 if len(unmark) > 0:
-                    result, data = self.connection.store(number, "-FLAGS", "(%s)" % " ".join(unmark))
+                    result, data = self.connection.store(
+                        number, "-FLAGS", "(%s)" % " ".join(unmark))
                 if result == "OK":
                     rowcount += 1
         return rowcount
@@ -6104,7 +6226,15 @@ def sqlhtml_validators(field):
         def list_ref_repr(ids, row=None, r=referenced, f=ff):
             if not ids:
                 return None
-            refs = r._db(r._id.belongs(ids)).select(r._id)
+            refs = None
+            if isinstance(r._db._adapter, GoogleDatastoreAdapter):
+                for i in xrange(0, len(ids), 30):
+                    if not refs:
+                        refs = r._db(r._id.belongs(ids[i:i+30])).select(r._id)
+                    else:
+                        refs = refs & r._db(r._id.belongs(ids[i:i+30])).select(r._id)
+            else:
+                refs = r._db(r._id.belongs(ids)).select(r._id)
             return (refs and ', '.join(str(f(r,ref.id)) for ref in refs) or '')
         field.represent = field.represent or list_ref_repr
         if hasattr(referenced, '_format') and referenced._format:
@@ -6197,8 +6327,12 @@ class Row(dict):
     def __copy__(self):
         return Row(dict(self))
 
-    def as_dict(self,datetime_to_str=False):
-        SERIALIZABLE_TYPES = (str,unicode,int,long,float,bool,list)
+    def as_dict(self, datetime_to_str=False, custom_types=None):
+        SERIALIZABLE_TYPES = [str, unicode, int, long, float, bool, list, dict]
+        if isinstance(custom_types,(list,tuple,set)):
+            SERIALIZABLE_TYPES += custom_types
+        elif custom_types:
+            SERIALIZABLE_TYPES.append(custom_types)
         d = dict(self)
         for k in copy.copy(d.keys()):
             v=d[k]
@@ -6213,7 +6347,7 @@ class Row(dict):
             elif isinstance(v, (datetime.date, datetime.datetime, datetime.time)):
                 if datetime_to_str:
                     d[k] = v.isoformat().replace('T',' ')[:19]
-            elif not isinstance(v,SERIALIZABLE_TYPES):
+            elif not isinstance(v,tuple(SERIALIZABLE_TYPES)):
                 del d[k]
         return d
 
@@ -6228,7 +6362,7 @@ copy_reg.pickle(Row, Row_pickler, Row_unpickler)
 
 
 ################################################################################
-# Everything below should be independent of the specifics of the database 
+# Everything below should be independent of the specifics of the database
 # and should work for RDBMs and some NoSQL databases
 ################################################################################
 
@@ -6322,7 +6456,7 @@ def smart_query(fields,text):
                 value = constants[item[1:]]
             else:
                 value = item
-                if field.type in ('text','string'): 
+                if field.type in ('text','string'):
                     if op == '=': op = 'like'
             if op == '=': new_query = field==value
             elif op == '<': new_query = field<value
@@ -6413,7 +6547,7 @@ class DAL(dict):
                  migrate_enabled=True, fake_migrate_all=False,
                  decode_credentials=False, driver_args=None,
                  adapter_args=None, attempts=5, auto_import=False,
-                 bigint_id=False,debug=False):
+                 bigint_id=False,debug=False,lazy_tables=False):
         """
         Creates a new Database Abstraction Layer instance.
 
@@ -6458,6 +6592,8 @@ class DAL(dict):
         self._bigint_id = bigint_id
         self._debug = debug
         self._migrated = []
+        self._LAZY_TABLES = {}
+        self._lazy_tables = lazy_tables
         if not str(attempts).isdigit() or attempts < 0:
             attempts = 5
         if uri:
@@ -6643,7 +6779,7 @@ def index():
                         patterns += auto_table(rtable,base=tag,depth=depth-1)
             return patterns
 
-        if patterns=='auto':
+        if patterns==DEFAULT:
             patterns=[]
             for table in db.tables:
                 if not table.startswith('auth_'):
@@ -6783,94 +6919,76 @@ def index():
                                 'pattern':pattern,'count':count})
         return Row({'status':400,'error':'no matching pattern','response':None})
 
-
     def define_table(
         self,
         tablename,
         *fields,
         **args
-        ):
-
-        for key in args:
-            if key not in [
-                    'migrate',
-                    'primarykey',
-                    'fake_migrate',
-                    'format',
-                    'singular',
-                    'plural',
-                    'trigger_name',
-                    'sequence_name',
-                    'common_filter',
-                    'polymodel',
-                    'table_class']:
-                raise SyntaxError, 'invalid table "%s" attribute: %s' \
-                    % (tablename, key)
+        ):       
         if not isinstance(tablename,str):
             raise SyntaxError, "missing table name"
-        tablename = cleanup(tablename)
-        migrate = self._migrate_enabled and args.get('migrate',
-                                                     self._migrate)
-        fake_migrate = self._fake_migrate_all or args.get('fake_migrate',
-                                                          self._fake_migrate)
-        table_class = args.get('table_class',Table)
-        format = args.get('format',None)
-        trigger_name = args.get('trigger_name', None)
-        sequence_name = args.get('sequence_name', None)
-        primarykey =args.get('primarykey',None)
-        polymodel = args.get('polymodel',None)
-        singular = args.get('singular',tablename.replace('_',' ').capitalize())
-        plural = args.get('plural',pluralize(singular.lower()).capitalize())
-        lowertablename = tablename.lower()
-
-        if tablename.startswith('_') or hasattr(self,lowertablename) or \
+        elif tablename.startswith('_') or hasattr(self,tablename) or \
                 regex_python_keywords.match(tablename):
             raise SyntaxError, 'invalid table name: %s' % tablename
-        elif lowertablename in self.tables:
+        elif tablename in self.tables:
             raise SyntaxError, 'table already defined: %s' % tablename
         elif self.check_reserved:
             self.check_reserved_keyword(tablename)
+        else:
+            invalid_args = [key for key in args if not key in TABLE_ARGS]
+            if invalid_args:
+                raise SyntaxError, 'invalid table "%s" attributes: %s' \
+                    % (tablename,invalid_args)         
+        if self._lazy_tables and not tablename in self._LAZY_TABLES:
+            self._LAZY_TABLES[tablename] = (tablename,fields,args)
+            table = None
+        else:
+            table = self.lazy_define_table(tablename,*fields,**args)
+        self.tables.append(tablename)
+        return table
 
+    def lazy_define_table(
+        self,
+        tablename,
+        *fields,
+        **args
+        ):
         if self._common_fields:
-            fields = [f for f in fields] + [f for f in self._common_fields]
+            fields = list(fields) + list(self._common_fields)
 
-        common_filter = args.get('common_filter', None)
+        table_class = args.get('table_class',Table)
+        table = table_class(self, tablename, *fields, **args)
+        table._actual = True
+        self[tablename] = table
+        table._create_references() # must follow above line to handle self references
 
-        t = self[tablename] = table_class(self, tablename, *fields,
-                                          **dict(primarykey=primarykey,
-                                                 trigger_name=trigger_name,
-                                                 sequence_name=sequence_name,
-                                                 common_filter=common_filter))
-
-        # db magic
-        if self._uri in (None,'None'):
-            return t
-
-        t._create_references()
-
-        if migrate or self._adapter.dbengine=='google:datastore':
+        migrate = self._migrate_enabled and args.get('migrate',self._migrate)
+        if migrate and not self._uri in (None,'None') \
+                or self._adapter.dbengine=='google:datastore':
+            fake_migrate = self._fake_migrate_all or \
+                args.get('fake_migrate',self._fake_migrate)
+            polymodel = args.get('polymodel',None)
             try:
                 sql_locker.acquire()
-                self._adapter.create_table(t,migrate=migrate,
+                self._adapter.create_table(table,migrate=migrate,
                                            fake_migrate=fake_migrate,
                                            polymodel=polymodel)
             finally:
                 sql_locker.release()
         else:
-            t._dbt = None
-        self.tables.append(tablename)
-        t._format = format
-        t._singular = singular
-        t._plural = plural
-        t._actual = True
-        return t
+            table._dbt = None
+        return table
 
     def __iter__(self):
         for tablename in self.tables:
             yield self[tablename]
 
     def __getitem__(self, key):
-        return dict.__getitem__(self, str(key))
+        key = str(key)
+        if not key is '_LAZY_TABLES' and key in self._LAZY_TABLES:
+            tablename, fields, args = self._LAZY_TABLES.pop(key)
+            return self.lazy_define_table(tablename,*fields,**args)
+        return dict.__getitem__(self, key)
 
     def __setitem__(self, key, value):
         dict.__setitem__(self, str(key), value)
@@ -7000,10 +7118,10 @@ class SQLALL(object):
     """
 
     def __init__(self, table):
-        self.table = table
+        self._table = table
 
     def __str__(self):
-        return ', '.join([str(field) for field in self.table])
+        return ', '.join([str(field) for field in self._table])
 
 
 class Reference(int):
@@ -7092,6 +7210,14 @@ class Table(dict):
         self._trigger_name = args.get('trigger_name',None) or \
             db and db._adapter.trigger_name(tablename)
         self._common_filter = args.get('common_filter', None)
+        self._format = args.get('format',None)
+        self._singular = args.get(
+            'singular',tablename.replace('_',' ').capitalize())
+        self._plural = args.get(
+            'plural',pluralize(self._singular.lower()).capitalize())
+        # horrible but for backard compatibility of appamdin:
+        if 'primarykey' in args and args['primarykey']:
+            self._primarykey = args.get('primarykey', None)
 
         self._before_insert = []
         self._before_update = [lambda self,fs:self.delete_uploaded_files(fs)]
@@ -7100,25 +7226,23 @@ class Table(dict):
         self._after_update = []
         self._after_delete = []
 
-        primarykey = args.get('primarykey', None)
         fieldnames,newfields=set(),[]
-        if primarykey:
-            if not isinstance(primarykey,list):
+        if hasattr(self,'_primarykey'):
+            if not isinstance(self._primarykey,list):
                 raise SyntaxError, \
                     "primarykey must be a list of fields from table '%s'" \
                     % tablename
-            self._primarykey = primarykey
+            if len(self._primarykey)==1:
+                self._id = [f for f in fields if isinstance(f,Field) \
+                                and f.name==self._primarykey[0]][0]
         elif not [f for f in fields if isinstance(f,Field) and f.type=='id']:
             field = Field('id', 'id')
             newfields.append(field)
             fieldnames.add('id')
             self._id = field
         for field in fields:
-            if not isinstance(field, (Field, Table)):
-                raise SyntaxError, \
-                    'define_table argument is not a Field or Table: %s' % field
-            elif isinstance(field, Field) and not field.name in fieldnames:
-                if hasattr(field, '_db'):
+            if isinstance(field, Field) and not field.name in fieldnames:
+                if field.db is not None:
                     field = copy.copy(field)
                 newfields.append(field)
                 fieldnames.add(field.name)
@@ -7128,15 +7252,13 @@ class Table(dict):
                 table = field
                 for field in table:
                     if not field.name in fieldnames and not field.type=='id':
-                        field = copy.copy(field)
-                        # correct self references
-                        if not table._actual and field.type == 'reference '+table._tablename:
-                            field.type = 'reference '+self._tablename
+                        t2 = not table._actual and self._tablename
+                        field = field.clone(point_self_references_to=t2)
                         newfields.append(field)
                         fieldnames.add(field.name)
-            else:
-                # let's ignore new fields with duplicated names!!!
-                pass
+            elif not isinstance(field, (Field, Table)):
+                raise SyntaxError, \
+                    'define_table argument is not a Field or Table: %s' % field
         fields = newfields
         self._db = db
         tablename = tablename
@@ -7177,7 +7299,7 @@ class Table(dict):
             if self._db and not field.type in ('text','blob') and \
                     self._db._adapter.maxcharlength < field.length:
                 field.length = self._db._adapter.maxcharlength
-            if field.requires is DEFAULT:
+            if field.requires == DEFAULT:
                 field.requires = sqlhtml_validators(field)
         self.ALL = SQLALL(self)
 
@@ -7202,16 +7324,18 @@ class Table(dict):
                                   current_record = 'current_record',
                                   is_active = 'is_active'):
         archive_db = archive_db or self._db
-        fieldnames = self.fields()
         archive_name = archive_name % dict(tablename=self._tablename)
+        if archive_name in archive_db.tables():
+            return # do not try define the archive if already exists
+        fieldnames = self.fields()
         field_type = self if archive_db is self._db else 'bigint'
-        archive_table = archive_db.define_table(
+        archive_db.define_table(
             archive_name,
             Field(current_record,field_type),
-            self)
+            *[field.clone(unique=False) for field in self])
         self._before_update.append(
-            lambda qset,fs,at=archive_table,cn=current_record:
-                archive_record(qset,fs,at,cn))
+            lambda qset,fs,db=archive_db,an=archive_name,cn=current_record:
+                archive_record(qset,fs,db[an],cn))
         if is_active and is_active in fieldnames:
             self._before_delete.append(
                 lambda qset: qset.update(is_active=False))
@@ -7397,7 +7521,10 @@ class Table(dict):
                     new_fields.append((ofield,ofield.update))
         for ofield in self:
             if ofield.compute:
-                new_fields.append((ofield,ofield.compute(Row(fields))))
+                try:
+                    new_fields.append((ofield,ofield.compute(Row(fields))))
+                except KeyError:
+                    pass
             if not update and ofield.required and not ofield.name in new_fields_names:
                 raise SyntaxError,'Table: missing required field: %s' % ofield.name
         return new_fields
@@ -7422,7 +7549,9 @@ class Table(dict):
         self._attempt_upload(fields)
         if any(f(fields) for f in self._before_insert): return 0
         ret =  self._db._adapter.insert(self,self._listify(fields))
-        ret and [f(fields,ret) for f in self._after_insert]
+        if ret and self._after_insert:
+            fields = Row(fields)
+            [f(fields,ret) for f in self._after_insert]
         return ret
 
     def validate_and_insert(self,**fields):
@@ -7444,6 +7573,8 @@ class Table(dict):
     def update_or_insert(self, _key=DEFAULT, **values):
         if _key is DEFAULT:
             record = self(**values)
+        elif isinstance(_key,dict):
+            record = self(**_key)
         else:
             record = self(_key)
         if record:
@@ -7475,24 +7606,24 @@ class Table(dict):
         id_map=None,
         null='<NULL>',
         unique='uuid',
-        id_offset={}, # id_offset only used when id_map is None
+        id_offset=None, # id_offset used only when id_map is None
         *args, **kwargs
         ):
         """
-        import records from csv file. Column headers must have same names as
-        table fields. field 'id' is ignored. If column names read 'table.file'
-        the 'table.' prefix is ignored.
+        Import records from csv file.
+        Column headers must have same names as table fields.
+        Field 'id' is ignored.
+        If column names read 'table.file' the 'table.' prefix is ignored.
         'unique' argument is a field which must be unique
-        (typically a uuid field)
-        'restore' argument is default False.
-        If set True will remove old values
-        in table first.
-        'id_map' If set to None will not map id.
-        The import will keep the id numbers in the restored table. 
+            (typically a uuid field)
+        'restore' argument is default False;
+            if set True will remove old values in table first.
+        'id_map' ff set to None will not map ids.
+        The import will keep the id numbers in the restored table.
         This assumes that there is an field of type id that
-        is integer and in incrementing order. 
+        is integer and in incrementing order.
         Will keep the id numbers in restored table.
-      """
+        """
 
         delimiter = kwargs.get('delimiter', ',')
         quotechar = kwargs.get('quotechar', '"')
@@ -7552,12 +7683,13 @@ class Table(dict):
                 return False
 
         first = True
+        unique_idx = None
         for line in reader:
             if not line:
                 break
             if not colnames:
                 colnames = [x.split('.',1)[-1] for x in line][:len(line)]
-                cols, cid = [], []
+                cols, cid = [], None
                 for i,colname in enumerate(colnames):
                     if is_id(colname):
                         cid = i
@@ -7568,30 +7700,26 @@ class Table(dict):
             else:
                 items = [fix(self[colnames[i]], line[i], id_map, id_offset) \
                              for i in cols if colnames[i] in self.fields]
-                if not id_map and cid:
+
+                if not id_map and cid is not None and id_offset is not None and not unique_idx:
                     csv_id = int(line[cid])
                     curr_id = self.insert(**dict(items))
-                    del_id = curr_id
                     if first:
                         first = False
-                        # First curr_id is bigger than csv_id, 
+                        # First curr_id is bigger than csv_id,
                         # then we are not restoring but
                         # extending db table with csv db table
                         if curr_id>csv_id:
                             id_offset[self._tablename] = curr_id-csv_id
                         else:
                             id_offset[self._tablename] = 0
-                    # create new id until we get the same as old_id
+                    # create new id until we get the same as old_id+offset
                     while curr_id<csv_id+id_offset[self._tablename]:
+                        self._db(self._db[self][colnames[cid]] == curr_id).delete()
                         curr_id = self.insert(**dict(items))
-                    # remove ids that are not used
-                    while del_id<csv_id:
-                        query = self._db[self][colnames[cid]] == del_id
-                        self._db(query).delete()
-                        del_id += 1
                 # Validation. Check for duplicate of 'unique' &,
                 # if present, update instead of insert.
-                elif not unique or unique not in colnames:
+                elif not unique_idx:
                     new_id = self.insert(**dict(items))
                 else:
                     unique_value = line[unique_idx]
@@ -7602,7 +7730,7 @@ class Table(dict):
                         new_id = record[self._id.name]
                     else:
                         new_id = self.insert(**dict(items))
-                if id_map and cid != []:
+                if id_map and cid is not None:
                     id_map_self[int(line[cid])] = new_id
 
     def with_alias(self, alias):
@@ -7908,6 +8036,9 @@ class FieldLazy(object):
         self.handler = handler
 
 
+def list_represent(x,r=None):
+    return ', '.join(str(y) for y in x or [])
+
 class Field(Expression):
 
     Virtual = FieldVirtual
@@ -7960,7 +8091,7 @@ class Field(Expression):
         unique=False,
         uploadfield=True,
         widget=None,
-        label=DEFAULT,
+        label=None,
         comment=None,
         writable=True,
         readable=True,
@@ -7980,24 +8111,17 @@ class Field(Expression):
         filter_out = None,
         custom_qualifier = None,
         ):
-        self.db = None
+        self._db = self.db = None # both for backward compatibility
         self.op = None
         self.first = None
         self.second = None
-        if not isinstance(fieldname,str):
-            raise SyntaxError, "missing field name"
         self.name = fieldname = cleanup(fieldname)
-        if hasattr(Table,fieldname) or fieldname[0] == '_' or \
-                regex_python_keywords.match(fieldname):
+        if not isinstance(fieldname,str) or hasattr(Table,fieldname) or \
+                fieldname[0] == '_' or regex_python_keywords.match(fieldname):
             raise SyntaxError, 'Field: invalid field name: %s' % fieldname
-        if isinstance(type, Table):
-            type = 'reference ' + type._tablename
-        self.type = type  # 'string', 'integer'
-        self.length = (length is None) and DEFAULTLENGTH.get(type,512) or length
-        if default is DEFAULT:
-            self.default = update or None
-        else:
-            self.default = default
+        self.type = type if not isinstance(type, Table) else 'reference %s' % type
+        self.length = length if not length is None else DEFAULTLENGTH.get(self.type,512)
+        self.default = default if default!=DEFAULT else (update or None)
         self.required = required  # is this field required
         self.ondelete = ondelete.upper()  # this is for reference fields only
         self.notnull = notnull
@@ -8007,19 +8131,14 @@ class Field(Expression):
         self.uploadseparate = uploadseparate
         self.uploadfs = uploadfs
         self.widget = widget
-        if label is DEFAULT:
-            self.label = fieldname.replace('_', ' ').title()
-        else:
-            self.label = label or ''
         self.comment = comment
         self.writable = writable
         self.readable = readable
         self.update = update
         self.authorize = authorize
         self.autodelete = autodelete
-        if not represent and type in ('list:integer','list:string'):
-            represent=lambda x,r=None: ', '.join(str(y) for y in x or [])
-        self.represent = represent
+        self.represent = list_represent if \
+            represent==None and type in ('list:integer','list:string') else represent
         self.compute = compute
         self.isattachment = True
         self.custom_store = custom_store
@@ -8029,12 +8148,16 @@ class Field(Expression):
         self.filter_in = filter_in
         self.filter_out = filter_out
         self.custom_qualifier = custom_qualifier
-        if self.label is None:
-            self.label = fieldname.replace('_',' ').title()
-        if requires is None:
-            self.requires = []
-        else:
-            self.requires = requires
+        self.label = label if label!=None else fieldname.replace('_',' ').title()
+        self.requires = requires if requires!=None else []
+
+    def clone(self,point_self_references_to=False,**args):
+        field = copy.copy(self)
+        if point_self_references_to and \
+                field.type == 'reference %s'+field._tablename:
+            field.type = 'reference %s' % point_self_references_to
+        field.__dict__.update(args)
+        return field
 
     def store(self, file, filename=None, path=None):
         if self.custom_store:
@@ -8175,8 +8298,8 @@ class Field(Expression):
                 return (value, error)
         return (value, None)
 
-    def count(self, expression=None):
-        return Expression(self.db, self.db._adapter.COUNT, self, expression, self.type)
+    def count(self, distinct=None):
+        return Expression(self.db, self.db._adapter.COUNT, self, distinct, 'integer')
 
     def __nonzero__(self):
         return True
@@ -8310,6 +8433,8 @@ class Set(object):
         return self.db._adapter.count(self.query,distinct)
 
     def select(self, *fields, **attributes):
+        if self.query is None:# and fields[0]._table._common_filter != None:
+            return self(fields[0]._table).select(*fields,**attributes)
         adapter = self.db._adapter
         fields = adapter.expand_all(fields, adapter.tables(self.query))
         return adapter.select(self.query,fields,attributes)
@@ -8412,7 +8537,7 @@ def update_record(pack, a=None):
     (colset, table, id) = pack
     b = a or dict(colset)
     c = dict([(k,v) for (k,v) in b.items() if k in table.fields and table[k].type!='id'])
-    table._db(table._id==id).update(**c)
+    table._db(table._id==id,ignore_common_filters=True).update(**c)
     for (k, v) in c.items():
         colset[k] = v
 
@@ -8583,7 +8708,10 @@ class Rows(object):
         """
         returns a list of sorted elements (not sorted in place)
         """
-        return Rows(self.db,sorted(self,key=f,reverse=reverse),self.colnames)
+        rows = Rows(self.db,[],self.colnames,compact=False)
+        rows.records = sorted(self,key=f,reverse=reverse)
+        return rows
+
 
     def group_by_value(self, field):
         """
@@ -8605,7 +8733,8 @@ class Rows(object):
     def as_list(self,
                 compact=True,
                 storage_to_dict=True,
-                datetime_to_str=True):
+                datetime_to_str=True,
+                custom_types=None):
         """
         returns the data as a list or dictionary.
         :param storage_to_dict: when True returns a dict, otherwise a list(default True)
@@ -8613,7 +8742,7 @@ class Rows(object):
         """
         (oc, self.compact) = (self.compact, compact)
         if storage_to_dict:
-            items = [item.as_dict(datetime_to_str) for item in self]
+            items = [item.as_dict(datetime_to_str, custom_types) for item in self]
         else:
             items = [item for item in self]
         self.compact = compact
@@ -8624,7 +8753,8 @@ class Rows(object):
                 key='id',
                 compact=True,
                 storage_to_dict=True,
-                datetime_to_str=True):
+                datetime_to_str=True,
+                custom_types=None):
         """
         returns the data as a dictionary of dictionaries (storage_to_dict=True) or records (False)
 
@@ -8633,7 +8763,7 @@ class Rows(object):
         :param storage_to_dict: when True returns a dict, otherwise a list(default True)
         :param datetime_to_str: convert datetime fields as strings (default True)
         """
-        rows = self.as_list(compact, storage_to_dict, datetime_to_str)
+        rows = self.as_list(compact, storage_to_dict, datetime_to_str, custom_types)
         if isinstance(key,str) and key.count('.')==1:
             (table, field) = key.split('.')
             return dict([(r[table][field],r) for r in rows])
@@ -8977,6 +9107,7 @@ DAL.Table = Table  # was necessary in gluon/globals.py session.connect
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

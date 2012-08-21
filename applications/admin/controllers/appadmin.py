@@ -199,17 +199,8 @@ def select():
                 _class='delete', _type='checkbox', value=False), ''),
                 TR('', '', INPUT(_type='submit', _value=T('submit')))),
                 _action=URL(r=request,args=request.args))
-    if request.vars.csvfile != None:
-        try:
-            import_csv(db[request.vars.table],
-                       request.vars.csvfile.file)
-            response.flash = T('data uploaded')
-        except Exception, e:
-            response.flash = DIV(T('unable to parse csv file'),PRE(str(e)))
     if form.accepts(request.vars, formname=None):
-#         regex = re.compile(request.args[0] + '\.(?P<table>\w+)\.id\>0')
         regex = re.compile(request.args[0] + '\.(?P<table>\w+)\..+')
-
         match = regex.match(form.vars.query.strip())
         if match:
             table = match.group('table')
@@ -218,10 +209,10 @@ def select():
             if form.vars.update_check and form.vars.update_fields:
                 db(query).update(**eval_in_global_env('dict(%s)'
                                   % form.vars.update_fields))
-                response.flash = T('%s rows updated', nrows)
+                response.flash = T('%s %%{row} updated', nrows)
             elif form.vars.delete_check:
                 db(query).delete()
-                response.flash = T('%s rows deleted', nrows)
+                response.flash = T('%s %%{row} deleted', nrows)
             nrows = db(query).count()
             if orderby:
                 rows = db(query,ignore_common_filters=True).select(limitby=(start, stop), orderby=eval_in_global_env(orderby))
@@ -230,6 +221,24 @@ def select():
         except Exception, e:
             (rows, nrows) = ([], 0)
             response.flash = DIV(T('Invalid Query'),PRE(str(e)))
+    # begin handle upload csv
+    csv_table = table or request.vars.table
+    if csv_table:
+        formcsv = FORM(str(T('or import from csv file'))+" ",
+                       INPUT(_type='file',_name='csvfile'),
+                       INPUT(_type='hidden',_value=csv_table,_name='table'),
+                       INPUT(_type='submit',_value=T('import')))
+    else:
+        formcsv = None
+    if formcsv and formcsv.process().accepted:
+        try:
+            import_csv(db[request.vars.table],
+                       request.vars.csvfile.file)
+            response.flash = T('data uploaded')
+        except Exception, e:
+            response.flash = DIV(T('unable to parse csv file'),PRE(str(e)))
+    # end handle upload csv
+
     return dict(
         form=form,
         table=table,
@@ -238,6 +247,7 @@ def select():
         nrows=nrows,
         rows=rows,
         query=request.vars.query,
+        formcsv = formcsv,
         )
 
 

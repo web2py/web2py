@@ -61,7 +61,7 @@ def exec_environment(
             appname = mo.group('appname')
             request.folder = os.path.join('applications', appname)
         else:
-            request.folder = ''    
+            request.folder = ''
     env = build_environment(request, response, session, store_current=False)
     if pyfile:
         pycfile = pyfile + 'c'
@@ -123,7 +123,7 @@ def env(
         return True
 
     fileutils.check_credentials = check_credentials
-    
+
     environment = build_environment(request, response, session)
 
     if import_models:
@@ -172,8 +172,13 @@ def run(
         die(errmsg)
     adir = os.path.join('applications', a)
     if not os.path.exists(adir):
-        if raw_input('application %s does not exist, create (y/n)?'
-                      % a).lower() in ['y', 'yes']:
+        if sys.stdin and not sys.stdin.name == '/dev/null':
+            c = raw_input('application %s does not exist, create (y/n)?' % a)
+        else:
+            logging.warn('application does not exist and will not be created')
+            return
+        if c.lower() in ['y', 'yes']:
+
             os.mkdir(adir)
             w2p_unpack('welcome.w2p', adir)
             for subfolder in ['models','views','controllers', 'databases',
@@ -205,9 +210,6 @@ def run(
     if f:
         exec ('print %s()' % f, _env)
         return
-
-    # "woodoo magic" workaround: reinitialize main.py
-    g={}; exec "import main" in g; del g
 
     _env.update(exec_pythonrc())
     if startfile:
@@ -423,6 +425,7 @@ def execute_from_command_line(argv=None):
 
 if __name__ == '__main__':
     execute_from_command_line()
+
 
 
 

@@ -3,7 +3,7 @@
 
 """
     BrowserID Authentication for web2py
-    developed by Madhukar R Pai (Copyright © 2011)
+    developed by Madhukar R Pai (Copyright 2012)
     Email <madspai@gmail.com>
     License : LGPL
     

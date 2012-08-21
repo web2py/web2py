@@ -1,17 +1,21 @@
 body {
-  padding-top: 90px; /* container go all the way to the bottom of the topbar */
-  height:auto; /*to avoid vertical scroll bar*/
+  padding-top: 60px;
 }
 
-h1,h2,h3,h4,h5,h6 {font-family: inherit;}
+#navbar .auth_navbar, #navbar .auth_navbar a {color:inherit;}
 
-li {margin-bottom: 0;} /*bootswatch*/
+/* bootstrap dropdown */
 
-.auth_navbar, .navbar .btn-group{padding:0;}
+.dropdown-menu ul {
+    left: 100%;
+    position: absolute;
+    top: 0;
+    visibility: hidden;
+    margin-top: -1px;
+}
 
-@media only screen and (max-width: 320px) {
-  .navbar-inner{position:relative;}
-  #navbar{float:none;position:absolute;bottom:-10px;left:4px;}
+.dropdown-menu li:hover ul {
+    visibility: visible;
 }
 
 .mastheader h1 {
@@ -29,20 +33,6 @@ li {margin-bottom: 0;} /*bootswatch*/
 .mastheader small {
   font-size: 20px;
   font-weight: 300;
-}
-
-/* bootstrap dropdown */
-
-.dropdown-menu ul {
-    left: 100%;
-    position: absolute;
-    top: 0;
-    visibility: hidden;
-    margin-top: -1px;
-}
-
-.dropdown-menu li:hover ul {
-    visibility: visible;
 }
 
 .navbar .dropdown-menu ul:before {
@@ -85,14 +75,56 @@ li {margin-bottom: 0;} /*bootswatch*/
 }
 
 .open > .dropdown-menu  ul { /* fix menu issue when BS2.0.4 is applied */ 
-	display: block; 
+  display: block; 
 }
 
-#navbar{padding-top:9px;}
-#navbar .auth_navbar, #navbar .auth_navbar a {color:inherit;}
 .ie-lte7 #navbar .auth_navbar, #navbar .auth_navbar a {color:expression(this.parentNode.currentStyle['color']); /* ie7 doesn't support inherit */}
 
 #navbar .auth_navbar a:hover {color:white;text-decoration:none;} /* this overwrite bootswatch */
 
+body {
+  height:auto; /*to avoid vertical scroll bar*/
+}
+
+h1,h2,h3,h4,h5,h6 {font-family: inherit;}
+
+li {margin-bottom: 0;} /*bootswatch*/
+
+.auth_navbar, .navbar .btn-group { padding:0; }
+
 [class^="icon-"],[class*=" icon-"]{background-image:url("../images/glyphicons-halflings.png")} /* right folder for bootstrap black images/icons */
 .icon-white{background-image:url("../images/glyphicons-halflings-white.png");} /* right folder for bootstrap white images/icons */
+
+@media only screen and (max-width: 979px) {
+  body {
+  padding-top: 0px;
+  }
+  
+  .navbar-inner{position:relative;}
+  #navbar{bottom:-10px;left:4px;}
+  
+  div.flash {
+    right: 5px;
+  }
+  
+  .dropdown-menu ul {
+    visibility: visible;
+  }
+ 
+}
+
+@media only screen and (max-width: 479px) {
+  body {
+  padding-left: 10px;
+    padding-right: 10px;
+  }
+  
+  .navbar-fixed-top, .navbar-fixed-bottom {
+    margin-left: -10px;
+    margin-right: -10px;
+  }  
+  
+  input[type="text"], input[type="password"], select {
+    width: 95%;
+  }
+}

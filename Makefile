@@ -43,11 +43,11 @@ src:
 	rm -f applications/admin/uploads/*                 
 	rm -f applications/welcome/uploads/*               
 	rm -f applications/examples/uploads/*             
-	### make admin layout and appadmin the default
-	cp applications/admin/views/appadmin.html applications/welcome/views
-	cp applications/admin/views/appadmin.html applications/examples/views
-	cp applications/admin/controllers/appadmin.py applications/welcome/controllers
-	cp applications/admin/controllers/appadmin.py applications/examples/controllers	
+	### make welcome layout and appadmin the default
+	cp applications/welcome/views/appadmin.html applications/admin/views
+	cp applications/welcome/views/appadmin.html applications/examples/views
+	cp applications/welcome/controllers/appadmin.py applications/admin/controllers
+	cp applications/welcome/controllers/appadmin.py applications/examples/controllers	
 	### build web2py_src.zip
 	echo '' > NEWINSTALL
 	mv web2py_src.zip web2py_src_old.zip | echo 'no old'
@@ -62,8 +62,8 @@ app:
 	echo 'did you uncomment import_all in gluon/main.py?'
 	python2.5 -c 'import compileall; compileall.compile_dir("gluon/")'
 	#python web2py.py -S welcome -R __exit__.py
+	#cd ../web2py_osx/site-packages/; unzip ../site-packages.zip
 	find gluon -path '*.pyc' -exec cp {} ../web2py_osx/site-packages/{} \;
-	cd ../web2py_osx/site-packages/; unzip ../site-packages.zip
 	cd ../web2py_osx/site-packages/; zip -r ../site-packages.zip *
 	mv ../web2py_osx/site-packages.zip ../web2py_osx/web2py/web2py.app/Contents/Resources/lib/python2.5
 	cp README.markdown ../web2py_osx/web2py/web2py.app/Contents/Resources
@@ -85,9 +85,9 @@ app:
 	mv ../web2py_osx/web2py_osx.zip .
 win:
 	echo 'did you uncomment import_all in gluon/main.py?'
-	python2.5 -c 'import compileall; compileall.compile_dir("gluon/")'
+	python2.7 -c 'import compileall; compileall.compile_dir("gluon/")'
+	#cd ../web2py_win/library/; unzip ../library.zip
 	find gluon -path '*.pyc' -exec cp {} ../web2py_win/library/{} \;
-	cd ../web2py_win/library/; unzip ../library.zip
 	cd ../web2py_win/library/; zip -r ../library.zip *
 	mv ../web2py_win/library.zip ../web2py_win/web2py
 	cp README.markdown ../web2py_win/web2py/
@@ -114,12 +114,12 @@ pip:
 run:
 	python2.5 web2py.py -a hello
 commit:
+	python web2py.py --run_system_tests
 	make src
 	echo '' > NEWINSTALL
 	hg commit -m "$(S)"
 	#bzr commit -m "$(S)"
 	git commit -a -m "$(S)"
-	python web2py.py --run_system_tests
 push:
 	hg push
 	git push

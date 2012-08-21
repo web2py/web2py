@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from distutils.core import setup
+from setuptools import setup
 from gluon.fileutils import tar, untar, read_file, write_file
 import tarfile
 import sys
@@ -77,6 +77,7 @@ if __name__ == '__main__':
     #s = raw_input('>')
     #if s.lower()[:1]=='y':
     start()
+
 
 
 

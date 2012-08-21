@@ -29,11 +29,10 @@
 	device-width: Occupy full width of the screen in its current orientation
 	initial-scale = 1.0 retains dimensions instead of zooming out if page height > device height
 	user-scalable = yes allows the user to zoom in -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <!-- Place favicon.ico and apple-touch-icon.png in the root of your domain and delete these references -->
-  <link rel="shortcut icon" href="{{=URL('static','favicon.ico')}}" type="image/x-icon">
-  <link rel="apple-touch-icon" href="{{=URL('static','favicon.png')}}">
+  <link rel="shortcut icon" href="{{=URL('static','images/favicon.ico')}}" type="image/x-icon">
+  <link rel="apple-touch-icon" href="{{=URL('static','images/favicon.png')}}">
   
   <!-- All JavaScript at the bottom, except for Modernizr which enables 
        HTML5 elements & feature detects -->
@@ -46,6 +45,10 @@
   response.files.append(URL('static','css/web2py.css'))
   response.files.append(URL('static','css/bootswatch.css'))
   }}
+  <!-- Makes bootswatch working on IE 7/8 -->
+  <!--[if (lt IE 9)]>
+  <link rel="stylesheet" href="{{=URL('static','css/bootswatch_ie.css')}}">
+  <![endif]-->
 
   {{include 'web2py_ajax.html'}}
   
@@ -61,18 +64,6 @@
        <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/themes/base/jquery-ui.css" type="text/css" media="all" />
        <script src="http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.16/jquery-ui.min.js" type="text/javascript"></script>
        uncomment to load jquery-ui //-->
-  <script>
-    jQuery(function(){
-      jQuery('.nav>li>a').each(function(){	        
-        if(jQuery(this).parent().find('ul').length)
-          jQuery(this).attr({'class':'dropdown-toggle','data-toggle':'dropdown'}).append('<b class="caret"></b>');
-      });
-      jQuery('.nav li li').each(function(){	        
-        if(jQuery(this).find('ul').length)
-          jQuery(this).children('a').contents().before('<i class="chevron-right"></i>'); 
-      });
-    });
-  </script>
   <noscript><link href="{{=URL('static', 'css/bootswatch_nojs.css')}}" rel="stylesheet" type="text/css" /></noscript>
   {{block head}}{{end}}
 </head>
@@ -82,13 +73,14 @@
   <div class="navbar navbar-fixed-top">
     <div class="navbar-inner">
       <div class="container">
+	<!-- the next tag is necessary for bootstrap menus, do not remove -->
 	<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-	  <span class="icon-bar"></span>
-	  <span class="icon-bar"></span>
-	  <span class="icon-bar"></span>
-	</a>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+          <span class="icon-bar"></span>
+        </a>
 	<a class="brand" href="#">web2py&trade;&nbsp;</a>
-	<div id="navbar">{{='auth' in globals() and auth.navbar(separators=(' ',' | ','')) or ''}}</div>
+	<div id="navbar">{{='auth' in globals() and auth.navbar() or ''}}</div>
 	<div class="nav-collapse">
 	  {{is_mobile=request.user_agent().is_mobile}}
 	  {{if response.menu:}}
@@ -99,9 +91,9 @@
     </div>
   </div><!--/top navbar -->
   
-  <div class="flash">{{=response.flash or ''}}</div>
-
   <div class="container">
+    <div class="flash">{{=response.flash or ''}}</div>
+
     <!-- Masthead ================================================== -->
     <header class="mastheader" id="header">
       <div class="page-header">
@@ -144,7 +136,7 @@
     <footer class="footer">
       {{block footer}} <!-- this is default footer -->
       <div class="footer-content">
-	<div class="copyright pull-left">{{=T('Copyright')}} &#169; 2011</div>
+	<div class="copyright pull-left">{{=T('Copyright')}} &#169; {{=request.now.year}}</div>
 	<div id="poweredBy" class="pull-right">
 	  {{=T('Powered by')}}
 	  <a href="http://www.web2py.com/">web2py</a>
@@ -155,10 +147,31 @@
     
   </div> <!-- /container -->
   
-  <!-- Le javascript ================================================== -->
-  <!-- Placed at the end of the document so the pages load faster -->
-  <script src="{{=URL('static','js/bootstrap.min.js')}}"></script>
-  
+  <!-- The javascript =============================================
+       (Placed at the end of the document so the pages load faster) -->
+  <script>
+    // this code improves bootstrap menus and adds dropdown support
+    jQuery(function(){
+      jQuery('.nav>li>a').each(function(){	        
+        if(jQuery(this).parent().find('ul').length)
+          jQuery(this).attr({'class':'dropdown-toggle','data-toggle':'dropdown'}).append('<b class="caret"></b>');
+      });
+      jQuery('.nav li li').each(function(){	        
+        if(jQuery(this).find('ul').length)
+          jQuery(this).children('a').contents().before('<i class="chevron-right"></i>'); 
+      });
+
+      if(jQuery(document).width()>=980) {
+        jQuery('ul.nav li.dropdown').hover(function() {
+          jQuery(this).find('.dropdown-menu').stop(true, true).delay(200).fadeIn(); 
+        }, function() {
+          jQuery(this).find('.dropdown-menu').stop(true, true).delay(200).fadeOut(); 
+        });
+      }
+      jQuery('ul.nav li.dropdown a').click(function(){window.location=jQuery(this).attr('href');});
+    });
+  </script>  
+  <script src="{{=URL('static','js/bootstrap.min.js')}}"></script>  
   <!--[if lt IE 7 ]>
       <script src="{{=URL('static','js/dd_belatedpng.js')}}"></script>
       <script> DD_belatedPNG.fix('img, .png_bg'); //fix any <img> or .png_bg background-images </script>

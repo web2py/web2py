@@ -139,7 +139,7 @@ def step2():
                     if not name in session.app['pages']:
                         session.app['pages'].append(name)
                         session.app['page_'+name] = \
-                            '## Manage %s\n{{=form}}' % (table)
+                            '## Manage %s\n\n{{=form}}' % (table)
             if session.app['tables']:
                 redirect(URL('step3',args=0))
             else:
@@ -248,8 +248,11 @@ def sort_tables(tables):
     def append(table,trail=[]):
         if table in trail:
             raise RuntimeError
-        for t in d[table]: append(t,trail=trail+[table])
-        if not table in tables: tables.append(table)
+        for t in d[table]:
+            # if not t==table: (problem, no dropdown for self references)
+            append(t,trail=trail+[table])
+        if not table in tables:
+            tables.append(table)
     for table in d: append(table)
     return tables
 
@@ -351,7 +354,7 @@ def make_table(table,fields):
         s+="""
 db.auth_user.first_name.requires = IS_NOT_EMPTY(error_message=auth.messages.is_empty)
 db.auth_user.last_name.requires = IS_NOT_EMPTY(error_message=auth.messages.is_empty)
-db.auth_user.password.requires = CRYPT(key=auth.settings.hmac_key)
+db.auth_user.password.requires = CRYPT(key=auth.settings.hmac_key, min_length=4)
 db.auth_user.username.requires = IS_NOT_IN_DB(db, db.auth_user.username)
 db.auth_user.email.requires = (IS_EMAIL(error_message=auth.messages.invalid_email),
                                IS_NOT_IN_DB(db, db.auth_user.email))

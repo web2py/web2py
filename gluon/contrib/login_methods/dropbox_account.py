@@ -3,7 +3,7 @@
 
 """
    Dropbox Authentication for web2py
-   Developed by Massimo Di Pierro (2011)
+   Developed by Massimo Di Pierro (2012)
    Same License as Web2py License
 """
 
