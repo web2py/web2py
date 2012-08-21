@@ -109,7 +109,7 @@ HEARTBEAT = 3*SECONDS
 MAXHIBERNATION = 10
 CLEAROUT = '!clear!'
 
-CALLABLETYPES = (types.LambdaType, types.FunctionType, 
+CALLABLETYPES = (types.LambdaType, types.FunctionType,
                  types.BuiltinFunctionType,
                  types.MethodType, types.BuiltinMethodType)
 
@@ -181,16 +181,13 @@ def executor(queue,task, out):
             self.out_queue = out_queue
             self.stdout = sys.stdout
             sys.stdout = self
-            self.istr = ""
         def __del__(self):
             sys.stdout = self.stdout
+        def flush(self):
+            pass
         def write(self,data):
             self.out_queue.put(data)
-            self.istr += data
-        def getvalue(self):
-            return self.istr
-    
-    #stdout, sys.stdout = sys.stdout, cStringIO.StringIO()
+
     stdout = LogOutput(out)
     try:
         if task.app:
@@ -224,13 +221,11 @@ def executor(queue,task, out):
             result = eval(task.function)(
                 *loads(task.args, object_hook=_decode_dict),
                  **loads(task.vars, object_hook=_decode_dict))
-        #stdout, sys.stdout = sys.stdout, stdout
-        sys.stdout = stdout.stdout
-        queue.put(TaskReport(COMPLETED, result,stdout.getvalue()))
+        queue.put(TaskReport(COMPLETED, result=result))
     except BaseException,e:
-        sys.stdout = stdout.stdout
         tb = traceback.format_exc()
-        queue.put(TaskReport(FAILED,tb=tb, output=stdout.getvalue()))
+        queue.put(TaskReport(FAILED,tb=tb))
+    del stdout
 
 class MetaScheduler(threading.Thread):
     def __init__(self):
@@ -255,47 +250,62 @@ class MetaScheduler(threading.Thread):
         self.process = p
         logging.debug('   task starting')
         p.start()
+
+        task_output = ""
+        tout = ""
+
         try:
             if task.sync_output > 0:
-                task_output = ""
-                start = time.time()
-                while p.is_alive() and (time.time()-start < task.timeout):
-                    p.join(timeout=task.sync_output)
-                    tout = ""
-                    while not out.empty():
-                        tout += out.get()
-                    if tout:
-                        logging.debug(' partial output: "%s"' % str(tout))
-                        if CLEAROUT in tout:
-                            task_output = tout[tout.rfind(CLEAROUT)+len(CLEAROUT):]
-                        else:
-                            task_output += tout
+                run_timeout = task.sync_output
+            else:
+                run_timeout = task.timeout
+
+            start = time.time()
+
+            while p.is_alive() and (time.time()-start < task.timeout):
+                if tout:
+                    try:
+                        logging.debug(' partial output saved')
                         db(sr.id==task.run_id).update(output = task_output)
                         db.commit()
-            else:
-                p.join(task.timeout)
+                    except:
+                        pass
+                p.join(timeout=run_timeout)
+                tout = ""
+                while not out.empty():
+                    tout += out.get()
+                if tout:
+                    logging.debug(' partial output: "%s"' % str(tout))
+                    if CLEAROUT in tout:
+                        task_output = tout[tout.rfind(CLEAROUT)+len(CLEAROUT):]
+                    else:
+                        task_output += tout
         except:
             p.terminate()
             p.join()
             self.have_heartbeat = False
             logging.debug('    task stopped by general exception')
-            return TaskReport(STOPPED)
-        if p.is_alive():
-            p.terminate()
-            logging.debug('    task timeout')
-            try:
-                tr = queue.get(timeout=2)
-                tr.status = TIMEOUT
-            except Queue.Empty:
-                tr = TaskReport(TIMEOUT)
-            return tr
-        elif queue.empty():
-            self.have_heartbeat = False
-            logging.debug('    task stopped')
-            return TaskReport(STOPPED)
+            tr = TaskReport(STOPPED)
         else:
-            logging.debug('  task completed or failed')
-            return queue.get()
+            if p.is_alive():
+                p.terminate()
+                logging.debug('    task timeout')
+                try:
+                    # we try to get a traceback here
+                    tr = queue.get(timeout=2)
+                    tr.status = TIMEOUT
+                    tr.output = task_output
+                except Queue.Empty:
+                    tr = TaskReport(TIMEOUT)
+            elif queue.empty():
+                self.have_heartbeat = False
+                logging.debug('    task stopped')
+                tr = TaskReport(STOPPED)
+            else:
+                logging.debug('  task completed or failed')
+                tr = queue.get()
+        tr.output = task_output
+        return tr
 
     def die(self):
         logging.info('die!')
@@ -588,15 +598,11 @@ class Scheduler(MetaScheduler):
                         #if it's stopped it's None as NoneType, so we record
                         #the STOPPED "run" anyway
                         logging.debug(' recording task report in db (%s)' % task_report.status)
-                        #CLEAROUT clears the output
-                        tout = task_report.output
-                        if tout and CLEAROUT in tout:
-                            tout = tout[tout.rfind(CLEAROUT)+len(CLEAROUT):]
                         db(db.scheduler_run.id==task.run_id).update(
                             status = task_report.status,
                             stop_time = now,
                             result = task_report.result,
-                            output = tout,
+                            output = task_report.output,
                             traceback = task_report.tb)
                     else:
                         logging.debug(' deleting task report in db because of no result')

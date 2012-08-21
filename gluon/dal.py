@@ -4566,7 +4566,7 @@ class CouchDBAdapter(NoSQLAdapter):
         fieldnames = [f.name for f in (fields or self.db[tablename])]
         colnames = ['%s.%s' % (tablename,k) for k in fieldnames]
         fields = ','.join(['%s.%s' % (tablename,uid(f)) for f in fieldnames])
-        fn="function(%(t)s){if(%(query)s)emit(%(order)s,[%(fields)s]);}" %\
+        fn="(function(%(t)s){if(%(query)s)emit(%(order)s,[%(fields)s]);})" %\
             dict(t=tablename,
                  query=self.expand(query),
                  order='%s._id' % tablename,
@@ -4880,6 +4880,10 @@ class MongoDBAdapter(NoSQLAdapter):
     # need to define all the 'sql' methods gt,lt etc....
 
     def select(self,query,fields,attributes,count=False,snapshot=False):
+        try:
+            from pymongo.objectid import ObjectId
+        except ImportError:
+            from bson.objectid import ObjectId
         tablename, mongoqry_dict, mongofields_dict, \
         mongosort_list, limitby_limit, limitby_skip = \
             self._select(query,fields,attributes)
@@ -6763,7 +6767,7 @@ def index():
                         patterns += auto_table(rtable,base=tag,depth=depth-1)
             return patterns
 
-        if patterns=='auto':
+        if patterns==DEFAULT:
             patterns=[]
             for table in db.tables:
                 if not table.startswith('auth_'):
@@ -6943,7 +6947,7 @@ def index():
         table_class = args.get('table_class',Table)
         table = table_class(self, tablename, *fields, **args)
         table._actual = True
-        self[tablename] = table        
+        self[tablename] = table
         table._create_references() # must follow above line to handle self references
 
         migrate = self._migrate_enabled and args.get('migrate',self._migrate)
@@ -7283,7 +7287,7 @@ class Table(dict):
             if self._db and not field.type in ('text','blob') and \
                     self._db._adapter.maxcharlength < field.length:
                 field.length = self._db._adapter.maxcharlength
-            if field.requires is DEFAULT:
+            if field.requires == DEFAULT:
                 field.requires = sqlhtml_validators(field)
         self.ALL = SQLALL(self)
 
@@ -8069,7 +8073,7 @@ class Field(Expression):
         length=None,
         default=DEFAULT,
         required=False,
-        requires=None,
+        requires=DEFAULT,
         ondelete='CASCADE',
         notnull=False,
         unique=False,
