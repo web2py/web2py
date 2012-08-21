@@ -6983,6 +6983,9 @@ def index():
 
     def __getitem__(self, key):
         key = str(key)
+        return dict.__getitem__(self,key)
+
+    def __getattr__(self, key):
         if not key is '_LAZY_TABLES' and key in self._LAZY_TABLES:
             tablename, fields, args = self._LAZY_TABLES.pop(key)
             return self.lazy_define_table(tablename,*fields,**args)
