@@ -6954,7 +6954,7 @@ def index():
         **args
         ):
         if self._common_fields:
-            fields = fields + self._common_fields
+            fields = list(fields) + list(self._common_fields)
 
         table_class = args.get('table_class',Table)
         table = table_class(self, tablename, *fields, **args)
