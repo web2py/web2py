@@ -2641,8 +2641,7 @@ class Auth(object):
         return form
 
     def is_impersonating(self):
-        def is_impersonating(self):
-            return self.is_logged_in() and 'impersonator' in current.session.auth
+        return self.is_logged_in() and 'impersonator' in current.session.auth
 
     def impersonate(self, user_id=DEFAULT):
         """
