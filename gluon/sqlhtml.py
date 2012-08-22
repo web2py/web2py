@@ -687,18 +687,40 @@ def formstyle_ul(form, fields):
 def formstyle_bootstrap(form, fields):
     ''' bootstrap format form layout '''
     form['_class'] = 'form-horizontal'
-    table = FIELDSET()
+    parent = FIELDSET()
     for id, label, controls, help in fields:
-        if isinstance(controls, (INPUT, SELECT, TEXTAREA)):
+        # wrappers
+        _help = SPAN(help, _class='help-inline')
+        # embed _help into _controls
+        _controls = DIV(controls, _help, _class='controls')
+        # submit unflag by default
+        _submit = False
+
+        if isinstance(controls, INPUT):
             controls['_class'] = 'input-xlarge'
+            if controls['_type'] == 'submit':
+                # flag submit button
+                _submit = True
+                controls['_class'] = 'btn btn-primary'
+
+        if isinstance(controls, SELECT):
+            controls['_class'] = 'input-xlarge'
+
+        if isinstance(controls, TEXTAREA):
+            controls['_class'] = 'input-xlarge'
+
         if isinstance(label, LABEL):
             label['_class'] = 'control-label'
-        # styles
-        _help = DIV(help, _class='help-block')
-        # embed _help into _controls don't wrap label
-        _controls = DIV(controls, _help, _class='controls')
-        table.append(DIV(label, _controls, _class='control-group',_id=id))
-    return table
+
+        if _submit:
+            # submit button has unwrapped label and controls, different class
+            parent.append(DIV(label, controls, _class='form-actions'))
+            # unflag submit (possible side effect)
+            _submit = False
+        else:
+            # unwrapped label
+            parent.append(DIV(label, _controls, _class='control-group'))
+    return parent
 
 class SQLFORM(FORM):
 
@@ -1086,7 +1108,8 @@ class SQLFORM(FORM):
 
         if callable(self.formstyle):
             # backward compatibility, 4 argument function is the old style
-            if len(inspect.getargspec(self.formstyle)[0]) == 4:
+            args, varargs, keywords, defaults = inspect.getargspec(self.formstyle)
+            if defaults and len(args) - len(defaults) == 4 or len(args) == 4:
                 table = TABLE()
                 for id,a,b,c in xfields:
                     raw_b = self.field_parent[id] = b
@@ -1815,7 +1838,7 @@ class SQLFORM(FORM):
                 filename = '.'.join(('rows', oExp.file_ext))
                 response.headers['Content-Type'] = oExp.content_type
                 response.headers['Content-Disposition'] = \
-                    'attachment;filename='+filename+';'                
+                    'attachment;filename='+filename+';'
                 raise HTTP(200, oExp.export(),**response.headers)
 
         elif request.vars.records and not isinstance(
@@ -2159,12 +2182,12 @@ class SQLFORM(FORM):
                         LI(A(T(db[referee]._plural),
                              _class=trap_class(),
                              _href=url()),
-                           SPAN(divider,_class='divider')))
+                           SPAN(divider,_class='divider'),_class='w2p_grid_breadcrumb_elem'))
                     if kwargs.get('details',True):
                         breadcrumbs.append(
                             LI(A(name,_class=trap_class(),
                                  _href=url(args=['view',referee,id])),
-                               SPAN(divider,_class='divider')))
+                               SPAN(divider,_class='divider'),_class='w2p_grid_breadcrumb_elem'))
                     nargs+=2
                 else:
                     break
@@ -2212,7 +2235,7 @@ class SQLFORM(FORM):
         if isinstance(grid,DIV):
             header = table._plural + (field and ' for '+field.name or '')
             breadcrumbs.append(LI(A(T(header),_class=trap_class(),
-                                 _href=url()),_class='active'))
+                                 _href=url()),_class='active w2p_grid_breadcrumb_elem'))
             grid.insert(0,DIV(UL(*breadcrumbs, **{'_class':breadcrumbs_class}),
                               _class='web2py_breadcrumbs'))
         return grid
