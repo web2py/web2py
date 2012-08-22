@@ -35,7 +35,7 @@ def _():
     ctr = request.controller
     # useful links to internal and external resources
     response.menu+=[
-        ('web2py',False, 'http://web2py.com', [
+        (SPAN('web2py',_style='color:yellow'),False, 'http://web2py.com', [
                 (T('My Sites'),False,URL('admin','default','site')),
                 (T('This App'),False,URL('admin','default','design/%s' % app), [
                         (T('Controller'),False,
