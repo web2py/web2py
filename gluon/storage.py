@@ -18,58 +18,25 @@ import portalocker
 __all__ = ['List', 'Storage', 'Settings', 'Messages',
            'StorageList', 'load_storage', 'save_storage']
 
-
-class List(list):
+def have_python_bug_1469629():
     """
-    Like a regular python list but a[i] if i is out of bounds return None
-    instead of IndexOutOfBounds
+    http://bugs.python.org/issue1469629
+    
+    because of this bug class Storage is slower on Python < 2.7.3
     """
+    import weakref
+    class Test(dict):
+        def __init__(self):
+            self.__dict__ = self
+    s = Test()
+    w = weakref.ref(s)
+    del s
+    return w() is not None
 
-    def __call__(self, i, default=None, cast=None, otherwise=None):
-        """
-        request.args(0,default=0,cast=int,otherwise='http://error_url')
-        request.args(0,default=0,cast=int,otherwise=lambda:...)
-        """
-        n = len(self)
-        if 0<=i<n or -n<=i<0:
-            value = self[i]
-        else:
-            value = default
-        if cast:
-            try:
-                value = cast(value)
-            except (ValueError, TypeError):
-                from http import HTTP, redirect
-                if otherwise is None:
-                    raise HTTP(404)
-                elif isinstance(otherwise,str):
-                    redirect(otherwise)
-                elif callable(otherwise):
-                    return otherwise()
-                else:
-                    raise RuntimeError, "invalid otherwise"
-        return value
+HAVE_PYTHON_BUG_1469629 = have_python_bug_1469629()
 
-class Storage(dict):
-    """
-    A Storage object is like a dictionary except `obj.foo` can be used
-    in addition to `obj['foo']`, and setting obj.foo = None deletes item foo.
 
-        >>> o = Storage(a=1)
-        >>> print o.a
-        1
-
-        >>> o['a']
-        1
-
-        >>> o.a = 2
-        >>> print o['a']
-        2
-
-        >>> del o.a
-        >>> print o.a
-        
-    """
+class NewStorage(dict):
     def __init__(self, *args, **kwargs): 
         dict.__init__(self, *args, **kwargs)
         self.__dict__ = self
@@ -92,6 +59,54 @@ class Storage(dict):
     def update(self, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
         self.__dict__ = self
+
+
+class OldStorage(dict):
+    def __getattr__(self, key):
+        return dict.get(self, key, None)
+    def __setattr__(self, key, value):
+        if value is None:
+            if key in self:
+                del self[key]
+        else:
+            self[key] = value
+    def __delattr__(self, key):
+        if key in self:
+            del self[key]
+        else:
+            raise AttributeError, "missing key=%s" % key
+    def __getitem__(self, key):
+        return dict.get(self, key, None)
+    def __repr__(self):
+        return '<Storage %s>' + dict.__repr__(self)
+    def __getstate__(self):
+        return dict(self)
+    def __setstate__(self, value):
+        for (k, v) in value.items():
+            self[k] = v
+
+
+class Storage(OldStorage if HAVE_PYTHON_BUG_1469629 else NewStorage):
+
+    """
+    A Storage object is like a dictionary except `obj.foo` can be used
+    in addition to `obj['foo']`, and setting obj.foo = None deletes item foo.
+
+        >>> o = Storage(a=1)
+        >>> print o.a
+        1
+
+        >>> o['a']
+        1
+
+        >>> o.a = 2
+        >>> print o['a']
+        2
+
+        >>> del o.a
+        >>> print o.a        
+        None
+    """
     def getlist(self,key):
         """
         Return a Storage value as a list.
@@ -112,7 +127,7 @@ class Storage(dict):
         >>> request.vars.getlist('z')
         []
         """
-        value = getattr(self,key,[])
+        value = self.get(key,[])
         return value if not value else \
             value if isinstance(value,(list,tuple)) else [value]
     def getfirst(self,key,default=None):
@@ -133,7 +148,7 @@ class Storage(dict):
         'abc'
         >>> request.vars.getfirst('z')
         """
-        values = self.getlist(default)
+        values = self.getlist(key)
         return values[0] if values else default
     def getlast(self,key,default=None):
         """
@@ -154,8 +169,8 @@ class Storage(dict):
         'def'
         >>> request.vars.getlast('z')
         """
-        values = self.getlist(default)
-        return values[0] if values else default
+        values = self.getlist(key)
+        return values[-1] if values else default
 
 PICKABLE = (str,int,long,float,bool,list,dict,tuple,set)
 
@@ -190,29 +205,55 @@ def save_storage(storage, filename):
     finally:
         if fp: fp.close()
 
+setter = Storage.__setitem__ if HAVE_PYTHON_BUG_1469629 else Storage.__setattr__
+getter = Storage.__getitem__ if HAVE_PYTHON_BUG_1469629 else Storage.__getattr__
+
 class Settings(Storage):
     def __setattr__(self, key, value):
-        if key != 'lock_keys' and self.lock_keys and not key in self:
+        if key != 'lock_keys' and 'lock_keys' in self and not key in self:
             raise SyntaxError, 'setting key \'%s\' does not exist' % key
-        if key != 'lock_values' and self.lock_values:
+        if key != 'lock_values' and 'lock_values' in self:
             raise SyntaxError, 'setting value cannot be changed: %s' % key
-        Storage.__setattr__(self,key,value)
+        setter(self,key,value)
 
-class Messages(Storage):
+class Messages(Settings):
     def __init__(self, T):
         Storage.__init__(self,T=T)
-
-    def __setattr__(self, key, value):
-        if key != 'lock_keys' and self.lock_keys and not key in self:
-            raise SyntaxError, 'setting key \'%s\' does not exist' % key
-        if key != 'lock_values' and self.lock_values:
-            raise SyntaxError, 'setting value cannot be changed: %s' % key
-        Storage.__setattr__(self,key,value)
-
     def __getattr__(self, key):
-        value = Storage.__getattr__(self,key)
+        value = getter(self,key)
         if isinstance(value, str):
             return str(self.T(value))
+        return value
+
+class List(list):
+    """
+    Like a regular python list but a[i] if i is out of bounds return None
+    instead of IndexOutOfBounds
+    """
+
+    def __call__(self, i, default=None, cast=None, otherwise=None):
+        """
+        request.args(0,default=0,cast=int,otherwise='http://error_url')
+        request.args(0,default=0,cast=int,otherwise=lambda:...)
+        """
+        n = len(self)
+        if 0<=i<n or -n<=i<0:
+            value = self[i]
+        else:
+            value = default
+        if cast:
+            try:
+                value = cast(value)
+            except (ValueError, TypeError):
+                from http import HTTP, redirect
+                if otherwise is None:
+                    raise HTTP(404)
+                elif isinstance(otherwise,str):
+                    redirect(otherwise)
+                elif callable(otherwise):
+                    return otherwise()
+                else:
+                    raise RuntimeError, "invalid otherwise"
         return value
 
 
