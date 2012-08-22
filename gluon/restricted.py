@@ -33,6 +33,7 @@ class TicketStorage(Storage):
         db=None,
         tablename='web2py_ticket'
         ):
+        Storage.__init__(self)
         self.db = db
         self.tablename = tablename
 

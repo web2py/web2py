@@ -446,8 +446,9 @@ def wsgibase(environ, responder):
                 elif not request.is_local and \
                         os.path.exists(os.path.join(request.folder,'DISABLED')):
                     raise HTTP(503, "<html><body><h1>Temporarily down for maintenance</h1></body></html>")
-                request.url = Url(r=request, args=request.args,
-                                       extension=request.raw_extension)
+                request.url = Url(r=request,
+                                  args=request.args,
+                                  extension=request.raw_extension)
 
                 # ##################################################
                 # build missing folders
