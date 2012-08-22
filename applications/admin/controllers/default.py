@@ -1379,6 +1379,7 @@ def errors():
 
         return dict(errors = [x[1] for x in decorated], app=app, method=method, db_ready=db_ready)
 
+
     elif method == 'dbnew':
         errors_path = apath('%s/errors' % app, r=request)
         tk_db, tk_table = get_ticket_storage(app)

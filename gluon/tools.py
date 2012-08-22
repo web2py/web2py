@@ -28,7 +28,7 @@ from email import MIMEBase, MIMEMultipart, MIMEText, Encoders, Header, message_f
 from contenttype import contenttype
 from storage import Storage, StorageList, Settings, Messages
 from utils import web2py_uuid
-from fileutils import read_file
+from fileutils import read_file, check_credentials
 from gluon import *
 from gluon.contrib.autolinks import expand_one
 
@@ -2641,8 +2641,7 @@ class Auth(object):
         return form
 
     def is_impersonating(self):
-        return current.session.auth and \
-            'impersonator' in current.session.auth
+        return self.is_logged_in() and 'impersonator' in current.session.auth
 
     def impersonate(self, user_id=DEFAULT):
         """
@@ -3137,9 +3136,11 @@ class Auth(object):
                 new_record[key] = value
         id = archive_table.insert(**new_record)
         return id
-    def wiki(self,slug=None,env=None,manage_permissions=False,force_prefix=''):
+    def wiki(self,slug=None,env=None,automenu=True,manage_permissions=False,force_prefix=''):
         if not hasattr(self,'_wiki'):
-            self._wiki = Wiki(self,manage_permissions=manage_permissions,
+            self._wiki = Wiki(self,
+                              automenu=automenu,
+                              manage_permissions=manage_permissions,
                               force_prefix=force_prefix,env=env)
         else:
             self._wiki.env.update(env or {})
@@ -4470,7 +4471,7 @@ class Wiki(object):
     def __init__(self,auth,env=None,automenu=True,render='markmin',
                  manage_permissions=False,force_prefix=''):
         self.env = env or {}
-        self.env['component'] = Wiki.component
+        self.env['component'] = Wiki.component        
         if render == 'markmin': render=self.markmin_render
         self.auth = auth
         self.automenu = automenu
@@ -4478,6 +4479,7 @@ class Wiki(object):
             self.force_prefix = force_prefix % self.auth.user
         else:
             self.force_prefix = force_prefix
+        self.host = current.request.env.http_host
         perms = self.manage_permissions = manage_permissions
         db = auth.db
         db.define_table(
@@ -4519,6 +4521,11 @@ class Wiki(object):
                 if tag: db.wiki_tag.insert(name=tag,wiki_page=page.id)
         db.wiki_page._after_insert.append(update_tags_insert)
         db.wiki_page._after_update.append(update_tags_update)
+        if auth.user and check_credentials(current.request) and \
+                not 'wiki_editor' in auth.user_groups.values():
+            group = db.auth_group(role='wiki_editor')
+            gid = group.id if group else db.auth_group.insert(role='wiki_editor')
+            auth.add_membership(gid)            
     # WIKI ACCESS POLICY
     def not_authorized(self,page=None):
         raise HTTP(401)
@@ -4586,6 +4593,9 @@ class Wiki(object):
             if ps: return ps[0]
         return ''
 
+    def fix_hostname(self,body):
+        return body.replace('://HOSTNAME','://%s' % self.host)
+    
     def read(self,slug):
         if slug in '_cloud':
             return self.cloud()
@@ -4600,9 +4610,9 @@ class Wiki(object):
             else:
                 match = self.regex_redirect.match(page.body)
                 if match: redirect(match.group(1))
-                return dict(content=XML(page.html))
+                return dict(content=XML(self.fix_hostname(page.html)))
         elif current.request.extension == 'load':
-            return page.html if page else ''
+            return self.fix_hostname(page.html) if page else ''
         else:
             if not page:
                 raise HTTP(404)
@@ -4638,6 +4648,9 @@ class Wiki(object):
             db.wiki_page.slug.default = slug
             db.wiki_page.menu.default = slug
             db.wiki_page.body.default = '## %s\n\npage content' % title_guess
+        vars = current.request.post_vars
+        if vars.body:
+            vars.body=vars.body.replace('://%s' % self.host,'://HOSTNAME')
         form = SQLFORM(db.wiki_page,page,deletable=True,showid=False).process()
         if form.deleted:
             current.session.flash = 'page deleted'

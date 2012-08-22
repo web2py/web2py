@@ -29,7 +29,7 @@ def file_create_form(location):
               INPUT(_type="submit",_value=T("submit")),_action=URL('create_file'))
     return form
 def deletefile(arglist):
-  return A(TAG[''](IMG(_src=URL('static', 'images/delete_icon.png')), SPAN(T('Delete this file (you will be asked to confirm deletion)'))), _class='icon delete tooltip', _href=URL('delete',args=arglist,vars=dict(sender=request.function+'/'+app)))
+  return A(TAG[''](IMG(_src=URL('static', 'images/delete_icon.png')), SPAN(T('Delete this file (you will be asked to confirm deletion)'))), _class='icon delete tooltip', _href=URL('delete',args=arglist,vars=dict(sender=request.function+'/'+app+'/'+request.args[1])))
 }}
 
 {{block sectionclass}}plugin{{end}}
