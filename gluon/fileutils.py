@@ -318,7 +318,7 @@ def get_session(request, other_application='admin'):
         session_id = request.cookies['session_id_' + other_application].value
         osession = storage.load_storage(os.path.join(
                 up(request.folder), other_application, 'sessions', session_id))
-    except:
+    except Exception, e:
         osession = storage.Storage()
     return osession
 
@@ -337,7 +337,6 @@ def check_credentials(request, other_application='admin', expiration = 60*60):
         dt = time.time() - expiration
         s = get_session(request, other_application)
         return (s.authorized and s.last_time and s.last_time > dt)
-
 
 def fix_newlines(path):
     regex = re.compile(r'''(\r

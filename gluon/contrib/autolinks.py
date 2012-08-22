@@ -126,12 +126,19 @@ EXTENSION_MAPS = {
     'xps': googledoc_viewer,
 }
 
+class VimeoURLOpener(urllib.FancyURLopener):
+    "Vimeo blocks the urllib user agent for some reason"
+    version = "Mozilla/4.0"
+urllib._urlopener = VimeoURLOpener()
+
 def oembed(url):
     for k,v in EMBED_MAPS:
         if k.match(url):
             oembed = v+'?format=json&url='+cgi.escape(url)
-            try:
-                return loads(urllib.urlopen(oembed).read())
+            try:                
+                data = urllib.urlopen(oembed).read()
+                print data
+                return loads(data) # json!
             except:
                 pass
     return {}
@@ -143,10 +150,10 @@ def expand_one(url,cdict):
     # try ombed but first check in cache
     if cdict and url in cdict:
         r = cdict[url]
-    elif cdict:
-        r = cdict[url] = oembed(url)
     else:
         r = oembed(url)
+        if isinstance(cdict,dict): 
+            cdict[url] = r
     # if oembed service
     if 'html' in r:
         html = r['html'].encode('utf8')

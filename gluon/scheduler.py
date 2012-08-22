@@ -109,7 +109,7 @@ HEARTBEAT = 3*SECONDS
 MAXHIBERNATION = 10
 CLEAROUT = '!clear!'
 
-CALLABLETYPES = (types.LambdaType, types.FunctionType, 
+CALLABLETYPES = (types.LambdaType, types.FunctionType,
                  types.BuiltinFunctionType,
                  types.MethodType, types.BuiltinMethodType)
 
@@ -187,7 +187,7 @@ def executor(queue,task, out):
             pass
         def write(self,data):
             self.out_queue.put(data)
-    
+
     stdout = LogOutput(out)
     try:
         if task.app:
@@ -265,7 +265,7 @@ class MetaScheduler(threading.Thread):
             while p.is_alive() and (time.time()-start < task.timeout):
                 if tout:
                     try:
-                        logging.debug("aaaaaaaaaaaaaa partial output saved")
+                        logging.debug(' partial output saved')
                         db(sr.id==task.run_id).update(output = task_output)
                         db.commit()
                     except:

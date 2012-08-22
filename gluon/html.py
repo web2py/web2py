@@ -2044,7 +2044,7 @@ class FORM(DIV):
 
 
     @staticmethod
-    def confim(text='OK',buttons=None,hidden=None):
+    def confirm(text='OK',buttons=None,hidden=None):
         if not buttons: buttons = {}
         if not hidden: hidden={}
         inputs = [INPUT(_type='button',
