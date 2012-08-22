@@ -80,7 +80,7 @@ body {
 
 .ie-lte7 #navbar .auth_navbar, #navbar .auth_navbar a {color:expression(this.parentNode.currentStyle['color']); /* ie7 doesn't support inherit */}
 
-#navbar .auth_navbar a:hover {color:white;text-decoration:none;} /* this overwrite bootswatch */
+// #navbar .auth_navbar a:hover {color:white;text-decoration:none;} /* this overwrite bootswatch */
 
 body {
   height:auto; /*to avoid vertical scroll bar*/
