@@ -3136,9 +3136,11 @@ class Auth(object):
                 new_record[key] = value
         id = archive_table.insert(**new_record)
         return id
-    def wiki(self,slug=None,env=None,manage_permissions=False,force_prefix=''):
+    def wiki(self,slug=None,env=None,automenu=True,manage_permissions=False,force_prefix=''):
         if not hasattr(self,'_wiki'):
-            self._wiki = Wiki(self,manage_permissions=manage_permissions,
+            self._wiki = Wiki(self,
+                              automenu=automenu,
+                              manage_permissions=manage_permissions,
                               force_prefix=force_prefix,env=env)
         else:
             self._wiki.env.update(env or {})
