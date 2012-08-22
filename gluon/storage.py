@@ -21,12 +21,11 @@ __all__ = ['List', 'Storage', 'Settings', 'Messages',
 def have_python_bug_1469629():
     """
     http://bugs.python.org/issue1469629
-    
-    because of this bug class Storage is slower on Python < 2.7.3
     """
     import weakref
     class Test(dict):
         def __init__(self):
+            dict.__init__(self)
             self.__dict__ = self
     s = Test()
     w = weakref.ref(s)
