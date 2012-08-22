@@ -3136,10 +3136,9 @@ class Auth(object):
                 new_record[key] = value
         id = archive_table.insert(**new_record)
         return id
-    def wiki(self,slug=None,env=None,automenu=True,manage_permissions=False,force_prefix=''):
+    def wiki(self,slug=None,env=None,manage_permissions=False,force_prefix=''):
         if not hasattr(self,'_wiki'):
             self._wiki = Wiki(self,
-                              automenu=automenu,
                               manage_permissions=manage_permissions,
                               force_prefix=force_prefix,env=env)
         else:
@@ -4468,13 +4467,12 @@ class Wiki(object):
         items = text.split('/')
         controller, function, args = items[0], items[1], items[2:]
         return LOAD(controller, function, args=args, ajax=True).xml()
-    def __init__(self,auth,env=None,automenu=True,render='markmin',
+    def __init__(self,auth,env=None,render='markmin',
                  manage_permissions=False,force_prefix=''):
         self.env = env or {}
         self.env['component'] = Wiki.component        
         if render == 'markmin': render=self.markmin_render
         self.auth = auth
-        self.automenu = automenu
         if self.auth.user:
             self.force_prefix = force_prefix % self.auth.user
         else:
@@ -4489,7 +4487,6 @@ class Wiki(object):
                   readable=False,writable=False),
             Field('title',unique=True),
             Field('body','text',notnull=True),
-            Field('menu'),
             Field('tags','list:string'),
             Field('can_read','list:string',writable=perms,readable=perms,
                   default=[Wiki.everybody]),
@@ -4555,9 +4552,8 @@ class Wiki(object):
     ### END POLICY
     def __call__(self):
         request =  current.request
-        if self.automenu:
-            current.response.menu = self.menu(request.controller,
-                                              request.function)
+        automenu = self.menu(request.controller,request.function)
+        current.response.menu += automenu
         zero = request.args(0)
         if zero and zero.isdigit():
             return self.media(int(zero))
@@ -4646,8 +4642,10 @@ class Wiki(object):
             db.wiki_page.can_edit.default = [auth.user_group_role()]
             db.wiki_page.title.default = title_guess
             db.wiki_page.slug.default = slug
-            db.wiki_page.menu.default = slug
-            db.wiki_page.body.default = '## %s\n\npage content' % title_guess
+            if slug == 'wiki-menu':
+                db.wiki_page.body.default = '- Menu Item > @////index\n- - Submenu > http://web2py.com'
+            else:
+                db.wiki_page.body.default = '## %s\n\npage content' % title_guess
         vars = current.request.post_vars
         if vars.body:
             vars.body=vars.body.replace('://%s' % self.host,'://HOSTNAME')
@@ -4718,23 +4716,23 @@ class Wiki(object):
     def menu(self,controller='default',function='index'):
         db = self.auth.db
         request = current.request
-        rows = db((db.wiki_page.menu!=None)|(db.wiki_page.menu!=''))\
-            .select(db.wiki_page.menu,db.wiki_page.title,db.wiki_page.slug,
-                    orderby = db.wiki_page.menu)
+        menu_page = db.wiki_page(slug='wiki-menu')
         menu = []
-        tree = {'.':menu}
-        regex = re.compile('\d\:')
-        for row in rows:
-            if row.menu:
-                key = './'+regex.sub('',row.menu)
-                base = key.rsplit('/',1)[0]
-                subtree = tree[key] = []
-                if base in tree:
-                    tree[base].append((current.T(row.title),
-                                       request.args(0)==row.slug,
-                                       URL(controller,function,args=row.slug),
-                                       subtree))
-        #if self.auth.user:
+        if menu_page:
+            tree = {'':menu}
+            regex = re.compile('[\r\n\t]*(?P<base>(\s*\-\s*)+)(?P<title>\w.*?)\s+\>\s+(?P<link>\S+)')
+            for match in regex.finditer(self.fix_hostname(menu_page.body)):
+                base = match.group('base').replace(' ','')
+                title = match.group('title')
+                link = match.group('link')                
+                if link.startswith('@'):
+                    items = link[1:].split('/')
+                    if len(items)>3:
+                        link = URL(a=items[0] or None,c=items[1] or None,f=items[2] or None, args=items[3:])
+                parent = tree.get(base[1:],tree[''])
+                subtree = []
+                tree[base] = subtree
+                parent.append((current.T(title),False,link,subtree))
         if True:
             submenu = []
             menu.append((current.T('[Wiki]'),None,None,submenu))
@@ -4765,6 +4763,8 @@ class Wiki(object):
         # if self.can_manage():
             submenu.append((current.T('Manage Pages'),None,
                             URL(controller,function,args=('_pages'))))
+            submenu.append((current.T('Edit Menu'),None,
+                            URL(controller,function,args=('_edit','wiki-menu'))))
         # if self.can_search():
             submenu.append((current.T('Search Pages'),None,
                             URL(controller,function,args=('_search'))))
