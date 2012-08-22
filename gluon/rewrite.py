@@ -823,21 +823,15 @@ class MapUrlIn(object):
         self.remote_addr = self.env.get('REMOTE_ADDR','localhost')
         self.scheme = self.env.get('wsgi.url_scheme', 'http').lower()
         self.method = self.env.get('REQUEST_METHOD', 'get').lower()
-        self.host = self.env.get('HTTP_HOST')
-        self.port = None
+        (self.host, self.port) = (self.env.get('HTTP_HOST'), None)
         if not self.host:
-            self.host = self.env.get('SERVER_NAME')
-            self.port = self.env.get('SERVER_PORT')
+            (self.host, self.port) = (self.env.get('SERVER_NAME'), self.env.get('SERVER_PORT'))
         if not self.host:
-            self.host = 'localhost'
-            self.port = '80'
+            (self.host, self.port) = ('localhost', '80')
         if ':' in self.host:
             (self.host, self.port) = self.host.split(':')
         if not self.port:
-            if self.scheme == 'https':
-                self.port = '443'
-            else:
-                self.port = '80'
+            self.port = '443' if self.scheme == 'https' else '80'
 
     def map_prefix(self):
         "strip path prefix, if present in its entirety"
