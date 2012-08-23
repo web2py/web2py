@@ -2067,7 +2067,7 @@ class SQLFORM(FORM):
                     selectable(records)
                     redirect(referrer)
         else:
-            htmltable = DIV(T('No records found'))
+            htmltable = DIV(current.T('No records found'))
 
         if csv and nrows:
             export_links =[]

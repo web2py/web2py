@@ -4587,7 +4587,6 @@ class Wiki(object):
         elif zero=='_cloud':
             return self.cloud()
 
-
     def first_paragraph(self,page):
         if not self.can_read(page):
             mm = page.body.replace('\r','')
@@ -4600,8 +4599,8 @@ class Wiki(object):
         return body.replace('://HOSTNAME','://%s' % self.host)
     
     def read(self,slug):
-        if slug in '_cloud':
-            return self.cloud()
+        if slug in '_cloud': return self.cloud()
+        elif slug in '_search': return self.search()
         page = self.auth.db.wiki_page(slug=slug)
         if not page:
             redirect(URL(args=('_create',slug)))
@@ -4806,7 +4805,8 @@ class Wiki(object):
                                limitby=limitby))
             if request.extension in ('html','load'):
                 if not pages:
-                    content.append(DIV(T("No results",_class='w2p_wiki_form')))
+                    content.append(DIV(current.T("No results"),
+                                       _class='w2p_wiki_form'))
                 def link(t):
                     return A(t,_href=URL(args='_search',vars=dict(tags=t)))
                 items = [DIV(H3(A(p.title,_href=URL(args=p.slug))),
