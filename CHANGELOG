@@ -1,67 +1,84 @@
-## 2.00.0
+## 2.00.1
 
-- redirect(...,type='auto') will be handled properly in ajax responses
-- experimental MongoDB support in DAL
-- FORM.confirm('Confirm?',{'Back':URL(...)})
-- @auth.requires_login(otherwise=URL(...))
-- request.args(0,default=0, cast=int, otherwise=URL(...)), thanks Anthony
-- better memcache support
-- generic.ics
-- generic.map
-- geodal and spatialite, thanks Denes and Fran
-- auth.enable_record_versioning(...db=...)
-- db.table._before_insert, _after_insert, _before_update, _after_update, _before_delete. _after_delete
+### DAL Improvements
+
+- MongoDB support in DAL (experimental)
+- geodal and spatialite, thanks Denes and Fran (experimental)
+- db.mytable._before_insert, _after_insert, _before_update, _after_update, _before_delete. _after_delete (list of callbacks)
 - db(...).update_naive(...) same as update but ignores table._before_update and table._after_update
-- SQLFORM.smartdictform
-- form.add_button(value,link)
-- db.table.insert(uploadfield=open(....))
 - DAL BIGINT support and DAL(...,bigint_id=True)
-- IS_IN_DB distinct
-- more secure SQLFORM.grid and SQLFORM.smartgrid
-- more export options in SQLFORM.grid and SQLFORM.smartgrid
-- more secure admin against CSRF
-- improved spreadsheet, thanks Alan
-- routes in can redirect outside with routes_in=[('/path','303->http://..')]
-- auth supports salt and compatible with third party data, thanks Dave Stoll
-- CRYPT now defaults to pbkdf2(1000,20,sha1)
-- experimental GIT integration
-- experimental OpenShift deployment
-- new makrmin with supports for nested lists, <i>, <em>, autolinks
-- new interantionalization engine
-- multi-language pluralization engine 
-- db.table.field.count(True)
-- auth.wiki()
-- new syntax BR()*5
-- gluon.cache.lazy_cache decorator
-- auth.settings.everybody_group_id
-- ace text web editor in admin
-- -E -b -L options for scheduler
-- coffee and less support in response.fields, thanks Sam Sheftel
-- ldap certificate support
-- pg8000 postgresql driver support
-- portable html.py
-- new admin pages: manage_students, bulk_regsiter, and progress reports
-- @cache('%(name)s%(args)s%(vars)s',5) and cache.autokey
-- added tox.ini, thanks Marc
-- better mongodb support (still experimental) thanks Mark
-- web2py.py --run_system_tests, thanks Marc Abramowitz
+- IS_IN_DB(..., distinct=True)
+- new syntax: db.mytable.insert(myuploadfield=open(....))
+- db(...).select(db.mytable.myfield.count(distinct=True))
+- db(db.a)._update(name=db(db.b.a==db.a.id).nested_select(db.b.id))
+- db.mytable.myfield.filter_in, filter_out
+- db.mytable._enable_record_versioning(db) adds verining to this table
 - teradata adapter, thanks Andrew Willimott
 - experimental Sybase Adapter
 - added db.table.field.avg()
-- db(db.a)._update(name=db(db.b.a==db.a.id).nested_select(db.b.id))
-- new layout based on bootstrap and bootswatch
+- Suport for Google App Engine projections
+
+### Auth improvements
+
+- auth.enable_record_versioning(db)  adds full versining to all tables
+- @auth.requires_login(otherwise=URL(...))
+- auth supports salt and compatible with third party data, thanks Dave Stoll
+- CRYPT now defaults to pbkdf2(1000,20,sha1)
+- Built-in wiki with menu, tags, search, media, permissions. def index: return auth.wiki()
+- auth.settings.everybody_group_id
+- allow storage of uploads on any PyFileSystem (including amazon)
+
+### Form improvements
+
+- FORM.confirm('Are you sure?',{'Back':URL(...)})
+- SQLFORM.smartdictform(dict)
+- form.add_button(value,link)
+- SQLFORM.grid(groupby=...')
+- fixed security issue with SQLFORM.grid and SQLFORM.smartgrid
+- more export options in SQLFORM.grid and SQLFORM.smartgrid (html, xml, csv, ...)
+
+### Admin improvements
+
+- new admin pages: manage_students, bulk_regsiter, and progress reports
+- increased secure admin against CSRF
+- experimental Git integration
+- experimental OpenShift deployment
+- multi-language pluralization engine 
+- ace text web editor in admin
 - Ukrainian translations, thanks Vladyslav Kozlovskyy
 - Romanian translation for welcome, thanks ionel
 - support for mercurial 2.6, thanks Vlad
-- GAE projections
-- SQLFORM.grid(groupby=...')
-- db.table.field.filter_in, filter_out
-- allowed storage of uploads on any PyFileSystem (including amazon)
-- new scheduler can now handle 10k tasks with 20 concurrent workers and no known issues (thanks to niphlod, ykessler, dhx, toomim)
-- shceduler: tasks can be found in the environment (no need to define the tasks parameter)
-- scheduler: max_empty_runs kills the workers automatically if no new tasks are found in queue (nice for "spikes" of processing power), discard_results to completely discard the results (if you don't need the output of the task), utc_time enables datetime calculations with UTC time, task_name is no longer required (filled automatically with function_name if found empty), uuid makes easy to coordinate scheduler_task maintenance (filled automatically if not provided), stop_time has no default (previously was today+1), retry_failed to requeue automatically failed tasks, sync_output refreshes automatically the output (nice to report percentages)
-- scheduler tasks can be DISABLED (put to sleep and do nothing if not sending the heartbeat every 30 seconds), TERMINATE (complete the current task and then die), KILL (kill ASAP), EXPIRED (if stop_time passed)
+
+### Scheduler Inprovements
+
 - web2py.py -K myapp -X starts the myapp scheduler alongside the webserver
+- more options: web2py.py -E -b -L
+- scheduler can now handle 10k tasks with 20 concurrent workers and no known issues (thanks to niphlod, ykessler, dhx, toomim)
+- tasks can be found in the environment (no need to define the tasks parameter)
+- max_empty_runs kills the workers automatically if no new tasks are found in queue (nice for "spikes" of processing power), discard_results to completely discard the results (if you don't need the output of the task), utc_time enables datetime calculations with UTC time, task_name is no longer required (filled automatically with function_name if found empty), uuid makes easy to coordinate scheduler_task maintenance (filled automatically if not provided), stop_time has no default (previously was today+1), retry_failed to requeue automatically failed tasks, sync_output refreshes automatically the output (nice to report percentages)
+- tasks can be DISABLED (put to sleep and do nothing if not sending the heartbeat every 30 seconds), TERMINATE (complete the current task and then die), KILL (kill ASAP), EXPIRED (if stop_time passed)
+
+### Other Improvements 
+
+- new layout based on Twitter Bootstrap
+- New generic views: generic.ics (Mac Mail Calendar) and generic.map (Google Maps)
+- request.args(0,default=0, cast=int, otherwise=URL(...)), thanks Anthony
+- redirect(...,type='auto') will be handled properly in ajax responses
+- routes in can redirect outside with routes_in=[('/path','303->http://..')]
+- better memcache support
+- improved spreadsheet, thanks Alan
+- new interantionalization engine, thanks Vladyslav
+- pluralization engine, thanks Vladyslav
+- new makrmin with supports for nested lists, <i>, <em>, autolinks, thanks Vladyslav
+- new syntax: {{=BR()*5}}
+- gluon.cache.lazy_cache decorator allows caching functions in modules
+- .coffee and .less support in response.fields, thanks Sam Sheftel
+- ldap certificate support
+- pg8000 postgresql driver support (experimental)
+- @cache('%(name)s%(args)s%(vars)s',5) and cache.autokey
+- added tox.ini, thanks Marc
+- web2py.py --run_system_tests, thanks Marc Abramowitz
+- html.py (and web2py helpers) can be used without web2py dependencies
 
 
 ## 1.99.5-1.99.7
@@ -125,7 +142,6 @@ This is a major revision in peparation for web2py 2.0
 - experimental PyPy support
 - experimental mongodb support, thanks Mark
 - tickets in db now accessible from admin, thanks Niphlod
-- many grid improvements and bug fixes
 
 
 

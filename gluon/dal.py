@@ -6281,9 +6281,11 @@ class Row(dict):
     this is only used to store a Row
     """
 
-    def __init__(self,*args,**kwargs):
-        dict.__init__(self,*args,**kwargs)
-        self.__dict__ = self
+    def __getattr__(self, key):
+        return self[key]
+
+    def __setattr__(self, key, value):
+        self[key] = value
 
     def __getitem__(self, key):
         key=str(key)
@@ -6572,7 +6574,6 @@ class DAL(dict):
         :fake_migrate_all (defaults to False). If sets to True fake migrates ALL tables
         :attempts (defaults to 5). Number of times to attempt connecting
         """
-        self.__dict__ = self
         if not decode_credentials:
             credential_decoder = lambda cred: cred
         else:
@@ -6983,8 +6984,7 @@ def index():
             yield self[tablename]
 
     def __getitem__(self, key):
-        key = str(key)
-        return dict.__getitem__(self,key)
+        return self.__getattr__(str(key))
 
     def __getattr__(self, key):
         if not key is '_LAZY_TABLES' and key in self._LAZY_TABLES:
@@ -6999,7 +6999,7 @@ def index():
         if key[:1]!='_' and key in self:
             raise SyntaxError, \
                 'Object %s exists and cannot be redefined' % key
-        dict.__setattr__(self,key,value)
+        dict.__setitem__(self,key,value)
 
     def __repr__(self):
         return '<DAL ' + dict.__repr__(self) + '>'
@@ -7201,7 +7201,6 @@ class Table(dict):
 
         :raises SyntaxError: when a supplied field is of incorrect type.
         """
-        self.__dict__ = self
         self._actual = False # set to True by define_table()
         self._tablename = tablename
         self._sequence_name = args.get('sequence_name',None) or \
@@ -7463,6 +7462,9 @@ class Table(dict):
                     'value must be a dictionary: %s' % value
             dict.__setitem__(self, str(key), value)
 
+    def __getattr__(self, key):                                                                                               
+        return self[key]
+
     def __delitem__(self, key):
         if isinstance(key, dict):
             query = self._build_query(key)
@@ -7474,7 +7476,7 @@ class Table(dict):
     def __setattr__(self, key, value):
         if key[:1]!='_' and key in self:
             raise SyntaxError, 'Object exists and cannot be redefined: %s' % key
-        dict.__setattr__(self,key,value)
+        self[key] = value
 
     def __iter__(self):
         for fieldname in self.fields:

@@ -13,41 +13,10 @@ Provides:
 """
 
 import cPickle
+import portalocker
 
 __all__ = ['List', 'Storage', 'Settings', 'Messages',
            'StorageList', 'load_storage', 'save_storage']
-
-
-class List(list):
-    """
-    Like a regular python list but a[i] if i is out of bounds return None
-    instead of IndexOutOfBounds
-    """
-
-    def __call__(self, i, default=None, cast=None, otherwise=None):
-        """
-        request.args(0,default=0,cast=int,otherwise='http://error_url')
-        request.args(0,default=0,cast=int,otherwise=lambda:...)
-        """
-        n = len(self)
-        if 0<=i<n or -n<=i<0:
-            value = self[i]
-        else:
-            value = default
-        if cast:
-            try:
-                value = cast(value)
-            except (ValueError, TypeError):
-                from http import HTTP, redirect
-                if otherwise is None:
-                    raise HTTP(404)
-                elif isinstance(otherwise,str):
-                    redirect(otherwise)
-                elif callable(otherwise):
-                    return otherwise()
-                else:
-                    raise RuntimeError, "invalid otherwise"
-        return value
 
 class Storage(dict):
     """
@@ -66,31 +35,24 @@ class Storage(dict):
         2
 
         >>> del o.a
-        >>> print o.a
-        
+        >>> print o.a        
+        None
     """
-    def __init__(self, *args, **kwargs): 
-        dict.__init__(self, *args, **kwargs)
-        self.__dict__ = self
-    def __getattr__(self,key):
-        return getattr(self,key) if key in self else None
-    def __getitem__(self,key):
-        return dict.get(self,key,None)
-    def copy(self):
-        self.__dict__ = {}
-        s = Storage(self)
-        self.__dict__ = self
-        return s
+    def __getattr__(self, key):
+        return dict.get(self, key, None)
+    def __setattr__(self, key, value):
+        self[key] = value
+    def __delattr__(self, key):
+        del self[key]
+    def __getitem__(self, key):
+        return dict.get(self, key, None)
     def __repr__(self):
-        return '<Storage %s>' % dict.__repr__(self)
+        return '<Storage %s>' + dict.__repr__(self)
     def __getstate__(self):
         return dict(self)
-    def __setstate__(self, sdict):
-        dict.__init__(self, sdict)
-        self.__dict__ = self
-    def update(self, *args, **kwargs):
-        dict.__init__(self, *args, **kwargs)
-        self.__dict__ = self
+    def __setstate__(self,values):
+        self.update(values)
+
     def getlist(self,key):
         """
         Return a Storage value as a list.
@@ -111,9 +73,10 @@ class Storage(dict):
         >>> request.vars.getlist('z')
         []
         """
-        value = getattr(self,key,[])
+        value = self.get(key,[])
         return value if not value else \
             value if isinstance(value,(list,tuple)) else [value]
+
     def getfirst(self,key,default=None):
         """
         Return the first or only value when given a request.vars-style key.
@@ -132,8 +95,9 @@ class Storage(dict):
         'abc'
         >>> request.vars.getfirst('z')
         """
-        values = self.getlist(default)
+        values = self.getlist(key)
         return values[0] if values else default
+
     def getlast(self,key,default=None):
         """
         Returns the last or only single value when 
@@ -153,8 +117,8 @@ class Storage(dict):
         'def'
         >>> request.vars.getlast('z')
         """
-        values = self.getlist(default)
-        return values[0] if values else default
+        values = self.getlist(key)
+        return values[-1] if values else default
 
 PICKABLE = (str,int,long,float,bool,list,dict,tuple,set)
 
@@ -191,27 +155,50 @@ def save_storage(storage, filename):
 
 class Settings(Storage):
     def __setattr__(self, key, value):
-        if key != 'lock_keys' and self.lock_keys and not key in self:
+        if key != 'lock_keys' and 'lock_keys' in self and not key in self:
             raise SyntaxError, 'setting key \'%s\' does not exist' % key
-        if key != 'lock_values' and self.lock_values:
+        if key != 'lock_values' and 'lock_values' in self:
             raise SyntaxError, 'setting value cannot be changed: %s' % key
-        Storage.__setattr__(self,key,value)
+        self[key] = value
 
-class Messages(Storage):
+class Messages(Settings):
     def __init__(self, T):
         Storage.__init__(self,T=T)
-
-    def __setattr__(self, key, value):
-        if key != 'lock_keys' and self.lock_keys and not key in self:
-            raise SyntaxError, 'setting key \'%s\' does not exist' % key
-        if key != 'lock_values' and self.lock_values:
-            raise SyntaxError, 'setting value cannot be changed: %s' % key
-        Storage.__setattr__(self,key,value)
-
     def __getattr__(self, key):
-        value = Storage.__getattr__(self,key)
+        value = self[key]
         if isinstance(value, str):
             return str(self.T(value))
+        return value
+
+class List(list):
+    """
+    Like a regular python list but a[i] if i is out of bounds return None
+    instead of IndexOutOfBounds
+    """
+
+    def __call__(self, i, default=None, cast=None, otherwise=None):
+        """
+        request.args(0,default=0,cast=int,otherwise='http://error_url')
+        request.args(0,default=0,cast=int,otherwise=lambda:...)
+        """
+        n = len(self)
+        if 0<=i<n or -n<=i<0:
+            value = self[i]
+        else:
+            value = default
+        if cast:
+            try:
+                value = cast(value)
+            except (ValueError, TypeError):
+                from http import HTTP, redirect
+                if otherwise is None:
+                    raise HTTP(404)
+                elif isinstance(otherwise,str):
+                    redirect(otherwise)
+                elif callable(otherwise):
+                    return otherwise()
+                else:
+                    raise RuntimeError, "invalid otherwise"
         return value
 
 
