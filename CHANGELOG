@@ -12,15 +12,15 @@
 - db(...).select(db.mytable.myfield.count(distinct=True))
 - db(db.a)._update(name=db(db.b.a==db.a.id).nested_select(db.b.id))
 - db.mytable.myfield.filter_in, filter_out
-- db.mytable._enable_record_versioning(db) adds verining to this table
+- db.mytable._enable_record_versioning(db) adds versioning to this table
 - teradata adapter, thanks Andrew Willimott
 - experimental Sybase Adapter
 - added db.table.field.avg()
-- Suport for Google App Engine projections
+- Support for Google App Engine projections
 
 ### Auth improvements
 
-- auth.enable_record_versioning(db)  adds full versining to all tables
+- auth.enable_record_versioning(db)  adds full versioning to all tables
 - @auth.requires_login(otherwise=URL(...))
 - auth supports salt and compatible with third party data, thanks Dave Stoll
 - CRYPT now defaults to pbkdf2(1000,20,sha1)
@@ -33,14 +33,14 @@
 - FORM.confirm('Are you sure?',{'Back':URL(...)})
 - SQLFORM.smartdictform(dict)
 - form.add_button(value,link)
-- SQLFORM.grid(groupby=...')
+- SQLFORM.grid(groupby='...')
 - fixed security issue with SQLFORM.grid and SQLFORM.smartgrid
 - more export options in SQLFORM.grid and SQLFORM.smartgrid (html, xml, csv, ...)
 
 ### Admin improvements
 
 - new admin pages: manage_students, bulk_regsiter, and progress reports
-- increased secure admin against CSRF
+- increased security in admin against CSRF
 - experimental Git integration
 - experimental OpenShift deployment
 - multi-language pluralization engine 
@@ -49,14 +49,28 @@
 - Romanian translation for welcome, thanks ionel
 - support for mercurial 2.6, thanks Vlad
 
-### Scheduler Inprovements
+### Scheduler Improvements (thanks to niphlod, ykessler, dhx, toomim)
 
 - web2py.py -K myapp -X starts the myapp scheduler alongside the webserver
+- tasks are marked EXPIRED (if stop_time passed)
+- functions with no result don't end up in scheduler_run
 - more options: web2py.py -E -b -L
-- scheduler can now handle 10k tasks with 20 concurrent workers and no known issues (thanks to niphlod, ykessler, dhx, toomim)
-- tasks can be found in the environment (no need to define the tasks parameter)
-- max_empty_runs kills the workers automatically if no new tasks are found in queue (nice for "spikes" of processing power), discard_results to completely discard the results (if you don't need the output of the task), utc_time enables datetime calculations with UTC time, task_name is no longer required (filled automatically with function_name if found empty), uuid makes easy to coordinate scheduler_task maintenance (filled automatically if not provided), stop_time has no default (previously was today+1), retry_failed to requeue automatically failed tasks, sync_output refreshes automatically the output (nice to report percentages)
-- tasks can be DISABLED (put to sleep and do nothing if not sending the heartbeat every 30 seconds), TERMINATE (complete the current task and then die), KILL (kill ASAP), EXPIRED (if stop_time passed)
+- scheduler can now handle 10k tasks with 20 concurrent workers and with no issues
+- new params:
+    tasks can be found in the environment (no need to define the tasks parameter)
+    max_empty_runs kills the workers automatically if no new tasks are found in queue (nice for "spikes" of processing power)
+    discard_results to completely discard the results (if you don't need the output of the task)
+    utc_time enables datetime calculations with UTC time
+- scheduler_task changes:
+    task_name is no longer required (filled automatically with function_name if found empty)
+    uuid makes easy to coordinate scheduler_task maintenance (filled automatically if not provided)
+    stop_time has no default (previously was today+1)
+    retry_failed to requeue automatically failed tasks
+    sync_output refreshes automatically the output (nice to report percentages)
+- workers can be:
+    DISABLED (put to sleep and do nothing if not sending the heartbeat every 30 seconds)
+    TERMINATE (complete the current task and then die)
+    KILL (kill ASAP)
 
 ### Other Improvements 
 
@@ -67,12 +81,12 @@
 - routes in can redirect outside with routes_in=[('/path','303->http://..')]
 - better memcache support
 - improved spreadsheet, thanks Alan
-- new interantionalization engine, thanks Vladyslav
+- new internationalization engine, thanks Vladyslav
 - pluralization engine, thanks Vladyslav
-- new makrmin with supports for nested lists, <i>, <em>, autolinks, thanks Vladyslav
+- new markmin with support for nested lists, <i>, <em>, autolinks, thanks Vladyslav
 - new syntax: {{=BR()*5}}
 - gluon.cache.lazy_cache decorator allows caching functions in modules
-- .coffee and .less support in response.fields, thanks Sam Sheftel
+- .coffee and .less support in response.files, thanks Sam Sheftel
 - ldap certificate support
 - pg8000 postgresql driver support (experimental)
 - @cache('%(name)s%(args)s%(vars)s',5) and cache.autokey
