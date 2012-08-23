@@ -2,6 +2,7 @@
 
 ### DAL Improvements
 
+- Support for DAL(lazy_tables=True) and db.define_table(on_define=lambda table:), thanks Jonathan
 - MongoDB support in DAL (experimental)
 - geodal and spatialite, thanks Denes and Fran (experimental)
 - db.mytable._before_insert, _after_insert, _before_update, _after_update, _before_delete. _after_delete (list of callbacks)
@@ -17,6 +18,7 @@
 - experimental Sybase Adapter
 - added db.table.field.avg()
 - Support for Google App Engine projections
+- Field(... 'upload', default=path) now accepts a path to a local file as default value, if user does not upload a file. Relative path looks inside current application folder, thanks Marin
 
 ### Auth improvements
 
