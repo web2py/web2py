@@ -174,7 +174,7 @@ import platform
 CALLABLETYPES = (types.LambdaType, types.FunctionType,
                  types.BuiltinFunctionType,
                  types.MethodType, types.BuiltinMethodType)
-TABLE_ARGS = ('migrate','primarykey','fake_migrate','format','singular','plural','trigger_name','sequence_name','common_filter','polymodel','table_class')
+TABLE_ARGS = ('migrate','primarykey','fake_migrate','format','singular','plural','trigger_name','sequence_name','common_filter','polymodel','table_class','on_define')
 
 ###################################################################################
 # following checks allow the use of dal without web2py, as a standalone module
@@ -6977,6 +6977,8 @@ def index():
                 sql_locker.release()
         else:
             table._dbt = None
+        on_define = args.get('on_define',None) 
+        if on_define: on_define(table)
         return table
 
     def __iter__(self):
@@ -8148,6 +8150,9 @@ class Field(Expression):
         self.custom_qualifier = custom_qualifier
         self.label = label if label!=None else fieldname.replace('_',' ').title()
         self.requires = requires if requires!=None else []
+
+    def set_attributes(self,*args,**attributes):
+        self.__dict__.update(*args,**attributes)
 
     def clone(self,point_self_references_to=False,**args):
         field = copy.copy(self)
