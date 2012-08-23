@@ -9,7 +9,7 @@
 - DAL BIGINT support and DAL(...,bigint_id=True)
 - IS_IN_DB(..., distinct=True)
 - new syntax: db.mytable.insert(myuploadfield=open(....))
-- db.mytable.myfield.count(True)
+- db(...).select(db.mytable.myfield.count(distinct=True))
 - db(db.a)._update(name=db(db.b.a==db.a.id).nested_select(db.b.id))
 - db.mytable.myfield.filter_in, filter_out
 - db.mytable._enable_record_versioning(db) adds verining to this table
@@ -78,7 +78,7 @@
 - @cache('%(name)s%(args)s%(vars)s',5) and cache.autokey
 - added tox.ini, thanks Marc
 - web2py.py --run_system_tests, thanks Marc Abramowitz
-- portable html.py
+- html.py (and web2py helpers) can be used without web2py dependencies
 
 
 ## 1.99.5-1.99.7
