@@ -4463,8 +4463,12 @@ class Wiki(object):
     rows_page = 25
     regex_redirect = re.compile('redirect\s+(\w+\://\S+)\s*')
     def markmin_render(self,page):
-        return MARKMIN(page.body,url=True,environment=self.env,
+        html = MARKMIN(page.body,url=True,environment=self.env,
                        autolinks=lambda link: expand_one(link,{})).xml()
+        html += DIV(_class='w2p_wiki_tags',
+                    *[A(t.strip(),_href=URL(args='_search',vars=dict(q=t)))
+                      for t in page.tags or [] if t.strip()]).xml()
+        return html
     @staticmethod
     def component(text):
         """
@@ -4767,7 +4771,7 @@ class Wiki(object):
 
             submenu.append((current.T('Create New Page'),None,
                             URL(controller,function,args=('_create'))))
-        # if self.can_manage():
+        if self.can_manage():
             submenu.append((current.T('Manage Pages'),None,
                             URL(controller,function,args=('_pages'))))
             submenu.append((current.T('Edit Menu'),None,
@@ -4782,13 +4786,13 @@ class Wiki(object):
         request = current.request
         content = CAT()
         if tags is None and query is None:
-            form = FORM(INPUT(_name='tags',requires=IS_NOT_EMPTY(),
-                              value=request.vars.tags),
+            form = FORM(INPUT(_name='q',requires=IS_NOT_EMPTY(),
+                              value=request.vars.q),
                         INPUT(_type="submit",_value=current.T('Search')),
                         _method='GET')
             content.append(DIV(form,_class='w2p_wiki_form'))
-            if request.vars:
-                tags = [v.strip() for v in request.vars.tags.split(',')]
+            if request.vars.q:
+                tags = [v.strip() for v in request.vars.q.split(',')]
                 tags = [v for v in tags if v]
         if tags or not query is None:
             db = self.auth.db
@@ -4801,7 +4805,7 @@ class Wiki(object):
             if query is None:
                 query = (db.wiki_page.id==db.wiki_tag.wiki_page)&\
                     (db.wiki_tag.name.belongs(tags))
-                query = query|db.wiki_page.title.startswith(request.vars.tags)
+                query = query|db.wiki_page.title.startswith(request.vars.q)
             pages = db(query).select(
                 *fields,**dict(orderby=orderby or ~count,
                                groupby=db.wiki_page.id,
@@ -4811,7 +4815,7 @@ class Wiki(object):
                     content.append(DIV(current.T("No results"),
                                        _class='w2p_wiki_form'))
                 def link(t):
-                    return A(t,_href=URL(args='_search',vars=dict(tags=t)))
+                    return A(t,_href=URL(args='_search',vars=dict(q=t)))
                 items = [DIV(H3(A(p.title,_href=URL(args=p.slug))),
                              MARKMIN(self.first_paragraph(p)) \
                                  if preview else '',
@@ -4844,7 +4848,7 @@ class Wiki(object):
                    _style='padding:0.2em;font-size:%sem' \
                        % scale(item(count)),
                    _href=URL(args='_search',
-                             vars=dict(tags=item.wiki_tag.name)))
+                             vars=dict(q=item.wiki_tag.name)))
                  for item in ids]
         return dict(content=DIV(_class='w2p_cloud',*items))
 
