@@ -16,8 +16,9 @@ class Template:
     def __init__(self, infile=None, elements=None, format='A4', orientation='portrait',
                  title='', author='', subject='', creator='', keywords=''):
         if elements:
-            self.elements = dict([(v['name'].lower(),v) for v in elements])
-        self.handlers = {'T': self.text, 'L': self.line, 'I': self.image,
+            self.elements = elements
+            self.keys = [v['name'].lower() for v in self.elements]
+        self.handlers = {'T': self.text, 'L': self.line, 'I': self.image, 
                          'B': self.rect, 'BC': self.barcode, }
         self.pg_no = 0
         self.texts = {}
@@ -32,34 +33,33 @@ class Template:
         "Parse template format csv file and create elements dict"
         keys = ('name','type','x1','y1','x2','y2','font','size',
             'bold','italic','underline','foreground','background',
-            'align','text','priority')
-        self.elements = {}
-        f = open(infile, 'rb')
-        try:
-            for row in csv.reader(f, delimiter=delimiter):
-                kargs = {}
-                for i,v in enumerate(row):
-                    if not v.startswith("'") and decimal_sep!=".":
-                        v = v.replace(decimal_sep,".")
-                    else:
-                        v = v
-                    if v=='':
-                        v = None
-                    else:
-                        v = eval(v.strip())
-                    kargs[keys[i]] = v
-                self.elements[kargs['name'].lower()] = kargs
-        finally:
-            f.close()
+            'align','text','priority', 'multiline')
+        self.elements = []
+        for row in csv.reader(open(infile, 'rb'), delimiter=delimiter):
+            kargs = {}
+            for i,v in enumerate(row):
+                if not v.startswith("'") and decimal_sep!=".": 
+                    v = v.replace(decimal_sep,".")
+                else:
+                    v = v
+                if v=='':
+                    v = None
+                else:
+                    v = eval(v.strip())
+                kargs[keys[i]] = v
+            self.elements.append(kargs)
+        self.keys = [v['name'].lower() for v in self.elements]
 
     def add_page(self):
         self.pg_no += 1
         self.texts[self.pg_no] = {}
-
+        
     def __setitem__(self, name, value):
-        if name.lower() in self.elements:
+        if self.has_key(name):
             if isinstance(value,unicode):
                 value = value.encode("latin1","ignore")
+            elif value is None:
+                value = ""
             else:
                 value = str(value)
             self.texts[self.pg_no][name.lower()] = value
@@ -67,14 +67,27 @@ class Template:
     # setitem shortcut (may be further extended)
     set = __setitem__
 
+    def has_key(self, name):
+        return name.lower() in self.keys
+        
     def __getitem__(self, name):
-        if name.lower() in self.elements:
-            return self.texts[self.pg_no].get(name.lower(), self.elements[name.lower()]['text'])
+        if self.has_key(name):
+            key = name.lower()
+            if key in self.texts:
+                # text for this page:
+                return self.texts[self.pg_no][key]
+            else:
+                # find first element for default text:
+                elements = [element for element in self.elements
+                    if element['name'].lower() == key]
+                if elements:
+                    return elements[0]['text']
 
     def split_multicell(self, text, element_name):
         "Divide (\n) a string using a given element width"
         pdf = self.pdf
-        element = self.elements[element_name.lower()]
+        element = [element for element in self.elements
+            if element['name'].lower() == element_name.lower()][0]
         style = ""
         if element['bold']: style += "B"
         if element['italic']: style += "I"
@@ -88,7 +101,7 @@ class Template:
         return pdf.multi_cell(w=element['x2']-element['x1'],
                              h=element['y2']-element['y1'],
                              txt=text,align=align,split_only=True)
-
+        
     def render(self, outfile, dest="F"):
         pdf = self.pdf
         for pg in range(1, self.pg_no+1):
@@ -96,7 +109,7 @@ class Template:
             pdf.set_font('Arial','B',16)
             pdf.set_auto_page_break(False,margin=0)
 
-            for element in sorted(self.elements.values(),key=lambda x: x['priority']):
+            for element in sorted(self.elements,key=lambda x: x['priority']):
                 #print "dib",element['type'], element['name'], element['x1'], element['y1'], element['x2'], element['y2']
                 element = element.copy()
                 element['text'] = self.texts[pg].get(element['name'].lower(), element['text'])
@@ -105,12 +118,12 @@ class Template:
                 self.handlers[element['type'].upper()](pdf, **element)
                 if 'rotate' in element:
                     pdf.rotate(0)
-
+                    
         return pdf.output(outfile, dest)
-
-    def text(self, pdf, x1=0, y1=0, x2=0, y2=0, text='', font="arial", size=10,
-             bold=False, italic=False, underline=False, align="",
-             foreground=0, backgroud=65535,
+        
+    def text(self, pdf, x1=0, y1=0, x2=0, y2=0, text='', font="arial", size=10, 
+             bold=False, italic=False, underline=False, align="", 
+             foreground=0, backgroud=65535, multiline=None,
              *args, **kwargs):
         if text:
             if pdf.text_color!=rgb(foreground):
@@ -134,7 +147,19 @@ class Template:
             ##m_k = 72 / 2.54
             ##h = (size/m_k)
             pdf.set_xy(x1,y1)
-            pdf.cell(w=x2-x1,h=y2-y1,txt=text,border=0,ln=0,align=align)
+            if multiline is None:
+                # multiline==None: write without wrapping/trimming (default)
+                pdf.cell(w=x2-x1,h=y2-y1,txt=text,border=0,ln=0,align=align)
+            elif multiline:
+                # multiline==True: automatic word - warp
+                pdf.multi_cell(w=x2-x1,h=y2-y1,txt=text,border=0,align=align)
+            else:
+                # multiline==False: trim to fit exactly the space defined
+                text = pdf.multi_cell(w=x2-x1, h=y2-y1,
+                             txt=text, align=align, split_only=True)[0]
+                print "trimming: *%s*" % text
+                pdf.cell(w=x2-x1,h=y2-y1,txt=text,border=0,ln=0,align=align)
+
             #pdf.Text(x=x1,y=y1,txt=text)
 
     def line(self, pdf, x1=0, y1=0, x2=0, y2=0, size=0, foreground=0, *args, **kwargs):
@@ -176,7 +201,7 @@ if __name__ == "__main__":
              title="Sample Invoice", author="Sample Company",
              subject="Sample Customer", keywords="Electronic TAX Invoice")
     f.parse_csv(infile="invoice.csv", delimiter=";", decimal_sep=",")
-
+    
     detail = "Lorem ipsum dolor sit amet, consectetur. " * 30
     items = []
     for i in range(1, 30):
@@ -185,7 +210,7 @@ if __name__ == "__main__":
         price = round(random.random()*100,3)
         code = "%s%s%02d" % (chr(random.randint(65,90)), chr(random.randint(65,90)),i)
         items.append(dict(code=code, unit='u',
-                          qty=qty, price=price,
+                          qty=qty, price=price, 
                           amount=qty*price,
                           ds="%s: %s" % (i,ds)))
 
@@ -228,7 +253,7 @@ if __name__ == "__main__":
         f["company_name"] = "Sample Company"
         f["company_logo"] = "tutorial/logo.png"
         f["company_header1"] = "Some Address - somewhere -"
-        f["company_header2"] = "http://www.example.com"
+        f["company_header2"] = "http://www.example.com"        
         f["company_footer1"] = "Tax Code ..."
         f["company_footer2"] = "Tax/VAT ID ..."
         f['number'] = '0001-00001234'
@@ -236,9 +261,9 @@ if __name__ == "__main__":
         f['due_date'] = '2099-09-10'
         f['customer_name'] = "Sample Client"
         f['customer_address'] = "Siempreviva 1234"
-
+       
         # print line item...
-        li = 0
+        li = 0 
         k = 0
         total = Decimal("0.00")
         for it in li_items:
@@ -268,11 +293,9 @@ if __name__ == "__main__":
         else:
             f['total_label'] = 'SubTotal:'
         f['total'] = "%0.2f" % total
-
+            
     f.render("./invoice.pdf")
     if sys.platform.startswith("linux"):
         os.system("evince ./invoice.pdf")
     else:
         os.system("./invoice.pdf")
-
-
