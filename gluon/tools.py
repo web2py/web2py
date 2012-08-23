@@ -4684,10 +4684,11 @@ class Wiki(object):
     def create(self):
         if not self.can_edit(): return self.not_authorized()
         db = self.auth.db
-        form = SQLFORM.factory(
-            Field('slug',default=current.request.args(1),
-                  label = 'New Page',
-                  requires=(IS_SLUG(),IS_NOT_IN_DB(db,db.wiki_page.slug))))
+        form = FORM(INPUT(_name='slug',value=current.request.args(1),
+                          requires=(IS_SLUG(),
+                                    IS_NOT_IN_DB(db,db.wiki_page.slug))),
+                    INPUT(_type='submit',
+                          _value=current.T('Create Page from Slug')))
         if form.process().accepted:
             redirect(URL(args=('_edit',form.vars.slug)))
         return dict(content=form)
@@ -4781,9 +4782,10 @@ class Wiki(object):
         request = current.request
         content = CAT()
         if tags is None and query is None:
-            form = SQLFORM.factory(Field('tags',requires=IS_NOT_EMPTY(),
-                                         default=request.vars.tags,
-                                         label=current.T('Search')))
+            form = FORM(INPUT(_name='tags',requires=IS_NOT_EMPTY(),
+                              value=request.vars.tags),
+                        INPUT(_type="submit",_value=current.T('Search')),
+                        _method='GET')
             content.append(DIV(form,_class='w2p_wiki_form'))
             if request.vars:
                 tags = [v.strip() for v in request.vars.tags.split(',')]
@@ -4799,6 +4801,7 @@ class Wiki(object):
             if query is None:
                 query = (db.wiki_page.id==db.wiki_tag.wiki_page)&\
                     (db.wiki_tag.name.belongs(tags))
+                query = query|db.wiki_page.title.startswith(request.vars.tags)
             pages = db(query).select(
                 *fields,**dict(orderby=orderby or ~count,
                                groupby=db.wiki_page.id,
@@ -4812,9 +4815,10 @@ class Wiki(object):
                 items = [DIV(H3(A(p.title,_href=URL(args=p.slug))),
                              MARKMIN(self.first_paragraph(p)) \
                                  if preview else '',
-                             SPAN(*[link(t.strip()) for t in \
-                                        p.tags or [] if t.strip()]),
-                             _class='w2p_wiki_tags')
+                             DIV(_class='w2p_wiki_tags',
+                                 *[link(t.strip()) for t in \
+                                       p.tags or [] if t.strip()]),
+                             _class='w2p_wiki_search_item')
                          for p in pages]
                 content.append(DIV(_class='w2p_wiki_pages',*items))
             else:
@@ -4836,9 +4840,9 @@ class Wiki(object):
             a,b = ids[0](count), ids[-1](count)
         def scale(c):
             return '%.2f' % (3.0*(c-b)/max(a-b,1)+1)
-        items = [A(item.wiki_tag.name,_class='w2p_cloud_tag',
-                      _style='padding-right:0.2em;font-size:%sem' \
-                          % scale(item(count)),
+        items = [A(item.wiki_tag.name,
+                   _style='padding:0.2em;font-size:%sem' \
+                       % scale(item(count)),
                    _href=URL(args='_search',
                              vars=dict(tags=item.wiki_tag.name)))
                  for item in ids]
