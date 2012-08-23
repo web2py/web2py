@@ -170,6 +170,64 @@ class Messages(Settings):
             return str(self.T(value))
         return value
 
+class FastStorage(dict):
+    """
+    Eventually this should replace class Storage but causes memory leak 
+    because of http://bugs.python.org/issue1469629
+
+    >>> s = FastStorage()
+    >>> s.a = 1
+    >>> s.a
+    1
+    >>> s['a']
+    1
+    >>> s.b
+    >>> s['b']
+    >>> s['b']=2
+    >>> s['b']
+    2
+    >>> s.b
+    2
+    >>> isinstance(s,dict)
+    True
+    >>> dict(s)
+    {'a': 1, 'b': 2}
+    >>> dict(FastStorage(s))
+    {'a': 1, 'b': 2}
+    >>> import pickle
+    >>> s = pickle.loads(pickle.dumps(s))
+    >>> dict(s)
+    {'a': 1, 'b': 2}
+    >>> del s.b
+    >>> del s.a
+    >>> s.a
+    >>> s.b
+    >>> s['a']
+    >>> s['b']
+    """
+    def __init__(self, *args, **kwargs): 
+        dict.__init__(self, *args, **kwargs)
+        self.__dict__ = self
+    def __getattr__(self,key):
+        return getattr(self,key) if key in self else None
+    def __getitem__(self,key):
+        return dict.get(self,key,None)
+    def copy(self):
+        self.__dict__ = {}
+        s = FastStorage(self)
+        self.__dict__ = self
+        return s
+    def __repr__(self):
+        return '<Storage %s>' % dict.__repr__(self)
+    def __getstate__(self):
+        return dict(self)
+    def __setstate__(self, sdict):
+        dict.__init__(self, sdict)
+        self.__dict__=self
+    def update(self, *args, **kwargs):
+        dict.__init__(self, *args, **kwargs)
+        self.__dict__=self
+
 class List(list):
     """
     Like a regular python list but a[i] if i is out of bounds return None
