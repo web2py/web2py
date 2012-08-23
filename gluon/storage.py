@@ -35,7 +35,7 @@ class Storage(dict):
         2
 
         >>> del o.a
-        >>> print o.a        
+        >>> print o.a
         None
     """
     def __getattr__(self, key):
@@ -100,7 +100,7 @@ class Storage(dict):
 
     def getlast(self,key,default=None):
         """
-        Returns the last or only single value when 
+        Returns the last or only single value when
         given a request.vars-style key.
 
         If the value is a list, the last item will be returned;
@@ -155,9 +155,9 @@ def save_storage(storage, filename):
 
 class Settings(Storage):
     def __setattr__(self, key, value):
-        if key != 'lock_keys' and 'lock_keys' in self and not key in self:
+        if key != 'lock_keys' and self['lock_keys'] and key not in self:
             raise SyntaxError, 'setting key \'%s\' does not exist' % key
-        if key != 'lock_values' and 'lock_values' in self:
+        if key != 'lock_values' and self['lock_values']:
             raise SyntaxError, 'setting value cannot be changed: %s' % key
         self[key] = value
 
