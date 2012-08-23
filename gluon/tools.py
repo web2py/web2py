@@ -1171,7 +1171,7 @@ class Auth(object):
         return self.db[self.settings.table_user_name]
     def table_group(self):
         return self.db[self.settings.table_group_name]
-    def table_memberhsip(self):
+    def table_membership(self):
         return self.db[self.settings.table_membership_name]
     def table_event(self):
         return self.db[self.settings.table_event_name]
@@ -1272,7 +1272,7 @@ class Auth(object):
             if not 'register' in self.settings.actions_disabled:
                 bar.insert(-1, s2)
                 bar.insert(-1, register)
-            if 'username' in self.user_username and \
+            if self.use_username and \
                     not 'retrieve_username' in self.settings.actions_disabled:
                 bar.insert(-1, s2)
                 bar.insert(-1, retrieve_username)
@@ -1401,7 +1401,7 @@ class Auth(object):
                            min_length=settings.password_min_length)
         is_unique_email = [
             IS_EMAIL(error_message=self.messages.invalid_email),
-            IS_NOT_IN_DB(db, 'email.id')]
+            IS_NOT_IN_DB(db, '%s.email' % settings.table_user_name)]
         if not settings.email_case_sensitive:
             is_unique_email.insert(1,IS_LOWER())
         if not settings.table_user_name in db.tables:
