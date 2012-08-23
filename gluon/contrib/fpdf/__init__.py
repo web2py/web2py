@@ -14,3 +14,5 @@ except ImportError:
     warnings.warn("web2py gluon package not installed, required for html2pdf")
 
 from template import Template
+
+
