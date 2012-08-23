@@ -7,7 +7,7 @@ import gluon.serializers
 from gluon import current, HTTP
 from gluon.html import markmin_serializer, TAG, HTML, BODY, UL, XML, H1
 from gluon.contenttype import contenttype
-from gluon.contrib.pyfpdf import FPDF, HTMLMixin
+from gluon.contrib.fpdf import FPDF, HTMLMixin
 from gluon.sanitizer import sanitize
 from gluon.contrib.markmin.markmin2latex import markmin2latex
 from gluon.contrib.markmin.markmin2pdf import markmin2pdf
