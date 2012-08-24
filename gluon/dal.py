@@ -2737,7 +2737,10 @@ class OracleAdapter(BaseAdapter):
 
     def parse_value(self, value, field_type, blob_decode=True):
         if blob_decode and isinstance(value, cx_Oracle.LOB):
-            value = value.read()
+            try:
+                value = value.read()
+            except cx_Oracle.ProgrammingError: # After a subsequent fetch the LOB value is not valid anymore
+                pass
         return BaseAdapter.parse_value(self, value, field_type, blob_decode)
 
 
