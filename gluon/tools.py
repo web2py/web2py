@@ -1084,8 +1084,8 @@ class Auth(object):
         messages.is_empty = "Cannot be empty"
         messages.mismatched_password = "Password fields don't match"
         messages.verify_email = \
-            'Click on the link http://' + current.request.env.http_host + \
-            URL('default','user',args=['verify_email']) + \
+            'Click on the link ' + \
+            URL('default','user',args='verify_email',scheme=True) + \
             '/%(key)s to verify your email'
         messages.verify_email_subject = 'Email verification'
         messages.username_sent = 'Your username was emailed to you'
@@ -1096,8 +1096,8 @@ class Auth(object):
         messages.retrieve_password = 'Your password is: %(password)s'
         messages.retrieve_password_subject = 'Password retrieve'
         messages.reset_password = \
-            'Click on the link http://' + current.request.env.http_host + \
-            URL('default','user',args=['reset_password']) + \
+            'Click on the link ' + \
+            URL('default','user',args='reset_password',scheme=True) + \
             '/%(key)s to reset your password'
         messages.reset_password_subject = 'Password reset'
         messages.invalid_reset_password = 'Invalid reset password'
