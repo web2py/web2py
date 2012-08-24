@@ -7501,33 +7501,38 @@ class Table(dict):
         return self._db._adapter.drop(self,mode)
 
     def _listify(self,fields,update=False):
-        new_fields = []
-        new_fields_names = []
+        new_fields = {} # format: new_fields[name] = (field,value)
+        # store all fields passed as input in new_fields
         for name in fields:
             if not name in self.fields:
                 if name != 'id':
-                    raise SyntaxError, 'Field %s does not belong to the table' % name
+                    raise SyntaxError, \
+                        'Field %s does not belong to the table' % name
             else:
                 field = self[name]
                 value = fields[name]
-                if field.filter_in: value = field.filter_in(value)
-                new_fields.append((field,value))
-                new_fields_names.append(name)
+                if field.filter_in:
+                    value = field.filter_in(value)
+                new_fields[name] = (field,value)
+        # check all fields that should be in the self table
         for ofield in self:
-            if not ofield.name in new_fields_names:
-                if not update and not ofield.default is None:
-                    new_fields.append((ofield,ofield.default))
-                elif update and not ofield.update is None:
-                    new_fields.append((ofield,ofield.update))
-        for ofield in self:
+            name = ofield.name
+            # if field is supposed to be computed, compute it!
             if ofield.compute:
                 try:
-                    new_fields.append((ofield,ofield.compute(Row(fields))))
+                    new_fields[name] = (ofield,ofield.compute(Row(fields)))
                 except KeyError:
                     pass
-            if not update and ofield.required and not ofield.name in new_fields_names:
-                raise SyntaxError,'Table: missing required field: %s' % ofield.name
-        return new_fields
+            # if field is required, check its default value
+            elif not name in new_fields:
+                if not update and not ofield.default is None:
+                    new_fields[name] = (ofield,ofield.default)
+                elif update and not ofield.update is None:
+                    new_fields[name] = (ofield,ofield.update)
+            # error if field if required, record to be create and field missing
+            if not update and ofield.required and not name in new_fields:
+                raise SyntaxError, 'Table: missing required field: %s' % name
+        return new_fields.values()
 
     def _attempt_upload(self, fields):
         for field in self:
