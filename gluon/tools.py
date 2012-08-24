@@ -1177,6 +1177,8 @@ class Auth(object):
         return self.db[self.settings.table_event_name]
     def table_cas(self):
         return self.db[self.settings.table_cas_name]
+    def table_permission(self):
+        return self.db[self.settings.table_permission_name]
 
     def _HTTP(self, *a, **b):
         """
