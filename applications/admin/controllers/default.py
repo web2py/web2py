@@ -336,7 +336,7 @@ def pack_plugin():
         redirect(URL('plugin',args=request.args))
 
 def upgrade_web2py():
-    dialog = FORM.confim(T('Upgrade'),
+    dialog = FORM.confirm(T('Upgrade'),
                          {T('Cancel'):URL('site')})    
     if dialog.accepted:
         (success, error) = upgrade(request)
@@ -350,7 +350,7 @@ def upgrade_web2py():
 def uninstall():
     app = get_app()
 
-    dialog = FORM.confim(T('Uninstall'),
+    dialog = FORM.confirm(T('Uninstall'),
                          {T('Cancel'):URL('site')})
     
     if dialog.accepted:
@@ -433,7 +433,7 @@ def delete():
     if isinstance(sender, list):  # ## fix a problem with Vista
         sender = sender[0]
 
-    dialog = FORM.confim(T('Delete'),
+    dialog = FORM.confirm(T('Delete'),
                          {T('Cancel'):URL(sender, anchor=request.vars.id)})
 
     if dialog.accepted:
@@ -1003,7 +1003,7 @@ def delete_plugin():
     plugin = request.args(1)
     plugin_name='plugin_'+plugin
 
-    dialog = FORM.confim(
+    dialog = FORM.confirm(
         T('Delete'),
         {T('Cancel'):URL('design', args=app)})
 
@@ -1652,7 +1652,7 @@ def git_pull():
     if not have_git:
         session.flash = GIT_MISSING
         redirect(URL('site'))
-    dialog = FORM.confim(T('Pull'),
+    dialog = FORM.confirm(T('Pull'),
                          {T('Cancel'):URL('site')})    
     if dialog.accepted:
         try:
