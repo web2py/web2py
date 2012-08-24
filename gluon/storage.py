@@ -18,76 +18,7 @@ import portalocker
 __all__ = ['List', 'Storage', 'Settings', 'Messages',
            'StorageList', 'load_storage', 'save_storage']
 
-def have_python_bug_1469629():
-    """
-    http://bugs.python.org/issue1469629
-    
-    because of this bug class Storage is slower on Python < 2.7.3
-    """
-    import weakref
-    class Test(dict):
-        def __init__(self):
-            self.__dict__ = self
-    s = Test()
-    w = weakref.ref(s)
-    del s
-    return w() is not None
-
-HAVE_PYTHON_BUG_1469629 = have_python_bug_1469629()
-
-
-class NewStorage(dict):
-    def __init__(self, *args, **kwargs): 
-        dict.__init__(self, *args, **kwargs)
-        self.__dict__ = self
-    def __getattr__(self,key):
-        return getattr(self,key) if key in self else None
-    def __getitem__(self,key):
-        return dict.get(self,key,None)
-    def copy(self):
-        self.__dict__ = {}
-        s = Storage(self)
-        self.__dict__ = self
-        return s
-    def __repr__(self):
-        return '<Storage %s>' % dict.__repr__(self)
-    def __getstate__(self):
-        return dict(self)
-    def __setstate__(self, sdict):
-        dict.__init__(self, sdict)
-        self.__dict__ = self
-    def update(self, *args, **kwargs):
-        dict.__init__(self, *args, **kwargs)
-        self.__dict__ = self
-
-
-class OldStorage(dict):
-    def __getattr__(self, key):
-        return dict.get(self, key, None)
-    def __setattr__(self, key, value):
-        if value is None:
-            if key in self:
-                del self[key]
-        else:
-            self[key] = value
-    def __delattr__(self, key):
-        if key in self:
-            del self[key]
-        else:
-            raise AttributeError, "missing key=%s" % key
-    def __getitem__(self, key):
-        return dict.get(self, key, None)
-    def __repr__(self):
-        return '<Storage %s>' + dict.__repr__(self)
-    def __getstate__(self):
-        return dict(self)
-    def __setstate__(self, value):
-        for (k, v) in value.items():
-            self[k] = v
-
-
-class Storage(OldStorage if HAVE_PYTHON_BUG_1469629 else NewStorage):
-
+class Storage(dict):
     """
     A Storage object is like a dictionary except `obj.foo` can be used
     in addition to `obj['foo']`, and setting obj.foo = None deletes item foo.
@@ -104,9 +35,24 @@ class Storage(OldStorage if HAVE_PYTHON_BUG_1469629 else NewStorage):
         2
 
         >>> del o.a
-        >>> print o.a        
+        >>> print o.a
         None
     """
+    def __getattr__(self, key):
+        return dict.get(self, key, None)
+    def __setattr__(self, key, value):
+        self[key] = value
+    def __delattr__(self, key):
+        del self[key]
+    def __getitem__(self, key):
+        return dict.get(self, key, None)
+    def __repr__(self):
+        return '<Storage %s>' + dict.__repr__(self)
+    def __getstate__(self):
+        return dict(self)
+    def __setstate__(self,values):
+        self.update(values)
+
     def getlist(self,key):
         """
         Return a Storage value as a list.
@@ -130,6 +76,7 @@ class Storage(OldStorage if HAVE_PYTHON_BUG_1469629 else NewStorage):
         value = self.get(key,[])
         return value if not value else \
             value if isinstance(value,(list,tuple)) else [value]
+
     def getfirst(self,key,default=None):
         """
         Return the first or only value when given a request.vars-style key.
@@ -150,9 +97,10 @@ class Storage(OldStorage if HAVE_PYTHON_BUG_1469629 else NewStorage):
         """
         values = self.getlist(key)
         return values[0] if values else default
+
     def getlast(self,key,default=None):
         """
-        Returns the last or only single value when 
+        Returns the last or only single value when
         given a request.vars-style key.
 
         If the value is a list, the last item will be returned;
@@ -205,25 +153,80 @@ def save_storage(storage, filename):
     finally:
         if fp: fp.close()
 
-setter = Storage.__setitem__ if HAVE_PYTHON_BUG_1469629 else Storage.__setattr__
-getter = Storage.__getitem__ if HAVE_PYTHON_BUG_1469629 else Storage.__getattr__
-
 class Settings(Storage):
     def __setattr__(self, key, value):
-        if key != 'lock_keys' and 'lock_keys' in self and not key in self:
+        if key != 'lock_keys' and self['lock_keys'] and key not in self:
             raise SyntaxError, 'setting key \'%s\' does not exist' % key
-        if key != 'lock_values' and 'lock_values' in self:
+        if key != 'lock_values' and self['lock_values']:
             raise SyntaxError, 'setting value cannot be changed: %s' % key
-        setter(self,key,value)
+        self[key] = value
 
 class Messages(Settings):
     def __init__(self, T):
         Storage.__init__(self,T=T)
     def __getattr__(self, key):
-        value = getter(self,key)
+        value = self[key]
         if isinstance(value, str):
             return str(self.T(value))
         return value
+
+class FastStorage(dict):
+    """
+    Eventually this should replace class Storage but causes memory leak 
+    because of http://bugs.python.org/issue1469629
+
+    >>> s = FastStorage()
+    >>> s.a = 1
+    >>> s.a
+    1
+    >>> s['a']
+    1
+    >>> s.b
+    >>> s['b']
+    >>> s['b']=2
+    >>> s['b']
+    2
+    >>> s.b
+    2
+    >>> isinstance(s,dict)
+    True
+    >>> dict(s)
+    {'a': 1, 'b': 2}
+    >>> dict(FastStorage(s))
+    {'a': 1, 'b': 2}
+    >>> import pickle
+    >>> s = pickle.loads(pickle.dumps(s))
+    >>> dict(s)
+    {'a': 1, 'b': 2}
+    >>> del s.b
+    >>> del s.a
+    >>> s.a
+    >>> s.b
+    >>> s['a']
+    >>> s['b']
+    """
+    def __init__(self, *args, **kwargs): 
+        dict.__init__(self, *args, **kwargs)
+        self.__dict__ = self
+    def __getattr__(self,key):
+        return getattr(self,key) if key in self else None
+    def __getitem__(self,key):
+        return dict.get(self,key,None)
+    def copy(self):
+        self.__dict__ = {}
+        s = FastStorage(self)
+        self.__dict__ = self
+        return s
+    def __repr__(self):
+        return '<Storage %s>' % dict.__repr__(self)
+    def __getstate__(self):
+        return dict(self)
+    def __setstate__(self, sdict):
+        dict.__init__(self, sdict)
+        self.__dict__=self
+    def update(self, *args, **kwargs):
+        dict.__init__(self, *args, **kwargs)
+        self.__dict__=self
 
 class List(list):
     """

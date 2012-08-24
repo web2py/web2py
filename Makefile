@@ -1,3 +1,7 @@
+all:
+	echo "The Makefile is used to build the distribution."
+	echo "In order to run web2py you do not need to make anything."
+	echo "just run web2py.py"
 clean:
 	rm -f httpserver.log 
 	rm -f parameters*.py 
@@ -13,10 +17,6 @@ clean:
 	find ./applications/examples/ -name '.*' -exec rm -f {} \; 
 	find ./applications/welcome/ -name '.*' -exec rm -f {} \; 
 	find ./ -name '*.pyc' -exec rm -f {} \;
-all:
-	echo "The Makefile is used to build the distribution."
-	echo "In order to run web2py you do not need to make anything."
-	echo "just run web2py.py"
 epydoc:
 	### build epydoc
 	rm -f -r applications/examples/static/epydoc/ 
@@ -124,4 +124,8 @@ push:
 	hg push
 	git push
 	git push mdipierro
-	#bzr push bzr+ssh://mdipierro@bazaar.launchpad.net/~mdipierro/web2py/devel --use-existing-dir
+tag:
+	git tag -l '$(S)'
+	hg tag -l '$(S)'
+	make commit
+	make push

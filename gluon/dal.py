@@ -174,7 +174,7 @@ import platform
 CALLABLETYPES = (types.LambdaType, types.FunctionType,
                  types.BuiltinFunctionType,
                  types.MethodType, types.BuiltinMethodType)
-TABLE_ARGS = ('migrate','primarykey','fake_migrate','format','singular','plural','trigger_name','sequence_name','common_filter','polymodel','table_class')
+TABLE_ARGS = ('migrate','primarykey','fake_migrate','format','singular','plural','trigger_name','sequence_name','common_filter','polymodel','table_class','on_define')
 
 ###################################################################################
 # following checks allow the use of dal without web2py, as a standalone module
@@ -6291,11 +6291,6 @@ class Row(dict):
     this is only used to store a Row
     """
 
-    # IF NOT HAVE BUG http://bugs.python.org/issue1469629 uncommend these lines and comment __getattr__, __setattr__
-    # def __init__(self,*args,**kwargs):
-    #    dict.__init__(self,*args,**kwargs)
-    #    self.__dict__ = self
-
     def __getattr__(self, key):
         return self[key]
 
@@ -6589,7 +6584,6 @@ class DAL(dict):
         :fake_migrate_all (defaults to False). If sets to True fake migrates ALL tables
         :attempts (defaults to 5). Number of times to attempt connecting
         """
-        # self.__dict__ = self # http://bugs.python.org/issue1469629
         if not decode_credentials:
             credential_decoder = lambda cred: cred
         else:
@@ -6993,6 +6987,8 @@ def index():
                 sql_locker.release()
         else:
             table._dbt = None
+        on_define = args.get('on_define',None) 
+        if on_define: on_define(table)
         return table
 
     def __iter__(self):
@@ -7016,8 +7012,6 @@ def index():
             raise SyntaxError, \
                 'Object %s exists and cannot be redefined' % key
         dict.__setitem__(self,key,value)
-        # replace above line with below if not have bug http://bugs.python.org/issue1469629
-        # dict.__setattr__(self,key,value)
 
     def __repr__(self):
         return '<DAL ' + dict.__repr__(self) + '>'
@@ -7219,7 +7213,6 @@ class Table(dict):
 
         :raises SyntaxError: when a supplied field is of incorrect type.
         """
-        # self.__dict__ = self # http://bugs.python.org/issue1469629
         self._actual = False # set to True by define_table()
         self._tablename = tablename
         self._sequence_name = args.get('sequence_name',None) or \
@@ -7481,7 +7474,6 @@ class Table(dict):
                     'value must be a dictionary: %s' % value
             dict.__setitem__(self, str(key), value)
 
-    # comment if not have bug http://bugs.python.org/issue1469629
     def __getattr__(self, key):                                                                                               
         return self[key]
 
@@ -7497,8 +7489,6 @@ class Table(dict):
         if key[:1]!='_' and key in self:
             raise SyntaxError, 'Object exists and cannot be redefined: %s' % key
         self[key] = value
-        # replace with line below if have bug http://bugs.python.org/issue1469629
-        # dict.__setattr__(self,key,value)
 
     def __iter__(self):
         for fieldname in self.fields:
@@ -8170,6 +8160,9 @@ class Field(Expression):
         self.custom_qualifier = custom_qualifier
         self.label = label if label!=None else fieldname.replace('_',' ').title()
         self.requires = requires if requires!=None else []
+
+    def set_attributes(self,*args,**attributes):
+        self.__dict__.update(*args,**attributes)
 
     def clone(self,point_self_references_to=False,**args):
         field = copy.copy(self)
