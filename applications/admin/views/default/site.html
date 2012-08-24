@@ -135,13 +135,15 @@
       {{=form_update.custom.end}}
     </div>
     <!-- DEPLOY ON GAE -->
+    {{if not MULTI_USER_MODE or is_manager():}}
     <div class="box">
       <h3>{{=T("Deploy")}}</h3>
       <p>
 	{{=button(URL('gae','deploy'), T('Deploy on Google App Engine'))}}
 	{{=button(URL('openshift','deploy'),T('Deploy to OpenShift'))}}
       </p>
-    </div><br/>
+    </div>
+    {{pass}}
     {{if TWITTER_HASH:}}
     <div class="box">
       <h3>{{=T("%s Recent Tweets"%TWITTER_HASH)}}</h3>
