@@ -126,7 +126,7 @@ def app_cleanup(app, request):
                 r = False
 
     # Remove cache files
-    path = apath('%s/sessions/' % app, request)
+    path = apath('%s/cache/' % app, request)
     if os.path.exists(path):
         for f in os.listdir(path):
             try:
