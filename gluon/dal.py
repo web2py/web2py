@@ -7520,7 +7520,7 @@ class Table(dict):
                 elif update and not ofield.update is None:
                     new_fields.append((ofield,ofield.update))
         for ofield in self:
-            if ofield.compute:
+            if not ofield.name in new_fields_names and ofield.compute:
                 try:
                     new_fields.append((ofield,ofield.compute(Row(fields))))
                 except KeyError:
