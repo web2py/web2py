@@ -1174,7 +1174,7 @@ class Auth(object):
     def table_membership(self):
         return self.db[self.settings.table_membership_name]
     def table_permission(self):
-        return self.db[self.settings.table_membership_name]
+        return self.db[self.settings.table_permission_name]
     def table_event(self):
         return self.db[self.settings.table_event_name]
     def table_cas(self):
