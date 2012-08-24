@@ -754,9 +754,11 @@ def console():
                       default='',
                       help=msg)
 
-    msg = 'run scheduled tasks for the specified apps'
-    msg += '-K app1,app2,app3'
-    msg += 'requires a scheduler defined in the models'
+    msg = 'run scheduled tasks for the specified apps: expects a list of '
+    msg += 'app names as -K app1,app2,app3 '
+    msg += 'or a list of app:groups as -K app1:group1:group2,app2:group1 '
+    msg += 'to override specific group_names. (only strings, no spaces '
+    msg += 'allowed. Requires a scheduler defined in the models'
     parser.add_option('-K',
                       '--scheduler',
                       dest='scheduler',
@@ -917,9 +919,20 @@ def console():
         options.interfaces = [
             tuple(interface) for interface in options.interfaces]
 
+    #  accepts --scheduler in the form
+    #  "app:group1,group2,app2:group1"
+    scheduler = []
+    options.scheduler_groups = None
+    if isinstance(options.scheduler, str):
+        if ':' in options.scheduler:
+            for opt in options.scheduler.split(','):
+                scheduler.append(opt.split(':'))
+            options.scheduler = ','.join([app[0] for app in scheduler])
+            options.scheduler_groups = scheduler
+    
     if options.numthreads is not None and options.minthreads is None:
-        options.minthreads = options.numthreads  # legacy
-
+        options.minthreads = options.numthreads  # legacy    
+    
     if not options.cronjob:
         # If we have the applications package or if we should upgrade
         if not os.path.exists('applications/__init__.py'):
@@ -940,20 +953,28 @@ def check_existent_app(options,appname):
         return True
 
 def start_schedulers(options):
-    apps = [app.strip() for app in options.scheduler.split(',')]
     try:
         from multiprocessing import Process
     except:
         sys.stderr.write('Sorry, -K only supported for python 2.6-2.7\n')
         return
     processes = []
-    code = "from gluon import current;current._scheduler.loop()"
+    apps = [(app.strip(), None) for app in options.scheduler.split(',')]
+    if options.scheduler_groups:
+        apps = options.scheduler_groups
     for app in apps:
-        if not check_existent_app(options, app):
-            print "Application '%s' doesn't exist, skipping" % (app)
+        if len(app) == 1 or app[1] == None:
+            code = "from gluon import current;current._scheduler.loop()"
+        else:
+            code = "from gluon import current;current._scheduler.group_names = ['%s'];"
+            code += "current._scheduler.loop()"
+            code = code % ("','".join(app[1:]))
+        app_ = app[0]
+        if not check_existent_app(options, app_):
+            print "Application '%s' doesn't exist, skipping" % (app_)
             continue
-        print 'starting scheduler for "%s"...' % app
-        args = (app,True,True,None,False,code)
+        print 'starting scheduler for "%s"...' % app_
+        args = (app_,True,True,None,False,code)
         logging.getLogger().setLevel(options.debuglevel)
         p = Process(target=run, args=args)
         processes.append(p)
