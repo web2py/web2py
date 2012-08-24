@@ -1,5 +1,3 @@
-#!/bin/bash
-
 echo 'setup-web2py-nginx-uwsgi-ubuntu-precise.sh'
 echo 'Requires Ubuntu 12.04 and installs Nginx + uWSGI + Web2py'
 
@@ -77,3 +75,4 @@ cd /home/www-data/web2py
 sudo -u www-data python -c "from gluon.main import save_password; save_password('$PW',443)"
 /etc/init.d/uwsgi restart
 /etc/init.d/nginx restart
+
