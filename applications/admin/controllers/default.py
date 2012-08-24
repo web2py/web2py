@@ -206,7 +206,8 @@ def site():
     elif form_create.accepted:
         # create a new application
         appname = cleanpath(form_create.vars.name)
-        if app_create(appname, request):
+        created, error = app_create(appname, request,info=True)
+        if created:
             if MULTI_USER_MODE:
                 db.app.insert(name=appname,owner=auth.user.id)
             log_progress(appname)
@@ -214,8 +215,8 @@ def site():
             redirect(URL('design',args=appname))
         else:
             session.flash = \
-                T('unable to create application "%s" (it may exist already)', 
-                  form_create.vars.name)
+                DIV(T('unable to create application "%s"' % appname),
+                    PRE(error))                      
         redirect(URL(r=request))
 
     elif form_update.accepted:
