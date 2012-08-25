@@ -47,7 +47,7 @@ class Storage(dict):
     def __getitem__(self, key):
         return dict.get(self, key, None)
     def __repr__(self):
-        return '<Storage %s>' + dict.__repr__(self)
+        return '<Storage %s>' % dict.__repr__(self)
     def __getstate__(self):
         return dict(self)
     def __setstate__(self,values):
