@@ -841,6 +841,32 @@ def get_parsed(text):
     """
     return str(TemplateParser(text))
 
+class DummyResponse():
+    def __init__(self):
+        self.body = cStringIO.StringIO()
+    def write(self, data, escape=True):
+        if not escape:
+            self.body.write(str(data))
+        elif hasattr(data,'xml') and callable(data.xml):
+            self.body.write(data.xml())
+        else:
+            # make it a string
+            if not isinstance(data, (str, unicode)):
+                data = str(data)
+            elif isinstance(data, unicode):
+                data = data.encode('utf8', 'xmlcharrefreplace')
+            data = cgi.escape(data, True).replace("'","&#x27;")
+            self.body.write(data)
+
+class NOESCAPE():
+    """
+    A little helper to avoid escaping.
+    """
+    def __init__(self, text):
+        self.text = text
+    def xml(self):
+        return self.text
+
 # And this is a generic render function.
 # Here for integration with gluon.
 def render(content = "hello world",
@@ -877,42 +903,29 @@ def render(content = "hello world",
     >>> render(content='{{for i in range(3):\\n=i\\npass}}')
     '012'
     """
-    # Here to avoid circular Imports
+    # save current response class
+    if context and 'response' in context:
+        old_response = context['response']
+    else:
+        old_response = None
+
+    # here to avoid circular Imports
     try:
         from globals import Response
-    except:
+    except ImportError:
         # Working standalone. Build a mock Response object.
-        class Response():
-            def __init__(self):
-                self.body = cStringIO.StringIO()
-            def write(self, data, escape=True):
-                if not escape:
-                    self.body.write(str(data))
-                elif hasattr(data,'xml') and callable(data.xml):
-                    self.body.write(data.xml())
-                else:
-                    # make it a string
-                    if not isinstance(data, (str, unicode)):
-                        data = str(data)
-                    elif isinstance(data, unicode):
-                        data = data.encode('utf8', 'xmlcharrefreplace')
-                    data = cgi.escape(data, True).replace("'","&#x27;")
-                    self.body.write(data)
+        Response = DummyResponse
 
-        # A little helper to avoid escaping.
-        class NOESCAPE():
-            def __init__(self, text):
-                self.text = text
-            def xml(self):
-                return self.text
         # Add it to the context so we can use it.
-        context['NOESCAPE'] = NOESCAPE
-
+        if not 'NOESCAPE' in context:
+            context['NOESCAPE'] = XML
+            
     # If we don't have anything to render, why bother?
     if not content and not stream and not filename:
         raise SyntaxError, "Must specify a stream or filename or content"
 
-    # Here for legacy purposes, probably can be reduced to something more simple.
+    # Here for legacy purposes, probably can be reduced to 
+    # something more simple.
     close_stream = False
     if not stream:
         if filename:
@@ -936,7 +949,9 @@ def render(content = "hello world",
         stream.close()
 
     # Returned the rendered content.
-    return context['response'].body.getvalue()
+    text = context['response'].body.getvalue()
+    if old_response is not None: context['response'] = old_response
+    return text
 
 
 if __name__ == '__main__':
