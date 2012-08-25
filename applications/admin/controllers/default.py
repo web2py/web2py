@@ -20,7 +20,7 @@ try:
     have_git = True
 except ImportError:                                                                       
     have_git = False
-    GIT_MISSING = 'requires python-git module, but not installed'
+    GIT_MISSING = 'requires python-git module, but not installed or incompatible version'
 
 from gluon.languages import (regex_language, read_possible_languages,
                              read_possible_plurals, lang_sampling,
@@ -223,6 +223,7 @@ def site():
         if (form_update.vars.url or '').endswith('.git'):
             if not have_git:
                 session.flash = GIT_MISSING
+                redirect(URL(r=request))
             target = os.path.join(apath(r=request),form_update.vars.name)
             try:
                 new_repo = Repo.clone_from(form_update.vars.url,target)
