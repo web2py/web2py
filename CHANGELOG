@@ -3,13 +3,13 @@
 ### DAL Improvements
 
 - Support for DAL(lazy_tables=True) and db.define_table(on_define=lambda table:), thanks Jonathan
-- MongoDB support in DAL (experimental)
+- MongoDB support in DAL (experimental), thanks Mark Breedveld
 - geodal and spatialite, thanks Denes and Fran (experimental)
 - db.mytable._before_insert, _after_insert, _before_update, _after_update, _before_delete. _after_delete (list of callbacks)
 - db(...).update_naive(...) same as update but ignores table._before_update and table._after_update
 - DAL BIGINT support and DAL(...,bigint_id=True)
 - IS_IN_DB(..., distinct=True)
-- new syntax: db.mytable.insert(myuploadfield=open(....))
+- new syntax: db.mytable.insert(myuploadfield=open(....)), thank you Iceberg
 - db(...).select(db.mytable.myfield.count(distinct=True))
 - db(db.a)._update(name=db(db.b.a==db.a.id).nested_select(db.b.id))
 - db.mytable.myfield.filter_in, filter_out
@@ -17,7 +17,7 @@
 - teradata adapter, thanks Andrew Willimott
 - experimental Sybase Adapter
 - added db.table.field.avg()
-- Support for Google App Engine projections
+- Support for Google App Engine projections, thanks Christian
 - Field(... 'upload', default=path) now accepts a path to a local file as default value, if user does not upload a file. Relative path looks inside current application folder, thanks Marin
 - executesql(...,fields=,columns=) allows parsing of results in Rows, thanks Anthony
 
@@ -97,6 +97,7 @@
 - added tox.ini, thanks Marc
 - web2py.py --run_system_tests, thanks Marc Abramowitz
 - html.py (and web2py helpers) can be used without web2py dependencies
+- new fpdf, thanks Mariano
 
 
 ## 1.99.5-1.99.7
