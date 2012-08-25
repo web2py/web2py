@@ -6289,11 +6289,9 @@ class Row(dict):
     this is only used to store a Row
     """
 
-    def __getattr__(self, key):
-        return self[key]
-
-    def __setattr__(self, key, value):
-        self[key] = value
+    __setattr__ = dict.__setitem__
+    __getattr__ = dict.__getitem__
+    __delattr__ = dict.__delitem__
 
     def __getitem__(self, key):
         key=str(key)
@@ -6307,8 +6305,10 @@ class Row(dict):
                 key = m.group(2)
         return dict.__getitem__(self, key)
 
-    def __call__(self,key):
-        return self.__getitem__(key)
+    __call__ = __getitem__
+
+    #def __call__(self,key):
+    #    return self.__getitem__(key)
 
     def __setitem__(self, key, value):
         dict.__setitem__(self, str(key), value)
@@ -7498,15 +7498,15 @@ class Table(dict):
                     'value must be a dictionary: %s' % value
             dict.__setitem__(self, str(key), value)
 
-    def __getattr__(self, key):
-        return self[key]
+    __getattr__ = __getitem__
 
     def __delitem__(self, key):
         if isinstance(key, dict):
             query = self._build_query(key)
             if not self._db(query).delete():
                 raise SyntaxError, 'No such record: %s' % key
-        elif not str(key).isdigit() or not self._db(self._id == key).delete():
+        elif not str(key).isdigit() or \
+                not self._db(self._id == key).delete():
             raise SyntaxError, 'No such record: %s' % key
 
     def __setattr__(self, key, value):
