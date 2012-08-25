@@ -7035,9 +7035,10 @@ def index():
             thread.instances.remove(self._adapter)
         self._adapter.close()
 
-    def executesql(self, query, placeholders=None, as_dict=False):
+    def executesql(self, query, placeholders=None, as_dict=False,
+                   fields=None, colnames=None):
         """
-        placeholders is optional and will always be None when using DAL.
+        placeholders is optional and will always be None.
         If using raw SQL with placeholders, placeholders may be
         a sequence of values to be substituted in
         or, (if supported by the DB driver), a dictionary with keys
@@ -7054,7 +7055,21 @@ def index():
 
         [{field1: value1, field2: value2}, {field1: value1b, field2: value2b}]
 
-        --bmeredyk
+        Added 2012-08-24 "fields" optional argument. If not None, the
+        results cursor returned by the DB driver will be converted to a
+        DAL Rows object using the db._adapter.parse() method. This requires
+        specifying the "fields" argument as a list of DAL Field objects
+        that match the fields returned from the DB. The Field objects should
+        be part of one or more Table objects defined on the DAL object.
+        The "fields" list can include one or more DAL Table objects in addition
+        to or instead of including Field objects, or it can be just a single
+        table (not in a list). In that case, the Field objects will be
+        extracted from the table(s).
+        
+        The field names will be extracted from the Field objects, or optionally,
+        a list of field names can be provided (in tablename.fieldname format)
+        via the "colnames" argument. Note, the fields and colnames must be in
+        the same order as the fields in the results cursor returned from the DB.
         """
         if placeholders:
             self._adapter.execute(query, placeholders)
@@ -7074,11 +7089,22 @@ def index():
             # convert the list for each row into a dictionary so it's
             # easier to work with. row['field_name'] rather than row[0]
             return [dict(zip(fields,row)) for row in data]
-        # see if any results returned from database
-        try:
-            return self._adapter.cursor.fetchall()
-        except:
-            return None
+        data = self._adapter.cursor.fetchall()
+        if fields:
+            if not isinstance(fields, list):
+                fields = [fields]
+            extracted_fields = []
+            for field in fields:
+                if isinstance(field, Table):
+                    extracted_fields.extend([f for f in field])
+                else:
+                    extracted_fields.append(field)
+            if not colnames:
+                colnames = ['%s.%s' % (f.tablename, f.name) 
+                            for f in extracted_fields]
+            data = self._adapter.parse(
+                data, fields=extracted_fields, colnames=colnames)
+        return data
 
     def _update_referenced_by(self, other):
         for tablename in self.tables:
