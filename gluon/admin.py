@@ -18,6 +18,7 @@ from fileutils import up, fix_newlines, abspath, recursive_unlink
 from fileutils import read_file, write_file, parse_version
 from restricted import RestrictedError
 from settings import global_settings
+from http import HTTP
 
 if not global_settings.web2py_runtime_gae:
     import site
@@ -126,7 +127,7 @@ def app_cleanup(app, request):
                 r = False
 
     # Remove cache files
-    path = apath('%s/sessions/' % app, request)
+    path = apath('%s/cache/' % app, request)
     if os.path.exists(path):
         for f in os.listdir(path):
             try:
@@ -157,7 +158,7 @@ def app_compile(app, request):
         remove_compiled_application(folder)
         return tb
 
-def app_create(app, request,force=False,key=None):
+def app_create(app, request,force=False,key=None,info=False):
     """
     Create a copy of welcome.w2p (scaffolding) app
 
@@ -169,11 +170,19 @@ def app_create(app, request,force=False,key=None):
         the global request object
 
     """
-    try:
-        path = apath(app, request)
-        os.mkdir(path)
-    except:
-        if not force:
+    path = apath(app, request)
+    if not os.path.exists(path):
+        try:
+            os.mkdir(path)
+        except:
+            if info:
+                return False, traceback.format_exc(sys.exc_info)
+            else:
+                return False
+    elif not force:
+        if info:
+            return False, "Application exists"
+        else:
             return False
     try:
         w2p_unpack('welcome.w2p', path)
@@ -189,10 +198,16 @@ def app_create(app, request,force=False,key=None):
             data = data.replace('<your secret key>',
                                 'sha512:'+(key or web2py_uuid()))
             write_file(db, data)
-        return True
+        if info:
+            return True, None
+        else:
+            return True
     except:
         rmtree(path)
-        return False
+        if info:
+            return False, traceback.format_exc(sys.exc_info)
+        else:
+            return False
 
 
 def app_install(app, fobj, request, filename, overwrite=None):
@@ -459,6 +474,7 @@ def create_missing_app_folders(request):
                 if not os.path.exists(path):
                     os.mkdir(path)
             global_settings.app_folders.add(request.folder)
+
 
 
 

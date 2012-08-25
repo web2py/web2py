@@ -78,6 +78,16 @@
       </p>
     </div>
     {{pass}}
+    <!-- MULTI_USER_INTERFACE -->
+    {{if MULTI_USER_MODE and is_manager():}}
+    <div class="box">
+      <h3>{{=T("Multi User Mode")}}</h3>
+      <p>
+	{{=button(URL('bulk_register'),T('Bulk Register'))}}
+	{{=button(URL('manage_students'),T('Manage Students'))}}
+      </p>
+    </div>
+    {{pass}}
     <!-- APP WIZARD -->
     <div class="box">
       <h3>{{=T("New application wizard")}}</h3>

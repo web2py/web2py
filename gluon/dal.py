@@ -174,7 +174,7 @@ import platform
 CALLABLETYPES = (types.LambdaType, types.FunctionType,
                  types.BuiltinFunctionType,
                  types.MethodType, types.BuiltinMethodType)
-TABLE_ARGS = ('migrate','primarykey','fake_migrate','format','singular','plural','trigger_name','sequence_name','common_filter','polymodel','table_class')
+TABLE_ARGS = ('migrate','primarykey','fake_migrate','format','singular','plural','trigger_name','sequence_name','common_filter','polymodel','table_class','on_define')
 
 ###################################################################################
 # following checks allow the use of dal without web2py, as a standalone module
@@ -1317,7 +1317,7 @@ class BaseAdapter(ConnectionPool):
                     tablename,fieldname = item.split('.')
                     new_fields.append(self.db[tablename][fieldname])
                 else:
-                    new_fields.append(Expression(self.db,item))
+                    new_fields.append(Expression(self.db,lambda:item))
             else:
                 new_fields.append(item)
         # ## if no fields specified take them all from the requested tables
@@ -2735,6 +2735,14 @@ class OracleAdapter(BaseAdapter):
         self.execute('SELECT %s.currval FROM dual;' % sequence_name)
         return int(self.cursor.fetchone()[0])
 
+    def parse_value(self, value, field_type, blob_decode=True):
+        if blob_decode and isinstance(value, cx_Oracle.LOB):
+            try:
+                value = value.read()
+            except cx_Oracle.ProgrammingError:
+                # After a subsequent fetch the LOB value is not valid anymore
+                pass
+        return BaseAdapter.parse_value(self, value, field_type, blob_decode)
 
 class MSSQLAdapter(BaseAdapter):
 
@@ -6281,11 +6289,9 @@ class Row(dict):
     this is only used to store a Row
     """
 
-    def __getattr__(self, key):
-        return self[key]
-
-    def __setattr__(self, key, value):
-        self[key] = value
+    __setattr__ = dict.__setitem__
+    __getattr__ = dict.__getitem__
+    __delattr__ = dict.__delitem__
 
     def __getitem__(self, key):
         key=str(key)
@@ -6299,8 +6305,10 @@ class Row(dict):
                 key = m.group(2)
         return dict.__getitem__(self, key)
 
-    def __call__(self,key):
-        return self.__getitem__(key)
+    __call__ = __getitem__
+
+    #def __call__(self,key):
+    #    return self.__getitem__(key)
 
     def __setitem__(self, key, value):
         dict.__setitem__(self, str(key), value)
@@ -6924,7 +6932,7 @@ def index():
         tablename,
         *fields,
         **args
-        ):       
+        ):
         if not isinstance(tablename,str):
             raise SyntaxError, "missing table name"
         elif tablename.startswith('_') or hasattr(self,tablename) or \
@@ -6938,7 +6946,7 @@ def index():
             invalid_args = [key for key in args if not key in TABLE_ARGS]
             if invalid_args:
                 raise SyntaxError, 'invalid table "%s" attributes: %s' \
-                    % (tablename,invalid_args)         
+                    % (tablename,invalid_args)
         if self._lazy_tables and not tablename in self._LAZY_TABLES:
             self._LAZY_TABLES[tablename] = (tablename,fields,args)
             table = None
@@ -6977,6 +6985,8 @@ def index():
                 sql_locker.release()
         else:
             table._dbt = None
+        on_define = args.get('on_define',None)
+        if on_define: on_define(table)
         return table
 
     def __iter__(self):
@@ -7025,9 +7035,10 @@ def index():
             thread.instances.remove(self._adapter)
         self._adapter.close()
 
-    def executesql(self, query, placeholders=None, as_dict=False):
+    def executesql(self, query, placeholders=None, as_dict=False,
+                   fields=None, colnames=None):
         """
-        placeholders is optional and will always be None when using DAL.
+        placeholders is optional and will always be None.
         If using raw SQL with placeholders, placeholders may be
         a sequence of values to be substituted in
         or, (if supported by the DB driver), a dictionary with keys
@@ -7044,7 +7055,21 @@ def index():
 
         [{field1: value1, field2: value2}, {field1: value1b, field2: value2b}]
 
-        --bmeredyk
+        Added 2012-08-24 "fields" optional argument. If not None, the
+        results cursor returned by the DB driver will be converted to a
+        DAL Rows object using the db._adapter.parse() method. This requires
+        specifying the "fields" argument as a list of DAL Field objects
+        that match the fields returned from the DB. The Field objects should
+        be part of one or more Table objects defined on the DAL object.
+        The "fields" list can include one or more DAL Table objects in addition
+        to or instead of including Field objects, or it can be just a single
+        table (not in a list). In that case, the Field objects will be
+        extracted from the table(s).
+
+        The field names will be extracted from the Field objects, or optionally,
+        a list of field names can be provided (in tablename.fieldname format)
+        via the "colnames" argument. Note, the fields and colnames must be in
+        the same order as the fields in the results cursor returned from the DB.
         """
         if placeholders:
             self._adapter.execute(query, placeholders)
@@ -7064,11 +7089,22 @@ def index():
             # convert the list for each row into a dictionary so it's
             # easier to work with. row['field_name'] rather than row[0]
             return [dict(zip(fields,row)) for row in data]
-        # see if any results returned from database
-        try:
-            return self._adapter.cursor.fetchall()
-        except:
-            return None
+        data = self._adapter.cursor.fetchall()
+        if fields:
+            if not isinstance(fields, list):
+                fields = [fields]
+            extracted_fields = []
+            for field in fields:
+                if isinstance(field, Table):
+                    extracted_fields.extend([f for f in field])
+                else:
+                    extracted_fields.append(field)
+            if not colnames:
+                colnames = ['%s.%s' % (f.tablename, f.name)
+                            for f in extracted_fields]
+            data = self._adapter.parse(
+                data, fields=extracted_fields, colnames=colnames)
+        return data
 
     def _update_referenced_by(self, other):
         for tablename in self.tables:
@@ -7462,15 +7498,15 @@ class Table(dict):
                     'value must be a dictionary: %s' % value
             dict.__setitem__(self, str(key), value)
 
-    def __getattr__(self, key):                                                                                               
-        return self[key]
+    __getattr__ = __getitem__
 
     def __delitem__(self, key):
         if isinstance(key, dict):
             query = self._build_query(key)
             if not self._db(query).delete():
                 raise SyntaxError, 'No such record: %s' % key
-        elif not str(key).isdigit() or not self._db(self._id == key).delete():
+        elif not str(key).isdigit() or \
+                not self._db(self._id == key).delete():
             raise SyntaxError, 'No such record: %s' % key
 
     def __setattr__(self, key, value):
@@ -7499,33 +7535,38 @@ class Table(dict):
         return self._db._adapter.drop(self,mode)
 
     def _listify(self,fields,update=False):
-        new_fields = []
-        new_fields_names = []
+        new_fields = {} # format: new_fields[name] = (field,value)
+        # store all fields passed as input in new_fields
         for name in fields:
             if not name in self.fields:
                 if name != 'id':
-                    raise SyntaxError, 'Field %s does not belong to the table' % name
+                    raise SyntaxError, \
+                        'Field %s does not belong to the table' % name
             else:
                 field = self[name]
                 value = fields[name]
-                if field.filter_in: value = field.filter_in(value)
-                new_fields.append((field,value))
-                new_fields_names.append(name)
+                if field.filter_in:
+                    value = field.filter_in(value)
+                new_fields[name] = (field,value)
+        # check all fields that should be in the self table
         for ofield in self:
-            if not ofield.name in new_fields_names:
-                if not update and not ofield.default is None:
-                    new_fields.append((ofield,ofield.default))
-                elif update and not ofield.update is None:
-                    new_fields.append((ofield,ofield.update))
-        for ofield in self:
+            name = ofield.name
+            # if field is supposed to be computed, compute it!
             if ofield.compute:
                 try:
-                    new_fields.append((ofield,ofield.compute(Row(fields))))
+                    new_fields[name] = (ofield,ofield.compute(Row(fields)))
                 except KeyError:
                     pass
-            if not update and ofield.required and not ofield.name in new_fields_names:
-                raise SyntaxError,'Table: missing required field: %s' % ofield.name
-        return new_fields
+            # if field is required, check its default value
+            elif not name in new_fields:
+                if not update and not ofield.default is None:
+                    new_fields[name] = (ofield,ofield.default)
+                elif update and not ofield.update is None:
+                    new_fields[name] = (ofield,ofield.update)
+            # error if field if required, record to be create and field missing
+            if not update and ofield.required and not name in new_fields:
+                raise SyntaxError, 'Table: missing required field: %s' % name
+        return new_fields.values()
 
     def _attempt_upload(self, fields):
         for field in self:
@@ -8148,6 +8189,9 @@ class Field(Expression):
         self.custom_qualifier = custom_qualifier
         self.label = label if label!=None else fieldname.replace('_',' ').title()
         self.requires = requires if requires!=None else []
+
+    def set_attributes(self,*args,**attributes):
+        self.__dict__.update(*args,**attributes)
 
     def clone(self,point_self_references_to=False,**args):
         field = copy.copy(self)
@@ -9105,6 +9149,7 @@ DAL.Table = Table  # was necessary in gluon/globals.py session.connect
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

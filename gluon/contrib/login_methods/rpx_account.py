@@ -53,12 +53,12 @@ class RPXAccount(object):
         self.prompt = prompt
         self.on_login_failure = on_login_failure
         self.mappings = Storage()
-        
+
         dn = {'givenName':'','familyName':''}
         self.mappings.Facebook = lambda profile, dn=dn:\
             dict(registration_id = profile.get("identifier",""),
                  username = profile.get("preferredUsername",""),
-                 email = profile.get("email",""),                 
+                 email = profile.get("email",""),
                  first_name = profile.get("name",dn).get("givenName",""),
                  last_name = profile.get("name",dn).get("familyName",""))
         self.mappings.Google = lambda profile, dn=dn:\
@@ -120,8 +120,9 @@ def use_janrain(auth,filename='private/janrain.key',**kwargs):
         request = current.request
         domain,key = open(path,'r').read().strip().split(':')
         host = current.request.env.http_host
-        url = '%s' % URL(r=request, c='default', f='user', args=['login'], scheme=True)
+        url = URL('default', 'user', args='login', scheme=True)
         auth.settings.actions_disabled = \
             ['register','change_password','request_reset_password']
         auth.settings.login_form = RPXAccount(
             request, api_key=key,domain=domain, url = url,**kwargs)
+

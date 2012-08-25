@@ -6,18 +6,18 @@
     developed by Madhukar R Pai (Copyright 2012)
     Email <madspai@gmail.com>
     License : LGPL
-    
+
     thanks and credits to the web2py community
-    
+
     This custom authenticator allows web2py to authenticate using browserid (https://browserid.org/)
     BrowserID is a project by Mozilla Labs (http://mozillalabs.com/)
     to Know how browserid works please visit http://identity.mozilla.com/post/7616727542/introducing-browserid-a-better-way-to-sign-in
-    
+
     bottom line BrowserID provides a free, secure, de-centralized, easy to use(for users and developers) login solution.
     You can use any email id as your login id. Browserid just verifys the email id and lets you login with that id.
-    
+
     credits for the doPost jquery function - itsadok (http://stackoverflow.com/users/7581/itsadok)
-    
+
 """
 import time
 from gluon import *
@@ -32,7 +32,7 @@ class BrowserID(object):
         audience = "http://127.0.0.1:8000"
         assertion_post_url = "http://127.0.0.1:8000/%s/default/user/login" % request.application)
     """
-    
+
     def __init__(self,
                 request,
                 audience = "",
@@ -45,7 +45,7 @@ class BrowserID(object):
                 crypto_js = "https://crypto-js.googlecode.com/files/2.2.0-crypto-md5.js",
                 on_login_failure = None,
                 ):
-                
+
         self.request = request
         self.audience = audience
         self.assertion_post_url = assertion_post_url
@@ -64,13 +64,13 @@ class BrowserID(object):
 
     def get_user(self):
         request = self.request
-        if request.vars.assertion: 
+        if request.vars.assertion:
             audience = self.audience
             issuer = self.issuer
             assertion = XML(request.vars.assertion,sanitize=True)
             verify_data = {'assertion':assertion,'audience':audience}
             auth_info_json = fetch(self.verify_url,data=verify_data)
-            j = json.loads(auth_info_json) 
+            j = json.loads(auth_info_json)
             epoch_time = int(time.time()*1000) # we need 13 digit epoch time
             if j["status"] == "okay" and j["audience"] == audience and j['issuer'] == issuer and j['expires'] >= epoch_time:
                 return dict(email = j['email'])
@@ -88,3 +88,4 @@ class BrowserID(object):
             A(IMG(_src=self.browserid_button,_alt=self.prompt),_href="#",_onclick=onclick,_class="browserid",_title="Login With BrowserID"),
             SCRIPT(self.asertion_js))
         return form
+

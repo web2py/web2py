@@ -6,24 +6,24 @@ from gluon.dal import DAL
 
 def motp_auth(db=DAL('sqlite://storage.sqlite'),
               time_offset=60):
-              
+
     """
-    motp allows you to login with a one time password(OTP) generated on a motp client, 
+    motp allows you to login with a one time password(OTP) generated on a motp client,
     motp clients are available for practically all platforms.
     to know more about OTP visit http://en.wikipedia.org/wiki/One-time_password
     to know more visit http://motp.sourceforge.net
-    
-    
+
+
     Written by Madhukar R Pai (madspai@gmail.com)
     License : MIT or GPL v2
-    
+
     thanks and credits to the web2py community
-    
+
     to use motp_auth:
     motp_auth.py has to be located in gluon/contrib/login_methods/ folder
     first auth_user has to have 2 extra fields - motp_secret and motp_pin
     for that define auth like shown below:
-    
+
     ## after auth = Auth(db)
     db.define_table(
         auth.settings.table_user_name,
@@ -42,7 +42,7 @@ def motp_auth(db=DAL('sqlite://storage.sqlite'),
               writable=False, readable=False, default=''),
         Field('registration_id', length=512,                 # required
               writable=False, readable=False, default=''))
-              
+
     ##validators
     custom_auth_table = db[auth.settings.table_user_name] # get the custom_auth_table
     custom_auth_table.first_name.requires = \
@@ -53,22 +53,22 @@ def motp_auth(db=DAL('sqlite://storage.sqlite'),
     custom_auth_table.email.requires = [
       IS_EMAIL(error_message=auth.messages.invalid_email),
       IS_NOT_IN_DB(db, custom_auth_table.email)]
-      
+
     auth.settings.table_user = custom_auth_table # tell auth to use custom_auth_table
     ## before auth.define_tables()
-    
-    ##after that:     
-    
+
+    ##after that:
+
     from gluon.contrib.login_methods.motp_auth import motp_auth
     auth.settings.login_methods.append(motp_auth(db=db))
-    
+
     ##Instructions for using MOTP
     - after configuring motp for web2py, Install a MOTP client on your phone (android,IOS, java, windows phone, etc)
-    - initialize the motp client (to reset a motp secret type in #**#), 
+    - initialize the motp client (to reset a motp secret type in #**#),
       During user creation enter the secret generated during initialization into the motp_secret field in auth_user and
       similarly enter a pre-decided pin into the motp_pin
     - done.. to login, just generate a fresh OTP by typing in the pin and use the OTP as password
-    
+
     ###To Dos###
     - both motp_secret and pin are stored in plain text! need to have some way of encrypting
     - web2py stores the password in db on successful login (should not happen)
@@ -85,7 +85,7 @@ def motp_auth(db=DAL('sqlite://storage.sqlite'),
             hash = md5(to_hash).hexdigest()[:6]
             if otp == hash: return True
         return False
-    
+
     def motp_auth_aux(email,
                       password,
                       db=db,
@@ -102,3 +102,4 @@ def motp_auth(db=DAL('sqlite://storage.sqlite'),
                 else: return False
         return False
     return motp_auth_aux
+

@@ -997,7 +997,7 @@ class Auth(object):
         settings.table_event_name = 'auth_event'
         settings.table_cas_name = 'auth_cas'
 
-        # ## if none, they will be created
+        # ## if none, they will be created, unless DAL(lazy_tables=True)!!!
 
         settings.table_user = None
         settings.table_group = None
@@ -1084,8 +1084,8 @@ class Auth(object):
         messages.is_empty = "Cannot be empty"
         messages.mismatched_password = "Password fields don't match"
         messages.verify_email = \
-            'Click on the link http://' + current.request.env.http_host + \
-            URL('default','user',args=['verify_email']) + \
+            'Click on the link ' + \
+            URL('default','user',args='verify_email',scheme=True) + \
             '/%(key)s to verify your email'
         messages.verify_email_subject = 'Email verification'
         messages.username_sent = 'Your username was emailed to you'
@@ -1096,8 +1096,8 @@ class Auth(object):
         messages.retrieve_password = 'Your password is: %(password)s'
         messages.retrieve_password_subject = 'Password retrieve'
         messages.reset_password = \
-            'Click on the link http://' + current.request.env.http_host + \
-            URL('default','user',args=['reset_password']) + \
+            'Click on the link ' + \
+            URL('default','user',args='reset_password',scheme=True) + \
             '/%(key)s to reset your password'
         messages.reset_password_subject = 'Password reset'
         messages.invalid_reset_password = 'Invalid reset password'
@@ -1166,6 +1166,19 @@ class Auth(object):
        return self.user and self.user.id or None
 
     user_id = property(_get_user_id, doc="user.id or None")
+
+    def table_user(self):
+        return self.db[self.settings.table_user_name]
+    def table_group(self):
+        return self.db[self.settings.table_group_name]
+    def table_membership(self):
+        return self.db[self.settings.table_membership_name]
+    def table_permission(self):
+        return self.db[self.settings.table_permission_name]
+    def table_event(self):
+        return self.db[self.settings.table_event_name]
+    def table_cas(self):
+        return self.db[self.settings.table_cas_name]
 
     def _HTTP(self, *a, **b):
         """
@@ -1261,7 +1274,7 @@ class Auth(object):
             if not 'register' in self.settings.actions_disabled:
                 bar.insert(-1, s2)
                 bar.insert(-1, register)
-            if 'username' in self.settings.table_user.fields() and \
+            if self.use_username and \
                     not 'retrieve_username' in self.settings.actions_disabled:
                 bar.insert(-1, s2)
                 bar.insert(-1, retrieve_username)
@@ -1373,6 +1386,7 @@ class Auth(object):
 
         db = self.db
         settings = self.settings
+        self.use_username = username
         if not self.signature:
             self.define_signature()
         if signature==True:
@@ -1384,23 +1398,41 @@ class Auth(object):
         else:
             signature_list = signature
         lazy_tables, db._lazy_tables = db._lazy_tables, False
+        is_not_empty = IS_NOT_EMPTY(error_message=self.messages.is_empty)
+        is_crypted = CRYPT(key=settings.hmac_key,
+                           min_length=settings.password_min_length)
+        is_unique_email = [
+            IS_EMAIL(error_message=self.messages.invalid_email),
+            IS_NOT_IN_DB(db, '%s.email' % settings.table_user_name)]
+        if not settings.email_case_sensitive:
+            is_unique_email.insert(1,IS_LOWER())
         if not settings.table_user_name in db.tables:
             passfield = settings.password_field
             extra_fields = settings.extra_fields.get(
                 settings.table_user_name,[])+signature_list
-            if username or settings.cas_provider:                
+            if username or settings.cas_provider:
+                is_unique_username = \
+                    [IS_MATCH('[\w\.\-]+'),
+                     IS_NOT_IN_DB(db,'%s.username' % settings.table_user_name)]
+                if not settings.username_case_sensitive:
+                    is_unique_username.insert(1,IS_LOWER())
                 table = db.define_table(
                     settings.table_user_name,
                     Field('first_name', length=128, default='',
-                          label=self.messages.label_first_name),
+                          label=self.messages.label_first_name,
+                          requires = is_not_empty),
                     Field('last_name', length=128, default='',
-                          label=self.messages.label_last_name),
+                          label=self.messages.label_last_name,
+                          requires = is_not_empty),
                     Field('email', length=512, default='',
-                          label=self.messages.label_email),
+                          label=self.messages.label_email,
+                          requires = is_unique_email),
                     Field('username', length=128, default='',
-                          label=self.messages.label_username),
+                          label=self.messages.label_username,
+                          requires=is_unique_username),
                     Field(passfield, 'password', length=512,
-                          readable=False, label=self.messages.label_password),
+                          readable=False, label=self.messages.label_password,
+                          requires = [is_crypted]),
                     Field('registration_key', length=512,
                           writable=False, readable=False, default='',
                           label=self.messages.label_registration_key),
@@ -1416,22 +1448,21 @@ class Auth(object):
                                                    migrate),
                         fake_migrate=fake_migrate,
                         format='%(username)s'))
-                table.username.requires = \
-                    [IS_MATCH('[\w\.\-]+'),
-                     IS_NOT_IN_DB(db, table.username)]
-                if not settings.username_case_sensitive:
-                    table.username.requires.insert(1,IS_LOWER())
             else:
                 table = db.define_table(
                     settings.table_user_name,
                     Field('first_name', length=128, default='',
-                          label=self.messages.label_first_name),
+                          label=self.messages.label_first_name,
+                          requires = is_not_empty),
                     Field('last_name', length=128, default='',
-                          label=self.messages.label_last_name),
+                          label=self.messages.label_last_name,
+                          requires = is_not_empty),
                     Field('email', length=512, default='',
-                          label=self.messages.label_email),
+                          label=self.messages.label_email,
+                          requires = is_unique_email),
                     Field(passfield, 'password', length=512,
-                          readable=False, label=self.messages.label_password),
+                          readable=False, label=self.messages.label_password,
+                          requires = [is_crypted]),
                     Field('registration_key', length=512,
                           writable=False, readable=False, default='',
                           label=self.messages.label_registration_key),
@@ -1447,27 +1478,16 @@ class Auth(object):
                                                    migrate),
                         fake_migrate=fake_migrate,
                         format='%(first_name)s %(last_name)s (%(id)s)'))
-            table.first_name.requires = \
-                IS_NOT_EMPTY(error_message=self.messages.is_empty)
-            table.last_name.requires = \
-                IS_NOT_EMPTY(error_message=self.messages.is_empty)
-            table[passfield].requires = [
-                CRYPT(key=settings.hmac_key,
-                      min_length=settings.password_min_length)]
-            table.email.requires = \
-                [IS_EMAIL(error_message=self.messages.invalid_email),
-                 IS_NOT_IN_DB(db, table.email)]
-            if not settings.email_case_sensitive:
-                table.email.requires.insert(1,IS_LOWER())
-            table.registration_key.default = ''
-        settings.table_user = db[settings.table_user_name]
+        reference_table_user = 'reference %s' % settings.table_user_name
         if not settings.table_group_name in db.tables:
             extra_fields = settings.extra_fields.get(
                 settings.table_group_name,[])+signature_list
             table = db.define_table(
                 settings.table_group_name,
                 Field('role', length=512, default='',
-                        label=self.messages.label_role),
+                        label=self.messages.label_role,
+                      requires = IS_NOT_IN_DB(
+                        db, '%s.role'% settings.table_group_name)),
                 Field('description', 'text',
                         label=self.messages.label_description),
                 *extra_fields,
@@ -1476,55 +1496,41 @@ class Auth(object):
                         settings.table_group_name, migrate),
                     fake_migrate=fake_migrate,
                     format = '%(role)s (%(id)s)'))
-            table.role.requires = IS_NOT_IN_DB(db, '%s.role'
-                 % settings.table_group_name)
-        settings.table_group = db[settings.table_group_name]
+        reference_table_group = 'reference %s' % settings.table_group_name
         if not settings.table_membership_name in db.tables:
             extra_fields = settings.extra_fields.get(
                 settings.table_membership_name,[])+signature_list
             table = db.define_table(
                 settings.table_membership_name,
-                Field('user_id', settings.table_user,
+                Field('user_id', reference_table_user,
                         label=self.messages.label_user_id),
-                Field('group_id', settings.table_group,
+                Field('group_id', reference_table_group,
                         label=self.messages.label_group_id),
                 *extra_fields,
                 **dict(
                     migrate=self.__get_migrate(
                         settings.table_membership_name, migrate),
                     fake_migrate=fake_migrate))
-            table.user_id.requires = IS_IN_DB(db, '%s.id' %
-                    settings.table_user_name,
-                    settings.table_user._format)
-            table.group_id.requires = IS_IN_DB(db, '%s.id' %
-                    settings.table_group_name,
-                    '%(role)s (%(id)s)')
-        settings.table_membership = db[settings.table_membership_name]
         if not settings.table_permission_name in db.tables:
             extra_fields = settings.extra_fields.get(
                 settings.table_permission_name,[])+signature_list
             table = db.define_table(
                 settings.table_permission_name,
-                Field('group_id', settings.table_group,
-                        label=self.messages.label_group_id),
+                Field('group_id', reference_table_group,
+                      label=self.messages.label_group_id),
                 Field('name', default='default', length=512,
-                        label=self.messages.label_name),
+                      label=self.messages.label_name,
+                      requires=is_not_empty),
                 Field('table_name', length=512,
-                        label=self.messages.label_table_name),
+                      label=self.messages.label_table_name),
                 Field('record_id', 'integer',default=0,
-                        label=self.messages.label_record_id),
+                      label=self.messages.label_record_id,
+                      requires = IS_INT_IN_RANGE(0, 10 ** 9)),
                 *extra_fields,
                 **dict(
                     migrate=self.__get_migrate(
                         settings.table_permission_name, migrate),
                     fake_migrate=fake_migrate))
-            table.group_id.requires = IS_IN_DB(db, '%s.id' %
-                    settings.table_group_name,
-                    '%(role)s (%(id)s)')
-            table.name.requires = IS_NOT_EMPTY(error_message=self.messages.is_empty)
-            #table.table_name.requires = IS_EMPTY_OR(IS_IN_SET(self.db.tables))
-            table.record_id.requires = IS_INT_IN_RANGE(0, 10 ** 9)
-        settings.table_permission = db[settings.table_permission_name]
         if not settings.table_event_name in db.tables:
             table  = db.define_table(
                 settings.table_event_name,
@@ -1534,29 +1540,25 @@ class Auth(object):
                 Field('client_ip',
                         default=current.request.client,
                         label=self.messages.label_client_ip),
-                Field('user_id', settings.table_user, default=None,
-                        label=self.messages.label_user_id),
+                Field('user_id', reference_table_user, default=None,
+                      label=self.messages.label_user_id),
                 Field('origin', default='auth', length=512,
-                        label=self.messages.label_origin),
+                      label=self.messages.label_origin,
+                      requires=is_not_empty),
                 Field('description', 'text', default='',
-                        label=self.messages.label_description),
+                      label=self.messages.label_description,
+                      requires=is_not_empty),
                 *settings.extra_fields.get(settings.table_event_name,[]),
                 **dict(
                     migrate=self.__get_migrate(
                         settings.table_event_name, migrate),
                     fake_migrate=fake_migrate))
-            table.user_id.requires = IS_IN_DB(db, '%s.id' %
-                    settings.table_user_name,
-                    settings.table_user._format)
-            table.origin.requires = IS_NOT_EMPTY(error_message=self.messages.is_empty)
-            table.description.requires = IS_NOT_EMPTY(error_message=self.messages.is_empty)
-        settings.table_event = db[settings.table_event_name]
         now = current.request.now
         if settings.cas_domains:
             if not settings.table_cas_name in db.tables:
                 table  = db.define_table(
                     settings.table_cas_name,
-                    Field('user_id', settings.table_user, default=None,
+                    Field('user_id', reference_table_user, default=None,
                           label=self.messages.label_user_id),
                     Field('created_on','datetime',default=now),
                     Field('service',requires=IS_URL()),
@@ -1567,20 +1569,26 @@ class Auth(object):
                         migrate=self.__get_migrate(
                             settings.table_cas_name, migrate),
                         fake_migrate=fake_migrate))
-                table.user_id.requires = IS_IN_DB(db, '%s.id' % \
-                    settings.table_user_name,
-                    settings.table_user._format)
-            settings.table_cas = db[settings.table_cas_name]
-        db._lazy_tables = lazy_tables
-        if settings.cas_provider:
+        if not db._lazy_tables:
+            settings.table_user = db[settings.table_user_name]
+            settings.table_group = db[settings.table_group_name]
+            settings.table_membership = db[settings.table_membership_name]
+            settings.table_permission = db[settings.table_permission_name]
+            settings.table_event = db[settings.table_event_name]
+            if settings.cas_domains:
+                settings.table_cas = db[settings.table_cas_name]
+
+        if settings.cas_provider: ### THIS IS NOT LAZY
             settings.actions_disabled = \
-                ['profile','register','change_password','request_reset_password']
+                ['profile','register','change_password',
+                 'request_reset_password']
             from gluon.contrib.login_methods.cas_auth import CasAuth
             maps = settings.cas_maps
             if not maps:
+                table_user = self.table_user()
                 maps = dict((name,lambda v,n=name:v.get(n,None)) for name in \
-                                settings.table_user.fields if name!='id' \
-                                and settings.table_user[name].readable)
+                                table_user.fields if name!='id' \
+                                and table_user[name].readable)
                 maps['registration_id'] = \
                     lambda v,p=settings.cas_provider:'%s/%s' % (p,v['user'])
             actions = [settings.cas_actions['login'],
@@ -1606,8 +1614,9 @@ class Auth(object):
         else:
             user_id = None  # user unknown
         vars = vars or {}
-        self.settings.table_event.insert(description=description % vars,
-                                         origin=origin, user_id=user_id)
+        self.table_event().insert(
+            description=description % vars,
+            origin=origin, user_id=user_id)
 
     def get_or_create_user(self, keys, update_fields=['email']):
         """
@@ -1615,7 +1624,7 @@ class Auth(object):
             If the user exists already then password is updated.
             If the user doesn't yet exist, then they are created.
         """
-        table_user = self.settings.table_user
+        table_user = self.table_user()
         user = None
         checks = []
         # make a guess about who this user is
@@ -1673,7 +1682,7 @@ class Auth(object):
 
         request = current.request
         session = current.session
-        table_user = self.settings.table_user
+        table_user = self.table_user()
         if self.settings.login_userfield:
             userfield = self.settings.login_userfield
         elif 'username' in table_user.fields:
@@ -1711,7 +1720,7 @@ class Auth(object):
         request = current.request
         response = current.response
         session = current.session
-        db, table = self.db, self.settings.table_cas
+        db, table = self.db, self.table_cas()
         session._cas_service = request.vars.service or session._cas_service
         if not request.env.http_host in self.settings.cas_domains or \
                 not session._cas_service:
@@ -1747,7 +1756,7 @@ class Auth(object):
 
     def cas_validate(self, version=2, proxy=False):
         request = current.request
-        db, table = self.db, self.settings.table_cas
+        db, table = self.db, self.table_cas()
         current.response.headers['Content-Type']='text'
         ticket = request.vars.ticket
         renew = True if request.vars.has_key('renew') else False
@@ -1763,7 +1772,7 @@ class Auth(object):
             # If ticket is a service Ticket and RENEW flag respected
             if ticket[0:3] == 'ST-' and \
                     not ((row.renew and renew) ^ renew):
-                user = self.settings.table_user(row.user_id)
+                user = self.table_user()(row.user_id)
                 row.delete_record()
                 success = True
         def build_response(body):
@@ -1779,7 +1788,7 @@ class Auth(object):
                     TAG['cas:authenticationSuccess'](
                         TAG['cas:user'](username),
                         *[TAG['cas:'+field.name](user[field.name]) \
-                              for field in self.settings.table_user \
+                              for field in self.table_user() \
                               if field.readable]))
         else:
            if version == 1:
@@ -1808,7 +1817,7 @@ class Auth(object):
 
         """
 
-        table_user = self.settings.table_user
+        table_user = self.table_user()
         if self.settings.login_userfield:
             username = self.settings.login_userfield
         elif 'username' in table_user.fields:
@@ -2043,7 +2052,7 @@ class Auth(object):
 
         """
 
-        table_user = self.settings.table_user
+        table_user = self.table_user()
         request = current.request
         response = current.response
         session = current.session
@@ -2058,7 +2067,7 @@ class Auth(object):
         if log is DEFAULT:
             log = self.messages.register_log
 
-        table_user = self.settings.table_user
+        table_user = self.table_user()
         if 'username' in table_user.fields:
             username = 'username'
         else:
@@ -2182,7 +2191,7 @@ class Auth(object):
         """
 
         key = getarg(-1)
-        table_user = self.settings.table_user
+        table_user = self.table_user()
         user = self.db(table_user.registration_key == key).select().first()
         if not user:
             redirect(self.settings.login_url)
@@ -2221,7 +2230,7 @@ class Auth(object):
 
         """
 
-        table_user = self.settings.table_user
+        table_user = self.table_user()
         if not 'username' in table_user.fields:
             raise HTTP(404)
         request = current.request
@@ -2306,7 +2315,7 @@ class Auth(object):
 
         """
 
-        table_user = self.settings.table_user
+        table_user = self.table_user()
         request = current.request
         response = current.response
         session = current.session
@@ -2383,7 +2392,7 @@ class Auth(object):
 
         """
 
-        table_user = self.settings.table_user
+        table_user = self.table_user()
         request = current.request
         # response = current.response
         session = current.session
@@ -2403,7 +2412,7 @@ class Auth(object):
         form = SQLFORM.factory(
             Field('new_password', 'password',
                   label=self.messages.new_password,
-                  requires=self.settings.table_user[passfield].requires),
+                  requires=self.table_user()[passfield].requires),
             Field('new_password2', 'password',
                   label=self.messages.verify_password,
                   requires=[IS_EXPR('value==%s' % repr(request.vars.new_password),
@@ -2435,7 +2444,7 @@ class Auth(object):
             [, onvalidation=DEFAULT [, onaccept=DEFAULT [, log=DEFAULT]]]])
 
         """
-        table_user = self.settings.table_user
+        table_user = self.table_user()
         request = current.request
         response = current.response
         session = current.session
@@ -2467,7 +2476,7 @@ class Auth(object):
                        separator=self.settings.label_separator
                        )
         if captcha:
-            addrow(form, captcha.label, captcha, captcha.comment, self.settings.formstyle,'captcha__row')        
+            addrow(form, captcha.label, captcha, captcha.comment, self.settings.formstyle,'captcha__row')
         if form.accepts(request, session,
                         formname='reset_password', dbio=False,
                         onvalidation=onvalidation,
@@ -2533,7 +2542,7 @@ class Auth(object):
         if not self.is_logged_in():
             redirect(self.settings.login_url)
         db = self.db
-        table_user = self.settings.table_user
+        table_user = self.table_user()
         usern = self.settings.table_user_name
         s = db(table_user.id == self.user.id)
 
@@ -2599,11 +2608,11 @@ class Auth(object):
 
         """
 
-        table_user = self.settings.table_user
+        table_user = self.table_user()
         if not self.is_logged_in():
             redirect(self.settings.login_url)
         passfield = self.settings.password_field
-        self.settings.table_user[passfield].writable = False
+        table_user[passfield].writable = False
         request = current.request
         session = current.session
         if next is DEFAULT:
@@ -2654,6 +2663,7 @@ class Auth(object):
         request = current.request
         session = current.session
         auth = session.auth
+        table_user = self.table_user()
         if not self.is_logged_in():
             raise HTTP(401, "Not Authorized")
         current_id = auth.user.id
@@ -2665,12 +2675,12 @@ class Auth(object):
                                        self.settings.table_user_name,
                                        user_id):
                 raise HTTP(403, "Forbidden")
-            user = self.settings.table_user(user_id)
+            user = table_user(user_id)
             if not user:
                 raise HTTP(401, "Not Authorized")
             auth.impersonator = cPickle.dumps(session)
             auth.user.update(
-                self.settings.table_user._filter_fields(user, True))
+                table_user._filter_fields(user, True))
             self.user = auth.user
             if self.settings.login_onaccept:
                 form = Storage(dict(vars=self.user))
@@ -2691,10 +2701,11 @@ class Auth(object):
         user_groups = self.user_groups = {}
         if current.session.auth:
             current.session.auth.user_groups = self.user_groups
-        memberships = self.db(self.settings.table_membership.user_id
-                              == self.user.id).select()
+        table_group = self.table_group()
+        table_membership = self.table_membership()
+        memberships = self.db(table_membership.user_id==self.user.id).select()
         for membership in memberships:
-            group = self.settings.table_group(membership.group_id)
+            group = table_group(membership.group_id)
             if group:
                 user_groups[membership.group_id] = group.role
 
@@ -2705,12 +2716,12 @@ class Auth(object):
 
         if not self.is_logged_in():
             redirect(self.settings.login_url)
-        memberships = self.db(self.settings.table_membership.user_id
-                               == self.user.id).select()
+        table_membership = self.table_membership()
+        memberships = self.db(table_membership.user_id==self.user.id).select()
         table = TABLE()
         for membership in memberships:
-            groups = self.db(self.settings.table_group.id
-                              == membership.group_id).select()
+            table_group = self.db[self.settings.table_group_name]
+            groups = self.db(table_group.id==membership.group_id).select()
             if groups:
                 group = groups[0]
                 table.append(TR(H3(group.role, '(%s)' % group.id)))
@@ -2814,7 +2825,7 @@ class Auth(object):
         creates a group associated to a role
         """
 
-        group_id = self.settings.table_group.insert(
+        group_id = self.table_group().insert(
             role=role, description=description)
         self.log_event(self.messages.add_group_log,
                        dict(group_id=group_id, role=role))
@@ -2824,10 +2835,9 @@ class Auth(object):
         """
         deletes a group
         """
-
-        self.db(self.settings.table_group.id == group_id).delete()
-        self.db(self.settings.table_membership.group_id == group_id).delete()
-        self.db(self.settings.table_permission.group_id == group_id).delete()
+        self.db(self.table_group().id == group_id).delete()
+        self.db(self.table_membership().group_id == group_id).delete()
+        self.db(self.table_permission().group_id == group_id).delete()
         self.update_groups()
         self.log_event(self.messages.del_group_log,dict(group_id=group_id))
 
@@ -2835,7 +2845,7 @@ class Auth(object):
         """
         returns the group_id of the group specified by the role
         """
-        rows = self.db(self.settings.table_group.role == role).select()
+        rows = self.db(self.table_group().role == role).select()
         if not rows:
             return None
         return rows[0].id
@@ -2849,7 +2859,7 @@ class Auth(object):
 
     def user_group_role(self, user_id=None):
         if user_id:
-            user = self.settings.table_user[user_id]
+            user = self.table_user()[user_id]
         else:
             user = self.user
         return self.settings.create_user_groups % user
@@ -2867,7 +2877,7 @@ class Auth(object):
             group_id = self.id_group(group_id) # interpret group_id as a role
         if not user_id and self.user:
             user_id = self.user.id
-        membership = self.settings.table_membership
+        membership = self.table_membership()
         if self.db((membership.user_id == user_id)
                     & (membership.group_id == group_id)).select():
             r = True
@@ -2890,7 +2900,7 @@ class Auth(object):
             group_id = self.id_group(group_id) # interpret group_id as a role
         if not user_id and self.user:
             user_id = self.user.id
-        membership = self.settings.table_membership
+        membership = self.table_membership()
         record = membership(user_id = user_id,group_id = group_id)
         if record:
             return record.id
@@ -2910,7 +2920,7 @@ class Auth(object):
         group_id = group_id or self.id_group(role)
         if not user_id and self.user:
             user_id = self.user.id
-        membership = self.settings.table_membership
+        membership = self.table_membership()
         self.log_event(self.messages.del_membership_log,
                        dict(user_id=user_id,group_id=group_id))
         ret = self.db(membership.user_id
@@ -2941,7 +2951,7 @@ class Auth(object):
         if not user_id and not group_id and self.user:
             user_id = self.user.id
         if user_id:
-            membership = self.settings.table_membership
+            membership = self.table_membership()
             rows = self.db(membership.user_id
                            == user_id).select(membership.group_id)
             groups = set([row.group_id for row in rows])
@@ -2949,7 +2959,7 @@ class Auth(object):
                 return False
         else:
             groups = set([group_id])
-        permission = self.settings.table_permission
+        permission = self.table_permission()
         rows = self.db(permission.name == name)(permission.table_name
                  == str(table_name))(permission.record_id
                  == record_id).select(permission.group_id)
@@ -2982,7 +2992,7 @@ class Auth(object):
         gives group_id 'name' access to 'table_name' and 'record_id'
         """
 
-        permission = self.settings.table_permission
+        permission = self.table_permission()
         if group_id == 0:
             group_id = self.user_group()
         record = self.db(permission.group_id==group_id)(permission.name==name)\
@@ -3011,7 +3021,7 @@ class Auth(object):
         revokes group_id 'name' access to 'table_name' and 'record_id'
         """
 
-        permission = self.settings.table_permission
+        permission = self.table_permission()
         self.log_event(self.messages.del_permission_log,
                        dict(group_id=group_id, name=name,
                             table_name=table_name, record_id=record_id))
@@ -3039,8 +3049,8 @@ class Auth(object):
                 self.has_permission(name, table, 0, user_id):
             return table.id > 0
         db = self.db
-        membership = self.settings.table_membership
-        permission = self.settings.table_permission
+        membership = self.table_membership()
+        permission = self.table_permission()
         query = table.id.belongs(
             db(membership.user_id == user_id)\
                 (membership.group_id == permission.group_id)\
@@ -3123,7 +3133,7 @@ class Auth(object):
                     archive_table_name,
                     Field(current_record,table),
                     *[field.clone(unique=False) for field in table])
-            archive_table = table._db[archive_table_name]    
+            archive_table = table._db[archive_table_name]
         new_record = {current_record:form.vars.id}
         for fieldname in archive_table.fields:
             if not fieldname in ['id',current_record]:
@@ -4456,8 +4466,12 @@ class Wiki(object):
     rows_page = 25
     regex_redirect = re.compile('redirect\s+(\w+\://\S+)\s*')
     def markmin_render(self,page):
-        return MARKMIN(page.body,url=True,environment=self.env,
+        html = MARKMIN(page.body,url=True,environment=self.env,
                        autolinks=lambda link: expand_one(link,{})).xml()
+        html += DIV(_class='w2p_wiki_tags',
+                    *[A(t.strip(),_href=URL(args='_search',vars=dict(q=t)))
+                      for t in page.tags or [] if t.strip()]).xml()
+        return html
     @staticmethod
     def component(text):
         """
@@ -4470,7 +4484,7 @@ class Wiki(object):
     def __init__(self,auth,env=None,render='markmin',
                  manage_permissions=False,force_prefix=''):
         self.env = env or {}
-        self.env['component'] = Wiki.component        
+        self.env['component'] = Wiki.component
         if render == 'markmin': render=self.markmin_render
         self.auth = auth
         if self.auth.user:
@@ -4522,7 +4536,7 @@ class Wiki(object):
                 not 'wiki_editor' in auth.user_groups.values():
             group = db.auth_group(role='wiki_editor')
             gid = group.id if group else db.auth_group.insert(role='wiki_editor')
-            auth.add_membership(gid)            
+            auth.add_membership(gid)
     # WIKI ACCESS POLICY
     def not_authorized(self,page=None):
         raise HTTP(401)
@@ -4580,7 +4594,6 @@ class Wiki(object):
         elif zero=='_cloud':
             return self.cloud()
 
-
     def first_paragraph(self,page):
         if not self.can_read(page):
             mm = page.body.replace('\r','')
@@ -4591,10 +4604,10 @@ class Wiki(object):
 
     def fix_hostname(self,body):
         return body.replace('://HOSTNAME','://%s' % self.host)
-    
+
     def read(self,slug):
-        if slug in '_cloud':
-            return self.cloud()
+        if slug in '_cloud': return self.cloud()
+        elif slug in '_search': return self.search()
         page = self.auth.db.wiki_page(slug=slug)
         if not page:
             redirect(URL(args=('_create',slug)))
@@ -4649,7 +4662,8 @@ class Wiki(object):
         vars = current.request.post_vars
         if vars.body:
             vars.body=vars.body.replace('://%s' % self.host,'://HOSTNAME')
-        form = SQLFORM(db.wiki_page,page,deletable=True,showid=False).process()
+        form = SQLFORM(db.wiki_page,page,deletable=True,
+                       formstyle='table2cols',showid=False).process()
         if form.deleted:
             current.session.flash = 'page deleted'
             redirect(URL())
@@ -4660,7 +4674,7 @@ class Wiki(object):
 
     def editmedia(self,slug):
         auth = self.auth
-        db = auth.db        
+        db = auth.db
         page = db.wiki_page(slug=slug)
         if not (page and self.can_edit(page)): return self.not_authorized(page)
         self.auth.db.wiki_media.id.represent = lambda id,row:\
@@ -4678,10 +4692,11 @@ class Wiki(object):
     def create(self):
         if not self.can_edit(): return self.not_authorized()
         db = self.auth.db
-        form = SQLFORM.factory(
-            Field('slug',default=current.request.args(1),
-                  label = 'New Page',
-                  requires=(IS_SLUG(),IS_NOT_IN_DB(db,db.wiki_page.slug))))
+        form = FORM(INPUT(_name='slug',value=current.request.args(1),
+                          requires=(IS_SLUG(),
+                                    IS_NOT_IN_DB(db,db.wiki_page.slug))),
+                    INPUT(_type='submit',
+                          _value=current.T('Create Page from Slug')))
         if form.process().accepted:
             redirect(URL(args=('_edit',form.vars.slug)))
         return dict(content=form)
@@ -4724,9 +4739,9 @@ class Wiki(object):
             for match in regex.finditer(self.fix_hostname(menu_page.body)):
                 base = match.group('base').replace(' ','')
                 title = match.group('title')
-                link = match.group('link')                
+                link = match.group('link')
                 if link.startswith('@'):
-                    items = link[1:].split('/')
+                    items = link[2:].split('/')
                     if len(items)>3:
                         link = URL(a=items[0] or None,c=items[1] or None,f=items[2] or None, args=items[3:])
                 parent = tree.get(base[1:],tree[''])
@@ -4760,7 +4775,7 @@ class Wiki(object):
 
             submenu.append((current.T('Create New Page'),None,
                             URL(controller,function,args=('_create'))))
-        # if self.can_manage():
+        if self.can_manage():
             submenu.append((current.T('Manage Pages'),None,
                             URL(controller,function,args=('_pages'))))
             submenu.append((current.T('Edit Menu'),None,
@@ -4775,12 +4790,13 @@ class Wiki(object):
         request = current.request
         content = CAT()
         if tags is None and query is None:
-            form = SQLFORM.factory(Field('tags',requires=IS_NOT_EMPTY(),
-                                         default=request.vars.tags,
-                                         label=current.T('Search')))
+            form = FORM(INPUT(_name='q',requires=IS_NOT_EMPTY(),
+                              value=request.vars.q),
+                        INPUT(_type="submit",_value=current.T('Search')),
+                        _method='GET')
             content.append(DIV(form,_class='w2p_wiki_form'))
-            if request.vars:
-                tags = [v.strip() for v in request.vars.tags.split(',')]
+            if request.vars.q:
+                tags = [v.strip() for v in request.vars.q.split(',')]
                 tags = [v for v in tags if v]
         if tags or not query is None:
             db = self.auth.db
@@ -4793,21 +4809,24 @@ class Wiki(object):
             if query is None:
                 query = (db.wiki_page.id==db.wiki_tag.wiki_page)&\
                     (db.wiki_tag.name.belongs(tags))
+                query = query|db.wiki_page.title.startswith(request.vars.q)
             pages = db(query).select(
                 *fields,**dict(orderby=orderby or ~count,
                                groupby=db.wiki_page.id,
                                limitby=limitby))
             if request.extension in ('html','load'):
                 if not pages:
-                    content.append(DIV(T("No results",_class='w2p_wiki_form')))
+                    content.append(DIV(current.T("No results"),
+                                       _class='w2p_wiki_form'))
                 def link(t):
-                    return A(t,_href=URL(args='_search',vars=dict(tags=t)))
+                    return A(t,_href=URL(args='_search',vars=dict(q=t)))
                 items = [DIV(H3(A(p.title,_href=URL(args=p.slug))),
                              MARKMIN(self.first_paragraph(p)) \
                                  if preview else '',
-                             SPAN(*[link(t.strip()) for t in \
-                                        p.tags or [] if t.strip()]),
-                             _class='w2p_wiki_tags')
+                             DIV(_class='w2p_wiki_tags',
+                                 *[link(t.strip()) for t in \
+                                       p.tags or [] if t.strip()]),
+                             _class='w2p_wiki_search_item')
                          for p in pages]
                 content.append(DIV(_class='w2p_wiki_pages',*items))
             else:
@@ -4829,17 +4848,18 @@ class Wiki(object):
             a,b = ids[0](count), ids[-1](count)
         def scale(c):
             return '%.2f' % (3.0*(c-b)/max(a-b,1)+1)
-        items = [A(item.wiki_tag.name,_class='w2p_cloud_tag',
-                      _style='padding-right:0.2em;font-size:%sem' \
-                          % scale(item(count)),
+        items = [A(item.wiki_tag.name,
+                   _style='padding:0.2em;font-size:%sem' \
+                       % scale(item(count)),
                    _href=URL(args='_search',
-                             vars=dict(tags=item.wiki_tag.name)))
+                             vars=dict(q=item.wiki_tag.name)))
                  for item in ids]
         return dict(content=DIV(_class='w2p_cloud',*items))
 
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

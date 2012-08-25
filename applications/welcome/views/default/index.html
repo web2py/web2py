@@ -1,4 +1,4 @@
-{{left_sidebar_enabled,right_sidebar_enabled=False,True}}
+{{left_sidebar_enabled,right_sidebar_enabled=False,('message' in globals())}}
 {{extend 'layout.html'}}
 
 {{if 'message' in globals():}}
@@ -17,6 +17,8 @@
            _href=URL('admin','default','peek',args=(request.application,'views',request.controller,'index.html')))))}}</li>
   <li>{{=T('You can modify this application and adapt it to your needs')}}</li>
 </ol>
+{{elif 'content' in globals():}}
+{{=content}}
 {{else:}}
 {{=BEAUTIFY(response._vars)}}
 {{pass}}
@@ -31,4 +33,3 @@
   <li><a href="http://web2py.com/book">{{=T('Documentation')}}</a></li>
 </ul>
 {{end}}
-

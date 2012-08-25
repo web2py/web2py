@@ -101,7 +101,7 @@ class Request(Storage):
         self.is_https = False
         self.is_local = False
         self.global_settings = settings.global_settings
-        
+
     def compute_uuid(self):
         self.uuid = '%s/%s.%s.%s' % (
             self.application,
@@ -687,6 +687,7 @@ class Session(Storage):
                 del response.session_file
             except:
                 pass
+
 
 
 

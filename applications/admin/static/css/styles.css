@@ -274,13 +274,13 @@ ul.button li a {
 	display: block;
 	z-index: 2;
 	}
-a.button {
+a.button, a.btn {
 	display: inline-block;
 	vertical-align: middle;
 	}
 
 /* 1.1. Normal status */
-a.button,
+a.button, a.btn,
 ul.button li a {
 	background-position: 100% 0;
 	background-repeat: no-repeat;
@@ -313,14 +313,14 @@ ul.button li.select a span {
 /* 2. EDITABLE STYLES */
 
 /* 2.1. Image background used */
-a.button,
+a.button, a.btn,
 .button a,
 .button span {
 	background-image: url(../images/button.png);
 	}
 
 /* 2.2. Normal status (Example for padding 10px) */
-a.button,
+a.button, a.btn,
 .button a {
 	padding: 0 10px 0 0; /* Padding-right: 10px */
 	margin: 0 1px 0 10px; /* Margin-left: 10px */
@@ -342,7 +342,7 @@ a.button span {
 	_float: left; /* Only IE6 */
 	_position: relative; /* Only IE6 */
 	}
-a.button {
+a.button, a.btn {
 	display: -moz-inline-box; /* FF<3 */
 	display: inline-block; /* FF<3 */
 	-moz-box-orient: vertical; /* FF<3 */
