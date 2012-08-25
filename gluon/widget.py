@@ -929,10 +929,10 @@ def console():
                 scheduler.append(opt.split(':'))
             options.scheduler = ','.join([app[0] for app in scheduler])
             options.scheduler_groups = scheduler
-    
+
     if options.numthreads is not None and options.minthreads is None:
-        options.minthreads = options.numthreads  # legacy    
-    
+        options.minthreads = options.numthreads  # legacy
+
     if not options.cronjob:
         # If we have the applications package or if we should upgrade
         if not os.path.exists('applications/__init__.py'):
@@ -1197,6 +1197,7 @@ end tell
         except:
             pass
     logging.shutdown()
+
 
 
 

@@ -86,7 +86,7 @@ class ExtendedLoginForm(object):
         Otherwise it will render the normal login form combined with
         alt_login_form.login_form.
         """
-        
+
         request = current.request
         args = request.args
 
@@ -101,4 +101,5 @@ class ExtendedLoginForm(object):
 
         form.components.append(self.alt_login_form.login_form())
         return form
+
 

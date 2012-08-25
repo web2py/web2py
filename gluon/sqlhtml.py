@@ -239,7 +239,7 @@ class ListWidget(StringWidget):
         else: _class = 'string'
         requires = field.requires if isinstance(field.requires, (IS_NOT_EMPTY, IS_LIST_OF)) else None
         attributes['_style'] = 'list-style:none'
-        items=[LI(INPUT(_id=_id, _class=_class, _name=_name, 
+        items=[LI(INPUT(_id=_id, _class=_class, _name=_name,
                         value=v, hideerror=True, requires=requires),
                   **attributes)  for v in value or ['']]
         script=SCRIPT("""
@@ -2665,6 +2665,7 @@ class ExporterXML(ExportClass):
             out.write('</row>\n')
         out.write('</rows>')
         return str(out.getvalue())
+
 
 
 

@@ -498,3 +498,4 @@ def lazy_cache(key=None,time_expire=None,cache_model='ram'):
     return decorator
 
 
+

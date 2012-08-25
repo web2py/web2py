@@ -6932,7 +6932,7 @@ def index():
         tablename,
         *fields,
         **args
-        ):       
+        ):
         if not isinstance(tablename,str):
             raise SyntaxError, "missing table name"
         elif tablename.startswith('_') or hasattr(self,tablename) or \
@@ -6946,7 +6946,7 @@ def index():
             invalid_args = [key for key in args if not key in TABLE_ARGS]
             if invalid_args:
                 raise SyntaxError, 'invalid table "%s" attributes: %s' \
-                    % (tablename,invalid_args)         
+                    % (tablename,invalid_args)
         if self._lazy_tables and not tablename in self._LAZY_TABLES:
             self._LAZY_TABLES[tablename] = (tablename,fields,args)
             table = None
@@ -6985,7 +6985,7 @@ def index():
                 sql_locker.release()
         else:
             table._dbt = None
-        on_define = args.get('on_define',None) 
+        on_define = args.get('on_define',None)
         if on_define: on_define(table)
         return table
 
@@ -7065,7 +7065,7 @@ def index():
         to or instead of including Field objects, or it can be just a single
         table (not in a list). In that case, the Field objects will be
         extracted from the table(s).
-        
+
         The field names will be extracted from the Field objects, or optionally,
         a list of field names can be provided (in tablename.fieldname format)
         via the "colnames" argument. Note, the fields and colnames must be in
@@ -7100,7 +7100,7 @@ def index():
                 else:
                     extracted_fields.append(field)
             if not colnames:
-                colnames = ['%s.%s' % (f.tablename, f.name) 
+                colnames = ['%s.%s' % (f.tablename, f.name)
                             for f in extracted_fields]
             data = self._adapter.parse(
                 data, fields=extracted_fields, colnames=colnames)
@@ -7498,7 +7498,7 @@ class Table(dict):
                     'value must be a dictionary: %s' % value
             dict.__setitem__(self, str(key), value)
 
-    def __getattr__(self, key):                                                                                               
+    def __getattr__(self, key):
         return self[key]
 
     def __delitem__(self, key):
@@ -9149,6 +9149,7 @@ DAL.Table = Table  # was necessary in gluon/globals.py session.connect
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

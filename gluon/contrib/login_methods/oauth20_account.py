@@ -66,7 +66,7 @@ class OAuthAccount(object):
 
                if not self.accessToken():
                   return None
-       
+
                if not self.graph:
                   self.graph = GraphAPI((self.accessToken()))
 
@@ -117,7 +117,7 @@ server for requests.  It can be used for the optional"scope" parameters for Face
         """
         Build the url opener for managing HTTP Basic Athentication
         """
-        # Create an OpenerDirector with support 
+        # Create an OpenerDirector with support
         # for Basic HTTP Authentication...
 
         auth_handler = urllib2.HTTPBasicAuthHandler()
@@ -172,7 +172,7 @@ server for requests.  It can be used for the optional"scope" parameters for Face
                     if current.session.token.has_key('expires_in'):
                         exps = 'expires_in'
                     elif current.session.token.has_key('expires'):
-                        exps = 'expires'                    
+                        exps = 'expires'
                     else:
                         exps = None
                     current.session.token['expires'] = exps and \
@@ -185,7 +185,7 @@ server for requests.  It can be used for the optional"scope" parameters for Face
         current.session.token = None
         return None
 
-    def __init__(self, g=None, 
+    def __init__(self, g=None,
                  client_id=None, client_secret=None,
                  auth_url=None, token_url=None, **args):
         """
@@ -215,7 +215,7 @@ server for requests.  It can be used for the optional"scope" parameters for Face
     def get_user(self):
         """
         Override this method by sublcassing the class.
-        
+
         """
         if not current.session.token: return None
         return dict(first_name = 'Pinco',
@@ -273,4 +273,5 @@ server for requests.  It can be used for the optional"scope" parameters for Face
                 self.accessToken()
                 return current.session.code
         return None
+
 

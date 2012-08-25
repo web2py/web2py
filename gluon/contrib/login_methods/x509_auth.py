@@ -53,7 +53,7 @@ class X509Auth(object):
             # cn = self.subject.cn
             self.subject = Storage(filter(None,
                                           map(lambda x:
-                                                  (x,map(lambda y: 
+                                                  (x,map(lambda y:
                                                          y.get_data().as_text(),
                                                          subject.get_entries_by_nid(subject.nid[x]))),
                                               subject.nid.keys())))
@@ -63,7 +63,7 @@ class X509Auth(object):
     def login_form(self, **args):
         raise HTTP(403,'Login not allowed. No valid x509 crentials')
 
-        
+
 
     def login_url(self, next="/"):
         raise HTTP(403,'Login not allowed. No valid x509 crentials')
@@ -100,5 +100,6 @@ class X509Auth(object):
         p['certificate'] = self.ssl_client_raw_cert
 
         return profile
+
 
 

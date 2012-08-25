@@ -14,3 +14,4 @@ class MessageBoxHandler(logging.Handler):
             msg = self.format(record)
             tkMessageBox.showinfo('info1', msg)
 
+

@@ -476,7 +476,7 @@ def load_routers(all_apps):
 def regex_uri(e, regexes, tag, default=None):
     "filter incoming URI against a list of regexes"
     path = e['PATH_INFO']
-    host = e.get('http_host', e.get('SERVER_NAME','localhost')).lower()    
+    host = e.get('http_host', e.get('SERVER_NAME','localhost')).lower()
     i = host.find(':')
     if i > 0:
         host = host[:i]
@@ -1305,6 +1305,7 @@ def get_effective_router(appname):
     if not routers or appname not in routers:
         return None
     return Storage(routers[appname])  # return a copy
+
 
 
 

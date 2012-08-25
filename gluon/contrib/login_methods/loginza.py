@@ -110,3 +110,4 @@ class Loginza(object):
                    SCRIPT(_src="https://s3-eu-west-1.amazonaws.com/s1.loginza.ru/js/widget.js", _type="text/javascript"))
         return form
 
+

@@ -135,7 +135,7 @@ def oembed(url):
     for k,v in EMBED_MAPS:
         if k.match(url):
             oembed = v+'?format=json&url='+cgi.escape(url)
-            try:                
+            try:
                 data = urllib.urlopen(oembed).read()
                 print data
                 return loads(data) # json!
@@ -152,7 +152,7 @@ def expand_one(url,cdict):
         r = cdict[url]
     else:
         r = oembed(url)
-        if isinstance(cdict,dict): 
+        if isinstance(cdict,dict):
             cdict[url] = r
     # if oembed service
     if 'html' in r:
@@ -203,4 +203,5 @@ if __name__=="__main__":
         print expand_html(open(sys.argv[1]).read())
     else:
         print test()
+
 

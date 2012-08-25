@@ -12,7 +12,7 @@
 import os
 import re
 import urllib
-from dropbox import client, rest, session 
+from dropbox import client, rest, session
 from gluon import *
 from gluon.tools import fetch
 from gluon.storage import Storage
@@ -50,15 +50,15 @@ class DropboxAccount(object):
         self.sess = session.DropboxSession(
             self.key,self.secret,self.access_type)
 
-        
+
     def get_user(self):
         request = self.request
         token = current.session.dropbox_token
         try:
-            access_token = self.sess.obtain_access_token(token)        
+            access_token = self.sess.obtain_access_token(token)
         except:
             access_token = None
-        if access_token:            
+        if access_token:
             user = Storage()
             self.client = client.DropboxClient(self.sess)
             data = self.client.account_info()
@@ -68,7 +68,7 @@ class DropboxAccount(object):
                         last_name = display_name[-1],
                         registration_id = data.get('uid',None))
             if not user['registration_id'] and self.on_login_failure:
-                redirect(self.on_login_failure)   
+                redirect(self.on_login_failure)
             return user
         return None
 
@@ -107,3 +107,4 @@ def use_dropbox(auth,filename='private/dropbox.key',**kwargs):
         auth.settings.login_form = DropboxAccount(
             request,key=key,secret=secret,access_type=access_type,
             login_url = login_url,**kwargs)
+
