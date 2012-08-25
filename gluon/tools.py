@@ -4662,7 +4662,8 @@ class Wiki(object):
         vars = current.request.post_vars
         if vars.body:
             vars.body=vars.body.replace('://%s' % self.host,'://HOSTNAME')
-        form = SQLFORM(db.wiki_page,page,deletable=True,showid=False).process()
+        form = SQLFORM(db.wiki_page,page,deletable=True,
+                       formstyle='table2cols',showid=False).process()
         if form.deleted:
             current.session.flash = 'page deleted'
             redirect(URL())

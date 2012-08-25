@@ -238,8 +238,10 @@ class ListWidget(StringWidget):
         if field.type=='list:integer': _class = 'integer'
         else: _class = 'string'
         requires = field.requires if isinstance(field.requires, (IS_NOT_EMPTY, IS_LIST_OF)) else None
-        items=[LI(INPUT(_id=_id, _class=_class, _name=_name, value=v, hideerror=True, requires=requires)) \
-                   for v in value or ['']]
+        attributes['_style'] = 'list-style:none'
+        items=[LI(INPUT(_id=_id, _class=_class, _name=_name, 
+                        value=v, hideerror=True, requires=requires),
+                  **attributes)  for v in value or ['']]
         script=SCRIPT("""
 // from http://refactormycode.com/codes/694-expanding-input-list-using-jquery
 (function(){
@@ -270,7 +272,8 @@ function rel(ul) {
 })();
 jQuery(document).ready(function(){jQuery('#%s_grow_input').grow_input();});
 """ % _id)
-        attributes['_id']=_id+'_grow_input'
+        attributes['_id'] = _id+'_grow_input'
+        attributes['_style'] = 'list-style:none'
         return TAG[''](UL(*items,**attributes),script)
 
 
