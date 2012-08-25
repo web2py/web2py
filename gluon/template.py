@@ -903,12 +903,6 @@ def render(content = "hello world",
     >>> render(content='{{for i in range(3):\\n=i\\npass}}')
     '012'
     """
-    # save current response class
-    if context and 'response' in context:
-        old_response = context['response']
-    else:
-        old_response = None
-
     # here to avoid circular Imports
     try:
         from globals import Response
@@ -920,6 +914,14 @@ def render(content = "hello world",
         if not 'NOESCAPE' in context:
             context['NOESCAPE'] = XML
             
+    # save current response class
+    if context and 'response' in context:
+        old_response_body = context['response'].body
+        context['response'].body = cStringIO.StringIO()
+    else:
+        old_response_body = None
+        context['response'] = Response()
+
     # If we don't have anything to render, why bother?
     if not content and not stream and not filename:
         raise SyntaxError, "Must specify a stream or filename or content"
@@ -934,9 +936,6 @@ def render(content = "hello world",
         elif content:
             stream = cStringIO.StringIO(content)
 
-    # Get a response class.
-    context['response'] = Response()
-
     # Execute the template.
     code = str(TemplateParser(stream.read(), context=context, path=path, lexers=lexers, delimiters=delimiters))
     try:
@@ -950,7 +949,8 @@ def render(content = "hello world",
 
     # Returned the rendered content.
     text = context['response'].body.getvalue()
-    if old_response is not None: context['response'] = old_response
+    if old_response_body is not None:
+        context['response'].body = old_response_body
     return text
 
 
