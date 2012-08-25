@@ -19,6 +19,7 @@
 - added db.table.field.avg()
 - Support for Google App Engine projections
 - Field(... 'upload', default=path) now accepts a path to a local file as default value, if user does not upload a file. Relative path looks inside current application folder, thanks Marin
+- executesql(...,fields=,columns=) allows parsing of results in Rows, thanks Anthony
 
 ### Auth improvements
 
