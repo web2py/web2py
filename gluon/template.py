@@ -913,7 +913,7 @@ def render(content = "hello world",
         # Add it to the context so we can use it.
         if not 'NOESCAPE' in context:
             context['NOESCAPE'] = XML
-            
+
     # save current response class
     if context and 'response' in context:
         old_response_body = context['response'].body
@@ -926,7 +926,7 @@ def render(content = "hello world",
     if not content and not stream and not filename:
         raise SyntaxError, "Must specify a stream or filename or content"
 
-    # Here for legacy purposes, probably can be reduced to 
+    # Here for legacy purposes, probably can be reduced to
     # something more simple.
     close_stream = False
     if not stream:
@@ -957,6 +957,7 @@ def render(content = "hello world",
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

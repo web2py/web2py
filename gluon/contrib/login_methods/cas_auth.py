@@ -136,3 +136,4 @@ class CasAuth( object ):
         import urllib
         redirect("%s?service=%s" % (self.cas_logout_url,self.cas_my_url))
 
+

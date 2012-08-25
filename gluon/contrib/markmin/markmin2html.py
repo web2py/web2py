@@ -801,7 +801,7 @@ def render(text,
         # this is experimental @{function/args}
         # turns into a digitally signed URL
         def u1(match,URL=URL):
-            a,c,f,args = match.group('a','c','f','args')                        
+            a,c,f,args = match.group('a','c','f','args')
             return URL(a=a or None,c=c or None,f = f or None,
                        args=args.split('/'), scheme=True, host=True)
         text = regex_URL.sub(u1,text)

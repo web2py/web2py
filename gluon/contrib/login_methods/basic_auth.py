@@ -23,3 +23,4 @@ def basic_auth(server="http://127.0.0.1"):
             return False
     return basic_login_aux
 
+

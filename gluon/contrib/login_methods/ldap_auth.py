@@ -634,3 +634,4 @@ def ldap_auth(server='ldap', port=None,
     if filterstr[0] == '(' and filterstr[-1] == ')':  # rfc4515 syntax
         filterstr = filterstr[1:-1]  # parens added again where used
     return ldap_auth_aux
+

@@ -962,7 +962,7 @@ class DIV(XmlComponent):
         >>> for c in a.elements('input, select, textarea'): c['_disabled'] = 'disabled'
         >>> a.xml()
         '<form action="" enctype="multipart/form-data" method="post"><input disabled="disabled" type="text" /><select disabled="disabled"><option value="0">0</option></select><textarea cols="40" disabled="disabled" rows="10"></textarea></form>'
-        
+
         Elements that are matched can also be replaced or removed by specifying
         a "replace" argument (note, a list of the original matching elements
         is still returned as usual).
@@ -2497,6 +2497,7 @@ class MARKMIN(XmlComponent):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

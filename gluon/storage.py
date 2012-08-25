@@ -172,7 +172,7 @@ class Messages(Settings):
 
 class FastStorage(dict):
     """
-    Eventually this should replace class Storage but causes memory leak 
+    Eventually this should replace class Storage but causes memory leak
     because of http://bugs.python.org/issue1469629
 
     >>> s = FastStorage()
@@ -205,7 +205,7 @@ class FastStorage(dict):
     >>> s['a']
     >>> s['b']
     """
-    def __init__(self, *args, **kwargs): 
+    def __init__(self, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
         self.__dict__ = self
     def __getattr__(self,key):
@@ -263,6 +263,7 @@ class List(list):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 
