@@ -598,7 +598,7 @@ def render(text,
     - class_prefix is a prefix for ALL classes in markmin text. E.g. if class_prefix='my_'
       then for ``test``:cls class will be changed to "my_cls" (default value is '')
     - id_prefix is prefix for ALL ids in markmin text (default value is 'markmin_'). E.g.:
-        -- [[id]] will be converted to <a name="markmin_id"></a>
+        -- [[id]] will be converted to <div class="anchor" id="markmin_id"></div>
         -- [[link #id]] will be converted to <a href="#markmin_id">link</a>
         -- ``test``:cls[id] will be converted to <code class="cls" id="markmin_id">test</code>
 
@@ -729,19 +729,19 @@ def render(text,
     '<p>[[probe]]</p>'
 
     >>> render(r"\\\\[[probe]]")
-    '<p>\\\\<a name="markmin_probe"></a></p>'
+    '<p>\\\\<div class="anchor" id="markmin_probe"></div></p>'
 
     >>> render(r"\\\\\\[[probe]]")
     '<p>\\\\[[probe]]</p>'
 
     >>> render(r"\\\\\\\\[[probe]]")
-    '<p>\\\\\\\\<a name="markmin_probe"></a></p>'
+    '<p>\\\\\\\\<div class="anchor" id="markmin_probe"></div></p>'
 
     >>> render(r"\\\\\\\\\[[probe]]")
     '<p>\\\\\\\\[[probe]]</p>'
 
     >>> render(r"\\\\\\\\\\\[[probe]]")
-    '<p>\\\\\\\\\\\\<a name="markmin_probe"></a></p>'
+    '<p>\\\\\\\\\\\\<div class="anchor" id="markmin_probe"></div></p>'
 
     >>> render("``[[ [\\[[probe\]\\]] URL\\[x\\]]]``:red[dummy_params]")
     '<span style="color: red"><a href="URL[x]" title="[[probe]]">URL[x]</a></span>'
@@ -789,7 +789,7 @@ def render(text,
     '<p><strong>test 1</strong></p>'
 
     >>> render('[[id1 [span **messag** in ''markmin''] ]] ... [[**link** to id [link\\\'s title] #mark1]]')
-    '<p><a name="markmin_id1">span <strong>messag</strong> in markmin</a> ... <a href="#markmin_mark1" title="link\\\'s title"><strong>link</strong> to id</a></p>'
+    '<p><div class="anchor" id="markmin_id1">span <strong>messag</strong> in markmin</div> ... <a href="#markmin_mark1" title="link\\\'s title"><strong>link</strong> to id</a></p>'
 
     """
     if autolinks=="default": autolinks = autolinks_simple
@@ -1200,7 +1200,7 @@ def render(text,
                        protolinks, class_prefix, id_prefix) if t else k
             return '<a href="%(k)s"%(title)s%(target)s>%(t)s</a>' \
                    % dict(k=k, title=title, target=target, t=t)
-        return '<a name="%s">%s</a>' % (escape(id_prefix+t),
+        return '<div class="anchor" id="%s">%s</div>' % (escape(id_prefix+t),
                                         render(a, {},{},'br', URL,
                                                environment, latex, autolinks,
                                                protolinks, class_prefix, id_prefix))
