@@ -2197,7 +2197,7 @@ class Auth(object):
 
         key = getarg(-1)
         table_user = self.table_user()
-        user = self.db(table_user.registration_key == key).select().first()
+        user = table_user(registration_key=key)
         if not user:
             redirect(self.settings.login_url)
         if self.settings.registration_requires_approval:
@@ -2272,7 +2272,7 @@ class Auth(object):
         if form.accepts(request, session,
                         formname='retrieve_username', dbio=False,
                         onvalidation=onvalidation,hideerror=self.settings.hideerror):
-            user = self.db(table_user.email == form.vars.email).select().first()
+            user = table_user(email=form.vars.email)
             if not user:
                 current.session.flash = \
                     self.messages.invalid_email
@@ -2350,7 +2350,7 @@ class Auth(object):
         if form.accepts(request, session,
                         formname='retrieve_password', dbio=False,
                         onvalidation=onvalidation,hideerror=self.settings.hideerror):
-            user = self.db(table_user.email == form.vars.email).select().first()
+            user = table_user(email=form.vars.email)
             if not user:
                 current.session.flash = \
                     self.messages.invalid_email
@@ -2490,7 +2490,7 @@ class Auth(object):
                         formname='reset_password', dbio=False,
                         onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
-            user = self.db(table_user.email == form.vars.email).select().first()
+            user = table_user(email=form.vars.email)
             if not user:
                 session.flash = self.messages.invalid_email
                 redirect(self.url(args=request.args))
