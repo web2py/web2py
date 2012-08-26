@@ -6282,16 +6282,12 @@ def bar_decode_string(value):
     return [x.replace('||', '|') for x in string_unpack.split(value[1:-1]) if x.strip()]
 
 
-class Row(dict):
+class Row(object):
 
     """
     a dictionary that lets you do d['a'] as well as d.a
     this is only used to store a Row
     """
-
-    __setattr__ = dict.__setitem__
-    __getattr__ = dict.__getitem__
-    __delattr__ = dict.__delitem__
 
     def __getitem__(self, key):
         key=str(key)
@@ -6303,15 +6299,27 @@ class Row(dict):
                 return dict.__getitem__(self, m.group(1))[m.group(2)]
             except (KeyError,TypeError):
                 key = m.group(2)
-        return dict.__getitem__(self, key)
+        return object.__getattribute__(self, key)
+
+    def __setitem__(self, key, value):
+        setattr(self, str(key), value)
 
     __call__ = __getitem__
 
-    #def __call__(self,key):
-    #    return self.__getitem__(key)
+    def get(self,key,default=None):
+        return self.__dict__.get(key,default)
 
-    def __setitem__(self, key, value):
-        dict.__setitem__(self, str(key), value)
+    def __contains__(self,key):
+        return key in self.__dict__
+
+    def keys(self):
+        return self.__dict__.keys()
+
+    def items(self):
+        return self.__dict__.items()
+
+    def values(self):
+        return self.__dict__.values()
 
     def __str__(self):
         ### this could be made smarter
@@ -6490,7 +6498,7 @@ def smart_query(fields,text):
     return query
 
 
-class DAL(dict):
+class DAL(object):
 
     """
     an instance of this class represents a database connection
@@ -6691,12 +6699,6 @@ class DAL(dict):
         for backend in self.check_reserved:
             if name.upper() in self.RSK[backend]:
                 raise SyntaxError, 'invalid table/column name "%s" is a "%s" reserved SQL keyword' % (name, backend.upper())
-
-    def __contains__(self, tablename):
-        if self.has_key(tablename):
-            return True
-        else:
-            return False
 
     def parse_as_rest(self,patterns,args,vars,queries=None,nested_select=True):
         """
@@ -6989,6 +6991,9 @@ def index():
         if on_define: on_define(table)
         return table
 
+    def __contains__(self, tablename):
+        return tablename in self.tables
+
     def __iter__(self):
         for tablename in self.tables:
             yield self[tablename]
@@ -7000,16 +7005,18 @@ def index():
         if not key is '_LAZY_TABLES' and key in self._LAZY_TABLES:
             tablename, fields, args = self._LAZY_TABLES.pop(key)
             return self.lazy_define_table(tablename,*fields,**args)
-        return dict.__getitem__(self, key)
+        return object.__getattribute__(self, key)
 
     def __setitem__(self, key, value):
-        dict.__setitem__(self, str(key), value)
+        object.__setattr__(self, str(key), value)
 
     def __setattr__(self, key, value):
         if key[:1]!='_' and key in self:
             raise SyntaxError, \
                 'Object %s exists and cannot be redefined' % key
-        dict.__setitem__(self,key,value)
+        object.__setattr__(self,key,value)
+
+    __delitem__ = object.__delattr__
 
     def __repr__(self):
         return '<DAL %s>' % self._uri
@@ -7207,7 +7214,7 @@ def Reference_pickler(data):
 copy_reg.pickle(Reference, Reference_pickler, Reference_unpickler)
 
 
-class Table(dict):
+class Table(object):
 
     """
     an instance of this class represents a database table
@@ -7447,7 +7454,7 @@ class Table(dict):
         elif str(key).isdigit() or 'google' in drivers and isinstance(key, Key):
             return self._db(self._id == key).select(limitby=(0,1)).first()
         elif key:
-            return dict.__getitem__(self, str(key))
+            return object.__getattribute__(self, str(key))
 
     def __call__(self, key=DEFAULT, **kwargs):
         for_update = kwargs.get('_for_update',False)
@@ -7496,9 +7503,14 @@ class Table(dict):
             if isinstance(key, dict):
                 raise SyntaxError,\
                     'value must be a dictionary: %s' % value
-            dict.__setitem__(self, str(key), value)
+            object.__setattr__(self, str(key), value)
 
     __getattr__ = __getitem__
+
+    def __setattr__(self, key, value):
+        if key[:1]!='_' and key in self:
+            raise SyntaxError, 'Object exists and cannot be redefined: %s' % key
+        object.__setattr__(self,key,value)
 
     def __delitem__(self, key):
         if isinstance(key, dict):
@@ -7509,10 +7521,11 @@ class Table(dict):
                 not self._db(self._id == key).delete():
             raise SyntaxError, 'No such record: %s' % key
 
-    def __setattr__(self, key, value):
-        if key[:1]!='_' and key in self:
-            raise SyntaxError, 'Object exists and cannot be redefined: %s' % key
-        self[key] = value
+    def __contains__(self,key):
+        return hasattr(self,key)
+
+    def items(self):
+        return self.__dict__.items()
 
     def __iter__(self):
         for fieldname in self.fields:
@@ -7522,7 +7535,7 @@ class Table(dict):
         return '<Table %s (%s)>' % (self._tablename,','.join(self.fields()))
 
     def __str__(self):
-        if self.get('_ot', None):
+        if hasattr(self,'_ot') and self._ot is not None:
             if 'Oracle' in str(type(self._db._adapter)):     # <<< patch
                 return '%s %s' % (self._ot, self._tablename) # <<< patch
             return '%s AS %s' % (self._ot, self._tablename)
