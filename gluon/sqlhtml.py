@@ -1834,7 +1834,7 @@ class SQLFORM(FORM):
             else:
                 rows = dbset.select(left=left,orderby=orderby,*columns)
 
-            if exportManager.has_key(export_type):
+            if export_type in exportManager:
                 value = exportManager[export_type]
                 clazz = value[0] if hasattr(value, '__getitem__') else value
                 oExp = clazz(rows)
