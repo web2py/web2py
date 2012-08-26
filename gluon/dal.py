@@ -8886,13 +8886,13 @@ class Rows(object):
                     row.append(none_exception(value))
             writer.writerow(row)
 
-    def xml(self,strict=False):
+    def xml(self,strict=False,row_name='row',rows_name='rows'):
         """
         serializes the table using sqlhtml.SQLTABLE (if present)
         """
         if strict:
             ncols = len(self.colnames)
-            def f(row,field='row',indent='  '):
+            def f(row,field,indent='  '):
                 if isinstance(row,dict):
                     spc = indent+'  \n'
                     items = [f(row[x],x,indent+'  ') for x in row]
@@ -8906,7 +8906,10 @@ class Rows(object):
                     return '%s<%s>%s</%s>' % (indent,field,row,field)
                 else:
                     return None
-            return '<rows>\n%s\n</rows>' % '\n'.join(f(row) for row in self)
+            return '<%s>\n%s\n</%s>' % (
+                rows_name,
+                '\n'.join(f(row,row_name) for row in self),
+                rows_name)
         import sqlhtml
         return sqlhtml.SQLTABLE(self).xml()
 
