@@ -6288,6 +6288,8 @@ class Row(object):
     a dictionary that lets you do d['a'] as well as d.a
     this is only used to store a Row
     """
+    def __init__(self,*args,**kwargs):
+        self.__dict__.update(*args,**kwargs)
 
     def __getitem__(self, key):
         key=str(key)
@@ -6320,13 +6322,16 @@ class Row(object):
 
     def values(self):
         return self.__dict__.values()
+    
+    def __iter__(self):
+        return self.__dict__.__iter__()
 
     def __str__(self):
         ### this could be made smarter
-        return '<Row %s>' % dict.__repr__(self)
+        return '<Row %s>' % self.__dict__
 
     def __repr__(self):
-        return '<Row %s>' % dict.__repr__(self)
+        return '<Row %s>' % self.__dict__
 
     def __int__(self):
         return dict.__getitem__(self,'id')
@@ -6366,7 +6371,6 @@ class Row(object):
             elif not isinstance(v,tuple(SERIALIZABLE_TYPES)):
                 del d[k]
         return d
-
 
 def Row_unpickler(data):
     return Row(cPickle.loads(data))
@@ -8903,10 +8907,11 @@ class Rows(object):
         """
         serializes the table using sqlhtml.SQLTABLE (if present)
         """
+        alphanumeric = re.compile('[a-zA-Z]\w*')
         if strict:
             ncols = len(self.colnames)
             def f(row,field,indent='  '):
-                if isinstance(row,dict):
+                if isinstance(row,Row):
                     spc = indent+'  \n'
                     items = [f(row[x],x,indent+'  ') for x in row]
                     return '%s<%s>\n%s\n%s</%s>' % (
@@ -8916,7 +8921,12 @@ class Rows(object):
                         indent,
                         field)
                 elif not callable(row):
-                    return '%s<%s>%s</%s>' % (indent,field,row,field)
+                    if alphanumeric.match(field):
+                        return '%s<%s>%s</%s>' % \
+                            (indent,field,row,field)
+                    else:
+                        return '%s<extra name="%s">%s</extra>' % \
+                            (indent,field,row)
                 else:
                     return None
             return '<%s>\n%s\n</%s>' % (
