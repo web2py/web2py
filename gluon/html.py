@@ -296,7 +296,8 @@ def URL(
     if other.endswith('/'):
         other += '/'    # add trailing slash to make last trailing empty arg explicit
 
-    if vars.has_key('_signature'): vars.pop('_signature')
+    if '_signature' in vars:
+        vars.pop('_signature')
     list_vars = []
     for (key, vals) in sorted(vars.items()):
         if not isinstance(vals, (list, tuple)):
@@ -387,7 +388,7 @@ def verifyURL(request, hmac_key=None, hash_vars=True, salt=None, user_signature=
 
     """
 
-    if not request.get_vars.has_key('_signature'):
+    if not '_signature' in request.get_vars:
         return False # no signature in the request URL
 
     # check if user_signature requires
@@ -1109,9 +1110,8 @@ class DIV(XmlComponent):
         sibs = [s for s in self.parent.components if not s == self]
         matches = []
         first_only = False
-        if kargs.has_key("first_only"):
-            first_only = kargs["first_only"]
-            del kargs["first_only"]
+        if 'first_only' in kargs:
+            first_only = kargs.pop('first_only')
         for c in sibs:
             try:
                 check = True

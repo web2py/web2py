@@ -1753,15 +1753,15 @@ class Auth(object):
                              renew=interactivelogin)
             service = session._cas_service
             del session._cas_service
-            if request.vars.has_key('warn') and not interactivelogin:
+            if 'warn' in request.vars and not interactivelogin:
                 response.headers['refresh'] = "5;URL=%s"%service+"?ticket="+ticket
                 return A("Continue to %s"%service,
                     _href=service+"?ticket="+ticket)
             else:
                 redirect(service+"?ticket="+ticket)
-        if self.is_logged_in() and not request.vars.has_key('renew'):
+        if self.is_logged_in() and not 'renew' in request.vars:
             return allow_access()
-        elif not self.is_logged_in() and request.vars.has_key('gateway'):
+        elif not self.is_logged_in() and 'gateway' in request.vars:
             redirect(service)
         def cas_onaccept(form, onaccept=onaccept):
             if not onaccept is DEFAULT: onaccept(form)
@@ -1774,7 +1774,7 @@ class Auth(object):
         db, table = self.db, self.table_cas()
         current.response.headers['Content-Type']='text'
         ticket = request.vars.ticket
-        renew = True if request.vars.has_key('renew') else False
+        renew = 'renew' in request.vars
         row = table(ticket=ticket)
         success = False
         if row:
@@ -1993,10 +1993,10 @@ class Auth(object):
             # user wants to be logged in for longer
             self.login_user(user)
             session.auth.expiration = \
-                request.vars.get("remember",False) and \
+                request.vars.get('remember',False) and \
                 self.settings.long_expiration or \
                 self.settings.expiration
-            session.auth.remember = request.vars.has_key("remember"),
+            session.auth.remember = 'remember' in request.vars
             self.log_event(log, user)
             session.flash = self.messages.logged_in
 
@@ -3724,14 +3724,14 @@ def universal_caller(f, *a, **b):
     # There might be pos_args left, that are sent as named_values. Gather them as well.
     # If a argument already is populated with values we simply replaces them.
     for arg_name in pos_args[len(arg_dict):]:
-        if b.has_key(arg_name):
+        if arg_name in b:
             arg_dict[arg_name] = b[arg_name]
 
     if len(arg_dict) >= len(pos_args):
         # All the positional arguments is found. The function may now be called.
         # However, we need to update the arg_dict with the values from the named arguments as well.
         for arg_name in named_args:
-            if b.has_key(arg_name):
+            if arg_name in b:
                 arg_dict[arg_name] = b[arg_name]
 
         return f(**arg_dict)
