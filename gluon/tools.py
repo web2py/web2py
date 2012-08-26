@@ -2684,7 +2684,8 @@ class Auth(object):
             self.user = auth.user
             if self.settings.login_onaccept:
                 form = Storage(dict(vars=self.user))
-                self.settings.login_onaccept(form)
+                for callback in self.settings.login_onaccept:
+                    callback(form)
             log = self.messages.impersonate_log
             self.log_event(log,dict(id=current_id, other_id=auth.user.id))
         elif user_id in (0, '0') and self.is_impersonating():
