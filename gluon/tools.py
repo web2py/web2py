@@ -31,6 +31,7 @@ from utils import web2py_uuid
 from fileutils import read_file, check_credentials
 from gluon import *
 from gluon.contrib.autolinks import expand_one
+from gluon.dal import Row
 
 import serializers
 
@@ -1987,7 +1988,7 @@ class Auth(object):
 
         # process authenticated users
         if user:
-            user = Storage(table_user._filter_fields(user, id=True))
+            user = Row(table_user._filter_fields(user, id=True))
             # process authenticated users
             # user wants to be logged in for longer
             self.login_user(user)
@@ -2156,7 +2157,9 @@ class Auth(object):
                 if not self.settings.registration_requires_verification:
                     table_user[form.vars.id] = dict(registration_key='')
                 session.flash = self.messages.registration_successful
-                user = self.db(table_user[username] == form.vars[username]).select().first()                
+                user = self.db(
+                    table_user[username] == form.vars[username]
+                    ).select().first()                
                 self.login_user(user)
                 session.flash = self.messages.logged_in
             self.log_event(log, form.vars)
@@ -2405,7 +2408,7 @@ class Auth(object):
             key = request.vars.key or getarg(-1)
             t0 = int(key.split('-')[0])
             if time.time()-t0 > 60*60*24: raise Exception
-            user = self.db(table_user.reset_password_key == key).select().first()
+            user = table_user(reset_password_key=key)
             if not user: raise Exception
         except Exception:
             session.flash = self.messages.invalid_reset_password
@@ -2424,10 +2427,12 @@ class Auth(object):
             formstyle=self.settings.formstyle,
             separator=self.settings.label_separator
         )
-        if form.accepts(request,session,hideerror=self.settings.hideerror):
-            user.update_record(**{passfield:str(form.vars.new_password),
-                                  'registration_key':'',
-                                  'reset_password_key':''})
+        if form.accepts(request,session,
+                        hideerror=self.settings.hideerror):
+            user.update_record(
+                **{passfield:str(form.vars.new_password),
+                   'registration_key':'',
+                   'reset_password_key':''})
             session.flash = self.messages.password_changed
             if self.settings.login_after_password_change:
                 self.login_user(user)
