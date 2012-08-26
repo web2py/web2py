@@ -959,6 +959,7 @@ class Auth(object):
         settings.registration_requires_verification = False
         settings.registration_requires_approval = False
         settings.login_after_registration = False
+        settings.login_after_password_change = True
         settings.alternate_requires_registration = False
         settings.create_user_groups = "user_%(id)s"
         settings.everybody_group_id = None
@@ -1038,8 +1039,9 @@ class Auth(object):
         settings.profile_fields = None
         settings.retrieve_username_next = self.url('index')
         settings.retrieve_password_next = self.url('index')
-        settings.request_reset_password_next = self.url(function, args='login')
-        settings.reset_password_next = self.url(function, args='login')
+        settings.request_reset_password_next = \
+            self.url(function,args='login')
+        settings.reset_password_next = self.url('index')
 
         settings.change_password_next = self.url('index')
         settings.change_password_onvalidation = []
@@ -1675,6 +1677,15 @@ class Auth(object):
         (username, password) = base64.b64decode(basic[6:]).split(':')
         return (True, True, self.login_bare(username, password))
 
+    def login_user(self,user):
+        current.session.auth = Storage(
+            user = user, 
+            last_visit = current.request.now,
+            expiration = self.settings.expiration,
+            hmac_key = web2py_uuid())
+        self.user = user
+        self.update_groups()
+
     def login_bare(self, username, password):
         """
         logins user
@@ -1695,11 +1706,7 @@ class Auth(object):
             password = table_user[passfield].validate(password)[0]
             if not user.registration_key and password == user[passfield]:
                 user = Storage(table_user._filter_fields(user, id=True))
-                session.auth = Storage(user=user, last_visit=request.now,
-                                       expiration=self.settings.expiration,
-                                       hmac_key = web2py_uuid())
-                self.user = user
-                self.update_groups()
+                self.login_user(user)
                 return user
         else:
             # user not in database try other login methods
@@ -1974,23 +1981,16 @@ class Auth(object):
         # process authenticated users
         if user:
             user = Storage(table_user._filter_fields(user, id=True))
-
             # process authenticated users
             # user wants to be logged in for longer
-            session.auth = Storage(
-                user = user,
-                last_visit = request.now,
-                expiration = request.vars.get("remember",False) and \
-                    self.settings.long_expiration or self.settings.expiration,
-                remember = request.vars.has_key("remember"),
-                hmac_key = web2py_uuid()
-                )
-
-            self.user = user
+            self.login_user(user)
+            session.auth.expiration = \
+                request.vars.get("remember",False) and \
+                self.settings.long_expiration or \
+                self.settings.expiration
+            session.auth.remember = request.vars.has_key("remember"),
             self.log_event(log, user)
             session.flash = self.messages.logged_in
-
-        self.update_groups()
 
         # how to continue
         if self.settings.login_form == self:
@@ -2151,11 +2151,7 @@ class Auth(object):
                 session.flash = self.messages.registration_successful
                 user = self.db(table_user[username] == form.vars[username]).select().first()
                 user = Storage(table_user._filter_fields(user, id=True))
-                session.auth = Storage(user=user, last_visit=request.now,
-                                       expiration=self.settings.expiration,
-                                       hmac_key = web2py_uuid())
-                self.user = user
-                self.update_groups()
+                self.login_user(user)
                 session.flash = self.messages.logged_in
             self.log_event(log, form.vars)
             callback(onaccept,form)
@@ -2398,7 +2394,7 @@ class Auth(object):
         session = current.session
 
         if next is DEFAULT:
-            next = self.next or self.settings.reset_password_next
+            next = self.settings.reset_password_next
         try:
             key = request.vars.key or getarg(-1)
             t0 = int(key.split('-')[0])
@@ -2427,6 +2423,8 @@ class Auth(object):
                                   'registration_key':'',
                                   'reset_password_key':''})
             session.flash = self.messages.password_changed
+            if self.settings.login_after_password_change:
+                self.login_user(user)
             redirect(next)
         return form
 
