@@ -1783,36 +1783,37 @@ class BaseAdapter(ConnectionPool):
         db = self.db
         virtualtables = []
         new_rows = []
+        tmps = []
+        for colname in colnames:
+            if not regex_table_field.match(colname):
+                tmps.append(None)
+            else:
+                (tablename, fieldname) = colname.split('.')
+                table = db[tablename]
+                field = table[fieldname]
+                tmps.append((tablename,fieldname,table,field))
         for (i,row) in enumerate(rows):
             new_row = Row()
-            for j,colname in enumerate(colnames):
-                value = row[j]
-                if not regex_table_field.match(colnames[j]):
-                    if not '_extra' in new_row:
-                        new_row['_extra'] = Row()
-                    new_row['_extra'][colnames[j]] = \
-                        self.parse_value(value, fields[j].type,blob_decode)
-                    new_column_name = \
-                        regex_select_as_parser.search(colnames[j])
-                    if not new_column_name is None:
-                        column_name = new_column_name.groups(0)
-                        setattr(new_row,column_name[0],value)
-                else:
-                    (tablename, fieldname) = colname.split('.')
-                    table = db[tablename]
-                    field = table[fieldname]
-                    if not tablename in new_row:
+            for (j,colname) in enumerate(colnames):
+                value = row[j]                
+                tmp = tmps[j]
+                if tmp:
+                    (tablename,fieldname,table,field) = tmp
+                    if tablename in new_row:
+                        colset = new_row[tablename]
+                    else:
                         colset = new_row[tablename] = Row()
                         if tablename not in virtualtables:
                             virtualtables.append(tablename)
-                    else:
-                        colset = new_row[tablename]
-                    value = self.parse_value(value,field.type,blob_decode)
-                    if field.filter_out: value = field.filter_out(value)
+                    value = self.parse_value(value,field.type,
+                                             blob_decode)
+                    if field.filter_out:
+                        value = field.filter_out(value)
                     colset[fieldname] = value
 
                     if field.type == 'id':
-                        # temporary hack to deal with GoogleDatastoreAdapter
+                        # temporary hack to deal with 
+                        # GoogleDatastoreAdapter
                         # references
                         if isinstance(self, GoogleDatastoreAdapter):
                             id = value.key().id_or_name()
@@ -1826,12 +1827,26 @@ class BaseAdapter(ConnectionPool):
                         colset.delete_record = (
                             lambda t = table, i = id:
                             t._db(t._id==i).delete())
-                        for (referee_table, referee_name) in table._referenced_by:
+                        for (referee_table, referee_name) \
+                                in table._referenced_by:
                             s = db[referee_table][referee_name]
                             referee_link = db._referee_name and \
-                                db._referee_name % dict(table=referee_table,field=referee_name)
-                            if referee_link and not referee_link in colset:
+                                db._referee_name % dict(
+                                table=referee_table,field=referee_name)
+                            if referee_link and \
+                                    not referee_link in colset:
                                 colset[referee_link] = Set(db, s == id)
+                else:
+                    if not '_extra' in new_row:
+                        new_row['_extra'] = Row()
+                    new_row['_extra'][colname] = \
+                        self.parse_value(value,
+                                         fields[j].type,blob_decode)
+                    new_column_name = \
+                        regex_select_as_parser.search(colname)
+                    if not new_column_name is None:
+                        column_name = new_column_name.groups(0)
+                        setattr(new_row,column_name[0],value)
             new_rows.append(new_row)
         rowsobj = Rows(db, new_rows, colnames, rawrows=rows)
 
@@ -3136,7 +3151,7 @@ class FireBirdAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if adapter_args.has_key('driver_name'):
+        if 'driver_name' in adapter_args:
             if adapter_args['driver_name'] == 'kinterbasdb':
                 self.driver = kinterbasdb
             elif adapter_args['driver_name'] == 'firebirdsql':
@@ -3202,7 +3217,7 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
 
-        if adapter_args.has_key('driver_name'):
+        if 'driver_name' in adapter_args:
             if adapter_args['driver_name'] == 'kinterbasdb':
                 self.driver = kinterbasdb
             elif adapter_args['driver_name'] == 'firebirdsql':
@@ -6314,6 +6329,9 @@ class Row(object):
     def __contains__(self,key):
         return key in self.__dict__
 
+    def update(self, *args, **kwargs):
+        self.__dict__.update(*args, **kwargs)
+
     def keys(self):
         return self.__dict__.keys()
 
@@ -6997,6 +7015,9 @@ def index():
 
     def __contains__(self, tablename):
         return tablename in self.tables
+
+    def get(self,key,default):
+        return self.__dict__.get(key,default)
 
     def __iter__(self):
         for tablename in self.tables:
