@@ -6315,10 +6315,10 @@ class Row(dict):
 
     def __str__(self):
         ### this could be made smarter
-        return '<Row ' + dict.__repr__(self) + '>'
+        return '<Row %s>' % dict.__repr__(self)
 
     def __repr__(self):
-        return '<Row ' + dict.__repr__(self) + '>'
+        return '<Row %s>' % dict.__repr__(self)
 
     def __int__(self):
         return dict.__getitem__(self,'id')
@@ -7012,7 +7012,7 @@ def index():
         dict.__setitem__(self,key,value)
 
     def __repr__(self):
-        return '<DAL ' + dict.__repr__(self) + '>'
+        return '<DAL %s>' % self._uri
 
     def smart_query(self,fields,text):
         return Set(self, smart_query(fields,text))
@@ -7519,7 +7519,7 @@ class Table(dict):
             yield self[fieldname]
 
     def __repr__(self):
-        return '<Table ' + dict.__repr__(self) + '>'
+        return '<Table %s (%s)>' % (self._tablename,','.join(self.fields()))
 
     def __str__(self):
         if self.get('_ot', None):
@@ -8381,6 +8381,9 @@ class Query(object):
         self.second = second
         self.ignore_common_filters = ignore_common_filters
 
+    def __repr__(self):
+        return '<Query %s>' % BaseAdapter.expand(self.db._adapter,self)
+
     def __str__(self):
         return self.db._adapter.expand(self)
 
@@ -8436,6 +8439,9 @@ class Set(object):
             query = copy.copy(query)
             query.ignore_common_filters = ignore_common_filters
         self.query = query
+
+    def __repr__(self):
+        return '<Set %s>' % BaseAdapter.expand(self.db._adapter,self.query)
 
     def __call__(self, query, ignore_common_filters=False):
         if isinstance(query,Table):
@@ -8616,6 +8622,9 @@ class Rows(object):
         self.colnames = colnames
         self.compact = compact
         self.response = rawrows
+
+    def __repr__(self):
+        return '<Rows (%s)>' % len(self.records)
 
     def setvirtualfields(self,**keyed_virtualfields):
         """
@@ -8877,11 +8886,30 @@ class Rows(object):
                     row.append(none_exception(value))
             writer.writerow(row)
 
-    def xml(self):
+    def xml(self,strict=False,row_name='row',rows_name='rows'):
         """
         serializes the table using sqlhtml.SQLTABLE (if present)
         """
-
+        if strict:
+            ncols = len(self.colnames)
+            def f(row,field,indent='  '):
+                if isinstance(row,dict):
+                    spc = indent+'  \n'
+                    items = [f(row[x],x,indent+'  ') for x in row]
+                    return '%s<%s>\n%s\n%s</%s>' % (
+                        indent,
+                        field,
+                        spc.join(item for item in items if item),
+                        indent,
+                        field)
+                elif not callable(row):
+                    return '%s<%s>%s</%s>' % (indent,field,row,field)
+                else:
+                    return None
+            return '<%s>\n%s\n</%s>' % (
+                rows_name,
+                '\n'.join(f(row,row_name) for row in self),
+                rows_name)
         import sqlhtml
         return sqlhtml.SQLTABLE(self).xml()
 
