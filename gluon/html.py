@@ -656,10 +656,10 @@ class DIV(XmlComponent):
         self.attributes = attributes
         self._fixup()
         # converts special attributes in components attributes
-        self._postprocessing()
         self.parent = None
         for c in self.components:
             self._setnode(c)
+        self._postprocessing()
 
     def update(self, **kargs):
         """
@@ -2323,7 +2323,7 @@ def test():
     >>> print form.accepts({'myvar':'34'}, formname=None)
     False
     >>> print form.xml()
-    <form action="" enctype="multipart/form-data" method="post"><input class="invalidinput" name="myvar" type="text" value="34" /><div class="error" id="myvar__error">invalid expression</div></form>
+    <form action="" enctype="multipart/form-data" method="post"><input class="invalidinput" name="myvar" type="text" value="34" /><div class="error_wrapper"><div class="error" id="myvar__error">invalid expression</div></div></form>
     >>> print form.accepts({'myvar':'4'}, formname=None, keepvalues=True)
     True
     >>> print form.xml()
@@ -2337,7 +2337,7 @@ def test():
     >>> print form.accepts({'myvar':'as df'}, formname=None)
     False
     >>> print form.xml()
-    <form action=\"\" enctype=\"multipart/form-data\" method=\"post\"><input class=\"invalidinput\" name=\"myvar\" type=\"text\" value=\"as df\" /><div class=\"error\" id=\"myvar__error\">only alphanumeric!</div></form>
+    <form action="" enctype="multipart/form-data" method="post"><input class="invalidinput" name="myvar" type="text" value="as df" /><div class="error_wrapper"><div class="error" id="myvar__error">only alphanumeric!</div></div></form>
     >>> session={}
     >>> form=FORM(INPUT(value=\"Hello World\", _name=\"var\", requires=IS_MATCH('^\w+$')))
     >>> if form.accepts({}, session,formname=None): print 'passed'
