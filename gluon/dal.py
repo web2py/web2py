@@ -39,7 +39,7 @@ Example of usage:
 >>> # from dal import DAL, Field
 
 ### create DAL connection (and create DB if it doesn't exist)
->>> db = DAL(('mysql://a:b@localhost/x', 'sqlite://storage.sqlite'),
+>>> db = DAL(('sqlite://storage.sqlite','mysql://a:b@localhost/x'), 
 ... folder=None)
 
 ### define a table 'person' (create/alter as necessary)
@@ -9055,6 +9055,17 @@ def test_all():
     >>> me = db(db.person.id==person_id).select()[0] # test select
     >>> me.name
     'Massimo'
+    >>> db.person[2].name
+    'Massimo'
+    >>> db.person(2).name
+    'Massimo'
+    >>> db.person(name='Massimo').name
+    'Massimo'
+    >>> db.person(db.person.name=='Massimo').name
+    'Massimo'
+    >>> row = db.person[2]
+    >>> row.name == row['name'] == row['person.name'] == row('person.name')
+    True
     >>> db(db.person.name=='Massimo').update(name='massimo') # test update
     1
     >>> db(db.person.name=='Marco').select().first().delete_record() # test delete
