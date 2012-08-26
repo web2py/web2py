@@ -1669,6 +1669,11 @@ class Auth(object):
         return user
 
     def basic(self):
+        """
+        perform basic login.
+        reads current.request.env.http_authorization
+        and returns basic_allowed,basic_accepted,user 
+        """
         if not self.settings.allow_basic_login:
             return (False,False,False)
         basic = current.request.env.http_authorization
@@ -1678,6 +1683,10 @@ class Auth(object):
         return (True, True, self.login_bare(username, password))
 
     def login_user(self,user):
+        """
+        login the user = db.auth_user(id)
+        """
+        # user=Storage(self.table_user()._filter_fields(user,id=True))
         current.session.auth = Storage(
             user = user, 
             last_visit = current.request.now,
@@ -1688,9 +1697,8 @@ class Auth(object):
 
     def login_bare(self, username, password):
         """
-        logins user
+        logins user as specified by usernname (or email) and password
         """
-
         request = current.request
         session = current.session
         table_user = self.table_user()
@@ -1705,7 +1713,6 @@ class Auth(object):
         if user and user.get(passfield,False):
             password = table_user[passfield].validate(password)[0]
             if not user.registration_key and password == user[passfield]:
-                user = Storage(table_user._filter_fields(user, id=True))
                 self.login_user(user)
                 return user
         else:
@@ -2149,8 +2156,7 @@ class Auth(object):
                 if not self.settings.registration_requires_verification:
                     table_user[form.vars.id] = dict(registration_key='')
                 session.flash = self.messages.registration_successful
-                user = self.db(table_user[username] == form.vars[username]).select().first()
-                user = Storage(table_user._filter_fields(user, id=True))
+                user = self.db(table_user[username] == form.vars[username]).select().first()                
                 self.login_user(user)
                 session.flash = self.messages.logged_in
             self.log_event(log, form.vars)
