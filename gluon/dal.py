@@ -6315,10 +6315,10 @@ class Row(dict):
 
     def __str__(self):
         ### this could be made smarter
-        return '<Row ' + dict.__repr__(self) + '>'
+        return '<Row %s>' % dict.__repr__(self)
 
     def __repr__(self):
-        return '<Row ' + dict.__repr__(self) + '>'
+        return '<Row %s>' % dict.__repr__(self)
 
     def __int__(self):
         return dict.__getitem__(self,'id')
@@ -7012,7 +7012,7 @@ def index():
         dict.__setitem__(self,key,value)
 
     def __repr__(self):
-        return '<DAL ' + dict.__repr__(self) + '>'
+        return '<DAL %s>' % self._uri
 
     def smart_query(self,fields,text):
         return Set(self, smart_query(fields,text))
@@ -7519,7 +7519,7 @@ class Table(dict):
             yield self[fieldname]
 
     def __repr__(self):
-        return '<Table ' + dict.__repr__(self) + '>'
+        return '<Table %s>' % dict.__repr__(self)
 
     def __str__(self):
         if self.get('_ot', None):
