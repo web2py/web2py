@@ -814,7 +814,8 @@ class DIV(XmlComponent):
                 c.latest = self.latest
                 c.session = self.session
                 c.formname = self.formname
-                if hideerror: c['hideerror'] = hideerror
+                if hideerror and not attributes.get('hideerror',False):
+                    c['hideerror'] = hideerror
                 newstatus = c._traverse(status,hideerror) and newstatus
 
         # for input, textarea, select, option
