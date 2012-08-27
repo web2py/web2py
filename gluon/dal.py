@@ -1463,28 +1463,33 @@ class BaseAdapter(ConnectionPool):
         return 'SELECT %s %s FROM %s%s%s;' % \
             (sql_s, sql_f, sql_t, sql_w, sql_o)
 
-    def select(self, query, fields, attributes):
-        """
-        Always returns a Rows object, possibly empty.
-        """
-        def response(sql):
-            self.execute(sql)
-            return self.cursor.fetchall()
-        sql = self._select(query, fields, attributes)
-        if attributes.get('cache', None):
-            (cache_model, time_expire) = attributes['cache']
-            del attributes['cache']
-            key = self.uri + '/' + sql
-            key = (len(key)<=200) and key or hashlib.md5(key).hexdigest()
-            rows = cache_model(key, lambda: response(sql), time_expire)
-        else:
-            rows = response(sql)
+    def _select_aux(self,sql,fields,attributes,cachable):
+        self.execute(sql)
+        rows = self.cursor.fetchall()
         if isinstance(rows,tuple):
             rows = list(rows)
         limitby = attributes.get('limitby', None) or (0,)
         rows = self.rowslice(rows,limitby[0],None)
         processor = attributes.get('processor',self.parse)
-        return processor(rows,fields,self._colnames)
+        return processor(rows,fields,self._colnames,cachable=cachable)
+
+    def select(self, query, fields, attributes):
+        """
+        Always returns a Rows object, possibly empty.
+        """
+        sql = self._select(query, fields, attributes)
+        if attributes.get('cache', None):
+            args = (sql,fields,attributes,True)
+            (cache_model, time_expire) = attributes['cache']
+            del attributes['cache']
+            key = self.uri + '/' + sql
+            if len(key)>200: key = hashlib.md5(key).hexdigest()
+            return cache_model(
+                key, 
+                lambda self=self,args=args:self._select_aux(*args),
+                time_expire)
+        else:
+            return self._select_aux(sql,fields,attributes,False)
 
     def _count(self, query, distinct=None):
         tablenames = self.tables(query)
@@ -1778,7 +1783,8 @@ class BaseAdapter(ConnectionPool):
             'list:string':self.parse_list_strings,
             }
 
-    def parse(self, rows, fields, colnames, blob_decode=True):
+    def parse(self, rows, fields, colnames, blob_decode=True,
+              cachable = False):
         self.build_parsemap()
         db = self.db
         virtualtables = []
@@ -1811,7 +1817,7 @@ class BaseAdapter(ConnectionPool):
                         value = field.filter_out(value)
                     colset[fieldname] = value
 
-                    if field.type == 'id':
+                    if field.type == 'id' and not cachable:
                         # temporary hack to deal with 
                         # GoogleDatastoreAdapter
                         # references
