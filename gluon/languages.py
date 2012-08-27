@@ -31,9 +31,18 @@ __all__ = ['translator', 'findT', 'update_all_languages']
 ospath = os.path
 ostat = os.stat
 osep = os.sep
+isdir = os.path.isdir
 is_gae = settings.global_settings.web2py_runtime_gae
 
 DEFAULT_ACCEPT_LANGUAGE = 'en'
+
+# DEFAULT PLURAL-FORMS RULES:
+# language doesn't use plural forms
+DEFAULT_NPLURALS = 1
+# only one singular/plural form is used
+DEFAULT_GET_PLURAL_ID = lambda n: 0
+# word is unchangeable
+DEFAULT_CONSTRUCTOR_PLURAL_FORM = lambda word, plural_id: word
 
 def safe_eval(text):
     if text.strip():
@@ -78,11 +87,6 @@ regex_plural_rules = re.compile('^plural_rules-[a-zA-Z]{2}(-[a-zA-Z]{2})?\.py$')
 upper_fun = lambda s: unicode(s,'utf-8').upper().encode('utf-8')
 title_fun = lambda s: unicode(s,'utf-8').title().encode('utf-8')
 cap_fun   = lambda s: unicode(s,'utf-8').capitalize().encode('utf-8')
-
-# DEFAULT PLURAL-FORMS RULES:
-default_nplurals = 1 # language doesn't use plural forms
-default_get_plural_id = lambda n: 0 # only one singular/plural form is used
-default_construct_plural_form = lambda word, plural_id: word # word is unchangeable
 
 ttab_in  = maketrans("\\%{}", '\x1c\x1d\x1e\x1f')
 ttab_out = maketrans('\x1c\x1d\x1e\x1f', "\\%{}")
@@ -161,7 +165,7 @@ def read_dict_aux(filename):
     # clear cache of processed messages:
     clear_cache(tcache.setdefault(filename, ({}, allocate_lock())))
     try:
-        return save_eval(lang_text) or {}
+        return safe_eval(lang_text) or {}
     except Exception, e:
         status = 'Syntax error in %s (%s)' % (filename, e)
         logging.error(status)
@@ -224,113 +228,61 @@ def read_possible_languages(appdir):
         langs['default'] = ('en', 'English', 0)
     return langs
 
-def read_plural_rules_aux(filename):
-    """retrieve plural rules from rules/*plural_rules-lang*.py file.
+def read_global_plural_rules(filename):
+    """
+    retrieve plural rules from rules/*plural_rules-lang*.py file.
 
     args:
         filename (str): plural_rules filename
 
     returns:
-        tuple(nplurals, get_plural_id, construct_plural_form)
-        e.g.: (3, <function>, <function>)
+        (nplurals, get_plural_id, construct_plural_form, status)
+        e.g.: (3, <function>, <function>, ok)
     """
-    f = portalocker.LockedFile(filename, 'r')
-    plural_py=f.read().replace('\r\n','\n')
-    f.close()
+    env = {}
+    lock = portalocker.LockedFile(filename, 'r')
     try:
-        exec(plural_py)
-        nplurals=locals().get('nplurals', default_nplurals)
-        get_plural_id=locals().get('get_plural_id', default_get_plural_id)
-        construct_plural_form=locals().get('construct_plural_form',
-                               default_construct_plural_form)
+        execfile(filename) in env
         status='ok'
     except Exception, e:
-        nplurals=default_nplurals
-        get_plural_id=default_get_plural_id
-        construct_plural_form=default_construct_plural_form
         status='Syntax error in %s (%s)' % (filename, e)
         logging.error(status)
+    lock.close()        
+    nplurals = env.get('nplurals', DEFAULT_NPLURALS)
+    get_plural_id = env.get('get_plural_id', DEFAULT_GET_PLURAL_ID)
+    construct_plural_form = env.get('construct_plural_form',
+                                    DEFAULT_CONSTRUCTOR_PLURAL_FORM)
     return (nplurals, get_plural_id, construct_plural_form, status)
 
-def read_plural_rules(lang):
-    filename = abspath('gluon','contrib','rules', 'plural_rules-%s.py' % lang)
-    return getcfs('plural_rules-'+lang, filename,
-               lambda: read_plural_rules_aux(filename))
 
-pcache={}
 def read_possible_plurals():
     """ create list of all possible plural rules files
         result is cached to increase speed
     """
-    global pcache
     pdir = abspath('gluon','contrib','rules')
     plurals = {}
     # scan rules directory for plural_rules-*.py files:
-    for pname in [f for f in listdir(pdir, regex_plural_rules)
-                  if osep not in f]:
+    for pname in os.listdir(pdir):
+        if not isdir(pname) and regex_plural_rules.match(pname):
+            lang = pname[13:-3]
+            fname = ospath.join(pdir, pname)
+            n, f1, f2, status = read_global_plural_rules(fname)
+            if status == 'ok':
+                plurals[lang] = (lang, n, f1, f2)
+    plurals['default'] = ('default',
+                          DEFAULT_NPLURALS,
+                          DEFAULT_GET_PLURAL_ID,
+                          DEFAULT_CONSTRUCTOR_PLURAL_FORM)
+    return plurals
 
-        lang=pname[13:-3]
-        fname=ospath.join(pdir, pname)
-        mtime=ostat(fname).st_mtime
-        if lang in pcache and pcache[lang][2] == mtime:
-            # if plural_file's mtime wasn't changed - use previous value:
-            plurals[lang]=pcache[lang]
-        else:
-            # otherwise, reread plural_rules-file:
-            if 'plural_rules-'+lang in cfs:
-               n,f1,f2,status=read_plural_rules(lang)
-            else:
-               n,f1,f2,status=read_plural_rules_aux(fname)
-            plurals[lang]=(n, pname, mtime, status)
-    pcache=plurals
-    return pcache
-
-def get_plural_rules(languages):
-    """get plural-forms rules for language *lang*
-       if rules not found - default rules will be return and lang=='unknown'
-
-    args:
-        lang (str): the languages, for one of which the plural-forms is return
-
-    returns:
-        tuples(lang, plural_rules-filename, nplurals,
-                        get_plural_id(), construct_plural_form(), status)
-    """
-    if isinstance(languages, str):
-       languages = [languages]
-
-    all_plurals=read_possible_plurals()
-    for lang in languages:
-        match_language = regex_language.match(lang.strip().lower())
-        if match_language:
-            match_language = tuple(part
-                                   for part in match_language.groups()
-                                   if part)
-            lang = lang_sampling(match_language, all_plurals.keys())
-            if lang:
-               ( nplurals,
-                  get_plural_id,
-                  construct_plural_form,
-                  status
-               ) = read_plural_rules(lang)
-               return (lang, all_plurals[lang][1], nplurals,
-                                                   get_plural_id,
-                                                   construct_plural_form,
-                                                   status)
-    return ('unknown', None, default_nplurals,
-                             default_get_plural_id,
-                             default_construct_plural_form,
-                             'ok')
-
+PLURAL_RULES = read_possible_plurals()
 
 def read_plural_dict_aux(filename):
     fp = portalocker.LockedFile(filename, 'r')
     lang_text = fp.read().replace('\r\n', '\n')
     fp.close()
-    if not lang_text.strip():
-        return {}
     try:
-        return eval(lang_text)
+        return safe_eval(lang_text) or {}
     except Exception, e:
         status='Syntax error in %s (%s)' % (filename, e)
         logging.error(status)
@@ -339,7 +291,6 @@ def read_plural_dict_aux(filename):
 def read_plural_dict(filename):
     return getcfs('plurals:'+filename, filename,
                       lambda: read_plural_dict_aux(filename))
-
 
 def write_plural_dict(filename, contents):
     if '__corrupted__' in contents:
@@ -536,32 +487,27 @@ class translator(object):
         self.current_languages = languages
         self.force(self.http_accept_language)
 
-    def set_plural(self, languages):
+    def set_plural(self, language):
         """ initialize plural forms subsystem
             invoked from self.force()
         """
-        ( self.plural_language,
-          self.plural_rules_file,
-          self.nplurals,
-          self.get_plural_id,
-          self.construct_plural_form,
-          self.plural_status
-        ) = get_plural_rules(languages)
-
-        if self.plural_language == 'unknown':
+        lang = language[:2] 
+        (self.plural_language,
+         self.nplurals,
+         self.get_plural_id,
+         self.construct_plural_form,
+         ) = PLURAL_RULES.get(language,PLURAL_RULES['default'])
+        filename = 'plural-%s.py' % self.plural_language
+        if filename in self.filenames:
+            self.plural_file = ospath.join(self.langpath,filename)
+            self.plural_dict = read_plural_dict(self.plural_file)
+        else:
             self.plural_file = None
             self.plural_dict = {}
-        else:
-            filename = 'plural-%s.py' % self.plural_language
-            if filename in self.filenames:
-                self.plural_file = ospath.join(self.langpath,filename)
-                self.plural_dict = read_plural_dict(self.plural_file)
-            else:
-                self.plural_file = None
-                self.plural_dict = {}
 
     def plural(self, word, n):
-        """ get plural form of word for number *n*
+        """
+        get plural form of word for number *n*
             NOTE: *word" MUST be defined in current language
                   (T.accepted_language)
 
@@ -579,22 +525,20 @@ class translator(object):
             if id > 0:
                 forms = self.plural_dict.get(word, [])
                 if forms:
-                    try:
-                        form = forms[id-1]
-                    except:
-                        form = None
-                    if form: return form
+                    form = forms.get(id-1)
+                    if form:
+                        return form
                 form = self.construct_plural_form(word, id)
                 if len(forms) < nplurals-1:
                     forms.extend('' for i in xrange(nplurals-len(forms)-1))
                 forms[id-1] = form
                 self.plural_dict[word] = forms
                 if (self.plural_file and
-                       not settings.global_settings.web2py_runtime_gae):
-                    write_plural_dict(self.plural_file, self.plural_dict)
+                    not settings.global_settings.web2py_runtime_gae):
+                    write_plural_dict(self.plural_file,
+                                      self.plural_dict)
                 return form
         return word
-
 
     def get_possible_languages_info(self, lang=None):
         """
@@ -664,7 +608,7 @@ class translator(object):
             self.language_file = None
             self.t = {}
             self.cache = tcache[None]
-        # self.set_plural(language)
+        self.set_plural(language)
         return languages
 
     def __call__(self, message, symbols={}, language=None, lazy=None):
