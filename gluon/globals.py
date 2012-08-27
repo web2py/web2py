@@ -405,6 +405,8 @@ class Response(Storage):
             dbstats = [TABLE(*[TR(PRE(row[0]),'%.2fms' % (row[1]*1000)) \
                                    for row in i.db._timings]) \
                            for i in thread.instances]
+            dbtables = dict([(i.uri, [t for t in i.db.tables if t not in i.db._LAZY_TABLES])
+                             for i in thread.instances])
         else:
             dbstats = [] # if no db or on GAE
         u = web2py_uuid()
@@ -416,6 +418,8 @@ class Response(Storage):
             DIV(BEAUTIFY(current.session),_class="hidden",_id="session-%s"%u),
             BUTTON('response',_onclick="jQuery('#response-%s').slideToggle()"%u),
             DIV(BEAUTIFY(current.response),_class="hidden",_id="response-%s"%u),
+            BUTTON('db tables',_onclick="jQuery('#db-tables-%s').slideToggle()"%u),
+            DIV(BEAUTIFY(dbtables),_class="hidden",_id="db-tables-%s"%u),
             BUTTON('db stats',_onclick="jQuery('#db-stats-%s').slideToggle()"%u),
             DIV(BEAUTIFY(dbstats),_class="hidden",_id="db-stats-%s"%u),
             SCRIPT("jQuery('.hidden').hide()")
