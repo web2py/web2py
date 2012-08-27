@@ -20,7 +20,7 @@ import marshal
 import copy_reg
 from fileutils import abspath, listdir
 import settings
-from cfs import getcfs, cfs
+from cfs import getcfs
 from thread import allocate_lock
 from html import XML, xmlescape
 from contrib.markmin.markmin2html import render, markmin_escape
@@ -542,7 +542,7 @@ class translator(object):
                                          langfile_mtime ) }
         """
         info = read_possible_languages(self.folder)
-        if lang: info = ingo.get(lang)
+        if lang: info = info.get(lang)
         return info
 
     def force(self, *languages):
@@ -677,17 +677,20 @@ class translator(object):
         """
         key = prefix+message
         mt = self.t.get(key, None)
-        if mt is not None:
-            return mt
-        if not message.startswith('##') and not '\n' in message:
-            tokens = message.rsplit('##', 1)
-        else:
-            # this allows markmin syntax in translations
-            tokens = [message]
-        self.t[key] = mt = key
-        if self.language_file and not is_gae:
-            write_dict(self.language_file, self.t)
-        return regex_backslash.sub(lambda m: m.group(1).translate(ttab_in), mt)
+        if mt is None:
+            # we did not find a translation
+            if message.find('##')>0 and not '\n' in message:
+                # remove comments
+                message = message.rsplit('##', 1)[0]
+            # guess translation same as original
+            self.t[key] = mt = message
+            # update language file for later translation
+            if self.language_file and not is_gae:
+                write_dict(self.language_file, self.t)
+            # fix backslash escaping
+            mt = regex_backslash.sub(
+                lambda m: m.group(1).translate(ttab_in), mt)
+        return mt
 
     def params_substitution(self, message, symbols):
         """
