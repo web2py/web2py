@@ -6289,6 +6289,8 @@ class Row(dict):
     this is only used to store a Row
     """
 
+    __slots__=()
+    
     __setattr__ = dict.__setitem__
     __getattr__ = dict.__getitem__
     __delattr__ = dict.__delitem__
@@ -6501,7 +6503,8 @@ class DAL(dict):
        db.define_table('tablename', Field('fieldname1'),
                                     Field('fieldname2'))
     """
-
+    __slots__ = ()
+    
     @staticmethod
     def set_folder(folder):
         """
@@ -7219,7 +7222,8 @@ class Table(dict):
         db.users.insert(name='me') # print db.users._insert(...) to see SQL
         db.users.drop()
     """
-
+    __slots__ = ()
+    
     def __init__(
         self,
         db,

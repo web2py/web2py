@@ -160,12 +160,8 @@ def LOAD(c=None, f='index', args=None, vars=None,
         if not isinstance(args,(list,tuple)):
             args = [args]
         c = c or request.controller
-        other_request = Storage()
-        for key, value in request.items():
-            other_request[key] = value
-        other_request['env'] = Storage()
-        for key, value in request.env.items():
-            other_request.env[key] = value
+        other_request = Storage(request)
+        other_request['env'] = Storage(request.env)
         other_request.controller = c
         other_request.function = f
         other_request.extension = extension or request.extension
@@ -200,8 +196,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
         page = run_controller_in(c, f, other_environment)
         if isinstance(page, dict):
             other_response._vars = page
-            for key in page:
-                other_response._view_environment[key] = page[key]
+            other_response._view_environment.update(page)
             run_view_in(other_response._view_environment)
             page = other_response.body.getvalue()
         current.request, current.response = original_request, original_response
@@ -245,12 +240,8 @@ class LoadFactory(object):
                 args = [args]
             c = c or request.controller
 
-            other_request = Storage()
-            for key, value in request.items():
-                other_request[key] = value
-            other_request['env'] = Storage()
-            for key, value in request.env.items():
-                other_request.env['key'] = value
+            other_request = Storage(request)
+            other_request['env'] = Storage(request.env)
             other_request.controller = c
             other_request.function = f
             other_request.extension = extension or request.extension
@@ -283,8 +274,7 @@ class LoadFactory(object):
             page = run_controller_in(c, f, other_environment)
             if isinstance(page, dict):
                 other_response._vars = page
-                for key in page:
-                    other_response._view_environment[key] = page[key]
+                other_response._view_environment.update(page)
                 run_view_in(other_response._view_environment)
                 page = other_response.body.getvalue()
             current.request, current.response = original_request, original_response
@@ -359,11 +349,10 @@ def build_environment(request, response, session, store_current=True):
     Build the environment dictionary into which web2py files are executed.
     """
 
-    environment = {}
-    for key in html.__all__:
-        environment[key] = getattr(html, key)
-    for key in validators.__all__:
-        environment[key] = getattr(validators, key)
+    _validators = validators
+    _html = html
+    environment = dict(map(lambda key: (key, getattr(_html, key)), _html.__all__))
+    environment.update(map(lambda key: (key, getattr(_validators, key)), _validators.__all__))
     if not request.env:
         request.env = Storage()
 
@@ -570,8 +559,7 @@ def run_controller_in(controller, function, environment):
     response = environment['response']
     vars=response._vars
     if response.postprocessing:
-        for p in response.postprocessing:
-            vars = p(vars)
+        vars = reduce(lambda vars, p: p(vars), response.postprocessing, vars)
     if isinstance(vars,unicode):
         vars = vars.encode('utf8')
     elif hasattr(vars,'xml') and callable(vars.xml):
@@ -592,7 +580,7 @@ def run_view_in(environment):
     path = os.path.join(folder, 'compiled')
     badv = 'invalid view (%s)' % response.view
     patterns = response.generic_patterns or []
-    regex = re.compile('|'.join(fnmatch.translate(r) for r in patterns))
+    regex = re.compile('|'.join(map(fnmatch.translate, patterns)))
     short_action =  '%(controller)s/%(function)s.%(extension)s' % request
     allow_generic = patterns and regex.search(short_action)
     if not isinstance(response.view, str):
