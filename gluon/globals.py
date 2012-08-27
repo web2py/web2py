@@ -405,10 +405,15 @@ class Response(Storage):
             dbstats = [TABLE(*[TR(PRE(row[0]),'%.2fms' % (row[1]*1000)) \
                                    for row in i.db._timings]) \
                            for i in thread.instances]
-            dbtables = dict([(i.uri, [t for t in i.db.tables if t not in i.db._LAZY_TABLES])
+            dbtables = dict([(i.uri, {'defined': sorted(list(set(i.db.tables) - 
+                                                 set(i.db._LAZY_TABLES.keys()))) or
+                                                 '[no defined tables]',
+                                      'lazy': sorted(i.db._LAZY_TABLES.keys()) or
+                                              '[no lazy tables]'})
                              for i in thread.instances])
         else:
             dbstats = [] # if no db or on GAE
+            dbtables = {}
         u = web2py_uuid()
         return DIV(
             BUTTON('design',_onclick="document.location='%s'" % admin),
