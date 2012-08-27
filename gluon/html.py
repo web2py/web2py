@@ -485,15 +485,17 @@ class XmlComponent(object):
             components += [other]
         return CAT(*components)
 
-    def add_class(self, name):
+    def add_class(self, name):        
         """ add a class to _class attribute """
-        classes = set(self['_class'].split())|set(name.split())
+        c = self['_class']
+        classes = (set(c.split()) if c else set())|set(name.split())
         self['_class'] = ' '.join(classes) if classes else None
         return self
 
     def remove_class(self, name):
         """ remove a class from _class attribute """
-        classes = set(self['_class'].split())-set(name.split())
+        c = self['_class']
+        classes = (set(c.split()) if c else set())-set(name.split())
         self['_class'] = ' '.join(classes) if classes else None
         return self
 
