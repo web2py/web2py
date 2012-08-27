@@ -143,13 +143,13 @@ class LockedFile(object):
         self.close()
 
 def read_locked(filename):
-    fp = portalocker.LockedFile(file, 'r')
+    fp = LockedFile(filename, 'r')
     data = fp.read()
     fp.close()
     return data
 
 def write_locked(filename,data):
-    fp = portalocker.LockedFile(file, 'w')
+    fp = LockedFile(filename, 'w')
     data = fp.write(data)
     fp.close()
 
