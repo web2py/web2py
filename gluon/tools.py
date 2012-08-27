@@ -799,6 +799,141 @@ def addrow(form, a, b, c, style, _id, position=-1):
 
 
 class Auth(object):
+
+    default_settings = {
+        'hideerror': False,
+        'password_min_length': 4,
+        'cas_maps': None,
+        'reset_password_requires_verification': False,
+        'registration_requires_verification': False,
+        'registration_requires_approval': False,
+        'login_after_registration': False,
+        'login_after_password_change': True,
+        'alternate_requires_registration': False,
+        'create_user_groups': "user_%(id)s",
+        'everybody_group_id': None,
+        'login_captcha': None,
+        'register_captcha': None,
+        'retrieve_username_captcha': None,
+        'retrieve_password_captcha': None,
+        'captcha': None,
+        'expiration': 3600,            # one hour
+        'long_expiration': 3600*30*24, # one month
+        'remember_me_form': True,
+        'allow_basic_login': False,
+        'allow_basic_login_only': False,
+        'on_failed_authentication': lambda x: redirect(x),
+        'formstyle': 'table3cols',
+        'label_separator': ': ',
+        'password_field': 'password',
+        'table_user_name': 'auth_user',
+        'table_group_name': 'auth_group',
+        'table_membership_name': 'auth_membership',
+        'table_permission_name': 'auth_permission',
+        'table_event_name': 'auth_event',
+        'table_cas_name': 'auth_cas',
+        'table_user': None,
+        'table_group': None,
+        'table_membership': None,
+        'table_permission': None,
+        'table_event': None,
+        'table_cas': None,
+        'showid': False,
+        'login_email_validate': True,
+        'login_userfield': None,
+        'logout_onlogout': None,
+        'register_fields': None,
+        'register_verify_password': True,
+        'profile_fields': None,
+        'email_case_sensitive': True,
+        'username_case_sensitive': True,
+        }
+        # ## these are messages that can be customized
+    default_messages = {
+        'login_button': 'Login',
+        'register_button': 'Register',
+        'password_reset_button': 'Request reset password',
+        'password_change_button': 'Change password',
+        'profile_save_button': 'Save profile',
+        'submit_button': 'Submit',
+        'verify_password': 'Verify Password',
+        'delete_label': 'Check to delete',
+        'function_disabled': 'Function disabled',
+        'access_denied': 'Insufficient privileges',
+        'registration_verifying': 'Registration needs verification',
+        'registration_pending': 'Registration is pending approval',
+        'login_disabled': 'Login disabled by administrator',
+        'logged_in': 'Logged in',
+        'email_sent': 'Email sent',
+        'unable_to_send_email': 'Unable to send email',
+        'email_verified': 'Email verified',
+        'logged_out': 'Logged out',
+        'registration_successful': 'Registration successful',
+        'invalid_email': 'Invalid email',
+        'unable_send_email': 'Unable to send email',
+        'invalid_login': 'Invalid login',
+        'invalid_user': 'Invalid user',
+        'invalid_password': 'Invalid password',
+        'is_empty': "Cannot be empty",
+        'mismatched_password': "Password fields don't match",
+        'verify_email': 'Click on the link %(link)s to verify your email',
+        'verify_email_subject': 'Email verification',
+        'username_sent': 'Your username was emailed to you',
+        'new_password_sent': 'A new password was emailed to you',
+        'password_changed': 'Password changed',
+        'retrieve_username': 'Your username is: %(username)s',
+        'retrieve_username_subject': 'Username retrieve',
+        'retrieve_password': 'Your password is: %(password)s',
+        'retrieve_password_subject': 'Password retrieve',
+        'reset_password': \
+            'Click on the link %(link)s to reset your password',
+        'reset_password_subject': 'Password reset',
+        'invalid_reset_password': 'Invalid reset password',
+        'profile_updated': 'Profile updated',
+        'new_password': 'New password',
+        'old_password': 'Old password',
+        'group_description': 'Group uniquely assigned to user %(id)s',
+        'register_log': 'User %(id)s Registered',
+        'login_log': 'User %(id)s Logged-in',
+        'login_failed_log': None,
+        'logout_log': 'User %(id)s Logged-out',
+        'profile_log': 'User %(id)s Profile updated',
+        'verify_email_log': 'User %(id)s Verification email sent',
+        'retrieve_username_log': 'User %(id)s Username retrieved',
+        'retrieve_password_log': 'User %(id)s Password retrieved',
+        'reset_password_log': 'User %(id)s Password reset',
+        'change_password_log': 'User %(id)s Password changed',
+        'add_group_log': 'Group %(group_id)s created',
+        'del_group_log': 'Group %(group_id)s deleted',
+        'add_membership_log': None,
+        'del_membership_log': None,
+        'has_membership_log': None,
+        'add_permission_log': None,
+        'del_permission_log': None,
+        'has_permission_log': None,
+        'impersonate_log': 'User %(id)s is impersonating %(other_id)s',
+        'label_first_name': 'First name',
+        'label_last_name': 'Last name',
+        'label_username': 'Username',
+        'label_email': 'E-mail',
+        'label_password': 'Password',
+        'label_registration_key': 'Registration key',
+        'label_reset_password_key': 'Reset Password key',
+        'label_registration_id': 'Registration identifier',
+        'label_role': 'Role',
+        'label_description': 'Description',
+        'label_user_id': 'User ID',
+        'label_group_id': 'Group ID',
+        'label_name': 'Name',
+        'label_table_name': 'Object or table name',
+        'label_record_id': 'Record ID',
+        'label_time_stamp': 'Timestamp',
+        'label_client_ip': 'Client IP',
+        'label_origin': 'Origin',
+        'label_remember_me': "Remember me (for 30 days)",
+        'verify_password_comment': 'please input your password again',
+        }
+
     """
     Class for authentication, authorization, role based access control.
 
@@ -895,10 +1030,11 @@ class Auth(object):
             open(filename,'w').write(key)
         return key
 
-    def url(self, f=None, args=None, vars=None):
+    def url(self, f=None, args=None, vars=None, scheme=False):
         if args is None: args=[]
         if vars is None: vars={}
-        return URL(c=self.settings.controller, f=f, args=args, vars=vars)
+        return URL(c=self.settings.controller, 
+                   f=f, args=args, vars=vars,scheme=scheme)
 
     def here(self):
         return URL(args=current.request.args,vars=current.request.vars)
@@ -934,223 +1070,67 @@ class Auth(object):
         else:
             self.user = None
             session.auth = None
-        settings = self.settings = Settings()
-
         # ## what happens after login?
 
         self.next = current.request.vars._next
         if isinstance(self.next,(list,tuple)):
             self.next = self.next[0]
-
+        url_index = URL(controller,'index')
+        url_login = URL(controller,function,args='login')
         # ## what happens after registration?
-
-        settings.hideerror = False
-        settings.password_min_length = 4
-        settings.cas_domains = [request.env.http_host]
-        settings.cas_provider = cas_provider
-        settings.cas_actions = {'login':'login',
-                                'validate':'validate',
-                                'servicevalidate':'serviceValidate',
-                                'proxyvalidate':'proxyValidate',
-                                'logout':'logout'}
-        settings.cas_maps = None
-        settings.extra_fields = {}
-        settings.actions_disabled = []
-        settings.reset_password_requires_verification = False
-        settings.registration_requires_verification = False
-        settings.registration_requires_approval = False
-        settings.login_after_registration = False
-        settings.login_after_password_change = True
-        settings.alternate_requires_registration = False
-        settings.create_user_groups = "user_%(id)s"
-        settings.everybody_group_id = None
-
-        settings.controller = controller
-        settings.function = function
-        settings.login_url = self.url(function, args='login')
-        settings.logged_url = self.url(function, args='profile')
-        settings.download_url = self.url('download')
-        settings.mailer = (mailer==True) and Mail() or mailer
-        settings.login_captcha = None
-        settings.register_captcha = None
-        settings.retrieve_username_captcha = None
-        settings.retrieve_password_captcha = None
-        settings.captcha = None
-        settings.expiration = 3600            # one hour
-        settings.long_expiration = 3600*30*24 # one month
-        settings.remember_me_form = True
-        settings.allow_basic_login = False
-        settings.allow_basic_login_only = False
-        settings.on_failed_authorization = \
-            self.url(function, args='not_authorized')
-
-        settings.on_failed_authentication = lambda x: redirect(x)
-
-        settings.formstyle = 'table3cols'
-        settings.label_separator = ': '
-
-        # ## table names to be used
-
-        settings.password_field = 'password'
-        settings.table_user_name = 'auth_user'
-        settings.table_group_name = 'auth_group'
-        settings.table_membership_name = 'auth_membership'
-        settings.table_permission_name = 'auth_permission'
-        settings.table_event_name = 'auth_event'
-        settings.table_cas_name = 'auth_cas'
-
-        # ## if none, they will be created, unless DAL(lazy_tables=True)!!!
-
-        settings.table_user = None
-        settings.table_group = None
-        settings.table_membership = None
-        settings.table_permission = None
-        settings.table_event = None
-        settings.table_cas = None
-
-        # ##
-
-        settings.showid = False
-
-        # ## these should be functions or lambdas
-
-        settings.login_next = self.url('index')
-        settings.login_onvalidation = []
-        settings.login_onaccept = []
-        settings.login_methods = [self]
-        settings.login_form = self
-        settings.login_email_validate = True
-        settings.login_userfield = None
-
-        settings.logout_next = self.url('index')
-        settings.logout_onlogout = None
-
-        settings.register_next = self.url('index')
-        settings.register_onvalidation = []
-        settings.register_onaccept = []
-        settings.register_fields = None
-        settings.register_verify_password = True
-
-        settings.verify_email_next = self.url(function, args='login')
-        settings.verify_email_onaccept = []
-
-        settings.profile_next = self.url('index')
-        settings.profile_onvalidation = []
-        settings.profile_onaccept = []
-        settings.profile_fields = None
-        settings.retrieve_username_next = self.url('index')
-        settings.retrieve_password_next = self.url('index')
-        settings.request_reset_password_next = \
-            self.url(function,args='login')
-        settings.reset_password_next = self.url('index')
-
-        settings.change_password_next = self.url('index')
-        settings.change_password_onvalidation = []
-        settings.change_password_onaccept = []
-
-        settings.retrieve_password_onvalidation = []
-        settings.reset_password_onvalidation = []
-        settings.reset_password_onaccept = []
-
-        settings.email_case_sensitive = True
-        settings.username_case_sensitive = True
-
-        settings.hmac_key = hmac_key
+            
+        settings = self.settings = Settings()
+        settings.update(Auth.default_settings)
+        settings.update({
+        'cas_domains': [request.env.http_host],
+        'cas_provider': cas_provider,
+        'cas_actions': {'login':'login',
+                        'validate':'validate',
+                        'servicevalidate':'serviceValidate',
+                        'proxyvalidate':'proxyValidate',
+                        'logout':'logout'},
+        'extra_fields': {},
+        'actions_disabled': [],
+        'controller': controller,
+        'function': function,
+        'login_url': url_login,
+        'logged_url': URL(controller, function, args='profile'),
+        'download_url': URL(controller,'download'),
+        'mailer': (mailer==True) and Mail() or mailer,
+        'on_failed_authorization': \
+            URL(controller,function, args='not_authorized'),
+        'login_next': url_index,
+        'login_onvalidation': [],
+        'login_onaccept': [],
+        'login_methods': [self],
+        'login_form': self,
+        'logout_next': url_index,
+        'logout_onlogout': None,
+        'register_next': url_index,
+        'register_onvalidation': [],
+        'register_onaccept': [],
+        'verify_email_next': url_login,
+        'verify_email_onaccept': [],
+        'profile_next': url_index,
+        'profile_onvalidation': [],
+        'profile_onaccept': [],
+        'retrieve_username_next': url_index,
+        'retrieve_password_next': url_index,
+        'request_reset_password_next': url_login,
+        'reset_password_next': url_index,
+        'change_password_next': url_index,
+        'change_password_onvalidation': [],
+        'change_password_onaccept': [],
+        'retrieve_password_onvalidation': [],
+        'reset_password_onvalidation': [],
+        'reset_password_onaccept': [],
+        'hmac_key': hmac_key,
+        })
         settings.lock_keys = True
 
         # ## these are messages that can be customized
         messages = self.messages = Messages(current.T)
-        messages.login_button = 'Login'
-        messages.register_button = 'Register'
-        messages.password_reset_button = 'Request reset password'
-        messages.password_change_button = 'Change password'
-        messages.profile_save_button = 'Save profile'
-        messages.submit_button = 'Submit'
-        messages.verify_password = 'Verify Password'
-        messages.delete_label = 'Check to delete'
-        messages.function_disabled = 'Function disabled'
-        messages.access_denied = 'Insufficient privileges'
-        messages.registration_verifying = 'Registration needs verification'
-        messages.registration_pending = 'Registration is pending approval'
-        messages.login_disabled = 'Login disabled by administrator'
-        messages.logged_in = 'Logged in'
-        messages.email_sent = 'Email sent'
-        messages.unable_to_send_email = 'Unable to send email'
-        messages.email_verified = 'Email verified'
-        messages.logged_out = 'Logged out'
-        messages.registration_successful = 'Registration successful'
-        messages.invalid_email = 'Invalid email'
-        messages.unable_send_email = 'Unable to send email'
-        messages.invalid_login = 'Invalid login'
-        messages.invalid_user = 'Invalid user'
-        messages.invalid_password = 'Invalid password'
-        messages.is_empty = "Cannot be empty"
-        messages.mismatched_password = "Password fields don't match"
-        messages.verify_email = \
-            'Click on the link ' + \
-            URL('default','user',args='verify_email',scheme=True) + \
-            '/%(key)s to verify your email'
-        messages.verify_email_subject = 'Email verification'
-        messages.username_sent = 'Your username was emailed to you'
-        messages.new_password_sent = 'A new password was emailed to you'
-        messages.password_changed = 'Password changed'
-        messages.retrieve_username = 'Your username is: %(username)s'
-        messages.retrieve_username_subject = 'Username retrieve'
-        messages.retrieve_password = 'Your password is: %(password)s'
-        messages.retrieve_password_subject = 'Password retrieve'
-        messages.reset_password = \
-            'Click on the link ' + \
-            URL('default','user',args='reset_password',scheme=True) + \
-            '/%(key)s to reset your password'
-        messages.reset_password_subject = 'Password reset'
-        messages.invalid_reset_password = 'Invalid reset password'
-        messages.profile_updated = 'Profile updated'
-        messages.new_password = 'New password'
-        messages.old_password = 'Old password'
-        messages.group_description = \
-            'Group uniquely assigned to user %(id)s'
-
-        messages.register_log = 'User %(id)s Registered'
-        messages.login_log = 'User %(id)s Logged-in'
-        messages.login_failed_log = None
-        messages.logout_log = 'User %(id)s Logged-out'
-        messages.profile_log = 'User %(id)s Profile updated'
-        messages.verify_email_log = 'User %(id)s Verification email sent'
-        messages.retrieve_username_log = 'User %(id)s Username retrieved'
-        messages.retrieve_password_log = 'User %(id)s Password retrieved'
-        messages.reset_password_log = 'User %(id)s Password reset'
-        messages.change_password_log = 'User %(id)s Password changed'
-        messages.add_group_log = 'Group %(group_id)s created'
-        messages.del_group_log = 'Group %(group_id)s deleted'
-        messages.add_membership_log = None
-        messages.del_membership_log = None
-        messages.has_membership_log = None
-        messages.add_permission_log = None
-        messages.del_permission_log = None
-        messages.has_permission_log = None
-        messages.impersonate_log = 'User %(id)s is impersonating %(other_id)s'
-
-        messages.label_first_name = 'First name'
-        messages.label_last_name = 'Last name'
-        messages.label_username = 'Username'
-        messages.label_email = 'E-mail'
-        messages.label_password = 'Password'
-        messages.label_registration_key = 'Registration key'
-        messages.label_reset_password_key = 'Reset Password key'
-        messages.label_registration_id = 'Registration identifier'
-        messages.label_role = 'Role'
-        messages.label_description = 'Description'
-        messages.label_user_id = 'User ID'
-        messages.label_group_id = 'Group ID'
-        messages.label_name = 'Name'
-        messages.label_table_name = 'Object or table name'
-        messages.label_record_id = 'Record ID'
-        messages.label_time_stamp = 'Timestamp'
-        messages.label_client_ip = 'Client IP'
-        messages.label_origin = 'Origin'
-        messages.label_remember_me = "Remember me (for 30 days)"
-        messages['T'] = current.T
-        messages.verify_password_comment = 'please input your password again'
+        messages.update(Auth.default_messages)
         messages.lock_keys = True
 
         # for "remember me" option
@@ -1339,37 +1319,39 @@ class Auth(object):
         settings = self.settings
         request = current.request
         T = current.T
-        def lazy_user (auth = self): return auth.user_id
         reference_user = 'reference %s' % settings.table_user_name
+        def lazy_user (auth = self):
+            return auth.user_id        
         def represent(id,record=None,s=settings):
             try:
                 user = s.table_user(id)
                 return '%(first_name)s %(last_name)s' % user
-            except: return id
-        self.signature = db.Table(self.db,'auth_signature',
-                                  Field('is_active','boolean',
-                                        default=True,
-                                        readable=False, writable=False,
-                                        label=T('Is Active')),
-                                  Field('created_on','datetime',
-                                        default=request.now,
-                                        writable=False, readable=False,
-                                        label=T('Created On')),
-                                  Field('created_by',
-                                        reference_user,
-                                        default=lazy_user, represent=represent,
-                                        writable=False, readable=False,
-                                        label=T('Created By')),
-                                  Field('modified_on','datetime',
-                                        update=request.now,default=request.now,
-                                        writable=False,readable=False,
-                                        label=T('Modified On')),
-                                  Field('modified_by',
-                                        reference_user,represent=represent,
-                                        default=lazy_user,update=lazy_user,
-                                        writable=False,readable=False,
-                                        label=T('Modified By')))
-
+            except:
+                return id
+        self.signature = db.Table(
+            self.db,'auth_signature',
+            Field('is_active','boolean',
+                  default=True,
+                  readable=False, writable=False,
+                  label=T('Is Active')),
+            Field('created_on','datetime',
+                  default=request.now,
+                  writable=False, readable=False,
+                  label=T('Created On')),
+            Field('created_by',
+                  reference_user,
+                  default=lazy_user, represent=represent,
+                  writable=False, readable=False,
+                  label=T('Created By')),
+            Field('modified_on','datetime',
+                  update=request.now,default=request.now,
+                  writable=False,readable=False,
+                  label=T('Modified On')),
+            Field('modified_by',
+                  reference_user,represent=represent,
+                  default=lazy_user,update=lazy_user,
+                  writable=False,readable=False,
+                  label=T('Modified By')))
 
     def define_tables(self, username=False, signature=None,
                       migrate=True, fake_migrate=False):
@@ -2137,11 +2119,14 @@ class Auth(object):
             if self.settings.everybody_group_id:
                 self.add_membership(self.settings.everybody_group_id, form.vars.id)
             if self.settings.registration_requires_verification:
+                link = self.url('user',args=('verify_email',key),scheme=True)
+                                
                 if not self.settings.mailer or \
-                   not self.settings.mailer.send(to=form.vars.email,
-                        subject=self.messages.verify_email_subject,
-                        message=self.messages.verify_email
-                         % dict(key=key)):
+                   not self.settings.mailer.send(
+                    to=form.vars.email,
+                    subject=self.messages.verify_email_subject,
+                    message=self.messages.verify_email \
+                        % dict(key=key,link=link)):
                     self.db.rollback()
                     response.flash = self.messages.unable_send_email
                     return form
@@ -2511,11 +2496,14 @@ class Auth(object):
 
     def email_reset_password(self,user):
         reset_password_key = str(int(time.time()))+'-' + web2py_uuid()
+        link = self.url('user',
+                        args=('reset_password',reset_password_key),
+                        scheme=True) 
         if self.settings.mailer.send(
             to=user.email,
             subject=self.messages.reset_password_subject,
             message=self.messages.reset_password % \
-                dict(key=reset_password_key)):
+                dict(key=reset_password_key,link=link)):
             user.update_record(reset_password_key=reset_password_key)
             return True
         return False
