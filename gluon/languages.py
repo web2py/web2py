@@ -35,10 +35,21 @@ is_gae = settings.global_settings.web2py_runtime_gae
 
 DEFAULT_ACCEPT_LANGUAGE = 'en'
 
+def safe_eval(text):
+    if text.strip():
+        try:
+            import ast
+            return ast.literal_eval(text)
+        except ImportError:
+            return eval(text,{},{})
+    return None
+
 # used as default filter in translator.M()
-markmin = lambda s: render(regex_param.sub(
-        lambda m: '{' + markmin_escape(m.group('s')) + '}',
-        s), sep='br', autolinks=None, id_prefix='' )
+def markmin_aux(m):
+    return '{%s}' % markmin_escape(m.group('s'))
+def markmin(s):
+    return render(regex_param.sub(markmin_aux,s),
+                  sep='br', autolinks=None, id_prefix='')
 
 NUMBERS = (int,long,float)
 
@@ -149,18 +160,16 @@ def read_dict_aux(filename):
     fp.close()
     # clear cache of processed messages:
     clear_cache(tcache.setdefault(filename, ({}, allocate_lock())))
-    if not lang_text.strip():
-        return {}
     try:
-        return eval(lang_text)
+        return save_eval(lang_text) or {}
     except Exception, e:
-        status='Syntax error in %s (%s)' % (filename, e)
+        status = 'Syntax error in %s (%s)' % (filename, e)
         logging.error(status)
         return {'__corrupted__':status}
 
-
 def read_dict(filename):
-    """ return dictionary with translation messages
+    """
+    return dictionary with translation messages
     """
     return getcfs('lang:'+filename, filename,
                 lambda: read_dict_aux(filename))
@@ -625,40 +634,37 @@ class translator(object):
             languages = regex_language.findall(languages.lower())
         elif not languages or languages[0] is None:
             languages = []
-        if languages:
-            for lang in languages:
-                if lang+'.py' in self.filenames:
-                    language = lang
-                    langfile = language+'.py'
-                    break
-                elif len(lang)>5 and lang[:5]+'.py' in self.filenames:
-                    language = lang[:5]
-                    langfile = language+'.py'
-                    break
-                elif len(lang)>2 and lang[:2]+'.py' in self.filenames:
-                    language = lang[:2]
-                    langfile = language+'.py'
-                    break
+        for lang in languages:
+            if lang+'.py' in self.filenames:
+                language = lang
+                langfile = language+'.py'
+                break
+            elif len(lang)>5 and lang[:5]+'.py' in self.filenames:
+                language = lang[:5]
+                langfile = language+'.py'
+                break
+            elif len(lang)>2 and lang[:2]+'.py' in self.filenames:
+                language = lang[:2]
+                langfile = language+'.py'
+                break
+        else:
+            if 'default.py' in self.filenames:
+                language = DEFAULT_ACCEPT_LANGUAGE
+                langfile = 'default.py'
             else:
-                if 'default.py' in self.filenames:
-                    language = DEFAULT_ACCEPT_LANGUAGE
-                    langfile = 'default.py'
-                else:
-                    language = DEFAULT_ACCEPT_LANGUAGE
-                    langfile = None
-        if languages and langfile:
+                language = DEFAULT_ACCEPT_LANGUAGE
+                langfile = None
+        self.accepted_language = language
+        if langfile:
             self.language_file = ospath.join(self.langpath,langfile)
             self.t = read_dict(self.language_file)
             self.cache = tcache.setdefault(self.language_file,
                                            ({},allocate_lock()))
-            # self.set_plural(language)
-            self.accepted_language = language
         else:
-            self.accepted_language = DEFAULT_ACCEPT_LANGUAGE
             self.language_file = None
-            self.cache = tcache[None]
             self.t = {}
-            # self.set_plural(DEFAULT_ACCEPT_LANGUAGE)
+            self.cache = tcache[None]
+        # self.set_plural(language)
         return languages
 
     def __call__(self, message, symbols={}, language=None, lazy=None):
