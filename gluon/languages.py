@@ -10,7 +10,7 @@ Plural subsystem is created by Vladyslav Kozlovskyy (Ukraine)
                                <dbdevelop@gmail.com>
 """
 
-from os import path as ospath, stat as ostat, sep as osep
+import os
 import re
 from utf8 import Utf8
 from cgi import escape
@@ -28,10 +28,17 @@ from string import maketrans
 
 __all__ = ['translator', 'findT', 'update_all_languages']
 
+ospath = os.path
+ostat = os.stat
+osep = os.sep
+is_gae = settings.global_settings.web2py_runtime_gae
+
+DEFAULT_ACCEPT_LANGUAGE = 'en'
+
 # used as default filter in translator.M()
-markmin = lambda s: render( regex_param.sub(
-                       lambda m: '{' + markmin_escape(m.group('s')) + '}',
-                          s ), sep='br', autolinks=None, id_prefix='' )
+markmin = lambda s: render(regex_param.sub(
+        lambda m: '{' + markmin_escape(m.group('s')) + '}',
+        s), sep='br', autolinks=None, id_prefix='' )
 
 NUMBERS = (int,long,float)
 
@@ -195,29 +202,18 @@ def get_lang_info(lang, langdir):
         langcode = lang if lang != 'default' else 'en'
     return langcode, langname or langcode, ostat(filename).st_mtime
 
-def read_possible_languages_aux(langdir):
+def read_possible_languages(appdir):
     langs = {}
     # scan languages directory for langfiles:
-    for langfile in [f for f in
-                      listdir(langdir, regex_langfile) +
-                      listdir(langdir, '^default\.py$')
-                      if osep not in f]:
-        lang=langfile[:-3]
-        langs[lang]=get_lang_info(lang, langdir)
-    if 'default' not in langs:
+    langdir = ospath.join(appdir,'languages')
+    for filename in os.listdir(langdir):
+        if regex_langfile.match(filename) or filename=='default.py':
+            lang = filename[:-3]
+            langs[lang]=get_lang_info(lang, langdir)
+    if not 'default' in langs:
         # if default.py is not found, add default value:
         langs['default'] = ('en', 'English', 0)
-    deflang=langs['default']
-    if deflang[0] not in langs:
-        # create language from default.py:
-        langs[deflang[0]] = (deflang[0], deflang[1], 0)
     return langs
-
-def read_possible_languages(path):
-    lang_path = ospath.join(path, 'languages')
-    return getcfs('langs:'+lang_path, lang_path,
-                   lambda: read_possible_languages_aux(lang_path))
-
 
 def read_plural_rules_aux(filename):
     """retrieve plural rules from rules/*plural_rules-lang*.py file.
@@ -488,18 +484,11 @@ class translator(object):
     """
 
     def __init__(self, request):
-        global tcache
         self.request = request
         self.folder = request.folder
-        dfile = ospath.join(self.folder,'languages','default.py')
-        if ospath.exists(dfile):
-            self.default_language_file = dfile
-            self.default_t = read_dict(dfile)
-        else: # languages/default.py is not found
-            self.default_language_file = ospath.join(self.folder, 'languages','')
-            self.default_t = {}
-        self.cache = tcache.setdefault(self.default_language_file, ({}, allocate_lock()))
-        self.current_languages = [self.get_possible_languages_info('default')[0]]
+        self.langpath = ospath.join(self.folder,'languages')
+        self.filenames = set(os.listdir(self.langpath))
+        self.cache = tcache.setdefault(None, ({},allocate_lock()))
         self.http_accept_language = request.env.http_accept_language
         # self.accepted_language = None     # filled in self.force()
         # self.language_file = None         # filled in self.force()
@@ -511,38 +500,20 @@ class translator(object):
         # self.plural_file = None           # filled in self.force()
         # self.plural_dict = None           # filled in self.force()
         # self.plural_status = None         # filled in self.force()
-        self.requested_languages = self.force(self.http_accept_language)
+
+        self.requested_languages = \
+            self.force(self.http_accept_language)
         self.lazy = True
         self.otherTs = {}
         self.filter = markmin
         self.ftag = 'markmin'
 
-    def get_possible_languages_info(self, lang=None):
-        """
-        return info for selected language or dictionary with all
-            possible languages info from APP/languages/*.py
-        args:
-            *lang* (str): language
-        returns:
-            if *lang* is defined:
-               return tuple(langcode, langname, langfile_mtime) or None
-
-            if *lang* is NOT defined:
-               returns dictionary with all possible languages:
-            { langcode(from filename): ( langcode(from !langcode! key),
-                                         langname(from !langname! key),
-                                         langfile_mtime ) }
-        """
-        if lang:
-            return read_possible_languages(self.folder).get(lang)
-        return read_possible_languages(self.folder)
 
     def get_possible_languages(self):
-        """ get list of all possible languages for current applications """
-        return sorted( set(lang for lang in
-                           read_possible_languages(self.folder).iterkeys()
-                           if lang != 'default')
-                     | set(self.current_languages))
+        possible_languages = [
+            lang[:-3] for lang in self.filenames \
+                if regex_langfile.match(lang)]
+        return possible_languages
 
     def set_current_languages(self, *languages):
         """
@@ -550,7 +521,8 @@ class translator(object):
         setting one of this languages makes force() function
         turn translation off to use default language
         """
-        if len(languages) == 1 and isinstance(languages[0], (tuple, list)):
+        if len(languages) == 1 and isinstance(
+            languages[0], (tuple, list)):
             languages = languages[0]
         self.current_languages = languages
         self.force(self.http_accept_language)
@@ -571,12 +543,12 @@ class translator(object):
             self.plural_file = None
             self.plural_dict = {}
         else:
-            self.plural_file = ospath.join(self.folder,
-                                           'languages',
-                                           'plural-%s.py' % self.plural_language)
-            if ospath.exists(self.plural_file):
+            filename = 'plural-%s.py' % self.plural_language
+            if filename in self.filenames:
+                self.plural_file = ospath.join(self.langpath,filename)
                 self.plural_dict = read_plural_dict(self.plural_file)
             else:
+                self.plural_file = None
                 self.plural_dict = {}
 
     def plural(self, word, n):
@@ -614,9 +586,29 @@ class translator(object):
                 return form
         return word
 
+
+    def get_possible_languages_info(self, lang=None):
+        """
+        return info for selected language or dictionary with all
+            possible languages info from APP/languages/*.py
+        args:
+            *lang* (str): language
+        returns:
+            if *lang* is defined:
+               return tuple(langcode, langname, langfile_mtime) or None
+
+            if *lang* is NOT defined:
+               returns dictionary with all possible languages:
+            { langcode(from filename): ( langcode(from !langcode! key),
+                                         langname(from !langname! key),
+                                         langfile_mtime ) }
+        """
+        if lang:
+            return read_possible_languages(self.folder).get(lang)
+        return read_possible_languages(self.folder)
+
     def force(self, *languages):
         """
-
         select language(s) for translation
 
         if a list of languages is passed as a parameter,
@@ -629,47 +621,44 @@ class translator(object):
         """
         global tcache
         language = ''
-
-        if not languages or languages[0] is None:
+        if isinstance(languages,str):
+            languages = regex_language.findall(languages.lower())
+        elif not languages or languages[0] is None:
             languages = []
-        if len(languages) == 1 and isinstance(languages[0], (str, unicode)):
-            languages = languages[0]
-
         if languages:
-            if isinstance(languages, (str, unicode)):
-                parts = languages.split(';')
-                languages = []
-                for al in parts:
-                    languages.extend(al.split(','))
-
-            possible_languages = self.get_possible_languages()
             for lang in languages:
-                match_language = regex_language.match(lang.strip().lower())
-                if match_language:
-                    match_language = tuple(part
-                                           for part in match_language.groups()
-                                           if part)
-                    language = lang_sampling(match_language,
-                                             self.current_languages)
-                    if language:
-                        break
-                    language = lang_sampling(match_language, possible_languages)
-                    if language:
-                        self.language_file = ospath.join(self.folder,
-                                                         'languages',
-                                                         language + '.py')
-                        if ospath.exists(self.language_file):
-                            self.t = read_dict(self.language_file)
-                            self.cache = tcache.setdefault(self.language_file,
-                                                           ({},allocate_lock()))
-                            self.set_plural(language)
-                            self.accepted_language = language
-                            return languages
-        self.accepted_language = language or self.current_languages[0]
-        self.language_file = self.default_language_file
-        self.cache = tcache[self.language_file]
-        self.t = self.default_t
-        self.set_plural(language or self.current_languages)
+                if lang+'.py' in self.filenames:
+                    language = lang
+                    langfile = language+'.py'
+                    break
+                elif len(lang)>5 and lang[:5]+'.py' in self.filenames:
+                    language = lang[:5]
+                    langfile = language+'.py'
+                    break
+                elif len(lang)>2 and lang[:2]+'.py' in self.filenames:
+                    language = lang[:2]
+                    langfile = language+'.py'
+                    break
+            else:
+                if 'default.py' in self.filenames:
+                    language = DEFAULT_ACCEPT_LANGUAGE
+                    langfile = 'default.py'
+                else:
+                    language = DEFAULT_ACCEPT_LANGUAGE
+                    langfile = None
+        if languages and langfile:
+            self.language_file = ospath.join(self.langpath,langfile)
+            self.t = read_dict(self.language_file)
+            self.cache = tcache.setdefault(self.language_file,
+                                           ({},allocate_lock()))
+            # self.set_plural(language)
+            self.accepted_language = language
+        else:
+            self.accepted_language = DEFAULT_ACCEPT_LANGUAGE
+            self.language_file = None
+            self.cache = tcache[None]
+            self.t = {}
+            # self.set_plural(DEFAULT_ACCEPT_LANGUAGE)
         return languages
 
     def __call__(self, message, symbols={}, language=None, lazy=None):
@@ -758,11 +747,10 @@ class translator(object):
         else:
             # this allows markmin syntax in translations
             tokens = [message]
-        self.t[key] = mt = self.default_t.get(key, tokens[0])
-        if (self.language_file != self.default_language_file and
-             not settings.global_settings.web2py_runtime_gae):
+        self.t[key] = mt = key
+        if self.language_file and not is_gae:
             write_dict(self.language_file, self.t)
-        return  regex_backslash.sub(lambda m: m.group(1).translate(ttab_in), mt)
+        return regex_backslash.sub(lambda m: m.group(1).translate(ttab_in), mt)
 
     def params_substitution(self, message, symbols):
         """
@@ -937,6 +925,8 @@ def update_all_languages(application_path):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
+
 
 
 

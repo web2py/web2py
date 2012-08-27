@@ -1399,8 +1399,7 @@ class Auth(object):
         elif isinstance(signature,self.db.Table):
             signature_list = [signature]
         else:
-            signature_list = signature
-        lazy_tables, db._lazy_tables = db._lazy_tables, False
+            signature_list = signature        
         is_not_empty = IS_NOT_EMPTY(error_message=self.messages.is_empty)
         is_crypted = CRYPT(key=settings.hmac_key,
                            min_length=settings.password_min_length)
@@ -1602,7 +1601,6 @@ class Auth(object):
                 urlbase = settings.cas_provider,
                 actions=actions,
                 maps=maps)
-
 
     def log_event(self, description, vars=None, origin='auth'):
         """
