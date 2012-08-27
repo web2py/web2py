@@ -912,7 +912,7 @@ def render(content = "hello world",
 
         # Add it to the context so we can use it.
         if not 'NOESCAPE' in context:
-            context['NOESCAPE'] = XML
+            context['NOESCAPE'] = NOESCAPE
 
     # save current response class
     if context and 'response' in context:

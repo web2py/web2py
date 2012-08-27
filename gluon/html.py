@@ -814,7 +814,8 @@ class DIV(XmlComponent):
                 c.latest = self.latest
                 c.session = self.session
                 c.formname = self.formname
-                if hideerror and not attributes.get('hideerror',False):
+                if hideerror and not \
+                        self.attributes.get('hideerror',False):
                     c['hideerror'] = hideerror
                 newstatus = c._traverse(status,hideerror) and newstatus
 

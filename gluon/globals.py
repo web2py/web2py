@@ -458,7 +458,7 @@ class Session(Storage):
             response.session_cookie_key2 = hashlib.md5(cookie_key).digest()
             cookie_name = request.application.lower()+'_session_data'
             response.session_cookie_name = cookie_name
-            if cookie_data in request.cookies:
+            if cookie_name in request.cookies:
                 cookie_value = request.cookies[cookie_name].value
                 cookie_parts = cookie_value.split(":")
                 enc = cookie_parts[2]
