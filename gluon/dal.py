@@ -174,7 +174,16 @@ import platform
 CALLABLETYPES = (types.LambdaType, types.FunctionType,
                  types.BuiltinFunctionType,
                  types.MethodType, types.BuiltinMethodType)
-TABLE_ARGS = ('migrate','primarykey','fake_migrate','format','singular','plural','trigger_name','sequence_name','common_filter','polymodel','table_class','on_define')
+
+TABLE_ARGS = set(
+    ('migrate','primarykey','fake_migrate','format',
+     'singular','plural','trigger_name','sequence_name',
+     'common_filter','polymodel','table_class','on_define'))
+
+SELECT_ARGS = set(
+    ('orderby', 'groupby', 'limitby','required', 'cache', 'left',
+     'distinct', 'having', 'join','for_update', 'processor','cacheable'))
+
 
 ###################################################################################
 # following checks allow the use of dal without web2py, as a standalone module
@@ -1328,10 +1337,7 @@ class BaseAdapter(ConnectionPool):
         return new_fields
 
     def _select(self, query, fields, attributes):
-        for key in set(attributes.keys())-set(('orderby', 'groupby', 'limitby',
-                                               'required', 'cache', 'left',
-                                               'distinct', 'having', 'join',
-                                               'for_update', 'processor')):
+        for key in set(attributes.keys())-SELECT_ARGS:
             raise SyntaxError, 'invalid select attribute: %s' % key
 
         tablenames = self.tables(query)
@@ -1463,7 +1469,7 @@ class BaseAdapter(ConnectionPool):
         return 'SELECT %s %s FROM %s%s%s;' % \
             (sql_s, sql_f, sql_t, sql_w, sql_o)
 
-    def _select_aux(self,sql,fields,attributes,cachable):
+    def _select_aux(self,sql,fields,attributes):
         self.execute(sql)
         rows = self.cursor.fetchall()
         if isinstance(rows,tuple):
@@ -1471,17 +1477,19 @@ class BaseAdapter(ConnectionPool):
         limitby = attributes.get('limitby', None) or (0,)
         rows = self.rowslice(rows,limitby[0],None)
         processor = attributes.get('processor',self.parse)
-        return processor(rows,fields,self._colnames,cachable=cachable)
+        cacheable = attributes.get('cacheable',False)
+        return processor(rows,fields,self._colnames,cacheable=cacheable)
 
     def select(self, query, fields, attributes):
         """
         Always returns a Rows object, possibly empty.
         """
         sql = self._select(query, fields, attributes)
-        if attributes.get('cache', None):
-            args = (sql,fields,attributes,True)
+        if attributes.get('cache', None):            
+            args = (sql,fields,attributes)
             (cache_model, time_expire) = attributes['cache']
             del attributes['cache']
+            attributes['cacheable'] = True
             key = self.uri + '/' + sql
             if len(key)>200: key = hashlib.md5(key).hexdigest()
             return cache_model(
@@ -1489,7 +1497,7 @@ class BaseAdapter(ConnectionPool):
                 lambda self=self,args=args:self._select_aux(*args),
                 time_expire)
         else:
-            return self._select_aux(sql,fields,attributes,False)
+            return self._select_aux(sql,fields,attributes)
 
     def _count(self, query, distinct=None):
         tablenames = self.tables(query)
@@ -1784,7 +1792,7 @@ class BaseAdapter(ConnectionPool):
             }
 
     def parse(self, rows, fields, colnames, blob_decode=True,
-              cachable = False):
+              cacheable = False):
         self.build_parsemap()
         db = self.db
         virtualtables = []
@@ -1817,7 +1825,7 @@ class BaseAdapter(ConnectionPool):
                         value = field.filter_out(value)
                     colset[fieldname] = value
 
-                    if field.type == 'id' and not cachable:
+                    if field.type == 'id' and not cacheable:
                         # temporary hack to deal with 
                         # GoogleDatastoreAdapter
                         # references
@@ -6977,7 +6985,7 @@ def index():
         elif self.check_reserved:
             self.check_reserved_keyword(tablename)
         else:
-            invalid_args = [key for key in args if not key in TABLE_ARGS]
+            invalid_args = set(args)-TABLE_ARGS
             if invalid_args:
                 raise SyntaxError, 'invalid table "%s" attributes: %s' \
                     % (tablename,invalid_args)
@@ -8529,7 +8537,17 @@ class Set(object):
     def isempty(self):
         return not self.select(limitby=(0,1))
 
-    def count(self,distinct=None):
+    def count(self,distinct=None, cache=None):
+        if cache:
+            cache_model, time_expire = cache
+            sql = self._count(distinct=distinct)
+            key = self._db._uri + '/' + sql
+            if len(key)>200: key = hashlib.md5(key).hexdigest()
+            return cache_model(
+                key,
+                (lambda self=self,distinct=distinct: \
+                  self.db._adapter.count(self.query,distinct)),
+                time_expire)                
         return self.db._adapter.count(self.query,distinct)
 
     def select(self, *fields, **attributes):
