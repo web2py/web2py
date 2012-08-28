@@ -7592,6 +7592,7 @@ class Table(object):
 
     def _listify(self,fields,update=False):
         new_fields = {} # format: new_fields[name] = (field,value)
+
         # store all fields passed as input in new_fields
         for name in fields:
             if not name in self.fields:
@@ -7604,24 +7605,36 @@ class Table(object):
                 if field.filter_in:
                     value = field.filter_in(value)
                 new_fields[name] = (field,value)
-        # check all fields that should be in the self table
+
+        # check all fields that should be in the table but are not passed
+        to_compute = []
         for ofield in self:
             name = ofield.name
             if not name in new_fields:
                 # if field is supposed to be computed, compute it!
-                if ofield.compute:
-                    try:
-                        new_fields[name] = (ofield,ofield.compute(Row(fields)))
-                    except (KeyError, AttributeError):
-                        pass
+                if ofield.compute: # save those to compute for later
+                    to_compute.append((name,ofield))
                 # if field is required, check its default value
                 elif not update and not ofield.default is None:
                     new_fields[name] = (ofield,ofield.default)
+                # if this is an update, user the update field instead
                 elif update and not ofield.update is None:
                     new_fields[name] = (ofield,ofield.update)
-            # error if field if required, record to be create and field missing
-            if not update and ofield.required and not name in new_fields:
-                raise SyntaxError, 'Table: missing required field: %s' % name
+                # if the field is still not there but it should, error
+                elif not update and ofield.required:
+                    raise RuntimeError, \
+                        'Table: missing required field: %s' % name
+        # now deal with fields that are supposed to be computed
+        if to_compute:
+            dummyrow = Row(new_fields)
+            for name,ofield in to_compute:
+                # try compute it
+                try:
+                    new_fields[name] = (ofield,ofield.compute(dummyrow))
+                except (KeyError, AttributeError):
+                    # error sinlently unless field is required!
+                    if ofield.required:
+                        raise SyntaxError, 'unable to comput field: %s' % name
         return new_fields.values()
 
     def _attempt_upload(self, fields):
@@ -8661,6 +8674,7 @@ class RecordUpdater(object):
                 del newfields[fieldname]
         table._db(table._id==id,ignore_common_filters=True).update(**newfields)
         colset.update(newfields)
+        return colset
 
 class RecordDeleter(object):
     def __init__(self, table, id):
