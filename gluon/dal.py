@@ -6321,8 +6321,8 @@ class Row(object):
             return self._extra[key]
         elif m:
             try:
-                return dict.__getitem__(self, m.group(1))[m.group(2)]
-            except (KeyError,TypeError):
+                return object.__getattribute__(self, m.group(1))[m.group(2)]
+            except (KeyError,AttributeError,TypeError):
                 key = m.group(2)
         return object.__getattribute__(self, key)
 

@@ -389,6 +389,17 @@ class TestJoin(unittest.TestCase):
         db.t1.drop()
         db.t2.drop()
 
+        db.define_table('person',Field('name'))
+        id = db.person.insert(name="max")
+        self.assertEqual(id.name,'max')
+        db.define_table('dog',Field('name'),Field('owner','reference person'))
+        db.dog.insert(name='skipper',owner=1)
+        row = db(db.person.id==db.dog.owner).select().first()
+        self.assertEqual(row[db.person.name],'max')
+        self.assertEqual(row['person.name'],'max')
+        db.dog.drop()
+        self.assertEqual(len(db.person._referenced_by),0)
+        db.person.drop()
 
 class TestMinMaxSum(unittest.TestCase):
 
