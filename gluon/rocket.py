@@ -1407,7 +1407,7 @@ class Worker(Thread):
             raise BadRequest
 
         req = match.groupdict()
-        for k,v in req.items():
+        for k,v in req.iteritems():
             if not v:
                 req[k] = ""
             if k == 'path':
@@ -1694,7 +1694,8 @@ class FileSystemWorker(Worker):
 
         try:
             # Get our file path
-            headers = dict([(str(k.lower()), v) for k, v in self.read_headers(sock_file).items()])
+            reader = self.read_headers(sock_file)
+            headers = dict((k.lower(),v) for k,v in reader.iteritems())
             rpath = request.get('path', '').lstrip('/')
             filepath = os.path.join(self.root, rpath)
             filepath = os.path.abspath(filepath)

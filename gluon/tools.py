@@ -3138,8 +3138,7 @@ class Auth(object):
                 elif form.record and fieldname in form.record:
                     new_record[fieldname]=form.record[fieldname]
         if fields:
-            for key,value in fields.items():
-                new_record[key] = value
+            new_record.update(fields)
         id = archive_table.insert(**new_record)
         return id
     def wiki(self,slug=None,env=None,manage_permissions=False,force_prefix=''):
@@ -4132,7 +4131,7 @@ class Service(object):
             prefix='pys',
             documentation = documentation,
             ns = True)
-        for method, (function, returns, args, doc) in procedures.items():
+        for method, (function, returns, args, doc) in procedures.iteritems():
             dispatcher.register_function(method, function, returns, args, doc)
         if request.env.request_method == 'POST':
             # Process normal Soap Operation
@@ -4388,8 +4387,9 @@ class PluginManager(object):
             self.__dict__.clear()
         settings = self.__getattr__(plugin)
         settings.installed = True
-        [settings.update({key:value}) for key,value in defaults.items() \
-            if not key in settings]
+        settings.update(
+            (k,v) for k,v in defaults.items() if not k in settings)
+                            
     def __getattr__(self, key):
         if not key in self.__dict__:
             self.__dict__[key] = Storage()

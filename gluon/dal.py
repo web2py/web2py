@@ -870,9 +870,9 @@ class BaseAdapter(ConnectionPool):
                 v=dict(type='unkown',sql=v)
             return k.lower(),v
         ### make sure all field names are lower case to avoid conflicts
-        sql_fields = dict(map(fix,sql_fields.items()))
-        sql_fields_old = dict(map(fix,sql_fields_old.items()))
-        sql_fields_aux = dict(map(fix,sql_fields_aux.items()))
+        sql_fields = dict(map(fix,sql_fields.iteritems()))
+        sql_fields_old = dict(map(fix,sql_fields_old.iteritems()))
+        sql_fields_aux = dict(map(fix,sql_fields_aux.iteritems()))
 
         keys = sql_fields.keys()
         for key in sql_fields_old:
@@ -1859,9 +1859,9 @@ class BaseAdapter(ConnectionPool):
         for tablename in virtualtables:
             ### new style virtual fields
             table = db[tablename]
-            fields_virtual = [(f,v) for (f,v) in table.items()
+            fields_virtual = [(f,v) for (f,v) in table.iteritems()
                               if isinstance(v,FieldVirtual)]
-            fields_lazy = [(f,v) for (f,v) in table.items()
+            fields_lazy = [(f,v) for (f,v) in table.iteritems()
                            if isinstance(v,FieldLazy)]
             if fields_virtual or fields_lazy:
                 for row in rowsobj.records:
@@ -2892,7 +2892,7 @@ class MSSQLAdapter(BaseAdapter):
             argpattern = re.compile('(?P<argkey>[^=]+)=(?P<argvalue>[^&]*)')
             for argmatch in argpattern.finditer(urlargs):
                 argsdict[str(argmatch.group('argkey')).upper()] = argmatch.group('argvalue')
-            urlargs = ';'.join(['%s=%s' % (ak, av) for (ak, av) in argsdict.items()])
+            urlargs = ';'.join(['%s=%s' % (ak, av) for (ak, av) in argsdict.iteritems()])
             cnxn = 'SERVER=%s;PORT=%s;DATABASE=%s;UID=%s;PWD=%s;%s' \
                 % (host, port, db, user, password, urlargs)
         def connect(cnxn=cnxn,driver_args=driver_args):
@@ -6351,6 +6351,9 @@ class Row(object):
     def __iter__(self):
         return self.__dict__.__iter__()
 
+    def iteritems(self):
+        return self.__dict__.iteritems()
+
     def __str__(self):
         ### this could be made smarter
         return '<Row %s>' % self.__dict__
@@ -6708,7 +6711,7 @@ class DAL(object):
                 sql_fields = cPickle.load(tfile)
                 name = filename[len(pattern)-7:-6]
                 mf = [(value['sortable'],Field(key,type=value['type'])) \
-                          for key, value in sql_fields.items()]
+                          for key, value in sql_fields.iteritems()]
                 mf.sort(lambda a,b: cmp(a[0],b[0]))
                 self.define_table(name,*[item[1] for item in mf],
                                   **dict(migrate=migrate,fake_migrate=fake_migrate))
@@ -7420,7 +7423,7 @@ class Table(object):
 
     def _validate(self,**vars):
         errors = Row()
-        for key,value in vars.items():
+        for key,value in vars.iteritems():
             value,error = self[key].validate(value)
             if error:
                 errors[key] = error
@@ -7455,7 +7458,7 @@ class Table(object):
             self._referenced_by.append((referee._tablename,referee.name))
 
     def _filter_fields(self, record, id=False):
-        return dict([(k, v) for (k, v) in record.items() if k
+        return dict([(k, v) for (k, v) in record.iteritems() if k
                      in self.fields and (self[k].type!='id' or id)])
 
     def _build_query(self,key):
@@ -7501,11 +7504,11 @@ class Table(object):
                 record = self._db(self._id == key).select(
                     limitby=(0,1),for_update=for_update).first()
             if record:
-                for k,v in kwargs.items():
+                for k,v in kwargs.iteritems():
                     if record[k]!=v: return None
             return record
         elif kwargs:
-            query = reduce(lambda a,b:a&b,[self[k]==v for k,v in kwargs.items()])
+            query = reduce(lambda a,b:a&b,[self[k]==v for k,v in kwargs.iteritems()])
             return self._db(query).select(limitby=(0,1),for_update=for_update).first()
         else:
             return None
@@ -7562,6 +7565,10 @@ class Table(object):
     def __iter__(self):
         for fieldname in self.fields:
             yield self[fieldname]
+
+    def iteritems(self):
+        return self.__dict__.iteritems()
+
 
     def __repr__(self):
         return '<Table %s (%s)>' % (self._tablename,','.join(self.fields()))
@@ -7642,7 +7649,7 @@ class Table(object):
         response = Row()
         response.errors = Row()
         new_fields = copy.copy(fields)
-        for key,value in fields.items():
+        for key,value in fields.iteritems():
             value,error = self[key].validate(value)
             if error:
                 response.errors[key] = error
@@ -8572,7 +8579,7 @@ class Set(object):
         response = Row()
         response.errors = Row()
         new_fields = copy.copy(update_fields)
-        for key,value in update_fields.items():
+        for key,value in update_fields.iteritems():
             value,error = self.db[tablename][key].validate(value)
             if error:
                 response.errors[key] = error
@@ -8631,9 +8638,9 @@ class Set(object):
 def update_record(pack, a=None):
     (colset, table, id) = pack
     b = a or dict(colset)
-    c = dict([(k,v) for (k,v) in b.items() if k in table.fields and table[k].type!='id'])
+    c = dict([(k,v) for (k,v) in b.iteritems() if k in table.fields and table[k].type!='id'])
     table._db(table._id==id,ignore_common_filters=True).update(**c)
-    for (k, v) in c.items():
+    for (k, v) in c.iteritems():
         colset[k] = v
 
 class VirtualCommand(object):
@@ -8694,7 +8701,7 @@ class Rows(object):
         if not keyed_virtualfields:
             return self
         for row in self.records:
-            for (tablename,virtualfields) in keyed_virtualfields.items():
+            for (tablename,virtualfields) in keyed_virtualfields.iteritems():
                 attributes = dir(virtualfields)
                 if not tablename in row:
                     box = row[tablename] = Row()
