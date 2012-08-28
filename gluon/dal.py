@@ -1034,6 +1034,7 @@ class BaseAdapter(ConnectionPool):
         return ['DROP TABLE %s;' % table]
 
     def drop(self, table, mode=''):
+        db = table._db
         if table._dbt:
             logfile = self.file_open(table._loggername, 'a')
         queries = self._drop(table, mode)
@@ -1041,10 +1042,10 @@ class BaseAdapter(ConnectionPool):
             if table._dbt:
                 logfile.write(query + '\n')
             self.execute(query)
-        table._db.commit()
-        del table._db[table._tablename]
-        del table._db.tables[table._db.tables.index(table._tablename)]
-        table._db._update_referenced_by(table._tablename)
+        db.commit()
+        del db[table._tablename]
+        del db.tables[db.tables.index(table._tablename)]
+        db._remove_references_to(table)
         if table._dbt:
             self.file_delete(table._dbt)
             logfile.write('success!\n')
@@ -1299,11 +1300,10 @@ class BaseAdapter(ConnectionPool):
             counter =  None
         ### special code to handle CASCADE in SQLite & SpatiaLite
         if self.dbengine in ('sqlite', 'spatialite') and counter:
-            for tablename,fieldname in table._referenced_by:
-                f = db[tablename][fieldname]
-                if f.type=='reference '+table._tablename \
-                        and f.ondelete=='CASCADE':
-                    db(db[tablename][fieldname].belongs(deleted)).delete()
+            for field in table._referenced_by:
+                if field.type=='reference '+table._tablename \
+                        and field.ondelete=='CASCADE':
+                    db(field.belongs(deleted)).delete()
         ### end special code to handle CASCADE in SQLite & SpatiaLite
         return counter
 
@@ -1837,15 +1837,12 @@ class BaseAdapter(ConnectionPool):
                             id = value
                         colset.update_record = RecordUpdater(colset,table,id)
                         colset.delete_record = RecordDeleter(table,id)
-                        for (referee_table, referee_name) \
-                                in table._referenced_by:
-                            s = db[referee_table][referee_name]
+                        for rfield in table._referenced_by:
                             referee_link = db._referee_name and \
                                 db._referee_name % dict(
-                                table=referee_table,field=referee_name)
-                            if referee_link and \
-                                    not referee_link in colset:
-                                colset[referee_link] = Set(db, s == id)
+                                table=rfield.tablename,field=rfield.name)
+                            if referee_link and not referee_link in colset:
+                                colset[referee_link] = Set(db,rfield == id)
                 else:
                     if not '_extra' in new_row:
                         new_row['_extra'] = Row()
@@ -6819,8 +6816,8 @@ def index():
                     patterns.append(tag)
                     patterns.append(tag+'/:field')
                 if depth>0:
-                    for rtable,rfield in db[table]._referenced_by:
-                        tag+='/%s[%s.%s]' % (rtable,rtable,rfield)
+                    for f in db[table]._referenced_by:
+                        tag+='/%s[%s.%s]' % (rtable,f.tablename,f.name)
                         patterns.append(tag)
                         patterns += auto_table(rtable,base=tag,depth=depth-1)
             return patterns
@@ -7152,10 +7149,10 @@ def index():
                 data, fields=extracted_fields, colnames=colnames)
         return data
 
-    def _update_referenced_by(self, other):
-        for tablename in self.tables:
-            by = self[tablename]._referenced_by
-            by[:] = [item for item in by if not item[0] == other]
+    def _remove_references_to(self, thistable):
+        for table in self:
+            table._referenced_by = [field for field in table._referenced_by
+                                    if not field.table==thistable]
 
     def export_to_csv_file(self, ofile, *args, **kwargs):
         step = int(kwargs.get('max_fetch_rows,',500))
@@ -7457,9 +7454,9 @@ class Table(object):
                         raise SyntaxError,\
                             "invalid field '%s' for referenced table '%s' in table '%s'" \
                             % (rfieldname, rtablename, self._tablename)
-                rtable._referenced_by.append((self._tablename, field.name))
+                rtable._referenced_by.append(field)
         for referee in pr.get(self._tablename,[]):
-            self._referenced_by.append((referee._tablename,referee.name))
+            self._referenced_by.append(referee)
 
     def _filter_fields(self, record, id=False):
         return dict([(k, v) for (k, v) in record.iteritems() if k
