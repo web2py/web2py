@@ -1880,7 +1880,7 @@ class BaseAdapter(ConnectionPool):
             for item in table.virtualfields:
                 try:
                     rowsobj = rowsobj.setvirtualfields(**{tablename:item})
-                except KeyError:
+                except (KeyError, AttributeError):
                     # to avoid breaking virtualfields when partial select
                     pass
         return rowsobj
@@ -6946,7 +6946,7 @@ def index():
                     ofields = vars.get('order',db[table]._id.name).split('|')
                     try:
                         orderby = [db[table][f] if not f.startswith('~') else ~db[table][f[1:]] for f in ofields]
-                    except KeyError:
+                    except (KeyError, AttributeError):
                         return Row({'status':400,'error':'invalid orderby','response':None})
                     fields = [field for field in db[table] if field.readable]
                     count = dbset.count()
