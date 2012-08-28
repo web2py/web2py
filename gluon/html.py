@@ -2272,10 +2272,11 @@ class MENU(DIV):
             select = SELECT(**self.attributes)
         for item in data:
             if len(item) <= 4 or item[4] == True:
-                if item[2]:
-                    select.append(OPTION(CAT(prefix, item[0]), _value=item[2], _selected=item[1]))
-                    if len(item)>3 and len(item[3]):
-                        self.serialize_mobile(item[3], select, prefix = CAT(prefix, item[0], '/'))
+                select.append(OPTION(CAT(prefix, item[0]), 
+                                     _value=item[2], _selected=item[1]))
+                if len(item)>3 and len(item[3]):
+                    self.serialize_mobile(
+                        item[3], select, prefix = CAT(prefix, item[0], '/'))
         select['_onchange'] = 'window.location=this.value'
         return select
 
