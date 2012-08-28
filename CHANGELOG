@@ -3,6 +3,9 @@
 ### DAL Improvements
 
 - Support for DAL(lazy_tables=True) and db.define_table(on_define=lambda table:), thanks Jonathan
+- db(...).select(cacheable=True) make select 30% faster
+- db(...).select(cache=(cache.ram,3600)) now caches parsed data 100x faster
+- db(...).count(cache=(cache.ram,3600)) now supported
 - MongoDB support in DAL (experimental), thanks Mark Breedveld
 - geodal and spatialite, thanks Denes and Fran (experimental)
 - db.mytable._before_insert, _after_insert, _before_update, _after_update, _before_delete. _after_delete (list of callbacks)
