@@ -1835,12 +1835,8 @@ class BaseAdapter(ConnectionPool):
                             colset.gae_item = value
                         else:
                             id = value
-                        colset.update_record = (
-                            lambda _ = (colset, table, id), **a:
-                            update_record(_, a))
-                        colset.delete_record = (
-                            lambda t = table, i = id:
-                            t._db(t._id==i).delete())
+                        colset.update_record = RecordUpdater(colset,table,id)
+                        colset.delete_record = RecordDeleter(table,id)
                         for (referee_table, referee_name) \
                                 in table._referenced_by:
                             s = db[referee_table][referee_name]
@@ -7611,15 +7607,15 @@ class Table(object):
         # check all fields that should be in the self table
         for ofield in self:
             name = ofield.name
-            # if field is supposed to be computed, compute it!
-            if ofield.compute:
-                try:
-                    new_fields[name] = (ofield,ofield.compute(Row(fields)))
-                except KeyError:
-                    pass
-            # if field is required, check its default value
-            elif not name in new_fields:
-                if not update and not ofield.default is None:
+            if not name in new_fields:
+                # if field is supposed to be computed, compute it!
+                if ofield.compute:
+                    try:
+                        new_fields[name] = (ofield,ofield.compute(Row(fields)))
+                    except (KeyError, AttributeError):
+                        pass
+                # if field is required, check its default value
+                elif not update and not ofield.default is None:
                     new_fields[name] = (ofield,ofield.default)
                 elif update and not ofield.update is None:
                     new_fields[name] = (ofield,ofield.update)
@@ -8653,13 +8649,25 @@ class Set(object):
                         os.unlink(oldpath)
         return False
 
-def update_record(pack, a=None):
-    (colset, table, id) = pack
-    b = a or dict(colset)
-    c = dict([(k,v) for (k,v) in b.iteritems() if k in table.fields and table[k].type!='id'])
-    table._db(table._id==id,ignore_common_filters=True).update(**c)
-    for (k, v) in c.iteritems():
-        colset[k] = v
+class RecordUpdater(object):
+    def __init__(self, colset, table, id):
+        self.colset, self.table, self.id = colset, table, id
+
+    def __call__(self, **fields):
+        colset, table, id = self.colset, self.table, self.id 
+        newfields = fields or dict(colset)
+        for fieldname in newfields.keys():
+            if not fieldname in table.fields or table[fieldname].type=='id':
+                del newfields[fieldname]
+        table._db(table._id==id,ignore_common_filters=True).update(**newfields)
+        colset.update(newfields)
+
+class RecordDeleter(object):
+    def __init__(self, table, id):
+        self.table, self.id = table,id
+    def __call__(self):
+        return self.table._db(self.table._id==self.id).delete()
+
 
 class VirtualCommand(object):
     def __init__(self,method,row):
