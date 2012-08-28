@@ -3141,14 +3141,18 @@ class Auth(object):
             new_record.update(fields)
         id = archive_table.insert(**new_record)
         return id
-    def wiki(self,slug=None,env=None,manage_permissions=False,force_prefix=''):
+
+    def wiki(self,slug=None,env=None,manage_permissions=False,force_prefix='', resolve=True):
         if not hasattr(self,'_wiki'):
             self._wiki = Wiki(self,
                               manage_permissions=manage_permissions,
                               force_prefix=force_prefix,env=env)
         else:
             self._wiki.env.update(env or {})
-        return self._wiki.read(slug)['content'] if slug else self._wiki()
+        # if resolve is set to True, process request as wiki call
+        # resolve=False allows initial setup without wiki redirection
+        if resolve:
+            return self._wiki.read(slug)['content'] if slug else self._wiki()
 
 class Crud(object):
 
@@ -4490,32 +4494,48 @@ class Wiki(object):
         self.host = current.request.env.http_host
         perms = self.manage_permissions = manage_permissions
         db = auth.db
-        db.define_table(
-            'wiki_page',
-            Field('slug',
-                  requires=[IS_SLUG(),IS_NOT_IN_DB(db,'wiki_page.slug')],
-                  readable=False,writable=False),
-            Field('title',unique=True),
-            Field('body','text',notnull=True),
-            Field('tags','list:string'),
-            Field('can_read','list:string',writable=perms,readable=perms,
-                  default=[Wiki.everybody]),
-            Field('can_edit','list:string',writable=perms,readable=perms,
-                  default=[Wiki.everybody]),
-            Field('changelog'),
-            Field('html','text',readable=False,writable=False,compute=render),
-            auth.signature,format='%(title)s')
-        db.define_table(
-            'wiki_tag',
-            Field('name'),
-            Field('wiki_page',db.wiki_page),
-            auth.signature,format='%(name)s')
-        db.define_table(
-            'wiki_media',
-            Field('wiki_page',db.wiki_page),
-            Field('title',required=True),
-            Field('file','upload',required=True),
-            auth.signature,format='%(title)s')
+        table_definitions = {
+            'wiki_page':{
+                'args':[
+                    Field('slug',
+                          requires=[IS_SLUG(),
+                                    IS_NOT_IN_DB(db,'wiki_page.slug')],
+                          readable=False,writable=False),
+                    Field('title',unique=True),
+                    Field('body','text',notnull=True),
+                    Field('tags','list:string'),
+                    Field('can_read','list:string',
+                          writable=perms,
+                          readable=perms,
+                          default=[Wiki.everybody]),
+                    Field('can_edit', 'list:string',
+                          writable=perms,readable=perms,
+                          default=[Wiki.everybody]),
+                    Field('changelog'),
+                    Field('html','text',compute=render,
+                          readable=False, writable=False),
+                    auth.signature],
+                'vars':{'format':'%(title)s'}},
+             'wiki_tag':{
+                'args':[
+                    Field('name'),
+                    Field('wiki_page','reference wiki_page'),
+                    auth.signature],
+                'vars':{'format':'%(name)s'}},
+           'wiki_media':{
+                'args':[
+                    Field('wiki_page','reference wiki_page'),
+                    Field('title',required=True),
+                    Field('file','upload',required=True),
+                    auth.signature],
+                'vars':{'format':'%(title)s'}}
+            }
+
+        # define only non-existent tables
+        for key, value in table_definitions.iteritems():
+            if not key in db.tables():
+                db.define_table(key, *value['args'], **value['vars'])
+
         def update_tags_insert(page,id,db=db):
             for tag in page.tags or []:
                 tag = tag.strip().lower()
