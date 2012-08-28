@@ -6309,6 +6309,7 @@ class Row(object):
     a dictionary that lets you do d['a'] as well as d.a
     this is only used to store a Row
     """
+
     def __init__(self,*args,**kwargs):
         self.__dict__.update(*args,**kwargs)
 
@@ -6537,7 +6538,7 @@ class DAL(object):
        db.define_table('tablename', Field('fieldname1'),
                                     Field('fieldname2'))
     """
-
+    
     @staticmethod
     def set_folder(folder):
         """
@@ -7257,7 +7258,7 @@ class Table(object):
         db.users.insert(name='me') # print db.users._insert(...) to see SQL
         db.users.drop()
     """
-
+    
     def __init__(
         self,
         db,
@@ -8546,9 +8547,11 @@ class Set(object):
         tablename = self.db._adapter.get_table(self.query)
         table = self.db[tablename]
         table._attempt_upload(update_fields)
-        if any(f(self,update_fields) for f in table._before_update): return 0
+        if any(f(self,update_fields) for f in table._before_update):
+            return 0
         fields = table._listify(update_fields,update=True)
-        if not fields: raise SyntaxError, "No fields to update"
+        if not fields:
+            raise SyntaxError, "No fields to update"
         ret = self.db._adapter.update(tablename,self.query,fields)
         ret and [f(self,update_fields) for f in table._after_update]
         return ret

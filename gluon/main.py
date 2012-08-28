@@ -209,8 +209,7 @@ def serve_controller(request, response, session):
     page = run_controller_in(request.controller, request.function, environment)
     if isinstance(page, dict):
         response._vars = page
-        for key in page:
-            response._view_environment[key] = page[key]
+        response._view_environment.update(page)
         run_view_in(response._view_environment)
         page = response.body.getvalue()
     # logic to garbage collect after exec, not always, once every 100 requests
