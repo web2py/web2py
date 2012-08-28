@@ -92,14 +92,13 @@ class HTTP(BaseException):
                     body += '<!-- %s //-->' % ('x'*512) ### trick IE
                 self.headers['Content-Length'] = len(body)
         headers = []
-        for (k, v) in self.headers.items():
+        for k, v in self.headers.iteritems():
             if isinstance(v, list):
-                for item in v:
-                    headers.append((k, str(item)))
+                headers += [(k, str(item)) for item in v]
             else:
                 headers.append((k, str(v)))
         responder(status, headers)
-        if hasattr(body, '__iter__') and not isinstance(self.body, str):
+        if hasattr(body, '__iter__') and not isinstance(self.body,str):
             return body
         return [str(body)]
 

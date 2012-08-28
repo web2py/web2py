@@ -117,7 +117,8 @@ class Request(Storage):
             user_agent_parser.detect(self.env.http_user_agent)
         user_agent = Storage(user_agent)
         for key,value in user_agent.items():
-            if isinstance(value,dict): user_agent[key] = Storage(value)
+            if isinstance(value,dict):
+                user_agent[key] = Storage(value)
         return user_agent
 
     def requires_https(self):
@@ -222,9 +223,9 @@ class Response(Storage):
         return page
 
     def include_meta(self):
-        s = '\n'
-        for key,value in (self.meta or {}).items():
-            s += '<meta name="%s" content="%s" />\n' % (key,xmlescape(value))
+        s = '\n'.join(
+            '<meta name="%s" content="%s" />\n' % (k,xmlescape(v))
+            for k,v in (self.meta or {}).iteritems())
         self.write(s,escape=False)
 
     def include_files(self):

@@ -253,7 +253,8 @@ def middleware_aux(request, response, *middleware_apps):
         for item in middleware_apps:
             app=item(app)
         def caller(app):
-            return app(request.wsgi.environ,request.wsgi.start_response)
+            return app(request.wsgi.environ,
+                       request.wsgi.start_response)
         return lambda caller=caller, app=app: caller(app)
     return middleware
 
@@ -375,7 +376,8 @@ def wsgibase(environ, responder):
 
                 if not environ.get('PATH_INFO',None) and \
                         environ.get('REQUEST_URI',None):
-                    # for fcgi, get path_info and query_string from request_uri
+                    # for fcgi, get path_info and 
+                    # query_string from request_uri
                     items = environ['REQUEST_URI'].split('?')
                     environ['PATH_INFO'] = items[0]
                     if len(items) > 1:
@@ -383,13 +385,17 @@ def wsgibase(environ, responder):
                     else:
                         environ['QUERY_STRING'] = ''
                 if not environ.get('HTTP_HOST',None):
-                    environ['HTTP_HOST'] = '%s:%s' % (environ.get('SERVER_NAME'),
-                                                      environ.get('SERVER_PORT'))
+                    environ['HTTP_HOST'] = '%s:%s' % (
+                        environ.get('SERVER_NAME'),
+                        environ.get('SERVER_PORT'))
 
-                (static_file, environ) = rewrite.url_in(request, environ)
+                (static_file, environ) = \
+                    rewrite.url_in(request, environ)
                 if static_file:
-                    if environ.get('QUERY_STRING', '')[:10] == 'attachment':
-                        response.headers['Content-Disposition'] = 'attachment'
+                    if environ.get('QUERY_STRING','').startswith(
+                        'attachment'):
+                        response.headers['Content-Disposition'] \
+                            = 'attachment'
                     response.stream(static_file, request=request)
 
                 # ##################################################
@@ -401,14 +407,17 @@ def wsgibase(environ, responder):
                 local_hosts = [http_host,'::1','127.0.0.1','::ffff:127.0.0.1']
                 if not global_settings.web2py_runtime_gae:
                     local_hosts.append(socket.gethostname())
-                    try: local_hosts.append(socket.gethostbyname(http_host))
-                    except socket.gaierror: pass
+                    try:
+                        local_hosts.append(
+                        socket.gethostbyname(http_host))
+                    except socket.gaierror:
+                        pass
                 request.client = get_client(request.env)
                 if not is_valid_ip_address(request.client):
-                    raise HTTP(400,"Bad Request (request.client=%s)" % \
+                    raise HTTP(400,"Bad Request (request.client=%s)" %\
                                    request.client)
-                request.folder = abspath('applications',
-                                         request.application) + os.sep
+                request.folder = abspath(
+                    'applications',request.application) + os.sep
                 x_req_with = str(request.env.http_x_requested_with).lower()
                 request.ajax = x_req_with == 'xmlhttprequest'
                 request.cid = request.env.http_web2py_component_element
