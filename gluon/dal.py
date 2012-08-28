@@ -184,6 +184,8 @@ SELECT_ARGS = set(
     ('orderby', 'groupby', 'limitby','required', 'cache', 'left',
      'distinct', 'having', 'join','for_update', 'processor','cacheable'))
 
+ogetattr = object.__getattribute__
+osetattr = object.__setattr__
 
 ###################################################################################
 # following checks allow the use of dal without web2py, as a standalone module
@@ -6325,10 +6327,10 @@ class Row(object):
             return self._extra[key]
         elif m:
             try:
-                return object.__getattribute__(self, m.group(1))[m.group(2)]
+                return ogetattr(self, m.group(1))[m.group(2)]
             except (KeyError,AttributeError,TypeError):
                 key = m.group(2)
-        return object.__getattribute__(self, key)
+        return ogetattr(self, key)
 
     def __setitem__(self, key, value):
         setattr(self, str(key), value)
@@ -7042,19 +7044,19 @@ def index():
         return self.__getattr__(str(key))
 
     def __getattr__(self, key):
-        if not key is '_LAZY_TABLES' and key in self._LAZY_TABLES:
+        if ogetattr(self,'_lazy_tables') and not key in ogetattr(self,'_LAZY_TABLES'):
             tablename, fields, args = self._LAZY_TABLES.pop(key)
             return self.lazy_define_table(tablename,*fields,**args)
-        return object.__getattribute__(self, key)
+        return ogetattr(self, key)
 
     def __setitem__(self, key, value):
-        object.__setattr__(self, str(key), value)
+        osetattr(self, str(key), value)
 
     def __setattr__(self, key, value):
         if key[:1]!='_' and key in self:
             raise SyntaxError, \
                 'Object %s exists and cannot be redefined' % key
-        object.__setattr__(self,key,value)
+        osetattr(self,key,value)
 
     __delitem__ = object.__delattr__
 
@@ -7494,7 +7496,7 @@ class Table(object):
         elif str(key).isdigit() or 'google' in drivers and isinstance(key, Key):
             return self._db(self._id == key).select(limitby=(0,1)).first()
         elif key:
-            return object.__getattribute__(self, str(key))
+            return ogetattr(self, str(key))
 
     def __call__(self, key=DEFAULT, **kwargs):
         for_update = kwargs.get('_for_update',False)
@@ -7543,14 +7545,14 @@ class Table(object):
             if isinstance(key, dict):
                 raise SyntaxError,\
                     'value must be a dictionary: %s' % value
-            object.__setattr__(self, str(key), value)
+            osetattr(self, str(key), value)
 
     __getattr__ = __getitem__
 
     def __setattr__(self, key, value):
         if key[:1]!='_' and key in self:
             raise SyntaxError, 'Object exists and cannot be redefined: %s' % key
-        object.__setattr__(self,key,value)
+        osetattr(self,key,value)
 
     def __delitem__(self, key):
         if isinstance(key, dict):
