@@ -1824,6 +1824,10 @@ class BaseAdapter(ConnectionPool):
                     if field.filter_out:
                         value = field.filter_out(value)
                     colset[fieldname] = value
+                                        
+                    # for backward compatibility
+                    if field.type=='id' and fieldname!='id' and not 'id' in table.fields:
+                        colset['id'] = value
 
                     if field.type == 'id' and not cacheable:
                         # temporary hack to deal with 
