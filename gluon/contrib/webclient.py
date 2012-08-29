@@ -15,7 +15,8 @@ import urllib2
 class WebClient(object):
     regex = re.compile('\<input name\="_formkey" type\="hidden" value\="(?P<formkey>.+?)" \/\>\<input name\="_formname" type\="hidden" value\="(?P<formname>.+?)" \/\>')
 
-    def __init__(self,app=''):
+    def __init__(self,app='', postbacks=True):
+        self.postbacks = postbacks
         self.history = []
         self.app = app
         self.cookies = {}
@@ -25,8 +26,10 @@ class WebClient(object):
         
     def post(self,url,data=None,cookies=None,headers=None,auth=None):
         self.url = self.app+url
-        if data and '_formname' in data and self.history and \
-                self.history[-1][1]!=self.url:        
+        if data and '_formname' in data and self.postbacks and \
+                self.history and self.history[-1][1]!=self.url:        
+            # to bypass the web2py CSRF need to get formkey
+            # before submitting the form
             self.get(url,cookies=None,headers=None,auth=None)
         if cookies is None: cookies = self.cookies
         if auth:
@@ -35,14 +38,17 @@ class WebClient(object):
             opener = urllib2.build_opener(auth_handler)
         else:
             opener = urllib2.build_opener()
+        # copy headers from dict to list of key,value
         headers_list = []
         for key,value in (headers or {}).iteritems():
             if isinstance(value,(list,tuple)):
                 for v in value: headers_list.append((key,v))
             else:
                 headers_list.append((key,value))
+        # move cookies to headers
         for key,value in (cookies or {}).iteritems():
             headers_list.append(('Cookie','%s=%s' % (key,value)))
+        # add headers to request
         for key,value in headers_list:
             opener.addheaders.append((key,str(value)))
         if data is not None:
@@ -66,11 +72,14 @@ class WebClient(object):
         self.status = self.request.getcode()
         self.text = self.request.read()        
         self.headers = dict(self.request.headers)
+        # parse headers into cookies
         self.cookies = dict(item[:item.find(';')].split('=') for item in \
                                 self.headers.get('set-cookie','').split(','))
         self.forms = {}
+        # find all forms and formkeys
         for match in WebClient.regex.finditer(self.text):
             self.forms[match.group('formname')] = match.group('formkey')
+        # log this request
         self.history.append((self.method,self.url,self.status,self.time))
 
 def test_web2py_registration_and_login():
