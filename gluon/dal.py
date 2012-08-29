@@ -7673,21 +7673,25 @@ class Table(object):
                     to_compute.append((name,ofield))
                 # if field is required, check its default value
                 elif not update and not ofield.default is None:
-                    new_fields[name] = (ofield,ofield.default)
+                    value = ofield.default
+                    fields[name] = value
+                    new_fields[name] = (ofield,value)
                 # if this is an update, user the update field instead
                 elif update and not ofield.update is None:
-                    new_fields[name] = (ofield,ofield.update)
+                    value = ofield.update
+                    fields[name] = value
+                    new_fields[name] = (ofield,value)
                 # if the field is still not there but it should, error
                 elif not update and ofield.required:
                     raise RuntimeError, \
                         'Table: missing required field: %s' % name
         # now deal with fields that are supposed to be computed
         if to_compute:
-            dummyrow = Row(new_fields)
+            row = Row(fields)
             for name,ofield in to_compute:
                 # try compute it
                 try:
-                    new_fields[name] = (ofield,ofield.compute(dummyrow))
+                    new_fields[name] = (ofield,ofield.compute(row))
                 except (KeyError, AttributeError):
                     # error sinlently unless field is required!
                     if ofield.required:

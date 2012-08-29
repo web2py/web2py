@@ -515,6 +515,20 @@ class TestVirtualFields(unittest.TestCase):
         db.t.drop()
         db.commit()
 
+class TestComputedFields(unittest.TestCase):
+
+    def testRun(self):
+        db = DAL('sqlite:memory:')
+        db.define_table('t', 
+                        Field('a'),
+                        Field('b',default='x'),
+                        Field('c',compute=lambda r: r.a+r.b))
+        db.commit()
+        id = db.t.insert(a="z")
+        self.assertEqual(db.t[id].c,'zx')
+        db.t.drop()
+        db.commit()
+
 class TestImportExportFields(unittest.TestCase):
 
     def testRun(self):
