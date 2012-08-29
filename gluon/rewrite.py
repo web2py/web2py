@@ -27,9 +27,17 @@ from http import HTTP
 from fileutils import abspath, read_file
 from settings import global_settings
 
-logger = logging.getLogger('web2py.rewrite')
+isdir = os.path.isdir
+isfile = os.path.isfile
+exists = os.path.exists
+pjoin = os.path.join
 
-thread = threading.local()  # thread-local storage for routing parameters
+logger = logging.getLogger('web2py.rewrite')
+thread = threading.local()  # thread-local storage for routing params
+
+regex_at = re.compile(r'(?<!\\)\$[a-zA-Z]\w*')
+regex_anything = re.compile(r'(?<!\\)\$anything')
+regex_redirect = re.compile(r'(\d+)->(.*)')
 
 def _router_default():
     "return new copy of default base router"
@@ -75,7 +83,7 @@ def _params_default(app=None):
 
 params_apps = dict()
 params = _params_default(app=None)  # regex rewrite parameters
-thread.routes = params              # default to base regex rewrite parameters
+thread.routes = params  # default to base regex rewrite parameters
 routers = None
 
 def log_rewrite(string):
@@ -97,13 +105,18 @@ def log_rewrite(string):
     else:
         logger.debug(string)
 
-ROUTER_KEYS = set(('default_application', 'applications', 'default_controller', 'controllers',
-    'default_function', 'functions', 'default_language', 'languages',
-    'domain', 'domains', 'root_static', 'path_prefix',
-    'exclusive_domain', 'map_hyphen', 'map_static',
-    'acfe_match', 'file_match', 'args_match'))
+ROUTER_KEYS = set(
+    ('default_application', 'applications', 
+     'default_controller', 'controllers',
+     'default_function', 'functions', 
+     'default_language', 'languages',
+     'domain', 'domains', 'root_static', 'path_prefix',
+     'exclusive_domain', 'map_hyphen', 'map_static',
+     'acfe_match', 'file_match', 'args_match'))
 
-ROUTER_BASE_KEYS = set(('applications', 'default_application', 'domains', 'path_prefix'))
+ROUTER_BASE_KEYS = set(
+    ('applications', 'default_application', 
+     'domains', 'path_prefix'))
 
 #  The external interface to rewrite consists of:
 #
@@ -223,9 +236,7 @@ def try_redirect_on_error(http_object, request, ticket=None):
                         (redir,status,ticket,
                          urllib.quote_plus(request.env.request_uri),
                          request.url)
-                return HTTP(303,
-                            'You are being redirected <a href="%s">here</a>' % url,
-                            Location=url)
+                return HTTP(303,'You are being redirected <a href="%s">here</a>' % url,Location=url)
     return http_object
 
 
@@ -258,7 +269,7 @@ def load(routes='routes.py', app=None, data=None, rdict=None):
                 path = abspath(routes)
             else:
                 path = abspath('applications', app, routes)
-            if not os.path.exists(path):
+            if not exists(path):
                 return
             data = read_file(path).replace('\r\n','\n')
 
@@ -309,9 +320,11 @@ def load(routes='routes.py', app=None, data=None, rdict=None):
         #    parse the app-specific routes.py if present
         #
         all_apps = []
-        for appname in [app for app in os.listdir(abspath('applications')) if not app.startswith('.')]:
-            if os.path.isdir(abspath('applications', appname)) and \
-               os.path.isdir(abspath('applications', appname, 'controllers')):
+        apppath = abspath('applications')
+        for appname in os.listdir(apppath):
+            if not appname.startswith('.') and \
+                    isdir(abspath(apppath,appname)) and \
+                    isdir(abspath(apppath,appname,'controllers')):
                 all_apps.append(appname)
                 if routers:
                     router = Storage(routers.BASE)   # new copy
@@ -321,7 +334,7 @@ def load(routes='routes.py', app=None, data=None, rdict=None):
                                 raise SyntaxError, "BASE-only key '%s' in router '%s'" % (key, appname)
                         router.update(routers[appname])
                     routers[appname] = router
-                if os.path.exists(abspath('applications', appname, routes)):
+                if exists(abspath('applications', appname, routes)):
                     load(routes, appname)
 
         if routers:
@@ -336,14 +349,9 @@ def load(routes='routes.py', app=None, data=None, rdict=None):
     log_rewrite('URL rewrite is on. configuration in %s' % path)
 
 
-regex_at = re.compile(r'(?<!\\)\$[a-zA-Z]\w*')
-regex_anything = re.compile(r'(?<!\\)\$anything')
-regex_redirect = re.compile(r'(\d+)->(.*)')
-
 def compile_regex(k, v):
     """
     Preprocess and compile the regular expressions in routes_app/in/out
-
     The resulting regex will match a pattern of the form:
 
         [remote address]:[protocol]://[host]:[method] [path]
@@ -380,8 +388,9 @@ def compile_regex(k, v):
 def load_routers(all_apps):
     "load-time post-processing of routers"
 
-    for app in routers.keys():
-        # initialize apps with routers that aren't present, on behalf of unit tests
+    for app in routers:
+        # initialize apps with routers that aren't present,
+        # on behalf of unit tests
         if app not in all_apps:
             all_apps.append(app)
             router = Storage(routers.BASE)   # new copy
@@ -420,10 +429,10 @@ def load_routers(all_apps):
                 routers.BASE.domains[router.domain] = app
             if isinstance(router.controllers, str) and router.controllers == 'DEFAULT':
                 router.controllers = set()
-                if os.path.isdir(abspath('applications', app)):
+                if isdir(abspath('applications', app)):
                     cpath = abspath('applications', app, 'controllers')
                     for cname in os.listdir(cpath):
-                        if os.path.isfile(abspath(cpath, cname)) and cname.endswith('.py'):
+                        if isfile(abspath(cpath, cname)) and cname.endswith('.py'):
                             router.controllers.add(cname[:-3])
             if router.controllers:
                 router.controllers.add('static')
@@ -458,16 +467,20 @@ def load_routers(all_apps):
     #
     domains = dict()
     if routers.BASE.domains:
-        for (domain, app) in [(d.strip(':'), a.strip('/')) for (d, a) in routers.BASE.domains.items()]:
-            port = None
+        for (d, a) in routers.BASE.domains.iteritems():
+            (domain, app) = (d.strip(':'), a.strip('/'))
             if ':' in domain:
                 (domain, port) = domain.split(':')
-            ctlr = None
-            fcn = None
+            else:
+                port = None
             if '/' in app:
                 (app, ctlr) = app.split('/', 1)
+            else:
+                ctlr = None
             if ctlr and '/' in ctlr:
                 (ctlr, fcn) = ctlr.split('/')
+            else:
+                fcn = None
             if app not in all_apps and app not in routers:
                 raise SyntaxError, "unknown app '%s' in domains" % app
             domains[(domain, port)] = (app, ctlr, fcn)
@@ -514,7 +527,8 @@ def regex_filter_in(e):
     query = e.get('QUERY_STRING', None)
     e['WEB2PY_ORIGINAL_URI'] = e['PATH_INFO'] + (query and ('?' + query) or '')
     if thread.routes.routes_in:
-        path = regex_uri(e, thread.routes.routes_in, "routes_in", e['PATH_INFO'])
+        path = regex_uri(e, thread.routes.routes_in, 
+                         "routes_in", e['PATH_INFO'])
         rmatch = regex_redirect.match(path)
         if rmatch:
             raise HTTP(int(rmatch.group(1)),location=rmatch.group(2))
@@ -581,6 +595,9 @@ regex_args = re.compile(r'''
      /?$)    # trailing slash
      ''', re.X)
 
+def sluggify(key):
+    return key.lower().replace('.','_')
+
 def regex_url_in(request, environ):
     "rewrite and parse incoming URL"
 
@@ -594,9 +611,8 @@ def regex_url_in(request, environ):
 
     if thread.routes.routes_in:
         environ = regex_filter_in(environ)
-
-    for (key, value) in environ.items():
-        request.env[key.lower().replace('.', '_')] = value
+    
+    request.env.update((sluggify(k),v) for k,v in environ.iteritems())
 
     path = request.env.path_info.replace('\\', '/')
 
@@ -606,7 +622,7 @@ def regex_url_in(request, environ):
 
     match = regex_static.match(regex_space.sub('_', path))
     if match and match.group('x'):
-        static_file = os.path.join(request.env.applications_parent,
+        static_file = pjoin(request.env.applications_parent,
                                    'applications', match.group('b'),
                                    'static', match.group('x'))
         return (static_file, environ)
@@ -908,7 +924,7 @@ class MapUrlIn(object):
         '''
         if len(self.args) == 1 and self.arg0 in self.router.root_static:
             self.controller = self.request.controller = 'static'
-            root_static_file = os.path.join(self.request.env.applications_parent,
+            root_static_file = pjoin(self.request.env.applications_parent,
                                    'applications', self.application,
                                    self.controller, self.arg0)
             log_rewrite("route: root static=%s" % root_static_file)
@@ -962,7 +978,8 @@ class MapUrlIn(object):
                 bad_static = bad_static or name in ('', '.', '..') or not self.router._file_match.match(name)
         if bad_static:
             log_rewrite('bad static path=%s' % file)
-            raise HTTP(400, thread.routes.error_message % 'invalid request',
+            raise HTTP(400,
+                       thread.routes.error_message % 'invalid request',
                        web2py_error='invalid static file')
         #
         #  support language-specific static subdirectories,
@@ -970,13 +987,13 @@ class MapUrlIn(object):
         #  if language-specific file doesn't exist, try same file in static
         #
         if self.language:
-            static_file = os.path.join(self.request.env.applications_parent,
-                                   'applications', self.application,
-                                   'static', self.language, file)
-        if not self.language or not os.path.isfile(static_file):
-            static_file = os.path.join(self.request.env.applications_parent,
-                                   'applications', self.application,
-                                   'static', file)
+            static_file = pjoin(self.request.env.applications_parent,
+                                'applications', self.application,
+                                'static', self.language, file)
+        if not self.language or not isfile(static_file):
+            static_file = pjoin(self.request.env.applications_parent,
+                                'applications', self.application,
+                                'static', file)
         log_rewrite("route: static=%s" % static_file)
         return static_file
 
@@ -1040,12 +1057,14 @@ class MapUrlIn(object):
             uri += '.' + self.extension
         if self.language:
             uri = '/%s%s' % (self.language, uri)
-        uri = '/%s%s' % (app, uri)
-        uri += self.args and urllib.quote('/' + '/'.join([str(x) for x in self.args])) or ''
-        uri += (self.query and ('?' + self.query) or '')
+        uri = '/%s%s%s%s' % (
+            app, 
+            uri,
+            urllib.quote('/'+'/'.join(str(x) for x in self.args)) if self.args else '',
+            ('?' + self.query) if self.query else '')
         self.env['REQUEST_URI'] = uri
-        for (key, value) in self.env.items():
-            self.request.env[key.lower().replace('.', '_')] = value
+        self.request.env.update(
+            (sluggify(k),v) for k,v in self.env.iteritems())
 
     @property
     def arg0(self):

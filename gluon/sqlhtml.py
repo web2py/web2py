@@ -36,6 +36,8 @@ import re
 import cStringIO
 from gluon import current, redirect, A, URL, DIV, H3, UL, LI, SPAN, INPUT
 import inspect
+import settings
+is_gae = settings.global_settings.web2py_runtime_gae
 
 table_field = re.compile('[\w_]+\.[\w_]+')
 widget_class = re.compile('^\w*')
@@ -581,7 +583,7 @@ class AutocompleteWidget(object):
     def callback(self):
         if self.keyword in self.request.vars:
             field = self.fields[0]
-            if settings.global_settings.web2py_runtime_gae:
+            if is_gae:
                 rows = self.db(field.__ge__(self.request.vars[self.keyword])&field.__lt__(self.request.vars[self.keyword]+ u'\ufffd')).select(orderby=self.orderby,limitby=self.limitby,*self.fields)
             else:
                 rows = self.db(field.like(self.request.vars[self.keyword]+'%')).select(orderby=self.orderby,limitby=self.limitby,distinct=self.distinct,*self.fields)
@@ -1834,7 +1836,7 @@ class SQLFORM(FORM):
             else:
                 rows = dbset.select(left=left,orderby=orderby,*columns)
 
-            if exportManager.has_key(export_type):
+            if export_type in exportManager:
                 value = exportManager[export_type]
                 clazz = value[0] if hasattr(value, '__getitem__') else value
                 oExp = clazz(rows)

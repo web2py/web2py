@@ -129,6 +129,26 @@ class TestFields(unittest.TestCase):
             )
         self.assertEqual(db.t.insert(a=t0), 1)
         self.assertEqual(db().select(db.t.a)[0].a, t0)
+
+        ## Row APIs
+        row = db().select(db.t.a)[0]
+        self.assertEqual(db.t[1].a,t0)
+        self.assertEqual(db.t['a'],db.t.a)
+        self.assertEqual(db.t(1).a,t0)
+        self.assertTrue(db.t(1,a=None)==None)
+        self.assertFalse(db.t(1,a=t0)==None)
+        self.assertEqual(row.a,t0)
+        self.assertEqual(row['a'],t0)
+        self.assertEqual(row['t.a'],t0)
+        self.assertEqual(row('t.a'),t0)
+
+        ## Lazy and Virtual fields
+        db.t.b = Field.Virtual(lambda row: row.t.a)
+        db.t.c = Field.Lazy(lambda row: row.t.a)
+        row = db().select(db.t.a)[0]
+        self.assertEqual(row.b,t0)
+        self.assertEqual(row.c(),t0)
+
         db.t.drop()
         db.define_table('t', Field('a', 'time', default='11:30'))
         t0 = datetime.time(10, 30, 55)
@@ -369,6 +389,17 @@ class TestJoin(unittest.TestCase):
         db.t1.drop()
         db.t2.drop()
 
+        db.define_table('person',Field('name'))
+        id = db.person.insert(name="max")
+        self.assertEqual(id.name,'max')
+        db.define_table('dog',Field('name'),Field('owner','reference person'))
+        db.dog.insert(name='skipper',owner=1)
+        row = db(db.person.id==db.dog.owner).select().first()
+        self.assertEqual(row[db.person.name],'max')
+        self.assertEqual(row['person.name'],'max')
+        db.dog.drop()
+        self.assertEqual(len(db.person._referenced_by),0)
+        db.person.drop()
 
 class TestMinMaxSum(unittest.TestCase):
 

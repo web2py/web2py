@@ -298,7 +298,7 @@ class CacheOnDisk(CacheAbstract):
             try:
                 storage = self._open_shelf_with_lock()
                 try:
-                    if not storage.has_key(CacheAbstract.cache_stats_name):
+                    if not CacheAbstract.cache_stats_name in storage:
                         storage[CacheAbstract.cache_stats_name] = {
                             'hit_total': 0,
                             'misses': 0,

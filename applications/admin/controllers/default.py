@@ -23,9 +23,9 @@ except ImportError:
     GIT_MISSING = 'requires python-git module, but not installed or incompatible version'
 
 from gluon.languages import (regex_language, read_possible_languages,
-                             read_possible_plurals, lang_sampling,
+                             lang_sampling,
                              read_dict, write_dict, read_plural_dict,
-                             write_plural_dict)
+                             write_plural_dict, PLURAL_RULES)
 
 
 if DEMO_MODE and request.function in ['change_password','pack','pack_plugin','upgrade_web2py','uninstall','cleanup','compile_app','remove_compiled_app','delete','delete_plugin','create_file','upload_file','update_languages','reload_routes','git_push','git_pull']:
@@ -949,8 +949,8 @@ def design():
                                         # get only existed files
     languages = sorted(all_languages)
 
-    plural_rules={}
-    all_plurals=read_possible_plurals()
+    plural_rules = {}
+    all_plurals = PLURAL_RULES
     for langfile,lang in all_languages.iteritems():
         lang=lang.strip()
         match_language = regex_language.match(lang)
@@ -961,7 +961,7 @@ def design():
             plang = lang_sampling(match_language, all_plurals.keys())
             if plang:
                plural=all_plurals[plang]
-               plural_rules[langfile]=(plural[0],plang,plural[1],plural[3])
+               plural_rules[langfile]=(plural[0],plang,plural[4],plural[3])
             else:
                plural_rules[langfile]=(0,lang,'plural_rules-%s.py'%lang,'')
 

@@ -17,6 +17,7 @@ import languages
 import tempfile
 import threading
 import logging
+from storage import Storage
 
 try:
     import multiprocessing
@@ -52,6 +53,39 @@ try:
             results = pool.map(read_write, [[self.filename, 10]] * readwriters)
             for result in results:
                 self.assertTrue(result)
+
+
+    class TestTranslations(unittest.TestCase):
+    
+        def setUp(self):            
+            self.request = Storage()
+            self.request.folder = 'applications/welcome'
+            self.request.env = Storage()
+            self.request.env.http_accept_language = 'en'
+            
+            
+        def tearDown(self):
+            pass
+    
+        def test_plain(self):
+            T = languages.translator(self.request)
+            self.assertEqual(str(T('Hello World')),
+                             'Hello World')
+            self.assertEqual(str(T('Hello World## comment')),
+                             'Hello World')
+            self.assertEqual(str(T('%s %%{shop}', 1)),
+                             '1 shop')
+            self.assertEqual(str(T('%s %%{shop}', 2)),
+                             '2 shops')
+            self.assertEqual(str(T('%s %%{shop[0]}', 1)),
+                             '1 shop')
+            self.assertEqual(str(T('%s %%{shop[0]}', 2)),
+                             '2 shops')
+            self.assertEqual(str(T.M('**Hello World**')),
+                             '<strong>Hello World</strong>')
+            T.force('it')
+            self.assertEqual(str(T('Hello World')),
+                             'Salve Mondo')
 
 except ImportError:
     logging.warning("Skipped test case, no multiprocessing module.")

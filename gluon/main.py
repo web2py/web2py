@@ -21,7 +21,6 @@ import re
 import copy
 import sys
 import time
-import thread
 import datetime
 import signal
 import socket
@@ -29,6 +28,7 @@ import tempfile
 import random
 import string
 import urllib2
+from thread import allocate_lock
 
 from fileutils import abspath, write_file, parse_version
 from settings import global_settings
@@ -69,8 +69,11 @@ import logging.config
 import gluon.messageboxhandler
 logging.gluon = gluon
 
+exists = os.path.exists
+pjoin = os.path.join
+
 logpath = abspath("logging.conf")
-if os.path.exists(logpath):
+if exists(logpath):
     logging.config.fileConfig(abspath("logging.conf"))
 else:
     logging.basicConfig()
@@ -87,10 +90,10 @@ from dal import BaseAdapter
 from settings import global_settings
 from validators import CRYPT
 from cache import Cache
-from html import URL as Url, xmlescape
+from html import URL, xmlescape
 from utils import is_valid_ip_address
+from rewrite import load, url_in, thread as rwthread, try_rewrite_on_error
 import newcron
-import rewrite
 
 __all__ = ['wsgibase', 'save_password', 'appfactory', 'HttpServer']
 
@@ -103,7 +106,7 @@ requests = 0    # gc timer
 regex_client = re.compile('[\w\-:]+(\.[\w\-]+)*\.?')  # ## to account for IPV6
 
 try:
-    version_info = open(os.path.join(global_settings.gluon_parent, 'VERSION'), 'r')
+    version_info = open(pjoin(global_settings.gluon_parent, 'VERSION'), 'r')
     raw_version_string = version_info.read().strip()
     version_info.close()
     global_settings.web2py_version = parse_version(raw_version_string)
@@ -118,7 +121,7 @@ except:
     if not global_settings.web2py_runtime_gae:
         logger.warn('unable to import Rocket')
 
-rewrite.load()
+load()
 
 def get_client(env):
     """
@@ -129,11 +132,16 @@ def get_client(env):
     """
     g = regex_client.search(env.get('http_x_forwarded_for', ''))
     if g:
-        return g.group()
-    g = regex_client.search(env.get('remote_addr', ''))
-    if g:
-        return g.group()
-    return '127.0.0.1'
+        client = g.group()
+    else:
+        g = regex_client.search(env.get('remote_addr', ''))
+        if g:
+            client = g.group()
+        else:
+            client = '127.0.0.1'
+    if not is_valid_ip_address(client):
+        raise HTTP(400,"Bad Request (request.client=%s)" % client)
+    return client
 
 def copystream_progress(request, chunk_size= 10**5):
     """
@@ -253,7 +261,8 @@ def middleware_aux(request, response, *middleware_apps):
         for item in middleware_apps:
             app=item(app)
         def caller(app):
-            return app(request.wsgi.environ,request.wsgi.start_response)
+            wsgi = request.wsgi
+            return app(wsgi.environ, wsgi.start_response)
         return lambda caller=caller, app=app: caller(app)
     return middleware
 
@@ -279,14 +288,14 @@ def parse_get_post_vars(request, environ):
 
     # parse POST variables on POST, PUT, BOTH only in post_vars
     try:
-        request.body = copystream_progress(request) ### stores request body
+        request.body = body = copystream_progress(request)
     except IOError:
         raise HTTP(400,"Bad Request - HTTP body is incomplete")
-    if (request.body and request.env.request_method in ('POST', 'PUT', 'BOTH')):
-        dpost = cgi.FieldStorage(fp=request.body,environ=environ,keep_blank_values=1)
+    if (body and request.env.request_method in ('POST', 'PUT', 'BOTH')):
+        dpost = cgi.FieldStorage(fp=body,environ=environ,keep_blank_values=1)
         # The same detection used by FieldStorage to detect multipart POSTs
         is_multipart = dpost.type[:10] == 'multipart/'
-        request.body.seek(0)
+        body.seek(0)
         isle25 = sys.version_info[1] <= 5
 
         def listify(a):
@@ -357,9 +366,10 @@ def wsgibase(environ, responder):
     request = Request()
     response = Response()
     session = Session()
-    request.env.web2py_path = global_settings.applications_parent
-    request.env.web2py_version = web2py_version
-    request.env.update(global_settings)
+    env = request.env
+    env.web2py_path = global_settings.applications_parent
+    env.web2py_version = web2py_version
+    env.update(global_settings)
     static_file = False
     try:
         try:
@@ -373,79 +383,80 @@ def wsgibase(environ, responder):
                 # serve file if static
                 # ##################################################
 
-                if not environ.get('PATH_INFO',None) and \
-                        environ.get('REQUEST_URI',None):
-                    # for fcgi, get path_info and query_string from request_uri
+                eget = environ.get
+                if not eget('PATH_INFO',None) and eget('REQUEST_URI',None):
+                    # for fcgi, get path_info and 
+                    # query_string from request_uri
                     items = environ['REQUEST_URI'].split('?')
                     environ['PATH_INFO'] = items[0]
                     if len(items) > 1:
                         environ['QUERY_STRING'] = items[1]
                     else:
                         environ['QUERY_STRING'] = ''
-                if not environ.get('HTTP_HOST',None):
-                    environ['HTTP_HOST'] = '%s:%s' % (environ.get('SERVER_NAME'),
-                                                      environ.get('SERVER_PORT'))
+                if not eget('HTTP_HOST',None):
+                    environ['HTTP_HOST'] = \
+                        eget('SERVER_NAME')+':'+eget('SERVER_PORT')
+                    
 
-                (static_file, environ) = rewrite.url_in(request, environ)
+                (static_file, environ) = url_in(request, environ)
+
                 if static_file:
-                    if environ.get('QUERY_STRING', '')[:10] == 'attachment':
-                        response.headers['Content-Disposition'] = 'attachment'
+                    if environ.get('QUERY_STRING','').startswith(
+                        'attachment'):
+                        response.headers['Content-Disposition'] \
+                            = 'attachment'
                     response.stream(static_file, request=request)
 
                 # ##################################################
                 # fill in request items
                 # ##################################################
-
-                http_host = request.env.http_host.split(':',1)[0]
-
-                local_hosts = [http_host,'::1','127.0.0.1','::ffff:127.0.0.1']
+                app = request.application ## must go after url_in!
+                                
+                http_host = env.http_host.split(':',1)[0]
+                local_hosts = [http_host,'::1','127.0.0.1',
+                               '::ffff:127.0.0.1']
                 if not global_settings.web2py_runtime_gae:
                     local_hosts.append(socket.gethostname())
-                    try: local_hosts.append(socket.gethostbyname(http_host))
-                    except socket.gaierror: pass
-                request.client = get_client(request.env)
-                if not is_valid_ip_address(request.client):
-                    raise HTTP(400,"Bad Request (request.client=%s)" % \
-                                   request.client)
-                request.folder = abspath('applications',
-                                         request.application) + os.sep
-                x_req_with = str(request.env.http_x_requested_with).lower()
-                request.ajax = x_req_with == 'xmlhttprequest'
-                request.cid = request.env.http_web2py_component_element
-                request.is_local = request.env.remote_addr in local_hosts
-                request.is_https = request.env.wsgi_url_scheme \
-                    in ['https', 'HTTPS'] or request.env.https == 'on'
-
-                # ##################################################
-                # compute a request.uuid to be used for tickets and toolbar
-                # ##################################################
-
-                response.uuid = request.compute_uuid()
+                    try:
+                        local_hosts.append(
+                        socket.gethostbyname(http_host))
+                    except socket.gaierror:
+                        pass
+                client = get_client(env)                
+                x_req_with = str(env.http_x_requested_with).lower()
+                
+                request.update(dict(
+                        client = client,
+                        folder = abspath('applications',app) + os.sep,
+                        ajax = x_req_with == 'xmlhttprequest',
+                        cid = env.http_web2py_component_element,
+                        is_local = env.remote_addr in local_hosts,
+                        is_https = env.wsgi_url_scheme \
+                            in ['https', 'HTTPS'] or env.https=='on'))
+                request.uuid = request.compute_uuid() # requires client
 
                 # ##################################################
                 # access the requested application
                 # ##################################################
 
-                if not os.path.exists(request.folder):
-                    if request.application == \
-                            rewrite.thread.routes.default_application \
-                            and request.application != 'welcome':
-                        request.application = 'welcome'
-                        redirect(Url(r=request))
-                    elif rewrite.thread.routes.error_handler:
-                        _handler = rewrite.thread.routes.error_handler
-                        redirect(Url(_handler['application'],
+                if not exists(request.folder):
+                    if app == rwthread.routes.default_application \
+                            and app != 'welcome':
+                        redirect(URL('welcome','default','index'))
+                    elif rwthread.routes.error_handler:
+                        _handler = rwthread.routes.error_handler
+                        redirect(URL(_handler['application'],
                                      _handler['controller'],
                                      _handler['function'],
-                                     args=request.application))
+                                     args=app))
                     else:
-                        raise HTTP(404, rewrite.thread.routes.error_message \
+                        raise HTTP(404, rwthread.routes.error_message \
                                        % 'invalid request',
                                    web2py_error='invalid application')
                 elif not request.is_local and \
-                        os.path.exists(os.path.join(request.folder,'DISABLED')):
+                        exists(pjoin(request.folder,'DISABLED')):
                     raise HTTP(503, "<html><body><h1>Temporarily down for maintenance</h1></body></html>")
-                request.url = Url(r=request,
+                request.url = URL(r=request,
                                   args=request.args,
                                   extension=request.raw_extension)
 
@@ -492,22 +503,23 @@ def wsgibase(environ, responder):
                 # ##################################################
                 # set no-cache headers
                 # ##################################################
-
-                response.headers['Content-Type'] = \
+                
+                headers = response.headers
+                headers['Content-Type'] = \
                     contenttype('.'+request.extension)
-                response.headers['Cache-Control'] = \
+                headers['Cache-Control'] = \
                     'no-store, no-cache, must-revalidate, post-check=0, pre-check=0'
-                response.headers['Expires'] = \
+                headers['Expires'] = \
                     time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime())
-                response.headers['Pragma'] = 'no-cache'
+                headers['Pragma'] = 'no-cache'
 
                 # ##################################################
                 # run controller
                 # ##################################################
 
-                if global_settings.debugging and request.application != "admin":
+                if global_settings.debugging and app != "admin":
                     import gluon.debug
-                    # activate the debugger and wait to reach application code
+                    # activate the debugger
                     gluon.debug.dbg.do_debug(mainpyfile=request.folder)
 
                 serve_controller(request, response, session)
@@ -549,22 +561,24 @@ def wsgibase(environ, responder):
                 # ##################################################
 
                 if request.cid:
-                    if response.flash and not 'web2py-component-flash' \
-                            in http_response.headers:
-                        http_response.headers['web2py-component-flash'] = \
+                    rheaders
+                    if response.flash and \
+                            not 'web2py-component-flash' in rheaders:
+                        rheaders['web2py-component-flash'] = \
                             urllib2.quote(xmlescape(response.flash)\
                                               .replace('\n',''))
-                    if response.js and not 'web2py-component-command' \
-                            in http_response.headers:
-                        http_response.headers['web2py-component-command'] = \
+                    if response.js and \
+                            not 'web2py-component-command' in readers:
+                        readers['web2py-component-command'] = \
                             response.js.replace('\n','')
+                rcookies = response.cookies
                 if session._forget and \
                         response.session_id_name in response.cookies:
-                    del response.cookies[response.session_id_name]
+                    del rcookies[response.session_id_name]
                 elif session._secure:
-                    response.cookies[response.session_id_name]['secure'] = True
+                    rcookies[response.session_id_name]['secure'] = True
 
-                http_response.cookies2headers(response.cookies)
+                http_response.cookies2headers(rcookies)
                 ticket=None
 
             except RestrictedError, e:
@@ -583,7 +597,7 @@ def wsgibase(environ, responder):
                     BaseAdapter.close_all_instances('rollback')
 
                 http_response = \
-                    HTTP(500, rewrite.thread.routes.error_message_ticket % \
+                    HTTP(500, rwthread.routes.error_message_ticket % \
                              dict(ticket=ticket),
                          web2py_error='ticket %s' % ticket)
 
@@ -606,7 +620,7 @@ def wsgibase(environ, responder):
             e = RestrictedError('Framework', '', '', locals())
             ticket = e.log(request) or 'unrecoverable'
             http_response = \
-                HTTP(500, rewrite.thread.routes.error_message_ticket \
+                HTTP(500, rwthread.routes.error_message_ticket \
                          % dict(ticket=ticket),
                      web2py_error='ticket %s' % ticket)
 
@@ -616,7 +630,7 @@ def wsgibase(environ, responder):
             response.session_file.close()
 
     session._unlock(response)
-    http_response, new_environ = rewrite.try_rewrite_on_error(
+    http_response, new_environ = try_rewrite_on_error(
         http_response, request, environ, ticket)
     if not http_response:
         return wsgibase(new_environ,responder)
@@ -641,7 +655,7 @@ def save_password(password, port):
         print '*********************************************************'
     elif password == '<recycle>':
         # reuse the current password if any
-        if os.path.exists(password_file):
+        if exists(password_file):
             return
         else:
             password = ''
@@ -672,9 +686,9 @@ def appfactory(wsgiapp=wsgibase,
             [, profilerfilename='profiler.log']]])
 
     """
-    if profilerfilename and os.path.exists(profilerfilename):
+    if profilerfilename and exists(profilerfilename):
         os.unlink(profilerfilename)
-    locker = thread.allocate_lock()
+    locker = allocate_lock()
 
     def app_with_logging(environ, responder):
         """
@@ -785,7 +799,7 @@ class HttpServer(object):
             os.chdir(path)
             [add_path_first(p) for p in (path, abspath('site-packages'), "")]
             custom_import_install(web2py_path)
-            if os.path.exists("logging.conf"):
+            if exists("logging.conf"):
                 logging.config.fileConfig("logging.conf")
 
         save_password(password, port)
@@ -800,9 +814,9 @@ class HttpServer(object):
             logger.info('SSL is off')
         elif not rocket.ssl:
             logger.warning('Python "ssl" module unavailable. SSL is OFF')
-        elif not os.path.exists(ssl_certificate):
+        elif not exists(ssl_certificate):
             logger.warning('unable to open SSL certificate. SSL is OFF')
-        elif not os.path.exists(ssl_private_key):
+        elif not exists(ssl_private_key):
             logger.warning('unable to open SSL private key. SSL is OFF')
         else:
             sock_list.extend([ssl_private_key, ssl_certificate])
@@ -847,10 +861,4 @@ class HttpServer(object):
             os.unlink(self.pid_filename)
         except:
             pass
-
-
-
-
-
-
 

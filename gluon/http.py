@@ -77,41 +77,45 @@ class HTTP(BaseException):
                 str(cookie)[11:] for cookie in cookies.values()]
 
     def to(self, responder):
-        if self.status in defined_status:
-            status = '%d %s' % (self.status, defined_status[self.status])
+        status = self.status
+        headers = self.headers
+        if status in defined_status:
+            status = '%d %s' % (status, defined_status[status])
         else:
-            status = str(self.status) + ' '
-        if not 'Content-Type' in self.headers:
-            self.headers['Content-Type'] = 'text/html; charset=UTF-8'
+            status = str(status) + ' '
+        if not 'Content-Type' in headers:
+            headers['Content-Type'] = 'text/html; charset=UTF-8'
         body = self.body
         if status[:1] == '4':
             if not body:
                 body = status
             if isinstance(body, str):
-                if len(body)<512 and self.headers['Content-Type'].startswith('text/html'):
+                if len(body)<512 and headers['Content-Type'].startswith('text/html'):
                     body += '<!-- %s //-->' % ('x'*512) ### trick IE
-                self.headers['Content-Length'] = len(body)
-        headers = []
-        for (k, v) in self.headers.items():
+                headers['Content-Length'] = len(body)
+        rheaders = []
+        for k, v in headers.iteritems():
             if isinstance(v, list):
-                for item in v:
-                    headers.append((k, str(item)))
+                rheaders += [(k, str(item)) for item in v]
             else:
-                headers.append((k, str(v)))
-        responder(status, headers)
-        if hasattr(body, '__iter__') and not isinstance(self.body, str):
+                rheaders.append((k, str(v)))
+        responder(status, rheaders)
+        if isinstance(body,str):
+            return [body]
+        elif hasattr(body, '__iter__'):
             return body
-        return [str(body)]
+        else:
+            return [str(body)]
 
     @property
     def message(self):
-        '''
+        """
         compose a message describing this exception
 
-        "status defined_status [web2py_error]"
+            "status defined_status [web2py_error]"
 
         message elements that are not defined are omitted
-        '''
+        """
         msg = '%(status)d'
         if self.status in defined_status:
             msg = '%(status)d %(defined_status)s'

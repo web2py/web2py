@@ -11,6 +11,8 @@ import copy
 import gluon.contenttype
 import gluon.fileutils
 
+response.subtitle = 'Database Administration (appadmin)'
+
 # ## critical --- make a copy of the environment
 
 global_env = copy.copy(globals())
