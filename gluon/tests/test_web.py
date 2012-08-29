@@ -14,10 +14,11 @@ import unittest
 from gluon.contrib.webclient import WebClient
 
 class TestWeb(unittest.TestCase):
-    def testWebClient(self):        
+    def testWebClient(self):
         session = WebClient('http://127.0.0.1:8000/welcome/default/')
-        session.get('user/register')
+        session.get('index')
         session_id_welcome = session.cookies['session_id_welcome']
+
         data = dict(first_name = 'Homer',
                     last_name = 'Simpson',
                     email = 'homer@web2py.com',
@@ -25,8 +26,8 @@ class TestWeb(unittest.TestCase):
                     password_two = 'test',
                     _formname = 'register')
         session.post('user/register',data = data)
+
         
-        session.get('user/login')
         data = dict(email='homer@web2py.com',
                     password='test',
                     _formname = 'login')

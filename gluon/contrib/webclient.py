@@ -21,6 +21,8 @@ class WebClient(object):
         return self.post(url,data=None,cookies=cookies,headers=headers)
         
     def post(self,url,data=None,cookies=None,headers=None,auth=None):
+        if data and '_formname' in data:
+            self.get(url,cookies=None,headers=None,auth=None)
         self.url = self.app+url
         if cookies is None: cookies = self.cookies
         if auth:
@@ -62,8 +64,9 @@ class WebClient(object):
 
 def test_web2py_registration_and_login():
     session = WebClient('http://127.0.0.1:8000/welcome/default/')
-    session.get('user/register')
+    session.get('index')
     session_id_welcome = session.cookies['session_id_welcome']
+
     data = dict(first_name = 'Homer',
                 last_name = 'Simpson',
                 email = 'homer@web2py.com',
@@ -72,7 +75,6 @@ def test_web2py_registration_and_login():
                 _formname = 'register')
     session.post('user/register',data = data)
 
-    session.get('user/login')
     data = dict(email='homer@web2py.com',
                 password='test',
                 _formname = 'login')
@@ -85,7 +87,6 @@ def test_web2py_registration_and_login():
 
     # check we are always in the same session
     assert session_id_welcome == session.cookies['session_id_welcome']
-
 
 if __name__ == '__main__':
     test_web2py_registration_and_login()
