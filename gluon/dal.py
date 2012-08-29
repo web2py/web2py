@@ -8458,6 +8458,7 @@ class Field(Expression):
         return (filename, stream)
 
     def retrieve_file_properties(self, name, path=None):
+        self_uploadfield = self.uploadfield
         if self.custom_retrieve_file_properties:
             return self.custom_retrieve_file_properties(name, path)
         try:
