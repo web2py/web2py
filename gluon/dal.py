@@ -4329,9 +4329,9 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
 
     def select_raw(self,query,fields=None,attributes=None):
         db = self.db
-        args_get = attributes.get
         fields = fields or []
         attributes = attributes or {}
+        args_get = attributes.get
         new_fields = []
         for item in fields:
             if isinstance(item,SQLALL):

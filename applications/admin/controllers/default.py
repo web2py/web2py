@@ -51,12 +51,12 @@ def log_progress(app,mode='EDIT',filename=None,progress=0):
     progress_file = os.path.join(apath(app, r=request), 'progress.log')
     now = str(request.now)[:19]
     if not os.path.exists(progress_file):
-        open(progress_file,'w').write('[%s] START\n' % now)
+        safe_open(progress_file,'w').write('[%s] START\n' % now)
     if filename:
-        open(progress_file,'a').write('[%s] %s %s: %s\n' % (now,mode,filename,progress))
+        safe_open(progress_file,'a').write('[%s] %s %s: %s\n' % (now,mode,filename,progress))
 
 def safe_open(a,b):
-    if DEMO_MODE and 'w' in b:
+    if DEMO_MODE and ('w' in b or 'a' in b):
         class tmp:
             def write(self,data): pass
         return tmp()
@@ -455,11 +455,13 @@ def delete():
 def enable():
     app = get_app()
     filename = os.path.join(apath(app, r=request),'DISABLED')
-    if os.path.exists(filename):
+    if is_gae:
+        return SPAN(T('Not supported'),_style='color:yellow')
+    elif os.path.exists(filename):
         os.unlink(filename)
         return SPAN(T('Disable'),_style='color:green')
     else:
-        open(filename,'wb').write(time.ctime())
+        safe_open(filename,'wb').write(time.ctime())
         return SPAN(T('Enable'),_style='color:red')
 
 def peek():

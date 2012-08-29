@@ -12,6 +12,9 @@ if request.env.web2py_runtime_gae:
     session_db = DAL('gae')
     session.connect(request, response, db=session_db)
     hosts = (http_host, )
+    is_gae = True
+else:
+    is_gae = False
 
 if request.env.http_x_forwarded_for or request.is_https:
     session.secure()
@@ -27,7 +30,7 @@ try:
         raise HTTP(200, T('admin disabled because no admin password'))
 except IOError:
     import gluon.fileutils
-    if request.env.web2py_runtime_gae:
+    if is_gae:
         if gluon.fileutils.check_credentials(request):
             session.authorized = True
             session.last_time = time.time()
