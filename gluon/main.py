@@ -526,7 +526,8 @@ def wsgibase(environ, responder):
 
             except HTTP, http_response:
                 if static_file:
-                    return http_response.to(responder)
+                    return http_response.to(responder,env=env)
+                        
 
                 if request.body:
                     request.body.close()
@@ -636,7 +637,7 @@ def wsgibase(environ, responder):
         return wsgibase(new_environ,responder)
     if global_settings.web2py_crontype == 'soft':
         newcron.softcron(global_settings.applications_parent).start()
-    return http_response.to(responder)
+    return http_response.to(responder,env=env)
 
 
 def save_password(password, port):
