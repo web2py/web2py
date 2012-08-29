@@ -1042,20 +1042,19 @@ class SQLFORM(FORM):
         # build a link
         if record and linkto:
             db = linkto.split('/')[-1]
-            for (rtable, rfield) in table._referenced_by:
+            for rfld in table._referenced_by:
                 if keyed:
-                    rfld = table._db[rtable][rfield]
                     query = urllib.quote('%s.%s==%s' % (db,rfld,record[rfld.type[10:].split('.')[1]]))
                 else:
-                    query = urllib.quote('%s.%s==%s' % (db,table._db[rtable][rfield],record[self.id_field_name]))
-                lname = olname = '%s.%s' % (rtable, rfield)
+                    query = urllib.quote('%s.%s==%s' % (db,rfld,record[self.id_field_name]))
+                lname = olname = '%s.%s' % (rfld.tablename, rfld.name)
                 if ofields and not olname in ofields:
                     continue
                 if labels and lname in labels:
                     lname = labels[lname]
                 widget = A(lname,
                            _class='reference',
-                           _href='%s/%s?query=%s' % (linkto, rtable, query))
+                           _href='%s/%s?query=%s' % (linkto, rfld.tablename, query))
                 xfields.append((olname.replace('.', '__')+SQLFORM.ID_ROW_SUFFIX,
                                 '',widget,col3.get(olname,'')))
                 self.custom.linkto[olname.replace('.', '__')] = widget
@@ -2218,9 +2217,9 @@ class SQLFORM(FORM):
                     del kwargs[key]
         check = {}
         id_field_name = table._id.name
-        for tablename,fieldname in table._referenced_by:
-            if db[tablename][fieldname].readable:
-                check[tablename] = check.get(tablename,[])+[fieldname]
+        for field in table._referenced_by:
+            if field.readable:
+                check[field.tablename] = check.get(field.tablename,[])+[field.name]
         for tablename in sorted(check):
             linked_fieldnames = check[tablename]
             tb = db[tablename]
