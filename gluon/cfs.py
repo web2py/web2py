@@ -35,7 +35,6 @@ def getcfs(key, filename, filter=None):
     This is used on Google App Engine since pyc files cannot be saved.
     """
     try:
-        logging.info(filename)
         t = os.stat(filename).st_mtime
     except OSError:
         return filter() if callable(filter) else ''
