@@ -177,7 +177,8 @@ class Content(BlockNode):
         if isinstance(other, (list, tuple)):
             # Must reverse so the order stays the same.
             other.reverse()
-            (self._insert(item, index) for item in other)
+            for item in other:
+                self._insert(item, index)
         else:
             self._insert(other, index)
 
