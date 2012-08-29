@@ -425,14 +425,14 @@ def wsgibase(environ, responder):
                 client = get_client(env)                
                 x_req_with = str(env.http_x_requested_with).lower()
                 
-                request.update(dict(
-                        client = client,
-                        folder = abspath('applications',app) + os.sep,
-                        ajax = x_req_with == 'xmlhttprequest',
-                        cid = env.http_web2py_component_element,
-                        is_local = env.remote_addr in local_hosts,
-                        is_https = env.wsgi_url_scheme \
-                            in ['https', 'HTTPS'] or env.https=='on'))
+                request.update(
+                    client = client,
+                    folder = abspath('applications',app) + os.sep,
+                    ajax = x_req_with == 'xmlhttprequest',
+                    cid = env.http_web2py_component_element,
+                    is_local = env.remote_addr in local_hosts,
+                    is_https = env.wsgi_url_scheme \
+                        in ['https', 'HTTPS'] or env.https=='on')
                 request.uuid = request.compute_uuid() # requires client
 
                 # ##################################################
@@ -561,15 +561,15 @@ def wsgibase(environ, responder):
                 # ##################################################
 
                 if request.cid:
-                    rheaders
+                    rheaders = response.headers
                     if response.flash and \
                             not 'web2py-component-flash' in rheaders:
                         rheaders['web2py-component-flash'] = \
                             urllib2.quote(xmlescape(response.flash)\
                                               .replace('\n',''))
                     if response.js and \
-                            not 'web2py-component-command' in readers:
-                        readers['web2py-component-command'] = \
+                            not 'web2py-component-command' in rheaders:
+                        rheaders['web2py-component-command'] = \
                             response.js.replace('\n','')
                 rcookies = response.cookies
                 if session._forget and \
