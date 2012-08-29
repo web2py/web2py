@@ -2025,7 +2025,7 @@ class SpatiaLiteAdapter(SQLiteAdapter):
 
     import copy
     types = copy.copy(BaseAdapter.types)
-    types.update({'geometry': 'GEOMETRY'})
+    types.update(geometry='GEOMETRY')
 
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
@@ -2263,12 +2263,12 @@ class MySQLAdapter(BaseAdapter):
             raise SyntaxError, 'Database name required'
         port = int(m.group('port') or '3306')
         charset = m.group('charset') or 'utf8'
-        driver_args.update(dict(db=db,
-                                user=credential_decoder(user),
-                                passwd=credential_decoder(password),
-                                host=host,
-                                port=port,
-                                charset=charset))
+        driver_args.update(db=db,
+                           user=credential_decoder(user),
+                           passwd=credential_decoder(password),
+                           host=host,
+                           port=port,
+                           charset=charset)
         def connect(driver_args=driver_args):
             return self.driver.connect(**driver_args)
         self.pool_connection(connect)
@@ -3114,9 +3114,9 @@ class SybaseAdapter(MSSQLAdapter):
 
             dsn = 'sybase:host=%s:%s;dbname=%s' % (host,port,db)
 
-            driver_args.update(dict(user = credential_decoder(user),
-                                    password = credential_decoder(password),
-                                    locale = charset))
+            driver_args.update(user = credential_decoder(user),
+                               password = credential_decoder(password),
+                               locale = charset)
 
         def connect(dsn=dsn,driver_args=driver_args):
             return self.driver.connect(dsn,**driver_args)
@@ -3225,11 +3225,11 @@ class FireBirdAdapter(BaseAdapter):
         if not db:
             raise SyntaxError, 'Database name required'
         charset = m.group('charset') or 'UTF8'
-        driver_args.update(dict(dsn='%s/%s:%s' % (host,port,db),
-                                   user = credential_decoder(user),
-                                   password = credential_decoder(password),
-                                   charset = charset))
-
+        driver_args.update(dsn='%s/%s:%s' % (host,port,db),
+                           user = credential_decoder(user),
+                           password = credential_decoder(password),
+                           charset = charset)
+        
         def connect(driver_args=driver_args):
             return self.driver.connect(**driver_args)
         self.pool_connection(connect)
@@ -3291,11 +3291,11 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
         if not charset:
             charset = 'UTF8'
         host = ''
-        driver_args.update(dict(host=host,
-                                   database=pathdb,
-                                   user=credential_decoder(user),
-                                   password=credential_decoder(password),
-                                   charset=charset))
+        driver_args.update(host=host,
+                           database=pathdb,
+                           user=credential_decoder(user),
+                           password=credential_decoder(password),
+                           charset=charset)
         #def connect(driver_args=driver_args):
         #    return kinterbasdb.connect(**driver_args)
 
@@ -3403,7 +3403,7 @@ class InformixAdapter(BaseAdapter):
         user = credential_decoder(user)
         password = credential_decoder(password)
         dsn = '%s@%s' % (db,host)
-        driver_args.update(dict(user=user,password=password,autocommit=True))
+        driver_args.update(user=user,password=password,autocommit=True)
         def connect(dsn=dsn,driver_args=driver_args):
             return self.driver.connect(dsn,**driver_args)
         self.pool_connection(connect)
@@ -3644,10 +3644,10 @@ class IngresAdapter(BaseAdapter):
         vnode = '(local)'
         servertype = 'ingres'
         trace = (0, None) # No tracing
-        driver_args.update(dict(database=database_name,
-                                   vnode=vnode,
-                                   servertype=servertype,
-                                   trace=trace))
+        driver_args.update(database=database_name,
+                           vnode=vnode,
+                           servertype=servertype,
+                           trace=trace)
         def connect(driver_args=driver_args):
             return self.driver.connect(**driver_args)
         self.pool_connection(connect)
@@ -4161,7 +4161,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                 'list:string': (lambda: gae.StringListProperty(default=None)),
                 'list:integer': (lambda: gae.ListProperty(int,default=None)),
                 'list:reference': (lambda: gae.ListProperty(int,default=None)),
-        })
+                })
         self.db = db
         self.uri = uri
         self.dbengine = 'google:datastore'
@@ -5516,7 +5516,7 @@ class IMAPAdapter(NoSQLAdapter):
         if port==993:
             over_ssl = True
 
-        driver_args.update(dict(host=host,port=port, password=password, user=user))
+        driver_args.update(host=host,port=port, password=password, user=user)
         def connect(driver_args=driver_args):
             # it is assumed sucessful authentication alLways
             # TODO: support direct connection and login tests
