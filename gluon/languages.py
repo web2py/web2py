@@ -429,10 +429,7 @@ class translator(object):
         self.request = request
         self.folder = request.folder
         self.langpath = ospath.join(self.folder,'languages')
-        try:
-            self.filenames = set(os.listdir(self.langpath))        
-        except:
-            self.filenames = set()
+        self.filenames = set(os.listdir(self.langpath))
         self.http_accept_language = request.env.http_accept_language
         # self.cache                        # filled in self.force()
         # self.accepted_language = None     # filled in self.force()
@@ -445,7 +442,6 @@ class translator(object):
         # self.plural_file = None           # filled in self.force()
         # self.plural_dict = None           # filled in self.force()
         # self.plural_status = None         # filled in self.force()
-
         self.requested_languages = \
             self.force(self.http_accept_language)
         self.lazy = True
