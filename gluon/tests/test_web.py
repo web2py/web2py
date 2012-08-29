@@ -38,4 +38,3 @@ class TestWeb(unittest.TestCase):
         # check we are always in the same session
         self.assertEqual(session_id_welcome,
                          session.cookies['session_id_welcome'])
-        self.assertEqual('a','b')
