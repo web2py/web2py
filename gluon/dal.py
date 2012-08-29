@@ -6386,6 +6386,9 @@ class Row(object):
     def __contains__(self,key):
         return key in self.__dict__
 
+    def __nonzero__(self):
+        return len(self.__dict__)>0
+
     def update(self, *args, **kwargs):
         self.__dict__.update(*args, **kwargs)
 
