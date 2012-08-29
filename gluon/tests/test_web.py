@@ -38,3 +38,6 @@ class TestWeb(unittest.TestCase):
         # check we are always in the same session
         self.assertEqual(session_id_welcome,
                          session.cookies['session_id_welcome'])
+
+if __name__ == '__main__':
+    unittest.main()
