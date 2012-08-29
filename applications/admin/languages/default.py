@@ -78,6 +78,7 @@
 'New simple application': 'New simple application',
 'Overwrite installed app': 'Overwrite installed app',
 'Pack all': 'Pack all',
+'Peeking at file': 'Peeking at file',
 'Plugins': 'Plugins',
 'plugins': 'plugins',
 'Plural-Forms:': 'Plural-Forms:',
