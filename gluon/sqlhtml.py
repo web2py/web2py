@@ -292,7 +292,7 @@ class MultipleOptionsWidget(OptionsWidget):
             be shown
         """
 
-        attributes.update(dict(_size=size, _multiple=True))
+        attributes.update(_size=size, _multiple=True)
 
         return OptionsWidget.widget(field, value, **attributes)
 
