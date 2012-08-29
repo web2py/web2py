@@ -298,14 +298,15 @@ class Response(Storage):
         default to the last request argument otherwise)
         """
 
+        headers = self.headers
         # for attachment settings and backward compatibility
-        keys = [item.lower() for item in self.headers]
+        keys = [item.lower() for item in headers]
         if attachment:
             if filename is None:
                 attname = ""
             else:
                 attname = filename
-            self.headers["Content-Disposition"] = \
+            headers["Content-Disposition"] = \
                 "attachment;filename=%s" % attname
 
         if not request:
@@ -314,30 +315,31 @@ class Response(Storage):
             stream_file_or_304_or_206(stream,
                                       chunk_size=chunk_size,
                                       request=request,
-                                      headers=self.headers)
+                                      headers=headers)
 
         # ## the following is for backward compatibility
         if hasattr(stream, 'name'):
             filename = stream.name
 
         if filename and not 'content-type' in keys:
-            self.headers['Content-Type'] = contenttype(filename)
+            headers['Content-Type'] = contenttype(filename)
         if filename and not 'content-length' in keys:
             try:
-                self.headers['Content-Length'] = \
+                headers['Content-Length'] = \
                     os.path.getsize(filename)
             except OSError:
                 pass
-
+        
+        env = request.env
         # Internet Explorer < 9.0 will not allow downloads over SSL unless caching is enabled
-        if request.is_https and isinstance(request.env.http_user_agent,str) and \
-                not re.search(r'Opera', request.env.http_user_agent) and \
-                re.search(r'MSIE [5-8][^0-9]', request.env.http_user_agent):
-            self.headers['Pragma'] = 'cache'
-            self.headers['Cache-Control'] = 'private'
+        if request.is_https and isinstance(env.http_user_agent,str) and \
+                not re.search(r'Opera', env.http_user_agent) and \
+                re.search(r'MSIE [5-8][^0-9]', env.http_user_agent):
+            headers['Pragma'] = 'cache'
+            headers['Cache-Control'] = 'private'
 
-        if request and request.env.web2py_use_wsgi_file_wrapper:
-            wrapped = request.env.wsgi_file_wrapper(stream, chunk_size)
+        if request and env.web2py_use_wsgi_file_wrapper:
+            wrapped = env.wsgi_file_wrapper(stream, chunk_size)
         else:
             wrapped = streamer(stream, chunk_size=chunk_size)
         return wrapped
@@ -365,11 +367,12 @@ class Response(Storage):
             (filename, stream) = field.retrieve(name)
         except IOError:
             raise HTTP(404)
-        self.headers['Content-Type'] = contenttype(name)
+        headers['Content-Type'] = contenttype(name)
         if attachment:
-            self.headers['Content-Disposition'] = \
-                "attachment; filename=%s" % filename
-        return self.stream(stream, chunk_size = chunk_size, request=request)
+            headers['Content-Disposition'] = \
+                'attachment; filename=%s' % filename
+        return self.stream(stream, chunk_size = chunk_size, 
+                           request=request)
 
     def json(self, data, default=None):
         return json(data, default = default or custom_json)
@@ -462,14 +465,15 @@ class Session(Storage):
         response.session_id_name = 'session_id_%s' % masterapp.lower()
 
         # Load session data from cookie
-
+        cookies = request.cookies
+            
         if cookie_key:
             response.session_cookie_key = cookie_key
             response.session_cookie_key2 = hashlib.md5(cookie_key).digest()
-            cookie_name = request.application.lower()+'_session_data'
+            cookie_name = masterapp.lower()+'_session_data'
             response.session_cookie_name = cookie_name
-            if cookie_name in request.cookies:
-                cookie_value = request.cookies[cookie_name].value
+            if cookie_name in cookies:
+                cookie_value = cookies[cookie_name].value
                 cookie_parts = cookie_value.split(":")
                 enc = cookie_parts[2]
                 cipher = AES.new(cookie_key)
@@ -487,9 +491,9 @@ class Session(Storage):
                 return
             response.session_new = False
             client = request.client and request.client.replace(':', '.')
-            if response.session_id_name in request.cookies:
+            if response.session_id_name in cookies:
                 response.session_id = \
-                    request.cookies[response.session_id_name].value
+                    cookies[response.session_id_name].value
                 if regex_session_id.match(response.session_id):
                     response.session_filename = \
                         os.path.join(up(request.folder), masterapp,
@@ -542,38 +546,35 @@ class Session(Storage):
                 table_migrate = False
             tname = tablename + '_' + masterapp
             table = db.get(tname, None)
+            Field = db.Field
             if table is None:
-                table = db.define_table(
+                db.define_table(
                     tname,
-                    db.Field('locked', 'boolean', default=False),
-                    db.Field('client_ip', length=64),
-                    db.Field('created_datetime', 'datetime',
+                    Field('locked', 'boolean', default=False),
+                    Field('client_ip', length=64),
+                    Field('created_datetime', 'datetime',
                              default=request.now),
-                    db.Field('modified_datetime', 'datetime'),
-                    db.Field('unique_key', length=64),
-                    db.Field('session_data', 'blob'),
+                    Field('modified_datetime', 'datetime'),
+                    Field('unique_key', length=64),
+                    Field('session_data', 'blob'),
                     migrate=table_migrate,
                     )
+                table = db[tname] # to allow for lazy table
             try:
 
-                        # Get session data out of the database
-
-                        # Key comes from the cookie
-                key = request.cookies[response.session_id_name].value
+                # Get session data out of the database
+                # Key comes from the cookie
+                key = cookies[response.session_id_name].value
                 (record_id, unique_key) = key.split(':')
                 if record_id == '0':
                     raise Exception, 'record_id == 0'
-                        # Select from database.
+                        # Select from database
                 rows = db(table.id == record_id).select()
-
-                        # Make sure the session data exists in the database
+                # Make sure the session data exists in the database
                 if len(rows) == 0 or rows[0].unique_key != unique_key:
                     raise Exception, 'No record'
-
-                 # rows[0].update_record(locked=True)
-
-
-                    # Unpickle the data
+                # rows[0].update_record(locked=True)
+                # Unpickle the data
                 session_data = cPickle.loads(rows[0].session_data)
                 self.update(session_data)
             except Exception:
@@ -583,8 +584,9 @@ class Session(Storage):
             response._dbtable_and_field = \
                 (response.session_id_name, table, record_id, unique_key)
             response.session_id = '%s:%s' % (record_id, unique_key)
-        response.cookies[response.session_id_name] = response.session_id
-        response.cookies[response.session_id_name]['path'] = '/'
+        rcookies = response.cookies
+        rcookies[response.session_id_name] = response.session_id
+        rcookies[response.session_id_name]['path'] = '/'
         self.__hash = hashlib.md5(str(self)).digest()
         if self.flash:
             (response.flash, self.flash) = (self.flash, None)

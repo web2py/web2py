@@ -7089,7 +7089,8 @@ def index():
         return self.__getattr__(str(key))
 
     def __getattr__(self, key):
-        if ogetattr(self,'_lazy_tables') and not key in ogetattr(self,'_LAZY_TABLES'):
+        if ogetattr(self,'_lazy_tables') and \
+                key in ogetattr(self,'_LAZY_TABLES'):
             tablename, fields, args = self._LAZY_TABLES.pop(key)
             return self.lazy_define_table(tablename,*fields,**args)
         return ogetattr(self, key)
