@@ -80,6 +80,7 @@
 
 ### Other Improvements 
 
+- gluon/contrib/webclient.py makes it easy to create functional tests for app
 - DIV(..).elements(...replace=...), thanks Anthony
 - new layout based on Twitter Bootstrap
 - New generic views: generic.ics (Mac Mail Calendar) and generic.map (Google Maps)
