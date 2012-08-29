@@ -7,13 +7,16 @@ web2py cookies and web2py forms. An example of usage is at the bottom.
 """
 
 import re
+import time
 import urllib
 import urllib2
+
 
 class WebClient(object):
     regex = re.compile('\<input name\="_formkey" type\="hidden" value\="(?P<formkey>.+?)" \/\>\<input name\="_formname" type\="hidden" value\="(?P<formname>.+?)" \/\>')
 
     def __init__(self,app=''):
+        self.history = []
         self.app = app
         self.cookies = {}
     
@@ -21,9 +24,10 @@ class WebClient(object):
         return self.post(url,data=None,cookies=cookies,headers=headers)
         
     def post(self,url,data=None,cookies=None,headers=None,auth=None):
-        if data and '_formname' in data:
-            self.get(url,cookies=None,headers=None,auth=None)
         self.url = self.app+url
+        if data and '_formname' in data and self.history and \
+                self.history[-1][1]!=self.url:        
+            self.get(url,cookies=None,headers=None,auth=None)
         if cookies is None: cookies = self.cookies
         if auth:
             auth_handler = urllib2.HTTPBasicAuthHandler()
@@ -42,6 +46,7 @@ class WebClient(object):
         for key,value in headers_list:
             opener.addheaders.append((key,str(value)))
         if data is not None:
+            self.method = 'POST'
             # if there is only one form, set _formname automatically
             if not '_formname' in data and len(self.forms)==1:
                 data['_formname'] = self.forms.keys()[0]
@@ -50,9 +55,14 @@ class WebClient(object):
                     data['_formname'] in self.forms:
                 data['_formkey'] = self.forms[data['_formname']]
             data = urllib.urlencode(data)
+            t0 = time.time()
             self.request = opener.open(self.url,data)
+            self.time = time.time()-t0
         else:
+            self.method = 'GET'
+            t0 = time.time()
             self.request = opener.open(self.url)
+            self.time = time.time()-t0
         self.status = self.request.getcode()
         self.text = self.request.read()        
         self.headers = dict(self.request.headers)
@@ -61,6 +71,7 @@ class WebClient(object):
         self.forms = {}
         for match in WebClient.regex.finditer(self.text):
             self.forms[match.group('formname')] = match.group('formkey')
+        self.history.append((self.method,self.url,self.status,self.time))
 
 def test_web2py_registration_and_login():
     session = WebClient('http://127.0.0.1:8000/welcome/default/')
@@ -87,6 +98,9 @@ def test_web2py_registration_and_login():
 
     # check we are always in the same session
     assert session_id_welcome == session.cookies['session_id_welcome']
+
+    for method, url, status, t in session.history:
+        print method, url, status, t
 
 if __name__ == '__main__':
     test_web2py_registration_and_login()
