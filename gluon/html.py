@@ -1686,14 +1686,14 @@ class INPUT(DIV):
         if name is None or name == '':
             return True
         name = str(name)
-
+        request_vars_get = self.request_vars.get
         if self['_type'] != 'checkbox':
             self['old_value'] = self['value'] or self['_value'] or ''
-            value = self.request_vars.get(name, '')
+            value = request_vars_get(name, '')
             self['value'] = value
         else:
             self['old_value'] = self['value'] or False
-            value = self.request_vars.get(name)
+            value = request_vars_get(name)
             if isinstance(value, (tuple, list)):
                 self['value'] = self['_value'] in value
             else:
@@ -1936,14 +1936,15 @@ class FORM(DIV):
         # check formname and formkey
 
         status = True
-        if self.session:
-            formkey = self.session.get('_formkey[%s]' % self.formname, None)
+        request_vars = self.request_vars
+        if session:
+            formkey = session.get('_formkey[%s]' % formname, None)
             # check if user tampering with form and void CSRF
-            if formkey != self.request_vars._formkey:
+            if formkey != request_vars._formkey:
                 status = False
-        if self.formname != self.request_vars._formname:
+        if formname != request_vars._formname:
             status = False
-        if status and self.session:
+        if status and session:
             # check if editing a record that has been modified by the server
             if hasattr(self,'record_hash') and self.record_hash != formkey:
                 status = False
