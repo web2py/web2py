@@ -367,12 +367,13 @@ class Response(Storage):
             (filename, stream) = field.retrieve(name)
         except IOError:
             raise HTTP(404)
+        headers = self.headers
         headers['Content-Type'] = contenttype(name)
         if attachment:
             headers['Content-Disposition'] = \
                 'attachment; filename=%s' % filename
-        return self.stream(stream, chunk_size = chunk_size, 
-                           request=request)
+        return self.stream(stream, chunk_size=chunk_size, request=request)
+                           
 
     def json(self, data, default=None):
         return json(data, default = default or custom_json)
