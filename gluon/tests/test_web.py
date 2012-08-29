@@ -15,9 +15,10 @@ from gluon.contrib.webclient import WebClient
 
 class TestWeb(unittest.TestCase):
     def testWebClient(self):
-        session = WebClient('http://127.0.0.1:8000/welcome/default/')
-        session.get('index')
-        session_id_welcome = session.cookies['session_id_welcome']
+        client = WebClient('http://127.0.0.1:8000/welcome/default/')
+
+        client.get('index')
+        session_id_welcome = client.cookies['session_id_welcome']
 
         data = dict(first_name = 'Homer',
                     last_name = 'Simpson',
@@ -25,20 +26,22 @@ class TestWeb(unittest.TestCase):
                     password = 'test',
                     password_two = 'test',
                     _formname = 'register')
-        session.post('user/register',data = data)
+        client.post('user/register',data = data)
 
         
         data = dict(email='homer@web2py.com',
                     password='test',
                     _formname = 'login')
-        session.post('user/login',data = data)
+        client.post('user/login',data = data)
         
-        session.get('index')
+        client.get('index')
+
         # check registration and login were successful
-        self.assertTrue('Welcome Homer' in session.text)   
+        self.assertTrue('Welcome Homer' in client.text)   
+
         # check we are always in the same session
         self.assertEqual(session_id_welcome,
-                         session.cookies['session_id_welcome'])
+                         client.cookies['session_id_welcome'])
 
 if __name__ == '__main__':
     unittest.main()

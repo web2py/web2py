@@ -83,9 +83,9 @@ class WebClient(object):
         self.history.append((self.method,self.url,self.status,self.time))
 
 def test_web2py_registration_and_login():
-    session = WebClient('http://127.0.0.1:8000/welcome/default/')
-    session.get('index')
-    session_id_welcome = session.cookies['session_id_welcome']
+    client = WebClient('http://127.0.0.1:8000/welcome/default/')
+    client.get('index')
+    session_id_welcome = client.cookies['session_id_welcome']
 
     data = dict(first_name = 'Homer',
                 last_name = 'Simpson',
@@ -93,22 +93,22 @@ def test_web2py_registration_and_login():
                 password = 'test',
                 password_two = 'test',
                 _formname = 'register')
-    session.post('user/register',data = data)
+    client.post('user/register',data = data)
 
     data = dict(email='homer@web2py.com',
                 password='test',
                 _formname = 'login')
-    session.post('user/login',data = data)
+    client.post('user/login',data = data)
     
-    session.get('index')
+    client.get('index')
 
     # check registration and login were successful
-    assert 'Welcome Homer' in session.text
+    assert 'Welcome Homer' in client.text
 
     # check we are always in the same session
-    assert session_id_welcome == session.cookies['session_id_welcome']
+    assert session_id_welcome == client.cookies['session_id_welcome']
 
-    for method, url, status, t in session.history:
+    for method, url, status, t in client.history:
         print method, url, status, t
 
 if __name__ == '__main__':
