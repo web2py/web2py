@@ -76,7 +76,8 @@ class HTTP(BaseException):
             self.headers['Set-Cookie'] = [
                 str(cookie)[11:] for cookie in cookies.values()]
 
-    def to(self, responder, env={}):
+    def to(self, responder, env=None):
+        env = env or {}
         status = self.status
         headers = self.headers
         if status in defined_status:
