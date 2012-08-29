@@ -88,16 +88,19 @@ class TicketStorage(Storage):
         ticket_id,
         ):
         if not self.db:
-            ef = self._error_file(request, ticket_id, 'rb', app)
+            try:
+                ef = self._error_file(request, ticket_id, 'rb', app)
+            except IOError:
+                return {}
             try:
                 return cPickle.load(ef)
             finally:
                 ef.close()
-        table = self._get_table(self.db, self.tablename, app)
-        rows = self.db(table.ticket_id == ticket_id).select()
-        if rows:
-            return cPickle.loads(rows[0].ticket_data)
-        return None
+        else:
+            table = self._get_table(self.db, self.tablename, app)
+            rows = self.db(table.ticket_id == ticket_id).select()
+            return cPickle.loads(rows[0].ticket_data) if rows else {}
+            
 
 
 class RestrictedError(Exception):
@@ -164,10 +167,10 @@ class RestrictedError(Exception):
         ticket_storage = TicketStorage(db=request.tickets_db)
         d = ticket_storage.load(request, app, ticket_id)
 
-        self.layer = d['layer']
-        self.code = d['code']
-        self.output = d['output']
-        self.traceback = d['traceback']
+        self.layer = d.get('layer')
+        self.code = d.get('code')
+        self.output = d.get('output')
+        self.traceback = d.get('traceback')
         self.snapshot = d.get('snapshot')
 
     def __str__(self):

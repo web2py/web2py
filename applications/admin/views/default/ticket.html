@@ -13,12 +13,16 @@
       <th>web2py&trade;</th>
       <td>{{=myversion}}</td>
     </tr>
+    {{if snapshot:}}
     <tr>
       <th>Python</th>
       <td>{{=snapshot.get('pyver','')}}</td>
     </tr>
+    {{pass}}
   </tbody>
 </table>
+
+{{if traceback or code or layer:}}
 <h3>{{=T('Traceback')}}</h3>
 <div class="inspect">
 {{=traceback}}
@@ -130,4 +134,6 @@
   <h3>In file: {{=layer}}</h3>
   {{=CODE(code.replace('\r',''),language='python',link='/examples/global/vars/')}}
 </div>
-
+{{else:}}
+<h3>{{=T('Ticket Missing')}}</h3>
+{{pass}}

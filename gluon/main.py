@@ -90,7 +90,7 @@ from dal import BaseAdapter
 from settings import global_settings
 from validators import CRYPT
 from cache import Cache
-from html import URL as Url, xmlescape
+from html import URL, xmlescape
 from utils import is_valid_ip_address
 from rewrite import load, url_in, thread as rwthread, try_rewrite_on_error
 import newcron
@@ -442,10 +442,10 @@ def wsgibase(environ, responder):
                 if not exists(request.folder):
                     if app == rwthread.routes.default_application \
                             and app != 'welcome':
-                        redirect(Url(app,'default','index'))
+                        redirect(URL('welcome','default','index'))
                     elif rwthread.routes.error_handler:
                         _handler = rwthread.routes.error_handler
-                        redirect(Url(_handler['application'],
+                        redirect(URL(_handler['application'],
                                      _handler['controller'],
                                      _handler['function'],
                                      args=app))
@@ -456,7 +456,7 @@ def wsgibase(environ, responder):
                 elif not request.is_local and \
                         exists(pjoin(request.folder,'DISABLED')):
                     raise HTTP(503, "<html><body><h1>Temporarily down for maintenance</h1></body></html>")
-                request.url = Url(r=request,
+                request.url = URL(r=request,
                                   args=request.args,
                                   extension=request.raw_extension)
 

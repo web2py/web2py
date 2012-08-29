@@ -107,6 +107,7 @@
 'These files are not served, they are only available from within your app': 'These files are not served, they are only available from within your app',
 'These files are served without processing, your images go here': 'These files are served without processing, your images go here',
 'Ticket ID': 'Ticket ID',
+'Ticket Missing': 'Ticket Missing',
 'To create a plugin, name a file/folder plugin_[name]': 'To create a plugin, name a file/folder plugin_[name]',
 'Traceback': 'Traceback',
 'Translation strings for the application': 'Translation strings for the application',
