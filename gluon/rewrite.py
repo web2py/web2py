@@ -994,6 +994,7 @@ class MapUrlIn(object):
             static_file = pjoin(self.request.env.applications_parent,
                                 'applications', self.application,
                                 'static', file)
+        self.extension = None
         log_rewrite("route: static=%s" % static_file)
         return static_file
 
@@ -1053,7 +1054,7 @@ class MapUrlIn(object):
         if self.map_hyphen:
             uri = uri.replace('_', '-')
             app = app.replace('_', '-')
-        if self.extension != 'html':
+        if self.extension and self.extension != 'html':
             uri += '.' + self.extension
         if self.language:
             uri = '/%s%s' % (self.language, uri)
@@ -1271,19 +1272,14 @@ def map_url_in(request, env, app=False):
     # handle mapping of lang/static to static/lang in externally-rewritten URLs
     # in case we have to handle them ourselves
     if map.languages and map.map_static is False and map.arg0 == 'static' and map.args(1) in map.languages:
-        if 'es' in map.languages:
-            print 'handle static/lang %s' % map.args(1)
         map.map_controller()
         map.map_language()
     else:
-        if 'es' in map.languages:
-            print 'NO handle static/lang %s' % map.args(1)
         map.map_language()
         map.map_controller()
     static_file = map.map_static()
-    if 'es' in map.languages:
-        print 'static_file=%s' % static_file
     if static_file:
+        map.update_request()
         return (static_file, map.env)
     map.map_function()
     map.validate_args()
