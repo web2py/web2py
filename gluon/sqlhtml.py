@@ -1656,7 +1656,7 @@ class SQLFORM(FORM):
         if user_signature:
             if (args != request.args and user_signature and \
                     not URL.verify(request,user_signature=user_signature)) or \
-                    (not session.auth.user and \
+                    (not (session.auth and session.auth.user) and \
                          ('edit' in request.args or \
                               'create' in request.args or \
                               'delete' in request.args)):
