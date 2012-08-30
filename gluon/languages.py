@@ -507,7 +507,7 @@ class translator(object):
         if int(n)==1:
             return word
         elif word:
-            id = min(int(n)-1,1) # self.get_plural_id(abs(int(n)))
+            id = self.get_plural_id(abs(int(n)))
             # id = 0 first plural form
             # id = 1 second plural form
             # etc.
