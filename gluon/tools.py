@@ -1612,12 +1612,12 @@ class Auth(object):
         checks = []
         # make a guess about who this user is
         for fieldname in ['registration_id','username','email']:
-            if fieldname in table_user.fields() and keys.get(fieldname,None):
+            if fieldname in table_user.fields() and \
+                    keys.get(fieldname,None):
                 checks.append(fieldname)
                 value = keys[fieldname]
-                user = user or table_user._db(
-                    (table_user.registration_id==value)|
-                    (table_user[fieldname]==value)).select().first()
+                user = table_user(**{fieldname:value})
+                if user: break
         if not checks:
             return None
         if not 'registration_id' in keys:
