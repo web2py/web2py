@@ -2190,12 +2190,14 @@ class SQLFORM(FORM):
                         LI(A(T(db[referee]._plural),
                              _class=trap_class(),
                              _href=url()),
-                           SPAN(divider,_class='divider'),_class='w2p_grid_breadcrumb_elem'))
+                           SPAN(divider,_class='divider'),
+                           _class='w2p_grid_breadcrumb_elem'))
                     if kwargs.get('details',True):
                         breadcrumbs.append(
                             LI(A(name,_class=trap_class(),
                                  _href=url(args=['view',referee,id])),
-                               SPAN(divider,_class='divider'),_class='w2p_grid_breadcrumb_elem'))
+                               SPAN(divider,_class='divider'),
+                               _class='w2p_grid_breadcrumb_elem'))
                     nargs+=2
                 else:
                     break
@@ -2221,16 +2223,18 @@ class SQLFORM(FORM):
                     del kwargs[key]
         check = {}
         id_field_name = table._id.name
-        for field in table._referenced_by:
-            if field.readable:
-                check[field.tablename] = check.get(field.tablename,[])+[field.name]
+        for rfield in table._referenced_by:
+            if rfield.readable:
+                check[rfield.tablename] = \
+                    check.get(rfield.tablename,[])+[rfield.name]
         for tablename in sorted(check):
             linked_fieldnames = check[tablename]
             tb = db[tablename]
             multiple_links = len(linked_fieldnames)>1
             for fieldname in linked_fieldnames:
                 if linked_tables is None or tablename in linked_tables:
-                    t = T(tb._plural) if not multiple_links else T(tb._plural+'('+fieldname+')')
+                    t = T(tb._plural) if not multiple_links else \
+                        T(tb._plural+'('+fieldname+')')
                     args0 = tablename+'.'+fieldname
                     links.append(
                         lambda row,t=t,nargs=nargs,args0=args0:\
