@@ -411,12 +411,14 @@ class TestMinMaxSum(unittest.TestCase):
         self.assertEqual(db.t.insert(a=3), 3)
         s = db.t.a.min()
         self.assertEqual(db(db.t.id > 0).select(s)[0]._extra[s], 1)
+        self.assertEqual(db(db.t.id > 0).select(s).first()[s], 1)
+        self.assertEqual(db().select(s).first()[s], 1)
         s = db.t.a.max()
-        self.assertEqual(db(db.t.id > 0).select(s)[0]._extra[s], 3)
+        self.assertEqual(db().select(s).first()[s], 3)
         s = db.t.a.sum()
-        self.assertEqual(db(db.t.id > 0).select(s)[0]._extra[s], 6)
+        self.assertEqual(db().select(s).first()[s], 6)
         s = db.t.a.count()
-        self.assertEqual(db(db.t.id > 0).select(s)[0]._extra[s], 3)
+        self.assertEqual(db().select(s).first()[s], 3)
         db.t.drop()
 
 
