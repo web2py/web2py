@@ -176,9 +176,9 @@ class TestTable(unittest.TestCase):
         self.assertRaises(SyntaxError, Table, None, 'test', None)
 
         persons = Table(None, 'persons',
-                        Field('firstname','string'), 
+                        Field('firstname','string'),
                         Field('lastname', 'string'))
-        
+
         # Does it have the correct fields?
 
         self.assert_(set(persons.fields).issuperset(set(['firstname',
@@ -519,7 +519,7 @@ class TestComputedFields(unittest.TestCase):
 
     def testRun(self):
         db = DAL('sqlite:memory:')
-        db.define_table('t', 
+        db.define_table('t',
                         Field('a'),
                         Field('b',default='x'),
                         Field('c',compute=lambda r: r.a+r.b))
@@ -547,7 +547,7 @@ class TestImportExportFields(unittest.TestCase):
         db(db.pet).delete()
         db(db.person).delete()
         stream = cStringIO.StringIO(stream.getvalue())
-        db.import_from_csv_file(stream)        
+        db.import_from_csv_file(stream)
         assert db(db.person.id==db.pet.friend)(db.person.name==db.pet.name).count()==10
         db.pet.drop()
         db.person.drop()
@@ -569,7 +569,7 @@ class TestImportExportUuidFields(unittest.TestCase):
         stream = cStringIO.StringIO()
         db.export_to_csv_file(stream)
         stream = cStringIO.StringIO(stream.getvalue())
-        db.import_from_csv_file(stream)        
+        db.import_from_csv_file(stream)
         assert db(db.person).count()==10
         assert db(db.person.id==db.pet.friend)(db.person.name==db.pet.name).count()==20
         db.pet.drop()
@@ -579,3 +579,4 @@ class TestImportExportUuidFields(unittest.TestCase):
 if __name__ == '__main__':
     unittest.main()
     tearDownModule()
+

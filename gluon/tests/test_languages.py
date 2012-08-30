@@ -32,7 +32,7 @@ try:
         return True
 
     class TestLanguagesParallel(unittest.TestCase):
-    
+
         def setUp(self):
             self.filename = tempfile.mktemp()
             contents = dict()
@@ -46,7 +46,7 @@ try:
                 os.remove(self.filename)
             except:
                 pass
-    
+
         def test_reads_and_writes(self):
             readwriters = 10
             pool = multiprocessing.Pool(processes = readwriters)
@@ -56,17 +56,17 @@ try:
 
 
     class TestTranslations(unittest.TestCase):
-    
-        def setUp(self):            
+
+        def setUp(self):
             self.request = Storage()
             self.request.folder = 'applications/welcome'
             self.request.env = Storage()
             self.request.env.http_accept_language = 'en'
-            
-            
+
+
         def tearDown(self):
             pass
-    
+
         def test_plain(self):
             T = languages.translator(self.request)
             self.assertEqual(str(T('Hello World')),
@@ -89,6 +89,7 @@ try:
 
 except ImportError:
     logging.warning("Skipped test case, no multiprocessing module.")
-        
+
 if __name__ == '__main__':
     unittest.main()
+

@@ -27,7 +27,7 @@ class TestBareHelpers(unittest.TestCase):
 
     def testHR(self):
         self.assertEqual(HR(_a='1', _b='2').xml(), '<hr a="1" b="2" />')
-        
+
     def testIMG(self):
         self.assertEqual(IMG(_a='1', _b='2').xml(),
                          '<img a="1" b="2" />')
@@ -209,3 +209,4 @@ class TestBareHelpers(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
