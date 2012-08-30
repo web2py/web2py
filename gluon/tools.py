@@ -1060,6 +1060,7 @@ class Auth(object):
         request = current.request
         session = current.session
         auth = session.auth
+        self.use_username = None # None means postpone detection
         self.user_groups = auth and auth.user_groups or {}
         if auth and auth.last_visit and auth.last_visit + \
                 datetime.timedelta(days=0, seconds=auth.expiration) > request.now:
@@ -1257,6 +1258,9 @@ class Auth(object):
             if not 'register' in self.settings.actions_disabled:
                 bar.insert(-1, s2)
                 bar.insert(-1, register)
+            if self.use_username is None:
+                # should always be false if auth.define_tables() is called
+                self.use_username = 'username' in self.table_user().fields
             if self.use_username and \
                     not 'retrieve_username' in self.settings.actions_disabled:
                 bar.insert(-1, s2)
