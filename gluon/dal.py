@@ -7935,6 +7935,7 @@ class Expression(object):
         self.op = op
         self.first = first
         self.second = second
+        self._table = getattr(first,'_table',None)
         ### self._tablename =  first._tablename ## CHECK
         if not type and first and hasattr(first,'type'):
             self.type = first.type
