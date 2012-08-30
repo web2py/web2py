@@ -14,7 +14,7 @@ else:
 from utils import md5_hash
 import contrib.fpdf as fpdf
 import contrib.pyfpdf as pyfpdf
-    
+
 
 class TestContribs(unittest.TestCase):
     """ Tests the contrib package """
@@ -28,14 +28,15 @@ class TestContribs(unittest.TestCase):
         pdf = fpdf.FPDF()
         pdf.add_page()
         pdf.compress = False
-        pdf.set_font('Arial', '',14)  
+        pdf.set_font('Arial', '',14)
         pdf.ln(10)
         pdf.write(5, 'hello world')
         pdf_out = pdf.output('', 'S')
-        
+
         self.assertTrue(fpdf.FPDF_VERSION in pdf_out, 'version string')
         self.assertTrue('hello world' in pdf_out, 'sample message')
 
 
 if __name__ == '__main__':
     unittest.main()
+

@@ -18,8 +18,8 @@ class TestWeb(unittest.TestCase):
         client = WebClient('http://127.0.0.1:8000/welcome/default/')
 
         client.get('index')
-        session_id_welcome = client.cookies['session_id_welcome']
 
+        # register
         data = dict(first_name = 'Homer',
                     last_name = 'Simpson',
                     email = 'homer@web2py.com',
@@ -28,20 +28,19 @@ class TestWeb(unittest.TestCase):
                     _formname = 'register')
         client.post('user/register',data = data)
 
-        
+        # logout
+        client.get('user/logout')
+
+        # login again
         data = dict(email='homer@web2py.com',
                     password='test',
                     _formname = 'login')
         client.post('user/login',data = data)
-        
-        client.get('index')
 
         # check registration and login were successful
-        self.assertTrue('Welcome Homer' in client.text)   
-
-        # check we are always in the same session
-        self.assertEqual(session_id_welcome,
-                         client.cookies['session_id_welcome'])
+        client.get('index')
+        self.assertTrue('Welcome Homer' in client.text)
 
 if __name__ == '__main__':
     unittest.main()
+
