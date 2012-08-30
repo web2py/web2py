@@ -29,7 +29,7 @@ update:
 	wget -O gluon/contrib/simplejsonrpc.py http://rad2py.googlecode.com/hg/ide2py/simplejsonrpc.py
 	echo "remember that pymysql was tweaked"
 src:
-	echo 'Version 2.00.1 ('`date +%Y-%m-%d\ %H:%M:%S`') rc4' > VERSION
+	echo 'Version 2.0.2 ('`date +%Y-%m-%d\ %H:%M:%S`') stable' > VERSION
 	### rm -f all junk files
 	make clean
 	### clean up baisc apps
