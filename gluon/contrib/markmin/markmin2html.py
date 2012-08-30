@@ -1230,9 +1230,9 @@ def render(text,
             if code[:1]=='\n': code=code[1:]
             if code[-1:]=='\n': code=code[:-1]
             if p:
-                return extra[b](code,p)
+                return str(extra[b](code,p))
             else:
-                return extra[b](code)
+                return str(extra[b](code))
         elif b=='cite':
             return '['+','.join('<a href="#%s" class="%s">%s</a>' \
                   % (d,b,d) \
