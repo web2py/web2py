@@ -140,8 +140,8 @@ def check_version():
         return SPAN('You should upgrade to version %s' % version_number)
     else:
         return sp_button(URL('upgrade_web2py'), T('upgrade now')) \
-          + XML(' <strong class="upgrade_version">%s</strong>' % version_number)
-
+            + XML(' <strong class="upgrade_version">%s.%s.%s</strong>' \
+                      % version_number[:3])
 
 def logout():
     """ Logout handler """
