@@ -262,7 +262,8 @@ class MetaScheduler(threading.Thread):
 
             start = time.time()
 
-            while p.is_alive() and (time.time()-start < task.timeout):
+            while p.is_alive() and (
+                not task.timeout or time.time()-start < task.timeout):
                 if tout:
                     try:
                         logging.debug(' partial output saved')

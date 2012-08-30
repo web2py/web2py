@@ -127,5 +127,5 @@ push:
 tag:
 	git tag -l '$(S)'
 	hg tag -l '$(S)'
-	make commit
+	make commit S='$(S)'
 	make push
