@@ -81,6 +81,10 @@ try:
                              '1 shop')
             self.assertEqual(str(T('%s %%{shop[0]}', 2)),
                              '2 shops')
+            self.assertEqual(str(T('%s %%{quark[0]}', 1)),
+                             '1 quark')
+            self.assertEqual(str(T('%s %%{quark[0]}', 2)),
+                             '2 quarks')
             self.assertEqual(str(T.M('**Hello World**')),
                              '<strong>Hello World</strong>')
             T.force('it')
