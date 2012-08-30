@@ -20,6 +20,7 @@ including:
 - SQLite & SpatiaLite
 - MySQL
 - Postgres
+- Firebird
 - Oracle
 - MS SQL
 - DB2
@@ -312,6 +313,12 @@ if not 'google' in drivers:
         drivers.append('Sybase')
     except ImportError:
         logger.debug('no Sybase driver')
+        
+    try:
+        import fdb
+        drivers.append('Firebird')
+    except ImportError:
+        logger.debug('no Firebird driver')    
 
     try:
         import kinterbasdb
@@ -3191,12 +3198,14 @@ class FireBirdAdapter(BaseAdapter):
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
         if 'driver_name' in adapter_args:
-            if adapter_args['driver_name'] == 'kinterbasdb':
-                self.driver = kinterbasdb
+            if adapter_args['driver_name'] == 'fdb':
+                self.driver = fdb
             elif adapter_args['driver_name'] == 'firebirdsql':
                 self.driver = firebirdsql
+            elif adapter_args['driver_name'] == 'kinterbasdb':
+                self.driver = kinterbasdb    
         else:
-            self.driver = kinterbasdb
+            self.driver = fdb
 
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
@@ -3257,13 +3266,15 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
                  adapter_args={}):
 
         if 'driver_name' in adapter_args:
-            if adapter_args['driver_name'] == 'kinterbasdb':
-                self.driver = kinterbasdb
+            if adapter_args['driver_name'] == 'fdb':
+                self.driver = fdb
             elif adapter_args['driver_name'] == 'firebirdsql':
                 self.driver = firebirdsql
+            elif adapter_args['driver_name'] == 'kinterbasdb':
+                self.driver = kinterbasdb    
         else:
-            self.driver = kinterbasdb
-
+            self.driver = fdb
+            
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
         self.db = db
@@ -3296,9 +3307,7 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
                            user=credential_decoder(user),
                            password=credential_decoder(password),
                            charset=charset)
-        #def connect(driver_args=driver_args):
-        #    return kinterbasdb.connect(**driver_args)
-
+        
         def connect(driver_args=driver_args):
             return self.driver.connect(**driver_args)
         self.pool_connection(connect)
