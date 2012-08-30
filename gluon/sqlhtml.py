@@ -1826,14 +1826,15 @@ class SQLFORM(FORM):
                     try:
                         dbset = dbset(SQLFORM.build_query(
                                 fields,request.vars.get('keywords','')))
-                        rows = dbset.select()
+                        rows = dbset.select(cacheable=True)
                     except Exception, e:
                         response.flash = T('Internal Error')
                         rows = []
                 else:
-                    rows = dbset.select()
+                    rows = dbset.select(cacheable=True)
             else:
-                rows = dbset.select(left=left,orderby=orderby,*columns)
+                rows = dbset.select(left=left,orderby=orderby,
+                                    cacheable=True*columns)
 
             if export_type in exportManager:
                 value = exportManager[export_type]
@@ -1892,7 +1893,8 @@ class SQLFORM(FORM):
         try:
             if left or groupby:
                 c = 'count(*)'
-                nrows = dbset.select(c,left=left,groupby=groupby).first()[c]
+                nrows = dbset.select(c,left=left,cacheable=True,
+                                     groupby=groupby).first()[c]
             else:
                 nrows = dbset.count()
         except:
@@ -1976,7 +1978,9 @@ class SQLFORM(FORM):
 
         try:
             table_fields = [f for f in fields if f._tablename in tablenames]
-            rows = dbset.select(left=left,orderby=orderby,groupby=groupby,limitby=limitby,*table_fields)
+            rows = dbset.select(left=left,orderby=orderby,
+                                groupby=groupby,limitby=limitby,
+                                cacheable=True,*table_fields)
         except SyntaxError:
             rows = None
             error = T("Query Not Supported")
