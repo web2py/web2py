@@ -18,7 +18,7 @@ import portalocker
 import logging
 import marshal
 import copy_reg
-from fileutils import abspath, listdir
+from fileutils import listdir
 import settings
 from cfs import getcfs
 from thread import allocate_lock
@@ -31,6 +31,8 @@ __all__ = ['translator', 'findT', 'update_all_languages']
 ospath = os.path
 ostat = os.stat
 osep = os.sep
+pjoin = os.path.join
+pdirname = os.path.dirname
 isdir = os.path.isdir
 is_gae = settings.global_settings.web2py_runtime_gae
 
@@ -244,7 +246,7 @@ def read_possible_plurals():
     create list of all possible plural rules files
     result is cached to increase speed
     """
-    pdir = abspath('gluon','contrib','rules')
+    pdir = pjoin(pdirname(__file__),'contrib','rules')
     plurals = {}
     # scan rules directory for plural_rules-*.py files:
     for pname in os.listdir(pdir):

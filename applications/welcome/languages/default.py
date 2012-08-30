@@ -4,6 +4,7 @@
 '!langname!': 'English (US)',
 '%s %%(shop)': '%s %%(shop)',
 '%s %%(shop[0])': '%s %%(shop[0])',
+'%s %%{quark[0]}': '%s %%{quark[0]}',
 '%s %%{shop[0]}': '%s %%{shop[0]}',
 '%s %%{shop}': '%s %%{shop}',
 '%Y-%m-%d': '%Y-%m-%d',
