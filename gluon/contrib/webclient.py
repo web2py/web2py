@@ -39,6 +39,7 @@ class WebClient(object):
                  session_regex = SESSION_REGEX):
         self.app = app
         self.postbacks = postbacks
+        self.forms = {}
         self.history = []
         self.cookies = {}
         self.default_headers = default_headers
