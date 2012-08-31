@@ -220,18 +220,25 @@ def read_possible_plurals():
     create list of all possible plural rules files
     result is cached to increase speed
     """
-    import gluon.contrib.plural_rules as package
-    plurals = {}
-    for importer, modname, ispkg in pkgutil.iter_modules(package.__path__):
-        if len(modname)==2:
-            module = __import__(package.__name__+'.'+modname)
-            lang = modname
-            pname = modname+'.py'
-            nplurals = getattr(module,'nplurals', DEFAULT_NPLURALS)
-            get_plural_id = getattr(module,'get_plural_id', DEFAULT_GET_PLURAL_ID)
-            construct_plural_form = getattr(module,'construct_plural_form',
-                                            DEFAULT_CONSTRUCTOR_PLURAL_FORM)
-            plurals[lang] = (lang, nplurals, get_plural_id, construct_plural_form, pname)
+    try:
+        import gluon.contrib.plural_rules as package
+        plurals = {}
+        for importer, modname, ispkg in pkgutil.iter_modules(package.__path__):
+            if len(modname)==2:
+                module = __import__(package.__name__+'.'+modname)
+                lang = modname
+                pname = modname+'.py'
+                nplurals = getattr(module,'nplurals', DEFAULT_NPLURALS)
+                get_plural_id = getattr(
+                    module,'get_plural_id', 
+                    DEFAULT_GET_PLURAL_ID)
+                construct_plural_form = getattr(
+                    module,'construct_plural_form',
+                    DEFAULT_CONSTRUCTOR_PLURAL_FORM)
+                plurals[lang] = (lang, nplurals, get_plural_id,
+                                 construct_plural_form, pname)
+    except ImportError:
+        logging.warn('Unable to import plural rules')
     plurals['default'] = ('default',
                           DEFAULT_NPLURALS,
                           DEFAULT_GET_PLURAL_ID,
