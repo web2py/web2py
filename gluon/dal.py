@@ -1800,7 +1800,7 @@ class BaseAdapter(ConnectionPool):
                 h,m = tz.split(':')
                 dt = datetime.timedelta(seconds=3600*int(h)+60*int(m))
             elif '-' in timezone:
-                ms,tz = value.split('-')
+                ms,tz = timezone.split('-')
                 h,m = tz.split(':')
                 dt = -datetime.timedelta(seconds=3600*int(h)+60*int(m))
             else:
