@@ -935,7 +935,8 @@ class BaseAdapter(ConnectionPool):
         logfile,
         fake_migrate=False,
         ):
-        table._db._migrated.append(table._tablename)
+        db = table._db
+        db._migrated.append(table._tablename)
         tablename = table._tablename
         def fix(item):
             k,v=item
@@ -946,6 +947,8 @@ class BaseAdapter(ConnectionPool):
         sql_fields = dict(map(fix,sql_fields.iteritems()))
         sql_fields_old = dict(map(fix,sql_fields_old.iteritems()))
         sql_fields_aux = dict(map(fix,sql_fields_aux.iteritems()))
+        if db._debug:
+            logging.debug('migrating %s to %s' % (sql_fields_old,sql_fields))
 
         keys = sql_fields.keys()
         for key in sql_fields_old:
@@ -1019,7 +1022,7 @@ class BaseAdapter(ConnectionPool):
             if query:
                 logfile.write('timestamp: %s\n'
                               % datetime.datetime.today().isoformat())
-                table._db['_lastsql'] = '\n'.join(query)
+                db['_lastsql'] = '\n'.join(query)
                 for sub_query in query:
                     logfile.write(sub_query + '\n')
                     if not fake_migrate:
@@ -1027,8 +1030,8 @@ class BaseAdapter(ConnectionPool):
                         # Caveat: mysql, oracle and firebird do not allow multiple alter table
                         # in one transaction so we must commit partial transactions and
                         # update table._dbt after alter table.
-                        if table._db._adapter.commit_on_alter_table:
-                            table._db.commit()
+                        if db._adapter.commit_on_alter_table:
+                            db.commit()
                             tfile = self.file_open(table._dbt, 'w')
                             cPickle.dump(sql_fields_current, tfile)
                             self.file_close(tfile)
@@ -1042,7 +1045,7 @@ class BaseAdapter(ConnectionPool):
 
         if metadata_change and \
                 not (query and self.dbengine in ('mysql','oracle','firebird')):
-            table._db.commit()
+            db.commit()
             tfile = self.file_open(table._dbt, 'w')
             cPickle.dump(sql_fields_current, tfile)
             self.file_close(tfile)
