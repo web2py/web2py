@@ -88,7 +88,7 @@ except:
     from simplejson import loads, dumps
 
 
-from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB
+from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB, IS_INT_IN_RANGE
 from gluon.utils import web2py_uuid
 
 
@@ -454,15 +454,20 @@ class Scheduler(MetaScheduler):
             Field('args','text',default='[]',requires=TYPE(list)),
             Field('vars','text',default='{}',requires=TYPE(dict)),
             Field('enabled','boolean',default=True),
-            Field('start_time','datetime',default=now),
+            Field('start_time','datetime',default=now, requires=IS_NOT_EMPTY()),
             Field('next_run_time','datetime',default=now),
             Field('stop_time','datetime'),
-            Field('repeats','integer',default=1,comment="0=unlimited"),
-            Field('retry_failed', 'integer', default=0, comment="-1=unlimited"),
-            Field('period','integer',default=60,comment='seconds'),
-            Field('timeout','integer',default=60,comment='seconds'),
+            Field('repeats','integer',default=1,comment="0=unlimited",
+                  requires=IS_INT_IN_RANGE(0, None)),
+            Field('retry_failed', 'integer', default=0, comment="-1=unlimited",
+                  requires=IS_INT_IN_RANGE(-1, None)),
+            Field('period','integer',default=60,comment='seconds',
+                  requires=IS_INT_IN_RANGE(0, None)),
+            Field('timeout','integer',default=60,comment='seconds',
+                  requires=IS_INT_IN_RANGE(0, None)),
             Field('sync_output', 'integer', default=0,
-                  comment="update output every n sec: 0=never"),
+                  comment="update output every n sec: 0=never",
+                  requires=IS_INT_IN_RANGE(0, None)),
             Field('times_run','integer',default=0,writable=False),
             Field('times_failed','integer',default=0,writable=False),
             Field('last_run_time','datetime',writable=False,readable=False),
@@ -870,4 +875,3 @@ def main():
 
 if __name__=='__main__':
     main()
-
