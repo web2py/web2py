@@ -249,13 +249,14 @@ def read_possible_plurals():
     pdir = pjoin(pdirname(__file__),'contrib','rules')
     plurals = {}
     # scan rules directory for plural_rules-*.py files:
-    for pname in os.listdir(pdir):
-        if not isdir(pname) and regex_plural_rules.match(pname):
-            lang = pname[13:-3]
-            fname = ospath.join(pdir, pname)
-            n, f1, f2, status = read_global_plural_rules(fname)
-            if status == 'ok':
-                plurals[lang] = (lang, n, f1, f2, pname)
+    if os.path.exists(pdir):
+        for pname in os.listdir(pdir):
+            if not isdir(pname) and regex_plural_rules.match(pname):
+                lang = pname[13:-3]
+                fname = ospath.join(pdir, pname)
+                n, f1, f2, status = read_global_plural_rules(fname)
+                if status == 'ok':
+                    plurals[lang] = (lang, n, f1, f2, pname)
     plurals['default'] = ('default',
                           DEFAULT_NPLURALS,
                           DEFAULT_GET_PLURAL_ID,
