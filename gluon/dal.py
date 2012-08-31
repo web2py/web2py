@@ -9420,8 +9420,3 @@ DAL.Table = Table  # was necessary in gluon/globals.py session.connect
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-
-
-
-
-
