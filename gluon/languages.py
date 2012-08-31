@@ -12,6 +12,7 @@ Plural subsystem is created by Vladyslav Kozlovskyy (Ukraine)
 
 import os
 import re
+import pkgutil
 from utf8 import Utf8
 from cgi import escape
 import portalocker
@@ -82,7 +83,6 @@ regex_backslash = re.compile(r"\\([\\{}%])")
 regex_plural = re.compile('%({.+?})')
 regex_plural_dict = re.compile('^{(?P<w>[^()[\]][^()[\]]*?)\((?P<n>[^()\[\]]+)\)}$')  # %%{word(varname or number)}
 regex_plural_tuple = re.compile('^{(?P<w>[^[\]()]+)(?:\[(?P<i>\d+)\])?}$') # %%{word[index]} or %%{word}
-regex_plural_rules = re.compile('^plural_rules-[a-zA-Z]{2}(-[a-zA-Z]{2})?\.py$')
 
 # UTF8 helper functions
 def upper_fun(s):
@@ -215,48 +215,23 @@ def read_possible_languages(appdir):
         langs['en'] = ('en', 'English', 0)
     return langs
 
-def read_global_plural_rules(filename):
-    """
-    retrieve plural rules from rules/*plural_rules-lang*.py file.
-
-    args:
-        filename (str): plural_rules filename
-
-    returns:
-        (nplurals, get_plural_id, construct_plural_form, status)
-        e.g.: (3, <function>, <function>, ok)
-    """
-    env = {}
-    data = portalocker.read_locked(filename)
-    try:
-        exec(data) in env
-        status='ok'
-    except Exception, e:
-        status='Syntax error in %s (%s)' % (filename, e)
-        logging.error(status)
-    nplurals = env.get('nplurals', DEFAULT_NPLURALS)
-    get_plural_id = env.get('get_plural_id', DEFAULT_GET_PLURAL_ID)
-    construct_plural_form = env.get('construct_plural_form',
-                                    DEFAULT_CONSTRUCTOR_PLURAL_FORM)
-    return (nplurals, get_plural_id, construct_plural_form, status)
-
-
 def read_possible_plurals():
     """
     create list of all possible plural rules files
     result is cached to increase speed
     """
-    pdir = pjoin(pdirname(__file__),'contrib','rules')
+    import gluon.contrib.plural_rules as package
     plurals = {}
-    # scan rules directory for plural_rules-*.py files:
-    if os.path.exists(pdir):
-        for pname in os.listdir(pdir):
-            if not isdir(pname) and regex_plural_rules.match(pname):
-                lang = pname[13:-3]
-                fname = ospath.join(pdir, pname)
-                n, f1, f2, status = read_global_plural_rules(fname)
-                if status == 'ok':
-                    plurals[lang] = (lang, n, f1, f2, pname)
+    for importer, modname, ispkg in pkgutil.iter_modules(package.__path__):
+        if len(modname)==2:
+            module = __import__(package.__name__+'.'+modname)
+            lang = modname
+            pname = modname+'.py'
+            nplurals = getattr(module,'nplurals', DEFAULT_NPLURALS)
+            get_plural_id = getattr(module,'get_plural_id', DEFAULT_GET_PLURAL_ID)
+            construct_plural_form = getattr(module,'construct_plural_form',
+                                            DEFAULT_CONSTRUCTOR_PLURAL_FORM)
+            plurals[lang] = (lang, nplurals, get_plural_id, construct_plural_form, pname)
     plurals['default'] = ('default',
                           DEFAULT_NPLURALS,
                           DEFAULT_GET_PLURAL_ID,
