@@ -943,7 +943,8 @@ class BaseAdapter(ConnectionPool):
             if not isinstance(v,dict):
                 v=dict(type='unkown',sql=v)
             return k.lower(),v
-        ### make sure all field names are lower case to avoid conflicts
+        # make sure all field names are lower case to avoid
+        # migrations because of case cahnge
         sql_fields = dict(map(fix,sql_fields.iteritems()))
         sql_fields_old = dict(map(fix,sql_fields_old.iteritems()))
         sql_fields_aux = dict(map(fix,sql_fields_aux.iteritems()))
@@ -993,10 +994,11 @@ class BaseAdapter(ConnectionPool):
                     query = ['ALTER TABLE %s DROP %s;' % (tablename, key)]
                 metadata_change = True
             elif sql_fields[key]['sql'] != sql_fields_old[key]['sql'] \
-                  and not isinstance(table[key].type, SQLCustomType) \
-                  and not table[key].type.startswith('reference')\
-                  and not table[key].type.startswith('double')\
-                  and not table[key].type.startswith('id'):
+                  and not (key in table.fields and 
+                           isinstance(table[key].type, SQLCustomType)) \
+                  and not sql_fields[key]['type'].startswith('reference')\
+                  and not sql_fields[key]['type'].startswith('double')\
+                  and not sql_fields[key]['type'].startswith('id'):
                 sql_fields_current[key] = sql_fields[key]
                 t = tablename
                 tt = sql_fields_aux[key]['sql'].replace(', ', new_add)
