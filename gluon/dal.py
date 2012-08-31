@@ -1793,21 +1793,18 @@ class BaseAdapter(ConnectionPool):
 
     def parse_datetime(self, value, field_type):
         if not isinstance(value, datetime.datetime):
-            try:
-                if '+' in value:
-                    value,tz = value.split('+')
-                    h,m = tz.split(':')
-                    dt = datetime.timedelta(seconds=3600*int(h)+60*int(m))
-                elif '-' in value:
-                    value,tz = value.split('-')
-                    h,m = tz.split(':')
-                    dt = -datetime.timedelta(seconds=3600*int(h)+60*int(m))
-                else:
-                    dt = None
-            except: # invalid timezone format (should never happen)
-                pass
-            date_part, time_part = (
-                str(value)[:19].replace('T',' ')+' ').split(' ',1)
+            value = str(value)
+            date_part,time_part,timezone = value[:10],value[11:19],value[19:]
+            if '+' in timezone:
+                ms,tz = timezone.split('+')
+                h,m = tz.split(':')
+                dt = datetime.timedelta(seconds=3600*int(h)+60*int(m))
+            elif '-' in timezone:
+                ms,tz = value.split('-')
+                h,m = tz.split(':')
+                dt = -datetime.timedelta(seconds=3600*int(h)+60*int(m))
+            else:
+                dt = None
             (y, m, d) = map(int,date_part.split('-'))
             time_parts = time_part and time_part.split(':')[:3] or (0,0,0)
             while len(time_parts)<3: time_parts.append(0)
