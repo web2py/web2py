@@ -1004,9 +1004,9 @@ def start(cron=True):
         print ProgramAuthor
         print ProgramVersion
 
-    from dal import drivers
+    from dal import DRIVERS
     if not options.nobanner:
-        print 'Database drivers available: %s' % ', '.join(drivers)
+        print 'Database drivers available: %s' % ', '.join(DRIVERS)
 
 
     # ## if -L load options from options.config file
