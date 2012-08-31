@@ -656,7 +656,7 @@ class BaseAdapter(ConnectionPool):
         drivers_available = [driver for driver in self.drivers
                              if driver in globals()]
         if uri:
-            items = uri.split('://')[0].split(':')
+            items = uri.split('://',1)[0].split(':')
             request_driver = items[1] if len(items)>1 else None
         else:
             request_driver = None
@@ -703,6 +703,7 @@ class BaseAdapter(ConnectionPool):
                      migrate=True,
                      fake_migrate=False,
                      polymodel=None):
+        db = table._db
         fields = []
         # PostGIS geo fields are added after the table has been created
         postcreation_fields = []
@@ -730,7 +731,7 @@ class BaseAdapter(ConnectionPool):
                 else:
                     if hasattr(table,'_primarykey'):
                         rtablename,rfieldname = referenced.split('.')
-                        rtable = table._db[rtablename]
+                        rtable = db[rtablename]
                         rfield = rtable[rfieldname]
                         # must be PK reference or unique
                         if rfieldname in hasattr(rtable,'_primarykey') or \
@@ -752,8 +753,12 @@ class BaseAdapter(ConnectionPool):
                                     on_delete_action=field.ondelete)
                     else:
                         # make a guess here for circular references
-                        id_fieldname = referenced in table._db \
-                            and table._db[referenced]._id.name or 'id'
+                        if referenced in db:
+                            id_fieldname = db[referenced]._id.name
+                        elif referenced == tablename:
+                            id_fieldname = table._id.name
+                        else: #make a guess
+                            id_fieldname = 'id'
                         ftype = types[field_type[:9]] % dict(
                             index_name = field_name+'__idx',
                             field_name = field_name,
@@ -840,7 +845,7 @@ class BaseAdapter(ConnectionPool):
         fields = ',\n    '.join(fields)
         for rtablename in TFK:
             rfields = TFK[rtablename]
-            pkeys = table._db[rtablename]._primarykey
+            pkeys = db[rtablename]._primarykey
             fkeys = [ rfields[k] for k in pkeys ]
             fields = fields + ',\n    ' + \
                 types['reference TFK'] % dict(
@@ -2023,7 +2028,7 @@ class SQLiteAdapter(BaseAdapter):
         if uri.startswith('sqlite:memory'):
             dbpath = ':memory:'
         else:
-            dbpath = uri.split('://')[1]
+            dbpath = uri.split('://',1)[1]
             if dbpath[0] != '/':
                 dbpath = pjoin(
                     self.folder.decode(path_encoding).encode('utf8'), dbpath)
@@ -2087,7 +2092,7 @@ class SpatiaLiteAdapter(SQLiteAdapter):
         if uri.startswith('spatialite:memory'):
             dbpath = ':memory:'
         else:
-            dbpath = uri.split('://')[1]
+            dbpath = uri.split('://',1)[1]
             if dbpath[0] != '/':
                 dbpath = pjoin(
                     self.folder.decode(path_encoding).encode('utf8'), dbpath)
@@ -2191,7 +2196,7 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
         if uri.startswith('sqlite:memory'):
             dbpath = ':memory:'
         else:
-            dbpath = uri.split('://')[1]
+            dbpath = uri.split('://',1)[1]
             if dbpath[0] != '/':
                 dbpath = pjoin(
                     self.folder.decode(path_encoding).encode('utf8'), dbpath)
@@ -2283,8 +2288,8 @@ class MySQLAdapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        uri = uri.split('://')[1]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^?]+)(\?set_encoding=(?P<charset>\w+))?$').match(uri)
+        ruri = uri.split('://',1)[1]
+        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^?]+)(\?set_encoding=(?P<charset>\w+))?$').match(ruri)
         if not m:
             raise SyntaxError, \
                 "Invalid URI string in DAL: %s" % self.uri
@@ -2408,8 +2413,8 @@ class PostgreSQLAdapter(BaseAdapter):
         self.db_codec = db_codec
         self.srid = srid
         self.find_or_make_work_folder()
-        uri = uri.split('://')[:2]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?sslmode=(?P<sslmode>.+))?$').match(uri)
+        ruri = uri.split('://',1)[1]
+        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?sslmode=(?P<sslmode>.+))?$').match(ruri)
         if not m:
             raise SyntaxError, "Invalid URI string in DAL"
         user = credential_decoder(m.group('user'))
@@ -2631,8 +2636,8 @@ class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        uri = uri.split('://')[1]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>.+)$').match(uri)
+        ruri = uri.split('://',1)[1]
+        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>.+)$').match(ruri)
         if not m:
             raise SyntaxError, "Invalid URI string in DAL"
         user = credential_decoder(m.group('user'))
@@ -2758,10 +2763,10 @@ class OracleAdapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        uri = uri.split('://')[1]
+        ruri = uri.split('://',1)[1]
         if not 'threaded' in driver_args:
             driver_args['threaded']=True
-        def connect(uri=uri,driver_args=driver_args):
+        def connect(uri=ruri,driver_args=driver_args):
             return self.driver.connect(uri,**driver_args)
         self.pool_connection(connect)
         self.after_connection()
@@ -2909,10 +2914,10 @@ class MSSQLAdapter(BaseAdapter):
         self.srid = srid
         self.find_or_make_work_folder()
         # ## read: http://bytes.com/groups/python/460325-cx_oracle-utf8
-        uri = uri.split('://')[1]
-        if '@' not in uri:
+        ruri = uri.split('://',1)[1]
+        if '@' not in ruri:
             try:
-                m = re.compile('^(?P<dsn>.+)$').match(uri)
+                m = re.compile('^(?P<dsn>.+)$').match(ruri)
                 if not m:
                     raise SyntaxError, \
                         'Parsing uri string(%s) has no result' % self.uri
@@ -2925,10 +2930,10 @@ class MSSQLAdapter(BaseAdapter):
             # was cnxn = 'DSN=%s' % dsn
             cnxn = dsn
         else:
-            m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?(?P<urlargs>.*))?$').match(uri)
+            m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?(?P<urlargs>.*))?$').match(ruri)
             if not m:
                 raise SyntaxError, \
-                    "Invalid URI string in DAL: %s" % uri
+                    "Invalid URI string in DAL: %s" % self.uri
             user = credential_decoder(m.group('user'))
             if not user:
                 raise SyntaxError, 'User required'
@@ -3105,10 +3110,10 @@ class SybaseAdapter(MSSQLAdapter):
         self.srid = srid
         self.find_or_make_work_folder()
         # ## read: http://bytes.com/groups/python/460325-cx_oracle-utf8
-        uri = uri.split('://')[1]
-        if '@' not in uri:
+        ruri = uri.split('://',1)[1]
+        if '@' not in ruri:
             try:
-                m = re.compile('^(?P<dsn>.+)$').match(uri)
+                m = re.compile('^(?P<dsn>.+)$').match(ruri)
                 if not m:
                     raise SyntaxError, \
                         'Parsing uri string(%s) has no result' % self.uri
@@ -3119,10 +3124,10 @@ class SybaseAdapter(MSSQLAdapter):
                 logger.error('NdGpatch error')
                 raise e
         else:
-            m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?(?P<urlargs>.*))?$').match(uri)
+            m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?(?P<urlargs>.*))?$').match(ruri)
             if not m:
                 raise SyntaxError, \
-                    "Invalid URI string in DAL: %s" % uri
+                    "Invalid URI string in DAL: %s" % self.uri
             user = credential_decoder(m.group('user'))
             if not user:
                 raise SyntaxError, 'User required'
@@ -3222,10 +3227,10 @@ class FireBirdAdapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        uri = uri.split('://')[1]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>.+?)(\?set_encoding=(?P<charset>\w+))?$').match(uri)
+        ruri = uri.split('://',1)[1]
+        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>.+?)(\?set_encoding=(?P<charset>\w+))?$').match(ruri)
         if not m:
-            raise SyntaxError, "Invalid URI string in DAL: %s" % uri
+            raise SyntaxError, "Invalid URI string in DAL: %s" % self.uri
         user = credential_decoder(m.group('user'))
         if not user:
             raise SyntaxError, 'User required'
@@ -3279,8 +3284,8 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        uri = uri.split('://')[1]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<path>[^\?]+)(\?set_encoding=(?P<charset>\w+))?$').match(uri)
+        ruri = uri.split('://',1)[1]
+        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<path>[^\?]+)(\?set_encoding=(?P<charset>\w+))?$').match(ruri)
         if not m:
             raise SyntaxError, \
                 "Invalid URI string in DAL: %s" % self.uri
@@ -3385,8 +3390,8 @@ class InformixAdapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        uri = uri.split('://')[1]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>.+)$').match(uri)
+        ruri = uri.split('://',1)[1]
+        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>.+)$').match(ruri)
         if not m:
             raise SyntaxError, \
                 "Invalid URI string in DAL: %s" % self.uri
@@ -3487,8 +3492,8 @@ class DB2Adapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        cnxn = uri.split('://', 1)[1]
-        def connect(cnxn=cnxn,driver_args=driver_args):
+        ruri = uri.split('://', 1)[1]
+        def connect(cnxn=ruri,driver_args=driver_args):
             return self.driver.connect(cnxn,**driver_args)
         self.pool_connection(connect)
         self.after_connection()
@@ -3550,8 +3555,8 @@ class TeradataAdapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        cnxn = uri.split('://', 1)[1]
-        def connect(cnxn=cnxn,driver_args=driver_args):
+        ruri = uri.split('://', 1)[1]
+        def connect(cnxn=ruri,driver_args=driver_args):
             return self.driver.connect(cnxn,**driver_args)
         self.pool_connection(connect)
         self.after_connection()
@@ -3764,8 +3769,8 @@ class SAPDBAdapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        uri = uri.split('://')[1]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?sslmode=(?P<sslmode>.+))?$').match(uri)
+        ruri = uri.split('://',1)[1]
+        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?sslmode=(?P<sslmode>.+))?$').match(ruri)
         if not m:
             raise SyntaxError, "Invalid URI string in DAL"
         user = credential_decoder(m.group('user'))
@@ -3805,8 +3810,8 @@ class CubridAdapter(MySQLAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        uri = uri.split('://')[1]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^?]+)(\?set_encoding=(?P<charset>\w+))?$').match(uri)
+        ruri = uri.split('://',1)[1]
+        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^?]+)(\?set_encoding=(?P<charset>\w+))?$').match(ruri)
         if not m:
             raise SyntaxError, \
                 "Invalid URI string in DAL: %s" % self.uri
@@ -3937,10 +3942,10 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
         self.db_codec = db_codec
         self.folder = folder or pjoin('$HOME',thread.folder.split(
                 os.sep+'applications'+os.sep,1)[1])
-        uri = uri.split("://")[1]
-        m = re.compile('^(?P<instance>.*)/(?P<db>.*)$').match(uri)
+        ruri = uri.split("://")[1]
+        m = re.compile('^(?P<instance>.*)/(?P<db>.*)$').match(ruri)
         if not m:
-            raise SyntaxError, "Invalid URI string in SQLDB: %s" % uri
+            raise SyntaxError, "Invalid URI string in SQLDB: %s" % self.uri
         instance = credential_decoder(m.group('instance'))
         self.dbstring = db = credential_decoder(m.group('db'))
         driver_args['instance'] = instance
