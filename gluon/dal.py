@@ -663,11 +663,13 @@ class BaseAdapter(ConnectionPool):
         request_driver = request_driver or adapter_args.get('driver')            
         if request_driver:
             if request_driver in drivers_available:
+                self.driver_name = request_driver
                 self.driver = globals().get(request_driver)
             else:
                 raise RuntimeError, "driver %s not available" % request_driver
         elif drivers_available:
-            self.driver = globals().get(drivers_available[0])
+            self.driver_name = drivers_available[0]
+            self.driver = globals().get(self.driver_name)
         else:
             raise RuntimeError, "no driver available %s", self.drivers
             
