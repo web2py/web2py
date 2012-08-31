@@ -9,10 +9,10 @@ if '__file__' in globals():
 elif hasattr(sys, 'frozen'):
     path = os.path.dirname(os.path.abspath(sys.executable)) # for py2exe
 else: #should never happen
-     path = os.getcwd()
+    path = os.getcwd()
 os.chdir(path)
 
-sys.path = [path]+[p for p in sys.path if not p==path]
+sys.path = [path]+[p for p in sys.path if not p == path]
 
 # import gluon.import_all ##### This should be uncommented for py2exe.py
 import gluon.widget
