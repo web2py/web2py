@@ -2205,7 +2205,7 @@ class MySQLAdapter(BaseAdapter):
         'list:string': 'LONGTEXT',
         'list:reference': 'LONGTEXT',
         'big-id': 'BIGINT AUTO_INCREMENT NOT NULL',
-        'big-reference': 'BIGINT, INDEX %(index_name`)s (%(field_name)s), FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'big-reference': 'BIGINT, INDEX %(index_name)s (%(field_name)s), FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         }
 
     def varquote(self,name):
