@@ -239,7 +239,7 @@ regex_select_as_parser = re.compile("\s+AS\s+(\S+)")
 
 # list of drivers will be built on the fly
 # and lists only what is available
-drivers = []
+DRIVERS = []
 
 try:
     from new import classobj
@@ -247,22 +247,23 @@ try:
     from google.appengine.api import namespace_manager, rdbms
     from google.appengine.api.datastore_types import Key  ### for belongs on ID
     from google.appengine.ext.db.polymodel import PolyModel
-    drivers.append('google')
+    DRIVERS.append('google')
 except ImportError:
     pass
 
-if not 'google' in drivers:
+if not 'google' in DRIVERS:
 
     try:
-        # first try pysqlite2 else try sqlite3
-        try:
-            from pysqlite2 import dbapi2 as sqlite3
-            drivers.append('pysqlite2')
-        except ImportError:
-            from sqlite3 import dbapi2 as sqlite3
-            drivers.append('SQLite3')
+        from pysqlite2 import dbapi2 as sqlite2
+        DRIVERS.append('SQLite(sqlite2)')
     except ImportError:
-        logger.debug('no sqlite3 or pysqlite2.dbapi2 driver')
+        logger.debug('no SQLite drivers pysqlite2.dbapi2')
+
+    try:
+        from sqlite3 import dbapi2 as sqlite3
+        DRIVERS.append('SQLite(sqlite3)')
+    except ImportError:
+        logger.debug('no SQLite drivers sqlite3')
 
     try:
         # first try contrib driver, then from site-packages (if installed)
@@ -275,16 +276,23 @@ if not 'google' in drivers:
             # end monkeypatch
         except ImportError:
             import pymysql
-        drivers.append('pymysql')
+        DRIVERS.append('MySQL(pymysql)')
     except ImportError:
-        logger.debug('no pymysql driver')
+        logger.debug('no MySQL driver pymysql')
+
+    try:
+        import MySQLdb
+        DRIVERS.append('MySQL(MySQLdb)')
+    except ImportError:
+        logger.debug('no MySQL driver MySQLDB')
+
 
     try:
         import psycopg2
         from psycopg2.extensions import adapt as psycopg2_adapt
-        drivers.append('psycopg2')
+        DRIVERS.append('PostgreSQL(psycopg2)')
     except ImportError:
-        logger.debug('no psycopg2 driver')
+        logger.debug('no PostgreSQL driver psycopg2')
 
     try:
         # first try contrib driver, then from site-packages (if installed)
@@ -292,103 +300,108 @@ if not 'google' in drivers:
             import contrib.pg8000.dbapi as pg8000
         except ImportError:
             import pg8000.dbapi as pg8000
-        drivers.append('pg8000')
+        DRIVERS.append('PostgreSQL(pg8000)')
     except ImportError:
-        logger.debug('no pg8000 driver')
+        logger.debug('no PostgreSQL driver pg8000')
 
     try:
         import cx_Oracle
-        drivers.append('Oracle')
+        DRIVERS.append('Oracle(cx_Oracle)')
     except ImportError:
-        logger.debug('no cx_Oracle driver')
+        logger.debug('no Oracle driver cx_Oracle')
 
     try:
         import pyodbc
-        drivers.append('MSSQL/DB2/Teradata')
+        DRIVERS.append('MSSQL(pyodbc)')
+        DRIVERS.append('DB2(pyodbc)')
+        DRIVERS.append('Teradata(pyodbc)')
     except ImportError:
-        logger.debug('no MSSQL/DB2/Teradata driver')
+        logger.debug('no MSSQL/DB2/Teradata driver pyodbc')
 
     try:
         import Sybase
-        drivers.append('Sybase')
+        DRIVERS.append('Sybase(Sybase)')
     except ImportError:
         logger.debug('no Sybase driver')
         
     try:
-        import fdb
-        drivers.append('Firebird')
+        import kinterbasdb
+        DRIVERS.append('Interbase(kinterbasdb)')
+        DRIVERS.append('Firebird(kinterbasdb)')
     except ImportError:
-        logger.debug('no Firebird driver')    
+        logger.debug('no Firebird/Interbase driver kinterbasdb')
 
     try:
-        import kinterbasdb
-        drivers.append('Interbase')
+        import fdb
+        DRIVERS.append('Firbird(fdb)')
     except ImportError:
-        logger.debug('no kinterbasdb driver')
-
+        logger.debug('no Firebird driver fdb')    
+#####
     try:
         import firebirdsql
-        drivers.append('Firebird')
+        DRIVERS.append('Firebird(firebirdsql)')
     except ImportError:
-        logger.debug('no Firebird driver')
+        logger.debug('no Firebird driver firebirdsql')
 
     try:
         import informixdb
-        drivers.append('Informix')
+        DRIVERS.append('Informix(informixdb)')
         logger.warning('Informix support is experimental')
     except ImportError:
-        logger.debug('no informixdb driver')
+        logger.debug('no Informix driver informixdb')
 
     try:
         import sapdb
-        drivers.append('SAPDB')
+        DRIVERS.append('SQL(sapdb)')
         logger.warning('SAPDB support is experimental')
     except ImportError:
-        logger.debug('no sapdb driver')
+        logger.debug('no SAP driver sapdb')
 
     try:
         import cubriddb
-        drivers.append('Cubrid')
+        DRIVERS.append('Cubrid(cubriddb)')
         logger.warning('Cubrid support is experimental')
     except ImportError:
-        logger.debug('no cubriddb driver')
+        logger.debug('no Cubrid driver cubriddb')
 
     try:
         from com.ziclix.python.sql import zxJDBC
         import java.sql
         # Try sqlite jdbc driver from http://www.zentus.com/sqlitejdbc/
         from org.sqlite import JDBC # required by java.sql; ensure we have it
-        drivers.append('zxJDBC')
+        zxJDBC_sqlite = java.sql.DriverManager
+        DRIVERS.append('PostgreSQL(zxJDBC)')
+        DRIVERS.append('SQLite(zxJDBC)')
         logger.warning('zxJDBC support is experimental')
         is_jdbc = True
     except ImportError:
-        logger.debug('no zxJDBC driver')
+        logger.debug('no SQLite/PostgreSQL driver zxJDBC')
         is_jdbc = False
 
     try:
         import ingresdbi
-        drivers.append('Ingres')
+        DRIVERS.append('Ingres(ingresdbi)')
     except ImportError:
-        logger.debug('no Ingres driver')
+        logger.debug('no Ingres driver ingresdbi')
     # NOTE could try JDBC.......
 
     try:
         import couchdb
-        drivers.append('CouchDB')
+        DRIVERS.append('CouchDB(couchdb)')
     except ImportError:
-        logger.debug('no couchdb driver')
+        logger.debug('no Couchdb driver couchdb')
 
     try:
         import pymongo
-        drivers.append('mongoDB')
+        DRIVERS.append('MongoDB(pymongo)')
     except:
-        logger.debug('no mongoDB driver')
+        logger.debug('no MongoDB driver pymongo')
 
     try:
         import imaplib
-        drivers.append('IMAP')
+        DRIVERS.append('IMAP(imaplib)')
     except:
-        logger.debug('could not import imaplib')
+        logger.debug('no IMAP driver imaplib')
 
 PLURALIZE_RULES = [
     (re.compile('child$'), re.compile('child$'), 'children'),
@@ -423,7 +436,7 @@ def IDENTITY(x): return x
 def varquote_aux(name,quotestr='%s'):
     return name if regex_safe.match(name) else quotestr % name
 
-if 'google' in drivers:
+if 'google' in DRIVERS:
 
     is_jdbc = False
 
@@ -636,6 +649,28 @@ class BaseAdapter(ConnectionPool):
 
     def file_delete(self, filename):
         os.unlink(filename)
+
+    def find_driver(self,adapter_args,uri=None):
+        if hasattr(self,'driver') and self.driver!=None:
+            return 
+        drivers_available = [driver for driver in self.drivers
+                             if driver in globals()]
+        if uri:
+            items = uri.split('://')[0].split(':')
+            request_driver = items[1] if len(items)>1 else None
+        else:
+            request_driver = None
+        request_driver = request_driver or adapter_args.get('driver')            
+        if request_driver:
+            if request_driver in drivers_available:
+                self.driver = globals().get(request_driver)
+            else:
+                raise RuntimeError, "driver %s not available" % request_driver
+        elif drivers_available:
+            self.driver = globals().get(drivers_available[0])
+        else:
+            raise RuntimeError, "no driver available %s", self.drivers
+            
 
     def __init__(self, db,uri,pool_size=0, folder=None, db_codec='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
@@ -1943,8 +1978,8 @@ class BaseAdapter(ConnectionPool):
 ###################################################################################
 
 class SQLiteAdapter(BaseAdapter):
+    drivers = ('sqlite3','sqlite2')
 
-    driver = globals().get('sqlite3', None)
     can_select_for_update = None    # support ourselves with BEGIN TRANSACTION
 
     def EXTRACT(self,field,what):
@@ -1973,11 +2008,10 @@ class SQLiteAdapter(BaseAdapter):
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "sqlite"
         self.uri = uri
+        self.find_driver(adapter_args)
         self.pool_size = 0
         self.folder = folder
         self.db_codec = db_codec
@@ -2029,19 +2063,18 @@ class SQLiteAdapter(BaseAdapter):
         return super(SQLiteAdapter, self).select(query, fields, attributes)
 
 class SpatiaLiteAdapter(SQLiteAdapter):
+    drivers = ('sqlite3','sqlite2')
 
-    import copy
     types = copy.copy(BaseAdapter.types)
     types.update(geometry='GEOMETRY')
 
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}, srid=4326):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "spatialite"
         self.uri = uri
+        self.find_driver(adapter_args)
         self.pool_size = 0
         self.folder = folder
         self.db_codec = db_codec
@@ -2138,17 +2171,15 @@ class SpatiaLiteAdapter(SQLiteAdapter):
 
 
 class JDBCSQLiteAdapter(SQLiteAdapter):
-
-    driver = globals().get('zxJDBC', None)
+    drivers = ('zxJDBC_sqlite',)
 
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "sqlite"
         self.uri = uri
+        self.find_driver(adapter_args)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -2164,7 +2195,7 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
                     self.folder.decode(path_encoding).encode('utf8'), dbpath)
         def connect(dbpath=dbpath,driver_args=driver_args):
             return self.driver.connect(
-                java.sql.DriverManager.getConnection('jdbc:sqlite:'+dbpath),
+                self.driver.getConnection('jdbc:sqlite:'+dbpath),
                 **driver_args)
         self.pool_connection(connect)
         self.after_connection()
@@ -2179,8 +2210,8 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
 
 
 class MySQLAdapter(BaseAdapter):
+    drivers = ('MySQLdb','pymysql')
 
-    driver = globals().get('pymysql',None)
     maxcharlength = 255
     commit_on_alter_table = True
     support_distributed_transaction = True
@@ -2242,11 +2273,10 @@ class MySQLAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "mysql"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -2276,6 +2306,8 @@ class MySQLAdapter(BaseAdapter):
                            host=host,
                            port=port,
                            charset=charset)
+
+
         def connect(driver_args=driver_args):
             return self.driver.connect(**driver_args)
         self.pool_connection(connect)
@@ -2290,10 +2322,7 @@ class MySQLAdapter(BaseAdapter):
         return int(self.cursor.fetchone()[0])
 
 class PostgreSQLAdapter(BaseAdapter):
-
-    driver = None
-    drivers = {'psycopg2': globals().get('psycopg2', None),
-               'pg8000': globals().get('pg8000', None), }
+    drivers = ('psycopg2','pg8000')
 
     support_distributed_transaction = True
     types = {
@@ -2326,9 +2355,12 @@ class PostgreSQLAdapter(BaseAdapter):
         return varquote_aux(name,'"%s"')
 
     def adapt(self,obj):
-        #if self.driver == self.drivers.get('pg8000'):
-        #    obj = str(obj).replace('%','%%')
-        return psycopg2_adapt(obj).getquoted()
+        if self.driver_name == 'psycopg2':
+            return psycopg2_adapt(obj).getquoted()
+        elif self.driver_name == 'pg8000':
+            return str(obj).replace("%","%%").replace("'","''")
+        else:
+            return str(obj).replace("'","''")
 
     def sequence_name(self,table):
         return '%s_id_Seq' % table
@@ -2365,17 +2397,15 @@ class PostgreSQLAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}, srid=4326):
-        if not self.drivers.get('psycopg2') and not self.drivers.get('pg8000'):
-            raise RuntimeError, "Unable to import any drivers (psycopg2 or pg8000)"
         self.db = db
         self.dbengine = "postgres"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
         self.srid = srid
         self.find_or_make_work_folder()
-        library, uri = uri.split('://')[:2]
         m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?sslmode=(?P<sslmode>.+))?$').match(uri)
         if not m:
             raise SyntaxError, "Invalid URI string in DAL"
@@ -2402,20 +2432,6 @@ class PostgreSQLAdapter(BaseAdapter):
                    "port=%s password='%s'") \
                    % (db, user, host, port, password)
         # choose diver according uri
-        if library == "postgres":
-            if 'psycopg2' in self.drivers:
-                self.driver = self.drivers['psycopg2']
-            elif 'pg8000' in self.drivers:
-                self.driver = self.drivers['pg8000']
-            else:
-                raise RuntimeError, "No pgsql driver"
-        elif library == "postgres:psycopg2":
-            self.driver = self.drivers.get('psycopg2')
-        elif library == "postgres:pg8000":
-            self.driver = self.drivers.get('pg8000')
-        if not self.driver:
-            raise RuntimeError, "%s is not available" % library
-
         self.__version__ = "%s %s" % (self.driver.__name__, self.driver.__version__)
         def connect(msg=msg,driver_args=driver_args):
             return self.driver.connect(msg,**driver_args)
@@ -2546,6 +2562,8 @@ class PostgreSQLAdapter(BaseAdapter):
         return BaseAdapter.represent(self, obj, fieldtype)
 
 class NewPostgreSQLAdapter(PostgreSQLAdapter):
+    drivers = ('psycopg2','pg8000')
+
     types = {
         'boolean': 'CHAR(1)',
         'string': 'VARCHAR(%(length)s)',
@@ -2597,15 +2615,15 @@ class NewPostgreSQLAdapter(PostgreSQLAdapter):
 
 
 class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
+    drivers = ('zxJDBC',)
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "postgres"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -2640,6 +2658,7 @@ class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
 
 
 class OracleAdapter(BaseAdapter):
+    drivers = ('cx_Oracle',)
 
     driver = globals().get('cx_Oracle',None)
 
@@ -2728,11 +2747,10 @@ class OracleAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "oracle"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -2799,14 +2817,13 @@ class OracleAdapter(BaseAdapter):
         if blob_decode and isinstance(value, cx_Oracle.LOB):
             try:
                 value = value.read()
-            except cx_Oracle.ProgrammingError:
+            except self.driver.ProgrammingError:
                 # After a subsequent fetch the LOB value is not valid anymore
                 pass
         return BaseAdapter.parse_value(self, value, field_type, blob_decode)
 
 class MSSQLAdapter(BaseAdapter):
-
-    driver = globals().get('pyodbc',None)
+    drivers = ('pyodbc',)
 
     types = {
         'boolean': 'BIT',
@@ -2879,11 +2896,10 @@ class MSSQLAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                     adapter_args={}, fake_connect=False, srid=4326):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "mssql"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3004,6 +3020,8 @@ class MSSQLAdapter(BaseAdapter):
 
 
 class MSSQL2Adapter(MSSQLAdapter):
+    drivers = ('pyodbc',)
+
     types = {
         'boolean': 'CHAR(1)',
         'string': 'NVARCHAR(%(length)s)',
@@ -3040,8 +3058,7 @@ class MSSQL2Adapter(MSSQLAdapter):
         return self.log_execute(a.decode('utf8'))
 
 class SybaseAdapter(MSSQLAdapter):
-
-    driver = globals().get('Sybase',None)
+    drivers = ('Sybase',)
 
     types = {
         'boolean': 'BIT',
@@ -3075,12 +3092,10 @@ class SybaseAdapter(MSSQLAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                     adapter_args={}, fake_connect=False, srid=4326):
-        ### Fix this for sybase
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "sybase"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3136,8 +3151,7 @@ class SybaseAdapter(MSSQLAdapter):
 
 
 class FireBirdAdapter(BaseAdapter):
-
-    driver = globals().get('pyodbc',None)
+    drivers = ('kinterbasdb','firebirdsql','fdb','pyodbc')
 
     commit_on_alter_table = False
     support_distributed_transaction = True
@@ -3196,26 +3210,11 @@ class FireBirdAdapter(BaseAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}):        
-        if 'driver_name' in adapter_args:
-            if adapter_args['driver_name'] == 'fdb':
-                self.driver = fdb
-            elif adapter_args['driver_name'] == 'firebirdsql':
-                self.driver = firebirdsql
-            elif adapter_args['driver_name'] == 'kinterbasdb':
-                self.driver = kinterbasdb    
-        elif 'fdb' in globals():
-            self.driver = fdb
-        elif 'kinterbasdb' in globals():
-            self.driver = kinterbasdb
-        else:
-            raise RuntimeError, "no fdb and no kinterbasdb driver found"
-
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
+                 adapter_args={}): 
         self.db = db
         self.dbengine = "firebird"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3264,26 +3263,15 @@ class FireBirdAdapter(BaseAdapter):
 
 
 class FireBirdEmbeddedAdapter(FireBirdAdapter):
+    drivers = ('kinterbasdb','firebirdsql','fdb','pyodbc')
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-
-        if 'driver_name' in adapter_args:
-            if adapter_args['driver_name'] == 'fdb':
-                self.driver = fdb
-            elif adapter_args['driver_name'] == 'firebirdsql':
-                self.driver = firebirdsql
-            elif adapter_args['driver_name'] == 'kinterbasdb':
-                self.driver = kinterbasdb    
-        else:
-            self.driver = fdb
-            
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "firebird"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3319,8 +3307,7 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
 
 
 class InformixAdapter(BaseAdapter):
-
-    driver = globals().get('informixdb',None)
+    drivers = ('informixdb',)
 
     types = {
         'boolean': 'CHAR(1)',
@@ -3387,11 +3374,10 @@ class InformixAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "informix"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3435,8 +3421,7 @@ class InformixAdapter(BaseAdapter):
 
 
 class DB2Adapter(BaseAdapter):
-
-    driver = globals().get('pyodbc',None)
+    drivers = ('pyodbc',)
 
     types = {
         'boolean': 'CHAR(1)',
@@ -3491,11 +3476,10 @@ class DB2Adapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "db2"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3522,8 +3506,7 @@ class DB2Adapter(BaseAdapter):
 
 
 class TeradataAdapter(BaseAdapter):
-
-    driver = globals().get('pyodbc',None)
+    drivers = ('pyodbc',)
 
     types = {
         'boolean': 'CHAR(1)',
@@ -3556,11 +3539,10 @@ class TeradataAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "teradata"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3590,8 +3572,7 @@ INGRES_SEQNAME='ii***lineitemsequence' # NOTE invalid database object name
                                        # to be a delimited identifier)
 
 class IngresAdapter(BaseAdapter):
-
-    driver = globals().get('ingresdbi',None)
+    drivers = ('ingredbi',)
 
     types = {
         'boolean': 'CHAR(1)',
@@ -3639,11 +3620,10 @@ class IngresAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "ingres"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3693,6 +3673,9 @@ class IngresAdapter(BaseAdapter):
 
 
 class IngresUnicodeAdapter(IngresAdapter):
+
+    drivers = ('ingresdbi',)
+
     types = {
         'boolean': 'CHAR(1)',
         'string': 'NVARCHAR(%(length)s)',
@@ -3720,8 +3703,8 @@ class IngresUnicodeAdapter(IngresAdapter):
         }
 
 class SAPDBAdapter(BaseAdapter):
+    drivers = ('sapdb',)
 
-    driver = globals().get('sapdb',None)
     support_distributed_transaction = False
     types = {
         'boolean': 'CHAR(1)',
@@ -3770,11 +3753,10 @@ class SAPDBAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "sapdb"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3807,17 +3789,15 @@ class SAPDBAdapter(BaseAdapter):
         return int(self.cursor.fetchone()[0])
 
 class CubridAdapter(MySQLAdapter):
-
-    driver = globals().get('cubriddb', None)
+    drivers = ('cubriddb',)
 
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "cubrid"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -4546,6 +4526,8 @@ def int2uuid(n):
     return str(uuid.UUID(int=n))
 
 class CouchDBAdapter(NoSQLAdapter):
+    drivers = ('couchdb',)
+
     uploads_in_blob = True
     types = {
                 'boolean': bool,
@@ -4612,6 +4594,7 @@ class CouchDBAdapter(NoSQLAdapter):
                  adapter_args={}):
         self.db = db
         self.uri = uri
+        self.find_driver(adapter_args)
         self.dbengine = 'couchdb'
         self.folder = folder
         db['_lastsql'] = ''
@@ -4620,7 +4603,7 @@ class CouchDBAdapter(NoSQLAdapter):
 
         url='http://'+uri[10:]
         def connect(url=url,driver_args=driver_args):
-            return couchdb.Server(url,**driver_args)
+            return self.driver.Server(url,**driver_args)
         self.pool_connection(connect,cursor=False)
         self.after_connection()
 
@@ -4747,6 +4730,8 @@ def cleanup(text):
     return text
 
 class MongoDBAdapter(NoSQLAdapter):
+    drivers = ('pymongo',)
+
     uploads_in_blob = True
 
     types = {
@@ -4774,6 +4759,10 @@ class MongoDBAdapter(NoSQLAdapter):
                  pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
+        self.db = db
+        self.uri = uri
+        self.find_driver(adapter_args)
+
         m=None
         try:
             #Since version 2
@@ -4788,8 +4777,6 @@ class MongoDBAdapter(NoSQLAdapter):
                 raise ImportError("Uriparser for mongodb is not available")
         except:
             raise SyntaxError("This type of uri is not supported by the mongodb uri parser")
-        self.db = db
-        self.uri = uri
         self.dbengine = 'mongodb'
         self.folder = folder
         db['_lastsql'] = ''
@@ -4808,8 +4795,8 @@ class MongoDBAdapter(NoSQLAdapter):
             raise SyntaxError("Database is required!")
         def connect(uri=self.uri,m=m):
             try:
-                return pymongo.Connection(uri)[m.get('database')]
-            except pymongo.errors.ConnectionFailure, inst:
+                return self.driver.Connection(uri)[m.get('database')]
+            except self.driver.errors.ConnectionFailure, inst:
                 raise SyntaxError, "The connection to " + uri + " could not be made"
             except Exception, inst:
                 if inst == "cannot specify database without a username and password":
@@ -5346,6 +5333,8 @@ class MongoDBAdapter(NoSQLAdapter):
 
 
 class IMAPAdapter(NoSQLAdapter):
+    drivers = ('imaplib',)
+
     """ IMAP server adapter
 
       This class is intended as an interface with
@@ -5490,6 +5479,7 @@ class IMAPAdapter(NoSQLAdapter):
         uri = uri.split("://")[1]
         self.db = db
         self.uri = uri
+        self.find_driver(adapter_args)
         self.pool_size=pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -7560,7 +7550,7 @@ class Table(object):
             if rows:
                 return rows[0]
             return None
-        elif str(key).isdigit() or 'google' in drivers and isinstance(key, Key):
+        elif str(key).isdigit() or 'google' in DRIVERS and isinstance(key, Key):
             return self._db(self._id == key).select(limitby=(0,1)).first()
         elif key:
             return ogetattr(self, str(key))
