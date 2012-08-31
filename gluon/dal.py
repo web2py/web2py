@@ -8946,18 +8946,24 @@ class Rows(object):
             return None
         return self[-1]
 
-    def find(self,f):
+    def find(self,f,limitby=None):
         """
         returns a new Rows object, a subset of the original object,
         filtered by the function f
         """
-        if not self.records:
+        if not self:
             return Rows(self.db, [], self.colnames)
         records = []
-        for i in range(0,len(self)):
-            row = self[i]
+        if limitby:
+            a,b = limitby
+        else:
+            a,b = 0,len(self)
+        k = 0
+        for row in self:
             if f(row):
-                records.append(self.records[i])
+                if a<=k: records.append(row)
+                k += 1
+                if k==b: break
         return Rows(self.db, records, self.colnames)
 
     def exclude(self, f):
