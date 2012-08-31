@@ -583,8 +583,9 @@ class ConnectionPool(object):
 ###################################################################################
 
 class BaseAdapter(ConnectionPool):
-
     driver = None
+    driver_name = None
+    drivers = () # list of drivers from which to pick
     maxcharlength = MAXCHARLENGTH
     commit_on_alter_table = False
     support_distributed_transaction = False
@@ -2672,8 +2673,6 @@ class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
 
 class OracleAdapter(BaseAdapter):
     drivers = ('cx_Oracle',)
-
-    driver = globals().get('cx_Oracle',None)
 
     commit_on_alter_table = False
     types = {
@@ -5474,7 +5473,6 @@ class IMAPAdapter(NoSQLAdapter):
         }
 
     dbengine = 'imap'
-    driver = globals().get('imaplib',None)
 
     def __init__(self,
                  db,
