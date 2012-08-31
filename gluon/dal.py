@@ -3196,7 +3196,7 @@ class FireBirdAdapter(BaseAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}):
+                 adapter_args={}):        
         if 'driver_name' in adapter_args:
             if adapter_args['driver_name'] == 'fdb':
                 self.driver = fdb
@@ -3204,8 +3204,12 @@ class FireBirdAdapter(BaseAdapter):
                 self.driver = firebirdsql
             elif adapter_args['driver_name'] == 'kinterbasdb':
                 self.driver = kinterbasdb    
-        else:
+        elif 'fdb' in globals():
             self.driver = fdb
+        elif 'kinterbasdb' in globals():
+            self.driver = kinterbasdb
+        else:
+            raise RuntimeError, "no fdb and no kinterbasdb driver found"
 
         if not self.driver:
             raise RuntimeError, "Unable to import driver"
