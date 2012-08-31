@@ -2408,6 +2408,7 @@ class PostgreSQLAdapter(BaseAdapter):
         self.db_codec = db_codec
         self.srid = srid
         self.find_or_make_work_folder()
+        uri = uri.split('://')[:2]
         m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?sslmode=(?P<sslmode>.+))?$').match(uri)
         if not m:
             raise SyntaxError, "Invalid URI string in DAL"
@@ -3936,10 +3937,10 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
         self.db_codec = db_codec
         self.folder = folder or pjoin('$HOME',thread.folder.split(
                 os.sep+'applications'+os.sep,1)[1])
-
-        m = re.compile('^(?P<instance>.*)/(?P<db>.*)$').match(self.uri[len('google:sql://'):])
+        uri = uri.split("://")[1]
+        m = re.compile('^(?P<instance>.*)/(?P<db>.*)$').match(uri)
         if not m:
-            raise SyntaxError, "Invalid URI string in SQLDB: %s" % self._uri
+            raise SyntaxError, "Invalid URI string in SQLDB: %s" % uri
         instance = credential_decoder(m.group('instance'))
         self.dbstring = db = credential_decoder(m.group('db'))
         driver_args['instance'] = instance
@@ -5478,7 +5479,6 @@ class IMAPAdapter(NoSQLAdapter):
         # db uri: user@example.com:password@imap.server.com:123
         # TODO: max size adapter argument for preventing large mail transfers
 
-        uri = uri.split("://")[1]
         self.db = db
         self.uri = uri
         self.find_driver(adapter_args)
@@ -5492,6 +5492,7 @@ class IMAPAdapter(NoSQLAdapter):
         self.charset = sys.getfilesystemencoding()
         # imap class
         self.imap4 = None
+        uri = uri.split("://")[1]
 
         """ MESSAGE is an identifier for sequence number"""
 
