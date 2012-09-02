@@ -308,8 +308,8 @@ def load(routes='routes.py', app=None, data=None, rdict=None):
 
     for sym in ('routes_app', 'routes_in', 'routes_out'):
         if sym in symbols:
-            for (k, v) in symbols[sym]:
-                p[sym].append(compile_regex(k, v))
+            for items in symbols[sym]:
+                p[sym].append(compile_regex(*items))
     for sym in ('routes_onerror', 'routes_apps_raw',
                 'error_handler','error_message', 'error_message_ticket',
                 'default_application','default_controller', 'default_function',
@@ -371,7 +371,7 @@ def load(routes='routes.py', app=None, data=None, rdict=None):
     log_rewrite('URL rewrite is on. configuration in %s' % path)
 
 
-def compile_regex(k, v):
+def compile_regex(k, v, env=None):
     """
     Preprocess and compile the regular expressions in routes_app/in/out
     The resulting regex will match a pattern of the form:
@@ -405,7 +405,7 @@ def compile_regex(k, v):
     # same for replacement pattern, but with \g
     for item in regex_at.findall(v):
         v = v.replace(item, r'\g<%s>' % item[1:])
-    return (re.compile(k, re.DOTALL), v)
+    return (re.compile(k, re.DOTALL), v, env or {})
 
 def load_routers(all_apps):
     "load-time post-processing of routers"
@@ -519,8 +519,9 @@ def regex_uri(e, regexes, tag, default=None):
         (e.get('REMOTE_ADDR','localhost'),
          e.get('wsgi.url_scheme', 'http').lower(), host,
          e.get('REQUEST_METHOD', 'get').lower(), path)
-    for (regex, value) in regexes:
+    for (regex, value, custom_env) in regexes:
         if regex.match(key):
+            e.update(custom_env)
             rewritten = regex.sub(value, key)
             log_rewrite('%s: [%s] [%s] -> %s' % (tag, key, value, rewritten))
             return rewritten
@@ -708,7 +709,7 @@ def regex_filter_out(url, e=None):
                   e.get('request_method', 'get').lower(), items[0])
         else:
             items[0] = ':http://localhost:get %s' % items[0]
-        for (regex, value) in thread.routes.routes_out:
+        for (regex, value, tmp) in thread.routes.routes_out:
             if regex.match(items[0]):
                 rewritten = '?'.join([regex.sub(value, items[0])] + items[1:])
                 log_rewrite('routes_out: [%s] -> %s' % (url, rewritten))
