@@ -227,21 +227,21 @@ thread = threading.local()
 # internal representation of tables with field
 #  <table>.<field>, tables and fields may only be [a-zA-Z0-9_]
 
-regex_type = re.compile('^([\w\_\:]+)')
-regex_dbname = re.compile('^(\w+)(\:\w+)*')
-regex_safe = re.compile('^\w+$')
-regex_table_field = re.compile('^(\w+)\.(\w+)$')
-regex_content = re.compile('(?P<table>[\w\-]+)\.(?P<field>[\w\-]+)\.(?P<uuidkey>[\w\-]+)\.(?P<name>\w+)\.\w+$')
-regex_cleanup_fn = re.compile('[\'"\s;]+')
-string_unpack=re.compile('(?<!\|)\|(?!\|)')
-regex_python_keywords = re.compile('^(and|del|from|not|while|as|elif|global|or|with|assert|else|if|pass|yield|break|except|import|print|class|exec|in|raise|continue|finally|is|return|def|for|lambda|try)$')
-regex_select_as_parser = re.compile("\s+AS\s+(\S+)")
-regex_const_strings = re.compile('(\"[^\"]*?\")|(\'[^\']*?\')')
-regex_search_pattenrs = re.compile('^{[^\.]+\.[^\.]+(\.(lt|gt|le|ge|eq|ne|contains|startswith|year|month|day|hour|minute|second))?(\.not)?}$')
-regex_square_brackets = re.compile('^.+\[.+\]$')
-regex_store_pattern = re.compile('\.(?P<e>\w{1,5})$')
-regex_quotes = re.compile("'[^']*'")
-alphanumeric = re.compile('^[a-zA-Z]\w*$')
+REGEX_TYPE = re.compile('^([\w\_\:]+)')
+REGEX_DBNAME = re.compile('^(\w+)(\:\w+)*')
+REGEX_W = re.compile('^\w+$')
+REGEX_TABLE_DOT_FIELD = re.compile('^(\w+)\.(\w+)$')
+REGEX_UPLOAD_PATTERN = re.compile('(?P<table>[\w\-]+)\.(?P<field>[\w\-]+)\.(?P<uuidkey>[\w\-]+)\.(?P<name>\w+)\.\w+$')
+REGEX_CLEANUP_FN = re.compile('[\'"\s;]+')
+REGEX_UNPACK = re.compile('(?<!\|)\|(?!\|)')
+REGEX_PYTHON_KEYWORDS = re.compile('^(and|del|from|not|while|as|elif|global|or|with|assert|else|if|pass|yield|break|except|import|print|class|exec|in|raise|continue|finally|is|return|def|for|lambda|try)$')
+REGEX_SELECT_AS_PARSER = re.compile("\s+AS\s+(\S+)")
+REGEX_CONST_STRING = re.compile('(\"[^\"]*?\")|(\'[^\']*?\')')
+REGEX_SEARCH_PATTERN = re.compile('^{[^\.]+\.[^\.]+(\.(lt|gt|le|ge|eq|ne|contains|startswith|year|month|day|hour|minute|second))?(\.not)?}$')
+REGEX_SQUARE_BRACKETS = re.compile('^.+\[.+\]$')
+REGEX_STORE_PATTERN = re.compile('\.(?P<e>\w{1,5})$')
+REGEX_QUOTES = re.compile("'[^']*'")
+REGEX_ALPHANUMERIC = re.compile('^[a-zA-Z]\w*$')
 
 # list of drivers will be built on the fly
 # and lists only what is available
@@ -440,7 +440,7 @@ def AND(a,b):
 def IDENTITY(x): return x
 
 def varquote_aux(name,quotestr='%s'):
-    return name if regex_safe.match(name) else quotestr % name
+    return name if REGEX_W.match(name) else quotestr % name
 
 if 'google' in DRIVERS:
 
@@ -1403,7 +1403,7 @@ class BaseAdapter(ConnectionPool):
             if isinstance(item,SQLALL):
                 new_fields += item._table
             elif isinstance(item,str):
-                if regex_table_field.match(item):
+                if REGEX_TABLE_DOT_FIELD.match(item):
                     tablename,fieldname = item.split('.')
                     append(db[tablename][fieldname])
                 else:
@@ -1425,7 +1425,7 @@ class BaseAdapter(ConnectionPool):
         tablenames = tables(query)
         for field in fields:
             if isinstance(field, basestring) \
-                    and regex_table_field.match(field):
+                    and REGEX_TABLE_DOT_FIELD.match(field):
                 tn,fn = field.split('.')
                 field = self.db[tn][fn]
             for tablename in tables(field):
@@ -1768,7 +1768,7 @@ class BaseAdapter(ConnectionPool):
         elif field_type == 'blob' and not blob_decode:
             return value
         else:
-            key = regex_type.match(field_type).group(0)
+            key = REGEX_TYPE.match(field_type).group(0)
             return self.parsemap[key](value,field_type)
 
     def parse_reference(self, value, field_type):
@@ -1883,7 +1883,7 @@ class BaseAdapter(ConnectionPool):
         new_rows = []
         tmps = []
         for colname in colnames:
-            if not regex_table_field.match(colname):
+            if not REGEX_TABLE_DOT_FIELD.match(colname):
                 tmps.append(None)
             else:
                 (tablename, fieldname) = colname.split('.')
@@ -1939,7 +1939,7 @@ class BaseAdapter(ConnectionPool):
                         self.parse_value(value,
                                          fields[j].type,blob_decode)
                     new_column_name = \
-                        regex_select_as_parser.search(colname)
+                        REGEX_SELECT_AS_PARSER.search(colname)
                     if not new_column_name is None:
                         column_name = new_column_name.groups(0)
                         setattr(new_row,column_name[0],value)
@@ -4765,7 +4765,7 @@ def cleanup(text):
     """
     validates that the given text is clean: only contains [0-9a-zA-Z_]
     """
-    if not alphanumeric.match(text):
+    if not REGEX_ALPHANUMERIC.match(text):
         raise SyntaxError, 'invalid table or field name: %s' % text
     return text
 
@@ -6394,7 +6394,8 @@ def bar_decode_integer(value):
     return [int(x) for x in value.split('|') if x.strip()]
 
 def bar_decode_string(value):
-    return [x.replace('||', '|') for x in string_unpack.split(value[1:-1]) if x.strip()]
+    return [x.replace('||', '|') for x in
+            REGEX_UNPACK.split(value[1:-1]) if x.strip()]
 
 
 class Row(object):
@@ -6409,7 +6410,7 @@ class Row(object):
 
     def __getitem__(self, key):
         key=str(key)
-        m = regex_table_field.match(key)
+        m = REGEX_TABLE_DOT_FIELD.match(key)
         if key in self.get('_extra',{}):
             return self._extra[key]
         elif m:
@@ -6539,7 +6540,7 @@ def smart_query(fields,text):
     constants = {}
     i = 0
     while True:
-        m = regex_const_strings.search(text)
+        m = REGEX_CONST_STRING.search(text)
         if not m: break
         text = text[:m.start()]+('#%i' % i)+text[m.end():]
         constants[str(i)] = m.group()[1:-1]
@@ -6749,7 +6750,7 @@ class DAL(object):
                     try:
                         if is_jdbc and not uri.startswith('jdbc:'):
                             uri = 'jdbc:'+uri
-                        self._dbname = regex_dbname.match(uri).group()
+                        self._dbname = REGEX_DBNAME.match(uri).group()
                         if not self._dbname in ADAPTERS:
                             raise SyntaxError, "Error in URI '%s' or database not supported" % self._dbname
                         # notice that driver args or {} else driver_args
@@ -6862,8 +6863,8 @@ def index():
         """
 
         db = self
-        re1 = regex_search_pattenrs
-        re2 = regex_square_brackets
+        re1 = REGEX_SEARCH_PATTERN
+        re2 = REGEX_SQUARE_BRACKETS
 
         def auto_table(table,base='',depth=0):
             patterns = []
@@ -7066,7 +7067,7 @@ def index():
         if not isinstance(tablename,str):
             raise SyntaxError, "missing table name"
         elif tablename.startswith('_') or hasattr(self,tablename) or \
-                regex_python_keywords.match(tablename):
+                REGEX_PYTHON_KEYWORDS.match(tablename):
             raise SyntaxError, 'invalid table name: %s' % tablename
         elif tablename in self.tables:
             raise SyntaxError, 'table already defined: %s' % tablename
@@ -8377,7 +8378,7 @@ class Field(Expression):
         self.second = None
         self.name = fieldname = cleanup(fieldname)
         if not isinstance(fieldname,str) or hasattr(Table,fieldname) or \
-                fieldname[0] == '_' or regex_python_keywords.match(fieldname):
+                fieldname[0] == '_' or REGEX_PYTHON_KEYWORDS.match(fieldname):
             raise SyntaxError, 'Field: invalid field name: %s' % fieldname
         self.type = type if not isinstance(type, Table) else 'reference %s' % type
         self.length = length if not length is None else DEFAULTLENGTH.get(self.type,512)
@@ -8432,7 +8433,7 @@ class Field(Expression):
             filename = file.name
         filename = os.path.basename(filename.replace('/', os.sep)\
                                         .replace('\\', os.sep))        
-        m = regex_store_pattern.search(filename)
+        m = REGEX_STORE_PATTERN.search(filename)
         extension = m and m.group('e') or 'txt'
         uuid_key = web2py_uuid().replace('-', '')[-16:]
         encoded_filename = base64.b16encode(filename).lower()
@@ -8485,7 +8486,7 @@ class Field(Expression):
                 raise http.HTTP(404)
         if self.authorize and not self.authorize(row):
             raise http.HTTP(403)
-        m = regex_content.match(name)
+        m = REGEX_UPLOAD_PATTERN.match(name)
         if not m or not self.isattachment:
             raise TypeError, 'Can\'t retrieve %s' % name
         file_properties = self.retrieve_file_properties(name,path)
@@ -8510,11 +8511,11 @@ class Field(Expression):
         if self.custom_retrieve_file_properties:
             return self.custom_retrieve_file_properties(name, path)
         try:
-            m = regex_content.match(name)
+            m = REGEX_UPLOAD_PATTERN.match(name)
             if not m or not self.isattachment:
                 raise TypeError, 'Can\'t retrieve %s file properties' % name
             filename = base64.b16decode(m.group('name'), True)
-            filename = regex_cleanup_fn.sub('_', filename)
+            filename = REGEX_CLEANUP_FN.sub('_', filename)
         except (TypeError, AttributeError):
             filename = name
         if isinstance(self_uploadfield, str):  # ## if file is in DB
@@ -9132,7 +9133,7 @@ class Rows(object):
         for record in self:
             row = []
             for col in colnames:
-                if not regex_table_field.match(col):
+                if not REGEX_TABLE_DOT_FIELD.match(col):
                     row.append(record._extra[col])
                 else:
                     (t, f) = col.split('.')
@@ -9165,7 +9166,7 @@ class Rows(object):
                         indent,
                         field)
                 elif not callable(row):
-                    if alphanumeric.match(field):
+                    if REGEX_ALPHANUMERIC.match(field):
                         return '%s<%s>%s</%s>' % (indent,field,row,field)
                     else:
                         return '%s<extra name="%s">%s</extra>' % \
@@ -9190,7 +9191,7 @@ class Rows(object):
         def inner_loop(record, col):
             (t, f) = col.split('.')
             res = None
-            if not regex_table_field.match(col):
+            if not REGEX_TABLE_DOT_FIELD.match(col):
                 key = col
                 res = record._extra[col]
             else:
