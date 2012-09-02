@@ -800,8 +800,8 @@ def findT(path, language='en'):
     """
     must be run by the admin app
     """
-    filename = ospath.join(path, 'languages', language + '.py')
-    sentences = read_dict(filename)
+    lang_file = ospath.join(path, 'languages', language + '.py')
+    sentences = read_dict(lang_file)
     mp = ospath.join(path, 'models')
     cp = ospath.join(path, 'controllers')
     vp = ospath.join(path, 'views')
@@ -830,8 +830,9 @@ def findT(path, language='en'):
             'en' if language in ('default', 'en') else language)
     if not '!langname!' in sentences:
         sentences['!langname!'] = (
-            'English' if language in ('default', 'en') else sentences['!langcode!'])
-    write_dict(filename, sentences)
+            'English' if language in ('default', 'en')
+            else sentences['!langcode!'])
+    write_dict(lang_file, sentences)
 
 ### important to allow safe session.flash=T(....)
 def lazyT_unpickle(data):

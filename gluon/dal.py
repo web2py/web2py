@@ -3584,7 +3584,7 @@ INGRES_SEQNAME='ii***lineitemsequence' # NOTE invalid database object name
                                        # to be a delimited identifier)
 
 class IngresAdapter(BaseAdapter):
-    drivers = ('ingredbi',)
+    drivers = ('ingresdbi',)
 
     types = {
         'boolean': 'CHAR(1)',
