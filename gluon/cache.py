@@ -40,7 +40,6 @@ __all__ = ['Cache', 'lazy_cache']
 
 DEFAULT_TIME_EXPIRE = 300
 
-
 class CacheAbstract(object):
     """
     Abstract class for cache implementations.
