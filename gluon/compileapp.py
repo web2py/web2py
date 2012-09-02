@@ -581,10 +581,13 @@ def run_view_in(environment):
     folder = request.folder
     path = pjoin(folder, 'compiled')
     badv = 'invalid view (%s)' % view
-    patterns = response.generic_patterns or []
-    regex = re.compile('|'.join(map(fnmatch.translate, patterns)))
-    short_action =  '%(controller)s/%(function)s.%(extension)s' % request
-    allow_generic = patterns and regex.search(short_action)
+    if response.generic_patterns:
+        patterns = response.generic_patterns
+        regex = re.compile('|'.join(map(fnmatch.translate, patterns)))
+        short_action =  '%(controller)s/%(function)s.%(extension)s' % request
+        allow_generic = regex.search(short_action)
+    else:
+        allow_generic = False
     if not isinstance(view, str):
         ccode = parse_template(view, pjoin(folder, 'views'),
                                context=environment)
