@@ -149,10 +149,11 @@ def copystream_progress(request, chunk_size= 10**5):
     and stores progress upload status in cache.ram
     X-Progress-ID:length and X-Progress-ID:uploaded
     """
-    if not request.env.content_length:
+    env = request.env
+    if not env.content_length:
         return cStringIO.StringIO()
-    source = request.env.wsgi_input
-    size = int(request.env.content_length)
+    source = env.wsgi_input
+    size = int(env.content_length)
     dest = tempfile.TemporaryFile()
     if not 'X-Progress-ID' in request.vars:
         copystream(source, dest, size, chunk_size)
@@ -275,7 +276,8 @@ def environ_aux(environ,request):
 def parse_get_post_vars(request, environ):
 
     # always parse variables in URL for GET, POST, PUT, DELETE, etc. in get_vars
-    dget = cgi.parse_qsl(request.env.query_string or '', keep_blank_values=1)
+    env = request.env
+    dget = cgi.parse_qsl(env.query_string or '', keep_blank_values=1)
     for (key, value) in dget:
         if key in request.get_vars:
             if isinstance(request.get_vars[key], list):
@@ -291,7 +293,7 @@ def parse_get_post_vars(request, environ):
         request.body = body = copystream_progress(request)
     except IOError:
         raise HTTP(400,"Bad Request - HTTP body is incomplete")
-    if (body and request.env.request_method in ('POST', 'PUT', 'BOTH')):
+    if (body and env.request_method in ('POST', 'PUT', 'BOTH')):
         dpost = cgi.FieldStorage(fp=body,environ=environ,keep_blank_values=1)
         # The same detection used by FieldStorage to detect multipart POSTs
         is_multipart = dpost.type[:10] == 'multipart/'
@@ -472,9 +474,9 @@ def wsgibase(environ, responder):
                 # load cookies
                 # ##################################################
 
-                if request.env.http_cookie:
+                if env.http_cookie:
                     try:
-                        request.cookies.load(request.env.http_cookie)
+                        request.cookies.load(env.http_cookie)
                     except Cookie.CookieError, e:
                         pass # invalid cookies
 
@@ -482,7 +484,8 @@ def wsgibase(environ, responder):
                 # try load session or create new session file
                 # ##################################################
 
-                session.connect(request, response)
+                if not env.web2py_disable_session:
+                    session.connect(request, response)
 
                 # ##################################################
                 # set no-cache headers
@@ -519,7 +522,8 @@ def wsgibase(environ, responder):
                 # ##################################################
                 # on success, try store session in database
                 # ##################################################
-                session._try_store_in_db(request, response)
+                if not env.web2py_disable_session:
+                    session._try_store_in_db(request, response)
 
                 # ##################################################
                 # on success, commit database
@@ -538,8 +542,9 @@ def wsgibase(environ, responder):
                 # if session not in db try store session on filesystem
                 # this must be done after trying to commit database!
                 # ##################################################
-
-                session._try_store_on_disk(request, response)
+                    
+                if not env.web2py_disable_session:
+                    session._try_store_on_disk(request, response)
 
                 # ##################################################
                 # store cookies in headers
