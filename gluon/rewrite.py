@@ -135,6 +135,27 @@ ROUTER_BASE_KEYS = set(
 #  filter_err: helper for doctest & unittest
 #  regex_filter_out: doctest
 
+def fixup_missing_path_info(environ):
+    eget = environ.get
+    path_info = eget('PATH_INFO')
+    request_uri = eget('REQUEST_URI')
+    if not path_info and request_uri:
+        # for fcgi, get path_info and                           
+        # query_string from request_uri                         
+        items = request_uri.split('?')
+        path_info = environ['PATH_INFO'] = items[0]
+        environ['QUERY_STRING'] = items[1] if len(items) > 1 else ''
+    elif not request_uri:
+        query_string = eget('QUERY_STRING')
+        if query_string:
+            environ['REQUEST_URI'] = '%s?%s' % (path_info,query_string)
+        else:
+            environ['REQUEST_URI'] = path_info
+    if not eget('HTTP_HOST'):
+        environ['HTTP_HOST'] = \
+            '%s:%s' % (eget('SERVER_NAME'),eget('SERVER_PORT'))
+            
+        
 def url_in(request, environ):
     "parse and rewrite incoming URL"
     if routers:
