@@ -223,16 +223,12 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
             {{=editpluralsfile('languages',pfile,dict(nplurals=p[0]))}}
           </span>
           <span class="file">
-            {{=peekfile('languages',pfile,dict(id=id))}},
+            {{=peekfile('languages',pfile,dict(id=id))}}
           </span>
         {{else:}}
-          <b>{{=T("are not used yet")}}</b>,
+          <b>{{=T("are not used yet")}}</b>
         {{pass}}
       {{pass}}
-      {{=T("rules:")}}
-        <span class="file{{=' error' if p[3]!='ok' else ''}}">
-          {{=peekfile('gluon/contrib/rules', p[2], dict(app=app, id=id), p[3] if p[3]!='ok' else None)}}
-        </span>
     {{pass}}
     )
     </td>

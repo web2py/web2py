@@ -1376,6 +1376,7 @@ class IS_GENERIC_URL(Validator):
 
     """
 
+
     def __init__(
         self,
         error_message='enter a valid URL',
@@ -1402,6 +1403,9 @@ class IS_GENERIC_URL(Validator):
                 "prepend_scheme='%s' is not in allowed_schemes=%s" \
                 % (self.prepend_scheme, self.allowed_schemes)
 
+    GENERIC_URL = re.compile(r"%[^0-9A-Fa-f]{2}|%[^0-9A-Fa-f][0-9A-Fa-f]|%[0-9A-Fa-f][^0-9A-Fa-f]|%$|%[0-9A-Fa-f]$|%[^0-9A-Fa-f]$")
+    GENERIC_URL_VALID = re.compile(r"[A-Za-z0-9;/?:@&=+$,\-_\.!~*'\(\)%#]+$")
+
     def __call__(self, value):
         """
         :param value: a string, the URL to validate
@@ -1411,12 +1415,9 @@ class IS_GENERIC_URL(Validator):
         """
         try:
             # if the URL does not misuse the '%' character
-            if not re.compile(
-                r"%[^0-9A-Fa-f]{2}|%[^0-9A-Fa-f][0-9A-Fa-f]|%[0-9A-Fa-f][^0-9A-Fa-f]|%$|%[0-9A-Fa-f]$|%[^0-9A-Fa-f]$"
-                              ).search(value):
+            if not self.GENERIC_URL.search(value):
                 # if the URL is only composed of valid characters
-                if re.compile(
-                    r"[A-Za-z0-9;/?:@&=+$,\-_\.!~*'\(\)%#]+$").match(value):
+                if self.GENERIC_URL_VALID.match(value):
                     # Then split up the URL into its components and check on
                     # the scheme
                     scheme = url_split_regex.match(value).group(2)
@@ -1432,11 +1433,10 @@ class IS_GENERIC_URL(Validator):
                         # ports, check to see if adding a valid scheme fixes
                         # the problem (but only do this if it doesn't have
                         # one already!)
-                        if not re.compile('://').search(value) and None\
-                             in self.allowed_schemes:
+                        if value.find('://')<0 and None in self.allowed_schemes:
                             schemeToUse = self.prepend_scheme or 'http'
-                            prependTest = self.__call__(schemeToUse
-                                     + '://' + value)
+                            prependTest = self.__call__(
+                                schemeToUse + '://' + value)
                             # if the prepend test succeeded
                             if prependTest[1] is None:
                                 # if prepending in the output is enabled
@@ -1791,6 +1791,9 @@ class IS_HTTP_URL(Validator):
 
     """
 
+    GENERIC_VALID_IP = re.compile("([\w.!~*'|;:&=+$,-]+@)?\d+\.\d+\.\d+\.\d+(:\d*)*$")
+    GENERIC_VALID_DOMAIN = re.compile("([\w.!~*'|;:&=+$,-]+@)?(([A-Za-z0-9]+[A-Za-z0-9\-]*[A-Za-z0-9]+\.)*([A-Za-z0-9]+\.)*)*([A-Za-z]+[A-Za-z0-9\-]*[A-Za-z0-9]+)\.?(:\d*)*$")
+
     def __init__(
         self,
         error_message='enter a valid URL',
@@ -1843,16 +1846,12 @@ class IS_HTTP_URL(Validator):
                 # if there is an authority component
                 if authority:
                     # if authority is a valid IP address
-                    if re.compile(
-                        "([\w.!~*'|;:&=+$,-]+@)?\d+\.\d+\.\d+\.\d+(:\d*)*$").match(authority):
+                    if self.GENERIC_VALID_IP.match(authority):
                         # Then this HTTP URL is valid
                         return (value, None)
                     else:
                         # else if authority is a valid domain name
-                        domainMatch = \
-                            re.compile(
-                                "([\w.!~*'|;:&=+$,-]+@)?(([A-Za-z0-9]+[A-Za-z0-9\-]*[A-Za-z0-9]+\.)*([A-Za-z0-9]+\.)*)*([A-Za-z]+[A-Za-z0-9\-]*[A-Za-z0-9]+)\.?(:\d*)*$"
-                                ).match(authority)
+                        domainMatch = self.GENERIC_VALID_DOMAIN.match(authority)
                         if domainMatch:
                             # if the top-level domain really exists
                             if domainMatch.group(5).lower()\
@@ -1865,13 +1864,13 @@ class IS_HTTP_URL(Validator):
                     path = componentsMatch.group(5)
                     # relative case: if this is a valid path (if it starts with
                     # a slash)
-                    if re.compile('/').match(path):
+                    if path.startswith('/'):
                         # Then this HTTP URL is valid
                         return (value, None)
                     else:
                         # abbreviated case: if we haven't already, prepend a
                         # scheme and see if it fixes the problem
-                        if not re.compile('://').search(value):
+                        if value.find('://')<0:
                             schemeToUse = self.prepend_scheme or 'http'
                             prependTest = self.__call__(schemeToUse
                                      + '://' + value)
@@ -2521,9 +2520,11 @@ class CLEANUP(Validator):
 
     removes special characters on validation
     """
+    REGEX_CLEANUP = re.compile('[^\x09\x0a\x0d\x20-\x7e]')
 
-    def __init__(self, regex='[^\x09\x0a\x0d\x20-\x7e]'):
-        self.regex = re.compile(regex)
+    def __init__(self, regex=None):
+        self.regex = self.REGEX_CLEANUP if regex is None \
+            else re.compile(regex)
 
     def __call__(self, value):
         v = self.regex.sub('',str(value).strip())
@@ -2790,11 +2791,13 @@ class IS_STRONG(object):
 
 class IS_IN_SUBSET(IS_IN_SET):
 
+    REGEX_W = re.compile('\w+')
+
     def __init__(self, *a, **b):
         IS_IN_SET.__init__(self, *a, **b)
 
     def __call__(self, value):
-        values = re.compile("\w+").findall(str(value))
+        values = self.REGEX_W.findall(str(value))
         failures = [x for x in values if IS_IN_SET.__call__(self, x)[1]]
         if failures:
             return (value, translate(self.error_message))

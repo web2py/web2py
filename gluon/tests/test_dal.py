@@ -176,9 +176,9 @@ class TestTable(unittest.TestCase):
         self.assertRaises(SyntaxError, Table, None, 'test', None)
 
         persons = Table(None, 'persons',
-                        Field('firstname','string'), 
+                        Field('firstname','string'),
                         Field('lastname', 'string'))
-        
+
         # Does it have the correct fields?
 
         self.assert_(set(persons.fields).issuperset(set(['firstname',
@@ -411,12 +411,14 @@ class TestMinMaxSum(unittest.TestCase):
         self.assertEqual(db.t.insert(a=3), 3)
         s = db.t.a.min()
         self.assertEqual(db(db.t.id > 0).select(s)[0]._extra[s], 1)
+        self.assertEqual(db(db.t.id > 0).select(s).first()[s], 1)
+        self.assertEqual(db().select(s).first()[s], 1)
         s = db.t.a.max()
-        self.assertEqual(db(db.t.id > 0).select(s)[0]._extra[s], 3)
+        self.assertEqual(db().select(s).first()[s], 3)
         s = db.t.a.sum()
-        self.assertEqual(db(db.t.id > 0).select(s)[0]._extra[s], 6)
+        self.assertEqual(db().select(s).first()[s], 6)
         s = db.t.a.count()
-        self.assertEqual(db(db.t.id > 0).select(s)[0]._extra[s], 3)
+        self.assertEqual(db().select(s).first()[s], 3)
         db.t.drop()
 
 
@@ -515,6 +517,20 @@ class TestVirtualFields(unittest.TestCase):
         db.t.drop()
         db.commit()
 
+class TestComputedFields(unittest.TestCase):
+
+    def testRun(self):
+        db = DAL('sqlite:memory:')
+        db.define_table('t',
+                        Field('a'),
+                        Field('b',default='x'),
+                        Field('c',compute=lambda r: r.a+r.b))
+        db.commit()
+        id = db.t.insert(a="z")
+        self.assertEqual(db.t[id].c,'zx')
+        db.t.drop()
+        db.commit()
+
 class TestImportExportFields(unittest.TestCase):
 
     def testRun(self):
@@ -533,7 +549,7 @@ class TestImportExportFields(unittest.TestCase):
         db(db.pet).delete()
         db(db.person).delete()
         stream = cStringIO.StringIO(stream.getvalue())
-        db.import_from_csv_file(stream)        
+        db.import_from_csv_file(stream)
         assert db(db.person.id==db.pet.friend)(db.person.name==db.pet.name).count()==10
         db.pet.drop()
         db.person.drop()
@@ -555,7 +571,7 @@ class TestImportExportUuidFields(unittest.TestCase):
         stream = cStringIO.StringIO()
         db.export_to_csv_file(stream)
         stream = cStringIO.StringIO(stream.getvalue())
-        db.import_from_csv_file(stream)        
+        db.import_from_csv_file(stream)
         assert db(db.person).count()==10
         assert db(db.person.id==db.pet.friend)(db.person.name==db.pet.name).count()==20
         db.pet.drop()
@@ -565,3 +581,4 @@ class TestImportExportUuidFields(unittest.TestCase):
 if __name__ == '__main__':
     unittest.main()
     tearDownModule()
+

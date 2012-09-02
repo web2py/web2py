@@ -136,7 +136,7 @@ class StorageList(Storage):
     like Storage but missing elements default to [] instead of None
     """
     def __getitem__(self,key):
-        return self.__gteattr__(key)
+        return self.__getattr__(key)
     def __getattr__(self, key):
         if key in self:
             return getattr(self,key)

@@ -76,7 +76,8 @@ class HTTP(BaseException):
             self.headers['Set-Cookie'] = [
                 str(cookie)[11:] for cookie in cookies.values()]
 
-    def to(self, responder):
+    def to(self, responder, env=None):
+        env = env or {}
         status = self.status
         headers = self.headers
         if status in defined_status:
@@ -100,7 +101,9 @@ class HTTP(BaseException):
             else:
                 rheaders.append((k, str(v)))
         responder(status, rheaders)
-        if isinstance(body,str):
+        if env.get('request_method','')=='HEAD':
+            return ['']
+        elif isinstance(body,str):
             return [body]
         elif hasattr(body, '__iter__'):
             return body

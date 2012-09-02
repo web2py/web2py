@@ -6,6 +6,7 @@
 'is': ['are'],
 'man': ['men'],
 'person': ['people'],
+'quark': ['quarks'],
 'shop': ['shops'],
 'this': ['these'],
 'was': ['were'],

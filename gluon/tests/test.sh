@@ -28,8 +28,10 @@ else
 	elif [ "$1" = "doctest" ]; then
 		# this has to run in gluon's parent; needs work
 		#
-		# the problem is that doctests run this way have a very different environment,
-		# apparently due to imports that don't happen in the normal course of running
+		# the problem is that doctests run this way 
+	        # have a very different environment,
+		# apparently due to imports that don't happen 
+                # in the normal course of running
 		# doctest via __main__.
 		#
 		echo doctest not supported >&2

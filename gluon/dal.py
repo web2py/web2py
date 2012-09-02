@@ -20,6 +20,7 @@ including:
 - SQLite & SpatiaLite
 - MySQL
 - Postgres
+- Firebird
 - Oracle
 - MS SQL
 - DB2
@@ -226,19 +227,25 @@ thread = threading.local()
 # internal representation of tables with field
 #  <table>.<field>, tables and fields may only be [a-zA-Z0-9_]
 
-regex_type = re.compile('^([\w\_\:]+)')
-regex_dbname = re.compile('^(\w+)(\:\w+)*')
-regex_safe = re.compile('^\w+$')
-regex_table_field = re.compile('^(\w+)\.(\w+)$')
-regex_content = re.compile('(?P<table>[\w\-]+)\.(?P<field>[\w\-]+)\.(?P<uuidkey>[\w\-]+)\.(?P<name>\w+)\.\w+$')
-regex_cleanup_fn = re.compile('[\'"\s;]+')
-string_unpack=re.compile('(?<!\|)\|(?!\|)')
-regex_python_keywords = re.compile('^(and|del|from|not|while|as|elif|global|or|with|assert|else|if|pass|yield|break|except|import|print|class|exec|in|raise|continue|finally|is|return|def|for|lambda|try)$')
-regex_select_as_parser = re.compile("\s+AS\s+(\S+)")
+REGEX_TYPE = re.compile('^([\w\_\:]+)')
+REGEX_DBNAME = re.compile('^(\w+)(\:\w+)*')
+REGEX_W = re.compile('^\w+$')
+REGEX_TABLE_DOT_FIELD = re.compile('^(\w+)\.(\w+)$')
+REGEX_UPLOAD_PATTERN = re.compile('(?P<table>[\w\-]+)\.(?P<field>[\w\-]+)\.(?P<uuidkey>[\w\-]+)\.(?P<name>\w+)\.\w+$')
+REGEX_CLEANUP_FN = re.compile('[\'"\s;]+')
+REGEX_UNPACK = re.compile('(?<!\|)\|(?!\|)')
+REGEX_PYTHON_KEYWORDS = re.compile('^(and|del|from|not|while|as|elif|global|or|with|assert|else|if|pass|yield|break|except|import|print|class|exec|in|raise|continue|finally|is|return|def|for|lambda|try)$')
+REGEX_SELECT_AS_PARSER = re.compile("\s+AS\s+(\S+)")
+REGEX_CONST_STRING = re.compile('(\"[^\"]*?\")|(\'[^\']*?\')')
+REGEX_SEARCH_PATTERN = re.compile('^{[^\.]+\.[^\.]+(\.(lt|gt|le|ge|eq|ne|contains|startswith|year|month|day|hour|minute|second))?(\.not)?}$')
+REGEX_SQUARE_BRACKETS = re.compile('^.+\[.+\]$')
+REGEX_STORE_PATTERN = re.compile('\.(?P<e>\w{1,5})$')
+REGEX_QUOTES = re.compile("'[^']*'")
+REGEX_ALPHANUMERIC = re.compile('^[a-zA-Z]\w*$')
 
 # list of drivers will be built on the fly
 # and lists only what is available
-drivers = []
+DRIVERS = []
 
 try:
     from new import classobj
@@ -246,22 +253,23 @@ try:
     from google.appengine.api import namespace_manager, rdbms
     from google.appengine.api.datastore_types import Key  ### for belongs on ID
     from google.appengine.ext.db.polymodel import PolyModel
-    drivers.append('google')
+    DRIVERS.append('google')
 except ImportError:
     pass
 
-if not 'google' in drivers:
+if not 'google' in DRIVERS:
 
     try:
-        # first try pysqlite2 else try sqlite3
-        try:
-            from pysqlite2 import dbapi2 as sqlite3
-            drivers.append('pysqlite2')
-        except ImportError:
-            from sqlite3 import dbapi2 as sqlite3
-            drivers.append('SQLite3')
+        from pysqlite2 import dbapi2 as sqlite2
+        DRIVERS.append('SQLite(sqlite2)')
     except ImportError:
-        logger.debug('no sqlite3 or pysqlite2.dbapi2 driver')
+        logger.debug('no SQLite drivers pysqlite2.dbapi2')
+
+    try:
+        from sqlite3 import dbapi2 as sqlite3
+        DRIVERS.append('SQLite(sqlite3)')
+    except ImportError:
+        logger.debug('no SQLite drivers sqlite3')
 
     try:
         # first try contrib driver, then from site-packages (if installed)
@@ -274,16 +282,23 @@ if not 'google' in drivers:
             # end monkeypatch
         except ImportError:
             import pymysql
-        drivers.append('pymysql')
+        DRIVERS.append('MySQL(pymysql)')
     except ImportError:
-        logger.debug('no pymysql driver')
+        logger.debug('no MySQL driver pymysql')
+
+    try:
+        import MySQLdb
+        DRIVERS.append('MySQL(MySQLdb)')
+    except ImportError:
+        logger.debug('no MySQL driver MySQLDB')
+
 
     try:
         import psycopg2
         from psycopg2.extensions import adapt as psycopg2_adapt
-        drivers.append('psycopg2')
+        DRIVERS.append('PostgreSQL(psycopg2)')
     except ImportError:
-        logger.debug('no psycopg2 driver')
+        logger.debug('no PostgreSQL driver psycopg2')
 
     try:
         # first try contrib driver, then from site-packages (if installed)
@@ -291,97 +306,108 @@ if not 'google' in drivers:
             import contrib.pg8000.dbapi as pg8000
         except ImportError:
             import pg8000.dbapi as pg8000
-        drivers.append('pg8000')
+        DRIVERS.append('PostgreSQL(pg8000)')
     except ImportError:
-        logger.debug('no pg8000 driver')
+        logger.debug('no PostgreSQL driver pg8000')
 
     try:
         import cx_Oracle
-        drivers.append('Oracle')
+        DRIVERS.append('Oracle(cx_Oracle)')
     except ImportError:
-        logger.debug('no cx_Oracle driver')
+        logger.debug('no Oracle driver cx_Oracle')
 
     try:
         import pyodbc
-        drivers.append('MSSQL/DB2/Teradata')
+        DRIVERS.append('MSSQL(pyodbc)')
+        DRIVERS.append('DB2(pyodbc)')
+        DRIVERS.append('Teradata(pyodbc)')
     except ImportError:
-        logger.debug('no MSSQL/DB2/Teradata driver')
+        logger.debug('no MSSQL/DB2/Teradata driver pyodbc')
 
     try:
         import Sybase
-        drivers.append('Sybase')
+        DRIVERS.append('Sybase(Sybase)')
     except ImportError:
         logger.debug('no Sybase driver')
-
+        
     try:
         import kinterbasdb
-        drivers.append('Interbase')
+        DRIVERS.append('Interbase(kinterbasdb)')
+        DRIVERS.append('Firebird(kinterbasdb)')
     except ImportError:
-        logger.debug('no kinterbasdb driver')
+        logger.debug('no Firebird/Interbase driver kinterbasdb')
 
     try:
-        import firebirdsql
-        drivers.append('Firebird')
+        import fdb
+        DRIVERS.append('Firbird(fdb)')
     except ImportError:
-        logger.debug('no Firebird driver')
+        logger.debug('no Firebird driver fdb')    
+#####
+    try:
+        import firebirdsql
+        DRIVERS.append('Firebird(firebirdsql)')
+    except ImportError:
+        logger.debug('no Firebird driver firebirdsql')
 
     try:
         import informixdb
-        drivers.append('Informix')
+        DRIVERS.append('Informix(informixdb)')
         logger.warning('Informix support is experimental')
     except ImportError:
-        logger.debug('no informixdb driver')
+        logger.debug('no Informix driver informixdb')
 
     try:
         import sapdb
-        drivers.append('SAPDB')
+        DRIVERS.append('SQL(sapdb)')
         logger.warning('SAPDB support is experimental')
     except ImportError:
-        logger.debug('no sapdb driver')
+        logger.debug('no SAP driver sapdb')
 
     try:
         import cubriddb
-        drivers.append('Cubrid')
+        DRIVERS.append('Cubrid(cubriddb)')
         logger.warning('Cubrid support is experimental')
     except ImportError:
-        logger.debug('no cubriddb driver')
+        logger.debug('no Cubrid driver cubriddb')
 
     try:
         from com.ziclix.python.sql import zxJDBC
         import java.sql
         # Try sqlite jdbc driver from http://www.zentus.com/sqlitejdbc/
         from org.sqlite import JDBC # required by java.sql; ensure we have it
-        drivers.append('zxJDBC')
+        zxJDBC_sqlite = java.sql.DriverManager
+        DRIVERS.append('PostgreSQL(zxJDBC)')
+        DRIVERS.append('SQLite(zxJDBC)')
         logger.warning('zxJDBC support is experimental')
         is_jdbc = True
     except ImportError:
-        logger.debug('no zxJDBC driver')
+        logger.debug('no SQLite/PostgreSQL driver zxJDBC')
         is_jdbc = False
 
     try:
         import ingresdbi
-        drivers.append('Ingres')
+        DRIVERS.append('Ingres(ingresdbi)')
     except ImportError:
-        logger.debug('no Ingres driver')
+        logger.debug('no Ingres driver ingresdbi')
     # NOTE could try JDBC.......
 
     try:
         import couchdb
-        drivers.append('CouchDB')
+        DRIVERS.append('CouchDB(couchdb)')
     except ImportError:
-        logger.debug('no couchdb driver')
+        logger.debug('no Couchdb driver couchdb')
 
     try:
         import pymongo
-        drivers.append('mongoDB')
+        DRIVERS.append('MongoDB(pymongo)')
     except:
-        logger.debug('no mongoDB driver')
+        logger.debug('no MongoDB driver pymongo')
 
     try:
         import imaplib
-        drivers.append('IMAP')
+        DRIVERS.append('IMAP(imaplib)')
     except:
-        logger.debug('could not import imaplib')
+        logger.debug('no IMAP driver imaplib')
 
 PLURALIZE_RULES = [
     (re.compile('child$'), re.compile('child$'), 'children'),
@@ -414,9 +440,9 @@ def AND(a,b):
 def IDENTITY(x): return x
 
 def varquote_aux(name,quotestr='%s'):
-    return name if regex_safe.match(name) else quotestr % name
+    return name if REGEX_W.match(name) else quotestr % name
 
-if 'google' in drivers:
+if 'google' in DRIVERS:
 
     is_jdbc = False
 
@@ -563,8 +589,9 @@ class ConnectionPool(object):
 ###################################################################################
 
 class BaseAdapter(ConnectionPool):
-
     driver = None
+    driver_name = None
+    drivers = () # list of drivers from which to pick
     maxcharlength = MAXCHARLENGTH
     commit_on_alter_table = False
     support_distributed_transaction = False
@@ -630,6 +657,30 @@ class BaseAdapter(ConnectionPool):
     def file_delete(self, filename):
         os.unlink(filename)
 
+    def find_driver(self,adapter_args,uri=None):
+        if hasattr(self,'driver') and self.driver!=None:
+            return 
+        drivers_available = [driver for driver in self.drivers
+                             if driver in globals()]
+        if uri:
+            items = uri.split('://',1)[0].split(':')
+            request_driver = items[1] if len(items)>1 else None
+        else:
+            request_driver = None
+        request_driver = request_driver or adapter_args.get('driver')            
+        if request_driver:
+            if request_driver in drivers_available:
+                self.driver_name = request_driver
+                self.driver = globals().get(request_driver)
+            else:
+                raise RuntimeError, "driver %s not available" % request_driver
+        elif drivers_available:
+            self.driver_name = drivers_available[0]
+            self.driver = globals().get(self.driver_name)
+        else:
+            raise RuntimeError, "no driver available %s", self.drivers
+            
+
     def __init__(self, db,uri,pool_size=0, folder=None, db_codec='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
@@ -659,6 +710,7 @@ class BaseAdapter(ConnectionPool):
                      migrate=True,
                      fake_migrate=False,
                      polymodel=None):
+        db = table._db
         fields = []
         # PostGIS geo fields are added after the table has been created
         postcreation_fields = []
@@ -686,7 +738,7 @@ class BaseAdapter(ConnectionPool):
                 else:
                     if hasattr(table,'_primarykey'):
                         rtablename,rfieldname = referenced.split('.')
-                        rtable = table._db[rtablename]
+                        rtable = db[rtablename]
                         rfield = rtable[rfieldname]
                         # must be PK reference or unique
                         if rfieldname in hasattr(rtable,'_primarykey') or \
@@ -708,8 +760,12 @@ class BaseAdapter(ConnectionPool):
                                     on_delete_action=field.ondelete)
                     else:
                         # make a guess here for circular references
-                        id_fieldname = referenced in table._db \
-                            and table._db[referenced]._id.name or 'id'
+                        if referenced in db:
+                            id_fieldname = db[referenced]._id.name
+                        elif referenced == tablename:
+                            id_fieldname = table._id.name
+                        else: #make a guess
+                            id_fieldname = 'id'
                         ftype = types[field_type[:9]] % dict(
                             index_name = field_name+'__idx',
                             field_name = field_name,
@@ -796,7 +852,7 @@ class BaseAdapter(ConnectionPool):
         fields = ',\n    '.join(fields)
         for rtablename in TFK:
             rfields = TFK[rtablename]
-            pkeys = table._db[rtablename]._primarykey
+            pkeys = db[rtablename]._primarykey
             fkeys = [ rfields[k] for k in pkeys ]
             fields = fields + ',\n    ' + \
                 types['reference TFK'] % dict(
@@ -886,17 +942,21 @@ class BaseAdapter(ConnectionPool):
         logfile,
         fake_migrate=False,
         ):
-        table._db._migrated.append(table._tablename)
+        db = table._db
+        db._migrated.append(table._tablename)
         tablename = table._tablename
         def fix(item):
             k,v=item
             if not isinstance(v,dict):
                 v=dict(type='unkown',sql=v)
             return k.lower(),v
-        ### make sure all field names are lower case to avoid conflicts
+        # make sure all field names are lower case to avoid
+        # migrations because of case cahnge
         sql_fields = dict(map(fix,sql_fields.iteritems()))
         sql_fields_old = dict(map(fix,sql_fields_old.iteritems()))
         sql_fields_aux = dict(map(fix,sql_fields_aux.iteritems()))
+        if db._debug:
+            logging.debug('migrating %s to %s' % (sql_fields_old,sql_fields))
 
         keys = sql_fields.keys()
         for key in sql_fields_old:
@@ -941,10 +1001,11 @@ class BaseAdapter(ConnectionPool):
                     query = ['ALTER TABLE %s DROP %s;' % (tablename, key)]
                 metadata_change = True
             elif sql_fields[key]['sql'] != sql_fields_old[key]['sql'] \
-                  and not isinstance(table[key].type, SQLCustomType) \
-                  and not table[key].type.startswith('reference')\
-                  and not table[key].type.startswith('double')\
-                  and not table[key].type.startswith('id'):
+                  and not (key in table.fields and 
+                           isinstance(table[key].type, SQLCustomType)) \
+                  and not sql_fields[key]['type'].startswith('reference')\
+                  and not sql_fields[key]['type'].startswith('double')\
+                  and not sql_fields[key]['type'].startswith('id'):
                 sql_fields_current[key] = sql_fields[key]
                 t = tablename
                 tt = sql_fields_aux[key]['sql'].replace(', ', new_add)
@@ -970,7 +1031,7 @@ class BaseAdapter(ConnectionPool):
             if query:
                 logfile.write('timestamp: %s\n'
                               % datetime.datetime.today().isoformat())
-                table._db['_lastsql'] = '\n'.join(query)
+                db['_lastsql'] = '\n'.join(query)
                 for sub_query in query:
                     logfile.write(sub_query + '\n')
                     if not fake_migrate:
@@ -978,8 +1039,8 @@ class BaseAdapter(ConnectionPool):
                         # Caveat: mysql, oracle and firebird do not allow multiple alter table
                         # in one transaction so we must commit partial transactions and
                         # update table._dbt after alter table.
-                        if table._db._adapter.commit_on_alter_table:
-                            table._db.commit()
+                        if db._adapter.commit_on_alter_table:
+                            db.commit()
                             tfile = self.file_open(table._dbt, 'w')
                             cPickle.dump(sql_fields_current, tfile)
                             self.file_close(tfile)
@@ -993,7 +1054,7 @@ class BaseAdapter(ConnectionPool):
 
         if metadata_change and \
                 not (query and self.dbengine in ('mysql','oracle','firebird')):
-            table._db.commit()
+            db.commit()
             tfile = self.file_open(table._dbt, 'w')
             cPickle.dump(sql_fields_current, tfile)
             self.file_close(tfile)
@@ -1342,7 +1403,7 @@ class BaseAdapter(ConnectionPool):
             if isinstance(item,SQLALL):
                 new_fields += item._table
             elif isinstance(item,str):
-                if regex_table_field.match(item):
+                if REGEX_TABLE_DOT_FIELD.match(item):
                     tablename,fieldname = item.split('.')
                     append(db[tablename][fieldname])
                 else:
@@ -1364,7 +1425,7 @@ class BaseAdapter(ConnectionPool):
         tablenames = tables(query)
         for field in fields:
             if isinstance(field, basestring) \
-                    and regex_table_field.match(field):
+                    and REGEX_TABLE_DOT_FIELD.match(field):
                 tn,fn = field.split('.')
                 field = self.db[tn][fn]
             for tablename in tables(field):
@@ -1707,7 +1768,7 @@ class BaseAdapter(ConnectionPool):
         elif field_type == 'blob' and not blob_decode:
             return value
         else:
-            key = regex_type.match(field_type).group(0)
+            key = REGEX_TYPE.match(field_type).group(0)
             return self.parsemap[key](value,field_type)
 
     def parse_reference(self, value, field_type):
@@ -1738,18 +1799,18 @@ class BaseAdapter(ConnectionPool):
 
     def parse_datetime(self, value, field_type):
         if not isinstance(value, datetime.datetime):
-            if '+' in value:
-                value,tz = value.split('+')
+            value = str(value)
+            date_part,time_part,timezone = value[:10],value[11:19],value[19:]
+            if '+' in timezone:
+                ms,tz = timezone.split('+')
                 h,m = tz.split(':')
                 dt = datetime.timedelta(seconds=3600*int(h)+60*int(m))
-            elif '-' in value:
-                value,tz = value.split('-')
+            elif '-' in timezone:
+                ms,tz = timezone.split('-')
                 h,m = tz.split(':')
                 dt = -datetime.timedelta(seconds=3600*int(h)+60*int(m))
             else:
                 dt = None
-            date_part, time_part = (
-                str(value).replace('T',' ')+' ').split(' ',1)
             (y, m, d) = map(int,date_part.split('-'))
             time_parts = time_part and time_part.split(':')[:3] or (0,0,0)
             while len(time_parts)<3: time_parts.append(0)
@@ -1822,7 +1883,7 @@ class BaseAdapter(ConnectionPool):
         new_rows = []
         tmps = []
         for colname in colnames:
-            if not regex_table_field.match(colname):
+            if not REGEX_TABLE_DOT_FIELD.match(colname):
                 tmps.append(None)
             else:
                 (tablename, fieldname) = colname.split('.')
@@ -1878,7 +1939,7 @@ class BaseAdapter(ConnectionPool):
                         self.parse_value(value,
                                          fields[j].type,blob_decode)
                     new_column_name = \
-                        regex_select_as_parser.search(colname)
+                        REGEX_SELECT_AS_PARSER.search(colname)
                     if not new_column_name is None:
                         column_name = new_column_name.groups(0)
                         setattr(new_row,column_name[0],value)
@@ -1936,8 +1997,8 @@ class BaseAdapter(ConnectionPool):
 ###################################################################################
 
 class SQLiteAdapter(BaseAdapter):
+    drivers = ('sqlite3','sqlite2')
 
-    driver = globals().get('sqlite3', None)
     can_select_for_update = None    # support ourselves with BEGIN TRANSACTION
 
     def EXTRACT(self,field,what):
@@ -1966,11 +2027,10 @@ class SQLiteAdapter(BaseAdapter):
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "sqlite"
         self.uri = uri
+        self.find_driver(adapter_args)
         self.pool_size = 0
         self.folder = folder
         self.db_codec = db_codec
@@ -1980,7 +2040,7 @@ class SQLiteAdapter(BaseAdapter):
         if uri.startswith('sqlite:memory'):
             dbpath = ':memory:'
         else:
-            dbpath = uri.split('://')[1]
+            dbpath = uri.split('://',1)[1]
             if dbpath[0] != '/':
                 dbpath = pjoin(
                     self.folder.decode(path_encoding).encode('utf8'), dbpath)
@@ -2022,19 +2082,18 @@ class SQLiteAdapter(BaseAdapter):
         return super(SQLiteAdapter, self).select(query, fields, attributes)
 
 class SpatiaLiteAdapter(SQLiteAdapter):
+    drivers = ('sqlite3','sqlite2')
 
-    import copy
     types = copy.copy(BaseAdapter.types)
     types.update(geometry='GEOMETRY')
 
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}, srid=4326):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "spatialite"
         self.uri = uri
+        self.find_driver(adapter_args)
         self.pool_size = 0
         self.folder = folder
         self.db_codec = db_codec
@@ -2045,7 +2104,7 @@ class SpatiaLiteAdapter(SQLiteAdapter):
         if uri.startswith('spatialite:memory'):
             dbpath = ':memory:'
         else:
-            dbpath = uri.split('://')[1]
+            dbpath = uri.split('://',1)[1]
             if dbpath[0] != '/':
                 dbpath = pjoin(
                     self.folder.decode(path_encoding).encode('utf8'), dbpath)
@@ -2131,17 +2190,15 @@ class SpatiaLiteAdapter(SQLiteAdapter):
 
 
 class JDBCSQLiteAdapter(SQLiteAdapter):
-
-    driver = globals().get('zxJDBC', None)
+    drivers = ('zxJDBC_sqlite',)
 
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "sqlite"
         self.uri = uri
+        self.find_driver(adapter_args)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -2151,13 +2208,13 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
         if uri.startswith('sqlite:memory'):
             dbpath = ':memory:'
         else:
-            dbpath = uri.split('://')[1]
+            dbpath = uri.split('://',1)[1]
             if dbpath[0] != '/':
                 dbpath = pjoin(
                     self.folder.decode(path_encoding).encode('utf8'), dbpath)
         def connect(dbpath=dbpath,driver_args=driver_args):
             return self.driver.connect(
-                java.sql.DriverManager.getConnection('jdbc:sqlite:'+dbpath),
+                self.driver.getConnection('jdbc:sqlite:'+dbpath),
                 **driver_args)
         self.pool_connection(connect)
         self.after_connection()
@@ -2172,8 +2229,8 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
 
 
 class MySQLAdapter(BaseAdapter):
+    drivers = ('MySQLdb','pymysql')
 
-    driver = globals().get('pymysql',None)
     maxcharlength = 255
     commit_on_alter_table = True
     support_distributed_transaction = True
@@ -2198,7 +2255,7 @@ class MySQLAdapter(BaseAdapter):
         'list:string': 'LONGTEXT',
         'list:reference': 'LONGTEXT',
         'big-id': 'BIGINT AUTO_INCREMENT NOT NULL',
-        'big-reference': 'BIGINT, INDEX %(index_name`)s (%(field_name)s), FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'big-reference': 'BIGINT, INDEX %(index_name)s (%(field_name)s), FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         }
 
     def varquote(self,name):
@@ -2232,20 +2289,21 @@ class MySQLAdapter(BaseAdapter):
     def concat_add(self,table):
         return '; ALTER TABLE %s ADD ' % table
 
+    REGEX_URI = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^?]+)(\?set_encoding=(?P<charset>\w+))?$')
+
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "mysql"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        uri = uri.split('://')[1]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^?]+)(\?set_encoding=(?P<charset>\w+))?$').match(uri)
+        ruri = uri.split('://',1)[1]
+        m = self.REGEX_URI.match(ruri)
         if not m:
             raise SyntaxError, \
                 "Invalid URI string in DAL: %s" % self.uri
@@ -2269,6 +2327,8 @@ class MySQLAdapter(BaseAdapter):
                            host=host,
                            port=port,
                            charset=charset)
+
+
         def connect(driver_args=driver_args):
             return self.driver.connect(**driver_args)
         self.pool_connection(connect)
@@ -2283,10 +2343,7 @@ class MySQLAdapter(BaseAdapter):
         return int(self.cursor.fetchone()[0])
 
 class PostgreSQLAdapter(BaseAdapter):
-
-    driver = None
-    drivers = {'psycopg2': globals().get('psycopg2', None),
-               'pg8000': globals().get('pg8000', None), }
+    drivers = ('psycopg2','pg8000')
 
     support_distributed_transaction = True
     types = {
@@ -2319,9 +2376,12 @@ class PostgreSQLAdapter(BaseAdapter):
         return varquote_aux(name,'"%s"')
 
     def adapt(self,obj):
-        #if self.driver == self.drivers.get('pg8000'):
-        #    obj = str(obj).replace('%','%%')
-        return psycopg2_adapt(obj).getquoted()
+        if self.driver_name == 'psycopg2':
+            return psycopg2_adapt(obj).getquoted()
+        elif self.driver_name == 'pg8000':
+            return str(obj).replace("%","%%").replace("'","''")
+        else:
+            return str(obj).replace("'","''")
 
     def sequence_name(self,table):
         return '%s_id_Seq' % table
@@ -2355,21 +2415,22 @@ class PostgreSQLAdapter(BaseAdapter):
         #              % (table._tablename, table._fieldname, table._sequence_name))
         self.execute(query)
 
+    REGEX_URI = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?sslmode=(?P<sslmode>.+))?$')
+
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}, srid=4326):
-        if not self.drivers.get('psycopg2') and not self.drivers.get('pg8000'):
-            raise RuntimeError, "Unable to import any drivers (psycopg2 or pg8000)"
         self.db = db
         self.dbengine = "postgres"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
         self.srid = srid
         self.find_or_make_work_folder()
-        library, uri = uri.split('://')[:2]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?sslmode=(?P<sslmode>.+))?$').match(uri)
+        ruri = uri.split('://',1)[1]
+        m = self.REGEX_URI.match(ruri)
         if not m:
             raise SyntaxError, "Invalid URI string in DAL"
         user = credential_decoder(m.group('user'))
@@ -2395,20 +2456,6 @@ class PostgreSQLAdapter(BaseAdapter):
                    "port=%s password='%s'") \
                    % (db, user, host, port, password)
         # choose diver according uri
-        if library == "postgres":
-            if 'psycopg2' in self.drivers:
-                self.driver = self.drivers['psycopg2']
-            elif 'pg8000' in self.drivers:
-                self.driver = self.drivers['pg8000']
-            else:
-                raise RuntimeError, "No pgsql driver"
-        elif library == "postgres:psycopg2":
-            self.driver = self.drivers.get('psycopg2')
-        elif library == "postgres:pg8000":
-            self.driver = self.drivers.get('pg8000')
-        if not self.driver:
-            raise RuntimeError, "%s is not available" % library
-
         self.__version__ = "%s %s" % (self.driver.__name__, self.driver.__version__)
         def connect(msg=msg,driver_args=driver_args):
             return self.driver.connect(msg,**driver_args)
@@ -2539,6 +2586,8 @@ class PostgreSQLAdapter(BaseAdapter):
         return BaseAdapter.represent(self, obj, fieldtype)
 
 class NewPostgreSQLAdapter(PostgreSQLAdapter):
+    drivers = ('psycopg2','pg8000')
+
     types = {
         'boolean': 'CHAR(1)',
         'string': 'VARCHAR(%(length)s)',
@@ -2590,21 +2639,23 @@ class NewPostgreSQLAdapter(PostgreSQLAdapter):
 
 
 class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
+    drivers = ('zxJDBC',)
+
+    REGEX_URI = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>.+)$')
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "postgres"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        uri = uri.split('://')[1]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>.+)$').match(uri)
+        ruri = uri.split('://',1)[1]
+        m = self.REGEX_URI.match(ruri)
         if not m:
             raise SyntaxError, "Invalid URI string in DAL"
         user = credential_decoder(m.group('user'))
@@ -2633,8 +2684,7 @@ class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
 
 
 class OracleAdapter(BaseAdapter):
-
-    driver = globals().get('cx_Oracle',None)
+    drivers = ('cx_Oracle',)
 
     commit_on_alter_table = False
     types = {
@@ -2721,19 +2771,18 @@ class OracleAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "oracle"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        uri = uri.split('://')[1]
+        ruri = uri.split('://',1)[1]
         if not 'threaded' in driver_args:
             driver_args['threaded']=True
-        def connect(uri=uri,driver_args=driver_args):
+        def connect(uri=ruri,driver_args=driver_args):
             return self.driver.connect(uri,**driver_args)
         self.pool_connection(connect)
         self.after_connection()
@@ -2741,6 +2790,7 @@ class OracleAdapter(BaseAdapter):
     def after_connection(self):
         self.execute("ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS';")
         self.execute("ALTER SESSION SET NLS_TIMESTAMP_FORMAT = 'YYYY-MM-DD HH24:MI:SS';")
+
     oracle_fix = re.compile("[^']*('[^']*'[^']*)*\:(?P<clob>CLOB\('([^']+|'')*'\))")
 
     def execute(self, command, args=None):
@@ -2792,14 +2842,13 @@ class OracleAdapter(BaseAdapter):
         if blob_decode and isinstance(value, cx_Oracle.LOB):
             try:
                 value = value.read()
-            except cx_Oracle.ProgrammingError:
+            except self.driver.ProgrammingError:
                 # After a subsequent fetch the LOB value is not valid anymore
                 pass
         return BaseAdapter.parse_value(self, value, field_type, blob_decode)
 
 class MSSQLAdapter(BaseAdapter):
-
-    driver = globals().get('pyodbc',None)
+    drivers = ('pyodbc',)
 
     types = {
         'boolean': 'BIT',
@@ -2869,24 +2918,27 @@ class MSSQLAdapter(BaseAdapter):
                 return '0'
         return None
 
+    REGEX_DSN = re.compile('^(?P<dsn>.+)$')
+    REGEX_URI = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?(?P<urlargs>.*))?$')
+    REGEX_ARGPATTERN = re.compile('(?P<argkey>[^=]+)=(?P<argvalue>[^&]*)')
+
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                     adapter_args={}, fake_connect=False, srid=4326):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "mssql"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
         self.srid = srid
         self.find_or_make_work_folder()
         # ## read: http://bytes.com/groups/python/460325-cx_oracle-utf8
-        uri = uri.split('://')[1]
-        if '@' not in uri:
+        ruri = uri.split('://',1)[1]
+        if '@' not in ruri:
             try:
-                m = re.compile('^(?P<dsn>.+)$').match(uri)
+                m = self.REGEX_DSN.match(ruri)
                 if not m:
                     raise SyntaxError, \
                         'Parsing uri string(%s) has no result' % self.uri
@@ -2899,10 +2951,10 @@ class MSSQLAdapter(BaseAdapter):
             # was cnxn = 'DSN=%s' % dsn
             cnxn = dsn
         else:
-            m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?(?P<urlargs>.*))?$').match(uri)
+            m = self.REGEX_URI.match(ruri)
             if not m:
                 raise SyntaxError, \
-                    "Invalid URI string in DAL: %s" % uri
+                    "Invalid URI string in DAL: %s" % self.uri
             user = credential_decoder(m.group('user'))
             if not user:
                 raise SyntaxError, 'User required'
@@ -2920,9 +2972,8 @@ class MSSQLAdapter(BaseAdapter):
             # (in the form of arg1=value1&arg2=value2&...)
             # Default values (drivers like FreeTDS insist on uppercase parameter keys)
             argsdict = { 'DRIVER':'{SQL Server}' }
-            urlargs = m.group('urlargs') or ''
-            argpattern = re.compile('(?P<argkey>[^=]+)=(?P<argvalue>[^&]*)')
-            for argmatch in argpattern.finditer(urlargs):
+            urlargs = m.group('urlargs') or ''            
+            for argmatch in self.REGEX_ARGPATTERN.finditer(urlargs):
                 argsdict[str(argmatch.group('argkey')).upper()] = argmatch.group('argvalue')
             urlargs = ';'.join(['%s=%s' % (ak, av) for (ak, av) in argsdict.iteritems()])
             cnxn = 'SERVER=%s;PORT=%s;DATABASE=%s;UID=%s;PWD=%s;%s' \
@@ -2997,6 +3048,8 @@ class MSSQLAdapter(BaseAdapter):
 
 
 class MSSQL2Adapter(MSSQLAdapter):
+    drivers = ('pyodbc',)
+
     types = {
         'boolean': 'CHAR(1)',
         'string': 'NVARCHAR(%(length)s)',
@@ -3033,8 +3086,7 @@ class MSSQL2Adapter(MSSQLAdapter):
         return self.log_execute(a.decode('utf8'))
 
 class SybaseAdapter(MSSQLAdapter):
-
-    driver = globals().get('Sybase',None)
+    drivers = ('Sybase',)
 
     types = {
         'boolean': 'BIT',
@@ -3068,22 +3120,20 @@ class SybaseAdapter(MSSQLAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                     adapter_args={}, fake_connect=False, srid=4326):
-        ### Fix this for sybase
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "sybase"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
         self.srid = srid
         self.find_or_make_work_folder()
         # ## read: http://bytes.com/groups/python/460325-cx_oracle-utf8
-        uri = uri.split('://')[1]
-        if '@' not in uri:
+        ruri = uri.split('://',1)[1]
+        if '@' not in ruri:
             try:
-                m = re.compile('^(?P<dsn>.+)$').match(uri)
+                m = self.REGEX_DSN.match(ruri)
                 if not m:
                     raise SyntaxError, \
                         'Parsing uri string(%s) has no result' % self.uri
@@ -3094,10 +3144,10 @@ class SybaseAdapter(MSSQLAdapter):
                 logger.error('NdGpatch error')
                 raise e
         else:
-            m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?(?P<urlargs>.*))?$').match(uri)
+            m = self.REGEX_URI.match(uri)            
             if not m:
                 raise SyntaxError, \
-                    "Invalid URI string in DAL: %s" % uri
+                    "Invalid URI string in DAL: %s" % self.uri
             user = credential_decoder(m.group('user'))
             if not user:
                 raise SyntaxError, 'User required'
@@ -3129,8 +3179,7 @@ class SybaseAdapter(MSSQLAdapter):
 
 
 class FireBirdAdapter(BaseAdapter):
-
-    driver = globals().get('pyodbc',None)
+    drivers = ('kinterbasdb','firebirdsql','fdb','pyodbc')
 
     commit_on_alter_table = False
     support_distributed_transaction = True
@@ -3187,30 +3236,23 @@ class FireBirdAdapter(BaseAdapter):
         return ['DELETE FROM %s;' % table._tablename,
                 'SET GENERATOR %s TO 0;' % table._sequence_name]
 
+    REGEX_URI = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>.+?)(\?set_encoding=(?P<charset>\w+))?$')
+
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}):
-        if 'driver_name' in adapter_args:
-            if adapter_args['driver_name'] == 'kinterbasdb':
-                self.driver = kinterbasdb
-            elif adapter_args['driver_name'] == 'firebirdsql':
-                self.driver = firebirdsql
-        else:
-            self.driver = kinterbasdb
-
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
+                 adapter_args={}): 
         self.db = db
         self.dbengine = "firebird"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        uri = uri.split('://')[1]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>.+?)(\?set_encoding=(?P<charset>\w+))?$').match(uri)
+        ruri = uri.split('://',1)[1]
+        m = self.REGEX_URI.match(ruri)
         if not m:
-            raise SyntaxError, "Invalid URI string in DAL: %s" % uri
+            raise SyntaxError, "Invalid URI string in DAL: %s" % self.uri
         user = credential_decoder(m.group('user'))
         if not user:
             raise SyntaxError, 'User required'
@@ -3251,30 +3293,23 @@ class FireBirdAdapter(BaseAdapter):
 
 
 class FireBirdEmbeddedAdapter(FireBirdAdapter):
+    drivers = ('kinterbasdb','firebirdsql','fdb','pyodbc')
+
+    REGEX_URI = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<path>[^\?]+)(\?set_encoding=(?P<charset>\w+))?$')
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-
-        if 'driver_name' in adapter_args:
-            if adapter_args['driver_name'] == 'kinterbasdb':
-                self.driver = kinterbasdb
-            elif adapter_args['driver_name'] == 'firebirdsql':
-                self.driver = firebirdsql
-        else:
-            self.driver = kinterbasdb
-
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "firebird"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        uri = uri.split('://')[1]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<path>[^\?]+)(\?set_encoding=(?P<charset>\w+))?$').match(uri)
+        ruri = uri.split('://',1)[1]
+        m = self.REGEX_URI.match(ruri)
         if not m:
             raise SyntaxError, \
                 "Invalid URI string in DAL: %s" % self.uri
@@ -3296,9 +3331,7 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
                            user=credential_decoder(user),
                            password=credential_decoder(password),
                            charset=charset)
-        #def connect(driver_args=driver_args):
-        #    return kinterbasdb.connect(**driver_args)
-
+        
         def connect(driver_args=driver_args):
             return self.driver.connect(**driver_args)
         self.pool_connection(connect)
@@ -3306,8 +3339,7 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
 
 
 class InformixAdapter(BaseAdapter):
-
-    driver = globals().get('informixdb',None)
+    drivers = ('informixdb',)
 
     types = {
         'boolean': 'CHAR(1)',
@@ -3371,20 +3403,21 @@ class InformixAdapter(BaseAdapter):
             return "to_date('%s','%%Y-%%m-%%d %%H:%%M:%%S')" % obj
         return None
 
+    REGEX_URI = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>.+)$')
+
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "informix"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        uri = uri.split('://')[1]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>.+)$').match(uri)
+        ruri = uri.split('://',1)[1]
+        m = self.REGEX_URI.match(ruri)
         if not m:
             raise SyntaxError, \
                 "Invalid URI string in DAL: %s" % self.uri
@@ -3422,8 +3455,7 @@ class InformixAdapter(BaseAdapter):
 
 
 class DB2Adapter(BaseAdapter):
-
-    driver = globals().get('pyodbc',None)
+    drivers = ('pyodbc',)
 
     types = {
         'boolean': 'CHAR(1)',
@@ -3478,17 +3510,16 @@ class DB2Adapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "db2"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        cnxn = uri.split('://', 1)[1]
-        def connect(cnxn=cnxn,driver_args=driver_args):
+        ruri = uri.split('://', 1)[1]
+        def connect(cnxn=ruri,driver_args=driver_args):
             return self.driver.connect(cnxn,**driver_args)
         self.pool_connection(connect)
         self.after_connection()
@@ -3509,8 +3540,7 @@ class DB2Adapter(BaseAdapter):
 
 
 class TeradataAdapter(BaseAdapter):
-
-    driver = globals().get('pyodbc',None)
+    drivers = ('pyodbc',)
 
     types = {
         'boolean': 'CHAR(1)',
@@ -3543,17 +3573,16 @@ class TeradataAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "teradata"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        cnxn = uri.split('://', 1)[1]
-        def connect(cnxn=cnxn,driver_args=driver_args):
+        ruri = uri.split('://', 1)[1]
+        def connect(cnxn=ruri,driver_args=driver_args):
             return self.driver.connect(cnxn,**driver_args)
         self.pool_connection(connect)
         self.after_connection()
@@ -3577,8 +3606,7 @@ INGRES_SEQNAME='ii***lineitemsequence' # NOTE invalid database object name
                                        # to be a delimited identifier)
 
 class IngresAdapter(BaseAdapter):
-
-    driver = globals().get('ingresdbi',None)
+    drivers = ('ingresdbi',)
 
     types = {
         'boolean': 'CHAR(1)',
@@ -3626,11 +3654,10 @@ class IngresAdapter(BaseAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "ingres"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3680,6 +3707,9 @@ class IngresAdapter(BaseAdapter):
 
 
 class IngresUnicodeAdapter(IngresAdapter):
+
+    drivers = ('ingresdbi',)
+
     types = {
         'boolean': 'CHAR(1)',
         'string': 'NVARCHAR(%(length)s)',
@@ -3707,8 +3737,8 @@ class IngresUnicodeAdapter(IngresAdapter):
         }
 
 class SAPDBAdapter(BaseAdapter):
+    drivers = ('sapdb',)
 
-    driver = globals().get('sapdb',None)
     support_distributed_transaction = False
     types = {
         'boolean': 'CHAR(1)',
@@ -3754,20 +3784,22 @@ class SAPDBAdapter(BaseAdapter):
                          % (table._tablename, table._id.name, table._sequence_name))
         self.execute(query)
 
+    REGEX_URI = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?sslmode=(?P<sslmode>.+))?$')
+
+
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "sapdb"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        uri = uri.split('://')[1]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?sslmode=(?P<sslmode>.+))?$').match(uri)
+        ruri = uri.split('://',1)[1]
+        m = self.REGEX_URI.match(ruri)
         if not m:
             raise SyntaxError, "Invalid URI string in DAL"
         user = credential_decoder(m.group('user'))
@@ -3794,23 +3826,23 @@ class SAPDBAdapter(BaseAdapter):
         return int(self.cursor.fetchone()[0])
 
 class CubridAdapter(MySQLAdapter):
+    drivers = ('cubriddb',)
 
-    driver = globals().get('cubriddb', None)
+    REGEX_URI = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^?]+)(\?set_encoding=(?P<charset>\w+))?$')
 
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
-        if not self.driver:
-            raise RuntimeError, "Unable to import driver"
         self.db = db
         self.dbengine = "cubrid"
         self.uri = uri
+        self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
         self.find_or_make_work_folder()
-        uri = uri.split('://')[1]
-        m = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^?]+)(\?set_encoding=(?P<charset>\w+))?$').match(uri)
+        ruri = uri.split('://',1)[1]
+        m = self.REGEX_URI.match(ruri)
         if not m:
             raise SyntaxError, \
                 "Invalid URI string in DAL: %s" % self.uri
@@ -3929,6 +3961,8 @@ class UseDatabaseStoredFile:
 class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
     uploads_in_blob = True
 
+    REGEX_URI = re.compile('^(?P<instance>.*)/(?P<db>.*)$')
+
     def __init__(self, db, uri='google:sql://realm:domain/database',
                  pool_size=0, folder=None, db_codec='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
@@ -3941,10 +3975,10 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
         self.db_codec = db_codec
         self.folder = folder or pjoin('$HOME',thread.folder.split(
                 os.sep+'applications'+os.sep,1)[1])
-
-        m = re.compile('^(?P<instance>.*)/(?P<db>.*)$').match(self.uri[len('google:sql://'):])
+        ruri = uri.split("://")[1]
+        m = self.REGEX_URI.match(ruri)
         if not m:
-            raise SyntaxError, "Invalid URI string in SQLDB: %s" % self._uri
+            raise SyntaxError, "Invalid URI string in SQLDB: %s" % self.uri
         instance = credential_decoder(m.group('instance'))
         self.dbstring = db = credential_decoder(m.group('db'))
         driver_args['instance'] = instance
@@ -4138,6 +4172,8 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
     def file_open(self, filename, mode='rb', lock=True): pass
     def file_close(self, fileobj): pass
 
+    REGEX_NAMESPACE = re.compile('.*://(?P<namespace>.+)')
+
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
@@ -4169,7 +4205,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         db['_lastsql'] = ''
         self.db_codec = 'UTF-8'
         self.pool_size = 0
-        match = re.compile('.*://(?P<namespace>.+)').match(uri)
+        match = self.REGEX_NAMESPACE.match(uri)
         if match:
             namespace_manager.set_namespace(match.group('namespace'))
 
@@ -4329,9 +4365,9 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
 
     def select_raw(self,query,fields=None,attributes=None):
         db = self.db
-        args_get = attributes.get
         fields = fields or []
         attributes = attributes or {}
+        args_get = attributes.get
         new_fields = []
         for item in fields:
             if isinstance(item,SQLALL):
@@ -4533,6 +4569,8 @@ def int2uuid(n):
     return str(uuid.UUID(int=n))
 
 class CouchDBAdapter(NoSQLAdapter):
+    drivers = ('couchdb',)
+
     uploads_in_blob = True
     types = {
                 'boolean': bool,
@@ -4599,6 +4637,7 @@ class CouchDBAdapter(NoSQLAdapter):
                  adapter_args={}):
         self.db = db
         self.uri = uri
+        self.find_driver(adapter_args)
         self.dbengine = 'couchdb'
         self.folder = folder
         db['_lastsql'] = ''
@@ -4607,7 +4646,7 @@ class CouchDBAdapter(NoSQLAdapter):
 
         url='http://'+uri[10:]
         def connect(url=url,driver_args=driver_args):
-            return couchdb.Server(url,**driver_args)
+            return self.driver.Server(url,**driver_args)
         self.pool_connection(connect,cursor=False)
         self.after_connection()
 
@@ -4726,14 +4765,13 @@ def cleanup(text):
     """
     validates that the given text is clean: only contains [0-9a-zA-Z_]
     """
-
-    if re.compile('[^0-9a-zA-Z_]').findall(text):
-        raise SyntaxError, \
-            'only [0-9a-zA-Z_] allowed in table and field names, received %s' \
-            % text
+    if not REGEX_ALPHANUMERIC.match(text):
+        raise SyntaxError, 'invalid table or field name: %s' % text
     return text
 
 class MongoDBAdapter(NoSQLAdapter):
+    drivers = ('pymongo',)
+
     uploads_in_blob = True
 
     types = {
@@ -4761,6 +4799,10 @@ class MongoDBAdapter(NoSQLAdapter):
                  pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}):
+        self.db = db
+        self.uri = uri
+        self.find_driver(adapter_args)
+
         m=None
         try:
             #Since version 2
@@ -4775,8 +4817,6 @@ class MongoDBAdapter(NoSQLAdapter):
                 raise ImportError("Uriparser for mongodb is not available")
         except:
             raise SyntaxError("This type of uri is not supported by the mongodb uri parser")
-        self.db = db
-        self.uri = uri
         self.dbengine = 'mongodb'
         self.folder = folder
         db['_lastsql'] = ''
@@ -4795,8 +4835,8 @@ class MongoDBAdapter(NoSQLAdapter):
             raise SyntaxError("Database is required!")
         def connect(uri=self.uri,m=m):
             try:
-                return pymongo.Connection(uri)[m.get('database')]
-            except pymongo.errors.ConnectionFailure, inst:
+                return self.driver.Connection(uri)[m.get('database')]
+            except self.driver.errors.ConnectionFailure, inst:
                 raise SyntaxError, "The connection to " + uri + " could not be made"
             except Exception, inst:
                 if inst == "cannot specify database without a username and password":
@@ -5333,6 +5373,8 @@ class MongoDBAdapter(NoSQLAdapter):
 
 
 class IMAPAdapter(NoSQLAdapter):
+    drivers = ('imaplib',)
+
     """ IMAP server adapter
 
       This class is intended as an interface with
@@ -5459,7 +5501,8 @@ class IMAPAdapter(NoSQLAdapter):
         }
 
     dbengine = 'imap'
-    driver = globals().get('imaplib',None)
+
+    REGEX_URI = re.compile('^(?P<user>[^:]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@]+)(\:(?P<port>[0-9]+))?$')
 
     def __init__(self,
                  db,
@@ -5474,9 +5517,9 @@ class IMAPAdapter(NoSQLAdapter):
         # db uri: user@example.com:password@imap.server.com:123
         # TODO: max size adapter argument for preventing large mail transfers
 
-        uri = uri.split("://")[1]
         self.db = db
         self.uri = uri
+        self.find_driver(adapter_args)
         self.pool_size=pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -5487,6 +5530,7 @@ class IMAPAdapter(NoSQLAdapter):
         self.charset = sys.getfilesystemencoding()
         # imap class
         self.imap4 = None
+        uri = uri.split("://")[1]
 
         """ MESSAGE is an identifier for sequence number"""
 
@@ -5507,7 +5551,7 @@ class IMAPAdapter(NoSQLAdapter):
 
         db['_lastsql'] = ''
 
-        m = re.compile('^(?P<user>[^:]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:@]+)(\:(?P<port>[0-9]+))?$').match(uri)
+        m = self.REGEX_URI.match(uri)
         user = m.group('user')
         password = m.group('password')
         host = m.group('host')
@@ -6350,7 +6394,8 @@ def bar_decode_integer(value):
     return [int(x) for x in value.split('|') if x.strip()]
 
 def bar_decode_string(value):
-    return [x.replace('||', '|') for x in string_unpack.split(value[1:-1]) if x.strip()]
+    return [x.replace('||', '|') for x in
+            REGEX_UNPACK.split(value[1:-1]) if x.strip()]
 
 
 class Row(object):
@@ -6365,7 +6410,7 @@ class Row(object):
 
     def __getitem__(self, key):
         key=str(key)
-        m = regex_table_field.match(key)
+        m = REGEX_TABLE_DOT_FIELD.match(key)
         if key in self.get('_extra',{}):
             return self._extra[key]
         elif m:
@@ -6492,11 +6537,10 @@ def smart_query(fields,text):
         n = str(field).lower()
         if not n in field_map:
             field_map[n] = field
-    re_constants = re.compile('(\"[^\"]*?\")|(\'[^\']*?\')')
     constants = {}
     i = 0
     while True:
-        m = re_constants.search(text)
+        m = REGEX_CONST_STRING.search(text)
         if not m: break
         text = text[:m.start()]+('#%i' % i)+text[m.end():]
         constants[str(i)] = m.group()[1:-1]
@@ -6706,7 +6750,7 @@ class DAL(object):
                     try:
                         if is_jdbc and not uri.startswith('jdbc:'):
                             uri = 'jdbc:'+uri
-                        self._dbname = regex_dbname.match(uri).group()
+                        self._dbname = REGEX_DBNAME.match(uri).group()
                         if not self._dbname in ADAPTERS:
                             raise SyntaxError, "Error in URI '%s' or database not supported" % self._dbname
                         # notice that driver args or {} else driver_args
@@ -6819,8 +6863,8 @@ def index():
         """
 
         db = self
-        re1 = re.compile('^{[^\.]+\.[^\.]+(\.(lt|gt|le|ge|eq|ne|contains|startswith|year|month|day|hour|minute|second))?(\.not)?}$')
-        re2 = re.compile('^.+\[.+\]$')
+        re1 = REGEX_SEARCH_PATTERN
+        re2 = REGEX_SQUARE_BRACKETS
 
         def auto_table(table,base='',depth=0):
             patterns = []
@@ -7023,7 +7067,7 @@ def index():
         if not isinstance(tablename,str):
             raise SyntaxError, "missing table name"
         elif tablename.startswith('_') or hasattr(self,tablename) or \
-                regex_python_keywords.match(tablename):
+                REGEX_PYTHON_KEYWORDS.match(tablename):
             raise SyntaxError, 'invalid table name: %s' % tablename
         elif tablename in self.tables:
             raise SyntaxError, 'table already defined: %s' % tablename
@@ -7547,7 +7591,7 @@ class Table(object):
             if rows:
                 return rows[0]
             return None
-        elif str(key).isdigit() or 'google' in drivers and isinstance(key, Key):
+        elif str(key).isdigit() or 'google' in DRIVERS and isinstance(key, Key):
             return self._db(self._id == key).select(limitby=(0,1)).first()
         elif key:
             return ogetattr(self, str(key))
@@ -7673,21 +7717,25 @@ class Table(object):
                     to_compute.append((name,ofield))
                 # if field is required, check its default value
                 elif not update and not ofield.default is None:
-                    new_fields[name] = (ofield,ofield.default)
+                    value = ofield.default
+                    fields[name] = value
+                    new_fields[name] = (ofield,value)
                 # if this is an update, user the update field instead
                 elif update and not ofield.update is None:
-                    new_fields[name] = (ofield,ofield.update)
+                    value = ofield.update
+                    fields[name] = value
+                    new_fields[name] = (ofield,value)
                 # if the field is still not there but it should, error
                 elif not update and ofield.required:
                     raise RuntimeError, \
                         'Table: missing required field: %s' % name
         # now deal with fields that are supposed to be computed
         if to_compute:
-            dummyrow = Row(new_fields)
+            row = Row(fields)
             for name,ofield in to_compute:
                 # try compute it
                 try:
-                    new_fields[name] = (ofield,ofield.compute(dummyrow))
+                    new_fields[name] = (ofield,ofield.compute(row))
                 except (KeyError, AttributeError):
                     # error sinlently unless field is required!
                     if ofield.required:
@@ -7931,6 +7979,7 @@ class Expression(object):
         self.op = op
         self.first = first
         self.second = second
+        self._table = getattr(first,'_table',None)
         ### self._tablename =  first._tablename ## CHECK
         if not type and first and hasattr(first,'type'):
             self.type = first.type
@@ -8329,7 +8378,7 @@ class Field(Expression):
         self.second = None
         self.name = fieldname = cleanup(fieldname)
         if not isinstance(fieldname,str) or hasattr(Table,fieldname) or \
-                fieldname[0] == '_' or regex_python_keywords.match(fieldname):
+                fieldname[0] == '_' or REGEX_PYTHON_KEYWORDS.match(fieldname):
             raise SyntaxError, 'Field: invalid field name: %s' % fieldname
         self.type = type if not isinstance(type, Table) else 'reference %s' % type
         self.length = length if not length is None else DEFAULTLENGTH.get(self.type,512)
@@ -8383,8 +8432,8 @@ class Field(Expression):
         elif not filename:
             filename = file.name
         filename = os.path.basename(filename.replace('/', os.sep)\
-                                        .replace('\\', os.sep))
-        m = re.compile('\.(?P<e>\w{1,5})$').search(filename)
+                                        .replace('\\', os.sep))        
+        m = REGEX_STORE_PATTERN.search(filename)
         extension = m and m.group('e') or 'txt'
         uuid_key = web2py_uuid().replace('-', '')[-16:]
         encoded_filename = base64.b16encode(filename).lower()
@@ -8437,7 +8486,7 @@ class Field(Expression):
                 raise http.HTTP(404)
         if self.authorize and not self.authorize(row):
             raise http.HTTP(403)
-        m = regex_content.match(name)
+        m = REGEX_UPLOAD_PATTERN.match(name)
         if not m or not self.isattachment:
             raise TypeError, 'Can\'t retrieve %s' % name
         file_properties = self.retrieve_file_properties(name,path)
@@ -8462,11 +8511,11 @@ class Field(Expression):
         if self.custom_retrieve_file_properties:
             return self.custom_retrieve_file_properties(name, path)
         try:
-            m = regex_content.match(name)
+            m = REGEX_UPLOAD_PATTERN.match(name)
             if not m or not self.isattachment:
                 raise TypeError, 'Can\'t retrieve %s file properties' % name
             filename = base64.b16decode(m.group('name'), True)
-            filename = regex_cleanup_fn.sub('_', filename)
+            filename = REGEX_CLEANUP_FN.sub('_', filename)
         except (TypeError, AttributeError):
             filename = name
         if isinstance(self_uploadfield, str):  # ## if file is in DB
@@ -8576,7 +8625,6 @@ class Query(object):
         return Query(self.db,self.db._adapter.NOT,self)
 
 
-regex_quotes = re.compile("'[^']*'")
 
 
 def xorify(orderby):
@@ -8932,18 +8980,24 @@ class Rows(object):
             return None
         return self[-1]
 
-    def find(self,f):
+    def find(self,f,limitby=None):
         """
         returns a new Rows object, a subset of the original object,
         filtered by the function f
         """
-        if not self.records:
+        if not self:
             return Rows(self.db, [], self.colnames)
         records = []
-        for i in range(0,len(self)):
-            row = self[i]
+        if limitby:
+            a,b = limitby
+        else:
+            a,b = 0,len(self)
+        k = 0
+        for row in self:
             if f(row):
-                records.append(self.records[i])
+                if a<=k: records.append(row)
+                k += 1
+                if k==b: break
         return Rows(self.db, records, self.colnames)
 
     def exclude(self, f):
@@ -9079,7 +9133,7 @@ class Rows(object):
         for record in self:
             row = []
             for col in colnames:
-                if not regex_table_field.match(col):
+                if not REGEX_TABLE_DOT_FIELD.match(col):
                     row.append(record._extra[col])
                 else:
                     (t, f) = col.split('.')
@@ -9098,8 +9152,7 @@ class Rows(object):
     def xml(self,strict=False,row_name='row',rows_name='rows'):
         """
         serializes the table using sqlhtml.SQLTABLE (if present)
-        """
-        alphanumeric = re.compile('[a-zA-Z]\w*')
+        """        
         if strict:
             ncols = len(self.colnames)
             def f(row,field,indent='  '):
@@ -9113,9 +9166,8 @@ class Rows(object):
                         indent,
                         field)
                 elif not callable(row):
-                    if alphanumeric.match(field):
-                        return '%s<%s>%s</%s>' % \
-                            (indent,field,row,field)
+                    if REGEX_ALPHANUMERIC.match(field):
+                        return '%s<%s>%s</%s>' % (indent,field,row,field)
                     else:
                         return '%s<extra name="%s">%s</extra>' % \
                             (indent,field,row)
@@ -9139,7 +9191,7 @@ class Rows(object):
         def inner_loop(record, col):
             (t, f) = col.split('.')
             res = None
-            if not regex_table_field.match(col):
+            if not REGEX_TABLE_DOT_FIELD.match(col):
                 key = col
                 res = record._extra[col]
             else:
@@ -9403,8 +9455,3 @@ DAL.Table = Table  # was necessary in gluon/globals.py session.connect
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-
-
-
-
-

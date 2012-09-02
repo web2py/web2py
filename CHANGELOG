@@ -23,6 +23,7 @@
 - Support for Google App Engine projections, thanks Christian
 - Field(... 'upload', default=path) now accepts a path to a local file as default value, if user does not upload a file. Relative path looks inside current application folder, thanks Marin
 - executesql(...,fields=,columns=) allows parsing of results in Rows, thanks Anthony
+- Rows.find(lambda row: bool(), limitby=(0,1))
 
 ### Auth improvements
 
@@ -80,6 +81,7 @@
 
 ### Other Improvements 
 
+- gluon/contrib/webclient.py makes it easy to create functional tests for app
 - DIV(..).elements(...replace=...), thanks Anthony
 - new layout based on Twitter Bootstrap
 - New generic views: generic.ics (Mac Mail Calendar) and generic.map (Google Maps)

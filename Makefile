@@ -29,7 +29,7 @@ update:
 	wget -O gluon/contrib/simplejsonrpc.py http://rad2py.googlecode.com/hg/ide2py/simplejsonrpc.py
 	echo "remember that pymysql was tweaked"
 src:
-	echo 'Version 2.00.1 ('`date +%Y-%m-%d\ %H:%M:%S`') rc4' > VERSION
+	echo 'Version 2.0.6 ('`date +%Y-%m-%d\ %H:%M:%S`') stable' > VERSION
 	### rm -f all junk files
 	make clean
 	### clean up baisc apps
@@ -127,5 +127,5 @@ push:
 tag:
 	git tag -l '$(S)'
 	hg tag -l '$(S)'
-	make commit
+	make commit S='$(S)'
 	make push

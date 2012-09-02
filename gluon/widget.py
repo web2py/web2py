@@ -33,8 +33,9 @@ try:
     import Tkinter, tkMessageBox
     import contrib.taskbar_widget
     from winservice import web2py_windows_service_handler
+    have_winservice = True
 except:
-    pass
+    have_winservice = False
 
 
 try:
@@ -1003,9 +1004,9 @@ def start(cron=True):
         print ProgramAuthor
         print ProgramVersion
 
-    from dal import drivers
+    from dal import DRIVERS
     if not options.nobanner:
-        print 'Database drivers available: %s' % ', '.join(drivers)
+        print 'Database drivers available: %s' % ', '.join(DRIVERS)
 
 
     # ## if -L load options from options.config file
@@ -1080,8 +1081,12 @@ def start(cron=True):
     # ## if -W install/start/stop web2py as service
     if options.winservice:
         if os.name == 'nt':
-            web2py_windows_service_handler(['', options.winservice],
-                    options.config)
+            if have_winservice:
+                web2py_windows_service_handler(['', options.winservice],
+                                               options.config)
+            else:
+                print 'Error: Missing python module winservice'
+                sys.exit(1)
         else:
             print 'Error: Windows services not supported on this platform'
             sys.exit(1)

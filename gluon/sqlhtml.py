@@ -24,7 +24,7 @@ from html import FORM, INPUT, LABEL, OPTION, SELECT, BUTTON
 from html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
 from html import URL, truncate_string, FIELDSET
 from dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
-    bar_encode, regex_table_field, Reference
+    bar_encode, Reference, REGEX_TABLE_DOT_FIELD
 from storage import Storage
 from utils import md5_hash
 from validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE, \
@@ -1042,20 +1042,19 @@ class SQLFORM(FORM):
         # build a link
         if record and linkto:
             db = linkto.split('/')[-1]
-            for (rtable, rfield) in table._referenced_by:
+            for rfld in table._referenced_by:
                 if keyed:
-                    rfld = table._db[rtable][rfield]
                     query = urllib.quote('%s.%s==%s' % (db,rfld,record[rfld.type[10:].split('.')[1]]))
                 else:
-                    query = urllib.quote('%s.%s==%s' % (db,table._db[rtable][rfield],record[self.id_field_name]))
-                lname = olname = '%s.%s' % (rtable, rfield)
+                    query = urllib.quote('%s.%s==%s' % (db,rfld,record[self.id_field_name]))
+                lname = olname = '%s.%s' % (rfld.tablename, rfld.name)
                 if ofields and not olname in ofields:
                     continue
                 if labels and lname in labels:
                     lname = labels[lname]
                 widget = A(lname,
                            _class='reference',
-                           _href='%s/%s?query=%s' % (linkto, rtable, query))
+                           _href='%s/%s?query=%s' % (linkto, rfld.tablename, query))
                 xfields.append((olname.replace('.', '__')+SQLFORM.ID_ROW_SUFFIX,
                                 '',widget,col3.get(olname,'')))
                 self.custom.linkto[olname.replace('.', '__')] = widget
@@ -1657,7 +1656,7 @@ class SQLFORM(FORM):
         if user_signature:
             if (args != request.args and user_signature and \
                     not URL.verify(request,user_signature=user_signature)) or \
-                    (not session.auth.user and \
+                    (not (session.auth and session.auth.user) and \
                          ('edit' in request.args or \
                               'create' in request.args or \
                               'delete' in request.args)):
@@ -1827,14 +1826,15 @@ class SQLFORM(FORM):
                     try:
                         dbset = dbset(SQLFORM.build_query(
                                 fields,request.vars.get('keywords','')))
-                        rows = dbset.select()
+                        rows = dbset.select(cacheable=True)
                     except Exception, e:
                         response.flash = T('Internal Error')
                         rows = []
                 else:
-                    rows = dbset.select()
+                    rows = dbset.select(cacheable=True)
             else:
-                rows = dbset.select(left=left,orderby=orderby,*columns)
+                rows = dbset.select(left=left,orderby=orderby,
+                                    cacheable=True*columns)
 
             if export_type in exportManager:
                 value = exportManager[export_type]
@@ -1893,7 +1893,8 @@ class SQLFORM(FORM):
         try:
             if left or groupby:
                 c = 'count(*)'
-                nrows = dbset.select(c,left=left,groupby=groupby).first()[c]
+                nrows = dbset.select(c,left=left,cacheable=True,
+                                     groupby=groupby).first()[c]
             else:
                 nrows = dbset.count()
         except:
@@ -1977,7 +1978,9 @@ class SQLFORM(FORM):
 
         try:
             table_fields = [f for f in fields if f._tablename in tablenames]
-            rows = dbset.select(left=left,orderby=orderby,groupby=groupby,limitby=limitby,*table_fields)
+            rows = dbset.select(left=left,orderby=orderby,
+                                groupby=groupby,limitby=limitby,
+                                cacheable=True,*table_fields)
         except SyntaxError:
             rows = None
             error = T("Query Not Supported")
@@ -2187,12 +2190,14 @@ class SQLFORM(FORM):
                         LI(A(T(db[referee]._plural),
                              _class=trap_class(),
                              _href=url()),
-                           SPAN(divider,_class='divider'),_class='w2p_grid_breadcrumb_elem'))
+                           SPAN(divider,_class='divider'),
+                           _class='w2p_grid_breadcrumb_elem'))
                     if kwargs.get('details',True):
                         breadcrumbs.append(
                             LI(A(name,_class=trap_class(),
                                  _href=url(args=['view',referee,id])),
-                               SPAN(divider,_class='divider'),_class='w2p_grid_breadcrumb_elem'))
+                               SPAN(divider,_class='divider'),
+                               _class='w2p_grid_breadcrumb_elem'))
                     nargs+=2
                 else:
                     break
@@ -2218,16 +2223,18 @@ class SQLFORM(FORM):
                     del kwargs[key]
         check = {}
         id_field_name = table._id.name
-        for tablename,fieldname in table._referenced_by:
-            if db[tablename][fieldname].readable:
-                check[tablename] = check.get(tablename,[])+[fieldname]
+        for rfield in table._referenced_by:
+            if rfield.readable:
+                check[rfield.tablename] = \
+                    check.get(rfield.tablename,[])+[rfield.name]
         for tablename in sorted(check):
             linked_fieldnames = check[tablename]
             tb = db[tablename]
             multiple_links = len(linked_fieldnames)>1
             for fieldname in linked_fieldnames:
                 if linked_tables is None or tablename in linked_tables:
-                    t = T(tb._plural) if not multiple_links else T(tb._plural+'('+fieldname+')')
+                    t = T(tb._plural) if not multiple_links else \
+                        T(tb._plural+'('+fieldname+')')
                     args0 = tablename+'.'+fieldname
                     links.append(
                         lambda row,t=t,nargs=nargs,args0=args0:\
@@ -2561,7 +2568,7 @@ class ExportClass(object):
         for record in self.rows:
             row = []
             for col in self.rows.colnames:
-                if not regex_table_field.match(col):
+                if not REGEX_TABLE_DOT_FIELD.match(col):
                     row.append(record._extra[col])
                 else:
                     (t, f) = col.split('.')
