@@ -38,6 +38,7 @@ thread = threading.local()  # thread-local storage for routing params
 regex_at = re.compile(r'(?<!\\)\$[a-zA-Z]\w*')
 regex_anything = re.compile(r'(?<!\\)\$anything')
 regex_redirect = re.compile(r'(\d+)->(.*)')
+regex_full_url = re.compile(r'^(?P<scheme>http|https|HTTP|HTTPS)\://(?P<host>[^/]*)(?P<uri>.*)')
 
 def _router_default():
     "return new copy of default base router"
@@ -695,11 +696,14 @@ def regex_filter_out(url, e=None):
     return url
 
 
-def filter_url(url, method='get', remote='0.0.0.0', out=False, app=False, lang=None,
-        domain=(None,None), env=False, scheme=None, host=None, port=None):
-    "doctest/unittest interface to regex_filter_in() and regex_filter_out()"
-    regex_url = re.compile(r'^(?P<scheme>http|https|HTTP|HTTPS)\://(?P<host>[^/]*)(?P<uri>.*)')
-    match = regex_url.match(url)
+def filter_url(url, method='get', remote='0.0.0.0', 
+               out=False, app=False, lang=None,
+               domain=(None,None), env=False, scheme=None, 
+               host=None, port=None):
+    """
+    doctest/unittest interface to regex_filter_in() and regex_filter_out()
+    """
+    match = regex_full_url.match(url)
     urlscheme = match.group('scheme').lower()
     urlhost = match.group('host').lower()
     uri = match.group('uri')
