@@ -26,10 +26,8 @@ administrator_email = 'you@localhost'
 
 while 1:
     for file in os.listdir(path):
-        filename = os.path.join(path, file)
-
         if not ALLOW_DUPLICATES:
-            fileobj = open(filename, 'r')
+            fileobj = open(file, 'r')
             try:
                 file_data = fileobj.read()
             finally:
@@ -42,10 +40,10 @@ while 1:
             hashes[key] = 1
 
         error = RestrictedError()
-        error.load(request, request.application, filename)
+        error.load(request, request.application, file)
 
         mail.send(to=administrator_email, subject='new web2py ticket', message=error.traceback)
 
-        os.unlink(filename)
+        os.unlink(os.path.join(path, file))
     time.sleep(SLEEP_MINUTES * 60)
 
