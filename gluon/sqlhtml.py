@@ -24,7 +24,7 @@ from html import FORM, INPUT, LABEL, OPTION, SELECT, BUTTON
 from html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
 from html import URL, truncate_string, FIELDSET
 from dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
-    bar_encode, regex_table_field, Reference
+    bar_encode, Reference, REGEX_TABLE_DOT_FIELD
 from storage import Storage
 from utils import md5_hash
 from validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE, \
@@ -2568,7 +2568,7 @@ class ExportClass(object):
         for record in self.rows:
             row = []
             for col in self.rows.colnames:
-                if not regex_table_field.match(col):
+                if not REGEX_TABLE_DOT_FIELD.match(col):
                     row.append(record._extra[col])
                 else:
                     (t, f) = col.split('.')
