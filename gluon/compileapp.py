@@ -91,6 +91,15 @@ def _TEST():
 _TEST()
 """
 
+CACHED_REGEXES = {}
+
+def re_compile(regex):
+    try:
+        return CACHED_REGEXES[regex]
+    except KeyError:
+        compiled_regex = CACHED_REGEXES[regex] = re.compile(regex)
+        return compiled_regex
+
 class mybuiltin(object):
     """
     NOTE could simple use a dict and populate it,
@@ -355,7 +364,11 @@ def build_environment(request, response, session, store_current=True):
     environment.update((k,getattr(v, k)) for k in v.__all__)
     if not request.env:
         request.env = Storage()
-
+    # Enable standard conditional models (i.e., /*.py, /[controller]/*.py, and
+    # /[controller]/[function]/*.py)
+    response.models_to_run = [r'^\w+\.py$', r'^%s/\w+\.py$' % request.controller,
+        r'^%s/%s/\w+\.py$' % (request.controller, request.function)]
+        
     t = environment['T'] = translator(request)
     c = environment['cache'] = Cache(request)
     if store_current:
@@ -485,9 +498,13 @@ def run_models_in(environment):
         path = pjoin(folder, 'models')
         models = listdir(path, '^\w+\.py$',0,sort=False)
         compiled=False
-    paths = (path, pjoin(path,c), pjoin(path,c,f))
+    n = len(path) + 1
     for model in models:
-        if not os.path.split(model)[0] in paths and c!='appadmin':
+        regex = environment['response'].models_to_run
+        if isinstance(regex, list):
+            regex = re_compile('|'.join(regex))
+        file = model[n:].replace(os.path.sep, '/').replace('.pyc', '.py')
+        if not regex.search(file) and c!= 'appadmin':
             continue
         elif compiled:
             code = read_pyc(model)
@@ -583,7 +600,7 @@ def run_view_in(environment):
     badv = 'invalid view (%s)' % view
     if response.generic_patterns:
         patterns = response.generic_patterns
-        regex = re.compile('|'.join(map(fnmatch.translate, patterns)))
+        regex = re_compile('|'.join(map(fnmatch.translate, patterns)))
         short_action =  '%(controller)s/%(function)s.%(extension)s' % request
         allow_generic = regex.search(short_action)
     else:
