@@ -23,6 +23,7 @@
 - Support for Google App Engine projections, thanks Christian
 - Field(... 'upload', default=path) now accepts a path to a local file as default value, if user does not upload a file. Relative path looks inside current application folder, thanks Marin
 - executesql(...,fields=,columns=) allows parsing of results in Rows, thanks Anthony
+- Rows.find(lambda row: bool(), limitby=(0,1))
 
 ### Auth improvements
 
