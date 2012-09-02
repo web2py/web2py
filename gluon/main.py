@@ -91,7 +91,8 @@ from validators import CRYPT
 from cache import Cache
 from html import URL, xmlescape
 from utils import is_valid_ip_address
-from rewrite import load, url_in, thread as rwthread, try_rewrite_on_error
+from rewrite import load, url_in, thread as rwthread, \
+    try_rewrite_on_error, fixup_missing_path_info
 import newcron
 
 __all__ = ['wsgibase', 'save_password', 'appfactory', 'HttpServer']
@@ -382,26 +383,7 @@ def wsgibase(environ, responder):
                 # serve file if static
                 # ##################################################
 
-                eget = environ.get
-                if not eget('PATH_INFO') and eget('REQUEST_URI'):
-                    # for fcgi, get path_info and 
-                    # query_string from request_uri
-                    items = environ['REQUEST_URI'].split('?')
-                    environ['PATH_INFO'] = items[0]
-                    if len(items) > 1:
-                        environ['QUERY_STRING'] = items[1]
-                    else:
-                        environ['QUERY_STRING'] = ''
-                elif not eget('REQUEST_URI'):
-                    if eget('QUERY_STRING'):
-                        environ['REQUEST_URI'] = eget('PATH_INFO') + '?' + eget('QUERY_STRING')
-                    else:
-                        environ['REQUEST_URI'] = eget('PATH_INFO')
-                if not eget('HTTP_HOST'):
-                    environ['HTTP_HOST'] = \
-                        eget('SERVER_NAME') + ':' + eget('SERVER_PORT')
-                    
-
+                fixup_missing_path_info(environ)
                 (static_file, environ) = url_in(request, environ)
 
                 if static_file:
@@ -438,6 +420,7 @@ def wsgibase(environ, responder):
                     is_https = env.wsgi_url_scheme \
                         in ['https', 'HTTPS'] or env.https=='on')
                 request.uuid = request.compute_uuid() # requires client
+                request.url = environ['PATH_INFO']
 
                 # ##################################################
                 # access the requested application
@@ -460,9 +443,6 @@ def wsgibase(environ, responder):
                 elif not request.is_local and \
                         exists(pjoin(request.folder,'DISABLED')):
                     raise HTTP(503, "<html><body><h1>Temporarily down for maintenance</h1></body></html>")
-                request.url = URL(r=request,
-                                  args=request.args,
-                                  extension=request.raw_extension)
 
                 # ##################################################
                 # build missing folders
