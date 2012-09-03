@@ -6460,7 +6460,7 @@ class Row(object):
         return '<Row %s>' % self.__dict__
 
     def __int__(self):
-        return dict.__getitem__(self,'id')
+        return object.__getattribute__(self,'id')
 
     def __eq__(self,other):
         try:
