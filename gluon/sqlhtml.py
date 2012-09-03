@@ -702,17 +702,17 @@ def formstyle_bootstrap(form, fields):
         _submit = False
 
         if isinstance(controls, INPUT):
-            controls['_class'] = 'input-xlarge'
+            controls.add_class('input-xlarge')
             if controls['_type'] == 'submit':
                 # flag submit button
                 _submit = True
                 controls['_class'] = 'btn btn-primary'
 
         if isinstance(controls, SELECT):
-            controls['_class'] = 'input-xlarge'
+            controls.add_class('input-xlarge')
 
         if isinstance(controls, TEXTAREA):
-            controls['_class'] = 'input-xlarge'
+            controls.add_class('input-xlarge')
 
         if isinstance(label, LABEL):
             label['_class'] = 'control-label'
