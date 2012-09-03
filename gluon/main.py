@@ -522,8 +522,7 @@ def wsgibase(environ, responder):
                 # ##################################################
                 # on success, try store session in database
                 # ##################################################
-                if not env.web2py_disable_session:
-                    session._try_store_in_db(request, response)
+                session._try_store_in_db(request, response)
 
                 # ##################################################
                 # on success, commit database
@@ -543,8 +542,7 @@ def wsgibase(environ, responder):
                 # this must be done after trying to commit database!
                 # ##################################################
                     
-                if not env.web2py_disable_session:
-                    session._try_store_on_disk(request, response)
+                session._try_store_on_disk(request, response)
 
                 # ##################################################
                 # store cookies in headers
