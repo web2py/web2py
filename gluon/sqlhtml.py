@@ -1663,8 +1663,9 @@ class SQLFORM(FORM):
                 session.flash = T('not authorized')
                 redirect(referrer)
 
-        def gridbutton(buttonclass='buttonadd',buttontext='Add',
-                       buttonurl=url(args=[]),callback=None,delete=None,trap=True):
+        def gridbutton(buttonclass='buttonadd', buttontext='Add',
+                       buttonurl=url(args=[]), callback=None,
+                       delete=None, trap=True):
             if showbuttontext:
                 if callback:
                     return A(SPAN(_class=ui.get(buttonclass)),
