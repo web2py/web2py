@@ -92,11 +92,14 @@ _TEST()
 """
 
 CACHED_REGEXES = {}
+CACHED_REGEXES_MAX_SIZE = 1000
 
 def re_compile(regex):
     try:
         return CACHED_REGEXES[regex]
     except KeyError:
+        if len(CACHED_REGEXES) >= CACHED_REGEXES_MAX_SIZE:
+            CACHED_REGEXES.clear()
         compiled_regex = CACHED_REGEXES[regex] = re.compile(regex)
         return compiled_regex
 
