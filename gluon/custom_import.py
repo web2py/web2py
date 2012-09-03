@@ -66,12 +66,14 @@ class _BaseImporter(object):
         help the management of this aspect.
         """
 
+    def __init__(self):
+        self._STANDARD_PYTHON_IMPORTER = _STANDARD_PYTHON_IMPORTER
     def __call__(self, name, globals=None, locals=None,
                  fromlist=None, level=-1):
         """
         The import method itself.
         """
-        return _STANDARD_PYTHON_IMPORTER(name,
+        return self._STANDARD_PYTHON_IMPORTER(name,
                                          globals,
                                          locals,
                                          fromlist,
@@ -226,7 +228,8 @@ class _Web2pyImporter(_BaseImporter):
         """
 
         global DEBUG
-        super(_Web2pyImporter, self).__init__()
+        self.super_class = super(_Web2pyImporter, self)
+        self.super_class.__init__()
         self.web2py_path =  web2py_path
         self.__web2py_path_os_path_sep = self.web2py_path+os.path.sep
         self.__web2py_path_os_path_sep_len = len(self.__web2py_path_os_path_sep)
@@ -284,16 +287,16 @@ class _Web2pyImporter(_BaseImporter):
                             globals, locals, fromlist, level)
                     else:
                         # import like "from x import a, b, ..."
-                        return super(_Web2pyImporter, self) \
+                        return self.super_class \
                             .__call__(modules_prefix+"."+name,
                                     globals, locals, fromlist, level)
                 except ImportError, e:
                     try:
-                        return super(_Web2pyImporter, self).__call__(name, globals, locals,
+                        return self.super_class.__call__(name, globals, locals,
                                                     fromlist, level)
                     except ImportError, e1:
                         raise e
-        return super(_Web2pyImporter, self).__call__(name, globals, locals,
+        return self.super_class.__call__(name, globals, locals,
                                                     fromlist, level)
 
     def __import__dot(self, prefix, name, globals, locals, fromlist,
