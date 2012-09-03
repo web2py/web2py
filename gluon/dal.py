@@ -7179,7 +7179,7 @@ def index():
         adapter.close()
 
     def executesql(self, query, placeholders=None, as_dict=False,
-                   fields=None, colnames=None, fetch=True):
+                   fields=None, colnames=None):
         """
         placeholders is optional and will always be None.
         If using raw SQL with placeholders, placeholders may be
@@ -7232,8 +7232,6 @@ def index():
             adapter.execute(query, placeholders)
         else:
             adapter.execute(query)
-        if not fetch:
-            return None
         if as_dict:
             if not hasattr(adapter.cursor,'description'):
                 raise RuntimeError, "database does not support executesql(...,as_dict=True)"
@@ -7248,7 +7246,10 @@ def index():
             # convert the list for each row into a dictionary so it's
             # easier to work with. row['field_name'] rather than row[0]
             return [dict(zip(fields,row)) for row in data]
-        data = adapter.cursor.fetchall()
+        try:
+            data = adapter.cursor.fetchall()
+        except:
+            return None
         if fields or colnames:
             fields = [] if fields is None else fields
             if not isinstance(fields, list):
