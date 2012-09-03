@@ -15,9 +15,9 @@ td,th {text-align:left; padding:2px 5px 2px 5px}
 th {vertical-align:middle; border-right:1px solid white}
 td {vertical-align:top}
 form table tr td label {text-align:left}
-p,table,ol,ul {padding:0; margin: 0.5em 0}
+p,table,ol,ul {padding:0; margin: 0.75em 0}
 p {text-align:justify}
-ol, ul {list-style-position:inside}
+ol, ul {list-style-position:outside; margin-left:2em}
 li {margin-bottom:0.5em}
 span,input,select,textarea,button,label,a {display:inline}
 img {border:0}
@@ -38,13 +38,6 @@ input[type=text],input[type=password],select{width:300px; margin-right:5px}
 /** end **/
 
 /* Sticky footer begin */
-
-.wrapper {
-  min-height:100%;
-  height:auto !important;
-  height:100%;
-  margin:0 auto -8em; /* set last value to footer height plus footer vertical padding */
-}
 
 .main {
   padding:20px 0 50px 0;
