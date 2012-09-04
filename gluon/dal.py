@@ -2379,9 +2379,9 @@ class PostgreSQLAdapter(BaseAdapter):
         if self.driver_name == 'psycopg2':
             return psycopg2_adapt(obj).getquoted()
         elif self.driver_name == 'pg8000':
-            return str(obj).replace("%","%%").replace("'","''")
+            return "'%s'" % str(obj).replace("%","%%").replace("'","''")
         else:
-            return str(obj).replace("'","''")
+            return "'%s'" % str(obj).replace("'","''")
 
     def sequence_name(self,table):
         return '%s_id_Seq' % table
