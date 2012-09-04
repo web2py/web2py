@@ -549,7 +549,7 @@ def wsgibase(environ, responder):
                 # ##################################################
 
                 if request.cid:
-                    rheaders = response.headers
+                    rheaders = http_response.headers
                     if response.flash and \
                             not 'web2py-component-flash' in rheaders:
                         rheaders['web2py-component-flash'] = \
