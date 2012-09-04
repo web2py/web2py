@@ -1376,8 +1376,8 @@ class SQLFORM(FORM):
                 # this should never happen but seems to happen to some
                 del fields['delete_this_record']
             for field in self.table:
-                if not field.name in fields and field.writable==False \
-                        and field.update is None:
+                if not field.name in fields and field.writable is False \
+                        and field.update is None and field.compute is None:
                     if record_id and self.record:
                         fields[field.name] = self.record[field.name]
                     elif not self.table[field.name].default is None:
