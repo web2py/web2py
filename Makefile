@@ -34,9 +34,9 @@ src:
 	make clean
 	### clean up baisc apps
 	rm -f routes.py 
-	rm -f applications/*/sessions/*       
+	rm -f applications/*/sessions/*
 	rm -f applications/*/errors/* | echo 'too many files'
-	rm -f applications/*/cache/*                  
+	rm -f applications/*/cache/*
 	rm -f applications/admin/databases/*                 
 	rm -f applications/welcome/databases/*               
 	rm -f applications/examples/databases/*             
