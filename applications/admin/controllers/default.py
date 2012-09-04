@@ -244,11 +244,15 @@ def site():
                     DIV(T('Unable to download app because:'),PRE(str(e)))
                 redirect(URL(r=request))
             fname = form_update.vars.url
-                
+            
         elif form_update.accepted and form_update.vars.file:
             fname = request.vars.file.filename
             f = request.vars.file.file
             
+        else:
+            session.flash = 'No file uploaded and no URL specified'
+            redirect(URL(r=request))
+
         if f:
             appname = cleanpath(form_update.vars.name)
             installed = app_install(appname, f, 
