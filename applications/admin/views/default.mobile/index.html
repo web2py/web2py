@@ -2,7 +2,9 @@
 
 <h2>web2py&trade; {{=T('Web Framework')}}</h2>
 <h3>{{=T('Login to the Administrative Interface')}}</h3>
-<div>
+
+{{if request.is_https or request.is_local:}}
+<div class="form">
   <form action="{{=URL(r=request)}}" method="post">
     <div><input type="hidden" name="send" value="{{=send}}"/></div>
     <table>
@@ -11,4 +13,6 @@
     </table>
   </form>
 </div>
-
+{{else:}}
+<p class="help">{{=T('ATTENTION: Login requires a secure (HTTPS) connection or running on localhost.')}}</p>
+{{pass}}

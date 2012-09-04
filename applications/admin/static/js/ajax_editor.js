@@ -55,7 +55,7 @@ function doClickSave() {
 	prepareDataForSave('saved_on', jQuery("input[name='saved_on']").val()),
 	prepareDataForSave('saved_on', jQuery("input[name='saved_on']").val()),
 	prepareDataForSave('from_ajax','true')));
-    // console.info(area.textarea.value);
+        // console.info(area.textarea.value);
         jQuery("input[name='saved_on']").attr('style','background-color:yellow');
 	jQuery("input[name='saved_on']").val('saving now...')
 	jQuery.ajax({
@@ -65,13 +65,13 @@ function doClickSave() {
 	  dataType: "json",
 	  data: dataForPost[0],
 	  timeout: 5000,
-      beforeSend: function(xhr) {
+          beforeSend: function(xhr) {
             xhr.setRequestHeader('web2py-component-location',document.location);
             xhr.setRequestHeader('web2py-component-element','doClickSave');},
-	  success: function(json,text,xhr){
+          success: function(json,text,xhr){
 
-	        // show flash message (if any)
-	        var flash=xhr.getResponseHeader('web2py-component-flash');
+	    // show flash message (if any)
+	    var flash=xhr.getResponseHeader('web2py-component-flash');
             if (flash) jQuery('.flash').html(decodeURIComponent(flash)).slideDown();
             else jQuery('.flash').hide();
 

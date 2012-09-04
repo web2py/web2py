@@ -839,6 +839,7 @@ class Auth(object):
         table_event = None,
         table_cas = None,
         showid = False,
+        use_username = False,
         login_email_validate = True,
         login_userfield = None,
         logout_onlogout = None,
@@ -1060,7 +1061,6 @@ class Auth(object):
         request = current.request
         session = current.session
         auth = session.auth
-        self.use_username = None # None means postpone detection
         self.user_groups = auth and auth.user_groups or {}
         if auth and auth.last_visit and auth.last_visit + \
                 datetime.timedelta(days=0, seconds=auth.expiration) > request.now:
@@ -1251,21 +1251,21 @@ class Auth(object):
         else:
             login = A(T('Login'), _href=href('login'))
             register = A(T('Register'), _href=href('register'))
-            retrieve_username = A(T('Forgot username?'), _href=href('retrieve_username'))
-            lost_password = A(T('Lost password?'), _href=href('request_reset_password'))
+            retrieve_username = A(
+                T('Forgot username?'), _href=href('retrieve_username'))
+            lost_password = A(
+                T('Lost password?'), _href=href('request_reset_password'))
             bar = SPAN(s1, login, s3, _class='auth_navbar')
 
             if not 'register' in self.settings.actions_disabled:
                 bar.insert(-1, s2)
                 bar.insert(-1, register)
-            if self.use_username is None:
-                # should always be false if auth.define_tables() is called
-                self.use_username = 'username' in self.table_user().fields
-            if self.use_username and \
-                    not 'retrieve_username' in self.settings.actions_disabled:
+            if self.settings.use_username and not 'retrieve_username' \
+                    in self.settings.actions_disabled:
                 bar.insert(-1, s2)
                 bar.insert(-1, retrieve_username)
-            if not 'request_reset_password' in self.settings.actions_disabled:
+            if not 'request_reset_password' \
+                    in self.settings.actions_disabled:
                 bar.insert(-1, s2)
                 bar.insert(-1, lost_password)
         return bar
@@ -1357,7 +1357,7 @@ class Auth(object):
                   writable=False,readable=False,
                   label=T('Modified By')))
 
-    def define_tables(self, username=False, signature=None,
+    def define_tables(self, username=None, signature=None,
                       migrate=True, fake_migrate=False):
         """
         to be called unless tables are defined manually
@@ -1375,7 +1375,10 @@ class Auth(object):
 
         db = self.db
         settings = self.settings
-        self.use_username = username
+        if username is None:
+            username = settings.use_username
+        else:
+            settings.use_username = username
         if not self.signature:
             self.define_signature()
         if signature==True:

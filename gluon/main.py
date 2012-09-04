@@ -91,7 +91,8 @@ from validators import CRYPT
 from cache import Cache
 from html import URL, xmlescape
 from utils import is_valid_ip_address
-from rewrite import load, url_in, thread as rwthread, try_rewrite_on_error
+from rewrite import load, url_in, thread as rwthread, \
+    try_rewrite_on_error, fixup_missing_path_info
 import newcron
 
 __all__ = ['wsgibase', 'save_password', 'appfactory', 'HttpServer']
@@ -148,10 +149,11 @@ def copystream_progress(request, chunk_size= 10**5):
     and stores progress upload status in cache.ram
     X-Progress-ID:length and X-Progress-ID:uploaded
     """
-    if not request.env.content_length:
+    env = request.env
+    if not env.content_length:
         return cStringIO.StringIO()
-    source = request.env.wsgi_input
-    size = int(request.env.content_length)
+    source = env.wsgi_input
+    size = int(env.content_length)
     dest = tempfile.TemporaryFile()
     if not 'X-Progress-ID' in request.vars:
         copystream(source, dest, size, chunk_size)
@@ -274,7 +276,8 @@ def environ_aux(environ,request):
 def parse_get_post_vars(request, environ):
 
     # always parse variables in URL for GET, POST, PUT, DELETE, etc. in get_vars
-    dget = cgi.parse_qsl(request.env.query_string or '', keep_blank_values=1)
+    env = request.env
+    dget = cgi.parse_qsl(env.query_string or '', keep_blank_values=1)
     for (key, value) in dget:
         if key in request.get_vars:
             if isinstance(request.get_vars[key], list):
@@ -290,7 +293,7 @@ def parse_get_post_vars(request, environ):
         request.body = body = copystream_progress(request)
     except IOError:
         raise HTTP(400,"Bad Request - HTTP body is incomplete")
-    if (body and request.env.request_method in ('POST', 'PUT', 'BOTH')):
+    if (body and env.request_method in ('POST', 'PUT', 'BOTH')):
         dpost = cgi.FieldStorage(fp=body,environ=environ,keep_blank_values=1)
         # The same detection used by FieldStorage to detect multipart POSTs
         is_multipart = dpost.type[:10] == 'multipart/'
@@ -382,26 +385,7 @@ def wsgibase(environ, responder):
                 # serve file if static
                 # ##################################################
 
-                eget = environ.get
-                if not eget('PATH_INFO') and eget('REQUEST_URI'):
-                    # for fcgi, get path_info and 
-                    # query_string from request_uri
-                    items = environ['REQUEST_URI'].split('?')
-                    environ['PATH_INFO'] = items[0]
-                    if len(items) > 1:
-                        environ['QUERY_STRING'] = items[1]
-                    else:
-                        environ['QUERY_STRING'] = ''
-                elif not eget('REQUEST_URI'):
-                    if eget('QUERY_STRING'):
-                        environ['REQUEST_URI'] = eget('PATH_INFO') + '?' + eget('QUERY_STRING')
-                    else:
-                        environ['REQUEST_URI'] = eget('PATH_INFO')
-                if not eget('HTTP_HOST'):
-                    environ['HTTP_HOST'] = \
-                        eget('SERVER_NAME') + ':' + eget('SERVER_PORT')
-                    
-
+                fixup_missing_path_info(environ)
                 (static_file, environ) = url_in(request, environ)
 
                 if static_file:
@@ -438,6 +422,7 @@ def wsgibase(environ, responder):
                     is_https = env.wsgi_url_scheme \
                         in ['https', 'HTTPS'] or env.https=='on')
                 request.uuid = request.compute_uuid() # requires client
+                request.url = environ['PATH_INFO']
 
                 # ##################################################
                 # access the requested application
@@ -460,9 +445,6 @@ def wsgibase(environ, responder):
                 elif not request.is_local and \
                         exists(pjoin(request.folder,'DISABLED')):
                     raise HTTP(503, "<html><body><h1>Temporarily down for maintenance</h1></body></html>")
-                request.url = URL(r=request,
-                                  args=request.args,
-                                  extension=request.raw_extension)
 
                 # ##################################################
                 # build missing folders
@@ -492,9 +474,9 @@ def wsgibase(environ, responder):
                 # load cookies
                 # ##################################################
 
-                if request.env.http_cookie:
+                if env.http_cookie:
                     try:
-                        request.cookies.load(request.env.http_cookie)
+                        request.cookies.load(env.http_cookie)
                     except Cookie.CookieError, e:
                         pass # invalid cookies
 
@@ -502,7 +484,8 @@ def wsgibase(environ, responder):
                 # try load session or create new session file
                 # ##################################################
 
-                session.connect(request, response)
+                if not env.web2py_disable_session:
+                    session.connect(request, response)
 
                 # ##################################################
                 # set no-cache headers
@@ -558,7 +541,7 @@ def wsgibase(environ, responder):
                 # if session not in db try store session on filesystem
                 # this must be done after trying to commit database!
                 # ##################################################
-
+                    
                 session._try_store_on_disk(request, response)
 
                 # ##################################################
@@ -566,7 +549,7 @@ def wsgibase(environ, responder):
                 # ##################################################
 
                 if request.cid:
-                    rheaders = response.headers
+                    rheaders = http_response.headers
                     if response.flash and \
                             not 'web2py-component-flash' in rheaders:
                         rheaders['web2py-component-flash'] = \

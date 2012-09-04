@@ -2379,9 +2379,9 @@ class PostgreSQLAdapter(BaseAdapter):
         if self.driver_name == 'psycopg2':
             return psycopg2_adapt(obj).getquoted()
         elif self.driver_name == 'pg8000':
-            return str(obj).replace("%","%%").replace("'","''")
+            return "'%s'" % str(obj).replace("%","%%").replace("'","''")
         else:
-            return str(obj).replace("'","''")
+            return "'%s'" % str(obj).replace("'","''")
 
     def sequence_name(self,table):
         return '%s_id_Seq' % table
@@ -6460,7 +6460,7 @@ class Row(object):
         return '<Row %s>' % self.__dict__
 
     def __int__(self):
-        return dict.__getitem__(self,'id')
+        return object.__getattribute__(self,'id')
 
     def __eq__(self,other):
         try:
@@ -7198,21 +7198,34 @@ def index():
 
         [{field1: value1, field2: value2}, {field1: value1b, field2: value2b}]
 
-        Added 2012-08-24 "fields" optional argument. If not None, the
-        results cursor returned by the DB driver will be converted to a
-        DAL Rows object using the db._adapter.parse() method. This requires
-        specifying the "fields" argument as a list of DAL Field objects
-        that match the fields returned from the DB. The Field objects should
-        be part of one or more Table objects defined on the DAL object.
-        The "fields" list can include one or more DAL Table objects in addition
-        to or instead of including Field objects, or it can be just a single
-        table (not in a list). In that case, the Field objects will be
-        extracted from the table(s).
+        Added 2012-08-24 "fields" and "colnames" optional arguments. If either
+        is provided, the results cursor returned by the DB driver will be
+        converted to a DAL Rows object using the db._adapter.parse() method.
+        
+        The "fields" argument is a list of DAL Field objects that match the
+        fields returned from the DB. The Field objects should be part of one or
+        more Table objects defined on the DAL object. The "fields" list can
+        include one or more DAL Table objects in addition to or instead of
+        including Field objects, or it can be just a single table (not in a
+        list). In that case, the Field objects will be extracted from the
+        table(s).
 
-        The field names will be extracted from the Field objects, or optionally,
-        a list of field names can be provided (in tablename.fieldname format)
-        via the "colnames" argument. Note, the fields and colnames must be in
-        the same order as the fields in the results cursor returned from the DB.
+        Instead of specifying the "fields" argument, the "colnames" argument
+        can be specified as a list of field names in tablename.fieldname format.
+        Again, these should represent tables and fields defined on the DAL
+        object.
+        
+        It is also possible to specify both "fields" and the associated
+        "colnames". In that case, "fields" can also include DAL Expression
+        objects in addition to Field objects. For Field objects in "fields",
+        the associated "colnames" must still be in tablename.fieldname format.
+        For Expression objects in "fields", the associated "colnames" can
+        be any arbitrary labels.
+        
+        Note, the DAL Table objects referred to by "fields" or "colnames" can
+        be dummy tables and do not have to represent any real tables in the
+        database. Also, note that the "fields" and "colnames" must be in the
+        same order as the fields in the results cursor returned from the DB.
         """
         adapter = self._adapter
         if placeholders:
@@ -7233,8 +7246,12 @@ def index():
             # convert the list for each row into a dictionary so it's
             # easier to work with. row['field_name'] rather than row[0]
             return [dict(zip(fields,row)) for row in data]
-        data = adapter.cursor.fetchall()
-        if fields:
+        try:
+            data = adapter.cursor.fetchall()
+        except:
+            return None
+        if fields or colnames:
+            fields = [] if fields is None else fields
             if not isinstance(fields, list):
                 fields = [fields]
             extracted_fields = []
