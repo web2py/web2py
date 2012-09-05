@@ -544,7 +544,6 @@ regex_list=re.compile('^(?:(?:(#{1,6})|(?:(\.+|\++|\-+)(\.)?))\s+)?(.*)$')
 regex_bq_headline=re.compile('^(?:(\.+|\++|\-+)(\.)?\s+)?(-{3}-*)$')
 regex_tq=re.compile('^(-{3}-*)(?::(?P<c>[a-zA-Z][_a-zA-Z\-\d]*)(?:\[(?P<p>[a-zA-Z][_a-zA-Z\-\d]*)\])?)?$')
 regex_proto = re.compile(r'(?<!["\w>/=])(?P<p>\w+):(?P<k>\w+://[\w\d\-+=?%&/:.]+)', re.M)
-regex_auto = re.compile(r'(?<!["\w>/=])(?P<k>\w+://[^\s\'\"\]\}\)]+)',re.M)
 regex_auto = re.compile(r'(?<!["\w>/=])(?P<k>\w+://[\w\d\-+_=?%&/:.]+)',re.M)
 regex_link=re.compile(r'('+LINK+r')|\[\[(?P<s>.+?)\]\]')
 regex_link_level2=re.compile(r'^(?P<t>\S.*?)?(?:\s+\[(?P<a>.+?)\])?(?:\s+(?P<k>\S+))?(?:\s+(?P<p>popup))?\s*$')
@@ -1303,7 +1302,6 @@ def render(text,
             return '<pre><code%s%s>%s</code></pre>%s' % (cls, id, escape(code[1:-1]), pp)
         return '<code%s%s>%s</code>' % (cls, id, escape(code[beg:end]))
     text = regex_expand_meta.sub(expand_meta, text)
-    text = text.translate(ttab_out)
 
     if environment:
         def u2(match, environment=environment):
@@ -1315,6 +1313,8 @@ def render(text,
                     f = 'ERROR: %s' % e
             return str(f)
         text = regex_env.sub(u2, text)
+
+    text = text.translate(ttab_out)
 
     return text
 
