@@ -1302,7 +1302,6 @@ def render(text,
             return '<pre><code%s%s>%s</code></pre>%s' % (cls, id, escape(code[1:-1]), pp)
         return '<code%s%s>%s</code>' % (cls, id, escape(code[beg:end]))
     text = regex_expand_meta.sub(expand_meta, text)
-    text = text.translate(ttab_out)
 
     if environment:
         def u2(match, environment=environment):
@@ -1315,7 +1314,8 @@ def render(text,
             return str(f)
         text = regex_env.sub(u2, text)
 
-    return text
+    return text.translate(ttab_out)
+
 
 def markmin2html(text, extra={}, allowed={}, sep='p',
                  autolinks='default', protolinks='default',
