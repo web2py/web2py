@@ -8187,7 +8187,7 @@ class Expression(object):
         db = self.db
         if isinstance(value,(list, tuple)):
             subqueries = [self.contains(str(v).strip()) for v in value if str(v).strip()]
-            return reduce(all and AND or OR, subqueries)
+            return reduce(all and AND or OR, subqueries,self.contains(''))
         if not self.type in ('string', 'text') and not self.type.startswith('list:'):
             raise SyntaxError, "contains used with incompatible field type"
         return Query(db, db._adapter.CONTAINS, self, value)
