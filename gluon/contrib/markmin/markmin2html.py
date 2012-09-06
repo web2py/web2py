@@ -1302,6 +1302,7 @@ def render(text,
             return '<pre><code%s%s>%s</code></pre>%s' % (cls, id, escape(code[1:-1]), pp)
         return '<code%s%s>%s</code>' % (cls, id, escape(code[beg:end]))
     text = regex_expand_meta.sub(expand_meta, text)
+    text = text.translate(ttab_out)
 
     if environment:
         def u2(match, environment=environment):
@@ -1313,8 +1314,6 @@ def render(text,
                     f = 'ERROR: %s' % e
             return str(f)
         text = regex_env.sub(u2, text)
-
-    text = text.translate(ttab_out)
 
     return text
 
