@@ -874,8 +874,9 @@ class SQLFORM(FORM):
         # if no fields are provided, build it from the provided table
         # will only use writable or readable fields, unless forced to ignore
         if fields is None:
-            fields = [f.name for f in table if (
-                    ignore_rw or f.writable or f.readable) and not f.compute]
+            fields = [f.name for f in table if 
+                      (ignore_rw or f.writable or f.readable) and 
+                      (readonly or not f.compute)]
         self.fields = fields
 
         # make sure we have an id
