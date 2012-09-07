@@ -906,6 +906,8 @@ def console():
         global_settings.cronjob = True  # tell the world
         options.nocron = True   # don't start cron jobs
         options.plain = True    # cronjobs use a plain shell
+        options.nobanner = True
+        options.nogui = True
 
     options.folder = os.path.abspath(options.folder)
 
