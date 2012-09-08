@@ -1551,10 +1551,22 @@ class BaseAdapter(ConnectionPool):
         return 'SELECT %s %s FROM %s%s%s;' % \
             (sql_s, sql_f, sql_t, sql_w, sql_o)
 
+    def _select_aux2(self,sql):
+         self.execute(sql)
+         return self.cursor.fetchall()
+
     def _select_aux(self,sql,fields,attributes):
         args_get = attributes.get
-        self.execute(sql)
-        rows = self.cursor.fetchall()
+        cache = args_get('cache',None)
+        if not cache:
+            rows = self._select_aux2(sql)
+        else:
+            (cache_model, time_expire) = cache
+            key = self.uri + '/' + sql + '/rows'
+            if len(key)>200: key = hashlib.md5(key).hexdigest()
+            rows = cache_model(key,
+                               lambda sql=sql: self._select_aux2(sql),
+                               time_expire)
         if isinstance(rows,tuple):
             rows = list(rows)
         limitby = args_get('limitby', None) or (0,)
@@ -1568,13 +1580,13 @@ class BaseAdapter(ConnectionPool):
         Always returns a Rows object, possibly empty.
         """
         sql = self._select(query, fields, attributes)
-        if attributes.get('cache', None):            
-            args = (sql,fields,attributes)
-            (cache_model, time_expire) = attributes['cache']
+        cache = attributes.get('cache', None)
+        if cache and attributes.get('cacheable',False):            
             del attributes['cache']
-            attributes['cacheable'] = True
+            (cache_model, time_expire) = cache
             key = self.uri + '/' + sql
             if len(key)>200: key = hashlib.md5(key).hexdigest()
+            args = (sql,fields,attributes)
             return cache_model(
                 key, 
                 lambda self=self,args=args:self._select_aux(*args),
