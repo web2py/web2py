@@ -1551,22 +1551,20 @@ class BaseAdapter(ConnectionPool):
         return 'SELECT %s %s FROM %s%s%s;' % \
             (sql_s, sql_f, sql_t, sql_w, sql_o)
 
-    def _select_aux2(self,sql):
-         self.execute(sql)
-         return self.cursor.fetchall()
-
     def _select_aux(self,sql,fields,attributes):
         args_get = attributes.get
         cache = args_get('cache',None)
         if not cache:
-            rows = self._select_aux2(sql)
+            self.execute(sql)
+            rows = self.cursor.fetchall()
         else:
             (cache_model, time_expire) = cache
             key = self.uri + '/' + sql + '/rows'
             if len(key)>200: key = hashlib.md5(key).hexdigest()
-            rows = cache_model(key,
-                               lambda sql=sql: self._select_aux2(sql),
-                               time_expire)
+            def _select_aux2():
+                self.execute(sql)
+                return self.cursor.fetchall()
+            rows = cache_model(key,_select_aux2,time_expire)
         if isinstance(rows,tuple):
             rows = list(rows)
         limitby = args_get('limitby', None) or (0,)
