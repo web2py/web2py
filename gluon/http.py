@@ -7,6 +7,8 @@ Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
 License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
 
+import re
+
 __all__ = ['HTTP', 'redirect']
 
 defined_status = {
@@ -56,6 +58,7 @@ try:
 except NameError:
     BaseException = Exception
 
+regex_status = re.compile('^\d{3} \w+$')
 
 class HTTP(BaseException):
 
@@ -83,7 +86,9 @@ class HTTP(BaseException):
         if status in defined_status:
             status = '%d %s' % (status, defined_status[status])
         else:
-            status = str(status) + ' '
+            status = str(status)
+            if not regex_status.match(status):
+                status = "500 UNKNOWN ERROR"
         if not 'Content-Type' in headers:
             headers['Content-Type'] = 'text/html; charset=UTF-8'
         body = self.body
