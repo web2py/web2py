@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-    Unit tests for gluon.sql
+    Unit tests for gluon.dal
 """
 
 import sys
@@ -424,7 +424,7 @@ class TestMinMaxSum(unittest.TestCase):
 
 class TestCache(unittest.TestCase):
     def testRun(self):
-        from gluon.cache import CacheInRam
+        from cache import CacheInRam
         cache = CacheInRam()
         db = DAL('sqlite:memory:')
         db.define_table('t', Field('a'))

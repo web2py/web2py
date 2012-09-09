@@ -220,9 +220,9 @@ def read_possible_plurals():
     create list of all possible plural rules files
     result is cached to increase speed
     """
+    plurals = {}
     try:
-        import gluon.contrib.plural_rules as package
-        plurals = {}
+        import contrib.plural_rules as package
         for importer, modname, ispkg in pkgutil.iter_modules(package.__path__):
             if len(modname)==2:
                 module = __import__(package.__name__+'.'+modname)
