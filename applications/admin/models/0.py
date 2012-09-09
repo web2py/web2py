@@ -9,7 +9,7 @@ WEB2PY_VERSION_URL = WEB2PY_URL+'/examples/default/version'
 # browser.
 
 ## Default editor
-TEXT_EDITOR = 'ace' or 'edit_area' or 'amy'
+TEXT_EDITOR = 'ace' or 'edit_area' or 'amy' or 'codemirror'
 ## Editor Color scheme (only for ace)
 TEXT_EDITOR_THEME = (
     "chrome", "clouds", "clouds_midnight", "cobalt", "crimson_editor", "dawn", 
