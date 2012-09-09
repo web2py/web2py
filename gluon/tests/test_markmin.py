@@ -11,7 +11,7 @@ else:
     sys.path.append(os.path.realpath('../'))
 
 import unittest
-from gluon.contrib.markmin.markmin2html import run_doctests
+from contrib.markmin.markmin2html import run_doctests
 
 class TestMarkmin(unittest.TestCase):
     def testMarkmin(self):

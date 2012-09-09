@@ -1063,6 +1063,11 @@ class MapUrlIn(object):
                 raise HTTP(400, thread.routes.error_message % 'invalid request',
                            web2py_error='invalid arg <%s>' % arg)
 
+    def sluggify(self):
+        ""
+        self.request.env.update(
+            (sluggify(k),v) for k,v in self.env.iteritems())
+        
     def update_request(self):
         '''
         update request from self
@@ -1091,8 +1096,7 @@ class MapUrlIn(object):
             urllib.quote('/'+'/'.join(str(x) for x in self.args)) if self.args else '',
             ('?' + self.query) if self.query else '')
         self.env['REQUEST_URI'] = uri
-        self.request.env.update(
-            (sluggify(k),v) for k,v in self.env.iteritems())
+        self.sluggify()
 
     @property
     def arg0(self):
@@ -1282,6 +1286,7 @@ def map_url_in(request, env, app=False):
     #
     thread.routes = params  # default to base routes
     map = MapUrlIn(request=request, env=env)
+    map.sluggify()
     map.map_prefix()  # strip prefix if present
     map.map_app()     # determine application
 
@@ -1295,6 +1300,7 @@ def map_url_in(request, env, app=False):
 
     root_static_file = map.map_root_static() # handle root-static files
     if root_static_file:
+        map.update_request()
         return (root_static_file, map.env)
     # handle mapping of lang/static to static/lang in externally-rewritten URLs
     # in case we have to handle them ourselves

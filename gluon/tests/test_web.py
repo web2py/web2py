@@ -11,7 +11,7 @@ else:
     sys.path.append(os.path.realpath('../'))
 
 import unittest
-from gluon.contrib.webclient import WebClient
+from contrib.webclient import WebClient
 
 class TestWeb(unittest.TestCase):
     def testWebClient(self):
