@@ -559,6 +559,29 @@ def markmin_escape(text):
     return regex_markmin_escape.sub(
        lambda m: '\\'+m.group(0).replace('\\','\\\\'), text)
 
+def replace_autolinks(text,autolinks):
+    return regex_auto.sub(lambda m: autolinks(m.group('k')), text)
+
+def replace_at_urls(text,url):
+    # this is experimental @{function/args}
+    # turns into a digitally signed URL
+    def u1(match,url=url):
+        a,c,f,args = match.group('a','c','f','args')
+        return url(a=a or None,c=c or None,f = f or None,
+                   args=args.split('/'), scheme=True, host=True)
+    return regex_URL.sub(u1,text)
+
+def replace_components(text,env):
+    def u2(match, env=env):
+        f = env.get(match.group('a'), match.group(0))
+        if callable(f):
+            try:
+                f = f(match.group('b'))
+            except Exception, e:
+                f = 'ERROR: %s' % e
+            return str(f)
+    return regex_env.sub(u2, text)
+
 def autolinks_simple(url):
     """
     it automatically converts the url to link,
@@ -829,13 +852,7 @@ def render(text,
     text = regex_backslash.sub(lambda m: m.group(1).translate(ttab_in), text)
 
     if URL is not None:
-        # this is experimental @{function/args}
-        # turns into a digitally signed URL
-        def u1(match,URL=URL):
-            a,c,f,args = match.group('a','c','f','args')
-            return URL(a=a or None,c=c or None,f = f or None,
-                       args=args.split('/'), scheme=True, host=True)
-        text = regex_URL.sub(u1,text)
+        text = replace_at_urls(text,URL)
 
     if latex == 'google':
         text = regex_dd.sub('``\g<latex>``:latex ', text)
@@ -878,7 +895,7 @@ def render(text,
         text = regex_proto.sub(lambda m: protolinks(*m.group('p','k')), text)
 
     if autolinks:
-        text = regex_auto.sub(lambda m: autolinks(m.group('k')), text)
+        text = replace_autolinks(text,lambda m: autolinks(m.group('k')))
 
     #############################################################
     # normalize spaces
@@ -1304,15 +1321,7 @@ def render(text,
     text = regex_expand_meta.sub(expand_meta, text)
 
     if environment:
-        def u2(match, environment=environment):
-            f = environment.get(match.group('a'), match.group(0))
-            if callable(f):
-                try:
-                    f = f(match.group('b'))
-                except Exception, e:
-                    f = 'ERROR: %s' % e
-            return str(f)
-        text = regex_env.sub(u2, text)
+        text = replace_components(text,environment)
 
     return text.translate(ttab_out)
 
