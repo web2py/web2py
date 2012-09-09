@@ -232,6 +232,7 @@ def try_rewrite_on_error(http_response, request, environ, ticket=None):
                         # wsgibase will be called recursively with the routes_onerror path.
                         environ['PATH_INFO'] = path_info
                         environ['QUERY_STRING'] = query_string
+                        environ['WEB2PY_STATUS_CODE'] = status
                         return None, environ
     # do nothing!
     return http_response, environ

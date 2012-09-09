@@ -387,6 +387,7 @@ def wsgibase(environ, responder):
 
                 fixup_missing_path_info(environ)
                 (static_file, environ) = url_in(request, environ)
+                response.status = env.web2py_status_code or response.status
 
                 if static_file:
                     if environ.get('QUERY_STRING','').startswith(
