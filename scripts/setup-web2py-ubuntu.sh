@@ -82,9 +82,16 @@ echo "================================================="
 echo '
 NameVirtualHost *:80
 NameVirtualHost *:443
+# If the WSGIDaemonProcess directive is specified outside of all virtual
+# host containers, any WSGI application can be delegated to be run within
+# that daemon process group.
+# If the WSGIDaemonProcess directive is specified
+# within a virtual host container, only WSGI applications associated with
+# virtual hosts with the same server name as that virtual host can be
+# delegated to that set of daemon processes.
+WSGIDaemonProcess web2py user=www-data group=www-data
 
 <VirtualHost *:80>
-  WSGIDaemonProcess web2py user=www-data group=www-data
   WSGIProcessGroup web2py
   WSGIScriptAlias / /home/www-data/web2py/wsgihandler.py
   WSGIPassAuthorization On
