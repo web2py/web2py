@@ -138,7 +138,8 @@ jQuery(document).ready(function(){
         theme: "web2py",
         tabMode: "shift",
         lineWrapping: true,
-        extraKeys: { "Ctrl-S": function(instance) {doClickSave();} },
+        extraKeys: { "Ctrl-S": function(instance) {doClickSave();},
+                     "Tab": "indentMore"},
         {{if TEXT_EDITOR_KEYBINDING == 'emacs':}}keyMap: "emacs",{{pass}}
         matchBrackets: true
       });
