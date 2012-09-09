@@ -17,10 +17,7 @@
 <script src="{{=cm}}/mode/css/css.js"></script>
 <script src="{{=cm}}/mode/javascript/javascript.js"></script>
 <script src="{{=cm}}/mode/htmlmixed/htmlmixed.js"></script>
-<!-- note to self:
- for this to be able to save, it requires ajax_editor.js
-but ajax_editor only works for ace because debugger breakpoints
-//-->
+<script language="Javascript" type="text/javascript" src="{{=URL('static','js/ajax_editor.js')}}"></script>
 {{elif TEXT_EDITOR == 'ace':}}
 <script src="{{=URL(r=request,c='static',f='ace/src/ace.js')}}" type="text/javascript" charset="utf-8"></script>
 <script src="{{=URL(r=request,c='static',f='ace/src/theme-%s.js' % TEXT_EDITOR_THEME)}}" type="text/javascript" charset="utf-8"></script>
@@ -127,9 +124,10 @@ jQuery(document).ready(function(){
     {{=T('Last saved on:')}} <input type="input" name="saved_on" value="{{=saved_on}}" readonly="readonly"/>
     <br><hr>
     {{if TEXT_EDITOR == 'amy':}}
-    <textarea style="width: auto; height:400px;direction:ltr;" rows="58" cols="100" -amy-enabled="true" id="body" name="data"><div id="editor"/>{{=data}}</textarea>
-    {{elif TEXT_EDITOR == 'codemirror':}}
     <textarea style="width: auto; height:400px;direction:ltr;" rows="58" cols="100" -amy-enabled="true" id="body" name="data">{{=data}}</textarea>
+    <script>window.eamy = eamy;</script>
+    {{elif TEXT_EDITOR == 'codemirror':}}
+    <textarea style="width: auto; height:400px;direction:ltr;" id="body" name="data">{{=data}}</textarea>
     {{cm_mode = {'html':'htmlmixed'}.get(filetype,filetype)}}
     <script>
       var editor = CodeMirror.fromTextArea(document.getElementById("body"),
@@ -137,10 +135,11 @@ jQuery(document).ready(function(){
         lineNumbers: true,
         indentUnit: 4,
         tabMode: "shift",
-        saveFunction: function() { doClickSave(); },
+        extraKeys: { "Ctrl-S": function(instance) {doClickSave();} },
         {{if TEXT_EDITOR_KEYBINDING == 'emacs':}}keyMap: "emacs",{{pass}}
         matchBrackets: true
       });
+      window.mirror = editor;
     </script>
     {{elif TEXT_EDITOR == 'ace':}}
     <div id="editor" style="height: 500px; width: auto; position: relative">{{=data}}</div>
@@ -166,9 +165,9 @@ window.onload = function() {
     window.ace_editor = editor;
 };
 </script>
-
     {{else:}}
     <textarea cols="80" rows="25" id="body" style="direction:ltr;" name="data">{{=data}}</textarea>
+    <script>window.textarea = area.textarea;</script>
     {{pass}}
     <button class="editbutton" onclick="window.location.reload(); return false">{{=T('restore')}}</button> {{=T('currently saved or')}} <button class="editbutton" type="submit" name="revert">{{=T('revert')}}</button>
     {{=T('to  previous version.')}}
