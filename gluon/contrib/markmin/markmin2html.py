@@ -643,7 +643,7 @@ def render(text,
     - class_prefix is a prefix for ALL classes in markmin text. E.g. if class_prefix='my_'
       then for ``test``:cls class will be changed to "my_cls" (default value is '')
     - id_prefix is prefix for ALL ids in markmin text (default value is 'markmin_'). E.g.:
-        -- [[id]] will be converted to <div class="anchor" id="markmin_id"></div>
+        -- [[id]] will be converted to <span class="anchor" id="markmin_id"></span>
         -- [[link #id]] will be converted to <a href="#markmin_id">link</a>
         -- ``test``:cls[id] will be converted to <code class="cls" id="markmin_id">test</code>
 
@@ -774,19 +774,19 @@ def render(text,
     '<p>[[probe]]</p>'
 
     >>> render(r"\\\\[[probe]]")
-    '<p>\\\\<div class="anchor" id="markmin_probe"></div></p>'
+    '<p>\\\\<span class="anchor" id="markmin_probe"></span></p>'
 
     >>> render(r"\\\\\\[[probe]]")
     '<p>\\\\[[probe]]</p>'
 
     >>> render(r"\\\\\\\\[[probe]]")
-    '<p>\\\\\\\\<div class="anchor" id="markmin_probe"></div></p>'
+    '<p>\\\\\\\\<span class="anchor" id="markmin_probe"></span></p>'
 
     >>> render(r"\\\\\\\\\[[probe]]")
     '<p>\\\\\\\\[[probe]]</p>'
 
     >>> render(r"\\\\\\\\\\\[[probe]]")
-    '<p>\\\\\\\\\\\\<div class="anchor" id="markmin_probe"></div></p>'
+    '<p>\\\\\\\\\\\\<span class="anchor" id="markmin_probe"></span></p>'
 
     >>> render("``[[ [\\[[probe\]\\]] URL\\[x\\]]]``:red[dummy_params]")
     '<span style="color: red"><a href="URL[x]" title="[[probe]]">URL[x]</a></span>'
@@ -834,16 +834,16 @@ def render(text,
     '<p><strong>test 1</strong></p>'
 
     >>> render('[[id1 [span **messag** in ''markmin''] ]] ... [[**link** to id [link\\\'s title] #mark1]]')
-    '<p><div class="anchor" id="markmin_id1">span <strong>messag</strong> in markmin</div> ... <a href="#markmin_mark1" title="link\\\'s title"><strong>link</strong> to id</a></p>'
+    '<p><span class="anchor" id="markmin_id1">span <strong>messag</strong> in markmin</span> ... <a href="#markmin_mark1" title="link\\\'s title"><strong>link</strong> to id</a></p>'
 
     >>> render('# Multiline[[NEWLINE]]\\n title\\nParagraph[[NEWLINE]]\\nwith breaks[[NEWLINE]]\\nin it')
     '<h1>Multiline<br /> title</h1><p>Paragraph<br /> with breaks<br /> in it</p>'
 
     >>> render("anchor with name 'NEWLINE': [[NEWLINE [ ] ]]")
-    '<p>anchor with name \\'NEWLINE\\': <div class="anchor" id="markmin_NEWLINE"></div></p>'
+    '<p>anchor with name \\'NEWLINE\\': <span class="anchor" id="markmin_NEWLINE"></span></p>'
 
     >>> render("anchor with name 'NEWLINE': [[NEWLINE [newline] ]]")
-    '<p>anchor with name \\'NEWLINE\\': <div class="anchor" id="markmin_NEWLINE">newline</div></p>'
+    '<p>anchor with name \\'NEWLINE\\': <span class="anchor" id="markmin_NEWLINE">newline</span></p>'
     """
     if autolinks=="default": autolinks = autolinks_simple
     if protolinks=="default": protolinks = protolinks_simple
@@ -895,7 +895,7 @@ def render(text,
         text = regex_proto.sub(lambda m: protolinks(*m.group('p','k')), text)
 
     if autolinks:
-        text = replace_autolinks(text,lambda m: autolinks(m.group('k')))
+        text = replace_autolinks(text,autolinks)
 
     #############################################################
     # normalize spaces
@@ -1260,12 +1260,13 @@ def render(text,
                    % dict(k=k, title=title, target=target, t=t)
         if t == 'NEWLINE' and not a:
             return '<br />'+pp
-        return '<div class="anchor" id="%s">%s</div>' % (escape(id_prefix+t),
-                                                         render(a, {},{},'br', URL,
-                                                                environment, latex, autolinks,
-                                                                protolinks, class_prefix,
-                                                                id_prefix, pretty_print))
-
+        return '<span class="anchor" id="%s">%s</span>' % (
+            escape(id_prefix+t),
+            render(a, {},{},'br', URL,
+                   environment, latex, autolinks,
+                   protolinks, class_prefix,
+                   id_prefix, pretty_print))
+    
     parts = text.split(LINK)
     text = parts[0]
     for i,s in enumerate(links):
