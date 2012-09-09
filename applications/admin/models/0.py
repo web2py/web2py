@@ -18,10 +18,11 @@ TEXT_EDITOR_THEME = (
     "solarized_dark", "solarized_light", "textmate", "tomorrow",
     "tomorrow_night", "tomorrow_night_blue", "tomorrow_night_bright",
     "tomorrow_night_eighties", "twilight", "vibrant_ink")[0]
-## Editor Keyboard bindings (only for ace)
-TEXT_EDITOR_KEYBINDING = '' #'emacs' or 'vi'
-    
-### edit_area
+
+## Editor Keyboard bindings (only for ace and codemirror)
+TEXT_EDITOR_KEYBINDING = '' # 'emacs' or 'vi'
+
+### edit_area only
 # The default font size, measured in 'points'. The value must be an integer > 0
 FONT_SIZE = 10
 

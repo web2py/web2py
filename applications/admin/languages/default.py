@@ -152,6 +152,7 @@
 'to  previous version.': 'to  previous version.',
 'To create a plugin, name a file/folder plugin_[name]': 'To create a plugin, name a file/folder plugin_[name]',
 'toggle breakpoint': 'toggle breakpoint',
+'Toggle Fullscreen': 'Toggle Fullscreen',
 'Traceback': 'Traceback',
 'Translation strings for the application': 'Translation strings for the application',
 'try view': 'try view',

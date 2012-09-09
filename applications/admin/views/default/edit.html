@@ -12,7 +12,8 @@
 <link rel="stylesheet" href="{{=cm}}/theme/web2py.css">
 <script src="{{=cm}}/lib/codemirror.js"></script>
 <script src="{{=cm}}/mode/clike/clike.js"></script>
-<script src="{{=cm}}/keymap/emacs.js"></script>
+{{if TEXT_EDITOR_KEYBINDING == 'emacs':}}<script src="{{=cm}}/keymap/emacs.js"></script>{{pass}}
+{{if TEXT_EDITOR_KEYBINDING == 'vi':}}<script src="{{=cm}}/keymap/vim.js"></script>{{pass}}
 <script src="{{=cm}}/mode/python/python.js"></script>
 <script src="{{=cm}}/mode/xml/xml.js"></script>
 <script src="{{=cm}}/mode/css/css.js"></script>
@@ -131,6 +132,30 @@ jQuery(document).ready(function(){
     <textarea style="width: auto; height:400px;direction:ltr;" id="body" name="data">{{=data}}</textarea>
     {{cm_mode = {'html':'htmlmixed'}.get(filetype,filetype)}}
     <script>
+      function isFullScreen(instance) {
+          return /\bCodeMirror-fullscreen\b/.test(instance.getWrapperElement().className);
+      }
+      function winHeight() {
+          return window.innerHeight || (document.documentElement || document.body).clientHeight;
+      }
+      function setFullScreen(instance, full) {
+          var wrap = instance.getWrapperElement(), scroll = instance.getScrollerElement();
+          if (full) {
+              wrap.className += " CodeMirror-fullscreen";
+              scroll.style.height = winHeight() + "px";
+              document.documentElement.style.overflow = "hidden";
+          } else {
+              wrap.className = wrap.className.replace(" CodeMirror-fullscreen", "");
+              scroll.style.height = "";
+              document.documentElement.style.overflow = "";
+          }
+          instance.refresh();
+      }
+      CodeMirror.connect(window, "resize", function() {
+          var showing = document.body.getElementsByClassName("CodeMirror-fullscreen")[0];
+          if (!showing) return;
+          showing.CodeMirror.getScrollerElement().style.height = winHeight() + "px";
+      });
       var editor = CodeMirror.fromTextArea(document.getElementById("body"),
       { mode: {name: '{{=cm_mode}}'{{if cm_mode=='python':}},version: 2,singleLineStringErrors: false{{pass}} },
         lineNumbers: true,
@@ -139,10 +164,18 @@ jQuery(document).ready(function(){
         tabMode: "shift",
         lineWrapping: true,
         extraKeys: { "Ctrl-S": function(instance) {doClickSave();},
-                     "Tab": "indentMore"},
+                     "Tab": "indentMore",
+                     "Ctrl-F11": function(instance) {setFullScreen(instance, !isFullScreen(instance));},
+                     "Esc": function(instance) {if (isFullScreen(instance)) setFullScreen(instance, false);}},
         {{if TEXT_EDITOR_KEYBINDING == 'emacs':}}keyMap: "emacs",{{pass}}
-        matchBrackets: true
+        {{if TEXT_EDITOR_KEYBINDING == 'vi':}}keyMap: "vim",{{pass}}
+        matchBrackets: true,
+        autofocus: true,
+        onCursorActivity: function() {
+            editor.setLineClass(hlLine, null, null);
+            hlLine = editor.setLineClass(editor.getCursor().line, null, "activeline");}
       });
+      var hlLine = editor.setLineClass(0, "activeline");
       window.mirror = editor;
     </script>
     {{elif TEXT_EDITOR == 'ace':}}
@@ -193,6 +226,14 @@ window.onload = function() {
     {{=shortcut('Ctrl+Shift+↑', T('Go to Matching Pair'))}}
   </ul>
 </div>
+{{elif TEXT_EDITOR == 'codemirror':}}
+<div class="help">
+  <h3>{{=T("Key bindings")}}</h3>
+  <ul>
+    {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
+    {{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
+  </ul>
+</div>
 {{else:}}
 <div class="help">
   <h3>{{=T("Key bindings")}}</h3>
@@ -201,4 +242,3 @@ window.onload = function() {
   </ul>
 </div>
 {{pass}}
-
