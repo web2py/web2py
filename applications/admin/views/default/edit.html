@@ -9,6 +9,7 @@
 {{elif TEXT_EDITOR == 'codemirror':}}
 {{cm=URL('static','codemirror')}}
 <link rel="stylesheet" href="{{=cm}}/lib/codemirror.css">
+<link rel="stylesheet" href="{{=cm}}/theme/web2py.css">
 <script src="{{=cm}}/lib/codemirror.js"></script>
 <script src="{{=cm}}/mode/clike/clike.js"></script>
 <script src="{{=cm}}/keymap/emacs.js"></script>
@@ -134,6 +135,7 @@ jQuery(document).ready(function(){
       { mode: {name: '{{=cm_mode}}'{{if cm_mode=='python':}},version: 2,singleLineStringErrors: false{{pass}} },
         lineNumbers: true,
         indentUnit: 4,
+        theme: "web2py",
         tabMode: "shift",
         extraKeys: { "Ctrl-S": function(instance) {doClickSave();} },
         {{if TEXT_EDITOR_KEYBINDING == 'emacs':}}keyMap: "emacs",{{pass}}
