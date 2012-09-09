@@ -70,11 +70,11 @@
     {{=form}}
   </div>
   <script>
-jQuery(document).ready(function(){
-        var t=jQuery('#no_table_layout_theme');
-  t.change(function(){
-           jQuery('#preview').attr('src','{{=LAYOUTS_APP}}/static/plugin_layouts/layouts/'+t.val()+'/preview.png');
-      });
+jQuery(function(){
+   var t=jQuery('#no_table_layout_theme');
+   t.change(function(){
+      jQuery('#preview').attr('src','{{=LAYOUTS_APP}}/static/plugin_layouts/layouts/'+t.val()+'/preview.png');
+   });
 });
   </script>
 
