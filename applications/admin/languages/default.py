@@ -8,6 +8,7 @@
 '(something like "it-it")': '(something like "it-it")',
 'About': 'About',
 'Additional code for your application': 'Additional code for your application',
+'admin disabled because unable to access password file': 'admin disabled because unable to access password file',
 'Admin language': 'Admin language',
 'administrative interface': 'administrative interface',
 'Administrator Password:': 'Administrator Password:',
