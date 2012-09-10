@@ -53,12 +53,15 @@ class DropboxAccount(object):
 
     def get_user(self):
         request = self.request
-        token = current.session.dropbox_token
+        token = current.session.dropbox_token        
+        if not token:
+            return None
         try:
-            access_token = self.sess.obtain_access_token(token)
+            self.sess.set_token(token[0],token[1])
         except:
-            access_token = None
-        if access_token:
+            # invalid token, should never happen
+            return None
+        else:
             user = Storage()
             self.client = client.DropboxClient(self.sess)
             data = self.client.account_info()
@@ -70,11 +73,10 @@ class DropboxAccount(object):
             if not user['registration_id'] and self.on_login_failure:
                 redirect(self.on_login_failure)
             return user
-        return None
 
     def login_form(self):
         token = self.sess.obtain_request_token()
-        current.session.dropbox_token = token
+        current.session.dropbox_token = (token.key,token.secret)
         dropbox_url = self.sess.build_authorize_url(token,self.login_url)
         redirect(dropbox_url)
         form = IFRAME(_src=dropbox_url,
