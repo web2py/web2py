@@ -1105,20 +1105,21 @@ class SQLFORM(FORM):
         self.components = [table]
 
     def createform(self, xfields):
-        if isinstance(self.formstyle, basestring):
-            if self.formstyle in SQLFORM.formstyles:
-                self.formstyle = SQLFORM.formstyles[self.formstyle]
+        formstyle = self.formstyle
+        if isinstance(formstyle, basestring):
+            if formstyle in SQLFORM.formstyles:
+                formstyle = SQLFORM.formstyles[formstyle]
             else:
                 raise RuntimeError, 'formstyle not found'
 
-        if callable(self.formstyle):
+        if callable(formstyle):
             # backward compatibility, 4 argument function is the old style
-            args, varargs, keywords, defaults = inspect.getargspec(self.formstyle)
+            args, varargs, keywords, defaults = inspect.getargspec(formstyle)
             if defaults and len(args) - len(defaults) == 4 or len(args) == 4:
                 table = TABLE()
                 for id,a,b,c in xfields:
                     raw_b = self.field_parent[id] = b
-                    newrows = self.formstyle(id,a,raw_b,c)
+                    newrows = formstyle(id,a,raw_b,c)
                     if type(newrows).__name__ != "tuple":
                         newrows = [newrows]
                     for newrow in newrows:
@@ -1126,7 +1127,7 @@ class SQLFORM(FORM):
             else:
                 for id,a,b,c in xfields:
                     self.field_parent[id] = b
-                table = self.formstyle(self, xfields)
+                table = formstyle(self, xfields)
         else:
             raise RuntimeError, 'formstyle not supported'
         return table

@@ -278,7 +278,8 @@ class Response(Storage):
         chunk_size = DEFAULT_CHUNK_SIZE,
         request=None,
         attachment=False,
-        filename=None
+        filename=None,
+        headers=None
         ):
         """
         if a controller function::
@@ -298,7 +299,7 @@ class Response(Storage):
         default to the last request argument otherwise)
         """
 
-        headers = self.headers
+        headers = headers if headers is not None else self.headers
         # for attachment settings and backward compatibility
         keys = [item.lower() for item in headers]
         if attachment:
