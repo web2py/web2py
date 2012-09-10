@@ -88,7 +88,7 @@ class HTTP(BaseException):
         else:
             status = str(status)
             if not regex_status.match(status):
-                status = "500 UNKNOWN ERROR"
+                status = '500 %s' % (defined_status[500])
         if not 'Content-Type' in headers:
             headers['Content-Type'] = 'text/html; charset=UTF-8'
         body = self.body
