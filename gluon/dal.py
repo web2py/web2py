@@ -185,6 +185,7 @@ SELECT_ARGS = set(
     ('orderby', 'groupby', 'limitby','required', 'cache', 'left',
      'distinct', 'having', 'join','for_update', 'processor','cacheable'))
 
+
 ogetattr = object.__getattribute__
 osetattr = object.__setattr__
 exists = os.path.exists
@@ -1613,15 +1614,16 @@ class BaseAdapter(ConnectionPool):
         self.execute(self._count(query, distinct))
         return self.cursor.fetchone()[0]
 
-    def tables(self, query):
+    def tables(self, *queries):
         tables = set()
-        if isinstance(query, Field):
-            tables.add(query.tablename)
-        elif isinstance(query, (Expression, Query)):
-            if not query.first is None:
-                tables = tables.union(self.tables(query.first))
-            if not query.second is None:
-                tables = tables.union(self.tables(query.second))
+        for query in queries:
+            if isinstance(query, Field):
+                tables.add(query.tablename)
+            elif isinstance(query, (Expression, Query)):
+                if not query.first is None:
+                    tables = tables.union(self.tables(query.first))
+                if not query.second is None:
+                    tables = tables.union(self.tables(query.second))
         return list(tables)
 
     def commit(self):
@@ -4678,9 +4680,7 @@ class CouchDBAdapter(NoSQLAdapter):
     def _select(self,query,fields,attributes):
         if not isinstance(query,Query):
             raise SyntaxError, "Not Supported"
-        for key in set(attributes.keys())-set(('orderby','groupby','limitby',
-                                               'required','cache','left',
-                                               'distinct', 'having', 'processor')):
+        for key in set(attributes.keys())-SELECT_ARGS:
             raise SyntaxError, 'invalid select attribute: %s' % key
         new_fields=[]
         for item in fields:
@@ -8717,7 +8717,12 @@ class Set(object):
 
     def _select(self, *fields, **attributes):
         adapter = self.db._adapter
-        fields = adapter.expand_all(fields, adapter.tables(self.query))
+        tablenames = adapter.tables(self.query,
+                                    attributes.get('join',None),
+                                    attributes.get('left',None),
+                                    attributes.get('orderby',None),
+                                    attributes.get('groupby',None))
+        fields = adapter.expand_all(fields, tablenames)
         return adapter._select(self.query,fields,attributes)
 
     def _delete(self):
@@ -8749,10 +8754,13 @@ class Set(object):
         return db._adapter.count(self.query,distinct)
 
     def select(self, *fields, **attributes):
-        if self.query is None:# and fields[0]._table._common_filter != None:
-            return self(fields[0]._table).select(*fields,**attributes)
         adapter = self.db._adapter
-        fields = adapter.expand_all(fields, adapter.tables(self.query))
+        tablenames = adapter.tables(self.query,
+                                    attributes.get('join',None),
+                                    attributes.get('left',None),
+                                    attributes.get('orderby',None),
+                                    attributes.get('groupby',None))
+        fields = adapter.expand_all(fields, tablenames)
         return adapter.select(self.query,fields,attributes)
 
     def nested_select(self,*fields,**attributes):
