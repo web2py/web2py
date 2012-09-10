@@ -15,33 +15,67 @@
 __author__ = "Mariano Reingart (reingart@gmail.com)"
 __copyright__ = "Copyright (C) 2008/009 Mariano Reingart"
 __license__ = "LGPL 3.0"
-__version__ = "1.02c"
+__version__ = "1.03a"
 
+import datetime
+import logging
+import re
+import time
+import warnings
 import xml.dom.minidom
 from decimal import Decimal
-import datetime
-import time
+
+log = logging.getLogger(__name__)
+logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.WARNING)
 
 DEBUG = False
 
-# Functions to serialize/unserialize special immutable types:
-datetime_u = lambda s: datetime.datetime.strptime(s, "%Y-%m-%dT%H:%M:%S")
+try:
+    _strptime = datetime.datetime.strptime
+except AttributeError:  # python2.4
+    _strptime = lambda s, fmt: datetime.datetime(*(time.strptime(s, fmt)[:6]))
+
+
+# Functions to serialize/deserialize special immutable types:
+def datetime_u(s):
+    fmt = "%Y-%m-%dT%H:%M:%S"
+    try:
+        return _strptime(s, fmt)
+    except ValueError:
+        try:
+            # strip utc offset
+            if s[-3] == ":" and s[-6] in (' ', '-', '+'):
+                warnings.warn('removing unsupported UTC offset', RuntimeWarning) 
+                s = s[:-6]
+            # parse microseconds
+            try:
+                return _strptime(s, fmt + ".%f")
+            except:
+                return _strptime(s, fmt)
+        except ValueError:
+            # strip microseconds (not supported in this platform)
+            if "." in s:
+                warnings.warn('removing unsuppported microseconds', RuntimeWarning) 
+                s = s[:s.index(".")]
+            return _strptime(s, fmt)
+                
 datetime_m = lambda dt: dt.isoformat('T')
-date_u = lambda s: datetime.datetime.strptime(s[0:10], "%Y-%m-%d").date()
+date_u = lambda s: _strptime(s[0:10], "%Y-%m-%d").date()
 date_m = lambda d: d.strftime("%Y-%m-%d")
-time_u = lambda s: datetime.datetime.strptime(s, "%H:%M:%S").time()
+time_u = lambda s: _strptime(s, "%H:%M:%S").time()
 time_m = lambda d: d.strftime("%H%M%S")
 bool_u = lambda s: {'0':False, 'false': False, '1': True, 'true': True}[s]
+bool_m = lambda s: {False: 'false', True: 'true'}[s]
 
 # aliases:
-class Alias():
+class Alias(object):
     def __init__(self, py_type, xml_type):
         self.py_type, self.xml_type = py_type, xml_type
     def __call__(self, value):
         return self.py_type(value)
     def __repr__(self):
         return "<alias '%s' for '%s'>" % (self.xml_type, self.py_type)
-
+        
 byte = Alias(str,'byte')
 short = Alias(int,'short')
 double = Alias(float,'double')
@@ -51,18 +85,34 @@ Date = datetime.date
 Time = datetime.time
 
 # Define convertion function (python type): xml schema type
-TYPE_MAP = {str:'string',unicode:'string',
-            bool:'boolean', short:'short', byte:'byte',
-            int:'int', long:'long', integer:'integer',
-            float:'float', double:'double',
-            Decimal:'decimal',
-            datetime.datetime:'dateTime', datetime.date:'date',
-            }
-TYPE_MARSHAL_FN = {datetime.datetime:datetime_m, datetime.date:date_m,}
-TYPE_UNMARSHAL_FN = {datetime.datetime:datetime_u, datetime.date:date_u,
-                     bool:bool_u,
-            }
+TYPE_MAP = {
+    str:'string',
+    unicode:'string',
+    bool:'boolean', 
+    short:'short', 
+    byte:'byte',
+    int:'int', 
+    long:'long', 
+    integer:'integer', 
+    float:'float', 
+    double:'double',
+    Decimal:'decimal',
+    datetime.datetime:'dateTime', 
+    datetime.date:'date',
+}
+TYPE_MARSHAL_FN = {
+    datetime.datetime:datetime_m, 
+    datetime.date:date_m,
+    bool:bool_m
+}
+TYPE_UNMARSHAL_FN = {
+    datetime.datetime:datetime_u, 
+    datetime.date:date_u,
+    bool:bool_u, 
+    str:unicode,
+}
 
+REVERSE_TYPE_MAP = dict([(v,k) for k,v in TYPE_MAP.items()])
 
 class OrderedDict(dict):
     "Minimal ordered dictionary for xsd:sequences"
@@ -103,33 +153,45 @@ class OrderedDict(dict):
 
 class SimpleXMLElement(object):
     "Simple XML manipulation (simil PHP)"
-
-    def __init__(self, text = None, elements = None, document = None, namespace = None, prefix=None):
+    
+    def __init__(self, text = None, elements = None, document = None, 
+                 namespace = None, prefix=None, namespaces_map={}):
+        """
+        :param namespaces_map: How to map our namespace prefix to that given by the client;
+          {prefix: received_prefix}
+        """
+        self.__namespaces_map = namespaces_map
+        _rx = "|".join(namespaces_map.keys()) # {'external': 'ext', 'model': 'mod'} -> 'external|model'
+        self.__ns_rx = re.compile(r"^(%s):.*$" % _rx) # And now we build an expression ^(external|model):.*$
+                                                      # to find prefixes in all xml nodes i.e.: <model:code>1</model:code>
+                                                      # and later change that to <mod:code>1</mod:code>
         self.__ns = namespace
         self.__prefix = prefix
-        if text:
+        
+        if text is not None:
             try:
                 self.__document = xml.dom.minidom.parseString(text)
             except:
-                if DEBUG: print text
+                log.error(text)
                 raise
             self.__elements = [self.__document.documentElement]
         else:
             self.__elements = elements
             self.__document = document
-
-    def add_child(self,name,text=None,ns=True):
+        
+    def add_child(self, name, text=None, ns=True):
         "Adding a child tag to a node"
         if not ns or not self.__ns:
-            if DEBUG: print "adding %s" % (name)
+            log.debug('adding %s', name)
             element = self.__document.createElement(name)
         else:
-            if DEBUG: print "adding %s ns %s %s" % (name, self.__ns,ns)
+            log.debug('adding %s ns "%s" %s', name, self.__ns, ns)
             if self.__prefix:
                 element = self.__document.createElementNS(self.__ns, "%s:%s" % (self.__prefix, name))
             else:
                 element = self.__document.createElementNS(self.__ns, name)
-        if text:
+        # don't append null tags!
+        if text is not None:
             if isinstance(text, unicode):
                 element.appendChild(self.__document.createTextNode(text))
             else:
@@ -139,22 +201,31 @@ class SimpleXMLElement(object):
                     elements=[element],
                     document=self.__document,
                     namespace=self.__ns,
-                    prefix=self.__prefix)
-
+                    prefix=self.__prefix,
+                    namespaces_map=self.__namespaces_map)
+    
     def __setattr__(self, tag, text):
         "Add text child tag node (short form)"
         if tag.startswith("_"):
             object.__setattr__(self, tag, text)
         else:
-            if DEBUG: print "__setattr__(%s,%s)" % (tag, text)
-            self.add_child(tag,text)
+            log.debug('__setattr__(%s, %s)', tag, text)
+            self.add_child(tag, text)
+
+    def __delattr__(self, tag):
+        "Remove a child tag (non recursive!)"
+        elements=[__element for __element in self._element.childNodes
+                          if __element.nodeType == __element.ELEMENT_NODE
+                         ]
+        for element in elements:
+            self._element.removeChild(element)
 
     def add_comment(self, data):
         "Add an xml comment to this child"
         comment = self.__document.createComment(data)
         self._element.appendChild(comment)
 
-    def as_xml(self,filename=None,pretty=False):
+    def as_xml(self, filename=None, pretty=False):
         "Return the XML representation of the document"
         if not pretty:
             return self.__document.toxml('UTF-8')
@@ -179,8 +250,13 @@ class SimpleXMLElement(object):
 
     def get_namespace_uri(self, ns):
         "Return the namespace uri for a prefix"
-        v = self.__document.documentElement.attributes['xmlns:%s' % ns]
-        return v.value
+        element = self._element
+        while element is not None and element.attributes is not None:
+            try:
+                return element.attributes['xmlns:%s' % ns].value
+            except KeyError:
+                element = element.parentNode
+
 
     def attributes(self):
         "Return a dict of attributes for this tag"
@@ -189,8 +265,8 @@ class SimpleXMLElement(object):
 
     def __getitem__(self, item):
         "Return xml tag attribute value or a slice of attributes (iter)"
-        if DEBUG: print "__getitem__(%s)" % item
-        if isinstance(item,basestring):
+        log.debug('__getitem__(%s)', item)
+        if isinstance(item, basestring):
             if self._element.hasAttribute(item):
                 return self._element.attributes[item].value
         elif isinstance(item, slice):
@@ -203,12 +279,13 @@ class SimpleXMLElement(object):
                     elements=[element],
                     document=self.__document,
                     namespace=self.__ns,
-                    prefix=self.__prefix)
-
+                    prefix=self.__prefix,
+                    namespaces_map=self.__namespaces_map)
+            
     def add_attribute(self, name, value):
         "Set an attribute value from a string"
         self._element.setAttribute(name, value)
-
+ 
     def __setitem__(self, item, value):
         "Set an attribute value"
         if isinstance(item,basestring):
@@ -218,9 +295,19 @@ class SimpleXMLElement(object):
             for k, v in value.items():
                 self.add_attribute(k, v)
 
-    def __call__(self, tag=None, ns=None, children=False, error=True):
+    def __call__(self, tag=None, ns=None, children=False, root=False,
+                 error=True, ):
         "Search (even in child nodes) and return a child tag by name"
         try:
+            if root:
+                # return entire document
+                return SimpleXMLElement(
+                    elements=[self.__document.documentElement],
+                    document=self.__document,
+                    namespace=self.__ns,
+                    prefix=self.__prefix,
+                    namespaces_map=self.__namespaces_map
+                )
             if tag is None:
                 # if no name given, iterate over siblings (same level)
                 return self.__iter__()
@@ -233,34 +320,35 @@ class SimpleXMLElement(object):
                 elements=[self.__elements[tag]]
             if ns and not elements:
                 for ns_uri in isinstance(ns, (tuple, list)) and ns or (ns, ):
-                    if DEBUG: print "searching %s by ns=%s" % (tag,ns_uri)
+                    log.debug('searching %s by ns=%s', tag, ns_uri)
                     elements = self._element.getElementsByTagNameNS(ns_uri, tag)
-                    if elements:
+                    if elements: 
                         break
             if self.__ns and not elements:
-                if DEBUG: print "searching %s by ns=%s" % (tag, self.__ns)
+                log.debug('searching %s by ns=%s', tag, self.__ns)
                 elements = self._element.getElementsByTagNameNS(self.__ns, tag)
             if not elements:
-                if DEBUG: print "searching %s " % (tag)
+                log.debug('searching %s', tag)
                 elements = self._element.getElementsByTagName(tag)
             if not elements:
-                if DEBUG: print self._element.toxml()
+                #log.debug(self._element.toxml())
                 if error:
-                    raise AttributeError("No elements found")
+                    raise AttributeError(u"No elements found")
                 else:
                     return
             return SimpleXMLElement(
                 elements=elements,
                 document=self.__document,
                 namespace=self.__ns,
-                prefix=self.__prefix)
+                prefix=self.__prefix,
+                namespaces_map=self.__namespaces_map)
         except AttributeError, e:
-            raise AttributeError("Tag not found: %s (%s)" % (tag, str(e)))
+            raise AttributeError(u"Tag not found: %s (%s)" % (tag, unicode(e)))
 
     def __getattr__(self, tag):
         "Shortcut for __call__"
         return self.__call__(tag)
-
+        
     def __iter__(self):
         "Iterate over xml tags at this level"
         try:
@@ -269,13 +357,14 @@ class SimpleXMLElement(object):
                     elements=[__element],
                     document=self.__document,
                     namespace=self.__ns,
-                    prefix=self.__prefix)
+                    prefix=self.__prefix,
+                    namespaces_map=self.__namespaces_map)
         except:
             raise
 
     def __dir__(self):
         "List xml children tags names"
-        return [node.tagName for node
+        return [node.tagName for node 
                 in self._element.childNodes
                 if node.nodeType != node.TEXT_NODE]
 
@@ -290,16 +379,17 @@ class SimpleXMLElement(object):
                 elements=elements,
                 document=self.__document,
                 namespace=self.__ns,
-                prefix=self.__prefix)
+                prefix=self.__prefix,
+                namespaces_map=self.__namespaces_map)
 
     def __len__(self):
         "Return elements count"
         return len(self.__elements)
-
+        
     def __contains__( self, item):
         "Search for a tag name in this element or child nodes"
         return self._element.getElementsByTagName(item)
-
+    
     def __unicode__(self):
         "Returns the unicode text nodes of the current element"
         if self._element.childNodes:
@@ -309,7 +399,7 @@ class SimpleXMLElement(object):
                     rc = rc + node.data
             return rc
         return ''
-
+    
     def __str__(self):
         "Returns the str text nodes of the current element"
         return unicode(self).encode("utf8","ignore")
@@ -323,94 +413,147 @@ class SimpleXMLElement(object):
         try:
             return float(self.__str__())
         except:
-            raise IndexError(self._element.toxml())
-
+            raise IndexError(self._element.toxml())    
+    
     _element = property(lambda self: self.__elements[0])
 
-    def unmarshall(self, types):
+    def unmarshall(self, types, strict=True):
         "Convert to python values the current serialized xml element"
         # types is a dict of {tag name: convertion function}
+        # strict=False to use default type conversion if not specified
         # example: types={'p': {'a': int,'b': int}, 'c': [{'d':str}]}
         #   expected xml: <p><a>1</a><b>2</b></p><c><d>hola</d><d>chau</d>
         #   returnde value: {'p': {'a':1,'b':2}, `'c':[{'d':'hola'},{'d':'chau'}]}
         d = {}
         for node in self():
             name = str(node.get_local_name())
+            ref_name_type = None
+            # handle multirefs: href="#id0"
+            if 'href' in node.attributes().keys():
+                href = node['href'][1:]
+                for ref_node in self(root=True)("multiRef"):
+                    if ref_node['id'] == href:
+                        node = ref_node
+                        ref_name_type = ref_node['xsi:type'].split(":")[1]
+                        break
             try:
                 fn = types[name]
             except (KeyError, ), e:
-                raise TypeError("Tag: %s invalid" % (name,))
-            if isinstance(fn,list):
+                if node.get_namespace_uri("soapenc"):
+                    fn = None # ignore multirefs!
+                elif 'xsi:type' in node.attributes().keys():
+                    xsd_type = node['xsi:type'].split(":")[1]
+                    fn = REVERSE_TYPE_MAP[xsd_type]
+                elif strict:
+                    raise TypeError(u"Tag: %s invalid (type not found)" % (name,))
+                else:
+                    # if not strict, use default type conversion
+                    fn = unicode
+            
+            if isinstance(fn, list):
+                # append to existing list (if any) - unnested dict arrays -
+                value = d.setdefault(name, [])
+                children = node.children()
+                for child in (children and children() or []): # Readability counts
+                    value.append(child.unmarshall(fn[0], strict))
+            
+            elif isinstance(fn, tuple):
                 value = []
+                _d = {}
                 children = node.children()
-                for child in children and children() or []:
-                    value.append(child.unmarshall(fn[0]))
-            elif isinstance(fn,dict):
+                as_dict = len(fn) == 1 and isinstance(fn[0], dict)
+
+                for child in (children and children() or []): # Readability counts
+                    if as_dict:
+                        _d.update(child.unmarshall(fn[0], strict)) # Merging pairs
+                    else:
+                        value.append(child.unmarshall(fn[0], strict))
+                if as_dict:
+                    value.append(_d)
+
+                if name in d:
+                    _tmp = list(d[name])
+                    _tmp.extend(value)
+                    value = tuple(_tmp)
+                else:
+                    value = tuple(value)
+            
+            elif isinstance(fn, dict):
+                ##if ref_name_type is not None:
+                ##    fn = fn[ref_name_type]
                 children = node.children()
-                value = children and children.unmarshall(fn)
+                value = children and children.unmarshall(fn, strict)
             else:
                 if fn is None: # xsd:anyType not unmarshalled
                     value = node
                 elif str(node) or fn == str:
                     try:
-                        # get special desserialization function (if any)
-                        fn = TYPE_UNMARSHAL_FN.get(fn,fn)
-                        value = fn(unicode(node))
+                        # get special deserialization function (if any)
+                        fn = TYPE_UNMARSHAL_FN.get(fn,fn) 
+                        if fn == str:
+                            # always return an unicode object:
+                            value = unicode(node)
+                        else:
+                            value = fn(unicode(node))
                     except (ValueError, TypeError), e:
-                        raise ValueError("Tag: %s: %s" % (name, unicode(e)))
+                        raise ValueError(u"Tag: %s: %s" % (name, unicode(e)))
                 else:
                     value = None
             d[name] = value
         return d
-
-    def marshall(self, name, value, add_child=True, add_comments=False, ns=False):
+    
+    
+    def _update_ns(self, name):
+        """Replace the defined namespace alias with tohse used by the client."""
+        pref = self.__ns_rx.search(name)
+        if pref:
+            pref = pref.groups()[0]
+            try:
+                name = name.replace(pref, self.__namespaces_map[pref])
+            except KeyError:
+                log.warning('Unknown namespace alias %s' % name)
+        return name
+    
+    
+    def marshall(self, name, value, add_child=True, add_comments=False, 
+                 ns=False, add_children_ns=True):
         "Analize python value and add the serialized XML element using tag name"
+        # Change node name to that used by a client
+        name = self._update_ns(name)
+        
         if isinstance(value, dict):  # serialize dict (<key>value</key>)
-            child = add_child and self.add_child(name,ns=ns) or self
+            child = add_child and self.add_child(name, ns=ns) or self
             for k,v in value.items():
+                if not add_children_ns:
+                    ns = False
                 child.marshall(k, v, add_comments=add_comments, ns=ns)
         elif isinstance(value, tuple):  # serialize tuple (<key>value</key>)
-            child = add_child and self.add_child(name,ns=ns) or self
+            child = add_child and self.add_child(name, ns=ns) or self
+            if not add_children_ns:
+                ns = False
             for k,v in value:
-                getattr(self,name).marshall(k, v, add_comments=add_comments, ns=ns)
+                getattr(self, name).marshall(k, v, add_comments=add_comments, ns=ns)
         elif isinstance(value, list): # serialize lists
-            child=self.add_child(name,ns=ns)
+            child=self.add_child(name, ns=ns)
+            if not add_children_ns:
+                ns = False
             if add_comments:
                 child.add_comment("Repetitive array of:")
             for t in value:
-                child.marshall(name,t, False, add_comments=add_comments, ns=ns)
+                child.marshall(name, t, False, add_comments=add_comments, ns=ns)
         elif isinstance(value, basestring): # do not convert strings or unicodes
-            self.add_child(name,value,ns=ns)
+            self.add_child(name, value,ns=ns)
         elif value is None: # sent a empty tag?
-            self.add_child(name,ns=ns)
+            self.add_child(name, ns=ns)
         elif value in TYPE_MAP.keys():
             # add commented placeholders for simple tipes (for examples/help only)
-            child = self.add_child(name,ns=ns)
+            child = self.add_child(name, ns=ns) 
             child.add_comment(TYPE_MAP[value])
-        else: # the rest of object types are converted to string
+        else: # the rest of object types are converted to string 
             # get special serialization function (if any)
-            fn = TYPE_MARSHAL_FN.get(type(value),str)
-            self.add_child(name,fn(value),ns=ns)
+            fn = TYPE_MARSHAL_FN.get(type(value), str)
+            self.add_child(name, fn(value), ns=ns) 
 
     def import_node(self, other):
         x = self.__document.importNode(other._element, True)  # deep copy
         self._element.appendChild(x)
-
-
-if __name__ == "__main__":
-    span = SimpleXMLElement('<span><a href="python.org.ar">pyar</a><prueba><i>1</i><float>1.5</float></prueba></span>')
-    assert str(span.a)==str(span('a'))==str(span.a(0))=="pyar"
-    assert span.a['href']=="python.org.ar"
-    assert int(span.prueba.i)==1 and float(span.prueba.float)==1.5
-    span1 = SimpleXMLElement('<span><a href="google.com">google</a><a>yahoo</a><a>hotmail</a></span>')
-    assert [str(a) for a in span1.a()] == ['google', 'yahoo', 'hotmail']
-    span1.add_child('a','altavista')
-    span1.b = "ex msn"
-    d = {'href':'http://www.bing.com/', 'alt': 'Bing'}
-    span1.b[:] = d
-    assert sorted([(k,v) for k,v in span1.b[:]]) == sorted(d.items())
-    print span1.as_xml()
-    assert 'b' in span1
-    span.import_node(span1)
-    print span.as_xml()
-

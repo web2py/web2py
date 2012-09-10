@@ -15,21 +15,67 @@
 __author__ = "Mariano Reingart (reingart@gmail.com)"
 __copyright__ = "Copyright (C) 2010 Mariano Reingart"
 __license__ = "LGPL 3.0"
-__version__ = "1.02c"
+__version__ = "1.03c"
 
-from simplexml import SimpleXMLElement, TYPE_MAP, DateTime, Date, Decimal
+import logging
+import re
+import traceback
+from simplexml import SimpleXMLElement, TYPE_MAP, Date, Decimal
 
+log = logging.getLogger(__name__)
+
+# Deprecated
 DEBUG = False
-
+NS_RX=re.compile(r'xmlns:(\w+)="(.+?)"')
 
 class SoapDispatcher(object):
     "Simple Dispatcher for SOAP Server"
-
-    def __init__(self, name, documentation='', action='', location='',
-                 namespace=None, prefix=False,
-                 soap_uri="http://schemas.xmlsoap.org/soap/envelope/",
+    
+    def __init__(self, name, documentation='', action='', location='', 
+                 namespace=None, prefix=False, 
+                 soap_uri="http://schemas.xmlsoap.org/soap/envelope/", 
                  soap_ns='soap',
+                 namespaces={},
+                 pretty=False,
+                 debug=False,
                  **kwargs):
+        """
+        :param namespace: Target namespace; xmlns=targetNamespace
+        :param prefix: Prefix for target namespace; xmlns:prefix=targetNamespace
+        :param namespaces: Specify additional namespaces; example: {'external': 'http://external.mt.moboperator'}
+        :param pretty: Prettifies generated xmls
+        :param debug: Use to add tracebacks in generated xmls.
+        
+        Multiple namespaces
+        ===================
+        
+        It is possible to support multiple namespaces.
+        You need to specify additional namespaces by passing `namespace` parameter.
+        
+        >>> dispatcher = SoapDispatcher(
+        ...    name = "MTClientWS",
+        ...    location = "http://localhost:8008/ws/MTClientWS",
+        ...    action = 'http://localhost:8008/ws/MTClientWS', # SOAPAction
+        ...    namespace = "http://external.mt.moboperator", prefix="external",
+        ...    documentation = 'moboperator MTClientWS',
+        ...    namespaces = {
+        ...        'external': 'http://external.mt.moboperator', 
+        ...        'model': 'http://model.common.mt.moboperator'
+        ...    },
+        ...    ns = True)
+        
+        Now the registered method must return node names with namespaces' prefixes.
+        
+        >>> def _multi_ns_func(self, serviceMsisdn):
+        ...    ret = {
+        ...        'external:activateSubscriptionsReturn': [
+        ...            {'model:code': '0'},
+        ...            {'model:description': 'desc'},
+        ...        ]}
+        ...    return ret
+        
+        Our prefixes will be changed to those used by the client.
+        """
         self.methods = {}
         self.name = name
         self.documentation = documentation
@@ -39,10 +85,28 @@ class SoapDispatcher(object):
         self.prefix = prefix
         self.soap_ns = soap_ns
         self.soap_uri = soap_uri
-
+        self.namespaces = namespaces
+        self.pretty = pretty
+        self.debug = debug
+    
+    
+    @staticmethod
+    def _extra_namespaces(xml, ns):
+        """Extends xml with extra namespaces.
+        :param ns: dict with namespaceUrl:prefix pairs
+        :param xml: XML node to modify
+        """
+        if ns:
+            _tpl = 'xmlns:%s="%s"'
+            _ns_str = " ".join([_tpl % (prefix, uri) for uri, prefix in ns.items() if uri not in xml])
+            xml = xml.replace('/>', ' '+_ns_str+'/>')
+        return xml
+    
+    
     def register_function(self, name, fn, returns=None, args=None, doc=None):
-        self.methods[name] = fn, returns, args, doc or getattr(fn,"__doc__","")
-
+        self.methods[name] = fn, returns, args, doc or getattr(fn, "__doc__", "")
+    
+    
     def dispatch(self, xml, action=None):
         "Receive and proccess SOAP call"
         # default values:
@@ -50,23 +114,41 @@ class SoapDispatcher(object):
         ret = fault = None
         soap_ns, soap_uri = self.soap_ns, self.soap_uri
         soap_fault_code = 'VersionMismatch'
-
+        name = None
+        
+        # namespaces = [('model', 'http://model.common.mt.moboperator'), ('external', 'http://external.mt.moboperator')]
+        _ns_reversed = dict(((v,k) for k,v in self.namespaces.iteritems())) # Switch keys-values
+        # _ns_reversed = {'http://external.mt.moboperator': 'external', 'http://model.common.mt.moboperator': 'model'}
+        
         try:
             request = SimpleXMLElement(xml, namespace=self.namespace)
-
+            
             # detect soap prefix and uri (xmlns attributes of Envelope)
             for k, v in request[:]:
                 if v in ("http://schemas.xmlsoap.org/soap/envelope/",
                                   "http://www.w3.org/2003/05/soap-env",):
                     soap_ns = request.attributes()[k].localName
                     soap_uri = request.attributes()[k].value
-
+                
+                # If the value from attributes on Envelope is in additional namespaces
+                elif v in self.namespaces.values():
+                    _ns = request.attributes()[k].localName
+                    _uri = request.attributes()[k].value
+                    _ns_reversed[_uri] = _ns # update with received alias
+                    # Now we change 'external' and 'model' to the received forms i.e. 'ext' and 'mod'
+                # After that we know how the client has prefixed additional namespaces
+            
+            ns = NS_RX.findall(xml)
+            for k, v in ns:
+                if v in self.namespaces.values():
+                    _ns_reversed[v] = k
+            
             soap_fault_code = 'Client'
-
+            
             # parse request message and get local method
             method = request('Body', ns=soap_uri).children()(0)
             if action:
-                # method name = action
+                # method name = action 
                 name = action[len(self.action)+1:-1]
                 prefix = self.prefix
             if not action or not name:
@@ -74,52 +156,69 @@ class SoapDispatcher(object):
                 name = method.get_local_name()
                 prefix = method.get_prefix()
 
-            if DEBUG: print "dispatch method", name
+            log.debug('dispatch method: %s', name)
             function, returns_types, args_types, doc = self.methods[name]
-
+            log.debug('returns_types %s', returns_types)
+            
             # de-serialize parameters (if type definitions given)
             if args_types:
                 args = method.children().unmarshall(args_types)
             elif args_types is None:
-                args = {'request':method} # send raw request
+                args = {'request': method} # send raw request
             else:
                 args = {} # no parameters
-
+            
             soap_fault_code = 'Server'
             # execute function
             ret = function(**args)
-            if DEBUG: print ret
+            log.debug('dispathed method returns: %s', ret)
 
-        except Exception, e:
+        except Exception: # This shouldn't be one huge try/except
             import sys
             etype, evalue, etb = sys.exc_info()
-            if DEBUG:
-                import traceback
+            log.error(traceback.format_exc())
+            if self.debug:
                 detail = ''.join(traceback.format_exception(etype, evalue, etb))
                 detail += '\n\nXML REQUEST\n\n' + xml
             else:
                 detail = None
-            fault = {'faultcode': "%s.%s" % (soap_fault_code, etype.__name__),
-                     'faultstring': unicode(evalue),
+            fault = {'faultcode': "%s.%s" % (soap_fault_code, etype.__name__), 
+                     'faultstring': unicode(evalue), 
                      'detail': detail}
 
         # build response message
         if not prefix:
-            xml = """<%(soap_ns)s:Envelope xmlns:%(soap_ns)s="%(soap_uri)s"/>"""
+            xml = """<%(soap_ns)s:Envelope xmlns:%(soap_ns)s="%(soap_uri)s"/>"""  
         else:
             xml = """<%(soap_ns)s:Envelope xmlns:%(soap_ns)s="%(soap_uri)s"
-                       xmlns:%(prefix)s="%(namespace)s"/>"""
-
-        xml = xml % {'namespace': self.namespace, 'prefix': prefix,
-                     'soap_ns': soap_ns, 'soap_uri': soap_uri}
-
-        response = SimpleXMLElement(xml, namespace=self.namespace,
+                       xmlns:%(prefix)s="%(namespace)s"/>"""  
+            
+        xml %= {    # a %= {} is a shortcut for a = a % {}
+            'namespace': self.namespace, 
+            'prefix': prefix,
+            'soap_ns': soap_ns, 
+            'soap_uri': soap_uri
+        }
+        
+        # Now we add extra namespaces
+        xml = SoapDispatcher._extra_namespaces(xml, _ns_reversed)
+        
+        # Change our namespace alias to that given by the client.
+        # We put [('model', 'http://model.common.mt.moboperator'), ('external', 'http://external.mt.moboperator')]
+        # mix it with {'http://external.mt.moboperator': 'ext', 'http://model.common.mt.moboperator': 'mod'}
+        mapping = dict(((k, _ns_reversed[v]) for k,v in self.namespaces.iteritems())) # Switch keys-values and change value
+        # and get {'model': u'mod', 'external': u'ext'}
+        
+        response = SimpleXMLElement(xml, 
+                                    namespace=self.namespace,
+                                    namespaces_map = mapping,
                                     prefix=prefix)
-
+        
         response['xmlns:xsi'] = "http://www.w3.org/2001/XMLSchema-instance"
         response['xmlns:xsd'] = "http://www.w3.org/2001/XMLSchema"
-
+        
         body = response.add_child("%s:Body" % soap_ns, ns=False)
+        
         if fault:
             # generate a Soap Fault (with the python exception)
             body.marshall("%s:Fault" % soap_ns, fault, ns=False)
@@ -139,14 +238,16 @@ class SoapDispatcher(object):
             elif returns_types is None:
                 # merge xmlelement returned
                 res.import_node(ret)
+            elif returns_types == {}:
+                log.warning('Given returns_types is an empty dict.')
 
-        return response.as_xml()
+        return response.as_xml(pretty=self.pretty)
 
     # Introspection functions:
 
     def list_methods(self):
         "Return a list of aregistered operations"
-        return [(method, doc) for method, (function, returns, args, doc) in self.methods.items()]
+        return [(method, doc) for method, (function, returns, args, doc) in self.methods.items()] 
 
     def help(self, method=None):
         "Generate sample request and response messages"
@@ -185,7 +286,7 @@ class SoapDispatcher(object):
     def wsdl(self):
         "Generate Web Service Description v1.1"
         xml = """<?xml version="1.0"?>
-<wsdl:definitions name="%(name)s"
+<wsdl:definitions name="%(name)s" 
           targetNamespace="%(namespace)s"
           xmlns:tns="%(namespace)s"
           xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
@@ -206,7 +307,7 @@ class SoapDispatcher(object):
 
         for method, (function, returns, args, doc) in self.methods.items():
             # create elements:
-
+                
             def parse_element(name, values, array=False, complex=False):
                 if not complex:
                     element = wsdl('wsdl:types')('xsd:schema').add_child('xsd:element')
@@ -241,12 +342,12 @@ class SoapDispatcher(object):
                             l.extend(d.items())
                         parse_element(n, l, array=True, complex=True)
                         t = "tns:%s" % n
-                    elif isinstance(v, dict):
+                    elif isinstance(v, dict): 
                         n="%s%s" % (name, k)
                         parse_element(n, v.items(), complex=True)
                         t = "tns:%s" % n
                     e.add_attribute('type', t)
-
+            
             parse_element("%s" % method, args and args.items())
             parse_element("%sResponse" % method, returns and returns.items())
 
@@ -255,7 +356,7 @@ class SoapDispatcher(object):
                 message = wsdl.add_child('wsdl:message')
                 message['name'] = "%s%s" % (method, m)
                 part = message.add_child("wsdl:part")
-                part[:] = {'name': 'parameters',
+                part[:] = {'name': 'parameters', 
                            'element': 'tns:%s%s' % (method,e)}
 
         # create ports
@@ -302,14 +403,13 @@ class SoapDispatcher(object):
         soapaddress = port.add_child('soap:address')
         soapaddress["location"] = self.location
         return wsdl.as_xml(pretty=True)
-
+    
 
 from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
 class SOAPHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         "User viewable help information and wsdl"
         args = self.path[1:].split("?")
-        print "serving", args
         if self.path != "/" and args[0] not in self.server.dispatcher.methods.keys():
             self.send_error(404, "Method not found: %s" % args[0])
         else:
@@ -322,7 +422,7 @@ class SOAPHandler(BaseHTTPRequestHandler):
                 if len(args)==1 or args[1]=="request":
                     response = req
                 else:
-                    response = res
+                    response = res                
             self.send_response(200)
             self.send_header("Content-type", "text/xml")
             self.end_headers()
@@ -349,7 +449,7 @@ if __name__=="__main__":
         documentation = 'Example soap service using PySimpleSoap',
         trace = True,
         ns = True)
-
+    
     def adder(p,c, dt=None):
         "Add several values"
         print c[0]['d'],c[1]['d'],
@@ -366,11 +466,11 @@ if __name__=="__main__":
         return request.value
 
     dispatcher.register_function('Adder', adder,
-        returns={'AddResult': {'ab': int, 'dd': str } },
+        returns={'AddResult': {'ab': int, 'dd': str } }, 
         args={'p': {'a': int,'b': int}, 'dt': Date, 'c': [{'d': Decimal}]})
 
     dispatcher.register_function('Dummy', dummy,
-        returns={'out0': str},
+        returns={'out0': str}, 
         args={'in0': str})
 
     dispatcher.register_function('Echo', echo)
@@ -379,58 +479,16 @@ if __name__=="__main__":
 
         wsdl=dispatcher.wsdl()
         print wsdl
-        testfile = open("C:/test.wsdl","w")
-        try:
-            testfile.write(wsdl)
-        finally:
-            testfile.close()
-        # dummy local test (clasic soap dialect)
-        xml = """<?xml version="1.0" encoding="UTF-8"?>
-    <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/">
-       <soap:Body>
-         <Adder xmlns="http://example.com/sample.wsdl">
-           <p><a>1</a><b>2</b></p><c><d>5000000.1</d><d>.2</d></c><dt>20100724</dt>
-        </Adder>
-       </soap:Body>
-    </soap:Envelope>"""
-
-        print dispatcher.dispatch(xml)
-
-        # dummy local test (modern soap dialect, SoapUI)
-        xml = """
-<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:pys="http://example.com/pysimplesoapsamle/">
-   <soapenv:Header/>
-   <soapenv:Body>
-      <pys:Adder>
-         <pys:p><pys:a>9</pys:a><pys:b>3</pys:b></pys:p>
-         <pys:dt>19690720<!--1969-07-20T21:28:00--></pys:dt>
-         <pys:c><pys:d>10.001</pys:d><pys:d>5.02</pys:d></pys:c>
-      </pys:Adder>
-   </soapenv:Body>
-</soapenv:Envelope>
-    """
-        print dispatcher.dispatch(xml)
-
-        # echo local test (generic soap service)
-        xml = """<?xml version="1.0" encoding="UTF-8"?>
-    <soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/"
-                   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                   xmlns:xsd="http://www.w3.org/2001/XMLSchema">
-       <soap:Body>
-         <Echo xmlns="http://example.com/sample.wsdl">
-           <value xsi:type="xsd:string">Hello world</value>
-        </Echo>
-       </soap:Body>
-    </soap:Envelope>"""
-
-        print dispatcher.dispatch(xml)
-
+        
+        # Commented because path is platform dependent
+        # Looks that it doesnt matter.
+        # open("C:/test.wsdl","w").write(wsdl) 
 
         for method, doc in dispatcher.list_methods():
             request, response, doc = dispatcher.help(method)
             ##print request
             ##print response
-
+            
     if '--serve' in sys.argv:
         print "Starting server..."
         httpd = HTTPServer(("", 8008), SOAPHandler)
@@ -442,7 +500,7 @@ if __name__=="__main__":
         client = SoapClient(
             location = "http://localhost:8008/",
             action = 'http://localhost:8008/', # SOAPAction
-            namespace = "http://example.com/sample.wsdl",
+            namespace = "http://example.com/sample.wsdl", 
             soap_ns='soap',
             trace = True,
             ns = False)
@@ -450,6 +508,3 @@ if __name__=="__main__":
         result = response.AddResult
         print int(result.ab)
         print str(result.dd)
-
-
-

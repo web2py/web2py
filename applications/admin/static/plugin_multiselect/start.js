@@ -1,1 +1,1 @@
-jQuery(document).ready(function(){jQuery('[multiple]').multiSelect({maxHeight:200});});
+jQuery(document).ready(function(){jQuery('[multiple]').multiSelect({selectableHeader:'<b>Options</b>',selectedHeader:'<b>Selected</b>'});});

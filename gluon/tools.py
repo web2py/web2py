@@ -31,6 +31,8 @@ from utils import web2py_uuid
 from fileutils import read_file, check_credentials
 from gluon import *
 from gluon.contrib.autolinks import expand_one
+from gluon.contrib.markmin.markmin2html import \
+    replace_at_urls, replace_autolinks, replace_components
 from gluon.dal import Row
 
 import serializers
@@ -3150,9 +3152,15 @@ class Auth(object):
         id = archive_table.insert(**new_record)
         return id
 
-    def wiki(self,slug=None,env=None,manage_permissions=False,force_prefix='', resolve=True):
+    def wiki(self,
+             slug=None,
+             env=None,
+             render=None,
+             manage_permissions=False,
+             force_prefix='', 
+             resolve=True):
         if not hasattr(self,'_wiki'):
-            self._wiki = Wiki(self,
+            self._wiki = Wiki(self,render=render,
                               manage_permissions=manage_permissions,
                               force_prefix=force_prefix,env=env)
         else:
@@ -4472,13 +4480,21 @@ class Expose(object):
 class Wiki(object):
     everybody = 'everybody'
     rows_page = 25
-    regex_redirect = re.compile('redirect\s+(\w+\://\S+)\s*')
     def markmin_render(self,page):
         html = MARKMIN(page.body,url=True,environment=self.env,
                        autolinks=lambda link: expand_one(link,{})).xml()
         html += DIV(_class='w2p_wiki_tags',
                     *[A(t.strip(),_href=URL(args='_search',vars=dict(q=t)))
                       for t in page.tags or [] if t.strip()]).xml()
+        return html
+    def html_render(self,page):
+        html = page.body
+        # @///function -> http://..../function
+        html = replace_at_urls(html,URL)
+        # http://...jpg -> <img src="http://...jpg/> or oembed
+        html = replace_autolinks(html,lambda link: expand_one(link,{}))
+        # @{component:name} -> <script>embed component name</script>
+        html = replace_components(html,self.env)
         return html
     @staticmethod
     def component(text):
@@ -4494,6 +4510,7 @@ class Wiki(object):
         self.env = env or {}
         self.env['component'] = Wiki.component
         if render == 'markmin': render=self.markmin_render
+        elif render == 'html': render=self.html_render
         self.auth = auth
         if self.auth.user:
             self.force_prefix = force_prefix % self.auth.user
@@ -4564,14 +4581,15 @@ class Wiki(object):
     # WIKI ACCESS POLICY
     def not_authorized(self,page=None):
         raise HTTP(401)
-    def can_read(self,page):
+    def can_read(self,page):   
         if 'everybody' in page.can_read or not self.manage_permissions:
             return True
         elif self.auth.user:
             groups = self.auth.user_groups.values()
             if ('wiki_editor' in groups or
                 set(groups).intersection(set(page.can_read+page.can_edit)) or
-                page.created_by==self.auth.user.id): return True
+                page.created_by==self.auth.user.id):
+                return True
         return False
     def can_edit(self,page=None):
         if not self.auth.user: redirect(self.auth.settings.login_url)
@@ -4582,7 +4600,8 @@ class Wiki(object):
                 set(groups).intersection(set(page.can_edit)) or
                 page.created_by==self.auth.user.id))
     def can_manage(self):
-        if not self.auth.user: redirect(self.auth.settings.login_url)
+        if not self.auth.user:
+            return False
         groups = self.auth.user_groups.values()
         return 'wiki_editor' in groups
     def can_search(self):
@@ -4592,11 +4611,11 @@ class Wiki(object):
         request =  current.request
         automenu = self.menu(request.controller,request.function)
         current.response.menu += automenu
-        zero = request.args(0)
+        zero = request.args(0) or 'index'
         if zero and zero.isdigit():
             return self.media(int(zero))
         elif not zero or not zero.startswith('_'):
-            return self.read(zero or 'index')
+            return self.read(zero)
         elif zero=='_edit':
             return self.edit(request.args(1) or 'index')
         elif zero=='_editmedia':
@@ -4630,19 +4649,20 @@ class Wiki(object):
         return body.replace('://HOSTNAME','://%s' % self.host)
 
     def read(self,slug):
-        if slug in '_cloud': return self.cloud()
-        elif slug in '_search': return self.search()
+        if slug in '_cloud':
+            return self.cloud()
+        elif slug in '_search':
+            return self.search()
         page = self.auth.db.wiki_page(slug=slug)
         if not page:
             redirect(URL(args=('_create',slug)))
-        if not self.can_read(page): return self.not_authorized(page)
+        if not self.can_read(page):
+            return self.not_authorized(page)
         if current.request.extension == 'html':
             if not page:
                 url = URL(args=('_edit',slug))
                 return dict(content=A('Create page "%s"' % slug,_href=url,_class="btn"))
             else:
-                match = self.regex_redirect.match(page.body)
-                if match: redirect(match.group(1))
                 return dict(content=XML(self.fix_hostname(page.html)))
         elif current.request.extension == 'load':
             return self.fix_hostname(page.html) if page else ''
@@ -4671,7 +4691,8 @@ class Wiki(object):
         if not self.can_edit(page): return self.not_authorized(page)
         title_guess = ' '.join(c.capitalize() for c in slug.split('-'))
         if not page:
-            if not (self.can_manage() or slug.startswith(self.force_prefix)):
+            if not (self.can_manage() or
+                    slug.startswith(self.force_prefix)):
                 current.session.flash='slug must have "%s" prefix' \
                     % self.force_prefix
                 redirect(URL(args=('_edit',self.force_prefix+slug)))
@@ -4725,7 +4746,8 @@ class Wiki(object):
             redirect(URL(args=('_edit',form.vars.slug)))
         return dict(content=form)
     def pages(self):
-        if not self.can_manage(): return self.not_authorized()
+        if not self.can_manage():
+            return self.not_authorized()
         self.auth.db.wiki_page.id.represent = lambda id,row:SPAN('@////%s' % row.slug)
         self.auth.db.wiki_page.title.represent = lambda title,row: \
             A(title,_href=URL(args=row.slug))
@@ -4808,6 +4830,7 @@ class Wiki(object):
             submenu.append((current.T('Search Pages'),None,
                             URL(controller,function,args=('_search'))))
         return menu
+
     def search(self,tags=None,query=None,cloud=True,preview=True,
                limitby=(0,100),orderby=None):
         if not self.can_search(): return self.not_authorized()

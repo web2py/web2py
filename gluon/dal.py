@@ -1553,8 +1553,18 @@ class BaseAdapter(ConnectionPool):
 
     def _select_aux(self,sql,fields,attributes):
         args_get = attributes.get
-        self.execute(sql)
-        rows = self.cursor.fetchall()
+        cache = args_get('cache',None)
+        if not cache:
+            self.execute(sql)
+            rows = self.cursor.fetchall()
+        else:
+            (cache_model, time_expire) = cache
+            key = self.uri + '/' + sql + '/rows'
+            if len(key)>200: key = hashlib.md5(key).hexdigest()
+            def _select_aux2():
+                self.execute(sql)
+                return self.cursor.fetchall()
+            rows = cache_model(key,_select_aux2,time_expire)
         if isinstance(rows,tuple):
             rows = list(rows)
         limitby = args_get('limitby', None) or (0,)
@@ -1568,13 +1578,13 @@ class BaseAdapter(ConnectionPool):
         Always returns a Rows object, possibly empty.
         """
         sql = self._select(query, fields, attributes)
-        if attributes.get('cache', None):            
-            args = (sql,fields,attributes)
-            (cache_model, time_expire) = attributes['cache']
+        cache = attributes.get('cache', None)
+        if cache and attributes.get('cacheable',False):            
             del attributes['cache']
-            attributes['cacheable'] = True
+            (cache_model, time_expire) = cache
             key = self.uri + '/' + sql
             if len(key)>200: key = hashlib.md5(key).hexdigest()
+            args = (sql,fields,attributes)
             return cache_model(
                 key, 
                 lambda self=self,args=args:self._select_aux(*args),
@@ -8187,7 +8197,10 @@ class Expression(object):
         db = self.db
         if isinstance(value,(list, tuple)):
             subqueries = [self.contains(str(v).strip()) for v in value if str(v).strip()]
-            return reduce(all and AND or OR, subqueries)
+            if not subqueries:
+                return self.contains('')
+            else:
+                return reduce(all and AND or OR,subqueries)
         if not self.type in ('string', 'text') and not self.type.startswith('list:'):
             raise SyntaxError, "contains used with incompatible field type"
         return Query(db, db._adapter.CONTAINS, self, value)

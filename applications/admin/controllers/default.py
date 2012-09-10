@@ -137,7 +137,7 @@ def check_version():
     elif new_version != True:
         return A(T('web2py is up to date'), _href=WEB2PY_URL)
     elif platform.system().lower() in ('windows','win32','win64') and os.path.exists("web2py.exe"):
-        return SPAN('You should upgrade to version %s' % version_number)
+        return SPAN('You should upgrade to version %s.%s.%s' % version_number[:3])
     else:
         return sp_button(URL('upgrade_web2py'), T('upgrade now')) \
             + XML(' <strong class="upgrade_version">%s.%s.%s</strong>' \

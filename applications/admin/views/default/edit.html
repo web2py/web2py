@@ -4,9 +4,23 @@
   def shortcut(combo, description):
     return XML('<li><tt>%s</tt> %s</li>' % (combo, description))
 }}
-
 {{if TEXT_EDITOR == 'amy':}}
 {{include 'default/amy_ajax.html'}}
+{{elif TEXT_EDITOR == 'codemirror':}}
+{{cm=URL('static','codemirror')}}
+<link rel="stylesheet" href="{{=cm}}/lib/codemirror.css">
+<link rel="stylesheet" href="{{=cm}}/theme/web2py.css">
+<script src="{{=cm}}/lib/codemirror.js"></script>
+<script src="{{=cm}}/mode/clike/clike.js"></script>
+{{if TEXT_EDITOR_KEYBINDING == 'emacs':}}<script src="{{=cm}}/keymap/emacs.js"></script>{{pass}}
+{{if TEXT_EDITOR_KEYBINDING == 'vi':}}<script src="{{=cm}}/keymap/vim.js"></script>{{pass}}
+<script src="{{=cm}}/mode/python/python.js"></script>
+<script src="{{=cm}}/mode/xml/xml.js"></script>
+<script src="{{=cm}}/mode/css/css.js"></script>
+<script src="{{=cm}}/mode/javascript/javascript.js"></script>
+<script src="{{=cm}}/mode/htmlmixed/htmlmixed.js"></script>
+<script src="{{=cm}}/emmet.min.js"></script>
+<script language="Javascript" type="text/javascript" src="{{=URL('static','js/ajax_editor.js')}}"></script>
 {{elif TEXT_EDITOR == 'ace':}}
 <script src="{{=URL(r=request,c='static',f='ace/src/ace.js')}}" type="text/javascript" charset="utf-8"></script>
 <script src="{{=URL(r=request,c='static',f='ace/src/theme-%s.js' % TEXT_EDITOR_THEME)}}" type="text/javascript" charset="utf-8"></script>
@@ -113,7 +127,73 @@ jQuery(document).ready(function(){
     {{=T('Last saved on:')}} <input type="input" name="saved_on" value="{{=saved_on}}" readonly="readonly"/>
     <br><hr>
     {{if TEXT_EDITOR == 'amy':}}
-    <textarea style="width: auto; height:400px;direction:ltr;" rows="58" cols="100" -amy-enabled="true" id="body" name="data"><div id="editor"/>{{=data}}</textarea>
+    <textarea style="width: auto; height:400px;direction:ltr;" rows="58" cols="100" -amy-enabled="true" id="body" name="data">{{=data}}</textarea>
+    <script>window.eamy = eamy;</script>
+    {{elif TEXT_EDITOR == 'codemirror':}}
+    <textarea style="width: auto; height:400px;direction:ltr;" id="body" name="data">{{=data}}</textarea>
+    <script>
+      function isFullScreen(instance) {
+          return /\bCodeMirror-fullscreen\b/.test(instance.getWrapperElement().className);
+      }
+      function winHeight() {
+          return window.innerHeight || (document.documentElement || document.body).clientHeight;
+      }
+      function setFullScreen(instance, full) {
+          var wrap = instance.getWrapperElement(), scroll = instance.getScrollerElement();
+          if (full) {
+              wrap.className += " CodeMirror-fullscreen";
+              scroll.style.height = winHeight() + "px";
+              document.documentElement.style.overflow = "hidden";
+          } else {
+              wrap.className = wrap.className.replace(" CodeMirror-fullscreen", "");
+              scroll.style.height = "";
+              document.documentElement.style.overflow = "";
+          }
+          instance.refresh();
+      }
+      CodeMirror.connect(window, "resize", function() {
+          var showing = document.body.getElementsByClassName("CodeMirror-fullscreen")[0];
+          if (!showing) return;
+          showing.CodeMirror.getScrollerElement().style.height = winHeight() + "px";
+      });
+      // must be here or break emmet/zencoding
+      CodeMirror.defaults.extraKeys["Ctrl-S"] = 
+        function(instance) {doClickSave();};
+      CodeMirror.defaults.extraKeys["Ctrl-F11"]= 
+        function(instance) {
+          setFullScreen(instance, !isFullScreen(instance));};
+      {{if filetype=='python':}}      
+      CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
+      {{pass}}
+      CodeMirror.defaults.extraKeys["Esc"]=
+        function(instance) {
+          if (isFullScreen(instance)) 
+             setFullScreen(instance, false);};
+      var cm_opts = {
+        {{if filetype=='html':}}
+          mode : "text/html", lineNumbers : true, 
+          profile: 'xhtml',
+        {{else:}}
+          mode: { name: '{{=filetype}}'{{if filetype=='python':}},version: 2,singleLineStringErrors: false{{pass}} },
+        {{pass}}
+        lineNumbers: true,
+        indentUnit: 4,
+        theme: "web2py",
+        tabMode: "shift",
+        lineWrapping: true,
+        {{if TEXT_EDITOR_KEYBINDING == 'emacs':}}keyMap: "emacs",{{pass}}
+        {{if TEXT_EDITOR_KEYBINDING == 'vi':}}keyMap: "vim",{{pass}}
+        matchBrackets: true,
+        autofocus: true,
+        onCursorActivity: function() {
+            editor.setLineClass(hlLine, null, null);
+            hlLine = editor.setLineClass(editor.getCursor().line, null, "activeline");}
+      };
+      var editor = CodeMirror.fromTextArea(
+         document.getElementById("body"),cm_opts);
+      var hlLine = editor.setLineClass(0, "activeline");
+      window.mirror = editor;
+    </script>
     {{elif TEXT_EDITOR == 'ace':}}
     <div id="editor" style="height: 500px; width: auto; position: relative">{{=data}}</div>
 <script>
@@ -138,9 +218,9 @@ window.onload = function() {
     window.ace_editor = editor;
 };
 </script>
-
     {{else:}}
     <textarea cols="80" rows="25" id="body" style="direction:ltr;" name="data">{{=data}}</textarea>
+    <script>window.textarea = area.textarea;</script>
     {{pass}}
     <button class="editbutton" onclick="window.location.reload(); return false">{{=T('restore')}}</button> {{=T('currently saved or')}} <button class="editbutton" type="submit" name="revert">{{=T('revert')}}</button>
     {{=T('to  previous version.')}}
@@ -148,8 +228,8 @@ window.onload = function() {
   </form>
 </div>
 
-{{if TEXT_EDITOR == 'edit_area' and filetype=='html':}}
 <div class="help">
+  {{if TEXT_EDITOR=='edit_area' and filetype=='html':}}
   <h3>{{=T('Key bindings for ZenCoding Plugin')}}</h3>
   <ul>
     {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
@@ -161,13 +241,23 @@ window.onload = function() {
     {{=shortcut('Ctrl+Shift+→', T('Next Edit Point'))}}
     {{=shortcut('Ctrl+Shift+↑', T('Go to Matching Pair'))}}
   </ul>
-</div>
-{{else:}}
-<div class="help">
+  {{elif TEXT_EDITOR == 'codemirror' and filetype=='html':}}
+  <h3>{{=T('Key bindings for ZenCoding Plugin')}}</h3>
+  <ul>
+    {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
+    {{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
+    {{=shortcut('Tab', T('Expand Abbreviation'))}}
+  </ul>
+  {{elif TEXT_EDITOR == 'codemirror':}}
+  <h3>{{=T("Key bindings")}}</h3>
+  <ul>
+    {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
+    {{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
+  </ul>
+  {{else:}}
   <h3>{{=T("Key bindings")}}</h3>
   <ul>
     {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
   </ul>
+  {{pass}}
 </div>
-{{pass}}
-

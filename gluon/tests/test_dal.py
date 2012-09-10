@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-    Unit tests for gluon.sql
+    Unit tests for gluon.dal
 """
 
 import sys
@@ -422,17 +422,23 @@ class TestMinMaxSum(unittest.TestCase):
         db.t.drop()
 
 
-#class TestCache(unittest.
-#    def testRun(self):
-#        cache = cache.ram
-#        db = DAL('sqlite:memory:')
-#        db.define_table('t', Field('a'))
-#        db.t.insert(a='1')
-#        r1 = db().select(db.t.ALL, cache=(cache, 1000))
-#        db.t.insert(a='1')
-#        r2 = db().select(db.t.ALL, cache=(cache, 1000))
-#        self.assertEqual(r1.response, r2.response)
-#        db.t.drop()
+class TestCache(unittest.TestCase):
+    def testRun(self):
+        from cache import CacheInRam
+        cache = CacheInRam()
+        db = DAL('sqlite:memory:')
+        db.define_table('t', Field('a'))
+        db.t.insert(a='1')
+        r0 = db().select(db.t.ALL)
+        r1 = db().select(db.t.ALL, cache=(cache, 1000))
+        self.assertEqual(len(r0),len(r1))
+        r2 = db().select(db.t.ALL, cache=(cache, 1000))
+        self.assertEqual(len(r0),len(r2))
+        r3 = db().select(db.t.ALL, cache=(cache, 1000), cacheable=True)
+        self.assertEqual(len(r0),len(r3))
+        r4 = db().select(db.t.ALL, cache=(cache, 1000), cacheable=True)
+        self.assertEqual(len(r0),len(r4))
+        db.t.drop()
 
 
 class TestMigrations(unittest.TestCase):
