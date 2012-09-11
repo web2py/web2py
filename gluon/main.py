@@ -226,6 +226,20 @@ def serve_controller(request, response, session):
     requests = ('requests' in globals()) and (requests+1) % 100 or 0
     if not requests: gc.collect()
     # end garbage collection logic
+
+    # ##################################################
+    # set default headers it not set
+    # ##################################################
+
+    default_headers = [
+        ('Content-Type', contenttype('.'+request.extension)),
+        ('Cache-Control','no-store, no-cache, must-revalidate, post-check=0, pre-check=0'),
+        ('Expires', time.strftime('%a, %d %b %Y %H:%M:%S GMT', 
+                                  time.gmtime())),
+        ('Pragma', 'no-cache')]
+    for key,value in default_headers:
+        response.headers.setdefault(key,value)
+
     raise HTTP(response.status, page, **response.headers)
 
 
@@ -496,7 +510,7 @@ def wsgibase(environ, responder):
                     import gluon.debug
                     # activate the debugger
                     gluon.debug.dbg.do_debug(mainpyfile=request.folder)
-
+                
                 serve_controller(request, response, session)
 
             except HTTP, http_response:
@@ -531,32 +545,12 @@ def wsgibase(environ, responder):
                 # ##################################################
                     
                 session._try_store_on_disk(request, response)
-
-                # ##################################################
-                # set default headers it not set
-                # ##################################################
                 
-                rheaders = http_response.headers
-
-                default_headers = [
-                    ('Content-Type', contenttype('.'+request.extension)),
-                    ('Cache-Control','no-store, no-cache, must-revalidate, post-check=0, pre-check=0'),
-                    ('Expires', time.strftime('%a, %d %b %Y %H:%M:%S GMT', 
-                                              time.gmtime())),
-                    ('Pragma', 'no-cache')]
-
                 if request.cid:
                     if response.flash:
-                        default_headers.append(
-                            ('web2py-component-flash',
-                             urllib2.quote(xmlescape(response.flash).replace('\n',''))))
+                        http_response.headers['web2py-component-flash'] = urllib2.quote(xmlescape(response.flash).replace('\n',''))
                     if response.js:
-                        default_headers.append(
-                            ('web2py-component-command',
-                             response.js.replace('\n','')))
-                    
-                for key,value in default_headers:
-                    rheaders.setdefault(key,value)
+                        http_response.headers['web2py-component-command'] = response.js.replace('\n','')
 
                 # ##################################################
                 # store cookies in headers
