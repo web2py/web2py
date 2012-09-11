@@ -7472,13 +7472,14 @@ class Table(object):
         fields = list(fields)
 
         if db and db._adapter.uploads_in_blob==True:
+            uploadfields = [f.name for f in fields if f.type=='blob']
             for field in fields:
+                fn = field.uploadfield
                 if isinstance(field, Field) and field.type == 'upload'\
-                        and field.uploadfield is True:
-                    tmp = field.uploadfield = '%s_blob' % field.name
-        if isinstance(field.uploadfield,str) and \
-                not [f for f in fields if f.name==field.uploadfield]:
-            fields.append(Field(field.uploadfield,'blob',default=''))
+                        and fn is True:
+                    fn = field.uploadfield = '%s_blob' % field.name
+                if isinstance(fn,str) and not fn in uploadfields:
+                    fields.append(Field(fn,'blob',default=''))
 
         lower_fieldnames = set()
         reserved = dir(Table) + ['fields']
