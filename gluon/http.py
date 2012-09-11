@@ -89,14 +89,14 @@ class HTTP(BaseException):
             status = str(status)
             if not regex_status.match(status):
                 status = '500 %s' % (defined_status[500])
-        if not 'Content-Type' in headers:
-            headers['Content-Type'] = 'text/html; charset=UTF-8'
+        headers.setdefault('Content-Type','text/html; charset=UTF-8')
         body = self.body
         if status[:1] == '4':
             if not body:
                 body = status
             if isinstance(body, str):
-                if len(body)<512 and headers['Content-Type'].startswith('text/html'):
+                if len(body)<512 and \
+                        headers['Content-Type'].startswith('text/html'):
                     body += '<!-- %s //-->' % ('x'*512) ### trick IE
                 headers['Content-Length'] = len(body)
         rheaders = []

@@ -556,8 +556,7 @@ def wsgibase(environ, responder):
                              response.js.replace('\n','')))
                     
                 for key,value in default_headers:
-                    if not key in rheaders:
-                        rheaders[key] = value
+                    rheaders.setdefault(key,value)
 
                 # ##################################################
                 # store cookies in headers
