@@ -895,7 +895,11 @@ class MapUrlIn(object):
         self.domain_controller = None
         self.domain_function = None
         arg0 = self.harg0
-        if (self.host, self.port) in base.domains:
+        if not base.exclusive_domain and base.applications and arg0 in base.applications:
+            self.application = arg0
+        elif not base.exclusive_domain and arg0 and not base.applications:
+            self.application = arg0
+        elif (self.host, self.port) in base.domains:
             (self.application, self.domain_controller, self.domain_function) = base.domains[(self.host, self.port)]
             self.env['domain_application'] = self.application
             self.env['domain_controller'] = self.domain_controller
