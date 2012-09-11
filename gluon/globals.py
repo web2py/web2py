@@ -230,7 +230,6 @@ class Response(Storage):
 
     def include_files(self):
 
-
         """
         Caching method for writing out files.
         By default, caches in ram for 5 minutes. To change,
@@ -244,8 +243,9 @@ class Response(Storage):
             if not item in files: files.append(item)
         if have_minify and (self.optimize_css or self.optimize_js):
             # cache for 5 minutes by default
+            key = hashlib.md5(repr(files)).hexdigest()
             cache = self.cache_includes or (current.cache.ram, 60*5)
-            def call_minify():
+            def call_minify(files=files):
                 return minify.minify(files,
                                      URL('static','temp'),
                                      current.request.folder,
@@ -253,7 +253,7 @@ class Response(Storage):
                                      self.optimize_js)
             if cache:
                 cache_model, time_expire = cache
-                files = cache_model('response.files.minified',
+                files = cache_model('response.files.minified/'+key,
                                     call_minify,
                                     time_expire)
             else:
