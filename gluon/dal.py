@@ -7479,7 +7479,8 @@ class Table(object):
                         and fn is True:
                     fn = field.uploadfield = '%s_blob' % field.name
                 if isinstance(fn,str) and not fn in uploadfields:
-                    fields.append(Field(fn,'blob',default=''))
+                    fields.append(Field(fn,'blob',default='',
+                                        writable=False,readable=False))
 
         lower_fieldnames = set()
         reserved = dir(Table) + ['fields']
