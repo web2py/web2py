@@ -103,7 +103,7 @@ class HTTP(BaseException):
         for k, v in headers.iteritems():
             if isinstance(v, list):
                 rheaders += [(k, str(item)) for item in v]
-            else:
+            elif not v is None:
                 rheaders.append((k, str(v)))
         responder(status, rheaders)
         if env.get('request_method','')=='HEAD':
