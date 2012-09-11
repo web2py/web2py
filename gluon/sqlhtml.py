@@ -2416,7 +2416,7 @@ class SQLTABLE(TABLE):
                 _class = 'odd'
 
             if not selectid is None: #new implement
-                if record[self.id_field_name]==selectid:
+                if record.get('id') == selectid:
                     _class += ' rowselected'
 
             for colname in columns:

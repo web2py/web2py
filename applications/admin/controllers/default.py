@@ -15,10 +15,10 @@ from gluon.utils import web2py_uuid
 from glob import glob
 import shutil
 import platform
-try:                                                                                      
-    from git import *                                                                     
+try:
+    from git import *
     have_git = True
-except ImportError:                                                                       
+except ImportError:
     have_git = False
     GIT_MISSING = 'requires python-git module, but not installed or incompatible version'
 
