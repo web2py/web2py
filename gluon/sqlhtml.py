@@ -1410,7 +1410,7 @@ class SQLFORM(FORM):
         type(''): ('string', None),
         type(True): ('boolean', None),
         type(1): ('integer', IS_INT_IN_RANGE(-1e12,+1e12)),
-        type(1.0): ('double', IS_INT_IN_RANGE(-1e12,+1e12)),
+        type(1.0): ('double', IS_FLOAT_IN_RANGE()),
         type([]): ('list:string', None),
         type(datetime.date.today()): ('date', IS_DATE()),
         type(datetime.datetime.today()): ('datetime', IS_DATETIME())
