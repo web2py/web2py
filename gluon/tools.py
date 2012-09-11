@@ -3157,12 +3157,15 @@ class Auth(object):
              env=None,
              render=None,
              manage_permissions=False,
-             force_prefix='', 
+             force_prefix='',
+             restrict_search=False,
              resolve=True):
         if not hasattr(self,'_wiki'):
             self._wiki = Wiki(self,render=render,
                               manage_permissions=manage_permissions,
-                              force_prefix=force_prefix,env=env)
+                              force_prefix=force_prefix,
+                              restrict_search=restrict_search,
+                              env=env)
         else:
             self._wiki.env.update(env or {})
         # if resolve is set to True, process request as wiki call
@@ -4506,7 +4509,8 @@ class Wiki(object):
         controller, function, args = items[0], items[1], items[2:]
         return LOAD(controller, function, args=args, ajax=True).xml()
     def __init__(self,auth,env=None,render='markmin',
-                 manage_permissions=False,force_prefix=''):
+                 manage_permissions=False,force_prefix='',
+                 restrict_search=False):
         self.env = env or {}
         self.env['component'] = Wiki.component
         if render == 'markmin': render=self.markmin_render
@@ -4518,6 +4522,7 @@ class Wiki(object):
             self.force_prefix = force_prefix
         self.host = current.request.env.http_host
         perms = self.manage_permissions = manage_permissions
+        self.restrict_search = restrict_search
         db = auth.db
         table_definitions = {
             'wiki_page':{
@@ -4826,9 +4831,8 @@ class Wiki(object):
                             URL(controller,function,args=('_pages'))))
             submenu.append((current.T('Edit Menu'),None,
                             URL(controller,function,args=('_edit','wiki-menu'))))
-        # if self.can_search():
-            submenu.append((current.T('Search Pages'),None,
-                            URL(controller,function,args=('_search'))))
+        submenu.append((current.T('Search Pages'),None,
+                        URL(controller,function,args=('_search'))))
         return menu
 
     def search(self,tags=None,query=None,cloud=True,preview=True,
@@ -4857,6 +4861,8 @@ class Wiki(object):
                 query = (db.wiki_page.id==db.wiki_tag.wiki_page)&\
                     (db.wiki_tag.name.belongs(tags))
                 query = query|db.wiki_page.title.startswith(request.vars.q)
+            if self.restrict_search and not self.manage():
+                query = query&(db.wiki_page.created_by==self.auth.user_id)
             pages = db(query).select(
                 *fields,**dict(orderby=orderby or ~count,
                                groupby=db.wiki_page.id,
