@@ -279,7 +279,6 @@ class Response(Storage):
         request=None,
         attachment=False,
         filename=None,
-        headers=None
         ):
         """
         if a controller function::
@@ -299,7 +298,7 @@ class Response(Storage):
         default to the last request argument otherwise)
         """
 
-        headers = headers if headers is not None else self.headers
+        headers = self.headers
         # for attachment settings and backward compatibility
         keys = [item.lower() for item in headers]
         if attachment:
