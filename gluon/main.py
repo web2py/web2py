@@ -489,19 +489,6 @@ def wsgibase(environ, responder):
                     session.connect(request, response)
 
                 # ##################################################
-                # set no-cache headers
-                # ##################################################
-                
-                headers = response.headers
-                headers['Content-Type'] = \
-                    contenttype('.'+request.extension)
-                headers['Cache-Control'] = \
-                    'no-store, no-cache, must-revalidate, post-check=0, pre-check=0'
-                headers['Expires'] = \
-                    time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime())
-                headers['Pragma'] = 'no-cache'
-
-                # ##################################################
                 # run controller
                 # ##################################################
 
@@ -513,10 +500,10 @@ def wsgibase(environ, responder):
                 serve_controller(request, response, session)
 
             except HTTP, http_response:
+
                 if static_file:
                     return http_response.to(responder,env=env)
                         
-
                 if request.body:
                     request.body.close()
 
@@ -546,27 +533,41 @@ def wsgibase(environ, responder):
                 session._try_store_on_disk(request, response)
 
                 # ##################################################
+                # set default headers it not set
+                # ##################################################
+                
+                rheaders = http_response.headers
+
+                default_headers = [
+                    ('Content-Type', contenttype('.'+request.extension)),
+                    ('Cache-Control','no-store, no-cache, must-revalidate, post-check=0, pre-check=0'),
+                    ('Expires', time.strftime('%a, %d %b %Y %H:%M:%S GMT', 
+                                              time.gmtime())),
+                    ('Pragma', 'no-cache')]
+
+                if request.cid:
+                    if response.flash:
+                        default_headers.append(
+                            ('web2py-component-flash',
+                             urllib2.quote(xmlescape(response.flash).replace('\n',''))))
+                    if response.js:
+                        default_headers.append(
+                            ('web2py-component-command',
+                             response.js.replace('\n','')))
+                    
+                for key,value in default_headers:
+                    if not key in rheaders:
+                        rheaders[key] = value
+
+                # ##################################################
                 # store cookies in headers
                 # ##################################################
 
-                if request.cid:
-                    rheaders = http_response.headers
-                    if response.flash and \
-                            not 'web2py-component-flash' in rheaders:
-                        rheaders['web2py-component-flash'] = \
-                            urllib2.quote(xmlescape(response.flash)\
-                                              .replace('\n',''))
-                    if response.js and \
-                            not 'web2py-component-command' in rheaders:
-                        rheaders['web2py-component-command'] = \
-                            response.js.replace('\n','')
                 rcookies = response.cookies
-                if session._forget and \
-                        response.session_id_name in response.cookies:
+                if session._forget and response.session_id_name in rcookies:
                     del rcookies[response.session_id_name]
                 elif session._secure:
                     rcookies[response.session_id_name]['secure'] = True
-
                 http_response.cookies2headers(rcookies)
                 ticket=None
 
