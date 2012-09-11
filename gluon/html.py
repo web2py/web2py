@@ -2227,6 +2227,7 @@ class MENU(DIV):
     def __init__(self, data, **args):
         self.data = data
         self.attributes = args
+        self.components = []
         if not '_class' in self.attributes:
             self['_class'] = 'web2py-menu web2py-menu-vertical'
         if not 'ul_class' in self.attributes:
