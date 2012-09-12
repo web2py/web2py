@@ -107,6 +107,7 @@ div.flash {
     -webkit-border-radius:5px;
     z-index:2000;
 }
+div.flash:hover { opacity:0.25; }
 
 div.error_wrapper {display:block}
 div.error {
