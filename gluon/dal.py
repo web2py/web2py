@@ -4349,7 +4349,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         if first.type != 'id':
             return [GAEF(first.name,'in',self.represent(second,first.type),lambda a,b:a in b)]
         else:
-            second = [Key.from_path(first._tablename, i) for i in second]
+            second = [Key.from_path(first._tablename, int(i)) for i in second]
             return [GAEF(first.name,'in',second,lambda a,b:a in b)]
 
     def CONTAINS(self,first,second):
