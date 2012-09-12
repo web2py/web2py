@@ -92,11 +92,13 @@
 
     <!-- Masthead ================================================== -->
     <header class="mastheader" id="header">
-      <div class="page-header">
-        <h1>
-          {{=response.title or request.application}}
-          <small>{{=response.subtitle or ''}}</small>
-        </h1>
+      <div class="row">
+	<div class="page-header span12">
+          <h1>
+            {{=response.title or request.application}}
+            <small>{{=response.subtitle or ''}}</small>
+          </h1>
+	</div>
       </div>
     </header>
 
@@ -130,15 +132,17 @@
 
     <!-- Footer ================================================== -->
     <footer class="footer" id="footer">
-      {{block footer}} <!-- this is default footer -->
-      <div class="footer-content">
-        <div class="copyright pull-left">{{=T('Copyright')}} &#169; {{=request.now.year}}</div>
-        <div id="poweredBy" class="pull-right">
-          {{=T('Powered by')}}
-          <a href="http://www.web2py.com/">web2py</a>
-        </div>
+      <div class="row">
+	<div class="footer-content span12">
+	  {{block footer}} <!-- this is default footer -->
+          <div class="copyright pull-left">{{=T('Copyright')}} &#169; {{=request.now.year}}</div>
+          <div id="poweredBy" class="pull-right">
+            {{=T('Powered by')}}
+            <a href="http://www.web2py.com/">web2py</a>
+          </div>
+	  {{end}}
+	</div>
       </div>
-      {{end}}
     </footer>
 
   </div> <!-- /container -->
