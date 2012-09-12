@@ -1664,8 +1664,9 @@ class SQLFORM(FORM):
             return URL(**b)
 
         referrer = session.get('_web2py_grid_referrer_'+formname, url())
-        if user_signature:
-            if (args != request.args and user_signature and \
+        if user_signature:            
+            if ('/'.join(str(a) for a in args) != '/'.join(request.args) and \
+                    user_signature and \
                     not URL.verify(request,user_signature=user_signature)) or \
                     (not (session.auth and session.auth.user) and \
                          ('edit' in request.args or \
