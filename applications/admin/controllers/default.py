@@ -20,7 +20,7 @@ try:
     have_git = True
 except ImportError:
     have_git = False
-    GIT_MISSING = 'requires python-git module, but not installed or incompatible version'
+    GIT_MISSING = 'requires gitpython module, but not installed or incompatible version'
 
 from gluon.languages import (read_possible_languages, read_dict, write_dict,
                              read_plural_dict, write_plural_dict)
