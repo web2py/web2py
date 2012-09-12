@@ -81,6 +81,8 @@ body {
 .ie-lte7 #navbar .auth_navbar, #navbar .auth_navbar a {color:expression(this.parentNode.currentStyle['color']); /* ie7 doesn't support inherit */}
 
 #navbar .auth_navbar a:hover {color:white;text-decoration:none;} /* this overwrite bootswatch */
+ul#navbar{padding:0;} /*reset ul padding */
+ul#navbar>.auth_navbar{display:inline-block;padding:5px;} /* set padding of span.auth_navbar inside ul*/
 
 body {
   height:auto; /*to avoid vertical scroll bar*/

@@ -1208,16 +1208,17 @@ class Auth(object):
 
     def navbar(self, prefix='Welcome', action=None,
                separators=(' [ ',' | ',' ] '), user_identifier=DEFAULT,
-               referrer_actions=DEFAULT):
+               referrer_actions=DEFAULT, mode='default'):
         referrer_actions = [] if not referrer_actions else referrer_actions
         request = current.request
+        asdropdown = (mode == 'dropdown')
         T = current.T
         if isinstance(prefix, str):
             prefix = T(prefix)
         if prefix:
             prefix = prefix.strip() + ' '
         if not action:
-            action=self.url(self.settings.function)
+            action = self.url(self.settings.function)
         s1,s2,s3 = separators
         if URL() == action:
             next = ''
@@ -1244,11 +1245,19 @@ class Auth(object):
             profile = A(T('Profile'), _href=href('profile'))
             password = A(T('Password'), _href=href('change_password'))
             bar = SPAN(prefix, user_identifier, s1, logout, s3, _class='auth_navbar')
+
+            if asdropdown:
+                logout = LI(A(I(_class='icon-off'), ' '+T('Logout'), _href='%s/logout?_next=%s' %
+                      (action, urllib.quote(self.settings.logout_next)))) # the space before T('Logout') is intentional. It creates a gap between icon and text
+                profile = LI(A(I(_class='icon-user'), ' '+T('Profile'), _href=href('profile')))
+                password = LI(A(I(_class='icon-lock'), ' '+T('Password'), _href=href('change_password')))
+                bar = UL(logout,_class='dropdown-menu') # logout will be the last item in list
+
             if not 'profile' in self.settings.actions_disabled:
-                bar.insert(-1, s2)
+                if not asdropdown: bar.insert(-1, s2)
                 bar.insert(-1, profile)
             if not 'change_password' in self.settings.actions_disabled:
-                bar.insert(-1, s2)
+                if not asdropdown: bar.insert(-1, s2)
                 bar.insert(-1, password)
         else:
             login = A(T('Login'), _href=href('login'))
@@ -1259,17 +1268,34 @@ class Auth(object):
                 T('Lost password?'), _href=href('request_reset_password'))
             bar = SPAN(s1, login, s3, _class='auth_navbar')
 
+            if asdropdown:
+                user_identifier = ''
+                login = LI(A(I(_class='icon-off'), ' '+T('Login'), _href=href('login'))) #the space before T('Login') is intentional. It creates a gap between icon and text
+                register = LI(A(I(_class='icon-user'), ' '+T('Register'), _href=href('register')))
+                retrieve_username = LI(A(I(_class='icon-edit'), ' '+T('Forgot username?'), _href=href('retrieve_username')))
+                lost_password = LI(A(I(_class='icon-lock'), ' '+T('Lost password?'), _href=href('request_reset_password')))
+                bar = UL(login,_class='dropdown-menu') # login will be the last item in list
+
             if not 'register' in self.settings.actions_disabled:
-                bar.insert(-1, s2)
+                if not asdropdown: bar.insert(-1, s2)
                 bar.insert(-1, register)
             if self.settings.use_username and not 'retrieve_username' \
                     in self.settings.actions_disabled:
-                bar.insert(-1, s2)
+                if not asdropdown: bar.insert(-1, s2)
                 bar.insert(-1, retrieve_username)
             if not 'request_reset_password' \
                     in self.settings.actions_disabled:
-                bar.insert(-1, s2)
+                if not asdropdown: bar.insert(-1, s2)
                 bar.insert(-1, lost_password)
+
+        if asdropdown:
+            bar.insert(-1, LI('',_class='divider'))
+            if self.user_id:               
+                bar = LI(A(prefix, user_identifier, _href='#'),
+                         bar,_class='dropdown')
+            else:
+                bar = LI(A(T('Login'), _href='#'),
+                         bar,_class='dropdown')
         return bar
 
     def __get_migrate(self, tablename, migrate=True):
