@@ -1269,7 +1269,6 @@ class Auth(object):
             bar = SPAN(s1, login, s3, _class='auth_navbar')
 
             if asdropdown:
-                user_identifier = ''
                 login = LI(A(I(_class='icon-off'), ' '+T('Login'), _href=href('login'))) #the space before T('Login') is intentional. It creates a gap between icon and text
                 register = LI(A(I(_class='icon-user'), ' '+T('Register'), _href=href('register')))
                 retrieve_username = LI(A(I(_class='icon-edit'), ' '+T('Forgot username?'), _href=href('retrieve_username')))
