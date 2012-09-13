@@ -51,6 +51,7 @@ except ImportError:
     have_minify = False
 
 regex_session_id = re.compile('^([\w\-]+/)?[\w\-\.]+$')
+regex_nopasswd = re.compile('(?<=\:)([^:@/]+)(?=@.+)')
 
 __all__ = ['Request', 'Response', 'Session']
 
@@ -410,11 +411,13 @@ class Response(Storage):
             dbstats = [TABLE(*[TR(PRE(row[0]),'%.2fms' % (row[1]*1000)) \
                                    for row in i.db._timings]) \
                            for i in thread.instances]
-            dbtables = dict([(i.uri, {'defined': sorted(list(set(i.db.tables) - 
-                                                 set(i.db._LAZY_TABLES.keys()))) or
-                                                 '[no defined tables]',
-                                      'lazy': sorted(i.db._LAZY_TABLES.keys()) or
-                                              '[no lazy tables]'})
+            dbtables = dict([(regex_nopasswd.sub('******',i.uri), 
+                              {'defined': 
+                               sorted(list(set(i.db.tables) - 
+                                           set(i.db._LAZY_TABLES.keys()))) or
+                               '[no defined tables]',
+                               'lazy': sorted(i.db._LAZY_TABLES.keys()) or
+                               '[no lazy tables]'})
                              for i in thread.instances])
         else:
             dbstats = [] # if no db or on GAE
