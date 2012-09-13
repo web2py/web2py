@@ -243,7 +243,8 @@ def URL(
         elif a and c and not f: (c,f,a)=(a,c,f)
         from globals import current
         if hasattr(current,'request'):
-            r = current.request
+            r = current.request    
+
     if r:
         application = r.application
         controller = r.controller
@@ -296,10 +297,10 @@ def URL(
     if other.endswith('/'):
         other += '/'    # add trailing slash to make last trailing empty arg explicit
 
-    if '_signature' in vars:
-        vars.pop('_signature')
     list_vars = []
     for (key, vals) in sorted(vars.items()):
+        if key == '_signature':
+            continue
         if not isinstance(vals, (list, tuple)):
             vals = [vals]
         for val in vals:
@@ -347,7 +348,8 @@ def URL(
 
     if regex_crlf.search(join([application, controller, function, other])):
         raise SyntaxError, 'CRLF Injection Detected'
-    url = url_out(r, env, application, controller, function,
+
+    url = url_out(r,env, application, controller, function,
                   args, other, scheme, host, port)
     return url
 

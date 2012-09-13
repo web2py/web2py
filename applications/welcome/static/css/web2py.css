@@ -176,19 +176,6 @@ div.error {
 
 /* #MEDIA QUERIES SECTION */
 
-    /* All Mobile Sizes (devices and browser) */
-    @media only screen and (max-width:767px) {
-/* removed because of bootswatch
-        .topbar {text-align:center}
-        #navbar,#menu {float:none}
-        #navbar {font-size:1.2em; padding:.6em 0 1.2em}
-        #menu  {padding:0 0 1.5em}
-        #menu select {font-size:1.2em; margin:0; padding:0}
-
-        div.flash {top:110px; right:10px}
-*/
-   }
-
 /*
 *Grid
 *
@@ -240,7 +227,7 @@ div.error {
     margin:0;
 }
 
-.web2py_search_actions{
+.web2py_search_actions {
     float:left;
     text-align:left;
 }
@@ -264,13 +251,13 @@ div.error {
 .web2py_console input[type=button],
 .web2py_console button {
     line-height:20px;
-    margin-right:5px; display:inline-block;
+    margin-right:2px; display:inline-block;
     padding:3px 5px 3px 5px;
 }
 
 .web2py_counter {
     margin-top:5px;
-    margin-right:5px;
+    margin-right:2px;
     width:35%;
     float:right;
     text-align:right;
@@ -308,7 +295,11 @@ li.w2p_grid_breadcrumb_elem {
     display:inline-block;
 }
 
-.ie9 #query_panel {padding-bottom:2px}
+.web2py_console form { vertical-align: middle; }
+.web2py_console input, .web2py_console select,
+.web2py_console a { margin: 2px; }
+
+.ie9 #w2p_query_panel {padding-bottom:2px}
 
 #wiki_page_body {
    width: 600px;
