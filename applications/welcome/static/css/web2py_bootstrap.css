@@ -6,7 +6,8 @@ div.flash.flash-center {
 }
 
 div.flash.flash-top, div.flash.flash-top:hover {
-  position: absolute;
+  position: relative;
+  display: block;
   margin:0;
   padding:1em;
   top:0;
@@ -121,17 +122,18 @@ li {margin-bottom: 0;} /*bootswatch*/
 [class^="icon-"],[class*=" icon-"]{background-image:url("../images/glyphicons-halflings.png")} /* right folder for bootstrap black images/icons */
 .icon-white{background-image:url("../images/glyphicons-halflings-white.png");} /* right folder for bootstrap white images/icons */
 
+.navbar-inner{
+  -webkit-border-radius: 0;
+  -moz-border-radius: 0;
+  border-radius: 0;
+  position:relative;
+}
+
 @media only screen and (max-width: 979px) {
   body {
   padding-top: 0px;
   }
   
-  .navbar-inner{
-     -webkit-border-radius: 0;
-     -moz-border-radius: 0;
-     border-radius: 0;
-     position:relative;
-  }
   #navbar{bottom:-10px;left:4px;}
   
   div.flash {
