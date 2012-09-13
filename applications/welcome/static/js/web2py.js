@@ -39,7 +39,7 @@ function web2py_ajax_init(target) {
 
 function web2py_event_handlers() {
   var doc = jQuery(document)
-  doc.on('click', '.flash', function(e){jQuery(this).fadeOut('slow'); e.preventDefault();});
+      doc.on('click', '.flash', function(e){var t=jQuery(this); if(t.css('top')=='0px') t.slideUp('slow'); else t.fadeOut(); e.preventDefault();});
   doc.on('keyup', 'input.integer', function(){this.value=this.value.reverse().replace(/[^0-9\-]|\-(?=.)/g,'').reverse();});
   doc.on('keyup', 'input.double, input.decimal', function(){this.value=this.value.reverse().replace(/[^0-9\-\.,]|[\-](?=.)|[\.,](?=[0-9]*[\.,])/g,'').reverse();});
   var confirm_message = (typeof w2p_ajax_confirm_message != 'undefined') ? w2p_ajax_confirm_message : "Are you sure you want to delete this object?";
@@ -55,7 +55,7 @@ function web2py_event_handlers() {
 jQuery(function() {
    var flash = jQuery('.flash');
    flash.hide();
-   if(flash.html()) flash.slideDown();
+   if(flash.html()) flash.append('<span style="float:right;">&times;<span>').slideDown();
    web2py_ajax_init(document);
    web2py_event_handlers();
 });

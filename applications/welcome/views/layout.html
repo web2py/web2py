@@ -65,6 +65,8 @@
 </head>
 
 <body>
+  <div class="flash">{{=response.flash or ''}}</div>
+
   <!-- Navbar ================================================== -->
   <div class="navbar navbar-fixed-top">
     <div class="navbar-inner">
@@ -88,8 +90,6 @@
   </div><!--/top navbar -->
 
   <div class="container">
-    <div class="flash">{{=response.flash or ''}}</div>
-
     <!-- Masthead ================================================== -->
     <header class="mastheader" id="header">
       <div class="row">
