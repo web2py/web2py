@@ -1,26 +1,27 @@
 #navbar .auth_navbar, #navbar .auth_navbar a {color:inherit;}
 
-div.flash.fcenter {
+div.flash.flash-center {
    left: 25%;
    right: 25%;
 }
 
-div.flash.ftop, div.flash.ftop:hover {
-   position: relative;
-   margin:0;
-   padding:1em;
-   top:0;
-   left:0;
-   width:100%;
-   text-align:center;
-   color:#3A87AD;
-   background:#D9EDF7;
-   border:1px solid #BCE8F1;
-   border-radius:0px;
-   -o-border-radius: 0px;
-   -moz-border-radius:0px;
-   -webkit-border-radius:0px;
-   opacity:1;
+div.flash.flash-top, div.flash.flash-top:hover {
+  position: absolute;
+  margin:0;
+  padding:1em;
+  top:0;
+  left:0;
+  width:100%;
+  text-align:center;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+  color:#865100;
+  background:#feea9a;
+  border:1px solid;
+  border-top:0px;
+  border-left:0px;
+  border-right:0px;
+  border-radius:0;
+  opacity:1;
 }
 
 /* bootstrap dropdown */
@@ -125,7 +126,12 @@ li {margin-bottom: 0;} /*bootswatch*/
   padding-top: 0px;
   }
   
-  .navbar-inner{position:relative;}
+  .navbar-inner{
+     -webkit-border-radius: 0;
+     -moz-border-radius: 0;
+     border-radius: 0;
+     position:relative;
+  }
   #navbar{bottom:-10px;left:4px;}
   
   div.flash {
