@@ -6,6 +6,7 @@
 <!--[if IE 9]><html class="ie9 ie-lte9 no-js" lang="{{=T.accepted_language or 'en'}}"> <![endif]-->
 <!--[if (gt IE 9)|!(IE)]><!--> <html class="no-js" lang="{{=T.accepted_language or 'en'}}"> <!--<![endif]-->
 <head>
+
   <meta charset="utf-8" />
   <!-- www.phpied.com/conditional-comments-block-downloads/ -->
   <!-- Always force latest IE rendering engine
@@ -167,7 +168,9 @@
         });
       }
       jQuery('ul.nav li.dropdown a').click(function(){window.location=jQuery(this).attr('href');});
-    });
+      // make all buttons bootstrap buttons
+      jQuery('button, form input[type="submit"], form input[type="button"]').addClass('btn').css({'margin-right':'2px','margin-bottom':'2px'});
+  });
   </script>
   <script src="{{=URL('static','js/bootstrap.min.js')}}"></script>
   <!--[if lt IE 7 ]>
