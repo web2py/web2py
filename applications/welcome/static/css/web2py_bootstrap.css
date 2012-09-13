@@ -16,10 +16,10 @@ div.flash.ftop, div.flash.ftop:hover {
    color:#3A87AD;
    background:#D9EDF7;
    border:1px solid #BCE8F1;
-   border-top:0px;
-   border-left:0px;
-   border-right:0px;
-   border-radius:0;
+   border-radius:0px;
+   -o-border-radius: 0px;
+   -moz-border-radius:0px;
+   -webkit-border-radius:0px;
    opacity:1;
 }
 
@@ -139,8 +139,17 @@ li {margin-bottom: 0;} /*bootswatch*/
 }
 
 div.error_wrapper {
-  margin-top: -9px;
   margin-bottom: 9px;
+}
+div.error {
+  border-radius: 4px;
+  -o-border-radius: 4px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px;  
+}
+
+input[type="button"], input[type="submit"] {
+   // to be fixed
 }
 
 @media only screen and (max-width: 479px) {
