@@ -6,7 +6,6 @@
 <!--[if IE 9]><html class="ie9 ie-lte9 no-js" lang="{{=T.accepted_language or 'en'}}"> <![endif]-->
 <!--[if (gt IE 9)|!(IE)]><!--> <html class="no-js" lang="{{=T.accepted_language or 'en'}}"> <!--<![endif]-->
 <head>
-
   <meta charset="utf-8" />
   <!-- www.phpied.com/conditional-comments-block-downloads/ -->
   <!-- Always force latest IE rendering engine
@@ -91,59 +90,57 @@
 
   <div class="container">
     <!-- Masthead ================================================== -->
-    <header class="mastheader" id="header">
-      <div class="row">
-	<div class="page-header span12">
-          <h1>
-            {{=response.title or request.application}}
-            <small>{{=response.subtitle or ''}}</small>
-          </h1>
-	</div>
-      </div>
+    <header class="mastheader row" id="header">
+        <div class="span12">
+            <div class="page-header">
+                <h1>
+                    {{=response.title or request.application}}
+                    <small>{{=response.subtitle or ''}}</small>
+                </h1>
+            </div>
+        </div>
     </header>
 
-    <section id="main" class="main span12">
-      <div class="row">
+    <section id="main" class="main row">
         {{if left_sidebar_enabled:}}
         <div class="span3 left-sidebar">
-          {{block left_sidebar}}
-          <h3>Left Sidebar</h3>
-          <p></p>
-          {{end}}
+            {{block left_sidebar}}
+            <h3>Left Sidebar</h3>
+            <p></p>
+            {{end}}
         </div>
         {{pass}}
 
         <div class="{{=middle_columns}}">
-          {{block center}}
-          {{include}}
-          {{end}}
+            {{block center}}
+            {{include}}
+            {{end}}
         </div>
 
         {{if right_sidebar_enabled:}}
         <div class="span3">
-          {{block right_sidebar}}
-          <h3>Right Sidebar</h3>
-          <p></p>
-          {{end}}
+            {{block right_sidebar}}
+            <h3>Right Sidebar</h3>
+            <p></p>
+            {{end}}
         </div>
         {{pass}}
-      </div><!--/row-->
     </section><!--/main-->
 
     <!-- Footer ================================================== -->
-    <footer class="footer" id="footer">
-      <div class="row">
-	<div class="footer-content span12">
-	  {{block footer}} <!-- this is default footer -->
-          <div class="copyright pull-left">{{=T('Copyright')}} &#169; {{=request.now.year}}</div>
-          <div id="poweredBy" class="pull-right">
-            {{=T('Powered by')}}
-            <a href="http://www.web2py.com/">web2py</a>
-          </div>
-	  {{end}}
-	</div>
-      </div>
-    </footer>
+    <div class="row">
+        <footer class="footer span12" id="footer">
+            <div class="footer-content">
+                {{block footer}} <!-- this is default footer -->
+                <div class="copyright pull-left">{{=T('Copyright')}} &#169; {{=request.now.year}}</div>
+                <div id="poweredBy" class="pull-right">
+                    {{=T('Powered by')}}
+                    <a href="http://www.web2py.com/">web2py</a>
+                </div>
+                {{end}}
+            </div>
+        </footer>
+    </div>
 
   </div> <!-- /container -->
 
@@ -170,7 +167,7 @@
       jQuery('ul.nav li.dropdown a').click(function(){window.location=jQuery(this).attr('href');});
       // make all buttons bootstrap buttons
       jQuery('button, form input[type="submit"], form input[type="button"]').addClass('btn').css({'margin-right':'2px','margin-bottom':'2px'});
-  });
+    });
   </script>
   <script src="{{=URL('static','js/bootstrap.min.js')}}"></script>
   <!--[if lt IE 7 ]>
