@@ -1,8 +1,27 @@
-body {
-  padding-top: 60px;
+#navbar .auth_navbar, #navbar .auth_navbar a {color:inherit;}
+
+div.flash.fcenter {
+   left: 25%;
+   right: 25%;
 }
 
-#navbar .auth_navbar, #navbar .auth_navbar a {color:inherit;}
+div.flash.ftop, div.flash.ftop:hover {
+   position: relative;
+   margin:0;
+   padding:1em;
+   top:0;
+   left:0;
+   width:100%;
+   text-align:center;
+   color:#3A87AD;
+   background:#D9EDF7;
+   border:1px solid #BCE8F1;
+   border-top:0px;
+   border-left:0px;
+   border-right:0px;
+   border-radius:0;
+   opacity:1;
+}
 
 /* bootstrap dropdown */
 
@@ -16,6 +35,10 @@ body {
 
 .dropdown-menu li:hover ul {
     visibility: visible;
+}
+
+#header {
+  margin-top: 60px;
 }
 
 .mastheader h1 {
