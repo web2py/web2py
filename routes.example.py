@@ -57,9 +57,9 @@ routes_out = (
     # do not reroute admin unless you want to disable it
     ('/admin/$anything', BASE+'/admin/?$anything'),
     # do not reroute appadmin unless you want to disable it
-    ('/$app/appadmin/$anything',BASE+'/$app/appadmin/?$anything'),
+    ('/$app/appadmin/$anything',BASE+'/$app/appadmin/$anything'),
     # do not reroute static files
-    ('/$app/static/$anything', BASE+'/$app/static/?$anything'),
+    ('/$app/static/$anything', BASE+'/$app/static/$anything'),
     # do other stuff
     (r'.*http://otherdomain.com.* /app/ctr(?P<any>.*)', r'\g<any>'),
     (r'/app(?P<any>.*)', r'\g<any>'),
