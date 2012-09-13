@@ -138,6 +138,11 @@ li {margin-bottom: 0;} /*bootswatch*/
  
 }
 
+div.error_wrapper {
+  margin-top: -9px;
+  margin-bottom: 9px;
+}
+
 @media only screen and (max-width: 479px) {
   body {
   padding-left: 10px;
