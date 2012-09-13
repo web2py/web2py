@@ -1,8 +1,6 @@
 {{left_sidebar_enabled,right_sidebar_enabled=False,('message' in globals())}}
 {{extend 'layout.html'}}
 
-{{=SQLFORM.grid(db.auth_user)}}
-
 {{if 'message' in globals():}}
 <h3>{{=message}}</h3>
 
