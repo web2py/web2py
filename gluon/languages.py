@@ -709,6 +709,10 @@ class translator(object):
         the ## notation is ignored in multiline strings and strings that
         start with ##. this is to allow markmin syntax to be translated
         """
+        if isinstance(message, unicode): 
+            message = message.encode('utf8') 
+        if isinstance(prefix, unicode): 
+            prefix = prefix.encode('utf8') 
         key = prefix+message
         mt = self.t.get(key, None)
         if mt is not None: return mt
