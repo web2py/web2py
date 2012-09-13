@@ -61,7 +61,7 @@ class MemcacheClientObj(Client):
             if item:
                 if not isinstance(item,(list,tuple)):
                     value = item
-                elif (item[0] < now - dt): # value expired
+                elif (item[0] < now - time_expire): # value expired
                     item = None # value to be computed
                 else:
                     value = item[1]
