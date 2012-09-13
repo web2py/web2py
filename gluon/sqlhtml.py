@@ -2114,11 +2114,12 @@ class SQLFORM(FORM):
         else:
             export_menu = None
 
-        res = DIV(console,
-                  DIV(htmltable,_class="web2py_table"),
-                  DIV(paginator,_class=\
-                          "web2py_paginator %(header)s %(cornerbottom)s" % ui),
+        res = DIV(console,DIV(htmltable,_class="web2py_table"),
                   _class='%s %s' % (_class, ui.get('widget')))
+        if paginator.components:
+            res.append(
+                DIV(paginator,
+                    _class="web2py_paginator %(header)s %(cornerbottom)s"%ui))
         if export_menu: res.append(export_menu)
         res.create_form = create_form
         res.update_form = update_form
