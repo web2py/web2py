@@ -6,7 +6,7 @@ echo "This script will:
 5) overwrite /etc/apache2/sites-available/default
 6) restart apache.
 
-You may want to read this cript before running it.
+You may want to read this script before running it.
 
 Press a key to continue...[ctrl+C to abort]"
 
