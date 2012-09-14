@@ -21,7 +21,7 @@ jQuery(function(){
 	var title = escape(jQuery('title').text());
 	var twit = 'http://twitter.com/home?status='+title+'%20'+url;
 	var facebook = 'http://www.facebook.com/sharer.php?u='+url;
-	var buzz = 'http://www.google.com/reader/link?url='+url+'&amp;title='+title+'&amp;srcURL='+host;
+	var buzz = 'https://plus.google.com/share?url='+url;
 	var tbar = '<div id="socialdrawer"><span>Share<br/></span><div id="sicons"><a href="'+twit+'" id="twit" title="Share on twitter"><img src="'+path+'/twitter.png"  alt="Share on Twitter" width="32" height="32" /></a><a href="'+facebook+'" id="facebook" title="Share on Facebook"><img src="'+path+'/facebook.png"  alt="Share on facebook" width="32" height="32" /></a><a href="'+buzz+'" id="buzz" title="Share on Buzz"><img src="'+path+'/google-buzz.png"  alt="Share on Buzz" width="32" height="32" /></a></div></div>';	
 	// Add the share tool bar.
 	jQuery('body').append(tbar); 
