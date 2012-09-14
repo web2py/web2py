@@ -479,6 +479,17 @@ class Cache(object):
             return CacheAction(func,key,time_expire,self,cache_model)
         return tmp
 
+    @staticmethod
+    def with_prefix(cache_model, prefix):
+        """
+        allow replacing cache.ram with cache.with_prefix(cache.ram,'prefix')
+        it will add prefix to all the cache keys used.
+        """        
+        return lambda key, f, time_expire=DEFAULT_TIME_EXPIRE, prefix=prefix:\
+            cache_model(prefix + key, f, time_expire)
+
+
+
 def lazy_cache(key=None,time_expire=None,cache_model='ram'):
     """
     can be used to cache any function including in modules,
