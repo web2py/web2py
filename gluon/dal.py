@@ -4391,7 +4391,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
             tablename = self.get_table(query)
         elif fields:
             tablename = fields[0].tablename
-            query = fields[0].table._id>0
+            query = fields[0].table._id != None
         else:
             raise SyntaxError, "Unable to determine a tablename"
 
@@ -7171,7 +7171,7 @@ def index():
 
     def __call__(self, query=None, ignore_common_filters=None):
         if isinstance(query,Table):
-            query = query._id>0
+            query = query._id != None
         elif isinstance(query,Field):
             query = query!=None
         return Set(self, query, ignore_common_filters=ignore_common_filters)
@@ -8702,7 +8702,7 @@ class Set(object):
 
     def __call__(self, query, ignore_common_filters=False):
         if isinstance(query,Table):
-            query = query._id>0
+            query = query._id != None
         elif isinstance(query,str):
             query = Expression(self.db,query)
         elif isinstance(query,Field):
