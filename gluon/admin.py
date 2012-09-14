@@ -60,7 +60,7 @@ def app_pack(app, request, raise_ex=False):
     """
     try:
         app_cleanup(app, request)
-        filename = apath('../deposit/%s.w2p' % app, request)
+        filename = apath('../deposit/web2py.app.%s.w2p' % app, request)
         w2p_pack(filename, apath(app, request))
         return filename
     except Exception, e:
