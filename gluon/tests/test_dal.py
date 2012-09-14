@@ -311,12 +311,13 @@ class TestDatetime(unittest.TestCase):
                          9, 30)), 3)
         self.assertEqual(len(db(db.t.a == datetime.datetime(1971, 12,
                          21, 11, 30)).select()), 1)
-        self.assertEqual(len(db(db.t.a.year() == 1971).select()), 2)
-        self.assertEqual(len(db(db.t.a.month() == 12).select()), 2)
-        self.assertEqual(len(db(db.t.a.day() == 21).select()), 3)
-        self.assertEqual(len(db(db.t.a.hour() == 11).select()), 1)
-        self.assertEqual(len(db(db.t.a.minutes() == 30).select()), 3)
-        self.assertEqual(len(db(db.t.a.seconds() == 0).select()), 3)
+        self.assertEqual(db(db.t.a.year() == 1971).count(), 2)
+        self.assertEqual(db(db.t.a.month() == 12).count(), 2)
+        self.assertEqual(db(db.t.a.day() == 21).count(), 3)
+        self.assertEqual(db(db.t.a.hour() == 11).count(), 1)
+        self.assertEqual(db(db.t.a.minutes() == 30).count(), 3)
+        self.assertEqual(db(db.t.a.seconds() == 0).count(), 3)
+        self.assertEqual(db(db.t.a.epoch()<365*24*3600).count(),1)
         db.t.drop()
 
 
@@ -329,7 +330,7 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(db.t.insert(a=2), 2)
         self.assertEqual(db.t.insert(a=3), 3)
         self.assertEqual(db(db.t.a == 3).update(a=db.t.a + 1), 1)
-        self.assertEqual(len(db(db.t.a == 4).select()), 1)
+        self.assertEqual(db(db.t.a == 4).count(), 1)
         db.t.drop()
 
 
