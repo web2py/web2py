@@ -242,7 +242,7 @@ REGEX_SEARCH_PATTERN = re.compile('^{[^\.]+\.[^\.]+(\.(lt|gt|le|ge|eq|ne|contain
 REGEX_SQUARE_BRACKETS = re.compile('^.+\[.+\]$')
 REGEX_STORE_PATTERN = re.compile('\.(?P<e>\w{1,5})$')
 REGEX_QUOTES = re.compile("'[^']*'")
-REGEX_ALPHANUMERIC = re.compile('^[a-zA-Z]\w*$')
+REGEX_ALPHANUMERIC = re.compile('^[0-9a-zA-Z]\w*$')
 
 # list of drivers will be built on the fly
 # and lists only what is available
