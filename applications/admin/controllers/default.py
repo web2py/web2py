@@ -366,10 +366,15 @@ def uninstall():
             else:
                 session.flash = T('no permission to uninstall "%s"', app)
                 redirect(URL('site'))
-        if app_uninstall(app, request):
-            session.flash = T('application "%s" uninstalled', app)
-        else:
+        try:
+            filename = app_pack(app, request, raise_ex=True)
+        except:
             session.flash = T('unable to uninstall "%s"', app)
+        else:
+            if app_uninstall(app, request):
+                session.flash = T('application "%s" uninstalled', app)
+            else:
+                session.flash = T('unable to uninstall "%s"', app)
         redirect(URL('site'))
     return dict(app=app, dialog=dialog)
 
