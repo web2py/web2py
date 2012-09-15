@@ -4580,7 +4580,7 @@ class Wiki(object):
                 'args':[
                     Field('wiki_page','reference wiki_page'),
                     Field('title',required=True),
-                    Field('file','upload',required=True),
+                    Field('filename','upload',required=True),
                     auth.signature],
                 'vars':{'format':'%(title)s'}}
             }
@@ -4754,7 +4754,7 @@ class Wiki(object):
         self.auth.db.wiki_media.id.represent = lambda id,row:\
             SPAN('@////%i/%s.%s' % \
                      (id,IS_SLUG.urlify(row.title.split('.')[0]),
-                      row.file.split('.')[-1]))
+                      row.filename.split('.')[-1]))
         self.auth.db.wiki_media.wiki_page.default = page.id
         self.auth.db.wiki_media.wiki_page.writable = False
         content = SQLFORM.grid(
@@ -4799,7 +4799,7 @@ class Wiki(object):
             if self.manage_permissions:
                 page = db.wiki_page(media.wiki_page)
                 if not self.can_read(page): return self.not_authorized(page)
-            request.args = [media.file]
+            request.args = [media.filename]
             return current.response.download(request,db)
         else:
             raise HTTP(404)
