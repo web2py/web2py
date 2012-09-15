@@ -3179,7 +3179,7 @@ class Auth(object):
     def wiki(self,
              slug=None,
              env=None,
-             render=None,
+             render='markmin',
              manage_permissions=False,
              force_prefix='',
              restrict_search=False,
