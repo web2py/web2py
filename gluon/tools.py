@@ -1191,7 +1191,10 @@ class Auth(object):
                        'reset_password','request_reset_password',
                        'change_password','profile','groups',
                        'impersonate','not_authorized'):
-            return getattr(self,args[0])()
+            if len(request.args) >= 2:
+                return getattr(self,args[0])(request.args[1])
+            else:
+                return getattr(self,args[0])()
         elif args[0]=='cas' and not self.settings.cas_provider:
             if args(1) == self.settings.cas_actions['login']:
                 return self.cas_login(version=2)
@@ -2723,7 +2726,7 @@ class Auth(object):
             self.user = session.auth.user
         if requested_id is DEFAULT and not request.post_vars:
             return SQLFORM.factory(Field('user_id', 'integer'))
-        return self.user
+        return SQLFORM(table_user, user.id, readonly=True)
 
     def update_groups(self):
         if not self.user:
