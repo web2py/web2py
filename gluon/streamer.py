@@ -13,7 +13,6 @@ import time
 import re
 import errno
 import rewrite
-from rocket import SERVER_SOFTWARE
 from http import HTTP
 from contenttype import contenttype
 
@@ -92,8 +91,7 @@ def stream_file_or_304_or_206(
         headers['Content-Length'] = '%i' % bytes
         status = 206
     else:
-        if request.env.server == SERVER_SOFTWARE and \
-                'gzip' in request.env.http_accept_encoding and\
+        if 'gzip' in request.env.http_accept_encoding and\
                 not 'Content-Encoding' in headers:
             gzipped = static_file + '.gz'
             if os.path.isfile(gzipped) and os.path.getmtime(gzipped)>modified:
