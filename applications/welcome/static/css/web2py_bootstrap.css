@@ -156,6 +156,14 @@ div.error {
   -webkit-border-radius: 4px;  
 }
 
+form table tr {
+  margin-bottom: 9px;
+}
+
+td.w2p_fw ul {
+  margin-left: 0px;
+}
+
 input[type="button"], input[type="submit"] {
    // to be fixed
 }
