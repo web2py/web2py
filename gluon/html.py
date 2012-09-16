@@ -1745,7 +1745,7 @@ class INPUT(DIV):
         elif not t == 'submit':
             if value is None:
                 self['value'] = _value
-            else:
+            elif not isinstance(value,list):
                 self['_value'] = value
 
     def xml(self):
