@@ -149,7 +149,7 @@
     <h4>{{=T("RAM")}}</h4>
     <p>{{=T.M("Number of entries: **%s**", ram['entries'])}}</p>
     {{if ram['entries'] > 0:}}
-    <p>{{=T.M("Hit Ratio: **%(ratio)s%%** (**%(hits)s** %{hit(hits)} and **%(misses)s** %%{miss(misses)})",
+    <p>{{=T.M("Hit Ratio: **%(ratio)s%%** (**%(hits)s** %%{hit(hits)} and **%(misses)s** %%{miss(misses)})",
              dict( ratio=ram['ratio'], hits=ram['hits'], misses=ram['misses']))}}
     </p>
     <p>
