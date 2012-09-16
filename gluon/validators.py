@@ -2329,11 +2329,12 @@ class IS_LIST_OF(Validator):
         new_value = []
         if self.other:
             for item in ivalue:
-                (v, e) = self.other(item)
-                if e:
-                    return (value, e)
-                else:
-                    new_value.append(v)
+                if item.strip():
+                    (v, e) = self.other(item)
+                    if e:
+                        return (ivalue, e)
+                    else:
+                        new_value.append(v)
             ivalue = new_value
         return (ivalue, None)
 

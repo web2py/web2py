@@ -239,11 +239,13 @@ class ListWidget(StringWidget):
         _name = field.name
         if field.type=='list:integer': _class = 'integer'
         else: _class = 'string'
-        requires = field.requires if isinstance(field.requires, (IS_NOT_EMPTY, IS_LIST_OF)) else None
+        requires = field.requires if isinstance(
+            field.requires, (IS_NOT_EMPTY, IS_LIST_OF)) else None
         attributes['_style'] = 'list-style:none'
-        items=[LI(INPUT(_id=_id, _class=_class, _name=_name,
-                        value=v, hideerror=True, requires=requires),
-                  **attributes)  for v in value or ['']]
+        items = [LI(INPUT(_id=_id, _class=_class, _name=_name,
+                          value=v, hideerror=k<len(value)-1, 
+                          requires=requires),
+                    **attributes)  for (k,v) in enumerate(value or [''])]
         script=SCRIPT("""
 // from http://refactormycode.com/codes/694-expanding-input-list-using-jquery
 (function(){
