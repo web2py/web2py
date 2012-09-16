@@ -242,10 +242,11 @@ class ListWidget(StringWidget):
         requires = field.requires if isinstance(
             field.requires, (IS_NOT_EMPTY, IS_LIST_OF)) else None
         attributes['_style'] = 'list-style:none'
+        nvalue = value or ['']
         items = [LI(INPUT(_id=_id, _class=_class, _name=_name,
-                          value=v, hideerror=k<len(value)-1, 
+                          value=v, hideerror=k<len(nvalue)-1, 
                           requires=requires),
-                    **attributes)  for (k,v) in enumerate(value or [''])]
+                    **attributes)  for (k,v) in enumerate(nvalue)]
         script=SCRIPT("""
 // from http://refactormycode.com/codes/694-expanding-input-list-using-jquery
 (function(){
