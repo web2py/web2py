@@ -88,7 +88,7 @@ except:
     from simplejson import loads, dumps
 
 
-from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB, IS_INT_IN_RANGE
+from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB, IS_INT_IN_RANGE, IS_DATETIME
 from gluon.utils import web2py_uuid
 
 
