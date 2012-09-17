@@ -40,9 +40,9 @@
 
   <!-- include stylesheets -->
   {{
+  response.files.append(URL('static','css/web2py.css'))
   response.files.append(URL('static','css/bootstrap.min.css'))
   response.files.append(URL('static','css/bootstrap-responsive.min.css'))
-  response.files.append(URL('static','css/web2py.css'))
   response.files.append(URL('static','css/web2py_bootstrap.css'))
   }}
 
@@ -166,7 +166,7 @@
       }
       jQuery('ul.nav li.dropdown a').click(function(){window.location=jQuery(this).attr('href');});
       // make all buttons bootstrap buttons
-      jQuery('button, form input[type="submit"], form input[type="button"]').addClass('btn').css({'margin-right':'2px','margin-bottom':'2px'});
+      jQuery('button, form input[type="submit"], form input[type="button"]').addClass('btn');
     });
   </script>
   <script src="{{=URL('static','js/bootstrap.min.js')}}"></script>
