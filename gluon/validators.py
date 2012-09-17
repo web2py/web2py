@@ -2593,7 +2593,9 @@ class LazyCrypt(object):
                 key = self.crypt.key
         else:
             key = ''
-        if stored_password.count('$')==2:
+        if stored_password is None:
+            return False
+        elif stored_password.count('$')==2:
             (digest_alg, salt, hash) = stored_password.split('$')
             h = simple_hash(self.password, key, salt, digest_alg)
             temp_pass = '%s$%s$%s' % (digest_alg, salt, h)
