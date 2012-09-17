@@ -1692,9 +1692,9 @@ class BaseAdapter(ConnectionPool):
             elif not isinstance(obj, (list, tuple)):
                 obj = [obj]
             if field_is_type('list:string'):
-                obj = [str(item) for item in obj]
+                obj = map(str,obj)
             else:
-                obj = [int(item) for item in obj]
+                obj = map(int,obj)
         if isinstance(obj, (list, tuple)):
             obj = bar_encode(obj)
         if obj is None:
@@ -2654,9 +2654,9 @@ class NewPostgreSQLAdapter(PostgreSQLAdapter):
             elif not isinstance(obj, (list, tuple)):
                 obj = [obj]
             if field_is_type('list:string'):
-                obj = [str(item) for item in obj]
+                obj = map(str,obj)
             else:
-                obj = [int(item) for item in obj]
+                obj = map(int,obj)
             return 'ARRAY[%s]' % ','.join(repr(item) for item in obj)
         return BaseAdapter.represent(self, obj, fieldtype)
 
@@ -5701,7 +5701,7 @@ class IMAPAdapter(NoSQLAdapter):
             year = int(date_list[2])
             month = months.index(date_list[1])
             day = int(date_list[0])
-            hms = [int(value) for value in date_list[3].split(":")]
+            hms = map(int, date_list[3].split(":"))
             return datetime.datetime(year, month, day,
                                      hms[0], hms[1], hms[2]) + add
         elif isinstance(date, (datetime.datetime, datetime.date)):
@@ -6384,11 +6384,9 @@ def sqlhtml_validators(field):
             refs = None
             db, id = r._db, r._id
             if isinstance(db._adapter, GoogleDatastoreAdapter):
-                for i in xrange(0, len(ids), 30):
-                    if not refs:
-                        refs = db(id.belongs(ids[i:i+30])).select(id)
-                    else:
-                        refs = refs&db(id.belongs(ids[i:i+30])).select(id)
+                def count(values): return db(id.belongs(values)).select(id)
+                rx = range(0, len(ids), 30)
+                refs = reduce(lambda a,b:a&b, [count(ids[i:i+30]) for i in rx])
             else:
                 refs = db(id.belongs(ids)).select(id)
             return (refs and ', '.join(str(f(r,x.id)) for x in refs) or '')
