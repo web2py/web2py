@@ -5509,8 +5509,8 @@ class IMAPAdapter(NoSQLAdapter):
     # mapped names (which native
     # mailbox has what table name)
 
-    db.mailboxes <dict> # tablename, server native name
-    db.mailbox_names <dict> # server native name, tablename
+    db.mailboxes <list> # DAL instance mailbox tablenames
+    db.mailbox_names <dict> # tablename, server native name pairs
 
     """
 
@@ -5813,8 +5813,10 @@ class IMAPAdapter(NoSQLAdapter):
                             Field("email", "string", writable=False, readable=False),
                             Field("attachments", "list:string", writable=False, readable=False),
                             )
-
-        return self.connection.mailbox_names
+        # Set the db instance mailbox collections
+        self.db.mailbox_names = self.connection.mailbox_names
+        self.db.mailboxes = self.connection.mailbox_names.keys()
+        return self.db.mailbox_names
 
     def create_table(self, *args, **kwargs):
         # not implemented
@@ -6227,7 +6229,11 @@ class IMAPAdapter(NoSQLAdapter):
             raise Exception("Operation not supported")
         return result
 
-    def NE(self, first, second):
+    def NE(self, first, second=None):
+        if (second is None) and isinstance(first, Field):
+            # All records special table query
+            if first.type == "id":
+                return self.GE(first, 1)
         result = self.NOT(self.EQ(first, second))
         result =  result.replace("NOT NOT", "").strip()
         return result
@@ -7150,7 +7156,11 @@ def index():
         return table
 
     def __contains__(self, tablename):
-        return tablename in self.tables
+        try:
+            return tablename in self.tables
+        except AttributeError:
+            # The instance has no .tables attribute yet
+            return False
 
     def get(self,key,default):
         return self.__dict__.get(key,default)
