@@ -4571,45 +4571,45 @@ class Wiki(object):
         perms = self.manage_permissions = manage_permissions
         self.restrict_search = restrict_search
         db = auth.db
-        table_definitions = {
-            'wiki_page':{
-                'args':[
-                    Field('slug',
-                          requires=[IS_SLUG(),
-                                    IS_NOT_IN_DB(db,'wiki_page.slug')],
-                          readable=False,writable=False),
-                    Field('title',unique=True),
-                    Field('body','text',notnull=True),
-                    Field('tags','list:string'),
-                    Field('can_read','list:string',
-                          writable=perms,
-                          readable=perms,
-                          default=[Wiki.everybody]),
-                    Field('can_edit', 'list:string',
-                          writable=perms,readable=perms,
-                          default=[Wiki.everybody]),
+        table_definitions = [
+            ('wiki_page',{
+                    'args':[
+                        Field('slug',
+                              requires=[IS_SLUG(),
+                                        IS_NOT_IN_DB(db,'wiki_page.slug')],
+                              readable=False,writable=False),
+                        Field('title',unique=True),
+                        Field('body','text',notnull=True),
+                        Field('tags','list:string'),
+                        Field('can_read','list:string',
+                              writable=perms,
+                              readable=perms,
+                              default=[Wiki.everybody]),
+                        Field('can_edit', 'list:string',
+                              writable=perms,readable=perms,
+                              default=[Wiki.everybody]),
                     Field('changelog'),
-                    Field('html','text',compute=render,
-                          readable=False, writable=False),
-                    auth.signature],
-                'vars':{'format':'%(title)s'}},
-             'wiki_tag':{
-                'args':[
-                    Field('name'),
-                    Field('wiki_page','reference wiki_page'),
-                    auth.signature],
-                'vars':{'format':'%(name)s'}},
-           'wiki_media':{
-                'args':[
-                    Field('wiki_page','reference wiki_page'),
-                    Field('title',required=True),
-                    Field('filename','upload',required=True),
-                    auth.signature],
-                'vars':{'format':'%(title)s'}}
-            }
+                        Field('html','text',compute=render,
+                              readable=False, writable=False),
+                        auth.signature],
+              'vars':{'format':'%(title)s'}}),
+            ('wiki_tag',{
+                    'args':[
+                        Field('name'),
+                        Field('wiki_page','reference wiki_page'),
+                        auth.signature],
+                    'vars':{'format':'%(name)s'}}),
+            ('wiki_media',{
+                    'args':[
+                        Field('wiki_page','reference wiki_page'),
+                        Field('title',required=True),
+                        Field('filename','upload',required=True),
+                        auth.signature],
+                    'vars':{'format':'%(title)s'}})
+            ]
 
         # define only non-existent tables
-        for key, value in table_definitions.iteritems():
+        for key, value in table_definitions:
             if not key in db.tables():
                 db.define_table(key, *value['args'], **value['vars'])
 
