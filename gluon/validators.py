@@ -462,12 +462,13 @@ class IS_IN_DB(Validator):
             groupby = self.groupby
             distinct = self.distinct
             dd = dict(orderby=orderby, groupby=groupby,
-                      distinct=distinct, cache=self.cache)
+                      distinct=distinct, cache=self.cache,
+                      cacheable=True)
             records = self.dbset(table).select(*fields, **dd)
         else:
             orderby = self.orderby or \
                 reduce(lambda a,b:a|b,(f for f in fields if not f.name=='id'))
-            dd = dict(orderby=orderby, cache=self.cache)
+            dd = dict(orderby=orderby, cache=self.cache, cacheable=True)
             records = self.dbset(table).select(table.ALL, **dd)
         self.theset = [str(r[self.kfield]) for r in records]
         if isinstance(self.label,str):
