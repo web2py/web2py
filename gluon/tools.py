@@ -4774,7 +4774,8 @@ class Wiki(object):
         db = auth.db
         page = db.wiki_page(slug=slug)
         if not (page and self.can_edit(page)): return self.not_authorized(page)
-        self.auth.db.wiki_media.id.represent = lambda id,row:\
+        self.auth.db.wiki_media.id.represent = lambda id,row: \
+            id if not row.filename else \
             SPAN('@////%i/%s.%s' % \
                      (id,IS_SLUG.urlify(row.title.split('.')[0]),
                       row.filename.split('.')[-1]))
