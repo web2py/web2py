@@ -2369,6 +2369,7 @@ class SQLTABLE(TABLE):
         extracolumns=None,
         selectid=None,
         renderstyle=False,
+        cid=None,
         **attributes
         ):
 
@@ -2406,7 +2407,7 @@ class SQLTABLE(TABLE):
                     row.append(TH(coldict['label'],**attrcol))
                 elif orderby:
                     row.append(TH(A(headers.get(c, c),
-                                    _href=th_link+'?orderby=' + c)))
+                                    _href=th_link+'?orderby=' + c, cid=cid)))
                 else:
                     row.append(TH(headers.get(c, c)))
 
