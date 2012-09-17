@@ -488,6 +488,8 @@ class IS_IN_DB(Validator):
         table = self.dbset.db[self.ktable]
         field = table[self.kfield]
         if self.multiple:
+            if self._and:
+                raise NotImplementedError
             if isinstance(value,list):
                 values=value
             elif value:
@@ -497,8 +499,20 @@ class IS_IN_DB(Validator):
             if isinstance(self.multiple,(tuple,list)) and \
                     not self.multiple[0]<=len(values)<self.multiple[1]:
                 return (values, translate(self.error_message))
-            if self.dbset(field.belongs(values)).count()==len(values):
-                return (values, None)
+            if self.theset:
+                if not [v for v in values if not v in self.theset]:
+                    return (values, None)
+            else:
+                from dal import GoogleDatastoreAdapter
+                def count(values, s=self.dbset, f=field):
+                    return s(f.belongs(map(int,values))).count()
+                if isinstance(self.dbset.db._adapter, GoogleDatastoreAdapter):
+                    range_ids = range(0,len(ids),30)
+                    total = sum(count(values[i:i+30]) for i in range_ids)
+                    if total == len(values):
+                        return (values, None)
+                elif count(values) == len(values):
+                    return (values, None)
         elif self.theset:
             if str(value) in self.theset:
                 if self._and:
