@@ -2111,8 +2111,10 @@ class FORM(DIV):
     REDIRECT_JS = "window.location='%s';return false"
 
     def add_button(self,value,url,_class=None):
-        self[0][-1][1].append(INPUT(_type="button",_value=value,_class=_class,
-                                    _onclick=self.REDIRECT_JS % url))
+        submit = self.element('input[type=submit]')
+        submit.parent.append(
+            INPUT(_type="button",_value=value,_class=_class,
+                  _onclick=self.REDIRECT_JS % url))
 
 
 

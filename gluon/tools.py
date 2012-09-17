@@ -794,6 +794,10 @@ def addrow(form, a, b, c, style, _id, position=-1):
                                     DIV(b, _class='w2p_fw'),
                                     DIV(c, _class='w2p_fc'),
                                     _id = _id))
+    elif style == "bootstrap":
+        form[0].insert(position, DIV(LABEL(a,_class='control-label'),
+                                    DIV(b,SPAN(c, _class='inline-help'),_class='controls'),
+                                    _class='control-group',_id = _id))
     else:
         form[0].insert(position, TR(TD(LABEL(a),_class='w2p_fl'),
                                     TD(b,_class='w2p_fw'),
@@ -1904,20 +1908,33 @@ class Auth(object):
 
             if self.settings.remember_me_form:
                 ## adds a new input checkbox "remember me for longer"
-                addrow(form,XML("&nbsp;"),
-                       DIV(XML("&nbsp;"),
-                           INPUT(_type='checkbox',
-                                 _class='checkbox',
-                                 _id="auth_user_remember",
-                                 _name="remember",
-                                 ),
-                           XML("&nbsp;&nbsp;"),
+                if self.settings.formstyle != 'bootstrap':
+                    addrow(form,XML("&nbsp;"),
+                               DIV(XML("&nbsp;"),
+                                   INPUT(_type='checkbox',
+                                         _class='checkbox',
+                                         _id="auth_user_remember",
+                                         _name="remember",
+                                        ),
+                                    XML("&nbsp;&nbsp;"),
+                                    LABEL(
+                                          self.messages.label_remember_me,
+                                          _for="auth_user_remember",
+                                        )),"",
+                               self.settings.formstyle,
+                               'auth_user_remember__row')
+                elif self.settings.formstyle == 'bootstrap':
+                    addrow(form,
+                           "",
                            LABEL(
-                            self.messages.label_remember_me,
-                            _for="auth_user_remember",
-                            )),"",
-                       self.settings.formstyle,
-                       'auth_user_remember__row')
+                                 INPUT(_type='checkbox',
+                                       _id="auth_user_remember",
+                                       _name="remember"),
+                                 self.messages.label_remember_me,
+                                 _class="checkbox"),
+                            "",
+                            self.settings.formstyle,
+                            'auth_user_remember__row')
 
             captcha = self.settings.login_captcha or \
                 (self.settings.login_captcha!=False and self.settings.captcha)
@@ -2133,6 +2150,9 @@ class Auth(object):
                             'value==%s' % \
                                 repr(request.vars.get(passfield, None)),
                             error_message=self.messages.mismatched_password))
+
+                    if formstyle == 'bootstrap' :
+                        form.custom.widget.password_two['_class'] = 'input-xlarge'
 
                     addrow(form, self.messages.verify_password + self.settings.label_separator,
                            form.custom.widget.password_two,
