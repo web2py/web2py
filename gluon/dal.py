@@ -1457,7 +1457,7 @@ class BaseAdapter(ConnectionPool):
         having = args_get('having', False)
         limitby = args_get('limitby', False)
         for_update = args_get('for_update', False)
-        if not distinct in (True,False) and not groupby:
+        if not distinct is True and not distinct is False and not groupby:
             distinct, groupby = False, distinct
         if self.can_select_for_update is False and for_update is True:
             raise SyntaxError, 'invalid select attribute: for_update'
