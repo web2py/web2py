@@ -4027,8 +4027,8 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
         self.execute("SET FOREIGN_KEY_CHECKS=1;")
         self.execute("SET sql_mode='NO_BACKSLASH_ESCAPES';")
 
-    def execute(self,a):
-        return self.log_execute(a.decode('utf8'))
+    def execute(self, command, *a, **b):
+        return self.log_execute(command.decode('utf8'), *a, **b)
 
 class NoSQLAdapter(BaseAdapter):
     can_select_for_update = False
