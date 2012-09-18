@@ -69,7 +69,6 @@ fieldset {padding:16px; border-top:1px #DEDEDE solid}
 fieldset legend {text-transform:uppercase; font-weight:bold; padding:4px 16px 4px 16px; background:#f1f1f1}
 
 /* fix ie problem with menu */
-.ie-lte7 .topbar .container {z-index:2}
 
 td.w2p_fw {padding-bottom:1px}
 td.w2p_fl,td.w2p_fw,td.w2p_fc {vertical-align:top}
@@ -296,10 +295,16 @@ li.w2p_grid_breadcrumb_elem {
 .web2py_console input, .web2py_console select,
 .web2py_console a { margin: 2px; }
 
-.ie9 #w2p_query_panel {padding-bottom:2px}
 
 #wiki_page_body {
    width: 600px;
    height: auto;
    min-height: 400px;
 }
+
+/* fix some IE problems */
+
+.ie-lte7 .topbar .container {z-index:2}
+.ie-lte8 div.flash{ filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#222222', endColorstr='#000000', GradientType=0 ); }
+.ie-lte8 div.flash:hover {filter:alpha(opacity=25);}
+.ie9 #w2p_query_panel {padding-bottom:2px}
