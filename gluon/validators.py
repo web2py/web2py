@@ -462,12 +462,13 @@ class IS_IN_DB(Validator):
             groupby = self.groupby
             distinct = self.distinct
             dd = dict(orderby=orderby, groupby=groupby,
-                      distinct=distinct, cache=self.cache)
+                      distinct=distinct, cache=self.cache,
+                      cacheable=True)
             records = self.dbset(table).select(*fields, **dd)
         else:
             orderby = self.orderby or \
                 reduce(lambda a,b:a|b,(f for f in fields if not f.name=='id'))
-            dd = dict(orderby=orderby, cache=self.cache)
+            dd = dict(orderby=orderby, cache=self.cache, cacheable=True)
             records = self.dbset(table).select(table.ALL, **dd)
         self.theset = [str(r[self.kfield]) for r in records]
         if isinstance(self.label,str):
@@ -488,6 +489,8 @@ class IS_IN_DB(Validator):
         table = self.dbset.db[self.ktable]
         field = table[self.kfield]
         if self.multiple:
+            if self._and:
+                raise NotImplementedError
             if isinstance(value,list):
                 values=value
             elif value:
@@ -497,8 +500,20 @@ class IS_IN_DB(Validator):
             if isinstance(self.multiple,(tuple,list)) and \
                     not self.multiple[0]<=len(values)<self.multiple[1]:
                 return (values, translate(self.error_message))
-            if self.dbset(field.belongs(values)).count()==len(values):
-                return (values, None)
+            if self.theset:
+                if not [v for v in values if not v in self.theset]:
+                    return (values, None)
+            else:
+                from dal import GoogleDatastoreAdapter
+                def count(values, s=self.dbset, f=field):
+                    return s(f.belongs(map(int,values))).count()
+                if isinstance(self.dbset.db._adapter, GoogleDatastoreAdapter):
+                    range_ids = range(0,len(ids),30)
+                    total = sum(count(values[i:i+30]) for i in range_ids)
+                    if total == len(values):
+                        return (values, None)
+                elif count(values) == len(values):
+                    return (values, None)
         elif self.theset:
             if str(value) in self.theset:
                 if self._and:
@@ -2329,11 +2344,12 @@ class IS_LIST_OF(Validator):
         new_value = []
         if self.other:
             for item in ivalue:
-                (v, e) = self.other(item)
-                if e:
-                    return (value, e)
-                else:
-                    new_value.append(v)
+                if item.strip():
+                    (v, e) = self.other(item)
+                    if e:
+                        return (ivalue, e)
+                    else:
+                        new_value.append(v)
             ivalue = new_value
         return (ivalue, None)
 
@@ -2592,7 +2608,9 @@ class LazyCrypt(object):
                 key = self.crypt.key
         else:
             key = ''
-        if stored_password.count('$')==2:
+        if stored_password is None:
+            return False
+        elif stored_password.count('$')==2:
             (digest_alg, salt, hash) = stored_password.split('$')
             h = simple_hash(self.password, key, salt, digest_alg)
             temp_pass = '%s$%s$%s' % (digest_alg, salt, h)

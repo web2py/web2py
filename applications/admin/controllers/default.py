@@ -15,17 +15,15 @@ from gluon.utils import web2py_uuid
 from glob import glob
 import shutil
 import platform
-try:                                                                                      
-    from git import *                                                                     
+try:
+    from git import *
     have_git = True
-except ImportError:                                                                       
+except ImportError:
     have_git = False
-    GIT_MISSING = 'requires python-git module, but not installed or incompatible version'
+    GIT_MISSING = 'requires gitpython module, but not installed or incompatible version'
 
-from gluon.languages import (regex_language, read_possible_languages,
-                             lang_sampling,
-                             read_dict, write_dict, read_plural_dict,
-                             write_plural_dict, PLURAL_RULES)
+from gluon.languages import (read_possible_languages, read_dict, write_dict,
+                             read_plural_dict, write_plural_dict)
 
 
 if DEMO_MODE and request.function in ['change_password','pack','pack_plugin','upgrade_web2py','uninstall','cleanup','compile_app','remove_compiled_app','delete','delete_plugin','create_file','upload_file','update_languages','reload_routes','git_push','git_pull']:
@@ -368,10 +366,15 @@ def uninstall():
             else:
                 session.flash = T('no permission to uninstall "%s"', app)
                 redirect(URL('site'))
-        if app_uninstall(app, request):
-            session.flash = T('application "%s" uninstalled', app)
-        else:
+        try:
+            filename = app_pack(app, request, raise_ex=True)
+        except:
             session.flash = T('unable to uninstall "%s"', app)
+        else:
+            if app_uninstall(app, request):
+                session.flash = T('application "%s" uninstalled', app)
+            else:
+                session.flash = T('unable to uninstall "%s"', app)
         redirect(URL('site'))
     return dict(app=app, dialog=dialog)
 
@@ -812,7 +815,6 @@ def edit_language():
 
 def edit_plurals():
     """ Edit plurals file """
-    #import ipdb; ipdb.set_trace()
     app = get_app()
     filename = '/'.join(request.args)
     plurals = read_plural_dict(apath(filename, r=request)) # plural forms dictionary
@@ -949,30 +951,11 @@ def design():
     statics.sort()
 
     # Get all languages
-    all_languages=dict([(lang+'.py',info[0]) for lang,info
-                        in read_possible_languages(apath(app, r=request)).iteritems()
-                        if info[2]!=0]) # info[2] is langfile_mtime:
-                                        # get only existed files
-    languages = sorted(all_languages)
-
-    plural_rules = {}
-    all_plurals = PLURAL_RULES
-    for langfile,lang in all_languages.iteritems():
-        lang=lang.strip()
-        match_language = regex_language.match(lang)
-        if match_language:
-            match_language = tuple(part
-                                   for part in match_language.groups()
-                                   if part)
-            plang = lang_sampling(match_language, all_plurals.keys())
-            if plang:
-               plural=all_plurals[plang]
-               plural_rules[langfile]=(plural[0],plang,plural[4],plural[3])
-            else:
-               plural_rules[langfile]=(0,lang,'plural_rules-%s.py'%lang,'')
-
-    plurals = listdir(apath('%s/languages/' % app, r=request),
-                      '^plural-[\w-]+\.py$')
+    languages=dict([(lang,info) for lang,info
+                   in read_possible_languages(
+                       apath(app, r=request)).iteritems()
+                   if info[2]!=0]) # info[2] is langfile_mtime:
+                                   # get only existed files
 
     #Get crontab
     cronfolder = apath('%s/cron' % app, r=request)
@@ -1000,8 +983,6 @@ def design():
                 privates=filter_plugins(privates,plugins),
                 statics=filter_plugins(statics,plugins),
                 languages=languages,
-                plurals=plurals,
-                plural_rules=plural_rules,
                 crontab=crontab,
                 plugins=plugins)
 

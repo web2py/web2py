@@ -5,6 +5,7 @@
 'book': ['books'],
 'is': ['are'],
 'man': ['men'],
+'miss': ['misses'],
 'person': ['people'],
 'quark': ['quarks'],
 'shop': ['shops'],

@@ -88,7 +88,7 @@ except:
     from simplejson import loads, dumps
 
 
-from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB, IS_INT_IN_RANGE
+from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB, IS_INT_IN_RANGE, IS_DATETIME
 from gluon.utils import web2py_uuid
 
 
@@ -454,7 +454,8 @@ class Scheduler(MetaScheduler):
             Field('args','text',default='[]',requires=TYPE(list)),
             Field('vars','text',default='{}',requires=TYPE(dict)),
             Field('enabled','boolean',default=True),
-            Field('start_time','datetime',default=now, requires=IS_NOT_EMPTY()),
+            Field('start_time','datetime',default=now,
+                  requires = IS_DATETIME()),
             Field('next_run_time','datetime',default=now),
             Field('stop_time','datetime'),
             Field('repeats','integer',default=1,comment="0=unlimited",

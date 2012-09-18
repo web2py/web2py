@@ -154,6 +154,8 @@ class Web2pyService(Service):
 def web2py_windows_service_handler(argv=None, opt_file='options'):
     path = os.path.dirname(__file__)
     web2py_path = up(path)
+    if web2py_path.endswith('.zip'): # in case bianry distro 'library.zip'
+        web2py_path = os.path.dirname(web2py_path)
     os.chdir(web2py_path)
     classstring = os.path.normpath(
         os.path.join(web2py_path,'gluon.winservice.Web2pyService'))

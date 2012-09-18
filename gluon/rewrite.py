@@ -162,10 +162,12 @@ def url_in(request, environ):
         return map_url_in(request, environ)
     return regex_url_in(request, environ)
 
-def url_out(request, env, application, controller, function, args, other, scheme, host, port):
+def url_out(request, env, application, controller, function, 
+            args, other, scheme, host, port):
     "assemble and rewrite outgoing URL"
     if routers:
-        acf = map_url_out(request, env, application, controller, function, args, other, scheme, host, port)
+        acf = map_url_out(request, env, application, controller,
+                          function, args, other, scheme, host, port)
         url = '%s%s' % (acf, other)
     else:
         url = '/%s/%s/%s%s' % (application, controller, function, other)
@@ -226,7 +228,8 @@ def try_rewrite_on_error(http_response, request, environ, ticket=None):
                     # Rewrite routes_onerror path.
                     path_info = '/' + path_info.lstrip('/') # add leading '/' if missing
                     environ['PATH_INFO'] = path_info
-                    error_handling_path = url_in(request, environ)[1]['PATH_INFO']
+                    error_handling_path = \
+                        url_in(request, environ)[1]['PATH_INFO']
                     # Avoid infinite loop.
                     if error_handling_path != error_raising_path:
                         # wsgibase will be called recursively with the routes_onerror path.
@@ -895,7 +898,11 @@ class MapUrlIn(object):
         self.domain_controller = None
         self.domain_function = None
         arg0 = self.harg0
-        if (self.host, self.port) in base.domains:
+        if not base.exclusive_domain and base.applications and arg0 in base.applications:
+            self.application = arg0
+        elif not base.exclusive_domain and arg0 and not base.applications:
+            self.application = arg0
+        elif (self.host, self.port) in base.domains:
             (self.application, self.domain_controller, self.domain_function) = base.domains[(self.host, self.port)]
             self.env['domain_application'] = self.application
             self.env['domain_controller'] = self.domain_controller
@@ -1118,7 +1125,8 @@ class MapUrlIn(object):
 class MapUrlOut(object):
     "logic for mapping outgoing URLs"
 
-    def __init__(self, request, env, application, controller, function, args, other, scheme, host, port):
+    def __init__(self, request, env, application, controller,
+                 function, args, other, scheme, host, port):
         "initialize a map-out object"
         self.default_application = routers.BASE.default_application
         if application in routers:
@@ -1319,7 +1327,8 @@ def map_url_in(request, env, app=False):
     map.update_request()
     return (None, map.env)
 
-def map_url_out(request, env, application, controller, function, args, other, scheme, host, port):
+def map_url_out(request, env, application, controller,
+                function, args, other, scheme, host, port):
     '''
     supply /a/c/f (or /a/lang/c/f) portion of outgoing url
 
@@ -1345,7 +1354,8 @@ def map_url_out(request, env, application, controller, function, args, other, sc
 
     We assume that language names do not collide with a/c/f names.
     '''
-    map = MapUrlOut(request, env, application, controller, function, args, other, scheme, host, port)
+    map = MapUrlOut(request, env, application, controller,
+                    function, args, other, scheme, host, port)
     return map.acf()
 
 def get_effective_router(appname):

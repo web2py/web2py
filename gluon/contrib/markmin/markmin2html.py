@@ -540,7 +540,7 @@ regex_strong=re.compile(r'\*\*(?P<t>[^\s*]+( +[^\s*]+)*)\*\*')
 regex_del=re.compile(r'~~(?P<t>[^\s*]+( +[^\s*]+)*)~~')
 regex_em=re.compile(r"''(?P<t>[^\s']+(?: +[^\s']+)*)''")
 regex_num=re.compile(r"^\s*[+-]?((\d+(\.\d*)?)|\.\d+)([eE][+-]?[0-9]+)?\s*$")
-regex_list=re.compile('^(?:(?:(#{1,6})|(?:(\.+|\++|\-+)(\.)?))\s+)?(.*)$')
+regex_list=re.compile('^(?:(?:(#{1,6})|(?:(\.+|\++|\-+)(\.)?))\s*)?(.*)$')
 regex_bq_headline=re.compile('^(?:(\.+|\++|\-+)(\.)?\s+)?(-{3}-*)$')
 regex_tq=re.compile('^(-{3}-*)(?::(?P<c>[a-zA-Z][_a-zA-Z\-\d]*)(?:\[(?P<p>[a-zA-Z][_a-zA-Z\-\d]*)\])?)?$')
 regex_proto = re.compile(r'(?<!["\w>/=])(?P<p>\w+):(?P<k>\w+://[\w\d\-+=?%&/:.]+)', re.M)
@@ -1165,17 +1165,17 @@ def render(text,
                         (lev, mtag, lineno)= parse_list(t2, p, ss, 'ol', lev, mtag, lineno)
                         lineno+=1
                         continue
-                    elif c0 == '-': # unordered list
-                        (lev, mtag, lineno) = parse_list(t2, p, ss, 'ul', lev, mtag, lineno)
-                        lineno+=1
-                        continue
+                    elif c0 == '-': # unordered list, table or blockquote
+                        if p or ss:
+                            (lev, mtag, lineno) = parse_list(t2, p, ss, 'ul', lev, mtag, lineno)
+                            lineno+=1
+                            continue
+                        else:
+                            (s, mtag, lineno) = parse_table_or_blockquote(s, mtag, lineno)
                     elif lev>0: # and c0 == '.' # paragraph in lists
                         (lev, mtag, lineno) = parse_point(t2, ss, lev, mtag, lineno)
                         lineno+=1
                         continue
-                else:
-                    if c0 == '-': # table or blockquote?
-                        (s, mtag, lineno) = parse_table_or_blockquote(s, mtag, lineno)
 
             if lev == 0 and (mtag == 'q' or s == META):
                 # new paragraph

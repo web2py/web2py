@@ -794,6 +794,10 @@ def addrow(form, a, b, c, style, _id, position=-1):
                                     DIV(b, _class='w2p_fw'),
                                     DIV(c, _class='w2p_fc'),
                                     _id = _id))
+    elif style == "bootstrap":
+        form[0].insert(position, DIV(LABEL(a,_class='control-label'),
+                                    DIV(b,SPAN(c, _class='inline-help'),_class='controls'),
+                                    _class='control-group',_id = _id))
     else:
         form[0].insert(position, TR(TD(LABEL(a),_class='w2p_fl'),
                                     TD(b,_class='w2p_fw'),
@@ -1191,7 +1195,10 @@ class Auth(object):
                        'reset_password','request_reset_password',
                        'change_password','profile','groups',
                        'impersonate','not_authorized'):
-            return getattr(self,args[0])()
+            if len(request.args) >= 2:
+                return getattr(self,args[0])(request.args[1])
+            else:
+                return getattr(self,args[0])()
         elif args[0]=='cas' and not self.settings.cas_provider:
             if args(1) == self.settings.cas_actions['login']:
                 return self.cas_login(version=2)
@@ -1208,23 +1215,23 @@ class Auth(object):
 
     def navbar(self, prefix='Welcome', action=None,
                separators=(' [ ',' | ',' ] '), user_identifier=DEFAULT,
-               referrer_actions=DEFAULT):
+               referrer_actions=DEFAULT, mode='default'):
         referrer_actions = [] if not referrer_actions else referrer_actions
         request = current.request
+        asdropdown = (mode == 'dropdown')
         T = current.T
         if isinstance(prefix, str):
             prefix = T(prefix)
         if prefix:
             prefix = prefix.strip() + ' '
         if not action:
-            action=self.url(self.settings.function)
+            action = self.url(self.settings.function)
         s1,s2,s3 = separators
         if URL() == action:
             next = ''
         else:
             next = '?_next=' + urllib.quote(URL(args=request.args,
                                                 vars=request.get_vars))
-
         href = lambda function: '%s/%s%s' % (action, function,
             next if referrer_actions is DEFAULT or function in referrer_actions else '')
 
@@ -1244,11 +1251,19 @@ class Auth(object):
             profile = A(T('Profile'), _href=href('profile'))
             password = A(T('Password'), _href=href('change_password'))
             bar = SPAN(prefix, user_identifier, s1, logout, s3, _class='auth_navbar')
+
+            if asdropdown:
+                logout = LI(A(I(_class='icon-off'), ' '+T('Logout'), _href='%s/logout?_next=%s' %
+                      (action, urllib.quote(self.settings.logout_next)))) # the space before T('Logout') is intentional. It creates a gap between icon and text
+                profile = LI(A(I(_class='icon-user'), ' '+T('Profile'), _href=href('profile')))
+                password = LI(A(I(_class='icon-lock'), ' '+T('Password'), _href=href('change_password')))
+                bar = UL(logout,_class='dropdown-menu') # logout will be the last item in list
+
             if not 'profile' in self.settings.actions_disabled:
-                bar.insert(-1, s2)
+                if not asdropdown: bar.insert(-1, s2)
                 bar.insert(-1, profile)
             if not 'change_password' in self.settings.actions_disabled:
-                bar.insert(-1, s2)
+                if not asdropdown: bar.insert(-1, s2)
                 bar.insert(-1, password)
         else:
             login = A(T('Login'), _href=href('login'))
@@ -1259,17 +1274,33 @@ class Auth(object):
                 T('Lost password?'), _href=href('request_reset_password'))
             bar = SPAN(s1, login, s3, _class='auth_navbar')
 
+            if asdropdown:
+                login = LI(A(I(_class='icon-off'), ' '+T('Login'), _href=href('login'))) #the space before T('Login') is intentional. It creates a gap between icon and text
+                register = LI(A(I(_class='icon-user'), ' '+T('Register'), _href=href('register')))
+                retrieve_username = LI(A(I(_class='icon-edit'), ' '+T('Forgot username?'), _href=href('retrieve_username')))
+                lost_password = LI(A(I(_class='icon-lock'), ' '+T('Lost password?'), _href=href('request_reset_password')))
+                bar = UL(login,_class='dropdown-menu') # login will be the last item in list
+
             if not 'register' in self.settings.actions_disabled:
-                bar.insert(-1, s2)
+                if not asdropdown: bar.insert(-1, s2)
                 bar.insert(-1, register)
             if self.settings.use_username and not 'retrieve_username' \
                     in self.settings.actions_disabled:
-                bar.insert(-1, s2)
+                if not asdropdown: bar.insert(-1, s2)
                 bar.insert(-1, retrieve_username)
             if not 'request_reset_password' \
                     in self.settings.actions_disabled:
-                bar.insert(-1, s2)
+                if not asdropdown: bar.insert(-1, s2)
                 bar.insert(-1, lost_password)
+
+        if asdropdown:
+            bar.insert(-1, LI('',_class='divider'))
+            if self.user_id:               
+                bar = LI(A(prefix, user_identifier, _href='#'),
+                         bar,_class='dropdown')
+            else:
+                bar = LI(A(T('Login'), _href='#'),
+                         bar,_class='dropdown')
         return bar
 
     def __get_migrate(self, tablename, migrate=True):
@@ -1877,20 +1908,33 @@ class Auth(object):
 
             if self.settings.remember_me_form:
                 ## adds a new input checkbox "remember me for longer"
-                addrow(form,XML("&nbsp;"),
-                       DIV(XML("&nbsp;"),
-                           INPUT(_type='checkbox',
-                                 _class='checkbox',
-                                 _id="auth_user_remember",
-                                 _name="remember",
-                                 ),
-                           XML("&nbsp;&nbsp;"),
+                if self.settings.formstyle != 'bootstrap':
+                    addrow(form,XML("&nbsp;"),
+                               DIV(XML("&nbsp;"),
+                                   INPUT(_type='checkbox',
+                                         _class='checkbox',
+                                         _id="auth_user_remember",
+                                         _name="remember",
+                                        ),
+                                    XML("&nbsp;&nbsp;"),
+                                    LABEL(
+                                          self.messages.label_remember_me,
+                                          _for="auth_user_remember",
+                                        )),"",
+                               self.settings.formstyle,
+                               'auth_user_remember__row')
+                elif self.settings.formstyle == 'bootstrap':
+                    addrow(form,
+                           "",
                            LABEL(
-                            self.messages.label_remember_me,
-                            _for="auth_user_remember",
-                            )),"",
-                       self.settings.formstyle,
-                       'auth_user_remember__row')
+                                 INPUT(_type='checkbox',
+                                       _id="auth_user_remember",
+                                       _name="remember"),
+                                 self.messages.label_remember_me,
+                                 _class="checkbox"),
+                            "",
+                            self.settings.formstyle,
+                            'auth_user_remember__row')
 
             captcha = self.settings.login_captcha or \
                 (self.settings.login_captcha!=False and self.settings.captcha)
@@ -2106,6 +2150,9 @@ class Auth(object):
                             'value==%s' % \
                                 repr(request.vars.get(passfield, None)),
                             error_message=self.messages.mismatched_password))
+
+                    if formstyle == 'bootstrap' :
+                        form.custom.widget.password_two['_class'] = 'input-xlarge'
 
                     addrow(form, self.messages.verify_password + self.settings.label_separator,
                            form.custom.widget.password_two,
@@ -2699,7 +2746,7 @@ class Auth(object):
             self.user = session.auth.user
         if requested_id is DEFAULT and not request.post_vars:
             return SQLFORM.factory(Field('user_id', 'integer'))
-        return self.user
+        return SQLFORM(table_user, user.id, readonly=True)
 
     def update_groups(self):
         if not self.user:
@@ -3155,14 +3202,17 @@ class Auth(object):
     def wiki(self,
              slug=None,
              env=None,
-             render=None,
+             render='markmin',
              manage_permissions=False,
-             force_prefix='', 
+             force_prefix='',
+             restrict_search=False,
              resolve=True):
         if not hasattr(self,'_wiki'):
             self._wiki = Wiki(self,render=render,
                               manage_permissions=manage_permissions,
-                              force_prefix=force_prefix,env=env)
+                              force_prefix=force_prefix,
+                              restrict_search=restrict_search,
+                              env=env)
         else:
             self._wiki.env.update(env or {})
         # if resolve is set to True, process request as wiki call
@@ -4506,7 +4556,8 @@ class Wiki(object):
         controller, function, args = items[0], items[1], items[2:]
         return LOAD(controller, function, args=args, ajax=True).xml()
     def __init__(self,auth,env=None,render='markmin',
-                 manage_permissions=False,force_prefix=''):
+                 manage_permissions=False,force_prefix='',
+                 restrict_search=False):
         self.env = env or {}
         self.env['component'] = Wiki.component
         if render == 'markmin': render=self.markmin_render
@@ -4518,46 +4569,47 @@ class Wiki(object):
             self.force_prefix = force_prefix
         self.host = current.request.env.http_host
         perms = self.manage_permissions = manage_permissions
+        self.restrict_search = restrict_search
         db = auth.db
-        table_definitions = {
-            'wiki_page':{
-                'args':[
-                    Field('slug',
-                          requires=[IS_SLUG(),
-                                    IS_NOT_IN_DB(db,'wiki_page.slug')],
-                          readable=False,writable=False),
-                    Field('title',unique=True),
-                    Field('body','text',notnull=True),
-                    Field('tags','list:string'),
-                    Field('can_read','list:string',
-                          writable=perms,
-                          readable=perms,
-                          default=[Wiki.everybody]),
-                    Field('can_edit', 'list:string',
-                          writable=perms,readable=perms,
-                          default=[Wiki.everybody]),
+        table_definitions = [
+            ('wiki_page',{
+                    'args':[
+                        Field('slug',
+                              requires=[IS_SLUG(),
+                                        IS_NOT_IN_DB(db,'wiki_page.slug')],
+                              readable=False,writable=False),
+                        Field('title',unique=True),
+                        Field('body','text',notnull=True),
+                        Field('tags','list:string'),
+                        Field('can_read','list:string',
+                              writable=perms,
+                              readable=perms,
+                              default=[Wiki.everybody]),
+                        Field('can_edit', 'list:string',
+                              writable=perms,readable=perms,
+                              default=[Wiki.everybody]),
                     Field('changelog'),
-                    Field('html','text',compute=render,
-                          readable=False, writable=False),
-                    auth.signature],
-                'vars':{'format':'%(title)s'}},
-             'wiki_tag':{
-                'args':[
-                    Field('name'),
-                    Field('wiki_page','reference wiki_page'),
-                    auth.signature],
-                'vars':{'format':'%(name)s'}},
-           'wiki_media':{
-                'args':[
-                    Field('wiki_page','reference wiki_page'),
-                    Field('title',required=True),
-                    Field('file','upload',required=True),
-                    auth.signature],
-                'vars':{'format':'%(title)s'}}
-            }
+                        Field('html','text',compute=render,
+                              readable=False, writable=False),
+                        auth.signature],
+              'vars':{'format':'%(title)s'}}),
+            ('wiki_tag',{
+                    'args':[
+                        Field('name'),
+                        Field('wiki_page','reference wiki_page'),
+                        auth.signature],
+                    'vars':{'format':'%(name)s'}}),
+            ('wiki_media',{
+                    'args':[
+                        Field('wiki_page','reference wiki_page'),
+                        Field('title',required=True),
+                        Field('filename','upload',required=True),
+                        auth.signature],
+                    'vars':{'format':'%(title)s'}})
+            ]
 
         # define only non-existent tables
-        for key, value in table_definitions.iteritems():
+        for key, value in table_definitions:
             if not key in db.tables():
                 db.define_table(key, *value['args'], **value['vars'])
 
@@ -4722,10 +4774,11 @@ class Wiki(object):
         db = auth.db
         page = db.wiki_page(slug=slug)
         if not (page and self.can_edit(page)): return self.not_authorized(page)
-        self.auth.db.wiki_media.id.represent = lambda id,row:\
+        self.auth.db.wiki_media.id.represent = lambda id,row: \
+            id if not row.filename else \
             SPAN('@////%i/%s.%s' % \
                      (id,IS_SLUG.urlify(row.title.split('.')[0]),
-                      row.file.split('.')[-1]))
+                      row.filename.split('.')[-1]))
         self.auth.db.wiki_media.wiki_page.default = page.id
         self.auth.db.wiki_media.wiki_page.writable = False
         content = SQLFORM.grid(
@@ -4770,7 +4823,7 @@ class Wiki(object):
             if self.manage_permissions:
                 page = db.wiki_page(media.wiki_page)
                 if not self.can_read(page): return self.not_authorized(page)
-            request.args = [media.file]
+            request.args = [media.filename]
             return current.response.download(request,db)
         else:
             raise HTTP(404)
@@ -4826,9 +4879,8 @@ class Wiki(object):
                             URL(controller,function,args=('_pages'))))
             submenu.append((current.T('Edit Menu'),None,
                             URL(controller,function,args=('_edit','wiki-menu'))))
-        # if self.can_search():
-            submenu.append((current.T('Search Pages'),None,
-                            URL(controller,function,args=('_search'))))
+        submenu.append((current.T('Search Pages'),None,
+                        URL(controller,function,args=('_search'))))
         return menu
 
     def search(self,tags=None,query=None,cloud=True,preview=True,
@@ -4857,6 +4909,8 @@ class Wiki(object):
                 query = (db.wiki_page.id==db.wiki_tag.wiki_page)&\
                     (db.wiki_tag.name.belongs(tags))
                 query = query|db.wiki_page.title.startswith(request.vars.q)
+            if self.restrict_search and not self.manage():
+                query = query&(db.wiki_page.created_by==self.auth.user_id)
             pages = db(query).select(
                 *fields,**dict(orderby=orderby or ~count,
                                groupby=db.wiki_page.id,

@@ -10,7 +10,7 @@ h3 {font-size:2.00em}
 h4 {font-size:1.50em}
 h5 {font-size:1.25em}
 h6 {font-size:1.12em}
-th,label {font-weight:bold; white-space:nowrap}
+th,label {font-weight:bold; white-space:nowrap;}
 td,th {text-align:left; padding:2px 5px 2px 5px}
 th {vertical-align:middle; border-right:1px solid white}
 td {vertical-align:top}
@@ -69,7 +69,6 @@ fieldset {padding:16px; border-top:1px #DEDEDE solid}
 fieldset legend {text-transform:uppercase; font-weight:bold; padding:4px 16px 4px 16px; background:#f1f1f1}
 
 /* fix ie problem with menu */
-.ie-lte7 .topbar .container {z-index:2}
 
 td.w2p_fw {padding-bottom:1px}
 td.w2p_fl,td.w2p_fw,td.w2p_fc {vertical-align:top}
@@ -95,25 +94,42 @@ div.flash {
     top:48px;
     right:50px;
     min-width:280px;
-    opacity:0.85;
+    opacity:0.95;
     margin:0px 0px 10px 10px;
-    color:#fff;
     vertical-align:middle;
     cursor:pointer;
-    background:#000;
+    color:#fff;
+    background-color:#000;
     border:2px solid #fff;
-    border-radius:5px;
-    -moz-border-radius:5px;
-    -webkit-border-radius:5px;
+    border-radius:8px;
+    -o-border-radius: 8px;
+    -moz-border-radius:8px;
+    -webkit-border-radius:8px;
+    background-image: -webkit-linear-gradient(top,#222,#000);
+    background-image: -o-linear-gradient(top,#222,#000);
+    background-image: -moz-linear-gradient(90deg, #222, #000);
+    background-image: linear-gradient(top,#222,#000);
+    background-repeat: repeat-x;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased;
     z-index:2000;
 }
 
+div.flash:hover { opacity:0.25; }
+
 div.error_wrapper {display:block}
 div.error {
-    background-color:red;
+    width: 298px;
+    background:red;
+    border: 2px solid #d00;
     color:white;
-    padding:3px;
-    display:inline-block;	
+    padding:5px;
+    display:inline-block;
+    background-image: -webkit-linear-gradient(left,#f00,#fdd);
+    background-image: -o-linear-gradient(left,#f00,#fdd);
+    background-image: -moz-linear-gradient(0deg, #f00, #fdd);
+    background-image: linear-gradient(left,#f00,#fdd);
+    background-repeat: repeat-y;
 }
 
 .topbar {
@@ -159,19 +175,6 @@ div.error {
 
 /* #MEDIA QUERIES SECTION */
 
-    /* All Mobile Sizes (devices and browser) */
-    @media only screen and (max-width:767px) {
-/* removed because of bootswatch
-        .topbar {text-align:center}
-        #navbar,#menu {float:none}
-        #navbar {font-size:1.2em; padding:.6em 0 1.2em}
-        #menu  {padding:0 0 1.5em}
-        #menu select {font-size:1.2em; margin:0; padding:0}
-
-        div.flash {top:110px; right:10px}
-*/
-   }
-
 /*
 *Grid
 *
@@ -183,10 +186,7 @@ div.error {
 .web2py_paginator {}
 .web2py_grid {width:100%}
 .web2py_grid table {width:100%}
-.web2py_grid tbody td {
-    padding:2px 5px 2px 5px;
-    vertical-align:middle;
-}
+.web2py_grid tbody td {padding:2px 5px 2px 5px; vertical-align: middle;}
 
 .web2py_grid thead th,.web2py_grid tfoot td {
     background-color:#EAEAEA;
@@ -223,7 +223,7 @@ div.error {
     margin:0;
 }
 
-.web2py_search_actions{
+.web2py_search_actions {
     float:left;
     text-align:left;
 }
@@ -247,13 +247,13 @@ div.error {
 .web2py_console input[type=button],
 .web2py_console button {
     line-height:20px;
-    margin-right:5px; display:inline-block;
+    margin-right:2px; display:inline-block;
     padding:3px 5px 3px 5px;
 }
 
 .web2py_counter {
     margin-top:5px;
-    margin-right:5px;
+    margin-right:2px;
     width:35%;
     float:right;
     text-align:right;
@@ -291,10 +291,20 @@ li.w2p_grid_breadcrumb_elem {
     display:inline-block;
 }
 
-.ie9 #query_panel {padding-bottom:2px}
+.web2py_console form { vertical-align: middle; }
+.web2py_console input, .web2py_console select,
+.web2py_console a { margin: 2px; }
+
 
 #wiki_page_body {
    width: 600px;
    height: auto;
    min-height: 400px;
 }
+
+/* fix some IE problems */
+
+.ie-lte7 .topbar .container {z-index:2}
+.ie-lte8 div.flash{ filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#222222', endColorstr='#000000', GradientType=0 ); }
+.ie-lte8 div.flash:hover {filter:alpha(opacity=25);}
+.ie9 #w2p_query_panel {padding-bottom:2px}

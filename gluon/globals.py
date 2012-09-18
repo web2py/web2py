@@ -51,6 +51,7 @@ except ImportError:
     have_minify = False
 
 regex_session_id = re.compile('^([\w\-]+/)?[\w\-\.]+$')
+regex_nopasswd = re.compile('(?<=\:)([^:@/]+)(?=@.+)')
 
 __all__ = ['Request', 'Response', 'Session']
 
@@ -230,7 +231,6 @@ class Response(Storage):
 
     def include_files(self):
 
-
         """
         Caching method for writing out files.
         By default, caches in ram for 5 minutes. To change,
@@ -244,8 +244,9 @@ class Response(Storage):
             if not item in files: files.append(item)
         if have_minify and (self.optimize_css or self.optimize_js):
             # cache for 5 minutes by default
+            key = hashlib.md5(repr(files)).hexdigest()
             cache = self.cache_includes or (current.cache.ram, 60*5)
-            def call_minify():
+            def call_minify(files=files):
                 return minify.minify(files,
                                      URL('static','temp'),
                                      current.request.folder,
@@ -253,7 +254,7 @@ class Response(Storage):
                                      self.optimize_js)
             if cache:
                 cache_model, time_expire = cache
-                files = cache_model('response.files.minified',
+                files = cache_model('response.files.minified/'+key,
                                     call_minify,
                                     time_expire)
             else:
@@ -278,7 +279,7 @@ class Response(Storage):
         chunk_size = DEFAULT_CHUNK_SIZE,
         request=None,
         attachment=False,
-        filename=None
+        filename=None,
         ):
         """
         if a controller function::
@@ -410,11 +411,13 @@ class Response(Storage):
             dbstats = [TABLE(*[TR(PRE(row[0]),'%.2fms' % (row[1]*1000)) \
                                    for row in i.db._timings]) \
                            for i in thread.instances]
-            dbtables = dict([(i.uri, {'defined': sorted(list(set(i.db.tables) - 
-                                                 set(i.db._LAZY_TABLES.keys()))) or
-                                                 '[no defined tables]',
-                                      'lazy': sorted(i.db._LAZY_TABLES.keys()) or
-                                              '[no lazy tables]'})
+            dbtables = dict([(regex_nopasswd.sub('******',i.uri), 
+                              {'defined': 
+                               sorted(list(set(i.db.tables) - 
+                                           set(i.db._LAZY_TABLES.keys()))) or
+                               '[no defined tables]',
+                               'lazy': sorted(i.db._LAZY_TABLES.keys()) or
+                               '[no lazy tables]'})
                              for i in thread.instances])
         else:
             dbstats = [] # if no db or on GAE

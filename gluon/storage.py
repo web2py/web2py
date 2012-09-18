@@ -38,29 +38,14 @@ class Storage(dict):
         >>> print o.a
         None
     """
-    __slots__=()
-    
+    __slots__=()    
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
     __getitem__ = dict.get
     __getattr__ = dict.get
     __repr__ = lambda self: '<Storage %s>' % dict.__repr__(self)
-    __getstate__ = dict
-    __setstate__ = dict.update
-    # def __getattr__(self, key):
-    #    return dict.get(self, key, None)
-    # def __setattr__(self, key, value):
-    #    self[key] = value
-    # def __getitem__(self, key):
-    #    return dict.get(self, key, None)
-    # def __delattr__(self, key):
-    #    del self[key]
-    # def __repr__(self):
-    #     return '<Storage %s>' % dict.__repr__(self)
-    # def __getstate__(self):
-    #     return dict(self)
-    # def __setstate__(self,values):
-    #     self.update(values)
+    # http://stackoverflow.com/questions/5247250/why-does-pickle-getstate-accept-as-a-return-value-the-very-instance-it-requi
+    __getstate__ = lambda self: None
 
     def getlist(self,key):
         """

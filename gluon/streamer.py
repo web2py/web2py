@@ -60,8 +60,8 @@ def stream_file_or_304_or_206(
         fp.close()
     stat_file = os.stat(static_file)
     fsize = stat_file[stat.ST_SIZE]
-    mtime = time.strftime('%a, %d %b %Y %H:%M:%S GMT',
-                          time.gmtime(stat_file[stat.ST_MTIME]))
+    modified = stat_file[stat.ST_MTIME]
+    mtime = time.strftime('%a, %d %b %Y %H:%M:%S GMT',time.gmtime(modified))
     headers.setdefault('Content-Type', contenttype(static_file))
     headers.setdefault('Last-Modified', mtime)
     headers.setdefault('Pragma', 'cache')
@@ -91,6 +91,14 @@ def stream_file_or_304_or_206(
         headers['Content-Length'] = '%i' % bytes
         status = 206
     else:
+        if 'gzip' in request.env.http_accept_encoding and\
+                not 'Content-Encoding' in headers:
+            gzipped = static_file + '.gz'
+            if os.path.isfile(gzipped) and os.path.getmtime(gzipped)>modified:
+                static_file = gzipped
+                fsize = os.path.getsize(gzipped)
+                headers['Content-Encoding'] = 'gzip'
+                headers['Vary'] = 'Accept-Encoding'
         try:
             stream = open(static_file, 'rb')
         except IOError, e:
@@ -106,10 +114,3 @@ def stream_file_or_304_or_206(
     else:
         wrapped = streamer(stream, chunk_size=chunk_size, bytes=bytes)
     raise HTTP(status, wrapped, **headers)
-
-
-
-
-
-
-

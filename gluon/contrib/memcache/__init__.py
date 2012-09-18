@@ -17,7 +17,7 @@ DEFAULT_TIME_EXPIRE = 300 # seconds (must be the same as cache.ram)
 def MemcacheClient(*a, **b):
     if not hasattr(current,'__mc_instance'):
         current.__memcache_client = MemcacheClientObj(*a, **b)
-    return current.__memecache_client
+    return current.__memcache_client
 
 class MemcacheClientObj(Client):
 
@@ -61,7 +61,7 @@ class MemcacheClientObj(Client):
             if item:
                 if not isinstance(item,(list,tuple)):
                     value = item
-                elif (item[0] < now - dt): # value expired
+                elif (item[0] < now - time_expire): # value expired
                     item = None # value to be computed
                 else:
                     value = item[1]

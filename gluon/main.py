@@ -226,6 +226,20 @@ def serve_controller(request, response, session):
     requests = ('requests' in globals()) and (requests+1) % 100 or 0
     if not requests: gc.collect()
     # end garbage collection logic
+
+    # ##################################################
+    # set default headers it not set
+    # ##################################################
+
+    default_headers = [
+        ('Content-Type', contenttype('.'+request.extension)),
+        ('Cache-Control','no-store, no-cache, must-revalidate, post-check=0, pre-check=0'),
+        ('Expires', time.strftime('%a, %d %b %Y %H:%M:%S GMT', 
+                                  time.gmtime())),
+        ('Pragma', 'no-cache')]
+    for key,value in default_headers:
+        response.headers.setdefault(key,value)
+
     raise HTTP(response.status, page, **response.headers)
 
 
@@ -489,19 +503,6 @@ def wsgibase(environ, responder):
                     session.connect(request, response)
 
                 # ##################################################
-                # set no-cache headers
-                # ##################################################
-                
-                headers = response.headers
-                headers['Content-Type'] = \
-                    contenttype('.'+request.extension)
-                headers['Cache-Control'] = \
-                    'no-store, no-cache, must-revalidate, post-check=0, pre-check=0'
-                headers['Expires'] = \
-                    time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime())
-                headers['Pragma'] = 'no-cache'
-
-                # ##################################################
                 # run controller
                 # ##################################################
 
@@ -509,14 +510,14 @@ def wsgibase(environ, responder):
                     import gluon.debug
                     # activate the debugger
                     gluon.debug.dbg.do_debug(mainpyfile=request.folder)
-
+                
                 serve_controller(request, response, session)
 
             except HTTP, http_response:
+
                 if static_file:
                     return http_response.to(responder,env=env)
                         
-
                 if request.body:
                     request.body.close()
 
@@ -544,29 +545,22 @@ def wsgibase(environ, responder):
                 # ##################################################
                     
                 session._try_store_on_disk(request, response)
+                
+                if request.cid:
+                    if response.flash:
+                        http_response.headers['web2py-component-flash'] = urllib2.quote(xmlescape(response.flash).replace('\n',''))
+                    if response.js:
+                        http_response.headers['web2py-component-command'] = response.js.replace('\n','')
 
                 # ##################################################
                 # store cookies in headers
                 # ##################################################
 
-                if request.cid:
-                    rheaders = http_response.headers
-                    if response.flash and \
-                            not 'web2py-component-flash' in rheaders:
-                        rheaders['web2py-component-flash'] = \
-                            urllib2.quote(xmlescape(response.flash)\
-                                              .replace('\n',''))
-                    if response.js and \
-                            not 'web2py-component-command' in rheaders:
-                        rheaders['web2py-component-command'] = \
-                            response.js.replace('\n','')
                 rcookies = response.cookies
-                if session._forget and \
-                        response.session_id_name in response.cookies:
+                if session._forget and response.session_id_name in rcookies:
                     del rcookies[response.session_id_name]
                 elif session._secure:
                     rcookies[response.session_id_name]['secure'] = True
-
                 http_response.cookies2headers(rcookies)
                 ticket=None
 

@@ -187,8 +187,9 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
   </div>
   {{if not languages:}}<p><strong>{{=T("There are no translators, only default language is supported")}}</strong></p>{{pass}}
   <table>
-    {{for file in languages:}}
-    {{id="languages__"+file.replace('.','__')}}
+    {{for lang in sorted(languages):
+        file = lang+'.py'
+        id = "languages__"+file.replace('.','__')}}
     <tr id="{{=id}}">
     <td>
     <span class="filetools controls">
@@ -203,24 +204,17 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     &nbsp;
     (
     {{=T("Plural-Forms:")}}
-    {{p=plural_rules[file]}}
-    {{if p[0] == 0:}}
-       <b>{{=T("rules are not defined")}}</b>,
-       <span class="controls comptools">
-       {{=button(URL('create_file', vars=dict(filename=p[2], location='gluon/contrib/rules/', sender=URL('design', args=app), id=id, app=app, token=session.token)), T('Create rules'))}}
-       </span>
+    {{p=languages[lang][3:7]}}
+    {{if p[2] == 'default':}}
+       <span class='error'>{{=T("rules are not defined")}}</span> {{=T.M("(file **gluon/contrib/plural_rules/%s.py** is not found)",lang[:2])}}
     {{else:}}
-      {{if p[0] == 1:}}
-        {{if p[3] == 'ok':}}
-           {{=B(T("are not used"))}},
-        {{else:}}
-           <span class='error'>{{=B(T("rules parsed with errors"))}}</span>,
-        {{pass}}
+      {{if p[3] == 1:}}
+           {{=B(T("are not used"))}}
       {{else:}}
-        {{pfile='plural-%s.py'%p[1]}}
-        {{if pfile in plurals:}}
+        {{pfile=p[0]}}
+        {{if p[1]!=0:}}
           <span class="filetools controls">
-            {{=editpluralsfile('languages',pfile,dict(nplurals=p[0]))}}
+            {{=editpluralsfile('languages',pfile,dict(nplurals=p[3]))}}
           </span>
           <span class="file">
             {{=peekfile('languages',pfile,dict(id=id))}}
@@ -235,6 +229,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     </tr>
     {{pass}}
   </table>
+  {{pass}}
   <div class="controls formfield">{{=file_create_form('%s/languages/' % app, 'languages')}}{{=T('(something like "it-it")')}}</div>
 </div>
 

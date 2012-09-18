@@ -169,7 +169,7 @@ def is_valid_ip_address(address):
                 return False
         else: # try validate using Regex
             match = REGEX_IPv4.match(address)
-            if match and all(0<=int(math.group(i))<256 for i in (1,2,3,4)):
+            if match and all(0<=int(match.group(i))<256 for i in (1,2,3,4)):
                 return True
             return False
     elif hasattr(socket,'inet_pton'): # assume IPv6, try using the OS

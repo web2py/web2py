@@ -243,7 +243,8 @@ def URL(
         elif a and c and not f: (c,f,a)=(a,c,f)
         from globals import current
         if hasattr(current,'request'):
-            r = current.request
+            r = current.request    
+
     if r:
         application = r.application
         controller = r.controller
@@ -296,10 +297,10 @@ def URL(
     if other.endswith('/'):
         other += '/'    # add trailing slash to make last trailing empty arg explicit
 
-    if '_signature' in vars:
-        vars.pop('_signature')
     list_vars = []
     for (key, vals) in sorted(vars.items()):
+        if key == '_signature':
+            continue
         if not isinstance(vals, (list, tuple)):
             vals = [vals]
         for val in vals:
@@ -347,7 +348,8 @@ def URL(
 
     if regex_crlf.search(join([application, controller, function, other])):
         raise SyntaxError, 'CRLF Injection Detected'
-    url = url_out(r, env, application, controller, function,
+
+    url = url_out(r,env, application, controller, function,
                   args, other, scheme, host, port)
     return url
 
@@ -1743,7 +1745,7 @@ class INPUT(DIV):
         elif not t == 'submit':
             if value is None:
                 self['value'] = _value
-            else:
+            elif not isinstance(value,list):
                 self['_value'] = value
 
     def xml(self):
@@ -2109,8 +2111,10 @@ class FORM(DIV):
     REDIRECT_JS = "window.location='%s';return false"
 
     def add_button(self,value,url,_class=None):
-        self[0][-1][1].append(INPUT(_type="button",_value=value,_class=_class,
-                                    _onclick=self.REDIRECT_JS % url))
+        submit = self.element('input[type=submit]')
+        submit.parent.append(
+            INPUT(_type="button",_value=value,_class=_class,
+                  _onclick=self.REDIRECT_JS % url))
 
 
 
@@ -2227,6 +2231,7 @@ class MENU(DIV):
     def __init__(self, data, **args):
         self.data = data
         self.attributes = args
+        self.components = []
         if not '_class' in self.attributes:
             self['_class'] = 'web2py-menu web2py-menu-vertical'
         if not 'ul_class' in self.attributes:

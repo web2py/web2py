@@ -346,7 +346,12 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(filter_url('http://domain1.com/abc', app=True), 'app1')
         self.assertEqual(filter_url('http://www.domain1.com/abc', app=True), 'app1')
         self.assertEqual(filter_url('http://domain2.com/abc', app=True), 'app2')
+        self.assertEqual(filter_url('http://domain2.com/admin', app=True), 'admin')
+
+        routers['BASE']['exclusive_domain'] = True
+        load(rdict=routers)
         self.assertEqual(filter_url('http://domain2.com/admin', app=True), 'app2')
+
 
         self.assertEqual(filter_url('http://domain.com/goodapp', app=True), 'goodapp')
         self.assertRaises(HTTP, filter_url, 'http://domain.com/bad!app', app=True)
@@ -428,7 +433,7 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(filter_url('http://domain1.com/abc.html'), '/app1/c1/abc')
         self.assertEqual(filter_url('http://domain1.com/abc.css'), '/app1/c1/abc.css')
         self.assertEqual(filter_url('http://domain1.com/index/abc'), "/app1/c1/index ['abc']")
-        self.assertEqual(filter_url('http://domain2.com/app1'), "/app2a/c2a/app1")
+        self.assertEqual(filter_url('http://domain2.com/app1'), "/app1/c1/f1")
 
         self.assertEqual(filter_url('https://domain1.com/app1/ctr/fcn', domain=('app1',None), out=True), "/ctr/fcn")
         self.assertEqual(filter_url('https://www.domain1.com/app1/ctr/fcn', domain=('app1',None), out=True), "/ctr/fcn")
@@ -467,6 +472,98 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(filter_url('https://domain6.com'), '/app6s/c6s/f6s')
 
         self.assertEqual(filter_url('http://domain2.com/app3/c3a/f3', domain=('app2b',None), out=True), "/app3/c3a/f3")
+        self.assertRaises(SyntaxError, filter_url, 'http://domain1.com/app1/c1/f1', domain=('app2b',None), out=True)
+        try:
+            # 2.7+ only
+            self.assertRaisesRegexp(SyntaxError, 'cross-domain conflict', filter_url, 'http://domain1.com/app1/c1/f1', domain=('app2b',None), out=True)
+        except AttributeError:
+            pass
+        self.assertEqual(filter_url('http://domain1.com/app1/c1/f1', domain=('app2b',None), host='domain2.com', out=True), "/app1")
+
+
+    def test_router_domains_ed(self):
+        '''
+        Test URLs that map domains with exclusive_domain set
+        '''
+        routers = dict(
+            BASE = dict(
+                applications = ['app1', 'app2', 'app2A', 'app3', 'app4', 'app5', 'app6'],
+                exclusive_domain = True,
+                domains = {
+                    #  two domains to the same app
+                    "domain1.com"     : "app1",
+                    "www.domain1.com" : "app1",
+                    #  same domain, two ports, to two apps
+                    "domain2.com"      : "app2a",
+                    "domain2.com:8080" : "app2b",
+                    #  two domains, same app, two controllers
+                    "domain3a.com" : "app3/c3a",
+                    "domain3b.com" : "app3/c3b",
+                    #  two domains, same app & controller, two functions
+                    "domain4a.com" : "app4/c4/f4a",
+                    "domain4b.com" : "app4/c4/f4b",
+                    #  http vs https
+                    "domain6.com:80"  : "app6",
+                    "domain6.com:443" : "app6s",
+                },
+            ),
+            app1 =  dict( default_controller = 'c1',  default_function = 'f1',  controllers = ['c1'], exclusive_domain=True, ),
+            app2a = dict( default_controller = 'c2a', default_function = 'f2a', controllers = ['c2a'], ),
+            app2b = dict( default_controller = 'c2b', default_function = 'f2b', controllers = ['c2b'], ),
+            app3 =  dict( controllers = ['c3a', 'c3b'], ),
+            app4 =  dict( default_controller = 'c4', controllers = ['c4']),
+            app5 =  dict( default_controller = 'c5', controllers = ['c5'], domain = 'localhost' ),
+            app6 =  dict( default_controller = 'c6',  default_function = 'f6',  controllers = ['c6'], ),
+            app6s =  dict( default_controller = 'c6s',  default_function = 'f6s',  controllers = ['c6s'], ),
+        )
+
+        load(rdict=routers)
+        self.assertEqual(filter_url('http://domain1.com/abc'), '/app1/c1/abc')
+        self.assertEqual(filter_url('http://domain1.com/c1/abc'), '/app1/c1/abc')
+        self.assertEqual(filter_url('http://domain1.com/abc.html'), '/app1/c1/abc')
+        self.assertEqual(filter_url('http://domain1.com/abc.css'), '/app1/c1/abc.css')
+        self.assertEqual(filter_url('http://domain1.com/index/abc'), "/app1/c1/index ['abc']")
+        self.assertEqual(filter_url('http://domain2.com/app1'), "/app2a/c2a/app1")
+
+        self.assertEqual(filter_url('https://domain1.com/app1/ctr/fcn', domain=('app1',None), out=True), "/ctr/fcn")
+        self.assertEqual(filter_url('https://www.domain1.com/app1/ctr/fcn', domain=('app1',None), out=True), "/ctr/fcn")
+
+        self.assertEqual(filter_url('http://domain2.com/abc'), '/app2a/c2a/abc')
+        self.assertEqual(filter_url('http://domain2.com:8080/abc'), '/app2b/c2b/abc')
+
+        self.assertEqual(filter_url('http://domain2.com/app2a/ctr/fcn', domain=('app2a',None), out=True), "/ctr/fcn")
+        self.assertEqual(filter_url('http://domain2.com/app2a/ctr/f2a', domain=('app2a',None), out=True), "/ctr")
+        self.assertEqual(filter_url('http://domain2.com/app2a/c2a/f2a', domain=('app2a',None), out=True), "/")
+        self.assertEqual(filter_url('http://domain2.com/app2a/c2a/fcn', domain=('app2a',None), out=True), "/fcn")
+        
+        self.assertRaises(SyntaxError, filter_url, 'http://domain2.com/app2a/ctr/fcn', domain=('app2b',None), out=True)
+        self.assertRaises(SyntaxError, filter_url, 'http://domain2.com/app2a/ctr/f2a', domain=('app2b',None), out=True)
+        self.assertRaises(SyntaxError, filter_url, 'http://domain2.com/app2a/c2a/f2a', domain=('app2b',None), out=True)
+
+        self.assertEqual(filter_url('http://domain3a.com/'), '/app3/c3a/index')
+        self.assertEqual(filter_url('http://domain3a.com/abc'), '/app3/c3a/abc')
+        self.assertEqual(filter_url('http://domain3a.com/c3b'), '/app3/c3b/index')
+        self.assertEqual(filter_url('http://domain3b.com/abc'), '/app3/c3b/abc')
+
+        self.assertEqual(filter_url('http://domain3a.com/app3/c3a/fcn', domain=('app3','c3a'), out=True), "/fcn")
+        self.assertEqual(filter_url('http://domain3a.com/app3/c3a/fcn', domain=('app3','c3b'), out=True), "/c3a/fcn")
+        
+        self.assertRaises(SyntaxError, filter_url, 'http://domain3a.com/app3/c3a/fcn', domain=('app1',None), out=True)
+
+        self.assertEqual(filter_url('http://domain4a.com/abc'), '/app4/c4/abc')
+        self.assertEqual(filter_url('https://domain4a.com/app4/c4/fcn', domain=('app4',None), out=True), "/fcn")
+
+        self.assertEqual(filter_url('http://domain4a.com'), '/app4/c4/f4a')
+        self.assertEqual(filter_url('http://domain4b.com'), '/app4/c4/f4b')
+
+        self.assertEqual(filter_url('http://localhost/abc'), '/app5/c5/abc')
+        self.assertEqual(filter_url('http:///abc'), '/app5/c5/abc') # test null host => localhost
+        self.assertEqual(filter_url('https://localhost/app5/c5/fcn', domain=('app5',None), out=True), "/fcn")
+
+        self.assertEqual(filter_url('http://domain6.com'), '/app6/c6/f6')
+        self.assertEqual(filter_url('https://domain6.com'), '/app6s/c6s/f6s')
+
+        self.assertRaises(SyntaxError, filter_url, 'http://domain2.com/app3/c3a/f3', domain=('app2b',None), out=True)
         self.assertRaises(SyntaxError, filter_url, 'http://domain1.com/app1/c1/f1', domain=('app2b',None), out=True)
         try:
             # 2.7+ only
