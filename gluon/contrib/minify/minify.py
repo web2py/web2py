@@ -24,9 +24,9 @@ def write_binary_file(filename,data):
     f.write(data)
     f.close()
 
-def fix_links(css,static_path):    
-    return css.replace('../',static_path+'/')
-
+def fix_links(css,static_path):
+    return css.replace('../',static_path+'../')
+    
 def minify(files, path_info, folder, optimize_css, optimize_js,
            ignore_concat = [],
            ignore_minify = ['/jquery.js', '/anytime.js']):
@@ -69,8 +69,19 @@ def minify(files, path_info, folder, optimize_css, optimize_js,
 
         if filename.lower().endswith('.css'):
             processed.append(filename)
+            spath_info, sfilename = path_info.split('/'), filename.split('/')
+            u = 0
+            for i,a in enumerate(sfilename):
+                try:
+                    if a != spath_info[i]:
+                        u = i
+                        break
+                except:
+                    pass
             if concat_css:
                 contents = read_binary_file(abs_filename)
+                replacement = '../'*len(spath_info[u:]) + '/'.join(sfilename[u:-1]) + '/'
+                contents = fix_links(contents, replacement)
                 if minify_css:
                     css.append(cssmin.cssmin(contents))
                 else:
@@ -91,9 +102,7 @@ def minify(files, path_info, folder, optimize_css, optimize_js,
     dest_key = hashlib.md5(repr(processed)).hexdigest()
     if css and concat_css:
         css = '\n\n'.join(contents for contents in css)
-        if inline_css:
-            css = ('css:inline',fix_links(css,static_path))
-        else:
+        if not inline_css:
             temppath = os.path.join(folder,'static',temp)
             if not os.path.exists(temppath): os.mkdir(temppath)
             dest = "compressed_%s.css" % dest_key
