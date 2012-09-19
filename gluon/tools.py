@@ -607,6 +607,7 @@ class Mail(object):
             # no cryptography process as usual
             payload=payload_in
 
+        sender = sender % dict(sender=self.settings.sender)
         payload['From'] = encoded_or_raw(sender.decode(encoding))
         origTo = to[:]
         if to:
@@ -624,7 +625,6 @@ class Mail(object):
         for k,v in headers.iteritems():
             payload[k] = encoded_or_raw(v.decode(encoding))
         result = {}
-        sender = sender % dict(sender=self.settings.sender)
         try:            
             if self.settings.server == 'logging':
                 logger.warn('email not sent\n%s\nFrom: %s\nTo: %s\nSubject: %s\n\n%s\n%s\n' % \
