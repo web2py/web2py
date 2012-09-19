@@ -264,6 +264,7 @@ class Mail(object):
         cc=None,
         bcc=None,
         reply_to=None,
+        sender='%(sender)s',
         encoding='utf-8',
         raw=False,
         headers={}
@@ -606,7 +607,7 @@ class Mail(object):
             # no cryptography process as usual
             payload=payload_in
 
-        payload['From'] = encoded_or_raw(self.settings.sender.decode(encoding))
+        payload['From'] = encoded_or_raw(sender.decode(encoding))
         origTo = to[:]
         if to:
             payload['To'] = encoded_or_raw(', '.join(to).decode(encoding))
@@ -623,10 +624,11 @@ class Mail(object):
         for k,v in headers.iteritems():
             payload[k] = encoded_or_raw(v.decode(encoding))
         result = {}
-        try:
+        sender = sender % dict(sender=self.settings.sender)
+        try:            
             if self.settings.server == 'logging':
                 logger.warn('email not sent\n%s\nFrom: %s\nTo: %s\nSubject: %s\n\n%s\n%s\n' % \
-                                ('-'*40,self.settings.sender,
+                                ('-'*40,sender,
                                  ', '.join(to),subject,
                                  text or html,'-'*40))
             elif self.settings.server == 'gae':
