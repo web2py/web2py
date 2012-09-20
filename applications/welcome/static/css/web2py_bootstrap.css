@@ -74,8 +74,8 @@ div.controls .error_wrapper+.inline-help{margin-left:-99999px;}
 /* beautify brand */
 .navbar-inverse .brand{color:#c6cecc;}
 .navbar-inverse .brand b{display:inline-block;margin-top:-1px;}
-.navbar-inverse .brand b>span{font-size:22px;color:#425f5a;}
-.navbar-inverse .brand:hover b>span{color:#638c86;}
+.navbar-inverse .brand b>span{font-size:22px;color:white}
+.navbar-inverse .brand:hover b>span{color:white}
 /* beautify web2py link in navbar */
 span.highlighted{color:#d8d800;}
 .open span.highlighted{color:#ffff00;}
