@@ -1652,7 +1652,6 @@ def git_pull():
             session.flash = T("Application updated via git pull")
             redirect(URL('site'))
         except CheckoutError, message:
-            logging.error(message)
             session.flash = T("Pull failed, certain files could not be checked out. Check logs for details.")
             redirect(URL('site'))
         except UnmergedEntriesError:
@@ -1662,11 +1661,9 @@ def git_pull():
             session.flash = T("Pull is not possible because you have unmerged files. Fix them up in the work tree, and then try again.")
             redirect(URL('site'))
         except GitCommandError, status:
-            logging.error(str(status))
             session.flash = T("Pull failed, git exited abnormally. See logs for details.")
             redirect(URL('site'))
         except Exception,e:
-            logging.error("Unexpected error:", sys.exc_info()[0])
             session.flash = T("Pull failed, git exited abnormally. See logs for details.")
             redirect(URL('site'))
     elif 'cancel' in request.vars:
@@ -1698,7 +1695,6 @@ def git_push():
             session.flash = T("Push failed, there are unmerged entries in the cache. Resolve merge issues manually and try again.")
             redirect(URL('site'))
         except Exception, e:
-            logging.error("Unexpected error:", sys.exc_info()[0])
             session.flash = T("Push failed, git exited abnormally. See logs for details.")
             redirect(URL('site'))
     return dict(app=app,form=form)
