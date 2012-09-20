@@ -70,7 +70,15 @@ div.controls .error{
   //display:inline; /* uncommenting this, the animation effect is lost */
 }
 div.controls .inline-help{color:#3A87AD;}
-div.controls .error_wrapper+.inline-help{margin-left:-99999px}
+div.controls .error_wrapper+.inline-help{margin-left:-99999px;}
+/* beautify brand */
+.navbar-inverse .brand{color:#c6cecc;}
+.navbar-inverse .brand b{display:inline-block;margin-top:-1px;}
+.navbar-inverse .brand b>span{font-size:22px;color:#425f5a;}
+.navbar-inverse .brand:hover b>span{color:#638c86;}
+/* beautify web2py link in navbar */
+span.highlighted{color:#d8d800;}
+.open span.highlighted{color:#ffff00;}
 
 /*=============================================================
                  OVERRIDING WEB2PY.CSS RULES
@@ -185,6 +193,8 @@ td.w2p_fw ul{margin-left:0px;}
   margin:3px 0 0 2px;
 }
 .web2py_grid form table{width:auto;}
+/* auth_user_remember checkbox extrapadding in IE fix */
+.ie-lte9 input#auth_user_remember.checkbox {padding-left:0;}
 
 /*=============================================================
                        MEDIA QUERIES
