@@ -192,6 +192,7 @@ def url_out(request, env, application, controller, function,
             port = ''
         else:
             port = ':%s' % port
+            host = host.split(':')[0]
         url = '%s://%s%s%s' % (scheme, host, port, url)
     return url
 
