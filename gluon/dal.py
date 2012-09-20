@@ -4323,7 +4323,8 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         if first.type != 'id':
             return [GAEF(first.name,'!=',self.represent(second,first.type),lambda a,b:a!=b)]
         else:
-            second = Key.from_path(first._tablename, long(second))
+            if not second is None:
+                second = Key.from_path(first._tablename, long(second))
             return [GAEF(first.name,'!=',second,lambda a,b:a!=b)]
 
     def LT(self,first,second=None):
