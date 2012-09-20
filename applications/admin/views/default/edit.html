@@ -19,6 +19,10 @@
 <script src="{{=cm}}/mode/css/css.js"></script>
 <script src="{{=cm}}/mode/javascript/javascript.js"></script>
 <script src="{{=cm}}/mode/htmlmixed/htmlmixed.js"></script>
+<script src="{{=cm}}/lib/util/search.js"></script>
+<script src="{{=cm}}/lib/util/searchcursor.js"></script>
+<script src="{{=cm}}/lib/util/dialog.js"></script>
+<link rel="stylesheet" href="{{=cm}}/lib/util/dialog.css">
 <script src="{{=cm}}/emmet.min.js"></script>
 <script language="Javascript" type="text/javascript" src="{{=URL('static','js/ajax_editor.js')}}"></script>
 {{elif TEXT_EDITOR == 'ace':}}
@@ -246,6 +250,11 @@ window.onload = function() {
   <ul>
     {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
     {{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
+    {{=shortcut('Ctrl-F / Cmd-F', T('Start searching'))}}
+    {{=shortcut('Ctrl-G / Cmd-G', T('Find Next'))}}
+    {{=shortcut('Shift-Ctrl-G / Shift-Cmd-G', T('Find Previous'))}}
+    {{=shortcut('Shift-Ctrl-F / Cmd-Option-F', T('Replace'))}}
+    {{=shortcut('Shift-Ctrl-R / Shift-Cmd-Option-F', T('Replace All'))}}
     {{=shortcut('Tab', T('Expand Abbreviation'))}}
   </ul>
   {{elif TEXT_EDITOR == 'codemirror':}}
@@ -253,6 +262,11 @@ window.onload = function() {
   <ul>
     {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
     {{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
+    {{=shortcut('Ctrl-F / Cmd-F', T('Start searching'))}}
+    {{=shortcut('Ctrl-G / Cmd-G', T('Find Next'))}}
+    {{=shortcut('Shift-Ctrl-G / Shift-Cmd-G', T('Find Previous'))}}
+    {{=shortcut('Shift-Ctrl-F / Cmd-Option-F', T('Replace'))}}
+    {{=shortcut('Shift-Ctrl-R / Shift-Cmd-Option-F', T('Replace All'))}}
   </ul>
   {{else:}}
   <h3>{{=T("Key bindings")}}</h3>
