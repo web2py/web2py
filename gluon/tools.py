@@ -1197,7 +1197,7 @@ class Auth(object):
                        'reset_password','request_reset_password',
                        'change_password','profile','groups',
                        'impersonate','not_authorized'):
-            if len(request.args) >= 2:
+            if len(request.args) >= 2 and args[0]=='impersonate':
                 return getattr(self,args[0])(request.args[1])
             else:
                 return getattr(self,args[0])()
@@ -2445,7 +2445,7 @@ class Auth(object):
         session = current.session
 
         if next is DEFAULT:
-            next = self.settings.reset_password_next
+            next = self.next or self.settings.reset_password_next
         try:
             key = request.vars.key or getarg(-1)
             t0 = int(key.split('-')[0])
