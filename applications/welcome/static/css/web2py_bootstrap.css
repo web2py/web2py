@@ -1,8 +1,8 @@
-/*=============================================================
-                       CUSTOM RULES 
-==============================================================*/
+//=======================================================
+//                   CUSTOM RULES 
+//=======================================================
 
-body{height:auto;} /* to avoid vertical scroll bar */
+body{height:auto;} // to avoid vertical scroll bar 
 div.flash.flash-center{left:25%;right:25%;}
 div.flash.flash-top,div.flash.flash-top:hover{
   position:relative;
@@ -36,16 +36,18 @@ div.flash.flash-top,div.flash.flash-top:hover{
   font-size:20px;
   font-weight:300;
 }
-/* auth navbar - primitive style */
+// auth navbar - primitive style
 .auth_navbar,.auth_navbar a{color:inherit;}
-.ie-lte7 .auth_navbar,.auth_navbar a{color:expression(this.parentNode.currentStyle['color']); /* ie7 doesn't support inherit */}
-.auth_navbar a{white-space:nowrap;} /* to avoid the nav split on more lines */ 
+.ie-lte7 .auth_navbar,.auth_navbar a{color:expression(this.parentNode.currentStyle['color']); // ie7 doesn't support inherit
+}
+.auth_navbar a{white-space:nowrap;} // to avoid the nav split on more lines
 .auth_navbar a:hover{color:white;text-decoration:none;}
 ul#navbar>.auth_navbar{
   display:inline-block;
   padding:5px;
 }
-/* form errors message box customization */
+
+// form errors message box customization
 div.error_wrapper{margin-bottom:9px;}
 div.error{
   border-radius: 4px;
@@ -53,8 +55,9 @@ div.error{
   -moz-border-radius: 4px;
   -webkit-border-radius: 4px;  
 }
-/* below rules are only for formstyle = bootstrap
-trying to make errors look like bootstrap ones */
+
+// below rules are only for formstyle = bootstrap
+// trying to make errors look like bootstrap ones
 div.controls .error_wrapper{
   display:inline-block;
   margin-bottom:0;
@@ -67,42 +70,46 @@ div.controls .error{
   border:none;
   padding:0;
   margin:0;
-  //display:inline; /* uncommenting this, the animation effect is lost */
+  //display:inline; // uncommenting this, the animation effect is lost 
 }
 div.controls .inline-help{color:#3A87AD;}
 div.controls .error_wrapper+.inline-help{margin-left:-99999px;}
-/* beautify brand */
+
+// beautify brand
 .navbar-inverse .brand{color:#c6cecc;}
 .navbar-inverse .brand b{display:inline-block;margin-top:-1px;}
 .navbar-inverse .brand b>span{font-size:22px;color:white}
 .navbar-inverse .brand:hover b>span{color:white}
-/* beautify web2py link in navbar */
+// beautify web2py link in navbar
 span.highlighted{color:#d8d800;}
 .open span.highlighted{color:#ffff00;}
 
-/*=============================================================
-                 OVERRIDING WEB2PY.CSS RULES
-==============================================================*/
+//===========================================================
+//              OVERRIDING WEB2PY.CSS RULES
+//===========================================================
 
-/* reset to default */
+// reset to default 
 a{white-space:normal;}
 li{margin-bottom:0;}
 textarea,button{display:block;}
-/*reset ul padding */
+// reset ul padding
 ul#navbar{padding:0;} 
-/* label aligned to related input */
+// label aligned to related input
 td.w2p_fl,td.w2p_fc {padding:0;}
 #web2py_user_form td{vertical-align:middle;}
 
-/*=============================================================
-                 OVERRIDING BOOTSTRAP.CSS RULES 
-==============================================================*/
+//==========================================================
+//             OVERRIDING BOOTSTRAP.CSS RULES 
+//==========================================================
 
-/* right folder for bootstrap black images/icons */
+// because web2py handles this via js
+.hidden{visibility:visible;}
+
+// right folder for bootstrap black images/icons 
 [class^="icon-"],[class*=" icon-"]{
   background-image:url("../images/glyphicons-halflings.png")
 }
-/* right folder for bootstrap white images/icons */
+// right folder for bootstrap white images/icons 
 .icon-white,
 .nav-tabs > .active > a > [class^="icon-"],
 .nav-tabs > .active > a > [class*=" icon-"],
@@ -118,20 +125,20 @@ td.w2p_fl,td.w2p_fc {padding:0;}
 .dropdown-menu > .active > a > [class*=" icon-"] {
   background-image:url("../images/glyphicons-halflings-white.png");
 }
-/* bootstrap has a label as input's wrapper while web2py has a div */
+// bootstrap has a label as input's wrapper while web2py has a div
 div>input[type="radio"],div>input[type="checkbox"]{margin:0;}
-/* bootstrap has button instead of input */
+// bootstrap has button instead of input 
 input[type="button"], input[type="submit"]{margin-right:8px;}
 
-/*=============================================================
-RULES FOR SOLVING CONFLICTS BETWEEN WEB2PY.CSS AND BOOTSTRAP.CSS
-==============================================================*/
+//===========================================================
+// SOLVING CONFLICTS BETWEEN WEB2PY.CSS AND BOOTSTRAP.CSS
+//===========================================================
 
-/*when formstyle=table3cols*/
+// when formstyle=table3cols
 tr#auth_user_remember__row>td.w2p_fw>div{padding-bottom:8px;}
 td.w2p_fw div>label{vertical-align:middle;}
 td.w2p_fc {padding-bottom:5px;}
-/*when formstyle=divs*/
+// when formstyle=divs
 div#auth_user_remember__row{margin-top:4px;}
 div#auth_user_remember__row>.w2p_fl{display:none;}
 div#auth_user_remember__row>.w2p_fw{min-height:39px;}
@@ -144,7 +151,8 @@ div.w2p_fc{
   padding-left:5px;
   margin-top:-8px;
 }
-/*when formstyle=ul*/
+
+// when formstyle=ul
 form>ul{
   list-style:none;
   margin:0;
@@ -152,28 +160,30 @@ form>ul{
 li#auth_user_remember__row{margin-top:4px;}
 li#auth_user_remember__row>.w2p_fl{display:none;}
 li#auth_user_remember__row>.w2p_fw{min-height:39px;}
-/*when formstyle=bootstrap*/
+
+// when formstyle=bootstrap
 #auth_user_remember__row  label.checkbox{display:block;}
 span.inline-help{display:inline-block;}
 input[type="text"].input-xlarge,input[type="password"].input-xlarge{width:270px;}
-/*when recaptcha is used*/
+
+// when recaptcha is used
 #recaptcha{min-height:30px;display:inline-block;margin-bottom:0;line-height:30px;vertical-align:middle;}
 td>#recaptcha{margin-bottom:6px;}
 div>#recaptcha{margin-bottom:9px;}
 
-/*=============================================================
-                       OTHER RULES
-==============================================================*/
+//==========================================================
+//                     OTHER RULES
+//==========================================================
 
 .navbar-inner{
-  position:relative; /*unnecessary ??*/
+  position:relative; // unnecessary 
 }
-/* Massimo Di Pierro fixed alignment in forms with list:string */
+
+// fixed alignment in forms with list:string
 form table tr{margin-bottom:9px;}
 td.w2p_fw ul{margin-left:0px;}
 
-/* web2py_console in grid and smartgrid */
-.hidden{visibility:visible;}
+// web2py_console in grid and smartgrid
 .web2py_console input{
   display: inline-block;
   margin-bottom: 0;
@@ -193,12 +203,12 @@ td.w2p_fw ul{margin-left:0px;}
   margin:3px 0 0 2px;
 }
 .web2py_grid form table{width:auto;}
-/* auth_user_remember checkbox extrapadding in IE fix */
+// auth_user_remember checkbox extrapadding in IE fix
 .ie-lte9 input#auth_user_remember.checkbox {padding-left:0;}
 
-/*=============================================================
-                       MEDIA QUERIES
-==============================================================*/
+//===========================================================
+//                   MEDIA QUERIES
+//===========================================================
 
 @media only screen and (max-width:979px){
   body{padding-top:0px;}
