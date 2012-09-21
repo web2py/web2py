@@ -2725,6 +2725,43 @@ class CRYPT(object):
             return ('', translate(self.error_message))
         return (LazyCrypt(self,value),None)
 
+#  entropy calculator for IS_STRONG
+#
+lowerset = frozenset(unicode('abcdefghijklmnopqrstuvwxyz'))
+upperset = frozenset(unicode('ABCDEFGHIJKLMNOPQRSTUVWXYZ'))
+numberset = frozenset(unicode('0123456789'))
+sym1set = frozenset(unicode('!@#$%^&*()'))
+sym2set = frozenset(unicode('~`-_=+[]{}\\|;:\'",.<>?/'))
+otherset = frozenset(unicode('0123456789abcdefghijklmnopqrstuvwxyz')) # anything else
+
+def calc_entropy(string):
+    " calculate a simple entropy for a given string "
+    import math
+    alphabet = 0    # alphabet size
+    other = set()
+    seen = set()
+    lastset = None
+    if isinstance(string, str):
+        string = unicode(string, encoding='utf8')
+    for c in string:
+        # classify this character
+        inset = otherset
+        for cset in (lowerset, upperset, numberset, sym1set, sym2set):
+            if c in cset:
+                inset = cset
+                break
+        # calculate effect of character on alphabet size
+        if inset not in seen:
+            seen.add(inset)
+            alphabet += len(inset)  # credit for a new character set
+        elif c not in other:
+            alphabet += 1   # credit for unique characters
+            other.add(c)
+        if inset is not lastset:
+            alphabet += 1   # credit for set transitions
+            lastset = cset
+    entropy = len(string) * math.log(alphabet) / 0.6931471805599453 # math.log(2)
+    return round(entropy, 2)
 
 class IS_STRONG(object):
     """
@@ -2734,23 +2771,61 @@ class IS_STRONG(object):
             requires=IS_STRONG(min=10, special=2, upper=2))
 
     enforces complexity requirements on a field
+
+    >>> IS_STRONG(es=True)('Abcd1234')
+    ('Abcd1234', 'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|')
+    >>> IS_STRONG(es=True)('Abcd1234!')
+    ('Abcd1234!', None)
+    >>> IS_STRONG(es=True, entropy=1)('a')
+    ('a', None)
+    >>> IS_STRONG(es=True, entropy=1, min=2)('a')
+    ('a', 'Minimum length is 2')
+    >>> IS_STRONG(es=True, entropy=100)('abc123')
+    ('abc123', 'Entropy (32.35) less than required (100)')
+    >>> IS_STRONG(es=True, entropy=100)('and')
+    ('and', 'Entropy (14.57) less than required (100)')
+    >>> IS_STRONG(es=True, entropy=100)('aaa')
+    ('aaa', 'Entropy (14.42) less than required (100)')
+    >>> IS_STRONG(es=True, entropy=100)('a1d')
+    ('a1d', 'Entropy (15.97) less than required (100)')
+    >>> IS_STRONG(es=True, entropy=100)('añd')
+    ('a\\xc3\\xb1d', 'Entropy (18.13) less than required (100)')
+
     """
 
-    def __init__(self, min=8, max=20, upper=1, lower=1, number=1,
-                 special=1, specials=r'~!@#$%^&*()_+-=?<>,.:;{}[]|',
-                 invalid=' "', error_message=None):
-        self.min = min
-        self.max = max
-        self.upper = upper
-        self.lower = lower
-        self.number = number
-        self.special = special
+    def __init__(self, min=None, max=None, upper=None, lower=None, number=None, 
+                 entropy=None,
+                 special=None, specials=r'~!@#$%^&*()_+-=?<>,.:;{}[]|',
+                 invalid=' "', error_message=None, es=False):
+        self.entropy = entropy
+        if entropy is None:
+            # enforce default requirements
+            self.min = 8 if min is None else min
+            self.max = max  # was 20, but that doesn't make sense
+            self.upper = 1 if upper is None else upper
+            self.lower = 1 if lower is None else lower
+            self.number = 1 if number is None else number
+            self.special = 1 if special is None else special
+        else:
+            # by default, an entropy spec is exclusive
+            self.min = min
+            self.max = max
+            self.upper = upper
+            self.lower = lower
+            self.number = number
+            self.special = special
         self.specials = specials
         self.invalid = invalid
         self.error_message = error_message
+        self.estring = es   # return error message as string (for doctest)
 
     def __call__(self, value):
         failures = []
+        if self.entropy is not None:
+            entropy = calc_entropy(value)
+            if entropy < self.entropy:
+                failures.append(translate("Entropy (%(have)s) less than required (%(need)s)") \
+                    % dict(have=entropy, need=self.entropy))
         if type(self.min) == int and self.min > 0:
             if not len(value) >= self.min:
                 failures.append(translate("Minimum length is %s") % self.min)
@@ -2761,7 +2836,7 @@ class IS_STRONG(object):
             all_special = [ch in value for ch in self.specials]
             if self.special > 0:
                 if not all_special.count(True) >= self.special:
-                    failures.append(translate("Must include at least %s of the following : %s") \
+                    failures.append(translate("Must include at least %s of the following: %s") \
                                         % (self.special, self.specials))
         if self.invalid:
             all_invalid = [ch in value for ch in self.invalid]
@@ -2801,6 +2876,8 @@ class IS_STRONG(object):
         if len(failures) == 0:
             return (value, None)
         if not self.error_message:
+            if self.estring:
+                return (value, '|'.join(failures))
             from html import XML
             return (value, XML('<br />'.join(failures)))
         else:

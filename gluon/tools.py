@@ -264,6 +264,7 @@ class Mail(object):
         cc=None,
         bcc=None,
         reply_to=None,
+        sender='%(sender)s',
         encoding='utf-8',
         raw=False,
         headers={}
@@ -606,7 +607,8 @@ class Mail(object):
             # no cryptography process as usual
             payload=payload_in
 
-        payload['From'] = encoded_or_raw(self.settings.sender.decode(encoding))
+        sender = sender % dict(sender=self.settings.sender)
+        payload['From'] = encoded_or_raw(sender.decode(encoding))
         origTo = to[:]
         if to:
             payload['To'] = encoded_or_raw(', '.join(to).decode(encoding))
@@ -623,10 +625,10 @@ class Mail(object):
         for k,v in headers.iteritems():
             payload[k] = encoded_or_raw(v.decode(encoding))
         result = {}
-        try:
+        try:            
             if self.settings.server == 'logging':
                 logger.warn('email not sent\n%s\nFrom: %s\nTo: %s\nSubject: %s\n\n%s\n%s\n' % \
-                                ('-'*40,self.settings.sender,
+                                ('-'*40,sender,
                                  ', '.join(to),subject,
                                  text or html,'-'*40))
             elif self.settings.server == 'gae':
@@ -1195,7 +1197,7 @@ class Auth(object):
                        'reset_password','request_reset_password',
                        'change_password','profile','groups',
                        'impersonate','not_authorized'):
-            if len(request.args) >= 2:
+            if len(request.args) >= 2 and args[0]=='impersonate':
                 return getattr(self,args[0])(request.args[1])
             else:
                 return getattr(self,args[0])()
@@ -2443,7 +2445,7 @@ class Auth(object):
         session = current.session
 
         if next is DEFAULT:
-            next = self.settings.reset_password_next
+            next = self.next or self.settings.reset_password_next
         try:
             key = request.vars.key or getarg(-1)
             t0 = int(key.split('-')[0])
