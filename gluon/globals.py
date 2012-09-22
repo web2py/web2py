@@ -241,7 +241,8 @@ class Response(Storage):
 
         files = []
         for item in self.files:
-            if not item in files: files.append(item)
+            if not item in files:
+                files.append(item)
         if have_minify and (self.optimize_css or self.optimize_js):
             # cache for 5 minutes by default
             key = hashlib.md5(repr(files)).hexdigest()
