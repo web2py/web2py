@@ -117,6 +117,10 @@ class Validator(object):
         """
         return value
 
+    def __call__(self,value):
+        raise NotImplementedError
+        return (value, None)
+
 
 class IS_MATCH(Validator):
     """
