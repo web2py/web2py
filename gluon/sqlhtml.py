@@ -770,6 +770,16 @@ def formstyle_divs(form, fields):
         table.append(DIV(_label, _controls, _help, _id=id))
     return table
 
+def formstyle_inline(form, fields):
+    ''' divs only '''
+    if len(fields)!=2:
+        raise RuntimeError, "Not possible"
+    id, label, controls, help = fields[0]
+    submit_button = fields[1][2]
+    return CAT(DIV(controls,_style='display:inline'),
+               submit_button)
+
+
 def formstyle_ul(form, fields):
     ''' unordered list '''
     table = UL()
@@ -895,6 +905,7 @@ class SQLFORM(FORM):
         divs = formstyle_divs,
         ul = formstyle_ul,
         bootstrap = formstyle_bootstrap,
+        inline = formstyle_inline,
         ))
 
     FIELDNAME_REQUEST_DELETE = 'delete_this_record'
