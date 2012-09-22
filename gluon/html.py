@@ -32,7 +32,7 @@ regex_crlf = re.compile('\r|\n')
 
 join = ''.join
 
-entitydefs = dict(map(lambda (k,v): (k, unichr(v)), name2codepoint.iteritems()))
+entitydefs = dict(map(lambda (k,v): (k, unichr(v).encode('utf-8')), name2codepoint.iteritems()))
 entitydefs.setdefault('apos', u"'")
 
 
@@ -2408,7 +2408,7 @@ class web2pyHTMLParser(HTMLParser):
         else:
             self.parent.append(unichr(int(name)).encode('utf8'))
     def handle_entityref(self,name):
-        self.parent.append(entitydefs[name].encode('utf8'))
+        self.parent.append(entitydefs[name])
     def handle_endtag(self, tagname):
         # this deals with unbalanced tags
         if tagname==self.last:
