@@ -955,6 +955,19 @@ def check_existent_app(options,appname):
     if os.path.isdir(os.path.join(options.folder, 'applications', appname)):
         return True
 
+def get_code_for_scheduler(app, options):
+    if len(app) == 1 or app[1] == None:
+        code = "from gluon import current;current._scheduler.loop()"
+    else:
+        code = "from gluon import current;current._scheduler.group_names = ['%s'];"
+        code += "current._scheduler.loop()"
+        code = code % ("','".join(app[1:]))
+    app_ = app[0]
+    if not check_existent_app(options, app_):
+        print "Application '%s' doesn't exist, skipping" % (app_)
+        return None, None
+    return app_, code
+
 def start_schedulers(options):
     try:
         from multiprocessing import Process
@@ -965,20 +978,21 @@ def start_schedulers(options):
     apps = [(app.strip(), None) for app in options.scheduler.split(',')]
     if options.scheduler_groups:
         apps = options.scheduler_groups
+    code = "from gluon import current;current._scheduler.loop()"
+    logging.getLogger().setLevel(options.debuglevel)
+    if len(apps) == 1:
+        app_, code = get_code_for_scheduler(apps[0], options)
+        if not app_:
+            return
+        print 'starting single-scheduler for "%s"...' % app_
+        run(app_,True,True,None,False,code)
+        return
     for app in apps:
-        if len(app) == 1 or app[1] == None:
-            code = "from gluon import current;current._scheduler.loop()"
-        else:
-            code = "from gluon import current;current._scheduler.group_names = ['%s'];"
-            code += "current._scheduler.loop()"
-            code = code % ("','".join(app[1:]))
-        app_ = app[0]
-        if not check_existent_app(options, app_):
-            print "Application '%s' doesn't exist, skipping" % (app_)
+        app_, code = get_code_for_scheduler(app, options)
+        if not app_:
             continue
         print 'starting scheduler for "%s"...' % app_
         args = (app_,True,True,None,False,code)
-        logging.getLogger().setLevel(options.debuglevel)
         p = Process(target=run, args=args)
         processes.append(p)
         print "Currently running %s scheduler processes" % (len(processes))
