@@ -32,6 +32,10 @@ regex_crlf = re.compile('\r|\n')
 
 join = ''.join
 
+entitydefs = dict(map(lambda (k,v): (k, unichr(v)), name2codepoint.iteritems()))
+entitydefs.setdefault('apos', u"'")
+
+
 __all__ = [
     'A',
     'B',
@@ -243,7 +247,7 @@ def URL(
         elif a and c and not f: (c,f,a)=(a,c,f)
         from globals import current
         if hasattr(current,'request'):
-            r = current.request    
+            r = current.request
 
     if r:
         application = r.application
@@ -487,7 +491,7 @@ class XmlComponent(object):
             components += [other]
         return CAT(*components)
 
-    def add_class(self, name):        
+    def add_class(self, name):
         """ add a class to _class attribute """
         c = self['_class']
         classes = (set(c.split()) if c else set())|set(name.split())
@@ -2278,7 +2282,7 @@ class MENU(DIV):
             select = SELECT(**self.attributes)
         for item in data:
             if len(item) <= 4 or item[4] == True:
-                select.append(OPTION(CAT(prefix, item[0]), 
+                select.append(OPTION(CAT(prefix, item[0]),
                                      _value=item[2], _selected=item[1]))
                 if len(item)>3 and len(item[3]):
                     self.serialize_mobile(
@@ -2404,7 +2408,7 @@ class web2pyHTMLParser(HTMLParser):
         else:
             self.parent.append(unichr(int(name)).encode('utf8'))
     def handle_entityref(self,name):
-        self.parent.append(unichr(name2codepoint[name]).encode('utf8'))
+        self.parent.append(entitydefs[name].encode('utf8'))
     def handle_endtag(self, tagname):
         # this deals with unbalanced tags
         if tagname==self.last:
@@ -2508,10 +2512,3 @@ class MARKMIN(XmlComponent):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-
-
-
-
-
-
-
