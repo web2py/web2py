@@ -433,94 +433,6 @@ class PasswordWidget(FormWidget):
 
     DEFAULT_PASSWORD_DISPLAY = 8*('*')
 
-    js = """
-    function calc_entropy(mystring) {
-      /*" calculate a simple entropy for a given string "*/
-      var lowerset = 'abcdefghijklmnopqrstuvwxyz';
-      var upperset = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-      var numberset = '0123456789';
-      var sym1set = '!@#$\%^&*()';
-      var sym2set = '~`-_=+[]{}\\|;:\\'",.<>?/';
-      var otherset = '0123456789abcdefghijklmnopqrstuvwxyz'
-      var alphabet = 0;
-      var other = {};
-      var seen = {};
-      var lastset = null;
-      var mystringlist = mystring.split('');
-      for (var i=0;i<mystringlist.length;i++) {
-        var c = mystringlist[i];
-        //console.log('we are at char', c);
-        /* classify this character*/
-        var inset = otherset;
-        while (1) {
-            /*lowerset*/
-            if (lowerset.indexOf(c) != -1) {
-                inset = lowerset;
-                break
-            };
-            /*upperset*/
-            if (upperset.indexOf(c) != -1) {
-                inset = upperset;
-                break
-            };
-            /*numberset*/
-            if (numberset.indexOf(c) != -1) {
-                inset = numberset;
-                break
-            };
-            /*sym1set*/
-            if (sym1set.indexOf(c) != -1) {
-                inset = sym1set;
-                break
-            };
-            /*sym2set*/
-            if (sym2set.indexOf(c) != -1) {
-                inset = sym2set;
-                break
-            } else {break};
-        }
-        //console.log('inset detected as', inset, seen);
-        /*calculate effect of character on alphabet size*/
-        if (!(inset in seen)) {
-            //console.log('credit for a new character set');
-            seen[inset] = 1;
-            // credit for a new character set
-            alphabet += inset.length; 
-        }
-        else if (!(c in other)) {
-            //console.log('credit for unique characters');
-            alphabet += 1;
-            other[c] = 1;
-        }
-        if (inset != lastset) {
-            //console.log('credit for set transitions');
-            alphabet += 1;  // credit for set transitions
-            lastset = inset;
-        }
-      }
-      var entropy = mystring.length / 1.0 * Math.log(alphabet) / 0.6931471805599453; /*math.log(2)*/
-      return Math.round(entropy*100)/100
-    }
-    function validate_entropy(myfield, midrange) {
-       var k = 256.0/midrange;
-       var validator = function () {
-            var value = calc_entropy(myfield.val());
-	    var color;
-            if(value<30) {
-                var c = Math.floor(value*k).toString(16);
-                color = '#ff'+((c.length==1)?'0':''+c)+'00';
-            } else {
-                var c = Math.floor(Math.max(0,255-(value-midrange)*k)).toString(16);
-                color = '#'+((c.length==1)?'0':'')+c+'ff00';
-	    }
-	    myfield.css('background-color',color);
-        }
-        myfield.on('keyup', validator);
-        myfield.on('keydown', validator);
-    }
-    validate_entropy(jQuery('#auth_user_password'),50);
-    """
-
     @classmethod
     def widget(cls, field, value, **attributes):
         """
@@ -537,7 +449,7 @@ class PasswordWidget(FormWidget):
             )
         attr = cls._attributes(field, default, **attributes)
 
-        return CAT(INPUT(**attr),SCRIPT(PasswordWidget.js))
+        return INPUT(**attr)
 
 
 class UploadWidget(FormWidget):
