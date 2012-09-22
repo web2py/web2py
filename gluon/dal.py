@@ -5167,22 +5167,6 @@ class MongoDBAdapter(NoSQLAdapter):
         items = [self.expand(item, first.type) for item in second]
         return {self.expand(first) : {"$in" : items} }
 
-    def LIKE(self, first, second):
-        #escaping regex operators?
-        return {self.expand(first) : ('%s' % self.expand(second, 'string').replace('%','/'))}
-
-    def STARTSWITH(self, first, second):
-        #escaping regex operators?
-        return {self.expand(first) : ('/^%s/' % self.expand(second, 'string'))}
-
-    def ENDSWITH(self, first, second):
-        #escaping regex operators?
-        return {self.expand(first) : ('/%s^/' % self.expand(second, 'string'))}
-
-    def CONTAINS(self, first, second):
-        #There is a technical difference, but mongodb doesn't support that, but the result will be the same
-        return {self.expand(first) : ('/%s/' % self.expand(second, 'string'))}
-
     def EQ(self,first,second):
         result = {}
         #if second is None:
@@ -5256,41 +5240,30 @@ class MongoDBAdapter(NoSQLAdapter):
         raise NotImplementedError, "This is not possible in NoSQL, but can be simulated with a wrapper."
         return '%s ON %s' % (self.expand(first), self.expand(second))
 
+    #
+    # BLOW ARE TWO IMPLEMENTATIONS OF THE SAME FUNCITONS
+    # WHICH ONE IS BEST?
+    #
+
     def COMMA(self, first, second):
         return '%s, %s' % (self.expand(first), self.expand(second))
 
-    def bulk_insert(self, table, items):
-        return [self.insert(table,item) for item in items]
+    def LIKE(self, first, second):
+        #escaping regex operators?
+        return {self.expand(first) : ('%s' % self.expand(second, 'string').replace('%','/'))}
 
-    #TODO This will probably not work:(
-    def NOT(self, first):
-        result = {}
-        result["$not"] = self.expand(first)
-        return result
+    def STARTSWITH(self, first, second):
+        #escaping regex operators?
+        return {self.expand(first) : ('/^%s/' % self.expand(second, 'string'))}
 
-    def AND(self,first,second):
-        f = self.expand(first)
-        s = self.expand(second)
-        f.update(s)
-        return f
+    def ENDSWITH(self, first, second):
+        #escaping regex operators?
+        return {self.expand(first) : ('/%s^/' % self.expand(second, 'string'))}
 
-    def OR(self,first,second):
-        # pymongo expects: .find( {'$or' : [{'name':'1'}, {'name':'2'}] } )
-        result = {}
-        f = self.expand(first)
-        s = self.expand(second)
-        result['$or'] = [f,s]
-        return result
+    def CONTAINS(self, first, second):
+        #There is a technical difference, but mongodb doesn't support that, but the result will be the same
+        return {self.expand(first) : ('/%s/' % self.expand(second, 'string'))}
 
-    def BELONGS(self, first, second):
-        if isinstance(second, str):
-            return {self.expand(first) : {"$in" : [ second[:-1]]} }
-        elif second==[] or second==():
-            return {1:0}
-        items = [self.expand(item, first.type) for item in second]
-        return {self.expand(first) : {"$in" : items} }
-
-    #TODO verify full compatibilty with official SQL Like operator
     def LIKE(self, first, second):
         import re
         return {self.expand(first) : {'$regex' : re.escape(self.expand(second, 'string')).replace('%','.*')}}
@@ -5314,89 +5287,9 @@ class MongoDBAdapter(NoSQLAdapter):
         #TODO contains operators need to be transformed to Regex
         return {self.expand(first) : {' $regex' : ".*" + re.escape(self.expand(second, 'string')) + ".*"}}
 
-    def EQ(self,first,second):
-        result = {}
-        #if second is None:
-            #return '(%s == null)' % self.expand(first)
-        #return '(%s == %s)' % (self.expand(first),self.expand(second,first.type))
-        result[self.expand(first)] = self.expand(second)
-        return result
-
-    def NE(self, first, second=None):
-        print "in NE"
-        result = {}
-        result[self.expand(first)] = {'$ne': self.expand(second)}
-        return result
-
-    def LT(self,first,second=None):
-        if second is None:
-            raise RuntimeError, "Cannot compare %s < None" % first
-        print "in LT"
-        result = {}
-        result[self.expand(first)] = {'$lt': self.expand(second)}
-        return result
-
-    def LE(self,first,second=None):
-        if second is None:
-            raise RuntimeError, "Cannot compare %s <= None" % first
-        print "in LE"
-        result = {}
-        result[self.expand(first)] = {'$lte': self.expand(second)}
-        return result
-
-    def GT(self,first,second):
-        print "in GT"
-        result = {}
-        result[self.expand(first)] = {'$gt': self.expand(second)}
-        return result
-
-    def GE(self,first,second=None):
-        if second is None:
-            raise RuntimeError, "Cannot compare %s >= None" % first
-        print "in GE"
-        result = {}
-        result[self.expand(first)] = {'$gte': self.expand(second)}
-        return result
-
-    #TODO javascript has math
-    def ADD(self, first, second):
-        raise NotImplementedError, "This must yet be replaced with javascript in order to accomplish this. Sorry"
-        return '%s + %s' % (self.expand(first), self.expand(second, first.type))
-
-    #TODO javascript has math
-    def SUB(self, first, second):
-        raise NotImplementedError, "This must yet be replaced with javascript in order to accomplish this. Sorry"
-        return '(%s - %s)' % (self.expand(first), self.expand(second, first.type))
-
-    #TODO javascript has math
-    def MUL(self, first, second):
-        raise NotImplementedError, "This must yet be replaced with javascript in order to accomplish this. Sorry"
-        return '(%s * %s)' % (self.expand(first), self.expand(second, first.type))
-        #TODO javascript has math
-
-    def DIV(self, first, second):
-        raise NotImplementedError, "This must yet be replaced with javascript in order to accomplish this. Sorry"
-        return '(%s / %s)' % (self.expand(first), self.expand(second, first.type))
-    #TODO javascript has math
-    def MOD(self, first, second):
-        raise NotImplementedError, "This must yet be replaced with javascript in order to accomplish this. Sorry"
-        return '(%s %% %s)' % (self.expand(first), self.expand(second, first.type))
-
-    #TODO javascript can do this
-    def AS(self, first, second):
-        raise NotImplementedError, "This must yet be replaced with javascript in order to accomplish this. Sorry"
-        return '%s AS %s' % (self.expand(first), second)
-
-    #We could implement an option that simulates a full featured SQL database. But I think the option should be set explicit or implemented as another library.
-    def ON(self, first, second):
-        raise NotImplementedError, "This is not possible in NoSQL, but can be simulated with a wrapper."
-        return '%s ON %s' % (self.expand(first), self.expand(second))
-
-    #TODO is this used in mongodb?
-    def COMMA(self, first, second):
-        return '%s, %s' % (self.expand(first), self.expand(second))
-
-
+    #
+    # END REDUNDANCY
+    #
 
 class IMAPAdapter(NoSQLAdapter):
     drivers = ('imaplib',)
