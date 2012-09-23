@@ -229,7 +229,7 @@ class Response(Storage):
             for k,v in (self.meta or {}).iteritems())
         self.write(s,escape=False)
 
-    def include_files(self):
+    def include_files(self, extensions=None):
 
         """
         Caching method for writing out files.
@@ -240,12 +240,22 @@ class Response(Storage):
         from gluon import URL
 
         files = []
+        has_js = has_css = False
         for item in self.files:
-            if not item in files:
-                files.append(item)
-        if have_minify and (self.optimize_css or self.optimize_js):
+            if extensions and not item.split('.')[-1] in extensions:
+                continue
+            if item in files:
+                continue
+            if item.endswith('.js'):
+                has_js = True
+            if item.endswith('.css'):
+                has_css = True
+            files.append(item)
+        
+        if have_minify and ((self.optimize_css and has_css) or (self.optimize_js and has_js)):
             # cache for 5 minutes by default
             key = hashlib.md5(repr(files)).hexdigest()
+ 
             cache = self.cache_includes or (current.cache.ram, 60*5)
             def call_minify(files=files):
                 return minify.minify(files,
