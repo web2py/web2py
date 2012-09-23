@@ -28,7 +28,7 @@ from dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
 from storage import Storage
 from utils import md5_hash
 from validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE, \
-    IS_DATETIME, IS_INT_IN_RANGE, IS_FLOAT_IN_RANGE
+    IS_DATETIME, IS_INT_IN_RANGE, IS_FLOAT_IN_RANGE, IS_STRONG
 
 import datetime
 import urllib
@@ -442,14 +442,23 @@ class PasswordWidget(FormWidget):
 
         see also: :meth:`FormWidget.widget`
         """
-
+        # detect if attached a IS_STRONG with entropy
         default=dict(
             _type='password',
             _value=(value and cls.DEFAULT_PASSWORD_DISPLAY) or '',
             )
         attr = cls._attributes(field, default, **attributes)
+        output = CAT(INPUT(**attr))
 
-        return INPUT(**attr)
+        # deal with entropy check!
+        requires = field.requires
+        if not isinstance(requires,(list,tuple)): requires = [requires]
+        is_strong = [r for r in requires if isinstance(r, IS_STRONG)]
+        if is_strong:
+            output.append(SCRIPT("web2py_validate_entropy(jQuery('#%s'),%s);" \
+                                     % (attr['_id'],is_strong[0].entropy)))
+        # end entropy check
+        return output
 
 
 class UploadWidget(FormWidget):
@@ -2713,8 +2722,3 @@ class ExporterXML(ExportClass):
             out.write('</row>\n')
         out.write('</rows>')
         return str(out.getvalue())
-
-
-
-
-
