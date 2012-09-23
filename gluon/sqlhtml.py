@@ -2249,7 +2249,9 @@ class SQLFORM(FORM):
                 else:
                     break
             if nargs>len(args)+1:
-                query = (field == id)
+                query = (field == id)                
+                if isinstance(linked_tables,dict):
+                    linked_tables = linked_tables[table._tablename]
                 if linked_tables is None or referee in linked_tables:
                     field.represent = lambda id,r=None,referee=referee,rep=field.represent: A(callable(rep) and rep(id) or id,_class=trap_class(),_href=url(args=['view',referee,id]))
         except (KeyError,ValueError,TypeError):
@@ -2274,6 +2276,8 @@ class SQLFORM(FORM):
             if rfield.readable:
                 check[rfield.tablename] = \
                     check.get(rfield.tablename,[])+[rfield.name]
+        if isinstance(linked_tables,dict):
+            linked_tables = linked_tables[tablename]
         for tablename in sorted(check):
             linked_fieldnames = check[tablename]
             tb = db[tablename]
