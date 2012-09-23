@@ -39,7 +39,7 @@
   <script src="{{=URL('static','js/modernizr.custom.js')}}"></script>
 
   <!-- include stylesheets -->
-  {{
+  {{  
   response.files.append(URL('static','css/web2py.css'))
   response.files.append(URL('static','css/bootstrap.min.css'))
   response.files.append(URL('static','css/bootstrap-responsive.min.css'))
@@ -146,32 +146,8 @@
 
   <!-- The javascript =============================================
        (Placed at the end of the document so the pages load faster) -->
-  <script>
-    // this code improves bootstrap menus and adds dropdown support
-    jQuery(function(){
-      jQuery('.nav>li>a').each(function(){
-        if(jQuery(this).parent().find('ul').length)
-          jQuery(this).attr({'class':'dropdown-toggle','data-toggle':'dropdown'}).append('<b class="caret"></b>');
-      });
-      jQuery('.nav li li').each(function(){
-        if(jQuery(this).find('ul').length)
-          jQuery(this).addClass('dropdown-submenu');
-      });
-      if(jQuery(document).width()>=980) {
-       jQuery('ul.nav a.dropdown-toggle').parent().hover(function() {
-          mi = jQuery(this).addClass('open');
-          mi.children('.dropdown-menu').stop(true, true).delay(200).fadeIn(400);
-        }, function() {
-          mi = jQuery(this);
-          mi.children('.dropdown-menu').stop(true, true).delay(200).fadeOut(function(){mi.removeClass('open')});
-        });
-      }
-      jQuery('ul.nav li.dropdown a').click(function(){window.location=jQuery(this).attr('href');});
-      // make all buttons bootstrap buttons
-      jQuery('button, form input[type="submit"], form input[type="button"]').addClass('btn');
-    });
-  </script>
   <script src="{{=URL('static','js/bootstrap.min.js')}}"></script>
+  <script src="{{=URL('static','js/web2py_bootstrap.js')}}"></script>
   <!--[if lt IE 7 ]>
       <script src="{{=URL('static','js/dd_belatedpng.js')}}"></script>
       <script> DD_belatedPNG.fix('img, .png_bg'); //fix any <img> or .png_bg background-images </script>
