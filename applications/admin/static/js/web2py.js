@@ -195,7 +195,7 @@ function web2py_validate_entropy(myfield, req_entropy) {
 	var color = '#'+rs(r)+rs(g)+rs(b);
         myfield.css('background-color',color);
 	entropy_callback = myfield.data('entropy_callback');
-	if(entropy_callback) entroy_callback(v);
+	if(entropy_callback) entropy_callback(v);
     }
     if(!myfield.hasClass('entropy_check')) myfield.on('keyup', validator).on('keydown', validator).addClass('entropy_check');
 }
