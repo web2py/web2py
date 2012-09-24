@@ -116,7 +116,9 @@ def minify(files, path_info, folder, optimize_css, optimize_js,
             tempfile = os.path.join(temppath, dest)
             write_binary_file(tempfile,css)
             css = path_info+'/%s' % dest
-        new_files.append(css)
+            new_files.append(css)
+        else:
+            new_files.append(('css:inline',css))
     else:
         new_files += css
     if js and concat_js:
