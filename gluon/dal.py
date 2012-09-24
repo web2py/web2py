@@ -2011,12 +2011,10 @@ class BaseAdapter(ConnectionPool):
 
     def CASE(self,query,t,f):
         def represent(x):
+            types = {type(True):'boolean',type(0):'integer',type(1.0):'double'}
             if x is None: return 'NULL'
             elif isinstance(x,Expression): return str(x)
-            types = {type(True): 'boolean',
-                     type(0): 'integer',
-                     type(1.0): 'double'}
-            return self.represent(x,types.get(type(x),'string'))
+            else: return self.represent(x,types.get(type(x),'string'))
         return Expression(self.db,'CASE WHEN %s THEN %s ELSE %s END' % \
                               (self.expand(query),represent(t),represent(f)))
 
