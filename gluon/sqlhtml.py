@@ -888,6 +888,8 @@ class SQLFORM(FORM):
         self.ignore_rw = ignore_rw
         self.formstyle = formstyle
         self.readonly = readonly
+        # Default dbio setting
+        self.detect_record_change = None
 
         nbsp = XML('&nbsp;') # Firefox2 does not display fields with blanks
         FORM.__init__(self, *[], **attributes)
@@ -1165,6 +1167,7 @@ class SQLFORM(FORM):
         dbio=True,
         hideerror=False,
         detect_record_change=False,
+        **kwargs
         ):
 
         """
@@ -1189,7 +1192,8 @@ class SQLFORM(FORM):
         # implement logic to detect whether record exist but has been modified
         # server side
         self.record_changed = None
-        if detect_record_change:
+        self.detect_record_change = detect_record_change
+        if self.detect_record_change:
             if self.record:
                 self.record_changed = False
                 serialized = '|'.join(str(self.record[k]) for k in self.table.fields())
@@ -1245,6 +1249,7 @@ class SQLFORM(FORM):
             keepvalues,
             onvalidation,
             hideerror=hideerror,
+            **kwargs
             )
 
         self.deleted = \
@@ -1254,10 +1259,19 @@ class SQLFORM(FORM):
 
         auch = record_id and self.errors and self.deleted
 
-        # auch is true when user tries to delete a record
-        # that does not pass validation, yet it should be deleted
-
-        if not ret and not auch:
+        if self.record_changed and self.detect_record_change:
+            message_onchange = \
+                kwargs.setdefault("message_onchange",
+                    current.T("A record change was detected. " + 
+                              "Consecutive update self-submissions " + 
+                              "are not allowed. Try re-submitting or " +
+                              "refreshing the form page."))
+            if message_onchange is not None:
+                current.response.flash = message_onchange
+            return ret
+        elif (not ret) and (not auch):
+            # auch is true when user tries to delete a record
+            # that does not pass validation, yet it should be deleted
             for fieldname in self.fields:
                 field = self.table[fieldname]
                 ### this is a workaround! widgets should always have default not None!
