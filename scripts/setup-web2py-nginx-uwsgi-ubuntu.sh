@@ -22,7 +22,8 @@ echo 'server {
            root /home/www-data/web2py/applications/;
         }
          location / {
-                uwsgi_pass      127.0.0.1:9001;
+                #uwsgi_pass      127.0.0.1:9001;
+                uwsgi_pass      unix:///run/uwsgi/app/web2py/web2py.socket;
                 include         uwsgi_params;
                 uwsgi_param     UWSGI_SCHEME $scheme;
                 uwsgi_param     SERVER_SOFTWARE    nginx/$nginx_version;
@@ -36,7 +37,8 @@ server {
         ssl_certificate         /etc/nginx/ssl/web2py.crt;
         ssl_certificate_key     /etc/nginx/ssl/web2py.key;
         location / {
-                uwsgi_pass      127.0.0.1:9001;
+                #uwsgi_pass      127.0.0.1:9001;
+                uwsgi_pass      unix:///run/uwsgi/app/web2py/web2py.socket;
                 include         uwsgi_params;
                 uwsgi_param     UWSGI_SCHEME $scheme;
                 uwsgi_param     SERVER_SOFTWARE    nginx/$nginx_version;
@@ -55,11 +57,23 @@ openssl x509 -req -days 1780 -in web2py.csr -signkey web2py.key -out web2py.crt
 # Create configuration file /etc/uwsgi/apps-available/web2py.xml
 echo '<uwsgi>
     <plugin>python</plugin>
-    <socket>127.0.0.1:9001</socket>
+    <socket>/run/uwsgi/app/web2py/web2py.socket</socket>
     <pythonpath>/home/www-data/web2py/</pythonpath>
     <app mountpoint="/">
         <script>wsgihandler</script>
     </app>
+    <master/>
+    <processes>4</processes>
+    <harakiri>60</harakiri> 
+    <reload-mercy>8</reload-mercy>
+    <cpu-affinity>1</cpu-affinity>
+    <stats>/tmp/stats.socket</stats>
+    <max-requests>2000</max-requests>
+    <limit-as>512</limit-as>
+    <reload-on-as>256</reload-on-as>
+    <reload-on-rss>192</reload-on-rss>
+    <no-orphans/>
+    <vacuum/>    
 </uwsgi>' >/etc/uwsgi/apps-available/web2py.xml
 ln -s /etc/uwsgi/apps-available/web2py.xml /etc/uwsgi/apps-enabled/web2py.xml
 
