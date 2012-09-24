@@ -189,9 +189,14 @@ function web2py_calc_entropy(mystring) {
 function web2py_validate_entropy(myfield, req_entropy) {
     var validator = function () {
         var v = (web2py_calc_entropy(myfield.val())||0)/req_entropy;
-        var color ='#'+Math.round(((v<1)?1.0-v:0)*15).toString(16)+Math.round(((v<1)?v:0)*15).toString(16)+Math.round(((v<1)?0:1)*15).toString(16); 
+        var r=0,g=0,b=0,rs=function(x){return Math.round(x*15).toString(16)};
+	if(v<=0.5) {r=1.0; g=2.0*v;}
+	else {r=(1.0-2.0*(Math.max(v,0)-0.5)); g=1.0;}
+	var color = '#'+rs(r)+rs(g)+rs(b);
         myfield.css('background-color',color);
+	entroy_callback = myfield.attr('entropy_callback');
+	if(entropy_callback) entroy_callback(v);
     }
-    if(myfield.attr('entropy_check')!=true) myfield.on('keyup', validator).on('keydown', validator).attr('entropy_check',true);
+    if(!myfield.hasClass('entropy_check')) myfield.on('keyup', validator).on('keydown', validator).addClass('entropy_check');
 }
 
