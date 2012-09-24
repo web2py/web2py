@@ -2009,6 +2009,16 @@ class BaseAdapter(ConnectionPool):
                         query = query & newquery
         return query
 
+    def CASE(self,query,t,f):
+        def represent(x):
+            if x is None: return 'NULL'
+            elif isinstance(x,Expression): return str(x)
+            types = {type(True): 'boolean',
+                     type(0): 'integer',
+                     type(1.0): 'double'}
+            return self.represent(x,types.get(type(x),'string'))
+        return Expression(self.db,'CASE WHEN %s THEN %s ELSE %s END' % \
+                              (self.expand(query),represent(t),represent(f)))
 
 ###################################################################################
 # List of all the available adapters; they all extend BaseAdapter.
@@ -8594,6 +8604,8 @@ class Query(object):
             return self.first
         return Query(self.db,self.db._adapter.NOT,self)
 
+    def case(self,t=1,f=0):
+        return self.db._adapter.CASE(self,t,f)
 
 
 
