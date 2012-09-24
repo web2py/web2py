@@ -12,6 +12,7 @@ import cssmin
 import jsmin
 import os
 import hashlib
+import re
 
 def read_binary_file(filename):
     f = open(filename,'rb')
@@ -25,7 +26,8 @@ def write_binary_file(filename,data):
     f.close()
 
 def fix_links(css,static_path):
-    return css.replace('../',static_path+'../')
+    return re.sub(r'url\((["\'])\.\./', 'url(\\1' + static_path, css)
+    
     
 def minify(files, path_info, folder, optimize_css, optimize_js,
            ignore_concat = [],
@@ -82,8 +84,7 @@ def minify(files, path_info, folder, optimize_css, optimize_js,
                     pass
             if concat_css:
                 contents = read_binary_file(abs_filename)
-                replacement = '../'*len(spath_info[u:]) + \
-                    '/'.join(sfilename[u:-1]) + '/'
+                replacement = '/'.join(spath_info[:u]) + '/'
                 contents = fix_links(contents, replacement)
                 if minify_css:
                     css.append(cssmin.cssmin(contents))
