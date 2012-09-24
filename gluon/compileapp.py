@@ -579,8 +579,7 @@ def run_controller_in(controller, function, environment):
     response = environment['response']
     vars=response._vars
     if response.postprocessing:
-        for p in response.postprocessing:
-            vars = p(vars)
+        vars = reduce(lambda vars, p: p(vars), response.postprocessing, vars)
     if isinstance(vars,unicode):
         vars = vars.encode('utf8')
     elif hasattr(vars,'xml') and callable(vars.xml):
