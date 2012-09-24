@@ -3343,6 +3343,7 @@ class Crud(object):
         message=DEFAULT,
         deletable=DEFAULT,
         formname=DEFAULT,
+        **attributes
         ):
         """
         method: Crud.update(table, record, [next=DEFAULT
@@ -3395,7 +3396,8 @@ class Crud(object):
             deletable=deletable,
             upload=self.settings.download_url,
             formstyle=self.settings.formstyle,
-            separator=self.settings.label_separator
+            separator=self.settings.label_separator,
+            **attributes
             )
         self.accepted = False
         self.deleted = False
@@ -3453,6 +3455,7 @@ class Crud(object):
         log=DEFAULT,
         message=DEFAULT,
         formname=DEFAULT,
+        **attributes
         ):
         """
         method: Crud.create(table, [next=DEFAULT [, onvalidation=DEFAULT
@@ -3479,6 +3482,7 @@ class Crud(object):
             message=message,
             deletable=False,
             formname=formname,
+            **attributes
             )
 
     def read(self, table, record):
