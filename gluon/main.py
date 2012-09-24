@@ -132,7 +132,7 @@ def get_client(env):
     """
     g = regex_client.search(env.get('http_x_forwarded_for', ''))
     if g:
-        client = g.group()
+        client = (g.group() or '').split(',')[0]
     else:
         g = regex_client.search(env.get('remote_addr', ''))
         if g:
