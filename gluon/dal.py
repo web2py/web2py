@@ -1555,19 +1555,23 @@ class BaseAdapter(ConnectionPool):
         return 'SELECT %s %s FROM %s%s%s;' % \
             (sql_s, sql_f, sql_t, sql_w, sql_o)
 
+
+    def _fetchall(self):
+        return self.cursor.fetchall()
+
     def _select_aux(self,sql,fields,attributes):
         args_get = attributes.get
         cache = args_get('cache',None)
         if not cache:
             self.execute(sql)
-            rows = self.cursor.fetchall()
+            rows = self._fetchall()
         else:
             (cache_model, time_expire) = cache
             key = self.uri + '/' + sql + '/rows'
             if len(key)>200: key = hashlib.md5(key).hexdigest()
             def _select_aux2():
                 self.execute(sql)
-                return self.cursor.fetchall()
+                return self._fetchall()
             rows = cache_model(key,_select_aux2,time_expire)
         if isinstance(rows,tuple):
             rows = list(rows)
@@ -2859,14 +2863,12 @@ class OracleAdapter(BaseAdapter):
         self.execute('SELECT %s.currval FROM dual;' % sequence_name)
         return int(self.cursor.fetchone()[0])
 
-    def parse_value(self, value, field_type, blob_decode=True):
-        if blob_decode and isinstance(value, cx_Oracle.LOB):
-            try:
-                value = value.read()
-            except self.driver.ProgrammingError:
-                # After a subsequent fetch the LOB value is not valid anymore
-                pass
-        return BaseAdapter.parse_value(self, value, field_type, blob_decode)
+    def _fetchall(self):
+        if any(x[1]==cx_Oracle.CLOB for x in self.cursor.description):
+            return [tuple([(c.read() if type(c) == cx_Oracle.LOB else c) for c in r]) for r in self.cursor]
+        else:
+            return self.cursor.fetchall()
+
 
 class MSSQLAdapter(BaseAdapter):
     drivers = ('pyodbc',)
@@ -7176,12 +7178,12 @@ def index():
             # reduce the column info down to just the field names
             fields = [f[0] for f in columns]
             # will hold our finished resultset in a list
-            data = adapter.cursor.fetchall()
+            data = adapter._fetchall()
             # convert the list for each row into a dictionary so it's
             # easier to work with. row['field_name'] rather than row[0]
             return [dict(zip(fields,row)) for row in data]
         try:
-            data = adapter.cursor.fetchall()
+            data = adapter._fetchall()
         except:
             return None
         if fields or colnames:
