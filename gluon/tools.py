@@ -4920,7 +4920,7 @@ class Wiki(object):
                 query = query&(db.wiki_page.created_by==self.auth.user_id)
             pages = db(query).select(
                 *fields,**dict(orderby=orderby or ~count,
-                               groupby=db.wiki_page.id,
+                               distinct=True,
                                limitby=limitby))
             if request.extension in ('html','load'):
                 if not pages:
@@ -4950,7 +4950,7 @@ class Wiki(object):
         count = db.wiki_tag.wiki_page.count(distinct=True)
         ids = db(db.wiki_tag).select(
             db.wiki_tag.name,count,
-            groupby=db.wiki_tag.name,
+            distinct=True,
             orderby=~count,limitby=(0,20))
         if ids:
             a,b = ids[0](count), ids[-1](count)
