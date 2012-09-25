@@ -1607,7 +1607,7 @@ class Auth(object):
         if settings.cas_provider: ### THIS IS NOT LAZY
             settings.actions_disabled = \
                 ['profile','register','change_password',
-                 'request_reset_password']
+                 'request_reset_password','retrieve_username']
             from gluon.contrib.login_methods.cas_auth import CasAuth
             maps = settings.cas_maps
             if not maps:
