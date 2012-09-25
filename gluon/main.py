@@ -325,10 +325,12 @@ def parse_get_post_vars(request, environ):
             dpk = dpost[key]
             # if en element is not a file replace it with its value else leave it alone
             if isinstance(dpk, list):
-                if not dpk[0].filename:
-                    value = [x.value for x in dpk]
-                else:
-                    value = [x for x in dpk]
+                value = []
+                for _dpk in dpk:
+                    if not _dpk.filename:
+                        value.append(_dpk.value)
+                    else:
+                        value.append(_dpk)
             elif not dpk.filename:
                 value = dpk.value
             else:

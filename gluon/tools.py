@@ -4759,7 +4759,8 @@ class Wiki(object):
             db.wiki_page.title.default = title_guess
             db.wiki_page.slug.default = slug
             if slug == 'wiki-menu':
-                db.wiki_page.body.default = '- Menu Item > @////index\n- - Submenu > http://web2py.com'
+                db.wiki_page.body.default = \
+                    '- Menu Item > @////index\n- - Submenu > http://web2py.com'
             else:
                 db.wiki_page.body.default = '## %s\n\npage content' % title_guess
         vars = current.request.post_vars
