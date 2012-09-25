@@ -7077,7 +7077,7 @@ def index():
             # The instance has no .tables attribute yet
             return False
 
-    def get(self,key,default):
+    def get(self,key,default=None):
         return self.__dict__.get(key,default)
 
     def __iter__(self):
@@ -7286,8 +7286,8 @@ class Reference(int):
         self.__allocate()
         return self._record.get(key, None)
 
-    def get(self, key):
-        return self.__getattr__(key)
+    def get(self, key, default=None):
+        return self.__getattr__(key, default)
 
     def __setattr__(self, key, value):
         if key.startswith('_'):
