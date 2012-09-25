@@ -155,7 +155,7 @@ function web2py_component(action, target, timeout, times){
         web2py_ajax_page('get', action, null, target);
     } }); }
 
-function web2py_comet(url,onmessage,onopen,onclose) {
+function web2py_websocket(url,onmessage,onopen,onclose) {
   if ("WebSocket" in window) {
     var ws = new WebSocket(url);
     ws.onopen = onopen?onopen:(function(){});
