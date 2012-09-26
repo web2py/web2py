@@ -4918,8 +4918,9 @@ class Wiki(object):
                 query = query|db.wiki_page.title.startswith(request.vars.q)
             if self.restrict_search and not self.manage():
                 query = query&(db.wiki_page.created_by==self.auth.user_id)
-            pages = db(query).select(
+            pages = db(query).select(count,
                 *fields,**dict(orderby=orderby or ~count,
+                               groupby=db.wiki_page.id,
                                distinct=True,
                                limitby=limitby))
             if request.extension in ('html','load'):
@@ -4928,18 +4929,19 @@ class Wiki(object):
                                        _class='w2p_wiki_form'))
                 def link(t):
                     return A(t,_href=URL(args='_search',vars=dict(q=t)))
-                items = [DIV(H3(A(p.title,_href=URL(args=p.slug))),
-                             MARKMIN(self.first_paragraph(p)) \
+                items = [DIV(H3(A(p.wiki_page.title,_href=URL(
+                                    args=p.wiki_page.slug))),
+                             MARKMIN(self.first_paragraph(p.wiki_page)) \
                                  if preview else '',
                              DIV(_class='w2p_wiki_tags',
                                  *[link(t.strip()) for t in \
-                                       p.tags or [] if t.strip()]),
+                                       p.wiki_page.tags or [] if t.strip()]),
                              _class='w2p_wiki_search_item')
                          for p in pages]
                 content.append(DIV(_class='w2p_wiki_pages',*items))
             else:
                 cloud=False
-                content = [p.as_dict() for p in pages]
+                content = [p.wiki_page.as_dict() for p in pages]
         elif cloud:
             content.append(self.cloud()['content'])
         if request.extension=='load':

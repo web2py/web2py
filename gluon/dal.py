@@ -3274,7 +3274,7 @@ class FireBirdAdapter(BaseAdapter):
     def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
         if limitby:
             (lmin, lmax) = limitby
-            sql_s += ' FIRST %i SKIP %i' % (lmax - lmin, lmin)
+            sql_s = ' FIRST %i SKIP %i %s' % (lmax - lmin, lmin, sql_s)
         return 'SELECT %s %s FROM %s%s%s;' % (sql_s, sql_f, sql_t, sql_w, sql_o)
 
     def _truncate(self,table,mode = ''):
