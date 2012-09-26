@@ -107,10 +107,6 @@ win:
 	cp applications/__init__.py ../web2py_win/web2py/applications
 	cd ../web2py_win; zip -r web2py_win.zip web2py
 	mv ../web2py_win/web2py_win.zip .
-pip:
-	# create Web2py distribution for upload to Pypi
-	# after upload clean Web2py sources with rm -R ./dist
-	python setup.py sdist
 run:
 	python2.5 web2py.py -a hello
 commit:
@@ -129,3 +125,10 @@ tag:
 	hg tag -l '$(S)'
 	make commit S='$(S)'
 	make push
+pip:
+	# create Web2py distribution for upload to Pypi
+	# after upload clean Web2py sources with rm -R ./dist
+	# http://guide.python-distribute.org/creation.html
+	python setup.py sdist
+	python setup.py register
+	python setup.py sdist upload
