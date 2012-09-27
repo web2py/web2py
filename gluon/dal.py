@@ -6379,6 +6379,8 @@ class Row(object):
     def __contains__(self,key):
         return key in self.__dict__
 
+    has_key = __contains__
+
     def __nonzero__(self):
         return len(self.__dict__)>0
 
@@ -7077,6 +7079,8 @@ def index():
             # The instance has no .tables attribute yet
             return False
 
+    has_key = __contains__
+
     def get(self,key,default=None):
         return self.__dict__.get(key,default)
 
@@ -7634,6 +7638,8 @@ class Table(object):
 
     def __contains__(self,key):
         return hasattr(self,key)
+
+    has_key = __contains__
 
     def items(self):
         return self.__dict__.items()
