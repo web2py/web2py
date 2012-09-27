@@ -1142,16 +1142,16 @@ class SQLFORM(FORM):
             if defaults and len(args) - len(defaults) == 4 or len(args) == 4:
                 table = TABLE()
                 for id,a,b,c in xfields:
-                    raw_b = self.field_parent[id] = b
-                    newrows = formstyle(id,a,raw_b,c)
+                    newrows = formstyle(id,a,b,c)
+                    self.field_parent[id] = b.parent
                     if type(newrows).__name__ != "tuple":
                         newrows = [newrows]
                     for newrow in newrows:
                         table.append(newrow)
             else:
-                for id,a,b,c in xfields:
-                    self.field_parent[id] = b
                 table = formstyle(self, xfields)
+                for id,a,b,c in xfields:
+                    self.field_parent[id] = b.parent
         else:
             raise RuntimeError, 'formstyle not supported'
         return table
@@ -1284,14 +1284,15 @@ class SQLFORM(FORM):
                         value = self.record[fieldname]
                     else:
                         value = self.table[fieldname].default
-                    if field.type.startswith('list:') and \
-                            isinstance(value, str):
+                    if field.type.startswith('list:') and isinstance(value, str):
                         value = [value]
                     row_id = '%s_%s%s' % (self.table, fieldname, SQLFORM.ID_ROW_SUFFIX)
                     widget = field.widget(field, value)
-                    self.field_parent[row_id].components = [ widget ]
-                    self.field_parent[row_id]._traverse(False, hideerror)
-                    self.custom.widget[ fieldname ] = widget
+                    parent = self.field_parent[row_id]
+                    if parent:
+                        parent.components = [ widget ]
+                        parent._traverse(False, hideerror)
+                    self.custom.widget[fieldname] = widget
             self.accepted = ret
             return ret
 
