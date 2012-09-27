@@ -4953,18 +4953,22 @@ class Wiki(object):
         ids = db(db.wiki_tag).select(
             db.wiki_tag.name,count,
             distinct=True,
-            orderby=~count,limitby=(0,20))
+            groupby = db.wiki_tag.name,
+            orderby = ~count, limitby=(0,20))
         if ids:
             a,b = ids[0](count), ids[-1](count)
-        def scale(c):
-            return '%.2f' % (3.0*(c-b)/max(a-b,1)+1)
-        items = [A(item.wiki_tag.name,
-                   _style='padding:0.2em;font-size:%sem' \
-                       % scale(item(count)),
-                   _href=URL(args='_search',
-                             vars=dict(q=item.wiki_tag.name)))
-                 for item in ids]
-        return dict(content=DIV(_class='w2p_cloud',*items))
+        def style(c):
+            STYLE ='padding:0 0.2em;line-height:%.2fem;font-size:%.2fem'
+            size = (1.5*(c-b)/max(a-b,1)+1.3)
+            return STYLE % (1.3,size)
+        items = []
+        for item in ids:
+            items.append(A(item.wiki_tag.name,
+                           _style=style(item(count)),
+                           _href=URL(args='_search',
+                                     vars=dict(q=item.wiki_tag.name))))
+            items.append(' ')
+        return dict(content = DIV(_class='w2p_cloud',*items))
 
 if __name__ == '__main__':
     import doctest
