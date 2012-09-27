@@ -1927,7 +1927,7 @@ class SQLFORM(FORM):
                 search_widget = search_widget[tablename]
             if search_widget=='default':
                 search_menu = SQLFORM.search_menu(sfields)
-                search_widget = lambda sfield, url: CAT(add,FORM(
+                search_widget = lambda sfield, url: CAT(FORM(
                     INPUT(_name='keywords',_value=request.vars.keywords,
                           _id='web2py_keywords',_onfocus="jQuery('#w2p_query_fields').change();jQuery('#w2p_query_panel').slideDown();"),
                     INPUT(_type='submit',_value=T('Search'),_class="btn"),
@@ -1935,6 +1935,7 @@ class SQLFORM(FORM):
                           _onclick="jQuery('#web2py_keywords').val('');"),
                     _method="GET",_action=url),search_menu)
             form = search_widget and search_widget(sfields,url()) or ''
+            console.append(add)
             console.append(form)
             keywords = request.vars.get('keywords','')
             try:
