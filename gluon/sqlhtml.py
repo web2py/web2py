@@ -174,8 +174,7 @@ class TextWidget(FormWidget):
         """
 
         default = dict(value = value)
-        attr = cls._attributes(field, default,
-                               **attributes)
+        attr = cls._attributes(field, default,**attributes)
         return TEXTAREA(**attr)
 
 
@@ -1023,11 +1022,11 @@ class SQLFORM(FORM):
                 else:
                     inp = field.formatter(default)
             elif field.type == 'upload':
-                if hasattr(field, 'widget') and field.widget:
+                if field.widget:
                     inp = field.widget(field, default, upload)
                 else:
                     inp = self.widgets.upload.widget(field, default, upload)
-            elif hasattr(field, 'widget') and field.widget:
+            elif field.widget:
                 inp = field.widget(field, default)
             elif field.type == 'boolean':
                 inp = self.widgets.boolean.widget(field, default)
@@ -1278,7 +1277,7 @@ class SQLFORM(FORM):
                 if not field.widget and field.type.startswith('list:') and \
                         not OptionsWidget.has_options(field):
                     field.widget = self.widgets.list.widget
-                if hasattr(field, 'widget') and field.widget and fieldname in request_vars:
+                if field.widget and fieldname in request_vars:
                     if fieldname in self.vars:
                         value = self.vars[fieldname]
                     elif self.record:
@@ -1980,8 +1979,7 @@ class SQLFORM(FORM):
             if columns and not str(field) in columns: continue
             if not field.readable: continue
             key = str(field)
-            header = headers.get(str(field),
-                                 hasattr(field,'label') and field.label or key)
+            header = headers.get(str(field), field.label or key)
             if sortable:
                 if key == order:
                     key, marker = '~'+order, sorter_icons[0]
