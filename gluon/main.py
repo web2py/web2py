@@ -402,7 +402,7 @@ def wsgibase(environ, responder):
                 # ##################################################
 
                 fixup_missing_path_info(environ)
-                (static_file, environ) = url_in(request, environ)
+                (static_file, version, environ) = url_in(request, environ)
                 response.status = env.web2py_status_code or response.status
 
                 if static_file:
@@ -410,13 +410,16 @@ def wsgibase(environ, responder):
                         'attachment'):
                         response.headers['Content-Disposition'] \
                             = 'attachment'
+                    if version:
+                        response.headers['Cache-Control'] = 'max-age=315360000'
+                        response.headers['Expires'] = 'Thu, 31 Dec 2037 23:59:59 GMT'
                     response.stream(static_file, request=request)
 
                 # ##################################################
                 # fill in request items
                 # ##################################################
                 app = request.application ## must go after url_in!
-                                
+
                 http_host = env.http_host.split(':',1)[0]
                 local_hosts = [http_host,'::1','127.0.0.1',
                                '::ffff:127.0.0.1']
