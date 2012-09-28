@@ -140,8 +140,9 @@ class LockedFile(object):
             self.file.close()
             self.file = None
     def __del__(self):
-        self.close()
-
+        if not self.file is None:
+            self.close()
+        
 def read_locked(filename):
     fp = LockedFile(filename, 'r')
     data = fp.read()
