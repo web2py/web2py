@@ -4920,7 +4920,7 @@ class Wiki(object):
                 query = query&(db.wiki_page.created_by==self.auth.user_id)
             pages = db(query).select(count,
                 *fields,**dict(orderby=orderby or ~count,
-                               groupby=db.wiki_page.id,
+                               groupby=reduce(lambda a,b:a|b,fields),
                                distinct=True,
                                limitby=limitby))
             if request.extension in ('html','load'):
