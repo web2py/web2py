@@ -3207,8 +3207,7 @@ class SybaseAdapter(MSSQLAdapter):
             dsn = 'sybase:host=%s:%s;dbname=%s' % (host,port,db)
 
             driver_args.update(user = credential_decoder(user),
-                               password = credential_decoder(password),
-                               locale = charset)
+                               password = credential_decoder(password))
 
         def connect(dsn=dsn,driver_args=driver_args):
             return self.driver.connect(dsn,**driver_args)
@@ -4260,7 +4259,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
     def create_table(self,table,migrate=True,fake_migrate=False, polymodel=None):
         myfields = {}
         for field in table:
-            if isinstance(polymodel,Table) and k in polymodel.fields():
+            if isinstance(polymodel,Table) and field.name in polymodel.fields():
                 continue
             attr = {}
             field_type = field.type
@@ -6863,9 +6862,9 @@ def index():
                     patterns.append(tag+'/:field')
                 if depth>0:
                     for f in db[table]._referenced_by:
-                        tag+='/%s[%s.%s]' % (rtable,f.tablename,f.name)
+                        tag+='/%s[%s.%s]' % (table,f.tablename,f.name)
                         patterns.append(tag)
-                        patterns += auto_table(rtable,base=tag,depth=depth-1)
+                        patterns += auto_table(table,base=tag,depth=depth-1)
             return patterns
 
         if patterns==DEFAULT:
@@ -9208,7 +9207,10 @@ class Rows(object):
         if have_serializers:
             return serializers.json(items,default=default or serializers.custom_json)
         else:
-            import simplejson
+            try:
+                import json as simplejson
+            except ImportError:
+                import gluon.contrib.simplejson as simplejson
             return simplejson.dumps(items)
 
 def Rows_unpickler(data):
