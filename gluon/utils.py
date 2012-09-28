@@ -136,7 +136,7 @@ def web2py_uuid():
     and it XORs the output with the tokens uniquely associated with this machine.
     """
     try:
-        bytes = string.join(map(lambda ur, ctoken: chr(random.randrange(256)^ord(ur)^ctoken), os.urandom(16), CTOKENS),'')
+        bytes = string.join(map(lambda ur, ctoken: chr(random.randrange(256)^ord(ur)^ctoken), os.urandom(16),CTOKENS),'')
     except NotImplementedError:
         bytes = string.join(map(lambda ctoken: chr(random.randrange(256)^ctoken), CTOKENS),'')
     return str(uuid.UUID(bytes=bytes, version=4))
