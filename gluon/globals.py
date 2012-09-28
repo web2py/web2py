@@ -274,6 +274,8 @@ class Response(Storage):
         for item in files:
             if isinstance(item,str):
                 f = item.lower().split('?')[0]
+                if self.static_version:
+                    item = item.replace('/static/', '/static/_%s/' % self.static_version, 1)
                 if f.endswith('.css'):  s += css_template % item
                 elif f.endswith('.js'): s += js_template % item
                 elif f.endswith('.coffee'): s += coffee_template % item
@@ -714,8 +716,3 @@ class Session(Storage):
                 del response.session_file
             except:
                 pass
-
-
-
-
-

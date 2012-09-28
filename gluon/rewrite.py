@@ -39,6 +39,7 @@ regex_at = re.compile(r'(?<!\\)\$[a-zA-Z]\w*')
 regex_anything = re.compile(r'(?<!\\)\$anything')
 regex_redirect = re.compile(r'(\d+)->(.*)')
 regex_full_url = re.compile(r'^(?P<scheme>http|https|HTTP|HTTPS)\://(?P<host>[^/]*)(?P<uri>.*)')
+regex_version = re.compile(r'^(_[\d]+\.[\d]+\.[\d]+)$')
 
 def _router_default():
     "return new copy of default base router"
@@ -107,16 +108,16 @@ def log_rewrite(string):
         logger.debug(string)
 
 ROUTER_KEYS = set(
-    ('default_application', 'applications', 
+    ('default_application', 'applications',
      'default_controller', 'controllers',
-     'default_function', 'functions', 
+     'default_function', 'functions',
      'default_language', 'languages',
      'domain', 'domains', 'root_static', 'path_prefix',
      'exclusive_domain', 'map_hyphen', 'map_static',
      'acfe_match', 'file_match', 'args_match'))
 
 ROUTER_BASE_KEYS = set(
-    ('applications', 'default_application', 
+    ('applications', 'default_application',
      'domains', 'path_prefix'))
 
 #  The external interface to rewrite consists of:
@@ -140,8 +141,8 @@ def fixup_missing_path_info(environ):
     path_info = eget('PATH_INFO')
     request_uri = eget('REQUEST_URI')
     if not path_info and request_uri:
-        # for fcgi, get path_info and                           
-        # query_string from request_uri                         
+        # for fcgi, get path_info and
+        # query_string from request_uri
         items = request_uri.split('?')
         path_info = environ['PATH_INFO'] = items[0]
         environ['QUERY_STRING'] = items[1] if len(items) > 1 else ''
@@ -154,15 +155,15 @@ def fixup_missing_path_info(environ):
     if not eget('HTTP_HOST'):
         environ['HTTP_HOST'] = \
             '%s:%s' % (eget('SERVER_NAME'),eget('SERVER_PORT'))
-            
-        
+
+
 def url_in(request, environ):
     "parse and rewrite incoming URL"
     if routers:
         return map_url_in(request, environ)
     return regex_url_in(request, environ)
 
-def url_out(request, env, application, controller, function, 
+def url_out(request, env, application, controller, function,
             args, other, scheme, host, port):
     "assemble and rewrite outgoing URL"
     if routers:
@@ -555,7 +556,7 @@ def regex_filter_in(e):
     query = e.get('QUERY_STRING', None)
     e['WEB2PY_ORIGINAL_URI'] = e['PATH_INFO'] + (query and ('?' + query) or '')
     if thread.routes.routes_in:
-        path = regex_uri(e, thread.routes.routes_in, 
+        path = regex_uri(e, thread.routes.routes_in,
                          "routes_in", e['PATH_INFO'])
         rmatch = regex_redirect.match(path)
         if rmatch:
@@ -587,10 +588,11 @@ regex_space = re.compile('(\+|\s|%20)+')
 #   apps in routes_apps_raw must parse raw_args into args
 
 regex_static = re.compile(r'''
-     (^                              # static pages
-         /(?P<b> \w+)                # b=app
-         /static                     # /b/static
-         /(?P<x> (\w[\-\=\./]?)* )   # x=file
+     (^                                   # static pages
+         /(?P<b> \w+)                     # b=app
+         /static                          # /b/static
+         (/(?P<v>_[\d]+\.[\d]+\.[\d]+))?  # version ?
+         /(?P<x> (\w[\-\=\./]?)* )        # x=file
      $)
      ''', re.X)
 
@@ -639,7 +641,7 @@ def regex_url_in(request, environ):
 
     if thread.routes.routes_in:
         environ = regex_filter_in(environ)
-    
+
     request.env.update((sluggify(k),v) for k,v in environ.iteritems())
 
     path = request.env.path_info.replace('\\', '/')
@@ -650,10 +652,11 @@ def regex_url_in(request, environ):
 
     match = regex_static.match(regex_space.sub('_', path))
     if match and match.group('x'):
+        version = match.group('v')
         static_file = pjoin(request.env.applications_parent,
                                    'applications', match.group('b'),
                                    'static', match.group('x'))
-        return (static_file, environ)
+        return (static_file, version, environ)
 
     # ##################################################
     # parse application, controller and function
@@ -692,7 +695,7 @@ def regex_url_in(request, environ):
             raise HTTP(400,
                        thread.routes.error_message % 'invalid request',
                        web2py_error='invalid path (args)')
-    return (None, environ)
+    return (None, None, environ)
 
 
 def regex_filter_out(url, e=None):
@@ -723,9 +726,9 @@ def regex_filter_out(url, e=None):
     return url
 
 
-def filter_url(url, method='get', remote='0.0.0.0', 
+def filter_url(url, method='get', remote='0.0.0.0',
                out=False, app=False, lang=None,
-               domain=(None,None), env=False, scheme=None, 
+               domain=(None,None), env=False, scheme=None,
                host=None, port=None):
     """
     doctest/unittest interface to regex_filter_in() and regex_filter_out()
@@ -794,7 +797,7 @@ def filter_url(url, method='get', remote='0.0.0.0',
 
     #  rewrite inbound URL
     #
-    (static, e) = url_in(request, e)
+    (static, version, e) = url_in(request, e)
     if static:
         return static
     result = "/%s/%s/%s" % (request.application, request.controller, request.function)
@@ -957,14 +960,15 @@ class MapUrlIn(object):
         a root-static file is one whose incoming URL expects it to be at the root,
         typically robots.txt & favicon.ico
         '''
+
         if len(self.args) == 1 and self.arg0 in self.router.root_static:
             self.controller = self.request.controller = 'static'
             root_static_file = pjoin(self.request.env.applications_parent,
                                    'applications', self.application,
                                    self.controller, self.arg0)
             log_rewrite("route: root static=%s" % root_static_file)
-            return root_static_file
-        return None
+            return root_static_file, None
+        return None, None
 
     def map_language(self):
         "handle language (no hyphen mapping)"
@@ -999,8 +1003,12 @@ class MapUrlIn(object):
         file_match but no hyphen mapping
         '''
         if self.controller != 'static':
-            return None
-        file = '/'.join(self.args)
+            return None, None
+        version = regex_version.match(self.args(0))
+        if self.args and version:
+            file = '/'.join(self.args[1:])
+        else:
+            file = '/'.join(self.args)
         if len(self.args) == 0:
             bad_static = True   # require a file name
         elif '/' in self.file_match:
@@ -1031,7 +1039,7 @@ class MapUrlIn(object):
                                 'static', file)
         self.extension = None
         log_rewrite("route: static=%s" % static_file)
-        return static_file
+        return static_file, version
 
     def map_function(self):
         "handle function.extension"
@@ -1075,7 +1083,7 @@ class MapUrlIn(object):
         ""
         self.request.env.update(
             (sluggify(k),v) for k,v in self.env.iteritems())
-        
+
     def update_request(self):
         '''
         update request from self
@@ -1099,7 +1107,7 @@ class MapUrlIn(object):
         if self.language:
             uri = '/%s%s' % (self.language, uri)
         uri = '/%s%s%s%s' % (
-            app, 
+            app,
             uri,
             urllib.quote('/'+'/'.join(str(x) for x in self.args)) if self.args else '',
             ('?' + self.query) if self.query else '')
@@ -1307,10 +1315,10 @@ def map_url_in(request, env, app=False):
     if app:
         return map.application
 
-    root_static_file = map.map_root_static() # handle root-static files
+    root_static_file, version = map.map_root_static() # handle root-static files
     if root_static_file:
         map.update_request()
-        return (root_static_file, map.env)
+        return (root_static_file, version, map.env)
     # handle mapping of lang/static to static/lang in externally-rewritten URLs
     # in case we have to handle them ourselves
     if map.languages and map.map_static is False and map.arg0 == 'static' and map.args(1) in map.languages:
@@ -1319,14 +1327,14 @@ def map_url_in(request, env, app=False):
     else:
         map.map_language()
         map.map_controller()
-    static_file = map.map_static()
+    static_file, version = map.map_static()
     if static_file:
         map.update_request()
-        return (static_file, map.env)
+        return (static_file, version, map.env)
     map.map_function()
     map.validate_args()
     map.update_request()
-    return (None, map.env)
+    return (None, None, map.env)
 
 def map_url_out(request, env, application, controller,
                 function, args, other, scheme, host, port):
@@ -1364,10 +1372,3 @@ def get_effective_router(appname):
     if not routers or appname not in routers:
         return None
     return Storage(routers[appname])  # return a copy
-
-
-
-
-
-
-
