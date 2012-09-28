@@ -9,6 +9,7 @@ License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 This file specifically includes utilities for security.
 """
 
+import string
 import hashlib
 import hmac
 import uuid
@@ -88,7 +89,7 @@ DIGEST_ALG_BY_SIZE = {
     }
 
 
-### compute constant ctokens
+### compute constant CTOKENS
 def initialize_urandom():
     """
     This function and the web2py_uuid follow from the following discussion:
@@ -124,7 +125,7 @@ def initialize_urandom():
 your system does not provide a cryptographically secure entropy source.
 This is not specific to web2py; consider deploying on a different operating system.""")
     return ctokens
-ctokens = initialize_urandom()
+CTOKENS = initialize_urandom()
 
 def web2py_uuid():
     """
@@ -134,14 +135,10 @@ def web2py_uuid():
     It works like uuid.uuid4 except that tries to use os.urandom() if possible
     and it XORs the output with the tokens uniquely associated with this machine.
     """
-    bytes = [random.randrange(256) for i in range(16)]
     try:
-        ubytes = [ord(c) for c in os.urandom(16)] # use /dev/urandom if possible
-        bytes = [bytes[i] ^ ubytes[i] for i in range(16)]
+        bytes = string.join(map(lambda ur, ctoken: chr(random.randrange(256)^ord(ur)^ctoken), os.urandom(16), CTOKENS),'')
     except NotImplementedError:
-        pass
-    ## xor bytes with constant ctokens
-    bytes = ''.join(chr(c ^ ctokens[i]) for i,c in enumerate(bytes))
+        bytes = string.join(map(lambda ctoken: chr(random.randrange(256)^ctoken), CTOKENS),'')
     return str(uuid.UUID(bytes=bytes, version=4))
 
 REGEX_IPv4 = re.compile('(\d+)\.(\d+)\.(\d+)\.(\d+)')
