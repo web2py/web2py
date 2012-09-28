@@ -379,12 +379,11 @@ class CheckboxesWidget(OptionsWidget):
         requires = field.requires
         if not isinstance(requires, (list, tuple)):
             requires = [requires]
-        if requires:
-            if hasattr(requires[0], 'options'):
-                options = requires[0].options()
-            else:
-                raise SyntaxError, 'widget cannot determine options of %s' \
-                    % field
+        if requires and hasattr(requires[0], 'options'):
+            options = requires[0].options()
+        else:
+            raise SyntaxError, 'widget cannot determine options of %s' \
+                % field
 
         options = [(k, v) for k, v in options if k != '']
         opts = []
