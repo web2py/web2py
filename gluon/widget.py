@@ -980,7 +980,7 @@ def start_schedulers(options):
         apps = options.scheduler_groups
     code = "from gluon import current;current._scheduler.loop()"
     logging.getLogger().setLevel(options.debuglevel)
-    if len(apps) == 1:
+    if len(apps) == 1 and not options.with_scheduler:
         app_, code = get_code_for_scheduler(apps[0], options)
         if not app_:
             return
