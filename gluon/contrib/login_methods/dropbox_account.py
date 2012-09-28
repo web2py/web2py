@@ -2,9 +2,9 @@
 # coding: utf8
 
 """
-   Dropbox Authentication for web2py
-   Developed by Massimo Di Pierro (2012)
-   Same License as Web2py License
+Dropbox Authentication for web2py
+Developed by Massimo Di Pierro (2012)
+Same License as Web2py License
 """
 
 # mind here session is dropbox session, not current.session
@@ -27,7 +27,7 @@ class DropboxAccount(object):
               key="...",
               secret="...",
               access_type="...",
-              url = "http://localhost:8000/%s/default/user/login" % request.application)
+              login_url = "http://localhost:8000/%s/default/user/login" % request.application)
     when logged in
     client = auth.settings.login_form.client
     """
@@ -40,7 +40,7 @@ class DropboxAccount(object):
                  login_url = "",
                  on_login_failure=None,
                  ):
-
+        
         self.request=request
         self.key=key
         self.secret=secret
@@ -53,39 +53,48 @@ class DropboxAccount(object):
 
     def get_user(self):
         request = self.request
-        token = current.session.dropbox_token        
-        if not token:
+        if not current.session.dropbox_request_token:
             return None
-        try:
-            self.sess.set_token(token[0],token[1])
-        except:
-            # invalid token, should never happen
-            return None
+        elif not current.session.dropbox_access_token:
+            
+            request_token = current.session.dropbox_request_token        
+            self.sess.set_request_token(request_token[0],request_token[1])
+            access_token = self.sess.obtain_access_token(self.sess.token)
+            current.session.dropbox_access_token = \
+                (access_token.key,access_token.secret)
         else:
-            user = Storage()
-            self.client = client.DropboxClient(self.sess)
-            data = self.client.account_info()
-            display_name = data.get('display_name','').split(' ',1)
-            user = dict(email = data.get('email',None),
-                        first_name = display_name[0],
-                        last_name = display_name[-1],
-                        registration_id = data.get('uid',None))
-            if not user['registration_id'] and self.on_login_failure:
-                redirect(self.on_login_failure)
-            return user
+            access_token = current.session.dropbox_access_token
+            self.sess.set_token(access_token[0],access_token[1])
+
+        
+        user = Storage()
+        self.client = client.DropboxClient(self.sess)
+        data = self.client.account_info()
+        display_name = data.get('display_name','').split(' ',1)
+        user = dict(email = data.get('email',None),
+                    first_name = display_name[0],
+                    last_name = display_name[-1],
+                    registration_id = data.get('uid',None))
+        if not user['registration_id'] and self.on_login_failure:
+            redirect(self.on_login_failure)
+        return user
 
     def login_form(self):
-        token = self.sess.obtain_request_token()
-        current.session.dropbox_token = (token.key,token.secret)
-        dropbox_url = self.sess.build_authorize_url(token,self.login_url)
+
+        request_token = self.sess.obtain_request_token()
+        current.session.dropbox_request_token =  \
+            (request_token.key,request_token.secret)
+        dropbox_url = self.sess.build_authorize_url(request_token,
+                                                    self.login_url)
         redirect(dropbox_url)
         form = IFRAME(_src=dropbox_url,
                       _scrolling="no",
                       _frameborder="no",
                       _style="width:400px;height:240px;")
         return form
+
     def logout_url(self, next = "/"):
-        current.session.dropbox_token=None
+        current.session.dropbox_request_token=None
         current.session.auth=None
         redirect('https://www.dropbox.com/logout')
         return next
