@@ -10,6 +10,7 @@ This file specifically includes utilities for security.
 """
 
 import string
+import struct
 import hashlib
 import hmac
 import uuid
@@ -126,8 +127,9 @@ your system does not provide a cryptographically secure entropy source.
 This is not specific to web2py; consider deploying on a different operating system.""")
     return ctokens
 CTOKENS = initialize_urandom()
+UNPACKED_CTOKENS = struct.unpack('=QQ',string.join((chr(x) for x in CTOKENS),''))
 
-def web2py_uuid():
+def web2py_uuid(ctokens=UNPACKED_CTOKENS):
     """
     This function follows from the following discussion:
     http://groups.google.com/group/web2py-developers/browse_thread/thread/7fd5789a7da3f09
@@ -135,11 +137,18 @@ def web2py_uuid():
     It works like uuid.uuid4 except that tries to use os.urandom() if possible
     and it XORs the output with the tokens uniquely associated with this machine.
     """
+    rand_longs = struct.unpack('=QQ', bytes(bytearray(
+                random.randrange(256) for i in xrange(16))))
     try:
-        bytes = string.join(map(lambda ur, ctoken: chr(random.randrange(256)^ord(ur)^ctoken), os.urandom(16),CTOKENS),'')
+        urand_longs = struct.unpack('=QQ', os.urandom(16))
+        byte_s = struct.pack('=QQ', 
+                             rand_longs[0]^urand_longs[0]^ctokens[0], 
+                             rand_longs[1]^urand_longs[1]^ctokens[1])
     except NotImplementedError:
-        bytes = string.join(map(lambda ctoken: chr(random.randrange(256)^ctoken), CTOKENS),'')
-    return str(uuid.UUID(bytes=bytes, version=4))
+        byte_s = struct.pack('=QQ', 
+                             rand_longs[0]^ctokens[0], 
+                             rand_longs[1]^ctokens[1])
+    return str(uuid.UUID(bytes=byte_s, version=4))
 
 REGEX_IPv4 = re.compile('(\d+)\.(\d+)\.(\d+)\.(\d+)')
 
