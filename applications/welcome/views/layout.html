@@ -71,11 +71,11 @@
     <div class="navbar-inner">
       <div class="container">
         <!-- the next tag is necessary for bootstrap menus, do not remove -->
-        <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+        <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
           <span class="icon-bar"></span>
-        </a>
+        </button>
         <a class="brand" href="http://www.web2py.com/"><b>web<span>2</span>py</b>&trade;&nbsp;</a>
         <ul id="navbar" class="nav pull-right">{{='auth' in globals() and auth.navbar(mode="dropdown") or ''}}</ul>
         <div class="nav-collapse">
