@@ -153,7 +153,10 @@ def copystream_progress(request, chunk_size= 10**5):
     if not env.content_length:
         return cStringIO.StringIO()
     source = env.wsgi_input
-    size = int(env.content_length)
+    try:
+        size = int(env.content_length)
+    except ValueError:
+        raise HTTP(400,"Invalid Content-Length header")
     dest = tempfile.TemporaryFile()
     if not 'X-Progress-ID' in request.vars:
         copystream(source, dest, size, chunk_size)
@@ -424,13 +427,16 @@ def wsgibase(environ, responder):
                 local_hosts = [http_host,'::1','127.0.0.1',
                                '::ffff:127.0.0.1']
                 if not global_settings.web2py_runtime_gae:
-                    local_hosts.append(socket.gethostname())
+                    try:
+                        local_hosts.append(socket.gethostname())
+                    except TypeError:
+                        pass
                     try:
                         local_hosts.append(
-                        socket.gethostbyname(http_host))
-                    except socket.gaierror:
+                            socket.gethostbyname(http_host))
+                    except (socket.gaierror,TypeError):
                         pass
-                client = get_client(env)                
+                client = get_client(env)
                 x_req_with = str(env.http_x_requested_with).lower()
                 
                 request.update(
