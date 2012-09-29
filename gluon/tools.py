@@ -4342,34 +4342,39 @@ def prettydate(d,T=lambda x:x):
         return ''
     else:
         return '[invalid date]'
+    if dt.days < 0:
+        suffix = ' from now'
+        dt = -dt
+    else:
+        suffix = ' ago'
     if dt.days >= 2*365:
-        return T('%d years ago') % int(dt.days / 365)
+        return T('%d years'+suffix) % int(dt.days / 365)
     elif dt.days >= 365:
-        return T('1 year ago')
+        return T('1 year'+suffix)
     elif dt.days >= 60:
-        return T('%d months ago') % int(dt.days / 30)
+        return T('%d months'+suffix) % int(dt.days / 30)
     elif dt.days > 21:
-        return T('1 month ago')
+        return T('1 month'+suffix)
     elif dt.days >= 14:
-        return T('%d weeks ago') % int(dt.days / 7)
+        return T('%d weeks'+suffix) % int(dt.days / 7)
     elif dt.days >= 7:
-        return T('1 week ago')
+        return T('1 week'+suffix)
     elif dt.days > 1:
-        return T('%d days ago') % dt.days
+        return T('%d days'+suffix) % dt.days
     elif dt.days == 1:
-        return T('1 day ago')
+        return T('1 day'+suffix)
     elif dt.seconds >= 2*60*60:
-        return T('%d hours ago') % int(dt.seconds / 3600)
+        return T('%d hours'+suffix) % int(dt.seconds / 3600)
     elif dt.seconds >= 60*60:
-        return T('1 hour ago')
+        return T('1 hour'+suffix)
     elif dt.seconds >= 2*60:
-        return T('%d minutes ago') % int(dt.seconds / 60)
+        return T('%d minutes'+suffix) % int(dt.seconds / 60)
     elif dt.seconds >= 60:
-        return T('1 minute ago')
+        return T('1 minute'+suffix)
     elif dt.seconds > 1:
-        return T('%d seconds ago') % dt.seconds
+        return T('%d seconds'+suffix) % dt.seconds
     elif dt.seconds == 1:
-        return T('1 second ago')
+        return T('1 second'+suffix)
     else:
         return T('now')
 
