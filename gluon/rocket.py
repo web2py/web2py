@@ -1468,7 +1468,7 @@ class Worker(Thread):
                     except UnicodeDecodeError:
                         self.err_log.warning('Client sent invalid header: ' + repr(l))
 
-                if l == '\r\n':
+                if l.strip() == '':
                     break
 
                 if l[0] in ' \t' and lname:
