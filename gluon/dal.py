@@ -5067,7 +5067,7 @@ class MongoDBAdapter(NoSQLAdapter):
                 mongoqry_dict, mongofields_dict,
                 skip=limitby_skip, limit=limitby_limit,
                 sort=mongosort_list, snapshot=snapshot) # pymongo cursor object
-        print "mongo_list_dicts=%s" % mongo_list_dicts
+        # DEBUG: print "mongo_list_dicts=%s" % mongo_list_dicts
         rows = []
         ### populate row in proper order
         colnames = [field.name for field in fields]
@@ -5191,7 +5191,6 @@ class MongoDBAdapter(NoSQLAdapter):
         return result
 
     def NE(self, first, second=None):
-        print "in NE"
         result = {}
         result[self.expand(first)] = {'$ne': self.expand(second)}
         return result
@@ -5199,7 +5198,6 @@ class MongoDBAdapter(NoSQLAdapter):
     def LT(self,first,second=None):
         if second is None:
             raise RuntimeError, "Cannot compare %s < None" % first
-        print "in LT"
         result = {}
         result[self.expand(first)] = {'$lt': self.expand(second)}
         return result
@@ -5207,13 +5205,11 @@ class MongoDBAdapter(NoSQLAdapter):
     def LE(self,first,second=None):
         if second is None:
             raise RuntimeError, "Cannot compare %s <= None" % first
-        print "in LE"
         result = {}
         result[self.expand(first)] = {'$lte': self.expand(second)}
         return result
 
     def GT(self,first,second):
-        print "in GT"
         result = {}
         result[self.expand(first)] = {'$gt': self.expand(second)}
         return result
@@ -5221,7 +5217,6 @@ class MongoDBAdapter(NoSQLAdapter):
     def GE(self,first,second=None):
         if second is None:
             raise RuntimeError, "Cannot compare %s >= None" % first
-        print "in GE"
         result = {}
         result[self.expand(first)] = {'$gte': self.expand(second)}
         return result
@@ -6674,7 +6669,7 @@ class DAL(object):
         :attempts (defaults to 5). Number of times to attempt connecting
         """
 
-        if hasattr(self,'_adapter'): return
+        if hasattr(self,'_adapter') or uri=='<lazy>': return
 
         if not decode_credentials:
             credential_decoder = lambda cred: cred
@@ -7270,11 +7265,11 @@ def index():
                 self[tablename].import_from_csv_file(
                     ifile, id_map, null, unique, id_offset, *args, **kwargs)
 
-def DAL_unpickler(uri):
-    return DAL(uri)
+def DAL_unpickler(singleton_code):
+    return DAL('<lazy>',singleton_code=singleton_code)
 
 def DAL_pickler(db):
-    return DAL_unpickler, (db._uri,)
+    return DAL_unpickler, (db._singleton_code,)
 
 copy_reg.pickle(DAL, DAL_pickler, DAL_unpickler)
 
