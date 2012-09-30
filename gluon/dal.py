@@ -6577,7 +6577,7 @@ class DAL(object):
         if 'singleton_code' in kwargs:
             singleton_code = kwargs['singleton_code']
             del kwargs['singleton_code']
-        singleton_code = hashlib.md5(uri).hexdigest()
+        singleton_code = hashlib.md5(repr(uri)).hexdigest()
         try:
             db = thread_local.db_instances[singleton_code]
             if args or kwargs:
