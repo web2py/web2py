@@ -549,10 +549,8 @@ class ConnectionPool(object):
         """
         if getattr(self,'connection',None) != None:
             return
-        if not f is None:
-            self._connection_function = f
-        else: 
-            f = self._connection_function
+        if f is None:
+            f = self.connector
 
         if not self.pool_size:
             self.connection = f()
@@ -2078,7 +2076,8 @@ class SQLiteAdapter(BaseAdapter):
             driver_args['detect_types'] = self.driver.PARSE_DECLTYPES
         def connector(dbpath=dbpath, driver_args=driver_args):
             return self.driver.Connection(dbpath, **driver_args)
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
     def after_connection(self):
         self.connection.create_function('web2py_extract', 2,
@@ -2141,7 +2140,8 @@ class SpatiaLiteAdapter(SQLiteAdapter):
             driver_args['detect_types'] = self.driver.PARSE_DECLTYPES
         def connector(dbpath=dbpath, driver_args=driver_args):
             return self.driver.Connection(dbpath, **driver_args)
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
     def after_connection(self):
         self.connection.enable_load_extension(True)
@@ -2242,7 +2242,8 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
             return self.driver.connect(
                 self.driver.getConnection('jdbc:sqlite:'+dbpath),
                 **driver_args)
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
     def after_connection(self):
         # FIXME http://www.zentus.com/sqlitejdbc/custom_functions.html for UDFs
@@ -2359,7 +2360,8 @@ class MySQLAdapter(BaseAdapter):
 
         def connector(driver_args=driver_args):
             return self.driver.connect(**driver_args)
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
     def after_connection(self):
         self.execute('SET FOREIGN_KEY_CHECKS=1;')
@@ -2486,7 +2488,8 @@ class PostgreSQLAdapter(BaseAdapter):
         self.__version__ = "%s %s" % (self.driver.__name__, self.driver.__version__)
         def connector(msg=msg,driver_args=driver_args):
             return self.driver.connect(msg,**driver_args)
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
     def after_connection(self):
         self.connection.set_client_encoding('UTF8')
@@ -2700,7 +2703,8 @@ class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
         msg = ('jdbc:postgresql://%s:%s/%s' % (host, port, db), user, password)
         def connector(msg=msg,driver_args=driver_args):
             return self.driver.connect(*msg,**driver_args)
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
     def after_connection(self):
         self.connection.set_client_encoding('UTF8')
@@ -2809,7 +2813,8 @@ class OracleAdapter(BaseAdapter):
             driver_args['threaded']=True
         def connector(uri=ruri,driver_args=driver_args):
             return self.driver.connect(uri,**driver_args)
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
     def after_connection(self):
         self.execute("ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS';")
@@ -3011,7 +3016,8 @@ class MSSQLAdapter(BaseAdapter):
                 % (host, port, db, user, password, urlargs)
         def connector(cnxn=cnxn,driver_args=driver_args):
             return self.driver.connect(cnxn,**driver_args)
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
     def lastrowid(self,table):
         #self.execute('SELECT @@IDENTITY;')
@@ -3201,7 +3207,8 @@ class SybaseAdapter(MSSQLAdapter):
 
         def connector(dsn=dsn,driver_args=driver_args):
             return self.driver.connect(dsn,**driver_args)
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
     def integrity_error_class(self):
         return RuntimeError # FIX THIS
@@ -3306,7 +3313,8 @@ class FireBirdAdapter(BaseAdapter):
 
         def connector(driver_args=driver_args):
             return self.driver.connect(**driver_args)
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
     def create_sequence_and_triggers(self, query, table, **args):
         tablename = table._tablename
@@ -3365,7 +3373,8 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
 
         def connector(driver_args=driver_args):
             return self.driver.connect(**driver_args)
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
 class InformixAdapter(BaseAdapter):
     drivers = ('informixdb',)
@@ -3468,7 +3477,8 @@ class InformixAdapter(BaseAdapter):
         driver_args.update(user=user,password=password,autocommit=True)
         def connector(dsn=dsn,driver_args=driver_args):
             return self.driver.connect(dsn,**driver_args)
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
     def execute(self,command):
         if command[-1:]==';':
@@ -3549,7 +3559,8 @@ class DB2Adapter(BaseAdapter):
         ruri = uri.split('://', 1)[1]
         def connector(cnxn=ruri,driver_args=driver_args):
             return self.driver.connect(cnxn,**driver_args)
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
     def execute(self,command):
         if command[-1:]==';':
@@ -3611,7 +3622,8 @@ class TeradataAdapter(BaseAdapter):
         ruri = uri.split('://', 1)[1]
         def connector(cnxn=ruri,driver_args=driver_args):
             return self.driver.connect(cnxn,**driver_args)
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
     def LEFT_JOIN(self):
         return 'LEFT OUTER JOIN'
@@ -3703,7 +3715,8 @@ class IngresAdapter(BaseAdapter):
                            trace=trace)
         def connector(driver_args=driver_args):
             return self.driver.connect(**driver_args)
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
     def create_sequence_and_triggers(self, query, table, **args):
         # post create table auto inc code (if needed)
@@ -3843,7 +3856,8 @@ class SAPDBAdapter(BaseAdapter):
                     host=host, driver_args=driver_args):
             return self.driver.Connection(user, password, database,
                                           host, **driver_args)
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
     def lastrowid(self,table):
         self.execute("select %s.NEXTVAL from dual" % table._sequence_name)
@@ -3889,7 +3903,8 @@ class CubridAdapter(MySQLAdapter):
         def connector(host=host,port=port,db=db,
                     user=user,passwd=password,driver_args=driver_args):
             return self.driver.connect(host,port,db,user,passwd,**driver_args)
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
     def after_connection(self):
         self.execute('SET FOREIGN_KEY_CHECKS=1;')
@@ -4010,7 +4025,8 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
             driver_args['database'] = db
         def connector(driver_args=driver_args):
             return rdbms.connect(**driver_args)
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
     def after_connection(self):
         if self.createdb:
@@ -5487,7 +5503,8 @@ class IMAPAdapter(NoSQLAdapter):
             return connection
 
         self.db.define_tables = self.define_tables
-        if do_connect: self.reconnect(connector)
+        self.connector = connector
+        if do_connect: self.reconnect()
 
     def reconnect(self, f, cursor=True):
         """
@@ -5501,10 +5518,8 @@ class IMAPAdapter(NoSQLAdapter):
         """
         if getattr(self,'connection',None) != None:
             return
-        if not f is None:
-            self._connection_function = f
-        else:
-            f = self._connection_function
+        if f is None:
+            f = self.connector
 
         if not self.pool_size:
             self.connection = f()
