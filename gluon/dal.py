@@ -519,6 +519,8 @@ class ConnectionPool(object):
                     sql_locker.release()
                 if really:
                     getattr(instance, 'close')()
+                if instance.db._singleton_code in thread_local.db_instances:
+                    del thread_local.db_instances[instance.db._singleton_code]
 
         if callable(action):
             action(None)
@@ -6583,15 +6585,23 @@ class DAL(object):
                                     Field('fieldname2'))
     """
 
-    #def __new__(cls, uri, *args, **kwargs):
-    #    if not hasattr(thread_local,'db_instances'):
-    #        thread_local.db_instances = {}
-    #    try:
-    #        return thread_local.db_instances[uri]
-    #    except KeyError:
-    #        instance = super(DAL, cls).__new__(cls, uri, *args, **kwargs)
-    #        thread_local.db_instances[uri] = instance
-    #        return instance
+    def __new__(cls, uri='sqlite://dummy.db', *args, **kwargs):
+        if not hasattr(thread_local,'db_instances'):
+            thread_local.db_instances = {}
+        if 'singleton_code' in kwargs:
+            singleton_code = kwargs['singleton_code']
+            del kwargs['singleton_code']
+        else:
+            singleton_code = hashlib.md5(uri).hexdigest()
+        try:
+            db = thread_local.db_instances[singleton_code]
+            if args or kwargs:
+                raise RuntimeError, 'Cannot duplicate a Singleton'
+        except KeyError:
+            db = super(DAL, cls).__new__(cls, uri, *args, **kwargs)
+            db._singleton_code = singleton_code
+            thread_local.db_instances[singleton_code] = db
+        return db
 
     @staticmethod
     def set_folder(folder):
@@ -6672,6 +6682,10 @@ class DAL(object):
         :fake_migrate_all (defaults to False). If sets to True fake migrates ALL tables
         :attempts (defaults to 5). Number of times to attempt connecting
         """
+
+        if hasattr(self,'_adapter'): return
+
+        print 'in init'
 
         if not decode_credentials:
             credential_decoder = lambda cred: cred
@@ -7136,6 +7150,8 @@ def index():
         adapter = self._adapter
         if adapter in thread_local.instances:
             thread_local.instances.remove(adapter)
+        if self._singleton_code in thread_local.db_instances:
+            del thread_local.db_instances[self._singleton_code]
         adapter.close()
 
     def executesql(self, query, placeholders=None, as_dict=False,
@@ -7264,6 +7280,14 @@ def index():
                 tablename = line[6:]
                 self[tablename].import_from_csv_file(
                     ifile, id_map, null, unique, id_offset, *args, **kwargs)
+
+def DAL_unpickler(uri):
+    return DAL(uri)
+
+def DAL_pickler(db):
+    return DAL_unpickler, (db._uri,)
+
+copy_reg.pickle(DAL, DAL_pickler, DAL_unpickler)
 
 class SQLALL(object):
     """
@@ -9218,15 +9242,14 @@ class Rows(object):
                 import gluon.contrib.simplejson as simplejson
             return simplejson.dumps(items)
 
-def Rows_unpickler(data):
-    return cPickle.loads(data)
-
-def Rows_pickler(data):
-    return Rows_unpickler, \
-        (cPickle.dumps(data.as_list(storage_to_dict=False,
-                                    datetime_to_str=False)),)
-
-copy_reg.pickle(Rows, Rows_pickler, Rows_unpickler)
+# def Rows_unpickler(data):
+#    return cPickle.loads(data)
+#
+# def Rows_pickler(data):
+#    return Rows_unpickler, \
+#        (cPickle.dumps(data.as_list(storage_to_dict=False,
+#                                    datetime_to_str=False)),)
+# copy_reg.pickle(Rows, Rows_pickler, Rows_unpickler)
 
 
 ################################################################################
