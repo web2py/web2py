@@ -23,7 +23,7 @@ applications/welcome/controllers/default.py
 
 # files and folders to exclude from gluon folder (comment with # if needed)
 IGNORED = """
-gluon/contrib/comet_messaging.py
+gluon/contrib/websocket_messaging.py
 gluon/contrib/feedparser.py
 gluon/contrib/generics.py
 gluon/contrib/gql.py

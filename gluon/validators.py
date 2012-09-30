@@ -117,6 +117,10 @@ class Validator(object):
         """
         return value
 
+    def __call__(self,value):
+        raise NotImplementedError
+        return (value, None)
+
 
 class IS_MATCH(Validator):
     """
@@ -508,7 +512,7 @@ class IS_IN_DB(Validator):
                 def count(values, s=self.dbset, f=field):
                     return s(f.belongs(map(int,values))).count()
                 if isinstance(self.dbset.db._adapter, GoogleDatastoreAdapter):
-                    range_ids = range(0,len(ids),30)
+                    range_ids = range(0,len(values),30)
                     total = sum(count(values[i:i+30]) for i in range_ids)
                     if total == len(values):
                         return (values, None)

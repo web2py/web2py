@@ -67,20 +67,20 @@ function web2py_trap_form(action,target) {
         form.submit(function(e){
          jQuery('.flash').hide().html('');
          web2py_ajax_page('post',action,form.serialize(),target);
-	 e.preventDefault();
+         e.preventDefault();
       });
    });
 }
 
 function web2py_trap_link(target) {
     jQuery('#'+target+' a.w2p_trap').each(function(i){
-	    var link=jQuery(this);
-	    link.click(function(e) {
-		    jQuery('.flash').hide().html('');
-		    web2py_ajax_page('get',link.attr('href'),[],target);
-		    e.preventDefault();
-		});
-	});
+            var link=jQuery(this);
+            link.click(function(e) {
+                    jQuery('.flash').hide().html('');
+                    web2py_ajax_page('get',link.attr('href'),[],target);
+                    e.preventDefault();
+                });
+        });
 }
 
 function web2py_ajax_page(method, action, data, target) {
@@ -101,9 +101,9 @@ function web2py_ajax_page(method, action, data, target) {
       web2py_trap_link(target);
       web2py_ajax_init('#'+target);
       if(command)
-	  eval(decodeURIComponent(command));
+          eval(decodeURIComponent(command));
       if(flash)
-	  jQuery('.flash').html(decodeURIComponent(flash)).slideDown();
+          jQuery('.flash').html(decodeURIComponent(flash)).slideDown();
     }
   });
 }
@@ -151,11 +151,11 @@ function web2py_component(action, target, timeout, times){
         }
     } else {
         // run once (no timeout specified)
-	element.reload_counter = Infinity;
+        element.reload_counter = Infinity;
         web2py_ajax_page('get', action, null, target);
     } }); }
 
-function web2py_comet(url,onmessage,onopen,onclose) {
+function web2py_websocket(url,onmessage,onopen,onclose) {
   if ("WebSocket" in window) {
     var ws = new WebSocket(url);
     ws.onopen = onopen?onopen:(function(){});
@@ -163,5 +163,40 @@ function web2py_comet(url,onmessage,onopen,onclose) {
     ws.onclose = onclose?onclose:(function(){});
     return true; // supported
   } else return false; // not supported
+}
+
+
+function web2py_calc_entropy(mystring) {
+    //calculate a simple entropy for a given string
+    var csets = new Array(
+      'abcdefghijklmnopqrstuvwxyz', 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
+      '0123456789', '!@#$\%^&*()', '~`-_=+[]{}\|;:\'",.<>?/',
+      '0123456789abcdefghijklmnopqrstuvwxyz');
+    var score = 0, other = {}, seen = {}, lastset = null, mystringlist = mystring.split('');
+    for (var i=0;i<mystringlist.length;i++) { // classify this character
+        var c = mystringlist[i], inset=5;
+        for(var j = 0; j<csets.length; j++)
+          if (csets[j].indexOf(c) != -1) {inset = j; break;}
+        //calculate effect of character on alphabet size       
+        if(!(inset in seen)) {seen[inset] = 1;score += csets[inset].length;}
+        else if (!(c in other)) {score += 1;other[c] = 1;}
+        if (inset != lastset) {score += 1;lastset = inset;}
+    }
+    var entropy = mystring.length*Math.log(score)/0.6931471805599453;
+    return Math.round(entropy*100)/100
+}
+
+function web2py_validate_entropy(myfield, req_entropy) {
+    var validator = function () {
+        var v = (web2py_calc_entropy(myfield.val())||0)/req_entropy;
+        var r=0,g=0,b=0,rs=function(x){return Math.round(x*15).toString(16)};
+	if(v<=0.5) {r=1.0; g=2.0*v;}
+	else {r=(1.0-2.0*(Math.max(v,0)-0.5)); g=1.0;}
+	var color = '#'+rs(r)+rs(g)+rs(b);
+        myfield.css('background-color',color);
+	entropy_callback = myfield.data('entropy_callback');
+	if(entropy_callback) entropy_callback(v);
+    }
+    if(!myfield.hasClass('entropy_check')) myfield.on('keyup', validator).on('keydown', validator).addClass('entropy_check');
 }
 

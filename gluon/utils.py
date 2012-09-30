@@ -9,6 +9,9 @@ License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 This file specifically includes utilities for security.
 """
 
+import string
+import threading
+import struct
 import hashlib
 import hmac
 import uuid
@@ -18,7 +21,11 @@ import os
 import re
 import logging
 import socket
-from contrib.pbkdf2 import pbkdf2_hex
+try:
+    from contrib.pbkdf2 import pbkdf2_hex
+    HAVE_PBKDF2 = True
+except ImportError:
+    HAVE_PBKDF2 = False
 
 logger = logging.getLogger("web2py")
 
@@ -88,7 +95,7 @@ DIGEST_ALG_BY_SIZE = {
     }
 
 
-### compute constant ctokens
+### compute constant CTOKENS
 def initialize_urandom():
     """
     This function and the web2py_uuid follow from the following discussion:
@@ -108,6 +115,7 @@ def initialize_urandom():
     random.seed(node_id + microseconds)
     try:
         os.urandom(1)
+        have_urandom = True
         try:
             # try to add process-specific entropy
             frandom = open('/dev/urandom','wb')
@@ -119,14 +127,33 @@ def initialize_urandom():
             # works anyway
             pass
     except NotImplementedError:
+        have_urandom = False
         logger.warning(
 """Cryptographically secure session management is not possible on your system because
 your system does not provide a cryptographically secure entropy source.
 This is not specific to web2py; consider deploying on a different operating system.""")
-    return ctokens
-ctokens = initialize_urandom()
+    unpacked_ctokens = struct.unpack('=QQ',string.join(
+            (chr(x) for x in ctokens),''))
+    return unpacked_ctokens, have_urandom
+UNPACKED_CTOKENS, HAVE_URANDOM = initialize_urandom()
 
-def web2py_uuid():
+def fast_urandom16(urandom=[], locker = threading.RLock()):
+    """
+    this is 4x faster than calling os.urandom(16) and prevents
+    the "too many files open" issue with concurrent access to os.urandom()
+    """
+    try:
+        return urandom.pop()
+    except IndexError:
+        try:
+            locker.acquire()
+            ur = os.urandom(16*1024)
+            urandom += [ur[i:i+16] for i in xrange(16,1024*16,16)]
+            return ur[0:16]
+        finally:
+            locker.release()
+
+def web2py_uuid(ctokens=UNPACKED_CTOKENS):
     """
     This function follows from the following discussion:
     http://groups.google.com/group/web2py-developers/browse_thread/thread/7fd5789a7da3f09
@@ -134,15 +161,18 @@ def web2py_uuid():
     It works like uuid.uuid4 except that tries to use os.urandom() if possible
     and it XORs the output with the tokens uniquely associated with this machine.
     """
-    bytes = [random.randrange(256) for i in range(16)]
-    try:
-        ubytes = [ord(c) for c in os.urandom(16)] # use /dev/urandom if possible
-        bytes = [bytes[i] ^ ubytes[i] for i in range(16)]
-    except NotImplementedError:
-        pass
-    ## xor bytes with constant ctokens
-    bytes = ''.join(chr(c ^ ctokens[i]) for i,c in enumerate(bytes))
-    return str(uuid.UUID(bytes=bytes, version=4))
+    rand_longs = struct.unpack('=QQ', string.join(
+            (chr(random.randrange(256)) for i in xrange(16)),''))
+    if HAVE_URANDOM:
+        urand_longs = struct.unpack('=QQ', fast_urandom16())
+        byte_s = struct.pack('=QQ',
+                             rand_longs[0]^urand_longs[0]^ctokens[0], 
+                             rand_longs[1]^urand_longs[1]^ctokens[1])
+    else:
+        byte_s = struct.pack('=QQ', 
+                             rand_longs[0]^ctokens[0], 
+                             rand_longs[1]^ctokens[1])
+    return str(uuid.UUID(bytes=byte_s, version=4))
 
 REGEX_IPv4 = re.compile('(\d+)\.(\d+)\.(\d+)\.(\d+)')
 

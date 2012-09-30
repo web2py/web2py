@@ -12,18 +12,18 @@ Attention: Requires Chrome or Safari. For IE of Firefox you need https://github.
 
 2) start this app:
 
-   python gluon/contrib/comet_messaging.py -k mykey -p 8888
+   python gluon/contrib/websocket_messaging.py -k mykey -p 8888
 
 3) from any web2py app you can post messages with
 
-   from gluon.contrib.comet_messaging import comet_send
-   comet_send('http://127.0.0.1:8888','Hello World','mykey','mygroup')
+   from gluon.contrib.websocket_messaging import websocket_send
+   websocket_send('http://127.0.0.1:8888','Hello World','mykey','mygroup')
 
 4) from any template you can receive them with
 
    <script>
    $(document).ready(function(){
-      if(!web2py_comet('ws://127.0.0.1:8888/realtime/mygroup',function(e){alert(e.data)}))
+      if(!web2py_websocket('ws://127.0.0.1:8888/realtime/mygroup',function(e){alert(e.data)}))
          alert("html5 websocket not supported by your browser, try Google Chrome");
    });
    </script>
@@ -34,14 +34,14 @@ Or if you want to send json messages and store evaluated json in a var called da
    <script>
    $(document).ready(function(){
       var data;
-      web2py_comet('ws://127.0.0.1:8888/realtime/mygroup',function(e){data=eval('('+e.data+')')});
+      web2py_websocket('ws://127.0.0.1:8888/realtime/mygroup',function(e){data=eval('('+e.data+')')});
    });
    </script>
 
-- All communications between web2py and comet_messaging will be digitally signed with hmac.
-- All validation is handled on the web2py side and there is no need to modify comet_messaging.py
-- Multiple web2py instances can talk with one or more comet_messaging servers.
-- "ws://127.0.0.1:8888/realtime/" must be contain the IP of the comet_messaging server.
+- All communications between web2py and websocket_messaging will be digitally signed with hmac.
+- All validation is handled on the web2py side and there is no need to modify websocket_messaging.py
+- Multiple web2py instances can talk with one or more websocket_messaging servers.
+- "ws://127.0.0.1:8888/realtime/" must be contain the IP of the websocket_messaging server.
 - Via group='mygroup' name you can support multiple groups of clients (think of many chat-rooms)
 
 Here is a complete sample web2py action:
@@ -51,7 +51,7 @@ Here is a complete sample web2py action:
         script=SCRIPT('''
             jQuery(document).ready(function(){
               var callback=function(e){alert(e.data)};
-              if(!web2py_comet('ws://127.0.0.1:8888/realtime/mygroup',callback))
+              if(!web2py_websocket('ws://127.0.0.1:8888/realtime/mygroup',callback))
                 alert("html5 websocket not supported by your browser, try Google Chrome");
             });
         ''')
@@ -60,8 +60,8 @@ Here is a complete sample web2py action:
     def ajax_form():
         form=SQLFORM.factory(Field('message'))
         if form.accepts(request,session):
-            from gluon.contrib.comet_messaging import comet_send
-            comet_send('http://127.0.0.1:8888',form.vars.message,'mykey','mygroup')
+            from gluon.contrib.websocket_messaging import websocket_send
+            websocket_send('http://127.0.0.1:8888',form.vars.message,'mykey','mygroup')
         return form
 
 Acknowledgements:
@@ -83,7 +83,7 @@ listeners = {}
 names = {}
 tokens = {}
 
-def comet_send(url,message,hmac_key=None,group='default'):
+def websocket_send(url,message,hmac_key=None,group='default'):
     sig = hmac_key and hmac.new(hmac_key,message).hexdigest() or ''
     params = urllib.urlencode({'message': message, 'signature': sig, 'group':group})
     f = urllib.urlopen(url, params)

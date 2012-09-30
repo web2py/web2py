@@ -61,7 +61,7 @@ input[type=text],input[type=password],select{width:300px; margin-right:5px}
     border-top:1px #DEDEDE solid;
 }
 .header {
-	// background:<fill here for header image>;
+	/* background:<fill here for header image>; */
 }
 
 
@@ -182,7 +182,7 @@ div.error {
 * will look better with the declarations below
 * if needed to remove base.css consider keeping these following lines in some css file.
 */
-// .web2py_table {border:1px solid #ccc}
+/* .web2py_table {border:1px solid #ccc} */
 .web2py_paginator {}
 .web2py_grid {width:100%}
 .web2py_grid table {width:100%}

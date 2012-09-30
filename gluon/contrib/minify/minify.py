@@ -12,6 +12,7 @@ import cssmin
 import jsmin
 import os
 import hashlib
+import re
 
 def read_binary_file(filename):
     f = open(filename,'rb')
@@ -25,7 +26,8 @@ def write_binary_file(filename,data):
     f.close()
 
 def fix_links(css,static_path):
-    return css.replace('../',static_path+'../')
+    return re.sub(r'url\((["\'])\.\./', 'url(\\1' + static_path, css)
+    
     
 def minify(files, path_info, folder, optimize_css, optimize_js,
            ignore_concat = [],
@@ -60,16 +62,18 @@ def minify(files, path_info, folder, optimize_css, optimize_js,
     processed = []
     for k,filename in enumerate(files):
         if not filename.startswith('/') or \
-                any(filename.endswith(x) for x in ignore_concat):
+                any(filename.endswith(x) \
+                        for x in ignore_concat):
             new_files.append(filename)
             continue
 
-        abs_filename = os.path.join(folder,'static',
-                                    filename[len(static_path)+1:])        
+        abs_filename = os.path.join(
+            folder,'static', filename[len(static_path)+1:])
 
         if filename.lower().endswith('.css'):
             processed.append(filename)
-            spath_info, sfilename = path_info.split('/'), filename.split('/')
+            spath_info, sfilename = \
+                path_info.split('/'), filename.split('/')
             u = 0
             for i,a in enumerate(sfilename):
                 try:
@@ -80,7 +84,7 @@ def minify(files, path_info, folder, optimize_css, optimize_js,
                     pass
             if concat_css:
                 contents = read_binary_file(abs_filename)
-                replacement = '../'*len(spath_info[u:]) + '/'.join(sfilename[u:-1]) + '/'
+                replacement = '/'.join(spath_info[:u]) + '/'
                 contents = fix_links(contents, replacement)
                 if minify_css:
                     css.append(cssmin.cssmin(contents))
@@ -91,9 +95,12 @@ def minify(files, path_info, folder, optimize_css, optimize_js,
         elif filename.lower().endswith('.js'):
             processed.append(filename)
             if concat_js:
-                contents = read_binary_file(abs_filename)            
-                if minify_js and not filename.endswith('.min.js') and \
-                        not any(filename.endswith(x) for x in ignore_minify):
+                contents = read_binary_file(abs_filename)
+
+                if minify_js and \
+                        not filename.endswith('.min.js') and \
+                        not any(filename.endswith(x) \
+                                    for x in ignore_minify):
                     js.append(jsmin.jsmin(contents))
                 else:
                     js.append(contents)
@@ -104,12 +111,15 @@ def minify(files, path_info, folder, optimize_css, optimize_js,
         css = '\n\n'.join(contents for contents in css)
         if not inline_css:
             temppath = os.path.join(folder,'static',temp)
-            if not os.path.exists(temppath): os.mkdir(temppath)
+            if not os.path.exists(temppath):
+                os.mkdir(temppath)
             dest = "compressed_%s.css" % dest_key
             tempfile = os.path.join(temppath, dest)
             write_binary_file(tempfile,css)
             css = path_info+'/%s' % dest
-        new_files.append(css)
+            new_files.append(css)
+        else:
+            new_files.append(('css:inline',css))
     else:
         new_files += css
     if js and concat_js:
@@ -118,7 +128,8 @@ def minify(files, path_info, folder, optimize_css, optimize_js,
             js = ('js:inline',js)
         else:
             temppath = os.path.join(folder,'static',temp)
-            if not os.path.exists(temppath): os.mkdir(temppath)
+            if not os.path.exists(temppath): 
+                os.mkdir(temppath)
             dest = "compressed_%s.js" % dest_key
             tempfile = os.path.join(folder,'static',temp,dest)
             write_binary_file(tempfile,js)

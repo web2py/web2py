@@ -1457,33 +1457,29 @@ class Worker(Thread):
     def read_headers(self, sock_file):
         try:
             headers = dict()
-            l = sock_file.readline()
-
-            lname = None
-            lval = None
+            lname = lval = ''            
             while True:
+                line = sock_file.readline()
                 if PY3K:
                     try:
-                        l = str(l, 'ISO-8859-1')
+                        line = str(line, 'ISO-8859-1')
                     except UnicodeDecodeError:
-                        self.err_log.warning('Client sent invalid header: ' + repr(l))
-
-                if l == '\r\n':
+                        self.err_log.warning('Client sent invalid header: ' + repr(line))
+                if line == '\r\n':
+                    if lname: headers[str(lname)] = str(lval)
                     break
-
-                if l[0] in ' \t' and lname:
+                elif line.strip() == '' or '\0' in line:
+                    raise BadRequest("Empty line in hader")
+                elif line[0] in ' \t' and lname:
                     # Some headers take more than one line
-                    lval += ',' + l.strip()
-                else:
-                    # HTTP header values are latin-1 encoded
-                    l = l.split(':', 1)
+                    lval += ' ' + line.strip()
+                elif ':' in line:
+                    if lname: headers[str(lname)] = str(lval)
+                    lname, lval = line.split(':', 1)
                     # HTTP header names are us-ascii encoded
-
-                    lname = l[0].strip().upper().replace('-', '_')
-                    lval = l[-1].strip()
-                headers[str(lname)] = str(lval)
-
-                l = sock_file.readline()
+                    lname = lname.strip().upper().replace('-', '_')
+                    # HTTP header values are latin-1 encoded
+                    lval = lval.strip()
         except socket.timeout:
             raise SocketTimeout("Socket timed out before request.")
 

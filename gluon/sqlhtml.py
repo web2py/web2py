@@ -28,7 +28,7 @@ from dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
 from storage import Storage
 from utils import md5_hash
 from validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE, \
-    IS_DATETIME, IS_INT_IN_RANGE, IS_FLOAT_IN_RANGE
+    IS_DATETIME, IS_INT_IN_RANGE, IS_FLOAT_IN_RANGE, IS_STRONG
 
 import datetime
 import urllib
@@ -174,8 +174,7 @@ class TextWidget(FormWidget):
         """
 
         default = dict(value = value)
-        attr = cls._attributes(field, default,
-                               **attributes)
+        attr = cls._attributes(field, default,**attributes)
         return TEXTAREA(**attr)
 
 
@@ -380,12 +379,11 @@ class CheckboxesWidget(OptionsWidget):
         requires = field.requires
         if not isinstance(requires, (list, tuple)):
             requires = [requires]
-        if requires:
-            if hasattr(requires[0], 'options'):
-                options = requires[0].options()
-            else:
-                raise SyntaxError, 'widget cannot determine options of %s' \
-                    % field
+        if requires and hasattr(requires[0], 'options'):
+            options = requires[0].options()
+        else:
+            raise SyntaxError, 'widget cannot determine options of %s' \
+                % field
 
         options = [(k, v) for k, v in options if k != '']
         opts = []
@@ -442,14 +440,23 @@ class PasswordWidget(FormWidget):
 
         see also: :meth:`FormWidget.widget`
         """
-
+        # detect if attached a IS_STRONG with entropy
         default=dict(
             _type='password',
             _value=(value and cls.DEFAULT_PASSWORD_DISPLAY) or '',
             )
         attr = cls._attributes(field, default, **attributes)
+        output = CAT(INPUT(**attr))
 
-        return INPUT(**attr)
+        # deal with entropy check!
+        requires = field.requires
+        if not isinstance(requires,(list,tuple)): requires = [requires]
+        is_strong = [r for r in requires if isinstance(r, IS_STRONG)]
+        if is_strong:
+            output.append(SCRIPT("web2py_validate_entropy(jQuery('#%s'),%s);" \
+                                     % (attr['_id'],is_strong[0].entropy)))
+        # end entropy check
+        return output
 
 
 class UploadWidget(FormWidget):
@@ -682,6 +689,16 @@ def formstyle_divs(form, fields):
         table.append(DIV(_label, _controls, _help, _id=id))
     return table
 
+def formstyle_inline(form, fields):
+    ''' divs only '''
+    if len(fields)!=2:
+        raise RuntimeError, "Not possible"
+    id, label, controls, help = fields[0]
+    submit_button = fields[1][2]
+    return CAT(DIV(controls,_style='display:inline'),
+               submit_button)
+
+
 def formstyle_ul(form, fields):
     ''' unordered list '''
     table = UL()
@@ -807,6 +824,7 @@ class SQLFORM(FORM):
         divs = formstyle_divs,
         ul = formstyle_ul,
         bootstrap = formstyle_bootstrap,
+        inline = formstyle_inline,
         ))
 
     FIELDNAME_REQUEST_DELETE = 'delete_this_record'
@@ -868,6 +886,8 @@ class SQLFORM(FORM):
         self.ignore_rw = ignore_rw
         self.formstyle = formstyle
         self.readonly = readonly
+        # Default dbio setting
+        self.detect_record_change = None
 
         nbsp = XML('&nbsp;') # Firefox2 does not display fields with blanks
         FORM.__init__(self, *[], **attributes)
@@ -1001,11 +1021,11 @@ class SQLFORM(FORM):
                 else:
                     inp = field.formatter(default)
             elif field.type == 'upload':
-                if hasattr(field, 'widget') and field.widget:
+                if field.widget:
                     inp = field.widget(field, default, upload)
                 else:
                     inp = self.widgets.upload.widget(field, default, upload)
-            elif hasattr(field, 'widget') and field.widget:
+            elif field.widget:
                 inp = field.widget(field, default)
             elif field.type == 'boolean':
                 inp = self.widgets.boolean.widget(field, default)
@@ -1121,16 +1141,16 @@ class SQLFORM(FORM):
             if defaults and len(args) - len(defaults) == 4 or len(args) == 4:
                 table = TABLE()
                 for id,a,b,c in xfields:
-                    raw_b = self.field_parent[id] = b
-                    newrows = formstyle(id,a,raw_b,c)
+                    newrows = formstyle(id,a,b,c)
+                    self.field_parent[id] = getattr(b,'parent',None)
                     if type(newrows).__name__ != "tuple":
                         newrows = [newrows]
                     for newrow in newrows:
                         table.append(newrow)
             else:
-                for id,a,b,c in xfields:
-                    self.field_parent[id] = b
                 table = formstyle(self, xfields)
+                for id,a,b,c in xfields:
+                    self.field_parent[id] = getattr(b,'parent',None)
         else:
             raise RuntimeError, 'formstyle not supported'
         return table
@@ -1145,6 +1165,7 @@ class SQLFORM(FORM):
         dbio=True,
         hideerror=False,
         detect_record_change=False,
+        **kwargs
         ):
 
         """
@@ -1169,7 +1190,8 @@ class SQLFORM(FORM):
         # implement logic to detect whether record exist but has been modified
         # server side
         self.record_changed = None
-        if detect_record_change:
+        self.detect_record_change = detect_record_change
+        if self.detect_record_change:
             if self.record:
                 self.record_changed = False
                 serialized = '|'.join(str(self.record[k]) for k in self.table.fields())
@@ -1225,6 +1247,7 @@ class SQLFORM(FORM):
             keepvalues,
             onvalidation,
             hideerror=hideerror,
+            **kwargs
             )
 
         self.deleted = \
@@ -1234,31 +1257,41 @@ class SQLFORM(FORM):
 
         auch = record_id and self.errors and self.deleted
 
-        # auch is true when user tries to delete a record
-        # that does not pass validation, yet it should be deleted
-
-        if not ret and not auch:
+        if self.record_changed and self.detect_record_change:
+            message_onchange = \
+                kwargs.setdefault("message_onchange",
+                    current.T("A record change was detected. " + 
+                              "Consecutive update self-submissions " + 
+                              "are not allowed. Try re-submitting or " +
+                              "refreshing the form page."))
+            if message_onchange is not None:
+                current.response.flash = message_onchange
+            return ret
+        elif (not ret) and (not auch):
+            # auch is true when user tries to delete a record
+            # that does not pass validation, yet it should be deleted
             for fieldname in self.fields:
                 field = self.table[fieldname]
                 ### this is a workaround! widgets should always have default not None!
                 if not field.widget and field.type.startswith('list:') and \
                         not OptionsWidget.has_options(field):
                     field.widget = self.widgets.list.widget
-                if hasattr(field, 'widget') and field.widget and fieldname in request_vars:
+                if field.widget and fieldname in request_vars:
                     if fieldname in self.vars:
                         value = self.vars[fieldname]
                     elif self.record:
                         value = self.record[fieldname]
                     else:
                         value = self.table[fieldname].default
-                    if field.type.startswith('list:') and \
-                            isinstance(value, str):
+                    if field.type.startswith('list:') and isinstance(value, str):
                         value = [value]
                     row_id = '%s_%s%s' % (self.table, fieldname, SQLFORM.ID_ROW_SUFFIX)
                     widget = field.widget(field, value)
-                    self.field_parent[row_id].components = [ widget ]
-                    self.field_parent[row_id]._traverse(False, hideerror)
-                    self.custom.widget[ fieldname ] = widget
+                    parent = self.field_parent[row_id]
+                    if parent:
+                        parent.components = [ widget ]
+                        parent._traverse(False, hideerror)
+                    self.custom.widget[fieldname] = widget
             self.accepted = ret
             return ret
 
@@ -1893,7 +1926,7 @@ class SQLFORM(FORM):
                 search_widget = search_widget[tablename]
             if search_widget=='default':
                 search_menu = SQLFORM.search_menu(sfields)
-                search_widget = lambda sfield, url: CAT(add,FORM(
+                search_widget = lambda sfield, url: CAT(FORM(
                     INPUT(_name='keywords',_value=request.vars.keywords,
                           _id='web2py_keywords',_onfocus="jQuery('#w2p_query_fields').change();jQuery('#w2p_query_panel').slideDown();"),
                     INPUT(_type='submit',_value=T('Search'),_class="btn"),
@@ -1901,6 +1934,7 @@ class SQLFORM(FORM):
                           _onclick="jQuery('#web2py_keywords').val('');"),
                     _method="GET",_action=url),search_menu)
             form = search_widget and search_widget(sfields,url()) or ''
+            console.append(add)
             console.append(form)
             keywords = request.vars.get('keywords','')
             try:
@@ -1945,8 +1979,7 @@ class SQLFORM(FORM):
             if columns and not str(field) in columns: continue
             if not field.readable: continue
             key = str(field)
-            header = headers.get(str(field),
-                                 hasattr(field,'label') and field.label or key)
+            header = headers.get(str(field), field.label or key)
             if sortable:
                 if key == order:
                     key, marker = '~'+order, sorter_icons[0]
@@ -2229,7 +2262,9 @@ class SQLFORM(FORM):
                 else:
                     break
             if nargs>len(args)+1:
-                query = (field == id)
+                query = (field == id)                
+                if isinstance(linked_tables,dict):
+                    linked_tables = linked_tables.get(table._tablename,[])
                 if linked_tables is None or referee in linked_tables:
                     field.represent = lambda id,r=None,referee=referee,rep=field.represent: A(callable(rep) and rep(id) or id,_class=trap_class(),_href=url(args=['view',referee,id]))
         except (KeyError,ValueError,TypeError):
@@ -2254,6 +2289,8 @@ class SQLFORM(FORM):
             if rfield.readable:
                 check[rfield.tablename] = \
                     check.get(rfield.tablename,[])+[rfield.name]
+        if isinstance(linked_tables,dict):
+            linked_tables = linked_tables.get(table._tablename,[])
         for tablename in sorted(check):
             linked_fieldnames = check[tablename]
             tb = db[tablename]
@@ -2702,8 +2739,3 @@ class ExporterXML(ExportClass):
             out.write('</row>\n')
         out.write('</rows>')
         return str(out.getvalue())
-
-
-
-
-

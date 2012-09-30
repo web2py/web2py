@@ -229,7 +229,7 @@ class Response(Storage):
             for k,v in (self.meta or {}).iteritems())
         self.write(s,escape=False)
 
-    def include_files(self):
+    def include_files(self, extensions=None):
 
         """
         Caching method for writing out files.
@@ -240,11 +240,22 @@ class Response(Storage):
         from gluon import URL
 
         files = []
+        has_js = has_css = False
         for item in self.files:
-            if not item in files: files.append(item)
-        if have_minify and (self.optimize_css or self.optimize_js):
+            if extensions and not item.split('.')[-1] in extensions:
+                continue
+            if item in files:
+                continue
+            if item.endswith('.js'):
+                has_js = True
+            if item.endswith('.css'):
+                has_css = True
+            files.append(item)
+        
+        if have_minify and ((self.optimize_css and has_css) or (self.optimize_js and has_js)):
             # cache for 5 minutes by default
             key = hashlib.md5(repr(files)).hexdigest()
+ 
             cache = self.cache_includes or (current.cache.ram, 60*5)
             def call_minify(files=files):
                 return minify.minify(files,
@@ -263,6 +274,8 @@ class Response(Storage):
         for item in files:
             if isinstance(item,str):
                 f = item.lower().split('?')[0]
+                if self.static_version:
+                    item = item.replace('/static/', '/static/_%s/' % self.static_version, 1)
                 if f.endswith('.css'):  s += css_template % item
                 elif f.endswith('.js'): s += js_template % item
                 elif f.endswith('.coffee'): s += coffee_template % item
@@ -406,11 +419,11 @@ class Response(Storage):
         BUTTON = TAG.button
         admin = URL("admin","default","design",
                     args=current.request.application)
-        from gluon.dal import thread
-        if hasattr(thread,'instances'):
+        from gluon.dal import THREAD_LOCAL
+        if hasattr(THREAD_LOCAL,'instances'):
             dbstats = [TABLE(*[TR(PRE(row[0]),'%.2fms' % (row[1]*1000)) \
                                    for row in i.db._timings]) \
-                           for i in thread.instances]
+                           for i in THREAD_LOCAL.instances]
             dbtables = dict([(regex_nopasswd.sub('******',i.uri), 
                               {'defined': 
                                sorted(list(set(i.db.tables) - 
@@ -418,7 +431,7 @@ class Response(Storage):
                                '[no defined tables]',
                                'lazy': sorted(i.db._LAZY_TABLES.keys()) or
                                '[no lazy tables]'})
-                             for i in thread.instances])
+                             for i in THREAD_LOCAL.instances])
         else:
             dbstats = [] # if no db or on GAE
             dbtables = {}
@@ -703,8 +716,3 @@ class Session(Storage):
                 del response.session_file
             except:
                 pass
-
-
-
-
-

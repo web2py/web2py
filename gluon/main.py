@@ -132,7 +132,7 @@ def get_client(env):
     """
     g = regex_client.search(env.get('http_x_forwarded_for', ''))
     if g:
-        client = g.group()
+        client = (g.group() or '').split(',')[0]
     else:
         g = regex_client.search(env.get('remote_addr', ''))
         if g:
@@ -153,7 +153,10 @@ def copystream_progress(request, chunk_size= 10**5):
     if not env.content_length:
         return cStringIO.StringIO()
     source = env.wsgi_input
-    size = int(env.content_length)
+    try:
+        size = int(env.content_length)
+    except ValueError:
+        raise HTTP(400,"Invalid Content-Length header")
     dest = tempfile.TemporaryFile()
     if not 'X-Progress-ID' in request.vars:
         copystream(source, dest, size, chunk_size)
@@ -325,10 +328,12 @@ def parse_get_post_vars(request, environ):
             dpk = dpost[key]
             # if en element is not a file replace it with its value else leave it alone
             if isinstance(dpk, list):
-                if not dpk[0].filename:
-                    value = [x.value for x in dpk]
-                else:
-                    value = [x for x in dpk]
+                value = []
+                for _dpk in dpk:
+                    if not _dpk.filename:
+                        value.append(_dpk.value)
+                    else:
+                        value.append(_dpk)
             elif not dpk.filename:
                 value = dpk.value
             else:
@@ -400,7 +405,7 @@ def wsgibase(environ, responder):
                 # ##################################################
 
                 fixup_missing_path_info(environ)
-                (static_file, environ) = url_in(request, environ)
+                (static_file, version, environ) = url_in(request, environ)
                 response.status = env.web2py_status_code or response.status
 
                 if static_file:
@@ -408,24 +413,30 @@ def wsgibase(environ, responder):
                         'attachment'):
                         response.headers['Content-Disposition'] \
                             = 'attachment'
+                    if version:
+                        response.headers['Cache-Control'] = 'max-age=315360000'
+                        response.headers['Expires'] = 'Thu, 31 Dec 2037 23:59:59 GMT'
                     response.stream(static_file, request=request)
 
                 # ##################################################
                 # fill in request items
                 # ##################################################
                 app = request.application ## must go after url_in!
-                                
+
                 http_host = env.http_host.split(':',1)[0]
                 local_hosts = [http_host,'::1','127.0.0.1',
                                '::ffff:127.0.0.1']
                 if not global_settings.web2py_runtime_gae:
-                    local_hosts.append(socket.gethostname())
+                    try:
+                        local_hosts.append(socket.gethostname())
+                    except TypeError:
+                        pass
                     try:
                         local_hosts.append(
-                        socket.gethostbyname(http_host))
-                    except socket.gaierror:
+                            socket.gethostbyname(http_host))
+                    except (socket.gaierror,TypeError):
                         pass
-                client = get_client(env)                
+                client = get_client(env)
                 x_req_with = str(env.http_x_requested_with).lower()
                 
                 request.update(

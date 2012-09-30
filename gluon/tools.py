@@ -1607,7 +1607,7 @@ class Auth(object):
         if settings.cas_provider: ### THIS IS NOT LAZY
             settings.actions_disabled = \
                 ['profile','register','change_password',
-                 'request_reset_password']
+                 'request_reset_password','retrieve_username']
             from gluon.contrib.login_methods.cas_auth import CasAuth
             maps = settings.cas_maps
             if not maps:
@@ -1709,7 +1709,8 @@ class Auth(object):
         """
         login the user = db.auth_user(id)
         """
-        # user=Storage(self.table_user()._filter_fields(user,id=True))
+        user = Storage(self.table_user()._filter_fields(user,id=True))
+        if 'password' in user: del user.password
         current.session.auth = Storage(
             user = user, 
             last_visit = current.request.now,
@@ -3343,6 +3344,7 @@ class Crud(object):
         message=DEFAULT,
         deletable=DEFAULT,
         formname=DEFAULT,
+        **attributes
         ):
         """
         method: Crud.update(table, record, [next=DEFAULT
@@ -3395,7 +3397,8 @@ class Crud(object):
             deletable=deletable,
             upload=self.settings.download_url,
             formstyle=self.settings.formstyle,
-            separator=self.settings.label_separator
+            separator=self.settings.label_separator,
+            **attributes
             )
         self.accepted = False
         self.deleted = False
@@ -3453,6 +3456,7 @@ class Crud(object):
         log=DEFAULT,
         message=DEFAULT,
         formname=DEFAULT,
+        **attributes
         ):
         """
         method: Crud.create(table, [next=DEFAULT [, onvalidation=DEFAULT
@@ -3479,6 +3483,7 @@ class Crud(object):
             message=message,
             deletable=False,
             formname=formname,
+            **attributes
             )
 
     def read(self, table, record):
@@ -4338,34 +4343,39 @@ def prettydate(d,T=lambda x:x):
         return ''
     else:
         return '[invalid date]'
+    if dt.days < 0:
+        suffix = ' from now'
+        dt = -dt
+    else:
+        suffix = ' ago'
     if dt.days >= 2*365:
-        return T('%d years ago') % int(dt.days / 365)
+        return T('%d years'+suffix) % int(dt.days / 365)
     elif dt.days >= 365:
-        return T('1 year ago')
+        return T('1 year'+suffix)
     elif dt.days >= 60:
-        return T('%d months ago') % int(dt.days / 30)
+        return T('%d months'+suffix) % int(dt.days / 30)
     elif dt.days > 21:
-        return T('1 month ago')
+        return T('1 month'+suffix)
     elif dt.days >= 14:
-        return T('%d weeks ago') % int(dt.days / 7)
+        return T('%d weeks'+suffix) % int(dt.days / 7)
     elif dt.days >= 7:
-        return T('1 week ago')
+        return T('1 week'+suffix)
     elif dt.days > 1:
-        return T('%d days ago') % dt.days
+        return T('%d days'+suffix) % dt.days
     elif dt.days == 1:
-        return T('1 day ago')
+        return T('1 day'+suffix)
     elif dt.seconds >= 2*60*60:
-        return T('%d hours ago') % int(dt.seconds / 3600)
+        return T('%d hours'+suffix) % int(dt.seconds / 3600)
     elif dt.seconds >= 60*60:
-        return T('1 hour ago')
+        return T('1 hour'+suffix)
     elif dt.seconds >= 2*60:
-        return T('%d minutes ago') % int(dt.seconds / 60)
+        return T('%d minutes'+suffix) % int(dt.seconds / 60)
     elif dt.seconds >= 60:
-        return T('1 minute ago')
+        return T('1 minute'+suffix)
     elif dt.seconds > 1:
-        return T('%d seconds ago') % dt.seconds
+        return T('%d seconds'+suffix) % dt.seconds
     elif dt.seconds == 1:
-        return T('1 second ago')
+        return T('1 second'+suffix)
     else:
         return T('now')
 
@@ -4755,7 +4765,8 @@ class Wiki(object):
             db.wiki_page.title.default = title_guess
             db.wiki_page.slug.default = slug
             if slug == 'wiki-menu':
-                db.wiki_page.body.default = '- Menu Item > @////index\n- - Submenu > http://web2py.com'
+                db.wiki_page.body.default = \
+                    '- Menu Item > @////index\n- - Submenu > http://web2py.com'
             else:
                 db.wiki_page.body.default = '## %s\n\npage content' % title_guess
         vars = current.request.post_vars
@@ -4913,9 +4924,10 @@ class Wiki(object):
                 query = query|db.wiki_page.title.startswith(request.vars.q)
             if self.restrict_search and not self.manage():
                 query = query&(db.wiki_page.created_by==self.auth.user_id)
-            pages = db(query).select(
+            pages = db(query).select(count,
                 *fields,**dict(orderby=orderby or ~count,
-                               groupby=db.wiki_page.id,
+                               groupby=reduce(lambda a,b:a|b,fields),
+                               distinct=True,
                                limitby=limitby))
             if request.extension in ('html','load'):
                 if not pages:
@@ -4923,18 +4935,19 @@ class Wiki(object):
                                        _class='w2p_wiki_form'))
                 def link(t):
                     return A(t,_href=URL(args='_search',vars=dict(q=t)))
-                items = [DIV(H3(A(p.title,_href=URL(args=p.slug))),
-                             MARKMIN(self.first_paragraph(p)) \
+                items = [DIV(H3(A(p.wiki_page.title,_href=URL(
+                                    args=p.wiki_page.slug))),
+                             MARKMIN(self.first_paragraph(p.wiki_page)) \
                                  if preview else '',
                              DIV(_class='w2p_wiki_tags',
                                  *[link(t.strip()) for t in \
-                                       p.tags or [] if t.strip()]),
+                                       p.wiki_page.tags or [] if t.strip()]),
                              _class='w2p_wiki_search_item')
                          for p in pages]
                 content.append(DIV(_class='w2p_wiki_pages',*items))
             else:
                 cloud=False
-                content = [p.as_dict() for p in pages]
+                content = [p.wiki_page.as_dict() for p in pages]
         elif cloud:
             content.append(self.cloud()['content'])
         if request.extension=='load':
@@ -4945,19 +4958,23 @@ class Wiki(object):
         count = db.wiki_tag.wiki_page.count(distinct=True)
         ids = db(db.wiki_tag).select(
             db.wiki_tag.name,count,
-            groupby=db.wiki_tag.name,
-            orderby=~count,limitby=(0,20))
+            distinct=True,
+            groupby = db.wiki_tag.name,
+            orderby = ~count, limitby=(0,20))
         if ids:
             a,b = ids[0](count), ids[-1](count)
-        def scale(c):
-            return '%.2f' % (3.0*(c-b)/max(a-b,1)+1)
-        items = [A(item.wiki_tag.name,
-                   _style='padding:0.2em;font-size:%sem' \
-                       % scale(item(count)),
-                   _href=URL(args='_search',
-                             vars=dict(q=item.wiki_tag.name)))
-                 for item in ids]
-        return dict(content=DIV(_class='w2p_cloud',*items))
+        def style(c):
+            STYLE ='padding:0 0.2em;line-height:%.2fem;font-size:%.2fem'
+            size = (1.5*(c-b)/max(a-b,1)+1.3)
+            return STYLE % (1.3,size)
+        items = []
+        for item in ids:
+            items.append(A(item.wiki_tag.name,
+                           _style=style(item(count)),
+                           _href=URL(args='_search',
+                                     vars=dict(q=item.wiki_tag.name))))
+            items.append(' ')
+        return dict(content = DIV(_class='w2p_cloud',*items))
 
 if __name__ == '__main__':
     import doctest

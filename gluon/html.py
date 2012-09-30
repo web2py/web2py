@@ -1943,6 +1943,7 @@ class FORM(DIV):
         # check formname and formkey
 
         status = True
+        changed = False
         request_vars = self.request_vars
         if session:
             formkey = session.get('_formkey[%s]' % formname, None)
@@ -1955,18 +1956,23 @@ class FORM(DIV):
             # check if editing a record that has been modified by the server
             if hasattr(self,'record_hash') and self.record_hash != formkey:
                 status = False
-                self.record_changed = True
+                self.record_changed = changed = True
         status = self._traverse(status,hideerror)
         status = self.assert_status(status, request_vars)
         if onvalidation:
             if isinstance(onvalidation, dict):
                 onsuccess = onvalidation.get('onsuccess', None)
                 onfailure = onvalidation.get('onfailure', None)
+                onchange = onvalidation.get('onchange', None)
                 if onsuccess and status:
                     onsuccess(self)
                 if onfailure and request_vars and not status:
                     onfailure(self)
                     status = len(self.errors) == 0
+                if changed:
+                    if onchange and self.record_changed and \
+                        self.detect_record_change:
+                        onchange(self)
             elif status:
                 if isinstance(onvalidation, (list, tuple)):
                     [f(self) for f in onvalidation]
@@ -2035,8 +2041,13 @@ class FORM(DIV):
         onfailure = 'flash' - will show message_onfailure in response.flash
                     None - will do nothing
                     can be a function (lambda form: pass)
+        onchange = 'flash' - will show message_onchange in response.flash
+                    None - will do nothing
+                    can be a function (lambda form: pass)
+
         message_onsuccess
         message_onfailure
+        message_onchange
         next      = where to redirect in case of success
         any other kwargs will be passed for form.accepts(...)
         """
@@ -2047,13 +2058,17 @@ class FORM(DIV):
 
         onsuccess = kwargs.get('onsuccess','flash')
         onfailure = kwargs.get('onfailure','flash')
+        onchange = kwargs.get('onchange', 'flash')
         message_onsuccess = kwargs.get('message_onsuccess',
                                        current.T("Success!"))
         message_onfailure = kwargs.get('message_onfailure',
                                        current.T("Errors in form, please check it out."))
+        message_onchange = kwargs.get('message_onchange',
+                                       current.T("Form consecutive submissions not allowed. " + 
+                                                 "Try re-submitting or refreshing the form page."))
         next = kwargs.get('next',None)
         for key in ('message_onsuccess','message_onfailure','onsuccess',
-                    'onfailure','next'):
+                    'onfailure','next', 'message_onchange', 'onchange'):
             if key in kwargs:
                 del kwargs[key]
 
@@ -2080,6 +2095,13 @@ class FORM(DIV):
             elif callable(onfailure):
                 onfailure(self)
             return False
+        elif hasattr(self, "record_changed"):
+            if self.record_changed and self.detect_record_change:
+                if onchange == 'flash':
+                    current.response.flash = message_onchange
+                elif callable(onchange):
+                    onchange(self)
+                return False
 
     def process(self, **kwargs):
         """
