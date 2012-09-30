@@ -26,8 +26,10 @@ class MemcacheClientObj(Client):
 
     def __init__(self, request, servers, debug=0, pickleProtocol=0,
                  pickler=pickle.Pickler, unpickler=pickle.Unpickler,
-                 pload=None, pid=None):
+                 pload=None, pid=None,
+                 default_time_expire = DEFAULT_TIME_EXPIRE):
         self.request=request
+        self.default_time_expire = time_expire
         if request:
             app = request.application
         else:
@@ -43,8 +45,9 @@ class MemcacheClientObj(Client):
         else:
             self.storage = self.meta_storage[app]
 
-    def __call__(self, key, f,
-                 time_expire=DEFAULT_TIME_EXPIRE):
+    def __call__(self, key, f, time_expire = 'default'):
+        if time_expire == 'default':
+            time_expire = self.default_time_expire
         if time_expire == None:
             time_expire = self.max_time_expire
         # this must be commented because get and set are redefined
@@ -70,8 +73,10 @@ class MemcacheClientObj(Client):
             self.set(key, (now,value), self.max_time_expire)
         return value
 
-    def increment(self, key, value=1, time_expire=DEFAULT_TIME_EXPIRE):
+    def increment(self, key, value=1, time_expire='default'):
         """ time_expire is ignored """
+        if time_expire == 'default':
+            time_expire = self.default_time_expire
         newKey = self.__keyFormat__(key)
         obj = Client.get(self, newKey)
         if obj:
@@ -86,7 +91,9 @@ class MemcacheClientObj(Client):
             Client.set(self, newKey, value, self.max_time_expire)
             return value
 
-    def set(self, key, value, time_expire=DEFAULT_TIME_EXPIRE):
+    def set(self, key, value, time_expire='default'):
+        if time_expire == 'default':
+            time_expire = self.default_time_expire
         newKey = self.__keyFormat__(key)
         return Client.set(self, newKey, value, time_expire)
 
