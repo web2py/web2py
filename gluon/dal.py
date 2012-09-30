@@ -488,7 +488,7 @@ if 'google' in DRIVERS:
 
 class ConnectionPool(object):
 
-    pools = {}
+    POOLS = {}
     check_active_connection = True
 
     @staticmethod
@@ -497,36 +497,31 @@ class ConnectionPool(object):
 
     # ## this allows gluon to commit/rollback all dbs in this thread
 
-    @staticmethod
-    def recycle_connection(adapter,action):
+    def close(self,action='commit',really=True):        
         if action:
             if callable(action):
-                action(adapter)
+                action(self)
             else:
-                getattr(adapter, action)()
+                getattr(self, action)()
         # ## if you want pools, recycle this connection
-        really = True
-        if adapter.pool_size:
+        if self.pool_size:
             GLOBAL_LOCKER.acquire()
-            pool = ConnectionPool.pools[adapter.uri]
-            if len(pool) < adapter.pool_size:
-                pool.append(adapter.connection)
+            pool = ConnectionPool.POOLS[self.uri]
+            if len(pool) < self.pool_size:
+                pool.append(self.connection)
                 really = False
             GLOBAL_LOCKER.release()
         if really:
-            getattr(adapter, 'close')()        
+            self.close_connection()
+        self.connection = None
 
     @staticmethod
     def close_all_instances(action):
         """ to close cleanly databases in a multithreaded environment """
         dbs = getattr(THREAD_LOCAL,'db_instances',{}).items()
         for singleton_code, db in dbs:
-            try:
-                adapter = db._adapter
-            except AttributeError:
-                pass
-            else:
-                ConnectionPool.recycle_connection(adapter,action)
+            if hasattr(db,'_adapter'):
+                db._adapter.close(action)
             del THREAD_LOCAL.db_instances[singleton_code]
         if callable(action):
             action(None)
@@ -544,13 +539,7 @@ class ConnectionPool(object):
         """ this it is suppoed to be overloaded by adtapters"""
         pass
 
-    def reconnect(self):
-        """ allows a thread to re-connect to server or re-pool """
-        ConnectionPool.recycle_connection(self,False) ### WHY?
-        self.pool_connection(self._connection_function)
-        self.after_connection()
-
-    def pool_connection(self, f, cursor=True):
+    def pool_connection(self, f=None, cursor=True):
         """
         this function defines: self.connection and self.cursor
         (iff cursor is True)
@@ -558,19 +547,25 @@ class ConnectionPool(object):
         if the connection is not active (closed by db server) it will loop
         if not self.pool_size or no active connections in pool makes a new one
         """
-        pools = ConnectionPool.pools
-        self._connection_function = f
+        if getattr(self,'connection',None) != None:
+            return
+        if not f is None:
+            self._connection_function = f
+        else: 
+            f = self._connection_function
+
         if not self.pool_size:
             self.connection = f()
             self.cursor = cursor and self.connection.cursor()
         else:
             uri = self.uri
+            POOLS = ConnectionPool.POOLS
             while True:
                 GLOBAL_LOCKER.acquire()
-                if not uri in pools:
-                    pools[uri] = []
-                if pools[uri]:
-                    self.connection = pools[uri].pop()
+                if not uri in POOLS:
+                    POOLS[uri] = []
+                if POOLS[uri]:
+                    self.connection = POOLS[uri].pop()
                     GLOBAL_LOCKER.release()
                     self.cursor = cursor and self.connection.cursor()
                     try:
@@ -584,6 +579,8 @@ class ConnectionPool(object):
                     self.connection = f()
                     self.cursor = cursor and self.connection.cursor()
                     break
+            self.after_connection()
+
 
 ###################################################################################
 # this is a generic adapter that does nothing; all others are derived from this one
@@ -1638,7 +1635,7 @@ class BaseAdapter(ConnectionPool):
     def rollback(self):
         return self.connection.rollback()
 
-    def close(self):
+    def close_connection(self):
         return self.connection.close()
 
     def distributed_transaction_begin(self, key):
@@ -3968,7 +3965,7 @@ class DatabaseStoredFile:
     def write(self,data):
         self.data += data
 
-    def close(self):
+    def close_connection(self):
         self.db.executesql("DELETE FROM web2py_filesystem WHERE path='%s'" \
                                % self.filename)
         query = "INSERT INTO web2py_filesystem(path,content) VALUES ('%s','%s')"\
@@ -4154,7 +4151,7 @@ class NoSQLAdapter(BaseAdapter):
         """
         pass
 
-    def close(self):
+    def close_connection(self):
         """
         remember: no transactions on many NoSQL
         """
@@ -5526,7 +5523,7 @@ class IMAPAdapter(NoSQLAdapter):
         closing
 
         """
-        pools = ConnectionPool.pools
+        POOLS = ConnectionPool.POOLS
         if not self.pool_size:
             self.connection = f()
             self.cursor = cursor and self.connection.cursor()
@@ -5534,10 +5531,10 @@ class IMAPAdapter(NoSQLAdapter):
             uri = self.uri
             while True:
                 GLOBAL_LOCKER.acquire()
-                if not uri in pools:
-                    pools[uri] = []
-                if pools[uri]:
-                    self.connection = pools[uri].pop()
+                if not uri in POOLS:
+                    POOLS[uri] = []
+                if POOLS[uri]:
+                    self.connection = POOLS[uri].pop()
                     GLOBAL_LOCKER.release()
                     self.cursor = cursor and self.connection.cursor()
                     if self.cursor and self.check_active_connection:

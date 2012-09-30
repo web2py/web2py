@@ -46,7 +46,8 @@ class Storage(dict):
     __repr__ = lambda self: '<Storage %s>' % dict.__repr__(self)
     # http://stackoverflow.com/questions/5247250/why-does-pickle-getstate-accept-as-a-return-value-the-very-instance-it-requi
     __getstate__ = lambda self: None
-    # __reduce_ex__ = None
+    __copy__ = lambda self: Storage(self)
+    
     
     def getlist(self,key):
         """
