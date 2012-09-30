@@ -191,7 +191,6 @@ osetattr = object.__setattr__
 exists = os.path.exists
 pjoin = os.path.join
 
-
 ###################################################################################
 # following checks allow the use of dal without web2py, as a standalone module
 ###################################################################################
@@ -223,7 +222,7 @@ logger = logging.getLogger("web2py.dal")
 DEFAULT = lambda:0
 
 sql_locker = threading.RLock()
-thread = threading.local()
+thread_local = threading.local()
 
 # internal representation of tables with field
 #  <table>.<field>, tables and fields may only be [a-zA-Z0-9_]
@@ -494,16 +493,16 @@ class ConnectionPool(object):
 
     @staticmethod
     def set_folder(folder):
-        thread.folder = folder
+        thread_local.folder = folder
 
     # ## this allows gluon to commit/rollback all dbs in this thread
 
     @staticmethod
     def close_all_instances(action):
         """ to close cleanly databases in a multithreaded environment """
-        if hasattr(thread, 'instances'):
-            while thread.instances:
-                instance = thread.instances.pop()
+        if hasattr(thread_local, 'instances'):
+            while thread_local.instances:
+                instance = thread_local.instances.pop()
                 if action:
                     if callable(action):
                         action(instance)
@@ -527,10 +526,7 @@ class ConnectionPool(object):
 
     def find_or_make_work_folder(self):
         """ this actually does not make the folder. it has to be there """
-        if hasattr(thread,'folder'):
-            self.folder = thread.folder
-        else:
-            self.folder = thread.folder = ''
+        self.folder = getattr(thread_local,'folder','')
 
         # Creating the folder if it does not exist
         if False and self.folder and not exists(self.folder):
@@ -580,9 +576,9 @@ class ConnectionPool(object):
                     self.connection = f()
                     self.cursor = cursor and self.connection.cursor()
                     break
-        if not hasattr(thread,'instances'):
-            thread.instances = []
-        thread.instances.append(self)
+        if not hasattr(thread_local,'instances'):
+            thread_local.instances = []
+        thread_local.instances.append(self)
 
 
 ###################################################################################
@@ -659,7 +655,7 @@ class BaseAdapter(ConnectionPool):
         os.unlink(filename)
 
     def find_driver(self,adapter_args,uri=None):
-        if hasattr(self,'driver') and self.driver!=None:
+        if getattr(self,'driver',None) != None:
             return
         drivers_available = [driver for driver in self.drivers
                              if driver in globals()]
@@ -4017,7 +4013,7 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
         self.uri = uri
         self.pool_size = pool_size
         self.db_codec = db_codec
-        self.folder = folder or pjoin('$HOME',thread.folder.split(
+        self.folder = folder or pjoin('$HOME',thread_local.folder.split(
                 os.sep+'applications'+os.sep,1)[1])
         ruri = uri.split("://")[1]
         m = self.REGEX_URI.match(ruri)
@@ -5560,9 +5556,9 @@ class IMAPAdapter(NoSQLAdapter):
                     self.cursor = cursor and self.connection.cursor()
                     break
 
-        if not hasattr(thread,'instances'):
-            thread.instances = []
-        thread.instances.append(self)
+        if not hasattr(thread_local,'instances'):
+            thread_local.instances = []
+        thread_local.instances.append(self)
 
     def get_last_message(self, tablename):
         last_message = None
@@ -6575,7 +6571,6 @@ def smart_query(fields,text):
             field = op = neg = logic = None
     return query
 
-
 class DAL(object):
 
     """
@@ -6587,6 +6582,16 @@ class DAL(object):
        db.define_table('tablename', Field('fieldname1'),
                                     Field('fieldname2'))
     """
+
+    #def __new__(cls, uri, *args, **kwargs):
+    #    if not hasattr(thread_local,'db_instances'):
+    #        thread_local.db_instances = {}
+    #    try:
+    #        return thread_local.db_instances[uri]
+    #    except KeyError:
+    #        instance = super(DAL, cls).__new__(cls, uri, *args, **kwargs)
+    #        thread_local.db_instances[uri] = instance
+    #        return instance
 
     @staticmethod
     def set_folder(folder):
@@ -6633,7 +6638,6 @@ class DAL(object):
                 db._adapter.commit_prepared(keys[i])
         return
 
-
     def __init__(self, uri='sqlite://dummy.db',
                  pool_size=0, folder=None,
                  db_codec='UTF-8', check_reserved=None,
@@ -6668,6 +6672,7 @@ class DAL(object):
         :fake_migrate_all (defaults to False). If sets to True fake migrates ALL tables
         :attempts (defaults to 5). Number of times to attempt connecting
         """
+
         if not decode_credentials:
             credential_decoder = lambda cred: cred
         else:
@@ -7129,8 +7134,8 @@ def index():
 
     def close(self):
         adapter = self._adapter
-        if adapter in thread.instances:
-            thread.instances.remove(adapter)
+        if adapter in thread_local.instances:
+            thread_local.instances.remove(adapter)
         adapter.close()
 
     def executesql(self, query, placeholders=None, as_dict=False,
