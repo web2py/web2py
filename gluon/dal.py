@@ -519,8 +519,6 @@ class ConnectionPool(object):
                     sql_locker.release()
                 if really:
                     getattr(instance, 'close')()
-                if instance.db._singleton_code in thread_local.db_instances:
-                    del thread_local.db_instances[instance.db._singleton_code]
 
         if callable(action):
             action(None)
@@ -1947,7 +1945,7 @@ class BaseAdapter(ConnectionPool):
                                 db._referee_name % dict(
                                 table=rfield.tablename,field=rfield.name)
                             if referee_link and not referee_link in colset:
-                                colset[referee_link] = LazySet(rfield,id)
+                                colset[referee_link] = Set(db,rfield == id)
                 else:
                     if not '_extra' in new_row:
                         new_row['_extra'] = Row()
@@ -6445,6 +6443,15 @@ class Row(object):
                 del d[k]
         return d
 
+def Row_unpickler(data):
+    return Row(cPickle.loads(data))
+
+def Row_pickler(data):
+    return Row_unpickler, (cPickle.dumps(data.as_dict(datetime_to_str=False)),)
+
+copy_reg.pickle(Row, Row_pickler, Row_unpickler)
+
+
 ################################################################################
 # Everything below should be independent of the specifics of the database
 # and should work for RDBMs and some NoSQL databases
@@ -6576,23 +6583,15 @@ class DAL(object):
                                     Field('fieldname2'))
     """
 
-    def __new__(cls, uri='sqlite://dummy.db', *args, **kwargs):
-        if not hasattr(thread_local,'db_instances'):
-            thread_local.db_instances = {}
-        if 'singleton_code' in kwargs:
-            singleton_code = kwargs['singleton_code']
-            del kwargs['singleton_code']
-        else:
-            singleton_code = hashlib.md5(uri).hexdigest()
-        try:
-            db = thread_local.db_instances[singleton_code]
-            if args or kwargs:
-                raise RuntimeError, 'Cannot duplicate a Singleton'
-        except KeyError:
-            db = super(DAL, cls).__new__(cls, uri, *args, **kwargs)
-            db._singleton_code = singleton_code
-            thread_local.db_instances[singleton_code] = db
-        return db
+    #def __new__(cls, uri, *args, **kwargs):
+    #    if not hasattr(thread_local,'db_instances'):
+    #        thread_local.db_instances = {}
+    #    try:
+    #        return thread_local.db_instances[uri]
+    #    except KeyError:
+    #        instance = super(DAL, cls).__new__(cls, uri, *args, **kwargs)
+    #        thread_local.db_instances[uri] = instance
+    #        return instance
 
     @staticmethod
     def set_folder(folder):
@@ -6673,8 +6672,6 @@ class DAL(object):
         :fake_migrate_all (defaults to False). If sets to True fake migrates ALL tables
         :attempts (defaults to 5). Number of times to attempt connecting
         """
-
-        if hasattr(self,'_adapter'): return
 
         if not decode_credentials:
             credential_decoder = lambda cred: cred
@@ -7139,8 +7136,6 @@ def index():
         adapter = self._adapter
         if adapter in thread_local.instances:
             thread_local.instances.remove(adapter)
-        if self._singleton_code in thread_local.db_instances:
-            del thread_local.db_instances[self._singleton_code]
         adapter.close()
 
     def executesql(self, query, placeholders=None, as_dict=False,
@@ -7269,14 +7264,6 @@ def index():
                 tablename = line[6:]
                 self[tablename].import_from_csv_file(
                     ifile, id_map, null, unique, id_offset, *args, **kwargs)
-
-def DAL_unpickler(uri):
-    return DAL(uri)
-
-def DAL_pickler(db):
-    return DAL_unpickler, (db._uri,)
-
-copy_reg.pickle(DAL, DAL_pickler, DAL_unpickler)
 
 class SQLALL(object):
     """
@@ -8838,12 +8825,10 @@ class Set(object):
 
 class RecordUpdater(object):
     def __init__(self, colset, table, id):
-        self.colset, self.db, self.tablename, self.id = \
-            colset, table._db, table._tablename, id
+        self.colset, self.table, self.id = colset, table, id
 
     def __call__(self, **fields):
-        colset, db, tablename, id = self.colset, self.db, self.tablename, self.id
-        table = db[tablename]
+        colset, table, id = self.colset, self.table, self.id
         newfields = fields or dict(colset)
         for fieldname in newfields.keys():
             if not fieldname in table.fields or table[fieldname].type=='id':
@@ -8854,47 +8839,10 @@ class RecordUpdater(object):
 
 class RecordDeleter(object):
     def __init__(self, table, id):
-        self.db, self.tablename, self.id = table._db, table._tablename, id
+        self.table, self.id = table,id
     def __call__(self):
-        return self.db(self.db[self.tablename]._id==self.id).delete()
+        return self.table._db(self.table._id==self.id).delete()
 
-class LazySet(object):
-    def __init__(self, field, id):
-        self.db, self.tablename, self.fieldname, self.id = \
-            field.db, field._tablename, field.name, id
-    def _getset(self):
-        query = self.db[self.tablename][self.fieldname]==self.id
-        return Set(self.db,query)
-    def __repr__(self):
-        return repr(self._getset())
-    def __call__(self, query, ignore_common_filters=False):
-        return self._getset()(query, ignore_common_filters)
-    def _count(self,distinct=None):
-        return self._getset()._count(distinct)
-    def _select(self, *fields, **attributes):
-        return self._getset()._select(*field,**attributes)
-    def _delete(self):
-        return self._getset()._delete()
-    def _update(self, **update_fields):
-        return self._getset()._update(**update_fields)
-    def isempty(self):
-        return self._getset().isempty()
-    def count(self,distinct=None, cache=None):
-        return self._getset().count(distinct,cache)
-    def select(self, *fields, **attributes):
-        return self._getset().select(*fields,**attributes)
-    def nested_select(self,*fields,**attributes):
-        return self._getset().nested_select(*fields,**attributes)
-    def delete(self):
-        return self._getset().delete()
-    def update(self, **update_fields):
-        return self._getset().update(**update_fields)
-    def update_naive(self, **update_fields):
-        return self._getset().update_naive(**update_fields)
-    def validate_and_update(self, **update_fields):
-        return self._getset().validate_and_update(**update_fields)
-    def delete_uploaded_files(self, upload_fields=None):
-        return self._getset().delete_uploaded_files(upload_fields)
 
 class VirtualCommand(object):
     def __init__(self,method,row):
@@ -9269,6 +9217,16 @@ class Rows(object):
             except ImportError:
                 import gluon.contrib.simplejson as simplejson
             return simplejson.dumps(items)
+
+def Rows_unpickler(data):
+    return cPickle.loads(data)
+
+def Rows_pickler(data):
+    return Rows_unpickler, \
+        (cPickle.dumps(data.as_list(storage_to_dict=False,
+                                    datetime_to_str=False)),)
+
+copy_reg.pickle(Rows, Rows_pickler, Rows_unpickler)
 
 
 ################################################################################
