@@ -8865,13 +8865,36 @@ class LazySet(object):
     def _getset(self):
         query = self.db[self.tablename][self.fieldname]==self.id
         return Set(self.db,query)
-    def select(self,*a,**b):
-        return self._getset().select(*a,**b)
-    def delete(self,*a,**b):
-        return self._getset().update(*a,**b)
-    def __call__(self,*a,**b):
-        return self._getset()(*a,**b)
-
+    def __repr__(self):
+        return repr(self._getset())
+    def __call__(self, query, ignore_common_filters=False):
+        return self._getset()(query, ignore_common_filters)
+    def _count(self,distinct=None):
+        return self._getset()._count(distinct)
+    def _select(self, *fields, **attributes):
+        return self._getset()._select(*field,**attributes)
+    def _delete(self):
+        return self._getset()._delete()
+    def _update(self, **update_fields):
+        return self._getset()._update(**update_fields)
+    def isempty(self):
+        return self._getset().isempty()
+    def count(self,distinct=None, cache=None):
+        return self._getset().count(distinct,cache)
+    def select(self, *fields, **attributes):
+        return self._getset().select(*fields,**attributes)
+    def nested_select(self,*fields,**attributes):
+        return self._getset().nested_select(*fields,**attributes)
+    def delete(self):
+        return self._getset().delete()
+    def update(self, **update_fields):
+        return self._getset().update(**update_fields)
+    def update_naive(self, **update_fields):
+        return self._getset().update_naive(**update_fields)
+    def validate_and_update(self, **update_fields):
+        return self._getset().validate_and_update(**update_fields)
+    def delete_uploaded_files(self, upload_fields=None):
+        return self._getset().delete_uploaded_files(upload_fields)
 
 class VirtualCommand(object):
     def __init__(self,method,row):
