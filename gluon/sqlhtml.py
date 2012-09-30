@@ -1150,7 +1150,7 @@ class SQLFORM(FORM):
             else:
                 table = formstyle(self, xfields)
                 for id,a,b,c in xfields:
-                    self.field_parent[id] = b.parent
+                    self.field_parent[id] = getattr(b,'parent',None)
         else:
             raise RuntimeError, 'formstyle not supported'
         return table

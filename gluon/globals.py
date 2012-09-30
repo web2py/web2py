@@ -419,11 +419,11 @@ class Response(Storage):
         BUTTON = TAG.button
         admin = URL("admin","default","design",
                     args=current.request.application)
-        from gluon.dal import thread_local
-        if hasattr(thread_local,'instances'):
+        from gluon.dal import THREAD_LOCAL
+        if hasattr(THREAD_LOCAL,'instances'):
             dbstats = [TABLE(*[TR(PRE(row[0]),'%.2fms' % (row[1]*1000)) \
                                    for row in i.db._timings]) \
-                           for i in thread_local.instances]
+                           for i in THREAD_LOCAL.instances]
             dbtables = dict([(regex_nopasswd.sub('******',i.uri), 
                               {'defined': 
                                sorted(list(set(i.db.tables) - 
@@ -431,7 +431,7 @@ class Response(Storage):
                                '[no defined tables]',
                                'lazy': sorted(i.db._LAZY_TABLES.keys()) or
                                '[no lazy tables]'})
-                             for i in thread_local.instances])
+                             for i in THREAD_LOCAL.instances])
         else:
             dbstats = [] # if no db or on GAE
             dbtables = {}
