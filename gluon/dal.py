@@ -6577,16 +6577,15 @@ class DAL(object):
         if 'singleton_code' in kwargs:
             singleton_code = kwargs['singleton_code']
             del kwargs['singleton_code']
-        else:
-            singleton_code = hashlib.md5(uri).hexdigest()
+        singleton_code = hashlib.md5(uri).hexdigest()
         try:
             db = thread_local.db_instances[singleton_code]
             if args or kwargs:
                 raise RuntimeError, 'Cannot duplicate a Singleton'
         except KeyError:
             db = super(DAL, cls).__new__(cls, uri, *args, **kwargs)
-            db._singleton_code = singleton_code
             thread_local.db_instances[singleton_code] = db
+        db._singleton_code = singleton_code
         return db
 
     @staticmethod
@@ -6641,7 +6640,8 @@ class DAL(object):
                  migrate_enabled=True, fake_migrate_all=False,
                  decode_credentials=False, driver_args=None,
                  adapter_args=None, attempts=5, auto_import=False,
-                 bigint_id=False,debug=False,lazy_tables=False):
+                 bigint_id=False,debug=False,lazy_tables=False,
+                 singleton_code=None):
         """
         Creates a new Database Abstraction Layer instance.
 

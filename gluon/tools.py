@@ -1710,6 +1710,7 @@ class Auth(object):
         login the user = db.auth_user(id)
         """
         user = Storage(self.table_user()._filter_fields(user,id=True))
+        if 'password' in user: del user.password
         current.session.auth = Storage(
             user = user, 
             last_visit = current.request.now,
