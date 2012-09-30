@@ -448,18 +448,22 @@ class TestMigrations(unittest.TestCase):
         db = DAL('sqlite://.storage.db')
         db.define_table('t', Field('a'), migrate='.storage.table')
         db.commit()
+        db.close()
         db = DAL('sqlite://.storage.db')
         db.define_table('t', Field('a'), Field('b'),
                         migrate='.storage.table')
         db.commit()
+        db.close()
         db = DAL('sqlite://.storage.db')
         db.define_table('t', Field('a'), Field('b', 'text'),
                         migrate='.storage.table')
         db.commit()
+        db.close()
         db = DAL('sqlite://.storage.db')
         db.define_table('t', Field('a'), migrate='.storage.table')
         db.t.drop()
         db.commit()
+        db.close()
 
     def tearDown(self):
         if os.path.exists('.storage.db'):
