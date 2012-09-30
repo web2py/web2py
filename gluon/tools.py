@@ -1709,7 +1709,7 @@ class Auth(object):
         """
         login the user = db.auth_user(id)
         """
-        # user=Storage(self.table_user()._filter_fields(user,id=True))
+        user = Storage(self.table_user()._filter_fields(user,id=True))
         current.session.auth = Storage(
             user = user, 
             last_visit = current.request.now,
