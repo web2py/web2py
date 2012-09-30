@@ -21,7 +21,11 @@ import os
 import re
 import logging
 import socket
-from contrib.pbkdf2 import pbkdf2_hex
+try:
+    from contrib.pbkdf2 import pbkdf2_hex
+    HAVE_PBKDF2 = True
+except ImportError:
+    HAVE_PBKDF2 = False
 
 logger = logging.getLogger("web2py")
 
