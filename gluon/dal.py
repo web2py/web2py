@@ -539,7 +539,7 @@ class ConnectionPool(object):
         """ this it is suppoed to be overloaded by adtapters"""
         pass
 
-    def pool_connection(self, f=None, cursor=True):
+    def reconnect(self, f=None, cursor=True):
         """
         this function defines: self.connection and self.cursor
         (iff cursor is True)
@@ -579,7 +579,7 @@ class ConnectionPool(object):
                     self.connection = f()
                     self.cursor = cursor and self.connection.cursor()
                     break
-            self.after_connection()
+        self.after_connection()
 
 
 ###################################################################################
@@ -2074,10 +2074,9 @@ class SQLiteAdapter(BaseAdapter):
             driver_args['check_same_thread'] = False
         if not 'detect_types' in driver_args:
             driver_args['detect_types'] = self.driver.PARSE_DECLTYPES
-        def connect(dbpath=dbpath, driver_args=driver_args):
+        def connector(dbpath=dbpath, driver_args=driver_args):
             return self.driver.Connection(dbpath, **driver_args)
-        self.pool_connection(connect)
-        self.after_connection()
+        self.reconnect(connector)
 
     def after_connection(self):
         self.connection.create_function('web2py_extract', 2,
@@ -2138,10 +2137,9 @@ class SpatiaLiteAdapter(SQLiteAdapter):
             driver_args['check_same_thread'] = False
         if not 'detect_types' in driver_args:
             driver_args['detect_types'] = self.driver.PARSE_DECLTYPES
-        def connect(dbpath=dbpath, driver_args=driver_args):
+        def connector(dbpath=dbpath, driver_args=driver_args):
             return self.driver.Connection(dbpath, **driver_args)
-        self.pool_connection(connect)
-        self.after_connection()
+        self.reconnect(connector)
 
     def after_connection(self):
         self.connection.enable_load_extension(True)
@@ -2238,12 +2236,11 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
             if dbpath[0] != '/':
                 dbpath = pjoin(
                     self.folder.decode(path_encoding).encode('utf8'), dbpath)
-        def connect(dbpath=dbpath,driver_args=driver_args):
+        def connector(dbpath=dbpath,driver_args=driver_args):
             return self.driver.connect(
                 self.driver.getConnection('jdbc:sqlite:'+dbpath),
                 **driver_args)
-        self.pool_connection(connect)
-        self.after_connection()
+        self.reconnect(connector)
 
     def after_connection(self):
         # FIXME http://www.zentus.com/sqlitejdbc/custom_functions.html for UDFs
@@ -2358,10 +2355,9 @@ class MySQLAdapter(BaseAdapter):
                            charset=charset)
 
 
-        def connect(driver_args=driver_args):
+        def connector(driver_args=driver_args):
             return self.driver.connect(**driver_args)
-        self.pool_connection(connect)
-        self.after_connection()
+        self.reconnect(connector)
 
     def after_connection(self):
         self.execute('SET FOREIGN_KEY_CHECKS=1;')
@@ -2486,10 +2482,9 @@ class PostgreSQLAdapter(BaseAdapter):
                    % (db, user, host, port, password)
         # choose diver according uri
         self.__version__ = "%s %s" % (self.driver.__name__, self.driver.__version__)
-        def connect(msg=msg,driver_args=driver_args):
+        def connector(msg=msg,driver_args=driver_args):
             return self.driver.connect(msg,**driver_args)
-        self.pool_connection(connect)
-        self.after_connection()
+        self.reconnect(connector)
 
     def after_connection(self):
         self.connection.set_client_encoding('UTF8')
@@ -2701,10 +2696,9 @@ class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
             raise SyntaxError, 'Database name required'
         port = m.group('port') or '5432'
         msg = ('jdbc:postgresql://%s:%s/%s' % (host, port, db), user, password)
-        def connect(msg=msg,driver_args=driver_args):
+        def connector(msg=msg,driver_args=driver_args):
             return self.driver.connect(*msg,**driver_args)
-        self.pool_connection(connect)
-        self.after_connection()
+        self.reconnect(connector)
 
     def after_connection(self):
         self.connection.set_client_encoding('UTF8')
@@ -2811,10 +2805,9 @@ class OracleAdapter(BaseAdapter):
         ruri = uri.split('://',1)[1]
         if not 'threaded' in driver_args:
             driver_args['threaded']=True
-        def connect(uri=ruri,driver_args=driver_args):
+        def connector(uri=ruri,driver_args=driver_args):
             return self.driver.connect(uri,**driver_args)
-        self.pool_connection(connect)
-        self.after_connection()
+        self.reconnect(connector)
 
     def after_connection(self):
         self.execute("ALTER SESSION SET NLS_DATE_FORMAT = 'YYYY-MM-DD HH24:MI:SS';")
@@ -3014,11 +3007,10 @@ class MSSQLAdapter(BaseAdapter):
             urlargs = ';'.join(['%s=%s' % (ak, av) for (ak, av) in argsdict.iteritems()])
             cnxn = 'SERVER=%s;PORT=%s;DATABASE=%s;UID=%s;PWD=%s;%s' \
                 % (host, port, db, user, password, urlargs)
-        def connect(cnxn=cnxn,driver_args=driver_args):
+        def connector(cnxn=cnxn,driver_args=driver_args):
             return self.driver.connect(cnxn,**driver_args)
         if not fake_connect:
-            self.pool_connection(connect)
-            self.after_connection()
+            self.reconnect(connector)
 
     def lastrowid(self,table):
         #self.execute('SELECT @@IDENTITY;')
@@ -3206,11 +3198,10 @@ class SybaseAdapter(MSSQLAdapter):
             driver_args.update(user = credential_decoder(user),
                                password = credential_decoder(password))
 
-        def connect(dsn=dsn,driver_args=driver_args):
+        def connector(dsn=dsn,driver_args=driver_args):
             return self.driver.connect(dsn,**driver_args)
         if not fake_connect:
-            self.pool_connection(connect)
-            self.after_connection()
+            self.reconnect(connector)
 
     def integrity_error_class(self):
         return RuntimeError # FIX THIS
@@ -3313,10 +3304,9 @@ class FireBirdAdapter(BaseAdapter):
                            password = credential_decoder(password),
                            charset = charset)
 
-        def connect(driver_args=driver_args):
+        def connector(driver_args=driver_args):
             return self.driver.connect(**driver_args)
-        self.pool_connection(connect)
-        self.after_connection()
+        self.reconnect(connector)
 
     def create_sequence_and_triggers(self, query, table, **args):
         tablename = table._tablename
@@ -3373,11 +3363,9 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
                            password=credential_decoder(password),
                            charset=charset)
 
-        def connect(driver_args=driver_args):
+        def connector(driver_args=driver_args):
             return self.driver.connect(**driver_args)
-        self.pool_connection(connect)
-        self.after_connection()
-
+        self.reconnect(connector)
 
 class InformixAdapter(BaseAdapter):
     drivers = ('informixdb',)
@@ -3478,10 +3466,9 @@ class InformixAdapter(BaseAdapter):
         password = credential_decoder(password)
         dsn = '%s@%s' % (db,host)
         driver_args.update(user=user,password=password,autocommit=True)
-        def connect(dsn=dsn,driver_args=driver_args):
+        def connector(dsn=dsn,driver_args=driver_args):
             return self.driver.connect(dsn,**driver_args)
-        self.pool_connection(connect)
-        self.after_connection()
+        self.reconnect(connector)
 
     def execute(self,command):
         if command[-1:]==';':
@@ -3560,10 +3547,9 @@ class DB2Adapter(BaseAdapter):
         self.db_codec = db_codec
         self.find_or_make_work_folder()
         ruri = uri.split('://', 1)[1]
-        def connect(cnxn=ruri,driver_args=driver_args):
+        def connector(cnxn=ruri,driver_args=driver_args):
             return self.driver.connect(cnxn,**driver_args)
-        self.pool_connection(connect)
-        self.after_connection()
+        self.reconnect(connector)
 
     def execute(self,command):
         if command[-1:]==';':
@@ -3623,10 +3609,9 @@ class TeradataAdapter(BaseAdapter):
         self.db_codec = db_codec
         self.find_or_make_work_folder()
         ruri = uri.split('://', 1)[1]
-        def connect(cnxn=ruri,driver_args=driver_args):
+        def connector(cnxn=ruri,driver_args=driver_args):
             return self.driver.connect(cnxn,**driver_args)
-        self.pool_connection(connect)
-        self.after_connection()
+        self.reconnect(connector)
 
     def LEFT_JOIN(self):
         return 'LEFT OUTER JOIN'
@@ -3716,10 +3701,9 @@ class IngresAdapter(BaseAdapter):
                            vnode=vnode,
                            servertype=servertype,
                            trace=trace)
-        def connect(driver_args=driver_args):
+        def connector(driver_args=driver_args):
             return self.driver.connect(**driver_args)
-        self.pool_connection(connect)
-        self.after_connection()
+        self.reconnect(connector)
 
     def create_sequence_and_triggers(self, query, table, **args):
         # post create table auto inc code (if needed)
@@ -3855,12 +3839,11 @@ class SAPDBAdapter(BaseAdapter):
         db = m.group('db')
         if not db:
             raise SyntaxError, 'Database name required'
-        def connect(user=user, password=password, database=db,
+        def connector(user=user, password=password, database=db,
                     host=host, driver_args=driver_args):
             return self.driver.Connection(user, password, database,
                                           host, **driver_args)
-        self.pool_connection(connect)
-        self.after_connection()
+        self.reconnect(connector)
 
     def lastrowid(self,table):
         self.execute("select %s.NEXTVAL from dual" % table._sequence_name)
@@ -3903,11 +3886,10 @@ class CubridAdapter(MySQLAdapter):
         charset = m.group('charset') or 'utf8'
         user = credential_decoder(user)
         passwd = credential_decoder(password)
-        def connect(host=host,port=port,db=db,
+        def connector(host=host,port=port,db=db,
                     user=user,passwd=password,driver_args=driver_args):
             return self.driver.connect(host,port,db,user,passwd,**driver_args)
-        self.pool_connection(connect)
-        self.after_connection()
+        self.reconnect(connector)
 
     def after_connection(self):
         self.execute('SET FOREIGN_KEY_CHECKS=1;')
@@ -4026,10 +4008,9 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
         self.createdb = createdb = adapter_args.get('createdb',True)
         if not createdb:
             driver_args['database'] = db
-        def connect(driver_args=driver_args):
+        def connector(driver_args=driver_args):
             return rdbms.connect(**driver_args)
-        self.pool_connection(connect)
-        self.after_connection()
+        self.reconnect(connector)
 
     def after_connection(self):
         if self.createdb:
@@ -4687,10 +4668,9 @@ class CouchDBAdapter(NoSQLAdapter):
         self.pool_size = pool_size
 
         url='http://'+uri[10:]
-        def connect(url=url,driver_args=driver_args):
+        def connector(url=url,driver_args=driver_args):
             return self.driver.Server(url,**driver_args)
-        self.pool_connection(connect,cursor=False)
-        self.after_connection()
+        self.reconnect(connector,cursor=False)
 
     def create_table(self, table, migrate=True, fake_migrate=False, polymodel=None):
         if migrate:
@@ -4873,7 +4853,7 @@ class MongoDBAdapter(NoSQLAdapter):
             m = {"database" : m[1]}
         if m.get('database')==None:
             raise SyntaxError("Database is required!")
-        def connect(uri=self.uri,m=m):
+        def connector(uri=self.uri,m=m):
             try:
                 return self.driver.Connection(uri)[m.get('database')]
             except self.driver.errors.ConnectionFailure, inst:
@@ -4883,10 +4863,7 @@ class MongoDBAdapter(NoSQLAdapter):
                     raise SyntaxError("You are probebly running version 1.1 of pymongo which contains a bug which requires authentication. Update your pymongo.")
                 else:
                     raise SyntaxError("This is not an official Mongodb uri (http://www.mongodb.org/display/DOCS/Connections) Error : %s" % inst)
-        self.pool_connection(connect,cursor=False)
-        self.after_connection()
-
-
+        self.reconnect(connector,cursor=False)
 
     def represent(self, obj, fieldtype):
         value = NoSQLAdapter.represent(self, obj, fieldtype)
@@ -5491,7 +5468,7 @@ class IMAPAdapter(NoSQLAdapter):
             over_ssl = True
 
         driver_args.update(host=host,port=port, password=password, user=user)
-        def connect(driver_args=driver_args):
+        def connector(driver_args=driver_args):
             # it is assumed sucessful authentication alLways
             # TODO: support direct connection and login tests
             if over_ssl:
@@ -5510,10 +5487,9 @@ class IMAPAdapter(NoSQLAdapter):
             return connection
 
         self.db.define_tables = self.define_tables
-        self.pool_connection(connect)
-        # self.after_connection()
+        self.reconnect(connector)
 
-    def pool_connection(self, f, cursor=True):
+    def reconnect(self, f, cursor=True):
         """
         IMAP4 Pool connection method
 
@@ -5523,11 +5499,18 @@ class IMAPAdapter(NoSQLAdapter):
         closing
 
         """
-        POOLS = ConnectionPool.POOLS
+        if getattr(self,'connection',None) != None:
+            return
+        if not f is None:
+            self._connection_function = f
+        else:
+            f = self._connection_function
+
         if not self.pool_size:
             self.connection = f()
             self.cursor = cursor and self.connection.cursor()
         else:
+            POOLS = ConnectionPool.POOLS
             uri = self.uri
             while True:
                 GLOBAL_LOCKER.acquire()
@@ -5551,6 +5534,7 @@ class IMAPAdapter(NoSQLAdapter):
                     self.connection = f()
                     self.cursor = cursor and self.connection.cursor()
                     break
+        self.after_connection()
 
     def get_last_message(self, tablename):
         last_message = None
