@@ -7375,8 +7375,8 @@ class Table(object):
             self._primarykey = args.get('primarykey', None)
 
         self._before_insert = []
-        self._before_update = [lambda self,fs:self.delete_uploaded_files(fs)]
-        self._before_delete = [lambda self:self.delete_uploaded_files()]
+        self._before_update = [Set.delete_uploaded_files]
+        self._before_delete = [Set.delete_uploaded_files]
         self._after_insert = []
         self._after_update = []
         self._after_delete = []
