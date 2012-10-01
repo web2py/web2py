@@ -3261,6 +3261,12 @@ class FireBirdAdapter(BaseAdapter):
     def SUBSTRING(self,field,parameters):
         return 'SUBSTRING(%s from %s for %s)' % (self.expand(field), parameters[0], parameters[1])
 
+    def CONTAINS(self, first, second):
+        if first.type.startswith('list:'):
+            key = '|'+str(second).replace('|','||').replace('%','%%')+'|'
+        return '(%s CONTAINING %s)' % (self.expand(first),
+                                       self.expand(key,'string'))
+
     def _drop(self,table,mode):
         sequence_name = table._sequence_name
         return ['DROP TABLE %s %s;' % (table, mode), 'DROP GENERATOR %s;' % sequence_name]
