@@ -1470,7 +1470,7 @@ class Worker(Thread):
                     break
                 elif l[0] in ' \t' and lname:
                     # Some headers take more than one line
-                    environ[lname] += ',' + l.strip()
+                    environ[lname] += ' ' + l.strip()
                 else:
                     # HTTP header values are latin-1 encoded
                     l = l.split(':', 1)
