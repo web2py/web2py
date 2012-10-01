@@ -3261,6 +3261,12 @@ class FireBirdAdapter(BaseAdapter):
     def SUBSTRING(self,field,parameters):
         return 'SUBSTRING(%s from %s for %s)' % (self.expand(field), parameters[0], parameters[1])
 
+    def CONTAINS(self, first, second):
+        if first.type.startswith('list:'):
+            key = '|'+str(second).replace('|','||').replace('%','%%')+'|'
+        return '(%s CONTAINING %s)' % (self.expand(first),
+                                       self.expand(key,'string'))
+
     def _drop(self,table,mode):
         sequence_name = table._sequence_name
         return ['DROP TABLE %s %s;' % (table, mode), 'DROP GENERATOR %s;' % sequence_name]
@@ -7375,8 +7381,8 @@ class Table(object):
             self._primarykey = args.get('primarykey', None)
 
         self._before_insert = []
-        self._before_update = [lambda self,fs:self.delete_uploaded_files(fs)]
-        self._before_delete = [lambda self:self.delete_uploaded_files()]
+        self._before_update = [Set.delete_uploaded_files]
+        self._before_delete = [Set.delete_uploaded_files]
         self._after_insert = []
         self._after_update = []
         self._after_delete = []

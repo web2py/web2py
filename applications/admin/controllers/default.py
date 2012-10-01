@@ -787,7 +787,7 @@ def edit_language():
 
         _class='untranslated' if k==s else 'translated'
 
-        if len(key) <= 40:
+        if len(s) <= 40:
             elem = INPUT(_type='text', _name=name, value=s,
                          _size=70,_class=_class)
         else:

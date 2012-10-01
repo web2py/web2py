@@ -358,20 +358,33 @@ OLD IMPLEMENTATION:
     return module
 """
 
+_base_environment_ = dict((k,getattr(html,k)) for k  in html.__all__)
+_base_environment_.update((k,getattr(validators,k)) for k  in validators.__all__)
+_base_environment_['__builtins__'] = __builtins__
+_base_environment_['HTTP'] = HTTP
+_base_environment_['redirect'] = redirect
+_base_environment_['DAL'] = DAL
+_base_environment_['Field'] = Field
+_base_environment_['SQLDB'] = SQLDB        # for backward compatibility
+_base_environment_['SQLField'] = SQLField  # for backward compatibility
+_base_environment_['SQLFORM'] = SQLFORM
+_base_environment_['SQLTABLE'] = SQLTABLE
+_base_environment_['LOAD'] = LOAD
+ 
 def build_environment(request, response, session, store_current=True):
     """
     Build the environment dictionary into which web2py files are executed.
     """
-    h,v = html,validators
-    environment = dict((k,getattr(h,k)) for k  in h.__all__)
-    environment.update((k,getattr(v, k)) for k in v.__all__)
+    #h,v = html,validators
+    environment = dict(_base_environment_)
+
     if not request.env:
         request.env = Storage()
     # Enable standard conditional models (i.e., /*.py, /[controller]/*.py, and
     # /[controller]/[function]/*.py)
     response.models_to_run = [r'^\w+\.py$', r'^%s/\w+\.py$' % request.controller,
         r'^%s/%s/\w+\.py$' % (request.controller, request.function)]
-        
+
     t = environment['T'] = translator(request)
     c = environment['cache'] = Cache(request)
     if store_current:
@@ -389,26 +402,15 @@ def build_environment(request, response, session, store_current=True):
         __builtins__ = mybuiltin()
     else:
         __builtins__['__import__'] = __builtin__.__import__ ### WHY?
-    environment['__builtins__'] = __builtins__
-    environment['HTTP'] = HTTP
-    environment['redirect'] = redirect
     environment['request'] = request
     environment['response'] = response
     environment['session'] = session
-    environment['DAL'] = DAL
-    environment['Field'] = Field
-    environment['SQLDB'] = SQLDB        # for backward compatibility
-    environment['SQLField'] = SQLField  # for backward compatibility
-    environment['SQLFORM'] = SQLFORM
-    environment['SQLTABLE'] = SQLTABLE
-    environment['LOAD'] = LOAD
     environment['local_import'] = \
-        lambda name, reload=False, app=request.application:\
-        local_import_aux(name,reload,app)
+       lambda name, reload=False, app=request.application:\
+       local_import_aux(name,reload,app)
     BaseAdapter.set_folder(pjoin(request.folder, 'databases'))
     response._view_environment = copy.copy(environment)
     return environment
-
 
 def save_pyc(filename):
     """
