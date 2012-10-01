@@ -594,7 +594,8 @@ class BaseAdapter(ConnectionPool):
     support_distributed_transaction = False
     uploads_in_blob = False
     can_select_for_update = True
-
+    TRUE = 'T'
+    FALSE = 'F'
     types = {
         'boolean': 'CHAR(1)',
         'string': 'CHAR(%(length)s)',
@@ -622,6 +623,11 @@ class BaseAdapter(ConnectionPool):
 
     def adapt(self, obj):
         return "'%s'" % obj.replace("'", "''")
+
+    def smart_adapt(self, obj):
+        if isinstance(obj,(int,float)):
+            return str(obj)
+        return self.adapt(str(obj))
 
     def integrity_error(self):
         return self.driver.IntegrityError
@@ -1703,10 +1709,10 @@ class BaseAdapter(ConnectionPool):
         if not r is None:
             return r
         if fieldtype == 'boolean':
-            if obj and not str(obj)[:1].upper() in ['F', '0']:
-                return "'T'"
+            if obj and not str(obj)[:1].upper() in '0F':
+                return self.smart_adapt(self.TRUE)
             else:
-                return "'F'"
+                return self.smart_adapt(self.FALSE)
         if fieldtype == 'id' or fieldtype == 'integer':
             return str(int(obj))
         if field_is_type('decimal'):
@@ -2946,13 +2952,8 @@ class MSSQLAdapter(BaseAdapter):
             sql_s += ' TOP %i' % lmax
         return 'SELECT %s %s FROM %s%s%s;' % (sql_s, sql_f, sql_t, sql_w, sql_o)
 
-    def represent_exceptions(self, obj, fieldtype):
-        if fieldtype == 'boolean':
-            if obj and not str(obj)[0].upper() == 'F':
-                return '1'
-            else:
-                return '0'
-        return None
+    TRUE = 1
+    FALSE = 0
 
     REGEX_DSN = re.compile('^(?P<dsn>.+)$')
     REGEX_URI = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?(?P<urlargs>.*))?$')
@@ -4089,7 +4090,7 @@ class NoSQLAdapter(BaseAdapter):
                     obj = obj['id']
                 obj = long(obj)
             elif fieldtype == 'boolean':
-                if obj and not str(obj)[0].upper() == 'F':
+                if obj and not str(obj)[0].upper() in '0F':
                     obj = True
                 else:
                     obj = False
