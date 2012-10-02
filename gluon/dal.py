@@ -594,6 +594,7 @@ class BaseAdapter(ConnectionPool):
     support_distributed_transaction = False
     uploads_in_blob = False
     can_select_for_update = True
+    
     TRUE = 'T'
     FALSE = 'F'
     types = {
@@ -620,6 +621,9 @@ class BaseAdapter(ConnectionPool):
         'big-id': 'BIGINT PRIMARY KEY AUTOINCREMENT',
         'big-reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         }
+
+    def id_query(self, table):
+        return table._id != None
 
     def adapt(self, obj):
         return "'%s'" % obj.replace("'", "''")
@@ -4057,6 +4061,9 @@ class NoSQLAdapter(BaseAdapter):
             return unicode(obj)
         return obj
 
+    def id_query(self, table):
+        return table._id > 0
+
     def represent(self, obj, fieldtype):
         field_is_type = fieldtype.startswith
         if isinstance(obj, CALLABLETYPES):
@@ -4407,7 +4414,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         return self.expand(first)
 
     def truncate(self,table,mode):
-        self.db(table._id > 0).delete()
+        self.db(table._id).delete()
 
     def select_raw(self,query,fields=None,attributes=None):
         db = self.db
@@ -4425,7 +4432,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
             tablename = self.get_table(query)
         elif fields:
             tablename = fields[0].tablename
-            query = fields[0].table._id != None
+            query = db._adapter.id_query(fields[0].table)
         else:
             raise SyntaxError, "Unable to determine a tablename"
 
@@ -7123,7 +7130,7 @@ def index():
 
     def __call__(self, query=None, ignore_common_filters=None):
         if isinstance(query,Table):
-            query = query._id != None
+            query = self._adapter.id_query(query)
         elif isinstance(query,Field):
             query = query!=None
         return Set(self, query, ignore_common_filters=ignore_common_filters)
@@ -7240,7 +7247,7 @@ def index():
             kwargs.get("write_colnames", True)
         for table in self.tables:
             ofile.write('TABLE %s\r\n' % table)
-            query = self[table]._id > 0
+            query = self._adapter.id_query(self[table])
             nrows = self(query).count()
             kwargs['write_colnames'] = write_colnames
             for k in range(0,nrows,step):
@@ -8670,7 +8677,7 @@ class Set(object):
 
     def __call__(self, query, ignore_common_filters=False):
         if isinstance(query,Table):
-            query = query._id != None
+            query = self.db._adapter.id_query(query)
         elif isinstance(query,str):
             query = Expression(self.db,query)
         elif isinstance(query,Field):
@@ -9448,10 +9455,10 @@ def test_all():
     Example of expressions
 
     >>> mynumber = db.define_table('mynumber', Field('x', 'integer'))
-    >>> db(mynumber.id>0).delete()
+    >>> db(mynumber).delete()
     0
     >>> for i in range(10): tmp = mynumber.insert(x=i)
-    >>> db(mynumber.id>0).select(mynumber.x.sum())[0](mynumber.x.sum())
+    >>> db(mynumber).select(mynumber.x.sum())[0](mynumber.x.sum())
     45
 
     >>> db(mynumber.x+2==5).select(mynumber.x + 2)[0](mynumber.x + 2)
