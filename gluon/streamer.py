@@ -43,6 +43,7 @@ def stream_file_or_304_or_206(
     chunk_size = DEFAULT_CHUNK_SIZE,
     request = None,
     headers = {},
+    status = 200,
     error_message = None,
     ):
     if error_message is None:
@@ -67,30 +68,33 @@ def stream_file_or_304_or_206(
     headers.setdefault('Pragma', 'cache')
     headers.setdefault('Cache-Control', 'private')
 
-    if request and request.env.http_if_modified_since == mtime:
-        raise HTTP(304, **{'Content-Type': headers['Content-Type']})
+    # if this is a normal response and not a respnse to an error page
+    if status == 200:
+        if request and request.env.http_if_modified_since == mtime:
+            raise HTTP(304, **{'Content-Type': headers['Content-Type']})
 
-    elif request and request.env.http_range:
-        start_items = regex_start_range.findall(request.env.http_range)
-        if not start_items:
-            start_items = [0]
-        stop_items = regex_stop_range.findall(request.env.http_range)
-        if not stop_items or int(stop_items[0]) > fsize - 1:
-            stop_items = [fsize - 1]
-        part = (int(start_items[0]), int(stop_items[0]), fsize)
-        bytes = part[1] - part[0] + 1
-        try:
-            stream = open(static_file, 'rb')
-        except IOError, e:
-            if e[0] in (errno.EISDIR, errno.EACCES):
-                raise HTTP(403)
-            else:
-                raise HTTP(404)
-        stream.seek(part[0])
-        headers['Content-Range'] = 'bytes %i-%i/%i' % part
-        headers['Content-Length'] = '%i' % bytes
-        status = 206
-    else:
+        elif request and request.env.http_range:
+            start_items = regex_start_range.findall(request.env.http_range)
+            if not start_items:
+                start_items = [0]
+            stop_items = regex_stop_range.findall(request.env.http_range)
+            if not stop_items or int(stop_items[0]) > fsize - 1:
+                stop_items = [fsize - 1]
+            part = (int(start_items[0]), int(stop_items[0]), fsize)
+            bytes = part[1] - part[0] + 1
+            try:
+                stream = open(static_file, 'rb')
+            except IOError, e:
+                if e[0] in (errno.EISDIR, errno.EACCES):
+                    raise HTTP(403)
+                else:
+                    raise HTTP(404)
+            stream.seek(part[0])
+            headers['Content-Range'] = 'bytes %i-%i/%i' % part
+            headers['Content-Length'] = '%i' % bytes
+            status = 206
+    # in all the other cases (not 304, not 206, but 200 or error page)
+    if status != 206:
         if 'gzip' in request.env.http_accept_encoding and\
                 not 'Content-Encoding' in headers:
             gzipped = static_file + '.gz'
@@ -102,13 +106,13 @@ def stream_file_or_304_or_206(
         try:
             stream = open(static_file, 'rb')
         except IOError, e:
+            # this better does not happer when returning an error page ;-)
             if e[0] in (errno.EISDIR, errno.EACCES):
                 raise HTTP(403)
             else:
                 raise HTTP(404)
         headers['Content-Length'] = fsize
         bytes = None
-        status = 200
     if request and request.env.web2py_use_wsgi_file_wrapper:
         wrapped = request.env.wsgi_file_wrapper(stream, chunk_size)
     else:
