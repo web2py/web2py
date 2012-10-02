@@ -3267,7 +3267,9 @@ class FireBirdAdapter(BaseAdapter):
         return 'SUBSTRING(%s from %s for %s)' % (self.expand(field), parameters[0], parameters[1])
 
     def CONTAINS(self, first, second):
-        if first.type.startswith('list:'):
+        if first.type in ('string','text'):
+            key = str(second).replace('%','%%')
+        elif first.type.startswith('list:'):
             key = '|'+str(second).replace('|','||').replace('%','%%')+'|'
         return '(%s CONTAINING %s)' % (self.expand(first),
                                        self.expand(key,'string'))
