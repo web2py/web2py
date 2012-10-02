@@ -95,8 +95,8 @@ def stream_file_or_304_or_206(
             status = 206
     # in all the other cases (not 304, not 206, but 200 or error page)
     if status != 206:
-        if 'gzip' in request.env.http_accept_encoding and\
-                not 'Content-Encoding' in headers:
+        enc =  request.env.http_accept_encoding
+        if enc and 'gzip' in enc and not 'Content-Encoding' in headers:
             gzipped = static_file + '.gz'
             if os.path.isfile(gzipped) and os.path.getmtime(gzipped)>modified:
                 static_file = gzipped
