@@ -7871,8 +7871,11 @@ class Table(object):
                 value = bar_decode_string(value)
             elif field.type.startswith(list_reference_s):
                 ref_table = field.type[len(list_reference_s):].strip()
-                value = [id_map[ref_table][int(v)] \
+                if id_map is not None:
+                    value = [id_map[ref_table][int(v)] \
                              for v in bar_decode_string(value)]
+                else:
+                    value = [v for v in bar_decode_string(value)]
             elif field.type.startswith('list:'):
                 value = bar_decode_integer(value)
             elif id_map and field.type.startswith('reference'):
