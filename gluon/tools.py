@@ -4921,7 +4921,7 @@ class Wiki(object):
             if query is None:
                 query = (db.wiki_page.id==db.wiki_tag.wiki_page)&\
                     (db.wiki_tag.name.belongs(tags))
-                query = query|db.wiki_page.title.startswith(request.vars.q)
+                query = query|db.wiki_page.title.contains(request.vars.q)
             if self.restrict_search and not self.manage():
                 query = query&(db.wiki_page.created_by==self.auth.user_id)
             pages = db(query).select(count,

@@ -594,7 +594,9 @@ class BaseAdapter(ConnectionPool):
     support_distributed_transaction = False
     uploads_in_blob = False
     can_select_for_update = True
-
+    
+    TRUE = 'T'
+    FALSE = 'F'
     types = {
         'boolean': 'CHAR(1)',
         'string': 'CHAR(%(length)s)',
@@ -620,8 +622,16 @@ class BaseAdapter(ConnectionPool):
         'big-reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         }
 
+    def id_query(self, table):
+        return table._id != None
+
     def adapt(self, obj):
         return "'%s'" % obj.replace("'", "''")
+
+    def smart_adapt(self, obj):
+        if isinstance(obj,(int,float)):
+            return str(obj)
+        return self.adapt(str(obj))
 
     def integrity_error(self):
         return self.driver.IntegrityError
@@ -1703,10 +1713,10 @@ class BaseAdapter(ConnectionPool):
         if not r is None:
             return r
         if fieldtype == 'boolean':
-            if obj and not str(obj)[:1].upper() in ['F', '0']:
-                return "'T'"
+            if obj and not str(obj)[:1].upper() in '0F':
+                return self.smart_adapt(self.TRUE)
             else:
-                return "'F'"
+                return self.smart_adapt(self.FALSE)
         if fieldtype == 'id' or fieldtype == 'integer':
             return str(int(obj))
         if field_is_type('decimal'):
@@ -2946,13 +2956,8 @@ class MSSQLAdapter(BaseAdapter):
             sql_s += ' TOP %i' % lmax
         return 'SELECT %s %s FROM %s%s%s;' % (sql_s, sql_f, sql_t, sql_w, sql_o)
 
-    def represent_exceptions(self, obj, fieldtype):
-        if fieldtype == 'boolean':
-            if obj and not str(obj)[0].upper() == 'F':
-                return '1'
-            else:
-                return '0'
-        return None
+    TRUE = 1
+    FALSE = 0
 
     REGEX_DSN = re.compile('^(?P<dsn>.+)$')
     REGEX_URI = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^\?]+)(\?(?P<urlargs>.*))?$')
@@ -3262,7 +3267,9 @@ class FireBirdAdapter(BaseAdapter):
         return 'SUBSTRING(%s from %s for %s)' % (self.expand(field), parameters[0], parameters[1])
 
     def CONTAINS(self, first, second):
-        if first.type.startswith('list:'):
+        if first.type in ('string','text'):
+            key = str(second).replace('%','%%')
+        elif first.type.startswith('list:'):
             key = '|'+str(second).replace('|','||').replace('%','%%')+'|'
         return '(%s CONTAINING %s)' % (self.expand(first),
                                        self.expand(key,'string'))
@@ -4056,6 +4063,9 @@ class NoSQLAdapter(BaseAdapter):
             return unicode(obj)
         return obj
 
+    def id_query(self, table):
+        return table._id > 0
+
     def represent(self, obj, fieldtype):
         field_is_type = fieldtype.startswith
         if isinstance(obj, CALLABLETYPES):
@@ -4089,7 +4099,7 @@ class NoSQLAdapter(BaseAdapter):
                     obj = obj['id']
                 obj = long(obj)
             elif fieldtype == 'boolean':
-                if obj and not str(obj)[0].upper() == 'F':
+                if obj and not str(obj)[0].upper() in '0F':
                     obj = True
                 else:
                     obj = False
@@ -4406,7 +4416,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         return self.expand(first)
 
     def truncate(self,table,mode):
-        self.db(table._id > 0).delete()
+        self.db(table._id).delete()
 
     def select_raw(self,query,fields=None,attributes=None):
         db = self.db
@@ -4424,7 +4434,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
             tablename = self.get_table(query)
         elif fields:
             tablename = fields[0].tablename
-            query = fields[0].table._id != None
+            query = db._adapter.id_query(fields[0].table)
         else:
             raise SyntaxError, "Unable to determine a tablename"
 
@@ -6571,7 +6581,10 @@ class DAL(object):
                                     Field('fieldname2'))
     """
 
-    def __new__(cls, uri='sqlite://dummy.db', *args, **kwargs):
+    def __new__(cls, uri='sqlite://dummy.db', *args, **kwargs):        
+        if uri==None and not 'singleton_code' in kwargs:
+            # this deal with the special case of Dummy DAL for SQLFORM.factory
+            return super(DAL, cls).__new__(cls, uri, *args, **kwargs)
         if not hasattr(THREAD_LOCAL,'db_instances'):
             THREAD_LOCAL.db_instances = {}
         if 'singleton_code' in kwargs:
@@ -7119,7 +7132,7 @@ def index():
 
     def __call__(self, query=None, ignore_common_filters=None):
         if isinstance(query,Table):
-            query = query._id != None
+            query = self._adapter.id_query(query)
         elif isinstance(query,Field):
             query = query!=None
         return Set(self, query, ignore_common_filters=ignore_common_filters)
@@ -7236,7 +7249,7 @@ def index():
             kwargs.get("write_colnames", True)
         for table in self.tables:
             ofile.write('TABLE %s\r\n' % table)
-            query = self[table]._id > 0
+            query = self._adapter.id_query(self[table])
             nrows = self(query).count()
             kwargs['write_colnames'] = write_colnames
             for k in range(0,nrows,step):
@@ -7860,8 +7873,11 @@ class Table(object):
                 value = bar_decode_string(value)
             elif field.type.startswith(list_reference_s):
                 ref_table = field.type[len(list_reference_s):].strip()
-                value = [id_map[ref_table][int(v)] \
+                if id_map is not None:
+                    value = [id_map[ref_table][int(v)] \
                              for v in bar_decode_string(value)]
+                else:
+                    value = [v for v in bar_decode_string(value)]
             elif field.type.startswith('list:'):
                 value = bar_decode_integer(value)
             elif id_map and field.type.startswith('reference'):
@@ -8666,7 +8682,7 @@ class Set(object):
 
     def __call__(self, query, ignore_common_filters=False):
         if isinstance(query,Table):
-            query = query._id != None
+            query = self.db._adapter.id_query(query)
         elif isinstance(query,str):
             query = Expression(self.db,query)
         elif isinstance(query,Field):
@@ -9444,10 +9460,10 @@ def test_all():
     Example of expressions
 
     >>> mynumber = db.define_table('mynumber', Field('x', 'integer'))
-    >>> db(mynumber.id>0).delete()
+    >>> db(mynumber).delete()
     0
     >>> for i in range(10): tmp = mynumber.insert(x=i)
-    >>> db(mynumber.id>0).select(mynumber.x.sum())[0](mynumber.x.sum())
+    >>> db(mynumber).select(mynumber.x.sum())[0](mynumber.x.sum())
     45
 
     >>> db(mynumber.x+2==5).select(mynumber.x + 2)[0](mynumber.x + 2)

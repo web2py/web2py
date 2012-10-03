@@ -128,6 +128,7 @@ class Request(Storage):
         and secure the session.
         """
         if not global_settings.cronjob and not self.is_https:
+            session.forget()
             redirect(URL(scheme='https', args=self.args, vars=self.vars))
 
         current.session.secure()
@@ -329,7 +330,8 @@ class Response(Storage):
             stream_file_or_304_or_206(stream,
                                       chunk_size=chunk_size,
                                       request=request,
-                                      headers=headers)
+                                      headers=headers,
+                                      status=self.status)
 
         # ## the following is for backward compatibility
         if hasattr(stream, 'name'):
