@@ -207,6 +207,7 @@ def select():
         if match:
             table = match.group('table')
         try:
+            tb = None
             nrows = db(query).count()
             if form.vars.update_check and form.vars.update_fields:
                 db(query).update(**eval_in_global_env('dict(%s)'
@@ -221,6 +222,8 @@ def select():
             else:
                 rows = db(query,ignore_common_filters=True).select(limitby=(start, stop))
         except Exception, e:
+            import traceback
+            tb = traceback.format_exc()
             (rows, nrows) = ([], 0)
             response.flash = DIV(T('Invalid Query'),PRE(str(e)))
     # begin handle upload csv
@@ -250,6 +253,7 @@ def select():
         rows=rows,
         query=request.vars.query,
         formcsv = formcsv,
+        tb = tb,
         )
 
 
