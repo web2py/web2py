@@ -1888,7 +1888,7 @@ class SQLFORM(FORM):
                     rows = dbset.select(cacheable=True)
             else:
                 rows = dbset.select(left=left,orderby=orderby,
-                                    cacheable=True*columns)
+                                    cacheable=True,*columns)
 
             if export_type in exportManager:
                 value = exportManager[export_type]
@@ -2039,7 +2039,7 @@ class SQLFORM(FORM):
             table_fields = [f for f in fields if f._tablename in tablenames]
             rows = dbset.select(left=left,orderby=orderby,
                                 groupby=groupby,limitby=limitby,
-                                cacheable=True,*table_fields)
+                                *table_fields)
         except SyntaxError:
             rows = None
             error = T("Query Not Supported")
