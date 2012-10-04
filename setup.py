@@ -56,7 +56,7 @@ def start():
                     'gluon/contrib/markdown',
                     'gluon/contrib/markmin',
                     'gluon/contrib/memcache',
-                    'gluon/contrib/pyfpdf',
+                    'gluon/contrib/fpdf',
                     'gluon/contrib/pymysql',
                     'gluon/contrib/pyrtf',
                     'gluon/contrib/pysimplesoap',
