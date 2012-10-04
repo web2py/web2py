@@ -1050,7 +1050,7 @@ class Auth(object):
 
     def __init__(self, environment=None, db=None, mailer=True,
                  hmac_key=None, controller='default', function='user',
-                 cas_provider=None, signature=True):
+                 cas_provider=None, signature=True, secure=False):
         """
         auth=Auth(db)
 
@@ -1070,6 +1070,9 @@ class Auth(object):
         session = current.session
         auth = session.auth
         self.user_groups = auth and auth.user_groups or {}
+        if secure and not request.is_https:
+            session.secure()
+            redirect(URL(args=request.args,vars=request.vars,scheme='http'))
         if auth and auth.last_visit and auth.last_visit + \
                 datetime.timedelta(days=0, seconds=auth.expiration) > request.now:
             self.user = auth.user
