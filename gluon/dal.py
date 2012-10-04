@@ -6583,7 +6583,7 @@ class DAL(object):
     def __new__(cls, uri='sqlite://dummy.db', *args, **kwargs):        
         if uri==None and not 'singleton_code' in kwargs:
             # this deal with the special case of Dummy DAL for SQLFORM.factory
-            return super(DAL, cls).__new__(cls, uri, *args, **kwargs)
+            return super(DAL, cls).__new__(cls)
         if not hasattr(THREAD_LOCAL,'db_instances'):
             THREAD_LOCAL.db_instances = {}
         if 'singleton_code' in kwargs:
