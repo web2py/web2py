@@ -185,7 +185,6 @@ SELECT_ARGS = set(
     ('orderby', 'groupby', 'limitby','required', 'cache', 'left',
      'distinct', 'having', 'join','for_update', 'processor','cacheable'))
 
-
 ogetattr = object.__getattribute__
 osetattr = object.__setattr__
 exists = os.path.exists
@@ -7031,11 +7030,12 @@ def index():
         ):
         if not isinstance(tablename,str):
             raise SyntaxError, "missing table name"
+        elif hasattr(self,tablename) or tablename in self.tables:
+            pass
+        #     raise SyntaxError, 'table may be already defined: %s' % tablename
         elif tablename.startswith('_') or hasattr(self,tablename) or \
                 REGEX_PYTHON_KEYWORDS.match(tablename):
             raise SyntaxError, 'invalid table name: %s' % tablename
-        elif tablename in self.tables:
-            raise SyntaxError, 'table already defined: %s' % tablename
         elif self.check_reserved:
             self.check_reserved_keyword(tablename)
         else:
@@ -7048,7 +7048,7 @@ def index():
             table = None
         else:
             table = self.lazy_define_table(tablename,*fields,**args)
-        self.tables.append(tablename)
+            if not tablename in self.tables: self.tables.append(tablename)
         return table
 
     def lazy_define_table(
