@@ -4703,14 +4703,14 @@ class Wiki(object):
 
     def first_paragraph(self,page):
         if not self.can_read(page):
-            mm = page.body.replace('\r','')
+            mm = (page.body or '').replace('\r','')
             ps = [p for p in mm.split('\n\n') \
                       if not p.startswith('#') and p.strip()]
             if ps: return ps[0]
         return ''
 
     def fix_hostname(self,body):
-        return body.replace('://HOSTNAME','://%s' % self.host)
+        return (body or '').replace('://HOSTNAME','://%s' % self.host)
 
     def read(self,slug):
         if slug in '_cloud':
