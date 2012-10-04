@@ -241,6 +241,7 @@ REGEX_SQUARE_BRACKETS = re.compile('^.+\[.+\]$')
 REGEX_STORE_PATTERN = re.compile('\.(?P<e>\w{1,5})$')
 REGEX_QUOTES = re.compile("'[^']*'")
 REGEX_ALPHANUMERIC = re.compile('^[0-9a-zA-Z]\w*$')
+REGEX_PASSWORD = re.compile('\://([^:@]*)\:')
 
 # list of drivers will be built on the fly
 # and lists only what is available
@@ -429,6 +430,9 @@ def pluralize(singular, rules=PLURALIZE_RULES):
         re_search, re_sub, replace = line
         plural = re_search.search(singular) and re_sub.sub(replace, singular)
         if plural: return plural
+
+def hide_password(uri):
+    return REGEX_PASSWORD.sub('://******:',uri)
 
 def OR(a,b):
     return a|b
@@ -7125,7 +7129,10 @@ def index():
     __delitem__ = object.__delattr__
 
     def __repr__(self):
-        return '<DAL %s>' % self._uri
+        if hasattr(self,'_uri'):
+            return '<DAL uri="%s">' % hide_password(str(self._uri))
+        else:
+            return '<DAL singleton_code="%s">' % self._singleton_code
 
     def smart_query(self,fields,text):
         return Set(self, smart_query(fields,text))
