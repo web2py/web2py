@@ -416,7 +416,7 @@ class TemplateParser(object):
         # Allow Views to include other views dynamically
         context = self.context
         if current and not "response" in context:
-            context["response"] = current.response
+            context["response"] = getattr(current,'response',None)
 
         # Get the filename; filename looks like ``"template.html"``.
         # We need to eval to remove the quotes and get the string type.
