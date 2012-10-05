@@ -43,8 +43,7 @@ def file_create_form(location):
     form=FORM(T("create file with filename:")," ",
               INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY),
               INPUT(_type="hidden",_name="location",_value=location),
-              INPUT(_type="hidden",_name="sender",_value=URL('design',args=app)),
-              INPUT(_type="submit",_value=T("Create")),_action=URL('create_file'))
+              INPUT(_type="hidden",_name="sender",_value=URL('design',args=app)))
     return form
 def upload_plugin_form(app):
     form=FORM(T("upload plugin file:")," ",
@@ -207,7 +206,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     {{pass}}
     </ul>
   <div data-role="fieldcontain">{{=file_create_form('%s/static/' % app)}}
-  {{=file_upload_form('%s/static/' % app)}}</div>
+  {{#=file_upload_form('%s/static/' % app)}}</div>
 </div>
 </div>
 
@@ -225,7 +224,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     </span>
     {{pass}}
   <div data-role="fieldcontain">{{=file_create_form('%s/modules/' % app)}}
-  {{=file_upload_form('%s/modules/' % app)}}</div>
+  {{#=file_upload_form('%s/modules/' % app)}}</div>
 </div>
 </div>
 

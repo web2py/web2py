@@ -24,17 +24,17 @@
       initial-scale = 1.0 retains dimensions instead of zooming out if page height > device height
       maximum-scale = 1.0 retains dimensions instead of zooming in if page width < device width
       -->
-    <!--meta name="viewport" content="width=device-width; initial-scale=1.0; maximum-scale=1.0;"-->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <!-- Place favicon.ico and apple-touch-icon.png in the root of your domain and delete these references -->
     <link rel="shortcut icon" href="{{=URL('static','favicon.ico')}}" type="image/x-icon">
     <link rel="apple-touch-icon" href="{{=URL('static','favicon.png')}}">
 
     <!-- For the less-enabled mobile browsers like Opera Mini -->
-    <link rel="stylesheet" href="{{=URL('static','plugin_jqmobile/jquery.mobile-1.0.min.css')}}">
+    <link rel="stylesheet" href="{{=URL('static','plugin_jqmobile/jquery.mobile-1.2.0.min.css')}}">
 
     <!-- All JavaScript at the bottom, except for Modernizr which enables HTML5 elements & feature detects -->
-    <script src="{{=URL('static','js/modernizr.custom.js')}}"></script>
+    <script src="{{=URL('static','js/modernizr.custom.js')}}"></script!>
 
     {{include 'web2py_ajax.html'}}
 
@@ -61,7 +61,7 @@ $(document).bind("mobileinit", function(){
 });
     </script>
 
-    <script src="{{=URL('static','plugin_jqmobile/jquery.mobile-1.0.min.js')}}"></script>
+    <script src="{{=URL('static','plugin_jqmobile/jquery.mobile-1.2.0.min.js')}}"></script>
 
     <style>
       .error { color: red; }
@@ -76,7 +76,7 @@ $(document).bind("mobileinit", function(){
   <!--[if (gt IE 9)|!(IE)]><!--> <body> <!--<![endif]-->
 
     <div data-role="page">
-      <div data-role="header" data-fullscreen="true" data-position="fixed">
+      <div data-role="header">
 	<h1>{{=response.title}}</h1>
 	{{block header}}
 	{{if 'auth' in globals():}}
@@ -101,7 +101,7 @@ $(document).bind("mobileinit", function(){
 	{{pass}}
 	{{include}}
       </div>
-      <div data-role="footer" data-fullscreen="true" data-position="fixed" style="padding: 5px; text-align: center">
+      <div data-role="footer">
 	{{block footer}}
 	powered by web2py - @{{=request.now.year}}
 	{{end}}

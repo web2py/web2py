@@ -3,7 +3,6 @@
 EXPERIMENTAL_STUFF = True
 
 if EXPERIMENTAL_STUFF:
-    is_mobile = request.user_agent().is_mobile
     if is_mobile:
         response.view = response.view.replace('default/','default.mobile/')
         response.menu = []

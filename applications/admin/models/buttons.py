@@ -8,7 +8,7 @@ def A_button(*a,**b):
     return A(*a,**b)
 
 def button(href, label):
-    if request.user_agent().is_mobile:
+    if is_mobile:
         ret = A_button(SPAN(label), _href=href)
     else:
         ret = A(SPAN(label),_class='button',_href=href)
