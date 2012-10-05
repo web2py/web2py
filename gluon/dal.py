@@ -6599,7 +6599,7 @@ class DAL(object):
             if args or kwargs:
                 raise RuntimeError, 'Cannot duplicate a Singleton'
         except KeyError:
-            db = super(DAL, cls).__new__(cls, uri, *args, **kwargs)
+            db = super(DAL, cls).__new__(cls)
             THREAD_LOCAL.db_instances[singleton_code] = db
         db._singleton_code = singleton_code
         return db
