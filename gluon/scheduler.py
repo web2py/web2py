@@ -443,7 +443,7 @@ class Scheduler(MetaScheduler):
             Field('application_name',requires=IS_NOT_EMPTY(),
                   default=None,writable=False),
             Field('task_name',default=None),
-            Field('group_name',default='main',writable=False),
+            Field('group_name',default='main'),
             Field('status',requires=IS_IN_SET(TASK_STATUS),
                   default=QUEUED,writable=False),
             Field('function_name',
