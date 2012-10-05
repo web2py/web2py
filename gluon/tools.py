@@ -1070,9 +1070,8 @@ class Auth(object):
         session = current.session
         auth = session.auth
         self.user_groups = auth and auth.user_groups or {}
-        if secure and not request.is_https:
-            session.secure()
-            redirect(URL(args=request.args,vars=request.vars,scheme='http'))
+        if secure:
+            request.requires_https()
         if auth and auth.last_visit and auth.last_visit + \
                 datetime.timedelta(days=0, seconds=auth.expiration) > request.now:
             self.user = auth.user
