@@ -113,7 +113,6 @@ def query_by_table_type(tablename,db,request=request):
 # ## list all databases and tables
 # ###########################################################
 
-
 def index():
     return dict(databases=databases)
 

@@ -7052,7 +7052,8 @@ def index():
             table = None
         else:
             table = self.lazy_define_table(tablename,*fields,**args)
-            if not tablename in self.tables: self.tables.append(tablename)
+        if not tablename in self.tables:
+            self.tables.append(tablename)
         return table
 
     def lazy_define_table(
