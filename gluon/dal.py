@@ -5525,7 +5525,7 @@ class IMAPAdapter(NoSQLAdapter):
         self.connector = connector
         if do_connect: self.reconnect()
 
-    def reconnect(self, f, cursor=True):
+    def reconnect(self, f=None, cursor=True):
         """
         IMAP4 Pool connection method
 
