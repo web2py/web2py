@@ -123,6 +123,21 @@ if session.authorized:
     else:
         session.last_time = t0
 
+
+if request.vars.is_mobile in ('true','false','auto'):
+    session.is_mobile = request.vars.is_mobile or 'auto'
+if request.controller=='default' and request.function=='index':
+    if not request.vars.is_mobile:
+        session.is_mobile = 'auto'
+if not session.is_mobile:
+    session.is_mobile = 'auto'
+if session.is_mobile == 'true':
+    is_mobile = True
+elif session.is_mobile == 'false':
+    is_mobile = False
+else:
+    is_mobile = request.user_agent().is_mobile
+
 if request.controller == "webservices":
     basic = request.env.http_authorization
     if not basic or not basic[:6].lower() == 'basic ':
@@ -149,7 +164,6 @@ elif session.authorized and \
      request.controller == 'default' and \
      request.function == 'index':
     redirect(URL(request.application, 'default', 'site'))
-
 
 if request.controller=='appadmin' and DEMO_MODE:
     session.flash = 'Appadmin disabled in demo mode'
