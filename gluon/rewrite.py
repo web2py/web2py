@@ -231,7 +231,7 @@ def try_rewrite_on_error(http_response, request, environ, ticket=None):
                     path_info = '/' + path_info.lstrip('/') # add leading '/' if missing
                     environ['PATH_INFO'] = path_info
                     error_handling_path = \
-                        url_in(request, environ)[1]['PATH_INFO']
+                        url_in(request, environ)[2]['PATH_INFO']
                     # Avoid infinite loop.
                     if error_handling_path != error_raising_path:
                         # wsgibase will be called recursively with the routes_onerror path.
