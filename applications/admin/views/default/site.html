@@ -76,6 +76,9 @@
       <p>
 	{{=T("Running on %s", request.env.server_software)}}
       </p>
+      {{if session.is_mobile=='auto':}}<p>
+	{{=A(T('Try the mobile interface'),_href=URL('plugin_jqmobile','about'))}}</p>
+      {{pass}}
     </div>
     {{pass}}
     <!-- MULTI_USER_INTERFACE -->

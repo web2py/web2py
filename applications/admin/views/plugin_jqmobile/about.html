@@ -34,7 +34,7 @@
     </style>
   </head>
   <body>
-    <iframe src="{{=URL('index')}}"></iframe>
+    <iframe src="{{=URL('default','index',vars=dict(is_mobile='true'))}}"></iframe>
     <div id="about">
       <h1><a href="http://web2py.com">web2py</a> plugin</h1>
       <h2>for <a href="http://jquerymobile.com/">jQuery Mobile</a></h2>

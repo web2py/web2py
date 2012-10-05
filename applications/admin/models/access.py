@@ -147,8 +147,8 @@ if request.controller == "webservices":
         time.sleep(10)
         raise HTTP(403,"Not authorized")
 elif not session.authorized and not \
-    (request.controller == 'default' and \
-     request.function in ('index','user')):
+    (request.controller+'/'+request.function in 
+     ('default/index','default/user','plugin_jqmobile/index','plugin_jqmobile/about')):
 
     if request.env.query_string:
         query_string = '?' + request.env.query_string

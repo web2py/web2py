@@ -86,7 +86,7 @@ $(document).bind("mobileinit", function(){
 	<a rel="external" href="{{=URL('default','user',args='logout')}}" data-icon="logout" class="ui-btn-left">Logout</a>
 	{{pass}}
 	{{pass}}
-	<a rel="external" href="{{=URL('default','index')}}" data-icon="home" class="ui-btn-right">{{=T("Home")}}</a>
+	<a rel="external" href="{{=URL('default','index',vars=dict(is_mobile='true'))}}" data-icon="home" class="ui-btn-right">{{=T("Home")}}</a>
 	{{end}}
       </div>
       <div data-role="content">
