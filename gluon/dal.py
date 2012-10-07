@@ -521,7 +521,7 @@ class ConnectionPool(object):
     @staticmethod
     def close_all_instances(action):
         """ to close cleanly databases in a multithreaded environment """
-        db_group = getattr(THREAD_LOCAL,'db_instances',{}).items()
+        dbs = getattr(THREAD_LOCAL,'db_instances',{}).items()
         for db_uid, db_group in dbs:
             for db in db_group:
                 db._adapter.close(action)
