@@ -177,9 +177,9 @@ CALLABLETYPES = (types.LambdaType, types.FunctionType,
                  types.MethodType, types.BuiltinMethodType)
 
 TABLE_ARGS = set(
-    ('migrate','primarykey','fake_migrate','format',
+    ('migrate','primarykey','fake_migrate','format','redefine',
      'singular','plural','trigger_name','sequence_name',
-     'common_filter','polymodel','table_class','on_define'))
+     'common_filter','polymodel','table_class','on_define',))
 
 SELECT_ARGS = set(
     ('orderby', 'groupby', 'limitby','required', 'cache', 'left',
@@ -521,11 +521,11 @@ class ConnectionPool(object):
     @staticmethod
     def close_all_instances(action):
         """ to close cleanly databases in a multithreaded environment """
-        dbs = getattr(THREAD_LOCAL,'db_instances',{}).items()
-        for singleton_code, db in dbs:
-            if hasattr(db,'_adapter'):
+        db_group = getattr(THREAD_LOCAL,'db_instances',{}).items()
+        for db_uid, db_group in dbs:
+            for db in db_group:
                 db._adapter.close(action)
-            del THREAD_LOCAL.db_instances[singleton_code]
+            del THREAD_LOCAL.db_instances[db_uid]
         if callable(action):
             action(None)
         return
@@ -6585,23 +6585,31 @@ class DAL(object):
     """
 
     def __new__(cls, uri='sqlite://dummy.db', *args, **kwargs):        
-        if uri==None and not 'singleton_code' in kwargs:
-            # this deal with the special case of Dummy DAL for SQLFORM.factory
-            return super(DAL, cls).__new__(cls)
         if not hasattr(THREAD_LOCAL,'db_instances'):
             THREAD_LOCAL.db_instances = {}
-        if 'singleton_code' in kwargs:
-            singleton_code = kwargs['singleton_code']
-            del kwargs['singleton_code']
-        singleton_code = hashlib.md5(repr(uri)).hexdigest()
-        try:
-            db = THREAD_LOCAL.db_instances[singleton_code]
-            if args or kwargs:
-                raise RuntimeError, 'Cannot duplicate a Singleton'
-        except KeyError:
-            db = super(DAL, cls).__new__(cls)
-            THREAD_LOCAL.db_instances[singleton_code] = db
-        db._singleton_code = singleton_code
+        if not hasattr(THREAD_LOCAL,'db_instances_zombie'):
+            THREAD_LOCAL.db_instances_zombie = {}
+        if uri == '<zombie>':
+            db_uid = kwargs['db_uid'] # a zombie must have a db_uid!
+            if db_uid in THREAD_LOCAL.db_instances:
+                db_group = THREAD_LOCAL.db_instances[db_uid]
+                db = db_group[-1]
+            elif db_uid in THREAD_LOCAL.db_instances_zombie:
+                db = THREAD_LOCAL.db_instances_zombie[db_uid]
+            else:
+                db = super(DAL, cls).__new__(cls)
+                THREAD_LOCAL.db_instances_zombie[db_uid] = db
+        else:
+            db_uid = kwargs.get('db_uid',hashlib.md5(repr(uri)).hexdigest())
+            if db_uid in THREAD_LOCAL.db_instances_zombie:
+                db = THREAD_LOCAL.db_instances_zombie[db_uid]
+                del THREAD_LOCAL.db_instances_zombie[db_uid]
+            else:
+                db = super(DAL, cls).__new__(cls)
+            db_group = THREAD_LOCAL.db_instances.get(db_uid,[])
+            db_group.append(db)
+            THREAD_LOCAL.db_instances[db_uid] = db_group
+        db._db_uid = db_uid
         return db
 
     @staticmethod
@@ -6657,7 +6665,7 @@ class DAL(object):
                  decode_credentials=False, driver_args=None,
                  adapter_args=None, attempts=5, auto_import=False,
                  bigint_id=False,debug=False,lazy_tables=False,
-                 singleton_code=None):
+                 db_uid=None):
         """
         Creates a new Database Abstraction Layer instance.
 
@@ -6685,7 +6693,7 @@ class DAL(object):
         :attempts (defaults to 5). Number of times to attempt connecting
         """
 
-        if hasattr(self,'_adapter') or uri=='<lazy>': return
+        if uri == '<zombie>' and db_uid is not None: return
 
         if not decode_credentials:
             credential_decoder = lambda cred: cred
@@ -7035,8 +7043,8 @@ def index():
         if not isinstance(tablename,str):
             raise SyntaxError, "missing table name"
         elif hasattr(self,tablename) or tablename in self.tables:
-            pass
-        #     raise SyntaxError, 'table may be already defined: %s' % tablename
+            if not args.get('redefine',False):
+                raise SyntaxError, 'table already defined: %s' % tablename
         elif tablename.startswith('_') or hasattr(self,tablename) or \
                 REGEX_PYTHON_KEYWORDS.match(tablename):
             raise SyntaxError, 'invalid table name: %s' % tablename
@@ -7133,7 +7141,7 @@ def index():
         if hasattr(self,'_uri'):
             return '<DAL uri="%s">' % hide_password(str(self._uri))
         else:
-            return '<DAL singleton_code="%s">' % self._singleton_code
+            return '<DAL db_uid="%s">' % self._db_uid
 
     def smart_query(self,fields,text):
         return Set(self, smart_query(fields,text))
@@ -7152,10 +7160,12 @@ def index():
         self._adapter.rollback()
 
     def close(self):
-        adapter = self._adapter
-        if self._singleton_code in THREAD_LOCAL.db_instances:
-            del THREAD_LOCAL.db_instances[self._singleton_code]
-        adapter.close()
+        self._adapter.close()
+        if self._db_uid in THREAD_LOCAL.db_instances:            
+            db_group = THREAD_LOCAL.db_instances[self._db_uid]
+            db_group.remove(self)
+            if not db_group:
+                del THREAD_LOCAL.db_instances[self._db_uid]
 
     def executesql(self, query, placeholders=None, as_dict=False,
                    fields=None, colnames=None):
@@ -7284,11 +7294,11 @@ def index():
                 self[tablename].import_from_csv_file(
                     ifile, id_map, null, unique, id_offset, *args, **kwargs)
 
-def DAL_unpickler(singleton_code):
-    return DAL('<lazy>',singleton_code=singleton_code)
+def DAL_unpickler(db_uid):
+    return DAL('<zombie>',db_uid=db_uid)
 
 def DAL_pickler(db):
-    return DAL_unpickler, (db._singleton_code,)
+    return DAL_unpickler, (db._db_uid,)
 
 copy_reg.pickle(DAL, DAL_pickler, DAL_unpickler)
 
