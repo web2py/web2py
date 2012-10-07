@@ -1,3 +1,4 @@
+
 #!/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -525,7 +526,8 @@ class ConnectionPool(object):
         for db_uid, db_group in dbs:
             for db in db_group:
                 db._adapter.close(action)
-            del THREAD_LOCAL.db_instances[db_uid]
+        THREAD_LOCAL.db_instances.clear()
+        THREAD_LOCAL.db_instances_zombie.clear()
         if callable(action):
             action(None)
         return
