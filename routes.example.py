@@ -35,8 +35,10 @@ BASE = '' # optonal prefix for incoming URLs
 
 routes_in = (
     # do not reroute admin unless you want to disable it
+    (BASE+'/admin','/admin/default/index'),
     (BASE+'/admin/$anything','/admin/$anything'),
     # do not reroute appadmin unless you want to disable it
+    (BASE+'/$app/appadmin','/$app/appadmin/index'),
     (BASE+'/$app/appadmin/$anything','/$app/appadmin/$anything'),
     # do not reroute static files
     (BASE+'/$app/static/$anything','/$app/static/$anything'),    
