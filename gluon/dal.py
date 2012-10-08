@@ -526,8 +526,8 @@ class ConnectionPool(object):
         for db_uid, db_group in dbs:
             for db in db_group:
                 db._adapter.close(action)
-        THREAD_LOCAL.db_instances.clear()
-        THREAD_LOCAL.db_instances_zombie.clear()
+        getattr(THREAD_LOCAL,'db_instances',{}).clear()
+        getattr(THREAD_LOCAL,'db_instances_zombie',{}).clear()
         if callable(action):
             action(None)
         return
