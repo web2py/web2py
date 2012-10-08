@@ -1,4 +1,27 @@
-## 2.00.1
+## 2.1.0
+
+- if apps are accidentally deleted there is copy left in deposit folder
+- db.table.field.epoch() counts seconds from epoch
+- fixed many aith.wiki problems
+- better welcome layout, thanks Paolo
+- db.define_table(...,redefine=True)
+- DAL, Row, and Rows object can now be pickled/unpickled, thanks to zombie DAL.
+- admin uses codemirror
+- support for auth.wiki(render='html')
+- upgraded jQuery 1.8
+- upgraded Bootstrap 2.1
+- fixed problem with dropbox_account.py
+- cache.with_prefix(cache.ram,'prefix')
+- mail.send(...,sender='Mr X <%(sender)s>')
+- allow entropy computation in IS_STRONG and web2py.js, thanks Jonathan and Niphlod
+- renamed luon/contrib/comet_messaging.py -> gluon/contrib/websocket_messaging.py
+- DAL support for SQL CASE, example: db().select(...query.case('true','false))
+- faster web2py_uuid() and request initialization logic, thanks Michele
+- static asset management, thanks Niphlod
+- improved mobile admin
+- request.requires_https and Auth(secure=True), thanks Yarin and Niphlod
+
+## 2.0.1-11
 
 ### DAL Improvements
 
