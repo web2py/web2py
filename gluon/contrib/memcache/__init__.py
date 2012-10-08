@@ -29,7 +29,7 @@ class MemcacheClientObj(Client):
                  pload=None, pid=None,
                  default_time_expire = DEFAULT_TIME_EXPIRE):
         self.request=request
-        self.default_time_expire = time_expire
+        self.default_time_expire = default_time_expire
         if request:
             app = request.application
         else:
