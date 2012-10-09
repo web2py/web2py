@@ -161,8 +161,7 @@ def web2py_uuid(ctokens=UNPACKED_CTOKENS):
     It works like uuid.uuid4 except that tries to use os.urandom() if possible
     and it XORs the output with the tokens uniquely associated with this machine.
     """
-    rand_longs = struct.unpack('=QQ', string.join(
-            (chr(random.randrange(256)) for i in xrange(16)),''))
+    rand_longs = (random.getrandbits(64),random.getrandbits(64))
     if HAVE_URANDOM:
         urand_longs = struct.unpack('=QQ', fast_urandom16())
         byte_s = struct.pack('=QQ',
