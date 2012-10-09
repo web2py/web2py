@@ -1,4 +1,3 @@
-
 #!/bin/env python
 # -*- coding: utf-8 -*-
 
@@ -525,7 +524,8 @@ class ConnectionPool(object):
         dbs = getattr(THREAD_LOCAL,'db_instances',{}).items()
         for db_uid, db_group in dbs:
             for db in db_group:
-                db._adapter.close(action)
+                if hasattr(db,'_adapter'):
+                    db._adapter.close(action)
         getattr(THREAD_LOCAL,'db_instances',{}).clear()
         getattr(THREAD_LOCAL,'db_instances_zombie',{}).clear()
         if callable(action):
@@ -4953,7 +4953,6 @@ class MongoDBAdapter(NoSQLAdapter):
         #    if expression.type=='id':
         #        return {_id}"
         if isinstance(expression, Query):
-            print "in expand and this is a query"
             # any query using 'id':=
             #   set name as _id (as per pymongo/mongodb primary key)
             # convert second arg to an objectid field
@@ -5010,7 +5009,9 @@ class MongoDBAdapter(NoSQLAdapter):
         except ImportError:
             from pymongo.son import SON
 
-        for key in set(attributes.keys())-set(('limitby','orderby')):
+        if 'for_update' in attributes:
+            logging.warn('mongodb does not support for_update')
+        for key in set(attributes.keys())-set(('limitby','orderby','for_update')):
             if attributes[key]!=None:
                 raise SyntaxError, 'invalid select attribute: %s' % key
 
@@ -5067,7 +5068,7 @@ class MongoDBAdapter(NoSQLAdapter):
         except ImportError:
             from bson.objectid import ObjectId
         tablename, mongoqry_dict, mongofields_dict, \
-        mongosort_list, limitby_limit, limitby_skip = \
+            mongosort_list, limitby_limit, limitby_skip = \
             self._select(query,fields,attributes)
         ctable = self.connection[tablename]
         if count:
@@ -5083,10 +5084,11 @@ class MongoDBAdapter(NoSQLAdapter):
         # DEBUG: print "mongo_list_dicts=%s" % mongo_list_dicts
         rows = []
         ### populate row in proper order
-        colnames = [field.name for field in fields]
+        colnames = [str(field) for field in fields]
         for k,record in enumerate(mongo_list_dicts):
             row=[]
-            for colname in colnames:
+            for fullcolname in colnames:
+                colname = fullcolname.split('.')[1]
                 column = '_id' if colname=='id' else colname
                 if column in record:
                     if column == '_id' and isinstance(
