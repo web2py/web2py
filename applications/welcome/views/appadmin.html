@@ -27,7 +27,7 @@
             {{pass}}
         {{else:}}
              {{qry=''}}
-             {{pass}}
+        {{pass}}
       {{pass}}
   <tr>
     <th style="font-size: 1.75em;">
@@ -37,9 +37,9 @@
       {{=A(str(T('New Record')),_href=URL('insert',args=[db,table]),_class="btn")}}
     </td>
   </tr>
-    {{pass}}
-</table>
   {{pass}}
+  {{pass}}
+</table>
 
 {{elif request.function=='select':}}
   <h2>{{=XML(str(T("Database %s select"))%A(request.args[0],_href=URL('index'))) }}

@@ -177,14 +177,13 @@ CALLABLETYPES = (types.LambdaType, types.FunctionType,
                  types.MethodType, types.BuiltinMethodType)
 
 TABLE_ARGS = set(
-    ('migrate','primarykey','fake_migrate','format',
+    ('migrate','primarykey','fake_migrate','format','redefine',
      'singular','plural','trigger_name','sequence_name',
-     'common_filter','polymodel','table_class','on_define'))
+     'common_filter','polymodel','table_class','on_define',))
 
 SELECT_ARGS = set(
     ('orderby', 'groupby', 'limitby','required', 'cache', 'left',
      'distinct', 'having', 'join','for_update', 'processor','cacheable'))
-
 
 ogetattr = object.__getattribute__
 osetattr = object.__setattr__
@@ -242,6 +241,7 @@ REGEX_SQUARE_BRACKETS = re.compile('^.+\[.+\]$')
 REGEX_STORE_PATTERN = re.compile('\.(?P<e>\w{1,5})$')
 REGEX_QUOTES = re.compile("'[^']*'")
 REGEX_ALPHANUMERIC = re.compile('^[0-9a-zA-Z]\w*$')
+REGEX_PASSWORD = re.compile('\://([^:@]*)\:')
 
 # list of drivers will be built on the fly
 # and lists only what is available
@@ -431,6 +431,9 @@ def pluralize(singular, rules=PLURALIZE_RULES):
         plural = re_search.search(singular) and re_sub.sub(replace, singular)
         if plural: return plural
 
+def hide_password(uri):
+    return REGEX_PASSWORD.sub('://******:',uri)
+
 def OR(a,b):
     return a|b
 
@@ -519,10 +522,12 @@ class ConnectionPool(object):
     def close_all_instances(action):
         """ to close cleanly databases in a multithreaded environment """
         dbs = getattr(THREAD_LOCAL,'db_instances',{}).items()
-        for singleton_code, db in dbs:
-            if hasattr(db,'_adapter'):
-                db._adapter.close(action)
-            del THREAD_LOCAL.db_instances[singleton_code]
+        for db_uid, db_group in dbs:
+            for db in db_group:
+                if hasattr(db,'_adapter'):
+                    db._adapter.close(action)
+        getattr(THREAD_LOCAL,'db_instances',{}).clear()
+        getattr(THREAD_LOCAL,'db_instances_zombie',{}).clear()
         if callable(action):
             action(None)
         return
@@ -4948,7 +4953,6 @@ class MongoDBAdapter(NoSQLAdapter):
         #    if expression.type=='id':
         #        return {_id}"
         if isinstance(expression, Query):
-            print "in expand and this is a query"
             # any query using 'id':=
             #   set name as _id (as per pymongo/mongodb primary key)
             # convert second arg to an objectid field
@@ -5005,7 +5009,9 @@ class MongoDBAdapter(NoSQLAdapter):
         except ImportError:
             from pymongo.son import SON
 
-        for key in set(attributes.keys())-set(('limitby','orderby')):
+        if 'for_update' in attributes:
+            logging.warn('mongodb does not support for_update')
+        for key in set(attributes.keys())-set(('limitby','orderby','for_update')):
             if attributes[key]!=None:
                 raise SyntaxError, 'invalid select attribute: %s' % key
 
@@ -5062,7 +5068,7 @@ class MongoDBAdapter(NoSQLAdapter):
         except ImportError:
             from bson.objectid import ObjectId
         tablename, mongoqry_dict, mongofields_dict, \
-        mongosort_list, limitby_limit, limitby_skip = \
+            mongosort_list, limitby_limit, limitby_skip = \
             self._select(query,fields,attributes)
         ctable = self.connection[tablename]
         if count:
@@ -5078,10 +5084,11 @@ class MongoDBAdapter(NoSQLAdapter):
         # DEBUG: print "mongo_list_dicts=%s" % mongo_list_dicts
         rows = []
         ### populate row in proper order
-        colnames = [field.name for field in fields]
+        colnames = [str(field) for field in fields]
         for k,record in enumerate(mongo_list_dicts):
             row=[]
-            for colname in colnames:
+            for fullcolname in colnames:
+                colname = fullcolname.split('.')[1]
                 column = '_id' if colname=='id' else colname
                 if column in record:
                     if column == '_id' and isinstance(
@@ -5522,7 +5529,7 @@ class IMAPAdapter(NoSQLAdapter):
         self.connector = connector
         if do_connect: self.reconnect()
 
-    def reconnect(self, f, cursor=True):
+    def reconnect(self, f=None, cursor=True):
         """
         IMAP4 Pool connection method
 
@@ -6582,23 +6589,31 @@ class DAL(object):
     """
 
     def __new__(cls, uri='sqlite://dummy.db', *args, **kwargs):        
-        if uri==None and not 'singleton_code' in kwargs:
-            # this deal with the special case of Dummy DAL for SQLFORM.factory
-            return super(DAL, cls).__new__(cls, uri, *args, **kwargs)
         if not hasattr(THREAD_LOCAL,'db_instances'):
             THREAD_LOCAL.db_instances = {}
-        if 'singleton_code' in kwargs:
-            singleton_code = kwargs['singleton_code']
-            del kwargs['singleton_code']
-        singleton_code = hashlib.md5(repr(uri)).hexdigest()
-        try:
-            db = THREAD_LOCAL.db_instances[singleton_code]
-            if args or kwargs:
-                raise RuntimeError, 'Cannot duplicate a Singleton'
-        except KeyError:
-            db = super(DAL, cls).__new__(cls, uri, *args, **kwargs)
-            THREAD_LOCAL.db_instances[singleton_code] = db
-        db._singleton_code = singleton_code
+        if not hasattr(THREAD_LOCAL,'db_instances_zombie'):
+            THREAD_LOCAL.db_instances_zombie = {}
+        if uri == '<zombie>':
+            db_uid = kwargs['db_uid'] # a zombie must have a db_uid!
+            if db_uid in THREAD_LOCAL.db_instances:
+                db_group = THREAD_LOCAL.db_instances[db_uid]
+                db = db_group[-1]
+            elif db_uid in THREAD_LOCAL.db_instances_zombie:
+                db = THREAD_LOCAL.db_instances_zombie[db_uid]
+            else:
+                db = super(DAL, cls).__new__(cls)
+                THREAD_LOCAL.db_instances_zombie[db_uid] = db
+        else:
+            db_uid = kwargs.get('db_uid',hashlib.md5(repr(uri)).hexdigest())
+            if db_uid in THREAD_LOCAL.db_instances_zombie:
+                db = THREAD_LOCAL.db_instances_zombie[db_uid]
+                del THREAD_LOCAL.db_instances_zombie[db_uid]
+            else:
+                db = super(DAL, cls).__new__(cls)
+            db_group = THREAD_LOCAL.db_instances.get(db_uid,[])
+            db_group.append(db)
+            THREAD_LOCAL.db_instances[db_uid] = db_group
+        db._db_uid = db_uid
         return db
 
     @staticmethod
@@ -6654,7 +6669,7 @@ class DAL(object):
                  decode_credentials=False, driver_args=None,
                  adapter_args=None, attempts=5, auto_import=False,
                  bigint_id=False,debug=False,lazy_tables=False,
-                 singleton_code=None):
+                 db_uid=None):
         """
         Creates a new Database Abstraction Layer instance.
 
@@ -6682,7 +6697,7 @@ class DAL(object):
         :attempts (defaults to 5). Number of times to attempt connecting
         """
 
-        if hasattr(self,'_adapter') or uri=='<lazy>': return
+        if uri == '<zombie>' and db_uid is not None: return
 
         if not decode_credentials:
             credential_decoder = lambda cred: cred
@@ -7031,11 +7046,12 @@ def index():
         ):
         if not isinstance(tablename,str):
             raise SyntaxError, "missing table name"
+        elif hasattr(self,tablename) or tablename in self.tables:
+            if not args.get('redefine',False):
+                raise SyntaxError, 'table already defined: %s' % tablename
         elif tablename.startswith('_') or hasattr(self,tablename) or \
                 REGEX_PYTHON_KEYWORDS.match(tablename):
             raise SyntaxError, 'invalid table name: %s' % tablename
-        elif tablename in self.tables:
-            raise SyntaxError, 'table already defined: %s' % tablename
         elif self.check_reserved:
             self.check_reserved_keyword(tablename)
         else:
@@ -7048,7 +7064,8 @@ def index():
             table = None
         else:
             table = self.lazy_define_table(tablename,*fields,**args)
-        self.tables.append(tablename)
+        if not tablename in self.tables:
+            self.tables.append(tablename)
         return table
 
     def lazy_define_table(
@@ -7125,7 +7142,10 @@ def index():
     __delitem__ = object.__delattr__
 
     def __repr__(self):
-        return '<DAL %s>' % self._uri
+        if hasattr(self,'_uri'):
+            return '<DAL uri="%s">' % hide_password(str(self._uri))
+        else:
+            return '<DAL db_uid="%s">' % self._db_uid
 
     def smart_query(self,fields,text):
         return Set(self, smart_query(fields,text))
@@ -7144,10 +7164,12 @@ def index():
         self._adapter.rollback()
 
     def close(self):
-        adapter = self._adapter
-        if self._singleton_code in THREAD_LOCAL.db_instances:
-            del THREAD_LOCAL.db_instances[self._singleton_code]
-        adapter.close()
+        self._adapter.close()
+        if self._db_uid in THREAD_LOCAL.db_instances:            
+            db_group = THREAD_LOCAL.db_instances[self._db_uid]
+            db_group.remove(self)
+            if not db_group:
+                del THREAD_LOCAL.db_instances[self._db_uid]
 
     def executesql(self, query, placeholders=None, as_dict=False,
                    fields=None, colnames=None):
@@ -7276,11 +7298,11 @@ def index():
                 self[tablename].import_from_csv_file(
                     ifile, id_map, null, unique, id_offset, *args, **kwargs)
 
-def DAL_unpickler(singleton_code):
-    return DAL('<lazy>',singleton_code=singleton_code)
+def DAL_unpickler(db_uid):
+    return DAL('<zombie>',db_uid=db_uid)
 
 def DAL_pickler(db):
-    return DAL_unpickler, (db._singleton_code,)
+    return DAL_unpickler, (db._db_uid,)
 
 copy_reg.pickle(DAL, DAL_pickler, DAL_unpickler)
 

@@ -4,16 +4,16 @@
 
 <h2>{{=T("Installed applications")}}</h2>
 
-<ul data-role="listview">
+<ul data-role="listview" data-inset="true">
   {{for a in apps:}}
   <li>
     {{if a==request.application:}}
     <h3>{{=a}} ({{=T('currently running')}})</h3>
     {{else:}}
-    <h3>{{=a}}</h3>
+    <h3>{{=T("Application")}} {{=a}}</h3>
     {{if MULTI_USER_MODE and db.app(name=a):}}<p>created by {{="%(first_name)s %(last_name)s" % db.auth_user[db.app(name=a).owner]}}</p>{{pass}}
     {{pass}}
-    <ul>
+    <ul data-role="listview" data-inset="true">
       {{if a!=request.application:}}
       {{=LI(A(T('Goto'),_rel="external",_href=URL(a,'default','index')))}}
       {{if not os.path.exists('applications/%s/compiled' % a):}}

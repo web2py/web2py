@@ -35,11 +35,13 @@ BASE = '' # optonal prefix for incoming URLs
 
 routes_in = (
     # do not reroute admin unless you want to disable it
-    (BASE+'/admin/?$anything','/admin/$anything'),
+    (BASE+'/admin','/admin/default/index'),
+    (BASE+'/admin/$anything','/admin/$anything'),
     # do not reroute appadmin unless you want to disable it
-    (BASE+'/$app/appadmin/?$anything','/$app/appadmin/$anything'),
+    (BASE+'/$app/appadmin','/$app/appadmin/index'),
+    (BASE+'/$app/appadmin/$anything','/$app/appadmin/$anything'),
     # do not reroute static files
-    (BASE+'/$app/static/?$anything','/$app/static/$anything'),    
+    (BASE+'/$app/static/$anything','/$app/static/$anything'),    
     # reroute favicon and robots, use exable for lack of better choice
     ('/favicon.ico', '/examples/static/favicon.ico'),
     ('/robots.txt', '/examples/static/robots.txt'),    
@@ -55,7 +57,7 @@ routes_in = (
 
 routes_out = (
     # do not reroute admin unless you want to disable it
-    ('/admin/$anything', BASE+'/admin/?$anything'),
+    ('/admin/$anything', BASE+'/admin/$anything'),
     # do not reroute appadmin unless you want to disable it
     ('/$app/appadmin/$anything',BASE+'/$app/appadmin/$anything'),
     # do not reroute static files

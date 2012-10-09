@@ -128,7 +128,7 @@ class Request(Storage):
         and secure the session.
         """
         if not global_settings.cronjob and not self.is_https:
-            session.forget()
+            current.session.forget()
             redirect(URL(scheme='https', args=self.args, vars=self.vars))
 
         current.session.secure()

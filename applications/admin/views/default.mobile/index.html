@@ -9,8 +9,9 @@
     <div><input type="hidden" name="send" value="{{=send}}"/></div>
     <table>
       <tr><td>{{=T('Administrator Password:')}}</td><td><input type="password" name="password" id="password"/></td></tr>
-      <tr><td></td><td><input type="submit" name="login" value="{{=T('Login')}}"/></td></tr>
+      <tr><td></td><td><button name="login">{{=T('Login')}}</button></td></tr>
     </table>
+    <input type="hidden" name="is_mobile" value="true"/>
   </form>
 </div>
 {{else:}}

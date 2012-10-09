@@ -80,7 +80,6 @@ skip_files: |
 
 builtins:
 - remote_api: on
-# - datastore_admin: on
 - appstats: on
 - admin_redirect: on
 - deferred: on
