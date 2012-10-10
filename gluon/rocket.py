@@ -1466,7 +1466,7 @@ class Worker(Thread):
                     except UnicodeDecodeError:
                         self.err_log.warning('Invalid request header: '+repr(l))
 
-                if l.strip() == '':
+                if l.strip().replace('\0','') == '':
                     break
                 elif l[0] in ' \t' and lname:
                     # Some headers take more than one line
