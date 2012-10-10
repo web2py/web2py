@@ -44,7 +44,7 @@ class MemcacheClient(Client):
         obj = self.get(key)
         if obj:
             value = obj[1] + value
-        self.set((time.time(), value))
+        self.set(key, (time.time(), value))        
         return value
 
     def clear(self, key = None):
