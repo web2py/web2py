@@ -426,18 +426,19 @@ def wsgibase(environ, responder):
                 app = request.application ## must go after url_in!
 
                 http_host = env.http_host.split(':',1)[0]
-                local_hosts = [http_host,'::1','127.0.0.1',
-                               '::ffff:127.0.0.1']
-                if not global_settings.web2py_runtime_gae:
-                    try:
-                        local_hosts.append(socket.gethostname())
-                    except TypeError:
-                        pass
-                    try:
-                        local_hosts.append(
-                            socket.gethostbyname(http_host))
-                    except (socket.gaierror,TypeError):
-                        pass
+                if not global_settings.local_hosts:
+                    local_hosts = ['127.0.0.1','::ffff:127.0.0.1']
+                    if not global_settings.web2py_runtime_gae:
+                        try:
+                            local_hosts.append(socket.gethostname())
+                        except TypeError:
+                            pass
+                        try:
+                            local_hosts.append(socket.gethostbyname(http_host))
+                        except (socket.gaierror,TypeError):
+                            pass
+                        global_settings.local_hosts = local_hosts
+                local_hosts = global_settings.local_hosts + [http_host]
                 client = get_client(env)
                 x_req_with = str(env.http_x_requested_with).lower()
                 
