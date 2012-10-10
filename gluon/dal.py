@@ -3981,8 +3981,8 @@ class DatabaseStoredFile:
         self.data += data
 
     def close_connection(self):
-        self.db.executesql("DELETE FROM web2py_filesystem WHERE path='%s'" \
-                               % self.filename)
+        self.db.executesql(
+            "DELETE FROM web2py_filesystem WHERE path='%s'" % self.filename)
         query = "INSERT INTO web2py_filesystem(path,content) VALUES ('%s','%s')"\
             % (self.filename, self.data.replace("'","''"))
         self.db.executesql(query)
@@ -4007,7 +4007,7 @@ class UseDatabaseStoredFile:
         return DatabaseStoredFile(self.db,filename,mode)
 
     def file_close(self, fileobj):
-        fileobj.close()
+        fileobj.close_connection()
 
     def file_delete(self,filename):
         query = "DELETE FROM web2py_filesystem WHERE path='%s'" % filename

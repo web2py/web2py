@@ -6,6 +6,7 @@ License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 
 import os
 import sys
+import socket
 import platform
 from storage import Storage
 
@@ -35,6 +36,5 @@ global_settings.is_jython = \
     'java' in sys.platform.lower() or \
     hasattr(sys, 'JYTHON_JAR') or \
     str(sys.copyright).find('Jython') > 0
-
 
 

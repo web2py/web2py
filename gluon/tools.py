@@ -4576,6 +4576,7 @@ class Wiki(object):
         self.env['component'] = Wiki.component
         if render == 'markmin': render=self.markmin_render
         elif render == 'html': render=self.html_render
+        self.render = render
         self.auth = auth
         if self.auth.user:
             self.force_prefix = force_prefix % self.auth.user
@@ -4702,6 +4703,8 @@ class Wiki(object):
                                )
         elif zero=='_cloud':
             return self.cloud()
+        elif zero == '_preview':
+            return self.preview(self.render)
 
     def first_paragraph(self,page):
         if not self.can_read(page):
@@ -4782,7 +4785,29 @@ class Wiki(object):
         elif form.accepted:
             current.session.flash = 'page created'
             redirect(URL(args=slug))
-        return dict(content=form)
+        script = """
+        $(function() {
+            if (!$('#wiki_page_body').length) return;
+            var pagecontent = $('#wiki_page_body');
+            var prevbutton = $('<button class="btn nopreview">Preview</button>');
+            var preview = $('<div id="preview"></div>').hide();
+            var table = $('form');
+            prevbutton.insertBefore(table);
+            prevbutton.on('click', function(e) {
+                e.preventDefault();
+                if (prevbutton.hasClass('nopreview')) {
+                    prevbutton.addClass('preview').removeClass('nopreview').html('Edit Source');
+                    preview.insertBefore(table);
+                    web2py_ajax_page('post', '%(url)s', {body : $('#wiki_page_body').val()}, 'preview');
+                    table.fadeOut('medium', function() {preview.fadeIn()});
+                } else {
+                    prevbutton.addClass('nopreview').removeClass('preview').html('Preview');
+                    preview.fadeOut('medium', function() {table.fadeIn()});
+                }
+            })
+        })
+        """ % dict(url=URL(args=('_preview')))
+        return dict(content=TAG[''](form, SCRIPT(script)))
 
     def editmedia(self,slug):
         auth = self.auth
@@ -4977,6 +5002,9 @@ class Wiki(object):
                                      vars=dict(q=item.wiki_tag.name))))
             items.append(' ')
         return dict(content = DIV(_class='w2p_cloud',*items))
+    def preview(self, render):
+        request = current.request
+        return render(request.post_vars)
 
 if __name__ == '__main__':
     import doctest
