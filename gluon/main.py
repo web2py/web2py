@@ -88,7 +88,7 @@ from contenttype import contenttype
 from dal import BaseAdapter
 from settings import global_settings
 from validators import CRYPT
-from cache import Cache
+from cache import CacheInRam
 from html import URL, xmlescape
 from utils import is_valid_ip_address
 from rewrite import load, url_in, thread as rwthread, \
@@ -148,7 +148,7 @@ def get_client(env):
 def copystream_progress(request, chunk_size= 10**5):
     """
     copies request.env.wsgi_input into request.body
-    and stores progress upload status in cache.ram
+    and stores progress upload status in cache_ram
     X-Progress-ID:length and X-Progress-ID:uploaded
     """
     env = request.env
@@ -164,16 +164,16 @@ def copystream_progress(request, chunk_size= 10**5):
         copystream(source, dest, size, chunk_size)
         return dest
     cache_key = 'X-Progress-ID:'+request.vars['X-Progress-ID']
-    cache = Cache(request)
-    cache.ram(cache_key+':length', lambda: size, 0)
-    cache.ram(cache_key+':uploaded', lambda: 0, 0)
+    cache_ram = CacheInRam(request)  # same as cache.ram because meta_storage
+    cache_ram(cache_key+':length', lambda: size, 0)
+    cache_ram(cache_key+':uploaded', lambda: 0, 0)
     while size > 0:
         if size < chunk_size:
             data = source.read(size)
-            cache.ram.increment(cache_key+':uploaded', size)
+            cache_ram.increment(cache_key+':uploaded', size)
         else:
             data = source.read(chunk_size)
-            cache.ram.increment(cache_key+':uploaded', chunk_size)
+            cache_ram.increment(cache_key+':uploaded', chunk_size)
         length = len(data)
         if length > size:
             (data, length) = (data[:size], size)
@@ -184,8 +184,8 @@ def copystream_progress(request, chunk_size= 10**5):
         if length < chunk_size:
             break
     dest.seek(0)
-    cache.ram(cache_key+':length', None)
-    cache.ram(cache_key+':uploaded', None)
+    cache_ram(cache_key+':length', None)
+    cache_ram(cache_key+':uploaded', None)
     return dest
 
 

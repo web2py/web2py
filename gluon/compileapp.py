@@ -387,6 +387,7 @@ def build_environment(request, response, session, store_current=True):
 
     t = environment['T'] = translator(request)
     c = environment['cache'] = Cache(request)
+
     if store_current:
         current.globalenv = environment
         current.request = request

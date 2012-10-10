@@ -11,7 +11,7 @@ Basic caching classes and methods
 
 - Cache - The generic caching object interfacing with the others
 - CacheInRam - providing caching in ram
-- CacheInDisk - provides caches on disk
+- CacheOnDisk - provides caches on disk
 
 Memcache is also available via a different module (see gluon.contrib.memcache)
 
@@ -130,22 +130,27 @@ class CacheInRam(CacheAbstract):
     meta_storage = {}
 
     def __init__(self, request=None):
-        self.locker.acquire()
+        self.initialized = False
         self.request = request
+
+    def initialize(self):
+        if self.initialized: return
+        else: self.initialized = True
+        self.locker.acquire()
+        request = self.request
         if request:
             app = request.application
         else:
             app = ''
         if not app in self.meta_storage:
-            self.storage = self.meta_storage[app] = {CacheAbstract.cache_stats_name: {
-                'hit_total': 0,
-                'misses': 0,
-            }}
+            self.storage = self.meta_storage[app] = {
+                CacheAbstract.cache_stats_name: {'hit_total': 0, 'misses': 0}}
         else:
             self.storage = self.meta_storage[app]
         self.locker.release()
 
     def clear(self, regex=None):
+        self.initialize()
         self.locker.acquire()
         storage = self.storage
         if regex is None:
@@ -154,10 +159,7 @@ class CacheInRam(CacheAbstract):
             self._clear(storage, regex)
 
         if not CacheAbstract.cache_stats_name in storage.keys():
-            storage[CacheAbstract.cache_stats_name] = {
-                'hit_total': 0,
-                'misses': 0,
-            }
+            storage[CacheAbstract.cache_stats_name] = {'hit_total': 0,'misses': 0}
 
         self.locker.release()
 
@@ -172,6 +174,7 @@ class CacheInRam(CacheAbstract):
         3) would work unless we deepcopy no storage and retrival which would make things slow.
         Anyway. You can deepcopy explicitly in the function generating the value to be cached.
         """
+        self.initialize()
 
         dt = time_expire
         now = time.time()
@@ -200,6 +203,7 @@ class CacheInRam(CacheAbstract):
         return value
 
     def increment(self, key, value=1):
+        self.initialize()
         self.locker.acquire()
         try:
             if key in self.storage:
@@ -226,58 +230,66 @@ class CacheOnDisk(CacheAbstract):
     Values stored in disk cache must be pickable.
     """
 
-    speedup_checks = set()
+    def _close_shelve_and_unlock(self):
+        try:
+            if self.storage:
+                self.storage.close()
+        finally:
+            if self.locker and self.locked:
+                portalocker.unlock(self.locker)
+                self.locker.close()
+                self.locked = False
 
-    def _open_shelf_with_lock(self):
+    def _open_shelve_and_lock(self):
         """Open and return a shelf object, obtaining an exclusive lock
         on self.locker first. Replaces the close method of the
         returned shelf instance with one that releases the lock upon
         closing."""
-        def _close(self):
-            try:
-                shelve.Shelf.close(self)
-            finally:
-                portalocker.unlock(self.locker)
-                self.locker.close()
-
-        storage, locker, locker_locked = None, None, False
+        
+        storage = None
+        locker = None
+        locked = False
         try:
-            locker = open(self.locker_name, 'a')
+            locker = locker = open(self.locker_name, 'a')
             portalocker.lock(locker, portalocker.LOCK_EX)
-            locker_locked = True
-            storage = shelve.open(self.shelve_name)
-            storage.close = _close.__get__(storage, shelve.Shelf)
-            storage.locker = locker
-        except Exception:
-            logger.error('corrupted cache file %s, will try to delete and recreate it!' % (self.shelve_name))
+            locked = True
+            try:
+                storage = shelve.open(self.shelve_name)
+            except:
+                logger.error('corrupted cache file %s, will try rebuild it' \
+                                 % (self.shelve_name))
+                storage = None
+            if not storage and os.path.exists(self.shelve_name):
+                os.unlink(self.shelve_name)
+                storage = shelve.open(self.shelve_name)
+            if not CacheAbstract.cache_stats_name in storage.keys():
+                storage[CacheAbstract.cache_stats_name] = {'hit_total':0, 'misses': 0}
+            storage.sync()
+        except Exception, e:
             if storage:
                 storage.close()
                 storage = None
-
-            try:
-                os.unlink(self.shelve_name)
-                storage = shelve.open(self.shelve_name)
-                storage.close = _close.__get__(storage, shelve.Shelf)
-                storage.locker = locker
-                if not CacheAbstract.cache_stats_name in storage.keys():
-                    storage[CacheAbstract.cache_stats_name] = {
-                        'hit_total': 0,
-                        'misses': 0,
-                    }
-                storage.sync()
-            except (IOError, OSError):
-                logger.warn('unable to delete and recreate cache file %s' % self.shelve_name)
-                if storage:
-                        storage.close()
-                        storage = None
-                if locker_locked:
-                    portalocker.unlock(locker)
-                if locker:
-                    locker.close()
+            if locked:
+                portalocker.unlock(locker)
+                locker.close()
+            locked = False
+            raise RuntimeError, 'unable to create/re-create cache file %s' % self.shelve_name
+        self.locker = locker
+        self.locked = locked
+        self.storage = storage
         return storage
 
-    def __init__(self, request, folder=None):
+    def __init__(self, request=None, folder=None):
+        self.initialized = False
         self.request = request
+        self.folder = folder
+        self.initialize()
+ 
+    def initialize(self):
+        if self.initialized: return
+        else: self.initialized = True
+        folder = self.folder
+        request = self.request
 
         # Lets test if the cache folder exists, if not
         # we are going to create it
@@ -291,93 +303,54 @@ class CacheOnDisk(CacheAbstract):
         self.locker_name = os.path.join(folder,'cache.lock')
         self.shelve_name = os.path.join(folder,'cache.shelve')
 
-        speedup_key = (folder,CacheAbstract.cache_stats_name)
-        if not speedup_key in self.speedup_checks or \
-                not os.path.exists(self.shelve_name):
-            try:
-                storage = self._open_shelf_with_lock()
-                try:
-                    if not CacheAbstract.cache_stats_name in storage:
-                        storage[CacheAbstract.cache_stats_name] = {
-                            'hit_total': 0,
-                            'misses': 0,
-                        }
-                        storage.sync()
-                finally:
-                    storage.close()
-                self.speedup_checks.add(speedup_key)
-            except ImportError:
-                pass # no module _bsddb, ignoring exception now so it makes a ticket only if used
-
     def clear(self, regex=None):
-        storage = self._open_shelf_with_lock()
+        self.initialize()
+        storage = self._open_shelve_and_lock()
         try:
             if regex is None:
                 storage.clear()
             else:
                 self._clear(storage, regex)
-            if not CacheAbstract.cache_stats_name in storage.keys():
-                storage[CacheAbstract.cache_stats_name] = {
-                    'hit_total': 0,
-                    'misses': 0,
-                }
             storage.sync()
         finally:
-            storage.close()
+            self._close_shelve_and_unlock()
 
     def __call__(self, key, f,
                 time_expire = DEFAULT_TIME_EXPIRE):
+        self.initialize()
         dt = time_expire
-
-        storage = self._open_shelf_with_lock()
+        storage = self._open_shelve_and_lock()
         try:
             item = storage.get(key, None)
+            storage[CacheAbstract.cache_stats_name]['hit_total'] += 1
             if item and f is None:
                 del storage[key]
-
-            storage[CacheAbstract.cache_stats_name] = {
-                'hit_total': storage[CacheAbstract.cache_stats_name]['hit_total'] + 1,
-                'misses': storage[CacheAbstract.cache_stats_name]['misses']
-            }
-
-            storage.sync()
+                storage.sync()
+            now = time.time()
+            if f is None:
+                value = None
+            elif item and (dt is None or item[0] > now - dt):
+                value = item[1]
+            else:
+                value = f()
+                storage[key] = (now, value)
+                storage[CacheAbstract.cache_stats_name]['misses']+=1
+                storage.sync()
         finally:
-            if storage:
-                storage.close()
-
-        now = time.time()
-        if f is None:
-            return None
-        if item and (dt is None or item[0] > now - dt):
-            return item[1]
-        value = f()
-
-        storage = self._open_shelf_with_lock()
-        try:
-            storage[key] = (now, value)
-
-            storage[CacheAbstract.cache_stats_name] = {
-                'hit_total': storage[CacheAbstract.cache_stats_name]['hit_total'],
-                'misses': storage[CacheAbstract.cache_stats_name]['misses'] + 1
-            }
-
-            storage.sync()
-        finally:
-            if storage:
-                storage.close()
+            self._close_shelve_and_unlock()
 
         return value
 
     def increment(self, key, value=1):
-        storage = self._open_shelf_with_lock()
+        self.initialize()
+        storage = self._open_shelve_and_lock()
         try:
             if key in storage:
                 value = storage[key][1] + value
             storage[key] = (time.time(), value)
             storage.sync()
         finally:
-            if storage:
-                storage.close()
+            self._close_shelve_and_unlock()
         return value
 
 class CacheAction(object):
@@ -423,10 +396,9 @@ class Cache(object):
             the global request object
         """
         # GAE will have a special caching
-
         if have_settings and settings.global_settings.web2py_runtime_gae:
             from contrib.gae_memcache import MemcacheClient
-            self.ram=self.disk=MemcacheClient(request)
+            self.ram = self.disk = MemcacheClient(request)
         else:
             # Otherwise use ram (and try also disk)
             self.ram = CacheInRam(request)
@@ -487,7 +459,6 @@ class Cache(object):
         """        
         return lambda key, f, time_expire=DEFAULT_TIME_EXPIRE, prefix=prefix:\
             cache_model(prefix + key, f, time_expire)
-
 
 
 def lazy_cache(key=None,time_expire=None,cache_model='ram'):
