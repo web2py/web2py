@@ -417,7 +417,7 @@ class Response(Storage):
         return handler(request, self, methods)
 
     def toolbar(self):
-        from html import DIV, SCRIPT, BEAUTIFY, TAG, URL
+        from html import DIV, SCRIPT, BEAUTIFY, TAG, URL, A
         BUTTON = TAG.button
         admin = URL("admin","default","design",
                     args=current.request.application)
@@ -438,19 +438,21 @@ class Response(Storage):
             dbstats = [] # if no db or on GAE
             dbtables = {}
         u = web2py_uuid()
+        backtotop = A('Back to top', _href="#totop-%s" % u)
         return DIV(
             BUTTON('design',_onclick="document.location='%s'" % admin),
             BUTTON('request',_onclick="jQuery('#request-%s').slideToggle()"%u),
-            DIV(BEAUTIFY(current.request),_class="hidden",_id="request-%s"%u),
-            BUTTON('session',_onclick="jQuery('#session-%s').slideToggle()"%u),
-            DIV(BEAUTIFY(current.session),_class="hidden",_id="session-%s"%u),
             BUTTON('response',_onclick="jQuery('#response-%s').slideToggle()"%u),
-            DIV(BEAUTIFY(current.response),_class="hidden",_id="response-%s"%u),
+            BUTTON('session',_onclick="jQuery('#session-%s').slideToggle()"%u),
             BUTTON('db tables',_onclick="jQuery('#db-tables-%s').slideToggle()"%u),
-            DIV(BEAUTIFY(dbtables),_class="hidden",_id="db-tables-%s"%u),
             BUTTON('db stats',_onclick="jQuery('#db-stats-%s').slideToggle()"%u),
-            DIV(BEAUTIFY(dbstats),_class="hidden",_id="db-stats-%s"%u),
+            DIV(BEAUTIFY(current.request), backtotop,_class="hidden",_id="request-%s"%u),
+            DIV(BEAUTIFY(current.session), backtotop, _class="hidden",_id="session-%s"%u),
+            DIV(BEAUTIFY(current.response), backtotop, _class="hidden",_id="response-%s"%u),
+            DIV(BEAUTIFY(dbtables), backtotop, _class="hidden",_id="db-tables-%s"%u),
+            DIV(BEAUTIFY(dbstats), backtotop, _class="hidden",_id="db-stats-%s"%u),
             SCRIPT("jQuery('.hidden').hide()")
+            ,_id="totop-%s" % u
             )
 
 class Session(Storage):
@@ -482,7 +484,7 @@ class Session(Storage):
         if not masterapp:
             masterapp = request.application
         response.session_id_name = 'session_id_%s' % masterapp.lower()
-
+        
         # Load session data from cookie
         cookies = request.cookies
             
