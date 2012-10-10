@@ -283,7 +283,6 @@ class CacheOnDisk(CacheAbstract):
         self.initialized = False
         self.request = request
         self.folder = folder
-        self.initialize()
  
     def initialize(self):
         if self.initialized: return
