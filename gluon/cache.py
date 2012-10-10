@@ -46,6 +46,19 @@ class CacheAbstract(object):
     Main function is now to provide referenced api documentation.
 
     Use CacheInRam or CacheOnDisk instead which are derived from this class.
+    
+    Attentions, Michele says:
+
+    There are signatures inside gdbm files that are used directly
+    by the python gdbm adapter that often are lagging behind in the
+    detection code in python part.
+    On every occasion that a gdbm store is probed by the python adapter, 
+    the probe fails, because gdbm file version is newer.
+    Using gdbm directly from C would work, because there is backward
+    compatibility, but not from python!
+    The .shelve file is discarded and a new one created (with new
+    signature) and it works until it is probed again...
+    The possible consequences are memory leaks and broken sessions.
     """
 
     cache_stats_name = 'web2py_cache_statistics'
