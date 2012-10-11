@@ -22,7 +22,6 @@ def is_tracking_changes():
     @return: True: neo_importer is tracking changes made to Python source
     files. False: neo_import does not reload Python modules.
     """
-
     global _is_tracking_changes
     return _is_tracking_changes
 
@@ -73,12 +72,9 @@ class _BaseImporter(object):
         """
         The import method itself.
         """
-        return self._STANDARD_PYTHON_IMPORTER(name,
-                                         globals,
-                                         locals,
-                                         fromlist,
-                                         level)
-
+        return self._STANDARD_PYTHON_IMPORTER(
+            name,globals,locals,fromlist,level)
+            
     def end(self):
         """
         Needed for clean up.
@@ -232,16 +228,12 @@ class _Web2pyImporter(_BaseImporter):
         self.super_class.__init__()
         self.web2py_path =  web2py_path
         self.__web2py_path_os_path_sep = self.web2py_path+os.path.sep
-        self.__web2py_path_os_path_sep_len = len(self.__web2py_path_os_path_sep)
+        self.__web2py_path_os_path_sep_len = \
+            len(self.__web2py_path_os_path_sep)
         self.__RE_APP_DIR = re.compile(
-          self._RE_ESCAPED_PATH_SEP.join( \
-          ( \
-            #"^" + re.escape(web2py_path),   # Not working with Python 2.5
-            "^(" + "applications",
-            "[^",
-            "]+)",
-            "",
-          ) ))
+            self._RE_ESCAPED_PATH_SEP.join(( \
+                    #"^" + re.escape(web2py_path),# Not working with Python 2.5
+                    "^(" + "applications","[^","]+)","")))
 
     def _matchAppDir(self, file_path):
         """
@@ -270,8 +262,8 @@ class _Web2pyImporter(_BaseImporter):
                     and not name.startswith("applications.") \
                     and isinstance(globals, dict):
             # Get the name of the file do the import
-            caller_file_name = os.path.join(self.web2py_path, \
-                                            globals.get("__file__", ""))
+            caller_file_name = os.path.join(
+                self.web2py_path, globals.get("__file__", ""))
             # Is the path in an application directory?
             match_app_dir = self._matchAppDir(caller_file_name)
             if match_app_dir:
@@ -293,11 +285,11 @@ class _Web2pyImporter(_BaseImporter):
                 except ImportError, e:
                     try:
                         return self.super_class.__call__(name, globals, locals,
-                                                    fromlist, level)
+                                                         fromlist, level)
                     except ImportError, e1:
                         raise e
         return self.super_class.__call__(name, globals, locals,
-                                                    fromlist, level)
+                                         fromlist, level)
 
     def __import__dot(self, prefix, name, globals, locals, fromlist,
                       level):
@@ -311,8 +303,8 @@ class _Web2pyImporter(_BaseImporter):
 
         result = None
         for name in name.split("."):
-            new_mod = super(_Web2pyImporter, self).__call__(prefix, globals,
-                                                        locals, [name], level)
+            new_mod = super(_Web2pyImporter, self).__call__(
+                prefix, globals,locals, [name], level)
             try:
                 result = result or new_mod.__dict__[name]
             except KeyError, e:
