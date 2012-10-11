@@ -314,22 +314,26 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
                 (action,models,command) = (True,'-M',command[1:])
             else:
                 action=False
+
             if action and command.endswith('.py'):
                 commands.extend(('-J',                # cron job
                                  models,              # import models?
                                  '-S', app,           # app name
                                  '-a', '"<recycle>"', # password
                                  '-R', command))      # command
-                shell = True
             elif action:
                 commands.extend(('-J',                  # cron job
                                  models,                # import models?
                                  '-S', app+'/'+command, # app name
                                  '-a', '"<recycle>"'))  # password
-                shell = True
             else:
                 commands = command
-                shell = False
+
+            # from python docs:
+            # You do not need shell=True to run a batch file or 
+            # console-based executable.
+            shell = False
+
             try:
                 cronlauncher(commands, shell=shell).start()
             except Exception, e:
