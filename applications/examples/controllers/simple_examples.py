@@ -38,7 +38,6 @@ def hello6():
 
 def status():
     """ page that shows internal status"""
-    response.view = 'generic.html'
     return dict(toolbar=response.toolbar())
 
 
