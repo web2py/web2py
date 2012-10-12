@@ -47,7 +47,7 @@ def stream_file_or_304_or_206(
     error_message = None,
     ):
     if error_message is None:
-        error_message = rewrite.thread.routes.error_message % 'invalid request'
+        error_message = rewrite.THREAD_LOCAL.routes.error_message % 'invalid request'
     try:
         fp = open(static_file)
     except IOError, e:
