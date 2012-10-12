@@ -35,8 +35,6 @@ from settings import global_settings
 from admin import add_path_first, create_missing_folders, create_missing_app_folders
 from globals import current
 
-from custom_import import custom_import_install
-
 #  Remarks:
 #  calling script has inserted path to script directory into sys.path
 #  applications_parent (path to applications/, site-packages/ etc)
@@ -54,8 +52,6 @@ from custom_import import custom_import_install
 #  main.web2py_path is the same as applications_parent (for backward compatibility)
 
 web2py_path = global_settings.applications_parent # backward compatibility
-
-custom_import_install(web2py_path)
 
 create_missing_folders()
 
@@ -799,7 +795,6 @@ class HttpServer(object):
             global_settings.applications_parent = path
             os.chdir(path)
             [add_path_first(p) for p in (path, abspath('site-packages'), "")]
-            custom_import_install(web2py_path)
             if exists("logging.conf"):
                 logging.config.fileConfig("logging.conf")
 

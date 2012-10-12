@@ -94,8 +94,6 @@ class Web2pyService(Service):
             os.chdir(dir)
             from gluon.settings import global_settings
             global_settings.gluon_parent = dir
-            from gluon.custom_import import custom_import_install
-            custom_import_install(dir)
             return True
         except:
             self.log("Can't change to web2py working path; server is stopped")

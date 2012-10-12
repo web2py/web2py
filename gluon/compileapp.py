@@ -40,6 +40,7 @@ import imp
 import logging
 logger = logging.getLogger("web2py")
 import rewrite
+from custom_import import custom_import_install
 
 try:
     import py_compile
@@ -411,6 +412,7 @@ def build_environment(request, response, session, store_current=True):
        local_import_aux(name,reload,app)
     BaseAdapter.set_folder(pjoin(request.folder, 'databases'))
     response._view_environment = copy.copy(environment)
+    custom_import_install()
     return environment
 
 def save_pyc(filename):
