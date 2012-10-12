@@ -27,7 +27,6 @@ from globals import Request, Response, Session
 from storage import Storage
 from admin import w2p_unpack
 from dal import BaseAdapter
-from custom_import import custom_import_install
 
 logger = logging.getLogger("web2py")
 
