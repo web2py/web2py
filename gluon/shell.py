@@ -19,7 +19,7 @@ import optparse
 import glob
 import traceback
 import fileutils
-import settings
+from settings import global_settings
 from utils import web2py_uuid
 from compileapp import build_environment, read_pyc, run_models_in
 from restricted import RestrictedError
@@ -27,7 +27,6 @@ from globals import Request, Response, Session
 from storage import Storage
 from admin import w2p_unpack
 from dal import BaseAdapter
-
 
 logger = logging.getLogger("web2py")
 
@@ -112,7 +111,7 @@ def env(
     request.env.path_info = '/%s/%s/%s' % (a, c, f)
     request.env.http_host = '127.0.0.1:8000'
     request.env.remote_addr = '127.0.0.1'
-    request.env.web2py_runtime_gae = settings.global_settings.web2py_runtime_gae
+    request.env.web2py_runtime_gae = global_settings.web2py_runtime_gae
 
     for k,v in extra_request.items():
         request[k] = v
