@@ -179,39 +179,28 @@ def url_in(request, environ):
         return map_url_in(request, environ)
     return regex_url_in(request, environ)
 
-def url_out(request, env, application, controller, function,
+def url_out(request, environ, application, controller, function,
             args, other, scheme, host, port):
     "assemble and rewrite outgoing URL"
     if routers:
-        acf = map_url_out(request, env, application, controller,
+        acf = map_url_out(request, environ, application, controller,
                           function, args, other, scheme, host, port)
         url = '%s%s' % (acf, other)
     else:
         url = '/%s/%s/%s%s' % (application, controller, function, other)
-        url = regex_filter_out(url, env)
+        url = regex_filter_out(url, environ)
     #
     #  fill in scheme and host if absolute URL is requested
     #  scheme can be a string, eg 'http', 'https', 'ws', 'wss'
     #
-    
-    if scheme or port is not None:
-        if host is None:    # scheme or port implies host
-            host = True
+    if host is True or (host is None and (scheme or port!=None)):
+        host = request.env.http_host
     if not scheme or scheme is True:
-        if request and request.env:
-            scheme = request.env.get('wsgi_url_scheme', 'http').lower()
-        else:
-            scheme = 'http' # some reasonable default in case we need it
-    if host is not None:
-        if host is True:
-            host = request.env.http_host
+        scheme = request.env.get('wsgi_url_scheme', 'http').lower() \
+            if request else 'http' 
     if host:
-        if port is None:
-            port = ''
-        else:
-            port = ':%s' % port
-            host = host.split(':')[0]
-        url = '%s://%s%s%s' % (scheme, host, port, url)
+        host_port = host if not port else host.split(':',1)[0]+':%s'%port
+        url = '%s://%s%s' % (scheme, host_port, url)
     return url
 
 def try_rewrite_on_error(http_response, request, environ, ticket=None):
