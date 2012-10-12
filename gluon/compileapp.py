@@ -532,7 +532,6 @@ def run_controller_in(controller, function, environment):
     """
 
     # if compiled should run compiled!
-
     folder = environment['request'].folder
     path = pjoin(folder, 'compiled')
     badc = 'invalid controller (%s/%s)' % (controller, function)
@@ -542,7 +541,7 @@ def run_controller_in(controller, function, environment):
                                  % (controller, function))
         if not os.path.exists(filename):
             raise HTTP(404,
-                       rewrite.thread.routes.error_message % badf,
+                       rewrite.THREAD_LOCAL.routes.error_message % badf,
                        web2py_error=badf)
         restricted(read_pyc(filename), environment, layer=filename)
     elif function == '_TEST':
@@ -557,7 +556,7 @@ def run_controller_in(controller, function, environment):
                                  % controller)
         if not os.path.exists(filename):
             raise HTTP(404,
-                       rewrite.thread.routes.error_message % badc,
+                       rewrite.THREAD_LOCAL.routes.error_message % badc,
                        web2py_error=badc)
         environment['__symbols__'] = environment.keys()
         code = read_file(filename)
@@ -568,13 +567,13 @@ def run_controller_in(controller, function, environment):
                                  % controller)
         if not os.path.exists(filename):
             raise HTTP(404,
-                       rewrite.thread.routes.error_message % badc,
+                       rewrite.THREAD_LOCAL.routes.error_message % badc,
                        web2py_error=badc)
         code = read_file(filename)
         exposed = regex_expose.findall(code)
         if not function in exposed:
             raise HTTP(404,
-                       rewrite.thread.routes.error_message % badf,
+                       rewrite.THREAD_LOCAL.routes.error_message % badf,
                        web2py_error=badf)
         code = "%s\nresponse._vars=response._caller(%s)\n" % (code, function)
         if is_gae:
@@ -598,7 +597,6 @@ def run_view_in(environment):
     or `view/generic.extension`
     It tries the pre-compiled views_controller_function.pyc before compiling it.
     """
-
     request = environment['request']
     response = environment['response']
     view = response.view
@@ -634,7 +632,7 @@ def run_view_in(environment):
                 restricted(code, environment, layer=filename)
                 return
         raise HTTP(404,
-                   rewrite.thread.routes.error_message % badv,
+                   rewrite.THREAD_LOCAL.routes.error_message % badv,
                    web2py_error=badv)
     else:
         filename = pjoin(folder, 'views', view)
@@ -643,7 +641,7 @@ def run_view_in(environment):
             filename = pjoin(folder, 'views', view)
         if not os.path.exists(filename):
             raise HTTP(404,
-                       rewrite.thread.routes.error_message % badv,
+                       rewrite.THREAD_LOCAL.routes.error_message % badv,
                        web2py_error=badv)
         layer = filename
         if is_gae:
