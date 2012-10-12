@@ -87,7 +87,7 @@ from validators import CRYPT
 from cache import CacheInRam
 from html import URL, xmlescape
 from utils import is_valid_ip_address
-from rewrite import load, url_in, thread as rwthread, \
+from rewrite import load, url_in, THREAD_LOCAL as rwthread, \
     try_rewrite_on_error, fixup_missing_path_info
 import newcron
 

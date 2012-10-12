@@ -33,13 +33,29 @@ exists = os.path.exists
 pjoin = os.path.join
 
 logger = logging.getLogger('web2py.rewrite')
-thread = threading.local()  # thread-local storage for routing params
+THREAD_LOCAL = threading.local()  # thread-local storage for routing params
 
 regex_at = re.compile(r'(?<!\\)\$[a-zA-Z]\w*')
 regex_anything = re.compile(r'(?<!\\)\$anything')
 regex_redirect = re.compile(r'(\d+)->(.*)')
 regex_full_url = re.compile(r'^(?P<scheme>http|https|HTTP|HTTPS)\://(?P<host>[^/]*)(?P<uri>.*)')
 regex_version = re.compile(r'^(_[\d]+\.[\d]+\.[\d]+)$')
+# pattern to replace spaces with underscore in URL
+#   also the html escaped variants '+' and '%20' are covered
+regex_space = re.compile('(\+|\s|%20)+')
+
+# pattern to find valid paths in url /application/controller/...
+#   this could be:
+#     for static pages:
+#        /<b:application>/static/<x:file>
+#     for dynamic pages:
+#        /<a:application>[/<c:controller>[/<f:function>[.<e:ext>][/<s:args>]]]
+#   application, controller, function and ext may only contain [a-zA-Z0-9_]
+#   file and args may also contain '-', '=', '.' and '/'
+#   apps in routes_apps_raw must parse raw_args into args
+
+regex_url = re.compile('^/((?P<a>\w+)(/(?P<c>\w+)(/(?P<z>(?P<f>\w+)(\.(?P<e>[\w.]+))?(?P<s>[/\w@=-]*(\.[/\w@=-]+)*)))?)?)?$')
+
 
 def _router_default():
     "return new copy of default base router"
@@ -85,7 +101,7 @@ def _params_default(app=None):
 
 params_apps = dict()
 params = _params_default(app=None)  # regex rewrite parameters
-thread.routes = params  # default to base regex rewrite parameters
+THREAD_LOCAL.routes = params  # default to base regex rewrite parameters
 routers = None
 
 def log_rewrite(string):
@@ -126,11 +142,11 @@ ROUTER_BASE_KEYS = set(
 #  url_in: parse and rewrite incoming URL
 #  url_out: assemble and rewrite outgoing URL
 #
-#  thread.routes.default_application
-#  thread.routes.error_message
-#  thread.routes.error_message_ticket
-#  thread.routes.try_redirect_on_error
-#  thread.routes.error_handler
+#  THREAD_LOCAL.routes.default_application
+#  THREAD_LOCAL.routes.error_message
+#  THREAD_LOCAL.routes.error_message_ticket
+#  THREAD_LOCAL.routes.try_redirect_on_error
+#  THREAD_LOCAL.routes.error_handler
 #
 #  filter_url: helper for doctest & unittest
 #  filter_err: helper for doctest & unittest
@@ -177,6 +193,7 @@ def url_out(request, env, application, controller, function,
     #  fill in scheme and host if absolute URL is requested
     #  scheme can be a string, eg 'http', 'https', 'ws', 'wss'
     #
+    
     if scheme or port is not None:
         if host is None:    # scheme or port implies host
             host = True
@@ -202,12 +219,12 @@ def try_rewrite_on_error(http_response, request, environ, ticket=None):
     called from main.wsgibase to rewrite the http response.
     """
     status = int(str(http_response.status).split()[0])
-    if status>=399 and thread.routes.routes_onerror:
+    if status>=399 and THREAD_LOCAL.routes.routes_onerror:
         keys=set(('%s/%s' % (request.application, status),
                   '%s/*' % (request.application),
                   '*/%s' % (status),
                   '*/*'))
-        for (key,uri) in thread.routes.routes_onerror:
+        for (key,uri) in THREAD_LOCAL.routes.routes_onerror:
             if key in keys:
                 if uri == '!':
                     # do nothing!
@@ -245,12 +262,12 @@ def try_rewrite_on_error(http_response, request, environ, ticket=None):
 def try_redirect_on_error(http_object, request, ticket=None):
     "called from main.wsgibase to rewrite the http response"
     status = int(str(http_object.status).split()[0])
-    if status>399 and thread.routes.routes_onerror:
+    if status>399 and THREAD_LOCAL.routes.routes_onerror:
         keys=set(('%s/%s' % (request.application, status),
                   '%s/*' % (request.application),
                   '*/%s' % (status),
                   '*/*'))
-        for (key,redir) in thread.routes.routes_onerror:
+        for (key,redir) in THREAD_LOCAL.routes.routes_onerror:
             if key in keys:
                 if redir == '!':
                     break
@@ -283,7 +300,7 @@ def load(routes='routes.py', app=None, data=None, rdict=None):
         global params_apps
         params_apps = dict()
         params = _params_default(app=None)  # regex rewrite parameters
-        thread.routes = params              # default to base regex rewrite parameters
+        THREAD_LOCAL.routes = params              # default to base regex rewrite parameters
         routers = None
 
     if isinstance(rdict, dict):
@@ -330,7 +347,7 @@ def load(routes='routes.py', app=None, data=None, rdict=None):
 
     if app is None:
         params = p                  # install base rewrite parameters
-        thread.routes = params      # install default as current routes
+        THREAD_LOCAL.routes = params      # install default as current routes
         #
         #  create the BASE router if routers in use
         #
@@ -539,24 +556,25 @@ def regex_select(env=None, app=None, request=None):
     select a set of regex rewrite params for the current request
     """
     if app:
-        thread.routes = params_apps.get(app, params)
+        THREAD_LOCAL.routes = params_apps.get(app, params)
     elif env and params.routes_app:
         if routers:
             map_url_in(request, env, app=True)
         else:
             app = regex_uri(env, params.routes_app, "routes_app")
-            thread.routes = params_apps.get(app, params)
+            THREAD_LOCAL.routes = params_apps.get(app, params)
     else:
-        thread.routes = params # default to base rewrite parameters
-    log_rewrite("select routing parameters: %s" % thread.routes.name)
+        THREAD_LOCAL.routes = params # default to base rewrite parameters
+    log_rewrite("select routing parameters: %s" % THREAD_LOCAL.routes.name)
     return app  # for doctest
 
 def regex_filter_in(e):
     "regex rewrite incoming URL"
+    routes = THREAD_LOCAL.routes
     query = e.get('QUERY_STRING', None)
     e['WEB2PY_ORIGINAL_URI'] = e['PATH_INFO'] + (query and ('?' + query) or '')
-    if thread.routes.routes_in:
-        path = regex_uri(e, thread.routes.routes_in,
+    if routes.routes_in:
+        path = regex_uri(e, routes.routes_in,
                          "routes_in", e['PATH_INFO'])
         rmatch = regex_redirect.match(path)
         if rmatch:
@@ -572,59 +590,7 @@ def regex_filter_in(e):
     e['REQUEST_URI'] = e['PATH_INFO'] + (query and ('?' + query) or '')
     return e
 
-
-# pattern to replace spaces with underscore in URL
-#   also the html escaped variants '+' and '%20' are covered
-regex_space = re.compile('(\+|\s|%20)+')
-
-# pattern to find valid paths in url /application/controller/...
-#   this could be:
-#     for static pages:
-#        /<b:application>/static/<x:file>
-#     for dynamic pages:
-#        /<a:application>[/<c:controller>[/<f:function>[.<e:ext>][/<s:args>]]]
-#   application, controller, function and ext may only contain [a-zA-Z0-9_]
-#   file and args may also contain '-', '=', '.' and '/'
-#   apps in routes_apps_raw must parse raw_args into args
-
-regex_static = re.compile(r'''
-     (^                                   # static pages
-         /(?P<b> \w+)                     # b=app
-         /static                          # /b/static
-         (/(?P<v>_[\d]+\.[\d]+\.[\d]+))?  # version ?
-         /(?P<x> (\w[\-\=\./]?)* )        # x=file
-     $)
-     ''', re.X)
-
-regex_url = re.compile(r'''
-     (^(                                  # (/a/c/f.e/s)
-         /(?P<a> [\w\s+]+ )               # /a=app
-         (                                # (/c.f.e/s)
-             /(?P<c> [\w\s+]+ )           # /a/c=controller
-             (                            # (/f.e/s)
-                 /(?P<f> [\w\s+]+ )       # /a/c/f=function
-                 (                        # (.e)
-                     \.(?P<e> [\w\s+]+ )  # /a/c/f.e=extension
-                 )?
-                 (                        # (/s)
-                     /(?P<r>              # /a/c/f.e/r=raw_args
-                     .*
-                     )
-                 )?
-             )?
-         )?
-     )?
-     /?$)
-     ''', re.X)
-
-regex_args = re.compile(r'''
-     (^
-         (?P<s>
-             ( [\w@/-][=.]? )*          # s=args
-         )?
-     /?$)    # trailing slash
-     ''', re.X)
-
+ 
 def sluggify(key):
     return key.lower().replace('.','_')
 
@@ -638,73 +604,61 @@ def regex_url_in(request, environ):
     # ##################################################
 
     regex_select(env=environ, request=request)
-
-    if thread.routes.routes_in:
+    routes = THREAD_LOCAL.routes
+    if routes.routes_in:
         environ = regex_filter_in(environ)
-
     request.env.update((sluggify(k),v) for k,v in environ.iteritems())
-
-    path = request.env.path_info.replace('\\', '/')
 
     # ##################################################
     # serve if a static file
     # ##################################################
 
-    match = regex_static.match(regex_space.sub('_', path))
-    if match and match.group('x'):
-        version = match.group('v')
-        static_file = pjoin(request.env.applications_parent,
-                                   'applications', match.group('b'),
-                                   'static', match.group('x'))
-        return (static_file, version, environ)
-
-    # ##################################################
-    # parse application, controller and function
-    # ##################################################
-
-    path = re.sub('%20', ' ', path)
+    path = request.env.path_info.replace('\\', '/') or '/'
+    path = regex_space.sub('_',path)
+    if path.endswith('/') and len(path)>1: path = path[:-1]
     match = regex_url.match(path)
-    if not match or match.group('c') == 'static':
+    if not match:
         raise HTTP(400,
-                   thread.routes.error_message % 'invalid request',
-                   web2py_error='invalid path')
-
-    request.application = \
-        regex_space.sub('_', match.group('a') or thread.routes.default_application)
-    request.controller = \
-        regex_space.sub('_', match.group('c') or thread.routes.default_controller)
-    request.function = \
-        regex_space.sub('_', match.group('f') or thread.routes.default_function)
-    group_e = match.group('e')
-    request.raw_extension = group_e and regex_space.sub('_', group_e) or None
-    request.extension = request.raw_extension or 'html'
-    request.raw_args = match.group('r')
-    request.args = List([])
-    if request.application in thread.routes.routes_apps_raw:
-        # application is responsible for parsing args
-        request.args = None
-    elif request.raw_args:
-        match = regex_args.match(request.raw_args.replace(' ', '_'))
-        if match:
-            group_s = match.group('s')
-            request.args = \
-                List((group_s and group_s.split('/')) or [])
-            if request.args and request.args[-1] == '':
-                request.args.pop()  # adjust for trailing empty arg
+                   routes.error_message % 'invalid request',
+                   web2py_error='invalid path')    
+    elif match.group('c')=='static':
+        application = match.group('a')
+        version, filename = None, match.group('z')
+        items = filename.split('/',1)
+        if regex_version.match(items[0]):
+            version,filename = items
+        static_file = pjoin(request.env.applications_parent,
+                            'applications', application,
+                            'static', filename)
+        return (static_file, version, environ)
+    else:
+        # ##################################################
+        # parse application, controller and function
+        # ##################################################        
+        request.application = match.group('a') or routes.default_application 
+        request.controller = match.group('c') or routes.default_controller 
+        request.function = match.group('f') or routes.default_function
+        request.raw_extension = match.group('e')
+        request.extension = request.raw_extension or 'html'
+        request.raw_args = match.group('s')
+        if request.application in routes.routes_apps_raw:
+            # application is responsible for parsing args
+            request.args = None
+        elif request.raw_args:
+            request.args = List(request.raw_args.split('/')[1:])
         else:
-            raise HTTP(400,
-                       thread.routes.error_message % 'invalid request',
-                       web2py_error='invalid path (args)')
+            request.args = List([])
     return (None, None, environ)
 
 
 def regex_filter_out(url, e=None):
     "regex rewrite outgoing URL"
-    if not hasattr(thread, 'routes'):
-        regex_select()    # ensure thread.routes is set (for application threads)
+    if not hasattr(THREAD_LOCAL, 'routes'):
+        regex_select()    # ensure routes is set (for application threads)
+    routes = THREAD_LOCAL.routes
     if routers:
         return url  # already filtered
-    if thread.routes.routes_out:
+    if routes.routes_out:
         items = url.split('?', 1)
         if e:
             host = e.get('http_host', 'localhost').lower()
@@ -717,7 +671,7 @@ def regex_filter_out(url, e=None):
                   e.get('request_method', 'get').lower(), items[0])
         else:
             items[0] = ':http://localhost:get %s' % items[0]
-        for (regex, value, tmp) in thread.routes.routes_out:
+        for (regex, value, tmp) in routes.routes_out:
             if regex.match(items[0]):
                 rewritten = '?'.join([regex.sub(value, items[0])] + items[1:])
                 log_rewrite('routes_out: [%s] -> %s' % (url, rewritten))
@@ -816,12 +770,13 @@ def filter_url(url, method='get', remote='0.0.0.0',
 
 def filter_err(status, application='app', ticket='tkt'):
     "doctest/unittest interface to routes_onerror"
-    if status > 399 and thread.routes.routes_onerror:
+    routes = THREAD_LOCAL.routes
+    if status > 399 and routes.routes_onerror:
         keys = set(('%s/%s' % (application, status),
                   '%s/*' % (application),
                   '*/%s' % (status),
                   '*/*'))
-        for (key,redir) in thread.routes.routes_onerror:
+        for (key,redir) in routes.routes_onerror:
             if key in keys:
                 if redir == '!':
                     break
@@ -925,12 +880,12 @@ class MapUrlIn(object):
         self.pop_arg_if(self.application == arg0)
 
         if not base._acfe_match.match(self.application):
-            raise HTTP(400, thread.routes.error_message % 'invalid request',
+            raise HTTP(400, THREAD_LOCAL.routes.error_message % 'invalid request',
                        web2py_error="invalid application: '%s'" % self.application)
 
         if self.application not in routers and \
-          (self.application != thread.routes.default_application or self.application == 'welcome'):
-            raise HTTP(400, thread.routes.error_message % 'invalid request',
+          (self.application != THREAD_LOCAL.routes.default_application or self.application == 'welcome'):
+            raise HTTP(400, THREAD_LOCAL.routes.error_message % 'invalid request',
                 web2py_error="unknown application: '%s'" % self.application)
 
         #  set the application router
@@ -994,7 +949,7 @@ class MapUrlIn(object):
         self.pop_arg_if(arg0 == self.controller)
         log_rewrite("route: controller=%s" % self.controller)
         if not self.router._acfe_match.match(self.controller):
-            raise HTTP(400, thread.routes.error_message % 'invalid request',
+            raise HTTP(400, THREAD_LOCAL.routes.error_message % 'invalid request',
                        web2py_error='invalid controller')
 
     def map_static(self):
@@ -1022,7 +977,7 @@ class MapUrlIn(object):
         if bad_static:
             log_rewrite('bad static path=%s' % file)
             raise HTTP(400,
-                       thread.routes.error_message % 'invalid request',
+                       THREAD_LOCAL.routes.error_message % 'invalid request',
                        web2py_error='invalid static file')
         #
         #  support language-specific static subdirectories,
@@ -1064,10 +1019,10 @@ class MapUrlIn(object):
         log_rewrite("route: function.ext=%s.%s" % (self.function, self.extension))
 
         if not self.router._acfe_match.match(self.function):
-            raise HTTP(400, thread.routes.error_message % 'invalid request',
+            raise HTTP(400, THREAD_LOCAL.routes.error_message % 'invalid request',
                        web2py_error='invalid function')
         if self.extension and not self.router._acfe_match.match(self.extension):
-            raise HTTP(400, thread.routes.error_message % 'invalid request',
+            raise HTTP(400, THREAD_LOCAL.routes.error_message % 'invalid request',
                        web2py_error='invalid extension')
 
     def validate_args(self):
@@ -1076,7 +1031,7 @@ class MapUrlIn(object):
         '''
         for arg in self.args:
             if not self.router._args_match.match(arg):
-                raise HTTP(400, thread.routes.error_message % 'invalid request',
+                raise HTTP(400, THREAD_LOCAL.routes.error_message % 'invalid request',
                            web2py_error='invalid arg <%s>' % arg)
 
     def sluggify(self):
@@ -1301,16 +1256,16 @@ def map_url_in(request, env, app=False):
 
     #  initialize router-url object
     #
-    thread.routes = params  # default to base routes
+    THREAD_LOCAL.routes = params  # default to base routes
     map = MapUrlIn(request=request, env=env)
     map.sluggify()
     map.map_prefix()  # strip prefix if present
     map.map_app()     # determine application
 
-    #  configure thread.routes for error rewrite
+    #  configure THREAD_LOCAL.routes for error rewrite
     #
     if params.routes_app:
-        thread.routes = params_apps.get(app, params)
+        THREAD_LOCAL.routes = params_apps.get(app, params)
 
     if app:
         return map.application
