@@ -1528,15 +1528,20 @@ class SQLFORM(FORM):
             'datetime':['=','!=','<','>','<=','>='],
             'integer':['=','!=','<','>','<=','>='],
             'double':['=','!=','<','>','<=','>='],
+            'id':['=','!=','<','>','<=','>='],
+            'reference':['=','!=','<','>','<=','>='],
             'boolean':['=','!=']}
         if fields[0]._db._adapter.dbengine=='google:datastore':
             search_options['string'] = ['=','!=','<','>','<=','>=']
             search_options['text'] = ['=','!=','<','>','<=','>=']
+            search_options['list:string'] = ['contains']
+            search_options['list:integer'] = ['contains']
+            search_options['list:reference'] = ['contains']
         criteria = []
         selectfields = []
         for field in fields:
             name = str(field).replace('.','-')
-            options = search_options.get(field.type,None)
+            options = search_options.get(field.type.split(' ')[0],None)
             if options:
                 label = isinstance(field.label,str) and T(field.label) or field.label
                 selectfields.append(OPTION(label, _value=str(field)))
