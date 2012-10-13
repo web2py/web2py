@@ -190,6 +190,8 @@ def is_valid_ip_address(address):
     elif address.lower() in ('unkown',''):
         return False
     elif address.count('.')==3: # assume IPv4
+        if address.startswith('::ffff:'):
+            address = address[7:]
         if hasattr(socket,'inet_aton'): # try validate using the OS
             try:
                 addr = socket.inet_aton(address)
