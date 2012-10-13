@@ -46,6 +46,18 @@ class TestWeb(unittest.TestCase):
         client.get('site')
         client.get('design/welcome')
 
+class TestStaticCacheControl(unittest.TestCase):
+    def testWebClient(self):
+        s=WebClient('http://127.0.0.1:8000/welcome/')
+        s.get('static/js/web2py.js')
+        assert('expires' not in s.headers)
+        assert(not s.headers['cache-control'].startswith('max-age'))
+        text = s.text
+        s.get('static/_1.2.3/js/web2py.js')
+        assert(text == s.text)
+        assert('expires' in s.headers)
+        assert(s.headers['cache-control'].startswith('max-age'))
+
 if __name__ == '__main__':
     unittest.main()
 
