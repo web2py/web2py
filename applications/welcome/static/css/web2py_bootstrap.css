@@ -47,7 +47,7 @@ ul#navbar>.auth_navbar{
 }
 /* form errors message box customization */
 div.error_wrapper{margin-bottom:9px;}
-div.error{
+div.error_wrapper .error{
   border-radius: 4px;
   -o-border-radius: 4px;
   -moz-border-radius: 4px;
@@ -162,6 +162,14 @@ input[type="text"].input-xlarge,input[type="password"].input-xlarge{width:270px;
 #recaptcha{min-height:30px;display:inline-block;margin-bottom:0;line-height:30px;vertical-align:middle;}
 td>#recaptcha{margin-bottom:6px;}
 div>#recaptcha{margin-bottom:9px;}
+div.control-group.error{
+width:auto;
+background:transparent;
+border:0;
+color:inherit;
+padding:0;
+background-repeat:repeat;
+}
 
 /*=============================================================
                        OTHER RULES
