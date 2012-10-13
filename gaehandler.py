@@ -83,9 +83,7 @@ def wsgiapp(env, res):
     if global_settings.web2py_runtime == 'gae:development':
         gluon.admin.create_missing_folders()
 
-    from gluon.custom_import import custom_import_install
     web2py_path = global_settings.applications_parent # backward compatibility
-    custom_import_install(web2py_path)
 
     return gluon.main.wsgibase(env, res)
 
