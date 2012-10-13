@@ -6565,6 +6565,10 @@ def smart_query(fields,text):
                 elif op == 'startswith': new_query = field.startswith(value)
                 elif op == 'endswith': new_query = field.endswith(value)
                 else: raise RuntimeError, "Invalid operation"
+            elif field._db._adapter.dbengine=='google:datastore' and \
+                 field.type in ('list:integer', 'list:string', 'list:reference'):
+                if op == 'contains': new_query = field.contains(value)
+                else: raise RuntimeError, "Invalid operation"                
             else: raise RuntimeError, "Invalid operation"
             if neg: new_query = ~new_query
             if query is None:
