@@ -4789,15 +4789,16 @@ class Wiki(object):
         $(function() {
             if (!$('#wiki_page_body').length) return;
             var pagecontent = $('#wiki_page_body');
+            pagecontent.css('font-family', 'Monaco,Menlo,Consolas,"Courier New",monospace');
             var prevbutton = $('<button class="btn nopreview">Preview</button>');
             var preview = $('<div id="preview"></div>').hide();
             var table = $('form');
             prevbutton.insertBefore(table);
+            preview.insertBefore(table);
             prevbutton.on('click', function(e) {
                 e.preventDefault();
                 if (prevbutton.hasClass('nopreview')) {
                     prevbutton.addClass('preview').removeClass('nopreview').html('Edit Source');
-                    preview.insertBefore(table);
                     web2py_ajax_page('post', '%(url)s', {body : $('#wiki_page_body').val()}, 'preview');
                     table.fadeOut('medium', function() {preview.fadeIn()});
                 } else {
