@@ -2039,7 +2039,7 @@ class BaseAdapter(ConnectionPool):
 ###################################################################################
 
 class SQLiteAdapter(BaseAdapter):
-    drivers = ('sqlite3','sqlite2')
+    drivers = ('sqlite2','sqlite3')
 
     can_select_for_update = None    # support ourselves with BEGIN TRANSACTION
 
