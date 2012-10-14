@@ -1648,25 +1648,25 @@ class BaseAdapter(ConnectionPool):
         return list(tables)
 
     def commit(self):
-        return self.connection.commit()
+        if self.connection: return self.connection.commit()
 
     def rollback(self):
-        return self.connection.rollback()
+        if self.connection: return self.connection.rollback()
 
     def close_connection(self):
-        return self.connection.close()
+        if self.connection: return self.connection.close()
 
     def distributed_transaction_begin(self, key):
         return
 
     def prepare(self, key):
-        self.connection.prepare()
-
+        if self.connection: self.connection.prepare()
+        
     def commit_prepared(self, key):
-        self.connection.commit()
+        if self.connection: self.connection.commit()
 
     def rollback_prepared(self, key):
-        self.connection.rollback()
+        if self.connection: self.connection.rollback()
 
     def concat_add(self, table):
         return ', ADD '
@@ -1678,6 +1678,7 @@ class BaseAdapter(ConnectionPool):
         self.execute(query)
 
     def log_execute(self, *a, **b):
+        if not self.connection: return None
         command = a[0]
         if self.db._debug:
             LOGGER.debug('SQL: %s' % command)
@@ -2074,7 +2075,7 @@ class SQLiteAdapter(BaseAdapter):
         self.db = db
         self.dbengine = "sqlite"
         self.uri = uri
-        self.find_driver(adapter_args)
+        if do_connect: self.find_driver(adapter_args)
         self.pool_size = 0
         self.folder = folder
         self.db_codec = db_codec
@@ -2133,11 +2134,11 @@ class SpatiaLiteAdapter(SQLiteAdapter):
 
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, srid=4326):
+                 adapter_args={}, do_connect=True, srid=4326):
         self.db = db
         self.dbengine = "spatialite"
         self.uri = uri
-        self.find_driver(adapter_args)
+        if do_connect: self.find_driver(adapter_args)
         self.pool_size = 0
         self.folder = folder
         self.db_codec = db_codec
@@ -2242,7 +2243,7 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
         self.db = db
         self.dbengine = "sqlite"
         self.uri = uri
-        self.find_driver(adapter_args)
+        if do_connect: self.find_driver(adapter_args)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -2344,7 +2345,7 @@ class MySQLAdapter(BaseAdapter):
         self.db = db
         self.dbengine = "mysql"
         self.uri = uri
-        self.find_driver(adapter_args,uri)
+        if do_connect: self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -2470,7 +2471,7 @@ class PostgreSQLAdapter(BaseAdapter):
         self.db = db
         self.dbengine = "postgres"
         self.uri = uri
-        self.find_driver(adapter_args,uri)
+        if do_connect: self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -2696,7 +2697,7 @@ class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
         self.db = db
         self.dbengine = "postgres"
         self.uri = uri
-        self.find_driver(adapter_args,uri)
+        if do_connect: self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -2821,7 +2822,7 @@ class OracleAdapter(BaseAdapter):
         self.db = db
         self.dbengine = "oracle"
         self.uri = uri
-        self.find_driver(adapter_args,uri)
+        if do_connect: self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -2977,7 +2978,7 @@ class MSSQLAdapter(BaseAdapter):
         self.db = db
         self.dbengine = "mssql"
         self.uri = uri
-        self.find_driver(adapter_args,uri)
+        if do_connect: self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3174,7 +3175,7 @@ class SybaseAdapter(MSSQLAdapter):
         self.db = db
         self.dbengine = "sybase"
         self.uri = uri
-        self.find_driver(adapter_args,uri)
+        if do_connect: self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3304,7 +3305,7 @@ class FireBirdAdapter(BaseAdapter):
         self.db = db
         self.dbengine = "firebird"
         self.uri = uri
-        self.find_driver(adapter_args,uri)
+        if do_connect: self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3363,7 +3364,7 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
         self.db = db
         self.dbengine = "firebird"
         self.uri = uri
-        self.find_driver(adapter_args,uri)
+        if do_connect: self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3470,7 +3471,7 @@ class InformixAdapter(BaseAdapter):
         self.db = db
         self.dbengine = "informix"
         self.uri = uri
-        self.find_driver(adapter_args,uri)
+        if do_connect: self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3572,7 +3573,7 @@ class DB2Adapter(BaseAdapter):
         self.db = db
         self.dbengine = "db2"
         self.uri = uri
-        self.find_driver(adapter_args,uri)
+        if do_connect: self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3635,7 +3636,7 @@ class TeradataAdapter(BaseAdapter):
         self.db = db
         self.dbengine = "teradata"
         self.uri = uri
-        self.find_driver(adapter_args,uri)
+        if do_connect: self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3716,7 +3717,7 @@ class IngresAdapter(BaseAdapter):
         self.db = db
         self.dbengine = "ingres"
         self.uri = uri
-        self.find_driver(adapter_args,uri)
+        if do_connect: self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3852,7 +3853,7 @@ class SAPDBAdapter(BaseAdapter):
         self.db = db
         self.dbengine = "sapdb"
         self.uri = uri
-        self.find_driver(adapter_args,uri)
+        if do_connect: self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -3895,7 +3896,7 @@ class CubridAdapter(MySQLAdapter):
         self.db = db
         self.dbengine = "cubrid"
         self.uri = uri
-        self.find_driver(adapter_args,uri)
+        if do_connect: self.find_driver(adapter_args,uri)
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -4700,7 +4701,7 @@ class CouchDBAdapter(NoSQLAdapter):
                  adapter_args={}, do_connect=True):
         self.db = db
         self.uri = uri
-        self.find_driver(adapter_args)
+        if do_connect: self.find_driver(adapter_args)
         self.dbengine = 'couchdb'
         self.folder = folder
         db['_lastsql'] = ''
@@ -4861,7 +4862,7 @@ class MongoDBAdapter(NoSQLAdapter):
                  adapter_args={}, do_connect=True):
         self.db = db
         self.uri = uri
-        self.find_driver(adapter_args)
+        if do_connect: self.find_driver(adapter_args)
 
         m=None
         try:
@@ -5468,7 +5469,7 @@ class IMAPAdapter(NoSQLAdapter):
 
         self.db = db
         self.uri = uri
-        self.find_driver(adapter_args)
+        if do_connect: self.find_driver(adapter_args)
         self.pool_size=pool_size
         self.folder = folder
         self.db_codec = db_codec
@@ -6676,7 +6677,7 @@ class DAL(object):
                  decode_credentials=False, driver_args=None,
                  adapter_args=None, attempts=5, auto_import=False,
                  bigint_id=False,debug=False,lazy_tables=False,
-                 db_uid=None):
+                 db_uid=None, do_connect=True):
         """
         Creates a new Database Abstraction Layer instance.
 
@@ -6742,10 +6743,15 @@ class DAL(object):
                             raise SyntaxError, "Error in URI '%s' or database not supported" % self._dbname
                         # notice that driver args or {} else driver_args
                         # defaults to {} global, not correct
-                        args = (self,uri,pool_size,folder,
-                                db_codec, credential_decoder,
-                                driver_args or {}, adapter_args or {})
-                        self._adapter = ADAPTERS[self._dbname](*args)
+                        kwargs = dict(db=self,uri=uri,
+                                      pool_size=pool_size,
+                                      folder=folder,
+                                      db_codec=db_codec, 
+                                      credential_decoder=credential_decoder,
+                                      driver_args=driver_args or {}, 
+                                      adapter_args=adapter_args or {},
+                                      do_connect=do_connect)
+                        self._adapter = ADAPTERS[self._dbname](**kwargs)
                         if bigint_id:
                             types = ADAPTERS[self._dbname].types
                             self._adapter.types = copy.copy(types) # copy so multiple DAL() possible
@@ -6766,8 +6772,9 @@ class DAL(object):
             if not connected:
                 raise RuntimeError, "Failure to connect, tried %d times:\n%s" % (attempts, tb)
         else:
-            args = (self,'None',0,folder,db_codec)
-            self._adapter = BaseAdapter(*args)
+            self._adapter = BaseAdapter(db=self,pool_size=0,
+                                        uri='None',folder=folder,
+                                        db_codec=db_codec)
             migrate = fake_migrate = False
         adapter = self._adapter
         self._uri_hash = hashlib.md5(adapter.uri).hexdigest()
