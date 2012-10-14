@@ -1627,6 +1627,7 @@ class Auth(object):
                 urlbase = settings.cas_provider,
                 actions=actions,
                 maps=maps)
+        return self
 
     def log_event(self, description, vars=None, origin='auth'):
         """
