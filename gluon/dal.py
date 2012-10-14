@@ -835,6 +835,9 @@ class BaseAdapter(ConnectionPool):
 
             # add to list of fields
             sql_fields[field_name] = dict(
+                length=field.length,
+                unique=field.unique,
+                notnull=field.notnull,
                 sortable=sortable,
                 type=str(field_type),
                 sql=ftype)
