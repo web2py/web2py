@@ -13,7 +13,7 @@ NAIVE_IMPORTER = __builtin__.__import__
 TRACK_CHANGES = False
 INVALID_MODULES = set(sys.modules.keys()).union(('','gluon','applications','custom_import'))
 
-# backward compatibility API
+# backward compatibility API 
 def custom_import_install():
     __builtin__.__import__ = custom_importer
 
@@ -22,17 +22,14 @@ def track_changes(track=True):
     global TRACK_CHANGES
     TRACK_CHANGES = track
 
-def is_tracking_changes():
+def is_tracking_changes():    
     return TRACK_CHANGES
-
-class CustomImportException(ImportError):
-    pass
 
 def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
     """
     The web2py custom importer. Like the standard Python importer but it
     tries to transform import statements as something like
-    "import applications.app_name.modules.x".
+    "import applications.app_name.modules.x". 
     If the import failed, fall back on naive_importer
     """
 
@@ -46,8 +43,7 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
     if hasattr(current,'request') \
             and level<=0 \
             and not name.split('.')[0] in INVALID_MODULES \
-            and isinstance(globals, dict):
-        import_tb = None
+            and isinstance(globals, dict):            
         try:
             items = current.request.folder.split(os.path.sep)
             if not items[-1]: items = items[:-1]
@@ -56,26 +52,22 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
                 # import like "import x" or "import x.y"
                 result = None
                 for itemname in name.split("."):
+                    new_mod = base_importer(
+                        modules_prefix, globals,locals, [itemname], level)
+                    try:
+                        result = result or new_mod.__dict__[itemname]
+                    except KeyError, e:
+                        raise ImportError, 'Cannot import module %s' % str(e)
                     modules_prefix += "." + itemname
-                    base_importer(
-                         modules_prefix, globals,locals, [], level)
                 return result
             else:
                 # import like "from x import a, b, ..."
                 pname = modules_prefix + "." + name
                 return base_importer(pname, globals, locals, fromlist, level)
         except ImportError, e1:
-            import_tb = sys.exc_info()[2]
-            try:
-                return NAIVE_IMPORTER(name,globals,locals,fromlist,level)
-            except ImportError, e3:
-                raise ImportError, e1, import_tb.tb_next # there an import error in the module
+            pass # the module does not exist
         except Exception, e2:
             raise e2 # there is an error in the module
-        finally:
-            if import_tb:
-                import_tb = None
-
     return NAIVE_IMPORTER(name,globals,locals,fromlist,level)
 
 

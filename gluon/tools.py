@@ -1627,6 +1627,7 @@ class Auth(object):
                 urlbase = settings.cas_provider,
                 actions=actions,
                 maps=maps)
+        return self
 
     def log_event(self, description, vars=None, origin='auth'):
         """
@@ -4603,7 +4604,7 @@ class Wiki(object):
                         Field('can_edit', 'list:string',
                               writable=perms,readable=perms,
                               default=[Wiki.everybody]),
-                    Field('changelog'),
+                        Field('changelog'),
                         Field('html','text',compute=render,
                               readable=False, writable=False),
                         auth.signature],
@@ -4625,8 +4626,17 @@ class Wiki(object):
 
         # define only non-existent tables
         for key, value in table_definitions:
+            args = []
             if not key in db.tables():
-                db.define_table(key, *value['args'], **value['vars'])
+                # look for wiki_ extra fields in auth.settings
+                extra_fields = auth.settings.extra_fields
+                if extra_fields:
+                    if key in extra_fields:
+                        if extra_fields[key]:
+                            for field in extra_fields[key]:
+                                args.append(field)
+                args += value['args']
+                db.define_table(key, *args, **value['vars'])
 
         def update_tags_insert(page,id,db=db):
             for tag in page.tags or []:
@@ -4789,15 +4799,16 @@ class Wiki(object):
         $(function() {
             if (!$('#wiki_page_body').length) return;
             var pagecontent = $('#wiki_page_body');
+            pagecontent.css('font-family', 'Monaco,Menlo,Consolas,"Courier New",monospace');
             var prevbutton = $('<button class="btn nopreview">Preview</button>');
             var preview = $('<div id="preview"></div>').hide();
             var table = $('form');
             prevbutton.insertBefore(table);
+            preview.insertBefore(table);
             prevbutton.on('click', function(e) {
                 e.preventDefault();
                 if (prevbutton.hasClass('nopreview')) {
                     prevbutton.addClass('preview').removeClass('nopreview').html('Edit Source');
-                    preview.insertBefore(table);
                     web2py_ajax_page('post', '%(url)s', {body : $('#wiki_page_body').val()}, 'preview');
                     table.fadeOut('medium', function() {preview.fadeIn()});
                 } else {
