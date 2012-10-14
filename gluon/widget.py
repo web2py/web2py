@@ -804,10 +804,10 @@ def console():
                       default=False,
                       help=msg)
 
-    parser.add_option('-N',
-                      '--no-cron',
+    parser.add_option('-H',
+                      '--run-cron',
                       action='store_true',
-                      dest='nocron',
+                      dest='runcron',
                       default=False,
                       help='do not start cron automatically')
 
@@ -904,7 +904,7 @@ def console():
 
     if options.cronjob:
         global_settings.cronjob = True  # tell the world
-        options.nocron = True   # don't start cron jobs
+        options.run = False   # don't start cron jobs
         options.plain = True    # cronjobs use a plain shell
         options.nobanner = True
         options.nogui = True
@@ -1083,13 +1083,13 @@ def start(cron=True):
         return
 
 
-    # ## if -N or not cron disable cron in this *process*
+    # ## if -H cron is enabled in this *process*
     # ## if --softcron use softcron
     # ## use hardcron in all other cases
-    if cron and not options.nocron and options.softcron:
+    if cron and options.runcron and options.softcron:
         print 'Using softcron (but this is not very efficient)'
         global_settings.web2py_crontype = 'soft'
-    elif cron and not options.nocron:
+    elif cron and options.runcron:
         logger.debug('Starting hardcron...')
         global_settings.web2py_crontype = 'hard'
         newcron.hardcron(options.folder).start()
