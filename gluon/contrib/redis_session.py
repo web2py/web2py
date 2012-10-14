@@ -19,8 +19,8 @@ locker = thread.allocate_lock()
 def RedisSession(*args, **vars):
     """
     Usage example: put in models
-
-    sessiondb = RedisSession('localhost:6379',db=0, debug=True)
+    from gluon.contrib.redis_session import RedisSession
+    sessiondb = RedisSession('localhost:6379',db=0, session_expiry=False)
     session.connect(request, response, db = sessiondb)
 
     Simple slip-in storage for session
@@ -180,7 +180,10 @@ class MockQuery(object):
     def update(self, **kwargs):
         #means that the session has been found and needs an update
         if self.op == 'eq' and self.field == 'id' and self.value:
-            return self.db.hmset("%s:%s" % (self.keyprefix, self.value), kwargs)
+            rtn = self.db.hmset("%s:%s" % (self.keyprefix, self.value), kwargs)
+            if self.session_expiry:
+                self.db.expire(key, self.session.expiry)
+            return rtn
 
 class RecordDeleter(object):
     """Dumb record deleter to support sessions2trash.py"""
