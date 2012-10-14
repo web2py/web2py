@@ -4603,7 +4603,7 @@ class Wiki(object):
                         Field('can_edit', 'list:string',
                               writable=perms,readable=perms,
                               default=[Wiki.everybody]),
-                    Field('changelog'),
+                        Field('changelog'),
                         Field('html','text',compute=render,
                               readable=False, writable=False),
                         auth.signature],
@@ -4625,8 +4625,17 @@ class Wiki(object):
 
         # define only non-existent tables
         for key, value in table_definitions:
+            args = []
             if not key in db.tables():
-                db.define_table(key, *value['args'], **value['vars'])
+                # look for wiki_ extra fields in auth.settings
+                extra_fields = auth.settings.extra_fields
+                if extra_fields:
+                    if key in extra_fields:
+                        if extra_fields[key]:
+                            for field in extra_fields[key]:
+                                args.append(field)
+                args += value['args']
+                db.define_table(key, *args, **value['vars'])
 
         def update_tags_insert(page,id,db=db):
             for tag in page.tags or []:
