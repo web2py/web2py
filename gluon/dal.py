@@ -6801,7 +6801,12 @@ class DAL(object):
             try:
                 sql_fields = cPickle.load(tfile)
                 name = filename[len(pattern)-7:-6]
-                mf = [(value['sortable'],Field(key,type=value['type'])) \
+                mf = [(value['sortable'],
+                       Field(key,
+                             type=value['type'],
+                             length=value.get('length',None),
+                             notnull=value.get('notnull',False),
+                             unique=value.get('unique',False))) \
                           for key, value in sql_fields.iteritems()]
                 mf.sort(lambda a,b: cmp(a[0],b[0]))
                 self.define_table(name,*[item[1] for item in mf],
