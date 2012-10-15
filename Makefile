@@ -130,5 +130,5 @@ pip:
 	# after upload clean Web2py sources with rm -R ./dist
 	# http://guide.python-distribute.org/creation.html
 	python setup.py sdist
-	python setup.py register
-	python setup.py sdist upload
+	sudo python setup.py register
+	sudo python setup.py sdist upload
