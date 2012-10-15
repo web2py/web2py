@@ -804,12 +804,12 @@ def console():
                       default=False,
                       help=msg)
 
-    parser.add_option('-H',
+    parser.add_option('-Y',
                       '--run-cron',
                       action='store_true',
                       dest='runcron',
                       default=False,
-                      help='do not start cron automatically')
+                      help='start the background cron process')
 
     parser.add_option('-J',
                       '--cronjob',
