@@ -56,9 +56,14 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
                 # import like "import x" or "import x.y"
                 result = None
                 for itemname in name.split("."):
+                    new_mod = base_importer(
+                        modules_prefix, globals,locals, [itemname], level)
+                    try:
+                        result = result or new_mod.__dict__[itemname]
+                        print result
+                    except KeyError, e:
+                        raise ImportError, 'Cannot import module %s' % str(e)
                     modules_prefix += "." + itemname
-                    base_importer(
-                         modules_prefix, globals,locals, [], level)
                 return result
             else:
                 # import like "from x import a, b, ..."
@@ -69,7 +74,7 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
             try:
                 return NATIVE_IMPORTER(name,globals,locals,fromlist,level)
             except ImportError, e3:
-                raise ImportError, e1, import_tb.tb_next # there an import error in the module
+                raise ImportError, e1, import_tb # there an import error in the module
         except Exception, e2:
             raise e2 # there is an error in the module
         finally:
