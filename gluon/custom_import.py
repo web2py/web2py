@@ -60,7 +60,6 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
                         modules_prefix, globals,locals, [itemname], level)
                     try:
                         result = result or new_mod.__dict__[itemname]
-                        print result
                     except KeyError, e:
                         raise ImportError, 'Cannot import module %s' % str(e)
                     modules_prefix += "." + itemname
