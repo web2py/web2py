@@ -10,22 +10,20 @@ import traceback
 from gluon import current
 
 NATIVE_IMPORTER = __builtin__.__import__
-TRACK_CHANGES = False
 INVALID_MODULES = set(('','gluon','applications','custom_import'))
 
 # backward compatibility API
 def custom_import_install():
     if __builtin__.__import__ != custom_importer:
-        INVALID_MODULES = INVALID_MODULES.union(sys.modules.keys())
+        INVALID_MODULES.update(sys.modules.keys())
         __builtin__.__import__ = custom_importer
 
 def track_changes(track=True):
     assert track in (True,False), "must be True or False"
-    global TRACK_CHANGES
-    TRACK_CHANGES = track
+    current.request._custom_import_track_changes = track
 
 def is_tracking_changes():
-    return TRACK_CHANGES
+    return current.request._custom_import_track_changes
 
 class CustomImportException(ImportError):
     pass
@@ -42,7 +40,13 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
     locals = locals or {}
     fromlist = fromlist or []
 
-    base_importer = TRACK_IMPORTER if TRACK_CHANGES else NATIVE_IMPORTER
+    try:
+        if current.request._custom_import_track_changes:
+            base_importer = TRACK_IMPORTER
+        else:
+            base_importer = NATIVE_IMPORTER
+    except: # there is no current.request (should never happen)
+        base_importer = NATIVE_IMPORTER
 
     # if not relative and not from applications:
     if hasattr(current,'request') \
