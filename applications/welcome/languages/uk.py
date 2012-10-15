@@ -89,6 +89,7 @@
 'export as csv file': 'експортувати як файл csv',
 'FAQ': 'ЧаПи (FAQ)',
 'First name': "Ім'я",
+'Forgot username?': "Забули ім'я користувача?",
 'Forms and Validators': 'Форми та коректність даних',
 'Free Applications': 'Вільні додатки',
 'Group %(group_id)s created': 'Групу %(group_id)s створено',

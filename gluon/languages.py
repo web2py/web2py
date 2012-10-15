@@ -35,7 +35,8 @@ pjoin = os.path.join
 pexists = os.path.exists
 pdirname = os.path.dirname
 isdir = os.path.isdir
-is_gae = settings.global_settings.web2py_runtime_gae
+is_writable = not (settings.global_settings.web2py_runtime_gae or
+                   settings.global_settings.languages_readonly)
 
 DEFAULT_LANGUAGE = 'en'
 DEFAULT_LANGUAGE_NAME = 'English'
@@ -274,7 +275,7 @@ def write_plural_dict(filename, contents):
             fp.write('%s: %s,\n' % (repr(Utf8(key)), forms))
         fp.write('}\n')
     except (IOError, OSError):
-        if not is_gae:
+        if is_writable:
             logging.warning('Unable to write to file %s' % filename)
         return
     finally:
@@ -537,7 +538,7 @@ class translator(object):
                     form = self.construct_plural_form(word, id)
                     forms[id-1] = form
                     self.plural_dict[word] = forms
-                    if self.plural_file and not is_gae:
+                    if self.plural_file and is_writable:
                         write_plural_dict(self.plural_file,
                                           self.plural_dict)
                     return form
@@ -723,7 +724,7 @@ class translator(object):
         # guess translation same as original
         self.t[key] = mt = self.default_t.get(key, message)
         # update language file for latter translation
-        if self.language_file != self.default_language_file and not is_gae:
+        if self.language_file != self.default_language_file and is_writable:
             write_dict(self.language_file, self.t)
         return regex_backslash.sub(
             lambda m: m.group(1).translate(ttab_in), mt)
