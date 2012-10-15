@@ -691,7 +691,7 @@ class BaseAdapter(ConnectionPool):
             self.driver_name = drivers_available[0]
             self.driver = globals().get(self.driver_name)
         else:
-            raise RuntimeError, "no driver available %s", self.drivers
+            raise RuntimeError, "no driver available %s" % self.drivers
 
 
     def __init__(self, db,uri,pool_size=0, folder=None, db_codec='UTF-8',
