@@ -36,8 +36,9 @@ import os
 import sys
 import traceback
 import threading
-import hmac
-import base64
+
+PAST = 'Sat, 1-Jan-1971 00:00:00'
+FUTURE = 'Tue, 1-Dec-2999 23:59:59'
 
 try:
     from gluon.contrib.minify import minify
@@ -523,7 +524,7 @@ class Session(Storage):
                 else:
                     response.session_id = None
             # do not try load the data from file is these was data in cookie
-            if response.session_id: #TODO and not session_cookie_data:
+            if response.session_id and not session_cookie_data:
                 try:
                     response.session_file = \
                         open(response.session_filename, 'rb+')
@@ -591,7 +592,7 @@ class Session(Storage):
                 if record_id == '0':
                     raise Exception, 'record_id == 0'
                         # Select from database
-                if True: # TODO: not session_cookie_data:
+                if not session_cookie_data:
                     rows = db(table.id == record_id).select()
                     # Make sure the session data exists in the database
                     if len(rows) == 0 or rows[0].unique_key != unique_key:
@@ -611,9 +612,12 @@ class Session(Storage):
         rcookies = response.cookies
         rcookies[response.session_id_name] = response.session_id
         rcookies[response.session_id_name]['path'] = '/'
-        # TODO: if not session data in cookie, delete seession_data_name cookie
-        #if session_cookie_data:
-        #    rcookies[response.session_data_name]
+        # if not cookie_key, but session_data_name in cookies
+        # expire session_data_name from cookies
+        if session_cookie_data:
+            rcookies[response.session_data_name] = 'expired'
+            rcookies[response.session_data_name]['path'] = '/'
+            rcookies[response.session_data_name]['expires'] = PAST
         if self.flash:
             (response.flash, self.flash) = (self.flash, None)
 
@@ -645,6 +649,7 @@ class Session(Storage):
         value = secure_dumps(dict(self),response.session_cookie_key)
         response.cookies[response.session_data_name] = value
         response.cookies[response.session_data_name]['path'] = '/'
+        response.cookies[response.session_data_name]['expires'] = FUTURE
         return True
 
     def _unchanged(self):

@@ -116,6 +116,8 @@ def secure_dumps(data,encryption_key,hash_key=None):
     return signature+':'+encrypted_data
 
 def secure_loads(data,encryption_key,hash_key=None):
+    if not ':' in data:
+        return None
     if not hash_key:
         hash_key = hashlib.sha1(encryption_key).hexdigest()
     signature, encrypted_data = data.split(':',1)
