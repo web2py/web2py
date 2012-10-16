@@ -2746,10 +2746,11 @@ class Auth(object):
                     callback(form)
             log = self.messages.impersonate_log
             self.log_event(log,dict(id=current_id, other_id=auth.user.id))
-        elif user_id in (0, '0') and self.is_impersonating():
-            session.clear()
-            session.update(cPickle.loads(auth.impersonator))
-            self.user = session.auth.user
+        elif user_id in (0, '0'):
+            if self.is_impersonating():
+                session.clear()
+                session.update(cPickle.loads(auth.impersonator))
+                self.user = session.auth.user
             return None
         if requested_id is DEFAULT and not request.post_vars:
             return SQLFORM.factory(Field('user_id', 'integer'))
