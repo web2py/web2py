@@ -172,11 +172,11 @@ def run(
     adir = os.path.join('applications', a)
     if not os.path.exists(adir):
         if sys.stdin and not sys.stdin.name == '/dev/null':
-            c = raw_input('application %s does not exist, create (y/n)?' % a)
+            confirm = raw_input('application %s does not exist, create (y/n)?' % a)
         else:
             logging.warn('application does not exist and will not be created')
             return
-        if c.lower() in ['y', 'yes']:
+        if confirm.lower() in ['y', 'yes']:
 
             os.mkdir(adir)
             w2p_unpack('welcome.w2p', adir)
