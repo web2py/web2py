@@ -37,6 +37,7 @@ import sys
 import traceback
 import threading
 
+FMT = '%a, %d-%b-%Y %H:%M:%S PST'
 PAST = 'Sat, 1-Jan-1971 00:00:00'
 FUTURE = 'Tue, 1-Dec-2999 23:59:59'
 
@@ -468,7 +469,7 @@ class Session(Storage):
         separate = None,
         check_client=False,
         cookie_key=None,
-        cookie_expires=FUTURE,
+        cookie_expires=None,
         ):
         """
         separate can be separate=lambda(session_name): session_name[-2:]
@@ -484,6 +485,7 @@ class Session(Storage):
             masterapp = request.application
         response.session_id_name = 'session_id_%s' % masterapp.lower()
         response.session_data_name = 'session_data_%s' % masterapp.lower()
+        response.session_cookie_expires = cookie_expires
         
         # Load session data from cookie
         cookies = request.cookies
@@ -505,7 +507,6 @@ class Session(Storage):
         if cookie_key:
             response.session_storage_type = 'cookie'
             response.session_cookie_key = cookie_key
-            response.session_data_expires = cookie_expires
             if session_cookie_data:
                 data = secure_loads(session_cookie_data,cookie_key)
                 if data:
@@ -614,6 +615,8 @@ class Session(Storage):
         rcookies = response.cookies
         rcookies[response.session_id_name] = response.session_id
         rcookies[response.session_id_name]['path'] = '/'
+        if cookie_expires:
+            rcookies[response.session_id_name]['expires'] = cookie_expires.strftime(FMT)
         # if not cookie_key, but session_data_name in cookies
         # expire session_data_name from cookies
         if session_cookie_data:
@@ -648,13 +651,15 @@ class Session(Storage):
 
     def _try_store_in_cookie(self, request, response):
         if response.session_storage_type!='cookie': return False
+        name = response.session_data_name
         value = secure_dumps(dict(self),response.session_cookie_key)
-        response.cookies.pop(response.session_data_name,None)            
-        response.cookies[response.session_data_name] = value
-        response.cookies[response.session_data_name]['path'] = '/'
-        expires = response.session_data_expires
+        expires = response.session_cookie_expires
+        rcookies = response.cookies 
+        rcookies.pop(name,None)            
+        rcookies[name] = value
+        rcookies[name]['path'] = '/'
         if expires: 
-            response.cookies[response.session_data_name]['expires'] = expires
+            rcookies[name]['expires'] = expires.strftime(FMT)
         return True
 
     def _unchanged(self):
