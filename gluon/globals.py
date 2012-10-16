@@ -481,27 +481,33 @@ class Session(Storage):
         if not masterapp:
             masterapp = request.application
         response.session_id_name = 'session_id_%s' % masterapp.lower()
+        response.session_data_name = 'session_data_%s' % masterapp.lower()
         
         # Load session data from cookie
         cookies = request.cookies
 
+        # check if there is a session_id in cookies
         if response.session_id_name in cookies:
             response.session_id = \
                 cookies[response.session_id_name].value
         else:
             response.session_id = None
 
+        # check if there is session data in cookies
+        if response.session_data_name in cookies:
+            session_cookie_data = cookies[response.session_data_name].value
+        else:
+            session_cookie_data = None
+                
+        # if we are supposed to use cookie based session data
         if cookie_key:
             response.session_storage_type = 'cookie'
             response.session_cookie_key = cookie_key
-            response.session_cookie_hkey = hashlib.md5(cookie_key).hexdigest()
-            cookie_name = 'session_data_'+masterapp.lower()
-            response.session_cookie_name = cookie_name
-            if cookie_name in cookies:
-                cookie_value = cookies[cookie_name].value
-                session_data = secure_loads(cookie_value, cookie_key)
-                if session_data:
-                    self.update(session_data)
+            if session_cookie_data:
+                data = secure_loads(session_cookie_data,cookie_key)
+                if data:
+                    self.update(data)
+        # else if we are supposed to use file based sessions
         elif not db:
             response.session_storage_type = 'file'
             if global_settings.db_sessions is True \
@@ -516,7 +522,8 @@ class Session(Storage):
                             'sessions', response.session_id)
                 else:
                     response.session_id = None
-            if response.session_id:
+            # do not try load the data from file is these was data in cookie
+            if response.session_id and not session_cookie_data:
                 try:
                     response.session_file = \
                         open(response.session_filename, 'rb+')
@@ -547,6 +554,7 @@ class Session(Storage):
                     os.path.join(up(request.folder), masterapp,
                                  'sessions', response.session_id)
                 response.session_new = True
+        # else the session goes in db
         else:
             response.session_storage_type = 'db'
             if global_settings.db_sessions is not True:
@@ -583,14 +591,15 @@ class Session(Storage):
                 if record_id == '0':
                     raise Exception, 'record_id == 0'
                         # Select from database
-                rows = db(table.id == record_id).select()
-                # Make sure the session data exists in the database
-                if len(rows) == 0 or rows[0].unique_key != unique_key:
-                    raise Exception, 'No record'
-                # rows[0].update_record(locked=True)
-                # Unpickle the data
-                session_data = cPickle.loads(rows[0].session_data)
-                self.update(session_data)
+                if not request.session_cookie_data:
+                    rows = db(table.id == record_id).select()
+                    # Make sure the session data exists in the database
+                    if len(rows) == 0 or rows[0].unique_key != unique_key:
+                        raise Exception, 'No record'
+                    # rows[0].update_record(locked=True)
+                    # Unpickle the data
+                    session_data = cPickle.loads(rows[0].session_data)
+                    self.update(session_data)
             except Exception:
                 record_id = None
                 unique_key = web2py_uuid()
@@ -602,6 +611,7 @@ class Session(Storage):
         rcookies = response.cookies
         rcookies[response.session_id_name] = response.session_id
         rcookies[response.session_id_name]['path'] = '/'
+        # TODO: if not session data in cookie, delete seession_data_name cookie
         if self.flash:
             (response.flash, self.flash) = (self.flash, None)
 
@@ -631,8 +641,8 @@ class Session(Storage):
     def _try_store_in_cookie(self, request, response):
         if response.session_storage_type!='cookie': return False
         value = secure_dumps(dict(self),response.session_cookie_key)
-        response.cookies[response.session_cookie_name] = value
-        response.cookies[response.session_cookie_name]['path'] = '/'
+        response.cookies[response.session_data_name] = value
+        response.cookies[response.session_data_name]['path'] = '/'
         return True
 
     def _unchanged(self):
