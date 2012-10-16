@@ -596,7 +596,7 @@ def regex_url_in(request, environ):
     routes = THREAD_LOCAL.routes
     if routes.routes_in:
         environ = regex_filter_in(environ)
-    request.env.update((sluggify(k),v) for k,v in environ.iteritems())
+    request.env.update((k.lower().replace('.','_'),v) for k,v in environ.iteritems())
 
     # ##################################################
     # serve if a static file
@@ -1026,7 +1026,7 @@ class MapUrlIn(object):
     def sluggify(self):
         ""
         self.request.env.update(
-            (sluggify(k),v) for k,v in self.env.iteritems())
+            (k.lower().replace('.','_'),v) for k,v in self.env.iteritems())
 
     def update_request(self):
         '''
