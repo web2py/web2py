@@ -608,7 +608,8 @@ class Session(Storage):
         rcookies = response.cookies
         rcookies[response.session_id_name] = response.session_id
         rcookies[response.session_id_name]['path'] = '/'
-        self.__hash = hashlib.md5(str(self)).digest()
+        pickle = cPickle.dumps(self)
+        self.__hash = hashlib.md5(pickle).digest()
         if self.flash:
             (response.flash, self.flash) = (self.flash, None)
 
@@ -653,16 +654,20 @@ class Session(Storage):
 
         # don't save if no change to session
         __hash = self.__hash
+        pickle = None
         if __hash is not None:
             del self.__hash
-            if __hash == hashlib.md5(str(self)).digest():
+            pickle = cPickle.dumps(self)
+            if __hash == hashlib.md5(pickle).digest():
                 return
+        else:
+            pickle = cPickle.dumps(self)
 
         (record_id_name, table, record_id, unique_key) = \
             response._dbtable_and_field
         dd = dict(locked=False, client_ip=request.client.replace(':','.'),
                   modified_datetime=request.now,
-                  session_data=cPickle.dumps(dict(self)),
+                  session_data=pickle,
                   unique_key=unique_key)
         if record_id:
             table._db(table.id == record_id).update(**dd)
@@ -680,9 +685,11 @@ class Session(Storage):
 
         # don't save if no change to session
         __hash = self.__hash
+        pickle = None
         if __hash is not None:
             del self.__hash
-            if __hash == hashlib.md5(str(self)).digest():
+            pickle = cPickle.dumps(self)
+            if __hash == hashlib.md5(pickle).digest():
                 self._close(response)
                 return
 
@@ -700,7 +707,8 @@ class Session(Storage):
             response.session_locked = True
 
         if response.session_file:
-            cPickle.dump(dict(self), response.session_file)
+            if not pickle: pickle = cPickle.dumps(self)
+            response.session_file.write(pickle)
             response.session_file.truncate()
             self._close(response)
 
