@@ -136,12 +136,11 @@ class WebClient(object):
                 raise error
 
         # parse headers into cookies
+        self.cookies = {}
         if 'set-cookie' in self.headers:
-            self.cookies = dict(
-                item[:item.find(';')].split('=') for item in \
-                    self.headers['set-cookie'].split(','))
-        else:
-            self.cookies = {}
+            for item in self.headers['set-cookie'].split(','):
+                key,value = item[:item.find(';')].split('=')
+            self.cookies[key.strip()]=value.strip()
 
         # check is a new session id has been issued, symptom of broken session
         if self.session_regex is not None:

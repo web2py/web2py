@@ -21,6 +21,14 @@ import os
 import re
 import logging
 import socket
+import cPickle
+import base64
+
+try:
+    from Crypto.Cipher import AES
+except ImportError:
+    from contrib import aes as AES
+
 try:
     from contrib.pbkdf2 import pbkdf2_hex
     HAVE_PBKDF2 = True
@@ -94,6 +102,34 @@ DIGEST_ALG_BY_SIZE = {
     512/4: 'sha512',
     }
 
+def pad(s,n=32,padchar='.'):
+    return s + (32 - len(s) % 32) * padchar
+
+def secure_dumps(data,encryption_key,hash_key=None):
+    if not hash_key:
+        hash_key = hashlib.sha1(encryption_key).hexdigest()
+    dump = cPickle.dumps(data)
+    key = pad(encryption_key[:32])
+    cipher = AES.new(key,IV=key)
+    encrypted_data = base64.b16encode(cipher.encrypt(pad(dump)))
+    signature = hmac.new(hash_key,encrypted_data).hexdigest()
+    return signature+':'+encrypted_data
+
+def secure_loads(data,encryption_key,hash_key=None):
+    if not hash_key:
+        hash_key = hashlib.sha1(encryption_key).hexdigest()
+    signature, encrypted_data = data.split(':',1)
+    actual_signature = hmac.new(hash_key,encrypted_data).hexdigest()
+    if signature!=actual_signature:
+        return None
+    key = pad(encryption_key[:32])
+    cipher = AES.new(key,IV=key)
+    try:
+        data = cipher.decrypt(base64.b16decode(encrypted_data))
+        data = data.rstrip(' ')
+        return cPickle.loads(data)
+    except (TypeError,cPickle.UnpicklingError):
+        return None
 
 ### compute constant CTOKENS
 def initialize_urandom():
