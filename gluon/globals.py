@@ -23,7 +23,7 @@ from http import HTTP, redirect
 from fileutils import up
 from serializers import json, custom_json
 import settings
-from utils import web2py_uuid
+from utils import web2py_uuid, secure_dumps, secure_loads
 from settings import global_settings
 import hashlib
 import portalocker
@@ -38,11 +38,6 @@ import traceback
 import threading
 import hmac
 import base64
-
-try:
-    from Crypto.Cipher import AES
-except ImportError:
-    from contrib import aes as AES
 
 try:
     from gluon.contrib.minify import minify
@@ -463,8 +458,8 @@ class Session(Storage):
 
     def connect(
         self,
-        request,
-        response,
+        request=None,
+        response=None,
         db=None,
         tablename='web2py_session',
         masterapp=None,
@@ -478,6 +473,8 @@ class Session(Storage):
         and it is used to determine a session prefix.
         separate can be True and it is set to session_name[-2:]
         """
+        if request is None: request = current.request
+        if response is None: response = current.response
         if separate == True:
             separate = lambda session_name: session_name[-2:]
         self._unlock(response)
@@ -487,34 +484,32 @@ class Session(Storage):
         
         # Load session data from cookie
         cookies = request.cookies
-            
+
+        if response.session_id_name in cookies:
+            response.session_id = \
+                cookies[response.session_id_name].value
+        else:
+            response.session_id = None
+
         if cookie_key:
+            response.session_storage_type = 'cookie'
             response.session_cookie_key = cookie_key
-            response.session_cookie_key2 = hashlib.md5(cookie_key).digest()
-            cookie_name = masterapp.lower()+'_session_data'
+            response.session_cookie_hkey = hashlib.md5(cookie_key).hexdigest()
+            cookie_name = 'session_data_'+masterapp.lower()
             response.session_cookie_name = cookie_name
             if cookie_name in cookies:
                 cookie_value = cookies[cookie_name].value
-                cookie_parts = cookie_value.split(":")
-                enc = cookie_parts[2]
-                cipher = AES.new(cookie_key)
-                decrypted = cipher.decrypt(base64.b64decode(enc)).rstrip('{')
-                check = hmac.new(response.session_cookie_key2,enc).hexdigest()
-                if cookie_parts[0] == check:
-                    session_data = cPickle.loads(decrypted)
+                session_data = secure_loads(cookie_value, cookie_key)
+                if session_data:
                     self.update(session_data)
-            else:
-                return
-
-        if not db:
+        elif not db:
+            response.session_storage_type = 'file'
             if global_settings.db_sessions is True \
                     or masterapp in global_settings.db_sessions:
                 return
             response.session_new = False
             client = request.client and request.client.replace(':', '.')
-            if response.session_id_name in cookies:
-                response.session_id = \
-                    cookies[response.session_id_name].value
+            if response.session_id:
                 if regex_session_id.match(response.session_id):
                     response.session_filename = \
                         os.path.join(up(request.folder), masterapp,
@@ -553,9 +548,9 @@ class Session(Storage):
                                  'sessions', response.session_id)
                 response.session_new = True
         else:
+            response.session_storage_type = 'db'
             if global_settings.db_sessions is not True:
                 global_settings.db_sessions.add(masterapp)
-            response.session_db = True
             if response.session_file:
                 self._close(response)
             if settings.global_settings.web2py_runtime_gae:
@@ -584,9 +579,7 @@ class Session(Storage):
             try:
 
                 # Get session data out of the database
-                # Key comes from the cookie
-                key = cookies[response.session_id_name].value
-                (record_id, unique_key) = key.split(':')
+                (record_id, unique_key) = response.session_id.split(':')
                 if record_id == '0':
                     raise Exception, 'record_id == 0'
                         # Select from database
@@ -602,13 +595,13 @@ class Session(Storage):
                 record_id = None
                 unique_key = web2py_uuid()
                 session_data = {}
-            response._dbtable_and_field = \
-                (response.session_id_name, table, record_id, unique_key)
             response.session_id = '%s:%s' % (record_id, unique_key)
+            response.session_db_table = table
+            response.session_db_record_id = record_id
+            response.session_db_unique_key = unique_key
         rcookies = response.cookies
         rcookies[response.session_id_name] = response.session_id
         rcookies[response.session_id_name]['path'] = '/'
-        self.__hash = hashlib.md5(str(self)).digest()
         if self.flash:
             (response.flash, self.flash) = (self.flash, None)
 
@@ -636,31 +629,38 @@ class Session(Storage):
         self._forget = True
 
     def _try_store_in_cookie(self, request, response):
-        pad = lambda s: s + (32 - len(s) % 32) * '{'
-        data = cPickle.dumps(dict(self))
-        cipher = AES.new(response.session_cookie_key)
-        encrypted_data = base64.b64encode(cipher.encrypt(pad(data)))
-        signature = hmac.new(response.session_cookie_key2,encrypted_data)\
-            .hexdigest()
-        value = signature+':'+encrypted_data
+        if response.session_storage_type!='cookie': return False
+        value = secure_dumps(dict(self),response.session_cookie_key)
         response.cookies[response.session_cookie_name] = value
         response.cookies[response.session_cookie_name]['path'] = '/'
+        return True
+
+    def _unchanged(self):
+        previous_session_hash = self.pop('_session_hash',None)
+        if not previous_session_hash and not self:
+            return True
+        session_pickled = cPickle.dumps(dict(self))
+        session_hash = hashlib.md5(session_pickled).hexdigest()
+        if previous_session_hash == session_hash:
+            return True
+        else:
+            self._session_hash = session_hash
+            return False
 
     def _try_store_in_db(self, request, response):
-        # don't save if file-based sessions, no session id, or session being forgotten
-        if not response.session_db or not response.session_id or self._forget:
-            return
+        # don't save if file-based sessions,
+        # no session id, or session being forgotten
+        # or no changes to session
+        if response.session_storage_type!='db' or not response.session_id \
+                or self._forget or self._unchanged():
+            return False
 
-        # don't save if no change to session
-        __hash = self.__hash
-        if __hash is not None:
-            del self.__hash
-            if __hash == hashlib.md5(str(self)).digest():
-                return
+        table = response.session_db_table
+        record_id = response.session_db_record_id
+        unique_key = response.session_db_unique_key
 
-        (record_id_name, table, record_id, unique_key) = \
-            response._dbtable_and_field
-        dd = dict(locked=False, client_ip=request.client.replace(':','.'),
+        dd = dict(locked=False,
+                  client_ip=request.client.replace(':','.'),
                   modified_datetime=request.now,
                   session_data=cPickle.dumps(dict(self)),
                   unique_key=unique_key)
@@ -668,41 +668,40 @@ class Session(Storage):
             table._db(table.id == record_id).update(**dd)
         else:
             record_id = table.insert(**dd)
-        response.cookies[response.session_id_name] = '%s:%s'\
-             % (record_id, unique_key)
-        response.cookies[response.session_id_name]['path'] = '/'
 
-    def _try_store_on_disk(self, request, response):
+        cookies, session_id_name = response.cookies, response.session_id_name
+        cookies[session_id_name] = '%s:%s' % (record_id, unique_key)
+        cookies[session_id_name]['path'] = '/'
+        return True
 
-        # don't save if sessions not not file-based
-        if response.session_db:
-            return
+    def _try_store_in_cookie_or_file(self, request, response):
+        return \
+            self._try_store_in_cookie(request,response) or \
+            self._try_store_in_file(request,response)
 
-        # don't save if no change to session
-        __hash = self.__hash
-        if __hash is not None:
-            del self.__hash
-            if __hash == hashlib.md5(str(self)).digest():
-                self._close(response)
-                return
+    def _try_store_in_file(self, request, response):
+        if response.session_storage_type!='file':
+            return False
 
-        if not response.session_id or self._forget:
+        try:
+            if not response.session_id or self._forget or self._unchanged():
+                return False
+
+            if response.session_new:
+                # Tests if the session sub-folder exists, if not, create it
+                session_folder = os.path.dirname(response.session_filename)
+                if not os.path.exists(session_folder):
+                    os.mkdir(session_folder)
+                response.session_file = open(response.session_filename, 'wb')
+                portalocker.lock(response.session_file, portalocker.LOCK_EX)
+                response.session_locked = True
+
+            if response.session_file:
+                cPickle.dump(dict(self), response.session_file)
+                response.session_file.truncate()
+        finally:
             self._close(response)
-            return
-
-        if response.session_new:
-            # Tests if the session sub-folder exists, if not, create it
-            session_folder = os.path.dirname(response.session_filename)
-            if not os.path.exists(session_folder):
-                os.mkdir(session_folder)
-            response.session_file = open(response.session_filename, 'wb')
-            portalocker.lock(response.session_file, portalocker.LOCK_EX)
-            response.session_locked = True
-
-        if response.session_file:
-            cPickle.dump(dict(self), response.session_file)
-            response.session_file.truncate()
-            self._close(response)
+        return True
 
     def _unlock(self, response):
         if response and response.session_file and response.session_locked:

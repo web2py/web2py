@@ -558,7 +558,7 @@ def wsgibase(environ, responder):
                 # this must be done after trying to commit database!
                 # ##################################################
                     
-                session._try_store_on_disk(request, response)
+                session._try_store_in_cookie_or_file(request, response)
                 
                 if request.cid:
                     if response.flash:
