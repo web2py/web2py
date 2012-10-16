@@ -6417,10 +6417,10 @@ class Row(object):
 
     def __str__(self):
         ### this could be made smarter
-        return '<Row %s>' % self.__dict__
+        return '<Row %s>' % self.as_dict()
 
     def __repr__(self):
-        return '<Row %s>' % self.__dict__
+        return '<Row %s>' % self.as_dict()
 
     def __int__(self):
         return object.__getattribute__(self,'id')
