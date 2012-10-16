@@ -523,7 +523,7 @@ class Session(Storage):
                 else:
                     response.session_id = None
             # do not try load the data from file is these was data in cookie
-            if response.session_id and not session_cookie_data:
+            if response.session_id: #TODO and not session_cookie_data:
                 try:
                     response.session_file = \
                         open(response.session_filename, 'rb+')
@@ -591,7 +591,7 @@ class Session(Storage):
                 if record_id == '0':
                     raise Exception, 'record_id == 0'
                         # Select from database
-                if not request.session_cookie_data:
+                if True: # TODO: not session_cookie_data:
                     rows = db(table.id == record_id).select()
                     # Make sure the session data exists in the database
                     if len(rows) == 0 or rows[0].unique_key != unique_key:
@@ -612,6 +612,8 @@ class Session(Storage):
         rcookies[response.session_id_name] = response.session_id
         rcookies[response.session_id_name]['path'] = '/'
         # TODO: if not session data in cookie, delete seession_data_name cookie
+        #if session_cookie_data:
+        #    rcookies[response.session_data_name]
         if self.flash:
             (response.flash, self.flash) = (self.flash, None)
 
