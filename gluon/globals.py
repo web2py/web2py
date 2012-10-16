@@ -468,6 +468,7 @@ class Session(Storage):
         separate = None,
         check_client=False,
         cookie_key=None,
+        cookie_expires=FUTURE,
         ):
         """
         separate can be separate=lambda(session_name): session_name[-2:]
@@ -504,6 +505,7 @@ class Session(Storage):
         if cookie_key:
             response.session_storage_type = 'cookie'
             response.session_cookie_key = cookie_key
+            response.session_data_expires = cookie_expires
             if session_cookie_data:
                 data = secure_loads(session_cookie_data,cookie_key)
                 if data:
@@ -647,9 +649,12 @@ class Session(Storage):
     def _try_store_in_cookie(self, request, response):
         if response.session_storage_type!='cookie': return False
         value = secure_dumps(dict(self),response.session_cookie_key)
+        response.cookies.pop(response.session_data_name,None)            
         response.cookies[response.session_data_name] = value
         response.cookies[response.session_data_name]['path'] = '/'
-        response.cookies[response.session_data_name]['expires'] = FUTURE
+        expires = response.session_data_expires
+        if expires: 
+            response.cookies[response.session_data_name]['expires'] = expires
         return True
 
     def _unchanged(self):
