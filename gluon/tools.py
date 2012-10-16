@@ -2750,6 +2750,7 @@ class Auth(object):
             session.clear()
             session.update(cPickle.loads(auth.impersonator))
             self.user = session.auth.user
+            return None
         if requested_id is DEFAULT and not request.post_vars:
             return SQLFORM.factory(Field('user_id', 'integer'))
         return SQLFORM(table_user, user.id, readonly=True)
