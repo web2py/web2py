@@ -1,5 +1,9 @@
 import os
-from distutils import dir_util
+try:
+    from distutils import dir_util
+except ImportError:
+    session.flash = T('requires distutils, but not installed')
+    redirect(URL('default','site'))
 try:
     from git import *
 except ImportError:
