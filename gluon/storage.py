@@ -48,7 +48,6 @@ class Storage(dict):
     __getstate__ = lambda self: None
     __copy__ = lambda self: Storage(self)
     
-    
     def getlist(self,key):
         """
         Return a Storage value as a list.
