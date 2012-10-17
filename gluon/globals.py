@@ -470,6 +470,7 @@ class Session(Storage):
         check_client=False,
         cookie_key=None,
         cookie_expires=None,
+        compression_level=None
         ):
         """
         separate can be separate=lambda(session_name): session_name[-2:]
@@ -507,8 +508,9 @@ class Session(Storage):
         if cookie_key:
             response.session_storage_type = 'cookie'
             response.session_cookie_key = cookie_key
+            response.session_cookie_compression_level = compression_level
             if session_cookie_data:
-                data = secure_loads(session_cookie_data,cookie_key)
+                data = secure_loads(session_cookie_data,cookie_key,compression_level=compression_level)
                 if data:
                     self.update(data)
         # else if we are supposed to use file based sessions
@@ -652,7 +654,7 @@ class Session(Storage):
     def _try_store_in_cookie(self, request, response):
         if response.session_storage_type!='cookie': return False
         name = response.session_data_name
-        value = secure_dumps(dict(self),response.session_cookie_key)
+        value = secure_dumps(dict(self),response.session_cookie_key, compression_level=response.session_cookie_compression_level)
         expires = response.session_cookie_expires
         rcookies = response.cookies 
         rcookies.pop(name,None)            

@@ -23,6 +23,7 @@ import logging
 import socket
 import cPickle
 import base64
+import zlib
 
 try:
     from Crypto.Cipher import AES
@@ -105,17 +106,19 @@ DIGEST_ALG_BY_SIZE = {
 def pad(s,n=32,padchar='.'):
     return s + (32 - len(s) % 32) * padchar
 
-def secure_dumps(data,encryption_key,hash_key=None):
+def secure_dumps(data,encryption_key,hash_key=None,compression_level=None):
     if not hash_key:
         hash_key = hashlib.sha1(encryption_key).hexdigest()
     dump = cPickle.dumps(data)
+    if compression_level:
+        dump = zlib.compress(dump, compression_level)
     key = pad(encryption_key[:32])
-    cipher = AES.new(key,IV=key)
-    encrypted_data = base64.b16encode(cipher.encrypt(pad(dump)))
+    cipher = AES.new(key,IV=key[:16])
+    encrypted_data = base64.urlsafe_b64encode(cipher.encrypt(pad(dump)))
     signature = hmac.new(hash_key,encrypted_data).hexdigest()
     return signature+':'+encrypted_data
 
-def secure_loads(data,encryption_key,hash_key=None):
+def secure_loads(data,encryption_key,hash_key=None, compression_level=None):
     if not ':' in data:
         return None
     if not hash_key:
@@ -125,10 +128,12 @@ def secure_loads(data,encryption_key,hash_key=None):
     if signature!=actual_signature:
         return None
     key = pad(encryption_key[:32])
-    cipher = AES.new(key,IV=key)
+    cipher = AES.new(key,IV=key[:16])
     try:
-        data = cipher.decrypt(base64.b16decode(encrypted_data))
+        data = cipher.decrypt(base64.urlsafe_b64decode(encrypted_data))
         data = data.rstrip(' ')
+        if compression_level:
+            data = zlib.decompress(data)
         return cPickle.loads(data)
     except (TypeError,cPickle.UnpicklingError):
         return None
