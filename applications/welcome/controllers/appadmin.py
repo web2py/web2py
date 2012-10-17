@@ -200,13 +200,14 @@ def select():
                 _class='delete', _type='checkbox', value=False), ''),
                 TR('', '', INPUT(_type='submit', _value=T('submit')))),
                 _action=URL(r=request,args=request.args))
+
+    tb = None
     if form.accepts(request.vars, formname=None):
         regex = re.compile(request.args[0] + '\.(?P<table>\w+)\..+')
         match = regex.match(form.vars.query.strip())
         if match:
             table = match.group('table')
         try:
-            tb = None
             nrows = db(query).count()
             if form.vars.update_check and form.vars.update_fields:
                 db(query).update(**eval_in_global_env('dict(%s)'

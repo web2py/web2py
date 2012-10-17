@@ -111,8 +111,10 @@ class Request(Storage):
     def user_agent(self):
         from gluon.contrib import user_agent_parser
         session = current.session
-        user_agent = session._user_agent = session._user_agent or \
+        user_agent = session._user_agent or \
             user_agent_parser.detect(self.env.http_user_agent)
+        if session:
+            session._user_agent = user_agent
         user_agent = Storage(user_agent)
         for key,value in user_agent.items():
             if isinstance(value,dict):
@@ -666,7 +668,8 @@ class Session(Storage):
 
     def _unchanged(self):
         previous_session_hash = self.pop('_session_hash',None)
-        if not previous_session_hash and not self:
+        if not previous_session_hash and not \
+                any(value is not None for value in self.itervalues()):
             return True
         session_pickled = cPickle.dumps(dict(self))
         session_hash = hashlib.md5(session_pickled).hexdigest()
