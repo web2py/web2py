@@ -404,7 +404,7 @@ class TYPE(object):
 
 class Scheduler(MetaScheduler):
     def __init__(self,db,tasks=None,migrate=True,
-                 worker_name=None,group_names=None,heartbeat=HEARTBEAT,
+                 worker_name=None,group_names=['main'],heartbeat=HEARTBEAT,
                  max_empty_runs=0, discard_results=False, utc_time=False):
 
         MetaScheduler.__init__(self)
@@ -429,15 +429,21 @@ class Scheduler(MetaScheduler):
         current._scheduler = self
 
         self.define_tables(db,migrate=migrate)
-
+        
     def now(self):
         return self.utc_time and datetime.datetime.utcnow() or datetime.datetime.now()
 
-    def define_tables(self,db,migrate):
+    def set_requirements(self, scheduler_task):
         from gluon import current
+        if hasattr(current,'request'):
+            scheduler_task.application_name.default= '%s/%s' % (
+            current.request.application, current.request.controller
+            )
+    
+    def define_tables(self,db,migrate):
         from gluon.dal import DEFAULT
         logging.debug('defining tables (migrate=%s)' % migrate)
-        now = self.now()
+        now = self.now
         db.define_table(
             'scheduler_task',
             Field('application_name',requires=IS_NOT_EMPTY(),
@@ -473,11 +479,9 @@ class Scheduler(MetaScheduler):
             Field('times_failed','integer',default=0,writable=False),
             Field('last_run_time','datetime',writable=False,readable=False),
             Field('assigned_worker_name',default='',writable=False),
+            on_define=self.set_requirements,
             migrate=migrate,format='%(task_name)s')
-        if hasattr(current,'request'):
-            db.scheduler_task.application_name.default= '%s/%s' % (
-                current.request.application, current.request.controller
-            )
+        
 
         db.define_table(
             'scheduler_run',
@@ -500,7 +504,8 @@ class Scheduler(MetaScheduler):
             Field('is_ticker', 'boolean', default=False, writable=False),
             Field('group_names', 'list:string', default=self.group_names),
             migrate=migrate)
-        db.commit()
+        if migrate:
+            db.commit()
 
     def loop(self,worker_name=None):
         signal.signal(signal.SIGTERM, lambda signum, stack_frame: sys.exit(1))
