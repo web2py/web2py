@@ -35,8 +35,7 @@ pjoin = os.path.join
 pexists = os.path.exists
 pdirname = os.path.dirname
 isdir = os.path.isdir
-is_writable = not (settings.global_settings.web2py_runtime_gae or
-                   settings.global_settings.languages_readonly)
+is_gae = settings.global_settings.web2py_runtime_gae
 
 DEFAULT_LANGUAGE = 'en'
 DEFAULT_LANGUAGE_NAME = 'English'
@@ -275,7 +274,7 @@ def write_plural_dict(filename, contents):
             fp.write('%s: %s,\n' % (repr(Utf8(key)), forms))
         fp.write('}\n')
     except (IOError, OSError):
-        if is_writable:
+        if not is_gae:
             logging.warning('Unable to write to file %s' % filename)
         return
     finally:
@@ -417,7 +416,7 @@ class translator(object):
         self.folder = request.folder
         self.langpath = pjoin(self.folder, 'languages')
         self.http_accept_language = request.env.http_accept_language
-        self.is_writable = is_writable
+        self.is_writable = not is_gae
         # filled in self.force():
         #------------------------
         # self.cache
@@ -539,7 +538,7 @@ class translator(object):
                     form = self.construct_plural_form(word, id)
                     forms[id-1] = form
                     self.plural_dict[word] = forms
-                    if self.plural_file and self.is_writable:
+                    if self.is_writable and self.plural_file:
                         write_plural_dict(self.plural_file,
                                           self.plural_dict)
                     return form
@@ -725,7 +724,7 @@ class translator(object):
         # guess translation same as original
         self.t[key] = mt = self.default_t.get(key, message)
         # update language file for latter translation
-        if self.language_file != self.default_language_file and self.is_writable:
+        if self.is_writable and self.language_file != self.default_language_file:
             write_dict(self.language_file, self.t)
         return regex_backslash.sub(
             lambda m: m.group(1).translate(ttab_in), mt)
