@@ -1080,7 +1080,7 @@ class Auth(object):
                 auth.last_visit = request.now
         else:
             self.user = None
-            session.auth = None
+            if session.auth: del session.auth
         # ## what happens after login?
 
         self.next = current.request.vars._next
