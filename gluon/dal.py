@@ -7815,7 +7815,7 @@ class Table(object):
         for key,value in fields.iteritems():
             value,error = self[key].validate(value)
             if error:
-                response.errors[key] = error
+                response.errors[key] = "%s" % error
             else:
                 new_fields[key] = value
         if not response.errors:
