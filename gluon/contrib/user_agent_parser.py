@@ -516,9 +516,3 @@ class mobilize(object):
             items.insert(-1,'mobile')
             current.response.view = '.'.join(items)
         return self.func()
-
-
-
-
-
-

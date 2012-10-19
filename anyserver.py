@@ -9,7 +9,11 @@ License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 This file is based, although a rewrite, on MIT-licensed code from the Bottle web framework.
 """
 
-import os, sys, optparse, urllib
+import os
+import sys
+import optparse
+import urllib
+
 path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(path)
 sys.path = [path]+[p for p in sys.path if not p==path]
@@ -217,7 +221,7 @@ def mongrel2_handler(application,conn,debug=False):
             environ['QUERY_STRING'] = environ['URI'].split('?')[1]
         else:
             environ['QUERY_STRING'] = ''
-        if environ.has_key('Content-Length'):
+        if 'Content-Length' in environ:
             environ['CONTENT_LENGTH'] = environ['Content-Length'] # necessary for POST to work with Django
         environ['wsgi.input'] = req.body
 
@@ -305,9 +309,3 @@ def main():
 
 if __name__=='__main__':
     main()
-
-
-
-
-
-

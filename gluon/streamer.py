@@ -118,4 +118,3 @@ def stream_file_or_304_or_206(
     else:
         wrapped = streamer(stream, chunk_size=chunk_size, bytes=bytes)
     raise HTTP(status, wrapped, **headers)
-

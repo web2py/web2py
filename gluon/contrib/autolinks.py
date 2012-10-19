@@ -203,6 +203,3 @@ if __name__=="__main__":
         print expand_html(open(sys.argv[1]).read())
     else:
         print test()
-
-
-

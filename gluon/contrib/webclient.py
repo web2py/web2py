@@ -200,6 +200,3 @@ def test_web2py_registration_and_login():
 
 if __name__ == '__main__':
     test_web2py_registration_and_login()
-
-
-

@@ -341,11 +341,3 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
                     'WEB2PY CRON: Execution error for %s: %s' \
                         % (task.get('cmd'), e))
     token.release()
-
-
-
-
-
-
-
-

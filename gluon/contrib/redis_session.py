@@ -197,5 +197,3 @@ class RecordDeleter(object):
         self.db.srem(id_idx, self.key)
         #remove the key itself
         self.db.delete(self.key)
-
-

@@ -489,7 +489,3 @@ def lazy_cache(key=None,time_expire=None,cache_model='ram'):
         g.__name__ = f.__name__
         return g
     return decorator
-
-
-
-

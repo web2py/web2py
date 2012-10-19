@@ -93,7 +93,3 @@ if __name__=='__main__':
     print('')
     # You can turn off ordering of results
     print(t.getReportText(orderByCost=False))
-
-
-
-

@@ -34,6 +34,3 @@ def helpicon():
 
 def searchbox(elementid):
     return TAG[''](LABEL(IMG(_id="search_start",_src=URL('static', 'images/search.png'), _alt=T('filter')), _class='icon', _for=elementid), ' ', INPUT(_id=elementid, _type='text', _size=12))
-
-
-

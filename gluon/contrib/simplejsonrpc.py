@@ -148,8 +148,3 @@ if __name__ == "__main__":
     location = "http://www.web2py.com.ar/webservices/sample/call/jsonrpc"
     client = ServerProxy(location, verbose='--verbose' in sys.argv,)
     print client.add(1, 2)
-
-
-
-
-

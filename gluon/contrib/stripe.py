@@ -62,9 +62,3 @@ if __name__=='__main__':
     print 'paid',s['paid'],s['amount'] ,s['currency']
     s = Stripe(key).refund(d[u'id'])
     print 'refunded',s['refunded']
-
-
-
-
-
-

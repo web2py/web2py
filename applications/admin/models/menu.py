@@ -33,6 +33,3 @@ if os.path.exists('applications/examples'):
     response.menu.append((T('Help'), False, URL('examples','default','index')))
 else:
     response.menu.append((T('Help'), False, 'http://web2py.com/examples'))
-
-
-

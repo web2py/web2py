@@ -58,4 +58,3 @@ class EXISTS(object):
         if os.path.exists(value):
             return (value,None)
         return (value,self.error_message)
-

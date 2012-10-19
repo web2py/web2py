@@ -395,7 +395,3 @@ def abspath(*relpath, **base):
     if gluon:
         return os.path.join(global_settings.gluon_parent, path)
     return os.path.join(global_settings.applications_parent, path)
-
-
-
-

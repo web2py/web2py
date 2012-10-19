@@ -500,6 +500,3 @@ aes_Rcon = array('B',
     'c697356ad4b37dfaefc5913972e4d3bd'
     '61c29f254a943366cc831d3a74e8cb'.decode('hex')
 )
-
-
-

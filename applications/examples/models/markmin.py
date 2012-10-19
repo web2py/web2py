@@ -37,5 +37,3 @@ def get_content(b=None,\
     openedfile.close()
 
     return html
-
-

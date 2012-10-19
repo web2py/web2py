@@ -6,6 +6,3 @@ def index():
 
 def about():
     return locals()
-
-
-

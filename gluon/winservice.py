@@ -166,11 +166,3 @@ def web2py_windows_service_handler(argv=None, opt_file='options'):
 
 if __name__ == '__main__':
     web2py_windows_service_handler()
-
-
-
-
-
-
-
-
