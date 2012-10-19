@@ -11,9 +11,9 @@ def basic_auth(server="http://127.0.0.1"):
     """
 
     def basic_login_aux(username,
-            password,
-            server=server):
-        key = base64.b64encode(username+':'+password)
+                        password,
+                        server=server):
+        key = base64.b64encode(username + ':' + password)
         headers = {'Authorization': 'Basic ' + key}
         request = urllib2.Request(server, None, headers)
         try:
@@ -22,5 +22,3 @@ def basic_auth(server="http://127.0.0.1"):
         except (urllib2.URLError, urllib2.HTTPError):
             return False
     return basic_login_aux
-
-

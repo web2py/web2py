@@ -33,7 +33,7 @@ import wsgiref.handlers
 import datetime
 
 path = os.path.dirname(os.path.abspath(__file__))
-sys.path = [path]+[p for p in sys.path if not p==path]
+sys.path = [path] + [p for p in sys.path if not p == path]
 
 sys.modules['cPickle'] = sys.modules['pickle']
 
@@ -83,13 +83,14 @@ def wsgiapp(env, res):
     if global_settings.web2py_runtime == 'gae:development':
         gluon.admin.create_missing_folders()
 
-    web2py_path = global_settings.applications_parent # backward compatibility
+    web2py_path = global_settings.applications_parent  # backward compatibility
 
     return gluon.main.wsgibase(env, res)
 
 
 if LOG_STATS or DEBUG:
     wsgiapp = log_stats(wsgiapp)
+
 
 def main():
     """Run the wsgi app"""

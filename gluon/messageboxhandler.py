@@ -5,6 +5,7 @@ try:
 except:
     tkMessageBox = None
 
+
 class MessageBoxHandler(logging.Handler):
     def __init__(self):
         logging.Handler.__init__(self)

@@ -1,5 +1,6 @@
 from gluon.contrib.pam import authenticate
 
+
 def pam_auth():
     """
     to use pam_login:
@@ -19,5 +20,3 @@ def pam_auth():
         return authenticate(username, password)
 
     return pam_auth_aux
-
-

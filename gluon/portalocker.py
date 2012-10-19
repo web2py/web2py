@@ -110,38 +110,45 @@ else:
 
 
 class LockedFile(object):
-    def __init__(self,filename, mode='rb'):
+    def __init__(self, filename, mode='rb'):
         self.filename = filename
         self.mode = mode
         self.file = None
         if 'r' in mode:
-            self.file = open(filename,mode)
-            lock(self.file,LOCK_SH)
+            self.file = open(filename, mode)
+            lock(self.file, LOCK_SH)
         elif 'w' in mode or 'a' in mode:
-            self.file = open(filename,mode.replace('w','a'))
-            lock(self.file,LOCK_EX)
+            self.file = open(filename, mode.replace('w', 'a'))
+            lock(self.file, LOCK_EX)
             if not 'a' in mode:
                 self.file.seek(0)
                 self.file.truncate()
         else:
-            raise RuntimeError, "invalid LockedFile(...,mode)"
-    def read(self,size=None):
+            raise RuntimeError("invalid LockedFile(...,mode)")
+
+    def read(self, size=None):
         return self.file.read() if size is None else self.file.read(size)
+
     def readline(self):
         return self.file.readline()
+
     def readlines(self):
         return self.file.readlines()
-    def write(self,data):
+
+    def write(self, data):
         self.file.write(data)
         self.file.flush()
+
     def close(self):
         if not self.file is None:
             unlock(self.file)
             self.file.close()
             self.file = None
+
     def __del__(self):
         if not self.file is None:
             self.close()
+
 
 def read_locked(filename):
     fp = LockedFile(filename, 'r')
@@ -149,15 +156,16 @@ def read_locked(filename):
     fp.close()
     return data
 
-def write_locked(filename,data):
+
+def write_locked(filename, data):
     fp = LockedFile(filename, 'w')
     data = fp.write(data)
     fp.close()
 
-if __name__=='__main__':
-    f = LockedFile('test.txt',mode='wb')
+if __name__ == '__main__':
+    f = LockedFile('test.txt', mode='wb')
     f.write('test ok')
     f.close()
-    f = LockedFile('test.txt',mode='rb')
+    f = LockedFile('test.txt', mode='rb')
     print f.read()
     f.close()

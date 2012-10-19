@@ -47,7 +47,7 @@ import os
 
 path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(path)
-sys.path = [path]+[p for p in sys.path if not p==path]
+sys.path = [path] + [p for p in sys.path if not p == path]
 
 import gluon.main
 
@@ -56,7 +56,7 @@ import gluon.main
 from wsgitools.scgi.forkpool import SCGIServer
 from wsgitools.filters import WSGIFilterMiddleware, GzipWSGIFilter
 
-wsgiapp=WSGIFilterMiddleware(gluon.main.wsgibase, GzipWSGIFilter)
+wsgiapp = WSGIFilterMiddleware(gluon.main.wsgibase, GzipWSGIFilter)
 
 if LOGGING:
     application = gluon.main.appfactory(wsgiapp=wsgiapp,
