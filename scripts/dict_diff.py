@@ -6,11 +6,11 @@
 @license: MIT
 @since: 2011-06-17
 
-Usage: dict_diff [OPTION]... dict1 dict2         
+Usage: dict_diff [OPTION]... dict1 dict2
 Show the differences for two dictionaries.
 
   -h,  --help          Display this help message.
-  
+
 dict1 and dict2 are two web2py dictionary files to compare. These are the files
 located in the "languages" directory of a web2py app. The tools show the
 differences between the two files.
@@ -22,33 +22,37 @@ import getopt
 import os.path
 import sys
 
+
 def main(argv):
     """Parse the arguments and start the main process."""
-    try:                                
+    try:
         opts, args = getopt.getopt(argv, "h", ["help"])
     except getopt.GetoptError:
         exit_with_parsing_error()
     for opt, arg in opts:
         arg = arg  # To avoid a warning from Pydev
         if opt in ("-h", "--help"):
-            usage()                     
+            usage()
             sys.exit()
     if len(args) == 2:
         params = list(get_dicts(*args))
         params.extend(get_dict_names(*args))
         compare_dicts(*params)
     else:
-        exit_with_parsing_error()       
+        exit_with_parsing_error()
 
-def exit_with_parsing_error():              
+
+def exit_with_parsing_error():
     """Report invalid arguments and usage."""
     print("Invalid argument(s).")
     usage()
     sys.exit(2)
 
+
 def usage():
     """Display the documentation"""
     print(__doc__)
+
 
 def get_dicts(dict_path1, dict_path2):
     """
@@ -58,7 +62,8 @@ def get_dicts(dict_path1, dict_path2):
     @return: The two dictionaries as a sequence.
     """
 
-    return eval(open(dict_path1).read()), eval(open(dict_path2).read()) 
+    return eval(open(dict_path1).read()), eval(open(dict_path2).read())
+
 
 def get_dict_names(dict1_path, dict2_path):
     """
@@ -75,7 +80,8 @@ def get_dict_names(dict1_path, dict2_path):
         dict1_name = "dict1"
         dict2_name = "dict2"
     return dict1_name, dict2_name
-    
+
+
 def compare_dicts(dict1, dict2, dict1_name, dict2_name):
     """
     Compare the two dictionaries. Print out the result.
@@ -100,7 +106,8 @@ def compare_dicts(dict1, dict2, dict1_name, dict2_name):
             has_value_differences = True
     if not has_value_differences:
         print "  None"
-        
+
+
 def print_key_diff(key_diff, dict1_name, dict2_name):
     """
     Prints the keys in the first dictionary and are in the second dictionary.
@@ -116,6 +123,6 @@ def print_key_diff(key_diff, dict1_name, dict2_name):
     else:
         print "  None"
     print
-            
+
 if __name__ == "__main__":
     main(sys.argv[1:])  # Start the process (without the application name)

@@ -162,7 +162,7 @@ class SessionFile(object):
 
     def last_visit_default(self):
         return datetime.datetime.fromtimestamp(
-                os.stat(self.filename)[stat.ST_MTIME])
+            os.stat(self.filename)[stat.ST_MTIME])
 
     def __str__(self):
         return self.filename
@@ -175,7 +175,7 @@ def total_seconds(delta):
     Args:
         delta: datetime.timedelta instance.
     """
-    return (delta.microseconds + (delta.seconds + (delta.days * 24 * 3600)) * \
+    return (delta.microseconds + (delta.seconds + (delta.days * 24 * 3600)) *
             10 ** 6) / 10 ** 6
 
 
@@ -186,25 +186,25 @@ def main():
     parser = OptionParser(usage=usage)
 
     parser.add_option('-f', '--force',
-        action='store_true', dest='force', default=False,
-        help=('Ignore session expiration. '
-            'Force expiry based on -x option or auth.settings.expiration.')
-        )
+                      action='store_true', dest='force', default=False,
+                      help=('Ignore session expiration. '
+                            'Force expiry based on -x option or auth.settings.expiration.')
+                      )
     parser.add_option('-o', '--once',
-        action='store_true', dest='once', default=False,
-        help='Delete sessions, then exit.',
-        )
+                      action='store_true', dest='once', default=False,
+                      help='Delete sessions, then exit.',
+                      )
     parser.add_option('-s', '--sleep',
-        dest='sleep', default=SLEEP_MINUTES * 60, type="int",
-        help='Number of seconds to sleep between executions. Default 300.',
-        )
+                      dest='sleep', default=SLEEP_MINUTES * 60, type="int",
+                      help='Number of seconds to sleep between executions. Default 300.',
+                      )
     parser.add_option('-v', '--verbose',
-        default=0, action='count',
-        help="print verbose output, a second -v increases verbosity")
+                      default=0, action='count',
+                      help="print verbose output, a second -v increases verbosity")
     parser.add_option('-x', '--expiration',
-        dest='expiration', default=None, type="int",
-        help='Expiration value for sessions without expiration (in seconds)',
-        )
+                      dest='expiration', default=None, type="int",
+                      help='Expiration value for sessions without expiration (in seconds)',
+                      )
 
     (options, unused_args) = parser.parse_args()
 

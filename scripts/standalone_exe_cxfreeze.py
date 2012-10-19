@@ -30,35 +30,35 @@ if sys.platform == 'win32':
 
 base_modules.remove('macpath')
 buildOptions = dict(
-        compressed = True,
-        excludes = ["macpath","PyQt4"],
-    	includes = base_modules,
-  	    include_files=[
-            'applications',
-            'ABOUT',
-            'LICENSE',
-            'VERSION',
-            'logging.example.conf',
-            'options_std.py',
-            'app.example.yaml',
-            'queue.example.yaml',
-            ],
-        # append any extra module by extending the list below -
-        # "contributed_modules+["lxml"]"
-        packages = contributed_modules,
-        )
+    compressed=True,
+    excludes=["macpath", "PyQt4"],
+    includes=base_modules,
+    include_files=[
+        'applications',
+        'ABOUT',
+        'LICENSE',
+        'VERSION',
+        'logging.example.conf',
+        'options_std.py',
+        'app.example.yaml',
+        'queue.example.yaml',
+    ],
+    # append any extra module by extending the list below -
+    # "contributed_modules+["lxml"]"
+    packages=contributed_modules,
+)
 
 setup(
-        name = "Web2py",
-        version=web2py_version,
-        author="Massimo DiPierro",
-        description="web2py web framework",
-        license = "LGPL v3",
-        options = dict(build_exe = buildOptions),
-        executables = [Executable("web2py.py",
-                                    base=base,
-                                    compress = True,
-                                    icon = "web2py.ico",
-                                    targetName="web2py.exe",
-                                    copyDependentFiles = True)],
-        )
+    name="Web2py",
+    version=web2py_version,
+    author="Massimo DiPierro",
+    description="web2py web framework",
+    license="LGPL v3",
+    options=dict(build_exe=buildOptions),
+    executables=[Executable("web2py.py",
+                            base=base,
+                            compress=True,
+                            icon="web2py.ico",
+                            targetName="web2py.exe",
+                            copyDependentFiles=True)],
+)
