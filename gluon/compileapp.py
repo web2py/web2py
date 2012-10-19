@@ -371,7 +371,7 @@ _base_environment_['SQLField'] = SQLField  # for backward compatibility
 _base_environment_['SQLFORM'] = SQLFORM
 _base_environment_['SQLTABLE'] = SQLTABLE
 _base_environment_['LOAD'] = LOAD
- 
+
 def build_environment(request, response, session, store_current=True):
     """
     Build the environment dictionary into which web2py files are executed.
@@ -700,6 +700,7 @@ def test():
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

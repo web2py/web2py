@@ -33,7 +33,7 @@ def _():
     # shortcuts
     app = request.application
     ctr = request.controller
-    # useful links to internal and external resources 
+    # useful links to internal and external resources
     response.menu+=[
         (SPAN('web2py',_class='highlighted'),False, 'http://web2py.com', [
                 (T('My Sites'),False,URL('admin','default','site')),
@@ -98,4 +98,5 @@ def _():
                 ]
          )]
 _()
+
 

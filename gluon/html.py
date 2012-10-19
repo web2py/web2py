@@ -2064,7 +2064,7 @@ class FORM(DIV):
         message_onfailure = kwargs.get('message_onfailure',
                                        current.T("Errors in form, please check it out."))
         message_onchange = kwargs.get('message_onchange',
-                                       current.T("Form consecutive submissions not allowed. " + 
+                                       current.T("Form consecutive submissions not allowed. " +
                                                  "Try re-submitting or refreshing the form page."))
         next = kwargs.get('next',None)
         for key in ('message_onsuccess','message_onfailure','onsuccess',
@@ -2535,3 +2535,4 @@ class MARKMIN(XmlComponent):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+

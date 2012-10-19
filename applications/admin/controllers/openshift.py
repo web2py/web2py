@@ -26,7 +26,7 @@ def deploy():
             kill()
         except:
             pass
-        
+
         ignore_apps = [item for item in apps if not item in form.vars.applications]
         regex = re.compile('\(applications/\(.*')
         w2p_origin = os.getcwd()
@@ -44,13 +44,13 @@ def deploy():
             #shutil.copytree(appsrc,appdest)
             index.add(['wsgi/'+osname+'/applications/'+i])
             new_commit = index.commit("Deploy from Web2py IDE")
-        
+
         origin = repo.remotes.origin
         origin.push
         origin.push()
         #Git code ends here
     return dict(form=form,command=cmd)
-        
+
 class EXISTS(object):
     def __init__(self, error_message='file not found'):
         self.error_message = error_message
@@ -58,3 +58,4 @@ class EXISTS(object):
         if os.path.exists(value):
             return (value,None)
         return (value,self.error_message)
+

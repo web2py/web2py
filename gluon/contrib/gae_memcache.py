@@ -24,7 +24,7 @@ class MemcacheClient(object):
         key,
         f,
         time_expire=300,
-        ):        
+        ):
         key = '%s/%s' % (self.request.application, key)
         dt = time_expire
         value = None
@@ -44,7 +44,7 @@ class MemcacheClient(object):
         obj = self.client.get(key)
         if obj:
             value = obj[1] + value
-        self.client.set(key, (time.time(), value))        
+        self.client.set(key, (time.time(), value))
         return value
 
     def clear(self, key = None):
@@ -65,3 +65,4 @@ class MemcacheClient(object):
 
     def flush_all(self,*a,**b):
         return self.client.delete(*a,**b)
+

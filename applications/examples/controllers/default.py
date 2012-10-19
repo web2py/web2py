@@ -74,3 +74,4 @@ def changelog():
     filename = os.path.join(request.env.gluon_parent, 'CHANGELOG')
     return response.render(dict(changelog=MARKMIN(read_file(filename))))
 
+

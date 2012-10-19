@@ -38,3 +38,4 @@ def get_content(b=None,\
 
     return html
 
+

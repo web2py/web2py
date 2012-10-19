@@ -2797,7 +2797,7 @@ class IS_STRONG(object):
 
     """
 
-    def __init__(self, min=None, max=None, upper=None, lower=None, number=None, 
+    def __init__(self, min=None, max=None, upper=None, lower=None, number=None,
                  entropy=None,
                  special=None, specials=r'~!@#$%^&*()_+-=?<>,.:;{}[]|',
                  invalid=' "', error_message=None, es=False):
@@ -3248,6 +3248,7 @@ class IS_IPV4(Validator):
 if __name__ == '__main__':
     import doctest
     doctest.testmod(optionflags=doctest.NORMALIZE_WHITESPACE|doctest.ELLIPSIS)
+
 
 
 

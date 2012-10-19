@@ -197,7 +197,7 @@ def url_out(request, environ, application, controller, function,
         host = request.env.http_host
     if not scheme or scheme is True:
         scheme = request.env.get('wsgi_url_scheme', 'http').lower() \
-            if request else 'http' 
+            if request else 'http'
     if host:
         host_port = host if not port else host.split(':',1)[0]+':%s'%port
         url = '%s://%s%s' % (scheme, host_port, url)
@@ -579,7 +579,7 @@ def regex_filter_in(e):
     e['REQUEST_URI'] = e['PATH_INFO'] + (query and ('?' + query) or '')
     return e
 
- 
+
 def sluggify(key):
     return key.lower().replace('.','_')
 
@@ -609,7 +609,7 @@ def regex_url_in(request, environ):
     if not match:
         raise HTTP(400,
                    routes.error_message % 'invalid request',
-                   web2py_error='invalid path')    
+                   web2py_error='invalid path')
     elif match.group('c')=='static':
         application = match.group('a')
         version, filename = None, match.group('z')
@@ -623,9 +623,9 @@ def regex_url_in(request, environ):
     else:
         # ##################################################
         # parse application, controller and function
-        # ##################################################        
-        request.application = match.group('a') or routes.default_application 
-        request.controller = match.group('c') or routes.default_controller 
+        # ##################################################
+        request.application = match.group('a') or routes.default_application
+        request.controller = match.group('c') or routes.default_controller
         request.function = match.group('f') or routes.default_function
         request.raw_extension = match.group('e')
         request.extension = request.raw_extension or 'html'
@@ -1316,3 +1316,4 @@ def get_effective_router(appname):
     if not routers or appname not in routers:
         return None
     return Storage(routers[appname])  # return a copy
+

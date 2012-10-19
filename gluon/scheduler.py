@@ -430,7 +430,7 @@ class Scheduler(MetaScheduler):
         current._scheduler = self
 
         self.define_tables(db,migrate=migrate)
-        
+
     def now(self):
         return self.utc_time and datetime.datetime.utcnow() or datetime.datetime.now()
 
@@ -440,7 +440,7 @@ class Scheduler(MetaScheduler):
             scheduler_task.application_name.default= '%s/%s' % (
             current.request.application, current.request.controller
             )
-    
+
     def define_tables(self,db,migrate):
         from gluon.dal import DEFAULT
         logger.debug('defining tables (migrate=%s)' % migrate)
@@ -482,7 +482,7 @@ class Scheduler(MetaScheduler):
             Field('assigned_worker_name',default='',writable=False),
             on_define=self.set_requirements,
             migrate=migrate,format='%(task_name)s')
-        
+
 
         db.define_table(
             'scheduler_run',
@@ -855,7 +855,7 @@ class Scheduler(MetaScheduler):
         If output == True, returns also the last scheduler_run record
             scheduler_run record is fetched by a left join, so it can
             have all fields == None
-        
+
         """
         from gluon.dal import Query
         sr, st = self.db.scheduler_run, self.db.scheduler_task
@@ -962,3 +962,4 @@ def main():
 
 if __name__=='__main__':
     main()
+

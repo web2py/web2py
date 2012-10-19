@@ -500,7 +500,7 @@ class ConnectionPool(object):
 
     # ## this allows gluon to commit/rollback all dbs in this thread
 
-    def close(self,action='commit',really=True):        
+    def close(self,action='commit',really=True):
         if action:
             if callable(action):
                 action(self)
@@ -599,7 +599,7 @@ class BaseAdapter(ConnectionPool):
     support_distributed_transaction = False
     uploads_in_blob = False
     can_select_for_update = True
-    
+
     TRUE = 'T'
     FALSE = 'F'
     types = {
@@ -1661,7 +1661,7 @@ class BaseAdapter(ConnectionPool):
 
     def prepare(self, key):
         if self.connection: self.connection.prepare()
-        
+
     def commit_prepared(self, key):
         if self.connection: self.connection.commit()
 
@@ -6572,7 +6572,7 @@ def smart_query(fields,text):
             elif field._db._adapter.dbengine=='google:datastore' and \
                  field.type in ('list:integer', 'list:string', 'list:reference'):
                 if op == 'contains': new_query = field.contains(value)
-                else: raise RuntimeError, "Invalid operation"                
+                else: raise RuntimeError, "Invalid operation"
             else: raise RuntimeError, "Invalid operation"
             if neg: new_query = ~new_query
             if query is None:
@@ -6596,7 +6596,7 @@ class DAL(object):
                                     Field('fieldname2'))
     """
 
-    def __new__(cls, uri='sqlite://dummy.db', *args, **kwargs):        
+    def __new__(cls, uri='sqlite://dummy.db', *args, **kwargs):
         if not hasattr(THREAD_LOCAL,'db_instances'):
             THREAD_LOCAL.db_instances = {}
         if not hasattr(THREAD_LOCAL,'db_instances_zombie'):
@@ -6746,9 +6746,9 @@ class DAL(object):
                         kwargs = dict(db=self,uri=uri,
                                       pool_size=pool_size,
                                       folder=folder,
-                                      db_codec=db_codec, 
+                                      db_codec=db_codec,
                                       credential_decoder=credential_decoder,
-                                      driver_args=driver_args or {}, 
+                                      driver_args=driver_args or {},
                                       adapter_args=adapter_args or {},
                                       do_connect=do_connect)
                         self._adapter = ADAPTERS[self._dbname](**kwargs)
@@ -7184,7 +7184,7 @@ def index():
 
     def close(self):
         self._adapter.close()
-        if self._db_uid in THREAD_LOCAL.db_instances:            
+        if self._db_uid in THREAD_LOCAL.db_instances:
             db_group = THREAD_LOCAL.db_instances[self._db_uid]
             db_group.remove(self)
             if not db_group:
@@ -9548,3 +9548,4 @@ DAL.Table = Table  # was necessary in gluon/globals.py session.connect
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+

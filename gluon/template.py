@@ -216,7 +216,7 @@ class TemplateParser(object):
     # These are used for re-indentation.
     # Indent + 1
     re_block = compile('^(elif |else:|except:|except |finally:).*$',DOTALL)
-                      
+
     # Indent - 1
     re_unblock = compile('^(return|continue|break|raise)( .*)?$', DOTALL)
     # Indent - 1
@@ -504,7 +504,7 @@ class TemplateParser(object):
         self.content.nodes = []
 
         t_content = t.content
-        
+
         # Set our include, unique by filename
         t_content.blocks['__include__' + filename] = buf
 
@@ -889,6 +889,7 @@ def render(content = "hello world",
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

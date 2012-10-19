@@ -251,11 +251,11 @@ class Response(Storage):
             if item.endswith('.css'):
                 has_css = True
             files.append(item)
-        
+
         if have_minify and ((self.optimize_css and has_css) or (self.optimize_js and has_js)):
             # cache for 5 minutes by default
             key = hashlib.md5(repr(files)).hexdigest()
- 
+
             cache = self.cache_includes or (current.cache.ram, 60*5)
             def call_minify(files=files):
                 return minify.minify(files,
@@ -344,7 +344,7 @@ class Response(Storage):
                     os.path.getsize(filename)
             except OSError:
                 pass
-        
+
         env = request.env
         # Internet Explorer < 9.0 will not allow downloads over SSL unless caching is enabled
         if request.is_https and isinstance(env.http_user_agent,str) and \
@@ -388,7 +388,7 @@ class Response(Storage):
             headers['Content-Disposition'] = \
                 'attachment; filename=%s' % filename
         return self.stream(stream, chunk_size=chunk_size, request=request)
-                           
+
 
     def json(self, data, default=None):
         return json(data, default = default or custom_json)
@@ -425,9 +425,9 @@ class Response(Storage):
             dbstats = [TABLE(*[TR(PRE(row[0]),'%.2fms' % (row[1]*1000)) \
                                    for row in i.db._timings]) \
                            for i in THREAD_LOCAL.instances]
-            dbtables = dict([(regex_nopasswd.sub('******',i.uri), 
-                              {'defined': 
-                               sorted(list(set(i.db.tables) - 
+            dbtables = dict([(regex_nopasswd.sub('******',i.uri),
+                              {'defined':
+                               sorted(list(set(i.db.tables) -
                                            set(i.db._LAZY_TABLES.keys()))) or
                                '[no defined tables]',
                                'lazy': sorted(i.db._LAZY_TABLES.keys()) or
@@ -489,7 +489,7 @@ class Session(Storage):
         response.session_id_name = 'session_id_%s' % masterapp.lower()
         response.session_data_name = 'session_data_%s' % masterapp.lower()
         response.session_cookie_expires = cookie_expires
-        
+
         # Load session data from cookie
         cookies = request.cookies
 
@@ -505,7 +505,7 @@ class Session(Storage):
             session_cookie_data = cookies[response.session_data_name].value
         else:
             session_cookie_data = None
-                
+
         # if we are supposed to use cookie based session data
         if cookie_key:
             response.session_storage_type = 'cookie'
@@ -658,11 +658,11 @@ class Session(Storage):
         name = response.session_data_name
         value = secure_dumps(dict(self),response.session_cookie_key, compression_level=response.session_cookie_compression_level)
         expires = response.session_cookie_expires
-        rcookies = response.cookies 
-        rcookies.pop(name,None)            
+        rcookies = response.cookies
+        rcookies.pop(name,None)
         rcookies[name] = value
         rcookies[name]['path'] = '/'
-        if expires: 
+        if expires:
             rcookies[name]['expires'] = expires.strftime(FMT)
         return True
 
@@ -751,3 +751,4 @@ class Session(Storage):
                 del response.session_file
             except:
                 pass
+
