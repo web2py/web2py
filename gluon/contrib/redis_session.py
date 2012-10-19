@@ -127,7 +127,7 @@ class MockTable(object):
 
 class MockQuery(object):
     """a fake Query object that supports querying by id
-       and listing all keys. No other operation is supported 
+       and listing all keys. No other operation is supported
     """
     def __init__(self, field=None, db=None, prefix=None, session_expiry=False):
         self.field = field
@@ -187,15 +187,15 @@ class MockQuery(object):
 
 class RecordDeleter(object):
     """Dumb record deleter to support sessions2trash.py"""
-    
+
     def __init__(self, db, key, keyprefix):
         self.db, self.key, self.keyprefix = db, key, keyprefix
-        
+
     def __call__(self):
         id_idx = "%s:id_idx" % self.keyprefix
         #remove from the index
         self.db.srem(id_idx, self.key)
         #remove the key itself
         self.db.delete(self.key)
-        
-    
+
+

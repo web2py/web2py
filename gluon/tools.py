@@ -625,7 +625,7 @@ class Mail(object):
         for k,v in headers.iteritems():
             payload[k] = encoded_or_raw(v.decode(encoding))
         result = {}
-        try:            
+        try:
             if self.settings.server == 'logging':
                 logger.warn('email not sent\n%s\nFrom: %s\nTo: %s\nSubject: %s\n\n%s\n%s\n' % \
                                 ('-'*40,sender,
@@ -1042,7 +1042,7 @@ class Auth(object):
     def url(self, f=None, args=None, vars=None, scheme=False):
         if args is None: args=[]
         if vars is None: vars={}
-        return URL(c=self.settings.controller, 
+        return URL(c=self.settings.controller,
                    f=f, args=args, vars=vars,scheme=scheme)
 
     def here(self):
@@ -1089,7 +1089,7 @@ class Auth(object):
         url_index = URL(controller,'index')
         url_login = URL(controller,function,args='login')
         # ## what happens after registration?
-            
+
         settings = self.settings = Settings()
         settings.update(Auth.default_settings)
         settings.update(
@@ -1299,7 +1299,7 @@ class Auth(object):
 
         if asdropdown:
             bar.insert(-1, LI('',_class='divider'))
-            if self.user_id:               
+            if self.user_id:
                 bar = LI(A(prefix, user_identifier, _href='#'),
                          bar,_class='dropdown')
             else:
@@ -1362,7 +1362,7 @@ class Auth(object):
         T = current.T
         reference_user = 'reference %s' % settings.table_user_name
         def lazy_user (auth = self):
-            return auth.user_id        
+            return auth.user_id
         def represent(id,record=None,s=settings):
             try:
                 user = s.table_user(id)
@@ -1425,7 +1425,7 @@ class Auth(object):
         elif isinstance(signature,self.db.Table):
             signature_list = [signature]
         else:
-            signature_list = signature        
+            signature_list = signature
         is_not_empty = IS_NOT_EMPTY(error_message=self.messages.is_empty)
         is_crypted = CRYPT(key=settings.hmac_key,
                            min_length=settings.password_min_length)
@@ -1698,7 +1698,7 @@ class Auth(object):
         """
         perform basic login.
         reads current.request.env.http_authorization
-        and returns basic_allowed,basic_accepted,user 
+        and returns basic_allowed,basic_accepted,user
         """
         if not self.settings.allow_basic_login:
             return (False,False,False)
@@ -1715,7 +1715,7 @@ class Auth(object):
         user = Storage(self.table_user()._filter_fields(user,id=True))
         if 'password' in user: del user.password
         current.session.auth = Storage(
-            user = user, 
+            user = user,
             last_visit = current.request.now,
             expiration = self.settings.expiration,
             hmac_key = web2py_uuid())
@@ -2182,7 +2182,7 @@ class Auth(object):
                 self.add_membership(self.settings.everybody_group_id, form.vars.id)
             if self.settings.registration_requires_verification:
                 link = self.url('user',args=('verify_email',key),scheme=True)
-                                
+
                 if not self.settings.mailer or \
                    not self.settings.mailer.send(
                     to=form.vars.email,
@@ -2204,7 +2204,7 @@ class Auth(object):
                 session.flash = self.messages.registration_successful
                 user = self.db(
                     table_user[username] == form.vars[username]
-                    ).select().first()                
+                    ).select().first()
                 self.login_user(user)
                 session.flash = self.messages.logged_in
             self.log_event(log, form.vars)
@@ -2561,7 +2561,7 @@ class Auth(object):
         reset_password_key = str(int(time.time()))+'-' + web2py_uuid()
         link = self.url('user',
                         args=('reset_password',reset_password_key),
-                        scheme=True) 
+                        scheme=True)
         if self.settings.mailer.send(
             to=user.email,
             subject=self.messages.reset_password_subject,
@@ -4476,7 +4476,7 @@ class PluginManager(object):
         settings.installed = True
         settings.update(
             (k,v) for k,v in defaults.items() if not k in settings)
-                            
+
     def __getattr__(self, key):
         if not key in self.__dict__:
             self.__dict__[key] = Storage()
@@ -4660,7 +4660,7 @@ class Wiki(object):
     # WIKI ACCESS POLICY
     def not_authorized(self,page=None):
         raise HTTP(401)
-    def can_read(self,page):   
+    def can_read(self,page):
         if 'everybody' in page.can_read or not self.manage_permissions:
             return True
         elif self.auth.user:
@@ -5022,6 +5022,7 @@ class Wiki(object):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

@@ -7,7 +7,7 @@ mostly for testing purposes
 
 - customizable
 - supports basic auth
-- supports cookies 
+- supports cookies
 - supports session cookies (tested with web2py sessions)
 - detects broken session
 - detects web2py form postbacks and handles formname and formkey
@@ -51,7 +51,7 @@ class WebClient(object):
 
     def post(self,url,data=None,cookies=None,headers=None,auth=None):
         self.url = self.app+url
-        
+
         # if this POST form requires a postback do it
         if data and '_formname' in data and self.postbacks and \
                 self.history and self.history[-1][1]!=self.url:
@@ -200,5 +200,6 @@ def test_web2py_registration_and_login():
 
 if __name__ == '__main__':
     test_web2py_registration_and_login()
+
 
 

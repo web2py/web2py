@@ -46,13 +46,13 @@ class CacheAbstract(object):
     Main function is now to provide referenced api documentation.
 
     Use CacheInRam or CacheOnDisk instead which are derived from this class.
-    
+
     Attentions, Michele says:
 
     There are signatures inside gdbm files that are used directly
     by the python gdbm adapter that often are lagging behind in the
     detection code in python part.
-    On every occasion that a gdbm store is probed by the python adapter, 
+    On every occasion that a gdbm store is probed by the python adapter,
     the probe fails, because gdbm file version is newer.
     Using gdbm directly from C would work, because there is backward
     compatibility, but not from python!
@@ -258,7 +258,7 @@ class CacheOnDisk(CacheAbstract):
         on self.locker first. Replaces the close method of the
         returned shelf instance with one that releases the lock upon
         closing."""
-        
+
         storage = None
         locker = None
         locked = False
@@ -296,7 +296,7 @@ class CacheOnDisk(CacheAbstract):
         self.initialized = False
         self.request = request
         self.folder = folder
- 
+
     def initialize(self):
         if self.initialized: return
         else: self.initialized = True
@@ -468,7 +468,7 @@ class Cache(object):
         """
         allow replacing cache.ram with cache.with_prefix(cache.ram,'prefix')
         it will add prefix to all the cache keys used.
-        """        
+        """
         return lambda key, f, time_expire=DEFAULT_TIME_EXPIRE, prefix=prefix:\
             cache_model(prefix + key, f, time_expire)
 
@@ -489,6 +489,7 @@ def lazy_cache(key=None,time_expire=None,cache_model='ram'):
         g.__name__ = f.__name__
         return g
     return decorator
+
 
 
 

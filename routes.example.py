@@ -41,14 +41,14 @@ routes_in = (
     (BASE+'/$app/appadmin','/$app/appadmin/index'),
     (BASE+'/$app/appadmin/$anything','/$app/appadmin/$anything'),
     # do not reroute static files
-    (BASE+'/$app/static/$anything','/$app/static/$anything'),    
+    (BASE+'/$app/static/$anything','/$app/static/$anything'),
     # reroute favicon and robots, use exable for lack of better choice
     ('/favicon.ico', '/examples/static/favicon.ico'),
-    ('/robots.txt', '/examples/static/robots.txt'),    
+    ('/robots.txt', '/examples/static/robots.txt'),
     # do other stuff
     ((r'.*http://otherdomain.com.* (?P<any>.*)', r'/app/ctr\g<any>')),
     # remove the BASE prefix
-    (BASE+'/$anything','/$anything'),        
+    (BASE+'/$anything','/$anything'),
     )
 
 # routes_out, like routes_in translates URL paths created with the web2py URL()
@@ -197,6 +197,7 @@ def __routes_doctest():
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

@@ -213,7 +213,7 @@ def site():
         else:
             session.flash = \
                 DIV(T('unable to create application "%s"' % appname),
-                    PRE(error))                      
+                    PRE(error))
         redirect(URL(r=request))
 
     elif form_update.accepted:
@@ -241,18 +241,18 @@ def site():
                     DIV(T('Unable to download app because:'),PRE(str(e)))
                 redirect(URL(r=request))
             fname = form_update.vars.url
-            
+
         elif form_update.accepted and form_update.vars.file:
             fname = request.vars.file.filename
             f = request.vars.file.file
-            
+
         else:
             session.flash = 'No file uploaded and no URL specified'
             redirect(URL(r=request))
 
         if f:
             appname = cleanpath(form_update.vars.name)
-            installed = app_install(appname, f, 
+            installed = app_install(appname, f,
                                     request, fname,
                                     overwrite=form_update.vars.overwrite)
         if f and installed:
@@ -282,7 +282,7 @@ def site():
 
     apps = sorted(apps,lambda a,b:cmp(a.upper(),b.upper()))
 
-    return dict(app=None, apps=apps, myversion=myversion, 
+    return dict(app=None, apps=apps, myversion=myversion,
                 form_create=form_create, form_update=form_update)
 
 
@@ -340,7 +340,7 @@ def pack_plugin():
 
 def upgrade_web2py():
     dialog = FORM.confirm(T('Upgrade'),
-                         {T('Cancel'):URL('site')})    
+                         {T('Cancel'):URL('site')})
     if dialog.accepted:
         (success, error) = upgrade(request)
         if success:
@@ -355,7 +355,7 @@ def uninstall():
 
     dialog = FORM.confirm(T('Uninstall'),
                          {T('Cancel'):URL('site')})
-    
+
     if dialog.accepted:
         if MULTI_USER_MODE:
             if is_manager() and db(db.app.name==app).delete():
@@ -1227,7 +1227,7 @@ def create_file():
             if request.vars.plugin and not filename.startswith('plugin_%s/' % request.vars.plugin):
                 filename = 'plugin_%s/%s' % (request.vars.plugin, filename)
             text = ''
-            
+
         else:
             redirect(request.vars.sender+anchor)
 
@@ -1641,7 +1641,7 @@ def git_pull():
         session.flash = GIT_MISSING
         redirect(URL('site'))
     dialog = FORM.confirm(T('Pull'),
-                         {T('Cancel'):URL('site')})    
+                         {T('Cancel'):URL('site')})
     if dialog.accepted:
         try:
             repo = Repo(os.path.join(apath(r=request),app))
@@ -1697,4 +1697,5 @@ def git_push():
             session.flash = T("Push failed, git exited abnormally. See logs for details.")
             redirect(URL('site'))
     return dict(app=app,form=form)
+
 

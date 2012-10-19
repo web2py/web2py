@@ -38,7 +38,7 @@ class Storage(dict):
         >>> print o.a
         None
     """
-    __slots__=()    
+    __slots__=()
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
     __getitem__ = dict.get
@@ -47,7 +47,7 @@ class Storage(dict):
     # http://stackoverflow.com/questions/5247250/why-does-pickle-getstate-accept-as-a-return-value-the-very-instance-it-requi
     __getstate__ = lambda self: None
     __copy__ = lambda self: Storage(self)
-    
+
     def getlist(self,key):
         """
         Return a Storage value as a list.
@@ -258,6 +258,7 @@ class List(list):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
 
 
 

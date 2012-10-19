@@ -235,7 +235,7 @@ def serve_controller(request, response, session):
     default_headers = [
         ('Content-Type', contenttype('.'+request.extension)),
         ('Cache-Control','no-store, no-cache, must-revalidate, post-check=0, pre-check=0'),
-        ('Expires', time.strftime('%a, %d %b %Y %H:%M:%S GMT', 
+        ('Expires', time.strftime('%a, %d %b %Y %H:%M:%S GMT',
                                   time.gmtime())),
         ('Pragma', 'no-cache')]
     for key,value in default_headers:
@@ -440,7 +440,7 @@ def wsgibase(environ, responder):
                     local_hosts = global_settings.local_hosts
                 client = get_client(env)
                 x_req_with = str(env.http_x_requested_with).lower()
-                
+
                 request.update(
                     client = client,
                     folder = abspath('applications',app) + os.sep,
@@ -524,14 +524,14 @@ def wsgibase(environ, responder):
                     import gluon.debug
                     # activate the debugger
                     gluon.debug.dbg.do_debug(mainpyfile=request.folder)
-                
+
                 serve_controller(request, response, session)
 
             except HTTP, http_response:
 
                 if static_file:
                     return http_response.to(responder,env=env)
-                        
+
                 if request.body:
                     request.body.close()
 
@@ -557,9 +557,9 @@ def wsgibase(environ, responder):
                 # if session not in db try store session on filesystem
                 # this must be done after trying to commit database!
                 # ##################################################
-                    
+
                 session._try_store_in_cookie_or_file(request, response)
-                
+
                 if request.cid:
                     if response.flash:
                         http_response.headers['web2py-component-flash'] = urllib2.quote(xmlescape(response.flash).replace('\n',''))
@@ -857,4 +857,5 @@ class HttpServer(object):
             os.unlink(self.pid_filename)
         except:
             pass
+
 

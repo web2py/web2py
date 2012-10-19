@@ -330,7 +330,7 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
                 commands = command
 
             # from python docs:
-            # You do not need shell=True to run a batch file or 
+            # You do not need shell=True to run a batch file or
             # console-based executable.
             shell = False
 
@@ -341,6 +341,7 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
                     'WEB2PY CRON: Execution error for %s: %s' \
                         % (task.get('cmd'), e))
     token.release()
+
 
 
 

@@ -90,7 +90,7 @@ def attach_debugger(host='localhost', port=6000, authkey='secret password'):
 
     if isinstance(authkey, unicode):
         authkey = authkey.encode('utf8')
-   
+
     if not hasattr(gluon.debug, 'qdb_listener'):
         # create a remote debugger server and wait for connection
         address = (host, port)     # family is deduced to be 'AF_INET'
@@ -127,4 +127,5 @@ def detach_debugger():
 def call():
     session.forget()
     return service()
+
 

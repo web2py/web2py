@@ -166,7 +166,7 @@ def read_possible_plural_rules():
                 pname = modname+'.py'
                 nplurals = getattr(module,'nplurals', DEFAULT_NPLURALS)
                 get_plural_id = getattr(
-                    module,'get_plural_id', 
+                    module,'get_plural_id',
                     DEFAULT_GET_PLURAL_ID)
                 construct_plural_form = getattr(
                     module,'construct_plural_form',
@@ -210,7 +210,7 @@ def read_possible_languages_aux(langdir):
                 nplurals,        # nplurals for current language
                 get_plural_id,   # get_plural_id() for current language
                 construct_plural_form) # construct_plural_form() for current language
- 
+
     plurals = {}
     flist = oslistdir(langdir)
     # scan languages directory for plural dict files:
@@ -223,7 +223,7 @@ def read_possible_languages_aux(langdir):
     for fname in flist:
         if regex_langfile.match(fname) or fname == 'default.py':
             fname_with_path = pjoin(langdir,fname)
-            d = read_dict(fname_with_path)    
+            d = read_dict(fname_with_path)
             lang = fname[:-3]
             langcode = d.get('!langcode!', lang if lang != 'default'
                                               else DEFAULT_LANGUAGE)
@@ -241,7 +241,7 @@ def read_possible_languages_aux(langdir):
     if deflangcode not in langs:
         # create language from default.py:
         langs[deflangcode] = deflang[:2]+(0,)+deflang[3:]
-                            
+
     return langs
 
 def read_possible_languages(appdir):
@@ -403,11 +403,11 @@ class translator(object):
 
     notice 1: there is no need to force since, by default, T uses
        http_accept_language to determine a translation file.
-    notice 2: 
+    notice 2:
        en and en-en are considered different languages!
-    notice 3: 
+    notice 3:
        if language xx-yy is not found force() probes other similar
-       languages using such algorithm: 
+       languages using such algorithm:
         xx-yy.py -> xx.py -> xx-yy*.py -> xx*.py
     """
 
@@ -489,7 +489,7 @@ class translator(object):
             languages[0], (tuple, list)):
             languages = languages[0]
         if not languages or languages[0] is None:
-            # set default language from default.py/DEFAULT_LANGUAGE 
+            # set default language from default.py/DEFAULT_LANGUAGE
             pl_info = self.get_possible_languages_info('default')
             if pl_info[2]==0: # langfile_mtime
                 # if languages/default.py is not found
@@ -505,7 +505,7 @@ class translator(object):
             self.current_languages = list(languages)
         self.force(self.http_accept_language)
 
-       
+
     def plural(self, word, n):
         """ get plural form of word for number *n*
             NOTE: *word" MUST be defined in current language
@@ -619,7 +619,7 @@ class translator(object):
                                          self.language_file,
                                          ({},allocate_lock()))
                     set_plural(language)
-                    self.accepted_language = language 
+                    self.accepted_language = language
                     return languages
         self.accepted_language = language or self.current_languages[0]
         self.language_file = self.default_language_file
@@ -676,7 +676,7 @@ class translator(object):
             message = self.params_substitution(message, symbols)
         return XML(message.translate(ttab_out))
 
-    def M(self, message, symbols={}, language=None, 
+    def M(self, message, symbols={}, language=None,
           lazy=None, filter=None, ftag=None):
         """
         get cached translated markmin-message with inserted parametes
@@ -710,10 +710,10 @@ class translator(object):
         the ## notation is ignored in multiline strings and strings that
         start with ##. this is to allow markmin syntax to be translated
         """
-        if isinstance(message, unicode): 
-            message = message.encode('utf8') 
-        if isinstance(prefix, unicode): 
-            prefix = prefix.encode('utf8') 
+        if isinstance(message, unicode):
+            message = message.encode('utf8')
+        if isinstance(prefix, unicode):
+            prefix = prefix.encode('utf8')
         key = prefix+message
         mt = self.t.get(key, None)
         if mt is not None: return mt
@@ -831,7 +831,7 @@ class translator(object):
         """
         get cached translated message with inserted parameters(symbols)
         """
-        message = get_from_cache(self.cache, message, 
+        message = get_from_cache(self.cache, message,
                                  lambda: self.get_t(message))
         if symbols or symbols == 0 or symbols == "":
             if isinstance(symbols, dict):
@@ -905,3 +905,4 @@ def update_all_languages(application_path):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+

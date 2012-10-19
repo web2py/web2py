@@ -147,7 +147,7 @@ if request.controller == "webservices":
         time.sleep(10)
         raise HTTP(403,"Not authorized")
 elif not session.authorized and not \
-    (request.controller+'/'+request.function in 
+    (request.controller+'/'+request.function in
      ('default/index','default/user','plugin_jqmobile/index','plugin_jqmobile/about')):
 
     if request.env.query_string:
@@ -168,4 +168,5 @@ elif session.authorized and \
 if request.controller=='appadmin' and DEMO_MODE:
     session.flash = 'Appadmin disabled in demo mode'
     redirect(URL('default','sites'))
+
 

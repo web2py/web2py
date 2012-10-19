@@ -208,11 +208,11 @@ def web2py_uuid(ctokens=UNPACKED_CTOKENS):
     if HAVE_URANDOM:
         urand_longs = struct.unpack('=QQ', fast_urandom16())
         byte_s = struct.pack('=QQ',
-                             rand_longs[0]^urand_longs[0]^ctokens[0], 
+                             rand_longs[0]^urand_longs[0]^ctokens[0],
                              rand_longs[1]^urand_longs[1]^ctokens[1])
     else:
-        byte_s = struct.pack('=QQ', 
-                             rand_longs[0]^ctokens[0], 
+        byte_s = struct.pack('=QQ',
+                             rand_longs[0]^ctokens[0],
                              rand_longs[1]^ctokens[1])
     return str(uuid.UUID(bytes=byte_s, version=4))
 
@@ -254,6 +254,7 @@ def is_valid_ip_address(address):
             return False
     else: # do not know what to do? assume it is a valid address
         return True
+
 
 
 

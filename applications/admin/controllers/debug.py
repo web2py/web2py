@@ -51,7 +51,7 @@ def interact():
     lineno = web_debugger.lineno
     if filename:
         lines = dict([(i+1, l) for (i, l) in enumerate(
-                            [l.strip("\n").strip("\r") for l 
+                            [l.strip("\n").strip("\r") for l
                                 in open(filename).readlines()])])
         filename = os.path.basename(filename)
     else:
@@ -76,9 +76,9 @@ def interact():
         response.flash = T('"User Exception" debug mode. '
                            'An error ticket could be issued!')
 
-    return dict(app=app, data="", 
-                filename=web_debugger.filename, lines=lines, lineno=lineno, 
-                f_globals=f_globals, f_locals=f_locals, 
+    return dict(app=app, data="",
+                filename=web_debugger.filename, lines=lines, lineno=lineno,
+                f_globals=f_globals, f_locals=f_locals,
                 exception=web_debugger.exception_info)
 
 def step():
@@ -120,8 +120,8 @@ def breakpoints():
 
     # Get all .py files
     files = listdir(apath('', r=request), '.*\.py$')
-    files = [filename for filename in files 
-             if filename and 'languages' not in filename 
+    files = [filename for filename in files
+             if filename and 'languages' not in filename
                 and not filename.startswith("admin")
                 and not filename.startswith("examples")]
 
@@ -129,16 +129,16 @@ def breakpoints():
         Field('filename', requires=IS_IN_SET(files), label=T("Filename")),
         Field('lineno', 'integer', label=T("Line number"),
               requires=IS_NOT_EMPTY()),
-        Field('temporary', 'boolean', label=T("Temporary"), 
+        Field('temporary', 'boolean', label=T("Temporary"),
               comment=T("deleted after first hit")),
         Field('condition', 'string', label=T("Condition"),
               comment=T("honored only if the expression evaluates to true")),
         )
 
     if form.accepts(request.vars, session):
-        filename = os.path.join(request.env['applications_parent'], 
+        filename = os.path.join(request.env['applications_parent'],
                                 'applications', form.vars.filename)
-        err = qdb_debugger.do_set_breakpoint(filename, 
+        err = qdb_debugger.do_set_breakpoint(filename,
                                             form.vars.lineno,
                                             form.vars.temporary,
                                             form.vars.condition)
@@ -150,9 +150,9 @@ def breakpoints():
             qdb_debugger.do_clear(item[7:])
 
     breakpoints = [{'number': bp[0], 'filename': os.path.basename(bp[1]),
-                    'path': bp[1], 'lineno': bp[2], 
-                    'temporary': bp[3], 'enabled': bp[4], 'hits': bp[5], 
-                    'condition': bp[6]}  
+                    'path': bp[1], 'lineno': bp[2],
+                    'temporary': bp[3], 'enabled': bp[4], 'hits': bp[5],
+                    'condition': bp[6]}
                     for bp in qdb_debugger.do_list_breakpoint()]
 
     return dict(breakpoints=breakpoints, form=form)
@@ -160,11 +160,11 @@ def breakpoints():
 
 def toggle_breakpoint():
     "Set or clear a breakpoint"
-    
+
     lineno = None
     ok = None
     try:
-        filename = os.path.join(request.env['applications_parent'], 
+        filename = os.path.join(request.env['applications_parent'],
                                 'applications', request.vars.filename)
         if not request.vars.data:
             # ace send us the line number!
@@ -184,7 +184,7 @@ def toggle_breakpoint():
                 no, bp_filename, bp_lineno, temporary, enabled, hits, cond = bp
                 if filename == bp_filename and lineno == bp_lineno:
                     err = qdb_debugger.do_clear_breakpoint(filename, lineno)
-                    response.flash = T("Removed Breakpoint on %s at line %s", ( 
+                    response.flash = T("Removed Breakpoint on %s at line %s", (
                                         filename, lineno))
                     ok = False
                     break
@@ -198,4 +198,5 @@ def toggle_breakpoint():
     except Exception, e:
         session.flash = str(e)
     return response.json({'ok': ok, 'lineno': lineno})
+
 

@@ -243,7 +243,7 @@ class ListWidget(StringWidget):
         attributes['_style'] = 'list-style:none'
         nvalue = value or ['']
         items = [LI(INPUT(_id=_id, _class=_class, _name=_name,
-                          value=v, hideerror=k<len(nvalue)-1, 
+                          value=v, hideerror=k<len(nvalue)-1,
                           requires=requires),
                     **attributes)  for (k,v) in enumerate(nvalue)]
         script=SCRIPT("""
@@ -897,8 +897,8 @@ class SQLFORM(FORM):
         # if no fields are provided, build it from the provided table
         # will only use writable or readable fields, unless forced to ignore
         if fields is None:
-            fields = [f.name for f in table if 
-                      (ignore_rw or f.writable or f.readable) and 
+            fields = [f.name for f in table if
+                      (ignore_rw or f.writable or f.readable) and
                       (readonly or not f.compute)]
         self.fields = fields
 
@@ -1260,8 +1260,8 @@ class SQLFORM(FORM):
         if self.record_changed and self.detect_record_change:
             message_onchange = \
                 kwargs.setdefault("message_onchange",
-                    current.T("A record change was detected. " + 
-                              "Consecutive update self-submissions " + 
+                    current.T("A record change was detected. " +
+                              "Consecutive update self-submissions " +
                               "are not allowed. Try re-submitting or " +
                               "refreshing the form page."))
             if message_onchange is not None:
@@ -1574,7 +1574,7 @@ class SQLFORM(FORM):
                         _id='w2p_field_%s' % name,
                         _class='w2p_query_row hidden',
                         _style='display:inline'))
-                                
+
         criteria.insert(0,SELECT(
                 _id="w2p_query_fields",
                 _onchange="jQuery('.w2p_query_row').hide();jQuery('#w2p_field_'+jQuery('#w2p_query_fields').val().replace('.','-')).show();",
@@ -1596,7 +1596,7 @@ class SQLFORM(FORM):
         """)
         return CAT(
             DIV(_id="w2p_query_panel",_class='hidden',*criteria),fadd)
-                       
+
 
 
     @staticmethod
@@ -1718,7 +1718,7 @@ class SQLFORM(FORM):
                     'create' in request.args or
                     'delete' in request.args or
                     'edit' in request.args)):
-                session.flash = T('not authorized')                
+                session.flash = T('not authorized')
                 redirect(referrer)
 
         def gridbutton(buttonclass='buttonadd', buttontext='Add',
@@ -2270,7 +2270,7 @@ class SQLFORM(FORM):
                 else:
                     break
             if nargs>len(args)+1:
-                query = (field == id)                
+                query = (field == id)
                 if isinstance(linked_tables,dict):
                     linked_tables = linked_tables.get(table._tablename,[])
                 if linked_tables is None or referee in linked_tables:
@@ -2747,3 +2747,4 @@ class ExporterXML(ExportClass):
             out.write('</row>\n')
         out.write('</rows>')
         return str(out.getvalue())
+
