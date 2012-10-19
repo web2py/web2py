@@ -4,21 +4,21 @@ import time
 def cache_in_ram():
     """cache the output of the lambda function in ram"""
 
-    t = cache.ram('time', lambda : time.ctime(), time_expire=5)
+    t = cache.ram('time', lambda: time.ctime(), time_expire=5)
     return dict(time=t, link=A('click to reload', _href=URL(r=request)))
 
 
 def cache_on_disk():
     """cache the output of the lambda function on disk"""
 
-    t = cache.disk('time', lambda : time.ctime(), time_expire=5)
+    t = cache.disk('time', lambda: time.ctime(), time_expire=5)
     return dict(time=t, link=A('click to reload', _href=URL(r=request)))
 
 
 def cache_in_ram_and_disk():
     """cache the output of the lambda function on disk and in ram"""
 
-    t = cache.ram('time', lambda : cache.disk('time', lambda : \
+    t = cache.ram('time', lambda: cache.disk('time', lambda:
                   time.ctime(), time_expire=5), time_expire=5)
     return dict(time=t, link=A('click to reload', _href=URL(r=request)))
 
