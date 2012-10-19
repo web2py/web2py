@@ -25,25 +25,28 @@ import Cookie
 import cStringIO
 from email import MIMEBase, MIMEMultipart, MIMEText, Encoders, Header, message_from_string
 
-from contenttype import contenttype
-from storage import Storage, StorageList, Settings, Messages
-from utils import web2py_uuid
-from fileutils import read_file, check_credentials
+from gluon.contenttype import contenttype
+from gluon.storage import Storage, StorageList, Settings, Messages
+from gluon.utils import web2py_uuid
+from gluon.fileutils import read_file, check_credentials
 from gluon import *
 from gluon.contrib.autolinks import expand_one
 from gluon.contrib.markmin.markmin2html import \
     replace_at_urls, replace_autolinks, replace_components
 from gluon.dal import Row
 
-import serializers
+import gluon.serializers as serializers
 
 try:
-    import json as json_parser                      # try stdlib (Python 2.6)
+    # try stdlib (Python 2.6)
+    import json as json_parser
 except ImportError:
     try:
-        import simplejson as json_parser            # try external module
+        # try external module
+        import simplejson as json_parser
     except:
-        import contrib.simplejson as json_parser    # fallback to pure-Python module
+        # fallback to pure-Python module
+        import contrib.simplejson as json_parser
 
 __all__ = ['Mail', 'Auth', 'Recaptcha', 'Crud', 'Service', 'Wiki',
            'PluginManager', 'fetch', 'geocode', 'prettydate']
