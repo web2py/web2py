@@ -5,10 +5,11 @@ import sys
 import re
 from BeautifulSoup import BeautifulSoup as BS
 
+
 def head(styles):
     title = '<title>{{=response.title or request.application}}</title>'
     items = '\n'.join(["{{response.files.append(URL(request.application,'static','%s'))}}" % (style) for style in styles])
-    loc="""<style>
+    loc = """<style>
 div.flash {
     position: absolute;
     float: right;
@@ -39,50 +40,54 @@ div.error {
     border: 1px solid #666;
 }
 </style>"""
-    return "\n%s\n%s\n{{include 'web2py_ajax.html'}}\n%s" % (title,items,loc)
+    return "\n%s\n%s\n{{include 'web2py_ajax.html'}}\n%s" % (title, items, loc)
+
 
 def content():
     return """<div class="flash">{{=response.flash or ''}}</div>{{include}}"""
 
+
 def process(folder):
-    indexfile = open(os.path.join(folder,'index.html'),'rb')
+    indexfile = open(os.path.join(folder, 'index.html'), 'rb')
     try:
         soup = BS(indexfile.read())
     finally:
         indexfile.close()
     styles = [x['href'] for x in soup.findAll('link')]
-    soup.find('head').contents=BS(head(styles))
+    soup.find('head').contents = BS(head(styles))
     try:
-        soup.find('h1').contents=BS('{{=response.title or request.application}}')
-        soup.find('h2').contents=BS("{{=response.subtitle or '=response.subtitle'}}")
+        soup.find(
+            'h1').contents = BS('{{=response.title or request.application}}')
+        soup.find('h2').contents = BS(
+            "{{=response.subtitle or '=response.subtitle'}}")
     except:
         pass
-    for match in (soup.find('div',id='menu'),
-              soup.find('div',{'class':'menu'}),
-              soup.find('div',id='nav'),
-              soup.find('div',{'class':'nav'})):
+    for match in (soup.find('div', id='menu'),
+                  soup.find('div', {'class': 'menu'}),
+                  soup.find('div', id='nav'),
+                  soup.find('div', {'class': 'nav'})):
         if match:
-            match.contents=BS('{{=MENU(response.menu)}}')
+            match.contents = BS('{{=MENU(response.menu)}}')
             break
-    done=False
-    for match in (soup.find('div',id='content'),
-              soup.find('div',{'class':'content'}),
-              soup.find('div',id='main'),
-              soup.find('div',{'class':'main'})):
+    done = False
+    for match in (soup.find('div', id='content'),
+                  soup.find('div', {'class': 'content'}),
+                  soup.find('div', id='main'),
+                  soup.find('div', {'class': 'main'})):
         if match:
-            match.contents=BS(content())
-            done=True
+            match.contents = BS(content())
+            done = True
             break
     if done:
         page = soup.prettify()
-        page = re.compile("\s*\{\{=response\.flash or ''\}\}\s*",re.MULTILINE)\
-            .sub("{{=response.flash or ''}}",page)
+        page = re.compile("\s*\{\{=response\.flash or ''\}\}\s*", re.MULTILINE)\
+            .sub("{{=response.flash or ''}}", page)
         print page
     else:
-        raise Exception, "Unable to convert"
+        raise Exception("Unable to convert")
 
-if __name__=='__main__':
-    if len(sys.argv)<2:
+if __name__ == '__main__':
+    if len(sys.argv) < 2:
         print """USAGE:
 1) start a new web2py application
 2) Download a sample free layout from the web into the static/ folder of
@@ -96,4 +101,3 @@ if __name__=='__main__':
         print 'Folder %s does not exist' % sys.argv[1]
     else:
         process(sys.argv[1])
-
