@@ -18,6 +18,7 @@ from cache import CacheInRam, CacheOnDisk
 
 oldcwd = None
 
+
 def setUpModule():
     global oldcwd
     if oldcwd is None:
@@ -25,11 +26,13 @@ def setUpModule():
         if not os.path.isdir('gluon'):
             os.chdir(os.path.realpath('../../'))
 
+
 def tearDownModule():
     global oldcwd
     if oldcwd:
         os.chdir(oldcwd)
         oldcwd = None
+
 
 class TestCache(unittest.TestCase):
 
@@ -70,5 +73,3 @@ if __name__ == '__main__':
     setUpModule()       # pre-python-2.7
     unittest.main()
     tearDownModule()
-
-

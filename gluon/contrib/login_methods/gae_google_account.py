@@ -11,6 +11,7 @@ Thanks to Hans Donner <hans.donner@pobox.com> for GaeGoogleAccount.
 
 from google.appengine.api import users
 
+
 class GaeGoogleAccount(object):
     """
     Login will be done via Google's Appengine login object, instead of web2py's
@@ -35,5 +36,3 @@ class GaeGoogleAccount(object):
         if user:
             return dict(nickname=user.nickname(), email=user.email(),
                         user_id=user.user_id(), source="google account")
-
-

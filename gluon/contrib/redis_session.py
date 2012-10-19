@@ -16,6 +16,7 @@ logger = logging.getLogger("web2py.session.redis")
 
 locker = thread.allocate_lock()
 
+
 def RedisSession(*args, **vars):
     """
     Usage example: put in models
@@ -48,7 +49,7 @@ class RedisClient(object):
         """
         self.server = server
         self.db = db or 0
-        host,port = (self.server.split(':')+['6379'])[:2]
+        host, port = (self.server.split(':') + ['6379'])[:2]
         port = int(port)
         self.debug = debug
         if current and current.request:
@@ -63,12 +64,13 @@ class RedisClient(object):
         return self.tablename
 
     def Field(self, fieldname, type='string', length=None, default=None,
-              required=False,requires=None):
+              required=False, requires=None):
         return None
 
-    def define_table(self,tablename,*fields,**args):
+    def define_table(self, tablename, *fields, **args):
         if not self.tablename:
-            self.tablename = MockTable(self, self.r_server, tablename, self.session_expiry)
+            self.tablename = MockTable(
+                self, self.r_server, tablename, self.session_expiry)
         return self.tablename
 
     def __getitem__(self, key):
@@ -82,6 +84,7 @@ class RedisClient(object):
         #this is only called by session2trash.py
         pass
 
+
 class MockTable(object):
 
     def __init__(self, db, r_server, tablename, session_expiry):
@@ -89,7 +92,8 @@ class MockTable(object):
         self.r_server = r_server
         self.tablename = tablename
         #set the namespace for sessions of this app
-        self.keyprefix = 'w2p:sess:%s' % tablename.replace('web2py_session_', '')
+        self.keyprefix = 'w2p:sess:%s' % tablename.replace(
+            'web2py_session_', '')
         #fast auto-increment id (needed for session handling)
         self.serial = "%s:serial" % self.keyprefix
         #index of all the session keys of this app
@@ -124,6 +128,7 @@ class MockTable(object):
         if self.session_expiry:
             self.r_server.expire(key, self.session_expiry)
         return newid
+
 
 class MockQuery(object):
     """a fake Query object that supports querying by id
@@ -171,7 +176,8 @@ class MockQuery(object):
                         continue
                 val = Storage(val)
                 #add a delete_record method (necessary for sessions2trash.py)
-                val.delete_record = RecordDeleter(self.db, sess, self.keyprefix)
+                val.delete_record = RecordDeleter(
+                    self.db, sess, self.keyprefix)
                 rtn.append(val)
             return rtn
         else:
@@ -184,6 +190,7 @@ class MockQuery(object):
             if self.session_expiry:
                 self.db.expire(key, self.session.expiry)
             return rtn
+
 
 class RecordDeleter(object):
     """Dumb record deleter to support sessions2trash.py"""

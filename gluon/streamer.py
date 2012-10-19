@@ -20,9 +20,10 @@ from contenttype import contenttype
 regex_start_range = re.compile('\d+(?=\-)')
 regex_stop_range = re.compile('(?<=\-)\d+')
 
-DEFAULT_CHUNK_SIZE = 64*1024
+DEFAULT_CHUNK_SIZE = 64 * 1024
 
-def streamer(stream, chunk_size = DEFAULT_CHUNK_SIZE, bytes = None):
+
+def streamer(stream, chunk_size=DEFAULT_CHUNK_SIZE, bytes=None):
     offset = 0
     while bytes is None or offset < bytes:
         if not bytes is None and bytes - offset < chunk_size:
@@ -38,14 +39,15 @@ def streamer(stream, chunk_size = DEFAULT_CHUNK_SIZE, bytes = None):
         offset += length
     stream.close()
 
+
 def stream_file_or_304_or_206(
     static_file,
-    chunk_size = DEFAULT_CHUNK_SIZE,
-    request = None,
-    headers = {},
-    status = 200,
-    error_message = None,
-    ):
+    chunk_size=DEFAULT_CHUNK_SIZE,
+    request=None,
+    headers={},
+    status=200,
+    error_message=None,
+):
     if error_message is None:
         error_message = rewrite.THREAD_LOCAL.routes.error_message % 'invalid request'
     try:
@@ -62,7 +64,7 @@ def stream_file_or_304_or_206(
     stat_file = os.stat(static_file)
     fsize = stat_file[stat.ST_SIZE]
     modified = stat_file[stat.ST_MTIME]
-    mtime = time.strftime('%a, %d %b %Y %H:%M:%S GMT',time.gmtime(modified))
+    mtime = time.strftime('%a, %d %b %Y %H:%M:%S GMT', time.gmtime(modified))
     headers.setdefault('Content-Type', contenttype(static_file))
     headers.setdefault('Last-Modified', mtime)
     headers.setdefault('Pragma', 'cache')
@@ -95,10 +97,10 @@ def stream_file_or_304_or_206(
             status = 206
     # in all the other cases (not 304, not 206, but 200 or error page)
     if status != 206:
-        enc =  request.env.http_accept_encoding
+        enc = request.env.http_accept_encoding
         if enc and 'gzip' in enc and not 'Content-Encoding' in headers:
             gzipped = static_file + '.gz'
-            if os.path.isfile(gzipped) and os.path.getmtime(gzipped)>modified:
+            if os.path.isfile(gzipped) and os.path.getmtime(gzipped) > modified:
                 static_file = gzipped
                 fsize = os.path.getsize(gzipped)
                 headers['Content-Encoding'] = 'gzip'

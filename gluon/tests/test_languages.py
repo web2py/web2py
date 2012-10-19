@@ -49,11 +49,10 @@ try:
 
         def test_reads_and_writes(self):
             readwriters = 10
-            pool = multiprocessing.Pool(processes = readwriters)
+            pool = multiprocessing.Pool(processes=readwriters)
             results = pool.map(read_write, [[self.filename, 10]] * readwriters)
             for result in results:
                 self.assertTrue(result)
-
 
     class TestTranslations(unittest.TestCase):
 
@@ -62,10 +61,10 @@ try:
             if os.path.isdir('gluon'):
                 self.request.folder = 'applications/welcome'
             else:
-                self.request.folder = os.path.realpath('../../applications/welcome')
+                self.request.folder = os.path.realpath(
+                    '../../applications/welcome')
             self.request.env = Storage()
             self.request.env.http_accept_language = 'en'
-
 
         def tearDown(self):
             pass
@@ -99,4 +98,3 @@ except ImportError:
 
 if __name__ == '__main__':
     unittest.main()
-

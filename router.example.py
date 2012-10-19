@@ -102,8 +102,8 @@
 routers = dict(
 
     # base router
-    BASE = dict(
-        default_application = 'welcome',
+    BASE=dict(
+        default_application='welcome',
     ),
 )
 
@@ -144,6 +144,7 @@ logging = 'debug'
 
 # error_message = '<html><body><h1>%s</h1></body></html>'
 # error_message_ticket = '<html><body><h1>Internal error</h1>Ticket issued: <a href="/admin/default/ticket/%(ticket)s" target="_blank">%(ticket)s</a></body></html>'
+
 
 def __routes_doctest():
     '''

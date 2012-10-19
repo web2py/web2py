@@ -61,6 +61,7 @@ Example of usage:
 
 ### update one record
 >>> james.update_record(name='Jim')
+<Row {'id': 1, 'name': 'Jim'}>
 
 ### update multiple records by query
 >>> db(person.name.like('J%')).update(name='James')
@@ -9390,6 +9391,7 @@ def test_all():
     Update a single record
 
     >>> me.update_record(name=\"Max\")
+    <Row {'name': 'Max', 'birth': datetime.date(1971, 12, 21), 'id': 2}>
     >>> me.name
     'Max'
 

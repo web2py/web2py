@@ -61,7 +61,8 @@ Here is a complete sample web2py action:
         form=SQLFORM.factory(Field('message'))
         if form.accepts(request,session):
             from gluon.contrib.websocket_messaging import websocket_send
-            websocket_send('http://127.0.0.1:8888',form.vars.message,'mykey','mygroup')
+            websocket_send(
+                'http://127.0.0.1:8888',form.vars.message,'mykey','mygroup')
         return form
 
 Acknowledgements:
@@ -83,30 +84,37 @@ listeners = {}
 names = {}
 tokens = {}
 
-def websocket_send(url,message,hmac_key=None,group='default'):
-    sig = hmac_key and hmac.new(hmac_key,message).hexdigest() or ''
-    params = urllib.urlencode({'message': message, 'signature': sig, 'group':group})
+
+def websocket_send(url, message, hmac_key=None, group='default'):
+    sig = hmac_key and hmac.new(hmac_key, message).hexdigest() or ''
+    params = urllib.urlencode(
+        {'message': message, 'signature': sig, 'group': group})
     f = urllib.urlopen(url, params)
-    data= f.read()
+    data = f.read()
     f.close()
     return data
+
 
 class PostHandler(tornado.web.RequestHandler):
     """
     only authorized parties can post messages
     """
     def post(self):
-        if hmac_key and not 'signature' in self.request.arguments: return 'false'
+        if hmac_key and not 'signature' in self.request.arguments:
+            return 'false'
         if 'message' in self.request.arguments:
             message = self.request.arguments['message'][0]
-            group = self.request.arguments.get('group',['default'])[0]
+            group = self.request.arguments.get('group', ['default'])[0]
             print '%s:MESSAGE to %s:%s' % (time.time(), group, message)
             if hmac_key:
                 signature = self.request.arguments['signature'][0]
-                if not hmac.new(hmac_key,message).hexdigest()==signature: return 'false'
-            for client in listeners.get(group,[]): client.write_message(message)
+                if not hmac.new(hmac_key, message).hexdigest() == signature:
+                    return 'false'
+            for client in listeners.get(group, []):
+                client.write_message(message)
             return 'true'
         return 'false'
+
 
 class TokenHandler(tornado.web.RequestHandler):
     """
@@ -115,46 +123,55 @@ class TokenHandler(tornado.web.RequestHandler):
     allows only authorized parties to joins, for example, a chat
     """
     def post(self):
-        if hmac_key and not 'message' in self.request.arguments: return 'false'
+        if hmac_key and not 'message' in self.request.arguments:
+            return 'false'
         if 'message' in self.request.arguments:
             message = self.request.arguments['message'][0]
             if hmac_key:
                 signature = self.request.arguments['signature'][0]
-                if not hmac.new(hmac_key,message).hexdigest()==signature: return 'false'
+                if not hmac.new(hmac_key, message).hexdigest() == signature:
+                    return 'false'
             tokens[message] = None
             return 'true'
         return 'false'
 
+
 class DistributeHandler(tornado.websocket.WebSocketHandler):
-    def open(self,params):
-        group,token,name = params.split('/')+[None,None]
+    def open(self, params):
+        group, token, name = params.split('/') + [None, None]
         self.group = group or 'default'
         self.token = token or 'none'
         self.name = name or 'anonymous'
         # only authorized parties can join
         if DistributeHandler.tokens:
-            if not self.token in tokens or not token[self.token]==None:
+            if not self.token in tokens or not token[self.token] is None:
                 self.close()
             else:
                 tokens[self.token] = self
-        if not self.group in listeners: listeners[self.group]=[]
+        if not self.group in listeners:
+            listeners[self.group] = []
         # notify clients that a member has joined the groups
-        for client in listeners.get(self.group,[]): client.write_message('+'+self.name)
+        for client in listeners.get(self.group, []):
+            client.write_message('+' + self.name)
         listeners[self.group].append(self)
         names[self] = self.name
         print '%s:CONNECT to %s' % (time.time(), self.group)
+
     def on_message(self, message):
         pass
+
     def on_close(self):
-        if self.group in listeners: listeners[self.group].remove(self)
+        if self.group in listeners:
+            listeners[self.group].remove(self)
         del names[self]
         # notify clients that a member has left the groups
-        for client in listeners.get(self.group,[]): client.write_message('-'+self.name)
+        for client in listeners.get(self.group, []):
+            client.write_message('-' + self.name)
         print '%s:DISCONNECT from %s' % (time.time(), self.group)
 
 if __name__ == "__main__":
     usage = __doc__
-    version= ""
+    version = ""
     parser = optparse.OptionParser(usage, None, optparse.Option, version)
     parser.add_option('-p',
                       '--port',
@@ -180,7 +197,7 @@ if __name__ == "__main__":
     (options, args) = parser.parse_args()
     hmac_key = options.hmac_key
     DistributeHandler.tokens = options.tokens
-    urls=[
+    urls = [
         (r'/', PostHandler),
         (r'/token', TokenHandler),
         (r'/realtime/(.*)', DistributeHandler)]

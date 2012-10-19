@@ -49,7 +49,7 @@ Both python 2 and python 3 are supported.
 
 .. _jsmin.c by Douglas Crockford:
    http://www.crockford.com/javascript/jsmin.c
-   
+
 Original author of Python version: Andr\xe9 Malo
 Home page: http://opensource.perlig.de/rjsmin/
 Modified by Ross Peoples <ross.peoples@gmail.com> for inclusion into web2py.
@@ -96,7 +96,7 @@ def _make_jsmin(extended=True, python_only=True):
     try:
         xrange
     except NameError:
-        xrange = range # pylint: disable = W0622
+        xrange = range  # pylint: disable = W0622
 
     space_chars = r'[\000-\011\013\014\016-\040]'
 
@@ -151,13 +151,13 @@ def _make_jsmin(extended=True, python_only=True):
                 last != first and chr(last) or ''
             ) for first, last in result])
 
-        return _re.sub(r'([\000-\040\047])', # for better portability
-            lambda m: '\\%03o' % ord(m.group(1)), (sequentize(result)
-                .replace('\\', '\\\\')
-                .replace('[', '\\[')
-                .replace(']', '\\]')
-            )
-        )
+        return _re.sub(r'([\000-\040\047])',  # for better portability
+                       lambda m: '\\%03o' % ord(m.group(1)), (sequentize(result)
+                                                              .replace('\\', '\\\\')
+                                                              .replace('[', '\\[')
+                                                              .replace(']', '\\]')
+                                                              )
+                       )
 
     def id_literal_(what):
         """ Make id_literal like char class """
@@ -190,25 +190,33 @@ def _make_jsmin(extended=True, python_only=True):
             r'|(?:(?<=%(preregex1)s)%(space)s*(%(regex)s[^\047"/\000-\040]*))'
             r'|(?:(?<=%(preregex2)s)%(space)s*(%(regex)s[^\047"/\000-\040]*))'
             r'|(?<=%(id_literal_close)s)'
-                r'%(space)s*(?:(%(newline)s)%(space)s*)+'
-                r'(?=%(id_literal_open)s)'
+            r'%(space)s*(?:(%(newline)s)%(space)s*)+'
+            r'(?=%(id_literal_open)s)'
             r'|(?<=%(id_literal)s)(%(space)s)+(?=%(id_literal)s)'
             r'|%(space)s+'
             r'|(?:%(newline)s%(space)s*)+'
         ) % locals()).sub
+
         def space_subber(match):
             """ Substitution callback """
             # pylint: disable = C0321, R0911
             groups = match.groups()
-            if groups[0]: return groups[0]
-            elif groups[1]: return groups[1]
-            elif groups[2]: return groups[2]
-            elif groups[3]: return groups[3]
-            elif groups[4]: return '\n'
-            elif groups[5]: return ' '
-            else: return ''
+            if groups[0]:
+                return groups[0]
+            elif groups[1]:
+                return groups[1]
+            elif groups[2]:
+                return groups[2]
+            elif groups[3]:
+                return groups[3]
+            elif groups[4]:
+                return '\n'
+            elif groups[5]:
+                return ' '
+            else:
+                return ''
 
-        def jsmin(script): # pylint: disable = W0621
+        def jsmin(script):  # pylint: disable = W0621
             r"""
             Minify javascript based on `jsmin.c by Douglas Crockford`_\.
 
@@ -239,20 +247,26 @@ def _make_jsmin(extended=True, python_only=True):
             r'|(%(space)s)+'
             r'|(?:(%(newline)s)%(space)s*)+'
         ) % locals()).sub
+
         def space_norm_subber(match):
             """ Substitution callback """
             # pylint: disable = C0321
             groups = match.groups()
-            if groups[0]: return groups[0]
-            elif groups[1]: return groups[1].replace('\r', '\n') + groups[2]
-            elif groups[3]: return ' '
-            elif groups[4]: return '\n'
+            if groups[0]:
+                return groups[0]
+            elif groups[1]:
+                return groups[1].replace('\r', '\n') + groups[2]
+            elif groups[3]:
+                return ' '
+            elif groups[4]:
+                return '\n'
 
         space_sub1 = _re.compile((
             r'[\040\n]?(%(strings)s|%(pre_regex)s%(regex)s)'
             r'|\040(%(not_id_literal)s)'
             r'|\n(%(not_id_literal_open)s)'
         ) % locals()).sub
+
         def space_subber1(match):
             """ Substitution callback """
             groups = match.groups()
@@ -264,6 +278,7 @@ def _make_jsmin(extended=True, python_only=True):
             r'|(%(not_id_literal)s)\040'
             r'|(%(not_id_literal_close)s)\n'
         ) % locals()).sub
+
         def space_subber2(match):
             """ Substitution callback """
             groups = match.groups()
@@ -295,10 +310,11 @@ def _make_jsmin(extended=True, python_only=True):
             :Rtype: ``str``
             """
             return space_sub2(space_subber2,
-                space_sub1(space_subber1,
-                    space_norm_sub(space_norm_subber, '\n%s\n' % script)
-                )
-            ).strip()
+                              space_sub1(space_subber1,
+                                         space_norm_sub(space_norm_subber,
+                                                        '\n%s\n' % script)
+                                         )
+                              ).strip()
     return jsmin
 
 jsmin = _make_jsmin()
@@ -310,6 +326,7 @@ jsmin = _make_jsmin()
 # import jsmin
 # jsmin.jsmin(script)
 #
+
 
 def jsmin_for_posers(script):
     r"""

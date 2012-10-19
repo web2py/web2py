@@ -40,6 +40,7 @@ __all__ = ['Cache', 'lazy_cache']
 
 DEFAULT_TIME_EXPIRE = 300
 
+
 class CacheAbstract(object):
     """
     Abstract class for cache implementations.
@@ -73,7 +74,7 @@ class CacheAbstract(object):
         raise NotImplementedError
 
     def __call__(self, key, f,
-                time_expire = DEFAULT_TIME_EXPIRE):
+                 time_expire=DEFAULT_TIME_EXPIRE):
         """
         Tries retrieve the value corresponding to `key` from the cache of the
         object exists and if it did not expire, else it called the function `f`
@@ -130,6 +131,7 @@ class CacheAbstract(object):
             if r.match(str(key)):
                 del storage[key]
 
+
 class CacheInRam(CacheAbstract):
     """
     Ram based caching
@@ -147,8 +149,10 @@ class CacheInRam(CacheAbstract):
         self.request = request
 
     def initialize(self):
-        if self.initialized: return
-        else: self.initialized = True
+        if self.initialized:
+            return
+        else:
+            self.initialized = True
         self.locker.acquire()
         request = self.request
         if request:
@@ -172,13 +176,14 @@ class CacheInRam(CacheAbstract):
             self._clear(storage, regex)
 
         if not CacheAbstract.cache_stats_name in storage.keys():
-            storage[CacheAbstract.cache_stats_name] = {'hit_total': 0,'misses': 0}
+            storage[CacheAbstract.cache_stats_name] = {
+                'hit_total': 0, 'misses': 0}
 
         self.locker.release()
 
     def __call__(self, key, f,
-                 time_expire = DEFAULT_TIME_EXPIRE,
-                 destroyer = None):
+                 time_expire=DEFAULT_TIME_EXPIRE,
+                 destroyer=None):
         """
         Attention! cache.ram does not copy the cached object. It just stores a reference to it.
         Turns out the deepcopying the object has some problems:
@@ -269,14 +274,15 @@ class CacheOnDisk(CacheAbstract):
             try:
                 storage = shelve.open(self.shelve_name)
             except:
-                logger.error('corrupted cache file %s, will try rebuild it' \
-                                 % (self.shelve_name))
+                logger.error('corrupted cache file %s, will try rebuild it'
+                             % (self.shelve_name))
                 storage = None
             if not storage and os.path.exists(self.shelve_name):
                 os.unlink(self.shelve_name)
                 storage = shelve.open(self.shelve_name)
             if not CacheAbstract.cache_stats_name in storage.keys():
-                storage[CacheAbstract.cache_stats_name] = {'hit_total':0, 'misses': 0}
+                storage[CacheAbstract.cache_stats_name] = {
+                    'hit_total': 0, 'misses': 0}
             storage.sync()
         except Exception, e:
             if storage:
@@ -286,7 +292,8 @@ class CacheOnDisk(CacheAbstract):
                 portalocker.unlock(locker)
                 locker.close()
             locked = False
-            raise RuntimeError, 'unable to create/re-create cache file %s' % self.shelve_name
+            raise RuntimeError(
+                'unable to create/re-create cache file %s' % self.shelve_name)
         self.locker = locker
         self.locked = locked
         self.storage = storage
@@ -298,8 +305,10 @@ class CacheOnDisk(CacheAbstract):
         self.folder = folder
 
     def initialize(self):
-        if self.initialized: return
-        else: self.initialized = True
+        if self.initialized:
+            return
+        else:
+            self.initialized = True
         folder = self.folder
         request = self.request
 
@@ -312,8 +321,8 @@ class CacheOnDisk(CacheAbstract):
 
         ### we need this because of a possible bug in shelve that may
         ### or may not lock
-        self.locker_name = os.path.join(folder,'cache.lock')
-        self.shelve_name = os.path.join(folder,'cache.shelve')
+        self.locker_name = os.path.join(folder, 'cache.lock')
+        self.shelve_name = os.path.join(folder, 'cache.shelve')
 
     def clear(self, regex=None):
         self.initialize()
@@ -328,7 +337,7 @@ class CacheOnDisk(CacheAbstract):
             self._close_shelve_and_unlock()
 
     def __call__(self, key, f,
-                time_expire = DEFAULT_TIME_EXPIRE):
+                 time_expire=DEFAULT_TIME_EXPIRE):
         self.initialize()
         dt = time_expire
         storage = self._open_shelve_and_lock()
@@ -346,7 +355,7 @@ class CacheOnDisk(CacheAbstract):
             else:
                 value = f()
                 storage[key] = (now, value)
-                storage[CacheAbstract.cache_stats_name]['misses']+=1
+                storage[CacheAbstract.cache_stats_name]['misses'] += 1
                 storage.sync()
         finally:
             self._close_shelve_and_unlock()
@@ -365,8 +374,9 @@ class CacheOnDisk(CacheAbstract):
             self._close_shelve_and_unlock()
         return value
 
+
 class CacheAction(object):
-    def __init__(self,func,key,time_expire,cache,cache_model):
+    def __init__(self, func, key, time_expire, cache, cache_model):
         self.__name__ = func.__name__
         self.__doc__ = func.__doc__
         self.func = func
@@ -374,17 +384,18 @@ class CacheAction(object):
         self.time_expire = time_expire
         self.cache = cache
         self.cache_model = cache_model
-    def __call__(self,*a,**b):
+
+    def __call__(self, *a, **b):
         if not self.key:
-            key2 = self.__name__+':'+repr(a)+':'+repr(b)
+            key2 = self.__name__ + ':' + repr(a) + ':' + repr(b)
         else:
-            key2 = self.key.replace('%(name)s',self.__name__)\
-                .replace('%(args)s',str(a)).replace('%(vars)s',str(b))
+            key2 = self.key.replace('%(name)s', self.__name__)\
+                .replace('%(args)s', str(a)).replace('%(vars)s', str(b))
         cache_model = self.cache_model
-        if not cache_model or isinstance(cache_model,str):
-            cache_model = getattr(self.cache,cache_model or 'ram')
+        if not cache_model or isinstance(cache_model, str):
+            cache_model = getattr(self.cache, cache_model or 'ram')
         return cache_model(key2,
-                           lambda a=a,b=b:self.func(*a,**b),
+                           lambda a=a, b=b: self.func(*a, **b),
                            self.time_expire)
 
 
@@ -424,9 +435,9 @@ class Cache(object):
                 logger.warning('no cache.disk (AttributeError)')
 
     def __call__(self,
-                 key = None,
-                 time_expire = DEFAULT_TIME_EXPIRE,
-                 cache_model = None):
+                 key=None,
+                 time_expire=DEFAULT_TIME_EXPIRE,
+                 cache_model=None):
         """
         Decorator function that can be used to cache any function/method.
 
@@ -459,8 +470,8 @@ class Cache(object):
         `request.env.path_info` as key.
         """
 
-        def tmp(func,cache=self,cache_model=cache_model):
-            return CacheAction(func,key,time_expire,self,cache_model)
+        def tmp(func, cache=self, cache_model=cache_model):
+            return CacheAction(func, key, time_expire, self, cache_model)
         return tmp
 
     @staticmethod
@@ -473,7 +484,7 @@ class Cache(object):
             cache_model(prefix + key, f, time_expire)
 
 
-def lazy_cache(key=None,time_expire=None,cache_model='ram'):
+def lazy_cache(key=None, time_expire=None, cache_model='ram'):
     """
     can be used to cache any function including in modules,
     as long as the cached function is only called within a web2py request
@@ -481,11 +492,12 @@ def lazy_cache(key=None,time_expire=None,cache_model='ram'):
     the time_expire defaults to None (no cache expiration)
     if cache_model is "ram" then the model is current.cache.ram, etc.
     """
-    def decorator(f,key=key,time_expire=time_expire,cache_model=cache_model):
+    def decorator(f, key=key, time_expire=time_expire, cache_model=cache_model):
         key = key or repr(f)
-        def g(*c,**d):
+
+        def g(*c, **d):
             from gluon import current
-            return current.cache(key,time_expire,cache_model)(f)(*c,**d)
+            return current.cache(key, time_expire, cache_model)(f)(*c, **d)
         g.__name__ = f.__name__
         return g
     return decorator

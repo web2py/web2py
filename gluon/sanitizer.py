@@ -47,12 +47,12 @@ class XssCleaner(HTMLParser):
             'code',
             'pre',
             'img/',
-            ],
+        ],
         allowed_attributes={'a': ['href', 'title'], 'img': ['src', 'alt'
-                            ], 'blockquote': ['type']},
+                                                            ], 'blockquote': ['type']},
         fmt=AbstractFormatter,
-        strip_disallowed = False
-        ):
+        strip_disallowed=False
+    ):
 
         HTMLParser.__init__(self, fmt)
         self.result = ''
@@ -103,7 +103,7 @@ class XssCleaner(HTMLParser):
         tag,
         method,
         attrs,
-        ):
+    ):
         if tag not in self.permitted_tags:
             if self.strip_disallowed:
                 self.in_disallowed = True
@@ -114,16 +114,16 @@ class XssCleaner(HTMLParser):
             if tag in self.allowed_attributes:
                 attrs = dict(attrs)
                 self.allowed_attributes_here = [x for x in
-                        self.allowed_attributes[tag] if x in attrs
-                         and len(attrs[x]) > 0]
+                                                self.allowed_attributes[tag] if x in attrs
+                                                and len(attrs[x]) > 0]
                 for attribute in self.allowed_attributes_here:
                     if attribute in ['href', 'src', 'background']:
                         if self.url_is_acceptable(attrs[attribute]):
                             bt += ' %s="%s"' % (attribute,
-                                    attrs[attribute])
+                                                attrs[attribute])
                     else:
                         bt += ' %s=%s' % (xssescape(attribute),
-                                quoteattr(attrs[attribute]))
+                                          quoteattr(attrs[attribute]))
             if bt == '<a' or bt == '<img':
                 return
             if tag in self.requires_no_close:
@@ -168,7 +168,8 @@ class XssCleaner(HTMLParser):
           content, otherwise remove it
         """
 
-        if not isinstance(rawstring, str): return str(rawstring)
+        if not isinstance(rawstring, str):
+            return str(rawstring)
         for tag in self.requires_no_close:
             rawstring = rawstring.replace("<%s/>" % tag, "<%s />" % tag)
         if not escape:
@@ -209,16 +210,17 @@ def sanitize(text, permitted_tags=[
         'code',
         'pre',
         'img/',
-        'h1','h2','h3','h4','h5','h6',
-        'table','tr','td','div',
-        ],
-             allowed_attributes = {
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'table', 'tr', 'td', 'div',
+],
+    allowed_attributes={
         'a': ['href', 'title'],
         'img': ['src', 'alt'],
         'blockquote': ['type'],
         'td': ['colspan'],
-        },
-             escape=True):
-    if not isinstance(text, str): return str(text)
+    },
+        escape=True):
+    if not isinstance(text, str):
+        return str(text)
     return XssCleaner(permitted_tags=permitted_tags,
                       allowed_attributes=allowed_attributes).strip(text, escape)

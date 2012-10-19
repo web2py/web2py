@@ -11,11 +11,10 @@ Adds support for x509 authentication.
 
 from gluon.globals import current
 from gluon.storage import Storage
-from gluon.http import HTTP,redirect
+from gluon.http import HTTP, redirect
 
 #requires M2Crypto
 from M2Crypto import X509
-
 
 
 class X509Auth(object):
@@ -29,8 +28,6 @@ class X509Auth(object):
 
     """
 
-
-
     def __init__(self):
         self.request = current.request
         self.ssl_client_raw_cert = self.request.env.ssl_client_raw_cert
@@ -41,10 +38,11 @@ class X509Auth(object):
 
         if self.ssl_client_raw_cert:
 
-            x509=X509.load_cert_string(self.ssl_client_raw_cert, X509.FORMAT_PEM)
+            x509 = X509.load_cert_string(
+                self.ssl_client_raw_cert, X509.FORMAT_PEM)
             # extract it from the cert
-            self.serial = self.request.env.ssl_client_serial or ('%x' % x509.get_serial_number()).upper()
-
+            self.serial = self.request.env.ssl_client_serial or (
+                '%x' % x509.get_serial_number()).upper()
 
             subject = x509.get_subject()
 
@@ -53,23 +51,17 @@ class X509Auth(object):
             # cn = self.subject.cn
             self.subject = Storage(filter(None,
                                           map(lambda x:
-                                                  (x,map(lambda y:
-                                                         y.get_data().as_text(),
-                                                         subject.get_entries_by_nid(subject.nid[x]))),
+                                              (x, map(lambda y:
+                                                      y.get_data(
+                                                      ).as_text(),
+                                                      subject.get_entries_by_nid(subject.nid[x]))),
                                               subject.nid.keys())))
 
-
-
     def login_form(self, **args):
-        raise HTTP(403,'Login not allowed. No valid x509 crentials')
-
-
+        raise HTTP(403, 'Login not allowed. No valid x509 crentials')
 
     def login_url(self, next="/"):
-        raise HTTP(403,'Login not allowed. No valid x509 crentials')
-
-
-
+        raise HTTP(403, 'Login not allowed. No valid x509 crentials')
 
     def logout_url(self, next="/"):
         return next
@@ -86,10 +78,14 @@ class X509Auth(object):
 
         p = profile = dict()
 
-        username = p['username'] = reduce(lambda a,b: '%s | %s' % (a,b), self.subject.CN or self.subject.commonName)
-        p['first_name'] = reduce(lambda a,b: '%s | %s' % (a,b),self.subject.givenName or username)
-        p['last_name'] = reduce(lambda a,b: '%s | %s' % (a,b),self.subject.surname)
-        p['email'] = reduce(lambda a,b: '%s | %s' % (a,b),self.subject.Email or self.subject.emailAddress)
+        username = p['username'] = reduce(lambda a, b: '%s | %s' % (
+            a, b), self.subject.CN or self.subject.commonName)
+        p['first_name'] = reduce(lambda a, b: '%s | %s' % (a, b),
+                                 self.subject.givenName or username)
+        p['last_name'] = reduce(
+            lambda a, b: '%s | %s' % (a, b), self.subject.surname)
+        p['email'] = reduce(lambda a, b: '%s | %s' % (
+            a, b), self.subject.Email or self.subject.emailAddress)
 
         # IMPORTANT WE USE THE CERT SERIAL AS UNIQUE KEY FOR THE USER
         p['registration_id'] = self.serial
@@ -100,6 +96,3 @@ class X509Auth(object):
         p['certificate'] = self.ssl_client_raw_cert
 
         return profile
-
-
-
