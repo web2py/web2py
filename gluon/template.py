@@ -889,11 +889,3 @@ def render(content = "hello world",
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-
-
-
-
-
-
-
-

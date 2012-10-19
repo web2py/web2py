@@ -857,5 +857,3 @@ class HttpServer(object):
             os.unlink(self.pid_filename)
         except:
             pass
-
-

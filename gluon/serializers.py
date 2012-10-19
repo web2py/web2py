@@ -111,11 +111,3 @@ def rss(feed):
                 pubDate=entry.get('created_on', now)
                 ) for entry in feed.get('entries',[])])
     return rss2.dumps(rss)
-
-
-
-
-
-
-
-

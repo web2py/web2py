@@ -72,11 +72,3 @@ def autoDetectXMLEncoding(buffer):
 def decoder(buffer):
     encoding = autoDetectXMLEncoding(buffer)
     return buffer.decode(encoding).encode('utf8')
-
-
-
-
-
-
-
-

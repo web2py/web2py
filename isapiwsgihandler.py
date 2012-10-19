@@ -33,9 +33,3 @@ if __name__=='__main__':
                               ScriptMapUpdate = "replace")
     params.VirtualDirs = [vd]
     HandleCommandLine(params)
-
-
-
-
-
-

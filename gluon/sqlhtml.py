@@ -2747,4 +2747,3 @@ class ExporterXML(ExportClass):
             out.write('</row>\n')
         out.write('</rows>')
         return str(out.getvalue())
-

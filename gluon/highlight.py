@@ -342,11 +342,3 @@ if __name__ == '__main__':
     argfp.close()
     print '<html><body>' + highlight(data, sys.argv[2])\
          + '</body></html>'
-
-
-
-
-
-
-
-

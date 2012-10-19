@@ -80,6 +80,3 @@ def revision():
         desc=ctx.description(),
         form=form
         )
-
-
-

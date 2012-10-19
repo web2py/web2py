@@ -65,4 +65,3 @@ class MemcacheClient(object):
 
     def flush_all(self,*a,**b):
         return self.client.delete(*a,**b)
-

@@ -43,6 +43,3 @@ def reset():
     session['commands:'+app] = []
     session['history:'+app] = gluon.contrib.shell.History()
     return 'done'
-
-
-

@@ -1697,5 +1697,3 @@ def git_push():
             session.flash = T("Push failed, git exited abnormally. See logs for details.")
             redirect(URL('site'))
     return dict(app=app,form=form)
-
-

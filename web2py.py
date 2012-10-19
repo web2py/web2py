@@ -25,9 +25,3 @@ if __name__ == '__main__':
     except:
         sys.stderr.write('Sorry, -K only supported for python 2.6-2.7\n')
     gluon.widget.start(cron=True)
-
-
-
-
-
-

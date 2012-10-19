@@ -137,5 +137,3 @@ Quoted text
 
 def ajaxwiki_onclick():
     return MARKMIN(request.vars.text).xml()
-
-

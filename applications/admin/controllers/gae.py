@@ -89,6 +89,3 @@ def callback():
     except:
         errors=''
     return (output+errors).replace('\n','<br/>')
-
-
-

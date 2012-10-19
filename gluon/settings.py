@@ -36,6 +36,3 @@ global_settings.is_jython = \
     'java' in sys.platform.lower() or \
     hasattr(sys, 'JYTHON_JAR') or \
     str(sys.copyright).find('Jython') > 0
-
-
-

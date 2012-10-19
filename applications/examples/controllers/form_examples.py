@@ -1,6 +1,3 @@
-
-
-
 def form():
     """ a simple entry form with various types of objects """
 
@@ -23,7 +20,3 @@ def form():
     else:
         response.flash = 'please fill the form'
     return dict(form=form, vars=form.vars)
-
-
-
-

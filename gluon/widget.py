@@ -1218,13 +1218,3 @@ end tell
         except:
             pass
     logging.shutdown()
-
-
-
-
-
-
-
-
-
-

@@ -1711,11 +1711,3 @@ ADAPTERS = {
 }
 
 ADAPTERS['all'] = reduce(lambda a,b:a.union(b),(x for x in ADAPTERS.values()))
-
-
-
-
-
-
-
-

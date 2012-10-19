@@ -189,8 +189,3 @@ qdb_debugger.set_params(dict(call_stack=True, environment=True))
 
 import gluon.main
 gluon.main.global_settings.debugging = True
-
-
-
-
-

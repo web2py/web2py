@@ -1,4 +1,3 @@
-
 import time
 
 
@@ -47,6 +46,3 @@ def cache_controller_and_view():
     t = time.ctime()
     d = dict(time=t, link=A('click to reload', _href=URL(r=request)))
     return response.render(d)
-
-
-

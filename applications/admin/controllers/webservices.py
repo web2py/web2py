@@ -127,5 +127,3 @@ def detach_debugger():
 def call():
     session.forget()
     return service()
-
-

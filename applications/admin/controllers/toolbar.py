@@ -27,6 +27,3 @@ def profiler():
             size += len(data)
             response.cookies[KEY] = size
     return data
-
-
-

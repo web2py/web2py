@@ -61,11 +61,3 @@ def pdf_from_html(html):
         return pdflatex_from_html(html)
     else:
         return pyfpdf_from_html(html)
-
-
-
-
-
-
-
-

@@ -42,15 +42,3 @@ if 0:
     mail = Mail()
     service = Service()
     plugins = PluginManager()
-
-
-
-
-
-
-
-
-
-
-
-

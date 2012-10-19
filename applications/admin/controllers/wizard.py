@@ -554,6 +554,3 @@ def call(): return service()
         path = os.path.join(request.folder,'..',app,'databases','*')
         for file in glob.glob(path):
             os.unlink(file)
-
-
-

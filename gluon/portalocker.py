@@ -161,8 +161,3 @@ if __name__=='__main__':
     f = LockedFile('test.txt',mode='rb')
     print f.read()
     f.close()
-
-
-
-
-

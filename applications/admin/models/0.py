@@ -78,6 +78,3 @@ PLUGINS_APP = 'http://web2py.com/plugins'
 # set the language
 if 'adminLanguage' in request.cookies and not (request.cookies['adminLanguage'] is None):
     T.force(request.cookies['adminLanguage'].value)
-
-
-

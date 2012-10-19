@@ -1,4 +1,3 @@
-
 def group_feed_reader(group,mode='div',counter='5'):
     """parse group feeds"""
 
@@ -43,8 +42,3 @@ def code_feed_reader(project,mode='div'):
 
 
     return html
-
-
-
-
-

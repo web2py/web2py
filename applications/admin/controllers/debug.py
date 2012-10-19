@@ -198,5 +198,3 @@ def toggle_breakpoint():
     except Exception, e:
         session.flash = str(e)
     return response.json({'ok': ok, 'lineno': lineno})
-
-

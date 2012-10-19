@@ -36,6 +36,3 @@ def is_manager():
         return True
     else:
         return False
-
-
-

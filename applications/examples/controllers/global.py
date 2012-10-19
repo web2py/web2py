@@ -1,4 +1,3 @@
-
 session.forget()
 
 response.menu = [['home', False, '/%s/default/index'
@@ -77,7 +76,3 @@ def vars():
         doc=doc,
         attributes=attributes,
         )
-
-
-
-

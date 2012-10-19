@@ -42,5 +42,3 @@ def toggle_menuclass(cssclass='pressed',menuid='headermenu'):
             return XML(jscript)
     else:
         return ''
-
-

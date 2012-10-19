@@ -751,4 +751,3 @@ class Session(Storage):
                 del response.session_file
             except:
                 pass
-
