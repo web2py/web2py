@@ -453,7 +453,10 @@ def compile_views(folder):
 
     path = pjoin(folder, 'views')
     for file in listdir(path, '^[\w/\-]+(\.\w+)+$'):
-        data = parse_template(file, path)
+        try:
+            data = parse_template(file, path)
+        except Exception, e:
+            raise Exception("%s in %s" % (e, file))
         filename = ('views/%s.py' % file).replace('/', '_').replace('\\', '_')
         filename = pjoin(folder, 'compiled', filename)
         write_file(filename, data)
