@@ -857,7 +857,6 @@ class Scheduler(MetaScheduler):
         tvars = 'vars' in kwargs and kwargs.pop('vars') or dumps(pvars)
         tuuid = 'uuid' in kwargs and kwargs.pop('uuid') or web2py_uuid()
         tname = 'task_name' in kwargs and kwargs.pop('task_name') or function
-        print 'a', targs
         rtn = self.db.scheduler_task.validate_and_insert(
             function_name=function,
             task_name=tname,
