@@ -24,6 +24,7 @@ import cmd
 import pydoc
 import threading
 
+
 class Qdb(bdb.Bdb):
     "Qdb Debugger Backend"
 
@@ -36,7 +37,7 @@ class Qdb(bdb.Bdb):
         self.frame = None
         self.i = 1  # sequential RPC call id
         self.waiting = False
-        self.pipe = pipe # for communication
+        self.pipe = pipe  # for communication
         self._wait_for_mainpyfile = False
         self._wait_for_breakpoint = False
         self.mainpyfile = ""
@@ -67,7 +68,7 @@ class Qdb(bdb.Bdb):
             # dispatch message (JSON RPC like)
             method = getattr(self, request['method'])
             response['result'] = method.__call__(*request['args'],
-                                        **request.get('kwargs', {}))
+                                                 **request.get('kwargs', {}))
         except Exception, e:
             response['error'] = {'code': 0, 'message': str(e)}
         # send the result for normal method calls, not for notifications
@@ -83,7 +84,7 @@ class Qdb(bdb.Bdb):
             self.pull_actions()
         # process the frame (see Bdb.trace_dispatch)
         if self.quitting:
-            return # None
+            return  # None
         if event == 'line':
             return self.dispatch_line(frame)
         if event == 'call':
@@ -106,7 +107,7 @@ class Qdb(bdb.Bdb):
         """This function is called when we stop or break at this line."""
         if self._wait_for_mainpyfile:
             if (not self.canonic(frame.f_code.co_filename).startswith(self.mainpyfile)
-                or frame.f_lineno<= 0):
+                    or frame.f_lineno <= 0):
                 return
             self._wait_for_mainpyfile = 0
         if self._wait_for_breakpoint:
@@ -150,11 +151,11 @@ class Qdb(bdb.Bdb):
         import __main__
         import imp
         __main__.__dict__.clear()
-        __main__.__dict__.update({"__name__"    : "__main__",
-                                  "__file__"    : filename,
+        __main__.__dict__.update({"__name__": "__main__",
+                                  "__file__": filename,
                                   "__builtins__": __builtins__,
-                                  "imp"         : imp,          # need for run
-                                 })
+                                  "imp": imp,          # need for run
+                                  })
 
         # avoid stopping before we reach the main script
         self._wait_for_mainpyfile = 1
@@ -200,8 +201,8 @@ class Qdb(bdb.Bdb):
                     if self.params.get('environment'):
                         kwargs['environment'] = self.do_environment()
                     self.pipe.send({'method': 'interaction', 'id': None,
-                                'args': (filename, self.frame.f_lineno, line),
-                                'kwargs': kwargs})
+                                    'args': (filename, self.frame.f_lineno, line),
+                                    'kwargs': kwargs})
 
                 self.pull_actions()
 
@@ -278,7 +279,7 @@ class Qdb(bdb.Bdb):
         filename = self.frame.f_code.co_filename
         breaklist = self.get_file_breaks(filename)
         lines = []
-        for lineno in range(first, last+1):
+        for lineno in range(first, last + 1):
             line = linecache.getline(filename, lineno,
                                      self.frame.f_globals)
             if not line:
@@ -303,7 +304,7 @@ class Qdb(bdb.Bdb):
             for bp in bdb.Breakpoint.bpbynumber:
                 if bp:
                     breaks.append((bp.number, bp.file, bp.line,
-                        bp.temporary, bp.enabled, bp.hits, bp.cond, ))
+                                   bp.temporary, bp.enabled, bp.hits, bp.cond, ))
         return breaks
 
     def do_clear_breakpoint(self, filename, lineno):
@@ -320,7 +321,7 @@ class Qdb(bdb.Bdb):
 
     def do_eval(self, arg, safe=True):
         ret = eval(arg, self.frame.f_globals,
-                    self.frame_locals)
+                   self.frame_locals)
         if safe:
             ret = pydoc.cram(repr(ret), 255)
         return ret
@@ -354,9 +355,11 @@ class Qdb(bdb.Bdb):
         # converts the frame global and locals to a short text representation:
         if self.frame:
             for name, value in self.frame_locals.items():
-                env['locals'][name] = pydoc.cram(repr(value), 255), repr(type(value))
+                env['locals'][name] = pydoc.cram(repr(
+                    value), 255), repr(type(value))
             for name, value in self.frame.f_globals.items():
-                env['globals'][name] = pydoc.cram(repr(value), 20), repr(type(value))
+                env['globals'][name] = pydoc.cram(repr(
+                    value), 20), repr(type(value))
         return env
 
     def get_autocomplete_list(self, expression):
@@ -589,8 +592,8 @@ class Frontend(object):
                 result = self.readline()
             if result:
                 response = {'version': '1.1', 'id': request.get('id'),
-                        'result': result,
-                        'error': None}
+                            'result': result,
+                            'error': None}
                 self.send(response)
             return True
 
@@ -609,7 +612,8 @@ class Frontend(object):
                 # nested request received (i.e. readline)! process it!
                 self.process_message(res)
             elif long(req['id']) != long(res['id']):
-                print "DEBUGGER wrong packet received: expecting id", req['id'], res['id']
+                print "DEBUGGER wrong packet received: expecting id", req[
+                    'id'], res['id']
                 # protocol state is unknown
             elif 'error' in res and res['error']:
                 raise RPCError(res['error']['message'])
@@ -736,7 +740,7 @@ class Cli(Frontend, cmd.Cmd):
         return raw_input()
 
     def postcmd(self, stop, line):
-        return not line.startswith("h") # stop
+        return not line.startswith("h")  # stop
 
     do_h = cmd.Cmd.do_help
 
@@ -838,6 +842,7 @@ def test():
     class Test(Frontend):
         def interaction(self, *args):
             print "interaction!", args
+
         def exception(self, *args):
             print "exception", args
             #raise RuntimeError("exception %s" % repr(args))
@@ -877,7 +882,7 @@ def main(host='localhost', port=6000, authkey='secret password'):
         print "usage: pdb.py scriptfile [arg] ..."
         sys.exit(2)
 
-    mainpyfile =  sys.argv[1]     # Get script filename
+    mainpyfile = sys.argv[1]     # Get script filename
     if not os.path.exists(mainpyfile):
         print 'Error:', mainpyfile, 'does not exist'
         sys.exit(1)
@@ -913,6 +918,8 @@ def main(host='localhost', port=6000, authkey='secret password'):
 
 
 qdb = None
+
+
 def set_trace(host='localhost', port=6000, authkey='secret password'):
     "Simplified interface to debug running programs"
     global qdb, listener, conn
@@ -950,7 +957,7 @@ if __name__ == '__main__':
     # Check environment for configuration parameters:
     kwargs = {}
     for param in 'host', 'port', 'authkey':
-       if 'QDB_%s' % param.upper() in os.environ:
+        if 'QDB_%s' % param.upper() in os.environ:
             kwargs[param] = os.environ['QDB_%s' % param.upper()]
 
     if not sys.argv[1:]:
@@ -961,7 +968,3 @@ if __name__ == '__main__':
         # reimport as global __main__ namespace is destroyed
         import qdb
         qdb.main(**kwargs)
-
-
-
-

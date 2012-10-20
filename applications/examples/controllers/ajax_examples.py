@@ -18,6 +18,3 @@ def flash():
 
 def fade():
     return dict()
-
-
-

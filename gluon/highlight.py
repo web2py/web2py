@@ -24,7 +24,7 @@ class Highlighter(object):
         mode,
         link=None,
         styles=None,
-        ):
+    ):
         """
         Initialise highlighter:
             mode = language (PYTHON, WEB2PY,C, CPP, HTML, HTML_PLAIN)
@@ -50,7 +50,7 @@ class Highlighter(object):
         elif mode == 'HTML':
             self.suppress_tokens = []
         else:
-            raise SyntaxError, 'Unknown mode: %s' % mode
+            raise SyntaxError('Unknown mode: %s' % mode)
         self.mode = mode
 
     def c_tokenizer(
@@ -58,7 +58,7 @@ class Highlighter(object):
         token,
         match,
         style,
-        ):
+    ):
         """
         Callback for C specific highlighting.
         """
@@ -72,7 +72,7 @@ class Highlighter(object):
         token,
         match,
         style,
-        ):
+    ):
         """
         Callback for python specific highlighting.
         """
@@ -93,10 +93,10 @@ class Highlighter(object):
             (url, style) = style[5:].split(';', 1)
             if url == 'None' or url == '':
                 self.output.append('<span style="%s">%s</span>'
-                                    % (style, value))
+                                   % (style, value))
             else:
                 self.output.append('<a href="%s%s" style="%s">%s</a>'
-                                    % (url, value, style, value))
+                                   % (url, value, style, value))
         else:
             self.change_style(token, style)
             self.output.append(value)
@@ -109,7 +109,7 @@ class Highlighter(object):
         token,
         match,
         style,
-        ):
+    ):
         """
         Callback for HTML specific highlighting.
         """
@@ -135,51 +135,51 @@ class Highlighter(object):
              re.compile(r'0x[0-9a-fA-F]+|[+-]?\d+(\.\d+)?([eE][+-]\d+)?|\d+'),
              'color: red'),
             ('KEYWORD', re.compile(r'(sizeof|int|long|short|char|void|'
-              + r'signed|unsigned|float|double|'
-              + r'goto|break|return|continue|asm|'
-              + r'case|default|if|else|switch|while|for|do|'
-              + r'struct|union|enum|typedef|'
-              + r'static|register|auto|volatile|extern|const)(?![a-zA-Z0-9_])'),
+                                   + r'signed|unsigned|float|double|'
+                                   + r'goto|break|return|continue|asm|'
+                                   + r'case|default|if|else|switch|while|for|do|'
+                                   + r'struct|union|enum|typedef|'
+                                   + r'static|register|auto|volatile|extern|const)(?![a-zA-Z0-9_])'),
              'color:#185369; font-weight: bold'),
             ('CPPKEYWORD',
              re.compile(r'(class|private|protected|public|template|new|delete|'
-              + r'this|friend|using|inline|export|bool|throw|try|catch|'
-              + r'operator|typeid|virtual)(?![a-zA-Z0-9_])'),
+                        + r'this|friend|using|inline|export|bool|throw|try|catch|'
+                        + r'operator|typeid|virtual)(?![a-zA-Z0-9_])'),
              'color: blue; font-weight: bold'),
             ('STRING', re.compile(r'r?u?\'(.*?)(?<!\\)\'|"(.*?)(?<!\\)"'),
              'color: #FF9966'),
             ('IDENTIFIER', re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*'),
              None),
             ('WHITESPACE', re.compile(r'[   \r\n]+'), 'Keep'),
-            )),
+        )),
         'PYTHON': (python_tokenizer, (
             ('GOTOHTML', re.compile(r'\}\}'), 'color: red'),
             ('PUNC', re.compile(r'[-+*!|&^~/%\=<>\[\]{}(),.:]'),
              'font-weight: bold'),
             ('NUMBER',
              re.compile(r'0x[0-9a-fA-F]+|[+-]?\d+(\.\d+)?([eE][+-]\d+)?|\d+'
-             ), 'color: red'),
+                        ), 'color: red'),
             ('KEYWORD',
              re.compile(r'(def|class|break|continue|del|exec|finally|pass|'
-              + r'print|raise|return|try|except|global|assert|lambda|'
-              + r'yield|for|while|if|elif|else|and|in|is|not|or|import|'
-              + r'from|True|False)(?![a-zA-Z0-9_])'),
+                        + r'print|raise|return|try|except|global|assert|lambda|'
+                        + r'yield|for|while|if|elif|else|and|in|is|not|or|import|'
+                        + r'from|True|False)(?![a-zA-Z0-9_])'),
              'color:#185369; font-weight: bold'),
             ('WEB2PY',
              re.compile(r'(request|response|session|cache|redirect|local_import|HTTP|TR|XML|URL|BEAUTIFY|A|BODY|BR|B|CAT|CENTER|CODE|COL|COLGROUP|DIV|EM|EMBED|FIELDSET|LEGEND|FORM|H1|H2|H3|H4|H5|H6|IFRAME|HEAD|HR|HTML|I|IMG|INPUT|LABEL|LI|LINK|MARKMIN|MENU|META|OBJECT|OL|ON|OPTION|P|PRE|SCRIPT|SELECT|SPAN|STYLE|TABLE|THEAD|TBODY|TFOOT|TAG|TD|TEXTAREA|TH|TITLE|TT|T|UL|XHTML|IS_SLUG|IS_STRONG|IS_LOWER|IS_UPPER|IS_ALPHANUMERIC|IS_DATETIME|IS_DATETIME_IN_RANGE|IS_DATE|IS_DATE_IN_RANGE|IS_DECIMAL_IN_RANGE|IS_EMAIL|IS_EXPR|IS_FLOAT_IN_RANGE|IS_IMAGE|IS_INT_IN_RANGE|IS_IN_SET|IS_IPV4|IS_LIST_OF|IS_LENGTH|IS_MATCH|IS_EQUAL_TO|IS_EMPTY_OR|IS_NULL_OR|IS_NOT_EMPTY|IS_TIME|IS_UPLOAD_FILENAME|IS_URL|CLEANUP|CRYPT|IS_IN_DB|IS_NOT_IN_DB|DAL|Field|SQLFORM|SQLTABLE|xmlescape|embed64)(?![a-zA-Z0-9_])'
-             ), 'link:%(link)s;text-decoration:None;color:#FF5C1F;'),
+                        ), 'link:%(link)s;text-decoration:None;color:#FF5C1F;'),
             ('MAGIC', re.compile(r'self|None'),
              'color:#185369; font-weight: bold'),
             ('MULTILINESTRING', re.compile(r'r?u?(\'\'\'|""")'),
              'color: #FF9966'),
             ('STRING', re.compile(r'r?u?\'(.*?)(?<!\\)\'|"(.*?)(?<!\\)"'
-             ), 'color: #FF9966'),
+                                  ), 'color: #FF9966'),
             ('IDENTIFIER', re.compile(r'[a-zA-Z_][a-zA-Z0-9_]*'),
              None),
             ('COMMENT', re.compile(r'\#.*\r?\n'),
              'color: green; font-style: italic'),
             ('WHITESPACE', re.compile(r'[   \r\n]+'), 'Keep'),
-            )),
+        )),
         'PYTHONMultilineString': (python_tokenizer,
                                   (('ENDMULTILINESTRING',
                                   re.compile(r'.*?("""|\'\'\')',
@@ -191,13 +191,13 @@ class Highlighter(object):
             ('XMLCRAP', re.compile(r'<![^>]*>'),
              'color: blue; font-style: italic'),
             ('SCRIPT', re.compile(r'<script .*?</script>', re.IGNORECASE
-              + re.DOTALL), 'color: black'),
+                                  + re.DOTALL), 'color: black'),
             ('TAG', re.compile(r'</?\s*[a-zA-Z0-9]+'),
              'color: darkred; font-weight: bold'),
             ('ENDTAG', re.compile(r'/?>'),
              'color: darkred; font-weight: bold'),
-            )),
-        }
+        )),
+    }
 
     def highlight(self, data):
         """
@@ -215,12 +215,12 @@ class Highlighter(object):
                         if style:
                             new_mode = \
                                 Highlighter.all_styles[mode][0](self,
-                                    token, match, style
-                                     % dict(link=self.link))
+                                                                token, match, style
+                                                                % dict(link=self.link))
                         else:
                             new_mode = \
                                 Highlighter.all_styles[mode][0](self,
-                                    token, match, style)
+                                                                token, match, style)
                         if not new_mode is None:
                             mode = new_mode
                         i += max(1, len(match.group()))
@@ -257,7 +257,7 @@ def highlight(
     highlight_line=None,
     context_lines=None,
     attributes=None,
-    ):
+):
     styles = styles or {}
     attributes = attributes or {}
     if not 'CODE' in styles:
@@ -289,7 +289,7 @@ def highlight(
         linehighlight_style = styles['LINEHIGHLIGHT']
 
     if language and language.upper() in ['PYTHON', 'C', 'CPP', 'HTML',
-            'WEB2PY']:
+                                         'WEB2PY']:
         code = Highlighter(language, link, styles).highlight(code)
     else:
         code = cgi.escape(code)
@@ -301,22 +301,24 @@ def highlight(
         linenumbers = [cgi.escape(counter)] * len(lines)
     else:
         linenumbers = [str(i + counter) + '.' for i in
-                               xrange(len(lines))]
+                       xrange(len(lines))]
 
     if highlight_line:
         if counter and not isinstance(counter, str):
             lineno = highlight_line - counter
         else:
             lineno = highlight_line
-        if lineno<len(lines):
-            lines[lineno] = '<div style="%s">%s</div>' % (linehighlight_style, lines[lineno])
-            linenumbers[lineno] = '<div style="%s">%s</div>' % (linehighlight_style, linenumbers[lineno])
+        if lineno < len(lines):
+            lines[lineno] = '<div style="%s">%s</div>' % (
+                linehighlight_style, lines[lineno])
+            linenumbers[lineno] = '<div style="%s">%s</div>' % (
+                linehighlight_style, linenumbers[lineno])
 
         if context_lines:
             if lineno + context_lines < len(lines):
                 del lines[lineno + context_lines:]
                 del linenumbers[lineno + context_lines:]
-            if lineno -context_lines > 0:
+            if lineno - context_lines > 0:
                 del lines[0:lineno - context_lines]
                 del linenumbers[0:lineno - context_lines]
 
@@ -326,13 +328,13 @@ def highlight(
     items = attributes.items()
     fa = ' '.join([key[1:].lower() for (key, value) in items if key[:1]
                    == '_' and value is None] + ['%s="%s"'
-                   % (key[1:].lower(), str(value).replace('"', "'"))
+                                                % (key[1:].lower(), str(value).replace('"', "'"))
                   for (key, value) in attributes.items() if key[:1]
-                   == '_' and value])
+                  == '_' and value])
     if fa:
         fa = ' ' + fa
     return '<table%s><tr valign="top"><td style="width:40px; text-align: right;"><pre style="%s">%s</pre></td><td><pre style="%s">%s</pre></td></tr></table>'\
-         % (fa, linenumbers_style, numbers, code_style, code)
+        % (fa, linenumbers_style, numbers, code_style, code)
 
 
 if __name__ == '__main__':
@@ -341,11 +343,4 @@ if __name__ == '__main__':
     data = argfp.read()
     argfp.close()
     print '<html><body>' + highlight(data, sys.argv[2])\
-         + '</body></html>'
-
-
-
-
-
-
-
+        + '</body></html>'

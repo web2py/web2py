@@ -51,7 +51,8 @@ def autoretry_datastore_timeouts(attempts=5.0, interval=0.1, exponent=2.0):
     :param exponent: rate of exponential back-off.
     """
 
-    import time, logging
+    import time
+    import logging
     from google.appengine.api import apiproxy_stub_map
     from google.appengine.runtime import apiproxy_errors
     from google.appengine.datastore import datastore_pb
@@ -60,8 +61,8 @@ def autoretry_datastore_timeouts(attempts=5.0, interval=0.1, exponent=2.0):
     interval = float(interval)
     exponent = float(exponent)
     wrapped = apiproxy_stub_map.MakeSyncCall
-    errors = {datastore_pb.Error.TIMEOUT:'Timeout',
-        datastore_pb.Error.CONCURRENT_TRANSACTION:'TransactionFailedError'}
+    errors = {datastore_pb.Error.TIMEOUT: 'Timeout',
+              datastore_pb.Error.CONCURRENT_TRANSACTION: 'TransactionFailedError'}
 
     def wrapper(*args, **kwargs):
         count = 0.0
@@ -70,10 +71,12 @@ def autoretry_datastore_timeouts(attempts=5.0, interval=0.1, exponent=2.0):
                 return wrapped(*args, **kwargs)
             except apiproxy_errors.ApplicationError, err:
                 errno = err.application_error
-                if errno not in errors: raise
+                if errno not in errors:
+                    raise
                 sleep = (exponent ** count) * interval
                 count += 1.0
-                if count > attempts: raise
+                if count > attempts:
+                    raise
                 msg = "Datastore %s: retry #%d in %s seconds.\n%s"
                 vals = ''
                 if count == 1.0:
@@ -84,10 +87,3 @@ def autoretry_datastore_timeouts(attempts=5.0, interval=0.1, exponent=2.0):
     setattr(wrapper, '_autoretry_datastore_timeouts', False)
     if getattr(wrapped, '_autoretry_datastore_timeouts', True):
         apiproxy_stub_map.MakeSyncCall = wrapper
-
-
-
-
-
-
-

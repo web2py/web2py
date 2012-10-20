@@ -40,15 +40,17 @@ __all__ = [
     'w2p_unpack_plugin',
     'fix_newlines',
     'make_fake_file_like_object',
-    ]
+]
 
-def parse_version(version = "Version 1.99.0 (2011-09-19 08:23:26)"):
+
+def parse_version(version="Version 1.99.0 (2011-09-19 08:23:26)"):
     re_version = re.compile('[^\d]+ (\d+)\.(\d+)\.(\d+)\s*\((?P<datetime>.+?)\)\s*(?P<type>[a-z]+)?')
     m = re_version.match(version)
-    a,b,c = int(m.group(1)),int(m.group(2)),int(m.group(3)),
+    a, b, c = int(m.group(1)), int(m.group(2)), int(m.group(3)),
     s = m.group('type') or 'dev'
-    d = datetime.datetime.strptime(m.group('datetime'),'%Y-%m-%d %H:%M:%S')
-    return (a,b,c,d,s)
+    d = datetime.datetime.strptime(m.group('datetime'), '%Y-%m-%d %H:%M:%S')
+    return (a, b, c, d, s)
+
 
 def read_file(filename, mode='r'):
     "returns content from filename, making sure to close the file explicitly on exit."
@@ -58,6 +60,7 @@ def read_file(filename, mode='r'):
     finally:
         f.close()
 
+
 def write_file(filename, value, mode='w'):
     "writes <value> to filename, making sure to close the file explicitly on exit."
     f = open(filename, mode)
@@ -66,17 +69,20 @@ def write_file(filename, value, mode='w'):
     finally:
         f.close()
 
+
 def readlines_file(filename, mode='r'):
     "applies .split('\n') to the output of read_file()"
     return read_file(filename, mode).split('\n')
 
 
 def mktree(path):
-    head,tail =os.path.split(path)
+    head, tail = os.path.split(path)
     if head:
-        if tail: mktree(head)
+        if tail:
+            mktree(head)
         if not os.path.exists(head):
             os.mkdir(head)
+
 
 def listdir(
     path,
@@ -84,7 +90,7 @@ def listdir(
     drop=True,
     add_dirs=False,
     sort=True,
-    ):
+):
     """
     like os.listdir() but you can specify a regex pattern to filter files.
     if add_dirs is True, the returned items will have the full path.
@@ -115,7 +121,7 @@ def listdir(
 def recursive_unlink(f):
     if os.path.isdir(f):
         for s in os.listdir(f):
-            recursive_unlink(os.path.join(f,s))
+            recursive_unlink(os.path.join(f, s))
         os.rmdir(f)
     elif os.path.isfile(f):
         os.unlink(f)
@@ -130,7 +136,7 @@ def cleanpath(path):
     items = path.split('.')
     if len(items) > 1:
         path = re.sub('[^\w\.]+', '_', '_'.join(items[:-1]) + '.'
-                       + ''.join(items[-1:]))
+                      + ''.join(items[-1:]))
     else:
         path = re.sub('[^\w\.]+', '_', ''.join(items[-1:]))
     return path
@@ -161,7 +167,7 @@ def _extractall(filename, path='.', members=None):
 
                         try:
                             os.makedirs(os.path.join(path,
-                                    tarinfo.name), 0777)
+                                                     tarinfo.name), 0777)
                         except EnvironmentError:
                             pass
                         directories.append(tarinfo)
@@ -187,7 +193,6 @@ def _extractall(filename, path='.', members=None):
                         else:
                             self._dbg(1, 'tarfile: %s' % e)
 
-
         _cls = TarFile
     else:
         _cls = tarfile.TarFile
@@ -196,6 +201,7 @@ def _extractall(filename, path='.', members=None):
     ret = tar.extractall(path, members)
     tar.close()
     return ret
+
 
 def tar(file, dir, expression='^.+$'):
     """
@@ -208,6 +214,7 @@ def tar(file, dir, expression='^.+$'):
             tar.add(os.path.join(dir, file), file, False)
     finally:
         tar.close()
+
 
 def untar(file, dir):
     """
@@ -231,6 +238,7 @@ def w2p_pack(filename, path, compiled=False):
     w2pfp.close()
     tarfp.close()
     os.unlink(tarname)
+
 
 def w2p_unpack(filename, path, delete_tar=True):
     filename = abspath(filename)
@@ -261,16 +269,18 @@ def w2p_pack_plugin(filename, path, plugin_name):
     filename = abspath(filename)
     path = abspath(path)
     if not filename.endswith('web2py.plugin.%s.w2p' % plugin_name):
-        raise Exception, "Not a web2py plugin name"
+        raise Exception("Not a web2py plugin name")
     plugin_tarball = tarfile.open(filename, 'w:gz')
     try:
         app_dir = path
-        while app_dir[-1]=='/':
+        while app_dir[-1] == '/':
             app_dir = app_dir[:-1]
-        files1=glob.glob(os.path.join(app_dir,'*/plugin_%s.*' % plugin_name))
-        files2=glob.glob(os.path.join(app_dir,'*/plugin_%s/*' % plugin_name))
-        for file in files1+files2:
-            plugin_tarball.add(file, arcname=file[len(app_dir)+1:])
+        files1 = glob.glob(
+            os.path.join(app_dir, '*/plugin_%s.*' % plugin_name))
+        files2 = glob.glob(
+            os.path.join(app_dir, '*/plugin_%s/*' % plugin_name))
+        for file in files1 + files2:
+            plugin_tarball.add(file, arcname=file[len(app_dir) + 1:])
     finally:
         plugin_tarball.close()
 
@@ -279,8 +289,8 @@ def w2p_unpack_plugin(filename, path, delete_tar=True):
     filename = abspath(filename)
     path = abspath(path)
     if not os.path.basename(filename).startswith('web2py.plugin.'):
-        raise Exception, "Not a web2py plugin"
-    w2p_unpack(filename,path,delete_tar)
+        raise Exception("Not a web2py plugin")
+    w2p_unpack(filename, path, delete_tar)
 
 
 def tar_compiled(file, dir, expression='^.+$'):
@@ -306,6 +316,7 @@ def tar_compiled(file, dir, expression='^.+$'):
         tar.add(filename, file, False)
     tar.close()
 
+
 def up(path):
     return os.path.dirname(os.path.normpath(path))
 
@@ -317,13 +328,13 @@ def get_session(request, other_application='admin'):
     try:
         session_id = request.cookies['session_id_' + other_application].value
         osession = storage.load_storage(os.path.join(
-                up(request.folder), other_application, 'sessions', session_id))
+            up(request.folder), other_application, 'sessions', session_id))
     except Exception, e:
         osession = storage.Storage()
     return osession
 
 
-def check_credentials(request, other_application='admin', expiration = 60*60):
+def check_credentials(request, other_application='admin', expiration=60 * 60):
     """ checks that user is authorized to access other_application"""
     if request.env.web2py_runtime_gae:
         from google.appengine.api import users
@@ -338,6 +349,7 @@ def check_credentials(request, other_application='admin', expiration = 60*60):
         s = get_session(request, other_application)
         return (s.authorized and s.last_time and s.last_time > dt)
 
+
 def fix_newlines(path):
     regex = re.compile(r'''(\r
 |\r|
@@ -348,12 +360,13 @@ def fix_newlines(path):
         if wdata != rdata:
             write_file(filename, wdata, 'wb')
 
+
 def copystream(
     src,
     dest,
     size,
     chunk_size=10 ** 5,
-    ):
+):
     """
     this is here because I think there is a bug in shutil.copyfileobj
     """
@@ -379,13 +392,16 @@ def make_fake_file_like_object():
     class LogFile(object):
         def write(self, value):
             pass
+
         def close(self):
             pass
     return LogFile()
 
 
-from settings import global_settings # we need to import settings here because
+from settings import global_settings  # we need to import settings here because
                                      # settings imports fileutils too
+
+
 def abspath(*relpath, **base):
     "convert relative path to absolute path based (by default) on applications_parent"
     path = os.path.join(*relpath)
@@ -395,6 +411,3 @@ def abspath(*relpath, **base):
     if gluon:
         return os.path.join(global_settings.gluon_parent, path)
     return os.path.join(global_settings.applications_parent, path)
-
-
-

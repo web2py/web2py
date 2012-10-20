@@ -42,8 +42,8 @@ while 1:
         error = RestrictedError()
         error.load(request, request.application, file)
 
-        mail.send(to=administrator_email, subject='new web2py ticket', message=error.traceback)
+        mail.send(to=administrator_email,
+                  subject='new web2py ticket', message=error.traceback)
 
         os.unlink(os.path.join(path, file))
     time.sleep(SLEEP_MINUTES * 60)
-

@@ -29,7 +29,7 @@ update:
 	wget -O gluon/contrib/simplejsonrpc.py http://rad2py.googlecode.com/hg/ide2py/simplejsonrpc.py
 	echo "remember that pymysql was tweaked"
 src:
-	echo 'Version 2.1.0 ('`date +%Y-%m-%d\ %H:%M:%S`') dev' > VERSION
+	echo 'Version 2.1.1 ('`date +%Y-%m-%d\ %H:%M:%S`') dev' > VERSION
 	### rm -f all junk files
 	make clean
 	### clean up baisc apps
@@ -130,5 +130,5 @@ pip:
 	# after upload clean Web2py sources with rm -R ./dist
 	# http://guide.python-distribute.org/creation.html
 	python setup.py sdist
-	python setup.py register
-	python setup.py sdist upload
+	sudo python setup.py register
+	sudo python setup.py sdist upload

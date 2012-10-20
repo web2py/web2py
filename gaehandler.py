@@ -33,7 +33,7 @@ import wsgiref.handlers
 import datetime
 
 path = os.path.dirname(os.path.abspath(__file__))
-sys.path = [path]+[p for p in sys.path if not p==path]
+sys.path = [path] + [p for p in sys.path if not p == path]
 
 sys.modules['cPickle'] = sys.modules['pickle']
 
@@ -78,12 +78,18 @@ def wsgiapp(env, res):
     """Return the wsgiapp"""
     env['PATH_INFO'] = env['PATH_INFO'].decode('latin1').encode('utf8')
 
+    #when using the blobstore image uploader GAE dev SDK passes these as unicode
+    # they should be regular strings as they are parts of URLs
+    env['wsgi.url_scheme'] = str(env['wsgi.url_scheme'])
+    env['QUERY_STRING'] = str(env['QUERY_STRING'])
+    env['SERVER_NAME'] = str(env['SERVER_NAME'])
+
     #this deals with a problem where GAE development server seems to forget
     # the path between requests
     if global_settings.web2py_runtime == 'gae:development':
         gluon.admin.create_missing_folders()
 
-    web2py_path = global_settings.applications_parent # backward compatibility
+    web2py_path = global_settings.applications_parent  # backward compatibility
 
     return gluon.main.wsgibase(env, res)
 
@@ -91,14 +97,10 @@ def wsgiapp(env, res):
 if LOG_STATS or DEBUG:
     wsgiapp = log_stats(wsgiapp)
 
+
 def main():
     """Run the wsgi app"""
     run_wsgi_app(wsgiapp)
 
 if __name__ == '__main__':
     main()
-
-
-
-
-

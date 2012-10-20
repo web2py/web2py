@@ -22,6 +22,7 @@ logger = logging.getLogger("web2py")
 
 __all__ = ['RestrictedError', 'restricted', 'TicketStorage', 'compile2']
 
+
 class TicketStorage(Storage):
 
     """
@@ -32,7 +33,7 @@ class TicketStorage(Storage):
         self,
         db=None,
         tablename='web2py_ticket'
-        ):
+    ):
         Storage.__init__(self)
         self.db = db
         self.tablename = tablename
@@ -64,7 +65,8 @@ class TicketStorage(Storage):
         root = request.folder
         if app:
             root = os.path.join(os.path.join(root, '..'), app)
-        errors_folder = os.path.abspath(os.path.join(root, 'errors'))#.replace('\\', '/')
+        errors_folder = os.path.abspath(
+            os.path.join(root, 'errors'))  # .replace('\\', '/')
         return open(os.path.join(errors_folder, ticket_id), mode)
 
     def _get_table(self, db, tablename, app):
@@ -78,7 +80,7 @@ class TicketStorage(Storage):
                 db.Field('ticket_id', length=100),
                 db.Field('ticket_data', 'text'),
                 db.Field('created_datetime', 'datetime'),
-                )
+            )
         return table
 
     def load(
@@ -86,7 +88,7 @@ class TicketStorage(Storage):
         request,
         app,
         ticket_id,
-        ):
+    ):
         if not self.db:
             try:
                 ef = self._error_file(request, ticket_id, 'rb', app)
@@ -100,7 +102,6 @@ class TicketStorage(Storage):
             table = self._get_table(self.db, self.tablename, app)
             rows = self.db(table.ticket_id == ticket_id).select()
             return cPickle.loads(rows[0].ticket_data) if rows else {}
-            
 
 
 class RestrictedError(Exception):
@@ -115,12 +116,13 @@ class RestrictedError(Exception):
         code='',
         output='',
         environment=None,
-        ):
+    ):
         """
         layer here is some description of where in the system the exception
         occurred.
         """
-        if environment is None: environment = {}
+        if environment is None:
+            environment = {}
         self.layer = layer
         self.code = code
         self.output = output
@@ -131,7 +133,7 @@ class RestrictedError(Exception):
             except:
                 self.traceback = 'no traceback because template parting error'
             try:
-                self.snapshot = snapshot(context=10,code=code,
+                self.snapshot = snapshot(context=10, code=code,
                                          environment=self.environment)
             except:
                 self.snapshot = {}
@@ -151,14 +153,13 @@ class RestrictedError(Exception):
                 'output': str(self.output),
                 'traceback': str(self.traceback),
                 'snapshot': self.snapshot,
-                }
+            }
             ticket_storage = TicketStorage(db=request.tickets_db)
-            ticket_storage.store(request, request.uuid.split('/',1)[1], d)
+            ticket_storage.store(request, request.uuid.split('/', 1)[1], d)
             return request.uuid
         except:
             logger.error(self.traceback)
             return None
-
 
     def load(self, request, app, ticket_id):
         """
@@ -186,11 +187,12 @@ class RestrictedError(Exception):
         return output
 
 
-def compile2(code,layer):
+def compile2(code, layer):
     """
     The +'\n' is necessary else compile fails when code ends in a comment.
     """
-    return compile(code.rstrip().replace('\r\n','\n')+'\n', layer, 'exec')
+    return compile(code.rstrip().replace('\r\n', '\n') + '\n', layer, 'exec')
+
 
 def restricted(code, environment=None, layer='Unknown'):
     """
@@ -198,14 +200,15 @@ def restricted(code, environment=None, layer='Unknown'):
     in code it raises a RestrictedError containing the traceback. layer is
     passed to RestrictedError to identify where the error occurred.
     """
-    if environment is None: environment = {}
+    if environment is None:
+        environment = {}
     environment['__file__'] = layer
     environment['__name__'] = '__restricted__'
     try:
-        if type(code) == types.CodeType:
+        if isinstance(code, types.CodeType):
             ccode = code
         else:
-            ccode = compile2(code,layer)
+            ccode = compile2(code, layer)
         exec ccode in environment
     except HTTP:
         raise
@@ -221,14 +224,21 @@ def restricted(code, environment=None, layer='Unknown'):
         output = "%s %s" % (etype, evalue)
         raise RestrictedError(layer, code, output, environment)
 
+
 def snapshot(info=None, context=5, code=None, environment=None):
     """Return a dict describing a given traceback (based on cgitb.text)."""
-    import os, types, time, linecache, inspect, pydoc, cgitb
+    import os
+    import types
+    import time
+    import linecache
+    import inspect
+    import pydoc
+    import cgitb
 
     # if no exception info given, get current:
     etype, evalue, etb = info or sys.exc_info()
 
-    if type(etype) is types.ClassType:
+    if isinstance(etype, types.ClassType):
         etype = etype.__name__
 
     # create a snapshot dict with some basic information
@@ -245,22 +255,26 @@ def snapshot(info=None, context=5, code=None, environment=None):
         call = ''
         if func != '?':
             call = inspect.formatargvalues(args, varargs, varkw, locals,
-                    formatvalue=lambda value: '=' + pydoc.text.repr(value))
+                                           formatvalue=lambda value: '=' + pydoc.text.repr(value))
 
         # basic frame information
-        f = {'file': file, 'func': func, 'call': call, 'lines': {}, 'lnum': lnum}
+        f = {'file': file, 'func': func, 'call': call, 'lines': {},
+             'lnum': lnum}
 
         highlight = {}
+
         def reader(lnum=[lnum]):
             highlight[lnum[0]] = 1
-            try: return linecache.getline(file, lnum[0])
-            finally: lnum[0] += 1
+            try:
+                return linecache.getline(file, lnum[0])
+            finally:
+                lnum[0] += 1
         vars = cgitb.scanvars(reader, frame, locals)
 
         # if it is a view, replace with generated code
         if file.endswith('html'):
-            lmin = lnum>context and (lnum-context) or 0
-            lmax = lnum+context
+            lmin = lnum > context and (lnum - context) or 0
+            lmax = lnum + context
             lines = code.split("\n")[lmin:lmax]
             index = min(context, lnum) - 1
 
@@ -273,10 +287,13 @@ def snapshot(info=None, context=5, code=None, environment=None):
         # dump local variables (referenced in current line only)
         f['dump'] = {}
         for name, where, value in vars:
-            if name in f['dump']: continue
+            if name in f['dump']:
+                continue
             if value is not cgitb.__UNDEF__:
-                if where == 'global': name = 'global ' + name
-                elif where != 'local': name = where + name.split('.')[-1]
+                if where == 'global':
+                    name = 'global ' + name
+                elif where != 'local':
+                    name = where + name.split('.')[-1]
                 f['dump'][name] = pydoc.text.repr(value)
             else:
                 f['dump'][name] = 'undefined'
@@ -290,7 +307,7 @@ def snapshot(info=None, context=5, code=None, environment=None):
     if isinstance(evalue, BaseException):
         for name in dir(evalue):
             # prevent py26 DeprecatedWarning:
-            if name!='message' or sys.version_info<(2.6):
+            if name != 'message' or sys.version_info < (2.6):
                 value = pydoc.text.repr(getattr(evalue, name))
                 s['exception'][name] = value
 
@@ -300,15 +317,8 @@ def snapshot(info=None, context=5, code=None, environment=None):
         s['locals'][name] = pydoc.text.repr(value)
 
     # add web2py environment variables
-    for k,v in environment.items():
+    for k, v in environment.items():
         if k in ('request', 'response', 'session'):
             s[k] = BEAUTIFY(v)
 
     return s
-
-
-
-
-
-
-

@@ -1,6 +1,3 @@
-
-
-
 def variables():
     return dict(a=10, b=20)
 
@@ -31,6 +28,3 @@ def xml():
 
 def beautify():
     return dict(message=BEAUTIFY(request))
-
-
-

@@ -61,6 +61,7 @@ Example of usage:
 
 ### update one record
 >>> james.update_record(name='Jim')
+<Row {'id': 1, 'name': 'Jim'}>
 
 ### update multiple records by query
 >>> db(person.name.like('J%')).update(name='James')
@@ -500,7 +501,7 @@ class ConnectionPool(object):
 
     # ## this allows gluon to commit/rollback all dbs in this thread
 
-    def close(self,action='commit',really=True):        
+    def close(self,action='commit',really=True):
         if action:
             if callable(action):
                 action(self)
@@ -599,7 +600,7 @@ class BaseAdapter(ConnectionPool):
     support_distributed_transaction = False
     uploads_in_blob = False
     can_select_for_update = True
-    
+
     TRUE = 'T'
     FALSE = 'F'
     types = {
@@ -691,7 +692,7 @@ class BaseAdapter(ConnectionPool):
             self.driver_name = drivers_available[0]
             self.driver = globals().get(self.driver_name)
         else:
-            raise RuntimeError, "no driver available %s", self.drivers
+            raise RuntimeError, "no driver available %s" % self.drivers
 
 
     def __init__(self, db,uri,pool_size=0, folder=None, db_codec='UTF-8',
@@ -1661,7 +1662,7 @@ class BaseAdapter(ConnectionPool):
 
     def prepare(self, key):
         if self.connection: self.connection.prepare()
-        
+
     def commit_prepared(self, key):
         if self.connection: self.connection.commit()
 
@@ -6417,10 +6418,10 @@ class Row(object):
 
     def __str__(self):
         ### this could be made smarter
-        return '<Row %s>' % self.__dict__
+        return '<Row %s>' % self.as_dict()
 
     def __repr__(self):
-        return '<Row %s>' % self.__dict__
+        return '<Row %s>' % self.as_dict()
 
     def __int__(self):
         return object.__getattribute__(self,'id')
@@ -6572,7 +6573,7 @@ def smart_query(fields,text):
             elif field._db._adapter.dbengine=='google:datastore' and \
                  field.type in ('list:integer', 'list:string', 'list:reference'):
                 if op == 'contains': new_query = field.contains(value)
-                else: raise RuntimeError, "Invalid operation"                
+                else: raise RuntimeError, "Invalid operation"
             else: raise RuntimeError, "Invalid operation"
             if neg: new_query = ~new_query
             if query is None:
@@ -6596,7 +6597,7 @@ class DAL(object):
                                     Field('fieldname2'))
     """
 
-    def __new__(cls, uri='sqlite://dummy.db', *args, **kwargs):        
+    def __new__(cls, uri='sqlite://dummy.db', *args, **kwargs):
         if not hasattr(THREAD_LOCAL,'db_instances'):
             THREAD_LOCAL.db_instances = {}
         if not hasattr(THREAD_LOCAL,'db_instances_zombie'):
@@ -6746,9 +6747,9 @@ class DAL(object):
                         kwargs = dict(db=self,uri=uri,
                                       pool_size=pool_size,
                                       folder=folder,
-                                      db_codec=db_codec, 
+                                      db_codec=db_codec,
                                       credential_decoder=credential_decoder,
-                                      driver_args=driver_args or {}, 
+                                      driver_args=driver_args or {},
                                       adapter_args=adapter_args or {},
                                       do_connect=do_connect)
                         self._adapter = ADAPTERS[self._dbname](**kwargs)
@@ -7184,7 +7185,7 @@ def index():
 
     def close(self):
         self._adapter.close()
-        if self._db_uid in THREAD_LOCAL.db_instances:            
+        if self._db_uid in THREAD_LOCAL.db_instances:
             db_group = THREAD_LOCAL.db_instances[self._db_uid]
             db_group.remove(self)
             if not db_group:
@@ -7815,7 +7816,7 @@ class Table(object):
         for key,value in fields.iteritems():
             value,error = self[key].validate(value)
             if error:
-                response.errors[key] = error
+                response.errors[key] = "%s" % error
             else:
                 new_fields[key] = value
         if not response.errors:
@@ -9390,6 +9391,7 @@ def test_all():
     Update a single record
 
     >>> me.update_record(name=\"Max\")
+    <Row {'name': 'Max', 'birth': datetime.date(1971, 12, 21), 'id': 2}>
     >>> me.name
     'Max'
 

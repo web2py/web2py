@@ -17,6 +17,7 @@ import sys
 
 logger = logging.getLogger("web2py")
 
+
 class Pipe(Queue.Queue):
     def __init__(self, name, mode='r', *args, **kwargs):
         self.__name = name
@@ -52,6 +53,7 @@ pipe_out = Pipe('out')
 
 debugger = pdb.Pdb(completekey=None, stdin=pipe_in, stdout=pipe_out,)
 
+
 def set_trace():
     "breakpoint shortcut (like pdb)"
     logger.info("DEBUG: set_trace!")
@@ -66,6 +68,7 @@ def stop_trace():
     pipe_out.write("debug finished!")
     pipe_out.write(None)
     #pipe_out.flush()
+
 
 def communicate(command=None):
     "send command to debbuger, wait result"
@@ -90,6 +93,7 @@ from threading import RLock
 
 interact_lock = RLock()
 run_lock = RLock()
+
 
 def check_interaction(fn):
     "Decorator to clean and prevent interaction when not available"
@@ -181,7 +185,8 @@ front_conn = qdb.QueuePipe("parent", parent_queue, child_queue)
 child_conn = qdb.QueuePipe("child", child_queue, parent_queue)
 
 web_debugger = WebDebugger(front_conn)                          # frontend
-qdb_debugger = qdb.Qdb(pipe=child_conn, redirect_stdio=False, skip=None)   # backend
+qdb_debugger = qdb.Qdb(
+    pipe=child_conn, redirect_stdio=False, skip=None)   # backend
 dbg = qdb_debugger
 
 # enable getting context (stack, globals/locals) at interaction
@@ -189,7 +194,3 @@ qdb_debugger.set_params(dict(call_stack=True, environment=True))
 
 import gluon.main
 gluon.main.global_settings.debugging = True
-
-
-
-

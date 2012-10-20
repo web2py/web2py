@@ -13,12 +13,14 @@ from gluon.import_all import base_modules, contributed_modules
 import os
 import fnmatch
 
+
 class reglob:
     def __init__(self, directory, pattern="*"):
         self.stack = [directory]
         self.pattern = pattern
         self.files = []
         self.index = 0
+
     def __getitem__(self, index):
         while 1:
             try:
@@ -38,22 +40,17 @@ class reglob:
 
 setup(app=['web2py.py'],
       data_files=[
-        'NEWINSTALL',
-        'ABOUT',
-        'LICENSE',
-        'VERSION',
-        ] + \
-          [x for x in reglob('applications/examples')] + \
-          [x for x in reglob('applications/welcome')] + \
-          [x for x in reglob('applications/admin')],
+      'NEWINSTALL',
+      'ABOUT',
+      'LICENSE',
+      'VERSION',
+      ] +
+      [x for x in reglob('applications/examples')] +
+      [x for x in reglob('applications/welcome')] +
+      [x for x in reglob('applications/admin')],
       options={'py2app': {
-            'argv_emulation': True,
-            'includes': base_modules,
-            'packages': contributed_modules,
-            }},
+               'argv_emulation': True,
+               'includes': base_modules,
+               'packages': contributed_modules,
+               }},
       setup_requires=['py2app'])
-
-
-
-
-

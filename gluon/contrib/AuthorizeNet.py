@@ -21,6 +21,7 @@ import urllib
 
 _known_tuple_types = {}
 
+
 class NamedTupleBase(tuple):
     """Base class for named tuples with the __new__ operator set, named tuples
        yielded by the namedtuple() function will subclass this and add
@@ -29,13 +30,14 @@ class NamedTupleBase(tuple):
         """Create a new instance of this fielded tuple"""
         # May need to unpack named field values here
         if kws:
-            values = list(args) + [None]*(len(cls._fields) - len(args))
+            values = list(args) + [None] * (len(cls._fields) - len(args))
             fields = dict((val, idx) for idx, val in enumerate(cls._fields))
             for kw, val in kws.iteritems():
                 assert kw in kws, "%r not in field list" % kw
                 values[fields[kw]] = val
             args = tuple(values)
         return tuple.__new__(cls, args)
+
 
 def namedtuple(typename, fieldnames):
     """
@@ -75,24 +77,26 @@ def namedtuple(typename, fieldnames):
     # Done
     return new_tuple_type
 
+
 class AIM:
 
     class AIMError(Exception):
         def __init__(self, value):
             self.parameter = value
+
         def __str__(self):
             return str(self.parameter)
 
     def __init__(self, login, transkey, testmode=False):
-        if str(login).strip() == '' or login == None:
+        if str(login).strip() == '' or login is None:
             raise AIM.AIMError('No login name provided')
-        if str(transkey).strip() == '' or transkey == None:
+        if str(transkey).strip() == '' or transkey is None:
             raise AIM.AIMError('No transaction key provided')
         if testmode != True and testmode != False:
             raise AIM.AIMError('Invalid value for testmode. Must be True or False. "{0}" given.'.format(testmode))
 
         self.testmode = testmode
-        self.proxy = None;
+        self.proxy = None
         self.delimiter = '|'
         self.results = []
         self.error = True
@@ -117,8 +121,9 @@ class AIM:
         else:
             url = 'https://secure.authorize.net/gateway/transact.dll'
 
-        if self.proxy == None:
-            self.results += str(urllib.urlopen(url, encoded_args).read()).split(self.delimiter)
+        if self.proxy is None:
+            self.results += str(urllib.urlopen(
+                url, encoded_args).read()).split(self.delimiter)
         else:
             opener = urllib.FancyURLopener(self.proxy)
             opened = opener.open(url, encoded_args)
@@ -147,36 +152,37 @@ class AIM:
             raise AIM.AIMError(self.response.ResponseText)
 
     def setTransaction(self, creditcard, expiration, total, cvv=None, tax=None, invoice=None):
-        if str(creditcard).strip() == '' or creditcard == None:
+        if str(creditcard).strip() == '' or creditcard is None:
             raise AIM.AIMError('No credit card number passed to setTransaction(): {0}'.format(creditcard))
-        if str(expiration).strip() == '' or expiration == None:
+        if str(expiration).strip() == '' or expiration is None:
             raise AIM.AIMError('No expiration number to setTransaction(): {0}'.format(expiration))
-        if str(total).strip() == '' or total == None:
+        if str(total).strip() == '' or total is None:
             raise AIM.AIMError('No total amount passed to setTransaction(): {0}'.format(total))
 
         self.setParameter('x_card_num', creditcard)
         self.setParameter('x_exp_date', expiration)
         self.setParameter('x_amount', total)
-        if cvv != None:
+        if cvv is not None:
             self.setParameter('x_card_code', cvv)
-        if tax != None:
+        if tax is not None:
             self.setParameter('x_tax', tax)
-        if invoice != None:
+        if invoice is not None:
             self.setParameter('x_invoice_num', invoice)
 
     def setTransactionType(self, transtype=None):
-        types = ['AUTH_CAPTURE', 'AUTH_ONLY', 'PRIOR_AUTH_CAPTURE', 'CREDIT', 'CAPTURE_ONLY', 'VOID']
+        types = ['AUTH_CAPTURE', 'AUTH_ONLY', 'PRIOR_AUTH_CAPTURE',
+                 'CREDIT', 'CAPTURE_ONLY', 'VOID']
         if transtype.upper() not in types:
             raise AIM.AIMError('Incorrect Transaction Type passed to setTransactionType(): {0}'.format(transtype))
         self.setParameter('x_type', transtype.upper())
 
     def setProxy(self, proxy=None):
-        if str(proxy).strip() == '' or proxy == None:
+        if str(proxy).strip() == '' or proxy is None:
             raise AIM.AIMError('No proxy passed to setProxy()')
         self.proxy = {'http': str(proxy).strip()}
 
     def setParameter(self, key=None, value=None):
-        if key != None and value != None and str(key).strip() != '' and str(value).strip() != '':
+        if key is not None and value is not None and str(key).strip() != '' and str(value).strip() != '':
             self.parameters[key] = str(value).strip()
         else:
             raise AIM.AIMError('Incorrect parameters passed to setParameter(): {0}:{1}'.format(key, value))
@@ -194,16 +200,18 @@ class AIM:
         responses = ['', 'Approved', 'Declined', 'Error']
         return responses[int(self.results[0])]
 
-def process(creditcard,expiration,total,cvv=None,tax=None,invoice=None,
-            login='cnpdev4289', transkey='SR2P8g4jdEn7vFLQ',testmode=True):
-    payment = AIM(login,transkey,testmode)
-    expiration = expiration.replace('/','')
+
+def process(creditcard, expiration, total, cvv=None, tax=None, invoice=None,
+            login='cnpdev4289', transkey='SR2P8g4jdEn7vFLQ', testmode=True):
+    payment = AIM(login, transkey, testmode)
+    expiration = expiration.replace('/', '')
     payment.setTransaction(creditcard, expiration, total, cvv, tax, invoice)
     try:
         payment.process()
         return payment.isApproved()
     except AIM.AIMError:
         return False
+
 
 def test():
     import socket
@@ -215,12 +223,14 @@ def test():
     total = '1.00'
     cvv = '123'
     tax = '0.00'
-    invoice = str(time())[4:10] # get a random invoice number
+    invoice = str(time())[4:10]  # get a random invoice number
 
     try:
         payment = AIM('cnpdev4289', 'SR2P8g4jdEn7vFLQ', True)
-        payment.setTransaction(creditcard, expiration, total, cvv, tax, invoice)
-        payment.setParameter('x_duplicate_window', 180) # three minutes duplicate windows
+        payment.setTransaction(
+            creditcard, expiration, total, cvv, tax, invoice)
+        payment.setParameter(
+            'x_duplicate_window', 180)  # three minutes duplicate windows
         payment.setParameter('x_cust_id', '1324')       # customer ID
         payment.setParameter('x_first_name', 'John')
         payment.setParameter('x_last_name', 'Conde')
@@ -232,7 +242,8 @@ def test():
         payment.setParameter('x_country', 'US')
         payment.setParameter('x_phone', '800-555-1234')
         payment.setParameter('x_description', 'Test Transaction')
-        payment.setParameter('x_customer_ip', socket.gethostbyname(socket.gethostname()))
+        payment.setParameter(
+            'x_customer_ip', socket.gethostbyname(socket.gethostname()))
         payment.setParameter('x_email', 'john@example.com')
         payment.setParameter('x_email_customer', False)
         payment.process()
@@ -251,16 +262,9 @@ def test():
     except AIM.AIMError, e:
         print "Exception thrown:", e
         print 'An error occured'
-    print 'approved',payment.isApproved()
-    print 'declined',payment.isDeclined()
-    print 'error',payment.isError()
+    print 'approved', payment.isApproved()
+    print 'declined', payment.isDeclined()
+    print 'error', payment.isError()
 
-if __name__=='__main__':
+if __name__ == '__main__':
     test()
-
-
-
-
-
-
-

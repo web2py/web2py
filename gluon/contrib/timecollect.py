@@ -3,16 +3,20 @@ import time
 from collections import namedtuple
 Score = namedtuple('Score', ['tag', 'stamp'])
 
+
 class TimeCollector(object):
     def __init__(self):
         '''The first time stamp is created here'''
-        self.scores = [Score(tag='start',stamp=time.clock())]
+        self.scores = [Score(tag='start', stamp=time.clock())]
+
     def addStamp(self, description):
         '''Adds a new time stamp, with a description.'''
         self.scores.append(Score(tag=description, stamp=time.clock()))
+
     def _stampDelta(self, index1, index2):
         '''Private utility function to clean up this common calculation.'''
         return self.scores[index1].stamp - self.scores[index2].stamp
+
     def getReportItems(self, orderByCost=True):
         '''Returns a list of dicts. Each dict has
             start (ms),
@@ -25,23 +29,24 @@ class TimeCollector(object):
         total_time = self._stampDelta(-1, 0)
         data = []
         for i in range(1, len(self.scores)):
-            delta = self._stampDelta(i, i-1)
+            delta = self._stampDelta(i, i - 1)
             if abs(total_time) < 1e-6:
                 perc = 0
             else:
                 perc = delta / total_time * 100
             data.append(
                 dict(
-                    start = self._stampDelta(i-1, 0) * 1000,
-                    end = self._stampDelta(i, 0) * 1000,
-                    delta = delta * 1000,
-                    perc = perc,
-                    tag = self.scores[i].tag
-                    )
+                    start=self._stampDelta(i - 1, 0) * 1000,
+                    end=self._stampDelta(i, 0) * 1000,
+                    delta=delta * 1000,
+                    perc=perc,
+                    tag=self.scores[i].tag
                 )
+            )
         if orderByCost:
             data.sort(key=lambda x: x['perc'], reverse=True)
         return data
+
     def getReportLines(self, orderByCost=True):
         '''Produces a report of logged time-stamps as a list of strings.
         if orderByCost is False, then the order of the stamps is
@@ -51,14 +56,16 @@ class TimeCollector(object):
         headerData = ('Start(ms)', 'End(ms)', 'Delta(ms)', 'Time Cost',
                       'Description')
         bodyTemplate = '%(start)10.0f | %(end)10.0f | %(delta)10.0f |' \
-          + ' %(perc)10.0f%% | %(tag)-30s'
+            + ' %(perc)10.0f%% | %(tag)-30s'
         return [headerTemplate % headerData] + [bodyTemplate % d for d in data]
+
     def getReportText(self, **kwargs):
         return '\n'.join(self.getReportLines(**kwargs))
-    def restart(self):
-        self.scores = [Score(tag='start',stamp=time.clock())]
 
-if __name__=='__main__':
+    def restart(self):
+        self.scores = [Score(tag='start', stamp=time.clock())]
+
+if __name__ == '__main__':
     print('')
     print('Testing:')
     print('')
@@ -87,12 +94,9 @@ if __name__=='__main__':
     print(t.getReportText())
     t.restart()
     for y in range(1, 200, 20):
-        x = [i for i in range(10000)*y]
+        x = [i for i in range(10000) * y]
         t.addStamp('Iteration when y = ' + str(y))
 
     print('')
     # You can turn off ordering of results
     print(t.getReportText(orderByCost=False))
-
-
-

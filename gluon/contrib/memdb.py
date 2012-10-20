@@ -44,22 +44,21 @@ SQL_DIALECTS = {'memcache': {
     'is not null': 'IS NOT NULL',
     'extract': None,
     'left join': None,
-    }}
+}}
 
 
 def cleanup(text):
     if re.compile('[^0-9a-zA-Z_]').findall(text):
-        raise SyntaxError, \
-            'Can\'t cleanup \'%s\': only [0-9a-zA-Z_] allowed in table and field names' % text
+        raise SyntaxError('Can\'t cleanup \'%s\': only [0-9a-zA-Z_] allowed in table and field names' % text)
     return text
 
 
 def assert_filter_fields(*fields):
     for field in fields:
         if isinstance(field, (Field, Expression)) and field.type\
-             in ['text', 'blob']:
-            raise SyntaxError, 'AppEngine does not index by: %s'\
-                 % field.type
+                in ['text', 'blob']:
+            raise SyntaxError('AppEngine does not index by: %s'
+                              % field.type)
 
 
 def dateobj_to_datetime(object):
@@ -78,7 +77,7 @@ def dateobj_to_datetime(object):
             object.minute,
             object.second,
             object.microsecond,
-            )
+        )
     return object
 
 
@@ -96,7 +95,7 @@ def sqlhtml_validators(field_type, length):
         'time': validators.IS_TIME(),
         'datetime': validators.IS_DATETIME(),
         'reference': validators.IS_INT_IN_RANGE(0, 1e100),
-        }
+    }
     try:
         return v[field_type[:9]]
     except KeyError:
@@ -114,7 +113,8 @@ class DALStorage(dict):
 
     def __setattr__(self, key, value):
         if key in self:
-            raise SyntaxError, 'Object \'%s\'exists and cannot be redefined' % key
+            raise SyntaxError(
+                'Object \'%s\'exists and cannot be redefined' % key)
         self[key] = value
 
     def __repr__(self):
@@ -151,14 +151,14 @@ class MEMDB(DALStorage):
         tablename,
         *fields,
         **args
-        ):
+    ):
         tablename = cleanup(tablename)
         if tablename in dir(self) or tablename[0] == '_':
-            raise SyntaxError, 'invalid table name: %s' % tablename
+            raise SyntaxError('invalid table name: %s' % tablename)
         if not tablename in self.tables:
             self.tables.append(tablename)
         else:
-            raise SyntaxError, 'table already defined: %s' % tablename
+            raise SyntaxError('table already defined: %s' % tablename)
         t = self[tablename] = Table(self, tablename, *fields)
         t._create()
         return t
@@ -190,7 +190,7 @@ class Table(DALStorage):
         db,
         tablename,
         *fields
-        ):
+    ):
         self._db = db
         self._tablename = tablename
         self.fields = SQLCallableList()
@@ -219,24 +219,24 @@ class Table(DALStorage):
             if field.type[:9] == 'reference':
                 referenced = field.type[10:].strip()
                 if not referenced:
-                    raise SyntaxError, \
-                        'Table %s: reference \'%s\' to nothing!' % (self._tablename, k)
+                    raise SyntaxError('Table %s: reference \'%s\' to nothing!' % (
+                        self._tablename, k))
                 if not referenced in self._db:
-                    raise SyntaxError, \
-                        'Table: table %s does not exist' % referenced
+                    raise SyntaxError(
+                        'Table: table %s does not exist' % referenced)
                 referee = self._db[referenced]
                 ftype = \
                     self._db._translator[field.type[:9]](
                         self._db[referenced]._tableobj)
                 if self._tablename in referee.fields:  # ## THIS IS OK
-                    raise SyntaxError, \
-                        'Field: table \'%s\' has same name as a field ' \
-                        'in referenced table \'%s\'' % (self._tablename, referenced)
+                    raise SyntaxError('Field: table \'%s\' has same name as a field '
+                                      'in referenced table \'%s\'' % (
+                                          self._tablename, referenced))
                 self._db[referenced]._referenced_by.append((self._tablename,
-                        field.name))
+                                                            field.name))
             elif not field.type in self._db._translator\
-                 or not self._db._translator[field.type]:
-                raise SyntaxError, 'Field: unkown field type %s' % field.type
+                    or not self._db._translator[field.type]:
+                raise SyntaxError('Field: unkown field type %s' % field.type)
         self._tableobj = self._db.client
         return None
 
@@ -269,11 +269,11 @@ class Table(DALStorage):
     def update(self, id, **fields):
         for field in fields:
             if not field in fields and self[field].default\
-                 != None:
+                    is not None:
                 fields[field] = self[field].default
             if field in fields:
                 fields[field] = obj_represent(fields[field],
-                        self[field].type, self._db)
+                                              self[field].type, self._db)
         return self._tableobj.set(self._id_to_key(id), fields)
 
     def delete(self, id):
@@ -293,7 +293,7 @@ class Table(DALStorage):
             if self._tableobj.set(shard_id, '0'):
                 id = 0
             else:
-                raise Exception, 'cannot set memcache'
+                raise Exception('cannot set memcache')
         return long(str(shard) + str(id))
 
     def __str__(self):
@@ -307,7 +307,7 @@ class Expression(object):
         name,
         type='string',
         db=None,
-        ):
+    ):
         (self.name, self.type, self._db) = (name, type, db)
 
     def __str__(self):
@@ -393,11 +393,11 @@ class Field(Expression):
         notnull=False,
         unique=False,
         uploadfield=True,
-        ):
+    ):
 
         self.name = cleanup(fieldname)
         if fieldname in dir(Table) or fieldname[0] == '_':
-            raise SyntaxError, 'Field: invalid field name: %s' % fieldname
+            raise SyntaxError('Field: invalid field name: %s' % fieldname)
         if isinstance(type, Table):
             type = 'reference ' + type._tablename
         if not length:
@@ -437,9 +437,9 @@ MEMDB.Field = Field  # ## required by gluon/globals.py session.connect
 
 
 def obj_represent(object, fieldtype, db):
-    if object != None:
+    if object is not None:
         if fieldtype == 'date' and not isinstance(object,
-                datetime.date):
+                                                  datetime.date):
             (y, m, d) = [int(x) for x in str(object).strip().split('-')]
             object = datetime.date(y, m, d)
         elif fieldtype == 'time' and not isinstance(object, datetime.time):
@@ -450,7 +450,7 @@ def obj_represent(object, fieldtype, db):
                 (h, mi, s) = time_items + [0]
             object = datetime.time(h, mi, s)
         elif fieldtype == 'datetime' and not isinstance(object,
-                datetime.datetime):
+                                                        datetime.datetime):
             (y, m, d) = [int(x) for x in
                          str(object)[:10].strip().split('-')]
             time_items = [int(x) for x in
@@ -466,7 +466,7 @@ def obj_represent(object, fieldtype, db):
                 h,
                 mi,
                 s,
-                )
+            )
         elif fieldtype == 'integer' and not isinstance(object, long):
             object = long(object)
 
@@ -496,10 +496,10 @@ class Query(object):
         left,
         op=None,
         right=None,
-        ):
+    ):
         if isinstance(right, (Field, Expression)):
-            raise SyntaxError, \
-                'Query: right side of filter must be a value or entity'
+            raise SyntaxError(
+                'Query: right side of filter must be a value or entity')
         if isinstance(left, Field) and left.name == 'id':
             if op == '=':
                 self.get_one = \
@@ -507,8 +507,8 @@ class Query(object):
                                    id=long(right))
                 return
             else:
-                raise SyntaxError, 'only equality by id is supported'
-        raise SyntaxError, 'not supported'
+                raise SyntaxError('only equality by id is supported')
+        raise SyntaxError('not supported')
 
     def __str__(self):
         return str(self.left)
@@ -539,7 +539,7 @@ class Set(object):
             self.where = where
             self._tables.insert(0, where.get_all)
         elif hasattr(where, 'get_one') and isinstance(where.get_one,
-                QueryException):
+                                                      QueryException):
             self.where = where.get_one
         else:
 
@@ -553,9 +553,8 @@ class Set(object):
 
     def __call__(self, where):
         if isinstance(self.where, QueryException) or isinstance(where,
-                QueryException):
-            raise SyntaxError, \
-                'neither self.where nor where can be a QueryException instance'
+                                                                QueryException):
+            raise SyntaxError('neither self.where nor where can be a QueryException instance')
         if self.where:
             return Set(self._db, self.where & where)
         else:
@@ -564,9 +563,9 @@ class Set(object):
     def _get_table_or_raise(self):
         tablenames = list(set(self._tables))  # unique
         if len(tablenames) < 1:
-            raise SyntaxError, 'Set: no tables selected'
+            raise SyntaxError('Set: no tables selected')
         if len(tablenames) > 1:
-            raise SyntaxError, 'Set: no join in appengine'
+            raise SyntaxError('Set: no join in appengine')
         return self._db[tablenames[0]]._tableobj
 
     def _getitem_exception(self):
@@ -597,7 +596,7 @@ class Set(object):
         if isinstance(self.where, QueryException):
             return self._select_except()
         else:
-            raise SyntaxError, 'select arguments not supported'
+            raise SyntaxError('select arguments not supported')
 
     def count(self):
         return len(self.select())
@@ -609,7 +608,7 @@ class Set(object):
                 return
             self._db[tablename].delete(id)
         else:
-            raise Exception, 'deletion not implemented'
+            raise Exception('deletion not implemented')
 
     def update(self, **update_fields):
         if isinstance(self.where, QueryException):
@@ -620,7 +619,7 @@ class Set(object):
                 setattr(item, key, value)
             self._db[tablename].update(id, **item)
         else:
-            raise Exception, 'update not implemented'
+            raise Exception('update not implemented')
 
 
 def update_record(
@@ -628,7 +627,7 @@ def update_record(
     s,
     id,
     a,
-    ):
+):
     item = s.get(id)
     for (key, value) in a.items():
         t[key] = value
@@ -650,7 +649,7 @@ class Rows(object):
         db,
         response,
         *colnames
-        ):
+    ):
         self._db = db
         self.colnames = colnames
         self.response = response
@@ -660,9 +659,9 @@ class Rows(object):
 
     def __getitem__(self, i):
         if i >= len(self.response) or i < 0:
-            raise SyntaxError, 'Rows: no such row: %i' % i
+            raise SyntaxError('Rows: no such row: %i' % i)
         if len(self.response[0]) != len(self.colnames):
-            raise SyntaxError, 'Rows: internal error'
+            raise SyntaxError('Rows: internal error')
         row = DALStorage()
         for j in xrange(len(self.colnames)):
             value = self.response[i][j]
@@ -684,7 +683,7 @@ class Rows(object):
                 referee = field.type[10:].strip()
                 rid = value
                 row[tablename][fieldname] = rid
-            elif field.type == 'boolean' and value != None:
+            elif field.type == 'boolean' and value is not None:
 
                 # row[tablename][fieldname]=Set(self._db[referee].id==rid)
 
@@ -692,13 +691,13 @@ class Rows(object):
                     row[tablename][fieldname] = True
                 else:
                     row[tablename][fieldname] = False
-            elif field.type == 'date' and value != None\
-                 and not isinstance(value, datetime.date):
+            elif field.type == 'date' and value is not None\
+                    and not isinstance(value, datetime.date):
                 (y, m, d) = [int(x) for x in
                              str(value).strip().split('-')]
                 row[tablename][fieldname] = datetime.date(y, m, d)
-            elif field.type == 'time' and value != None\
-                 and not isinstance(value, datetime.time):
+            elif field.type == 'time' and value is not None\
+                    and not isinstance(value, datetime.time):
                 time_items = [int(x) for x in
                               str(value).strip().split(':')[:3]]
                 if len(time_items) == 3:
@@ -706,8 +705,8 @@ class Rows(object):
                 else:
                     (h, mi, s) = time_items + [0]
                 row[tablename][fieldname] = datetime.time(h, mi, s)
-            elif field.type == 'datetime' and value != None\
-                 and not isinstance(value, datetime.datetime):
+            elif field.type == 'datetime' and value is not None\
+                    and not isinstance(value, datetime.datetime):
                 (y, m, d) = [int(x) for x in
                              str(value)[:10].strip().split('-')]
                 time_items = [int(x) for x in
@@ -723,19 +722,19 @@ class Rows(object):
                     h,
                     mi,
                     s,
-                    )
+                )
             else:
                 row[tablename][fieldname] = value
             if fieldname == 'id':
                 id = row[tablename].id
                 row[tablename].update_record = lambda t = row[tablename], \
                     s = self._db[tablename], id = id, **a: update_record(t,
-                        s, id, a)
+                                                                         s, id, a)
                 for (referee_table, referee_name) in \
-                    table._referenced_by:
+                        table._referenced_by:
                     s = self._db[referee_table][referee_name]
                     row[tablename][referee_table] = Set(self._db, s
-                             == id)
+                                                        == id)
         if len(row.keys()) == 1:
             return row[row.keys()[0]]
         return row
@@ -905,10 +904,3 @@ SQLStorage = DALStorage
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-
-
-
-
-
-
-

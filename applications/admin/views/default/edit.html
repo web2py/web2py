@@ -134,7 +134,7 @@ jQuery(document).ready(function(){
     <textarea style="width: auto; height:400px;direction:ltr;" rows="58" cols="100" -amy-enabled="true" id="body" name="data">{{=data}}</textarea>
     <script>window.eamy = eamy;</script>
     {{elif TEXT_EDITOR == 'codemirror':}}
-    <textarea style="width: auto; height:400px;direction:ltr;" id="body" name="data">{{=data}}</textarea>
+    <textarea style="width: auto; height:auto; direction:ltr;" id="body" name="data">{{=data}}</textarea>
     <script>
       function isFullScreen(instance) {
           return /\bCodeMirror-fullscreen\b/.test(instance.getWrapperElement().className);
@@ -197,6 +197,7 @@ jQuery(document).ready(function(){
          document.getElementById("body"),cm_opts);
       var hlLine = editor.setLineClass(0, "activeline");
       window.mirror = editor;
+      jQuery(function(){jQuery('.CodeMirror-scroll').css("height","auto").css("overflow-x","auto");});
     </script>
     {{elif TEXT_EDITOR == 'ace':}}
     <div id="editor" style="height: 500px; width: auto; position: relative">{{=data}}</div>

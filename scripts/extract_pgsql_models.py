@@ -46,19 +46,21 @@ KWARGS = ('type', 'length', 'default', 'required', 'ondelete',
 import sys
 
 
-def query(conn, sql,*args):
+def query(conn, sql, *args):
     "Execute a SQL query and return rows as a list of dicts"
     cur = conn.cursor()
     ret = []
     try:
-        if DEBUG: print >> sys.stderr, "QUERY: ", sql % args
+        if DEBUG:
+            print >> sys.stderr, "QUERY: ", sql % args
         cur.execute(sql, args)
         for row in cur:
             dic = {}
             for i, value in enumerate(row):
                 field = cur.description[i][0]
                 dic[field] = value
-            if DEBUG: print >> sys.stderr, "RET: ", dic
+            if DEBUG:
+                print >> sys.stderr, "RET: ", dic
             ret.append(dic)
         return ret
     finally:
@@ -75,7 +77,8 @@ def get_tables(conn, schema=SCHEMA):
 
 def get_fields(conn, table):
     "Retrieve field list for a given table"
-    if DEBUG: print >> sys.stderr, "Processing TABLE", table
+    if DEBUG:
+        print >> sys.stderr, "Processing TABLE", table
     rows = query(conn, """
         SELECT column_name, data_type,
             is_nullable,
@@ -90,13 +93,13 @@ def get_fields(conn, table):
 
 def define_field(conn, table, field, pks):
     "Determine field type, default value, references, etc."
-    f={}
+    f = {}
     ref = references(conn, table, field['column_name'])
     if ref:
         f.update(ref)
     elif field['column_default'] and \
-         field['column_default'].startswith("nextval") and \
-         field['column_name'] in pks:
+        field['column_default'].startswith("nextval") and \
+            field['column_name'] in pks:
         # postgresql sequence (SERIAL) and primary key!
         f['type'] = "'id'"
     elif field['data_type'].startswith('character'):
@@ -109,7 +112,7 @@ def define_field(conn, table, field, pks):
         f['type'] = "'boolean'"
     elif field['data_type'] in ('integer', 'smallint', 'bigint'):
         f['type'] = "'integer'"
-    elif field['data_type'] in ('double precision', 'real' ):
+    elif field['data_type'] in ('double precision', 'real'):
         f['type'] = "'double'"
     elif field['data_type'] in ('timestamp', 'timestamp without time zone'):
         f['type'] = "'datetime'"
@@ -124,17 +127,17 @@ def define_field(conn, table, field, pks):
     elif field['data_type'] in ('bytea', ):
         f['type'] = "'blob'"
     elif field['data_type'] in ('point', 'lseg', 'polygon', 'unknown', 'USER-DEFINED'):
-        f['type'] = "" # unsupported?
+        f['type'] = ""  # unsupported?
     else:
         raise RuntimeError("Data Type not supported: %s " % str(field))
 
     try:
         if field['column_default']:
-            if field['column_default']=="now()":
+            if field['column_default'] == "now()":
                 d = "request.now"
-            elif field['column_default']=="true":
+            elif field['column_default'] == "true":
                 d = "True"
-            elif field['column_default']=="false":
+            elif field['column_default'] == "false":
                 d = "False"
             else:
                 d = repr(eval(field['column_default']))
@@ -142,7 +145,8 @@ def define_field(conn, table, field, pks):
     except (ValueError, SyntaxError):
         pass
     except Exception, e:
-        raise RuntimeError("Default unsupported '%s'" % field['column_default'])
+        raise RuntimeError(
+            "Default unsupported '%s'" % field['column_default'])
 
     if not field['is_nullable']:
         f['notnull'] = "True"
@@ -203,40 +207,40 @@ def references(conn, table, field):
           AND information_schema.key_column_usage.column_name=%s
           AND information_schema.table_constraints.constraint_type='FOREIGN KEY'
           ;""", table, field)
-    if len(rows1)==1:
+    if len(rows1) == 1:
         rows2 = query(conn, """
             SELECT table_name, column_name, *
             FROM information_schema.constraint_column_usage
             WHERE constraint_name=%s
             """, rows1[0]['constraint_name'])
         row = None
-        if len(rows2)>1:
-            row = rows2[int(rows1[0]['ordinal_position'])-1]
+        if len(rows2) > 1:
+            row = rows2[int(rows1[0]['ordinal_position']) - 1]
             keyed = True
-        if len(rows2)==1:
+        if len(rows2) == 1:
             row = rows2[0]
             keyed = False
         if row:
-            if keyed: # THIS IS BAD, DON'T MIX "id" and primarykey!!!
+            if keyed:  # THIS IS BAD, DON'T MIX "id" and primarykey!!!
                 ref = {'type': "'reference %s.%s'" % (row['table_name'],
                                                       row['column_name'])}
             else:
                 ref = {'type': "'reference %s'" % (row['table_name'],)}
-            if rows1[0]['delete_rule']!="NO ACTION":
+            if rows1[0]['delete_rule'] != "NO ACTION":
                 ref['ondelete'] = repr(rows1[0]['delete_rule'])
             return ref
         elif rows2:
             raise RuntimeError("Unsupported foreign key reference: %s" %
-                                str(rows2))
+                               str(rows2))
 
     elif rows1:
         raise RuntimeError("Unsupported referential constraint: %s" %
-                             str(rows1))
+                           str(rows1))
 
 
 def define_table(conn, table):
     "Output single table definition"
-    fields =  get_fields(conn, table)
+    fields = get_fields(conn, table)
     pks = primarykeys(conn, table)
     print "db.define_table('%s'," % (table, )
     for field in fields:
@@ -244,11 +248,11 @@ def define_table(conn, table):
         fdef = define_field(conn, table, field, pks)
         if fname not in pks and is_unique(conn, table, field):
             fdef['unique'] = "True"
-        if fdef['type']=="'id'" and fname in pks:
+        if fdef['type'] == "'id'" and fname in pks:
             pks.pop(pks.index(fname))
         print "    Field('%s', %s)," % (fname,
-                    ', '.join(["%s=%s" % (k, fdef[k]) for k in KWARGS
-                                            if k in fdef and fdef[k]]))
+                                        ', '.join(["%s=%s" % (k, fdef[k]) for k in KWARGS
+                                                   if k in fdef and fdef[k]]))
     if pks:
         print "    primarykey=[%s]," % ", ".join(["'%s'" % pk for pk in pks])
     print     "    migrate=migrate)"
@@ -280,5 +284,3 @@ if __name__ == "__main__":
                                )
         # Start model code generation:
         define_db(cnn, db, host, port, user, passwd)
-
-

@@ -700,7 +700,7 @@ CONTENT_TYPE = {
     '.zabw': 'application/x-abiword',
     '.zip': 'application/zip',
     '.zoo': 'application/x-zoo',
-    }
+}
 
 
 def contenttype(filename, default='text/plain'):
@@ -709,18 +709,11 @@ def contenttype(filename, default='text/plain'):
     """
 
     i = filename.rfind('.')
-    if i>=0:
-        default = CONTENT_TYPE.get(filename[i:].lower(),default)
+    if i >= 0:
+        default = CONTENT_TYPE.get(filename[i:].lower(), default)
         j = filename.rfind('.', 0, i)
-        if j>=0:
-            default = CONTENT_TYPE.get(filename[j:].lower(),default)
+        if j >= 0:
+            default = CONTENT_TYPE.get(filename[j:].lower(), default)
     if default.startswith('text/'):
         default += '; charset=utf-8'
     return default
-
-
-
-
-
-
-

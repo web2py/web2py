@@ -62,16 +62,16 @@ if python_version == '2.6':
 
 
 setup(
-  console=['web2py.py'],
-  windows=[{'script':'web2py.py',
-    'dest_base':'web2py_no_console' # MUST NOT be just 'web2py' otherwise it overrides the standard web2py.exe
-    }],
-  name="web2py",
-  version=web2py_version,
-  description="web2py web framework",
-  author="Massimo DiPierro",
-  license = "LGPL v3",
-  data_files=[
+    console=['web2py.py'],
+    windows=[{'script':'web2py.py',
+              'dest_base':'web2py_no_console'  # MUST NOT be just 'web2py' otherwise it overrides the standard web2py.exe
+              }],
+    name="web2py",
+    version=web2py_version,
+    description="web2py web framework",
+    author="Massimo DiPierro",
+    license="LGPL v3",
+    data_files=[
         'ABOUT',
         'LICENSE',
         'VERSION',
@@ -80,20 +80,21 @@ setup(
         'options_std.py',
         'app.example.yaml',
         'queue.example.yaml'
-        ],
-  options={'py2exe': {
-    'packages': contributed_modules,
-    'includes': base_modules,
-    }},
-  )
+    ],
+    options={'py2exe': {
+             'packages': contributed_modules,
+             'includes': base_modules,
+             }},
+)
 
 print "web2py binary successfully built"
 
+
 def copy_folders(source, destination):
     """Copy files & folders from source to destination (within dist/)"""
-    if os.path.exists(os.path.join('dist',destination)):
-        shutil.rmtree(os.path.join('dist',destination))
-    shutil.copytree(os.path.join(source), os.path.join('dist',destination))
+    if os.path.exists(os.path.join('dist', destination)):
+        shutil.rmtree(os.path.join('dist', destination))
+    shutil.copytree(os.path.join(source), os.path.join('dist', destination))
 
 #should we remove Windows OS dlls user is unlikely to be able to distribute
 
@@ -101,15 +102,16 @@ if remove_msft_dlls:
     print "Deleted Microsoft files not licensed for open source distribution"
     print "You are still responsible for making sure you have the rights to distribute any other included files!"
     #delete the API-MS-Win-Core DLLs
-    for f in glob ('dist/API-MS-Win-*.dll'):
-        os.unlink (f)
+    for f in glob('dist/API-MS-Win-*.dll'):
+        os.unlink(f)
     #then delete some other files belonging to Microsoft
-    other_ms_files = ['KERNELBASE.dll', 'MPR.dll', 'MSWSOCK.dll', 'POWRPROF.dll']
+    other_ms_files = ['KERNELBASE.dll', 'MPR.dll', 'MSWSOCK.dll',
+                      'POWRPROF.dll']
     for f in other_ms_files:
         try:
-            os.unlink(os.path.join('dist',f))
+            os.unlink(os.path.join('dist', f))
         except:
-            print "unable to delete dist/"+f
+            print "unable to delete dist/" + f
             #sys.exit(1)
 
 
@@ -144,29 +146,32 @@ else:
     pass
 
 
-
 #borrowed from http://bytes.com/topic/python/answers/851018-how-zip-directory-python-using-zipfile
-def recursive_zip(zipf, directory, folder = ""):
-   for item in os.listdir(directory):
-      if os.path.isfile(os.path.join(directory, item)):
-         zipf.write(os.path.join(directory, item), folder + os.sep + item)
-      elif os.path.isdir(os.path.join(directory, item)):
-         recursive_zip(zipf, os.path.join(directory, item), folder + os.sep + item)
+def recursive_zip(zipf, directory, folder=""):
+    for item in os.listdir(directory):
+        if os.path.isfile(os.path.join(directory, item)):
+            zipf.write(os.path.join(directory, item), folder + os.sep + item)
+        elif os.path.isdir(os.path.join(directory, item)):
+            recursive_zip(
+                zipf, os.path.join(directory, item), folder + os.sep + item)
 
 #should we create a zip file of the build?
 
 if make_zip:
     #to keep consistent with how official web2py windows zip file is setup,
     #create a web2py folder & copy dist's files into it
-    shutil.copytree('dist','zip_temp/web2py')
+    shutil.copytree('dist', 'zip_temp/web2py')
     #create zip file
     #use filename specified via command line
-    zipf = zipfile.ZipFile(zip_filename+".zip", "w", compression=zipfile.ZIP_DEFLATED )
-    path = 'zip_temp' #just temp so the web2py directory is included in our zip file
-    recursive_zip(zipf, path) #leave the first folder as None, as path is root.
+    zipf = zipfile.ZipFile(
+        zip_filename + ".zip", "w", compression=zipfile.ZIP_DEFLATED)
+    path = 'zip_temp'  # just temp so the web2py directory is included in our zip file
+    recursive_zip(
+        zipf, path)  # leave the first folder as None, as path is root.
     zipf.close()
     shutil.rmtree('zip_temp')
-    print "Your Windows binary version of web2py can be found in "+zip_filename+".zip"
+    print "Your Windows binary version of web2py can be found in " + \
+        zip_filename + ".zip"
     print "You may extract the archive anywhere and then run web2py/web2py.exe"
 
 #should py2exe build files be removed?
@@ -181,9 +186,4 @@ if not make_zip and not remove_build_files:
     print "Your Windows binary & associated files can also be found in /dist"
 
 print "Finished!"
-print "Enjoy web2py " +web2py_version_line
-
-
-
-
-
+print "Enjoy web2py " + web2py_version_line

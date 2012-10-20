@@ -188,18 +188,23 @@ def ldap_auth(server='ldap', port=None,
                      str(custom_scope), str(manage_groups)))
         if manage_user:
             if user_firstname_attrib.count(':') > 0:
-                (user_firstname_attrib, user_firstname_part) = user_firstname_attrib.split(':', 1)
+                (user_firstname_attrib,
+                 user_firstname_part) = user_firstname_attrib.split(':', 1)
                 user_firstname_part = (int(user_firstname_part) - 1)
             else:
                 user_firstname_part = None
             if user_lastname_attrib.count(':') > 0:
-                (user_lastname_attrib, user_lastname_part) = user_lastname_attrib.split(':', 1)
+                (user_lastname_attrib,
+                 user_lastname_part) = user_lastname_attrib.split(':', 1)
                 user_lastname_part = (int(user_lastname_part) - 1)
             else:
                 user_lastname_part = None
-            user_firstname_attrib = ldap.filter.escape_filter_chars(user_firstname_attrib)
-            user_lastname_attrib = ldap.filter.escape_filter_chars(user_lastname_attrib)
-            user_mail_attrib = ldap.filter.escape_filter_chars(user_mail_attrib)
+            user_firstname_attrib = ldap.filter.escape_filter_chars(
+                user_firstname_attrib)
+            user_lastname_attrib = ldap.filter.escape_filter_chars(
+                user_lastname_attrib)
+            user_mail_attrib = ldap.filter.escape_filter_chars(
+                user_mail_attrib)
         try:
             if allowed_groups:
                 if not is_user_in_allowed_groups(username, password):
@@ -310,7 +315,8 @@ def ldap_auth(server='ldap', port=None,
                     basedns = ldap_basedn
                 else:
                     basedns = [ldap_basedn]
-                filter = '(&(uid=%s)(%s))' % (ldap.filter.escape_filter_chars(username), filterstr)
+                filter = '(&(uid=%s)(%s))' % (
+                    ldap.filter.escape_filter_chars(username), filterstr)
                 found = False
                 for basedn in basedns:
                     try:
@@ -338,7 +344,8 @@ def ldap_auth(server='ldap', port=None,
                 else:
                     basedns = [ldap_basedn]
                 filter = '(&(%s=%s)(%s))' % (username_attrib,
-                                             ldap.filter.escape_filter_chars(username),
+                                             ldap.filter.escape_filter_chars(
+                                                 username),
                                              filterstr)
                 if custom_scope == 'subtree':
                     ldap_scope = ldap.SCOPE_SUBTREE
@@ -368,14 +375,16 @@ def ldap_auth(server='ldap', port=None,
                 logger.info('[%s] Manage user data' % str(username))
                 try:
                     if user_firstname_part is not None:
-                        store_user_firstname = result[user_firstname_attrib][0].split(' ', 1)[user_firstname_part]
+                        store_user_firstname = result[user_firstname_attrib][
+                            0].split(' ', 1)[user_firstname_part]
                     else:
                         store_user_firstname = result[user_firstname_attrib][0]
                 except KeyError, e:
                     store_user_firstname = None
                 try:
                     if user_lastname_part is not None:
-                        store_user_lastname = result[user_lastname_attrib][0].split(' ', 1)[user_lastname_part]
+                        store_user_lastname = result[user_lastname_attrib][
+                            0].split(' ', 1)[user_lastname_part]
                     else:
                         store_user_lastname = result[user_lastname_attrib][0]
                 except KeyError, e:
@@ -464,16 +473,19 @@ def ldap_auth(server='ldap', port=None,
             #
             # Get all group name where the user is in actually in ldap
             # #########################################################
-            ldap_groups_of_the_user = get_user_groups_from_ldap(username, password)
+            ldap_groups_of_the_user = get_user_groups_from_ldap(
+                username, password)
 
             #
             # Get all group name where the user is in actually in local db
             # #############################################################
             try:
-                db_user_id = db(db.auth_user.username == username).select(db.auth_user.id).first().id
+                db_user_id = db(db.auth_user.username == username).select(
+                    db.auth_user.id).first().id
             except:
                 try:
-                    db_user_id = db(db.auth_user.email == username).select(db.auth_user.id).first().id
+                    db_user_id = db(db.auth_user.email == username).select(
+                        db.auth_user.id).first().id
                 except AttributeError, e:
                     #
                     # There is no user in local db
@@ -486,7 +498,8 @@ def ldap_auth(server='ldap', port=None,
                         db_user_id = db.auth_user.insert(email=username,
                                                          first_name=username)
             if not db_user_id:
-                logging.error('There is no username or email for %s!' % username)
+                logging.error(
+                    'There is no username or email for %s!' % username)
                 raise
             db_group_search = db((db.auth_membership.user_id == db_user_id) &
                                 (db.auth_user.id == db.auth_membership.user_id) &
@@ -520,7 +533,8 @@ def ldap_auth(server='ldap', port=None,
                         gid = db.auth_group.insert(role=group_to_add,
                                                    description='Generated from LDAP')
                     else:
-                        gid = db(db.auth_group.role == group_to_add).select(db.auth_group.id).first().id
+                        gid = db(db.auth_group.role == group_to_add).select(
+                            db.auth_group.id).first().id
                     db.auth_membership.insert(user_id=db_user_id,
                                               group_id=gid)
         except:
@@ -634,4 +648,3 @@ def ldap_auth(server='ldap', port=None,
     if filterstr[0] == '(' and filterstr[-1] == ')':  # rfc4515 syntax
         filterstr = filterstr[1:-1]  # parens added again where used
     return ldap_auth_aux
-

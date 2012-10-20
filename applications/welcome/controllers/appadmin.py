@@ -23,7 +23,7 @@ remote_addr = request.env.remote_addr
 try:
     hosts = (http_host, socket.gethostname(),
              socket.gethostbyname(http_host),
-             '::1','127.0.0.1','::ffff:127.0.0.1')
+             '::1', '127.0.0.1', '::ffff:127.0.0.1')
 except:
     hosts = (http_host, )
 
@@ -32,10 +32,10 @@ if request.env.http_x_forwarded_for or request.is_https:
 elif (remote_addr not in hosts) and (remote_addr != "127.0.0.1"):
     raise HTTP(200, T('appadmin is disabled because insecure channel'))
 
-if (request.application=='admin' and not session.authorized) or \
-        (request.application!='admin' and not gluon.fileutils.check_credentials(request)):
+if (request.application == 'admin' and not session.authorized) or \
+        (request.application != 'admin' and not gluon.fileutils.check_credentials(request)):
     redirect(URL('admin', 'default', 'index',
-                 vars=dict(send=URL(args=request.args,vars=request.vars))))
+                 vars=dict(send=URL(args=request.args, vars=request.vars))))
 
 ignore_rw = True
 response.view = 'appadmin.html'
@@ -95,24 +95,23 @@ def get_query(request):
         return None
 
 
-def query_by_table_type(tablename,db,request=request):
-    keyed = hasattr(db[tablename],'_primarykey')
+def query_by_table_type(tablename, db, request=request):
+    keyed = hasattr(db[tablename], '_primarykey')
     if keyed:
         firstkey = db[tablename][db[tablename]._primarykey[0]]
         cond = '>0'
         if firstkey.type in ['string', 'text']:
             cond = '!=""'
-        qry = '%s.%s.%s%s' % (request.args[0], request.args[1], firstkey.name, cond)
+        qry = '%s.%s.%s%s' % (
+            request.args[0], request.args[1], firstkey.name, cond)
     else:
         qry = '%s.%s.id>0' % tuple(request.args[:2])
     return qry
 
 
-
 # ##########################################################
 # ## list all databases and tables
 # ###########################################################
-
 def index():
     return dict(databases=databases)
 
@@ -127,7 +126,7 @@ def insert():
     form = SQLFORM(db[table], ignore_rw=ignore_rw)
     if form.accepts(request.vars, session):
         response.flash = T('new record inserted')
-    return dict(form=form,table=db[table])
+    return dict(form=form, table=db[table])
 
 
 # ##########################################################
@@ -138,7 +137,8 @@ def insert():
 def download():
     import os
     db = get_database(request)
-    return response.download(request,db)
+    return response.download(request, db)
+
 
 def csv():
     import gluon.contenttype
@@ -149,26 +149,27 @@ def csv():
     if not query:
         return None
     response.headers['Content-disposition'] = 'attachment; filename=%s_%s.csv'\
-         % tuple(request.vars.query.split('.')[:2])
-    return str(db(query,ignore_common_filters=True).select())
+        % tuple(request.vars.query.split('.')[:2])
+    return str(db(query, ignore_common_filters=True).select())
 
 
 def import_csv(table, file):
     table.import_from_csv_file(file)
+
 
 def select():
     import re
     db = get_database(request)
     dbname = request.args[0]
     regex = re.compile('(?P<table>\w+)\.(?P<field>\w+)=(?P<value>\d+)')
-    if len(request.args)>1 and hasattr(db[request.args[1]],'_primarykey'):
+    if len(request.args) > 1 and hasattr(db[request.args[1]], '_primarykey'):
         regex = re.compile('(?P<table>\w+)\.(?P<field>\w+)=(?P<value>.+)')
     if request.vars.query:
         match = regex.match(request.vars.query)
         if match:
             request.vars.query = '%s.%s.%s==%s' % (request.args[0],
-                    match.group('table'), match.group('field'),
-                    match.group('value'))
+                                                   match.group('table'), match.group('field'),
+                                                   match.group('value'))
     else:
         request.vars.query = session.last_query
     query = get_query(request)
@@ -192,46 +193,50 @@ def select():
     session.last_query = request.vars.query
     form = FORM(TABLE(TR(T('Query:'), '', INPUT(_style='width:400px',
                 _name='query', _value=request.vars.query or '',
-                requires=IS_NOT_EMPTY(error_message=T("Cannot be empty")))), TR(T('Update:'),
+                requires=IS_NOT_EMPTY(
+                    error_message=T("Cannot be empty")))), TR(T('Update:'),
                 INPUT(_name='update_check', _type='checkbox',
                 value=False), INPUT(_style='width:400px',
                 _name='update_fields', _value=request.vars.update_fields
-                 or '')), TR(T('Delete:'), INPUT(_name='delete_check',
+                                    or '')), TR(T('Delete:'), INPUT(_name='delete_check',
                 _class='delete', _type='checkbox', value=False), ''),
                 TR('', '', INPUT(_type='submit', _value=T('submit')))),
-                _action=URL(r=request,args=request.args))
+                _action=URL(r=request, args=request.args))
+
+    tb = None
     if form.accepts(request.vars, formname=None):
         regex = re.compile(request.args[0] + '\.(?P<table>\w+)\..+')
         match = regex.match(form.vars.query.strip())
         if match:
             table = match.group('table')
         try:
-            tb = None
             nrows = db(query).count()
             if form.vars.update_check and form.vars.update_fields:
                 db(query).update(**eval_in_global_env('dict(%s)'
-                                  % form.vars.update_fields))
+                                                      % form.vars.update_fields))
                 response.flash = T('%s %%{row} updated', nrows)
             elif form.vars.delete_check:
                 db(query).delete()
                 response.flash = T('%s %%{row} deleted', nrows)
             nrows = db(query).count()
             if orderby:
-                rows = db(query,ignore_common_filters=True).select(limitby=(start, stop), orderby=eval_in_global_env(orderby))
+                rows = db(query, ignore_common_filters=True).select(limitby=(
+                    start, stop), orderby=eval_in_global_env(orderby))
             else:
-                rows = db(query,ignore_common_filters=True).select(limitby=(start, stop))
+                rows = db(query, ignore_common_filters=True).select(
+                    limitby=(start, stop))
         except Exception, e:
             import traceback
             tb = traceback.format_exc()
             (rows, nrows) = ([], 0)
-            response.flash = DIV(T('Invalid Query'),PRE(str(e)))
+            response.flash = DIV(T('Invalid Query'), PRE(str(e)))
     # begin handle upload csv
     csv_table = table or request.vars.table
     if csv_table:
-        formcsv = FORM(str(T('or import from csv file'))+" ",
-                       INPUT(_type='file',_name='csvfile'),
-                       INPUT(_type='hidden',_value=csv_table,_name='table'),
-                       INPUT(_type='submit',_value=T('import')))
+        formcsv = FORM(str(T('or import from csv file')) + " ",
+                       INPUT(_type='file', _name='csvfile'),
+                       INPUT(_type='hidden', _value=csv_table, _name='table'),
+                       INPUT(_type='submit', _value=T('import')))
     else:
         formcsv = None
     if formcsv and formcsv.process().accepted:
@@ -240,7 +245,7 @@ def select():
                        request.vars.csvfile.file)
             response.flash = T('data uploaded')
         except Exception, e:
-            response.flash = DIV(T('unable to parse csv file'),PRE(str(e)))
+            response.flash = DIV(T('unable to parse csv file'), PRE(str(e)))
     # end handle upload csv
 
     return dict(
@@ -251,9 +256,9 @@ def select():
         nrows=nrows,
         rows=rows,
         query=request.vars.query,
-        formcsv = formcsv,
-        tb = tb,
-        )
+        formcsv=formcsv,
+        tb=tb,
+    )
 
 
 # ##########################################################
@@ -263,14 +268,16 @@ def select():
 
 def update():
     (db, table) = get_table(request)
-    keyed = hasattr(db[table],'_primarykey')
+    keyed = hasattr(db[table], '_primarykey')
     record = None
     if keyed:
         key = [f for f in request.vars if f in db[table]._primarykey]
         if key:
-            record = db(db[table][key[0]] == request.vars[key[0]], ignore_common_filters=True).select().first()
+            record = db(db[table][key[0]] == request.vars[key[
+                        0]], ignore_common_filters=True).select().first()
     else:
-        record = db(db[table].id == request.args(2),ignore_common_filters=True).select().first()
+        record = db(db[table].id == request.args(
+            2), ignore_common_filters=True).select().first()
 
     if not record:
         qry = query_by_table_type(table, db)
@@ -280,20 +287,21 @@ def update():
 
     if keyed:
         for k in db[table]._primarykey:
-            db[table][k].writable=False
+            db[table][k].writable = False
 
-    form = SQLFORM(db[table], record, deletable=True, delete_label=T('Check to delete'),
-                   ignore_rw=ignore_rw and not keyed,
-                   linkto=URL('select',
+    form = SQLFORM(
+        db[table], record, deletable=True, delete_label=T('Check to delete'),
+        ignore_rw=ignore_rw and not keyed,
+        linkto=URL('select',
                    args=request.args[:1]), upload=URL(r=request,
-                   f='download', args=request.args[:1]))
+                                                      f='download', args=request.args[:1]))
 
     if form.accepts(request.vars, session):
         session.flash = T('done!')
         qry = query_by_table_type(table, db)
         redirect(URL('select', args=request.args[:1],
                  vars=dict(query=qry)))
-    return dict(form=form,table=db[table])
+    return dict(form=form, table=db[table])
 
 
 # ##########################################################
@@ -304,11 +312,15 @@ def update():
 def state():
     return dict()
 
+
 def ccache():
     form = FORM(
-        P(TAG.BUTTON(T("Clear CACHE?"), _type="submit", _name="yes", _value="yes")),
-        P(TAG.BUTTON(T("Clear RAM"), _type="submit", _name="ram", _value="ram")),
-        P(TAG.BUTTON(T("Clear DISK"), _type="submit", _name="disk", _value="disk")),
+        P(TAG.BUTTON(
+            T("Clear CACHE?"), _type="submit", _name="yes", _value="yes")),
+        P(TAG.BUTTON(
+            T("Clear RAM"), _type="submit", _name="ram", _value="ram")),
+        P(TAG.BUTTON(
+            T("Clear DISK"), _type="submit", _name="disk", _value="disk")),
     )
 
     if form.accepts(request.vars, session):
@@ -332,11 +344,16 @@ def ccache():
         redirect(URL(r=request))
 
     try:
-        from guppy import hpy; hp=hpy()
+        from guppy import hpy
+        hp = hpy()
     except ImportError:
         hp = False
 
-    import shelve, os, copy, time, math
+    import shelve
+    import os
+    import copy
+    import time
+    import math
     from gluon import portalocker
 
     ram = {
@@ -381,9 +398,10 @@ def ccache():
             ram['keys'].append((key, GetInHMS(time.time() - value[0])))
 
     locker = open(os.path.join(request.folder,
-                                        'cache/cache.lock'), 'a')
+                               'cache/cache.lock'), 'a')
     portalocker.lock(locker, portalocker.LOCK_EX)
-    disk_storage = shelve.open(os.path.join(request.folder, 'cache/cache.shelve'))
+    disk_storage = shelve.open(
+        os.path.join(request.folder, 'cache/cache.shelve'))
     try:
         for key, value in disk_storage.items():
             if isinstance(value, dict):
@@ -414,7 +432,8 @@ def ccache():
     total['misses'] = ram['misses'] + disk['misses']
     total['keys'] = ram['keys'] + disk['keys']
     try:
-        total['ratio'] = total['hits'] * 100 / (total['hits'] + total['misses'])
+        total['ratio'] = total['hits'] * 100 / (total['hits'] +
+                                                total['misses'])
     except (KeyError, ZeroDivisionError):
         total['ratio'] = 0
 
@@ -440,6 +459,3 @@ def ccache():
 
     return dict(form=form, total=total,
                 ram=ram, disk=disk, object_stats=hp != False)
-
-
-

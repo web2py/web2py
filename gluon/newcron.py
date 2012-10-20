@@ -23,6 +23,7 @@ from settings import global_settings
 logger = logging.getLogger("web2py.cron")
 _cron_stopping = False
 
+
 def absolute_path_link(path):
     """
     Return an absolute path for the destination of a symlink
@@ -36,10 +37,12 @@ def absolute_path_link(path):
         link = os.path.abspath(path)
     return link
 
+
 def stopcron():
     "graceful shutdown of cron"
     global _cron_stopping
     _cron_stopping = True
+
 
 class extcron(threading.Thread):
 
@@ -55,6 +58,7 @@ class extcron(threading.Thread):
             logger.debug('external cron invocation')
             crondance(self.path, 'external', startup=False, apps=self.apps)
 
+
 class hardcron(threading.Thread):
 
     def __init__(self, applications_parent):
@@ -66,7 +70,7 @@ class hardcron(threading.Thread):
     def launch(self):
         if not _cron_stopping:
             logger.debug('hard cron invocation')
-            crondance(self.path, 'hard', startup = False)
+            crondance(self.path, 'hard', startup=False)
 
     def run(self):
         s = sched.scheduler(time.time, time.sleep)
@@ -75,6 +79,7 @@ class hardcron(threading.Thread):
             now = time.time()
             s.enter(60 - now % 60, 1, self.launch, ())
             s.run()
+
 
 class softcron(threading.Thread):
 
@@ -88,16 +93,17 @@ class softcron(threading.Thread):
             logger.debug('soft cron invocation')
             crondance(self.path, 'soft', startup=False)
 
+
 class Token(object):
 
-    def __init__(self,path):
+    def __init__(self, path):
         self.path = os.path.join(path, 'cron.master')
         if not os.path.exists(self.path):
             fileutils.write_file(self.path, '', 'wb')
         self.master = None
         self.now = time.time()
 
-    def acquire(self,startup=False):
+    def acquire(self, startup=False):
         """
         returns the time when the lock is acquired or
         None if cron already running
@@ -112,12 +118,12 @@ class Token(object):
         if portalocker.LOCK_EX is None:
             logger.warning('WEB2PY CRON: Disabled because no file locking')
             return None
-        self.master = open(self.path,'rb+')
+        self.master = open(self.path, 'rb+')
         try:
             ret = None
-            portalocker.lock(self.master,portalocker.LOCK_EX)
+            portalocker.lock(self.master, portalocker.LOCK_EX)
             try:
-                (start, stop) =  cPickle.load(self.master)
+                (start, stop) = cPickle.load(self.master)
             except:
                 (start, stop) = (0, 1)
             if startup or self.now - start > 59.99:
@@ -127,7 +133,7 @@ class Token(object):
                     logger.warning('WEB2PY CRON: Stale cron.master detected')
                 logger.debug('WEB2PY CRON: Acquiring lock')
                 self.master.seek(0)
-                cPickle.dump((self.now,0),self.master)
+                cPickle.dump((self.now, 0), self.master)
         finally:
             portalocker.unlock(self.master)
         if not ret:
@@ -141,13 +147,13 @@ class Token(object):
         was completed
         """
         if not self.master.closed:
-            portalocker.lock(self.master,portalocker.LOCK_EX)
+            portalocker.lock(self.master, portalocker.LOCK_EX)
             logger.debug('WEB2PY CRON: Releasing cron lock')
             self.master.seek(0)
-            (start, stop) =  cPickle.load(self.master)
-            if start == self.now: # if this is my lock
+            (start, stop) = cPickle.load(self.master)
+            if start == self.now:  # if this is my lock
                 self.master.seek(0)
-                cPickle.dump((self.now,time.time()),self.master)
+                cPickle.dump((self.now, time.time()), self.master)
             portalocker.unlock(self.master)
             self.master.close()
 
@@ -177,25 +183,26 @@ def rangetolist(s, period='min'):
 def parsecronline(line):
     task = {}
     if line.startswith('@reboot'):
-        line=line.replace('@reboot', '-1 * * * *')
+        line = line.replace('@reboot', '-1 * * * *')
     elif line.startswith('@yearly'):
-        line=line.replace('@yearly', '0 0 1 1 *')
+        line = line.replace('@yearly', '0 0 1 1 *')
     elif line.startswith('@annually'):
-        line=line.replace('@annually', '0 0 1 1 *')
+        line = line.replace('@annually', '0 0 1 1 *')
     elif line.startswith('@monthly'):
-        line=line.replace('@monthly', '0 0 1 * *')
+        line = line.replace('@monthly', '0 0 1 * *')
     elif line.startswith('@weekly'):
-        line=line.replace('@weekly', '0 0 * * 0')
+        line = line.replace('@weekly', '0 0 * * 0')
     elif line.startswith('@daily'):
-        line=line.replace('@daily', '0 0 * * *')
+        line = line.replace('@daily', '0 0 * * *')
     elif line.startswith('@midnight'):
-        line=line.replace('@midnight', '0 0 * * *')
+        line = line.replace('@midnight', '0 0 * * *')
     elif line.startswith('@hourly'):
-        line=line.replace('@hourly', '0 * * * *')
+        line = line.replace('@hourly', '0 * * * *')
     params = line.strip().split(None, 6)
     if len(params) < 7:
         return None
-    daysofweek={'sun':0,'mon':1,'tue':2,'wed':3,'thu':4,'fri':5,'sat':6}
+    daysofweek = {'sun': 0, 'mon': 1, 'tue': 2, 'wed': 3, 'thu': 4,
+                  'fri': 5, 'sat': 6}
     for (s, id) in zip(params[:5], ['min', 'hr', 'dom', 'mon', 'dow']):
         if not s in [None, '*']:
             task[id] = []
@@ -205,9 +212,9 @@ def parsecronline(line):
                     val = '%s/1' % val
                 if '/' in val:
                     task[id] += rangetolist(val, id)
-                elif val.isdigit() or val=='-1':
+                elif val.isdigit() or val == '-1':
                     task[id].append(int(val))
-                elif id=='dow' and val[:3].lower() in daysofweek:
+                elif id == 'dow' and val[:3].lower() in daysofweek:
                     task[id].append(daysofweek(val[:3].lower()))
     task['user'] = params[5]
     task['cmd'] = params[6]
@@ -225,7 +232,7 @@ class cronlauncher(threading.Thread):
 
     def run(self):
         import subprocess
-        if isinstance(self.cmd, (list,tuple)):
+        if isinstance(self.cmd, (list, tuple)):
             cmd = self.cmd
         else:
             cmd = self.cmd.split()
@@ -234,28 +241,29 @@ class cronlauncher(threading.Thread):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
                                 shell=self.shell)
-        (stdoutdata,stderrdata) = proc.communicate()
+        (stdoutdata, stderrdata) = proc.communicate()
         if proc.returncode != 0:
             logger.warning(
-                'WEB2PY CRON Call returned code %s:\n%s' % \
-                    (proc.returncode, stdoutdata+stderrdata))
+                'WEB2PY CRON Call returned code %s:\n%s' %
+                (proc.returncode, stdoutdata + stderrdata))
         else:
-            logger.debug('WEB2PY CRON Call returned success:\n%s' \
-                              % stdoutdata)
+            logger.debug('WEB2PY CRON Call returned success:\n%s'
+                         % stdoutdata)
+
 
 def crondance(applications_parent, ctype='soft', startup=False, apps=None):
-    apppath = os.path.join(applications_parent,'applications')
+    apppath = os.path.join(applications_parent, 'applications')
     cron_path = os.path.join(applications_parent)
     token = Token(cron_path)
     cronmaster = token.acquire(startup=startup)
     if not cronmaster:
         return
     now_s = time.localtime()
-    checks=(('min',now_s.tm_min),
-            ('hr',now_s.tm_hour),
-            ('mon',now_s.tm_mon),
-            ('dom',now_s.tm_mday),
-            ('dow',(now_s.tm_wday+1)%7))
+    checks = (('min', now_s.tm_min),
+              ('hr', now_s.tm_hour),
+              ('mon', now_s.tm_mon),
+              ('dom', now_s.tm_mday),
+              ('dow', (now_s.tm_wday + 1) % 7))
 
     if apps is None:
         apps = [x for x in os.listdir(apppath)
@@ -265,8 +273,8 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
 
     for app in apps:
         if _cron_stopping:
-            break;
-        apath = os.path.join(apppath,app)
+            break
+        apath = os.path.join(apppath, app)
 
         # if app is a symbolic link to other app, skip it
         full_apath_link = absolute_path_link(apath)
@@ -281,7 +289,8 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
             continue
         try:
             cronlines = fileutils.readlines_file(crontab, 'rt')
-            lines = [x.strip() for x in cronlines if x.strip() and not x.strip().startswith('#')]
+            lines = [x.strip() for x in cronlines if x.strip(
+            ) and not x.strip().startswith('#')]
             tasks = [parsecronline(cline) for cline in lines]
         except Exception, e:
             logger.error('WEB2PY CRON: crontab read error %s' % e)
@@ -289,48 +298,48 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
 
         for task in tasks:
             if _cron_stopping:
-                break;
+                break
             commands = [sys.executable]
             w2p_path = fileutils.abspath('web2py.py', gluon=True)
             if os.path.exists(w2p_path):
                 commands.append(w2p_path)
             if global_settings.applications_parent != global_settings.gluon_parent:
                 commands.extend(('-f', global_settings.applications_parent))
-            citems = [(k in task and not v in task[k]) for k,v in checks]
-            task_min= task.get('min',[])
+            citems = [(k in task and not v in task[k]) for k, v in checks]
+            task_min = task.get('min', [])
             if not task:
                 continue
             elif not startup and task_min == [-1]:
                 continue
-            elif task_min != [-1] and reduce(lambda a,b: a or b, citems):
+            elif task_min != [-1] and reduce(lambda a, b: a or b, citems):
                 continue
-            logger.info('WEB2PY CRON (%s): %s executing %s in %s at %s' \
-                             % (ctype, app, task.get('cmd'),
-                                os.getcwd(), datetime.datetime.now()))
+            logger.info('WEB2PY CRON (%s): %s executing %s in %s at %s'
+                        % (ctype, app, task.get('cmd'),
+                           os.getcwd(), datetime.datetime.now()))
             action, command, models = False, task['cmd'], ''
             if command.startswith('**'):
-                (action,models,command) = (True,'',command[2:])
+                (action, models, command) = (True, '', command[2:])
             elif command.startswith('*'):
-                (action,models,command) = (True,'-M',command[1:])
+                (action, models, command) = (True, '-M', command[1:])
             else:
-                action=False
+                action = False
 
             if action and command.endswith('.py'):
                 commands.extend(('-J',                # cron job
                                  models,              # import models?
                                  '-S', app,           # app name
-                                 '-a', '"<recycle>"', # password
+                                 '-a', '"<recycle>"',  # password
                                  '-R', command))      # command
             elif action:
                 commands.extend(('-J',                  # cron job
                                  models,                # import models?
-                                 '-S', app+'/'+command, # app name
+                                 '-S', app + '/' + command,  # app name
                                  '-a', '"<recycle>"'))  # password
             else:
                 commands = command
 
             # from python docs:
-            # You do not need shell=True to run a batch file or 
+            # You do not need shell=True to run a batch file or
             # console-based executable.
             shell = False
 
@@ -338,13 +347,6 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
                 cronlauncher(commands, shell=shell).start()
             except Exception, e:
                 logger.warning(
-                    'WEB2PY CRON: Execution error for %s: %s' \
-                        % (task.get('cmd'), e))
+                    'WEB2PY CRON: Execution error for %s: %s'
+                    % (task.get('cmd'), e))
     token.release()
-
-
-
-
-
-
-

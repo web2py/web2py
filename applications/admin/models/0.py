@@ -1,7 +1,7 @@
 EXPIRATION = 60 * 60  # logout after 60 minutes of inactivity
 CHECK_VERSION = True
 WEB2PY_URL = 'http://web2py.com'
-WEB2PY_VERSION_URL = WEB2PY_URL+'/examples/default/version'
+WEB2PY_VERSION_URL = WEB2PY_URL + '/examples/default/version'
 
 ###########################################################################
 # Preferences for EditArea
@@ -13,15 +13,15 @@ TEXT_EDITOR = 'codemirror' or 'ace' or 'edit_area' or 'amy'
 
 ## Editor Color scheme (only for ace)
 TEXT_EDITOR_THEME = (
-    "chrome", "clouds", "clouds_midnight", "cobalt", "crimson_editor", "dawn", 
+    "chrome", "clouds", "clouds_midnight", "cobalt", "crimson_editor", "dawn",
     "dreamweaver", "eclipse", "idle_fingers", "kr_theme", "merbivore",
-    "merbivore_soft", "monokai", "mono_industrial", "pastel_on_dark", 
+    "merbivore_soft", "monokai", "mono_industrial", "pastel_on_dark",
     "solarized_dark", "solarized_light", "textmate", "tomorrow",
     "tomorrow_night", "tomorrow_night_blue", "tomorrow_night_bright",
     "tomorrow_night_eighties", "twilight", "vibrant_ink")[0]
 
 ## Editor Keyboard bindings (only for ace and codemirror)
-TEXT_EDITOR_KEYBINDING = '' # 'emacs' or 'vi'
+TEXT_EDITOR_KEYBINDING = ''  # 'emacs' or 'vi'
 
 ### edit_area only
 # The default font size, measured in 'points'. The value must be an integer > 0
@@ -59,9 +59,9 @@ GAE_APPCFG = os.path.abspath(os.path.join('/usr/local/bin/appcfg.py'))
 
 # To use web2py as a teaching tool, set MULTI_USER_MODE to True
 MULTI_USER_MODE = False
-EMAIL_SERVER    = 'localhost'
-EMAIL_SENDER    = 'professor@example.com'
-EMAIL_LOGIN     = None
+EMAIL_SERVER = 'localhost'
+EMAIL_SENDER = 'professor@example.com'
+EMAIL_LOGIN = None
 
 # configurable twitterbox, set to None/False to suppress
 TWITTER_HASH = "web2py"
@@ -78,5 +78,3 @@ PLUGINS_APP = 'http://web2py.com/plugins'
 # set the language
 if 'adminLanguage' in request.cookies and not (request.cookies['adminLanguage'] is None):
     T.force(request.cookies['adminLanguage'].value)
-
-

@@ -9,6 +9,13 @@
       body {
       background: url('{{=URL('static','plugin_jqmobile/images/iphone.jpg')}}') no-repeat white;
       }
+      #back {
+      z-index: 1000;
+      padding: 10px;
+      position: absolute;
+      top: 0;
+      right: 0;
+      }
       iframe {
       position: absolute;
       margin-left: 320px;
@@ -35,6 +42,7 @@
   </head>
   <body>
     <iframe src="{{=URL('default','index',vars=dict(is_mobile='true'))}}"></iframe>
+    <div id="back"><a href="{{=URL('default','index',vars=dict(is_mobile='false'))}}">Back</a></div>
     <div id="about">
       <h1><a href="http://web2py.com">web2py</a> plugin</h1>
       <h2>for <a href="http://jquerymobile.com/">jQuery Mobile</a></h2>

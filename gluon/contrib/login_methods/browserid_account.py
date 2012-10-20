@@ -25,6 +25,7 @@ from gluon.storage import Storage
 from gluon.tools import fetch
 import gluon.contrib.simplejson as json
 
+
 class BrowserID(object):
     """
     from gluon.contrib.login_methods.browserid_account import BrowserID
@@ -34,17 +35,17 @@ class BrowserID(object):
     """
 
     def __init__(self,
-                request,
-                audience = "",
-                assertion_post_url = "",
-                prompt = "BrowserID Login",
-                issuer = "browserid.org",
-                verify_url = "https://browserid.org/verify",
-                browserid_js = "https://browserid.org/include.js",
-                browserid_button = "https://browserid.org/i/sign_in_red.png",
-                crypto_js = "https://crypto-js.googlecode.com/files/2.2.0-crypto-md5.js",
-                on_login_failure = None,
-                ):
+                 request,
+                 audience="",
+                 assertion_post_url="",
+                 prompt="BrowserID Login",
+                 issuer="browserid.org",
+                 verify_url="https://browserid.org/verify",
+                 browserid_js="https://browserid.org/include.js",
+                 browserid_button="https://browserid.org/i/sign_in_red.png",
+                 crypto_js="https://crypto-js.googlecode.com/files/2.2.0-crypto-md5.js",
+                 on_login_failure=None,
+                 ):
 
         self.request = request
         self.audience = audience
@@ -67,13 +68,13 @@ class BrowserID(object):
         if request.vars.assertion:
             audience = self.audience
             issuer = self.issuer
-            assertion = XML(request.vars.assertion,sanitize=True)
-            verify_data = {'assertion':assertion,'audience':audience}
-            auth_info_json = fetch(self.verify_url,data=verify_data)
+            assertion = XML(request.vars.assertion, sanitize=True)
+            verify_data = {'assertion': assertion, 'audience': audience}
+            auth_info_json = fetch(self.verify_url, data=verify_data)
             j = json.loads(auth_info_json)
-            epoch_time = int(time.time()*1000) # we need 13 digit epoch time
+            epoch_time = int(time.time() * 1000)  # we need 13 digit epoch time
             if j["status"] == "okay" and j["audience"] == audience and j['issuer'] == issuer and j['expires'] >= epoch_time:
-                return dict(email = j['email'])
+                return dict(email=j['email'])
             elif self.on_login_failure:
                 redirect('http://google.com')
             else:
@@ -83,9 +84,8 @@ class BrowserID(object):
     def login_form(self):
         request = self.request
         onclick = "javascript:navigator.id.getVerifiedEmail(gotVerifiedEmail) ; return false"
-        form = DIV(SCRIPT(_src=self.browserid_js,_type="text/javascript"),
-            SCRIPT(_src=self.crypto_js,_type="text/javascript"),
-            A(IMG(_src=self.browserid_button,_alt=self.prompt),_href="#",_onclick=onclick,_class="browserid",_title="Login With BrowserID"),
-            SCRIPT(self.asertion_js))
+        form = DIV(SCRIPT(_src=self.browserid_js, _type="text/javascript"),
+                   SCRIPT(_src=self.crypto_js, _type="text/javascript"),
+                   A(IMG(_src=self.browserid_button, _alt=self.prompt), _href="#", _onclick=onclick, _class="browserid", _title="Login With BrowserID"),
+                   SCRIPT(self.asertion_js))
         return form
-

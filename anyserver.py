@@ -9,47 +9,54 @@ License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 This file is based, although a rewrite, on MIT-licensed code from the Bottle web framework.
 """
 
-import os, sys, optparse, urllib
+import os
+import sys
+import optparse
+import urllib
+
 path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(path)
-sys.path = [path]+[p for p in sys.path if not p==path]
+sys.path = [path] + [p for p in sys.path if not p == path]
 import gluon.main
 from gluon.fileutils import read_file, write_file
+
 
 class Servers:
     @staticmethod
     def cgi(app, address=None, **options):
         from wsgiref.handlers import CGIHandler
-        CGIHandler().run(app) # Just ignore host and port here
+        CGIHandler().run(app)  # Just ignore host and port here
 
     @staticmethod
-    def flup(app,address, **options):
+    def flup(app, address, **options):
         import flup.server.fcgi
         flup.server.fcgi.WSGIServer(app, bindAddress=address).run()
 
     @staticmethod
-    def wsgiref(app,address,**options): # pragma: no cover
+    def wsgiref(app, address, **options):  # pragma: no cover
         from wsgiref.simple_server import make_server, WSGIRequestHandler
+
         class QuietHandler(WSGIRequestHandler):
-            def log_request(*args, **kw): pass
+            def log_request(*args, **kw):
+                pass
         options['handler_class'] = QuietHandler
-        srv = make_server(address[0],address[1],app,**options)
+        srv = make_server(address[0], address[1], app, **options)
         srv.serve_forever()
 
     @staticmethod
-    def cherrypy(app,address, **options):
+    def cherrypy(app, address, **options):
         from cherrypy import wsgiserver
         server = wsgiserver.CherryPyWSGIServer(address, app)
         server.start()
 
     @staticmethod
-    def rocket(app,address, **options):
+    def rocket(app, address, **options):
         from gluon.rocket import CherryPyWSGIServer
         server = CherryPyWSGIServer(address, app)
         server.start()
 
     @staticmethod
-    def rocket_with_repoze_profiler(app,address, **options):
+    def rocket_with_repoze_profiler(app, address, **options):
         from gluon.rocket import CherryPyWSGIServer
         from repoze.profile.profiler import AccumulatingProfileMiddleware
         from gluon.settings import global_settings
@@ -59,44 +66,46 @@ class Servers:
             log_filename='wsgi.prof',
             discard_first_request=True,
             flush_at_shutdown=True,
-            path = '/__profile__'
-            )
+            path='/__profile__'
+        )
         server = CherryPyWSGIServer(address, wrapped)
         server.start()
 
     @staticmethod
-    def paste(app,address,**options):
+    def paste(app, address, **options):
         from paste import httpserver
         from paste.translogger import TransLogger
         httpserver.serve(app, host=address[0], port=address[1], **options)
 
     @staticmethod
-    def fapws(app,address, **options):
+    def fapws(app, address, **options):
         import fapws._evwsgi as evwsgi
         from fapws import base
-        evwsgi.start(address[0],str(address[1]))
+        evwsgi.start(address[0], str(address[1]))
         evwsgi.set_base_module(base)
+
         def app(environ, start_response):
             environ['wsgi.multiprocess'] = False
             return app(environ, start_response)
-        evwsgi.wsgi_cb(('',app))
+        evwsgi.wsgi_cb(('', app))
         evwsgi.run()
 
-
     @staticmethod
-    def gevent(app,address, **options):
-        from gevent import monkey; monkey.patch_all()
+    def gevent(app, address, **options):
+        from gevent import monkey
+        monkey.patch_all()
         from gevent import pywsgi
         from gevent.pool import Pool
-        pywsgi.WSGIServer(address, app, spawn = 'workers' in options and Pool(int(options.workers)) or 'default').serve_forever()
+        pywsgi.WSGIServer(address, app, spawn='workers' in options and Pool(
+            int(options.workers)) or 'default').serve_forever()
 
     @staticmethod
-    def bjoern(app,address, **options):
+    def bjoern(app, address, **options):
         import bjoern
         bjoern.run(app, *address)
 
     @staticmethod
-    def tornado(app,address, **options):
+    def tornado(app, address, **options):
         import tornado.wsgi
         import tornado.httpserver
         import tornado.ioloop
@@ -106,7 +115,7 @@ class Servers:
         tornado.ioloop.IOLoop.instance().start()
 
     @staticmethod
-    def twisted(app,address, **options):
+    def twisted(app, address, **options):
         from twisted.web import server, wsgi
         from twisted.python.threadpool import ThreadPool
         from twisted.internet import reactor
@@ -118,42 +127,44 @@ class Servers:
         reactor.run()
 
     @staticmethod
-    def diesel(app,address, **options):
+    def diesel(app, address, **options):
         from diesel.protocols.wsgi import WSGIApplication
         app = WSGIApplication(app, port=address[1])
         app.run()
 
     @staticmethod
-    def gunicorn(app,address, **options):
+    def gunicorn(app, address, **options):
         from gunicorn.app.base import Application
         config = {'bind': "%s:%d" % address}
         config.update(options)
         sys.argv = ['anyserver.py']
+
         class GunicornApplication(Application):
             def init(self, parser, opts, args):
                 return config
+
             def load(self):
                 return app
         g = GunicornApplication()
         g.run()
 
     @staticmethod
-    def eventlet(app,address, **options):
+    def eventlet(app, address, **options):
         from eventlet import wsgi, listen
         wsgi.server(listen(address), app)
 
     @staticmethod
-    def mongrel2(app,address,**options):
+    def mongrel2(app, address, **options):
         import uuid
         sys.path.append(os.path.abspath(os.path.dirname(__file__)))
         from mongrel2 import handler
         conn = handler.Connection(str(uuid.uuid4()),
                                   "tcp://127.0.0.1:9997",
                                   "tcp://127.0.0.1:9996")
-        mongrel2_handler(app,conn,debug=False)
+        mongrel2_handler(app, conn, debug=False)
 
 
-def run(servername,ip,port,softcron=True,logging=False,profiler=None):
+def run(servername, ip, port, softcron=True, logging=False, profiler=None):
     if logging:
         application = gluon.main.appfactory(wsgiapp=gluon.main.wsgibase,
                                             logfilename='httpserver.log',
@@ -163,9 +174,10 @@ def run(servername,ip,port,softcron=True,logging=False,profiler=None):
     if softcron:
         from gluon.settings import global_settings
         global_settings.web2py_crontype = 'soft'
-    getattr(Servers,servername)(application,(ip,int(port)))
+    getattr(Servers, servername)(application, (ip, int(port)))
 
-def mongrel2_handler(application,conn,debug=False):
+
+def mongrel2_handler(application, conn, debug=False):
     """
     Based on :
     https://github.com/berry/Mongrel2-WSGI-Handler/blob/master/wsgi-handler.py
@@ -190,20 +202,23 @@ def mongrel2_handler(application,conn,debug=False):
     # and responses. Unless I have missed something.
 
     while True:
-        if debug: print "WAITING FOR REQUEST"
+        if debug:
+            print "WAITING FOR REQUEST"
 
         # receive a request
         req = conn.recv()
-        if debug: print "REQUEST BODY: %r\n" % req.body
+        if debug:
+            print "REQUEST BODY: %r\n" % req.body
 
         if req.is_disconnect():
-            if debug: print "DISCONNECT"
-            continue #effectively ignore the disconnect from the client
+            if debug:
+                print "DISCONNECT"
+            continue  # effectively ignore the disconnect from the client
 
         # Set a couple of environment attributes a.k.a. header attributes
         # that are a must according to PEP 333
         environ = req.headers
-        environ['SERVER_PROTOCOL'] = 'HTTP/1.1' # SimpleHandler expects a server_protocol, lets assume it is HTTP 1.1
+        environ['SERVER_PROTOCOL'] = 'HTTP/1.1'  # SimpleHandler expects a server_protocol, lets assume it is HTTP 1.1
         environ['REQUEST_METHOD'] = environ['METHOD']
         if ':' in environ['Host']:
             environ['SERVER_NAME'] = environ['Host'].split(':')[0]
@@ -211,17 +226,19 @@ def mongrel2_handler(application,conn,debug=False):
         else:
             environ['SERVER_NAME'] = environ['Host']
             environ['SERVER_PORT'] = ''
-        environ['SCRIPT_NAME'] = '' # empty for now
+        environ['SCRIPT_NAME'] = ''  # empty for now
         environ['PATH_INFO'] = urllib.unquote(environ['PATH'])
         if '?' in environ['URI']:
             environ['QUERY_STRING'] = environ['URI'].split('?')[1]
         else:
             environ['QUERY_STRING'] = ''
-        if environ.has_key('Content-Length'):
-            environ['CONTENT_LENGTH'] = environ['Content-Length'] # necessary for POST to work with Django
+        if 'Content-Length' in environ:
+            environ['CONTENT_LENGTH'] = environ[
+                'Content-Length']  # necessary for POST to work with Django
         environ['wsgi.input'] = req.body
 
-        if debug: print "ENVIRON: %r\n" % environ
+        if debug:
+            print "ENVIRON: %r\n" % environ
 
         # SimpleHandler needs file-like stream objects for
         # requests, errors and responses
@@ -230,7 +247,8 @@ def mongrel2_handler(application,conn,debug=False):
         respIO = StringIO.StringIO()
 
         # execute the application
-        handler = SimpleHandler(reqIO, respIO, errIO, environ, multithread = False, multiprocess = False)
+        handler = SimpleHandler(reqIO, respIO, errIO, environ,
+                                multithread=False, multiprocess=False)
         handler.run(application)
 
         # Get the response and filter out the response (=data) itself,
@@ -254,11 +272,15 @@ def mongrel2_handler(application,conn,debug=False):
         errors = errIO.getvalue()
 
         # return the response
-        if debug: print "RESPONSE: %r\n" % response
+        if debug:
+            print "RESPONSE: %r\n" % response
         if errors:
-            if debug: print "ERRORS: %r" % errors
+            if debug:
+                print "ERRORS: %r" % errors
             data = "%s\r\n\r\n%s" % (data, errors)
-        conn.reply_http(req, data, code = code, status = status, headers = headers)
+        conn.reply_http(
+            req, data, code=code, status=status, headers=headers)
+
 
 def main():
     usage = "python anyserver.py -s tornado -i 127.0.0.1 -p 8000 -l -P"
@@ -278,7 +300,7 @@ def main():
                       default=False,
                       dest='profiler',
                       help='profiler filename')
-    servers = ', '.join(x for x in dir(Servers) if not x[0]=='_')
+    servers = ', '.join(x for x in dir(Servers) if not x[0] == '_')
     parser.add_option('-s',
                       '--server',
                       default='rocket',
@@ -300,13 +322,10 @@ def main():
                       dest='workers',
                       help='number of workers number')
     (options, args) = parser.parse_args()
-    print 'starting %s on %s:%s...' % (options.server,options.ip,options.port)
-    run(options.server,options.ip,options.port,logging=options.logging,profiler=options.profiler)
+    print 'starting %s on %s:%s...' % (
+        options.server, options.ip, options.port)
+    run(options.server, options.ip, options.port,
+        logging=options.logging, profiler=options.profiler)
 
-if __name__=='__main__':
+if __name__ == '__main__':
     main()
-
-
-
-
-

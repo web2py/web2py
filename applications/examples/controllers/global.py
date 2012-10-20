@@ -1,4 +1,3 @@
-
 session.forget()
 
 response.menu = [['home', False, '/%s/default/index'
@@ -17,14 +16,14 @@ def vars():
             c,
             d,
             value,
-            ) = (
+        ) = (
             'Global variables',
             globals(),
             None,
             None,
             (),
             None,
-            )
+        )
         (title, args) = ('globals()', '')
     elif len(request.args) < 3:
         args = '.'.join(request.args)
@@ -76,7 +75,4 @@ def vars():
         d=d,
         doc=doc,
         attributes=attributes,
-        )
-
-
-
+    )

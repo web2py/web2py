@@ -17,6 +17,7 @@ logger = logging.getLogger("web2py.cache.redis")
 
 locker = thread.allocate_lock()
 
+
 def RedisCache(*args, **vars):
     """
     Usage example: put in models
@@ -47,10 +48,11 @@ class RedisClient(object):
     meta_storage = {}
     MAX_RETRIES = 5
     RETRIES = 0
+
     def __init__(self, server='localhost:6379', db=None, debug=False):
         self.server = server
         self.db = db or 0
-        host,port = (self.server.split(':')+['6379'])[:2]
+        host, port = (self.server.split(':') + ['6379'])[:2]
         port = int(port)
         self.request = current.request
         self.debug = debug
@@ -64,7 +66,7 @@ class RedisClient(object):
                 CacheAbstract.cache_stats_name: {
                     'hit_total': 0,
                     'misses': 0,
-                    }}
+                }}
         else:
             self.storage = self.meta_storage[app]
 
@@ -72,8 +74,8 @@ class RedisClient(object):
 
     def __call__(self, key, f, time_expire=300):
         try:
-            if time_expire == None:
-                time_expire = 24*60*60
+            if time_expire is None:
+                time_expire = 24 * 60 * 60
             newKey = self.__keyFormat__(key)
             value = None
             obj = self.r_server.get(newKey)
@@ -100,13 +102,15 @@ class RedisClient(object):
     def retry_call(self, key, f, time_expire):
         self.RETRIES += 1
         if self.RETRIES <= self.MAX_RETRIES:
-            logger.error("sleeping %s seconds before reconnecting" % (2 * self.RETRIES))
+            logger.error("sleeping %s seconds before reconnecting" %
+                         (2 * self.RETRIES))
             time.sleep(2 * self.RETRIES)
             self.__init__(self.server, self.db, self.debug)
             return self.__call__(key, f, time_expire)
         else:
             self.RETRIES = 0
-            raise ConnectionError , 'Redis instance is unavailable at %s' % (self.server)
+            raise ConnectionError('Redis instance is unavailable at %s' % (
+                self.server))
 
     def increment(self, key, value=1, time_expire=300):
         try:
@@ -129,7 +133,8 @@ class RedisClient(object):
             return self.increment(key, value, time_expire)
         else:
             self.RETRIES = 0
-            raise ConnectionError , 'Redis instance is unavailable at %s' % (self.server)
+            raise ConnectionError('Redis instance is unavailable at %s' % (
+                self.server))
 
     def clear(self, regex):
         """
@@ -139,8 +144,8 @@ class RedisClient(object):
         r = re.compile(regex)
         prefix = "w2p:%s:" % (self.request.application)
         pipe = self.r_server.pipeline()
-        for a in self.r_server.keys("%s*" % \
-                                        (prefix)):
+        for a in self.r_server.keys("%s*" %
+                                    (prefix)):
             if r.match(str(a).replace(prefix, '', 1)):
                 pipe.delete(a)
         pipe.execute()
@@ -149,10 +154,10 @@ class RedisClient(object):
         statscollector = self.r_server.info()
         if self.debug:
             statscollector['w2p_stats'] = dict(
-                hit_total = self.r_server.get(
+                hit_total=self.r_server.get(
                     'web2py_cache_statistics:hit_total'),
                 misses=self.r_server.get('web2py_cache_statistics:misses')
-                )
+            )
         statscollector['w2p_keys'] = dict()
         for a in self.r_server.keys("w2p:%s:*" % (
                 self.request.application)):
@@ -163,8 +168,3 @@ class RedisClient(object):
     def __keyFormat__(self, key):
         return 'w2p:%s:%s' % (self.request.application,
                               key.replace(' ', '_'))
-
-
-
-
-

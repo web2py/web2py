@@ -8,6 +8,7 @@ So user can choose the built-in login or extended login methods.
 
 from gluon import current, DIV
 
+
 class ExtendedLoginForm(object):
     """
     Put extended_login_form under web2py/gluon/contrib/login_methods folder.
@@ -22,7 +23,8 @@ class ExtendedLoginForm(object):
                                 api_key="...",
                                 domain="...",
                                 url = "http://localhost:8000/%s/default/user/login" % request.application)
-    extended_login_form = ExtendedLoginForm(auth, alt_login_form, signals=['token'])
+    extended_login_form = ExtendedLoginForm(
+        auth, alt_login_form, signals=['token'])
 
     auth.settings.login_form = extended_login_form
 
@@ -37,7 +39,7 @@ class ExtendedLoginForm(object):
                  auth,
                  alt_login_form,
                  signals=[],
-                 login_arg = 'login'
+                 login_arg='login'
                  ):
         self.auth = auth
         self.alt_login_form = alt_login_form
@@ -50,7 +52,7 @@ class ExtendedLoginForm(object):
         """
         if hasattr(self.alt_login_form, 'get_user'):
             return self.alt_login_form.get_user()
-        return None # let gluon.tools.Auth.get_or_create_user do the rest
+        return None  # let gluon.tools.Auth.get_or_create_user do the rest
 
     def login_url(self, next):
         """
@@ -91,8 +93,8 @@ class ExtendedLoginForm(object):
         args = request.args
 
         if (self.signals and
-            any([True for signal in self.signals if request.vars.has_key(signal)])
-           ):
+            any([True for signal in self.signals if signal in request.vars])
+            ):
             return self.alt_login_form.login_form()
 
         self.auth.settings.login_form = self.auth
@@ -101,5 +103,3 @@ class ExtendedLoginForm(object):
 
         form.components.append(self.alt_login_form.login_form())
         return form
-
-

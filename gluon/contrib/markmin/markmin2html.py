@@ -545,14 +545,14 @@ regex_bq_headline=re.compile('^(?:(\.+|\++|\-+)(\.)?\s+)?(-{3}-*)$')
 regex_tq=re.compile('^(-{3}-*)(?::(?P<c>[a-zA-Z][_a-zA-Z\-\d]*)(?:\[(?P<p>[a-zA-Z][_a-zA-Z\-\d]*)\])?)?$')
 regex_proto = re.compile(r'(?<!["\w>/=])(?P<p>\w+):(?P<k>\w+://[\w\d\-+=?%&/:.]+)', re.M)
 regex_auto = re.compile(r'(?<!["\w>/=])(?P<k>\w+://[\w\d\-+_=?%&/:.]+)',re.M)
-regex_link=re.compile(r'('+LINK+r')|\[\[(?P<s>.+?)\]\]')
-regex_link_level2=re.compile(r'^(?P<t>\S.*?)?(?:\s+\[(?P<a>.+?)\])?(?:\s+(?P<k>\S+))?(?:\s+(?P<p>popup))?\s*$')
-regex_media_level2=re.compile(r'^(?P<t>\S.*?)?(?:\s+\[(?P<a>.+?)\])?(?:\s+(?P<k>\S+))?\s+(?P<p>img|IMG|left|right|center|video|audio)(?:\s+(?P<w>\d+px))?\s*$')
+regex_link=re.compile(r'('+LINK+r')|\[\[(?P<s>.+?)\]\]',re.S)
+regex_link_level2=re.compile(r'^(?P<t>\S.*?)?(?:\s+\[(?P<a>.+?)\])?(?:\s+(?P<k>\S+))?(?:\s+(?P<p>popup))?\s*$',re.S)
+regex_media_level2=re.compile(r'^(?P<t>\S.*?)?(?:\s+\[(?P<a>.+?)\])?(?:\s+(?P<k>\S+))?\s+(?P<p>img|IMG|left|right|center|video|audio)(?:\s+(?P<w>\d+px))?\s*$',re.S)
 
-regex_markmin_escape = re.compile(r"(\\*)(['`:*~\\[\]{}@\$+\-.#])")
-regex_backslash = re.compile(r"\\(['`:*~\\[\]{}@\$+\-.#])")
-ttab_in  = maketrans("'`:*~\\[]{}@$+-.#", '\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b')
-ttab_out = maketrans('\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b',"'`:*~\\[]{}@$+-.#")
+regex_markmin_escape = re.compile(r"(\\*)(['`:*~\\[\]{}@\$+\-.#\n])")
+regex_backslash = re.compile(r"\\(['`:*~\\[\]{}@\$+\-.#\n])")
+ttab_in  = maketrans("'`:*~\\[]{}@$+-.#\n", '\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x05')
+ttab_out = maketrans('\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x05',"'`:*~\\[]{}@$+-.#\n")
 
 def markmin_escape(text):
     """ insert \\ before markmin control characters: '`:*~[]{}@$ """
@@ -686,6 +686,15 @@ def render(text,
     >>> render("----\\nhello world\\n----\\n")
     '<blockquote>hello world</blockquote>'
 
+    >>> render('[[http://example.com]]')
+    '<p><span class="anchor" id="markmin_http://example.com"></span></p>'
+
+    >>> render('[[ http://example.com]]')
+    '<p><a href="http://example.com">http://example.com</a></p>'
+
+    >>> render('[[bookmark [http://example.com] ]]')
+    '<p><span class="anchor" id="markmin_bookmark"><a href="http://example.com">http://example.com</a></span></p>'
+
     >>> render('[[this is a link http://example.com]]')
     '<p><a href="http://example.com">this is a link</a></p>'
 
@@ -699,6 +708,9 @@ def render(text,
     '<p><video controls="controls"><source src="http://example.com" />Your browser doesn\\'t support &lt;video&gt; HTML5 tag</video></p>'
 
     >>> render("[[Your browser doesn't support <audio> HTML5 tag http://example.com audio]]")
+    '<p><audio controls="controls"><source src="http://example.com" />Your browser doesn\\'t support &lt;audio&gt; HTML5 tag</audio></p>'
+
+    >>> render("[[Your\\nbrowser\\ndoesn't\\nsupport\\n<audio> HTML5 tag http://exam\\\\\\nple.com\\naudio]]")
     '<p><audio controls="controls"><source src="http://example.com" />Your browser doesn\\'t support &lt;audio&gt; HTML5 tag</audio></p>'
 
     >>> render('[[this is a **link** http://example.com]]')
@@ -850,6 +862,7 @@ def render(text,
     pp='\n' if pretty_print else ''
     text = str(text or '')
     text = regex_backslash.sub(lambda m: m.group(1).translate(ttab_in), text)
+    text = text.replace('\x05','') # concatenate strings separeted by \\n
 
     if URL is not None:
         text = replace_at_urls(text,URL)
@@ -1254,8 +1267,8 @@ def render(text,
             k = escape(k)
             title = ' title="%s"' % a.replace(META, DISABLED_META) if a else ''
             target = ' target="_blank"' if p == 'popup' else ''
-            t = render(t, {}, {}, 'br', URL, environment, latex, autolinks,
-                       protolinks, class_prefix, id_prefix, pretty_print) if t else k
+            t = render(t, {}, {}, 'br', URL, environment, latex, None,
+                       None, class_prefix, id_prefix, pretty_print) if t else k
             return '<a href="%(k)s"%(title)s%(target)s>%(t)s</a>' \
                    % dict(k=k, title=title, target=target, t=t)
         if t == 'NEWLINE' and not a:

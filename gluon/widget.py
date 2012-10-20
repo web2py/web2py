@@ -30,7 +30,8 @@ from settings import global_settings
 from shell import run, test
 
 try:
-    import Tkinter, tkMessageBox
+    import Tkinter
+    import tkMessageBox
     import contrib.taskbar_widget
     from winservice import web2py_windows_service_handler
     have_winservice = True
@@ -44,7 +45,8 @@ except NameError:
     BaseException = Exception
 
 ProgramName = 'web2py Web Framework'
-ProgramAuthor = 'Created by Massimo Di Pierro, Copyright 2007-' + str(datetime.datetime.now().year)
+ProgramAuthor = 'Created by Massimo Di Pierro, Copyright 2007-' + str(
+    datetime.datetime.now().year)
 ProgramVersion = read_file('VERSION').strip()
 
 ProgramInfo = '''%s
@@ -57,6 +59,7 @@ if not sys.version[:3] in ['2.4', '2.5', '2.6', '2.7']:
     sys.stderr.write(msg)
 
 logger = logging.getLogger("web2py")
+
 
 def run_system_tests():
     major_version = sys.version_info[0]
@@ -76,6 +79,7 @@ def run_system_tests():
         print "Only Python 2.x supported."
         ret = 256
     sys.exit(ret and 1)
+
 
 class IO(object):
     """   """
@@ -141,7 +145,7 @@ def presentation(root):
         pnl = Tkinter.Label(canvas, image=img, background='white', bd=0)
         pnl.pack(side='top', fill='both', expand='yes')
         # Prevent garbage collection of img
-        pnl.image=img
+        pnl.image = img
 
     def add_label(text='Change Me', font_size=12, foreground='#195866', height=1):
         return Tkinter.Label(
@@ -153,7 +157,7 @@ def presentation(root):
             anchor=Tkinter.CENTER,
             foreground=foreground,
             background='white'
-            )
+        )
 
     add_label('Welcome to...').pack(side='top')
     add_label(ProgramName, 18, '#FF5C1F', 2).pack()
@@ -231,17 +235,18 @@ class web2pyDialog(object):
                                                  sticky=sticky)
         self.ips = {}
         self.selected_ip = Tkinter.StringVar()
-        row=0
-        ips = [('127.0.0.1','Local')] + \
-            [(ip,'Public') for ip in options.ips] + \
-            [('0.0.0.0','Public')]
-        for ip,legend in ips:
+        row = 0
+        ips = [('127.0.0.1', 'Local')] + \
+            [(ip, 'Public') for ip in options.ips] + \
+            [('0.0.0.0', 'Public')]
+        for ip, legend in ips:
             self.ips[ip] = Tkinter.Radiobutton(
-                self.root,text='%s (%s)' % (legend,ip),
+                self.root, text='%s (%s)' % (legend, ip),
                 variable=self.selected_ip, value=ip)
             self.ips[ip].grid(row=row, column=1, sticky=sticky)
-            if row==0: self.ips[ip].select()
-            row+=1
+            if row == 0:
+                self.ips[ip].select()
+            row += 1
         shift = row
         # Port
         Tkinter.Label(self.root,
@@ -257,26 +262,26 @@ class web2pyDialog(object):
         # Password
         Tkinter.Label(self.root,
                       text='Choose Password:',
-                      justify=Tkinter.LEFT).grid(row=shift+1,
+                      justify=Tkinter.LEFT).grid(row=shift + 1,
                                                  column=0,
                                                  sticky=sticky)
 
         self.password = Tkinter.Entry(self.root, show='*')
         self.password.bind('<Return>', lambda e: self.start())
         self.password.focus_force()
-        self.password.grid(row=shift+1, column=1, sticky=sticky)
+        self.password.grid(row=shift + 1, column=1, sticky=sticky)
 
         # Prepare the canvas
         self.canvas = Tkinter.Canvas(self.root,
                                      width=300,
                                      height=100,
                                      bg='black')
-        self.canvas.grid(row=shift+2, column=0, columnspan=2)
+        self.canvas.grid(row=shift + 2, column=0, columnspan=2)
         self.canvas.after(1000, self.update_canvas)
 
         # Prepare the frame
         frame = Tkinter.Frame(self.root)
-        frame.grid(row=shift+3, column=0, columnspan=2)
+        frame.grid(row=shift + 3, column=0, columnspan=2)
 
         # Start button
         self.button_start = Tkinter.Button(frame,
@@ -309,12 +314,12 @@ class web2pyDialog(object):
         apps = []
         available_apps = [arq for arq in os.listdir('applications/')]
         available_apps = [arq for arq in available_apps
-            if os.path.exists('applications/%s/models/scheduler.py' % arq)]
+                          if os.path.exists('applications/%s/models/scheduler.py' % arq)]
         if start:
             #the widget takes care of starting the scheduler
             if self.options.scheduler and self.options.with_scheduler:
                 apps = [app.strip() for app in self.options.scheduler.split(',')
-                            if app in available_apps]
+                        if app in available_apps]
         for app in apps:
             self.try_start_scheduler(app)
 
@@ -324,11 +329,11 @@ class web2pyDialog(object):
             if arq not in self.scheduler_processes:
                 item = lambda u = arq: self.try_start_scheduler(u)
                 self.schedmenu.add_command(label="start %s" % arq,
-                                            command=item)
+                                           command=item)
             if arq in self.scheduler_processes:
                 item = lambda u = arq: self.try_stop_scheduler(u)
                 self.schedmenu.add_command(label="stop %s" % arq,
-                                            command=item)
+                                           command=item)
 
     def start_schedulers(self, app):
         try:
@@ -338,12 +343,13 @@ class web2pyDialog(object):
             return
         code = "from gluon import current;current._scheduler.loop()"
         print 'starting scheduler from widget for "%s"...' % app
-        args = (app,True,True,None,False,code)
+        args = (app, True, True, None, False, code)
         logging.getLogger().setLevel(self.options.debuglevel)
         p = Process(target=run, args=args)
         self.scheduler_processes[app] = p
         self.update_schedulers()
-        print "Currently running %s scheduler processes" % (len(self.scheduler_processes))
+        print "Currently running %s scheduler processes" % (
+            len(self.scheduler_processes))
         p.start()
         print "Processes started"
 
@@ -359,7 +365,6 @@ class web2pyDialog(object):
         if app not in self.scheduler_processes:
             t = threading.Thread(target=self.start_schedulers, args=(app,))
             t.start()
-
 
     def checkTaskBar(self):
         """ Check taskbar status """
@@ -573,7 +578,8 @@ def console():
 
     description = textwrap.dedent(description)
 
-    parser = optparse.OptionParser(usage, None, optparse.Option, ProgramVersion)
+    parser = optparse.OptionParser(
+        usage, None, optparse.Option, ProgramVersion)
 
     parser.description = description
 
@@ -804,12 +810,12 @@ def console():
                       default=False,
                       help=msg)
 
-    parser.add_option('-N',
-                      '--no-cron',
+    parser.add_option('-Y',
+                      '--run-cron',
                       action='store_true',
-                      dest='nocron',
+                      dest='runcron',
                       default=False,
-                      help='do not start cron automatically')
+                      help='start the background cron process')
 
     parser.add_option('-J',
                       '--cronjob',
@@ -857,14 +863,12 @@ def console():
                       dest='nobanner',
                       help='Do not print header banner')
 
-
     msg = 'listen on multiple addresses: "ip:port:cert:key:ca_cert;ip2:port2:cert2:key2:ca_cert2;..." (:cert:key optional; no spaces)'
     parser.add_option('--interfaces',
                       action='store',
                       dest='interfaces',
                       default=None,
                       help=msg)
-
 
     msg = 'runs web2py tests'
     parser.add_option('--run_system_tests',
@@ -873,10 +877,13 @@ def console():
                       default=False,
                       help=msg)
 
-    if '-A' in sys.argv: k = sys.argv.index('-A')
-    elif '--args' in sys.argv: k = sys.argv.index('--args')
-    else: k=len(sys.argv)
-    sys.argv, other_args = sys.argv[:k], sys.argv[k+1:]
+    if '-A' in sys.argv:
+        k = sys.argv.index('-A')
+    elif '--args' in sys.argv:
+        k = sys.argv.index('--args')
+    else:
+        k = len(sys.argv)
+    sys.argv, other_args = sys.argv[:k], sys.argv[k + 1:]
     (options, args) = parser.parse_args()
     options.args = [options.run] + other_args
     global_settings.cmd_options = options
@@ -885,7 +892,7 @@ def console():
     try:
         options.ips = [
             ip for ip in socket.gethostbyname_ex(socket.getfqdn())[2]
-            if ip!='127.0.0.1']
+            if ip != '127.0.0.1']
     except socket.gaierror:
         options.ips = []
 
@@ -904,7 +911,7 @@ def console():
 
     if options.cronjob:
         global_settings.cronjob = True  # tell the world
-        options.nocron = True   # don't start cron jobs
+        options.run = False   # don't start cron jobs
         options.plain = True    # cronjobs use a plain shell
         options.nobanner = True
         options.nogui = True
@@ -943,7 +950,7 @@ def console():
 
         if not os.path.exists('welcome.w2p') or os.path.exists('NEWINSTALL'):
             try:
-                w2p_pack('welcome.w2p','applications/welcome')
+                w2p_pack('welcome.w2p', 'applications/welcome')
                 os.unlink('NEWINSTALL')
             except:
                 msg = "New installation: unable to create welcome.w2p file"
@@ -951,12 +958,14 @@ def console():
 
     return (options, args)
 
-def check_existent_app(options,appname):
+
+def check_existent_app(options, appname):
     if os.path.isdir(os.path.join(options.folder, 'applications', appname)):
         return True
 
+
 def get_code_for_scheduler(app, options):
-    if len(app) == 1 or app[1] == None:
+    if len(app) == 1 or app[1] is None:
         code = "from gluon import current;current._scheduler.loop()"
     else:
         code = "from gluon import current;current._scheduler.group_names = ['%s'];"
@@ -967,6 +976,7 @@ def get_code_for_scheduler(app, options):
         print "Application '%s' doesn't exist, skipping" % (app_)
         return None, None
     return app_, code
+
 
 def start_schedulers(options):
     try:
@@ -985,14 +995,14 @@ def start_schedulers(options):
         if not app_:
             return
         print 'starting single-scheduler for "%s"...' % app_
-        run(app_,True,True,None,False,code)
+        run(app_, True, True, None, False, code)
         return
     for app in apps:
         app_, code = get_code_for_scheduler(app, options)
         if not app_:
             continue
         print 'starting scheduler for "%s"...' % app_
-        args = (app_,True,True,None,False,code)
+        args = (app_, True, True, None, False, code)
         p = Process(target=run, args=args)
         processes.append(p)
         print "Currently running %s scheduler processes" % (len(processes))
@@ -1024,7 +1034,6 @@ def start(cron=True):
     if not options.nobanner:
         print 'Database drivers available: %s' % ', '.join(DRIVERS)
 
-
     # ## if -L load options from options.config file
     if options.config:
         try:
@@ -1037,8 +1046,8 @@ def start(cron=True):
                 print 'Cannot import config file [%s]' % options.config
                 sys.exit(1)
         for key in dir(options2):
-            if hasattr(options,key):
-                setattr(options,key,getattr(options2,key))
+            if hasattr(options, key):
+                setattr(options, key, getattr(options2, key))
 
     if False and not os.path.exists('logging.conf') and \
             os.path.exists('logging.example.conf'):
@@ -1048,7 +1057,7 @@ def start(cron=True):
         sys.stdout.write("OK\n")
 
     # ## if -T run doctests (no cron)
-    if hasattr(options,'test') and options.test:
+    if hasattr(options, 'test') and options.test:
         test(options.test, verbose=options.verbose)
         return
 
@@ -1066,7 +1075,8 @@ def start(cron=True):
         logger.debug('Starting extcron...')
         global_settings.web2py_crontype = 'external'
         if options.scheduler:   # -K
-            apps = [app.strip() for app in options.scheduler.split(',') if check_existent_app(options, app.strip())]
+            apps = [app.strip() for app in options.scheduler.split(
+                ',') if check_existent_app(options, app.strip())]
         else:
             apps = None
         extcron = newcron.extcron(options.folder, apps=apps)
@@ -1082,14 +1092,13 @@ def start(cron=True):
             pass
         return
 
-
-    # ## if -N or not cron disable cron in this *process*
+    # ## if -H cron is enabled in this *process*
     # ## if --softcron use softcron
     # ## use hardcron in all other cases
-    if cron and not options.nocron and options.softcron:
+    if cron and options.runcron and options.softcron:
         print 'Using softcron (but this is not very efficient)'
         global_settings.web2py_crontype = 'soft'
-    elif cron and not options.nocron:
+    elif cron and options.runcron:
         logger.debug('Starting hardcron...')
         global_settings.web2py_crontype = 'hard'
         newcron.hardcron(options.folder).start()
@@ -1127,7 +1136,8 @@ def start(cron=True):
             import Tkinter
             havetk = True
         except ImportError:
-            logger.warn('GUI not available because Tk library is not installed')
+            logger.warn(
+                'GUI not available because Tk library is not installed')
             havetk = False
 
         if options.password == '<ask>' and havetk or options.taskbar and havetk:
@@ -1218,12 +1228,3 @@ end tell
         except:
             pass
     logging.shutdown()
-
-
-
-
-
-
-
-
-

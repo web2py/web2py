@@ -11,25 +11,18 @@ import re
 
 # pattern to find defined tables
 
-regex_tables = re.compile(\
+regex_tables = re.compile(
     """^[\w]+\.define_table\(\s*[\'\"](?P<name>\w+)[\'\"]""",
     flags=re.M)
 
 # pattern to find exposed functions in controller
 
-regex_expose = re.compile(\
+regex_expose = re.compile(
     '^def\s+(?P<name>(?:[a-zA-Z0-9]\w*)|(?:_[a-zA-Z0-9]\w*))\(\)\s*:',
     flags=re.M)
 
-regex_include = re.compile(\
+regex_include = re.compile(
     '(?P<all>\{\{\s*include\s+[\'"](?P<name>[^\'"]*)[\'"]\s*\}\})')
 
-regex_extend = re.compile(\
-    '^\s*(?P<all>\{\{\s*extend\s+[\'"](?P<name>[^\'"]+)[\'"]\s*\}\})',re.MULTILINE)
-
-
-
-
-
-
-
+regex_extend = re.compile(
+    '^\s*(?P<all>\{\{\s*extend\s+[\'"](?P<name>[^\'"]+)[\'"]\s*\}\})', re.MULTILINE)

@@ -19,10 +19,3 @@ def handler(request, response, methods):
     response.headers['Content-Type'] = 'text/xml'
     dispatch = getattr(dispatcher, '_dispatch', None)
     return dispatcher._marshaled_dispatch(request.body.read(), dispatch)
-
-
-
-
-
-
-

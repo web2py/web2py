@@ -33,7 +33,7 @@ def list_apps():
 @service.jsonrpc
 def list_files(app, pattern='.*\.py$'):
     files = listdir(apath('%s/' % app, r=request), pattern)
-    return [x.replace('\\','/') for x in files]
+    return [x.replace('\\', '/') for x in files]
 
 
 @service.jsonrpc
@@ -43,7 +43,7 @@ def read_file(filename, b64=False):
     try:
         data = f.read()
         if not b64:
-            data = data.replace('\r','')
+            data = data.replace('\r', '')
         else:
             data = base64.b64encode(data)
     finally:
@@ -82,6 +82,7 @@ def install(app_name, filename, data, overwrite=True):
 
     return installed
 
+
 @service.jsonrpc
 def attach_debugger(host='localhost', port=6000, authkey='secret password'):
     import gluon.contrib.qdb as qdb
@@ -90,7 +91,7 @@ def attach_debugger(host='localhost', port=6000, authkey='secret password'):
 
     if isinstance(authkey, unicode):
         authkey = authkey.encode('utf8')
-   
+
     if not hasattr(gluon.debug, 'qdb_listener'):
         # create a remote debugger server and wait for connection
         address = (host, port)     # family is deduced to be 'AF_INET'
@@ -124,7 +125,7 @@ def detach_debugger():
     gluon.debug.qdb_debugger = None
     return True
 
+
 def call():
     session.forget()
     return service()
-

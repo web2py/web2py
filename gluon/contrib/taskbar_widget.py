@@ -28,7 +28,7 @@ class TaskBarIcon:
             win32con.WM_DESTROY: self.OnDestroy,
             win32con.WM_COMMAND: self.OnCommand,
             win32con.WM_USER + 20: self.OnTaskbarNotify,
-            }
+        }
 
         # Register the Window class.
 
@@ -56,7 +56,7 @@ class TaskBarIcon:
             0,
             hinst,
             None,
-            )
+        )
         win32gui.UpdateWindow(self.hwnd)
         self.SetServerStopped()
 
@@ -82,7 +82,7 @@ class TaskBarIcon:
                 hicon = win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
 
         flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE\
-             | win32gui.NIF_TIP
+            | win32gui.NIF_TIP
         nid = (
             self.hwnd,
             0,
@@ -90,7 +90,7 @@ class TaskBarIcon:
             win32con.WM_USER + 20,
             hicon,
             'web2py Framework',
-            )
+        )
         try:
             win32gui.Shell_NotifyIcon(win32gui.NIM_MODIFY, nid)
         except:
@@ -111,7 +111,7 @@ class TaskBarIcon:
         msg,
         wparam,
         lparam,
-        ):
+    ):
         self._DoCreateIcons()
 
     def OnDestroy(
@@ -120,7 +120,7 @@ class TaskBarIcon:
         msg,
         wparam,
         lparam,
-        ):
+    ):
         nid = (self.hwnd, 0)
         win32gui.Shell_NotifyIcon(win32gui.NIM_DELETE, nid)
 
@@ -130,7 +130,7 @@ class TaskBarIcon:
         msg,
         wparam,
         lparam,
-        ):
+    ):
         if lparam == win32con.WM_LBUTTONUP:
             pass
         elif lparam == win32con.WM_LBUTTONDBLCLK:
@@ -144,14 +144,14 @@ class TaskBarIcon:
                 win32gui.AppendMenu(menu, win32con.MF_STRING, 1024,
                                     'Start Server')
                 win32gui.AppendMenu(menu, win32con.MF_STRING
-                                     | win32con.MF_GRAYED, 1025,
+                                    | win32con.MF_GRAYED, 1025,
                                     'Restart Server')
                 win32gui.AppendMenu(menu, win32con.MF_STRING
-                                     | win32con.MF_GRAYED, 1026,
+                                    | win32con.MF_GRAYED, 1026,
                                     'Stop Server')
             else:
                 win32gui.AppendMenu(menu, win32con.MF_STRING
-                                     | win32con.MF_GRAYED, 1024,
+                                    | win32con.MF_GRAYED, 1024,
                                     'Start Server')
                 win32gui.AppendMenu(menu, win32con.MF_STRING, 1025,
                                     'Restart Server')
@@ -173,7 +173,7 @@ class TaskBarIcon:
                 0,
                 self.hwnd,
                 None,
-                )
+            )
             win32api.PostMessage(self.hwnd, win32con.WM_NULL, 0, 0)
         return 1
 
@@ -183,7 +183,7 @@ class TaskBarIcon:
         msg,
         wparam,
         lparam,
-        ):
+    ):
         id = win32api.LOWORD(wparam)
         if id == 1023:
             self.status.append(self.EnumStatus.TOGGLE)
@@ -226,7 +226,7 @@ class TaskBarIcon:
             0,
             0,
             icon_flags,
-            )
+        )
         return hicon
 
     class EnumStatus:
@@ -241,10 +241,3 @@ class TaskBarIcon:
 
         RUNNING = 0
         STOPPED = 1
-
-
-
-
-
-
-

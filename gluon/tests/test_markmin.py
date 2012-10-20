@@ -13,10 +13,10 @@ else:
 import unittest
 from contrib.markmin.markmin2html import run_doctests
 
+
 class TestMarkmin(unittest.TestCase):
     def testMarkmin(self):
         run_doctests()
 
 if __name__ == '__main__':
     unittest.main()
-

@@ -9,6 +9,7 @@
 ## - call exposes all registered services (none by default)
 #########################################################################
 
+
 def index():
     """
     example action using the internationalization operator T and flash
@@ -19,6 +20,7 @@ def index():
     """
     response.flash = T("Welcome to web2py!")
     return dict(message=T('Hello World'))
+
 
 def user():
     """
@@ -42,7 +44,7 @@ def download():
     allows downloading of uploaded files
     http://..../[app]/default/download/[filename]
     """
-    return response.download(request,db)
+    return response.download(request, db)
 
 
 def call():

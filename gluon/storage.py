@@ -18,6 +18,7 @@ import portalocker
 __all__ = ['List', 'Storage', 'Settings', 'Messages',
            'StorageList', 'load_storage', 'save_storage']
 
+
 class Storage(dict):
     """
     A Storage object is like a dictionary except `obj.foo` can be used
@@ -38,7 +39,7 @@ class Storage(dict):
         >>> print o.a
         None
     """
-    __slots__=()    
+    __slots__ = ()
     __setattr__ = dict.__setitem__
     __delattr__ = dict.__delitem__
     __getitem__ = dict.get
@@ -47,9 +48,8 @@ class Storage(dict):
     # http://stackoverflow.com/questions/5247250/why-does-pickle-getstate-accept-as-a-return-value-the-very-instance-it-requi
     __getstate__ = lambda self: None
     __copy__ = lambda self: Storage(self)
-    
-    
-    def getlist(self,key):
+
+    def getlist(self, key):
         """
         Return a Storage value as a list.
 
@@ -69,11 +69,11 @@ class Storage(dict):
         >>> request.vars.getlist('z')
         []
         """
-        value = self.get(key,[])
+        value = self.get(key, [])
         return value if not value else \
-            value if isinstance(value,(list,tuple)) else [value]
+            value if isinstance(value, (list, tuple)) else [value]
 
-    def getfirst(self,key,default=None):
+    def getfirst(self, key, default=None):
         """
         Return the first or only value when given a request.vars-style key.
 
@@ -94,7 +94,7 @@ class Storage(dict):
         values = self.getlist(key)
         return values[0] if values else default
 
-    def getlast(self,key,default=None):
+    def getlast(self, key, default=None):
         """
         Returns the last or only single value when
         given a request.vars-style key.
@@ -116,21 +116,24 @@ class Storage(dict):
         values = self.getlist(key)
         return values[-1] if values else default
 
-PICKABLE = (str,int,long,float,bool,list,dict,tuple,set)
+PICKABLE = (str, int, long, float, bool, list, dict, tuple, set)
+
 
 class StorageList(Storage):
     """
     like Storage but missing elements default to [] instead of None
     """
-    def __getitem__(self,key):
+    def __getitem__(self, key):
         return self.__getattr__(key)
+
     def __getattr__(self, key):
         if key in self:
-            return getattr(self,key)
+            return getattr(self, key)
         else:
             r = []
-            setattr(self,key,r)
+            setattr(self, key, r)
             return r
+
 
 def load_storage(filename):
     fp = None
@@ -138,8 +141,10 @@ def load_storage(filename):
         fp = portalocker.LockedFile(filename, 'rb')
         storage = cPickle.load(fp)
     finally:
-        if fp: fp.close()
+        if fp:
+            fp.close()
     return Storage(storage)
+
 
 def save_storage(storage, filename):
     fp = None
@@ -147,24 +152,29 @@ def save_storage(storage, filename):
         fp = portalocker.LockedFile(filename, 'wb')
         cPickle.dump(dict(storage), fp)
     finally:
-        if fp: fp.close()
+        if fp:
+            fp.close()
+
 
 class Settings(Storage):
     def __setattr__(self, key, value):
         if key != 'lock_keys' and self['lock_keys'] and key not in self:
-            raise SyntaxError, 'setting key \'%s\' does not exist' % key
+            raise SyntaxError('setting key \'%s\' does not exist' % key)
         if key != 'lock_values' and self['lock_values']:
-            raise SyntaxError, 'setting value cannot be changed: %s' % key
+            raise SyntaxError('setting value cannot be changed: %s' % key)
         self[key] = value
+
 
 class Messages(Settings):
     def __init__(self, T):
-        Storage.__init__(self,T=T)
+        Storage.__init__(self, T=T)
+
     def __getattr__(self, key):
         value = self[key]
         if isinstance(value, str):
             return str(self.T(value))
         return value
+
 
 class FastStorage(dict):
     """
@@ -204,25 +214,33 @@ class FastStorage(dict):
     def __init__(self, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
         self.__dict__ = self
-    def __getattr__(self,key):
-        return getattr(self,key) if key in self else None
-    def __getitem__(self,key):
-        return dict.get(self,key,None)
+
+    def __getattr__(self, key):
+        return getattr(self, key) if key in self else None
+
+    def __getitem__(self, key):
+        return dict.get(self, key, None)
+
     def copy(self):
         self.__dict__ = {}
         s = FastStorage(self)
         self.__dict__ = self
         return s
+
     def __repr__(self):
         return '<Storage %s>' % dict.__repr__(self)
+
     def __getstate__(self):
         return dict(self)
+
     def __setstate__(self, sdict):
         dict.__init__(self, sdict)
-        self.__dict__=self
+        self.__dict__ = self
+
     def update(self, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
-        self.__dict__=self
+        self.__dict__ = self
+
 
 class List(list):
     """
@@ -236,7 +254,7 @@ class List(list):
         request.args(0,default=0,cast=int,otherwise=lambda:...)
         """
         n = len(self)
-        if 0<=i<n or -n<=i<0:
+        if 0 <= i < n or -n <= i < 0:
             value = self[i]
         else:
             value = default
@@ -247,22 +265,15 @@ class List(list):
                 from http import HTTP, redirect
                 if otherwise is None:
                     raise HTTP(404)
-                elif isinstance(otherwise,str):
+                elif isinstance(otherwise, str):
                     redirect(otherwise)
                 elif callable(otherwise):
                     return otherwise()
                 else:
-                    raise RuntimeError, "invalid otherwise"
+                    raise RuntimeError("invalid otherwise")
         return value
 
 
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-
-
-
-
-
-
-

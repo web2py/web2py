@@ -1,6 +1,3 @@
-
-
-
 def form():
     """ a simple entry form with various types of objects """
 
@@ -15,7 +12,7 @@ def form():
         TR('Profile', TEXTAREA(_name='profile',
            value='write something here')),
         TR('', INPUT(_type='submit', _value='SUBMIT')),
-        ))
+    ))
     if form.process().accepted:
         response.flash = 'form accepted'
     elif form.errors:
@@ -23,6 +20,3 @@ def form():
     else:
         response.flash = 'please fill the form'
     return dict(form=form, vars=form.vars)
-
-
-

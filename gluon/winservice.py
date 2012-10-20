@@ -30,6 +30,7 @@ from fileutils import up
 
 __all__ = ['web2py_windows_service_handler']
 
+
 class Service(win32serviceutil.ServiceFramework):
 
     _svc_name_ = '_unNamed'
@@ -48,7 +49,7 @@ class Service(win32serviceutil.ServiceFramework):
             self.ReportServiceStatus(win32service.SERVICE_RUNNING)
             self.start()
             win32event.WaitForSingleObject(self.stop_event,
-                    win32event.INFINITE)
+                                           win32event.INFINITE)
         except:
             self.log(traceback.format_exc(sys.exc_info))
             self.SvcStop()
@@ -85,7 +86,7 @@ class Web2pyService(Service):
         try:
             h = _winreg.OpenKey(_winreg.HKEY_LOCAL_MACHINE,
                                 r'SYSTEM\CurrentControlSet\Services\%s'
-                                 % self._svc_name_)
+                                % self._svc_name_)
             try:
                 cls = _winreg.QueryValue(h, 'PythonClass')
             finally:
@@ -108,11 +109,13 @@ class Web2pyService(Service):
         else:
             opt_mod = self._exe_args_
         options = __import__(opt_mod, [], [], '')
-        if True: # legacy support for old options files, which have only (deprecated) numthreads
+        if True:  # legacy support for old options files, which have only (deprecated) numthreads
             if hasattr(options, 'numthreads') and not hasattr(options, 'minthreads'):
                 options.minthreads = options.numthreads
-            if not hasattr(options, 'minthreads'): options.minthreads = None
-            if not hasattr(options, 'maxthreads'): options.maxthreads = None
+            if not hasattr(options, 'minthreads'):
+                options.minthreads = None
+            if not hasattr(options, 'maxthreads'):
+                options.maxthreads = None
         import main
         self.server = main.HttpServer(
             ip=options.ip,
@@ -130,7 +133,7 @@ class Web2pyService(Service):
             timeout=options.timeout,
             shutdown_timeout=options.shutdown_timeout,
             path=options.folder
-            )
+        )
         try:
             self.server.start()
         except:
@@ -152,24 +155,17 @@ class Web2pyService(Service):
 def web2py_windows_service_handler(argv=None, opt_file='options'):
     path = os.path.dirname(__file__)
     web2py_path = up(path)
-    if web2py_path.endswith('.zip'): # in case bianry distro 'library.zip'
+    if web2py_path.endswith('.zip'):  # in case bianry distro 'library.zip'
         web2py_path = os.path.dirname(web2py_path)
     os.chdir(web2py_path)
     classstring = os.path.normpath(
-        os.path.join(web2py_path,'gluon.winservice.Web2pyService'))
+        os.path.join(web2py_path, 'gluon.winservice.Web2pyService'))
     if opt_file:
         Web2pyService._exe_args_ = opt_file
         win32serviceutil.HandleCommandLine(Web2pyService,
-                serviceClassString=classstring, argv=['', 'install'])
+                                           serviceClassString=classstring, argv=['', 'install'])
     win32serviceutil.HandleCommandLine(Web2pyService,
-            serviceClassString=classstring, argv=argv)
+                                       serviceClassString=classstring, argv=argv)
 
 if __name__ == '__main__':
     web2py_windows_service_handler()
-
-
-
-
-
-
-

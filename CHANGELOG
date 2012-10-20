@@ -1,25 +1,35 @@
 ## 2.1.0
 
-- if apps are accidentally deleted there is copy left in deposit folder
-- db.table.field.epoch() counts seconds from epoch
-- fixed many aith.wiki problems
-- better welcome layout, thanks Paolo
-- db.define_table(...,redefine=True)
-- DAL, Row, and Rows object can now be pickled/unpickled, thanks to zombie DAL.
-- admin uses codemirror
-- support for auth.wiki(render='html')
-- upgraded jQuery 1.8
-- upgraded Bootstrap 2.1
-- fixed problem with dropbox_account.py
-- cache.with_prefix(cache.ram,'prefix')
-- mail.send(...,sender='Mr X <%(sender)s>')
-- allow entropy computation in IS_STRONG and web2py.js, thanks Jonathan and Niphlod
-- renamed luon/contrib/comet_messaging.py -> gluon/contrib/websocket_messaging.py
-- DAL support for SQL CASE, example: db().select(...query.case('true','false))
+- overall faster web2py
+- when apps are deleted, a w2p copy left in deposit folder
+- change in cron (it is now disabled by default). removed -N option and introduced -Y.
 - faster web2py_uuid() and request initialization logic, thanks Michele
 - static asset management, thanks Niphlod
 - improved mobile admin
 - request.requires_https and Auth(secure=True), thanks Yarin and Niphlod
+- better custom_import (works per app and is faster), thanks Michele
+- redis_sesssion.py, thanks Niphlod
+- allow entropy computation in IS_STRONG and web2py.js, thanks Jonathan and Niphlod
+- fixed many aith.wiki problems
+- support for auth.wiki(render='html')
+- better welcome layout, thanks Paolo
+- db.define_table(...,redefine=True)
+- DAL, Row, and Rows object can now be pickled/unpickled, thanks to zombie DAL.
+- admin uses codemirror
+- allow syntax auth = Auth(db).define_tables()
+- better auth.wiki with preview, thanks Alan
+- better auth.impersonate, thanks Alan
+- upgraded jQuery 1.8
+- upgraded Bootstrap 2.1
+- fixed problem with dropbox_account.py
+- many fixes to cache.ram, cache.disk, memcache and gae_memcache
+- cache.with_prefix(cache.ram,'prefix')
+- db.table.field.epoch() counts seconds from epoch
+- DAL support for SQL CASE, example: db().select(...query.case('true','false))
+- DAL(...,do_connect=False) allows faking connections
+- DAL(...,auto_import=True) now retieves some fiel attributes
+- mail can specify a sender: mail.send(...,sender='Mr X <%(sender)s>')
+- renamed gluon/contrib/comet_messaging.py -> gluon/contrib/websocket_messaging.py
 
 ## 2.0.1-11
 

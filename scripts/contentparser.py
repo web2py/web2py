@@ -22,7 +22,7 @@ Internet connection is required to perform the update.
 OVERRIDE = [
     ('.pdb', 'chemical/x-pdb'),
     ('.xyz', 'chemical/x-pdb')
-    ]
+]
 
 
 class MIMEParser(dict):
@@ -72,14 +72,15 @@ if __name__ == '__main__':
     sys.stdout.write('Checking freedesktop.org database version:')
     sys.stdout.flush()
     try:
-        search = re.search('(?P<url>http://freedesktop.org/.+?/shared-mime-info-(?P<version>.+?)\.tar\.(?P<type>[gb]z2?))',
+        search = re.search(
+            '(?P<url>http://freedesktop.org/.+?/shared-mime-info-(?P<version>.+?)\.tar\.(?P<type>[gb]z2?))',
             urllib.urlopen('http://www.freedesktop.org/wiki/Software/shared-mime-info').read())
         url = search.group('url')
-        assert url != None
+        assert url is not None
         nversion = search.group('version')
-        assert nversion != None
+        assert nversion is not None
         ftype = search.group('type')
-        assert ftype != None
+        assert ftype is not None
         sys.stdout.write('\t[OK] version %s\n' % nversion)
     except:
         sys.stdout.write('\t[ERROR] unknown version\n')
@@ -129,4 +130,3 @@ if __name__ == '__main__':
         sys.stdout.write('\t\t\t[OK] done\n')
     except Exception, e:
         sys.stdout.write('\t\t\t[ERROR] %s\n' % e)
-

@@ -4,6 +4,7 @@ import time
 from hashlib import md5
 from gluon.dal import DAL
 
+
 def motp_auth(db=DAL('sqlite://storage.sqlite'),
               time_offset=60):
 
@@ -44,7 +45,8 @@ def motp_auth(db=DAL('sqlite://storage.sqlite'),
               writable=False, readable=False, default=''))
 
     ##validators
-    custom_auth_table = db[auth.settings.table_user_name] # get the custom_auth_table
+    custom_auth_table = db[auth.settings.table_user_name]
+        # get the custom_auth_table
     custom_auth_table.first_name.requires = \
       IS_NOT_EMPTY(error_message=auth.messages.is_empty)
     custom_auth_table.last_name.requires = \
@@ -76,14 +78,15 @@ def motp_auth(db=DAL('sqlite://storage.sqlite'),
     - as of now user field is hardcoded to email. Some way of selecting user table and user field.
     """
 
-    def verify_otp(otp,pin,secret,offset=60):
+    def verify_otp(otp, pin, secret, offset=60):
         epoch_time = int(time.time())
         time_start = int(str(epoch_time - offset)[:-1])
         time_end = int(str(epoch_time + offset)[:-1])
-        for t in range(time_start-1,time_end+1):
-            to_hash = str(t)+secret+pin
+        for t in range(time_start - 1, time_end + 1):
+            to_hash = str(t) + secret + pin
             hash = md5(to_hash).hexdigest()[:6]
-            if otp == hash: return True
+            if otp == hash:
+                return True
         return False
 
     def motp_auth_aux(email,
@@ -91,15 +94,18 @@ def motp_auth(db=DAL('sqlite://storage.sqlite'),
                       db=db,
                       offset=time_offset):
         if db:
-            user_data =  db(db.auth_user.email == email ).select().first()
+            user_data = db(db.auth_user.email == email).select().first()
             if user_data:
                 if user_data['motp_secret'] and user_data['motp_pin']:
                     motp_secret = user_data['motp_secret']
                     motp_pin = user_data['motp_pin']
-                    otp_check = verify_otp(password,motp_pin,motp_secret,offset=offset)
-                    if otp_check: return True
-                    else: return False
-                else: return False
+                    otp_check = verify_otp(
+                        password, motp_pin, motp_secret, offset=offset)
+                    if otp_check:
+                        return True
+                    else:
+                        return False
+                else:
+                    return False
         return False
     return motp_auth_aux
-

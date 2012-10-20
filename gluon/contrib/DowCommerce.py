@@ -15,25 +15,27 @@ __all__ = ['DowCommerce']
 from operator import itemgetter
 import urllib
 
+
 class DowCommerce:
 
     class DowCommerceError(Exception):
         def __init__(self, value):
             self.parameter = value
+
         def __str__(self):
             return str(self.parameter)
 
     def __init__(self, username=None, password=None, demomode=False):
         if not demomode:
-            if str(username).strip() == '' or username == None:
+            if str(username).strip() == '' or username is None:
                 raise DowCommerce.DowCommerceError('No username provided')
-            if str(password).strip() == '' or password == None:
+            if str(password).strip() == '' or password is None:
                 raise DowCommerce.DowCommerceError('No password provided')
         else:
             username = 'demo'
             password = 'password'
 
-        self.proxy = None;
+        self.proxy = None
         self.delimiter = '&'
         self.results = {}
         self.error = True
@@ -45,11 +47,11 @@ class DowCommerce:
         self.setParameter('username', username)
         self.setParameter('password', password)
 
-
     def process(self):
         encoded_args = urllib.urlencode(self.parameters)
-        if self.proxy == None:
-            results = str(urllib.urlopen(self.url, encoded_args).read()).split(self.delimiter)
+        if self.proxy is None:
+            results = str(urllib.urlopen(
+                self.url, encoded_args).read()).split(self.delimiter)
         else:
             opener = urllib.FancyURLopener(self.proxy)
             opened = opener.open(self.url, encoded_args)
@@ -59,7 +61,7 @@ class DowCommerce:
                 opened.close()
 
         for result in results:
-            (key,val) = result.split('=')
+            (key, val) = result.split('=')
             self.results[key] = val
 
         if self.results['response'] == '1':
@@ -80,17 +82,18 @@ class DowCommerce:
             self.declined = False
             raise DowCommerce.DowCommerceError(self.results)
 
-    def setTransaction(self, creditcard, expiration, total, cvv=None, orderid=None, orderdescription=None,
-                        ipaddress=None, tax=None, shipping=None,
-                        firstname=None, lastname=None, company=None, address1=None, address2=None, city=None, state=None, zipcode=None,
-                        country=None, phone=None, fax=None, emailaddress=None, website=None,
-                        shipping_firstname=None, shipping_lastname=None, shipping_company=None, shipping_address1=None, shipping_address2=None,
-                        shipping_city=None, shipping_state=None, shipping_zipcode = None, shipping_country=None, shipping_emailaddress=None):
-        if str(creditcard).strip() == '' or creditcard == None:
+    def setTransaction(
+        self, creditcard, expiration, total, cvv=None, orderid=None, orderdescription=None,
+        ipaddress=None, tax=None, shipping=None,
+        firstname=None, lastname=None, company=None, address1=None, address2=None, city=None, state=None, zipcode=None,
+        country=None, phone=None, fax=None, emailaddress=None, website=None,
+        shipping_firstname=None, shipping_lastname=None, shipping_company=None, shipping_address1=None, shipping_address2=None,
+            shipping_city=None, shipping_state=None, shipping_zipcode=None, shipping_country=None, shipping_emailaddress=None):
+        if str(creditcard).strip() == '' or creditcard is None:
             raise DowCommerce.DowCommerceError('No credit card number passed to setTransaction(): {0}'.format(creditcard))
-        if str(expiration).strip() == '' or expiration == None:
+        if str(expiration).strip() == '' or expiration is None:
             raise DowCommerce.DowCommerceError('No expiration number passed to setTransaction(): {0}'.format(expiration))
-        if str(total).strip() == '' or total == None:
+        if str(total).strip() == '' or total is None:
             raise DowCommerce.DowCommerceError('No total amount passed to setTransaction(): {0}'.format(total))
 
         self.setParameter('ccnumber', creditcard)
@@ -165,12 +168,12 @@ class DowCommerce:
         self.setParameter('type', transtype.lower())
 
     def setProxy(self, proxy=None):
-        if str(proxy).strip() == '' or proxy == None:
+        if str(proxy).strip() == '' or proxy is None:
             raise DowCommerce.DowCommerceError('No proxy passed to setProxy()')
         self.proxy = {'http': str(proxy).strip()}
 
     def setParameter(self, key=None, value=None):
-        if key != None and value != None and str(key).strip() != '' and str(value).strip() != '':
+        if key is not None and value is not None and str(key).strip() != '' and str(value).strip() != '':
             self.parameters[key] = str(value).strip()
         else:
             raise DowCommerce.DowCommerceError('Incorrect parameters passed to setParameter(): {0}:{1}'.format(key, value))
@@ -194,6 +197,7 @@ class DowCommerce:
     def getResponseText(self):
         return self.results['responsetext']
 
+
 def test():
     import socket
     import sys
@@ -212,13 +216,14 @@ def test():
     total = '1.00'
     cvv = '999'
     tax = '0.00'
-    orderid = str(time())[4:10] # get a random invoice number
+    orderid = str(time())[4:10]  # get a random invoice number
 
     try:
         payment = DowCommerce(demomode=True)
-        payment.setTransaction(creditcard, expiration, total, cvv=cvv, tax=tax, orderid=orderid, orderdescription='Test Transaction',
-                                firstname='John', lastname='Doe', company='Acme', address1='123 Min Street', city='Hometown', state='VA',
-                                zipcode='12345', country='US', phone='888-555-1212', emailaddress='john@noemail.local', ipaddress='192.168.1.1')
+        payment.setTransaction(
+            creditcard, expiration, total, cvv=cvv, tax=tax, orderid=orderid, orderdescription='Test Transaction',
+            firstname='John', lastname='Doe', company='Acme', address1='123 Min Street', city='Hometown', state='VA',
+            zipcode='12345', country='US', phone='888-555-1212', emailaddress='john@noemail.local', ipaddress='192.168.1.1')
 
         payment.process()
         if payment.isApproved():
@@ -231,16 +236,9 @@ def test():
     except DowCommerce.DowCommerceError, e:
         print "Exception thrown:", e
         print 'An error occured'
-    print 'approved',payment.isApproved()
-    print 'declined',payment.isDeclined()
-    print 'error',payment.isError()
+    print 'approved', payment.isApproved()
+    print 'declined', payment.isDeclined()
+    print 'error', payment.isError()
 
-if __name__=='__main__':
+if __name__ == '__main__':
     test()
-
-
-
-
-
-
-
