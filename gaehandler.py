@@ -78,6 +78,12 @@ def wsgiapp(env, res):
     """Return the wsgiapp"""
     env['PATH_INFO'] = env['PATH_INFO'].decode('latin1').encode('utf8')
 
+    #when using the blobstore image uploader GAE dev SDK passes these as unicode
+    # they should be regular strings as they are parts of URLs
+    env['wsgi.url_scheme'] = str(env['wsgi.url_scheme'])
+    env['QUERY_STRING'] = str(env['QUERY_STRING'])
+    env['SERVER_NAME'] = str(env['SERVER_NAME'])
+
     #this deals with a problem where GAE development server seems to forget
     # the path between requests
     if global_settings.web2py_runtime == 'gae:development':
