@@ -1770,6 +1770,7 @@ official_top_level_domains = [
     'xn--hlcj6aya9esc7a',
     'xn--jxalpdlp',
     'xn--kgbechtv',
+    'xn--p1ai',
     'xn--zckzah',
     'ye',
     'yt',
