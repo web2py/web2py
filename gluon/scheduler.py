@@ -789,7 +789,7 @@ class Scheduler(MetaScheduler):
         db(st.status.belongs(
             (QUEUED, ASSIGNED)))(st.stop_time < now).update(status=EXPIRED)
 
-        all_available = db(st.status.belongs((QUEUED, ASSIGNED)))((st.times_run < st.repeats) | (st.repeats == 0))(st.start_time <= now)((st.stop_time is None) | (st.stop_time > now))(st.next_run_time <= now)(st.enabled == True)
+        all_available = db(st.status.belongs((QUEUED, ASSIGNED)))((st.times_run < st.repeats) | (st.repeats == 0))(st.start_time <= now)((st.stop_time == None) | (st.stop_time > now))(st.next_run_time <= now)(st.enabled == True)
         limit = len(all_workers) * (50 / len(wkgroups))
         #if there are a moltitude of tasks, let's figure out a maximum of tasks per worker.
         #this can be adjusted with some added intelligence (like esteeming how many tasks will
@@ -805,7 +805,7 @@ class Scheduler(MetaScheduler):
         #let's freeze it up
         db.commit()
         for group in wkgroups.keys():
-            tasks = all_available(st.group_name == group).select(
+            tasks = all_available(st.group_name==group).select(
                 limitby=(0, limit), orderby=st.next_run_time)
             #let's break up the queue evenly among workers
             for task in tasks:
