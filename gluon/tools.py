@@ -5082,7 +5082,7 @@ class Wiki(object):
             content.append(DIV(form, _class='w2p_wiki_form'))
             if request.vars.q:
                 tags = [v.strip() for v in request.vars.q.split(',')]
-                tags = [v for v in tags if v]
+                tags = [v.lower() for v in tags if v]
         if tags or not query is None:
             db = self.auth.db
             count = db.wiki_tag.wiki_page.count()
