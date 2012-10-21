@@ -1,3 +1,13 @@
+## 2.2.1
+
+- session.connect(cookie_key='secret', compression_level=9) stores sessions in cookies
+- T.is_writable = False prevents T from dynamically updating langauge files
+- all code is more PEP8 compliant
+- better custom_importer behaviour (now works per app, is smalled and faster)
+- fixed some bugs
+- upgraded feedparser.py and rss2.py
+- codemirror has autoresize
+
 ## 2.1.0
 
 - overall faster web2py
