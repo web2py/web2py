@@ -8607,12 +8607,13 @@ class Field(Expression):
         return value
 
     def validate(self, value):
-        if not self.requires:
+        if not self.requires or self.requires == DEFAULT:
             return (value, None)
         requires = self.requires
         if not isinstance(requires, (list, tuple)):
             requires = [requires]
         for validator in requires:
+            print validator
             (value, error) = validator(value)
             if error:
                 return (value, error)
