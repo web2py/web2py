@@ -64,7 +64,7 @@ def new(key, mode=MODE_CBC, IV=None):
         return ECBMode(AES(key))
     elif mode == MODE_CBC:
         if IV is None:
-            raise ValueError, "CBC mode needs an IV value!"
+            raise ValueError("CBC mode needs an IV value!")
 
         return CBCMode(AES(key), IV)
     else:
@@ -91,7 +91,7 @@ class AES(object):
         elif self.key_size == 32:
             self.rounds = 14
         else:
-            raise ValueError, "Key length must be 16, 24 or 32 bytes"
+            raise ValueError("Key length must be 16, 24 or 32 bytes")
 
         self.expand_key()
 
@@ -313,7 +313,7 @@ class ECBMode(object):
         """Perform ECB mode with the given function"""
 
         if len(data) % self.block_size != 0:
-            raise ValueError, "Plaintext length must be multiple of 16"
+            raise ValueError("Plaintext length must be multiple of 16")
 
         block_size = self.block_size
         data = array('B', data)
@@ -357,7 +357,7 @@ class CBCMode(object):
 
         block_size = self.block_size
         if len(data) % block_size != 0:
-            raise ValueError, "Plaintext length must be multiple of 16"
+            raise ValueError("Plaintext length must be multiple of 16")
 
         data = array('B', data)
         IV = self.IV
@@ -381,7 +381,7 @@ class CBCMode(object):
 
         block_size = self.block_size
         if len(data) % block_size != 0:
-            raise ValueError, "Ciphertext length must be multiple of 16"
+            raise ValueError("Ciphertext length must be multiple of 16")
 
         data = array('B', data)
         IV = self.IV
