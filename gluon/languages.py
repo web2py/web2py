@@ -13,16 +13,22 @@ Plural subsystem is created by Vladyslav Kozlovskyy (Ukraine)
 import os
 import re
 import pkgutil
-from utf8 import Utf8
-from cgi import escape
-import portalocker
 import logging
 import marshal
-import copy_reg
+from cgi import escape
+from threading import RLock
+
+try:
+    import copyreg as copy_reg # python 3
+except ImportError:
+    import copy_reg # python 2
+
+from portalocker import read_locked, LockedFile
+from utf8 import Utf8
+
 from fileutils import listdir
 import settings
 from cfs import getcfs
-from thread import allocate_lock
 from html import XML, xmlescape
 from contrib.markmin.markmin2html import render, markmin_escape
 from string import maketrans
@@ -35,7 +41,7 @@ pjoin = os.path.join
 pexists = os.path.exists
 pdirname = os.path.dirname
 isdir = os.path.isdir
-is_gae = settings.global_settings.web2py_runtime_gae
+is_gae = False # settings.global_settings.web2py_runtime_gae
 
 DEFAULT_LANGUAGE = 'en'
 DEFAULT_LANGUAGE_NAME = 'English'
@@ -137,7 +143,7 @@ def get_from_cache(cache, val, fun):
 
 def clear_cache(filename):
     cache = global_language_cache.setdefault(
-        filename, ({}, allocate_lock()))
+        filename, ({}, RLock()))
     lang_dict, lock = cache
     lock.acquire()
     try:
@@ -147,11 +153,12 @@ def clear_cache(filename):
 
 
 def read_dict_aux(filename):
-    lang_text = portalocker.read_locked(filename).replace('\r\n', '\n')
+    lang_text = read_locked(filename).replace('\r\n', '\n')
     clear_cache(filename)
     try:
         return safe_eval(lang_text) or {}
-    except Exception, e:
+    except Exception:
+        e = sys.exc_info()[1]
         status = 'Syntax error in %s (%s)' % (filename, e)
         logging.error(status)
         return {'__corrupted__': status}
@@ -187,7 +194,8 @@ def read_possible_plural_rules():
                     DEFAULT_CONSTRUCT_PLURAL_FORM)
                 plurals[lang] = (lang, nplurals, get_plural_id,
                                  construct_plural_form)
-    except ImportError, e:
+    except ImportError:
+        e = sys.exc_info()[1]
         logging.warn('Unable to import plural rules: %s' % e)
     return plurals
 
@@ -267,10 +275,11 @@ def read_possible_languages(langpath):
 
 
 def read_plural_dict_aux(filename):
-    lang_text = portalocker.read_locked(filename).replace('\r\n', '\n')
+    lang_text = read_locked(filename).replace('\r\n', '\n')
     try:
         return eval(lang_text) or {}
-    except Exception, e:
+    except Exception:
+        e = sys.exc_info()[1]
         status = 'Syntax error in %s (%s)' % (filename, e)
         logging.error(status)
         return {'__corrupted__': status}
@@ -285,7 +294,7 @@ def write_plural_dict(filename, contents):
     if '__corrupted__' in contents:
         return
     try:
-        fp = portalocker.LockedFile(filename, 'w')
+        fp = LockedFile(filename, 'w')
         fp.write('#!/usr/bin/env python\n{\n# "singular form (0)": ["first plural form (1)", "second plural form (2)", ...],\n')
         # coding: utf8\n{\n')
         for key in sorted(contents, lambda x, y: cmp(unicode(x, 'utf-8').lower(), unicode(y, 'utf-8').lower())):
@@ -305,7 +314,7 @@ def write_dict(filename, contents):
     if '__corrupted__' in contents:
         return
     try:
-        fp = portalocker.LockedFile(filename, 'w')
+        fp = LockedFile(filename, 'w')
     except (IOError, OSError):
         if not settings.global_settings.web2py_runtime_gae:
             logging.warning('Unable to write to file %s' % filename)
@@ -639,14 +648,14 @@ class translator(object):
                     self.t = read_dict(self.language_file)
                     self.cache = global_language_cache.setdefault(
                         self.language_file,
-                        ({}, allocate_lock()))
+                        ({}, RLock()))
                     set_plural(language)
                     self.accepted_language = language
                     return languages
         self.accepted_language = language or self.current_languages[0]
         self.language_file = self.default_language_file
         self.cache = global_language_cache.setdefault(self.language_file,
-                                                      ({}, allocate_lock()))
+                                                      ({}, RLock()))
         self.t = self.default_t
         set_plural(self.accepted_language)
         return languages
@@ -890,7 +899,7 @@ def findT(path, language=DEFAULT_LANGUAGE):
     for filename in \
             listdir(mp, '^.+\.py$', 0) + listdir(cp, '^.+\.py$', 0)\
             + listdir(vp, '^.+\.html$', 0) + listdir(mop, '^.+\.py$', 0):
-        data = portalocker.read_locked(filename)
+        data = read_locked(filename)
         items = regex_translate.findall(data)
         for item in items:
             try:
