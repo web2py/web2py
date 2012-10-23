@@ -170,16 +170,20 @@ import glob
 import traceback
 import platform
 
-python_version = sys.version_info[0]
-if python_version == 2:
+PYTHON_VERSION = sys.version_info[0]
+if PYTHON_VERSION == 2:
     import cPickle as pickle
     import cStringIO as StringIO
     import copy_reg as copyreg
+    hashlib_md5 = hashlib.md5
+    bytes, unicode = str, unicode
 else:
     import pickle
     from io import StringIO as StringIO    
     import copyreg
     long = int
+    hashlib_md5 = lambda s: hashlib.md5(bytes(s,'utf8'))
+    bytes, unicode = bytes, str
 
 CALLABLETYPES = (types.LambdaType, types.FunctionType,
                  types.BuiltinFunctionType,
@@ -1592,7 +1596,7 @@ class BaseAdapter(ConnectionPool):
         else:
             (cache_model, time_expire) = cache
             key = self.uri + '/' + sql + '/rows'
-            if len(key)>200: key = hashlib.md5(key).hexdigest()
+            if len(key)>200: key = hashlib_md5(key).hexdigest()
             def _select_aux2():
                 self.execute(sql)
                 return self._fetchall()
@@ -1615,7 +1619,7 @@ class BaseAdapter(ConnectionPool):
             del attributes['cache']
             (cache_model, time_expire) = cache
             key = self.uri + '/' + sql
-            if len(key)>200: key = hashlib.md5(key).hexdigest()
+            if len(key)>200: key = hashlib_md5(key).hexdigest()
             args = (sql,fields,attributes)
             return cache_model(
                 key,
@@ -1769,8 +1773,8 @@ class BaseAdapter(ConnectionPool):
                 obj = obj.isoformat()[:10]
             else:
                 obj = str(obj)
-        if not isinstance(obj,str):
-            obj = str(obj)
+        if not isinstance(obj,bytes):
+            obj = bytes(obj)
         try:
             obj.decode(self.db_codec)
         except:
@@ -2097,8 +2101,11 @@ class SQLiteAdapter(BaseAdapter):
         else:
             dbpath = uri.split('://',1)[1]
             if dbpath[0] != '/':
-                dbpath = pjoin(
-                    self.folder.decode(path_encoding).encode('utf8'), dbpath)
+                if PYTHON_VERSION == 2:
+                    dbpath = pjoin(
+                        self.folder.decode(path_encoding).encode('utf8'), dbpath)
+                else:
+                    dbpath = pjoin(self.folder, dbpath)                        
         if not 'check_same_thread' in driver_args:
             driver_args['check_same_thread'] = False
         if not 'detect_types' in driver_args:
@@ -6633,7 +6640,7 @@ class DAL(object):
                 db = super(DAL, cls).__new__(cls)
                 THREAD_LOCAL.db_instances_zombie[db_uid] = db
         else:
-            db_uid = kwargs.get('db_uid',hashlib.md5(repr(uri)).hexdigest())
+            db_uid = kwargs.get('db_uid',hashlib_md5(repr(uri)).hexdigest())
             if db_uid in THREAD_LOCAL.db_instances_zombie:
                 db = THREAD_LOCAL.db_instances_zombie[db_uid]
                 del THREAD_LOCAL.db_instances_zombie[db_uid]
@@ -6798,7 +6805,7 @@ class DAL(object):
                                         db_codec=db_codec)
             migrate = fake_migrate = False
         adapter = self._adapter
-        self._uri_hash = hashlib.md5(adapter.uri).hexdigest()
+        self._uri_hash = hashlib_md5(adapter.uri).hexdigest()
         self._tables = SQLCallableList()
         self.check_reserved = check_reserved
         if self.check_reserved:
@@ -8792,7 +8799,7 @@ class Set(object):
             cache_model, time_expire = cache
             sql = self._count(distinct=distinct)
             key = db._uri + '/' + sql
-            if len(key)>200: key = hashlib.md5(key).hexdigest()
+            if len(key)>200: key = hashlib_md5(key).hexdigest()
             return cache_model(
                 key,
                 (lambda self=self,distinct=distinct: \

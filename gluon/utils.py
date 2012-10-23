@@ -38,7 +38,7 @@ try:
 except ImportError:
     try:
         from .aes import AES
-    except ImportError:
+    except (ImportError, ValueError):
         from contrib.aes import AES
 
 try:
