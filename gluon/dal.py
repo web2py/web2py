@@ -6626,14 +6626,6 @@ class DAL(object):
         return db
 
     @staticmethod
-    def set_folder(folder):
-        """
-        # ## this allows gluon to set a folder for this thread
-        # ## <<<<<<<<< Should go away as new DAL replaces old sql.py
-        """
-        BaseAdapter.set_folder(folder)
-
-    @staticmethod
     def distributed_transaction_begin(*instances):
         if not instances:
             return
@@ -6712,8 +6704,6 @@ class DAL(object):
             credential_decoder = lambda cred: cred
         else:
             credential_decoder = lambda cred: urllib.unquote(cred)
-        if folder:
-            self.set_folder(folder)
         self._uri = uri
         self._pool_size = pool_size
         self._db_codec = db_codec
