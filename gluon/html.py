@@ -2319,6 +2319,8 @@ class MENU(DIV):
                 li = LI(link)
             elif 'no_link_url' in self.attributes and self['no_link_url'] == link:
                 li = LI(DIV(name))
+            elif isinstance(link,dict):
+                li = LI(A(name, **link))
             elif link:
                 li = LI(A(name, _href=link))
             elif not link and isinstance(name, A):
