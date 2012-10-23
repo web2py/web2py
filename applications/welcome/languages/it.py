@@ -6,7 +6,6 @@
 '"update" is an optional expression like "field1=\'newvalue\'". You cannot update or delete the results of a JOIN': '"update" è un\'espressione opzionale come "campo1=\'nuovo valore\'". Non si può fare "update" o "delete" dei risultati di un JOIN ',
 '%(nrows)s records found': '%(nrows)s records found',
 '%d seconds ago': '%d seconds ago',
-'%m/%d/%Y': '%m/%d/%Y',
 '%s %%{row} deleted': '%s righe ("record") cancellate',
 '%s %%{row} updated': '%s righe ("record") modificate',
 '%s selected': '%s selezionato',
