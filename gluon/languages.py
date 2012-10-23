@@ -261,10 +261,9 @@ def read_possible_languages_aux(langdir):
     return langs
 
 
-def read_possible_languages(appdir):
-    langdir = pjoin(appdir, 'languages')
-    return getcfs('langs:' + langdir, langdir,
-                  lambda: read_possible_languages_aux(langdir))
+def read_possible_languages(langpath):
+    return getcfs('langs:' + langpath, langpath,
+                  lambda: read_possible_languages_aux(langpath))
 
 
 def read_plural_dict_aux(filename):
@@ -434,11 +433,9 @@ class translator(object):
         xx-yy.py -> xx.py -> xx-yy*.py -> xx*.py
     """
 
-    def __init__(self, request):
-        self.request = request
-        self.folder = request.folder
-        self.langpath = pjoin(self.folder, 'languages')
-        self.http_accept_language = request.env.http_accept_language
+    def __init__(self, langpath, http_accept_language):
+        self.langpath = langpath
+        self.http_accept_language = http_accept_language
         self.is_writable = not is_gae
         # filled in self.force():
         #------------------------
@@ -493,7 +490,7 @@ class translator(object):
                   construct_plural_form) # construct_plural_form() for current language
             }
         """
-        info = read_possible_languages(self.folder)
+        info = read_possible_languages(self.langpath)
         if lang:
             info = info.get(lang)
         return info
@@ -501,7 +498,7 @@ class translator(object):
     def get_possible_languages(self):
         """ get list of all possible languages for current applications """
         return list(set(self.current_languages +
-                        [lang for lang in read_possible_languages(self.folder).iterkeys()
+                        [lang for lang in read_possible_languages(self.langpath).iterkeys()
                          if lang != 'default']))
 
     def set_current_languages(self, *languages):
@@ -581,7 +578,7 @@ class translator(object):
         default language will be selected if none
         of them matches possible_languages.
         """
-        pl_info = read_possible_languages(self.folder)
+        pl_info = read_possible_languages(self.langpath)
 
         def set_plural(language):
             """
@@ -670,7 +667,8 @@ class translator(object):
             try:
                 otherT = self.otherTs[language]
             except KeyError:
-                otherT = self.otherTs[language] = translator(self.request)
+                otherT = self.otherTs[language] = translator(
+                    self.langpath, self.http_accept_language)
                 otherT.force(language)
             return otherT(message, symbols, lazy=lazy)
 

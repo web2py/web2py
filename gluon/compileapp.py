@@ -396,7 +396,8 @@ def build_environment(request, response, session, store_current=True):
     response.models_to_run = [r'^\w+\.py$', r'^%s/\w+\.py$' % request.controller,
                               r'^%s/%s/\w+\.py$' % (request.controller, request.function)]
 
-    t = environment['T'] = translator(request)
+    t = environment['T'] = translator(os.path.join(request.folder,'languages'),
+                                      request.env.http_accept_langauge)
     c = environment['cache'] = Cache(request)
 
     if store_current:
