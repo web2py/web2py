@@ -16,9 +16,13 @@ Contributors:
 
 import os
 import cgi
-import cStringIO
 import logging
 from re import compile, sub, escape, DOTALL
+try:
+    import cStringIO as StringIO
+except:
+    from io import StringIO
+
 try:
     # have web2py
     from restricted import RestrictedError
@@ -791,13 +795,13 @@ def get_parsed(text):
 
 class DummyResponse():
     def __init__(self):
-        self.body = cStringIO.StringIO()
+        self.body = StringIO.StringIO()
 
     def write(self, data, escape=True):
         if not escape:
             self.body.write(str(data))
-        elif hasattr(data, 'xml') and callable(data.xml):
-            self.body.write(data.xml())
+        elif hasattr(data, 'as_html') and callable(data.as_html):
+            self.body.write(data.as_html())
         else:
             # make it a string
             if not isinstance(data, (str, unicode)):
@@ -870,7 +874,7 @@ def render(content="hello world",
     # save current response class
     if context and 'response' in context:
         old_response_body = context['response'].body
-        context['response'].body = cStringIO.StringIO()
+        context['response'].body = StringIO.StringIO()
     else:
         old_response_body = None
         context['response'] = Response()
@@ -887,7 +891,7 @@ def render(content="hello world",
             stream = open(filename, 'rb')
             close_stream = True
         elif content:
-            stream = cStringIO.StringIO(content)
+            stream = StringIO.StringIO(content)
 
     # Execute the template.
     code = str(TemplateParser(stream.read(
