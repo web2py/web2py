@@ -998,11 +998,11 @@ def design():
     statics.sort()
 
     # Get all languages
+    langpath = os.path.join(apath(app, r=request),'language')
     languages = dict([(lang, info) for lang, info
-                      in read_possible_languages(
-                      apath(app, r=request)).iteritems()
+                      in read_possible_languages(langpath).iteritems()
                       if info[2] != 0])  # info[2] is langfile_mtime:
-                                   # get only existed files
+                                         # get only existed files
 
     #Get crontab
     cronfolder = apath('%s/cron' % app, r=request)
