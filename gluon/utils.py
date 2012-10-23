@@ -21,32 +21,20 @@ import os
 import re
 import logging
 import socket
+import cPickle
 import base64
 import zlib
 
 try:
-    import cPickle as pickle # python 2
-except ImportError: 
-    import pickle            # python 3
-
-
-try:
     from Crypto.Cipher import AES
 except ImportError:
-    try:
-        from .aes import AES
-    except ImportError:
-        from contrib.aes import AES
+    from contrib import aes as AES
 
 try:
     from contrib.pbkdf2 import pbkdf2_hex
     HAVE_PBKDF2 = True
 except ImportError:
-    try:
-        from .pbkdf2 import pbkdf2_hex
-        HAVE_PBKDF2 = True
-    except (ImportError, ValueError):
-        HAVE_PBKDF2 = False
+    HAVE_PBKDF2 = False
 
 logger = logging.getLogger("web2py")
 
@@ -127,7 +115,7 @@ def pad(s, n=32, padchar='.'):
 def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
     if not hash_key:
         hash_key = hashlib.sha1(encryption_key).hexdigest()
-    dump = pickle.dumps(data)
+    dump = cPickle.dumps(data)
     if compression_level:
         dump = zlib.compress(dump, compression_level)
     key = pad(encryption_key[:32])
@@ -153,8 +141,8 @@ def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
         data = data.rstrip(' ')
         if compression_level:
             data = zlib.decompress(data)
-        return pickle.loads(data)
-    except (TypeError, pickle.UnpicklingError):
+        return cPickle.loads(data)
+    except (TypeError, cPickle.UnpicklingError):
         return None
 
 ### compute constant CTOKENS
@@ -185,10 +173,7 @@ def initialize_urandom():
             # try to add process-specific entropy
             frandom = open('/dev/urandom', 'wb')
             try:
-                try:
-                    frandom.write(''.join(chr(t) for t in ctokens)) # python 2
-                except:
-                    frandom.write(bytes([]).join(bytes([t]) for t in ctokens)) # python 3
+                frandom.write(''.join(chr(t) for t in ctokens))
             finally:
                 frandom.close()
         except IOError:
@@ -200,11 +185,8 @@ def initialize_urandom():
             """Cryptographically secure session management is not possible on your system because
 your system does not provide a cryptographically secure entropy source.
 This is not specific to web2py; consider deploying on a different operating system.""")
-    try:
-        packed = ''.join(chr(x) for x in ctokens) # python 2
-    except:
-        packed = bytes([]).join(bytes([x]) for x in ctokens) # python 3
-    unpacked_ctokens = struct.unpack('=QQ', packed)
+    unpacked_ctokens = struct.unpack('=QQ', string.join(
+        (chr(x) for x in ctokens), ''))
     return unpacked_ctokens, have_urandom
 UNPACKED_CTOKENS, HAVE_URANDOM = initialize_urandom()
 
