@@ -12,6 +12,7 @@ Plural subsystem is created by Vladyslav Kozlovskyy (Ukraine)
 
 import os
 import re
+import sys
 import pkgutil
 import logging
 import marshal
