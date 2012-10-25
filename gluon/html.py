@@ -1482,8 +1482,9 @@ class A(DIV):
                     (self['callback'], self['target'] or '', d)
             self['_href'] = self['_href'] or '#null'
         elif self['cid']:
-            self['_onclick'] = 'web2py_component("%s","%s");%sreturn false;' % \
-                (self['_href'], self['cid'], d)
+	    pre = self['pre_call'] + ';' if self['pre_call'] else ''
+            self['_onclick'] = '%sweb2py_component("%s","%s");%sreturn false;' % \
+                (pre,self['_href'], self['cid'], d)
         return DIV.xml(self)
 
 
