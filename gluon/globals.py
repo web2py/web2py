@@ -388,7 +388,10 @@ class Response(Storage):
         if not items:
             raise HTTP(404)
         (t, f) = (items.group('table'), items.group('field'))
-        field = db[t][f]
+        try:
+            field = db[t][f]
+        except AttributeError:
+            raise HTTP(404)
         try:
             (filename, stream) = field.retrieve(name)
         except IOError:
