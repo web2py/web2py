@@ -1192,7 +1192,7 @@ re_REQUEST_LINE = re.compile(r"""^
     (?P<host>[^/]+)                                          # Host
 )? #
 (?P<path>(\*|/[^ \?]*))                                      # Path
-(\? (?P<query_string>[^ ]+))?                                # Query String
+(\? (?P<query_string>[^ ]*))?                                # Query String
 \                                                            # (single space)
 (?P<protocol>HTTPS?/1\.[01])                                 # Protocol
 $
