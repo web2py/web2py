@@ -5035,30 +5035,31 @@ class Wiki(object):
         if True:
             submenu = []
             menu.append((current.T('[Wiki]'), None, None, submenu))
-            if URL() == URL(controller, function):
-                if not str(request.args(0)).startswith('_'):
-                    slug = request.args(0) or 'index'
-                    mode = 1
-                elif request.args(0) == '_edit':
-                    slug = request.args(1) or 'index'
-                    mode = 2
-                elif request.args(0) == '_editmedia':
-                    slug = request.args(1) or 'index'
-                    mode = 3
-                else:
-                    mode = 0
-                if mode in (2, 3):
-                    submenu.append((current.T('View Page'), None,
-                    URL(controller, function, args=slug)))
-                if mode in (1, 3):
-                    submenu.append((current.T('Edit Page'), None,
-                    URL(controller, function, args=('_edit', slug))))
-                if mode in (1, 2):
-                    submenu.append((current.T('Edit Page Media'), None,
-                    URL(controller, function, args=('_editmedia', slug))))
+            if self.auth.user:
+                if URL() == URL(controller, function):
+                    if not str(request.args(0)).startswith('_'):
+                        slug = request.args(0) or 'index'
+                        mode = 1
+                    elif request.args(0) == '_edit':
+                        slug = request.args(1) or 'index'
+                        mode = 2
+                    elif request.args(0) == '_editmedia':
+                        slug = request.args(1) or 'index'
+                        mode = 3
+                    else:
+                        mode = 0
+                    if mode in (2, 3):
+                        submenu.append((current.T('View Page'), None,
+                        URL(controller, function, args=slug)))
+                    if mode in (1, 3):
+                        submenu.append((current.T('Edit Page'), None,
+                        URL(controller, function, args=('_edit', slug))))
+                    if mode in (1, 2):
+                        submenu.append((current.T('Edit Page Media'), None,
+                        URL(controller, function, args=('_editmedia', slug))))
 
-            submenu.append((current.T('Create New Page'), None,
-                            URL(controller, function, args=('_create'))))
+                submenu.append((current.T('Create New Page'), None,
+                                URL(controller, function, args=('_create'))))
         if self.can_manage():
             submenu.append((current.T('Manage Pages'), None,
                             URL(controller, function, args=('_pages'))))
