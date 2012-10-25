@@ -1262,6 +1262,10 @@ def render(text,
         t = t or ''
         a = escape(a) if a else ''
         if k:
+            if '#' in k and not ':' in k.split('#')[0]: 
+                # wikipage, not external url
+                k=k.replace('#','#'+id_prefix)
+
             if k.startswith('#'):
                 k = '#'+id_prefix+k[1:]
             k = escape(k)
