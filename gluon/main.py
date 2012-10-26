@@ -460,7 +460,7 @@ def wsgibase(environ, responder):
                     is_https=env.wsgi_url_scheme in HTTPS_SCHEMES
                     or request.env.http_x_forwarded_proto in HTTPS_SCHEMES
                     or env.https == 'on')
-                request.uuid = request.compute_uuid()  # requires client
+                request.compute_uuid()  # requires client
                 request.url = environ['PATH_INFO']
 
                 # ##################################################
