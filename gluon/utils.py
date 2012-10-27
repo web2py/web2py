@@ -9,7 +9,6 @@ License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 This file specifically includes utilities for security.
 """
 
-import string
 import threading
 import struct
 import hashlib
@@ -38,7 +37,7 @@ try:
 except ImportError:
     try:
         from .aes import AES
-    except (ImportError, ValueError):
+    except ImportError:
         from contrib.aes import AES
 
 try:
@@ -271,7 +270,7 @@ def is_valid_ip_address(address):
             address = address[7:]
         if hasattr(socket, 'inet_aton'):  # try validate using the OS
             try:
-                addr = socket.inet_aton(address)
+                socket.inet_aton(address)
                 return True
             except socket.error:  # invalid address
                 return False
@@ -282,7 +281,7 @@ def is_valid_ip_address(address):
             return False
     elif hasattr(socket, 'inet_pton'):  # assume IPv6, try using the OS
         try:
-            addr = socket.inet_pton(socket.AF_INET6, address)
+            socket.inet_pton(socket.AF_INET6, address)
             return True
         except socket.error:  # invalid address
             return False
