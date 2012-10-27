@@ -1581,7 +1581,7 @@ class SQLFORM(FORM):
                 label = isinstance(
                     field.label, str) and T(field.label) or field.label
                 selectfields.append(OPTION(label, _value=str(field)))
-                operators = SELECT(*[T(option) for option in options])
+                operators = SELECT(*[OPTION(T(option), _value=option) for option in options])
                 if field.type == 'boolean':
                     value_input = SELECT(
                         OPTION(T("True"), _value="T"),

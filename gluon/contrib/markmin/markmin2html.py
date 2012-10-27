@@ -1262,8 +1262,9 @@ def render(text,
         t = t or ''
         a = escape(a) if a else ''
         if k:
-            if k.startswith('#'):
-                k = '#'+id_prefix+k[1:]
+            if '#' in k and not ':' in k.split('#')[0]: 
+                # wikipage, not external url
+                k=k.replace('#','#'+id_prefix)
             k = escape(k)
             title = ' title="%s"' % a.replace(META, DISABLED_META) if a else ''
             target = ' target="_blank"' if p == 'popup' else ''

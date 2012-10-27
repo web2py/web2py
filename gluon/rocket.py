@@ -1192,7 +1192,7 @@ re_REQUEST_LINE = re.compile(r"""^
     (?P<host>[^/]+)                                          # Host
 )? #
 (?P<path>(\*|/[^ \?]*))                                      # Path
-(\? (?P<query_string>[^ ]+))?                                # Query String
+(\? (?P<query_string>[^ ]*))?                                # Query String
 \                                                            # (single space)
 (?P<protocol>HTTPS?/1\.[01])                                 # Protocol
 $
@@ -1670,8 +1670,8 @@ class WSGIWorker(Worker):
                 peercert = conn.socket.getpeercert(binary_form=True)
                 environ['SSL_CLIENT_RAW_CERT'] = \
                     peercert and ssl.DER_cert_to_PEM_cert(peercert)
-            except Exception, e:
-                print e
+            except Exception:
+                print sys.exc_info()[1]
 
         if environ.get('HTTP_TRANSFER_ENCODING', '') == 'chunked':
             environ['wsgi.input'] = ChunkedReader(sock_file)

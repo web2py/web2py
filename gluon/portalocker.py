@@ -167,5 +167,5 @@ if __name__ == '__main__':
     f.write('test ok')
     f.close()
     f = LockedFile('test.txt', mode='rb')
-    print f.read()
+    sys.stdout.write(f.read()+'\n')
     f.close()
