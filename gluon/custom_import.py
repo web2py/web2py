@@ -12,8 +12,9 @@ from gluon import current
 NATIVE_IMPORTER = __builtin__.__import__
 INVALID_MODULES = set(('', 'gluon', 'applications', 'custom_import'))
 
-
 # backward compatibility API
+
+
 def custom_import_install():
     if __builtin__.__import__ != custom_importer:
         INVALID_MODULES.update(sys.modules.keys())
@@ -69,7 +70,7 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
                 result = None
                 for itemname in name.split("."):
                     new_mod = base_importer(
-                        modules_prefix, globals,locals, [itemname], level)
+                        modules_prefix, globals, locals, [itemname], level)
                     try:
                         result = result or new_mod.__dict__[itemname]
                     except KeyError, e:
@@ -85,7 +86,7 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
             try:
                 return NATIVE_IMPORTER(name, globals, locals, fromlist, level)
             except ImportError, e3:
-                raise ImportError, e1, import_tb # there an import error in the module
+                raise ImportError, e1, import_tb  # there an import error in the module
         except Exception, e2:
             raise e2  # there is an error in the module
         finally:
