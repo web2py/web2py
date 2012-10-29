@@ -180,7 +180,7 @@ if PYTHON_VERSION == 2:
     bytes, unicode = str, unicode
 else:
     import pickle
-    from io import StringIO as StringIO    
+    from io import StringIO as StringIO
     import copyreg
     long = int
     hashlib_md5 = lambda s: hashlib.md5(bytes(s,'utf8'))
@@ -256,6 +256,7 @@ REGEX_STORE_PATTERN = re.compile('\.(?P<e>\w{1,5})$')
 REGEX_QUOTES = re.compile("'[^']*'")
 REGEX_ALPHANUMERIC = re.compile('^[0-9a-zA-Z]\w*$')
 REGEX_PASSWORD = re.compile('\://([^:@]*)\:')
+REGEX_NOPASSWD = re.compile('(?<=\:)([^:@/]+)(?=@.+)')
 
 # list of drivers will be built on the fly
 # and lists only what is available
@@ -2106,7 +2107,7 @@ class SQLiteAdapter(BaseAdapter):
                     dbpath = pjoin(
                         self.folder.decode(path_encoding).encode('utf8'), dbpath)
                 else:
-                    dbpath = pjoin(self.folder, dbpath)                        
+                    dbpath = pjoin(self.folder, dbpath)
         if not 'check_same_thread' in driver_args:
             driver_args['check_same_thread'] = False
         if not 'detect_types' in driver_args:
@@ -6660,6 +6661,35 @@ class DAL(object):
         # ## <<<<<<<<< Should go away as new DAL replaces old sql.py
         """
         BaseAdapter.set_folder(folder)
+
+    @staticmethod
+    def get_instances():
+        """
+        Returns a dictionary with uri as key with timings and defined tables
+        {'sqlite://storage.sqlite': {
+            'dbstats': [(select auth_user.email from auth_user, 0.02009)],
+            'dbtables': {
+                'defined': ['auth_cas', 'auth_event', 'auth_group',
+                    'auth_membership', 'auth_permission', 'auth_user'],
+                'lazy': '[]'
+                }
+            }
+        }
+        """
+        dbs = getattr(THREAD_LOCAL,'db_instances',{}).items()
+        infos = {}
+        for db_uid, db_group in dbs:
+            for db in db_group:
+                if not db._uri:
+                    continue
+                k = REGEX_NOPASSWD.sub('******',db._uri)
+                infos[k] = dict(dbstats = [(row[0], row[1]) for row in db._timings],
+                                dbtables = {'defined':
+                                    sorted(list(set(db.tables) -
+                                                set(db._LAZY_TABLES.keys()))),
+                               'lazy': sorted(db._LAZY_TABLES.keys())}
+                                 )
+        return infos
 
     @staticmethod
     def distributed_transaction_begin(*instances):
