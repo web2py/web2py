@@ -2717,7 +2717,7 @@ class Auth(object):
                     next = self.url(args=request.args)
                 else:
                     next = replace_id(next, form)
-            redirect(next)
+                redirect(next)
         return form
 
     def profile(
