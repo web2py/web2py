@@ -95,8 +95,9 @@ class SessionSetDb(SessionSet):
         """Return list of SessionDb instances for existing sessions."""
         sessions = []
         table = current.response.session_db_table
-        for row in table._db(table.id > 0).select():
-            sessions.append(SessionDb(row))
+        if table:
+            for row in table._db(table.id > 0).select():
+                sessions.append(SessionDb(row))
         return sessions
 
 
