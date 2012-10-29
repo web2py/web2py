@@ -2987,10 +2987,12 @@ class Auth(object):
         return self.id_group(self.user_group_role(user_id))
 
     def user_group_role(self, user_id=None):
+        if not self.settings.create_user_groups:
+            return None
         if user_id:
             user = self.table_user()[user_id]
         else:
-            user = self.user
+            user = self.user        
         return self.settings.create_user_groups % user
 
     def has_membership(self, group_id=None, user_id=None, role=None):
@@ -4896,7 +4898,8 @@ class Wiki(object):
                     % self.force_prefix
                 redirect(URL(args=('_edit', self.force_prefix + slug)))
             db.wiki_page.can_read.default = [Wiki.everybody]
-            db.wiki_page.can_edit.default = [auth.user_group_role()]
+            user_group_role = auth.user_group_role()
+            db.wiki_page.can_edit.default = [user_group_role]
             db.wiki_page.title.default = title_guess
             db.wiki_page.slug.default = slug
             if slug == 'wiki-menu':
