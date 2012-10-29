@@ -435,21 +435,23 @@ class Response(Storage):
         admin = URL("admin", "default", "design",
                     args=current.request.application)
         from gluon.dal import THREAD_LOCAL
-        if hasattr(THREAD_LOCAL, 'instances'):
-            dbstats = [TABLE(*[TR(PRE(row[0]), '%.2fms' % (row[1] * 1000))
-                               for row in i.db._timings])
-                       for i in THREAD_LOCAL.instances]
-            dbtables = dict([(regex_nopasswd.sub('******', i.uri),
-                              {'defined':
-                               sorted(list(set(i.db.tables) -
-                                           set(i.db._LAZY_TABLES.keys()))) or
+        dbs = getattr(THREAD_LOCAL,'db_instances',{}).items()
+        dbstats = []
+        dbtables = {}
+        for db_uid, db_group in dbs:
+            for db in db_group:
+                if not db._uri:
+                    continue
+                k = regex_nopasswd.sub('******',db._uri)
+                dbstats.append(TABLE(*[TR(PRE(row[0]),'%.2fms' %
+                                          (row[1]*1000)) \
+                                           for row in db._timings]))
+                dbtables[k] = {'defined':
+                               sorted(list(set(db.tables) -
+                                           set(db._LAZY_TABLES.keys()))) or
                                '[no defined tables]',
-                               'lazy': sorted(i.db._LAZY_TABLES.keys()) or
-                               '[no lazy tables]'})
-                             for i in THREAD_LOCAL.instances])
-        else:
-            dbstats = []  # if no db or on GAE
-            dbtables = {}
+                               'lazy': sorted(db._LAZY_TABLES.keys()) or
+                               '[no lazy tables]'}
         u = web2py_uuid()
         backtotop = A('Back to top', _href="#totop-%s" % u)
         return DIV(
