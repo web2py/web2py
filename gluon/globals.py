@@ -48,7 +48,6 @@ except ImportError:
     have_minify = False
 
 regex_session_id = re.compile('^([\w\-]+/)?[\w\-\.]+$')
-regex_nopasswd = re.compile('(?<=\:)([^:@/]+)(?=@.+)')
 
 __all__ = ['Request', 'Response', 'Session']
 
@@ -127,7 +126,10 @@ class Request(Storage):
         If request comes in over HTTP, redirect it to HTTPS
         and secure the session.
         """
-        if not global_settings.cronjob and not self.is_https:
+        cmd_opts = global_settings.cmd_options
+        #checking if this is called within the scheduler or within the shell
+        #in addition to checking if it's not a cronjob
+        if not cmd_opts.shell and not cmd_opts.scheduler and not global_settings.cronjob and not self.is_https:
             current.session.forget()
             redirect(URL(scheme='https', args=self.args, vars=self.vars))
 
@@ -434,24 +436,16 @@ class Response(Storage):
         BUTTON = TAG.button
         admin = URL("admin", "default", "design",
                     args=current.request.application)
-        from gluon.dal import THREAD_LOCAL
-        dbs = getattr(THREAD_LOCAL,'db_instances',{}).items()
+        from gluon.dal import DAL
         dbstats = []
         dbtables = {}
-        for db_uid, db_group in dbs:
-            for db in db_group:
-                if not db._uri:
-                    continue
-                k = regex_nopasswd.sub('******',db._uri)
-                dbstats.append(TABLE(*[TR(PRE(row[0]),'%.2fms' %
-                                          (row[1]*1000)) \
-                                           for row in db._timings]))
-                dbtables[k] = {'defined':
-                               sorted(list(set(db.tables) -
-                                           set(db._LAZY_TABLES.keys()))) or
-                               '[no defined tables]',
-                               'lazy': sorted(db._LAZY_TABLES.keys()) or
-                               '[no lazy tables]'}
+        infos = DAL.get_instances()
+        for k,v in infos.iteritems():
+            dbstats.append(TABLE(*[TR(PRE(row[0]),'%.2fms' %
+                                          (row[1]*1000))
+                                           for row in v['dbstats']]))
+            dbtables[k] = dict(defined=v['dbtables']['defined'] or '[no defined tables]',
+                               lazy=v['dbtables']['lazy'] or '[no lazy tables]')
         u = web2py_uuid()
         backtotop = A('Back to top', _href="#totop-%s" % u)
         return DIV(
@@ -509,7 +503,7 @@ class Session(Storage):
             request = current.request
         if response is None:
             response = current.response
-        if separate == True:
+        if separate is True:
             separate = lambda session_name: session_name[-2:]
         self._unlock(response)
         if not masterapp:
