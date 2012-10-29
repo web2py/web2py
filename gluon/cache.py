@@ -147,6 +147,7 @@ class CacheInRam(CacheAbstract):
     def __init__(self, request=None):
         self.initialized = False
         self.request = request
+        self.storage = {}
 
     def initialize(self):
         if self.initialized:
@@ -303,6 +304,7 @@ class CacheOnDisk(CacheAbstract):
         self.initialized = False
         self.request = request
         self.folder = folder
+        self.storage = {}
 
     def initialize(self):
         if self.initialized:
