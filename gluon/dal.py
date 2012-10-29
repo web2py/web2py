@@ -26,6 +26,7 @@ including:
 - DB2
 - Interbase
 - Ingres
+- Informix
 - SapDB (experimental)
 - Cubrid (experimental)
 - CouchDB (experimental)
