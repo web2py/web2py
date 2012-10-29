@@ -778,6 +778,8 @@ class IS_FLOAT_IN_RANGE(Validator):
         return (value, self.error_message)
 
     def formatter(self, value):
+        if values is None:
+            return None
         return str2dec(value).replace('.', self.dot)
 
 
@@ -882,6 +884,8 @@ class IS_DECIMAL_IN_RANGE(Validator):
         return (value, self.error_message)
 
     def formatter(self, value):
+        if value is None:
+            return None
         return str2dec(value).replace('.', self.dot)
 
 
@@ -2170,6 +2174,8 @@ class IS_DATE(Validator):
             return (value, translate(self.error_message) % self.extremes)
 
     def formatter(self, value):
+        if value is None:
+            return None
         format = self.format
         year = value.year
         y = '%.4i' % year
@@ -2228,6 +2234,8 @@ class IS_DATETIME(Validator):
             return (value, translate(self.error_message) % self.extremes)
 
     def formatter(self, value):
+        if value is None:
+            return None
         format = self.format
         year = value.year
         y = '%.4i' % year
