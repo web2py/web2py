@@ -7,13 +7,9 @@ import sys
 import shutil
 import os
 
-from gluon.languages import findT, utf8_repr
+from gluon.languages import findT
 
 sys.path.insert(0, '.')
-
-file = sys.argv[1]
-apps = sys.argv[2:]
-
 
 def sync_language(d, data):
     ''' this function makes sure a translated string will be prefered over an untranslated
@@ -37,35 +33,46 @@ def sync_language(d, data):
 
     return d
 
-d = {}
-for app in apps:
-    path = 'applications/%s/' % app
-    findT(path, file)
-    langfile = open(os.path.join(path, 'languages', '%s.py' % file))
+def sync_main(file, apps):
+    d = {}
+    for app in apps:
+        path = 'applications/%s/' % app
+        findT(path, file)
+        langfile = open(os.path.join(path, 'languages', '%s.py' % file))
+        try:
+            data = eval(langfile.read())
+        finally:
+            langfile.close()
+    
+        d = sync_language(d, data)
+
+
+    path = 'applications/%s/' % apps[-1]
+    file1 = os.path.join(path, 'languages', '%s.py' % file)
+    
+    f = open(file1, 'w')
     try:
-        data = eval(langfile.read())
+        f.write('# coding: utf8\n')
+        f.write('{\n')
+        keys = d.keys()
+        keys.sort()
+        for key in keys:
+            f.write("'''%s''':'''%s''',\n" % (key.replace("'", "\\'"), str(d[key].replace("'", "\\'"))))
+        f.write('}\n')
     finally:
-        langfile.close()
+        f.close()
+    
+    oapps = reversed(apps[:-1])
+    for app in oapps:
+        path2 = 'applications/%s/' % app
+        file2 = os.path.join(path2, 'languages', '%s.py' % file)
+        if file1 != file2:
+            shutil.copyfile(file1, file2)
 
-    d = sync_language(d, data)
+if __name__ == "__main__":
 
-path = 'applications/%s/' % apps[-1]
-file1 = os.path.join(path, 'languages', '%s.py' % file)
+    file = sys.argv[1]
+    apps = sys.argv[2:]
 
-f = open(file1, 'w')
-try:
-    f.write('# coding: utf8\n')
-    f.write('{\n')
-    keys = d.keys()
-    keys.sort()
-    for key in keys:
-        f.write('%s:%s,\n' % (utf8_repr(key), utf8_repr(str(d[key]))))
-    f.write('}\n')
-finally:
-    f.close()
-
-oapps = reversed(apps[:-1])
-for app in oapps:
-    path2 = 'applications/%s/' % app
-    file2 = os.path.join(path2, 'languages', '%s.py' % file)
-    shutil.copyfile(file1, file2)
+    sync_main(file, apps)
+    
