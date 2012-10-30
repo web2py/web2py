@@ -4906,7 +4906,7 @@ class Wiki(object):
                 db.wiki_page.body.default = \
                     '- Menu Item > @////index\n- - Submenu > http://web2py.com'
             else:
-                db.wiki_page.body.default = '## %s\n\npage content' % title_guess
+                db.wiki_page.body.default = '## %s\n\npage content\n\n[[new page @////new_page]]\n' % title_guess
         vars = current.request.post_vars
         if vars.body:
             vars.body = vars.body.replace('://%s' % self.host, '://HOSTNAME')
@@ -4925,12 +4925,20 @@ class Wiki(object):
             pagecontent.css('font-family',
                             'Monaco,Menlo,Consolas,"Courier New",monospace');
             var prevbutton = $('<button class="btn nopreview">Preview</button>');
+            var mediabutton = $('<button class="btn nopreview">Media</button>');
             var preview = $('<div id="preview"></div>').hide();
+            var previewmedia = $('<div id="previewmedia"></div>');
             var table = $('form');
-            prevbutton.insertBefore(table);
             preview.insertBefore(table);
-            prevbutton.on('click', function(e) {
-                e.preventDefault();
+            prevbutton.insertBefore(table);
+            mediabutton.insertBefore(table);
+            previewmedia.insertBefore(table);
+            mediabutton.toggle(function() {
+                web2py_component('%(urlmedia)s', 'previewmedia');
+            }, function() {
+                previewmedia.empty();
+            });
+            prevbutton.click(function() {
                 if (prevbutton.hasClass('nopreview')) {
                     prevbutton.addClass('preview').removeClass(
                         'nopreview').html('Edit Source');
@@ -4943,7 +4951,7 @@ class Wiki(object):
                 }
             })
         })
-        """ % dict(url=URL(args=('_preview')))
+        """ % dict(url=URL(args=('_preview')), urlmedia=URL(extension='load',args=('_editmedia'),vars=dict(embedded=1)))
         return dict(content=TAG[''](form, SCRIPT(script)))
 
     def editmedia(self, slug):
@@ -4959,9 +4967,21 @@ class Wiki(object):
                       row.filename.split('.')[-1]))
         self.auth.db.wiki_media.wiki_page.default = page.id
         self.auth.db.wiki_media.wiki_page.writable = False
+        links = []
+        csv = True
+        if current.request.vars.embedded:
+            script = "var c = $('#wiki_page_body'); c.val(c.val() + $('%s').text()); return false;"
+            fragment = self.auth.db.wiki_media.id.represent
+            csv = False
+            links=[
+                lambda row:
+                    A('copy into source', _href='#', _onclick=script % (fragment(row.id, row)))
+                    ]
         content = SQLFORM.grid(
             self.auth.db.wiki_media.wiki_page == page.id,
             orderby=self.auth.db.wiki_media.title,
+            links = links,
+            csv = csv,
             args=['_editmedia', slug],
             user_signature=False)
         return dict(content=content)
