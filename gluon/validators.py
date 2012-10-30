@@ -778,7 +778,7 @@ class IS_FLOAT_IN_RANGE(Validator):
         return (value, self.error_message)
 
     def formatter(self, value):
-        if values is None:
+        if value is None:
             return None
         return str2dec(value).replace('.', self.dot)
 
