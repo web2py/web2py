@@ -84,9 +84,7 @@ def sqlite(database_name):
             for line in sql_lines[1:-1]:
                 if re.search('KEY', line) or re.search('PRIMARY', line) or re.search('"ID"', line) or line.startswith(')'):
                     continue
-                print line
                 hit = re.search(r'"(\S+)"\s+(\w+(\(\S+\))?),?( .*)?', line)
-                print hit and hit.groups()
                 if hit is not None:
                     name, d_type = hit.group(1), hit.group(2)
                     d_type = re.sub(r'(\w+)\(.*', r'\1', d_type)
