@@ -2561,7 +2561,7 @@ class SQLTABLE(TABLE):
                 else:
                     raise SyntaxError('something wrong in Rows object')
                 r_old = r
-                if not field:
+                if not field or isinstance(field, (Field.Virtual, Field.Lazy)):
                     pass
                 elif linkto and field.type == 'id':
                     try:
