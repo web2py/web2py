@@ -99,13 +99,21 @@ class DropboxAccount(object):
         redirect('https://www.dropbox.com/logout')
         return next
 
+    def get_client(self):
+        access_token = current.session.dropbox_access_token
+        self.sess.set_token(access_token[0], access_token[1])
+        self.client = client.DropboxClient(self.sess)
+
     def put(self, filename, file):
+        if not hasattr(self,'client'): self.get_client()
         return json.loads(self.client.put_file(filename, file))['bytes']
 
     def get(self, filename, file):
+        if not hasattr(self,'client'): self.get_client()
         return self.client.get_file(filename)
 
     def dir(self, path):
+        if not hasattr(self,'client'): self.get_client()
         return json.loads(self.client.metadata(path))
 
 

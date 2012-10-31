@@ -1365,13 +1365,13 @@ class Auth(object):
                                  archive_names='%(tablename)s_archive',
                                  current_record='current_record'):
         """
-        to enable full record vernionioning (including auth tables):
+        to enable full record versioning (including auth tables):
 
         auth = Auth(db)
         auth.define_tables(signature=True)
         # define our own tables
         db.define_table('mything',Field('name'),auth.signature)
-        auth.enable_record_vernining(tables=db)
+        auth.enable_record_versioning(tables=db)
 
         tables can be the db (all table) or a list of tables.
         only tables with modified_by and modified_on fiels (as created
@@ -1386,7 +1386,7 @@ class Auth(object):
 
         Important: If you use auth.enable_record_versioning,
         do not use auth.archive or you will end up with duplicates.
-        auth.archive does explicitely what enable_record_versioning
+        auth.archive does explicitly what enable_record_versioning
         does automatically.
 
         """
@@ -1489,7 +1489,7 @@ class Auth(object):
                      IS_NOT_IN_DB(db, '%s.username' % settings.table_user_name)]
                 if not settings.username_case_sensitive:
                     is_unique_username.insert(1, IS_LOWER())
-                table = db.define_table(
+                db.define_table(
                     settings.table_user_name,
                     Field('first_name', length=128, default='',
                           label=self.messages.label_first_name,
@@ -1522,7 +1522,7 @@ class Auth(object):
                         fake_migrate=fake_migrate,
                         format='%(username)s'))
             else:
-                table = db.define_table(
+                db.define_table(
                     settings.table_user_name,
                     Field('first_name', length=128, default='',
                           label=self.messages.label_first_name,
@@ -1555,7 +1555,7 @@ class Auth(object):
         if not settings.table_group_name in db.tables:
             extra_fields = settings.extra_fields.get(
                 settings.table_group_name, []) + signature_list
-            table = db.define_table(
+            db.define_table(
                 settings.table_group_name,
                 Field('role', length=512, default='',
                       label=self.messages.label_role,
@@ -1573,7 +1573,7 @@ class Auth(object):
         if not settings.table_membership_name in db.tables:
             extra_fields = settings.extra_fields.get(
                 settings.table_membership_name, []) + signature_list
-            table = db.define_table(
+            db.define_table(
                 settings.table_membership_name,
                 Field('user_id', reference_table_user,
                       label=self.messages.label_user_id),
@@ -1587,7 +1587,7 @@ class Auth(object):
         if not settings.table_permission_name in db.tables:
             extra_fields = settings.extra_fields.get(
                 settings.table_permission_name, []) + signature_list
-            table = db.define_table(
+            db.define_table(
                 settings.table_permission_name,
                 Field('group_id', reference_table_group,
                       label=self.messages.label_group_id),
@@ -1605,7 +1605,7 @@ class Auth(object):
                         settings.table_permission_name, migrate),
                     fake_migrate=fake_migrate))
         if not settings.table_event_name in db.tables:
-            table = db.define_table(
+            db.define_table(
                 settings.table_event_name,
                 Field('time_stamp', 'datetime',
                       default=current.request.now,
@@ -1629,7 +1629,7 @@ class Auth(object):
         now = current.request.now
         if settings.cas_domains:
             if not settings.table_cas_name in db.tables:
-                table = db.define_table(
+                db.define_table(
                     settings.table_cas_name,
                     Field('user_id', reference_table_user, default=None,
                           label=self.messages.label_user_id),
@@ -1773,8 +1773,6 @@ class Auth(object):
         """
         logins user as specified by usernname (or email) and password
         """
-        request = current.request
-        session = current.session
         table_user = self.table_user()
         if self.settings.login_userfield:
             userfield = self.settings.login_userfield
@@ -2669,7 +2667,6 @@ class Auth(object):
             redirect(self.settings.login_url)
         db = self.db
         table_user = self.table_user()
-        usern = self.settings.table_user_name
         s = db(table_user.id == self.user.id)
 
         request = current.request
@@ -2717,7 +2714,7 @@ class Auth(object):
                     next = self.url(args=request.args)
                 else:
                     next = replace_id(next, form)
-            redirect(next)
+                redirect(next)
         return form
 
     def profile(
@@ -2990,10 +2987,12 @@ class Auth(object):
         return self.id_group(self.user_group_role(user_id))
 
     def user_group_role(self, user_id=None):
+        if not self.settings.create_user_groups:
+            return None
         if user_id:
             user = self.table_user()[user_id]
         else:
-            user = self.user
+            user = self.user        
         return self.settings.create_user_groups % user
 
     def has_membership(self, group_id=None, user_id=None, role=None):
@@ -4139,12 +4138,13 @@ class Service(object):
                 return '<NULL>'
             return value
         if args and args[0] in self.run_procedures:
+            import types
             r = universal_caller(self.run_procedures[args[0]],
                                  *args[1:], **dict(request.vars))
             s = cStringIO.StringIO()
             if hasattr(r, 'export_to_csv_file'):
                 r.export_to_csv_file(s)
-            elif r and isinstance(r[0], (dict, Storage)):
+            elif r and not isinstance(r, types.GeneratorType) and isinstance(r[0], (dict, Storage)):
                 import csv
                 writer = csv.writer(s)
                 writer.writerow(r[0].keys())
@@ -4656,7 +4656,7 @@ class Wiki(object):
         html = page.body
         # @///function -> http://..../function
         html = replace_at_urls(html, URL)
-        # http://...jpg -> <img src="http://...jpg/> or oembed
+        # http://...jpg -> <img src="http://...jpg/> or embed
         html = replace_autolinks(html, lambda link: expand_one(link, {}))
         # @{component:name} -> <script>embed component name</script>
         html = replace_components(html, self.env)
@@ -4898,14 +4898,15 @@ class Wiki(object):
                     % self.force_prefix
                 redirect(URL(args=('_edit', self.force_prefix + slug)))
             db.wiki_page.can_read.default = [Wiki.everybody]
-            db.wiki_page.can_edit.default = [auth.user_group_role()]
+            user_group_role = auth.user_group_role()
+            db.wiki_page.can_edit.default = [user_group_role]
             db.wiki_page.title.default = title_guess
             db.wiki_page.slug.default = slug
             if slug == 'wiki-menu':
                 db.wiki_page.body.default = \
                     '- Menu Item > @////index\n- - Submenu > http://web2py.com'
             else:
-                db.wiki_page.body.default = '## %s\n\npage content' % title_guess
+                db.wiki_page.body.default = '## %s\n\npage content\n\n[[new page @////new_page]]\n' % title_guess
         vars = current.request.post_vars
         if vars.body:
             vars.body = vars.body.replace('://%s' % self.host, '://HOSTNAME')
@@ -4924,12 +4925,20 @@ class Wiki(object):
             pagecontent.css('font-family',
                             'Monaco,Menlo,Consolas,"Courier New",monospace');
             var prevbutton = $('<button class="btn nopreview">Preview</button>');
+            var mediabutton = $('<button class="btn nopreview">Media</button>');
             var preview = $('<div id="preview"></div>').hide();
+            var previewmedia = $('<div id="previewmedia"></div>');
             var table = $('form');
-            prevbutton.insertBefore(table);
             preview.insertBefore(table);
-            prevbutton.on('click', function(e) {
-                e.preventDefault();
+            prevbutton.insertBefore(table);
+            mediabutton.insertBefore(table);
+            previewmedia.insertBefore(table);
+            mediabutton.toggle(function() {
+                web2py_component('%(urlmedia)s', 'previewmedia');
+            }, function() {
+                previewmedia.empty();
+            });
+            prevbutton.click(function() {
                 if (prevbutton.hasClass('nopreview')) {
                     prevbutton.addClass('preview').removeClass(
                         'nopreview').html('Edit Source');
@@ -4942,7 +4951,7 @@ class Wiki(object):
                 }
             })
         })
-        """ % dict(url=URL(args=('_preview')))
+        """ % dict(url=URL(args=('_preview')), urlmedia=URL(extension='load',args=('_editmedia'),vars=dict(embedded=1)))
         return dict(content=TAG[''](form, SCRIPT(script)))
 
     def editmedia(self, slug):
@@ -4958,9 +4967,21 @@ class Wiki(object):
                       row.filename.split('.')[-1]))
         self.auth.db.wiki_media.wiki_page.default = page.id
         self.auth.db.wiki_media.wiki_page.writable = False
+        links = []
+        csv = True
+        if current.request.vars.embedded:
+            script = "var c = $('#wiki_page_body'); c.val(c.val() + $('%s').text()); return false;"
+            fragment = self.auth.db.wiki_media.id.represent
+            csv = False
+            links=[
+                lambda row:
+                    A('copy into source', _href='#', _onclick=script % (fragment(row.id, row)))
+                    ]
         content = SQLFORM.grid(
             self.auth.db.wiki_media.wiki_page == page.id,
             orderby=self.auth.db.wiki_media.title,
+            links = links,
+            csv = csv,
             args=['_editmedia', slug],
             user_signature=False)
         return dict(content=content)
