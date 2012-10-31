@@ -769,8 +769,12 @@ class Recaptcha(DIV):
             del self.request_vars.recaptcha_response_field
             self.request_vars.captcha = ''
             return True
-        self.errors['captcha'] = self.error_message
-        return False
+        else:
+            # In case we get an error code, store it so we can get an error message
+            # from the /api/challenge URL as described in the reCAPTCHA api docs.
+            self.error = return_values[1]
+            self.errors['captcha'] = self.error_message
+            return False
 
     def xml(self):
         public_key = self.public_key
