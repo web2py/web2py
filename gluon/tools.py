@@ -3464,10 +3464,12 @@ class Crud(object):
             deletable = self.settings.update_deletable
         if message is DEFAULT:
             message = self.messages.record_updated
+        if not 'hidden' in attributes:
+            attributes['hidden'] = {}
+        attributes['hidden']['_next'] = next
         form = SQLFORM(
             table,
             record,
-            hidden=dict(_next=next),
             showid=self.settings.showid,
             submit_button=self.messages.submit_button,
             delete_label=self.messages.delete_label,
@@ -3475,7 +3477,7 @@ class Crud(object):
             upload=self.settings.download_url,
             formstyle=self.settings.formstyle,
             separator=self.settings.label_separator,
-            **attributes
+            **attributes # contains hidden
             )
         self.accepted = False
         self.deleted = False
