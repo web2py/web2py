@@ -575,7 +575,10 @@ class IS_NOT_IN_DB(Validator):
         self.record_id = id
 
     def __call__(self, value):
-        value = str(value)
+        if isinstance(value,unicode):
+            value = value.encode('utf8')
+        else:
+            value = str(value)
         if not value.strip():
             return (value, translate(self.error_message))
         if value in self.allowed_override:
