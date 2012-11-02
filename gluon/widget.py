@@ -1007,6 +1007,8 @@ def start_schedulers(options):
         processes.append(p)
         print "Currently running %s scheduler processes" % (len(processes))
         p.start()
+        ##to avoid bashing the db at the same time
+        time.sleep(0.7)
         print "Processes started"
     for p in processes:
         try:
