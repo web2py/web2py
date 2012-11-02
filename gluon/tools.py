@@ -4823,7 +4823,7 @@ class Wiki(object):
         elif not zero or not zero.startswith('_'):
             return self.read(zero)
         elif zero == '_edit':
-            return self.edit(request.args(1) or 'index')
+            return self.edit(request.args(1) or 'index',request.args(2) or 0)
         elif zero == '_editmedia':
             return self.editmedia(request.args(1) or 'index')
         elif zero == '_create':
@@ -4898,7 +4898,7 @@ class Wiki(object):
             raise HTTP(401, "Not Authorized")
         return True
 
-    def edit(self, slug):
+    def edit(self,slug,from_template=0):
         auth = self.auth
         db = auth.db
         page = db.wiki_page(slug=slug)
@@ -4912,15 +4912,14 @@ class Wiki(object):
                     % self.force_prefix
                 redirect(URL(args=('_edit', self.force_prefix + slug)))
             db.wiki_page.can_read.default = [Wiki.everybody]
-            user_group_role = auth.user_group_role()
-            db.wiki_page.can_edit.default = [user_group_role]
+            db.wiki_page.can_edit.default = [auth.user_group_role()]
             db.wiki_page.title.default = title_guess
             db.wiki_page.slug.default = slug
             if slug == 'wiki-menu':
                 db.wiki_page.body.default = \
                     '- Menu Item > @////index\n- - Submenu > http://web2py.com'
             else:
-                db.wiki_page.body.default = '## %s\n\npage content\n\n[[new page @////new_page]]\n' % title_guess
+                db.wiki_page.body.default = db(db.wiki_page.id==from_template).select(db.wiki_page.body)[0].body if int(from_template) > 0 else '## %s\n\npage content' % title_guess
         vars = current.request.post_vars
         if vars.body:
             vars.body = vars.body.replace('://%s' % self.host, '://HOSTNAME')
@@ -5004,13 +5003,21 @@ class Wiki(object):
         if not self.can_edit():
             return self.not_authorized()
         db = self.auth.db
-        form = FORM(INPUT(_name='slug', value=current.request.args(1),
-                          requires=(IS_SLUG(),
-                                    IS_NOT_IN_DB(db, db.wiki_page.slug))),
-                    INPUT(_type='submit',
-                          _value=current.T('Create Page from Slug')))
+        slugs=db(db.wiki_page.id>0).select(db.wiki_page.id,db.wiki_page.slug)
+        options=[OPTION(row.slug,_value=row.id) for row in slugs] 
+         
+        options.insert(0, OPTION('',_value=''))
+        form = FORM(LABEL(INPUT(_name='slug',value=current.request.args(1),
+                            requires=(IS_SLUG(),
+                                     IS_NOT_IN_DB(db,db.wiki_page.slug)))),
+                     LABEL(SELECT(*options,**dict(
+                        _name='from_template',requires=IS_EMPTY_OR(IS_IN_DB(db,db.wiki_page.id)))),current.T(" Choose Template or empty for new Page")),
+                      INPUT(_type='submit',
+                           _value=current.T('Create Page from Slug')),
+                     _class="well span6")
         if form.process().accepted:
-            redirect(URL(args=('_edit', form.vars.slug)))
+#             form.vars.from_template = 0 if not form.vars.from_template else form.vars.from_template
+             redirect(URL(args=('_edit',form.vars.slug,form.vars.from_template or 0))) # added param
         return dict(content=form)
 
     def pages(self):
