@@ -4608,11 +4608,14 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         (items, tablename, fields) = self.select_raw(query)
         # items can be one item or a query
         if not isinstance(items,list):
-            counter = items.count(limit=None)
-            leftitems = items.fetch(1000)
+            #use a keys_only query to ensure that this runs as a datastore
+            # small operations
+            leftitems = items.fetch(1000, keys_only=True)
+            counter = 0
             while len(leftitems):
+                counter += len(leftitems)
                 gae.delete(leftitems)
-                leftitems = items.fetch(1000)
+                leftitems = items.fetch(1000, keys_only=True)
         else:
             counter = len(items)
             gae.delete(items)
