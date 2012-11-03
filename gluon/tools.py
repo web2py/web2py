@@ -3298,8 +3298,16 @@ class Auth(object):
             self._wiki.env.update(env or {})
         # if resolve is set to True, process request as wiki call
         # resolve=False allows initial setup without wiki redirection
+        wiki = None
         if resolve:
-            return self._wiki.read(slug)['content'] if slug else self._wiki()
+            action = str(current.request.args(0)).startswith("_")
+            if slug and not action:
+                wiki = self._wiki.read(slug)['content']
+            else:
+                wiki = self._wiki()
+            if isinstance(wiki, basestring):
+                wiki = XML(wiki)
+            return wiki
 
 
 class Crud(object):
@@ -5005,18 +5013,18 @@ class Wiki(object):
         db = self.auth.db
         slugs=db(db.wiki_page.id>0).select(db.wiki_page.id,db.wiki_page.slug)
         options=[OPTION(row.slug,_value=row.id) for row in slugs] 
-         
         options.insert(0, OPTION('',_value=''))
-        form = FORM(LABEL(INPUT(_name='slug',value=current.request.args(1),
-                            requires=(IS_SLUG(),
-                                     IS_NOT_IN_DB(db,db.wiki_page.slug)))),
-                     LABEL(SELECT(*options,**dict(
-                        _name='from_template',requires=IS_EMPTY_OR(IS_IN_DB(db,db.wiki_page.id)))),current.T(" Choose Template or empty for new Page")),
-                      INPUT(_type='submit',
-                           _value=current.T('Create Page from Slug')),
-                     _class="well span6")
+        form = SQLFORM.factory(Field("slug", default=current.request.args(1),
+                                     requires=(IS_SLUG(),
+                                     IS_NOT_IN_DB(db,db.wiki_page.slug))),
+                               Field("from_template", "reference wiki_page",
+                                     requires=IS_EMPTY_OR(IS_IN_DB(db, db.wiki_page, '%(slug)s')),
+                                     comment=current.T("Choose Template or empty for new Page")),
+                                     _class="well span6")
+        form.element("[type=submit]").attributes["_value"] = current.T("Create Page from Slug")
+
         if form.process().accepted:
-#             form.vars.from_template = 0 if not form.vars.from_template else form.vars.from_template
+             # form.vars.from_template = 0 if not form.vars.from_template else form.vars.from_template
              redirect(URL(args=('_edit',form.vars.slug,form.vars.from_template or 0))) # added param
         return dict(content=form)
 
