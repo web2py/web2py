@@ -520,3 +520,25 @@ class RSSItem(WriteXmlMixin):
         # Derived classes can hook into this to insert
         # output after the title and link elements
         pass
+
+
+def dumps(rss, encoding='utf-8'):
+    s = cStringIO.StringIO()
+    rss.write_xml(s, encoding)
+    return s.getvalue()
+
+
+def test():
+    rss = RSS2(title='web2py feed', link='http://www.web2py.com',
+               description='About web2py',
+               lastBuildDate=datetime.datetime.now(),
+               items=[RSSItem(title='web2py and PyRSS2Gen-0.0',
+               link='http://www.web2py.com/examples/simple_examples/getrss',
+               description='web2py can now make rss feeds!',
+               guid=Guid('http://www.web2py.com/'),
+               pubDate=datetime.datetime(2007, 11, 14, 10, 30))])
+    return dumps(rss)
+
+
+if __name__ == '__main__':
+    print test()
