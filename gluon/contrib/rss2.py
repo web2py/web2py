@@ -45,7 +45,6 @@ __author__ = "Andrew Dalke <dalke@dalkescientific.com>"
 _generator_name = __name__ + "-" + ".".join(map(str, __version__))
 
 import datetime
-
 import sys
 
 if sys.version_info[0] == 3:
@@ -523,7 +522,7 @@ class RSSItem(WriteXmlMixin):
 
 
 def dumps(rss, encoding='utf-8'):
-    s = cStringIO.StringIO()
+    s = StringIO()
     rss.write_xml(s, encoding)
     return s.getvalue()
 
