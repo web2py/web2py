@@ -739,6 +739,8 @@ class Scheduler(MetaScheduler):
                     db(sw.worker_name == self.worker_name).update(
                         last_heartbeat=now, status=ACTIVE)
                     self.worker_status[1] = 1  # re-activating the process
+                    if self.worker_status[0] <> RUNNING:
+                        self.worker_status[0] = ACTIVE
 
             self.do_assign_tasks = False
 
