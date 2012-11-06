@@ -769,8 +769,12 @@ class Recaptcha(DIV):
             del self.request_vars.recaptcha_response_field
             self.request_vars.captcha = ''
             return True
-        self.errors['captcha'] = self.error_message
-        return False
+        else:
+            # In case we get an error code, store it so we can get an error message
+            # from the /api/challenge URL as described in the reCAPTCHA api docs.
+            self.error = return_values[1]
+            self.errors['captcha'] = self.error_message
+            return False
 
     def xml(self):
         public_key = self.public_key
@@ -3294,8 +3298,16 @@ class Auth(object):
             self._wiki.env.update(env or {})
         # if resolve is set to True, process request as wiki call
         # resolve=False allows initial setup without wiki redirection
+        wiki = None
         if resolve:
-            return self._wiki.read(slug)['content'] if slug else self._wiki()
+            action = str(current.request.args(0)).startswith("_")
+            if slug and not action:
+                wiki = self._wiki.read(slug)['content']
+            else:
+                wiki = self._wiki()
+            if isinstance(wiki, basestring):
+                wiki = XML(wiki)
+            return wiki
 
 
 class Crud(object):
@@ -3464,10 +3476,12 @@ class Crud(object):
             deletable = self.settings.update_deletable
         if message is DEFAULT:
             message = self.messages.record_updated
+        if not 'hidden' in attributes:
+            attributes['hidden'] = {}
+        attributes['hidden']['_next'] = next
         form = SQLFORM(
             table,
             record,
-            hidden=dict(_next=next),
             showid=self.settings.showid,
             submit_button=self.messages.submit_button,
             delete_label=self.messages.delete_label,
@@ -3475,7 +3489,7 @@ class Crud(object):
             upload=self.settings.download_url,
             formstyle=self.settings.formstyle,
             separator=self.settings.label_separator,
-            **attributes
+            **attributes # contains hidden
             )
         self.accepted = False
         self.deleted = False
@@ -4581,16 +4595,23 @@ class PluginManager(object):
 
 
 class Expose(object):
-    def __init__(self, base=None, basename='base'):
+    def __init__(self, base=None, basename='base', extensions=None, allow_download=True):
+        """
+        extensions: an optional list of file extensions for filtering displayed files:
+        ['.py', '.jpg']
+        allow_download: whether to allow downloading selected files
+        """
         current.session.forget()
         base = base or os.path.join(current.request.folder, 'static')
         self.basename = basename
-        args = self.args = current.request.raw_args and \
-            current.request.raw_args.split('/') or []
-        filename = os.path.join(base, *args)
+        self.args = current.request.raw_args and \
+            [arg for arg in current.request.raw_args.split('/') if arg] or []
+        filename = os.path.join(base, *self.args)
+        if not os.path.exists(filename):
+            raise HTTP(404, "FILE NOT FOUND")
         if not os.path.normpath(filename).startswith(base):
             raise HTTP(401, "NOT AUTHORIZED")
-        if not os.path.isdir(filename):
+        if allow_download and not os.path.isdir(filename):
             current.response.headers['Content-Type'] = contenttype(filename)
             raise HTTP(200, open(filename, 'rb'), **current.response.headers)
         self.path = path = os.path.join(filename, '*')
@@ -4598,23 +4619,24 @@ class Expose(object):
                             if os.path.isdir(f) and not self.isprivate(f)]
         self.filenames = [f[len(path) - 1:] for f in sorted(glob.glob(path))
                             if not os.path.isdir(f) and not self.isprivate(f)]
+        if extensions:
+            self.filenames = [f for f in self.filenames if os.path.splitext(f)[-1] in extensions]
 
     def breadcrumbs(self, basename):
         path = []
         span = SPAN()
         span.append(A(basename, _href=URL()))
-        span.append('/')
-        args = current.request.raw_args and \
-            current.request.raw_args.split('/') or []
-        for arg in args:
+        for arg in self.args:
+            span.append('/')
             path.append(arg)
             span.append(A(arg, _href=URL(args='/'.join(path))))
-            span.append('/')
         return span
 
     def table_folders(self):
-        return TABLE(*[TR(TD(A(folder, _href=URL(args=self.args + [folder]))))
-                           for folder in self.folders])
+        if self.folders:
+            return SPAN(H3('Folders'), TABLE(*[TR(TD(A(folder, _href=URL(args=self.args + [folder]))))
+                           for folder in self.folders]))
+        return ''
 
     @staticmethod
     def isprivate(f):
@@ -4622,21 +4644,21 @@ class Expose(object):
 
     @staticmethod
     def isimage(f):
-        return f.rsplit('.')[-1].lower() in ('png', 'jpg', 'jpeg', 'gif', 'tiff')
+        return os.path.splitext(f)[-1].lower() in ('.png', '.jpg', '.jpeg', '.gif', '.tiff')
 
     def table_files(self, width=160):
-        return TABLE(*[TR(TD(A(f, _href=URL(args=self.args + [f]))),
+        if self.filenames:
+            return SPAN(H3('Files'), TABLE(*[TR(TD(A(f, _href=URL(args=self.args + [f]))),
                           TD(IMG(_src=URL(args=self.args + [f]),
                                  _style='max-width:%spx' % width)
                                  if width and self.isimage(f) else ''))
-                           for f in self.filenames])
+                           for f in self.filenames]))
+        return ''
 
     def xml(self):
         return DIV(
             H2(self.breadcrumbs(self.basename)),
-            H3('Folders'),
             self.table_folders(),
-            H3('Files'),
             self.table_files()).xml()
 
 
@@ -4809,7 +4831,7 @@ class Wiki(object):
         elif not zero or not zero.startswith('_'):
             return self.read(zero)
         elif zero == '_edit':
-            return self.edit(request.args(1) or 'index')
+            return self.edit(request.args(1) or 'index',request.args(2) or 0)
         elif zero == '_editmedia':
             return self.editmedia(request.args(1) or 'index')
         elif zero == '_create':
@@ -4884,7 +4906,7 @@ class Wiki(object):
             raise HTTP(401, "Not Authorized")
         return True
 
-    def edit(self, slug):
+    def edit(self,slug,from_template=0):
         auth = self.auth
         db = auth.db
         page = db.wiki_page(slug=slug)
@@ -4898,15 +4920,14 @@ class Wiki(object):
                     % self.force_prefix
                 redirect(URL(args=('_edit', self.force_prefix + slug)))
             db.wiki_page.can_read.default = [Wiki.everybody]
-            user_group_role = auth.user_group_role()
-            db.wiki_page.can_edit.default = [user_group_role]
+            db.wiki_page.can_edit.default = [auth.user_group_role()]
             db.wiki_page.title.default = title_guess
             db.wiki_page.slug.default = slug
             if slug == 'wiki-menu':
                 db.wiki_page.body.default = \
                     '- Menu Item > @////index\n- - Submenu > http://web2py.com'
             else:
-                db.wiki_page.body.default = '## %s\n\npage content\n\n[[new page @////new_page]]\n' % title_guess
+                db.wiki_page.body.default = db(db.wiki_page.id==from_template).select(db.wiki_page.body)[0].body if int(from_template) > 0 else '## %s\n\npage content' % title_guess
         vars = current.request.post_vars
         if vars.body:
             vars.body = vars.body.replace('://%s' % self.host, '://HOSTNAME')
@@ -4990,13 +5011,21 @@ class Wiki(object):
         if not self.can_edit():
             return self.not_authorized()
         db = self.auth.db
-        form = FORM(INPUT(_name='slug', value=current.request.args(1),
-                          requires=(IS_SLUG(),
-                                    IS_NOT_IN_DB(db, db.wiki_page.slug))),
-                    INPUT(_type='submit',
-                          _value=current.T('Create Page from Slug')))
+        slugs=db(db.wiki_page.id>0).select(db.wiki_page.id,db.wiki_page.slug)
+        options=[OPTION(row.slug,_value=row.id) for row in slugs] 
+        options.insert(0, OPTION('',_value=''))
+        form = SQLFORM.factory(Field("slug", default=current.request.args(1),
+                                     requires=(IS_SLUG(),
+                                     IS_NOT_IN_DB(db,db.wiki_page.slug))),
+                               Field("from_template", "reference wiki_page",
+                                     requires=IS_EMPTY_OR(IS_IN_DB(db, db.wiki_page, '%(slug)s')),
+                                     comment=current.T("Choose Template or empty for new Page")),
+                                     _class="well span6")
+        form.element("[type=submit]").attributes["_value"] = current.T("Create Page from Slug")
+
         if form.process().accepted:
-            redirect(URL(args=('_edit', form.vars.slug)))
+             # form.vars.from_template = 0 if not form.vars.from_template else form.vars.from_template
+             redirect(URL(args=('_edit',form.vars.slug,form.vars.from_template or 0))) # added param
         return dict(content=form)
 
     def pages(self):

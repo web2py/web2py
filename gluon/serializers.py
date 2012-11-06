@@ -114,4 +114,4 @@ def rss(feed):
                            description=str(entry.get('description', '')),
                            pubDate=entry.get('created_on', now)
                            ) for entry in feed.get('entries', [])])
-    return rss2.dumps(rss)
+    return rss.to_xml(encoding='utf-8')
