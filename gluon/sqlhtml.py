@@ -1675,6 +1675,8 @@ class SQLFORM(FORM):
              createargs={},
              editargs={},
              viewargs={},
+             buttons_placement = 'right',
+             links_placement = 'right'
              ):
 
         # jQuery UI ThemeRoller classes (empty if ui is disabled)
@@ -1824,6 +1826,14 @@ class SQLFORM(FORM):
                         buttons.append(link(record))
             return buttons
 
+        def linsert(lst, i, x):
+            """
+            a = [1,2]
+            linsert(a, 1, [0,3])
+            a = [1, 0, 3, 2]
+            """
+            lst[i:i] = x
+
         formfooter = DIV(
             _class='form_footer row_buttons %(header)s %(cornerbottom)s' % ui)
 
@@ -1903,7 +1913,13 @@ class SQLFORM(FORM):
                 (ExporterTSV, 'TSV (Excel compatible, hidden cols)'),
             tsv=(ExporterTSV, 'TSV (Excel compatible)'))
         if not exportclasses is None:
+            """
+            allow to set exportclasses=dict(csv=False) to disable the csv format
+            """
             exportManager.update(exportclasses)
+            for k,v in exportclasses.items():
+                if v is False:
+                    del exportManager[k]
 
         export_type = request.vars._export_type
         if export_type:
@@ -1920,7 +1936,8 @@ class SQLFORM(FORM):
                         orderby = ~orderby
 
             table_fields = [f for f in fields if f._tablename in tablenames]
-            if export_type in ('csv_with_hidden_cols', 'tsv_with_hidden_cols'):
+            if (export_type in ('csv_with_hidden_cols', 'tsv_with_hidden_cols')
+                    and export_type in exportManager):
                 if request.vars.keywords:
                     try:
                         dbset = dbset(SQLFORM.build_query(
@@ -2017,9 +2034,9 @@ class SQLFORM(FORM):
                 else:
                     orderby = (order[:1] == '~' and ~sort_field) or sort_field
 
-        head = TR(_class=ui.get('header'))
+        headcols = []
         if selectable:
-            head.append(TH(_class=ui.get('default')))
+            headcols.append(TH(_class=ui.get('default')))
         for field in fields:
             if columns and not str(field) in columns:
                 continue
@@ -2037,19 +2054,29 @@ class SQLFORM(FORM):
                 header = A(header, marker, _href=url(vars=dict(
                     keywords=request.vars.keywords or '',
                     order=key)), _class=trap_class())
-            head.append(TH(header, _class=ui.get('default')))
+            headcols.append(TH(header, _class=ui.get('default')))
 
+        toadd = []
         if links and links_in_grid:
             for link in links:
                 if isinstance(link, dict):
-                    head.append(TH(link['header'], _class=ui.get('default')))
+                    toadd.append(TH(link['header'], _class=ui.get('default')))
+            if links_placement in ['right', 'both']:
+                headcols.extend(toadd)
+            if links_placement in ['left', 'both']:
+                linsert(headcols, 0, toadd)
 
         # Include extra column for buttons if needed.
         include_buttons_column = (details or editable or deletable or
                                   (links and links_in_grid and
                                    not all([isinstance(link, dict) for link in links])))
         if include_buttons_column:
-            head.append(TH(_class=ui.get('default')))
+            if buttons_placement in ['right', 'both']:
+                headcols.append(TH(_class=ui.get('default','')))
+            if buttons_placement in ['left', 'both']:
+                headcols.insert(0, TH(_class=ui.get('default','')))
+
+        head = TR(*headcols, _class=ui.get('header'))
 
         paginator = UL()
         if paginate and paginate < nrows:
@@ -2105,21 +2132,10 @@ class SQLFORM(FORM):
             tbody = TBODY()
             numrec = 0
             for row in rows:
-                if numrec % 2 == 0:
-                    classtr = 'even'
-                else:
-                    classtr = 'odd'
-                numrec += 1
+                trcols = []
                 id = row[field_id]
-                if id:
-                    rid = id
-                    if callable(rid):  # can this ever be callable?
-                        rid = rid(row)
-                    tr = TR(_id=rid, _class='%s %s' % (classtr, 'with_id'))
-                else:
-                    tr = TR(_class=classtr)
                 if selectable:
-                    tr.append(
+                    trcols.append(
                         INPUT(_type="checkbox", _name="records", _value=id,
                                     value=request.vars.records))
                 for field in fields:
@@ -2157,15 +2173,21 @@ class SQLFORM(FORM):
                         value = truncate_string(value, maxlength)
                     elif not isinstance(value, DIV):
                         value = field.formatter(value)
-                    tr.append(TD(value))
+                    trcols.append(TD(value))
                 row_buttons = TD(_class='row_buttons')
                 if links and links_in_grid:
+                    toadd = []
                     for link in links:
                         if isinstance(link, dict):
-                            tr.append(TD(link['body'](row)))
+                            toadd.append(TD(link['body'](row)))
                         else:
                             if link(row):
                                 row_buttons.append(link(row))
+                    if links_placement in ['right', 'both']:
+                        trcols.extend(toadd)
+                    if links_placement in ['left', 'both']:
+                        linsert(trcols, 0, toadd)
+
                 if include_buttons_column:
                     if details and (not callable(details) or details(row)):
                         row_buttons.append(gridbutton(
@@ -2180,7 +2202,22 @@ class SQLFORM(FORM):
                             'buttondelete', 'Delete',
                             callback=url(args=['delete', tablename, id]),
                             delete='tr'))
-                    tr.append(row_buttons)
+                    if buttons_placement in ['right', 'both']:
+                        trcols.append(row_buttons)
+                    if buttons_placement in ['left', 'both']:
+                        trcols.insert(0, row_buttons)
+                if numrec % 2 == 0:
+                    classtr = 'even'
+                else:
+                    classtr = 'odd'
+                numrec += 1
+                if id:
+                    rid = id
+                    if callable(rid):  # can this ever be callable?
+                        rid = rid(row)
+                    tr = TR(*trcols, _id=rid, _class='%s %s' % (classtr, 'with_id'))
+                else:
+                    tr = TR(*trcols, _class=classtr)
                 tbody.append(tr)
             htmltable.append(tbody)
             htmltable = DIV(htmltable, _style='width:100%;overflow-x:auto')
@@ -2311,7 +2348,6 @@ class SQLFORM(FORM):
                             name = format % record
                     except TypeError:
                         name = id
-                    nameLink = 'view'
                     breadcrumbs.append(
                         LI(A(T(db[referee]._plural),
                              _class=trap_class(),
@@ -2740,7 +2776,6 @@ class ExporterTSV(ExportClass):
         writer = csv.writer(out, delimiter='\t')
         import codecs
         final.write(codecs.BOM_UTF16)
-        colnames = [a.split('.') for a in self.rows.colnames]
         writer.writerow(
             [unicode(col).encode("utf8") for col in self.rows.colnames])
         data = out.getvalue().decode("utf8")
