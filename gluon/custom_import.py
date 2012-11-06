@@ -16,7 +16,7 @@ INVALID_MODULES = set(('', 'gluon', 'applications', 'custom_import'))
 
 
 def custom_import_install():
-    if __builtin__.__import__ != custom_importer:
+    if __builtin__.__import__ == NATIVE_IMPORTER:
         INVALID_MODULES.update(sys.modules.keys())
         __builtin__.__import__ = custom_importer
 
