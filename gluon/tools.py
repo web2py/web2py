@@ -1836,7 +1836,7 @@ class Auth(object):
                 return A("Continue to %s" % service,
                          _href=service + query_sep + "ticket=" + ticket)
             else:
-                redirect(service + query_sep "ticket=" + ticket)
+                redirect(service + query_sep + "ticket=" + ticket)
         if self.is_logged_in() and not 'renew' in request.vars:
             return allow_access()
         elif not self.is_logged_in() and 'gateway' in request.vars:
