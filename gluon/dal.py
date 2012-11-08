@@ -8987,7 +8987,7 @@ class LazySet(object):
     def _count(self,distinct=None):
         return self._getset()._count(distinct)
     def _select(self, *fields, **attributes):
-        return self._getset()._select(*field,**attributes)
+        return self._getset()._select(*fields,**attributes)
     def _delete(self):
         return self._getset()._delete()
     def _update(self, **update_fields):
