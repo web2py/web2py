@@ -1247,19 +1247,20 @@ class HTML(DIV):
             lang = 'en'
         self.attributes['_lang'] = lang
         doctype = self['doctype']
-        if doctype:
-            if doctype == 'strict':
-                doctype = self.strict
-            elif doctype == 'transitional':
-                doctype = self.transitional
-            elif doctype == 'frameset':
-                doctype = self.frameset
-            elif doctype == 'html5':
-                doctype = self.html5
-            else:
-                doctype = '%s\n' % doctype
-        else:
+        if doctype is None:
             doctype = self.transitional
+        elif doctype == 'strict':
+            doctype = self.strict
+        elif doctype == 'transitional':
+            doctype = self.transitional
+        elif doctype == 'frameset':
+            doctype = self.frameset
+        elif doctype == 'html5':
+            doctype = self.html5
+        elif doctype == '':
+            doctype = ''
+        else:
+            doctype = '%s\n' % doctype
         (fa, co) = self._xml()
         return '%s<%s%s>%s</%s>' % (doctype, self.tag, fa, co, self.tag)
 
