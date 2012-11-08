@@ -4588,7 +4588,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         processor = attributes.get('processor',self.parse)
         return processor(rows,fields,colnames,False)
 
-    def count(self,query,distinct=None):
+    def count(self,query,distinct=None,limit=None):
         if distinct:
             raise RuntimeError("COUNT DISTINCT not supported")
         (items, tablename, fields) = self.select_raw(query)
@@ -4596,7 +4596,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         try:
             return len(items)
         except TypeError:
-            return items.count(limit=None)
+            return items.count(limit=limit)
 
     def delete(self,tablename, query):
         """
