@@ -2017,6 +2017,9 @@ class SQLFORM(FORM):
                 c = 'count(*)'
                 nrows = dbset.select(c, left=left, cacheable=True,
                                      groupby=groupby).first()[c]
+            elif dbset._db._adapter.dbengine=='google:datastore':
+                #if we don't set a limit, this can timeout for a large table
+                nrows = dbset.db._adapter.count(dbset.query, limit=1000)
             else:
                 nrows = dbset.count()
         except:
@@ -2078,8 +2081,64 @@ class SQLFORM(FORM):
 
         head = TR(*headcols, _class=ui.get('header'))
 
+        cursor = True
+        #figure out what page we are one to setup the limitby
+        if paginate and dbset._db._adapter.dbengine=='google:datastore':
+            cursor = request.vars.cursor or True
+            limitby = (0, paginate)
+            try: page = int(request.vars.page or 1)-1
+            except ValueError: page = 0
+        elif paginate and paginate<nrows:
+            try: page = int(request.vars.page or 1)-1
+            except ValueError: page = 0
+            limitby = (paginate*page,paginate*(page+1))
+        else:
+            limitby = None
+
+        try:
+            table_fields = [f for f in fields if f._tablename in tablenames]
+            if dbset._db._adapter.dbengine=='google:datastore':
+                rows = dbset.select(left=left,orderby=orderby,
+                                    groupby=groupby,limitby=limitby,
+                                    reusecursor=cursor,
+                                    cacheable=True,*table_fields)
+                next_cursor = dbset._db.get('_lastcursor', None)
+            else:
+                rows = dbset.select(left=left,orderby=orderby,
+                                    groupby=groupby,limitby=limitby,
+                                    cacheable=True,*table_fields)
+        except SyntaxError:
+            rows = None
+            next_cursor = None
+            error = T("Query Not Supported")
+        except Exception, e:
+            rows = None
+            next_cursor = None
+            error = T("Query Not Supported: %s")%e
+
+        message = error
+        if not message and nrows:
+            if dbset._db._adapter.dbengine=='google:datastore' and nrows>=1000:
+                message = T('at least %(nrows)s records found') % dict(nrows=nrows)
+            else:
+                message = T('%(nrows)s records found') % dict(nrows=nrows)
+        console.append(DIV(message,_class='web2py_counter'))
+
         paginator = UL()
-        if paginate and paginate < nrows:
+        if paginate and dbset._db._adapter.dbengine=='google:datastore':
+            #this means we may have a large table with an unknown number of rows.
+            try:
+                page = int(request.vars.page or 1)-1
+            except ValueError:
+                page = 0
+            paginator.append(LI('page %s'%(page+1)))
+            if next_cursor:
+                d = dict(page=page+2, cursor=next_cursor)
+                if order: d['order']=order
+                if request.vars.keywords: d['keywords']=request.vars.keywords
+                paginator.append(LI(
+                    A('next',_href=url(vars=d),_class=trap_class())))
+        elif paginate and paginate<nrows:
             npages, reminder = divmod(nrows, paginate)
             if reminder:
                 npages += 1
@@ -2087,7 +2146,6 @@ class SQLFORM(FORM):
                 page = int(request.vars.page or 1) - 1
             except ValueError:
                 page = 0
-            limitby = (paginate * page, paginate * (page + 1))
 
             def self_link(name, p):
                 d = dict(page=p + 1)
@@ -2114,18 +2172,6 @@ class SQLFORM(FORM):
                 paginator.append(LI(self_link('>>', npages - 1)))
         else:
             limitby = None
-
-        try:
-            table_fields = [f for f in fields if f._tablename in tablenames]
-            rows = dbset.select(left=left, orderby=orderby,
-                                groupby=groupby, limitby=limitby,
-                                *table_fields)
-        except SyntaxError:
-            rows = None
-            error = T("Query Not Supported")
-        if nrows:
-            message = error or T('%(nrows)s records found') % dict(nrows=nrows)
-            console.append(DIV(message, _class='web2py_counter'))
 
         if rows:
             htmltable = TABLE(THEAD(head))
