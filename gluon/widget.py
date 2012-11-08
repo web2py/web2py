@@ -104,6 +104,7 @@ def try_start_browser(url):
 
     try:
         import webbrowser
+        url = url.replace('0.0.0.0','127.0.0.1')
         webbrowser.open(url)
     except:
         print 'warning: unable to detect your browser'
