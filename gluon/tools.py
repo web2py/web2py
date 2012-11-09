@@ -1828,14 +1828,15 @@ class Auth(object):
                              created_on=request.now,
                              renew=interactivelogin)
             service = session._cas_service
+            query_sep = '&' if '?' in service else '?'
             del session._cas_service
             if 'warn' in request.vars and not interactivelogin:
                 response.headers[
-                    'refresh'] = "5;URL=%s" % service + "?ticket=" + ticket
+                    'refresh'] = "5;URL=%s" % service + query_sep + "ticket=" + ticket
                 return A("Continue to %s" % service,
-                         _href=service + "?ticket=" + ticket)
+                         _href=service + query_sep + "ticket=" + ticket)
             else:
-                redirect(service + "?ticket=" + ticket)
+                redirect(service + query_sep + "ticket=" + ticket)
         if self.is_logged_in() and not 'renew' in request.vars:
             return allow_access()
         elif not self.is_logged_in() and 'gateway' in request.vars:
