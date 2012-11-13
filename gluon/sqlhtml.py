@@ -2079,7 +2079,7 @@ class SQLFORM(FORM):
             if buttons_placement in ['left', 'both']:
                 headcols.insert(0, TH(_class=ui.get('default','')))
 
-        head = TR(*headcols, _class=ui.get('header'))
+        head = TR(*headcols, **dict(_class=ui.get('header')))
 
         cursor = True
         #figure out what page we are one to setup the limitby
@@ -2261,9 +2261,11 @@ class SQLFORM(FORM):
                     rid = id
                     if callable(rid):  # can this ever be callable?
                         rid = rid(row)
-                    tr = TR(*trcols, _id=rid, _class='%s %s' % (classtr, 'with_id'))
+                    tr = TR(*trcols, **dict(
+                            _id=rid, 
+                            _class='%s %s' % (classtr, 'with_id')))
                 else:
-                    tr = TR(*trcols, _class=classtr)
+                    tr = TR(*trcols, **dict(_class=classtr))
                 tbody.append(tr)
             htmltable.append(tbody)
             htmltable = DIV(htmltable, _style='width:100%;overflow-x:auto')
