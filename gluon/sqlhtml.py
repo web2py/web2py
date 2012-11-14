@@ -2436,9 +2436,8 @@ class SQLFORM(FORM):
         check = {}
         id_field_name = table._id.name
         for rfield in table._referenced_by:
-            if rfield.readable:
-                check[rfield.tablename] = \
-                    check.get(rfield.tablename, []) + [rfield.name]
+            check[rfield.tablename] = \
+                check.get(rfield.tablename, []) + [rfield.name]
         if isinstance(linked_tables, dict):
             linked_tables = linked_tables.get(table._tablename, [])
         for tablename in sorted(check):
