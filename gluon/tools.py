@@ -3289,13 +3289,14 @@ class Auth(object):
              manage_permissions=False,
              force_prefix='',
              restrict_search=False,
-             resolve=True):
+             resolve=True,
+             extra=None):
         if not hasattr(self, '_wiki'):
             self._wiki = Wiki(self, render=render,
                               manage_permissions=manage_permissions,
                               force_prefix=force_prefix,
                               restrict_search=restrict_search,
-                              env=env)
+                              env=env, extra=extra or {})
         else:
             self._wiki.env.update(env or {})
         # if resolve is set to True, process request as wiki call
@@ -4669,7 +4670,8 @@ class Wiki(object):
     rows_page = 25
 
     def markmin_render(self, page):
-        html = MARKMIN(page.body, url=True, environment=self.env,
+        html = MARKMIN(page.body, extra=self.extra, 
+                       url=True, environment=self.env,
                        autolinks=lambda link: expand_one(link, {})).xml()
         html += DIV(_class='w2p_wiki_tags',
                     *[A(t.strip(), _href=URL(args='_search', vars=dict(q=t)))
@@ -4698,7 +4700,7 @@ class Wiki(object):
 
     def __init__(self, auth, env=None, render='markmin',
                  manage_permissions=False, force_prefix='',
-                 restrict_search=False):
+                 restrict_search=False, extra=None):
         self.env = env or {}
         self.env['component'] = Wiki.component
         if render == 'markmin':
@@ -4714,6 +4716,7 @@ class Wiki(object):
         self.host = current.request.env.http_host
         perms = self.manage_permissions = manage_permissions
         self.restrict_search = restrict_search
+        self.extra = self.extra or {}
         db = auth.db
         table_definitions = [
             ('wiki_page', {
