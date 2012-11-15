@@ -1731,12 +1731,18 @@ class SQLFORM(FORM):
 
         def url(**b):
             b['args'] = args + b.get('args', [])
+            localvars = request.vars.copy()
+            localvars.update(b.get('vars', {}))
+            b['vars'] = localvars
             b['hash_vars'] = False
             b['user_signature'] = user_signature
             return URL(**b)
 
         def url2(**b):
             b['args'] = request.args + b.get('args', [])
+            localvars = request.vars.copy()
+            localvars.update(b.get('vars', {}))
+            b['vars'] = localvars
             b['hash_vars'] = False
             b['user_signature'] = user_signature
             return URL(**b)
@@ -1914,12 +1920,9 @@ class SQLFORM(FORM):
             tsv=(ExporterTSV, 'TSV (Excel compatible)'))
         if not exportclasses is None:
             """
-            allow to set exportclasses=dict(csv=False) to disable the csv format
+            remember: allow to set exportclasses=dict(csv=False) to disable the csv format
             """
             exportManager.update(exportclasses)
-            for k,v in exportclasses.items():
-                if v is False:
-                    del exportManager[k]
 
         export_type = request.vars._export_type
         if export_type:
@@ -1935,24 +1938,22 @@ class SQLFORM(FORM):
                     if sign == '~':
                         orderby = ~orderby
 
-            table_fields = [f for f in fields if f._tablename in tablenames]
-            if (export_type in ('csv_with_hidden_cols', 'tsv_with_hidden_cols')
-                    and export_type in exportManager):
+            expcolumns = columns
+            if export_type.endswith('with_hidden_cols'):
+                expcolumns = [f for f in fields if f._tablename in tablenames]
+            if export_type in exportManager and exportManager[export_type]:
                 if request.vars.keywords:
                     try:
                         dbset = dbset(SQLFORM.build_query(
                             fields, request.vars.get('keywords', '')))
-                        rows = dbset.select(cacheable=True)
+                        rows = dbset.select(cacheable=True, *expcolumns)
                     except Exception, e:
                         response.flash = T('Internal Error')
                         rows = []
                 else:
-                    rows = dbset.select(cacheable=True)
-            else:
-                rows = dbset.select(left=left, orderby=orderby,
-                                    cacheable=True, *columns)
+                    rows = dbset.select(left=left, orderby=orderby,
+                                    cacheable=True, *expcolumns)
 
-            if export_type in exportManager:
                 value = exportManager[export_type]
                 clazz = value[0] if hasattr(value, '__getitem__') else value
                 oExp = clazz(rows)
@@ -2283,6 +2284,8 @@ class SQLFORM(FORM):
         if csv and nrows:
             export_links = []
             for k, v in sorted(exportManager.items()):
+                if not v:
+                    continue
                 label = v[1] if hasattr(v, "__getitem__") else k
                 link = url2(vars=dict(
                     order=request.vars.order or '',
