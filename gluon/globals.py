@@ -554,7 +554,8 @@ class Session(Storage):
                 else:
                     response.session_id = None
             # do not try load the data from file is these was data in cookie
-            if response.session_id and not session_cookie_data:
+            if response.session_id and not session_cookie_data and \
+                    os.path.exists(response.session_filename):
                 try:
                     response.session_file = \
                         open(response.session_filename, 'rb+')

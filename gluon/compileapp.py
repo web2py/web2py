@@ -453,7 +453,7 @@ def compile_views(folder):
     """
 
     path = pjoin(folder, 'views')
-    for file in listdir(path, '^[\w/\-]+(\.\w+)+$'):
+    for file in listdir(path, '^[\w/\-]+(\.\w+)*$'):
         try:
             data = parse_template(file, path)
         except Exception, e:

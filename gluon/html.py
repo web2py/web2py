@@ -129,6 +129,11 @@ def xmlescape(data, quote=True):
     data = cgi.escape(data, quote).replace("'", "&#x27;")
     return data
 
+def call_as_list(f,*a,**b):
+    if not isinstance(f, (list,tuple)):
+        f = [f]
+    for item in f:
+        item(*a,**b)
 
 def truncate_string(text, length, dots='...'):
     text = text.decode('utf-8')
@@ -1247,19 +1252,20 @@ class HTML(DIV):
             lang = 'en'
         self.attributes['_lang'] = lang
         doctype = self['doctype']
-        if doctype:
-            if doctype == 'strict':
-                doctype = self.strict
-            elif doctype == 'transitional':
-                doctype = self.transitional
-            elif doctype == 'frameset':
-                doctype = self.frameset
-            elif doctype == 'html5':
-                doctype = self.html5
-            else:
-                doctype = '%s\n' % doctype
-        else:
+        if doctype is None:
             doctype = self.transitional
+        elif doctype == 'strict':
+            doctype = self.strict
+        elif doctype == 'transitional':
+            doctype = self.transitional
+        elif doctype == 'frameset':
+            doctype = self.frameset
+        elif doctype == 'html5':
+            doctype = self.html5
+        elif doctype == '':
+            doctype = ''
+        else:
+            doctype = '%s\n' % doctype
         (fa, co) = self._xml()
         return '%s<%s%s>%s</%s>' % (doctype, self.tag, fa, co, self.tag)
 
@@ -1757,7 +1763,7 @@ class INPUT(DIV):
             t = self['_type'] = 'text'
         t = t.lower()
         value = self['value']
-        if self['_value'] is None:
+        if self['_value'] is None or isinstance(self['_value'],cgi.FieldStorage):
             _value = None
         else:
             _value = str(self['_value'])
@@ -1997,20 +2003,20 @@ class FORM(DIV):
                 onsuccess = onvalidation.get('onsuccess', None)
                 onfailure = onvalidation.get('onfailure', None)
                 onchange = onvalidation.get('onchange', None)
+                if [k for k in onvalidation if not k in (
+                        'onsuccess','onfailure','onchange')]:
+                    raise RuntimeError('Invalid key in onvalidate dict')
                 if onsuccess and status:
-                    onsuccess(self)
+                    call_as_list(onsuccess,self)
                 if onfailure and request_vars and not status:
-                    onfailure(self)
+                    call_as_list(onfailure,self)
                     status = len(self.errors) == 0
                 if changed:
                     if onchange and self.record_changed and \
                             self.detect_record_change:
-                        onchange(self)
+                        call_as_list(onchange,self)
             elif status:
-                if isinstance(onvalidation, (list, tuple)):
-                    [f(self) for f in onvalidation]
-                else:
-                    onvalidation(self)
+                call_as_list(onvalidation, self)
         if self.errors:
             status = False
         if not session is None:

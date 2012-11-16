@@ -1199,7 +1199,7 @@ class BaseAdapter(ConnectionPool):
     def BELONGS(self, first, second):
         if isinstance(second, str):
             return '(%s IN (%s))' % (self.expand(first), second[:-1])
-        elif second==[] or second==():
+        elif not second:
             return '(1=0)'
         items = ','.join(self.expand(item, first.type) for item in second)
         return '(%s IN (%s))' % (self.expand(first), items)
@@ -4588,7 +4588,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         processor = attributes.get('processor',self.parse)
         return processor(rows,fields,colnames,False)
 
-    def count(self,query,distinct=None):
+    def count(self,query,distinct=None,limit=None):
         if distinct:
             raise RuntimeError("COUNT DISTINCT not supported")
         (items, tablename, fields) = self.select_raw(query)
@@ -4596,7 +4596,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         try:
             return len(items)
         except TypeError:
-            return items.count(limit=None)
+            return items.count(limit=limit)
 
     def delete(self,tablename, query):
         """
@@ -8987,7 +8987,7 @@ class LazySet(object):
     def _count(self,distinct=None):
         return self._getset()._count(distinct)
     def _select(self, *fields, **attributes):
-        return self._getset()._select(*field,**attributes)
+        return self._getset()._select(*fields,**attributes)
     def _delete(self):
         return self._getset()._delete()
     def _update(self, **update_fields):

@@ -1675,6 +1675,8 @@ class SQLFORM(FORM):
              createargs={},
              editargs={},
              viewargs={},
+             buttons_placement = 'right',
+             links_placement = 'right'
              ):
 
         # jQuery UI ThemeRoller classes (empty if ui is disabled)
@@ -1729,12 +1731,18 @@ class SQLFORM(FORM):
 
         def url(**b):
             b['args'] = args + b.get('args', [])
+            localvars = request.vars.copy()
+            localvars.update(b.get('vars', {}))
+            b['vars'] = localvars
             b['hash_vars'] = False
             b['user_signature'] = user_signature
             return URL(**b)
 
         def url2(**b):
             b['args'] = request.args + b.get('args', [])
+            localvars = request.vars.copy()
+            localvars.update(b.get('vars', {}))
+            b['vars'] = localvars
             b['hash_vars'] = False
             b['user_signature'] = user_signature
             return URL(**b)
@@ -1824,6 +1832,14 @@ class SQLFORM(FORM):
                         buttons.append(link(record))
             return buttons
 
+        def linsert(lst, i, x):
+            """
+            a = [1,2]
+            linsert(a, 1, [0,3])
+            a = [1, 0, 3, 2]
+            """
+            lst[i:i] = x
+
         formfooter = DIV(
             _class='form_footer row_buttons %(header)s %(cornerbottom)s' % ui)
 
@@ -1903,6 +1919,9 @@ class SQLFORM(FORM):
                 (ExporterTSV, 'TSV (Excel compatible, hidden cols)'),
             tsv=(ExporterTSV, 'TSV (Excel compatible)'))
         if not exportclasses is None:
+            """
+            remember: allow to set exportclasses=dict(csv=False) to disable the csv format
+            """
             exportManager.update(exportclasses)
 
         export_type = request.vars._export_type
@@ -1919,23 +1938,22 @@ class SQLFORM(FORM):
                     if sign == '~':
                         orderby = ~orderby
 
-            table_fields = [f for f in fields if f._tablename in tablenames]
-            if export_type in ('csv_with_hidden_cols', 'tsv_with_hidden_cols'):
+            expcolumns = columns
+            if export_type.endswith('with_hidden_cols'):
+                expcolumns = [f for f in fields if f._tablename in tablenames]
+            if export_type in exportManager and exportManager[export_type]:
                 if request.vars.keywords:
                     try:
                         dbset = dbset(SQLFORM.build_query(
                             fields, request.vars.get('keywords', '')))
-                        rows = dbset.select(cacheable=True)
+                        rows = dbset.select(cacheable=True, *expcolumns)
                     except Exception, e:
                         response.flash = T('Internal Error')
                         rows = []
                 else:
-                    rows = dbset.select(cacheable=True)
-            else:
-                rows = dbset.select(left=left, orderby=orderby,
-                                    cacheable=True, *columns)
+                    rows = dbset.select(left=left, orderby=orderby,
+                                    cacheable=True, *expcolumns)
 
-            if export_type in exportManager:
                 value = exportManager[export_type]
                 clazz = value[0] if hasattr(value, '__getitem__') else value
                 oExp = clazz(rows)
@@ -2000,6 +2018,9 @@ class SQLFORM(FORM):
                 c = 'count(*)'
                 nrows = dbset.select(c, left=left, cacheable=True,
                                      groupby=groupby).first()[c]
+            elif dbset._db._adapter.dbengine=='google:datastore':
+                #if we don't set a limit, this can timeout for a large table
+                nrows = dbset.db._adapter.count(dbset.query, limit=1000)
             else:
                 nrows = dbset.count()
         except:
@@ -2017,9 +2038,9 @@ class SQLFORM(FORM):
                 else:
                     orderby = (order[:1] == '~' and ~sort_field) or sort_field
 
-        head = TR(_class=ui.get('header'))
+        headcols = []
         if selectable:
-            head.append(TH(_class=ui.get('default')))
+            headcols.append(TH(_class=ui.get('default')))
         for field in fields:
             if columns and not str(field) in columns:
                 continue
@@ -2037,22 +2058,88 @@ class SQLFORM(FORM):
                 header = A(header, marker, _href=url(vars=dict(
                     keywords=request.vars.keywords or '',
                     order=key)), _class=trap_class())
-            head.append(TH(header, _class=ui.get('default')))
+            headcols.append(TH(header, _class=ui.get('default')))
 
+        toadd = []
         if links and links_in_grid:
             for link in links:
                 if isinstance(link, dict):
-                    head.append(TH(link['header'], _class=ui.get('default')))
+                    toadd.append(TH(link['header'], _class=ui.get('default')))
+            if links_placement in ['right', 'both']:
+                headcols.extend(toadd)
+            if links_placement in ['left', 'both']:
+                linsert(headcols, 0, toadd)
 
         # Include extra column for buttons if needed.
         include_buttons_column = (details or editable or deletable or
                                   (links and links_in_grid and
                                    not all([isinstance(link, dict) for link in links])))
         if include_buttons_column:
-            head.append(TH(_class=ui.get('default')))
+            if buttons_placement in ['right', 'both']:
+                headcols.append(TH(_class=ui.get('default','')))
+            if buttons_placement in ['left', 'both']:
+                headcols.insert(0, TH(_class=ui.get('default','')))
+
+        head = TR(*headcols, **dict(_class=ui.get('header')))
+
+        cursor = True
+        #figure out what page we are one to setup the limitby
+        if paginate and dbset._db._adapter.dbengine=='google:datastore':
+            cursor = request.vars.cursor or True
+            limitby = (0, paginate)
+            try: page = int(request.vars.page or 1)-1
+            except ValueError: page = 0
+        elif paginate and paginate<nrows:
+            try: page = int(request.vars.page or 1)-1
+            except ValueError: page = 0
+            limitby = (paginate*page,paginate*(page+1))
+        else:
+            limitby = None
+
+        try:
+            table_fields = [f for f in fields if f._tablename in tablenames]
+            if dbset._db._adapter.dbengine=='google:datastore':
+                rows = dbset.select(left=left,orderby=orderby,
+                                    groupby=groupby,limitby=limitby,
+                                    reusecursor=cursor,
+                                    cacheable=True,*table_fields)
+                next_cursor = dbset._db.get('_lastcursor', None)
+            else:
+                rows = dbset.select(left=left,orderby=orderby,
+                                    groupby=groupby,limitby=limitby,
+                                    cacheable=True,*table_fields)
+        except SyntaxError:
+            rows = None
+            next_cursor = None
+            error = T("Query Not Supported")
+        except Exception, e:
+            rows = None
+            next_cursor = None
+            error = T("Query Not Supported: %s")%e
+
+        message = error
+        if not message and nrows:
+            if dbset._db._adapter.dbengine=='google:datastore' and nrows>=1000:
+                message = T('at least %(nrows)s records found') % dict(nrows=nrows)
+            else:
+                message = T('%(nrows)s records found') % dict(nrows=nrows)
+        console.append(DIV(message,_class='web2py_counter'))
 
         paginator = UL()
-        if paginate and paginate < nrows:
+        if paginate and dbset._db._adapter.dbengine=='google:datastore':
+            #this means we may have a large table with an unknown number of rows.
+            try:
+                page = int(request.vars.page or 1)-1
+            except ValueError:
+                page = 0
+            paginator.append(LI('page %s'%(page+1)))
+            if next_cursor:
+                d = dict(page=page+2, cursor=next_cursor)
+                if order: d['order']=order
+                if request.vars.keywords: d['keywords']=request.vars.keywords
+                paginator.append(LI(
+                    A('next',_href=url(vars=d),_class=trap_class())))
+        elif paginate and paginate<nrows:
             npages, reminder = divmod(nrows, paginate)
             if reminder:
                 npages += 1
@@ -2060,7 +2147,6 @@ class SQLFORM(FORM):
                 page = int(request.vars.page or 1) - 1
             except ValueError:
                 page = 0
-            limitby = (paginate * page, paginate * (page + 1))
 
             def self_link(name, p):
                 d = dict(page=p + 1)
@@ -2088,38 +2174,15 @@ class SQLFORM(FORM):
         else:
             limitby = None
 
-        try:
-            table_fields = [f for f in fields if f._tablename in tablenames]
-            rows = dbset.select(left=left, orderby=orderby,
-                                groupby=groupby, limitby=limitby,
-                                *table_fields)
-        except SyntaxError:
-            rows = None
-            error = T("Query Not Supported")
-        if nrows:
-            message = error or T('%(nrows)s records found') % dict(nrows=nrows)
-            console.append(DIV(message, _class='web2py_counter'))
-
         if rows:
             htmltable = TABLE(THEAD(head))
             tbody = TBODY()
             numrec = 0
             for row in rows:
-                if numrec % 2 == 0:
-                    classtr = 'even'
-                else:
-                    classtr = 'odd'
-                numrec += 1
+                trcols = []
                 id = row[field_id]
-                if id:
-                    rid = id
-                    if callable(rid):  # can this ever be callable?
-                        rid = rid(row)
-                    tr = TR(_id=rid, _class='%s %s' % (classtr, 'with_id'))
-                else:
-                    tr = TR(_class=classtr)
                 if selectable:
-                    tr.append(
+                    trcols.append(
                         INPUT(_type="checkbox", _name="records", _value=id,
                                     value=request.vars.records))
                 for field in fields:
@@ -2157,15 +2220,21 @@ class SQLFORM(FORM):
                         value = truncate_string(value, maxlength)
                     elif not isinstance(value, DIV):
                         value = field.formatter(value)
-                    tr.append(TD(value))
+                    trcols.append(TD(value))
                 row_buttons = TD(_class='row_buttons')
                 if links and links_in_grid:
+                    toadd = []
                     for link in links:
                         if isinstance(link, dict):
-                            tr.append(TD(link['body'](row)))
+                            toadd.append(TD(link['body'](row)))
                         else:
                             if link(row):
                                 row_buttons.append(link(row))
+                    if links_placement in ['right', 'both']:
+                        trcols.extend(toadd)
+                    if links_placement in ['left', 'both']:
+                        linsert(trcols, 0, toadd)
+
                 if include_buttons_column:
                     if details and (not callable(details) or details(row)):
                         row_buttons.append(gridbutton(
@@ -2180,7 +2249,24 @@ class SQLFORM(FORM):
                             'buttondelete', 'Delete',
                             callback=url(args=['delete', tablename, id]),
                             delete='tr'))
-                    tr.append(row_buttons)
+                    if buttons_placement in ['right', 'both']:
+                        trcols.append(row_buttons)
+                    if buttons_placement in ['left', 'both']:
+                        trcols.insert(0, row_buttons)
+                if numrec % 2 == 0:
+                    classtr = 'even'
+                else:
+                    classtr = 'odd'
+                numrec += 1
+                if id:
+                    rid = id
+                    if callable(rid):  # can this ever be callable?
+                        rid = rid(row)
+                    tr = TR(*trcols, **dict(
+                            _id=rid, 
+                            _class='%s %s' % (classtr, 'with_id')))
+                else:
+                    tr = TR(*trcols, **dict(_class=classtr))
                 tbody.append(tr)
             htmltable.append(tbody)
             htmltable = DIV(htmltable, _style='width:100%;overflow-x:auto')
@@ -2198,6 +2284,8 @@ class SQLFORM(FORM):
         if csv and nrows:
             export_links = []
             for k, v in sorted(exportManager.items()):
+                if not v:
+                    continue
                 label = v[1] if hasattr(v, "__getitem__") else k
                 link = url2(vars=dict(
                     order=request.vars.order or '',
@@ -2311,7 +2399,6 @@ class SQLFORM(FORM):
                             name = format % record
                     except TypeError:
                         name = id
-                    nameLink = 'view'
                     breadcrumbs.append(
                         LI(A(T(db[referee]._plural),
                              _class=trap_class(),
@@ -2352,9 +2439,8 @@ class SQLFORM(FORM):
         check = {}
         id_field_name = table._id.name
         for rfield in table._referenced_by:
-            if rfield.readable:
-                check[rfield.tablename] = \
-                    check.get(rfield.tablename, []) + [rfield.name]
+            check[rfield.tablename] = \
+                check.get(rfield.tablename, []) + [rfield.name]
         if isinstance(linked_tables, dict):
             linked_tables = linked_tables.get(table._tablename, [])
         for tablename in sorted(check):
@@ -2740,7 +2826,6 @@ class ExporterTSV(ExportClass):
         writer = csv.writer(out, delimiter='\t')
         import codecs
         final.write(codecs.BOM_UTF16)
-        colnames = [a.split('.') for a in self.rows.colnames]
         writer.writerow(
             [unicode(col).encode("utf8") for col in self.rows.colnames])
         data = out.getvalue().decode("utf8")

@@ -1828,14 +1828,15 @@ class Auth(object):
                              created_on=request.now,
                              renew=interactivelogin)
             service = session._cas_service
+            query_sep = '&' if '?' in service else '?'
             del session._cas_service
             if 'warn' in request.vars and not interactivelogin:
                 response.headers[
-                    'refresh'] = "5;URL=%s" % service + "?ticket=" + ticket
+                    'refresh'] = "5;URL=%s" % service + query_sep + "ticket=" + ticket
                 return A("Continue to %s" % service,
-                         _href=service + "?ticket=" + ticket)
+                         _href=service + query_sep + "ticket=" + ticket)
             else:
-                redirect(service + "?ticket=" + ticket)
+                redirect(service + query_sep + "ticket=" + ticket)
         if self.is_logged_in() and not 'renew' in request.vars:
             return allow_access()
         elif not self.is_logged_in() and 'gateway' in request.vars:
@@ -2065,7 +2066,8 @@ class Auth(object):
                     # invalid login
                     session.flash = self.messages.invalid_login
                     redirect(
-                        self.url(args=request.args, vars=request.get_vars))
+                        self.url(args=request.args, vars=request.get_vars),
+                        client_side=True)
 
         else:
             # use a central authentication server
@@ -2081,7 +2083,7 @@ class Auth(object):
             else:
                 # we need to pass through login again before going on
                 next = self.url(self.settings.function, args='login')
-                redirect(cas.login_url(next))
+                redirect(cas.login_url(next), client_side=True)
 
         # process authenticated users
         if user:
@@ -2104,14 +2106,14 @@ class Auth(object):
                 if next == session._auth_next:
                     session._auth_next = None
                 next = replace_id(next, form)
-                redirect(next)
+                redirect(next, client_side=True)
             table_user[username].requires = old_requires
             return form
         elif user:
             callback(onaccept, None)
         if next == session._auth_next:
             del session._auth_next
-        redirect(next)
+        redirect(next, client_side=True)
 
     def logout(self, next=DEFAULT, onlogout=DEFAULT, log=DEFAULT):
         """
@@ -2162,7 +2164,7 @@ class Auth(object):
         response = current.response
         session = current.session
         if self.is_logged_in():
-            redirect(self.settings.logged_url)
+            redirect(self.settings.logged_url, client_side=True)
         if next is DEFAULT:
             next = self.next or self.settings.register_next
         if onvalidation is DEFAULT:
@@ -2278,7 +2280,7 @@ class Auth(object):
                 next = self.url(args=request.args)
             else:
                 next = replace_id(next, form)
-            redirect(next)
+            redirect(next, client_side=True)
         return form
 
     def is_logged_in(self):
@@ -2526,7 +2528,7 @@ class Auth(object):
                 raise Exception
         except Exception:
             session.flash = self.messages.invalid_reset_password
-            redirect(next)
+            redirect(next, client_side=True)
         passfield = self.settings.password_field
         form = SQLFORM.factory(
             Field('new_password', 'password',
@@ -2551,7 +2553,7 @@ class Auth(object):
             session.flash = self.messages.password_changed
             if self.settings.login_after_password_change:
                 self.login_user(user)
-            redirect(next)
+            redirect(next, client_side=True)
         return form
 
     def request_reset_password(
@@ -2609,10 +2611,10 @@ class Auth(object):
             user = table_user(email=form.vars.email)
             if not user:
                 session.flash = self.messages.invalid_email
-                redirect(self.url(args=request.args))
+                redirect(self.url(args=request.args), client_side=True)
             elif user.registration_key in ('pending', 'disabled', 'blocked'):
                 session.flash = self.messages.registration_pending
-                redirect(self.url(args=request.args))
+                redirect(self.url(args=request.args), client_side=True)
             if self.email_reset_password(user):
                 session.flash = self.messages.email_sent
             else:
@@ -2623,7 +2625,7 @@ class Auth(object):
                 next = self.url(args=request.args)
             else:
                 next = replace_id(next, form)
-            redirect(next)
+            redirect(next, client_side=True)
         # old_requires = table_user.email.requires
         return form
 
@@ -2668,7 +2670,7 @@ class Auth(object):
         """
 
         if not self.is_logged_in():
-            redirect(self.settings.login_url)
+            redirect(self.settings.login_url, client_side=True)
         db = self.db
         table_user = self.table_user()
         s = db(table_user.id == self.user.id)
@@ -2718,7 +2720,7 @@ class Auth(object):
                     next = self.url(args=request.args)
                 else:
                     next = replace_id(next, form)
-                redirect(next)
+                redirect(next, client_side=True)
         return form
 
     def profile(
@@ -2738,7 +2740,7 @@ class Auth(object):
 
         table_user = self.table_user()
         if not self.is_logged_in():
-            redirect(self.settings.login_url)
+            redirect(self.settings.login_url, client_side=True)
         passfield = self.settings.password_field
         table_user[passfield].writable = False
         request = current.request
@@ -2774,7 +2776,7 @@ class Auth(object):
                 next = self.url(args=request.args)
             else:
                 next = replace_id(next, form)
-            redirect(next)
+            redirect(next, client_side=True)
         return form
 
     def is_impersonating(self):
@@ -3287,13 +3289,14 @@ class Auth(object):
              manage_permissions=False,
              force_prefix='',
              restrict_search=False,
-             resolve=True):
+             resolve=True,
+             extra=None):
         if not hasattr(self, '_wiki'):
             self._wiki = Wiki(self, render=render,
                               manage_permissions=manage_permissions,
                               force_prefix=force_prefix,
                               restrict_search=restrict_search,
-                              env=env)
+                              env=env, extra=extra or {})
         else:
             self._wiki.env.update(env or {})
         # if resolve is set to True, process request as wiki call
@@ -4242,7 +4245,7 @@ class Service(object):
         if not method in methods:
             return return_error(id, 100, 'method "%s" does not exist' % method)
         try:
-            s = methods[method](*params)
+            s = methods[method](**params)
             if hasattr(s, 'as_list'):
                 s = s.as_list()
             return return_response(id, s)
@@ -4667,7 +4670,8 @@ class Wiki(object):
     rows_page = 25
 
     def markmin_render(self, page):
-        html = MARKMIN(page.body, url=True, environment=self.env,
+        html = MARKMIN(page.body, extra=self.extra, 
+                       url=True, environment=self.env,
                        autolinks=lambda link: expand_one(link, {})).xml()
         html += DIV(_class='w2p_wiki_tags',
                     *[A(t.strip(), _href=URL(args='_search', vars=dict(q=t)))
@@ -4696,7 +4700,7 @@ class Wiki(object):
 
     def __init__(self, auth, env=None, render='markmin',
                  manage_permissions=False, force_prefix='',
-                 restrict_search=False):
+                 restrict_search=False, extra=None):
         self.env = env or {}
         self.env['component'] = Wiki.component
         if render == 'markmin':
@@ -4712,6 +4716,7 @@ class Wiki(object):
         self.host = current.request.env.http_host
         perms = self.manage_permissions = manage_permissions
         self.restrict_search = restrict_search
+        self.extra = self.extra or {}
         db = auth.db
         table_definitions = [
             ('wiki_page', {

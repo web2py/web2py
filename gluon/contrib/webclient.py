@@ -150,6 +150,8 @@ class WebClient(object):
                 match = self.session_regex.match(cookie)
                 if match:
                     name = match.group('name')
+                    print repr(cookie)
+                    print name, self.sessions.get(name,None), value
                     if name in self.sessions and self.sessions[name] != value:
                         raise RuntimeError('Broken sessions %s' % name)
                     self.sessions[name] = value
