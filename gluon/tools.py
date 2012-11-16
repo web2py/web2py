@@ -4716,7 +4716,7 @@ class Wiki(object):
         self.host = current.request.env.http_host
         perms = self.manage_permissions = manage_permissions
         self.restrict_search = restrict_search
-        self.extra = self.extra or {}
+        self.extra = extra or {}
         db = auth.db
         table_definitions = [
             ('wiki_page', {
