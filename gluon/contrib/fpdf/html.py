@@ -28,7 +28,7 @@ class HTML2FPDF(HTMLParser):
 
     def __init__(self, pdf, image_map = None):
         HTMLParser.__init__(self)
-        self.image_map = self.image_map or lambda src: src
+        self.image_map = image_map or (lambda src: src)
         self.style = {}
         self.pre = False
         self.href = ''
