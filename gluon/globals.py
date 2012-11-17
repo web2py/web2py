@@ -557,8 +557,8 @@ class Session(Storage):
                 else:
                     response.session_id = None
             # do not try load the data from file is these was data in cookie
-            if response.session_id and not session_cookie_data and \
-                    os.path.exists(response.session_filename):
+            if response.session_id and not session_cookie_data:
+                # os.path.exists(response.session_filename):
                 try:
                     response.session_file = \
                         open(response.session_filename, 'rb+')
@@ -572,12 +572,14 @@ class Session(Storage):
                             .split('-')[0]
                         if check_client and client != oc:
                             raise Exception("cookie attack")
+                    except:
+                        response.session_id = None
                     finally:
                         pass
                         #This causes admin login to break. Must find out why.
                         #self._close(response)
                 except:
-                    response.session_id = None
+                    response.session_file = None
             if not response.session_id:
                 uuid = web2py_uuid()
                 response.session_id = '%s-%s' % (client, uuid)
@@ -748,7 +750,7 @@ class Session(Storage):
             if not response.session_id or self._forget or self._unchanged():
                 return False
 
-            if response.session_new:
+            if response.session_new or not response.session_file:
                 # Tests if the session sub-folder exists, if not, create it
                 session_folder = os.path.dirname(response.session_filename)
                 if not os.path.exists(session_folder):
