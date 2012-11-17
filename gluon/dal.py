@@ -8910,7 +8910,7 @@ class Set(object):
                 ret and [f(self,new_fields) for f in table._after_update]
             else:
                 ret = 0
-            response.update = ret
+            response.updated = ret
         return response
 
     def delete_uploaded_files(self, upload_fields=None):
