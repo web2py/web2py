@@ -3970,7 +3970,7 @@ class DatabaseStoredFile:
         self.filename = filename
         self.mode = mode
         if not self.web2py_filesystem:
-            self.db.executesql("CREATE TABLE IF NOT EXISTS web2py_filesystem (path VARCHAR(512), content LONGTEXT, PRIMARY KEY(path) ) ENGINE=InnoDB;")
+            self.db.executesql("CREATE TABLE IF NOT EXISTS web2py_filesystem (path VARCHAR(255), content LONGTEXT, PRIMARY KEY(path) ) ENGINE=InnoDB;")
             DatabaseStoredFile.web2py_filesystem = True
         self.p=0
         self.data = ''

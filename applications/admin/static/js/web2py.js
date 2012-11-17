@@ -110,7 +110,8 @@ function web2py_ajax_page(method, action, data, target) {
 
 function web2py_component(action, target, timeout, times){
   jQuery(function(){
-    var element = jQuery("#" + target).get(0);
+    var jelement = jQuery("#" + target);
+    var element = jelement.get(0);
     var statement = "jQuery('#" + target + "').get(0).reload();";
     element.reload = function (){
         // Continue if times is Infinity or
@@ -119,6 +120,7 @@ function web2py_component(action, target, timeout, times){
             web2py_ajax_page('get', action, null, target);} }; // reload
     // Method to check timing limit
     element.reload_check = function (){
+        if (jelement.hasClass('w2p_component_stop')) {return false;}
         if (this.reload_counter == Infinity){return true;}
         else {
             if (!isNaN(this.reload_counter)){
