@@ -40,6 +40,7 @@ class TestWeb(unittest.TestCase):
 
         # check registration and login were successful
         client.get('index')
+        print client.text
         self.assertTrue('Welcome Homer' in client.text)
 
         client = WebClient('http://127.0.0.1:8000/admin/default/')
