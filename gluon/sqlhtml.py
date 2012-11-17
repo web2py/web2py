@@ -263,15 +263,18 @@ class ListWidget(StringWidget):
 jQuery.fn.grow_input = function() {
   return this.each(function() {
     var ul = this;
-    jQuery(ul).find(":text").after('<a href="javascript:void(0)">+</a>').keypress(function (e) { return (e.which == 13) ? pe(ul) : true; }).next().click(function(){ pe(ul) });
+    jQuery(ul).find(":text").after('<a href="javascript:void(0)">+</a>&nbsp;<a href="javascript:void(0)">-</a>').keypress(function (e) { return (e.which == 13) ? pe(ul, e) : true; }).next().click(function(e){ pe(ul, e) }).next().click(function(e){ rl(ul, e)});
   });
 };
-function pe(ul) {
+function pe(ul, e) {
   var new_line = ml(ul);
   rel(ul);
-  new_line.appendTo(ul);
+  new_line.insertAfter($(e.target).parent());
   new_line.find(":text").focus();
   return false;
+}
+function rl(ul, e) {
+  $(e.target).parent().remove();
 }
 function ml(ul) {
   var line = jQuery(ul).find("li:first").clone(true);
