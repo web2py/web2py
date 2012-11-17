@@ -129,11 +129,14 @@ class Request(Storage):
         cmd_opts = global_settings.cmd_options
         #checking if this is called within the scheduler or within the shell
         #in addition to checking if it's not a cronjob
-        if not cmd_opts.shell and not cmd_opts.scheduler and not global_settings.cronjob and not self.is_https:
+        if ((cdm_opts and (cmd_opts.shell or cmd_opts.scheduler))
+            or global_settings.cronjob or self.is_https):
+            current.session.secure()
+        else:
             current.session.forget()
             redirect(URL(scheme='https', args=self.args, vars=self.vars))
 
-        current.session.secure()
+
 
     def restful(self):
         def wrapper(action, self=self):
