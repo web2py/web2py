@@ -42,7 +42,9 @@ src:
 	rm -f applications/examples/databases/*             
 	rm -f applications/admin/uploads/*                 
 	rm -f applications/welcome/uploads/*               
-	rm -f applications/examples/uploads/*             
+	rm -f applications/examples/uploads/* 
+	### make epydoc
+	make epydoc
 	### make welcome layout and appadmin the default
 	cp applications/welcome/views/appadmin.html applications/admin/views
 	cp applications/welcome/views/appadmin.html applications/examples/views
@@ -54,7 +56,6 @@ src:
 	cd ..; zip -r web2py/web2py_src.zip web2py/gluon/*.py web2py/gluon/contrib/* web2py/splashlogo.gif web2py/*.py web2py/README.markdown  web2py/LICENSE web2py/CHANGELOG web2py/NEWINSTALL web2py/VERSION web2py/Makefile web2py/epydoc.css web2py/epydoc.conf web2py/app.example.yaml web2py/logging.example.conf web2py_exe.conf web2py/queue.example.yaml MANIFEST.in w2p_apps w2p_clone w2p_run startweb2py web2py/scripts/*.sh web2py/scripts/*.py web2py/applications/admin web2py/applications/examples/ web2py/applications/welcome web2py/applications/__init__.py web2py/site-packages/__init__.py web2py/gluon/tests/*.sh web2py/gluon/tests/*.py
 
 mdp:
-	make epydoc
 	make src
 	make app
 	make win

@@ -3964,13 +3964,17 @@ class DatabaseStoredFile:
         return self.db._adapter.escape(obj)
 
     def __init__(self,db,filename,mode):
-        if db._adapter.dbengine != 'mysql':
-            raise RuntimeError("only MySQL can store metadata .table files in database for now")
+        if not db._adapter.dbengine in ('mysql', 'postgres'):
+            raise RuntimeError("only MySQL/Postgres can store metadata .table files in database for now")
         self.db = db
         self.filename = filename
         self.mode = mode
         if not self.web2py_filesystem:
-            self.db.executesql("CREATE TABLE IF NOT EXISTS web2py_filesystem (path VARCHAR(255), content LONGTEXT, PRIMARY KEY(path) ) ENGINE=InnoDB;")
+            if db._adapter.dbengine == 'mysql':
+                sql = "CREATE TABLE IF NOT EXISTS web2py_filesystem (path VARCHAR(255), content LONGTEXT, PRIMARY KEY(path) ) ENGINE=InnoDB;"
+            elif db._adapter.dbengine == 'postgres':
+                sql = "CREATE TABLE IF NOT EXISTS web2py_filesystem (path VARCHAR(255), content TEXT, PRIMARY KEY(path));"
+            self.db.executesql(sql)
             DatabaseStoredFile.web2py_filesystem = True
         self.p=0
         self.data = ''
