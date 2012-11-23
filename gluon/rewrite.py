@@ -76,7 +76,7 @@ def _router_default():
         map_hyphen=False,
         acfe_match=r'\w+$',                   # legal app/ctlr/fcn/ext
         file_match=r'([-+=@$%\w]+[./]?)+$',   # legal static subpath
-        args_match=r'([\w@ -]+[=.]?)*$',      # legal arg in args
+        args_match=r'([\w@ -]|(?<=[\w@ -])[.=])*$', # legal arg in args
     )
     return router
 
