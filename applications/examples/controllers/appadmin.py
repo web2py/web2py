@@ -396,12 +396,13 @@ def ccache():
             if value[0] < ram['oldest']:
                 ram['oldest'] = value[0]
             ram['keys'].append((key, GetInHMS(time.time() - value[0])))
-
-    locker = open(os.path.join(request.folder,
-                               'cache/cache.lock'), 'a')
+    folder = os.path.join(request.folder,'cache')
+    if not os.path.exists(folder):
+        os.mkdir(folder)
+    locker = open(os.path.join(folder, 'cache.lock'), 'a')
     portalocker.lock(locker, portalocker.LOCK_EX)
     disk_storage = shelve.open(
-        os.path.join(request.folder, 'cache/cache.shelve'))
+        os.path.join(folder, 'cache.shelve'))
     try:
         for key, value in disk_storage.items():
             if isinstance(value, dict):
