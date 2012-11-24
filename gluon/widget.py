@@ -28,6 +28,7 @@ import main
 from fileutils import w2p_pack, read_file, write_file
 from settings import global_settings
 from shell import run, test
+from utils import is_valid_ip_address, is_loopback_ip_address
 
 try:
     import Tkinter
@@ -99,24 +100,32 @@ class IO(object):
             self.buffer.write(data)
 
 
-def try_start_browser(url):
-    """ Try to start the default browser """
+def get_url(host, path='/', proto='http', port=80):
+    if ':' in host:
+        host = '[%s]' % host
+    else:
+        host = host.replace('0.0.0.0', '127.0.0.1')
+    if path.startswith('/'):
+        path = path[1:]
+    if proto.endswith(':'):
+        proto = proto[:-1]
+    if not port or port == 80:
+        port = ''
+    else:
+        port = ':%s' % port
+    return '%s://%s%s/%s' % (proto, host, port, path)
 
+
+def start_browser(url, startup=False):
+    if startup:
+        print 'please visit:'
+        print '\t', url
+        print 'starting browser...'
     try:
         import webbrowser
-        url = url.replace('0.0.0.0','127.0.0.1')
         webbrowser.open(url)
     except:
         print 'warning: unable to detect your browser'
-
-
-def start_browser(proto, ip, port):
-    """ Starts the default browser """
-    print 'please visit:'
-    url = '%s://%s:%s' % (proto, ip, port)
-    print '\t', url
-    print 'starting browser...'
-    try_start_browser(url)
 
 
 def presentation(root):
@@ -186,7 +195,7 @@ class web2pyDialog(object):
         httplog = os.path.join(self.options.folder, 'httpserver.log')
 
         # Building the Menu
-        item = lambda: try_start_browser(httplog)
+        item = lambda: start_browser(httplog)
         servermenu.add_command(label='View httpserver.log',
                                command=item)
 
@@ -207,7 +216,7 @@ class web2pyDialog(object):
         helpmenu = Tkinter.Menu(self.menu, tearoff=0)
 
         # Home Page
-        item = lambda: try_start_browser('http://www.web2py.com')
+        item = lambda: start_browser('http://www.web2py.com/')
         helpmenu.add_command(label='Home Page',
                              command=item)
 
@@ -237,7 +246,8 @@ class web2pyDialog(object):
         self.ips = {}
         self.selected_ip = Tkinter.StringVar()
         row = 0
-        ips = [('127.0.0.1', 'Local')] + \
+        ips = [('127.0.0.1', 'Local (IPv4)')] + \
+            [('::1', 'Local (IPv6)')] if socket.has_ipv6 else [] + \
             [(ip, 'Public') for ip in options.ips] + \
             [('0.0.0.0', 'Public')]
         for ip, legend in ips:
@@ -406,10 +416,9 @@ class web2pyDialog(object):
                           if os.path.exists('applications/%s/__init__.py' % arq)]
         self.pagesmenu.delete(0, len(available_apps))
         for arq in available_apps:
-            url = self.url + '/' + arq
-            start_browser = lambda u = url: try_start_browser(u)
+            url = self.url + arq
             self.pagesmenu.add_command(label=url,
-                                       command=start_browser)
+                                       command=lambda u=url: start_browser(u))
 
     def quit(self, justHide=False):
         """ Finish the program execution """
@@ -449,8 +458,7 @@ class web2pyDialog(object):
 
         ip = self.selected_ip.get()
 
-        regexp = '\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}'
-        if ip and not re.compile(regexp).match(ip):
+        if not is_valid_ip_address(ip):
             return self.error('invalid host ip address')
 
         try:
@@ -464,7 +472,7 @@ class web2pyDialog(object):
         else:
             proto = 'http'
 
-        self.url = '%s://%s:%s' % (proto, ip, port)
+        self.url = get_url(ip, proto=proto, port=port)
         self.connect_pages()
         self.button_start.configure(state='disabled')
 
@@ -501,7 +509,9 @@ class web2pyDialog(object):
         self.button_stop.configure(state='normal')
 
         if not options.taskbar:
-            thread.start_new_thread(start_browser, (proto, ip, port))
+            thread.start_new_thread(start_browser,
+                                    (get_url(ip, proto=proto, port=port),),
+                                    dict(startup=True))
 
         self.password.configure(state='readonly')
         [ip.configure(state='disabled') for ip in self.ips.values()]
@@ -584,11 +594,13 @@ def console():
 
     parser.description = description
 
+    msg = ('IP address of the server (e.g., 127.0.0.1 or ::1); '
+           'Note: This value is ignored when using the \'interfaces\' option.')
     parser.add_option('-i',
                       '--ip',
                       default='127.0.0.1',
                       dest='ip',
-                      help='ip address of the server (127.0.0.1)')
+                      help=msg)
 
     parser.add_option('-p',
                       '--port',
@@ -597,8 +609,8 @@ def console():
                       type='int',
                       help='port of server (8000)')
 
-    msg = 'password to be used for administration'
-    msg += ' (use -a "<recycle>" to reuse the last password))'
+    msg = ('password to be used for administration '
+           '(use -a "<recycle>" to reuse the last password))')
     parser.add_option('-a',
                       '--password',
                       default='<ask>',
@@ -617,11 +629,13 @@ def console():
                       dest='ssl_private_key',
                       help='file that contains ssl private key')
 
+    msg = ('Use this file containing the CA certificate to validate X509 '
+           'certificates from clients')
     parser.add_option('--ca-cert',
                       action='store',
                       dest='ssl_ca_certificate',
                       default=None,
-                      help='Use this file containing the CA certificate to validate X509 certificates from clients')
+                      help=msg)
 
     parser.add_option('-d',
                       '--pid_filename',
@@ -708,8 +722,8 @@ def console():
                       default=False,
                       help='disable all output')
 
-    msg = 'set debug output level (0-100, 0 means all, 100 means none;'
-    msg += ' default is 30)'
+    msg = ('set debug output level (0-100, 0 means all, 100 means none; '
+           'default is 30)')
     parser.add_option('-D',
                       '--debug',
                       dest='debuglevel',
@@ -717,18 +731,18 @@ def console():
                       type='int',
                       help=msg)
 
-    msg = 'run web2py in interactive shell or IPython (if installed) with'
-    msg += ' specified appname (if app does not exist it will be created).'
-    msg += ' APPNAME like a/c/f (c,f optional)'
+    msg = ('run web2py in interactive shell or IPython (if installed) with '
+           'specified appname (if app does not exist it will be created). '
+           'APPNAME like a/c/f (c,f optional)')
     parser.add_option('-S',
                       '--shell',
                       dest='shell',
                       metavar='APPNAME',
                       help=msg)
 
-    msg = 'run web2py in interactive shell or bpython (if installed) with'
-    msg += ' specified appname (if app does not exist it will be created).'
-    msg += '\n Use combined with --shell'
+    msg = ('run web2py in interactive shell or bpython (if installed) with '
+           'specified appname (if app does not exist it will be created).\n'
+           'Use combined with --shell')
     parser.add_option('-B',
                       '--bpython',
                       action='store_true',
@@ -744,8 +758,8 @@ def console():
                       dest='plain',
                       help=msg)
 
-    msg = 'auto import model files; default is False; should be used'
-    msg += ' with --shell option'
+    msg = ('auto import model files; default is False; should be used '
+           'with --shell option')
     parser.add_option('-M',
                       '--import_models',
                       action='store_true',
@@ -753,8 +767,8 @@ def console():
                       dest='import_models',
                       help=msg)
 
-    msg = 'run PYTHON_FILE in web2py environment;'
-    msg += ' should be used with --shell option'
+    msg = ('run PYTHON_FILE in web2py environment; '
+           'should be used with --shell option')
     parser.add_option('-R',
                       '--run',
                       dest='run',
@@ -762,11 +776,11 @@ def console():
                       default='',
                       help=msg)
 
-    msg = 'run scheduled tasks for the specified apps: expects a list of '
-    msg += 'app names as -K app1,app2,app3 '
-    msg += 'or a list of app:groups as -K app1:group1:group2,app2:group1 '
-    msg += 'to override specific group_names. (only strings, no spaces '
-    msg += 'allowed. Requires a scheduler defined in the models'
+    msg = ('run scheduled tasks for the specified apps: expects a list of '
+           'app names as -K app1,app2,app3 '
+           'or a list of app:groups as -K app1:group1:group2,app2:group1 '
+           'to override specific group_names. (only strings, no spaces '
+           'allowed. Requires a scheduler defined in the models')
     parser.add_option('-K',
                       '--scheduler',
                       dest='scheduler',
@@ -781,8 +795,8 @@ def console():
                       dest='with_scheduler',
                       help=msg)
 
-    msg = 'run doctests in web2py environment; ' +\
-        'TEST_PATH like a/c/f (c,f optional)'
+    msg = ('run doctests in web2py environment; '
+           'TEST_PATH like a/c/f (c,f optional)')
     parser.add_option('-T',
                       '--test',
                       dest='test',
@@ -851,12 +865,14 @@ def console():
                       dest='nogui',
                       help='text-only, no GUI')
 
+    msg = ('should be followed by a list of arguments to be passed to script, '
+           'to be used with -S, -A must be the last option')
     parser.add_option('-A',
                       '--args',
                       action='store',
                       dest='args',
                       default=None,
-                      help='should be followed by a list of arguments to be passed to script, to be used with -S, -A must be the last option')
+                      help=msg)
 
     parser.add_option('--no-banner',
                       action='store_true',
@@ -864,7 +880,10 @@ def console():
                       dest='nobanner',
                       help='Do not print header banner')
 
-    msg = 'listen on multiple addresses: "ip:port:cert:key:ca_cert;ip2:port2:cert2:key2:ca_cert2;..." (:cert:key optional; no spaces)'
+    msg = ('listen on multiple addresses: '
+           '"ip1:port1:key1:cert1:ca_cert1;ip2:port2:key2:cert2:ca_cert2;..." '
+           '(:key:cert:ca_cert optional; no spaces; IPv6 addresses must be in '
+           'square [] brackets)')
     parser.add_option('--interfaces',
                       action='store',
                       dest='interfaces',
@@ -891,9 +910,9 @@ def console():
     global_settings.cmd_args = args
 
     try:
-        options.ips = [
-            ip for ip in socket.gethostbyname_ex(socket.getfqdn())[2]
-            if ip != '127.0.0.1']
+        options.ips = list(set([
+            ip[4][0] for ip in socket.getaddrinfo(socket.getfqdn(), 0)
+            if not is_loopback_ip_address(ip[4][0])]))
     except socket.gaierror:
         options.ips = []
 
@@ -920,15 +939,22 @@ def console():
     options.folder = os.path.abspath(options.folder)
 
     #  accept --interfaces in the form
-    #  "ip:port:cert:key;ip2:port2;ip3:port3:cert3:key3"
-    #  (no spaces; optional cert:key indicate SSL)
+    #  "ip1:port1:key1:cert1:ca_cert1;[ip2]:port2;ip3:port3:key3:cert3"
+    #  (no spaces; optional key:cert indicate SSL)
     if isinstance(options.interfaces, str):
-        options.interfaces = [
-            interface.split(':') for interface in options.interfaces.split(';')]
-        for interface in options.interfaces:
-            interface[1] = int(interface[1])    # numeric port
-        options.interfaces = [
-            tuple(interface) for interface in options.interfaces]
+        interfaces = options.interfaces.split(';')
+        options.interfaces = []
+        for interface in interfaces:
+            if interface.startswith('['):  # IPv6
+                ip, if_remainder = interface.split(']', 1)
+                ip = ip[1:]
+                if_remainder = if_remainder[1:].split(':')
+                if_remainder[0] = int(if_remainder[0])  # numeric port
+                options.interfaces.append(tuple([ip] + if_remainder))
+            else:  # IPv4
+                interface = interface.split(':')
+                interface[1] = int(interface[1])  # numeric port
+                options.interfaces.append(tuple(interface))
 
     #  accepts --scheduler in the form
     #  "app:group1,group2,app2:group1"
@@ -1189,14 +1215,21 @@ end tell
 
     # ## start server
 
-    (ip, port) = (options.ip, int(options.port))
+    # Use first interface IP and port if interfaces specified, since the
+    # interfaces option overrides the IP (and related) options.
+    if not options.interfaces:
+        (ip, port) = (options.ip, int(options.port))
+    else:
+        first_if = options.interfaces[0]
+        (ip, port) = first_if[0], first_if[1]
 
     # Check for non default value for ssl inputs
     if (len(options.ssl_certificate) > 0) or (len(options.ssl_private_key) > 0):
         proto = 'https'
     else:
         proto = 'http'
-    url = '%s://%s:%s' % (proto, ip, port)
+
+    url = get_url(ip, proto=proto, port=port)
 
     if not options.nobanner:
         print 'please visit:'
