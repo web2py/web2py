@@ -241,6 +241,17 @@ def w2p_pack(filename, path, compiled=False):
 
 
 def w2p_unpack(filename, path, delete_tar=True):
+
+    if filename=='welcome.w2p' and (
+        not os.path.exists('welcome.w2p') or \
+            os.path.exists('NEWINSTALL')):
+        try:
+            w2p_pack('welcome.w2p', 'applications/welcome')
+            os.unlink('NEWINSTALL')
+        except:
+            msg = "New installation: unable to create welcome.w2p file"
+            sys.stderr.write(msg)
+
     filename = abspath(filename)
     path = abspath(path)
     if filename[-4:] == '.w2p' or filename[-3:] == '.gz':

@@ -975,14 +975,6 @@ def console():
         if not os.path.exists('applications/__init__.py'):
             write_file('applications/__init__.py', '')
 
-        if not os.path.exists('welcome.w2p') or os.path.exists('NEWINSTALL'):
-            try:
-                w2p_pack('welcome.w2p', 'applications/welcome')
-                os.unlink('NEWINSTALL')
-            except:
-                msg = "New installation: unable to create welcome.w2p file"
-                sys.stderr.write(msg)
-
     return (options, args)
 
 
