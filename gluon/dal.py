@@ -4010,12 +4010,17 @@ class DatabaseStoredFile:
         self.data += data
 
     def close_connection(self):
-        self.db.executesql(
-            "DELETE FROM web2py_filesystem WHERE path='%s'" % self.filename)
-        query = "INSERT INTO web2py_filesystem(path,content) VALUES ('%s','%s')"\
-            % (self.filename, self.data.replace("'","''"))
-        self.db.executesql(query)
-        self.db.commit()
+        if self.db is not None:
+            self.db.executesql(
+                "DELETE FROM web2py_filesystem WHERE path='%s'" % self.filename)
+            query = "INSERT INTO web2py_filesystem(path,content) VALUES ('%s','%s')"\
+                % (self.filename, self.data.replace("'","''"))
+            self.db.executesql(query)
+            self.db.commit()
+            self.db = None
+
+    def close(self):
+        self.close_connection()
 
     @staticmethod
     def exists(db, filename):
