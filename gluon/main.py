@@ -127,7 +127,7 @@ def get_client(env):
     guess the client address from the environment variables
 
     first tries 'http_x_forwarded_for', secondly 'remote_addr'
-    if all fails assume '127.0.0.1' (running locally)
+    if all fails, assume '127.0.0.1' or '::1' (running locally)
     """
     g = regex_client.search(env.get('http_x_forwarded_for', ''))
     if g:
@@ -136,8 +136,10 @@ def get_client(env):
         g = regex_client.search(env.get('remote_addr', ''))
         if g:
             client = g.group()
+        elif env.http_host.startswith('['):  # IPv6
+            client = '::1'
         else:
-            client = '127.0.0.1'
+            client = '127.0.0.1'  # IPv4
     if not is_valid_ip_address(client):
         raise HTTP(400, "Bad Request (request.client=%s)" % client)
     return client
@@ -432,20 +434,23 @@ def wsgibase(environ, responder):
                 app = request.application  # must go after url_in!
 
                 if not global_settings.local_hosts:
-                    local_hosts = ['127.0.0.1', '::ffff:127.0.0.1']
+                    local_hosts = set(['127.0.0.1', '::ffff:127.0.0.1', '::1'])
                     if not global_settings.web2py_runtime_gae:
                         try:
-                            local_hosts.append(socket.gethostname())
-                        except TypeError:
-                            pass
-                        try:
+                            fqdn = socket.getfqdn()
+                            local_hosts.add(socket.gethostname())
+                            local_hosts.add(fqdn)
+                            local_hosts.update([
+                                ip[4][0] for ip in socket.getaddrinfo(
+                                    fqdn, 0)])
                             if env.server_name:
-                                local_hosts += [
-                                    env.server_name,
-                                    socket.gethostbyname(env.server_name)]
+                                local_hosts.add(env.server_name)
+                                local_hosts.update([
+                                    ip[4][0] for ip in socket.getaddrinfo(
+                                        env.server_name, 0)])
                         except (socket.gaierror, TypeError):
                             pass
-                    global_settings.local_hosts = local_hosts
+                    global_settings.local_hosts = list(local_hosts)
                 else:
                     local_hosts = global_settings.local_hosts
                 client = get_client(env)

@@ -263,7 +263,7 @@ def is_valid_ip_address(address):
     # deal with special cases
     if address.lower() in ('127.0.0.1', 'localhost', '::1', '::ffff:127.0.0.1'):
         return True
-    elif address.lower() in ('unkown', ''):
+    elif address.lower() in ('unknown', ''):
         return False
     elif address.count('.') == 3:  # assume IPv4
         if address.startswith('::ffff:'):
@@ -287,3 +287,16 @@ def is_valid_ip_address(address):
             return False
     else:  # do not know what to do? assume it is a valid address
         return True
+
+
+def is_loopback_ip_address(ip):
+    """Determines whether the IP address appears to be a loopback address.
+
+    This assumes that the IP is valid.  The IPv6 check is limited to '::1'.
+
+    """
+    if not ip:
+        return False
+    if ip.count('.') == 3:  # IPv4
+        return ip.startswith('127') or ip.startswith('::ffff:127')
+    return ip == '::1'  # IPv6
