@@ -644,6 +644,7 @@ CONTENT_TYPE = {
     '.wmls': 'text/vnd.wap.wmlscript',
     '.wmv': 'video/x-ms-wmv',
     '.wmx': 'audio/x-ms-asx',
+    '.woff': 'application/font-woff',
     '.wp': 'application/vnd.wordperfect',
     '.wp4': 'application/vnd.wordperfect',
     '.wp5': 'application/vnd.wordperfect',
