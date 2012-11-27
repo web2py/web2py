@@ -89,8 +89,8 @@
 #         domains = None,
 #         map_hyphen = False,
 #         acfe_match = r'\w+$',                 # legal app/ctlr/fcn/ext
-#         file_match = r'([-+=@$%\w]+[./]?)+$', # legal static subpath
-#         args_match = r'([\w@ -]+[=.]?)+$',    # legal arg in args
+#         file_match = r'([-+=@$%\w]|(?<=[-+=@$%\w])[./])*$',   # legal static subpath
+#         args_match = r'([\w@ -]|(?<=[\w@ -])[.=])*$',         # legal arg in args
 #     )
 #
 #  See rewrite.map_url_in() and rewrite.map_url_out() for implementation details.
