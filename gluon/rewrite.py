@@ -75,8 +75,13 @@ def _router_default():
         exclusive_domain=False,
         map_hyphen=False,
         acfe_match=r'\w+$',                   # legal app/ctlr/fcn/ext
-        file_match=r'([-+=@$%\w]+[./]?)+$',   # legal static subpath
-        args_match=r'([\w@ -]|(?<=[\w@ -])[.=])*$', # legal arg in args
+        #
+        #  Implementation note:
+        #  The file_match & args_match patterns use look-behind to avoid
+        #  pathological backtracking from nested patterns.
+        #
+        file_match = r'([-+=@$%\w]|(?<=[-+=@$%\w])[./])*$', # legal static subpath
+        args_match=r'([\w@ -]|(?<=[\w@ -])[.=])*$',         # legal arg in args
     )
     return router
 
