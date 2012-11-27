@@ -754,6 +754,8 @@ def formstyle_bootstrap(form, fields):
                 # flag submit button
                 _submit = True
                 controls['_class'] = 'btn btn-primary'
+            if controls['_type'] == 'file':
+                controls['_class'] = 'input-file'
 
         if isinstance(controls, SELECT):
             controls.add_class('input-xlarge')
