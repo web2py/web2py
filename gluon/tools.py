@@ -2142,7 +2142,8 @@ class Auth(object):
 
         current.session.auth = None
         current.session.flash = self.messages.logged_out
-        redirect(next)
+        if not next is None:
+            redirect(next)
 
     def register(
         self,
