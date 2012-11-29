@@ -1762,11 +1762,12 @@ class Auth(object):
         """
         login the user = db.auth_user(id)
         """
-        user = Storage(self.table_user()._filter_fields(user, id=True))
-        if 'password' in user:
-            del user.password
+        user = Storage(user)
+        for key,value in user.items():
+            if callable(value) or key=='password':
+                del user[key]
         current.session.auth = Storage(
-            user=user,
+            user = user,
             last_visit=current.request.now,
             expiration=self.settings.expiration,
             hmac_key=web2py_uuid())
@@ -5088,40 +5089,42 @@ class Wiki(object):
                 subtree = []
                 tree[base] = subtree
                 parent.append((current.T(title), False, link, subtree))
-        if True:
+        # Changed from True to self.auth.user.   Why just True anyway?        
+        if self.auth.user:
             submenu = []
             menu.append((current.T('[Wiki]'), None, None, submenu))
-            if self.auth.user:
-                if URL() == URL(controller, function):
-                    if not str(request.args(0)).startswith('_'):
-                        slug = request.args(0) or 'index'
-                        mode = 1
-                    elif request.args(0) == '_edit':
-                        slug = request.args(1) or 'index'
-                        mode = 2
-                    elif request.args(0) == '_editmedia':
-                        slug = request.args(1) or 'index'
-                        mode = 3
-                    else:
-                        mode = 0
-                    if mode in (2, 3):
-                        submenu.append((current.T('View Page'), None,
-                        URL(controller, function, args=slug)))
-                    if mode in (1, 3):
-                        submenu.append((current.T('Edit Page'), None,
-                        URL(controller, function, args=('_edit', slug))))
-                    if mode in (1, 2):
-                        submenu.append((current.T('Edit Page Media'), None,
-                        URL(controller, function, args=('_editmedia', slug))))
+            if URL() == URL(controller, function):
+                if not str(request.args(0)).startswith('_'):
+                    slug = request.args(0) or 'index'
+                    mode = 1
+                elif request.args(0) == '_edit':
+                    slug = request.args(1) or 'index'
+                    mode = 2
+                elif request.args(0) == '_editmedia':
+                    slug = request.args(1) or 'index'
+                    mode = 3
+                else:
+                    mode = 0
+                if mode in (2, 3):
+                    submenu.append((current.T('View Page'), None,
+                    URL(controller, function, args=slug)))
+                if mode in (1, 3):
+                    submenu.append((current.T('Edit Page'), None,
+                    URL(controller, function, args=('_edit', slug))))
+                if mode in (1, 2):
+                    submenu.append((current.T('Edit Page Media'), None,
+                    URL(controller, function, args=('_editmedia', slug))))
 
-                submenu.append((current.T('Create New Page'), None,
-                                URL(controller, function, args=('_create'))))
-        if self.can_manage():
-            submenu.append((current.T('Manage Pages'), None,
+            submenu.append((current.T('Create New Page'), None,
+                            URL(controller, function, args=('_create'))))
+            # Moved next if to inside self.auth.user check
+            if self.can_manage():
+                submenu.append((current.T('Manage Pages'), None,
                             URL(controller, function, args=('_pages'))))
-            submenu.append((current.T('Edit Menu'), None,
+                submenu.append((current.T('Edit Menu'), None,
                             URL(controller, function, args=('_edit', 'wiki-menu'))))
-        submenu.append((current.T('Search Pages'), None,
+            # Also moved inside self.auth.user check
+            submenu.append((current.T('Search Pages'), None,
                         URL(controller, function, args=('_search'))))
         return menu
 
