@@ -3292,13 +3292,15 @@ class Auth(object):
              force_prefix='',
              restrict_search=False,
              resolve=True,
-             extra=None):
+             extra=None,
+             menugroups=None):
         if not hasattr(self, '_wiki'):
             self._wiki = Wiki(self, render=render,
                               manage_permissions=manage_permissions,
                               force_prefix=force_prefix,
                               restrict_search=restrict_search,
-                              env=env, extra=extra or {})
+                              env=env, extra=extra or {},
+                              menugroups=menugroups)
         else:
             self._wiki.env.update(env or {})
         # if resolve is set to True, process request as wiki call
@@ -4702,7 +4704,7 @@ class Wiki(object):
 
     def __init__(self, auth, env=None, render='markmin',
                  manage_permissions=False, force_prefix='',
-                 restrict_search=False, extra=None):
+                 restrict_search=False, extra=None, menugroups=None):
         self.env = env or {}
         self.env['component'] = Wiki.component
         if render == 'markmin':
@@ -4711,6 +4713,7 @@ class Wiki(object):
             render = self.html_render
         self.render = render
         self.auth = auth
+        self.menugroups = menugroups
         if self.auth.user:
             self.force_prefix = force_prefix % self.auth.user
         else:
@@ -4826,6 +4829,16 @@ class Wiki(object):
 
     def can_search(self):
         return True
+
+    def can_see_menu(self):
+        if self.menugroups is None:
+            return True
+        if self.auth.user:
+            groups = self.auth.user_groups.values()
+            if any(t in self.menugroups for t in groups):
+                return True
+        return False
+
     ### END POLICY
 
     def __call__(self):
@@ -5089,8 +5102,7 @@ class Wiki(object):
                 subtree = []
                 tree[base] = subtree
                 parent.append((current.T(title), False, link, subtree))
-        # Changed from True to self.auth.user.   Why just True anyway?        
-        if self.auth.user:
+        if self.can_see_menu():
             submenu = []
             menu.append((current.T('[Wiki]'), None, None, submenu))
             if URL() == URL(controller, function):
