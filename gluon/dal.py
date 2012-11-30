@@ -7174,10 +7174,6 @@ def index():
         table = table_class(self, tablename, *fields, **args)
         table._actual = True
         self[tablename] = table
-        # fix self refrences
-        for field in table:
-            if field.requires == DEFAULT:
-                field.requires = sqlhtml_validators(field)
         # must follow above line to handle self references
         table._create_references() 
 
@@ -7596,10 +7592,7 @@ class Table(object):
                     db._adapter.maxcharlength < field.length:
                 field.length = db._adapter.maxcharlength
             if field.requires == DEFAULT:
-                try:
-                    field.requires = sqlhtml_validators(field)
-                except AttributeError:
-                    pass                    
+                field.requires = sqlhtml_validators(field)
         self.ALL = SQLALL(self)
 
         if hasattr(self,'_primarykey'):
