@@ -55,7 +55,7 @@ function web2py_event_handlers() {
 jQuery(function() {
    var flash = jQuery('.flash');
    flash.hide();
-   if(flash.html()) flash.append('<span style="float:right;">&times;</span>').slideDown();
+   if(flash.html()) flash.append('<span id="closeflash">&times;</span>').slideDown();
    web2py_ajax_init(document);
    web2py_event_handlers();
 });

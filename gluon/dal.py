@@ -8495,6 +8495,7 @@ class Field(Expression):
         filter_in = None,
         filter_out = None,
         custom_qualifier = None,
+        map_none = None,
         ):
         self._db = self.db = None # both for backward compatibility
         self.op = None
@@ -8535,6 +8536,7 @@ class Field(Expression):
         self.custom_qualifier = custom_qualifier
         self.label = label if label!=None else fieldname.replace('_',' ').title()
         self.requires = requires if requires!=None else []
+        self.map_none = map_none
 
     def set_attributes(self,*args,**attributes):
         self.__dict__.update(*args,**attributes)
@@ -8666,7 +8668,7 @@ class Field(Expression):
     def formatter(self, value):
         requires = self.requires
         if value is None or not requires:
-            return value
+            return value or self.map_none
         if not isinstance(requires, (list, tuple)):
             requires = [requires]
         elif isinstance(requires, tuple):
@@ -8681,7 +8683,7 @@ class Field(Expression):
 
     def validate(self, value):
         if not self.requires or self.requires == DEFAULT:
-            return (value, None)
+            return ((value if value!=self.map_none else None), None)
         requires = self.requires
         if not isinstance(requires, (list, tuple)):
             requires = [requires]
@@ -8689,7 +8691,7 @@ class Field(Expression):
             (value, error) = validator(value)
             if error:
                 return (value, error)
-        return (value, None)
+        return ((value if value!=self.map_none else None), None)
 
     def count(self, distinct=None):
         return Expression(self.db, self.db._adapter.COUNT, self, distinct, 'integer')
