@@ -1,10 +1,10 @@
 EXPIRATION_MINUTES=60
 DIGITS=('0','1','2','3','4','5','6','7','8','9')
 import os, time, stat, cPickle, logging
-path=os.path.join(request.folder,'sessions')
+path = os.path.join(request.folder,'sessions')
 if not os.path.exists(path):
     os.mkdir(path)
-now=time.time()
+now = time.time()
 for filename in os.listdir(path):
     fullpath=os.path.join(path,filename)
     if os.path.isfile(fullpath) and filename.startswith(DIGITS):
@@ -18,4 +18,4 @@ for filename in os.listdir(path):
             if (now - filetime) > expiration:
                 os.unlink(fullpath)
         except:
-            logging.exception('failure to check %s'%fullpath)
+            logging.exception('failure to check %s' % fullpath)
