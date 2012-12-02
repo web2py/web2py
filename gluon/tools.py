@@ -1142,6 +1142,7 @@ class Auth(object):
             login_next = url_index,
             login_onvalidation = [],
             login_onaccept = [],
+            login_onfail = [],
             login_methods = [self],
             login_form = self,
             logout_next = url_index,
@@ -1953,7 +1954,9 @@ class Auth(object):
             onaccept = self.settings.login_onaccept
         if log is DEFAULT:
             log = self.messages.login_log
-
+        
+        onfail = self.settings.login_onfail
+        
         user = None  # default
 
         # do we use our own login form, or from a central source?
@@ -2066,6 +2069,7 @@ class Auth(object):
                                    request.post_vars)
                     # invalid login
                     session.flash = self.messages.invalid_login
+                    callback(onfail, None)
                     redirect(
                         self.url(args=request.args, vars=request.get_vars),
                         client_side=True)
@@ -2108,10 +2112,12 @@ class Auth(object):
                     session._auth_next = None
                 next = replace_id(next, form)
                 redirect(next, client_side=True)
+                
             table_user[username].requires = old_requires
             return form
         elif user:
             callback(onaccept, None)
+
         if next == session._auth_next:
             del session._auth_next
         redirect(next, client_side=True)
