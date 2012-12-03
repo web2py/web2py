@@ -1693,7 +1693,7 @@ class Auth(object):
             user_id = None  # user unknown
         vars = vars or {}
         self.table_event().insert(
-            description=description % vars,
+            description=str(description % vars),
             origin=origin, user_id=user_id)
 
     def get_or_create_user(self, keys, update_fields=['email']):
