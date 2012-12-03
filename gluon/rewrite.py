@@ -57,7 +57,6 @@ regex_space = re.compile('(\+|\s|%20)+')
 
 regex_url = re.compile('^/((?P<a>\w+)(/(?P<c>\w+)(/(?P<z>(?P<f>\w+)(\.(?P<e>[\w.]+))?(?P<s>[/\w@=-]*(\.[/\w@=-]+)*)))?)?)?$')
 
-
 def _router_default():
     "return new copy of default base router"
     router = Storage(
