@@ -931,7 +931,6 @@ def console():
 
     if options.cronjob:
         global_settings.cronjob = True  # tell the world
-        options.run = False   # don't start cron jobs
         options.plain = True    # cronjobs use a plain shell
         options.nobanner = True
         options.nogui = True
