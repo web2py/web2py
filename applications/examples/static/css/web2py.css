@@ -116,8 +116,8 @@ div.flash {
 }
 
 div.flash #closeflash{color:inherit; float:right;}
-.ie-lte7  div.flash
-#closeflash{color:expression(this.parentNode.currentStyle['color']);float:none;position:absolute;right:4px;}
+.ie-lte7  div.flash #closeflash
+{color:expression(this.parentNode.currentStyle['color']);float:none;position:absolute;right:4px;}
 
 div.flash:hover { opacity:0.25; }
 

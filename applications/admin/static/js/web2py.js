@@ -102,8 +102,12 @@ function web2py_ajax_page(method, action, data, target) {
       web2py_ajax_init('#'+target);
       if(command)
           eval(decodeURIComponent(command));
-      if(flash)
-          jQuery('.flash').html(decodeURIComponent(flash)).slideDown();
+      if(flash) {
+          jQuery('.flash')
+                .html(decodeURIComponent(flash))
+                .append('<span id="closeflash">&times;</span>')
+                .slideDown();
+        }
     }
   });
 }
