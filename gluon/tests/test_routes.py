@@ -105,13 +105,16 @@ class TestRoutes(unittest.TestCase):
         self.assertEqual(filter_url(
             'http://domain.com/abc/def/ghi/j%20kl'), "/abc/def/ghi ['j_kl']")
         self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/static'), "%s/applications/welcome/static/path/to/static" % root)
+        # no more necessary since explcit check for directory traversal attacks
+        """
         self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/to/st~tic')
         try:
             # 2.7+ only
             self.assertRaisesRegexp(HTTP, "400.*BAD REQUEST \[invalid path\]", filter_url, 'http://domain.com/welcome/static/bad/path/to/st~tic')
         except AttributeError:
             pass
-        # outgoing
+        """
+        # outgoing        
         self.assertEqual(filter_url('http://domain.com/init/default/index',
                          out=True), '/init/default/index')
         self.assertEqual(filter_url('http://domain.com/init/default/index/arg1', out=True), '/init/default/index/arg1')
