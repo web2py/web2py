@@ -6566,11 +6566,13 @@ def smart_query(fields,text):
                 (' not equal ','!='),
                 (' equal to ','='),
                 (' equal ','='),
-                (' equals ','!='),
+                (' equals ','='),
                 (' less than ','<'),
                 (' greater than ','>'),
                 (' starts with ','startswith'),
                 (' ends with ','endswith'),
+                (' not in ' , 'notbelongs'),
+                (' in ' , 'belongs'),
                 (' is ','=')]:
         if a[0]==' ':
             text = text.replace(' is'+a,' %s ' % b)
@@ -6605,6 +6607,8 @@ def smart_query(fields,text):
             elif op == '<=': new_query = field<=value
             elif op == '>=': new_query = field>=value
             elif op == '!=': new_query = field!=value
+            elif op == 'belongs': new_query = field.belongs(value.split(','))
+            elif op == 'notbelongs': new_query = ~field.belongs(value.split(','))
             elif field.type in ('text','string'):
                 if op == 'contains': new_query = field.contains(value)
                 elif op == 'like': new_query = field.like(value)
@@ -7175,7 +7179,7 @@ def index():
         table._actual = True
         self[tablename] = table
         # must follow above line to handle self references
-        table._create_references() 
+        table._create_references()
 
         migrate = self._migrate_enabled and args_get('migrate',self._migrate)
         if migrate and not self._uri in (None,'None') \
