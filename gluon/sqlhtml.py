@@ -1729,7 +1729,8 @@ class SQLFORM(FORM):
         request = current.request
         session = current.session
         response = current.response
-        wenabled = (not user_signature or (session.auth and session.auth.user))
+        logged = session.auth and session.auth.user
+        wenabled = (not user_signature or logged)
         create = wenabled and create
         editable = wenabled and editable
         deletable = wenabled and deletable
@@ -1759,13 +1760,11 @@ class SQLFORM(FORM):
         # - url has valid signature (vars are not signed, only path_info)
         # = url does not contain 'create','delete','edit' (readonly)
         if user_signature:
-            if not(
+            if not (
                 '/'.join(str(a) for a in args) == '/'.join(request.args) or
-                URL.verify(request, user_signature=user_signature,
-                           hash_vars=False) or not (
-                    'create' in request.args or
-                    'delete' in request.args or
-                    'edit' in request.args)):
+                URL.verify(request,user_signature=user_signature,
+                           hash_vars=False) or                
+                (request.args(len(args))=='view' and not logged)):
                 session.flash = T('not authorized')
                 redirect(referrer)
 
@@ -1871,7 +1870,7 @@ class SQLFORM(FORM):
 
         elif details and len(request.args) > 2 and request.args[-3] == 'view':
             table = db[request.args[-2]]
-            record = table(request.args[-1]) or redirect(URL('error'))
+            record = table(request.args[-1]) or redirect(referrer)
             sqlformargs.update(viewargs)
             view_form = SQLFORM(
                 table, record, upload=upload, ignore_rw=ignore_rw,
