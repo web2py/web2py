@@ -1561,15 +1561,15 @@ class SQLFORM(FORM):
     def search_menu(fields, search_options=None):
         T = current.T
         search_options = search_options or {
-            'string': ['=', '!=', '<', '>', '<=', '>=', 'starts with', 'contains'],
-            'text': ['=', '!=', '<', '>', '<=', '>=', 'starts with', 'contains'],
+            'string': ['=', '!=', '<', '>', '<=', '>=', 'starts with', 'contains', 'in', 'not in'],
+            'text': ['=', '!=', '<', '>', '<=', '>=', 'starts with', 'contains', 'in', 'not in'],
             'date': ['=', '!=', '<', '>', '<=', '>='],
             'time': ['=', '!=', '<', '>', '<=', '>='],
             'datetime': ['=', '!=', '<', '>', '<=', '>='],
-            'integer': ['=', '!=', '<', '>', '<=', '>='],
+            'integer': ['=', '!=', '<', '>', '<=', '>=', 'in', 'not in'],
             'double': ['=', '!=', '<', '>', '<=', '>='],
-            'id': ['=', '!=', '<', '>', '<=', '>='],
-            'reference': ['=', '!=', '<', '>', '<=', '>='],
+            'id': ['=', '!=', '<', '>', '<=', '>=', 'in', 'not in'],
+            'reference': ['=', '!=', '<', '>', '<=', '>=', 'in', 'not in'],
             'boolean': ['=', '!=']}
         if fields[0]._db._adapter.dbengine == 'google:datastore':
             search_options['string'] = ['=', '!=', '<', '>', '<=', '>=']
@@ -2268,7 +2268,7 @@ class SQLFORM(FORM):
                     if callable(rid):  # can this ever be callable?
                         rid = rid(row)
                     tr = TR(*trcols, **dict(
-                            _id=rid, 
+                            _id=rid,
                             _class='%s %s' % (classtr, 'with_id')))
                 else:
                     tr = TR(*trcols, **dict(_class=classtr))
@@ -2343,7 +2343,7 @@ class SQLFORM(FORM):
             table: pagination, search, view, edit, delete,
                    children, parent, etc.
 
-        constraints is a dict {'table',query} that limits which
+        constraints is a dict {'table':query} that limits which
         records can be accessible
         links is a dict like
            {'tablename':[lambda row: A(....), ...]}
