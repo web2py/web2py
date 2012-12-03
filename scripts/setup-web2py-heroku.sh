@@ -11,5 +11,6 @@ git add Procfile
 git commit -a -m "first commit"
 heroku create
 git push heroku master
+heroku addons:add heroku-postgresql:dev
 heroku scale web=1
 heroku open
