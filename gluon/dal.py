@@ -26,7 +26,7 @@ including:
 - DB2
 - Interbase
 - Ingres
-- Informix
+- Informix (9+ and SE)
 - SapDB (experimental)
 - Cubrid (experimental)
 - CouchDB (experimental)
@@ -3534,6 +3534,17 @@ class InformixAdapter(BaseAdapter):
     def integrity_error_class(self):
         return informixdb.IntegrityError
 
+class InformixSEAdapter(InformixAdapter):
+    """ work in progress """
+
+    def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
+        return 'SELECT %s %s FROM %s%s%s;' % \
+            (sql_s, sql_f, sql_t, sql_w, sql_o)
+
+    def rowslice(self,rows,minimum=0,maximum=None):
+        if maximum is None:
+            return rows[minimum:]
+        return rows[minimum:maximum]
 
 class DB2Adapter(BaseAdapter):
     drivers = ('pyodbc',)
@@ -6267,6 +6278,7 @@ ADAPTERS = {
     'db2': DB2Adapter,
     'teradata': TeradataAdapter,
     'informix': InformixAdapter,
+    'informix-se': InformixSEAdapter,
     'firebird': FireBirdAdapter,
     'firebird_embedded': FireBirdAdapter,
     'ingres': IngresAdapter,
