@@ -1,0 +1,246 @@
+{{extend 'layout.html'}}
+
+{{block sectionclass}}debug{{end}}
+<style type="text/css">
+
+.prompt, #output {
+  width: 45em;
+  height: 1em;
+  border: 1px solid #CCCCCC;
+  font-size: 10pt;
+  margin: 0.5em;
+  padding: 0.5em;
+  padding-right: 0em;
+  overflow: auto;
+  wrap: hard;
+}
+
+#output {
+  height:150px;overflow:auto;
+}
+
+#toolbar {
+  margin-left: 0.5em;
+  padding-left: 0.5em;
+}
+
+#caret {
+  width: 2.5em;
+  margin-right: 0px;
+  padding-right: 0px;
+  border-right: 0px;
+  float: left;
+}
+
+#statement {
+  width: 43em;
+  margin-left: 1em;
+  padding-left: 0px;
+  border-left: 0px;
+  background-position: top right;
+  background-repeat: no-repeat;
+}
+
+.processing {
+  background-image: url("{{=URL('static','images/spinner.gif')}}");
+}
+
+#ajax-status {
+  font-weight: bold;
+}
+
+.message {
+  color: #8AD;
+  font-weight: bold;
+  font-style: italic;
+}
+
+.error {
+  color: #F44;
+}
+
+.username {
+  font-weight: bold;
+}
+
+</style>
+<script src="{{=URL('static', 'js/autoscroll.js')}}"></script>
+
+<div class="applist f60">
+  <div class="applist_inner">
+    <h2>{{=T("web2py online debugger")}}</h2>
+
+    {{if filename:}}
+        <h3>{{=T("Interaction at %s line %s") % (filename, lineno)}}</h3>
+
+        {{if exception:}}
+              <h3 class="exception">{{=T("Exception %s", exception['title'])}}</h3>
+        {{pass}}
+        
+        <h5>{{=T("Code listing")}}</h5>
+        {{if lines:}}
+        <pre>{{=CODE('\n'.join([x[1] for x in sorted(lines.items(),key=lambda x: x[0])]),
+                language='python', link=None, counter=min(lines.keys()), 
+                highlight_line=lineno, context_lines=10)}}</pre>
+        {{pass}}
+
+        <div class="help">
+          <ul>
+            <li>{{=T("Your application will be blocked until you click an action button (next, step, continue, etc.)")}}</li>
+            <li>{{=T("Your can inspect variables using the console bellow")}}</li>
+          </ul>
+        </div>
+
+        
+        <h3>{{=T("Interactive console")}}</h3>
+          <textarea id="output" readonly="readonly">{{=data}}</textarea>
+
+          <form id="form" action="{{=URL(r=request,f='execute',args=app)}}" method="get">
+            <div id="shellwrapper">
+              <div id="caret">&gt;&gt;&gt;</div>
+              <div id="autoscroll" style="cursor:pointer;float:right;">autoscroll</div>
+              <div class="tooltip">
+                <textarea class="prompt" name="statement" id="statement"></textarea>
+                <span>{{=T("Type python statement in here and hit Return (Enter) to execute it.")}}</span>
+              </div>
+            </div>
+          </form>
+    {{elif request.env.get('wsgi_multiprocess') or not request.env.get('wsgi_multithread'):}}
+          <h3 class="not_paused">{{=T("Unsupported webserver working mode: %s", request.env.get('server_software', ''))}}</h3>
+            <div class="help">
+                <li><b>{{=T("WARNING:")}} </b>{{=T("This debugger may not work properly if you don't have a threaded webserver or you're using multiple daemon processes.")}}</li>
+                <li>{{=T("In development, use the default Rocket webserver that is currently supported by this debugger.")}}</li>
+                <li>{{=T("On production, you'll have to configure your webserver to use one process and multiple threads to use this debugger.")}}</li>
+              </ul>
+            </div>
+            {{#=BEAUTIFY(request.env)}}
+    {{else:}}
+          <h3 class="not_paused">{{=T("No Interaction yet")}}</h3>
+            <div class="help">
+              <ul>
+                <li>{{=T("You need to set up and reach a")}} {{=A(T("breakpoint"), _href=URL('breakpoints'))}} {{=T('to use the debugger!')}}</li>
+                <li>{{=T('To emulate a breakpoint programatically, write:')}}
+                {{=CODE("from gluon.debug import dbg\n"
+                        "dbg.set_trace() # stop here!\n",
+                        counter=None)}}</li>
+                <li>{{=T('Please')}} {{=A(T("refresh"), _href=URL('interact'))}} {{=T('this page to see if a breakpoint was hit and debug interaction is required.')}}</li>
+              </ul>
+            </div>
+    {{pass}}
+  </div>
+</div>
+
+
+<div class="sidebar fl60">
+  <div class="sidebar_inner controls">
+    <span class="pwdchange">
+        {{if filename:}}
+            {{=sp_button(URL('step'), T("step"))}}
+            {{=sp_button(URL('next'), T("next"))}}
+            {{=sp_button(URL('ret'), T("return"))}}
+            {{=sp_button(URL('cont'), T("continue"))}}
+            {{=sp_button(URL('stop'), T("stop"))}}
+        {{pass}}
+            {{=button(URL('breakpoints'), T("breakpoints"))}}
+    </span>
+
+    {{if exception:}}
+        <div class="box">
+          <h3>{{=T('Exception %(extype)s: %(exvalue)s', dict(extype=exception['extype'], exvalue=exception['exvalue']))}}</h3>
+          <div class="formfield">
+               {{=CODE((exception['request']), counter=None)}}
+          </div>
+        </div>
+    {{pass}}
+
+    <div class="box">
+      <h3>{{=T('Locals##debug')}}</h3>
+      <div class="formfield">
+	{{=BEAUTIFY(f_locals)}}
+      </div>
+    </div>
+    <div class="box">
+      <h3>{{=T('Globals##debug')}}</h3>
+      <div class="formfield">
+	{{=BEAUTIFY(f_globals)}}
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script type="text/javascript">
+var bShellScrolling=0
+jQuery(document).ready(function(){
+  jQuery('#statement').focus();
+
+  jQuery('#statement').keyup(function(event){
+    var t=jQuery(this),
+    s=t.val(),
+    o=jQuery('#output'),
+    RETURN = 38;
+    if(s=='\n') t.val('');
+    if(s.length>1 && s.substr(s.length-1,1)=='\n' && s.substr(s.length-2,1)!=':' &&
+    (s.indexOf(':\n ')<0 || s.substr(s.length-2,1)=='\n')) {
+      t.val('');
+      jQuery.post("{{=URL(r=request,f='execute',args=app)}}",
+      {statement:s},function(data){o.html(o.html()+data).attr('scrollTop',o.attr('scrollHeight'));});
+    } else { };
+    if(event.keyCode==RETURN){
+      var i=s.length
+      if(i==0){
+        var s=o.find('table:last pre:first').text();
+        bShellScrolling=o.find('table').length;
+      }else if(bShellScrolling){
+        var i=bShellScrolling
+        if(i<1){
+          return
+        }else{
+          i--
+          var s=o.find('table:nth-child('+(i)+') pre:first').text();
+          bShellScrolling=i
+        }
+      }else if(s.indexOf('\n')<0){
+        var oo=o.find('tr:first-child pre:contains("'+s+'")')
+        if(oo.length==0){
+          return
+        }else if(oo.length==1){
+          s=oo.text();
+        }else{
+          sVar=oo.text();
+          o.html(o.html()+'<dd>'+s+' ?</dd><dt>'+sVar+'</dt>').attr('scrollTop',o.attr('scrollHeight'))
+          return
+        }
+      }else{
+        //multistring expr
+        return;
+      }
+      //  if(s.slice(s.length-1)=='\n'){
+      s=s.slice(0,s.length-1)
+      //	}
+      t.val(s);
+    }
+    if(bShellScrolling && event.keyCode==40){
+      var i=bShellScrolling
+      i++
+      var s=o.find('table:nth-child('+i+') tr:first-child pre').text();
+      if(s){
+        s=s.slice(0,s.length-1)
+        t.val(s);
+        bShellScrolling=i
+      }else{
+        bShellScrolling=0
+        t.val('')
+      }
+    };
+    if(bShellScrolling && (event.keyCode==37 || event.keyCode==39)){
+      bShellScrolling=0;
+    };
+    if(event.keyCode==27){
+      bShellScrolling=0;
+      t.val('');
+    };
+  });
+});
+</script>
+
