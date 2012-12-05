@@ -405,7 +405,7 @@ class Response(Storage):
         headers['Content-Type'] = contenttype(name)
         if attachment:
             headers['Content-Disposition'] = \
-                'attachment; filename=%s' % filename
+                'attachment; filename="%s"' % filename.replace('"','\"')
         return self.stream(stream, chunk_size=chunk_size, request=request)
 
     def json(self, data, default=None):
