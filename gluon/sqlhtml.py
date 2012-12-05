@@ -1313,8 +1313,8 @@ class SQLFORM(FORM):
                         not OptionsWidget.has_options(field):
                     field.widget = self.widgets.list.widget
                 if field.widget and fieldname in request_vars:
-                    if fieldname in self.vars:
-                        value = self.vars[fieldname]
+                    if fieldname in self.request_vars:
+                        value = self.request_vars[fieldname]
                     elif self.record:
                         value = self.record[fieldname]
                     else:
@@ -1327,7 +1327,8 @@ class SQLFORM(FORM):
                     parent = self.field_parent[row_id]
                     if parent:
                         parent.components = [widget]
-                        parent._traverse(False, hideerror)
+                        if self.errors.get(fieldname):
+                            parent._traverse(False, hideerror)
                     self.custom.widget[fieldname] = widget
             self.accepted = ret
             return ret
