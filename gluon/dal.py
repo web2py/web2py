@@ -7200,11 +7200,14 @@ def index():
             fields = list(fields) + list(common_fields)
 
         table_class = args_get('table_class',Table)
-        table = table_class(self, tablename, *fields, **args)
+        table = table_class(self, tablename, *fields, **args)        
         table._actual = True
         self[tablename] = table
         # must follow above line to handle self references
         table._create_references()
+        for field in table:
+            if field.requires == DEFAULT:
+                field.requires = sqlhtml_validators(field)
 
         migrate = self._migrate_enabled and args_get('migrate',self._migrate)
         if migrate and not self._uri in (None,'None') \
@@ -7623,8 +7626,6 @@ class Table(object):
             if db and not field.type in ('text','blob') and \
                     db._adapter.maxcharlength < field.length:
                 field.length = db._adapter.maxcharlength
-            if field.requires == DEFAULT:
-                field.requires = sqlhtml_validators(field)
         self.ALL = SQLALL(self)
 
         if hasattr(self,'_primarykey'):
