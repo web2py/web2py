@@ -6851,9 +6851,10 @@ class DAL(object):
                                       adapter_args=adapter_args or {},
                                       do_connect=do_connect)
                         self._adapter = ADAPTERS[self._dbname](**kwargs)
+                        types = ADAPTERS[self._dbname].types
+                        # copy so multiple DAL() possible
+                        self._adapter.types = copy.copy(types) 
                         if bigint_id:
-                            types = ADAPTERS[self._dbname].types
-                            self._adapter.types = copy.copy(types) # copy so multiple DAL() possible
                             if 'big-id' in types and 'reference' in types:
                                 self._adapter.types['id'] = types['big-id']
                                 self._adapter.types['reference'] = types['big-reference']
