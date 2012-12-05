@@ -67,7 +67,7 @@ div.controls .error{
   border:none;
   padding:0;
   margin:0;
-  //display:inline; /* uncommenting this, the animation effect is lost */
+  /*display:inline;*/ /* uncommenting this, the animation effect is lost */
 }
 div.controls .inline-help{color:#3A87AD;}
 div.controls .error_wrapper+.inline-help{margin-left:-99999px;}
@@ -175,9 +175,6 @@ background-repeat:repeat;
                        OTHER RULES
 ==============================================================*/
 
-.navbar-inner{
-  position:relative; /*unnecessary ??*/
-}
 /* Massimo Di Pierro fixed alignment in forms with list:string */
 form table tr{margin-bottom:9px;}
 td.w2p_fw ul{margin-left:0px;}
@@ -212,7 +209,7 @@ td.w2p_fw ul{margin-left:0px;}
 
 @media only screen and (max-width:979px){
   body{padding-top:0px;}
-  #navbar{bottom:-10px;left:4px;}
+  #navbar{top:5px;}
   div.flash{right:5px;}
   .dropdown-menu ul{visibility:visible;}
 }
