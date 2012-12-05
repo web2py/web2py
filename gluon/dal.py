@@ -7740,22 +7740,26 @@ class Table(object):
     def __call__(self, key=DEFAULT, **kwargs):
         for_update = kwargs.get('_for_update',False)
         if '_for_update' in kwargs: del kwargs['_for_update']
+        
+        orderby = kwargs.get('_orderby',None)
+        if '_orderby' in kwargs: del kwargs['_orderby']
+        
         if not key is DEFAULT:
             if isinstance(key, Query):
                 record = self._db(key).select(
-                    limitby=(0,1),for_update=for_update).first()
+                    limitby=(0,1),for_update=for_update, orderby=orderby).first()
             elif not str(key).isdigit():
                 record = None
             else:
                 record = self._db(self._id == key).select(
-                    limitby=(0,1),for_update=for_update).first()
+                    limitby=(0,1),for_update=for_update, orderby=orderby).first()
             if record:
                 for k,v in kwargs.iteritems():
                     if record[k]!=v: return None
             return record
         elif kwargs:
             query = reduce(lambda a,b:a&b,[self[k]==v for k,v in kwargs.iteritems()])
-            return self._db(query).select(limitby=(0,1),for_update=for_update).first()
+            return self._db(query).select(limitby=(0,1),for_update=for_update, orderby=orderby).first()
         else:
             return None
 
