@@ -8545,7 +8545,7 @@ class Field(Expression):
         if not isinstance(fieldname,str) or hasattr(Table,fieldname) or \
                 fieldname[0] == '_' or REGEX_PYTHON_KEYWORDS.match(fieldname):
             raise SyntaxError('Field: invalid field name: %s' % fieldname)
-        self.type = type if not isinstance(type, Table) else 'reference %s' % type
+        self.type = type if not isinstance(type, (Table,Field)) else 'reference %s' % type
         self.length = length if not length is None else DEFAULTLENGTH.get(self.type,512)
         self.default = default if default!=DEFAULT else (update or None)
         self.required = required  # is this field required
