@@ -269,12 +269,12 @@ jQuery.fn.grow_input = function() {
 function pe(ul, e) {
   var new_line = ml(ul);
   rel(ul);
-  new_line.insertAfter($(e.target).parent());
+  new_line.insertAfter(jQuery(e.target).parent());
   new_line.find(":text").focus();
   return false;
 }
 function rl(ul, e) {
-  $(e.target).parent().remove();
+  jQuery(e.target).parent().remove();
 }
 function ml(ul) {
   var line = jQuery(ul).find("li:first").clone(true);
