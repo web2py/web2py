@@ -2858,6 +2858,8 @@ class IS_STRONG(object):
 
     def __call__(self, value):
         failures = []
+        if value and len(value) == value.count('*') > 4:
+            return (value, None)
         if self.entropy is not None:
             entropy = calc_entropy(value)
             if entropy < self.entropy:
