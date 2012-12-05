@@ -2002,7 +2002,7 @@ class BaseAdapter(ConnectionPool):
             fields_virtual = [(f,v) for (f,v) in table.iteritems()
                               if isinstance(v,FieldVirtual)]
             fields_lazy = [(f,v) for (f,v) in table.iteritems()
-                           if isinstance(v,FieldLazy)]
+                           if isinstance(v,FieldMethod)]
             if fields_virtual or fields_lazy:
                 for row in rowsobj.records:
                     box = row[tablename]
@@ -7557,8 +7557,11 @@ class Table(object):
             newfields.append(field)
             fieldnames.add('id')
             self._id = field
+        virtual_fields = []
         for field in fields:
-            if isinstance(field, Field) and not field.name in fieldnames:
+            if isinstance(field, (FieldMethod, FieldVirtual)):
+                virtual_fields.append(field)
+            elif isinstance(field, Field) and not field.name in fieldnames:
                 if field.db is not None:
                     field = copy.copy(field)
                 newfields.append(field)
@@ -7630,6 +7633,8 @@ class Table(object):
                         "primarykey must be a list of fields from table '%s " % tablename)
                 else:
                     self[k].notnull = True
+        for field in virtual_fields:
+            self[field.name] = field
 
     @property
     def fields(self):
@@ -8445,14 +8450,15 @@ class SQLCustomType(object):
         return self._class
 
 class FieldVirtual(object):
-    def __init__(self, f):
-        self.f = f
+    def __init__(self, name, f=None):
+        # for backward compatibility
+        (self.name, self.f) = (name, f) if f else ('unkown', name)
 
-class FieldLazy(object):
-    def __init__(self, f, handler=None):
-        self.f = f
+class FieldMethod(object):
+    def __init__(self, name, f=None, handler=None):
+        # for backward compatibility
+        (self.name, self.f) = (name, f) if f else ('unkown', name)
         self.handler = handler
-
 
 def list_represent(x,r=None):
     return ', '.join(str(y) for y in x or [])
@@ -8460,7 +8466,8 @@ def list_represent(x,r=None):
 class Field(Expression):
 
     Virtual = FieldVirtual
-    Lazy = FieldLazy
+    Method = FieldMethod
+    Lazy = FieldMethod # for backward compatibility
 
     """
     an instance of this class represents a database field
