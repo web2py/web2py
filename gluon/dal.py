@@ -2978,6 +2978,7 @@ class MSSQLAdapter(BaseAdapter):
             what = 'LEN'
         return "%s(%s)" % (what, self.expand(first))
 
+
     def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
         if limitby:
             (lmin, lmax) = limitby
@@ -3117,6 +3118,17 @@ class MSSQLAdapter(BaseAdapter):
 #                 raise SyntaxError('Invalid field type %s' %fieldtype)
             return "geometry::STGeomFromText('%s',%s)" %(obj, srid)
         return BaseAdapter.represent(self, obj, fieldtype)
+
+
+class MSSQL3Adapter(MSSQLAdapter):
+    """ experimental support for pagination in MSSQL"""
+    def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
+        if limitby:
+            (lmin, lmax) = limitby
+            return 'SELECT %s FROM (SELECT %s ROW_NUMBER() over (order by id) AS w_row, %s FROM %s%s%s) TMP WHERE w_row BETWEEN %i AND %s;' % (sql_f,sql_s,sql_f,sql_t,sql_w,sql_o,lmin,lmax)
+        return 'SELECT %s %s FROM %s%s%s;' % (sql_s,sql_f,sql_t,sql_w,sql_o)
+    def rowslice(self,rows,minimum=0,maximum=None):
+        return rows
 
 
 class MSSQL2Adapter(MSSQLAdapter):
