@@ -1112,17 +1112,6 @@ def start(cron=True):
             pass
         return
 
-    # ## if -H cron is enabled in this *process*
-    # ## if --softcron use softcron
-    # ## use hardcron in all other cases
-    if cron and options.runcron and options.softcron:
-        print 'Using softcron (but this is not very efficient)'
-        global_settings.web2py_crontype = 'soft'
-    elif cron and options.runcron:
-        logger.debug('Starting hardcron...')
-        global_settings.web2py_crontype = 'hard'
-        newcron.hardcron(options.folder).start()
-
     # ## if -W install/start/stop web2py as service
     if options.winservice:
         if os.name == 'nt':
@@ -1136,6 +1125,17 @@ def start(cron=True):
             print 'Error: Windows services not supported on this platform'
             sys.exit(1)
         return
+
+    # ## if -H cron is enabled in this *process*
+    # ## if --softcron use softcron
+    # ## use hardcron in all other cases
+    if cron and options.runcron and options.softcron:
+        print 'Using softcron (but this is not very efficient)'
+        global_settings.web2py_crontype = 'soft'
+    elif cron and options.runcron:
+        logger.debug('Starting hardcron...')
+        global_settings.web2py_crontype = 'hard'
+        newcron.hardcron(options.folder).start()
 
     # ## if no password provided and havetk start Tk interface
     # ## or start interface if we want to put in taskbar (system tray)
