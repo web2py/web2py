@@ -18,7 +18,7 @@ regex_tables = re.compile(
 # pattern to find exposed functions in controller
 
 regex_expose = re.compile(
-    '^def\s+(?P<name>(?:[a-zA-Z0-9]\w*)|(?:_[a-zA-Z0-9]\w*))\(\)\s*:',
+    '^def\s+(?P<name>_?[a-zA-Z0-9]\w*)\( *\)\s*:',
     flags=re.M)
 
 regex_include = re.compile(
