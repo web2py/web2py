@@ -1897,7 +1897,8 @@ class SELECT(INPUT):
         if not value is None:
             if not self['_multiple']:
                 for c in options:  # my patch
-                    if value and str(c['_value']) == str(value):
+                    if ((value is not None) and
+                        (str(c['_value']) == str(value))):
                         c['_selected'] = 'selected'
                     else:
                         c['_selected'] = None
@@ -1907,7 +1908,8 @@ class SELECT(INPUT):
                 else:
                     values = [str(value)]
                 for c in options:  # my patch
-                    if value and str(c['_value']) in values:
+                    if ((value is not None) and
+                        (str(c['_value']) in values)):
                         c['_selected'] = 'selected'
                     else:
                         c['_selected'] = None
