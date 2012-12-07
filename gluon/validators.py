@@ -2633,6 +2633,13 @@ class LazyCrypt(object):
         """
         compares the current lazy crypted password with a stored password
         """
+
+        # LazyCrypt objects comparison
+        if isinstance(stored_password, self.__class__):
+            return ((self is stored_password) or
+                   ((self.crypt.key == stored_password.crypt.key) and
+                   (self.password == stored_password.password)))
+
         if self.crypt.key:
             if ':' in self.crypt.key:
                 key = self.crypt.key.split(':')[1]
