@@ -415,6 +415,7 @@ class IS_IN_DB(Validator):
         cache=None,
         multiple=False,
         zero='',
+	optional=False,
         sort=False,
         _and=None,
     ):
@@ -452,6 +453,7 @@ class IS_IN_DB(Validator):
         self.cache = cache
         self.multiple = multiple
         self.zero = zero
+	self.optional = optional
         self.sort = sort
         self._and = _and
 
@@ -497,6 +499,8 @@ class IS_IN_DB(Validator):
     def __call__(self, value):
         table = self.dbset.db[self.ktable]
         field = table[self.kfield]
+	if self.optional and (value == None or value == ''):
+            return (None, None)
         if self.multiple:
             if self._and:
                 raise NotImplementedError
