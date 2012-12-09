@@ -660,6 +660,12 @@ class Session(Storage):
         if self.flash:
             (response.flash, self.flash) = (self.flash, None)
 
+    def clear(self):
+        previous_session_hash = self.pop('_session_hash', None)
+        Storage.clear(self)
+        if previous_session_hash:
+            self._session_hash = previous_session_hash
+
     def is_new(self):
         if self._start_timestamp:
             return False
@@ -745,11 +751,9 @@ class Session(Storage):
     def _try_store_in_file(self, request, response):
         if response.session_storage_type != 'file':
             return False
-
         try:
             if not response.session_id or self._forget or self._unchanged():
                 return False
-
             if response.session_new or not response.session_file:
                 # Tests if the session sub-folder exists, if not, create it
                 session_folder = os.path.dirname(response.session_filename)
