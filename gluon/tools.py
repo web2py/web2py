@@ -1763,10 +1763,14 @@ class Auth(object):
         """
         login the user = db.auth_user(id)
         """
-        user = Storage(user)
-        for key,value in user.items():
-            if callable(value) or key=='password':
-                del user[key]
+        from gluon.settings import global_settings
+        if global_settings.web2py_runtime_gae:
+            user = Row(self.db.auth_user._filter_fields(user, id=True))
+        else:
+            user = Row(user)
+            for key,value in user.items():
+                if callable(value) or key=='password':
+                    delattr(user,key)
         current.session.auth = Storage(
             user = user,
             last_visit=current.request.now,
