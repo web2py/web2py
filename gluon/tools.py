@@ -1766,6 +1766,7 @@ class Auth(object):
         from gluon.settings import global_settings
         if global_settings.web2py_runtime_gae:
             user = Row(self.db.auth_user._filter_fields(user, id=True))
+            delattr(user,'password')
         else:
             user = Row(user)
             for key,value in user.items():
