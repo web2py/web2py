@@ -515,11 +515,11 @@ def run_models_in(environment):
         for model in listdir(cpath, '^models_\w+\.pyc$', 0):
             restricted(read_pyc(model), environment, layer=model)
         path = pjoin(cpath, 'models')
-        models = listdir(path, '^\w+\.pyc$', 0, sort=False)
+        models = listdir(path, '^\w+\.pyc$', 0)
         compiled = True
     else:
         path = pjoin(folder, 'models')
-        models = listdir(path, '^\w+\.py$', 0, sort=False)
+        models = listdir(path, '^\w+\.py$', 0)
         compiled = False
     n = len(path) + 1
     for model in models:
