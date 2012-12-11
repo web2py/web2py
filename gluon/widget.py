@@ -34,7 +34,7 @@ try:
     import Tkinter
     import tkMessageBox
     import contrib.taskbar_widget
-    from winservice import web2py_windows_service_handler
+    from winservice import register_service_handler, Web2pyService
     have_winservice = True
 except:
     have_winservice = False
@@ -1116,8 +1116,10 @@ def start(cron=True):
     if options.winservice:
         if os.name == 'nt':
             if have_winservice:
-                web2py_windows_service_handler(['', options.winservice],
-                                               options.config)
+                register_service_handler(
+                    argv=['', options.winservice],
+                    opt_file=options.config,
+                    cls=Web2pyService)
             else:
                 print 'Error: Missing python module winservice'
                 sys.exit(1)

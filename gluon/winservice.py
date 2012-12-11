@@ -191,22 +191,21 @@ class Web2pyCronService(Web2pyService):
         if self.extcron:
             self.extcron.join()
 
-def register_service_handler(
-    name=Web2pyService, argv=None, opt_file='options'):
+def register_service_handler(argv=None, opt_file='options', cls=Web2pyService):
     path = os.path.dirname(__file__)
     web2py_path = up(path)
     if web2py_path.endswith('.zip'):  # in case bianry distro 'library.zip'
         web2py_path = os.path.dirname(web2py_path)
     os.chdir(web2py_path)
     classstring = os.path.normpath(
-        os.path.join(web2py_path, 'gluon.winservice.'+name.__name__))
+        os.path.join(web2py_path, 'gluon.winservice.'+cls.__name__))
     if opt_file:
-        name._exe_args_ = opt_file
+        cls._exe_args_ = opt_file
         win32serviceutil.HandleCommandLine(
-            name, serviceClassString=classstring, argv=['', 'install'])
+            cls, serviceClassString=classstring, argv=['', 'install'])
     win32serviceutil.HandleCommandLine(
-        name, serviceClassString=classstring, argv=argv)
+        cls, serviceClassString=classstring, argv=argv)
 
 if __name__ == '__main__':
-    register_service_handler(Web2pyService)
-    register_service_handler(Web2pyCronService)
+    register_service_handler(cls=Web2pyService)
+    register_service_handler(cls=Web2pyCronService)
