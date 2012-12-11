@@ -129,7 +129,7 @@ class Request(Storage):
         cmd_opts = global_settings.cmd_options
         #checking if this is called within the scheduler or within the shell
         #in addition to checking if it's not a cronjob
-        if ((cdm_opts and (cmd_opts.shell or cmd_opts.scheduler))
+        if ((cmd_opts and (cmd_opts.shell or cmd_opts.scheduler))
             or global_settings.cronjob or self.is_https):
             current.session.secure()
         else:
