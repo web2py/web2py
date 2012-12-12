@@ -1969,7 +1969,7 @@ class FORM(DIV):
         **kwargs
     ):
         """
-        kwargs is not used but allows to specify the same interface for FROM and SQLFORM
+        kwargs is not used but allows to specify the same interface for FORM and SQLFORM
         """
         if request_vars.__class__.__name__ == 'Request':
             request_vars = request_vars.post_vars
