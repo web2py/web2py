@@ -247,7 +247,7 @@ class web2pyDialog(object):
         self.selected_ip = Tkinter.StringVar()
         row = 0
         ips = [('127.0.0.1', 'Local (IPv4)')] + \
-            [('::1', 'Local (IPv6)')] if socket.has_ipv6 else [] + \
+            ([('::1', 'Local (IPv6)')] if socket.has_ipv6 else []) + \
             [(ip, 'Public') for ip in options.ips] + \
             [('0.0.0.0', 'Public')]
         for ip, legend in ips:
