@@ -6,6 +6,7 @@
 - made many modules Python 3.3 friendly (compile but not tested)
 - better welcome css, thanks Paolo
 - jQuery 1.8.2
+- integration with analyitics.js
 - better scheduler, thanks Niphlod
 - page and media preview in wiki, thanks Niphlod
 - create new auth.wiki page from slug model, thanks Nico
