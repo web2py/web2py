@@ -35,10 +35,7 @@ else:
 try:
     from Crypto.Cipher import AES
 except ImportError:
-    try:
-        from .aes import AES
-    except (ImportError, ValueError):
-        from contrib.aes import AES
+    import contrib.aes as AES
 
 try:
     from contrib.pbkdf2 import pbkdf2_hex
