@@ -1559,8 +1559,16 @@ class SQLFORM(FORM):
             return smart_query(fields, key)
 
     @staticmethod
-    def search_menu(fields, search_options=None):
+    def search_menu(fields,
+                    search_options=None,
+                    prefix='w2p'
+                    ):
         T = current.T
+        panel_id='%s_query_panel' % prefix
+        fields_id='%s_query_fields' % prefix
+        keywords_id='%s_keywords' % prefix
+        field_id='%s_field' % prefix
+        value_id='%s_value' % prefix
         search_options = search_options or {
             'string': ['=', '!=', '<', '>', '<=', '>=', 'starts with', 'contains', 'in', 'not in'],
             'text': ['=', '!=', '<', '>', '<=', '>=', 'starts with', 'contains', 'in', 'not in'],
@@ -1592,53 +1600,57 @@ class SQLFORM(FORM):
                     value_input = SELECT(
                         OPTION(T("True"), _value="T"),
                         OPTION(T("False"), _value="F"),
-                        _id="w2p_value_" + name)
+                        _id="%s_%s" % (value_id,name))
                 else:
                     value_input = INPUT(_type='text',
-                                        _id="w2p_value_" + name,
+                                        _id="%s_%s" % (value_id,name),
                                         _class=field.type)
                 new_button = INPUT(
                     _type="button", _value=T('New'), _class="btn",
-                    _onclick="w2p_build_query('new','%s')" % field)
+                    _onclick="%s_build_query('new','%s')" % (prefix,field))
                 and_button = INPUT(
                     _type="button", _value=T('And'), _class="btn",
-                    _onclick="w2p_build_query('and','%s')" % field)
+                    _onclick="%s_build_query('and','%s')" % (prefix, field))
                 or_button = INPUT(
                     _type="button", _value=T('Or'), _class="btn",
-                    _onclick="w2p_build_query('or','%s')" % field)
+                    _onclick="%s_build_query('or','%s')" % (prefix, field))
                 close_button = INPUT(
                     _type="button", _value=T('Close'), _class="btn",
-                    _onclick="jQuery('#w2p_query_panel').slideUp()")
+                    _onclick="jQuery('#%s').slideUp()" % panel_id)
 
                 criteria.append(DIV(
                     operators, value_input, new_button,
                     and_button, or_button, close_button,
-                    _id='w2p_field_%s' % name,
+                    _id='%s_%s' % (field_id, name),
                         _class='w2p_query_row hidden',
                         _style='display:inline'))
 
         criteria.insert(0, SELECT(
-            _id="w2p_query_fields",
-                _onchange="jQuery('.w2p_query_row').hide();jQuery('#w2p_field_'+jQuery('#w2p_query_fields').val().replace('.','-')).show();",
+            _id=fields_id,
+                _onchange="jQuery('.w2p_query_row').hide();jQuery('#%s_'+jQuery('#%s').val().replace('.','-')).show();" % (field_id,fields_id),
                 _style='float:left',
                 *selectfields))
 
         fadd = SCRIPT("""
-        jQuery('#w2p_query_panel input,#w2p_query_panel select').css(
+        jQuery('#%(fields_id)s input,#%(fields_id)s select').css(
             'width','auto');
-        jQuery(function(){web2py_ajax_fields('#w2p_query_panel');});
-        function w2p_build_query(aggregator,a) {
+        jQuery(function(){web2py_ajax_fields('#%(fields_id)s');});
+        function %(prefix)s_build_query(aggregator,a) {
           var b=a.replace('.','-');
-          var option = jQuery('#w2p_field_'+b+' select').val();
-          var value = jQuery('#w2p_value_'+b).val().replace('"','\\\\"');
+          var option = jQuery('#%(field_id)s_'+b+' select').val();
+          var value = jQuery('#%(value_id)s_'+b).val().replace('"','\\\\"');
           var s=a+' '+option+' "'+value+'"';
-          var k=jQuery('#web2py_keywords');
+          var k=jQuery('#%(keywords_id)s');
           var v=k.val();
           if(aggregator=='new') k.val(s); else k.val((v?(v+' '+ aggregator +' '):'')+s);
         }
-        """)
+        """ % dict(
+                prefix=prefix,fields_id=fields_id,keywords_id=keywords_id,
+                field_id=field_id,value_id=value_id
+                )
+        )
         return CAT(
-            DIV(_id="w2p_query_panel", _class='hidden', *criteria), fadd)
+            DIV(_id=panel_id, _class='hidden', *criteria), fadd)
 
     @staticmethod
     def grid(query,
@@ -1993,13 +2005,18 @@ class SQLFORM(FORM):
             if isinstance(search_widget, dict):
                 search_widget = search_widget[tablename]
             if search_widget == 'default':
-                search_menu = SQLFORM.search_menu(sfields)
+                prefix = formname == 'web2py_grid' and 'w2p' or 'w2p_%s' % formname
+                search_menu = SQLFORM.search_menu(sfields, prefix=prefix)
+                spanel_id = '%s_query_fields' % prefix
+                sfields_id = '%s_query_panel' % prefix
+                skeywords_id = '%s_keywords' % prefix
                 search_widget = lambda sfield, url: CAT(FORM(
                     INPUT(_name='keywords', _value=request.vars.keywords,
-                          _id='web2py_keywords', _onfocus="jQuery('#w2p_query_fields').change();jQuery('#w2p_query_panel').slideDown();"),
+                          _id=skeywords_id,
+                          _onfocus="jQuery('#%s').change();jQuery('#%s').slideDown();" % (spanel_id, sfields_id)),
                     INPUT(_type='submit', _value=T('Search'), _class="btn"),
                     INPUT(_type='submit', _value=T('Clear'), _class="btn",
-                          _onclick="jQuery('#web2py_keywords').val('');"),
+                          _onclick="jQuery('#%s').val('');" % skeywords_id),
                     _method="GET", _action=url), search_menu)
             form = search_widget and search_widget(sfields, url()) or ''
             console.append(add)
