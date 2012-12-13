@@ -1,5 +1,5 @@
 /*=============================================================
-                       CUSTOM RULES 
+                       CUSTOM RULES
 ==============================================================*/
 
 body{height:auto;} /* to avoid vertical scroll bar */
@@ -39,7 +39,7 @@ div.flash.flash-top,div.flash.flash-top:hover{
 /* auth navbar - primitive style */
 .auth_navbar,.auth_navbar a{color:inherit;}
 .ie-lte7 .auth_navbar,.auth_navbar a{color:expression(this.parentNode.currentStyle['color']); /* ie7 doesn't support inherit */}
-.auth_navbar a{white-space:nowrap;} /* to avoid the nav split on more lines */ 
+.auth_navbar a{white-space:nowrap;} /* to avoid the nav split on more lines */
 .auth_navbar a:hover{color:white;text-decoration:none;}
 ul#navbar>.auth_navbar{
   display:inline-block;
@@ -51,7 +51,7 @@ div.error_wrapper .error{
   border-radius: 4px;
   -o-border-radius: 4px;
   -moz-border-radius: 4px;
-  -webkit-border-radius: 4px;  
+  -webkit-border-radius: 4px;
 }
 /* below rules are only for formstyle = bootstrap
 trying to make errors look like bootstrap ones */
@@ -69,8 +69,11 @@ div.controls .error{
   margin:0;
   /*display:inline;*/ /* uncommenting this, the animation effect is lost */
 }
-div.controls .inline-help{color:#3A87AD;}
-div.controls .error_wrapper+.inline-help{margin-left:-99999px;}
+div.controls .help-inline{color:#3A87AD;}
+div.controls .error_wrapper +.help-inline {margin-left:-99999px;}
+div.controls select +.error_wrapper {margin-left:5px;}
+.ie-lte7 div.error{color:#fff;}
+
 /* beautify brand */
 .navbar-inverse .brand{color:#c6cecc;}
 .navbar-inverse .brand b{display:inline-block;margin-top:-1px;}
@@ -89,13 +92,13 @@ a{white-space:normal;}
 li{margin-bottom:0;}
 textarea,button{display:block;}
 /*reset ul padding */
-ul#navbar{padding:0;} 
+ul#navbar{padding:0;}
 /* label aligned to related input */
 td.w2p_fl,td.w2p_fc {padding:0;}
 #web2py_user_form td{vertical-align:middle;}
 
 /*=============================================================
-                 OVERRIDING BOOTSTRAP.CSS RULES 
+                 OVERRIDING BOOTSTRAP.CSS RULES
 ==============================================================*/
 
 /* because web2py handles this via js */
@@ -186,8 +189,8 @@ td.w2p_fw ul{margin-left:0px;}
   margin-bottom: 0;
   vertical-align: middle;
 }
-.web2py_console input[type="submit"], 
-.web2py_console input[type="button"], 
+.web2py_console input[type="submit"],
+.web2py_console input[type="button"],
 .web2py_console button{
   padding-top:4px;
   padding-bottom:4px;
@@ -221,7 +224,7 @@ td.w2p_fw ul{margin-left:0px;}
   .navbar-fixed-top,.navbar-fixed-bottom {
     margin-left:-10px;
     margin-right:-10px;
-  }  
+  }
   input[type="text"],input[type="password"],select{
     width:95%;
   }
