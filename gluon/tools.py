@@ -2899,7 +2899,9 @@ class Auth(object):
                 user = user or self.user
                 if requires_login:
                     if not user:
-                        if not otherwise is None:
+                        if current.request.ajax:
+                            raise HTTP(401)
+                        elif not otherwise is None:
                             if callable(otherwise):
                                 return otherwise()
                             redirect(otherwise)
