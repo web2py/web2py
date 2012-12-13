@@ -757,6 +757,10 @@ def formstyle_bootstrap(form, fields):
             if controls['_type'] == 'file':
                 controls['_class'] = 'input-file'
 
+        # For password fields, which are wrapped in a CAT object.
+        if isinstance(controls, CAT) and isinstance(controls[0], INPUT):
+            controls[0].add_class('input-xlarge')
+                
         if isinstance(controls, SELECT):
             controls.add_class('input-xlarge')
 
