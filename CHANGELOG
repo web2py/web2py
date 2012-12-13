@@ -1,3 +1,26 @@
+## 2.3.1
+
+- new virtual fields syntax: 
+  ``db.define_table('person',Field('name'),Field.Virtual('namey',lambda row: row.person.name+'y'))``
+- db.thing(name='Cohen',_orderby=db.thing.name), thanks Yair
+- made many modules Python 3.3 friendly (compile but not tested)
+- better welcome css, thanks Paolo
+- jQuery 1.8.2
+- better scheduler, thanks Niphlod
+- page and media preview in wiki, thanks Niphlod
+- create new auth.wiki page from slug model, thanks Nico
+- conditional menus with auth.wiki(menugroups=['wiki_editor'])
+- better security in grid/smartgrid
+- allow LOADing multiple grids, thanks Niphlod
+- auth.settings.login_onfail, thanks Yair
+- better handling of session files for speed
+- added heroku support (experimental)
+- added rocket support for IPV6, thanks Chirs Winebrinner
+- more customizable menus with MENU(li_first, li_last..)
+- added support for paymentech (gluon/contrib/paymentech.py)
+- fixed broken cron
+- many bug fixes. Closed more than 50 tickets since 2.2.1
+
 ## 2.2.1
 
 - session.connect(cookie_key='secret', compression_level=9) stores sessions in cookies
