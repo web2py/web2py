@@ -35,7 +35,7 @@ def callback():
         except ValueError:
             return ''
     session['commands:' + app].append(command)
-    environ = env(app, True)
+    environ = env(app, True, extra_request=dict(is_https=request.is_https))
     output = gluon.contrib.shell.run(history, command, environ)
     k = len(session['commands:' + app]) - 1
     #output = PRE(output)
