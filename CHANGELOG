@@ -7,7 +7,7 @@
 - better welcome css, thanks Paolo
 - jQuery 1.8.3
 - Bootstrap 2.2.2
-- Modernizr ???
+- Modernizr 2.6.2 (custom full options)
 - integration with analyitics.js (0.2.0)
 - better scheduler, thanks Niphlod
 - page and media preview in wiki, thanks Niphlod
@@ -22,6 +22,7 @@
 - more customizable menus with MENU(li_first, li_last..)
 - added support for paymentech (gluon/contrib/paymentech.py)
 - fixed broken cron
+- fixed possible xss with share.js
 - many bug fixes. Closed more than 50 tickets since 2.2.1
 
 ## 2.2.1
