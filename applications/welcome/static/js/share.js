@@ -16,7 +16,7 @@ jQuery(function(){
             return match && decodeURIComponent(match[1].replace(/\+/g, ' '))||default_value;
         }
 	var path = params('static','social');
-	var url = window.location.href;
+	var url = encodeURIComponent(window.location.href);
 	var host =  window.location.hostname;
 	var title = escape(jQuery('title').text());
 	var twit = 'http://twitter.com/home?status='+title+'%20'+url;
