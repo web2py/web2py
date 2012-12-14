@@ -5,8 +5,10 @@
 - db.thing(name='Cohen',_orderby=db.thing.name), thanks Yair
 - made many modules Python 3.3 friendly (compile but not tested)
 - better welcome css, thanks Paolo
-- jQuery 1.8.2
-- integration with analyitics.js
+- jQuery 1.8.3
+- Bootstrap 2.2.2
+- Modernizr ???
+- integration with analyitics.js (0.2.0)
 - better scheduler, thanks Niphlod
 - page and media preview in wiki, thanks Niphlod
 - create new auth.wiki page from slug model, thanks Nico
