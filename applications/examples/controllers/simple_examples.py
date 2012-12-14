@@ -1,3 +1,4 @@
+
 def hello1():
     """ simple page without template """
 
@@ -99,7 +100,7 @@ def rss_aggregator():
                     pubDate=datetime.datetime.now()) for entry in
                     d.entries])
     response.headers['Content-Type'] = 'application/rss+xml'
-    return rss2.dumps(rss)
+    return rss.to_xml(encoding='utf-8')
 
 
 def ajaxwiki():
