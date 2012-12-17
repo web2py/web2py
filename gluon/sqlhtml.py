@@ -468,8 +468,9 @@ class PasswordWidget(FormWidget):
             requires = [requires]
         is_strong = [r for r in requires if isinstance(r, IS_STRONG)]
         if is_strong:
-            output.append(SCRIPT("web2py_validate_entropy(jQuery('#%s'),%s);"
-                                 % (attr['_id'], is_strong[0].entropy)))
+            output.append(SCRIPT("web2py_validate_entropy(jQuery('#%s'),%s);" % (
+                        attr['_id'], is_strong[0].entropy
+                        if is_strong[0].entropy else "null")))
         # end entropy check
         return output
 
