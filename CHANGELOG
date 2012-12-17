@@ -1,4 +1,4 @@
-## 2.3.1
+## 2.3.1 - 2.3.2
 
 - new virtual fields syntax: 
   ``db.define_table('person',Field('name'),Field.Virtual('namey',lambda row: row.person.name+'y'))``
