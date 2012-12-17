@@ -25,7 +25,7 @@ import newcron
 import getpass
 import main
 
-from fileutils import w2p_pack, read_file, write_file
+from fileutils import w2p_pack, read_file, write_file, create_welcome_w2p
 from settings import global_settings
 from shell import run, test
 from utils import is_valid_ip_address, is_loopback_ip_address
@@ -968,6 +968,8 @@ def console():
 
     if options.numthreads is not None and options.minthreads is None:
         options.minthreads = options.numthreads  # legacy
+
+    create_welcome_w2p()
 
     if not options.cronjob:
         # If we have the applications package or if we should upgrade
