@@ -1825,8 +1825,8 @@ class SQLFORM(FORM):
         columns = [str(field) for field in fields
                    if field._tablename in tablenames]
 
-        if not str(field_id) in [str(f) for f in fields]:
-            fields.append(field_id)
+        if not any(str(f)==str(field_id) for f in fields):
+            fields = [f for f in fields]+[field_id]
         table = field_id.table
         tablename = table._tablename
         if upload == '<default>':
