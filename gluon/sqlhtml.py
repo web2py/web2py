@@ -2851,15 +2851,16 @@ class ExporterTSV(ExportClass):
         final = cStringIO.StringIO()
         import csv
         writer = csv.writer(out, delimiter='\t')
-        import codecs
-        final.write(codecs.BOM_UTF16)
-        writer.writerow(
-            [unicode(col).encode("utf8") for col in self.rows.colnames])
-        data = out.getvalue().decode("utf8")
-        data = data.encode("utf-16")
-        data = data[2:]
-        final.write(data)
-        out.truncate(0)
+        if self.rows:
+            import codecs
+            final.write(codecs.BOM_UTF16)
+            writer.writerow(
+                [unicode(col).encode("utf8") for col in self.rows.colnames])
+            data = out.getvalue().decode("utf8")
+            data = data.encode("utf-16")
+            data = data[2:]
+            final.write(data)
+            out.truncate(0)
         records = self.represented()
         for row in records:
             writer.writerow(
@@ -2881,7 +2882,10 @@ class ExporterCSV(ExportClass):
         ExportClass.__init__(self, rows)
 
     def export(self):
-        return str(self.rows)
+        if self.rows:
+            return str(self.rows)
+        else:
+            return ''
 
 
 class ExporterHTML(ExportClass):
@@ -2895,12 +2899,13 @@ class ExporterHTML(ExportClass):
     def export(self):
         out = cStringIO.StringIO()
         out.write('<html>\n<body>\n<table>\n')
-        colnames = [a.split('.') for a in self.rows.colnames]
-        for row in self.rows.records:
-            out.write('<tr>\n')
-            for col in colnames:
-                out.write('<td>' + str(row[col[0]][col[1]]) + '</td>\n')
-            out.write('</tr>\n')
+        if self.rows:
+            colnames = [a.split('.') for a in self.rows.colnames]
+            for row in self.rows.records:
+                out.write('<tr>\n')
+                for col in colnames:
+                    out.write('<td>' + str(row[col[0]][col[1]]) + '</td>\n')
+                out.write('</tr>\n')
         out.write('</table>\n</body>\n</html>')
         return str(out.getvalue())
 
@@ -2916,12 +2921,13 @@ class ExporterXML(ExportClass):
     def export(self):
         out = cStringIO.StringIO()
         out.write('<rows>\n')
-        colnames = [a.split('.') for a in self.rows.colnames]
-        for row in self.rows.records:
-            out.write('<row>\n')
-            for col in colnames:
-                out.write(
-                    '<%s>' % col + str(row[col[0]][col[1]]) + '</%s>\n' % col)
-            out.write('</row>\n')
+        if self.rows:
+            colnames = [a.split('.') for a in self.rows.colnames]
+            for row in self.rows.records:
+                out.write('<row>\n')
+                for col in colnames:
+                    out.write(
+                        '<%s>' % col + str(row[col[0]][col[1]]) + '</%s>\n' % col)
+                out.write('</row>\n')
         out.write('</rows>')
         return str(out.getvalue())
