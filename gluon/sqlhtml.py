@@ -1125,8 +1125,15 @@ class SQLFORM(FORM):
         # when deletable, add delete? checkbox
         self.custom.deletable = ''
         if record and deletable:
+            #add secondary css class for cascade delete warning
+            css = 'delete'
+            for f in self.table.fields:
+                on_del = self.table[f].ondelete
+                if isinstance(on_del,str) and 'cascade' in on_del.lower():
+                    css += ' cascade_delete'
+                    break
             widget = INPUT(_type='checkbox',
-                           _class='delete',
+                           _class=css,
                            _id=self.FIELDKEY_DELETE_RECORD,
                            _name=self.FIELDNAME_REQUEST_DELETE,
                            )
