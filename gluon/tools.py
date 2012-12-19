@@ -4986,8 +4986,9 @@ class Wiki(object):
             var preview = $('<div id="preview"></div>').hide();
             var previewmedia = $('<div id="previewmedia"></div>');
             var table = $('form');
-            preview.insertBefore(table);
-            prevbutton.insertBefore(table);
+            var bodylabel = $('#wiki_page_body__label');
+            preview.insertBefore(pagecontent);
+            prevbutton.insertAfter(bodylabel);
             mediabutton.insertBefore(table);
             previewmedia.insertBefore(table);
             mediabutton.toggle(function() {
@@ -4995,16 +4996,17 @@ class Wiki(object):
             }, function() {
                 previewmedia.empty();
             });
-            prevbutton.click(function() {
+            prevbutton.click(function(e) {
+                e.preventDefault();
                 if (prevbutton.hasClass('nopreview')) {
                     prevbutton.addClass('preview').removeClass(
                         'nopreview').html('Edit Source');
                     web2py_ajax_page('post', '%(url)s', {body : $('#wiki_page_body').val()}, 'preview');
-                    table.fadeOut('medium', function() {preview.fadeIn()});
+                    pagecontent.fadeOut('fast', function() {preview.fadeIn()});
                 } else {
                     prevbutton.addClass(
                         'nopreview').removeClass('preview').html('Preview');
-                    preview.fadeOut('medium', function() {table.fadeIn()});
+                    preview.fadeOut('fast', function() {pagecontent.fadeIn()});
                 }
             })
         })
@@ -5026,10 +5028,12 @@ class Wiki(object):
         self.auth.db.wiki_media.wiki_page.writable = False
         links = []
         csv = True
+        create = True
         if current.request.vars.embedded:
             script = "var c = $('#wiki_page_body'); c.val(c.val() + $('%s').text()); return false;"
             fragment = self.auth.db.wiki_media.id.represent
             csv = False
+            create = False
             links=[
                 lambda row:
                     A('copy into source', _href='#', _onclick=script % (fragment(row.id, row)))
@@ -5039,6 +5043,7 @@ class Wiki(object):
             orderby=self.auth.db.wiki_media.title,
             links = links,
             csv = csv,
+            create = create,
             args=['_editmedia', slug],
             user_signature=False)
         return dict(content=content)
