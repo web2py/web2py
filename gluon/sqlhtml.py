@@ -1682,6 +1682,7 @@ class SQLFORM(FORM):
              maxtextlengths={},
              maxtextlength=20,
              onvalidation=None,
+             onfailure=None,
              oncreate=None,
              onupdate=None,
              ondelete=None,
@@ -1878,6 +1879,7 @@ class SQLFORM(FORM):
             create_form.process(formname=formname,
                                 next=referrer,
                                 onvalidation=onvalidation,
+                                onfailure=onfailure,
                                 onsuccess=oncreate)
             res = DIV(buttons(), create_form, formfooter, _class=_class)
             res.create_form = create_form
@@ -1916,6 +1918,7 @@ class SQLFORM(FORM):
             update_form.process(
                 formname=formname,
                 onvalidation=onvalidation,
+                onfailure=onfailure,
                 onsuccess=onupdate,
                 next=referrer)
             res = DIV(buttons(view=details, record=record),
