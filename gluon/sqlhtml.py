@@ -1786,7 +1786,7 @@ class SQLFORM(FORM):
                 session.flash = T('not authorized')
                 redirect(referrer)
 
-        def gridbutton(buttonclass='buttonadd', buttontext='Add',
+        def gridbutton(buttonclass='buttonadd', buttontext=T('Add'),
                        buttonurl=url(args=[]), callback=None,
                        delete=None, trap=True):
             if showbuttontext:
@@ -1997,7 +1997,7 @@ class SQLFORM(FORM):
         if create:
             add = gridbutton(
                 buttonclass='buttonadd',
-                buttontext='Add',
+                buttontext=T('Add'),
                 buttonurl=url(args=['new', tablename]))
             if not searchable:
                 console.append(add)
