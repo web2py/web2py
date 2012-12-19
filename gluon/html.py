@@ -520,8 +520,7 @@ class XmlComponent(object):
         c = self['_class']
         classes = (set(c.split()) if c else set()) - set(name.split())
         self['_class'] = ' '.join(classes) if classes else None
-        return self
-
+        return self    
 
 class XML(XmlComponent):
     """
