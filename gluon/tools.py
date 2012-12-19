@@ -2825,9 +2825,12 @@ class Auth(object):
             auth.user.update(
                 table_user._filter_fields(user, True))
             self.user = auth.user
-            if self.settings.login_onaccept:
+            onaccept = self.settings.login_onaccept
+            if onaccept:
                 form = Storage(dict(vars=self.user))
-                for callback in self.settings.login_onaccept:
+                if not isinstance(onaccept,(list, tuple)):
+                    onaccept = [onaccept]
+                for callback in onaccept:
                     callback(form)
             log = self.messages.impersonate_log
             self.log_event(log, dict(id=current_id, other_id=auth.user.id))
