@@ -1959,9 +1959,9 @@ class Auth(object):
             onaccept = self.settings.login_onaccept
         if log is DEFAULT:
             log = self.messages.login_log
-        
+
         onfail = self.settings.login_onfail
-        
+
         user = None  # default
 
         # do we use our own login form, or from a central source?
@@ -2117,7 +2117,7 @@ class Auth(object):
                     session._auth_next = None
                 next = replace_id(next, form)
                 redirect(next, client_side=True)
-                
+
             table_user[username].requires = old_requires
             return form
         elif user:
@@ -3016,7 +3016,7 @@ class Auth(object):
         if user_id:
             user = self.table_user()[user_id]
         else:
-            user = self.user        
+            user = self.user
         return self.settings.create_user_groups % user
 
     def has_membership(self, group_id=None, user_id=None, role=None):
@@ -4690,7 +4690,7 @@ class Wiki(object):
     rows_page = 25
 
     def markmin_render(self, page):
-        html = MARKMIN(page.body, extra=self.extra, 
+        html = MARKMIN(page.body, extra=self.extra,
                        url=True, environment=self.env,
                        autolinks=lambda link: expand_one(link, {})).xml()
         html += DIV(_class='w2p_wiki_tags',
@@ -5053,7 +5053,7 @@ class Wiki(object):
             return self.not_authorized()
         db = self.auth.db
         slugs=db(db.wiki_page.id>0).select(db.wiki_page.id,db.wiki_page.slug)
-        options=[OPTION(row.slug,_value=row.id) for row in slugs] 
+        options=[OPTION(row.slug,_value=row.id) for row in slugs]
         options.insert(0, OPTION('',_value=''))
         form = SQLFORM.factory(Field("slug", default=current.request.args(1),
                                      requires=(IS_SLUG(),

@@ -70,7 +70,7 @@ class PaymenTech(object):
 
     #################################################################
     #               Notes for web2py implementations                #
-    #################################################################    
+    #################################################################
 
     # A recommended model for handling payments
 
@@ -87,7 +87,7 @@ class PaymenTech(object):
     PAYMENTECH_TARGET = <str>
     PAYMENTECH_HOST = <str>
     PAYMENTECH_API_URL = <str>
-    
+
     # The following table would allow passing data with web2py and to
     # update records with the webservice authorization output by using
     # the DAL
@@ -102,10 +102,10 @@ class PaymenTech(object):
     #
     #   # Send the authorization request to the webservice
     #   result = mypaymentech.charge(myrow.as_dict())
-    #   
+    #
     #   # Update the db record with the webservice response
     #   myrow.update_record(**result)
-    
+
     db.define_table("paymentech",
         Field("account"),
         Field("exp", comment="Must be of the mmyyyy form"),
@@ -302,7 +302,7 @@ class PaymenTech(object):
         tx_ref_num = order_id = None
         conn = httplib.HTTPS(self.host)
         conn.putrequest('POST', self.api_url)
-       
+
         if self.development:
             content_type = "PTI56"
         else:
@@ -340,5 +340,3 @@ class PaymenTech(object):
             dom.getElementsByTagName('CustomerRefNum')[0].firstChild.data
 
         return result
-
-
