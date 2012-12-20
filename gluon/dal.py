@@ -8163,6 +8163,10 @@ class Expression(object):
         db = self.db
         return Expression(db, db._adapter.AGGREGATE, self, 'AVG', self.type)
 
+    def abs(self):
+        db = self.db
+        return Expression(db, db._adapter.AGGREGATE, self, 'ABS', self.type)
+
     def lower(self):
         db = self.db
         return Expression(db, db._adapter.LOWER, self, None, self.type)
