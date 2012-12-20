@@ -43,13 +43,13 @@ def sync_main(file, apps):
             data = eval(langfile.read())
         finally:
             langfile.close()
-    
+
         d = sync_language(d, data)
 
 
     path = 'applications/%s/' % apps[-1]
     file1 = os.path.join(path, 'languages', '%s.py' % file)
-    
+
     f = open(file1, 'w')
     try:
         f.write('# coding: utf8\n')
@@ -61,7 +61,7 @@ def sync_main(file, apps):
         f.write('}\n')
     finally:
         f.close()
-    
+
     oapps = reversed(apps[:-1])
     for app in oapps:
         path2 = 'applications/%s/' % app
@@ -75,4 +75,3 @@ if __name__ == "__main__":
     apps = sys.argv[2:]
 
     sync_main(file, apps)
-    

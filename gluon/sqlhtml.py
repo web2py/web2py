@@ -269,7 +269,7 @@ jQuery.fn.grow_input = function() {
 function pe(ul, e) {
   var new_line = ml(ul);
   rel(ul);
-  new_line.appendTo(ul);  
+  new_line.appendTo(ul);
   new_line.find(":text").focus();
   return false;
 }
@@ -761,7 +761,7 @@ def formstyle_bootstrap(form, fields):
         # For password fields, which are wrapped in a CAT object.
         if isinstance(controls, CAT) and isinstance(controls[0], INPUT):
             controls[0].add_class('input-xlarge')
-                
+
         if isinstance(controls, SELECT):
             controls.add_class('input-xlarge')
 
@@ -1789,7 +1789,7 @@ class SQLFORM(FORM):
             if not (
                 '/'.join(str(a) for a in args) == '/'.join(request.args) or
                 URL.verify(request,user_signature=user_signature,
-                           hash_vars=False) or                
+                           hash_vars=False) or
                 (request.args(len(args))=='view' and not logged)):
                 session.flash = T('not authorized')
                 redirect(referrer)

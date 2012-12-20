@@ -6853,7 +6853,7 @@ class DAL(object):
                         self._adapter = ADAPTERS[self._dbname](**kwargs)
                         types = ADAPTERS[self._dbname].types
                         # copy so multiple DAL() possible
-                        self._adapter.types = copy.copy(types) 
+                        self._adapter.types = copy.copy(types)
                         if bigint_id:
                             if 'big-id' in types and 'reference' in types:
                                 self._adapter.types['id'] = types['big-id']
@@ -7200,7 +7200,7 @@ def index():
             fields = list(fields) + list(common_fields)
 
         table_class = args_get('table_class',Table)
-        table = table_class(self, tablename, *fields, **args)        
+        table = table_class(self, tablename, *fields, **args)
         table._actual = True
         self[tablename] = table
         # must follow above line to handle self references
@@ -7747,10 +7747,10 @@ class Table(object):
     def __call__(self, key=DEFAULT, **kwargs):
         for_update = kwargs.get('_for_update',False)
         if '_for_update' in kwargs: del kwargs['_for_update']
-        
+
         orderby = kwargs.get('_orderby',None)
         if '_orderby' in kwargs: del kwargs['_orderby']
-        
+
         if not key is DEFAULT:
             if isinstance(key, Query):
                 record = self._db(key).select(

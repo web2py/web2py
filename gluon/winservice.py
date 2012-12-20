@@ -171,7 +171,7 @@ class Web2pyCronService(Web2pyService):
             opt_mod = self._exe_args_
         options = __import__(opt_mod, [], [], '')
         global_settings.global_settings.web2py_crontype = 'external'
-        if options.scheduler:   # -K                         
+        if options.scheduler:   # -K
             apps = [app.strip() for app in options.scheduler.split(
                     ',') if check_existent_app(options, app.strip())]
         else:

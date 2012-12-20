@@ -154,4 +154,3 @@ def redirect(location='', how=303, client_side=False):
         from gluon import current
         if client_side and current.request.ajax:
             raise HTTP(200, **{'web2py-component-command': 'window.location.reload(true)'})
-    

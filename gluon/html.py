@@ -520,7 +520,7 @@ class XmlComponent(object):
         c = self['_class']
         classes = (set(c.split()) if c else set()) - set(name.split())
         self['_class'] = ' '.join(classes) if classes else None
-        return self    
+        return self
 
 class XML(XmlComponent):
     """
@@ -1487,7 +1487,7 @@ class A(DIV):
                     (self['callback'], self['target'] or '', d)
             self['_href'] = self['_href'] or '#null'
         elif self['cid']:
-	    pre = self['pre_call'] + ';' if self['pre_call'] else ''
+            pre = self['pre_call'] + ';' if self['pre_call'] else ''
             self['_onclick'] = '%sweb2py_component("%s","%s");%sreturn false;' % \
                 (pre,self['_href'], self['cid'], d)
         return DIV.xml(self)

@@ -1,19 +1,24 @@
+#!/bin/bash
 echo 'setup-web2py-nginx-uwsgi-ubuntu-precise.sh'
-echo 'Requires Ubuntu 12.04 and installs Nginx + uWSGI + Web2py'
-
+echo 'Requires Ubuntu > 12.04 and installs Nginx + uWSGI + Web2py'
+# Check if user has root privileges
+if [[ $EUID -ne 0 ]]; then
+   echo "You must run the script as root or using sudo"
+   exit 1
+fi
 # Get Web2py Admin Password
 echo -e "Web2py Admin Password: \c "
 read  PW
 # Upgrade and install needed software
 apt-get update
 apt-get -y upgrade
-apt-get -y dist-upgrade
 apt-get autoremove
 apt-get autoclean
 apt-get -y install nginx-full
-apt-get -y install build-essential python-dev libxml2-dev python-pip
+apt-get -y install build-essential python-dev libxml2-dev python-pip unzip
 pip install --upgrade pip
-pip install --upgrade uwsgi
+PIPPATH=`which pip`
+$PIPPATH install --upgrade uwsgi
 # Create configuration file /etc/nginx/sites-available/web2py
 echo 'server {
         listen          80;
@@ -37,11 +42,16 @@ echo 'server {
         }
 }
 server {
-        listen          443;
+        listen 443 default_server ssl;
         server_name     $hostname;
-        ssl                     on;
         ssl_certificate         /etc/nginx/ssl/web2py.crt;
         ssl_certificate_key     /etc/nginx/ssl/web2py.key;
+        ssl_prefer_server_ciphers on;
+        ssl_session_cache shared:SSL:10m;
+        ssl_session_timeout 10m;
+        ssl_ciphers ECDHE-RSA-AES256-SHA:DHE-RSA-AES256-SHA:DHE-DSS-AES256-SHA:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA;
+        ssl_protocols SSLv3 TLSv1;
+        keepalive_timeout    70;
         location / {
             #uwsgi_pass      127.0.0.1:9001;
             uwsgi_pass      unix:///tmp/web2py.socket;
@@ -49,21 +59,24 @@ server {
             uwsgi_param     UWSGI_SCHEME $scheme;
             uwsgi_param     SERVER_SOFTWARE    nginx/$nginx_version;
         }
-
+ 
 }' >/etc/nginx/sites-available/web2py
-
+ 
 ln -s /etc/nginx/sites-available/web2py /etc/nginx/sites-enabled/web2py
 rm /etc/nginx/sites-enabled/default
 mkdir /etc/nginx/ssl
 cd /etc/nginx/ssl
-openssl genrsa -out web2py.key 1024
-openssl req -batch -new -key web2py.key -out web2py.csr
-openssl x509 -req -days 1780 -in web2py.csr -signkey web2py.key -out web2py.crt
-
+ 
+openssl genrsa 1024 > web2py.key
+chmod 400 web2py.key
+openssl req -new -x509 -nodes -sha1 -days 1780 -key web2py.key > web2py.crt
+openssl x509 -noout -fingerprint -text < web2py.crt > web2py.info
+ 
+ 
 # Prepare folders for uwsgi
 sudo mkdir /etc/uwsgi
 sudo mkdir /var/log/uwsgi
-
+ 
 # Create configuration file /etc/uwsgi/web2py.xml
 echo '<uwsgi>
     <socket>/tmp/web2py.socket</socket>
@@ -84,11 +97,11 @@ echo '<uwsgi>
     <cron>0 0 -1 -1 -1 python /home/www-data/web2py/web2py.py -Q -S welcome -M -R scripts/sessions2trash.py -A -o</cron>
     <no-orphans/>
 </uwsgi>' >/etc/uwsgi/web2py.xml
-
+ 
 #Create a configuration file for uwsgi in emperor-mode
 #for Upstart in /etc/init/uwsgi-emperor.conf
 echo '# Emperor uWSGI script
-
+ 
 description "uWSGI Emperor"
 start on runlevel [2345]
 stop on runlevel [06]
@@ -104,7 +117,6 @@ respawn
 exec uwsgi --master --die-on-term --emperor /etc/uwsgi --logto /var/log/uwsgi/uwsgi.log
 ' > /etc/init/uwsgi-emperor.conf
 # Install Web2py
-apt-get -y install unzip
 mkdir /home/www-data
 cd /home/www-data
 wget http://web2py.com/examples/static/web2py_src.zip
@@ -117,11 +129,10 @@ cd /home/www-data/web2py
 sudo -u www-data python -c "from gluon.main import save_password; save_password('$PW',443)"
 start uwsgi-emperor
 /etc/init.d/nginx restart
-
+ 
 ## you can reload uwsgi with
 # restart uwsgi-emperor
 ## and stop it with
 # stop uwsgi-emperor
 ## to reload web2py only (without restarting uwsgi)
 # touch /etc/uwsgi/web2py.xml
-
