@@ -67,11 +67,10 @@ def parse_legacy(version="Version 1.99.0 (2011-09-19 08:23:26)"):
     return (a, b, c, pre_release, build)
 
 def parse_version(version):
-    items = parse_semantic(version)
-    if not items:
-        items = parse_legacy(version)
-    (a, b, c, pre_release, build) = items
-    return (a, b, c, build, pre_release) # build, pre_releas intentionally reversed
+    version_tuple = parse_semantic(version)
+    if not version_tuple:
+        version_tuple = parse_legacy(version)
+    return version_tuple
 
 def read_file(filename, mode='r'):
     "returns content from filename, making sure to close the file explicitly on exit."
