@@ -45,14 +45,33 @@ __all__ = [
 ]
 
 
-def parse_version(version="Version 1.99.0 (2011-09-19 08:23:26)"):
+def parse_semantic(version="Version 1.99.0-rc.1+timestamp.2011.09.19.08.23.26"):
+    "http://semver.org/"
+    re_version = re.compile('Version (\d+)\.(\d+)\.(\d+)(\-(?P<pre>[^\s+]*))?(\+(?P<build>\S*))')
+    m = re_version.match(version)
+    if not m:
+        return None
+    a, b, c = int(m.group(1)), int(m.group(2)), int(m.group(3))
+    pre_release = m.group('pre') or ''
+    build = m.group('build') or ''
+    if build.startswith('timestamp'):
+        build = datetime.datetime.strptime(build.split('.',1)[1], '%Y.%m.%d.%H.%M.%S')
+    return (a, b, c, pre_release, build)
+
+def parse_legacy(version="Version 1.99.0 (2011-09-19 08:23:26)"):
     re_version = re.compile('[^\d]+ (\d+)\.(\d+)\.(\d+)\s*\((?P<datetime>.+?)\)\s*(?P<type>[a-z]+)?')
     m = re_version.match(version)
     a, b, c = int(m.group(1)), int(m.group(2)), int(m.group(3)),
-    s = m.group('type') or 'dev'
-    d = datetime.datetime.strptime(m.group('datetime'), '%Y-%m-%d %H:%M:%S')
-    return (a, b, c, d, s)
+    pre_release = m.group('type') or 'dev'
+    build = datetime.datetime.strptime(m.group('datetime'), '%Y-%m-%d %H:%M:%S')
+    return (a, b, c, pre_release, build)
 
+def parse_version(version):
+    items = parse_semantic(version)
+    if not items:
+        items = parse_legacy(version)
+    (a, b, c, pre_release, build) = items
+    return (a, b, c, build, pre_release) # build, pre_releas intentionally reversed
 
 def read_file(filename, mode='r'):
     "returns content from filename, making sure to close the file explicitly on exit."
