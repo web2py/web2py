@@ -1397,7 +1397,7 @@ class Auth(object):
         """
         tables = [table for table in tables]
         for table in tables:
-            if 'modified_on' in table.fields():
+            if 'modified_on' in table.fields() and not current_record in table.fields():
                 table._enable_record_versioning(
                     archive_db=archive_db,
                     archive_name=archive_names,
