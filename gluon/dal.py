@@ -9667,6 +9667,19 @@ DAL.Field = Field  # was necessary in gluon/globals.py session.connect
 DAL.Table = Table  # was necessary in gluon/globals.py session.connect
 
 ################################################################################
+# Geodal utils
+################################################################################
+
+def geoPoint(*line):
+    return "POINT (%f %f)" % (x,y)
+
+def geoLine(*line):
+    return "LINESTRING (%s)" % ','.join("%f %f" % item for item in line)
+
+def geoPolygon(*line):
+    return "POLYGON ((%s))" % ','.join("%f %f" % item for item in line)
+
+################################################################################
 # run tests
 ################################################################################
 
