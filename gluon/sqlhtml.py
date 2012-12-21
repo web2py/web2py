@@ -263,18 +263,27 @@ class ListWidget(StringWidget):
 jQuery.fn.grow_input = function() {
   return this.each(function() {
     var ul = this;
-    jQuery(ul).find(":text").after('<a href="javascript:void(0)">+</a>').keypress(function (e) { return (e.which == 13) ? pe(ul) : true; }).next().click(function(){ pe(ul) });
+    jQuery(ul).find(":text").after('<a href="javascript:void(0)">+</a>&nbsp;<a href="javascript:void(0)">-</a>').keypress(function (e) { return (e.which == 13) ? pe(ul, e) : true; }).next().click(function(e){ pe(ul, e) }).next().click(function(e){ rl(ul, e)});
   });
 };
 function pe(ul, e) {
   var new_line = ml(ul);
   rel(ul);
-  new_line.appendTo(ul);
+  if ($(e.target).parent().is(':visible')) {
+    //make sure we didn't delete the element before we insert after
+    new_line.insertAfter($(e.target).parent());
+  } else {
+    //the line we clicked on was deleted, just add to end of list
+    new_line.appendTo(ul);
+  }
   new_line.find(":text").focus();
   return false;
 }
 function rl(ul, e) {
-  jQuery(e.target).parent().remove();
+  if (jQuery(ul).children().length > 1) {
+    //only remove if we have more than 1 item so the list is never empty
+    $(e.target).parent().remove();
+  }
 }
 function ml(ul) {
   var line = jQuery(ul).find("li:first").clone(true);
