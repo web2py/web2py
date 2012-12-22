@@ -808,6 +808,8 @@ class BaseAdapter(ConnectionPool):
                 ftype = types[field_type[:7]] % \
                     dict(precision=precision,scale=scale)
             elif field_type.startswith('geo'):
+                if not hasattr(self,'srid'):
+                    raise RuntimeError('Adapter does not support geometry')
                 srid = self.srid
                 geotype, parms = field_type[:-1].split('(')
                 if not geotype in types:
@@ -1472,8 +1474,12 @@ class BaseAdapter(ConnectionPool):
 
         if len(tablenames) < 1:
             raise SyntaxError('Set: no tables selected')
-        sql_f = ', '.join(map(self.expand, fields))
-        self._colnames = [c.strip() for c in sql_f.split(', ')]
+        self._colnames = map(self.expand, fields)
+        def geoexpand(field):
+            if isinstance(field.type,str) and field.type.startswith('geometry'):
+                field = field.st_asgeojson()
+            return self.expand(field)
+        sql_f = ', '.join(map(geoexpand, fields))
         if query:
             sql_w = ' WHERE ' + self.expand(query)
         else:
@@ -2110,7 +2116,7 @@ class SQLiteAdapter(BaseAdapter):
                     dbpath = pjoin(self.folder, dbpath)
         if not 'check_same_thread' in driver_args:
             driver_args['check_same_thread'] = False
-        if not 'detect_types' in driver_args:
+        if not 'detect_types' in driver_args and do_connect:
             driver_args['detect_types'] = self.driver.PARSE_DECLTYPES
         def connector(dbpath=dbpath, driver_args=driver_args):
             return self.driver.Connection(dbpath, **driver_args)
@@ -2174,7 +2180,7 @@ class SpatiaLiteAdapter(SQLiteAdapter):
                     self.folder.decode(path_encoding).encode('utf8'), dbpath)
         if not 'check_same_thread' in driver_args:
             driver_args['check_same_thread'] = False
-        if not 'detect_types' in driver_args:
+        if not 'detect_types' in driver_args and do_connect:
             driver_args['detect_types'] = self.driver.PARSE_DECLTYPES
         def connector(dbpath=dbpath, driver_args=driver_args):
             return self.driver.Connection(dbpath, **driver_args)
@@ -3070,7 +3076,7 @@ class MSSQLAdapter(BaseAdapter):
     def EPOCH(self, first):
         return "DATEDIFF(second, '1970-01-01 00:00:00', %s)" % self.expand(first)
 
-    # GIS functions
+    # GIS Spatial Extensions
 
     # No STAsGeoJSON in MSSQL
 
@@ -8352,11 +8358,11 @@ class Expression(object):
     def st_asgeojson(self, precision=15, options=0, version=1):
         return Expression(self.db, self.db._adapter.ST_ASGEOJSON, self,
                           dict(precision=precision, options=options,
-                               version=version), 'dict')
+                               version=version), 'string')
 
     def st_astext(self):
         db = self.db
-        return Expression(db, db._adapter.ST_ASTEXT, self)
+        return Expression(db, db._adapter.ST_ASTEXT, self, type='string')
 
     def st_contained(self, value):
         db = self.db
