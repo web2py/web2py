@@ -4265,7 +4265,10 @@ class Service(object):
         if not method in methods:
             return return_error(id, 100, 'method "%s" does not exist' % method)
         try:
-            s = methods[method](**params)
+            if isinstance(params,dict):
+                s = methods[method](**params)
+            else:
+                s = methods[method](*params)
             if hasattr(s, 'as_list'):
                 s = s.as_list()
             return return_response(id, s)
