@@ -1477,7 +1477,7 @@ class BaseAdapter(ConnectionPool):
         self._colnames = map(self.expand, fields)
         def geoexpand(field):
             if isinstance(field.type,str) and field.type.startswith('geometry'):
-                field = field.st_asgeojson()
+                field = field.st_astext()
             return self.expand(field)
         sql_f = ', '.join(map(geoexpand, fields))
         if query:
