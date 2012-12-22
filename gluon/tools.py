@@ -1422,6 +1422,7 @@ class Auth(object):
         self.signature = db.Table(
             self.db, 'auth_signature',
             Field('is_active', 'boolean',
+                  notnull=True,
                   default=True,
                   readable=False, writable=False,
                   label=T('Is Active')),

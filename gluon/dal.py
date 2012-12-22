@@ -859,7 +859,7 @@ class BaseAdapter(ConnectionPool):
                 type=str(field_type),
                 sql=ftype)
 
-            if isinstance(field.default,(str,int,float)):
+            if field.notnull and not field.default is None:
                 # Caveat: sql_fields and sql_fields_aux
                 # differ for default values.
                 # sql_fields is used to trigger migrations and sql_fields_aux
@@ -867,7 +867,7 @@ class BaseAdapter(ConnectionPool):
                 # The reason is that we do not want to trigger
                 # a migration simply because a default value changes.
                 not_null = self.NOT_NULL(field.default, field_type)
-                ftype = ftype.replace('NOT NULL', not_null)
+                ftype = ftype.replace('NOT NULL', not_null)            
             sql_fields_aux[field_name] = dict(sql=ftype)
             # Postgres - PostGIS:
             # geometry fields are added after the table has been created, not now
@@ -995,10 +995,7 @@ class BaseAdapter(ConnectionPool):
         for key in sql_fields_old:
             if not key in keys:
                 keys.append(key)
-        if self.dbengine == 'mssql':
-            new_add = '; ALTER TABLE %s ADD ' % tablename
-        else:
-            new_add = ', ADD '
+        new_add = self.concat_add(tablename)
 
         metadata_change = False
         sql_fields_current = copy.copy(sql_fields_old)
@@ -1690,7 +1687,7 @@ class BaseAdapter(ConnectionPool):
     def rollback_prepared(self, key):
         if self.connection: self.connection.rollback()
 
-    def concat_add(self, table):
+    def concat_add(self, tablename):
         return ', ADD '
 
     def constraint_name(self, table, fieldname):
@@ -2359,9 +2356,6 @@ class MySQLAdapter(BaseAdapter):
     def rollback_prepared(self,key):
         self.execute("XA ROLLBACK;")
 
-    def concat_add(self,table):
-        return '; ALTER TABLE %s ADD ' % table
-
     REGEX_URI = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^?]+)(\?set_encoding=(?P<charset>\w+))?$')
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
@@ -2957,6 +2951,9 @@ class MSSQLAdapter(BaseAdapter):
         'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
         }
+
+    def concat_add(self,tablename):
+        return '; ALTER TABLE %s ADD ' % tablename
 
     def varquote(self,name):
         return varquote_aux(name,'[%s]')
