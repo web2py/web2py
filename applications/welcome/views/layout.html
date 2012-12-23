@@ -154,7 +154,7 @@
       <![endif]-->
   
   {{if response.google_analytics_id:}}
-  <script src="{{=URL('static','js/analytics.js')}}"></script>
+  <script src="{{=URL('static','js/analytics.min.js')}}"></script>
   <script type="text/javascript">
   analytics.initialize({
     'Google Analytics':{trackingId:'{{=response.google_analytics_id}}'} 
