@@ -534,7 +534,7 @@ class Scheduler(MetaScheduler):
                     self.sleep()
                     continue
                 logger.debug('looping...')
-                task = self.pop_task()
+                task = self.wrapped_pop_task()
                 if task:
                     self.empty_runs = 0
                     self.worker_status[0] = RUNNING
@@ -569,9 +569,23 @@ class Scheduler(MetaScheduler):
                 x += 1
                 time.sleep(0.5)
 
-    def pop_task(self):
+    def wrapped_pop_task(self):
+        db = self.db
+        x = 0
+        while x < 10:
+            try:
+                rtn = self.pop_task(db)
+                return rtn
+                break
+            except:
+                db.rollback()
+                logger.error('TICKER(%s): error popping tasks', self.worker_name)
+                x += 1
+                time.sleep(0.5)
+        
+    def pop_task(self, db):
         now = self.now()
-        db, st = self.db, self.db.scheduler_task
+        st = self.db.scheduler_task
         if self.is_a_ticker and self.do_assign_tasks:
             #I'm a ticker, and 5 loops passed without reassigning tasks, let's do
             #that and loop again
