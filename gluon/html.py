@@ -1733,7 +1733,7 @@ class INPUT(DIV):
         if self['_type'] != 'checkbox':
             self['old_value'] = self['value'] or self['_value'] or ''
             value = request_vars_get(name, '')
-            self['value'] = value
+            self['value'] = value if not hasattr(value,'file') else None
         else:
             self['old_value'] = self['value'] or False
             value = request_vars_get(name)
