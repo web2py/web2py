@@ -1,0 +1,29 @@
+Metadata-Version: 1.0
+Name: web2py
+Version: 2.1.1
+Summary: full-stack framework for rapid development and prototyping
+        of secure database-driven web-based applications, written and
+        programmable in Python.
+Home-page: http://web2py.com
+Author: Massimo Di Pierro
+Author-email: mdipierro@cs.depaul.edu
+License: http://web2py.com/examples/default/license
+Description: 
+                Everything in one package with no dependencies. Development, deployment,
+                debugging, testing, database administration and maintenance of applications can
+                be done via the provided web interface. web2py has no configuration files,
+                requires no installation, can run off a USB drive. web2py uses Python for the
+                Model, the Views and the Controllers, has a built-in ticketing system to manage
+                errors, an internationalization engine, works with SQLite, PostgreSQL, MySQL,
+                MSSQL, FireBird, Oracle, IBM DB2, Informix, Ingres, sybase and Google App Engine via a
+                Database Abstraction Layer. web2py includes libraries to handle
+                HTML/XML, RSS, ATOM, CSV, RTF, JSON, AJAX, XMLRPC, WIKI markup. Production
+                ready, capable of upload/download streaming of very large files, and always
+                backward compatible.
+                
+Platform: Windows
+Platform: Linux
+Platform: Mac
+Platform: Unix
+Platform: Windows Mobile
+Classifier: Development Status :: 5 - Production/Stable

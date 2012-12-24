@@ -170,7 +170,11 @@ function doToggleBreakpoint(filename, url) {
 	  success: function(json,text,xhr){
 	     // show flash message (if any)
 	     var flash=xhr.getResponseHeader('web2py-component-flash');
-	     if (flash) jQuery('.flash').html(decodeURIComponent(flash)).slideDown();
+	     if (flash) {
+				jQuery('.flash').html(decodeURIComponent(flash))
+				.append('<a href="#" class="close">&times;</a>')
+				.slideDown();
+		}
 	     else jQuery('.flash').hide();
 	     try {
 		 if (json.error) {

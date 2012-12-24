@@ -1,0 +1,114 @@
+{{extend 'layout.html'}}
+
+{{block sectionclass}}debug{{end}}
+
+<style>
+table.sortable {
+  border-spacing:0px;
+}
+table.sortable td, table.sortable th {
+  padding: 2px 5px 2px 5px;
+}
+table.sortable thead {
+  background-color:#eee;
+  color:#666666;
+  font-weight: bold;
+  cursor: default;
+}
+tr.error_ticket:hover {
+  background-color: #eee;
+}
+</style>
+
+<script language="JavaScript">
+  function check(){
+    for (var i = 0; i < document.myform.elements.length; i++) {
+        var e = document.myform.elements[i];
+        if (e.type == 'checkbox') e.checked = true;
+    }
+  }
+  function uncheck(){
+    for (var i = 0; i < document.myform.elements.length; i++) {
+      var e = document.myform.elements[i];
+      if (e.type == 'checkbox') e.checked = false;
+    }
+  }
+  jQuery(document).ready(function() { jQuery('.sourcecode').hide(); });
+</script>
+
+<div class="applist f60">
+  <div class="applist_inner">
+
+<h2>{{=T("Breakpoints")}}</h2>
+
+<div class="errorform">
+  <form name="myform" method="post">
+    <input name="CheckAll" value="{{=T('check all')}}"
+     onclick="check()" type="button">
+    <input name="CheckAll" value="{{=T('uncheck all')}}"
+     onclick="uncheck()" type="button">
+    <input value="{{=T('delete all checked')}}" type="submit"><br><br>
+
+    <table id="trck_breakpoints" class="sortable">
+      <thead>
+        <tr>
+          <th>{{=T("Delete")}}</th>
+          <th>{{=T("Filename")}}</th>
+          <th>{{=T("LineNo")}}</th>
+          <th>{{=T("Temporary")}}</th>
+          <th>{{=T("Condition")}}</th>
+          <th>{{=T("Hits")}}</th>
+          <th></th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{for bp in breakpoints:}}
+        <tr class="breakpoint">
+          <td><input type="checkbox" name="delete_{{=bp['number']}}" /></td>
+          <td>{{=bp['filename']}}</td>
+          <td>{{=A(bp['lineno'],_href="#",_onclick="collapse('%s');" % bp['number'])}}</td>
+          <td>{{=bp['temporary']}}</td>
+          <td>{{=bp['condition']}}</td>
+          <td>{{=bp['hits']}}</td>
+        </tr>
+        <tr id="{{=bp['number']}}" class="sourcecode">
+          <td colspan="6">
+            <div>
+              {{=CODE(open(bp['path']).read(), language='python', 
+                link=None, highlight_line=bp['lineno'], context_lines=10)}}
+            </div>
+          </td>
+        </tr>
+        {{pass}}
+      </tbody>
+    </table>
+  </form>
+
+</div>
+
+<div class="help">
+  <ul>
+    <li>{{=T("You can also set and remove breakpoint in the edit window, using the Toggle Breakpoint button")}}</li>
+  </ul>
+</div>
+
+
+  </div>
+</div>
+
+
+<div class="sidebar fl60">
+  <div class="sidebar_inner controls">
+
+  <div class="box">
+
+<h3>{{=T("Add breakpoint")}}</h3>
+
+{{=form}}
+
+  </div>
+
+  </div>
+</div>
+
