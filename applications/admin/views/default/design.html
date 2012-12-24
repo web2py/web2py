@@ -79,6 +79,7 @@ def deletefile(arglist, vars={}):
     {{if os.access(os.path.join(request.folder,'..',app,'databases','sql.log'),os.R_OK):}}
       {{=button(URL('peek/%s/databases/sql.log'%app), 'sql.log')}}
     {{pass}}
+    {{=button(URL(a=app, c='appadmin',f='graph_model'), T('graph model'))}}
   </div>
   {{pass}}
 
