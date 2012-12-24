@@ -3325,7 +3325,10 @@ class Auth(object):
         if resolve:
             action = str(current.request.args(0)).startswith("_")
             if slug and not action:
-                wiki = self._wiki.read(slug)['content']
+                wiki = self._wiki.read(slug)
+                if isinstance(wiki, dict) and wiki.has_key('content'):
+                    # We don't want to return a dict object, just the wiki
+                    wiki = wiki['content']
             else:
                 wiki = self._wiki()
             if isinstance(wiki, basestring):
