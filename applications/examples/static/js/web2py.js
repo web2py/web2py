@@ -50,6 +50,13 @@ function web2py_event_handlers() {
       window.location = redirect;
     };
   });
+  doc.ajaxError(function(e, xhr, settings, exception) {
+    doc.off('click', '.flash')
+      switch(xhr.status){
+        case 500:
+          $('.flash').html(ajax_error_500).slideDown(); 
+      }
+  });
 };
 
 jQuery(function() {
