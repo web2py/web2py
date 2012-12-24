@@ -55,7 +55,7 @@ def index():
     reset(session)
     apps = os.listdir(os.path.join(request.folder, '..'))
     form = SQLFORM.factory(Field('name', requires=[IS_NOT_EMPTY(),
-                                                   IS_ALPHANUMERIC()]))
+                                                   IS_ALPHANUMERIC()]), _class='span5 well well-small')
     if form.accepts(request.vars):
         app = form.vars.name
         session.app['name'] = app
@@ -125,19 +125,20 @@ def step1():
               default=params.get('login_method', 'local')),
         Field(
             'login_config', default=params.get('login_config', None)),
-        Field('plugins', 'list:string', requires=IS_IN_SET(plugins, multiple=True)))
+        Field('plugins', 'list:string', requires=IS_IN_SET(plugins, multiple=True)),
+        _class='span7 well well-small')
 
     if form.accepts(request.vars):
         session.app['params'] = [(key, form.vars.get(key, None))
                                  for key, value in session.app['params']]
-        redirect(URL('step2'))
+        redirect(URL('step2')  + '/#xwizard_form')
     return dict(step='1: Setting Parameters', form=form)
 
 
 def step2():
     response.view = 'wizard/step.html'
     form = SQLFORM.factory(Field('table_names', 'list:string',
-                                 default=session.app['tables']))
+                                 default=session.app['tables']), _class="span7 well well-small")
     if form.accepts(request.vars):
         table_names = [clean(t) for t in listify(form.vars.table_names)
                        if t.strip()]
@@ -157,21 +158,21 @@ def step2():
                         session.app['page_' + name] = \
                             '## Manage %s\n\n{{=form}}' % (table)
             if session.app['tables']:
-                redirect(URL('step3', args=0))
+                redirect(URL('step3', args=0) + '/#xwizard_form')
             else:
-                redirect(URL('step4'))
+                redirect(URL('step4') + '/#xwizard_form')
     return dict(step='2: Tables', form=form)
 
 
 def step3():
     response.view = 'wizard/step.html'
-    n = int(request.args(0) or 0)
+    n = int(request.args(-1) or 0)
     m = len(session.app['tables'])
     if n >= m:
         redirect(URL('step2'))
     table = session.app['tables'][n]
     form = SQLFORM.factory(Field('field_names', 'list:string',
-                                 default=session.app.get('table_' + table, [])))
+                                 default=session.app.get('table_' + table, [])), _class="span7 well well-small")
     if form.accepts(request.vars) and form.vars.field_names:
         fields = listify(form.vars.field_names)
         if table == 'auth_user':
@@ -187,9 +188,9 @@ def step3():
             response.flash = T('invalid circular reference')
         else:
             if n < m - 1:
-                redirect(URL('step3', args=n + 1))
+                redirect(URL('step3', args=n + 1) + '/#xwizard_form')
             else:
-                redirect(URL('step4'))
+                redirect(URL('step4') + '/#xwizard_form')
     return dict(step='3: Fields for table "%s" (%s of %s)'
                 % (table, n + 1, m), table=table, form=form)
 
@@ -197,21 +198,21 @@ def step3():
 def step4():
     response.view = 'wizard/step.html'
     form = SQLFORM.factory(Field('pages', 'list:string',
-                                 default=session.app['pages']))
+                                 default=session.app['pages']), _class="span7 well well-small")
     if form.accepts(request.vars):
         session.app['pages'] = [clean(t)
                                 for t in listify(form.vars.pages)
                                 if t.strip()]
         if session.app['pages']:
-            redirect(URL('step5', args=0))
+            redirect(URL('step5', args=0) + '/#xwizard_form')
         else:
-            redirect(URL('step6'))
+            redirect(URL('step6') + '/#xwizard_form')
     return dict(step='4: Pages', form=form)
 
 
 def step5():
     response.view = 'wizard/step.html'
-    n = int(request.args(0) or 0)
+    n = int(request.args(-1) or 0)
     m = len(session.app['pages'])
     if n >= m:
         redirect(URL('step4'))
@@ -221,13 +222,13 @@ def step5():
                                  default=session.app.get('page_' + page, []),
                                  comment=A('use markmin',
                                            _href=markmin_url, _target='_blank')),
-                           formstyle='table2cols')
+                           formstyle='table2cols', _class="span7 well well-small")
     if form.accepts(request.vars):
         session.app['page_' + page] = form.vars.content
         if n < m - 1:
-            redirect(URL('step5', args=n + 1))
+            redirect(URL('step5', args=n + 1) + '/#xwizard_form')
         else:
-            redirect(URL('step6'))
+            redirect(URL('step6') + '/#xwizard_form')
     return dict(step='5: View for page "%s" (%s of %s)' % (page, n + 1, m), form=form)
 
 
@@ -242,7 +243,8 @@ def step6():
         Field('generate_menu', 'boolean', default=True),
         Field('apply_layout', 'boolean', default=True),
         Field('erase_database', 'boolean', default=True),
-        Field('populate_database', 'boolean', default=True))
+        Field('populate_database', 'boolean', default=True),
+        _id="generate_form", _class="form-horizontal span7 well well-small")
     if form.accepts(request.vars):
         if DEMO_MODE:
             session.flash = T('Application cannot be generated in demo mode')

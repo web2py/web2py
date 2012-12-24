@@ -1,0 +1,5 @@
+text = """
+[[https://groups.google.com/forum/?fromgroups#!forum/web2py/ https://groups.google.com/forum/?fromgroups#!forum/web2py/]]
+"""
+
+print MARKMIN(text).xml()

@@ -168,7 +168,8 @@ def change_password():
     form = SQLFORM.factory(Field('current_admin_password', 'password'),
                            Field('new_admin_password',
                                  'password', requires=IS_STRONG()),
-                           Field('new_admin_password_again', 'password'))
+                           Field('new_admin_password_again', 'password'),
+                           _class="span4 well")
     if form.accepts(request.vars):
         if not verify_password(request.vars.current_admin_password):
             form.errors.current_admin_password = T('invalid password')
@@ -202,12 +203,14 @@ def site():
 
     is_appname = IS_VALID_APPNAME()
     form_create = SQLFORM.factory(Field('name', requires=is_appname),
-                                  table_name='appcreate')
+                                  table_name='appcreate',
+                                  _class='well well-small')
     form_update = SQLFORM.factory(Field('name', requires=is_appname),
                                   Field('file', 'upload', uploadfield=False),
                                   Field('url'),
                                   Field('overwrite', 'boolean'),
-                                  table_name='appupdate')
+                                  table_name='appupdate',
+                                  _class='well well-small')
     form_create.process()
     form_update.process()
 
@@ -374,6 +377,10 @@ def uninstall():
 
     dialog = FORM.confirm(T('Uninstall'),
                           {T('Cancel'): URL('site')})
+    dialog['_id'] = 'confirm_form'
+    dialog['_class'] = 'well'
+    for component in dialog.components:
+        component['_class'] = 'btn'
 
     if dialog.accepted:
         if MULTI_USER_MODE:
@@ -791,7 +798,8 @@ def resolve():
         diff = TABLE(*[TR(TD(gen_data(i, item)),
                           TD(item[0]),
                           TD(leading(item[2:]),
-                          TT(item[2:].rstrip())), _class=getclass(item))
+                          TT(item[2:].rstrip())),
+                          _class=getclass(item))
                        for (i, item) in enumerate(d) if item[0] != '?'])
 
     return dict(diff=diff, filename=filename)
@@ -834,10 +842,14 @@ def edit_language():
         # Making the short circuit compatible with <= python2.4
         k = (s != k) and k or B(k)
 
-        rows.append(P(prefix, k, BR(), elem, TAG.BUTTON(T('delete'),
-                                                        _onclick='return delkey("%s")' % name), _id=name))
+        new_row = DIV(LABEL(prefix, k, _style="font-weight:normal;"),
+                      CAT(elem, '\n', TAG.BUTTON(
+                    T('delete'),
+                    _onclick='return delkey("%s")' % name,
+                    _class='btn')), _id=name, _class='span6 well well-small')
 
-    rows.append(INPUT(_type='submit', _value=T('update')))
+        rows.append(DIV(new_row,_class="row-fluid"))
+    rows.append(DIV(INPUT(_type='submit', _value=T('update'), _class="btn btn-primary"), _class='controls'))
     form = FORM(*rows)
     if form.accepts(request.vars, keepvalues=True):
         strs = dict()
@@ -868,29 +880,27 @@ def edit_plurals():
 
     keys = sorted(plurals.keys(), lambda x, y: cmp(
         unicode(x, 'utf-8').lower(), unicode(y, 'utf-8').lower()))
-    rows = []
-
-    row = [T("Singular Form")]
-    row.extend([T("Plural Form #%s", n + 1) for n in xnplurals])
-    table = TABLE(THEAD(TR(row)))
-
+    tab_rows = []
     for key in keys:
         name = md5_hash(key)
         forms = plurals[key]
 
         if len(forms) < nplurals:
             forms.extend(None for i in xrange(nplurals - len(forms)))
+        tab_col1 = DIV(CAT(LABEL(T("Singular Form")), B(key,
+                                                        _class='fake-input')))
+        tab_inputs = [SPAN(LABEL(T("Plural Form #%s", n + 1)), INPUT(_type='text', _name=name + '_' + str(n), value=forms[n], _size=20), _class='span6') for n in xnplurals]
+        tab_col2 = DIV(CAT(*tab_inputs))
+        tab_col3 = DIV(CAT(LABEL(XML('&nbsp;')), TAG.BUTTON(T('delete'), _onclick='return delkey("%s")' % name, _class='btn'), _class='span6'))
+        tab_row = DIV(DIV(tab_col1, '\n', tab_col2, '\n', tab_col3, _class='well well-small'), _id=name, _class='row-fluid tab_row')
+        tab_rows.append(tab_row)
 
-        row = [B(key)]
-        row.extend([INPUT(_type='text', _name=name + '_' + str(n),
-                   value=forms[n], _size=20) for n in xnplurals])
-        row.append(TD(
-            TAG.BUTTON(T('delete'), _onclick='return delkey("%s")' % name)))
-        rows.append(TR(row, _id=name))
-    if rows:
-        table.append(TBODY(rows))
-    rows = [table, INPUT(_type='submit', _value=T('update'))]
-    form = FORM(*rows)
+    tab_rows.append(DIV(TAG['button'](T('update'), _type='submit',
+                                      _class='btn btn-primary'),
+                        _class='controls'))
+    tab_container = DIV(*tab_rows, **dict(_class="row-fluid"))
+
+    form = FORM(tab_container)
     if form.accepts(request.vars, keepvalues=True):
         new_plurals = dict()
         for key in keys:
