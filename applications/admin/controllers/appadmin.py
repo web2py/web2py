@@ -10,6 +10,10 @@ import datetime
 import copy
 import gluon.contenttype
 import gluon.fileutils
+try:
+    import pygraphviz as pgv
+except ImportError:
+    pgv = None
 
 response.subtitle = 'Database Administration (appadmin)'
 
@@ -460,3 +464,50 @@ def ccache():
 
     return dict(form=form, total=total,
                 ram=ram, disk=disk, object_stats=hp != False)
+
+
+
+def table_template(table):
+    def types(field):
+        f_type = field.type
+        if not isinstance(f_type,str):
+            return ' '
+        elif f_type == 'string':
+            return field.length
+        elif f_type == 'id':
+            return B('pk')
+        elif f_type.startswith('reference') or \
+                f_type.startswith('list:reference'):
+            return B('fk')
+        else:
+            return ' '
+    # this is horribe HTML but the only one graphiz understands
+    header = '<TR><TD COLSPAN="3" CELLPADDING="4" ALIGN="CENTER" BGCOLOR="#F\
+FA21F"><FONT FACE="Helvetica Bold" COLOR="white">%s</FONT></TD></TR>' % table
+    fields = []                                                                
+    for field in db[table]:
+        fields.append('<TR><TD ALIGN="LEFT" CELLPADDING="4" BORDER="0"><FONT COLOR="#7B7B7B" FACE="Helvetica Bold">%s</FONT></TD><TD ALIGN="LEFT" CELLPADDING="4" BORDER="0"><FONT COLOR="#7B7B7B" FACE="Helvetica">%s</FONT></TD><TD ALIGN="CENTER" CELLPADDING="4" BORDER="0"><FONT COLOR="#7B7B7B" FACE="Helvetica">%s</FONT></TD></TR>' % (field.name,field.type,types(field)))
+    return '< <TABLE BGCOLOR="#F1F2AD" BORDER="1" CELLBORDER="0" CELLSPACING="0">%s %s</TABLE> >' % (header, ' '.join(fields))
+
+def bg_graph_model():
+    graph = pgv.AGraph(layout='dot', directed=True, strict=False, rankdir='LR')
+    for tablename in db.tables:
+        graph.add_node(tablename, name=tablename, shape='plaintext', 
+                       label=table_template(tablename))
+
+    for tablename in db.tables:
+        for field in db[tablename]:
+            f_type = field.type
+            if isinstance(f_type,str) and (
+                f_type.startswith('reference') or
+                f_type.startswith('list:reference')):
+                referenced_table = f_type.split()[1].split('.')[0]
+                n1 = graph.get_node(tablename)
+                n2 = graph.get_node(referenced_table)
+                graph.add_edge(n1, n2, color="#4C4C4C", label='')
+
+    graph.layout()
+    return graph.draw(format='png', prog='dot')
+
+def graph_model():
+    return dict(databases=databases, pgv=pgv)

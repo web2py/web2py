@@ -2,7 +2,7 @@
 <script><!--
     jQuery(document).ready(function(){
     jQuery("table.sortable tbody tr").mouseover( function() {
-    jQuery(this).addClass("highlight"); }).mouseout( function() { 
+    jQuery(this).addClass("highlight"); }).mouseout( function() {
     jQuery(this).removeClass("highlight"); });
     jQuery('table.sortable tbody tr:odd').addClass('odd');
     jQuery('table.sortable tbody tr:even').addClass('even');
@@ -63,11 +63,11 @@
     <br/><br/>
     <h4>{{=T("%s selected", nrows)}}</h4>
     {{if start>0:}}{{=A(T('previous 100 rows'),_href=URL('select',args=request.args[0],vars=dict(start=start-100)),_class="btn")}}{{pass}}
-    {{if stop<nrows:}}{{=A(T('next 100 rows'),_href=URL('select',args=request.args[0],vars=dict(start=start+100)),_class="btn")}}{{pass}}    
+    {{if stop<nrows:}}{{=A(T('next 100 rows'),_href=URL('select',args=request.args[0],vars=dict(start=start+100)),_class="btn")}}{{pass}}
     {{if rows:}}
        <div style="overflow: auto;" width="80%">
        {{linkto=URL('update',args=request.args[0])}}
-       {{upload=URL('download',args=request.args[0])}}    
+       {{upload=URL('download',args=request.args[0])}}
        {{=SQLTABLE(rows,linkto,upload,orderby=True,_class='sortable')}}
        </div>
     {{pass}}
@@ -75,7 +75,7 @@
     <a href="{{=URL('csv',args=request.args[0],vars=dict(query=query))}}" class="btn">{{=T("export as csv file")}}</a>
   {{=formcsv or ''}}
 
-{{elif request.function=='insert':}}  
+{{elif request.function=='insert':}}
   <h2>{{=T("Database")}} {{=A(request.args[0],_href=URL('index'))}}
     {{if hasattr(table,'_primarykey'):}}
       {{fieldname=table._primarykey[0]}}
@@ -83,7 +83,7 @@
       {{tablename=request.args[1]}}
       {{cond = table[fieldname].type in ['string','text'] and '!=""' or '>0'}}
       {{=T("Table")}} {{=A(tablename,_href=URL('select',args=dbname,vars=dict(query='%s.%s.%s%s'%(dbname,tablename,fieldname,cond))))}}
-    {{else:}}  
+    {{else:}}
       {{=T("Table")}} {{=A(request.args[1],_href=URL('select',args=request.args[0],vars=dict(query='%s.%s.id>0'%tuple(request.args[:2]))))}}
     {{pass}}
   </h2>
@@ -95,7 +95,7 @@
       {{fieldname=request.vars.keys()[0]}}
       {{dbname=request.args[0]}}
       {{tablename=request.args[1]}}
-      {{cond = table[fieldname].type in ['string','text'] and '!=""' or '>0'}}      
+      {{cond = table[fieldname].type in ['string','text'] and '!=""' or '>0'}}
       {{=T("Table")}} {{=A(tablename,_href=URL('select',args=dbname,vars=dict(query='%s.%s.%s%s'%(dbname,tablename,fieldname,cond))))}}
       {{=T("Record")}} {{=A('%s=%s'%request.vars.items()[0],_href=URL('update',args=request.args[:2],vars=request.vars))}}
     {{else:}}
@@ -131,7 +131,7 @@
               dict(ratio=total['ratio'], hits=total['hits'], misses=total['misses']))}}
      </p>
     <p>
-      {{=T("Size of cache:")}} 
+      {{=T("Size of cache:")}}
       {{if object_stats:}}
         {{=T.M("**%(items)s** %%{item(items)}, **%(bytes)s** %%{byte(bytes)}", dict(items=total['objects'], bytes=total['bytes']))}}
         {{if total['bytes'] > 524287:}}
@@ -151,7 +151,7 @@
     </div>
     <br />
     {{pass}}
-        
+
     <h4>{{=T("RAM")}}</h4>
     <p>{{=T.M("Number of entries: **%s**", ram['entries'])}}</p>
     {{if ram['entries'] > 0:}}
@@ -179,16 +179,16 @@
     </div>
     <br />
     {{pass}}
-    
+
     <h4>{{=T("DISK")}}</h4>
     <p>{{=T.M("Number of entries: **%s**", disk['entries'])}}</p>
     {{if disk['entries'] > 0:}}
       <p>
       {{=T.M("Hit Ratio: **%(ratio)s%%** (**%(hits)s** %%{hit(hits)} and **%(misses)s** %%{miss(misses)})",
-            dict(ratio=disk['ratio'], hits=disk['hits'], misses=disk['misses']))}} 
+            dict(ratio=disk['ratio'], hits=disk['hits'], misses=disk['misses']))}}
       </p>
       <p>
-      {{=T("Size of cache:")}} 
+      {{=T("Size of cache:")}}
       {{if object_stats:}}
         {{=T.M("**%(items)s** %%{item(items)}, **%(bytes)s** %%{byte(bytes)}", dict( items=disk['objects'], bytes=disk['bytes']))}}
         {{if disk['bytes'] > 524287:}}
@@ -209,11 +209,11 @@
       <br />
     {{pass}}
   </div>
-    
+
   <div class="list-header">
     <h3>{{=T("Manage Cache")}}</h3>
   </div>
-  
+
   <div class="content">
     <p>
       {{=form}}
@@ -221,4 +221,15 @@
   </div>
 </div>
 <div class="clear"></div>
+{{pass}}
+
+{{if request.function=='graph_model':}}
+<h2>{{=T("Graph Model")}}</h2>
+  {{if not pgv:}}
+    {{=T('pygraphviz library not found')}}
+  {{elif not databases:}}
+    {{=T("No databases in this application")}}
+  {{else:}}
+    {{=IMG(_src=URL('appadmin', 'bg_graph_model'))}}
+  {{pass}}
 {{pass}}
