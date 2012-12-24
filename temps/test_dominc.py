@@ -1,8 +1,0 @@
-db=DAL()
-db.define_table('person',Field('name'))
-id = db.person.insert(name="max")
-assert(id.name=='max')
-db.define_table('dog',Field('name'),Field('owner','reference person'))
-db.dog.insert(name='skipper',owner=1)
-row = db(db.person.id==db.dog.owner).select().first()
-assert(row[db.person.name]=='max')
