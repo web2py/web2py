@@ -119,7 +119,7 @@ DIGEST_ALG_BY_SIZE = {
 }
 
 
-def pad(s, n=32, padchar='.'):
+def pad(s, n=32, padchar=' '):
     return s + (32 - len(s) % 32) * padchar
 
 
