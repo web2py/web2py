@@ -1,3 +1,14 @@
+## 2.4.1
+
+- support for semantic versioning
+- new bootstrap based admin, thanks Paolo
+- graphiz support added to adm, thanks Jose
+- on_failure in grid
+- db.table.field.abs()
+- geoPoint, getLine, geoPolygon
+- better reporting of 500 ajax errors
+- bug fixes (including issues with calendar.js and archive tables)
+
 ## 2.3.1 - 2.3.2
 
 - new virtual fields syntax: 
