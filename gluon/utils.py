@@ -49,6 +49,7 @@ except ImportError:
 
 logger = logging.getLogger("web2py")
 
+AES_new = lambda key: AES.new(key, AES.MODE_CBC, IV=key[:16])
 
 def compare(a, b):
     """ compares two strings and not vulnerable to timing attacks """
@@ -130,7 +131,7 @@ def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
     if compression_level:
         dump = zlib.compress(dump, compression_level)
     key = pad(encryption_key[:32])
-    cipher = AES.new(key, IV=key[:16])
+    cipher = AES_new(key)
     encrypted_data = base64.urlsafe_b64encode(cipher.encrypt(pad(dump)))
     signature = hmac.new(hash_key, encrypted_data).hexdigest()
     return signature + ':' + encrypted_data
@@ -146,7 +147,7 @@ def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
     if signature != actual_signature:
         return None
     key = pad(encryption_key[:32])
-    cipher = AES.new(key, IV=key[:16])
+    cipher = AES_new(key)
     try:
         data = cipher.decrypt(base64.urlsafe_b64decode(encrypted_data))
         data = data.rstrip(' ')
