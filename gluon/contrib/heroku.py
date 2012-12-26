@@ -18,7 +18,7 @@ ADAPTERS['postgres'] = HerokuPostgresAdapter
 def get_db(name = None, pool_size=10):
     if not name:
         names = [n for n in os.environ.keys()
-                 if n[:18]+n[-4:]=='HEROKU_POSTGRESQL__URL']
+                 if n[:18]+n[-4:]==('HEROKU_POSTGRESQL__URL' or 'HEROKU_POSTGRESQL_COPPER_URL')]
         if names:
             name = names[0]
     if name:
