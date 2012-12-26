@@ -10,6 +10,7 @@ import datetime
 import copy
 import gluon.contenttype
 import gluon.fileutils
+
 try:
     import pygraphviz as pgv
 except ImportError:
@@ -466,8 +467,10 @@ def ccache():
                 ram=ram, disk=disk, object_stats=hp != False)
 
 
-
 def table_template(table):
+    from gluon.html import TR, TD, TABLE, TAG
+    def FONT(*args, **kwargs):
+        return TAG.font(*args, **kwargs)
     def types(field):
         f_type = field.type
         if not isinstance(f_type,str):
@@ -481,13 +484,31 @@ def table_template(table):
             return B('fk')
         else:
             return ' '
-    # this is horribe HTML but the only one graphiz understands
-    header = '<TR><TD COLSPAN="3" CELLPADDING="4" ALIGN="CENTER" BGCOLOR="#F\
-FA21F"><FONT FACE="Helvetica Bold" COLOR="white">%s</FONT></TD></TR>' % table
-    fields = []                                                                
-    for field in db[table]:
-        fields.append('<TR><TD ALIGN="LEFT" CELLPADDING="4" BORDER="0"><FONT COLOR="#7B7B7B" FACE="Helvetica Bold">%s</FONT></TD><TD ALIGN="LEFT" CELLPADDING="4" BORDER="0"><FONT COLOR="#7B7B7B" FACE="Helvetica">%s</FONT></TD><TD ALIGN="CENTER" CELLPADDING="4" BORDER="0"><FONT COLOR="#7B7B7B" FACE="Helvetica">%s</FONT></TD></TR>' % (field.name,field.type,types(field)))
-    return '< <TABLE BGCOLOR="#F1F2AD" BORDER="1" CELLBORDER="0" CELLSPACING="0">%s %s</TABLE> >' % (header, ' '.join(fields))
+
+    # This is horribe HTML but the only one graphiz understands
+    rows = []
+    cellpadding = 4
+    color = "#7B7B7B"
+    bgcolor = "#F1F2AD"
+    face = "Helvetica Bold"
+    border = 0
+    
+    rows.append(TR(TD(FONT(table, _face=face, _color="white"),
+                           _colspan=3, _cellpadding=cellpadding,
+                           _align="center", _bgcolor="#FFA21F")))
+    for row in db[table]:
+        rows.append(TR(TD(FONT(row.name, _color=color, _face=face),
+                              _align="left", _cellpadding=cellpadding,
+                              _border=border),
+                       TD(FONT(row.type, _color=color, _face=face),
+                               _align="left", _cellpadding=cellpadding,
+                               _border=border),
+                       TD(FONT(types(row), _color=color, _face=face),
+                               _align="center", _cellpadding=cellpadding,
+                               _border=border)))
+    return "< %s >" % TABLE(*rows, _bgcolor=bgcolor, _border=1,
+                            _cellborder=0, _cellspacing=0).xml()
+
 
 def bg_graph_model():
     graph = pgv.AGraph(layout='dot', directed=True, strict=False, rankdir='LR')
