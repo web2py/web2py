@@ -469,8 +469,10 @@ def ccache():
 
 def table_template(table):
     from gluon.html import TR, TD, TABLE, TAG
+    
     def FONT(*args, **kwargs):
         return TAG.font(*args, **kwargs)
+    
     def types(field):
         f_type = field.type
         if not isinstance(f_type,str):
@@ -478,7 +480,7 @@ def table_template(table):
         elif f_type == 'string':
             return field.length
         elif f_type == 'id':
-            return B('pk')
+            return B('pk')            
         elif f_type.startswith('reference') or \
                 f_type.startswith('list:reference'):
             return B('fk')
@@ -490,14 +492,15 @@ def table_template(table):
     cellpadding = 4
     color = "#7B7B7B"
     bgcolor = "#F1F2AD"
-    face = "Helvetica Bold"
+    face = "Helvetica"
+    face_bold = "Helvetica Bold"
     border = 0
     
-    rows.append(TR(TD(FONT(table, _face=face, _color="white"),
+    rows.append(TR(TD(FONT(table, _face=face_bold, _color="white"),
                            _colspan=3, _cellpadding=cellpadding,
                            _align="center", _bgcolor="#FFA21F")))
     for row in db[table]:
-        rows.append(TR(TD(FONT(row.name, _color=color, _face=face),
+        rows.append(TR(TD(FONT(row.name, _color=color, _face=face_bold),
                               _align="left", _cellpadding=cellpadding,
                               _border=border),
                        TD(FONT(row.type, _color=color, _face=face),
