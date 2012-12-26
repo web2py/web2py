@@ -57,6 +57,12 @@ class MemcacheClient(object):
 
     def delete(self, *a, **b):
         return self.client.delete(*a, **b)
+        
+    def delete_multi(self, keys,  *a, **b):        
+        _keys = []
+        for key in keys:
+            _keys.append('%s/%s' % (self.request.application, key))        
+        return self.client.delete_multi(_keys,  *a, **b)        
 
     def get(self, *a, **b):
         return self.client.delete(*a, **b)
