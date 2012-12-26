@@ -2429,7 +2429,7 @@ class SQLFORM(FORM):
                     cond = constraints.get(referee, None)
                     if cond:
                         record = db(
-                            db[referee].id == id)(cond).select().first()
+                            db[referee]._id == id)(cond).select().first()
                     else:
                         record = db[referee](id)
                     if previous_id:
@@ -2469,7 +2469,7 @@ class SQLFORM(FORM):
         except (KeyError, ValueError, TypeError):
             redirect(URL(args=table._tablename))
         if nargs == len(args) + 1:
-            query = table.id > 0
+            query = table._id > 0
 
         # filter out data info for displayed table
         if table._tablename in constraints:
