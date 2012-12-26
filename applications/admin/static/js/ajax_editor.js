@@ -180,9 +180,16 @@ function doToggleBreakpoint(filename, url) {
 		 if (json.error) {
 		     window.location.href=json.redirect;
 		 } else {
-		     // mark the breakpoint if ok=True
-		     // remove mark if ok=False
-		     // do nothing if ok = null  
+             if (json.ok==true && window.mirror) {
+    		     // mark the breakpoint if ok=True
+ 		         editor.setMarker(json.lineno-1, 
+ 		                         "<span style='color: red'>●</span> %N%")
+ 		     } else if (json.ok==false && window.mirror) {
+    		     // remove mark if ok=False
+ 		         editor.setMarker(json.lineno-1, "%N%")
+ 		     } else {
+    		     // do nothing if ok = null  
+    		 }
 		     // alert(json.ok + json.lineno);
 		 }
 	     } catch(e) { on_error(); }
