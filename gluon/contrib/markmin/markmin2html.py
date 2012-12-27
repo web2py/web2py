@@ -564,11 +564,10 @@ def replace_autolinks(text,autolinks):
 
 def replace_at_urls(text,url):
     # this is experimental @{function/args}
-    # turns into a digitally signed URL
     def u1(match,url=url):
         a,c,f,args = match.group('a','c','f','args')
         return url(a=a or None,c=c or None,f = f or None,
-                   args=args.split('/'), scheme=True, host=True)
+                   args=(args or '').split('/'), scheme=True, host=True)
     return regex_URL.sub(u1,text)
 
 def replace_components(text,env):
