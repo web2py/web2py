@@ -4098,6 +4098,8 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
         instance = credential_decoder(m.group('instance'))
         self.dbstring = db = credential_decoder(m.group('db'))
         driver_args['instance'] = instance
+        if not 'charset' in driver_args:
+            driver_args['charset'] = 'utf8'
         self.createdb = createdb = adapter_args.get('createdb',True)
         if not createdb:
             driver_args['database'] = db
