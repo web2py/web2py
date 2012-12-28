@@ -2,8 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-This file is part of the web2py Web Framework
-Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
+This file is part of the web2py Web Framework Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
 License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
 
@@ -1416,7 +1415,8 @@ class Auth(object):
         def represent(id, record=None, s=settings):
             try:
                 user = s.table_user(id)
-                return '%(first_name)s %(last_name)s' % user
+                return '%s %s' % (user.get("first_name", user.get("email")), 
+                                  user.get("last_name", ''))
             except:
                 return id
         self.signature = db.Table(
