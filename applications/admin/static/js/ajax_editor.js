@@ -148,8 +148,12 @@ function getSelectionRange() {
     return sel;
 }
 
-function doToggleBreakpoint(filename, url) {
-    var sel = getSelectionRange();
+function doToggleBreakpoint(filename, url, sel) {
+    if (sel==null) {
+        // use cursor position to determine the breakpoint line
+        // (gutter already tell us the selected line)
+        sel = getSelectionRange();
+    }
     var dataForPost = prepareMultiPartPOST(new Array(
 	prepareDataForSave('filename', filename),
 	prepareDataForSave('sel_start', sel["start"]),
@@ -199,6 +203,43 @@ function doToggleBreakpoint(filename, url) {
 	return false;
 }
 
+// on load, update all breakpoints markers:
+function doListBreakpoints(filename, url) {
+    var dataForPost = prepareMultiPartPOST(new Array(
+	    prepareDataForSave('filename', filename)
+        ));
+     jQuery.ajax({
+	  type: "POST",
+	  contentType: 'multipart/form-data;boundary="'+dataForPost[1]+'"',
+	  url: url,
+	  dataType: "json",
+	  data: dataForPost[0],
+	  timeout: 5000,
+      beforeSend: function(xhr) {
+	  xhr.setRequestHeader('web2py-component-location',
+			       document.location);
+	  xhr.setRequestHeader('web2py-component-element',
+			       'doListBreakpoints');},
+	  success: function(json,text,xhr){
+	     try {
+		     if (json.error) {
+		         window.location.href=json.redirect;
+		     } else {
+                 if (window.mirror) {
+                     for (i in json.breakpoints) {
+                         lineno = json.breakpoints[i];
+            		     // mark the breakpoint if ok=True
+         		         editor.setMarker(lineno-1, 
+         		                         "<span style='color: red'>●</span> %N%");
+         		     }
+        		 }
+		     }
+	     } catch(e) { on_error(); }
+      },
+      error: function(json) { on_error(); }
+	});
+	return false;
+}
 
 function keepalive(url) {
 	jQuery.ajax({
