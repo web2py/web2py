@@ -7,6 +7,7 @@ Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
 License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
 
+import sys
 import storage
 import os
 import re
@@ -14,6 +15,7 @@ import tarfile
 import glob
 import time
 import datetime
+import logging
 from http import HTTP
 from gzip import open as gzopen
 
@@ -43,14 +45,32 @@ __all__ = [
 ]
 
 
-def parse_version(version="Version 1.99.0 (2011-09-19 08:23:26)"):
+def parse_semantic(version="Version 1.99.0-rc.1+timestamp.2011.09.19.08.23.26"):
+    "http://semver.org/"
+    re_version = re.compile('Version (\d+)\.(\d+)\.(\d+)(\-(?P<pre>[^\s+]*))?(\+(?P<build>\S*))')
+    m = re_version.match(version)
+    if not m:
+        return None
+    a, b, c = int(m.group(1)), int(m.group(2)), int(m.group(3))
+    pre_release = m.group('pre') or ''
+    build = m.group('build') or ''
+    if build.startswith('timestamp'):
+        build = datetime.datetime.strptime(build.split('.',1)[1], '%Y.%m.%d.%H.%M.%S')
+    return (a, b, c, pre_release, build)
+
+def parse_legacy(version="Version 1.99.0 (2011-09-19 08:23:26)"):
     re_version = re.compile('[^\d]+ (\d+)\.(\d+)\.(\d+)\s*\((?P<datetime>.+?)\)\s*(?P<type>[a-z]+)?')
     m = re_version.match(version)
     a, b, c = int(m.group(1)), int(m.group(2)), int(m.group(3)),
-    s = m.group('type') or 'dev'
-    d = datetime.datetime.strptime(m.group('datetime'), '%Y-%m-%d %H:%M:%S')
-    return (a, b, c, d, s)
+    pre_release = m.group('type') or 'dev'
+    build = datetime.datetime.strptime(m.group('datetime'), '%Y-%m-%d %H:%M:%S')
+    return (a, b, c, pre_release, build)
 
+def parse_version(version):
+    version_tuple = parse_semantic(version)
+    if not version_tuple:
+        version_tuple = parse_legacy(version)
+    return version_tuple
 
 def read_file(filename, mode='r'):
     "returns content from filename, making sure to close the file explicitly on exit."
@@ -239,8 +259,20 @@ def w2p_pack(filename, path, compiled=False):
     tarfp.close()
     os.unlink(tarname)
 
+def create_welcome_w2p():
+    if not os.path.exists('welcome.w2p') or os.path.exists('NEWINSTALL'):
+        try:
+            w2p_pack('welcome.w2p', 'applications/welcome')
+            os.unlink('NEWINSTALL')
+            logging.info("New installation: created welcome.w2p file")
+        except:
+            logging.error("New installation error: unable to create welcome.w2p file")
+
 
 def w2p_unpack(filename, path, delete_tar=True):
+
+    if filename=='welcome.w2p':
+        create_welcome_w2p()
     filename = abspath(filename)
     path = abspath(path)
     if filename[-4:] == '.w2p' or filename[-3:] == '.gz':

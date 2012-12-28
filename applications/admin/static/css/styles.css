@@ -1166,7 +1166,7 @@ ul#snapshot > li {
     font-size: 1em;
     color: #3C3C3D;
     text-shadow: 1px 1px 0 #FFFFFF;
-    background:#ECECEC;
+    //background:#ECECEC;
     white-space: nowrap; overflow: visible;
     cursor: pointer; text-decoration: none;
     border: 1px solid #CACACA;
@@ -1244,8 +1244,64 @@ color: #222;
 	border-radius:2px;
 }
 .ie9 #query_panel {padding-bottom:2px;}
-
 .error, .error a {color:red}
 .pluralsform thead td {font-weight:bold; font-size:1.2em; padding-bottom:5px}
 .pluralsform td {padding-left:5px}
 .tm_ftag {color:blue}
+
+/*-----------------------------------*/
+/*       due to bootstrap layout
+/*-----------------------------------*/
+.navbar .btn-navbar{display:none;}
+label{display:block;}
+input{margin-bottom:5px;}
+.login input{width:210px;}
+.change_password input{width:210px;}
+div.flash .close{color:inherit;float:right;}
+label.checkbox{margin-bottom:5px;}
+.control-group{margin-bottom:5px;}
+.step #menu li{margin-left:0;margin-top:0;}
+.step #wizard_nav{padding-top:0.5em;}
+.hashstick{visibility:hidden;}
+#generate_form .control-label{float:left;width:160px;padding-top:5px;text-align:left;}
+#generate_form .controls > .checkbox:first-child{padding-top:7px;}
+/* from default/errors.html */
+table.sortable{border-spacing:0px;}
+table.sortable td, table.sortable th{padding:2px 5px 2px 5px;}
+table.sortable thead{background-color:#eee;color:#666666;font-weight:bold;cursor:default;}
+tr.error_ticket:hover{background-color:#eee;}
+.controls a.button.unavailable{color:#ff0000;}
+/* end from default/errors.html */
+/* new errors table */
+.tablebar{margin:7px 0 7px 0;}
+.cbcentered{text-align:center;}
+/* new tooltip */
+a[rel='tooltip']:hover{background:transparent;text-decoration:none;}
+a[rel='tooltip'] span{display:none;padding:5px;margin-left:10px;width:150px;}
+a[rel='tooltip']:hover span{cursor:default;display:inline;position:absolute;}
+a[rel='tooltip'] span{background:#9fb364;color:#eef1d9;border:1px solid #eef1d9;font-style:italic;width:20%;padding:0.3em;-moz-border-radius:0.5em;border-radius:0.5em;font-size:13px;text-transform:none;}
+/* flot graph */
+.about #placeholder{width:600px;height:300px;margin:0 auto;}
+.tophashlink.btn{visibility:hidden;}
+.help-block{display:block;}
+.w2p_grid_bottom_bar .w2p_export_menu{float:left;line-height:39px;margin-left:10px;}
+.w2p_export_menu .dropdown-toggle{cursor:default;color:#333;margin:0;padding:0;background-image:none;}
+.w2p_export_menu ul{display:inline-block;margin:0;vertical-align:middle;}
+.w2p_export_menu li{list-style:none;display:inline-block;margin-right:4px;margin-left:2px;}
+.edit_language .tab_row div{display:inline-block;vertical-align:top;margin-right:4px;}
+.edit_language .tab_row>div{border:1px solid #e3e3e3;margin-bottom:20px;background-color:#f5f5f5;}
+/* shell*/
+.shell .output-wrapper{width:75%;height:30em;border:1px solid #333;}
+.shell .prompt-wrapper{float:left;width:100%;overflow:hidden;height:auto;border:1px solid #333;}
+.shell .prompt-container{margin-left:2.5em;}
+.shell #caret{width:2.5em;float:left;margin-left:-100%;}
+.shell #shellwrapper{background:white;color:#E8953C;width:75%;margin:1em 0;border:0;}
+.shell #output,.shell .prompt{color:#E8953C;background:white;resize:none;border:none;width:100%;height:100%;cursor:default;-webkit-box-sizing:border-box;-moz-box-sizing:border-box;box-sizing:border-box;}
+.shell #output:focus,.shell .prompt:focus{border-color:transparent;outline:0;-webkit-box-shadow:none;-moz-box-shadow:none;box-shadow:none;}
+.shell #output pre{color:#E8953C;}
+.shell #autoscroll{cursor:pointer;float:right;}
+.shell .prompt,.shell #output,.shell #caret{font-size:11pt;padding:6px;padding-right:0em;}
+.shell .prompt,.shell #output,.shell pre,.shell #caret{font-family:monospace;}
+.shell a[rel="tooltip"]{margin-left:8px;}
+.shell .clearfix{clear:both;}
+.shell #caret{padding-top:9px;}

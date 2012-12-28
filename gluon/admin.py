@@ -189,9 +189,10 @@ def app_create(app, request, force=False, key=None, info=False):
             return False
     try:
         w2p_unpack('welcome.w2p', path)
-        for subfolder in ['models', 'views', 'controllers', 'databases',
-                          'modules', 'cron', 'errors', 'sessions',
-                          'languages', 'static', 'private', 'uploads']:
+        for subfolder in [
+            'models', 'views', 'controllers', 'databases',
+            'modules', 'cron', 'errors', 'sessions', 'cache',
+            'languages', 'static', 'private', 'uploads']:
             subpath = os.path.join(path, subfolder)
             if not os.path.exists(subpath):
                 os.mkdir(subpath)

@@ -55,7 +55,8 @@ regex_space = re.compile('(\+|\s|%20)+')
 #   file and args may also contain '-', '=', '.' and '/'
 #   apps in routes_apps_raw must parse raw_args into args
 
-regex_url = re.compile('^/((?P<a>\w+)(/(?P<c>\w+)(/(?P<z>(?P<f>\w+)(\.(?P<e>[\w.]+))?(?P<s>[/\w@=-]*(\.[/\w@=-]+)*)))?)?)?$')
+regex_url = re.compile('^/((?P<a>\w+)(/(?P<c>\w+)(/(?P<z>(?P<f>\w+)(\.(?P<e>[\w.]+))?(?P<s>.*)))?)?)?$')
+regex_args = re.compile('^[/\w@=-]*(\.[/\w@=-]+)*$')
 
 
 def _router_default():
@@ -75,8 +76,13 @@ def _router_default():
         exclusive_domain=False,
         map_hyphen=False,
         acfe_match=r'\w+$',                   # legal app/ctlr/fcn/ext
-        file_match=r'([-+=@$%\w]+[./]?)+$',   # legal static subpath
-        args_match=r'([\w@ -]+[=.]?)*$',      # legal arg in args
+        #
+        #  Implementation note:
+        #  The file_match & args_match patterns use look-behind to avoid
+        #  pathological backtracking from nested patterns.
+        #
+        file_match = r'([-+=@$%\w]|(?<=[-+=@$%\w])[./])*$', # legal static subpath
+        args_match=r'([\w@ -]|(?<=[\w@ -])[.=])*$',         # legal arg in args
     )
     return router
 
@@ -538,7 +544,7 @@ def load_routers(all_apps):
 def regex_uri(e, regexes, tag, default=None):
     "filter incoming URI against a list of regexes"
     path = e['PATH_INFO']
-    host = e.get('http_host', e.get('SERVER_NAME', 'localhost')).lower()
+    host = e.get('HTTP_HOST', e.get('SERVER_NAME', 'localhost')).lower()
     i = host.find(':')
     if i > 0:
         host = host[:i]
@@ -600,6 +606,10 @@ def regex_filter_in(e):
 def sluggify(key):
     return key.lower().replace('.', '_')
 
+def invalid_url(routes):
+    raise HTTP(400,
+               routes.error_message % 'invalid request',
+               web2py_error='invalid path')
 
 def regex_url_in(request, environ):
     "rewrite and parse incoming URL"
@@ -627,18 +637,21 @@ def regex_url_in(request, environ):
         path = path[:-1]
     match = regex_url.match(path)
     if not match:
-        raise HTTP(400,
-                   routes.error_message % 'invalid request',
-                   web2py_error='invalid path')
-    elif match.group('c') == 'static':
+        invalid_url(routes)
+    request.raw_args = (match.group('s') or '')
+    if request.raw_args.startswith('/'):
+        request.raw_args = request.raw_args[1:]
+    if match.group('c') == 'static':
         application = match.group('a')
         version, filename = None, match.group('z')
         items = filename.split('/', 1)
         if regex_version.match(items[0]):
             version, filename = items
-        static_file = pjoin(request.env.applications_parent,
-                            'applications', application,
-                            'static', filename)
+        static_folder = pjoin(request.env.applications_parent,
+                              'applications', application,'static')
+        static_file = os.path.abspath(pjoin(static_folder,filename))
+        if not static_file.startswith(static_folder):
+            invalid_url(routes)
         return (static_file, version, environ)
     else:
         # ##################################################
@@ -649,12 +662,13 @@ def regex_url_in(request, environ):
         request.function = match.group('f') or routes.default_function
         request.raw_extension = match.group('e')
         request.extension = request.raw_extension or 'html'
-        request.raw_args = match.group('s')
         if request.application in routes.routes_apps_raw:
             # application is responsible for parsing args
             request.args = None
+        elif not regex_args.match(request.raw_args):
+            invalid_url(routes)
         elif request.raw_args:
-            request.args = List(request.raw_args.split('/')[1:])
+            request.args = List(request.raw_args.split('/'))
         else:
             request.args = List([])
     return (None, None, environ)

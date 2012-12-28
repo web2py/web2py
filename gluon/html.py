@@ -522,7 +522,6 @@ class XmlComponent(object):
         self['_class'] = ' '.join(classes) if classes else None
         return self
 
-
 class XML(XmlComponent):
     """
     use it to wrap a string that contains XML/HTML so that it will not be
@@ -1488,7 +1487,7 @@ class A(DIV):
                     (self['callback'], self['target'] or '', d)
             self['_href'] = self['_href'] or '#null'
         elif self['cid']:
-	    pre = self['pre_call'] + ';' if self['pre_call'] else ''
+            pre = self['pre_call'] + ';' if self['pre_call'] else ''
             self['_onclick'] = '%sweb2py_component("%s","%s");%sreturn false;' % \
                 (pre,self['_href'], self['cid'], d)
         return DIV.xml(self)
@@ -1734,7 +1733,7 @@ class INPUT(DIV):
         if self['_type'] != 'checkbox':
             self['old_value'] = self['value'] or self['_value'] or ''
             value = request_vars_get(name, '')
-            self['value'] = value
+            self['value'] = value if not hasattr(value,'file') else None
         else:
             self['old_value'] = self['value'] or False
             value = request_vars_get(name)
@@ -1897,7 +1896,8 @@ class SELECT(INPUT):
         if not value is None:
             if not self['_multiple']:
                 for c in options:  # my patch
-                    if value and str(c['_value']) == str(value):
+                    if ((value is not None) and
+                        (str(c['_value']) == str(value))):
                         c['_selected'] = 'selected'
                     else:
                         c['_selected'] = None
@@ -1907,7 +1907,8 @@ class SELECT(INPUT):
                 else:
                     values = [str(value)]
                 for c in options:  # my patch
-                    if value and str(c['_value']) in values:
+                    if ((value is not None) and
+                        (str(c['_value']) in values)):
                         c['_selected'] = 'selected'
                     else:
                         c['_selected'] = None
@@ -1967,7 +1968,7 @@ class FORM(DIV):
         **kwargs
     ):
         """
-        kwargs is not used but allows to specify the same interface for FROM and SQLFORM
+        kwargs is not used but allows to specify the same interface for FORM and SQLFORM
         """
         if request_vars.__class__.__name__ == 'Request':
             request_vars = request_vars.post_vars
@@ -2292,6 +2293,8 @@ class MENU(DIV):
       _class: defaults to 'web2py-menu web2py-menu-vertical'
       ul_class: defaults to 'web2py-menu-vertical'
       li_class: defaults to 'web2py-menu-expand'
+      li_first: defaults to 'web2py-menu-first'
+      li_last: defaults to 'web2py-menu-last'
 
     Example:
         menu = MENU([['name', False, URL(...), [submenu]], ...])
@@ -2310,6 +2313,10 @@ class MENU(DIV):
             self['ul_class'] = 'web2py-menu-vertical'
         if not 'li_class' in self.attributes:
             self['li_class'] = 'web2py-menu-expand'
+        if not 'li_first' in self.attributes:
+            self['li_first'] = 'web2py-menu-first'
+        if not 'li_last' in self.attributes:
+            self['li_last'] = 'web2py-menu-last'
         if not 'li_active' in self.attributes:
             self['li_active'] = 'web2py-menu-active'
         if not 'mobile' in self.attributes:
@@ -2335,6 +2342,10 @@ class MENU(DIV):
             else:
                 li = LI(A(name, _href='#',
                           _onclick='javascript:void(0);return false;'))
+            if level == 0 and item == data[0]:
+                li['_class'] = self['li_first']
+            elif level == 0 and item == data[-1]:
+                li['_class'] = self['li_last']
             if len(item) > 3 and item[3]:
                 li['_class'] = self['li_class']
                 li.append(self.serialize(item[3], level + 1))

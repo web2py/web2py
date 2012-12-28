@@ -101,13 +101,14 @@ requests = 0    # gc timer
 # pattern used to validate client address
 regex_client = re.compile('[\w\-:]+(\.[\w\-]+)*\.?')  # ## to account for IPV6
 
-try:
+#try:
+if 1:
     version_info = open(pjoin(global_settings.gluon_parent, 'VERSION'), 'r')
     raw_version_string = version_info.read().strip()
     version_info.close()
     global_settings.web2py_version = parse_version(raw_version_string)
-except:
-    raise RuntimeError("Cannot determine web2py version")
+#except:
+#    raise RuntimeError("Cannot determine web2py version")
 
 web2py_version = global_settings.web2py_version
 
@@ -127,7 +128,7 @@ def get_client(env):
     guess the client address from the environment variables
 
     first tries 'http_x_forwarded_for', secondly 'remote_addr'
-    if all fails assume '127.0.0.1' (running locally)
+    if all fails, assume '127.0.0.1' or '::1' (running locally)
     """
     g = regex_client.search(env.get('http_x_forwarded_for', ''))
     if g:
@@ -136,8 +137,10 @@ def get_client(env):
         g = regex_client.search(env.get('remote_addr', ''))
         if g:
             client = g.group()
+        elif env.http_host.startswith('['):  # IPv6
+            client = '::1'
         else:
-            client = '127.0.0.1'
+            client = '127.0.0.1'  # IPv4
     if not is_valid_ip_address(client):
         raise HTTP(400, "Bad Request (request.client=%s)" % client)
     return client
@@ -432,34 +435,37 @@ def wsgibase(environ, responder):
                 app = request.application  # must go after url_in!
 
                 if not global_settings.local_hosts:
-                    local_hosts = ['127.0.0.1', '::ffff:127.0.0.1']
+                    local_hosts = set(['127.0.0.1', '::ffff:127.0.0.1', '::1'])
                     if not global_settings.web2py_runtime_gae:
                         try:
-                            local_hosts.append(socket.gethostname())
-                        except TypeError:
-                            pass
-                        try:
+                            fqdn = socket.getfqdn()
+                            local_hosts.add(socket.gethostname())
+                            local_hosts.add(fqdn)
+                            local_hosts.update([
+                                ip[4][0] for ip in socket.getaddrinfo(
+                                    fqdn, 0)])
                             if env.server_name:
-                                local_hosts += [
-                                    env.server_name,
-                                    socket.gethostbyname(env.server_name)]
+                                local_hosts.add(env.server_name)
+                                local_hosts.update([
+                                    ip[4][0] for ip in socket.getaddrinfo(
+                                        env.server_name, 0)])
                         except (socket.gaierror, TypeError):
                             pass
-                    global_settings.local_hosts = local_hosts
+                    global_settings.local_hosts = list(local_hosts)
                 else:
                     local_hosts = global_settings.local_hosts
                 client = get_client(env)
                 x_req_with = str(env.http_x_requested_with).lower()
 
                 request.update(
-                    client=client,
-                    folder=abspath('applications', app) + os.sep,
-                    ajax=x_req_with == 'xmlhttprequest',
-                    cid=env.http_web2py_component_element,
-                    is_local=env.remote_addr in local_hosts,
-                    is_https=env.wsgi_url_scheme in HTTPS_SCHEMES
-                    or request.env.http_x_forwarded_proto in HTTPS_SCHEMES
-                    or env.https == 'on')
+                    client = client,
+                    folder = abspath('applications', app) + os.sep,
+                    ajax = x_req_with == 'xmlhttprequest',
+                    cid = env.http_web2py_component_element,
+                    is_local = env.remote_addr in local_hosts,
+                    is_https = env.wsgi_url_scheme in HTTPS_SCHEMES or \
+                        request.env.http_x_forwarded_proto in HTTPS_SCHEMES \
+                        or env.https == 'on')
                 request.compute_uuid()  # requires client
                 request.url = environ['PATH_INFO']
 
@@ -572,9 +578,12 @@ def wsgibase(environ, responder):
 
                 if request.cid:
                     if response.flash:
-                        http_response.headers['web2py-component-flash'] = urllib2.quote(xmlescape(response.flash).replace('\n', ''))
+                        http_response.headers['web2py-component-flash'] = \
+                            urllib2.quote(xmlescape(response.flash)\
+                                              .replace('\n',''))
                     if response.js:
-                        http_response.headers['web2py-component-command'] = response.js.replace('\n', '')
+                        http_response.headers['web2py-component-command'] = \
+                            urllib2.quote(response.js.replace('\n',''))
 
                 # ##################################################
                 # store cookies in headers

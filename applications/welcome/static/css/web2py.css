@@ -115,6 +115,10 @@ div.flash {
     z-index:2000;
 }
 
+div.flash #closeflash{color:inherit; float:right; margin-left:15px;}
+.ie-lte7  div.flash #closeflash
+{color:expression(this.parentNode.currentStyle['color']);float:none;position:absolute;right:4px;}
+
 div.flash:hover { opacity:0.25; }
 
 div.error_wrapper {display:block}

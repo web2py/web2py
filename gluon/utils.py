@@ -35,10 +35,7 @@ else:
 try:
     from Crypto.Cipher import AES
 except ImportError:
-    try:
-        from .aes import AES
-    except (ImportError, ValueError):
-        from contrib.aes import AES
+    import contrib.aes as AES
 
 try:
     from contrib.pbkdf2 import pbkdf2_hex
@@ -52,6 +49,7 @@ except ImportError:
 
 logger = logging.getLogger("web2py")
 
+AES_new = lambda key: AES.new(key, AES.MODE_CBC, IV=key[:16])
 
 def compare(a, b):
     """ compares two strings and not vulnerable to timing attacks """
@@ -122,7 +120,7 @@ DIGEST_ALG_BY_SIZE = {
 }
 
 
-def pad(s, n=32, padchar='.'):
+def pad(s, n=32, padchar=' '):
     return s + (32 - len(s) % 32) * padchar
 
 
@@ -133,7 +131,7 @@ def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
     if compression_level:
         dump = zlib.compress(dump, compression_level)
     key = pad(encryption_key[:32])
-    cipher = AES.new(key, IV=key[:16])
+    cipher = AES_new(key)
     encrypted_data = base64.urlsafe_b64encode(cipher.encrypt(pad(dump)))
     signature = hmac.new(hash_key, encrypted_data).hexdigest()
     return signature + ':' + encrypted_data
@@ -149,7 +147,7 @@ def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
     if signature != actual_signature:
         return None
     key = pad(encryption_key[:32])
-    cipher = AES.new(key, IV=key[:16])
+    cipher = AES_new(key)
     try:
         data = cipher.decrypt(base64.urlsafe_b64decode(encrypted_data))
         data = data.rstrip(' ')
@@ -263,7 +261,7 @@ def is_valid_ip_address(address):
     # deal with special cases
     if address.lower() in ('127.0.0.1', 'localhost', '::1', '::ffff:127.0.0.1'):
         return True
-    elif address.lower() in ('unkown', ''):
+    elif address.lower() in ('unknown', ''):
         return False
     elif address.count('.') == 3:  # assume IPv4
         if address.startswith('::ffff:'):
@@ -287,3 +285,16 @@ def is_valid_ip_address(address):
             return False
     else:  # do not know what to do? assume it is a valid address
         return True
+
+
+def is_loopback_ip_address(ip):
+    """Determines whether the IP address appears to be a loopback address.
+
+    This assumes that the IP is valid.  The IPv6 check is limited to '::1'.
+
+    """
+    if not ip:
+        return False
+    if ip.count('.') == 3:  # IPv4
+        return ip.startswith('127') or ip.startswith('::ffff:127')
+    return ip == '::1'  # IPv6

@@ -26,7 +26,7 @@ including:
 - DB2
 - Interbase
 - Ingres
-- Informix
+- Informix (9+ and SE)
 - SapDB (experimental)
 - Cubrid (experimental)
 - CouchDB (experimental)
@@ -706,7 +706,7 @@ class BaseAdapter(ConnectionPool):
             self.driver_name = drivers_available[0]
             self.driver = globals().get(self.driver_name)
         else:
-            raise RuntimeError("no driver available %s" % self.drivers)
+            raise RuntimeError("no driver available %s" % str(self.drivers))
 
 
     def __init__(self, db,uri,pool_size=0, folder=None, db_codec='UTF-8',
@@ -808,6 +808,8 @@ class BaseAdapter(ConnectionPool):
                 ftype = types[field_type[:7]] % \
                     dict(precision=precision,scale=scale)
             elif field_type.startswith('geo'):
+                if not hasattr(self,'srid'):
+                    raise RuntimeError('Adapter does not support geometry')
                 srid = self.srid
                 geotype, parms = field_type[:-1].split('(')
                 if not geotype in types:
@@ -857,7 +859,7 @@ class BaseAdapter(ConnectionPool):
                 type=str(field_type),
                 sql=ftype)
 
-            if isinstance(field.default,(str,int,float)):
+            if field.notnull and not field.default is None:
                 # Caveat: sql_fields and sql_fields_aux
                 # differ for default values.
                 # sql_fields is used to trigger migrations and sql_fields_aux
@@ -865,7 +867,7 @@ class BaseAdapter(ConnectionPool):
                 # The reason is that we do not want to trigger
                 # a migration simply because a default value changes.
                 not_null = self.NOT_NULL(field.default, field_type)
-                ftype = ftype.replace('NOT NULL', not_null)
+                ftype = ftype.replace('NOT NULL', not_null)            
             sql_fields_aux[field_name] = dict(sql=ftype)
             # Postgres - PostGIS:
             # geometry fields are added after the table has been created, not now
@@ -993,10 +995,7 @@ class BaseAdapter(ConnectionPool):
         for key in sql_fields_old:
             if not key in keys:
                 keys.append(key)
-        if self.dbengine == 'mssql':
-            new_add = '; ALTER TABLE %s ADD ' % tablename
-        else:
-            new_add = ', ADD '
+        new_add = self.concat_add(tablename)
 
         metadata_change = False
         sql_fields_current = copy.copy(sql_fields_old)
@@ -1472,8 +1471,12 @@ class BaseAdapter(ConnectionPool):
 
         if len(tablenames) < 1:
             raise SyntaxError('Set: no tables selected')
-        sql_f = ', '.join(map(self.expand, fields))
-        self._colnames = [c.strip() for c in sql_f.split(', ')]
+        self._colnames = map(self.expand, fields)
+        def geoexpand(field):
+            if isinstance(field.type,str) and field.type.startswith('geometry'):
+                field = field.st_astext()
+            return self.expand(field)
+        sql_f = ', '.join(map(geoexpand, fields))
         if query:
             sql_w = ' WHERE ' + self.expand(query)
         else:
@@ -1684,7 +1687,7 @@ class BaseAdapter(ConnectionPool):
     def rollback_prepared(self, key):
         if self.connection: self.connection.rollback()
 
-    def concat_add(self, table):
+    def concat_add(self, tablename):
         return ', ADD '
 
     def constraint_name(self, table, fieldname):
@@ -2002,7 +2005,7 @@ class BaseAdapter(ConnectionPool):
             fields_virtual = [(f,v) for (f,v) in table.iteritems()
                               if isinstance(v,FieldVirtual)]
             fields_lazy = [(f,v) for (f,v) in table.iteritems()
-                           if isinstance(v,FieldLazy)]
+                           if isinstance(v,FieldMethod)]
             if fields_virtual or fields_lazy:
                 for row in rowsobj.records:
                     box = row[tablename]
@@ -2110,7 +2113,7 @@ class SQLiteAdapter(BaseAdapter):
                     dbpath = pjoin(self.folder, dbpath)
         if not 'check_same_thread' in driver_args:
             driver_args['check_same_thread'] = False
-        if not 'detect_types' in driver_args:
+        if not 'detect_types' in driver_args and do_connect:
             driver_args['detect_types'] = self.driver.PARSE_DECLTYPES
         def connector(dbpath=dbpath, driver_args=driver_args):
             return self.driver.Connection(dbpath, **driver_args)
@@ -2174,7 +2177,7 @@ class SpatiaLiteAdapter(SQLiteAdapter):
                     self.folder.decode(path_encoding).encode('utf8'), dbpath)
         if not 'check_same_thread' in driver_args:
             driver_args['check_same_thread'] = False
-        if not 'detect_types' in driver_args:
+        if not 'detect_types' in driver_args and do_connect:
             driver_args['detect_types'] = self.driver.PARSE_DECLTYPES
         def connector(dbpath=dbpath, driver_args=driver_args):
             return self.driver.Connection(dbpath, **driver_args)
@@ -2352,9 +2355,6 @@ class MySQLAdapter(BaseAdapter):
 
     def rollback_prepared(self,key):
         self.execute("XA ROLLBACK;")
-
-    def concat_add(self,table):
-        return '; ALTER TABLE %s ADD ' % table
 
     REGEX_URI = re.compile('^(?P<user>[^:@]+)(\:(?P<password>[^@]*))?@(?P<host>[^\:/]+)(\:(?P<port>[0-9]+))?/(?P<db>[^?]+)(\?set_encoding=(?P<charset>\w+))?$')
 
@@ -2952,6 +2952,9 @@ class MSSQLAdapter(BaseAdapter):
         'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
         }
 
+    def concat_add(self,tablename):
+        return '; ALTER TABLE %s ADD ' % tablename
+
     def varquote(self,name):
         return varquote_aux(name,'[%s]')
 
@@ -2977,6 +2980,7 @@ class MSSQLAdapter(BaseAdapter):
         if what == 'LENGTH':
             what = 'LEN'
         return "%s(%s)" % (what, self.expand(first))
+
 
     def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
         if limitby:
@@ -3069,7 +3073,7 @@ class MSSQLAdapter(BaseAdapter):
     def EPOCH(self, first):
         return "DATEDIFF(second, '1970-01-01 00:00:00', %s)" % self.expand(first)
 
-    # GIS functions
+    # GIS Spatial Extensions
 
     # No STAsGeoJSON in MSSQL
 
@@ -3117,6 +3121,17 @@ class MSSQLAdapter(BaseAdapter):
 #                 raise SyntaxError('Invalid field type %s' %fieldtype)
             return "geometry::STGeomFromText('%s',%s)" %(obj, srid)
         return BaseAdapter.represent(self, obj, fieldtype)
+
+
+class MSSQL3Adapter(MSSQLAdapter):
+    """ experimental support for pagination in MSSQL"""
+    def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
+        if limitby:
+            (lmin, lmax) = limitby
+            return 'SELECT %s FROM (SELECT %s ROW_NUMBER() over (order by id) AS w_row, %s FROM %s%s%s) TMP WHERE w_row BETWEEN %i AND %s;' % (sql_f,sql_s,sql_f,sql_t,sql_w,sql_o,lmin,lmax)
+        return 'SELECT %s %s FROM %s%s%s;' % (sql_s,sql_f,sql_t,sql_w,sql_o)
+    def rowslice(self,rows,minimum=0,maximum=None):
+        return rows
 
 
 class MSSQL2Adapter(MSSQLAdapter):
@@ -3534,6 +3549,17 @@ class InformixAdapter(BaseAdapter):
     def integrity_error_class(self):
         return informixdb.IntegrityError
 
+class InformixSEAdapter(InformixAdapter):
+    """ work in progress """
+
+    def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
+        return 'SELECT %s %s FROM %s%s%s;' % \
+            (sql_s, sql_f, sql_t, sql_w, sql_o)
+
+    def rowslice(self,rows,minimum=0,maximum=None):
+        if maximum is None:
+            return rows[minimum:]
+        return rows[minimum:maximum]
 
 class DB2Adapter(BaseAdapter):
     drivers = ('pyodbc',)
@@ -3964,13 +3990,17 @@ class DatabaseStoredFile:
         return self.db._adapter.escape(obj)
 
     def __init__(self,db,filename,mode):
-        if db._adapter.dbengine != 'mysql':
-            raise RuntimeError("only MySQL can store metadata .table files in database for now")
+        if not db._adapter.dbengine in ('mysql', 'postgres'):
+            raise RuntimeError("only MySQL/Postgres can store metadata .table files in database for now")
         self.db = db
         self.filename = filename
         self.mode = mode
         if not self.web2py_filesystem:
-            self.db.executesql("CREATE TABLE IF NOT EXISTS web2py_filesystem (path VARCHAR(512), content LONGTEXT, PRIMARY KEY(path) ) ENGINE=InnoDB;")
+            if db._adapter.dbengine == 'mysql':
+                sql = "CREATE TABLE IF NOT EXISTS web2py_filesystem (path VARCHAR(255), content LONGTEXT, PRIMARY KEY(path) ) ENGINE=InnoDB;"
+            elif db._adapter.dbengine == 'postgres':
+                sql = "CREATE TABLE IF NOT EXISTS web2py_filesystem (path VARCHAR(255), content TEXT, PRIMARY KEY(path));"
+            self.db.executesql(sql)
             DatabaseStoredFile.web2py_filesystem = True
         self.p=0
         self.data = ''
@@ -4006,12 +4036,17 @@ class DatabaseStoredFile:
         self.data += data
 
     def close_connection(self):
-        self.db.executesql(
-            "DELETE FROM web2py_filesystem WHERE path='%s'" % self.filename)
-        query = "INSERT INTO web2py_filesystem(path,content) VALUES ('%s','%s')"\
-            % (self.filename, self.data.replace("'","''"))
-        self.db.executesql(query)
-        self.db.commit()
+        if self.db is not None:
+            self.db.executesql(
+                "DELETE FROM web2py_filesystem WHERE path='%s'" % self.filename)
+            query = "INSERT INTO web2py_filesystem(path,content) VALUES ('%s','%s')"\
+                % (self.filename, self.data.replace("'","''"))
+            self.db.executesql(query)
+            self.db.commit()
+            self.db = None
+
+    def close(self):
+        self.close_connection()
 
     @staticmethod
     def exists(db, filename):
@@ -4063,6 +4098,8 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
         instance = credential_decoder(m.group('instance'))
         self.dbstring = db = credential_decoder(m.group('db'))
         driver_args['instance'] = instance
+        if not 'charset' in driver_args:
+            driver_args['charset'] = 'utf8'
         self.createdb = createdb = adapter_args.get('createdb',True)
         if not createdb:
             driver_args['database'] = db
@@ -6258,6 +6295,7 @@ ADAPTERS = {
     'db2': DB2Adapter,
     'teradata': TeradataAdapter,
     'informix': InformixAdapter,
+    'informix-se': InformixSEAdapter,
     'firebird': FireBirdAdapter,
     'firebird_embedded': FireBirdAdapter,
     'ingres': IngresAdapter,
@@ -6557,11 +6595,13 @@ def smart_query(fields,text):
                 (' not equal ','!='),
                 (' equal to ','='),
                 (' equal ','='),
-                (' equals ','!='),
+                (' equals ','='),
                 (' less than ','<'),
                 (' greater than ','>'),
                 (' starts with ','startswith'),
                 (' ends with ','endswith'),
+                (' not in ' , 'notbelongs'),
+                (' in ' , 'belongs'),
                 (' is ','=')]:
         if a[0]==' ':
             text = text.replace(' is'+a,' %s ' % b)
@@ -6596,6 +6636,8 @@ def smart_query(fields,text):
             elif op == '<=': new_query = field<=value
             elif op == '>=': new_query = field>=value
             elif op == '!=': new_query = field!=value
+            elif op == 'belongs': new_query = field.belongs(value.split(','))
+            elif op == 'notbelongs': new_query = ~field.belongs(value.split(','))
             elif field.type in ('text','string'):
                 if op == 'contains': new_query = field.contains(value)
                 elif op == 'like': new_query = field.like(value)
@@ -6814,9 +6856,10 @@ class DAL(object):
                                       adapter_args=adapter_args or {},
                                       do_connect=do_connect)
                         self._adapter = ADAPTERS[self._dbname](**kwargs)
+                        types = ADAPTERS[self._dbname].types
+                        # copy so multiple DAL() possible
+                        self._adapter.types = copy.copy(types)
                         if bigint_id:
-                            types = ADAPTERS[self._dbname].types
-                            self._adapter.types = copy.copy(types) # copy so multiple DAL() possible
                             if 'big-id' in types and 'reference' in types:
                                 self._adapter.types['id'] = types['big-id']
                                 self._adapter.types['reference'] = types['big-reference']
@@ -7165,7 +7208,11 @@ def index():
         table = table_class(self, tablename, *fields, **args)
         table._actual = True
         self[tablename] = table
-        table._create_references() # must follow above line to handle self references
+        # must follow above line to handle self references
+        table._create_references()
+        for field in table:
+            if field.requires == DEFAULT:
+                field.requires = sqlhtml_validators(field)
 
         migrate = self._migrate_enabled and args_get('migrate',self._migrate)
         if migrate and not self._uri in (None,'None') \
@@ -7519,8 +7566,11 @@ class Table(object):
             newfields.append(field)
             fieldnames.add('id')
             self._id = field
+        virtual_fields = []
         for field in fields:
-            if isinstance(field, Field) and not field.name in fieldnames:
+            if isinstance(field, (FieldMethod, FieldVirtual)):
+                virtual_fields.append(field)
+            elif isinstance(field, Field) and not field.name in fieldnames:
                 if field.db is not None:
                     field = copy.copy(field)
                 newfields.append(field)
@@ -7581,8 +7631,6 @@ class Table(object):
             if db and not field.type in ('text','blob') and \
                     db._adapter.maxcharlength < field.length:
                 field.length = db._adapter.maxcharlength
-            if field.requires == DEFAULT:
-                field.requires = sqlhtml_validators(field)
         self.ALL = SQLALL(self)
 
         if hasattr(self,'_primarykey'):
@@ -7592,6 +7640,8 @@ class Table(object):
                         "primarykey must be a list of fields from table '%s " % tablename)
                 else:
                     self[k].notnull = True
+        for field in virtual_fields:
+            self[field.name] = field
 
     @property
     def fields(self):
@@ -7702,22 +7752,26 @@ class Table(object):
     def __call__(self, key=DEFAULT, **kwargs):
         for_update = kwargs.get('_for_update',False)
         if '_for_update' in kwargs: del kwargs['_for_update']
+
+        orderby = kwargs.get('_orderby',None)
+        if '_orderby' in kwargs: del kwargs['_orderby']
+
         if not key is DEFAULT:
             if isinstance(key, Query):
                 record = self._db(key).select(
-                    limitby=(0,1),for_update=for_update).first()
+                    limitby=(0,1),for_update=for_update, orderby=orderby).first()
             elif not str(key).isdigit():
                 record = None
             else:
                 record = self._db(self._id == key).select(
-                    limitby=(0,1),for_update=for_update).first()
+                    limitby=(0,1),for_update=for_update, orderby=orderby).first()
             if record:
                 for k,v in kwargs.iteritems():
                     if record[k]!=v: return None
             return record
         elif kwargs:
             query = reduce(lambda a,b:a&b,[self[k]==v for k,v in kwargs.iteritems()])
-            return self._db(query).select(limitby=(0,1),for_update=for_update).first()
+            return self._db(query).select(limitby=(0,1),for_update=for_update, orderby=orderby).first()
         else:
             return None
 
@@ -8114,6 +8168,10 @@ class Expression(object):
         db = self.db
         return Expression(db, db._adapter.AGGREGATE, self, 'AVG', self.type)
 
+    def abs(self):
+        db = self.db
+        return Expression(db, db._adapter.AGGREGATE, self, 'ABS', self.type)
+
     def lower(self):
         db = self.db
         return Expression(db, db._adapter.LOWER, self, None, self.type)
@@ -8299,11 +8357,11 @@ class Expression(object):
     def st_asgeojson(self, precision=15, options=0, version=1):
         return Expression(self.db, self.db._adapter.ST_ASGEOJSON, self,
                           dict(precision=precision, options=options,
-                               version=version), 'dict')
+                               version=version), 'string')
 
     def st_astext(self):
         db = self.db
-        return Expression(db, db._adapter.ST_ASTEXT, self)
+        return Expression(db, db._adapter.ST_ASTEXT, self, type='string')
 
     def st_contained(self, value):
         db = self.db
@@ -8403,14 +8461,15 @@ class SQLCustomType(object):
         return self._class
 
 class FieldVirtual(object):
-    def __init__(self, f):
-        self.f = f
+    def __init__(self, name, f=None):
+        # for backward compatibility
+        (self.name, self.f) = (name, f) if f else ('unkown', name)
 
-class FieldLazy(object):
-    def __init__(self, f, handler=None):
-        self.f = f
+class FieldMethod(object):
+    def __init__(self, name, f=None, handler=None):
+        # for backward compatibility
+        (self.name, self.f) = (name, f) if f else ('unkown', name)
         self.handler = handler
-
 
 def list_represent(x,r=None):
     return ', '.join(str(y) for y in x or [])
@@ -8418,7 +8477,8 @@ def list_represent(x,r=None):
 class Field(Expression):
 
     Virtual = FieldVirtual
-    Lazy = FieldLazy
+    Method = FieldMethod
+    Lazy = FieldMethod # for backward compatibility
 
     """
     an instance of this class represents a database field
@@ -8486,6 +8546,7 @@ class Field(Expression):
         filter_in = None,
         filter_out = None,
         custom_qualifier = None,
+        map_none = None,
         ):
         self._db = self.db = None # both for backward compatibility
         self.op = None
@@ -8495,7 +8556,7 @@ class Field(Expression):
         if not isinstance(fieldname,str) or hasattr(Table,fieldname) or \
                 fieldname[0] == '_' or REGEX_PYTHON_KEYWORDS.match(fieldname):
             raise SyntaxError('Field: invalid field name: %s' % fieldname)
-        self.type = type if not isinstance(type, Table) else 'reference %s' % type
+        self.type = type if not isinstance(type, (Table,Field)) else 'reference %s' % type
         self.length = length if not length is None else DEFAULTLENGTH.get(self.type,512)
         self.default = default if default!=DEFAULT else (update or None)
         self.required = required  # is this field required
@@ -8526,6 +8587,7 @@ class Field(Expression):
         self.custom_qualifier = custom_qualifier
         self.label = label if label!=None else fieldname.replace('_',' ').title()
         self.requires = requires if requires!=None else []
+        self.map_none = map_none
 
     def set_attributes(self,*args,**attributes):
         self.__dict__.update(*args,**attributes)
@@ -8542,8 +8604,8 @@ class Field(Expression):
         if self.custom_store:
             return self.custom_store(file,filename,path)
         if isinstance(file, cgi.FieldStorage):
-            file = file.file
             filename = filename or file.filename
+            file = file.file
         elif not filename:
             filename = file.name
         filename = os.path.basename(filename.replace('/', os.sep)\
@@ -8657,7 +8719,7 @@ class Field(Expression):
     def formatter(self, value):
         requires = self.requires
         if value is None or not requires:
-            return value
+            return value or self.map_none
         if not isinstance(requires, (list, tuple)):
             requires = [requires]
         elif isinstance(requires, tuple):
@@ -8672,7 +8734,7 @@ class Field(Expression):
 
     def validate(self, value):
         if not self.requires or self.requires == DEFAULT:
-            return (value, None)
+            return ((value if value!=self.map_none else None), None)
         requires = self.requires
         if not isinstance(requires, (list, tuple)):
             requires = [requires]
@@ -8680,7 +8742,7 @@ class Field(Expression):
             (value, error) = validator(value)
             if error:
                 return (value, error)
-        return (value, None)
+        return ((value if value!=self.map_none else None), None)
 
     def count(self, distinct=None):
         return Expression(self.db, self.db._adapter.COUNT, self, distinct, 'integer')
@@ -8910,7 +8972,7 @@ class Set(object):
                 ret and [f(self,new_fields) for f in table._after_update]
             else:
                 ret = 0
-            response.update = ret
+            response.updated = ret
         return response
 
     def delete_uploaded_files(self, upload_fields=None):
@@ -9608,6 +9670,19 @@ SQLDB = DAL
 GQLDB = DAL
 DAL.Field = Field  # was necessary in gluon/globals.py session.connect
 DAL.Table = Table  # was necessary in gluon/globals.py session.connect
+
+################################################################################
+# Geodal utils
+################################################################################
+
+def geoPoint(*line):
+    return "POINT (%f %f)" % (x,y)
+
+def geoLine(*line):
+    return "LINESTRING (%s)" % ','.join("%f %f" % item for item in line)
+
+def geoPolygon(*line):
+    return "POLYGON ((%s))" % ','.join("%f %f" % item for item in line)
 
 ################################################################################
 # run tests

@@ -1,0 +1,27 @@
+#!/usr/bin/env python
+import gluon
+from gluon.fileutils import untar
+import os
+import sys
+
+
+def main():
+    path = gluon.__path__
+    out_path = os.getcwd()
+    try:
+        if sys.argv[1] and os.path.exists(sys.argv[1]):# To untar the web2py env to the selected path
+            out_path = sys.argv[1]
+        else:
+            os.mkdir(sys.argv[1])
+            out_path = sys.argv[1]
+    except:
+        pass
+    try:
+        print "Creating a web2py env in: " + out_path
+        untar(os.path.join(path[0],'env.tar'),out_path)
+    except:
+        print "Failed to create the web2py env"
+        print "Please reinstall web2py from pip"
+
+if __name__ == '__main__':
+    main()

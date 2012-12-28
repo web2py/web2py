@@ -5,6 +5,8 @@
 ## Customize your APP title, subtitle and menus here
 #########################################################################
 
+response.logo = A(B('web',SPAN(2),'py'),XML('&trade;&nbsp;'),
+                  _class="brand",_href="http://www.web2py.com/")
 response.title = ' '.join(
     word.capitalize() for word in request.application.split('_'))
 response.subtitle = T('customize me!')
@@ -26,10 +28,11 @@ response.menu = [
     (T('Home'), False, URL('default', 'index'), [])
 ]
 
+DEVELOPMENT_MENU = True
+
 #########################################################################
 ## provide shortcuts for development. remove in production
 #########################################################################
-
 
 def _():
     # shortcuts
@@ -133,4 +136,4 @@ def _():
                         ])
                 ]
          )]
-_()
+if DEVELOPMENT_MENU: _()

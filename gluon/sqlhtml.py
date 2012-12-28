@@ -263,15 +263,27 @@ class ListWidget(StringWidget):
 jQuery.fn.grow_input = function() {
   return this.each(function() {
     var ul = this;
-    jQuery(ul).find(":text").after('<a href="javascript:void(0)">+</a>').keypress(function (e) { return (e.which == 13) ? pe(ul) : true; }).next().click(function(){ pe(ul) });
+    jQuery(ul).find(":text").after('<a href="javascript:void(0)">+</a>&nbsp;<a href="javascript:void(0)">-</a>').keypress(function (e) { return (e.which == 13) ? pe(ul, e) : true; }).next().click(function(e){ pe(ul, e) }).next().click(function(e){ rl(ul, e)});
   });
 };
-function pe(ul) {
+function pe(ul, e) {
   var new_line = ml(ul);
   rel(ul);
-  new_line.appendTo(ul);
+  if ($(e.target).parent().is(':visible')) {
+    //make sure we didn't delete the element before we insert after
+    new_line.insertAfter($(e.target).parent());
+  } else {
+    //the line we clicked on was deleted, just add to end of list
+    new_line.appendTo(ul);
+  }
   new_line.find(":text").focus();
   return false;
+}
+function rl(ul, e) {
+  if (jQuery(ul).children().length > 1) {
+    //only remove if we have more than 1 item so the list is never empty
+    $(e.target).parent().remove();
+  }
 }
 function ml(ul) {
   var line = jQuery(ul).find("li:first").clone(true);
@@ -465,8 +477,9 @@ class PasswordWidget(FormWidget):
             requires = [requires]
         is_strong = [r for r in requires if isinstance(r, IS_STRONG)]
         if is_strong:
-            output.append(SCRIPT("web2py_validate_entropy(jQuery('#%s'),%s);"
-                                 % (attr['_id'], is_strong[0].entropy)))
+            output.append(SCRIPT("web2py_validate_entropy(jQuery('#%s'),%s);" % (
+                        attr['_id'], is_strong[0].entropy
+                        if is_strong[0].entropy else "null")))
         # end entropy check
         return output
 
@@ -657,7 +670,7 @@ class AutocompleteWidget(object):
             attr['value'] = record and record[self.fields[0].name]
             attr['_onblur'] = "jQuery('#%(div_id)s').delay(1000).fadeOut('slow');" % \
                 dict(div_id=div_id, u='F' + self.keyword)
-            attr['_onkeyup'] = "jQuery('#%(key3)s').val('');var e=event.which?event.which:event.keyCode; function %(u)s(){jQuery('#%(id)s').val(jQuery('#%(key)s :selected').text());jQuery('#%(key3)s').val(jQuery('#%(key)s').val())}; if(e==39) %(u)s(); else if(e==40) {if(jQuery('#%(key)s option:selected').next().length)jQuery('#%(key)s option:selected').attr('selected',null).next().attr('selected','selected'); %(u)s();} else if(e==38) {if(jQuery('#%(key)s option:selected').prev().length)jQuery('#%(key)s option:selected').attr('selected',null).prev().attr('selected','selected'); %(u)s();} else if(jQuery('#%(id)s').val().length>=%(min_length)s) jQuery.get('%(url)s?%(key)s='+escape(jQuery('#%(id)s').val()),function(data){if(data=='')jQuery('#%(key3)s').val('');else{jQuery('#%(id)s').next('.error').hide();jQuery('#%(div_id)s').html(data).show().focus();jQuery('#%(div_id)s select').css('width',jQuery('#%(id)s').css('width'));jQuery('#%(key3)s').val(jQuery('#%(key)s').val());jQuery('#%(key)s').change(%(u)s);jQuery('#%(key)s').click(%(u)s);};}); else jQuery('#%(div_id)s').fadeOut('slow');" % \
+            attr['_onkeyup'] = "jQuery('#%(key3)s').val('');var e=event.which?event.which:event.keyCode; function %(u)s(){jQuery('#%(id)s').val(jQuery('#%(key)s :selected').text());jQuery('#%(key3)s').val(jQuery('#%(key)s').val())}; if(e==39) %(u)s(); else if(e==40) {if(jQuery('#%(key)s option:selected').next().length)jQuery('#%(key)s option:selected').attr('selected',null).next().attr('selected','selected'); %(u)s();} else if(e==38) {if(jQuery('#%(key)s option:selected').prev().length)jQuery('#%(key)s option:selected').attr('selected',null).prev().attr('selected','selected'); %(u)s();} else if(jQuery('#%(id)s').val().length>=%(min_length)s) jQuery.get('%(url)s?%(key)s='+encodeURIComponent(jQuery('#%(id)s').val()),function(data){if(data=='')jQuery('#%(key3)s').val('');else{jQuery('#%(id)s').next('.error').hide();jQuery('#%(div_id)s').html(data).show().focus();jQuery('#%(div_id)s select').css('width',jQuery('#%(id)s').css('width'));jQuery('#%(key3)s').val(jQuery('#%(key)s').val());jQuery('#%(key)s').change(%(u)s);jQuery('#%(key)s').click(%(u)s);};}); else jQuery('#%(div_id)s').fadeOut('slow');" % \
                 dict(url=self.url, min_length=self.min_length,
                      key=self.keyword, id=attr['_id'], key2=key2, key3=key3,
                      name=name, div_id=div_id, u='F' + self.keyword)
@@ -670,7 +683,7 @@ class AutocompleteWidget(object):
             attr['_name'] = field.name
             attr['_onblur'] = "jQuery('#%(div_id)s').delay(1000).fadeOut('slow');" % \
                 dict(div_id=div_id, u='F' + self.keyword)
-            attr['_onkeyup'] = "var e=event.which?event.which:event.keyCode; function %(u)s(){jQuery('#%(id)s').val(jQuery('#%(key)s').val())}; if(e==39) %(u)s(); else if(e==40) {if(jQuery('#%(key)s option:selected').next().length)jQuery('#%(key)s option:selected').attr('selected',null).next().attr('selected','selected'); %(u)s();} else if(e==38) {if(jQuery('#%(key)s option:selected').prev().length)jQuery('#%(key)s option:selected').attr('selected',null).prev().attr('selected','selected'); %(u)s();} else if(jQuery('#%(id)s').val().length>=%(min_length)s) jQuery.get('%(url)s?%(key)s='+escape(jQuery('#%(id)s').val()),function(data){jQuery('#%(id)s').next('.error').hide();jQuery('#%(div_id)s').html(data).show().focus();jQuery('#%(div_id)s select').css('width',jQuery('#%(id)s').css('width'));jQuery('#%(key)s').change(%(u)s);jQuery('#%(key)s').click(%(u)s);}); else jQuery('#%(div_id)s').fadeOut('slow');" % \
+            attr['_onkeyup'] = "var e=event.which?event.which:event.keyCode; function %(u)s(){jQuery('#%(id)s').val(jQuery('#%(key)s').val())}; if(e==39) %(u)s(); else if(e==40) {if(jQuery('#%(key)s option:selected').next().length)jQuery('#%(key)s option:selected').attr('selected',null).next().attr('selected','selected'); %(u)s();} else if(e==38) {if(jQuery('#%(key)s option:selected').prev().length)jQuery('#%(key)s option:selected').attr('selected',null).prev().attr('selected','selected'); %(u)s();} else if(jQuery('#%(id)s').val().length>=%(min_length)s) jQuery.get('%(url)s?%(key)s='+encodeURIComponent(jQuery('#%(id)s').val()),function(data){jQuery('#%(id)s').next('.error').hide();jQuery('#%(div_id)s').html(data).show().focus();jQuery('#%(div_id)s select').css('width',jQuery('#%(id)s').css('width'));jQuery('#%(key)s').change(%(u)s);jQuery('#%(key)s').click(%(u)s);}); else jQuery('#%(div_id)s').fadeOut('slow');" % \
                 dict(url=self.url, min_length=self.min_length,
                      key=self.keyword, id=attr['_id'], div_id=div_id, u='F' + self.keyword)
             if self.min_length == 0:
@@ -751,6 +764,12 @@ def formstyle_bootstrap(form, fields):
                 # flag submit button
                 _submit = True
                 controls['_class'] = 'btn btn-primary'
+            if controls['_type'] == 'file':
+                controls['_class'] = 'input-file'
+
+        # For password fields, which are wrapped in a CAT object.
+        if isinstance(controls, CAT) and isinstance(controls[0], INPUT):
+            controls[0].add_class('input-xlarge')
 
         if isinstance(controls, SELECT):
             controls.add_class('input-xlarge')
@@ -1115,8 +1134,15 @@ class SQLFORM(FORM):
         # when deletable, add delete? checkbox
         self.custom.deletable = ''
         if record and deletable:
+            #add secondary css class for cascade delete warning
+            css = 'delete'
+            for f in self.table.fields:
+                on_del = self.table[f].ondelete
+                if isinstance(on_del,str) and 'cascade' in on_del.lower():
+                    css += ' cascade_delete'
+                    break
             widget = INPUT(_type='checkbox',
-                           _class='delete',
+                           _class=css,
                            _id=self.FIELDKEY_DELETE_RECORD,
                            _name=self.FIELDNAME_REQUEST_DELETE,
                            )
@@ -1308,8 +1334,8 @@ class SQLFORM(FORM):
                         not OptionsWidget.has_options(field):
                     field.widget = self.widgets.list.widget
                 if field.widget and fieldname in request_vars:
-                    if fieldname in self.vars:
-                        value = self.vars[fieldname]
+                    if fieldname in self.request_vars:
+                        value = self.request_vars[fieldname]
                     elif self.record:
                         value = self.record[fieldname]
                     else:
@@ -1322,7 +1348,8 @@ class SQLFORM(FORM):
                     parent = self.field_parent[row_id]
                     if parent:
                         parent.components = [widget]
-                        parent._traverse(False, hideerror)
+                        if self.errors.get(fieldname):
+                            parent._traverse(False, hideerror)
                     self.custom.widget[fieldname] = widget
             self.accepted = ret
             return ret
@@ -1553,18 +1580,26 @@ class SQLFORM(FORM):
             return smart_query(fields, key)
 
     @staticmethod
-    def search_menu(fields, search_options=None):
+    def search_menu(fields,
+                    search_options=None,
+                    prefix='w2p'
+                    ):
         T = current.T
+        panel_id='%s_query_panel' % prefix
+        fields_id='%s_query_fields' % prefix
+        keywords_id='%s_keywords' % prefix
+        field_id='%s_field' % prefix
+        value_id='%s_value' % prefix
         search_options = search_options or {
-            'string': ['=', '!=', '<', '>', '<=', '>=', 'starts with', 'contains'],
-            'text': ['=', '!=', '<', '>', '<=', '>=', 'starts with', 'contains'],
+            'string': ['=', '!=', '<', '>', '<=', '>=', 'starts with', 'contains', 'in', 'not in'],
+            'text': ['=', '!=', '<', '>', '<=', '>=', 'starts with', 'contains', 'in', 'not in'],
             'date': ['=', '!=', '<', '>', '<=', '>='],
             'time': ['=', '!=', '<', '>', '<=', '>='],
             'datetime': ['=', '!=', '<', '>', '<=', '>='],
-            'integer': ['=', '!=', '<', '>', '<=', '>='],
+            'integer': ['=', '!=', '<', '>', '<=', '>=', 'in', 'not in'],
             'double': ['=', '!=', '<', '>', '<=', '>='],
-            'id': ['=', '!=', '<', '>', '<=', '>='],
-            'reference': ['=', '!=', '<', '>', '<=', '>='],
+            'id': ['=', '!=', '<', '>', '<=', '>=', 'in', 'not in'],
+            'reference': ['=', '!=', '<', '>', '<=', '>=', 'in', 'not in'],
             'boolean': ['=', '!=']}
         if fields[0]._db._adapter.dbengine == 'google:datastore':
             search_options['string'] = ['=', '!=', '<', '>', '<=', '>=']
@@ -1586,53 +1621,57 @@ class SQLFORM(FORM):
                     value_input = SELECT(
                         OPTION(T("True"), _value="T"),
                         OPTION(T("False"), _value="F"),
-                        _id="w2p_value_" + name)
+                        _id="%s_%s" % (value_id,name))
                 else:
                     value_input = INPUT(_type='text',
-                                        _id="w2p_value_" + name,
+                                        _id="%s_%s" % (value_id,name),
                                         _class=field.type)
                 new_button = INPUT(
                     _type="button", _value=T('New'), _class="btn",
-                    _onclick="w2p_build_query('new','%s')" % field)
+                    _onclick="%s_build_query('new','%s')" % (prefix,field))
                 and_button = INPUT(
                     _type="button", _value=T('And'), _class="btn",
-                    _onclick="w2p_build_query('and','%s')" % field)
+                    _onclick="%s_build_query('and','%s')" % (prefix, field))
                 or_button = INPUT(
                     _type="button", _value=T('Or'), _class="btn",
-                    _onclick="w2p_build_query('or','%s')" % field)
+                    _onclick="%s_build_query('or','%s')" % (prefix, field))
                 close_button = INPUT(
                     _type="button", _value=T('Close'), _class="btn",
-                    _onclick="jQuery('#w2p_query_panel').slideUp()")
+                    _onclick="jQuery('#%s').slideUp()" % panel_id)
 
                 criteria.append(DIV(
                     operators, value_input, new_button,
                     and_button, or_button, close_button,
-                    _id='w2p_field_%s' % name,
+                    _id='%s_%s' % (field_id, name),
                         _class='w2p_query_row hidden',
                         _style='display:inline'))
 
         criteria.insert(0, SELECT(
-            _id="w2p_query_fields",
-                _onchange="jQuery('.w2p_query_row').hide();jQuery('#w2p_field_'+jQuery('#w2p_query_fields').val().replace('.','-')).show();",
+            _id=fields_id,
+                _onchange="jQuery('.w2p_query_row').hide();jQuery('#%s_'+jQuery('#%s').val().replace('.','-')).show();" % (field_id,fields_id),
                 _style='float:left',
                 *selectfields))
 
         fadd = SCRIPT("""
-        jQuery('#w2p_query_panel input,#w2p_query_panel select').css(
+        jQuery('#%(fields_id)s input,#%(fields_id)s select').css(
             'width','auto');
-        jQuery(function(){web2py_ajax_fields('#w2p_query_panel');});
-        function w2p_build_query(aggregator,a) {
+        jQuery(function(){web2py_ajax_fields('#%(fields_id)s');});
+        function %(prefix)s_build_query(aggregator,a) {
           var b=a.replace('.','-');
-          var option = jQuery('#w2p_field_'+b+' select').val();
-          var value = jQuery('#w2p_value_'+b).val().replace('"','\\\\"');
+          var option = jQuery('#%(field_id)s_'+b+' select').val();
+          var value = jQuery('#%(value_id)s_'+b).val().replace('"','\\\\"');
           var s=a+' '+option+' "'+value+'"';
-          var k=jQuery('#web2py_keywords');
+          var k=jQuery('#%(keywords_id)s');
           var v=k.val();
           if(aggregator=='new') k.val(s); else k.val((v?(v+' '+ aggregator +' '):'')+s);
         }
-        """)
+        """ % dict(
+                prefix=prefix,fields_id=fields_id,keywords_id=keywords_id,
+                field_id=field_id,value_id=value_id
+                )
+        )
         return CAT(
-            DIV(_id="w2p_query_panel", _class='hidden', *criteria), fadd)
+            DIV(_id=panel_id, _class='hidden', *criteria), fadd)
 
     @staticmethod
     def grid(query,
@@ -1659,6 +1698,7 @@ class SQLFORM(FORM):
              maxtextlengths={},
              maxtextlength=20,
              onvalidation=None,
+             onfailure=None,
              oncreate=None,
              onupdate=None,
              ondelete=None,
@@ -1724,7 +1764,8 @@ class SQLFORM(FORM):
         request = current.request
         session = current.session
         response = current.response
-        wenabled = (not user_signature or (session.auth and session.auth.user))
+        logged = session.auth and session.auth.user
+        wenabled = (not user_signature or logged)
         create = wenabled and create
         editable = wenabled and editable
         deletable = wenabled and deletable
@@ -1754,17 +1795,15 @@ class SQLFORM(FORM):
         # - url has valid signature (vars are not signed, only path_info)
         # = url does not contain 'create','delete','edit' (readonly)
         if user_signature:
-            if not(
+            if not (
                 '/'.join(str(a) for a in args) == '/'.join(request.args) or
-                URL.verify(request, user_signature=user_signature,
-                           hash_vars=False) or not (
-                    'create' in request.args or
-                    'delete' in request.args or
-                    'edit' in request.args)):
+                URL.verify(request,user_signature=user_signature,
+                           hash_vars=False) or
+                (request.args(len(args))=='view' and not logged)):
                 session.flash = T('not authorized')
                 redirect(referrer)
 
-        def gridbutton(buttonclass='buttonadd', buttontext='Add',
+        def gridbutton(buttonclass='buttonadd', buttontext=T('Add'),
                        buttonurl=url(args=[]), callback=None,
                        delete=None, trap=True):
             if showbuttontext:
@@ -1803,8 +1842,8 @@ class SQLFORM(FORM):
         columns = [str(field) for field in fields
                    if field._tablename in tablenames]
 
-        if not str(field_id) in [str(f) for f in fields]:
-            fields.append(field_id)
+        if not any(str(f)==str(field_id) for f in fields):
+            fields = [f for f in fields]+[field_id]
         table = field_id.table
         tablename = table._tablename
         if upload == '<default>':
@@ -1856,6 +1895,7 @@ class SQLFORM(FORM):
             create_form.process(formname=formname,
                                 next=referrer,
                                 onvalidation=onvalidation,
+                                onfailure=onfailure,
                                 onsuccess=oncreate)
             res = DIV(buttons(), create_form, formfooter, _class=_class)
             res.create_form = create_form
@@ -1866,7 +1906,7 @@ class SQLFORM(FORM):
 
         elif details and len(request.args) > 2 and request.args[-3] == 'view':
             table = db[request.args[-2]]
-            record = table(request.args[-1]) or redirect(URL('error'))
+            record = table(request.args[-1]) or redirect(referrer)
             sqlformargs.update(viewargs)
             view_form = SQLFORM(
                 table, record, upload=upload, ignore_rw=ignore_rw,
@@ -1894,6 +1934,7 @@ class SQLFORM(FORM):
             update_form.process(
                 formname=formname,
                 onvalidation=onvalidation,
+                onfailure=onfailure,
                 onsuccess=onupdate,
                 next=referrer)
             res = DIV(buttons(view=details, record=record),
@@ -1975,7 +2016,7 @@ class SQLFORM(FORM):
         if create:
             add = gridbutton(
                 buttonclass='buttonadd',
-                buttontext='Add',
+                buttontext=T('Add'),
                 buttonurl=url(args=['new', tablename]))
             if not searchable:
                 console.append(add)
@@ -1988,13 +2029,18 @@ class SQLFORM(FORM):
             if isinstance(search_widget, dict):
                 search_widget = search_widget[tablename]
             if search_widget == 'default':
-                search_menu = SQLFORM.search_menu(sfields)
+                prefix = formname == 'web2py_grid' and 'w2p' or 'w2p_%s' % formname
+                search_menu = SQLFORM.search_menu(sfields, prefix=prefix)
+                spanel_id = '%s_query_fields' % prefix
+                sfields_id = '%s_query_panel' % prefix
+                skeywords_id = '%s_keywords' % prefix
                 search_widget = lambda sfield, url: CAT(FORM(
                     INPUT(_name='keywords', _value=request.vars.keywords,
-                          _id='web2py_keywords', _onfocus="jQuery('#w2p_query_fields').change();jQuery('#w2p_query_panel').slideDown();"),
+                          _id=skeywords_id,
+                          _onfocus="jQuery('#%s').change();jQuery('#%s').slideDown();" % (spanel_id, sfields_id)),
                     INPUT(_type='submit', _value=T('Search'), _class="btn"),
                     INPUT(_type='submit', _value=T('Clear'), _class="btn",
-                          _onclick="jQuery('#web2py_keywords').val('');"),
+                          _onclick="jQuery('#%s').val('');" % skeywords_id),
                     _method="GET", _action=url), search_menu)
             form = search_widget and search_widget(sfields, url()) or ''
             console.append(add)
@@ -2263,7 +2309,7 @@ class SQLFORM(FORM):
                     if callable(rid):  # can this ever be callable?
                         rid = rid(row)
                     tr = TR(*trcols, **dict(
-                            _id=rid, 
+                            _id=rid,
                             _class='%s %s' % (classtr, 'with_id')))
                 else:
                     tr = TR(*trcols, **dict(_class=classtr))
@@ -2338,7 +2384,7 @@ class SQLFORM(FORM):
             table: pagination, search, view, edit, delete,
                    children, parent, etc.
 
-        constraints is a dict {'table',query} that limits which
+        constraints is a dict {'table':query} that limits which
         records can be accessible
         links is a dict like
            {'tablename':[lambda row: A(....), ...]}
@@ -2383,7 +2429,7 @@ class SQLFORM(FORM):
                     cond = constraints.get(referee, None)
                     if cond:
                         record = db(
-                            db[referee].id == id)(cond).select().first()
+                            db[referee]._id == id)(cond).select().first()
                     else:
                         record = db[referee](id)
                     if previous_id:
@@ -2423,7 +2469,7 @@ class SQLFORM(FORM):
         except (KeyError, ValueError, TypeError):
             redirect(URL(args=table._tablename))
         if nargs == len(args) + 1:
-            query = table.id > 0
+            query = table._id > 0
 
         # filter out data info for displayed table
         if table._tablename in constraints:
@@ -2824,15 +2870,16 @@ class ExporterTSV(ExportClass):
         final = cStringIO.StringIO()
         import csv
         writer = csv.writer(out, delimiter='\t')
-        import codecs
-        final.write(codecs.BOM_UTF16)
-        writer.writerow(
-            [unicode(col).encode("utf8") for col in self.rows.colnames])
-        data = out.getvalue().decode("utf8")
-        data = data.encode("utf-16")
-        data = data[2:]
-        final.write(data)
-        out.truncate(0)
+        if self.rows:
+            import codecs
+            final.write(codecs.BOM_UTF16)
+            writer.writerow(
+                [unicode(col).encode("utf8") for col in self.rows.colnames])
+            data = out.getvalue().decode("utf8")
+            data = data.encode("utf-16")
+            data = data[2:]
+            final.write(data)
+            out.truncate(0)
         records = self.represented()
         for row in records:
             writer.writerow(
@@ -2854,7 +2901,10 @@ class ExporterCSV(ExportClass):
         ExportClass.__init__(self, rows)
 
     def export(self):
-        return str(self.rows)
+        if self.rows:
+            return str(self.rows)
+        else:
+            return ''
 
 
 class ExporterHTML(ExportClass):
@@ -2868,12 +2918,13 @@ class ExporterHTML(ExportClass):
     def export(self):
         out = cStringIO.StringIO()
         out.write('<html>\n<body>\n<table>\n')
-        colnames = [a.split('.') for a in self.rows.colnames]
-        for row in self.rows.records:
-            out.write('<tr>\n')
-            for col in colnames:
-                out.write('<td>' + str(row[col[0]][col[1]]) + '</td>\n')
-            out.write('</tr>\n')
+        if self.rows:
+            colnames = [a.split('.') for a in self.rows.colnames]
+            for row in self.rows.records:
+                out.write('<tr>\n')
+                for col in colnames:
+                    out.write('<td>' + str(row[col[0]][col[1]]) + '</td>\n')
+                out.write('</tr>\n')
         out.write('</table>\n</body>\n</html>')
         return str(out.getvalue())
 
@@ -2889,12 +2940,13 @@ class ExporterXML(ExportClass):
     def export(self):
         out = cStringIO.StringIO()
         out.write('<rows>\n')
-        colnames = [a.split('.') for a in self.rows.colnames]
-        for row in self.rows.records:
-            out.write('<row>\n')
-            for col in colnames:
-                out.write(
-                    '<%s>' % col + str(row[col[0]][col[1]]) + '</%s>\n' % col)
-            out.write('</row>\n')
+        if self.rows:
+            colnames = [a.split('.') for a in self.rows.colnames]
+            for row in self.rows.records:
+                out.write('<row>\n')
+                for col in colnames:
+                    out.write(
+                        '<%s>' % col + str(row[col[0]][col[1]]) + '</%s>\n' % col)
+                out.write('</row>\n')
         out.write('</rows>')
         return str(out.getvalue())

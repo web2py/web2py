@@ -432,6 +432,8 @@ def ldap_auth(server='ldap', port=None,
                 if not do_manage_groups(username, password):
                     return False
             return True
+        except ldap.INVALID_CREDENTIALS, e:
+            return False
         except ldap.LDAPError, e:
             import traceback
             logger.warning('[%s] Error in ldap processing' % str(username))

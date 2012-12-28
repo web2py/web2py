@@ -279,7 +279,7 @@ class MetaScheduler(threading.Thread):
                 if tout:
                     try:
                         logger.debug(' partial output saved')
-                        db(sr.id == task.run_id).update(output=task_output)
+                        db(sr.id == task.run_id).update(run_output=task_output)
                         db.commit()
                     except:
                         pass
@@ -506,8 +506,8 @@ class Scheduler(MetaScheduler):
             Field('status', requires=IS_IN_SET(RUN_STATUS)),
             Field('start_time', 'datetime'),
             Field('stop_time', 'datetime'),
-            Field('output', 'text'),
-            Field('result', 'text'),
+            Field('run_output', 'text'),
+            Field('run_result', 'text'),
             Field('traceback', 'text'),
             Field('worker_name', default=self.worker_name),
             migrate=migrate)
@@ -534,7 +534,7 @@ class Scheduler(MetaScheduler):
                     self.sleep()
                     continue
                 logger.debug('looping...')
-                task = self.pop_task()
+                task = self.wrapped_pop_task()
                 if task:
                     self.empty_runs = 0
                     self.worker_status[0] = RUNNING
@@ -569,9 +569,23 @@ class Scheduler(MetaScheduler):
                 x += 1
                 time.sleep(0.5)
 
-    def pop_task(self):
+    def wrapped_pop_task(self):
+        db = self.db
+        x = 0
+        while x < 10:
+            try:
+                rtn = self.pop_task(db)
+                return rtn
+                break
+            except:
+                db.rollback()
+                logger.error('TICKER(%s): error popping tasks', self.worker_name)
+                x += 1
+                time.sleep(0.5)
+        
+    def pop_task(self, db):
         now = self.now()
-        db, st = self.db, self.db.scheduler_task
+        st = self.db.scheduler_task
         if self.is_a_ticker and self.do_assign_tasks:
             #I'm a ticker, and 5 loops passed without reassigning tasks, let's do
             #that and loop again
@@ -650,8 +664,8 @@ class Scheduler(MetaScheduler):
                         db(db.scheduler_run.id == task.run_id).update(
                             status=task_report.status,
                             stop_time=now,
-                            result=task_report.result,
-                            output=task_report.output,
+                            run_result=task_report.result,
+                            run_output=task_report.output,
                             traceback=task_report.tb)
                     else:
                         logger.debug(' deleting task report in db because of no result')
@@ -956,8 +970,8 @@ class Scheduler(MetaScheduler):
                    limitby=(0, 1))
              ).first()
         if output:
-            row.result = row.scheduler_run.result and \
-                loads(row.scheduler_run.result,
+            row.result = row.scheduler_run.run_result and \
+                loads(row.scheduler_run.run_result,
                       object_hook=_decode_dict) or None
         return row
 

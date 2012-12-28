@@ -146,7 +146,6 @@ def oembed(url):
             oembed = v + '?format=json&url=' + cgi.escape(url)
             try:
                 data = urllib.urlopen(oembed).read()
-                print data
                 return loads(data)  # json!
             except:
                 pass

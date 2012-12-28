@@ -3487,7 +3487,7 @@ def _parse_date_rfc822(dt):
     # If the year is 2 digits, assume everything in the 90's is the 1990's
     if m['year'] < 100:
         m['year'] += (1900, 2000)[m['year'] < 90]
-    stamp = datetime.datetime(*[m[i] for i in 
+    stamp = datetime.datetime(*[m[i] for i in
                 ('year', 'month', 'day', 'hour', 'minute', 'second')])
 
     # Use the timezone information to calculate the difference between
@@ -3699,7 +3699,7 @@ def convert_to_utf8(http_headers, data):
                                  u'application/xml-external-parsed-entity')
     text_content_types = (u'text/xml', u'text/xml-external-parsed-entity')
     if (http_content_type in application_content_types) or \
-       (http_content_type.startswith(u'application/') and 
+       (http_content_type.startswith(u'application/') and
         http_content_type.endswith(u'+xml')):
         acceptable_content_type = 1
         rfc3023_encoding = http_encoding or xml_encoding or u'utf-8'

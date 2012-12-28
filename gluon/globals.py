@@ -129,11 +129,14 @@ class Request(Storage):
         cmd_opts = global_settings.cmd_options
         #checking if this is called within the scheduler or within the shell
         #in addition to checking if it's not a cronjob
-        if not cmd_opts.shell and not cmd_opts.scheduler and not global_settings.cronjob and not self.is_https:
+        if ((cmd_opts and (cmd_opts.shell or cmd_opts.scheduler))
+            or global_settings.cronjob or self.is_https):
+            current.session.secure()
+        else:
             current.session.forget()
             redirect(URL(scheme='https', args=self.args, vars=self.vars))
 
-        current.session.secure()
+
 
     def restful(self):
         def wrapper(action, self=self):
@@ -402,7 +405,7 @@ class Response(Storage):
         headers['Content-Type'] = contenttype(name)
         if attachment:
             headers['Content-Disposition'] = \
-                'attachment; filename=%s' % filename
+                'attachment; filename="%s"' % filename.replace('"','\"')
         return self.stream(stream, chunk_size=chunk_size, request=request)
 
     def json(self, data, default=None):
@@ -554,8 +557,8 @@ class Session(Storage):
                 else:
                     response.session_id = None
             # do not try load the data from file is these was data in cookie
-            if response.session_id and not session_cookie_data and \
-                    os.path.exists(response.session_filename):
+            if response.session_id and not session_cookie_data:
+                # os.path.exists(response.session_filename):
                 try:
                     response.session_file = \
                         open(response.session_filename, 'rb+')
@@ -569,12 +572,14 @@ class Session(Storage):
                             .split('-')[0]
                         if check_client and client != oc:
                             raise Exception("cookie attack")
+                    except:
+                        response.session_id = None
                     finally:
                         pass
                         #This causes admin login to break. Must find out why.
                         #self._close(response)
                 except:
-                    response.session_id = None
+                    response.session_file = None
             if not response.session_id:
                 uuid = web2py_uuid()
                 response.session_id = '%s-%s' % (client, uuid)
@@ -654,6 +659,12 @@ class Session(Storage):
             rcookies[response.session_data_name]['expires'] = PAST
         if self.flash:
             (response.flash, self.flash) = (self.flash, None)
+
+    def clear(self):
+        previous_session_hash = self.pop('_session_hash', None)
+        Storage.clear(self)
+        if previous_session_hash:
+            self._session_hash = previous_session_hash
 
     def is_new(self):
         if self._start_timestamp:
@@ -740,12 +751,10 @@ class Session(Storage):
     def _try_store_in_file(self, request, response):
         if response.session_storage_type != 'file':
             return False
-
         try:
             if not response.session_id or self._forget or self._unchanged():
                 return False
-
-            if response.session_new:
+            if response.session_new or not response.session_file:
                 # Tests if the session sub-folder exists, if not, create it
                 session_folder = os.path.dirname(response.session_filename)
                 if not os.path.exists(session_folder):

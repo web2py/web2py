@@ -368,7 +368,7 @@ db.define_table(
 
 db.define_table(
     'product',
-    Field('seller_id',db_person),
+    Field('seller_id',db.person),
     Field('name'),
     Field('description', 'text'),
     Field('picture', 'upload', default=''),
@@ -383,9 +383,7 @@ db.define_table(
     Field('quantity', 'integer'),
     format = '%(quantity)s %(product_id)s -> %(buyer_id)s')
 
-purchased = \
-    (db.person.id==db.purchase.buyer_id)&\
-    (db.product.id==db.purchase.product_id)
+purchased = (db.person.id==db.purchase.buyer_id)&(db.product.id==db.purchase.product_id)
 
 db.person.name.requires = IS_NOT_EMPTY()
 db.person.email.requires = [IS_EMAIL(), IS_NOT_IN_DB(db, 'person.email')]

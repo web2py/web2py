@@ -70,8 +70,10 @@ class Storage(dict):
         []
         """
         value = self.get(key, [])
-        return value if not value else \
-            value if isinstance(value, (list, tuple)) else [value]
+        if value is None or isinstance(value, (list, tuple)):
+            return value
+        else:
+            return [value]
 
     def getfirst(self, key, default=None):
         """

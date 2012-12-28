@@ -220,7 +220,13 @@ def run(
     _env.update(exec_pythonrc())
     if startfile:
         try:
-            execfile(startfile, _env)
+            ccode = None
+            if startfile.endswith('.pyc'):
+                ccode = read_pyc(startfile)
+                exec ccode in _env
+            else:
+                execfile(startfile, _env)
+
             if import_models:
                 BaseAdapter.close_all_instances('commit')
         except Exception, e:

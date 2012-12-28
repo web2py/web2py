@@ -3,6 +3,7 @@
     var w2p_ajax_confirm_message = "{{=T('Are you sure you want to delete this object?')}}";
     var w2p_ajax_date_format = "{{=T('%Y-%m-%d')}}";
     var w2p_ajax_datetime_format = "{{=T('%Y-%m-%d %H:%M:%S')}}";
+    var ajax_error_500 = '{{=XML(T('An error occured, please %s the page') % A(T('reload'), _href=URL(args=request.args, vars=request.vars))) }}'
     //--></script>
 {{
 response.files.insert(0,URL('static','js/jquery.js'))

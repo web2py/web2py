@@ -26,8 +26,9 @@ def hex2dec(color = "#000000"):
 class HTML2FPDF(HTMLParser):
     "Render basic HTML to FPDF"
 
-    def __init__(self, pdf):
+    def __init__(self, pdf, image_map = None):
         HTMLParser.__init__(self)
+        self.image_map = image_map or (lambda src: src)
         self.style = {}
         self.pre = False
         self.href = ''
@@ -265,7 +266,8 @@ class HTML2FPDF(HTMLParser):
                 h = px2mm(attrs.get('height',0))
                 if self.align and self.align[0].upper() == 'C':
                     x = (self.pdf.w-x)/2.0 - w/2.0
-                self.pdf.image(attrs['src'], x, y, w, h, link=self.href)
+                self.pdf.image(self.image_map(attrs['src']),
+                               x, y, w, h, link=self.href)
                 self.pdf.set_x(x+w)
                 self.pdf.set_y(y+h)
         if tag=='b' or tag=='i' or tag=='u':
@@ -389,9 +391,9 @@ class HTML2FPDF(HTMLParser):
         self.pdf.ln(3)
 
 class HTMLMixin(object):
-    def write_html(self, text):
+    def write_html(self, text, image_map=None):
         "Parse HTML and convert it to PDF"
-        h2p = HTML2FPDF(self)
+        h2p = HTML2FPDF(self, image_map)
         h2p.feed(text)
 
 
