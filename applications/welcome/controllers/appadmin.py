@@ -490,15 +490,15 @@ def table_template(table):
     # This is horribe HTML but the only one graphiz understands
     rows = []
     cellpadding = 4
-    color = "#7B7B7B"
-    bgcolor = "#F1F2AD"
+    color = "#000000"
+    bgcolor = "#FFFFFF"
     face = "Helvetica"
     face_bold = "Helvetica Bold"
     border = 0
     
-    rows.append(TR(TD(FONT(table, _face=face_bold, _color="white"),
+    rows.append(TR(TD(FONT(table, _face=face_bold, _color=bgcolor),
                            _colspan=3, _cellpadding=cellpadding,
-                           _align="center", _bgcolor="#FFA21F")))
+                           _align="center", _bgcolor=color)))
     for row in db[table]:
         rows.append(TR(TD(FONT(row.name, _color=color, _face=face_bold),
                               _align="left", _cellpadding=cellpadding,
@@ -509,8 +509,9 @@ def table_template(table):
                        TD(FONT(types(row), _color=color, _face=face),
                                _align="center", _cellpadding=cellpadding,
                                _border=border)))
-    return "< %s >" % TABLE(*rows, _bgcolor=bgcolor, _border=1,
-                            _cellborder=0, _cellspacing=0).xml()
+    return "< %s >" % TABLE(*rows, **dict(_bgcolor=bgcolor, _border=1,
+                                          _cellborder=0, _cellspacing=0)
+                             ).xml()
 
 
 def bg_graph_model():
