@@ -1291,6 +1291,8 @@ class BaseAdapter(ConnectionPool):
         return '%s AS %s' % (self.expand(first), second)
 
     def ON(self, first, second):
+        if use_common_filters(second):
+            second = self.common_filter(second,[first._tablename])
         return '%s ON %s' % (self.expand(first), self.expand(second))
 
     def INVERT(self, first):
@@ -1466,9 +1468,6 @@ class BaseAdapter(ConnectionPool):
                 if not tablename in tablenames:
                     tablenames.append(tablename)
 
-        if use_common_filters(query):
-            query = self.common_filter(query,tablenames)
-
         if len(tablenames) < 1:
             raise SyntaxError('Set: no tables selected')
         self._colnames = map(self.expand, fields)
@@ -1477,10 +1476,6 @@ class BaseAdapter(ConnectionPool):
                 field = field.st_astext()
             return self.expand(field)
         sql_f = ', '.join(map(geoexpand, fields))
-        if query:
-            sql_w = ' WHERE ' + self.expand(query)
-        else:
-            sql_w = ''
         sql_o = ''
         sql_s = ''
         left = args_get('left', False)
@@ -1530,6 +1525,13 @@ class BaseAdapter(ConnectionPool):
             important_tablenames = joint + joinont + tables_to_merge.keys()
             excluded = [t for t in tablenames
                         if not t in important_tablenames ]
+        else:
+            excluded = tablenames
+
+        if use_common_filters(query):
+            query = self.common_filter(query,excluded)
+        sql_w = ' WHERE ' + self.expand(query) if query else ''
+
         def alias(t):
             return str(self.db[t])
         if inner_join and not left:
