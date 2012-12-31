@@ -1807,28 +1807,21 @@ class SQLFORM(FORM):
                        buttonurl=url(args=[]), callback=None,
                        delete=None, trap=True):
             if showbuttontext:
-                if callback:
-                    return A(SPAN(_class=ui.get(buttonclass)),
-                             SPAN(T(buttontext), _title=buttontext,
-                                  _class=ui.get('buttontext')),
-                             callback=callback, delete=delete,
-                             _class=trap_class(ui.get('button'), trap))
-                else:
-                    return A(SPAN(_class=ui.get(buttonclass)),
-                             SPAN(T(buttontext), _title=buttontext,
-                                  _class=ui.get('buttontext')),
-                             _href=buttonurl,
-                             _class=trap_class(ui.get('button'), trap))
+                return A(SPAN(_class=ui.get(buttonclass)),
+                         SPAN(T(buttontext), _title=buttontext,
+                              _class=ui.get('buttontext')),
+                         _href=buttonurl,
+                         callback=callback,
+                         delete=delete,
+                         _class=trap_class(ui.get('button'), trap))
             else:
-                if callback:
-                    return A(SPAN(_class=ui.get(buttonclass)),
-                             callback=callback, delete=delete,
-                             _title=buttontext,
-                             _class=trap_class(ui.get('buttontext'), trap))
-                else:
-                    return A(SPAN(_class=ui.get(buttonclass)),
-                             _href=buttonurl, _title=buttontext,
-                             _class=trap_class(ui.get('buttontext'), trap))
+                return A(SPAN(_class=ui.get(buttonclass)),
+                         _href=buttonurl,
+                         callback=callback,
+                         delete=delete,
+                         _title=buttontext,
+                         _class=trap_class(ui.get('buttontext'), trap))
+
         dbset = db(query)
         tablenames = db._adapter.tables(dbset.query)
         if left is not None:
@@ -1948,8 +1941,8 @@ class SQLFORM(FORM):
             table = db[request.args[-2]]
             if ondelete:
                 ondelete(table, request.args[-1])
-            ret = db(table[table._id.name] == request.args[-1]).delete()
-            return ret
+            db(table[table._id.name] == request.args[-1]).delete()
+            redirect(referrer)
 
         exportManager = dict(
             csv_with_hidden_cols=(ExporterCSV, 'CSV (hidden cols)'),
@@ -2293,6 +2286,7 @@ class SQLFORM(FORM):
                     if deletable and (not callable(deletable) or deletable(row)):
                         row_buttons.append(gridbutton(
                             'buttondelete', 'Delete',
+                            url(args=['delete', tablename, id]),
                             callback=url(args=['delete', tablename, id]),
                             delete='tr'))
                     if buttons_placement in ['right', 'both']:
