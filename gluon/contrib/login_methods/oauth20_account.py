@@ -115,19 +115,20 @@ server for requests.  It can be used for the optional"scope" parameters for Face
             uri += '?' + urlencode(r.get_vars)
         return uri
 
+
     def __build_url_opener(self, uri):
         """
         Build the url opener for managing HTTP Basic Athentication
         """
         # Create an OpenerDirector with support
         # for Basic HTTP Authentication...
-
-        auth_handler = urllib2.HTTPBasicAuthHandler()
-        auth_handler.add_password(None,
-                                  uri,
-                                  self.client_id,
-                                  self.client_secret)
-        opener = urllib2.build_opener(auth_handler)
+        password_mgr = urllib2.HTTPPasswordMgrWithDefaultRealm()
+        password_mgr.add_password(realm=None,
+                                  uri=uri,
+                                  user=self.client_id,
+                                  passwd=self.client_secret)
+        handler = urllib2.HTTPBasicAuthHandler(password_mgr)
+        opener = urllib2.build_opener(handler)
         return opener
 
     def accessToken(self):
