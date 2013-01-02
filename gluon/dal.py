@@ -4913,6 +4913,7 @@ class MongoDBAdapter(NoSQLAdapter):
                 'time': datetime.time,
                 'datetime': datetime.datetime,
                 'id': long,
+                'mongo': unicode, # any Mongodb document (not implemented)
                 'reference': long,
                 'list:string': list,
                 'list:integer': list,
@@ -4928,6 +4929,21 @@ class MongoDBAdapter(NoSQLAdapter):
         if do_connect: self.find_driver(adapter_args)
 
         m=None
+
+        import random
+        try:
+            from pymongo.objectid import ObjectId
+        except ImportError:
+            from bson.objectid import ObjectId
+        try:
+            from bson.son import SON
+        except ImportError:
+            from pymongo.son import SON
+
+        self.SON = SON
+        self.ObjectId = ObjectId
+        self.random = random
+
         try:
             #Since version 2
             import pymongo.uri_parser
@@ -4971,12 +4987,46 @@ class MongoDBAdapter(NoSQLAdapter):
                     raise SyntaxError("This is not an official Mongodb uri (http://www.mongodb.org/display/DOCS/Connections) Error : %s" % inst)
         self.reconnect(connector,cursor=False)
 
+    def object_id(self, arg=None):
+        """ Convert input to a valid Mongodb ObjectId instance
+
+        self.object_id("<random>") -> ObjectId (not unique) instance """
+        if not arg:
+            arg = 0
+        if isinstance(arg, basestring):
+            # we assume an integer as default input
+            rawhex = len(arg.replace("0x", "").replace("L", "")) == 24
+            if arg.isdigit() and (not rawhex):
+                arg = int(arg)
+            elif arg == "<random>":
+                arg = int("0x%sL" % \
+                str("".join([self.random.choice("0123456789abcdef") for x in \
+                range(24)])), 0)
+            elif arg.isalnum():
+                if not arg.startswith("0x"):
+                    arg = "0x%s" % arg
+                try:
+                    arg = int(arg, 0)
+                except ValueError, e:
+                    raise ValueError("invalid objectid argument string: %s" % e)
+            else:
+                raise ValueError("invalid objectid argument string. requires an integer or base 16 value")
+        elif isinstance(arg, self.ObjectId):
+            return arg
+        if not isinstance(arg, (int, long)):
+            raise TypeError("object_id argument must be of type ObjectId or an objectid representable integer")
+        if arg == 0:
+            hexvalue = "".zfill(24)
+        else:
+            hexvalue = hex(arg)[2:].replace("L", "")
+        return self.ObjectId(hexvalue)
+
     def represent(self, obj, fieldtype):
         value = NoSQLAdapter.represent(self, obj, fieldtype)
         if fieldtype  =='date':
             if value == None:
                 return value
-            t = datetime.time(0, 0, 0)#this piece of data can be stripped of based on the fieldtype
+            t = datetime.time(0, 0, 0)#this piece of data can be stripped off based on the fieldtype
             return datetime.datetime.combine(value, t) #mongodb doesn't has a date object and so it must datetime, string or integer
         elif fieldtype == 'time':
             if value == None:
@@ -4993,7 +5043,16 @@ class MongoDBAdapter(NoSQLAdapter):
         if safe==None:
             safe=self.safe
         ctable = self.connection[table._tablename]
-        values = dict((k.name,self.represent(v,table[k.name].type)) for k,v in fields)
+        values = dict()
+        for k, v in fields:
+            # avoid writing "id" name reserved form Mongodb
+            if not k.name == "id":
+                fieldname = k.name
+                fieldtype = table[k.name].type
+                if ("reference" in fieldtype) or (fieldtype=="id"):
+                    values[fieldname] = self.object_id(v)
+                else:
+                    values[fieldname] = self.represent(v, fieldtype)
         ctable.insert(values,safe=safe)
         return int(str(values['_id']), 16)
 
@@ -5014,13 +5073,10 @@ class MongoDBAdapter(NoSQLAdapter):
         # therefor call __select() connection[table].find(query).count() Since this will probably reduce the return set?
 
     def expand(self, expression, field_type=None):
-        try:
-            from pymongo.objectid import ObjectId
-        except ImportError:
-            from bson.objectid import ObjectId
         #if isinstance(expression,Field):
         #    if expression.type=='id':
         #        return {_id}"
+        result = None
         if isinstance(expression, Query):
             # any query using 'id':=
             #   set name as _id (as per pymongo/mongodb primary key)
@@ -5028,61 +5084,42 @@ class MongoDBAdapter(NoSQLAdapter):
             # (if its not already)
             # if second arg is 0 convert to objectid
             if isinstance(expression.first,Field) and \
-                    expression.first.type == 'id':
-                expression.first.name = '_id'
-                if expression.second != 0 and \
-                        not isinstance(expression.second,ObjectId):
-                    if isinstance(expression.second,int):
-                        try:
-                            # Because the reference field is by default
-                            # an integer and therefore this must be an
-                            # integer to be able to work with other
-                            # databases
-                            expression.second = ObjectId(("%X" % expression.second))
-                        except:
-                            raise SyntaxError('The second argument must by an integer that can represent an objectid.')
-                    else:
-                        try:
-                            #But a direct id is also possible
-                            expression.second = ObjectId(expression.second)
-                        except:
-                            raise SyntaxError('second argument must be of type ObjectId or an objectid representable integer')
-                elif expression.second == 0:
-                    expression.second = ObjectId('000000000000000000000000')
-                return expression.op(expression.first, expression.second)
+                    ((expression.first.type == 'id') or \
+                    ("reference" in expression.first.type)):
+                if expression.first.type == 'id':
+                    expression.first.name = '_id'
+                # cast to Mongo ObjectId
+                expression.second = self.object_id(expression.second)
+                result = expression.op(expression.first, expression.second)
         if isinstance(expression, Field):
             if expression.type=='id':
-                return "_id"
+                result = "_id"
             else:
-                return expression.name
+                result =  expression.name
             #return expression
         elif isinstance(expression, (Expression, Query)):
             if not expression.second is None:
-                return expression.op(expression.first, expression.second)
+                result = expression.op(expression.first, expression.second)
             elif not expression.first is None:
-                return expression.op(expression.first)
+                result = expression.op(expression.first)
             elif not isinstance(expression.op, str):
-                return expression.op()
+                result = expression.op()
             else:
-                return expression.op
+                result = expression.op
         elif field_type:
-            return str(self.represent(expression,field_type))
+            result = str(self.represent(expression,field_type))
         elif isinstance(expression,(list,tuple)):
-            return ','.join(self.represent(item,field_type) for item in expression)
+            result = ','.join(self.represent(item,field_type) for item in expression)
         else:
-            return expression
+            result = expression
+        return result
 
     def _select(self,query,fields,attributes):
-        try:
-            from bson.son import SON
-        except ImportError:
-            from pymongo.son import SON
-
         if 'for_update' in attributes:
             logging.warn('mongodb does not support for_update')
         for key in set(attributes.keys())-set(('limitby','orderby','for_update')):
             if attributes[key]!=None:
-                raise SyntaxError('invalid select attribute: %s' % key)
+                logging.warn('select attribute not implemented: %s' % key)
 
         new_fields=[]
         mongosort_list = []
@@ -5108,7 +5145,7 @@ class MongoDBAdapter(NoSQLAdapter):
         else:
             limitby_skip = limitby_limit = 0
 
-        mongofields_dict = SON()
+        mongofields_dict = self.SON()
         mongoqry_dict = {}
         for item in fields:
             if isinstance(item,SQLALL):
@@ -5132,13 +5169,10 @@ class MongoDBAdapter(NoSQLAdapter):
     # need to define all the 'sql' methods gt,lt etc....
 
     def select(self,query,fields,attributes,count=False,snapshot=False):
-        try:
-            from pymongo.objectid import ObjectId
-        except ImportError:
-            from bson.objectid import ObjectId
         tablename, mongoqry_dict, mongofields_dict, \
             mongosort_list, limitby_limit, limitby_skip = \
             self._select(query,fields,attributes)
+
         ctable = self.connection[tablename]
         if count:
             return {'count' : ctable.find(
@@ -5150,19 +5184,21 @@ class MongoDBAdapter(NoSQLAdapter):
                 mongoqry_dict, mongofields_dict,
                 skip=limitby_skip, limit=limitby_limit,
                 sort=mongosort_list, snapshot=snapshot) # pymongo cursor object
-        # DEBUG: print "mongo_list_dicts=%s" % mongo_list_dicts
+
         rows = []
         ### populate row in proper order
         colnames = [str(field) for field in fields]
-        for k,record in enumerate(mongo_list_dicts):
+        # for k,record in enumerate(mongo_list_dicts):
+        for record in mongo_list_dicts:
             row=[]
             for fullcolname in colnames:
                 colname = fullcolname.split('.')[1]
                 column = '_id' if colname=='id' else colname
                 if column in record:
-                    if column == '_id' and isinstance(
-                        record[column],ObjectId):
-                        value = int(str(record[column]),16)
+                    # if column in ('_id', "id") and isinstance(
+                    #    record[column], self.ObjectId):
+                    if isinstance(record[column], self.ObjectId):
+                        value = int(str(record[column]), 16)
                     elif column != '_id':
                         value = record[column]
                     else:
@@ -5172,7 +5208,12 @@ class MongoDBAdapter(NoSQLAdapter):
                 row.append(value)
             rows.append(row)
         processor = attributes.get('processor',self.parse)
-        return processor(rows,fields,colnames,False)
+        result = processor(rows,fields,colnames,False)
+        # we need to point .id to ._id for scaffolding actions
+        for row in result:
+            if hasattr(row, "_id"):
+                row.id = row._id
+        return result
 
     def INVERT(self,first):
         #print "in invert first=%s" % first
@@ -5198,42 +5239,60 @@ class MongoDBAdapter(NoSQLAdapter):
             filter = self.expand(query)
         f_v = []
 
-
         modify = { '$set' : dict(((k.name,self.represent(v,k.type)) for k,v in fields)) }
         return modify,filter
 
-    #TODO implement update
-    #TODO implement set operator
-    #TODO implement find and modify
-    #todo implement complex update
+    # TODO implement set operator
+    # TODO implement find and modify
+    # TODO implement complex update
+
     def update(self,tablename,query,fields,safe=None):
         if safe==None:
             safe=self.safe
-        #return amount of adjusted rows or zero, but no exceptions related not finding the result
+        #return amount of adjusted rows or zero, but no exceptions
+        # @ related not finding the result
         if not isinstance(query,Query):
             raise RuntimeError("Not implemented")
         amount = self.count(query,False)
         modify,filter = self.oupdate(tablename,query,fields)
         try:
+            result = self.connection[tablename].update(filter,
+                       modify, multi=True, safe=safe)
             if safe:
-                return self.connection[tablename].update(filter,modify,multi=True,safe=safe).n
+                try:
+                    # if result count is available fetch it
+                    return result["n"]
+                except (KeyError, AttributeError, TypeError):
+                    return amount
             else:
-                amount =self.count(query)
-                self.connection[tablename].update(filter,modify,multi=True,safe=safe)
                 return amount
-        except:
+        except Exception, e:
             #TODO Reverse update query to verifiy that the query succeded
-            return 0
+            raise RuntimeError("uncaught exception when updating rows: %s" % e)
+
     """
+    (NOTE: missing method for this docstring)
     An special update operator that enables the update of specific field
     return a dict
     """
 
-
-
     #this function returns a dict with the where clause and update fields
     def _update(self,tablename,query,fields):
         return str(self.oupdate(tablename,query,fields))
+
+    def delete(self, tablename, query, safe=None):
+        if safe is None:
+            safe = self.safe
+        amount = 0
+        amount = self.count(query,False)    
+        if not isinstance(query, Query):
+            raise RuntimeError("query type %s is not supported" % type(query))
+        filter = self.expand(query)
+        self._delete(tablename, filter, safe=safe)
+        return amount
+
+    def _delete(self, tablename, filter, safe=None):
+        return self.connection[tablename].remove(filter, safe=safe)
 
     def bulk_insert(self, table, items):
         return [self.insert(table,item) for item in items]
@@ -7451,8 +7510,8 @@ class SQLALL(object):
     def __str__(self):
         return ', '.join([str(field) for field in self._table])
 
-
-class Reference(int):
+# class Reference(int):
+class Reference(long):
 
     def __allocate(self):
         if not self._record:
