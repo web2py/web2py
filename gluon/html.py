@@ -1478,7 +1478,7 @@ class A(DIV):
                 (self['component'], self['target'] or '', d)
             self['_href'] = self['_href'] or '#null'
         elif self['callback']:
-            returnfalse = "var e = arguments[0] || window.event; e.cancelBubble=true; if (e.stopPropagation) e.stopPropagation(); e.preventDefault();"
+            returnfalse = "var e = arguments[0] || window.event; e.cancelBubble=true; if (e.stopPropagation) {e.stopPropagation(); e.stopImmediatePropagation(); e.preventDefault();}"
             if d:
                 self['_onclick'] = "if(confirm(w2p_ajax_confirm_message||'Are you sure you want to delete this object?')){ajax('%s',[],'%s');%s};%s" % \
                     (self['callback'], self['target'] or '', d, returnfalse)
