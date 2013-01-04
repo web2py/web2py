@@ -7084,7 +7084,7 @@ def index():
                         patterns += auto_table(table,base=tag,depth=depth-1)
             return patterns
 
-        if patterns==DEFAULT:
+        if patterns == 'auto':
             patterns=[]
             for table in db.tables:
                 if not table.startswith('auth_'):
