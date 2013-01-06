@@ -8415,7 +8415,7 @@ class Expression(object):
 
     def st_astext(self):
         db = self.db
-        return Expression(db, db._adapter.ST_ASTEXT, self, 'string')
+        return Expression(db, db._adapter.ST_ASTEXT, self, type='string')
 
     def st_distance(self, other):
         db = self.db
