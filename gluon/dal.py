@@ -9736,7 +9736,7 @@ DAL.Table = Table  # was necessary in gluon/globals.py session.connect
 # Geodal utils
 ################################################################################
 
-def geoPoint(*line):
+def geoPoint(x,y):
     return "POINT (%f %f)" % (x,y)
 
 def geoLine(*line):
