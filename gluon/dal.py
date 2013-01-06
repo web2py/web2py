@@ -2582,13 +2582,6 @@ class PostgreSQLAdapter(BaseAdapter):
         """
         return 'ST_AsText(%s)' %(self.expand(first))
 
-#     def ST_CONTAINED(self, first, second):
-#         """
-#         non-standard function based on ST_Contains with parameters reversed
-#         http://postgis.org/docs/ST_Contains.html
-#         """
-#         return 'ST_Contains(%s,%s)' % (self.expand(second, first.type), self.expand(first))
-
     def ST_CONTAINS(self, first, second):
         """
         http://postgis.org/docs/ST_Contains.html
@@ -8413,8 +8406,8 @@ class Expression(object):
         db = self.db
         return Expression(db, db._adapter.AS, self, alias, self.type)
 
-    # GIS functions
-
+    # GIS expressions
+    
     def st_asgeojson(self, precision=15, options=0, version=1):
         return Expression(self.db, self.db._adapter.ST_ASGEOJSON, self,
                           dict(precision=precision, options=options,
@@ -8422,19 +8415,21 @@ class Expression(object):
 
     def st_astext(self):
         db = self.db
-        return Expression(db, db._adapter.ST_ASTEXT, self, type='string')
+        return Expression(db, db._adapter.ST_ASTEXT, self, 'string')
 
-    def st_contained(self, value):
+    def st_distance(self, other):
         db = self.db
-        return Query(db, db._adapter.ST_CONTAINS, value, self)
+        return Expression(db,db._adapter.ST_DISTANCE,self,other, 'double')
+
+    def st_simplify(self, value):
+        db = self.db
+        return Expression(db, db._adapter.ST_SIMPLIFY, self, value, self.type)
+
+    # GIS queries
 
     def st_contains(self, value):
         db = self.db
         return Query(db, db._adapter.ST_CONTAINS, self, value)
-
-    def st_distance(self, other):
-        db = self.db
-        return Expression(db,db._adapter.ST_DISTANCE,self,other,self.type)
 
     def st_equals(self, value):
         db = self.db
@@ -8447,10 +8442,6 @@ class Expression(object):
     def st_overlaps(self, value):
         db = self.db
         return Query(db, db._adapter.ST_OVERLAPS, self, value)
-
-    def st_simplify(self, value):
-        db = self.db
-        return Expression(db, db._adapter.ST_SIMPLIFY, self, value)
 
     def st_touches(self, value):
         db = self.db
