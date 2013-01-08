@@ -2582,6 +2582,18 @@ class PostgreSQLAdapter(BaseAdapter):
         """
         return 'ST_AsText(%s)' %(self.expand(first))
 
+    def ST_X(self, first):
+        """
+        http://postgis.org/docs/ST_X.html
+        """
+        return 'ST_X(%s)' %(self.expand(first))
+
+    def ST_Y(self, first):
+        """
+        http://postgis.org/docs/ST_Y.html
+        """
+        return 'ST_Y(%s)' %(self.expand(first))
+
     def ST_CONTAINS(self, first, second):
         """
         http://postgis.org/docs/ST_Contains.html
@@ -8416,6 +8428,14 @@ class Expression(object):
     def st_astext(self):
         db = self.db
         return Expression(db, db._adapter.ST_ASTEXT, self, type='string')
+
+    def st_x(self):
+        db = self.db
+        return Expression(db, db._adapter.ST_X, self, type='string')
+
+    def st_y(self):
+        db = self.db
+        return Expression(db, db._adapter.ST_Y, self, type='string')
 
     def st_distance(self, other):
         db = self.db
