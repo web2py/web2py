@@ -733,7 +733,7 @@ def formstyle_table2cols(form, fields):
 
 def formstyle_divs(form, fields):
     ''' divs only '''
-    table = TAG['']()
+    table = FIELDSET()
     for id, label, controls, help in fields:
         _help = DIV(help, _class='w2p_fc')
         _controls = DIV(controls, _class='w2p_fw')
@@ -765,7 +765,7 @@ def formstyle_ul(form, fields):
 
 def formstyle_bootstrap(form, fields):
     ''' bootstrap format form layout '''
-    form['_class'] = 'form-horizontal'
+    form['_class'] += ' form-horizontal'
     parent = FIELDSET()
     for id, label, controls, help in fields:
         # wrappers
@@ -799,12 +799,12 @@ def formstyle_bootstrap(form, fields):
 
         if _submit:
             # submit button has unwrapped label and controls, different class
-            parent.append(DIV(label, controls, _class='form-actions'))
+            parent.append(DIV(label, controls, _class='form-actions', _id=id))
             # unflag submit (possible side effect)
             _submit = False
         else:
             # unwrapped label
-            parent.append(DIV(label, _controls, _class='control-group'))
+            parent.append(DIV(label, _controls, _class='control-group', _id=id))
     return parent
 
 
