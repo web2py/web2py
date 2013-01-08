@@ -1687,7 +1687,7 @@ SQLITE = set((
 ))
 
 
-MONGODB_NONRESERVED = set(('ID_', 'SAFE',))
+MONGODB_NONRESERVED = set(('SAFE',))
 
 # remove from here when you add a list.
 JDBCSQLITE = SQLITE

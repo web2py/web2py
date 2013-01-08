@@ -74,7 +74,7 @@ class TestBareHelpers(unittest.TestCase):
 
     def testFORM(self):
         self.assertEqual(FORM('<>', _a='1', _b='2').xml(),
-                         '<form a="1" action="" b="2" enctype="multipart/form-data" method="post">&lt;&gt;</form>')
+                         '<form a="1" action="#" b="2" enctype="multipart/form-data" method="post">&lt;&gt;</form>')
 
     def testH1(self):
         self.assertEqual(H1('<>', _a='1', _b='2').xml(),
