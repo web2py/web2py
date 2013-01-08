@@ -3309,14 +3309,14 @@ class Auth(object):
              restrict_search=False,
              resolve=True,
              extra=None,
-             menugroups=None):
+             menu_groups=None):
         if not hasattr(self, '_wiki'):
             self._wiki = Wiki(self, render=render,
                               manage_permissions=manage_permissions,
                               force_prefix=force_prefix,
                               restrict_search=restrict_search,
                               env=env, extra=extra or {},
-                              menugroups=menugroups)
+                              menu_groups=menu_groups)
         else:
             self._wiki.env.update(env or {})
         # if resolve is set to True, process request as wiki call
@@ -4726,7 +4726,7 @@ class Wiki(object):
 
     def __init__(self, auth, env=None, render='markmin',
                  manage_permissions=False, force_prefix='',
-                 restrict_search=False, extra=None, menugroups=None):
+                 restrict_search=False, extra=None, menu_groups=None):
         self.env = env or {}
         self.env['component'] = Wiki.component
         if render == 'markmin':
@@ -4735,7 +4735,7 @@ class Wiki(object):
             render = self.html_render
         self.render = render
         self.auth = auth
-        self.menugroups = menugroups
+        self.menu_groups = menu_groups
         if self.auth.user:
             self.force_prefix = force_prefix % self.auth.user
         else:
@@ -4853,11 +4853,11 @@ class Wiki(object):
         return True
 
     def can_see_menu(self):
-        if self.menugroups is None:
+        if self.menu_groups is None:
             return True
         if self.auth.user:
             groups = self.auth.user_groups.values()
-            if any(t in self.menugroups for t in groups):
+            if any(t in self.menu_groups for t in groups):
                 return True
         return False
 
