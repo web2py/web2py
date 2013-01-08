@@ -6899,6 +6899,7 @@ class DAL(object):
         self._migrated = []
         self._LAZY_TABLES = {}
         self._lazy_tables = lazy_tables
+        self._tables = SQLCallableList()
         if not str(attempts).isdigit() or attempts < 0:
             attempts = 5
         if uri:
@@ -6951,7 +6952,6 @@ class DAL(object):
             migrate = fake_migrate = False
         adapter = self._adapter
         self._uri_hash = hashlib_md5(adapter.uri).hexdigest()
-        self._tables = SQLCallableList()
         self.check_reserved = check_reserved
         if self.check_reserved:
             from reserved_sql_keywords import ADAPTERS as RSK
