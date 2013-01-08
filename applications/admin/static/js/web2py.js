@@ -44,12 +44,25 @@ function web2py_event_handlers() {
   doc.on('keyup', 'input.double, input.decimal', function(){this.value=this.value.reverse().replace(/[^0-9\-\.,]|[\-](?=.)|[\.,](?=[0-9]*[\.,])/g,'').reverse();});
   var confirm_message = (typeof w2p_ajax_confirm_message != 'undefined') ? w2p_ajax_confirm_message : "Are you sure you want to delete this object?";
   doc.on('click', "input[type='checkbox'].delete", function(){if(this.checked) if(!confirm(confirm_message)) this.checked=false;});
+
   doc.ajaxSuccess(function(e, xhr) {
     var redirect=xhr.getResponseHeader('web2py-redirect-location');
-    if (redirect != null) {
+    var command=xhr.getResponseHeader('web2py-component-command');
+    var flash=xhr.getResponseHeader('web2py-component-flash');
+    if (redirect !== null) {
       window.location = redirect;
     };
+    if(command !== null){
+      eval(decodeURIComponent(command));
+    }
+    if(flash) {
+      jQuery('.flash')
+            .html(decodeURIComponent(flash))
+            .append('<span id="closeflash">&times;</span>')
+            .slideDown();
+    }
   });
+
   doc.ajaxError(function(e, xhr, settings, exception) {
     doc.off('click', '.flash')
       switch(xhr.status){
@@ -98,8 +111,6 @@ function web2py_ajax_page(method, action, data, target) {
     'complete':function(xhr,text){
       var html=xhr.responseText;
       var content=xhr.getResponseHeader('web2py-component-content');
-      var command=xhr.getResponseHeader('web2py-component-command');
-      var flash=xhr.getResponseHeader('web2py-component-flash');
       var t = jQuery('#'+target);
       if(content=='prepend') t.prepend(html);
       else if(content=='append') t.append(html);
@@ -107,14 +118,6 @@ function web2py_ajax_page(method, action, data, target) {
       web2py_trap_form(action,target);
       web2py_trap_link(target);
       web2py_ajax_init('#'+target);
-      if(command)
-          eval(decodeURIComponent(command));
-      if(flash) {
-          jQuery('.flash')
-                .html(decodeURIComponent(flash))
-                .append('<span id="closeflash">&times;</span>')
-                .slideDown();
-        }
     }
   });
 }
