@@ -30,6 +30,7 @@ from utils import md5_hash
 from validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE, \
     IS_DATETIME, IS_INT_IN_RANGE, IS_FLOAT_IN_RANGE, IS_STRONG
 
+import serializers
 import datetime
 import urllib
 import re
@@ -38,6 +39,9 @@ from gluon import current, redirect, A, URL, DIV, H3, UL, LI, SPAN, INPUT
 import inspect
 import settings
 is_gae = settings.global_settings.web2py_runtime_gae
+
+
+
 
 table_field = re.compile('[\w_]+\.[\w_]+')
 widget_class = re.compile('^\w*')
@@ -164,10 +168,8 @@ class TimeWidget(StringWidget):
 class DateWidget(StringWidget):
     _class = 'date'
 
-
 class DatetimeWidget(StringWidget):
     _class = 'datetime'
-
 
 class TextWidget(FormWidget):
     _class = 'text'
@@ -184,6 +186,22 @@ class TextWidget(FormWidget):
         attr = cls._attributes(field, default, **attributes)
         return TEXTAREA(**attr)
 
+class JSONWidget(FormWidget):
+    _class = 'json'
+
+    @classmethod
+    def widget(cls, field, value, **attributes):
+        """
+        generates a TEXTAREA for JSON notation.
+
+        see also: :meth:`FormWidget.widget`
+        """
+        if not isinstance(value, basestring):
+            if value is not None:
+                value = serializers.json(value)
+        default = dict(value=value)
+        attr = cls._attributes(field, default, **attributes)
+        return TEXTAREA(**attr)
 
 class BooleanWidget(FormWidget):
     _class = 'boolean'
@@ -235,7 +253,6 @@ class OptionsWidget(FormWidget):
                 raise SyntaxError(
                     'widget cannot determine options of %s' % field)
         opts = [OPTION(v, _value=k) for (k, v) in options]
-
         return SELECT(*opts, **attr)
 
 
@@ -843,6 +860,7 @@ class SQLFORM(FORM):
     widgets = Storage(dict(
         string=StringWidget,
         text=TextWidget,
+        json=JSONWidget,
         password=PasswordWidget,
         integer=IntegerWidget,
         double=DoubleWidget,
