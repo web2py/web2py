@@ -881,6 +881,7 @@ class Auth(object):
         profile_fields=None,
         email_case_sensitive=True,
         username_case_sensitive=True,
+        update_fields = ['email'],
     )
         # ## these are messages that can be customized
     default_messages = dict(
@@ -2047,7 +2048,8 @@ class Auth(object):
                             if not self in self.settings.login_methods:
                                 # do not store password in db
                                 form.vars[passfield] = None
-                            user = self.get_or_create_user(form.vars)
+                            user = self.get_or_create_user(
+                                form.vars, self.settings.update_fields)
                             break
                     if not user:
                         # alternates have failed, maybe because service inaccessible
@@ -2067,7 +2069,8 @@ class Auth(object):
                                 if not self in self.settings.login_methods:
                                     # do not store password in db
                                     form.vars[passfield] = None
-                                user = self.get_or_create_user(form.vars)
+                                user = self.get_or_create_user(
+                                    form.vars, self.settings.update_fields)
                                 break
                 if not user:
                     self.log_event(self.messages.login_failed_log,
@@ -2087,7 +2090,8 @@ class Auth(object):
             if cas_user:
                 cas_user[passfield] = None
                 user = self.get_or_create_user(
-                    table_user._filter_fields(cas_user))
+                    table_user._filter_fields(cas_user),
+                    self.settings.update_fields)
             elif hasattr(cas, 'login_form'):
                 return cas.login_form()
             else:
