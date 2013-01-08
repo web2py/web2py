@@ -4253,7 +4253,7 @@ class NoSQLAdapter(BaseAdapter):
                             import json as simplejson
                         except ImportError:
                             import gluon.contrib.simplejson as simplejson
-                        obj = serializers.loads_json(obj)
+                        obj = simplejson.loads(obj)
             elif is_string and field_is_type('list:string'):
                 return map(self.to_unicode,obj)
             elif is_list:
@@ -5953,13 +5953,8 @@ class IMAPAdapter(NoSQLAdapter):
         return str(query)
 
     def select(self,query,fields,attributes):
-        """  Search and Fetch records and return web2py
-        rows
+        """  Search and Fetch records and return web2py rows
         """
-        # tablename, imapqry_array , fieldnames = self._select(query,fields,attributes)
-        ########################################
-        ############# Start new .select() ######
-
         # move this statement elsewhere (upper-level)
         if use_common_filters(query):
             query = self.common_filter(query, [self.get_query_mailbox(query),])
@@ -6151,10 +6146,6 @@ class IMAPAdapter(NoSQLAdapter):
             for fieldname in fieldnames:
                 imapqry_array_item.append(item_dict[fieldname])
             imapqry_array.append(imapqry_array_item)
-
-        # return tablename, imapqry_array, fieldnames
-        ############# End new .select() ########
-        ########################################
 
         # parse result and return a rows object
         colnames = fieldnames
@@ -9614,6 +9605,7 @@ def test_all():
               Field('blobf', 'blob'),\
               Field('integerf', 'integer', unique=True),\
               Field('doublef', 'double', unique=True,notnull=True),\
+              Field('jsonf', 'json'),\
               Field('datef', 'date', default=datetime.date.today()),\
               Field('timef', 'time'),\
               Field('datetimef', 'datetime'),\
@@ -9623,6 +9615,7 @@ def test_all():
 
     >>> db.users.insert(stringf='a', booleanf=True, passwordf='p', blobf='0A',\
                        uploadf=None, integerf=5, doublef=3.14,\
+                       jsonf={"j": True},\
                        datef=datetime.date(2001, 1, 1),\
                        timef=datetime.time(12, 30, 15),\
                        datetimef=datetime.datetime(2002, 2, 2, 12, 30, 15))
