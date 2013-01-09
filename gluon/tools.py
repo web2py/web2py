@@ -4698,15 +4698,19 @@ class Expose(object):
 class Wiki(object):
     everybody = 'everybody'
     rows_page = 25
-
-    def markmin_render(self, page):
-        html = MARKMIN(page.body, extra=self.extra,
+    def markmin_base(self,body):
+        return MARKMIN(body, extra=self.extra,
                        url=True, environment=self.env,
                        autolinks=lambda link: expand_one(link, {})).xml()
-        html += DIV(_class='w2p_wiki_tags',
-                    *[A(t.strip(), _href=URL(args='_search', vars=dict(q=t)))
-                      for t in page.tags or [] if t.strip()]).xml()
-        return html
+
+    def render_tags(self, tags):
+        return DIV(
+            _class='w2p_wiki_tags',
+            *[A(t.strip(), _href=URL(args='_search', vars=dict(q=t)))
+              for t in page.tags or [] if t.strip()])
+
+    def markmin_render(self, page):
+        return self.markmin_base(page.body) + self.render_tags(page.tags).xml()
 
     def html_render(self, page):
         html = page.body
@@ -4716,6 +4720,7 @@ class Wiki(object):
         html = replace_autolinks(html, lambda link: expand_one(link, {}))
         # @{component:name} -> <script>embed component name</script>
         html = replace_components(html, self.env)
+        html = html + self.render_tags(page.tags).xml()
         return html
 
     @staticmethod
