@@ -8044,13 +8044,24 @@ class Table(object):
                         raise RuntimeError("Unable to handle upload")
                     fields[field.name] = new_name
 
+    def _defaults(self, fields):
+        "If there are no fields/values specified, return table defaults"
+        if not fields:
+            fields = {}
+            for field in self:
+                if field.type != "id":
+                    fields[field.name] = field.default
+        return fields
+
     def _insert(self, **fields):
-        return self._db._adapter._insert(self,self._listify(fields))
+        fields = self._default(fields)
+        return self._db._adapter._insert(self, self._listify(fields))
 
     def insert(self, **fields):
+        fields = self._defaults(fields)
         self._attempt_upload(fields)
         if any(f(fields) for f in self._before_insert): return 0
-        ret =  self._db._adapter.insert(self,self._listify(fields))
+        ret =  self._db._adapter.insert(self, self._listify(fields))
         if ret and self._after_insert:
             fields = Row(fields)
             [f(fields,ret) for f in self._after_insert]
