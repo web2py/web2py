@@ -272,7 +272,7 @@ class Mail(object):
         cc=None,
         bcc=None,
         reply_to=None,
-        sender='%(sender)s',
+        sender=None,
         encoding='utf-8',
         raw=False,
         headers={}
@@ -360,9 +360,11 @@ class Mail(object):
                 text = encode_header(text)
             return text
 
+        sender = sender or self.settings.sender
+
         if not isinstance(self.settings.server, str):
             raise Exception('Server address not specified')
-        if not isinstance(self.settings.sender, str):
+        if not isinstance(sender, str):
             raise Exception('Sender address not specified')
 
         if not raw:
@@ -458,11 +460,11 @@ class Mail(object):
                 c.set_armor(1)
                 c.signers_clear()
                 # search for signing key for From:
-                for sigkey in c.op_keylist_all(self.settings.sender, 1):
+                for sigkey in c.op_keylist_all(sender, 1):
                     if sigkey.can_sign:
                         c.signers_add(sigkey)
                 if not c.signers_enum(0):
-                    self.error = 'No key for signing [%s]' % self.settings.sender
+                    self.error = 'No key for signing [%s]' % sender
                     return False
                 c.set_passphrase_cb(lambda x, y, z: sign_passphrase)
                 try:
@@ -619,7 +621,6 @@ class Mail(object):
             # no cryptography process as usual
             payload = payload_in
 
-        sender = sender % dict(sender=self.settings.sender)
         payload['From'] = encoded_or_raw(sender.decode(encoding))
         origTo = to[:]
         if to:
@@ -655,16 +656,16 @@ class Mail(object):
                 attachments = attachments and [(a.my_filename, a.my_payload) for a in attachments if not raw]
                 if attachments:
                     result = mail.send_mail(
-                        sender=self.settings.sender, to=origTo,
+                        sender=sender, to=origTo,
                         subject=subject, body=text, html=html,
                         attachments=attachments, **xcc)
                 elif html and (not raw):
                     result = mail.send_mail(
-                        sender=self.settings.sender, to=origTo,
+                        sender=sender, to=origTo,
                         subject=subject, body=text, html=html, **xcc)
                 else:
                     result = mail.send_mail(
-                        sender=self.settings.sender, to=origTo,
+                        sender=sender, to=origTo,
                         subject=subject, body=text, **xcc)
             else:
                 smtp_args = self.settings.server.split(':')
@@ -679,7 +680,7 @@ class Mail(object):
                 if self.settings.login:
                     server.login(*self.settings.login.split(':', 1))
                 result = server.sendmail(
-                    self.settings.sender, to, payload.as_string())
+                    sender, to, payload.as_string())
                 server.quit()
         except Exception, e:
             logger.warn('Mail.send failure:%s' % e)
