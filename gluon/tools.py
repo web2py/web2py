@@ -272,7 +272,7 @@ class Mail(object):
         cc=None,
         bcc=None,
         reply_to=None,
-        sender='%(sender)s',
+        sender=None,
         encoding='utf-8',
         raw=False,
         headers={}
@@ -360,9 +360,11 @@ class Mail(object):
                 text = encode_header(text)
             return text
 
+        sender = sender or self.settings.sender
+
         if not isinstance(self.settings.server, str):
             raise Exception('Server address not specified')
-        if not isinstance(self.settings.sender, str):
+        if not isinstance(sender, str):
             raise Exception('Sender address not specified')
 
         if not raw:
@@ -458,11 +460,11 @@ class Mail(object):
                 c.set_armor(1)
                 c.signers_clear()
                 # search for signing key for From:
-                for sigkey in c.op_keylist_all(self.settings.sender, 1):
+                for sigkey in c.op_keylist_all(sender, 1):
                     if sigkey.can_sign:
                         c.signers_add(sigkey)
                 if not c.signers_enum(0):
-                    self.error = 'No key for signing [%s]' % self.settings.sender
+                    self.error = 'No key for signing [%s]' % sender
                     return False
                 c.set_passphrase_cb(lambda x, y, z: sign_passphrase)
                 try:
@@ -619,7 +621,6 @@ class Mail(object):
             # no cryptography process as usual
             payload = payload_in
 
-        sender = sender % dict(sender=self.settings.sender)
         payload['From'] = encoded_or_raw(sender.decode(encoding))
         origTo = to[:]
         if to:
@@ -655,16 +656,16 @@ class Mail(object):
                 attachments = attachments and [(a.my_filename, a.my_payload) for a in attachments if not raw]
                 if attachments:
                     result = mail.send_mail(
-                        sender=self.settings.sender, to=origTo,
+                        sender=sender, to=origTo,
                         subject=subject, body=text, html=html,
                         attachments=attachments, **xcc)
                 elif html and (not raw):
                     result = mail.send_mail(
-                        sender=self.settings.sender, to=origTo,
+                        sender=sender, to=origTo,
                         subject=subject, body=text, html=html, **xcc)
                 else:
                     result = mail.send_mail(
-                        sender=self.settings.sender, to=origTo,
+                        sender=sender, to=origTo,
                         subject=subject, body=text, **xcc)
             else:
                 smtp_args = self.settings.server.split(':')
@@ -679,7 +680,7 @@ class Mail(object):
                 if self.settings.login:
                     server.login(*self.settings.login.split(':', 1))
                 result = server.sendmail(
-                    self.settings.sender, to, payload.as_string())
+                    sender, to, payload.as_string())
                 server.quit()
         except Exception, e:
             logger.warn('Mail.send failure:%s' % e)
@@ -881,6 +882,7 @@ class Auth(object):
         profile_fields=None,
         email_case_sensitive=True,
         username_case_sensitive=True,
+        update_fields = ['email'],
     )
         # ## these are messages that can be customized
     default_messages = dict(
@@ -2047,7 +2049,8 @@ class Auth(object):
                             if not self in self.settings.login_methods:
                                 # do not store password in db
                                 form.vars[passfield] = None
-                            user = self.get_or_create_user(form.vars)
+                            user = self.get_or_create_user(
+                                form.vars, self.settings.update_fields)
                             break
                     if not user:
                         # alternates have failed, maybe because service inaccessible
@@ -2067,7 +2070,8 @@ class Auth(object):
                                 if not self in self.settings.login_methods:
                                     # do not store password in db
                                     form.vars[passfield] = None
-                                user = self.get_or_create_user(form.vars)
+                                user = self.get_or_create_user(
+                                    form.vars, self.settings.update_fields)
                                 break
                 if not user:
                     self.log_event(self.messages.login_failed_log,
@@ -2087,7 +2091,8 @@ class Auth(object):
             if cas_user:
                 cas_user[passfield] = None
                 user = self.get_or_create_user(
-                    table_user._filter_fields(cas_user))
+                    table_user._filter_fields(cas_user),
+                    self.settings.update_fields)
             elif hasattr(cas, 'login_form'):
                 return cas.login_form()
             else:
@@ -3309,14 +3314,14 @@ class Auth(object):
              restrict_search=False,
              resolve=True,
              extra=None,
-             menugroups=None):
+             menu_groups=None):
         if not hasattr(self, '_wiki'):
             self._wiki = Wiki(self, render=render,
                               manage_permissions=manage_permissions,
                               force_prefix=force_prefix,
                               restrict_search=restrict_search,
                               env=env, extra=extra or {},
-                              menugroups=menugroups)
+                              menu_groups=menu_groups)
         else:
             self._wiki.env.update(env or {})
         # if resolve is set to True, process request as wiki call
@@ -4694,15 +4699,19 @@ class Expose(object):
 class Wiki(object):
     everybody = 'everybody'
     rows_page = 25
-
-    def markmin_render(self, page):
-        html = MARKMIN(page.body, extra=self.extra,
+    def markmin_base(self,body):
+        return MARKMIN(body, extra=self.extra,
                        url=True, environment=self.env,
                        autolinks=lambda link: expand_one(link, {})).xml()
-        html += DIV(_class='w2p_wiki_tags',
-                    *[A(t.strip(), _href=URL(args='_search', vars=dict(q=t)))
-                      for t in page.tags or [] if t.strip()]).xml()
-        return html
+
+    def render_tags(self, tags):
+        return DIV(
+            _class='w2p_wiki_tags',
+            *[A(t.strip(), _href=URL(args='_search', vars=dict(q=t)))
+              for t in tags or [] if t.strip()])
+
+    def markmin_render(self, page):
+        return self.markmin_base(page.body) + self.render_tags(page.tags).xml()
 
     def html_render(self, page):
         html = page.body
@@ -4712,6 +4721,7 @@ class Wiki(object):
         html = replace_autolinks(html, lambda link: expand_one(link, {}))
         # @{component:name} -> <script>embed component name</script>
         html = replace_components(html, self.env)
+        html = html + self.render_tags(page.tags).xml()
         return html
 
     @staticmethod
@@ -4726,7 +4736,7 @@ class Wiki(object):
 
     def __init__(self, auth, env=None, render='markmin',
                  manage_permissions=False, force_prefix='',
-                 restrict_search=False, extra=None, menugroups=None):
+                 restrict_search=False, extra=None, menu_groups=None):
         self.env = env or {}
         self.env['component'] = Wiki.component
         if render == 'markmin':
@@ -4735,7 +4745,7 @@ class Wiki(object):
             render = self.html_render
         self.render = render
         self.auth = auth
-        self.menugroups = menugroups
+        self.menu_groups = menu_groups
         if self.auth.user:
             self.force_prefix = force_prefix % self.auth.user
         else:
@@ -4853,11 +4863,11 @@ class Wiki(object):
         return True
 
     def can_see_menu(self):
-        if self.menugroups is None:
+        if self.menu_groups is None:
             return True
         if self.auth.user:
             groups = self.auth.user_groups.values()
-            if any(t in self.menugroups for t in groups):
+            if any(t in self.menu_groups for t in groups):
                 return True
         return False
 

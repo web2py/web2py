@@ -163,6 +163,22 @@ class Servers:
                                   "tcp://127.0.0.1:9996")
         mongrel2_handler(app, conn, debug=False)
 
+    @staticmethod
+    def motor(app, address, **options):
+        #https://github.com/rpedroso/motor
+        import motor
+        app = motor.WSGIContainer(app)
+        http_server = motor.HTTPServer(app)
+        http_server.listen(address=address[0], port=address[1])
+        #http_server.start(2)
+        motor.IOLoop.instance().start()
+
+    @staticmethod
+    def pulsar(app, address, **options):
+        from pulsar.apps import wsgi
+        sys.argv = ['anyserver.py']
+        s = wsgi.WSGIServer(callable=app, bind="%s:%d" % address)
+        s.start()
 
 def run(servername, ip, port, softcron=True, logging=False, profiler=None):
     if logging:

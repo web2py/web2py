@@ -212,3 +212,26 @@ def toggle_breakpoint():
     except Exception, e:
         session.flash = str(e)
     return response.json({'ok': ok, 'lineno': lineno})
+    
+def list_breakpoints():
+    "Return a list of linenumbers for current breakpoints"
+
+    breakpoints = []
+    ok = None
+    try:
+        filename = os.path.join(request.env['applications_parent'],
+                                'applications', request.vars.filename)
+        # normalize path name: replace slashes, references, etc...
+        filename = os.path.normpath(os.path.normcase(filename))
+        for bp in qdb_debugger.do_list_breakpoint():
+            no, bp_filename, bp_lineno, temporary, enabled, hits, cond = bp
+            # normalize path name: replace slashes, references, etc...
+            bp_filename = os.path.normpath(os.path.normcase(bp_filename))
+            if filename == bp_filename:
+                breakpoints.append(bp_lineno)
+        ok = True
+    except Exception, e:
+        session.flash = str(e)
+        ok = False
+    return response.json({'ok': ok, 'breakpoints': breakpoints})
+

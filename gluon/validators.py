@@ -21,6 +21,16 @@ import unicodedata
 from cStringIO import StringIO
 from utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 
+JSONErrors = (NameError, TypeError, ValueError, AttributeError,
+              KeyError)
+try:
+    import json as simplejson
+except ImportError:
+    from gluon.contrib import simplejson
+    from gluon.contrib.simplejson.decoder import JSONDecodeError
+    JSONErrors += (JSONDecodeError,)
+
+
 __all__ = [
     'CLEANUP',
     'CRYPT',
@@ -53,6 +63,7 @@ __all__ = [
     'IS_UPLOAD_FILENAME',
     'IS_UPPER',
     'IS_URL',
+    'IS_JSON',
 ]
 
 try:
@@ -300,6 +311,30 @@ class IS_LENGTH(Validator):
         return (value, translate(self.error_message)
                 % dict(min=self.minsize, max=self.maxsize))
 
+class IS_JSON(Validator):
+    """
+    example::
+        INPUT(_type='text', _name='name',
+            requires=IS_JSON(error_message="This is not a valid json input")
+
+        >>> IS_JSON()('{"a": 100}')
+        ('{"a": 100}', None)
+
+        >>> IS_JSON()('spam1234')
+        ('spam1234', 'invalid json')
+    """
+
+    def __init__(self, error_message='invalid json'):
+        self.error_message = error_message
+
+    def __call__(self, value):
+        try:
+            simplejson.loads(value)
+            return (value, None)
+        except JSONErrors:
+            pass
+        return (value, translate(self.error_message))
+    
 
 class IS_IN_SET(Validator):
     """

@@ -30,6 +30,7 @@ from utils import md5_hash
 from validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE, \
     IS_DATETIME, IS_INT_IN_RANGE, IS_FLOAT_IN_RANGE, IS_STRONG
 
+import serializers
 import datetime
 import urllib
 import re
@@ -38,6 +39,9 @@ from gluon import current, redirect, A, URL, DIV, H3, UL, LI, SPAN, INPUT
 import inspect
 import settings
 is_gae = settings.global_settings.web2py_runtime_gae
+
+
+
 
 table_field = re.compile('[\w_]+\.[\w_]+')
 widget_class = re.compile('^\w*')
@@ -164,10 +168,8 @@ class TimeWidget(StringWidget):
 class DateWidget(StringWidget):
     _class = 'date'
 
-
 class DatetimeWidget(StringWidget):
     _class = 'datetime'
-
 
 class TextWidget(FormWidget):
     _class = 'text'
@@ -184,6 +186,22 @@ class TextWidget(FormWidget):
         attr = cls._attributes(field, default, **attributes)
         return TEXTAREA(**attr)
 
+class JSONWidget(FormWidget):
+    _class = 'json'
+
+    @classmethod
+    def widget(cls, field, value, **attributes):
+        """
+        generates a TEXTAREA for JSON notation.
+
+        see also: :meth:`FormWidget.widget`
+        """
+        if not isinstance(value, basestring):
+            if value is not None:
+                value = serializers.json(value)
+        default = dict(value=value)
+        attr = cls._attributes(field, default, **attributes)
+        return TEXTAREA(**attr)
 
 class BooleanWidget(FormWidget):
     _class = 'boolean'
@@ -235,7 +253,6 @@ class OptionsWidget(FormWidget):
                 raise SyntaxError(
                     'widget cannot determine options of %s' % field)
         opts = [OPTION(v, _value=k) for (k, v) in options]
-
         return SELECT(*opts, **attr)
 
 
@@ -523,20 +540,25 @@ class UploadWidget(FormWidget):
 
             requires = attr["requires"]
             if requires == [] or isinstance(requires, IS_EMPTY_OR):
-                inp = DIV(inp, '[',
-                          A(current.T(
-                              UploadWidget.GENERIC_DESCRIPTION), _href=url),
-                          '|',
-                          INPUT(_type='checkbox',
-                                _name=field.name + cls.ID_DELETE_SUFFIX,
-                                _id=field.name + cls.ID_DELETE_SUFFIX),
-                          LABEL(current.T(cls.DELETE_FILE),
-                                _for=field.name + cls.ID_DELETE_SUFFIX),
-                          ']', br, image)
+                inp = DIV(inp, 
+                          SPAN('[',
+                               A(current.T(
+                                UploadWidget.GENERIC_DESCRIPTION), _href=url),
+                               '|',
+                               INPUT(_type='checkbox',
+                                     _name=field.name + cls.ID_DELETE_SUFFIX,
+                                     _id=field.name + cls.ID_DELETE_SUFFIX),
+                               LABEL(current.T(cls.DELETE_FILE),
+                                     _for=field.name + cls.ID_DELETE_SUFFIX,
+                                     _style='display:inline'),
+                               ']', _style='white-space:nowrap'), 
+                          br, image)
             else:
-                inp = DIV(inp, '[',
-                          A(cls.GENERIC_DESCRIPTION, _href=url),
-                          ']', br, image)
+                inp = DIV(inp, 
+                          SPAN('[',
+                               A(cls.GENERIC_DESCRIPTION, _href=url),
+                               ']', _style='white-space:nowrap'), 
+                          br, image)
         return inp
 
     @classmethod
@@ -716,7 +738,7 @@ def formstyle_table2cols(form, fields):
 
 def formstyle_divs(form, fields):
     ''' divs only '''
-    table = TAG['']()
+    table = FIELDSET()
     for id, label, controls, help in fields:
         _help = DIV(help, _class='w2p_fc')
         _controls = DIV(controls, _class='w2p_fw')
@@ -748,7 +770,7 @@ def formstyle_ul(form, fields):
 
 def formstyle_bootstrap(form, fields):
     ''' bootstrap format form layout '''
-    form['_class'] = 'form-horizontal'
+    form.add_class('form-horizontal')
     parent = FIELDSET()
     for id, label, controls, help in fields:
         # wrappers
@@ -782,12 +804,12 @@ def formstyle_bootstrap(form, fields):
 
         if _submit:
             # submit button has unwrapped label and controls, different class
-            parent.append(DIV(label, controls, _class='form-actions'))
+            parent.append(DIV(label, controls, _class='form-actions', _id=id))
             # unflag submit (possible side effect)
             _submit = False
         else:
             # unwrapped label
-            parent.append(DIV(label, _controls, _class='control-group'))
+            parent.append(DIV(label, _controls, _class='control-group', _id=id))
     return parent
 
 
@@ -843,6 +865,7 @@ class SQLFORM(FORM):
     widgets = Storage(dict(
         string=StringWidget,
         text=TextWidget,
+        json=JSONWidget,
         password=PasswordWidget,
         integer=IntegerWidget,
         double=DoubleWidget,
@@ -1132,7 +1155,7 @@ class SQLFORM(FORM):
 #                 </block>
 
         # when deletable, add delete? checkbox
-        self.custom.deletable = ''
+        self.custom.delete = self.custom.deletable = ''
         if record and deletable:
             #add secondary css class for cascade delete warning
             css = 'delete'
@@ -1154,7 +1177,8 @@ class SQLFORM(FORM):
                  _id=self.FIELDKEY_DELETE_RECORD + SQLFORM.ID_LABEL_SUFFIX),
                  widget,
                  col3.get(self.FIELDKEY_DELETE_RECORD, '')))
-            self.custom.deletable = widget
+            self.custom.delete = self.custom.deletable = widget
+            
 
         # when writable, add submit button
         self.custom.submit = ''
@@ -1807,28 +1831,21 @@ class SQLFORM(FORM):
                        buttonurl=url(args=[]), callback=None,
                        delete=None, trap=True):
             if showbuttontext:
-                if callback:
-                    return A(SPAN(_class=ui.get(buttonclass)),
-                             SPAN(T(buttontext), _title=buttontext,
-                                  _class=ui.get('buttontext')),
-                             callback=callback, delete=delete,
-                             _class=trap_class(ui.get('button'), trap))
-                else:
-                    return A(SPAN(_class=ui.get(buttonclass)),
-                             SPAN(T(buttontext), _title=buttontext,
-                                  _class=ui.get('buttontext')),
-                             _href=buttonurl,
-                             _class=trap_class(ui.get('button'), trap))
+                return A(SPAN(_class=ui.get(buttonclass)),
+                         SPAN(T(buttontext), _title=buttontext,
+                              _class=ui.get('buttontext')),
+                         _href=buttonurl,
+                         callback=callback,
+                         delete=delete,
+                         _class=trap_class(ui.get('button'), trap))
             else:
-                if callback:
-                    return A(SPAN(_class=ui.get(buttonclass)),
-                             callback=callback, delete=delete,
-                             _title=buttontext,
-                             _class=trap_class(ui.get('buttontext'), trap))
-                else:
-                    return A(SPAN(_class=ui.get(buttonclass)),
-                             _href=buttonurl, _title=buttontext,
-                             _class=trap_class(ui.get('buttontext'), trap))
+                return A(SPAN(_class=ui.get(buttonclass)),
+                         _href=buttonurl,
+                         callback=callback,
+                         delete=delete,
+                         _title=buttontext,
+                         _class=trap_class(ui.get('buttontext'), trap))
+
         dbset = db(query)
         tablenames = db._adapter.tables(dbset.query)
         if left is not None:
@@ -1948,8 +1965,8 @@ class SQLFORM(FORM):
             table = db[request.args[-2]]
             if ondelete:
                 ondelete(table, request.args[-1])
-            ret = db(table[table._id.name] == request.args[-1]).delete()
-            return ret
+            db(table[table._id.name] == request.args[-1]).delete()
+            redirect(referrer)
 
         exportManager = dict(
             csv_with_hidden_cols=(ExporterCSV, 'CSV (hidden cols)'),
@@ -2267,7 +2284,7 @@ class SQLFORM(FORM):
                     elif not isinstance(value, DIV):
                         value = field.formatter(value)
                     trcols.append(TD(value))
-                row_buttons = TD(_class='row_buttons')
+                row_buttons = TD(_class='row_buttons',_nowrap=True)
                 if links and links_in_grid:
                     toadd = []
                     for link in links:
@@ -2293,6 +2310,7 @@ class SQLFORM(FORM):
                     if deletable and (not callable(deletable) or deletable(row)):
                         row_buttons.append(gridbutton(
                             'buttondelete', 'Delete',
+                            url(args=['delete', tablename, id]),
                             callback=url(args=['delete', tablename, id]),
                             delete='tr'))
                     if buttons_placement in ['right', 'both']:

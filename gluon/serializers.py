@@ -20,6 +20,10 @@ except ImportError:
         import contrib.simplejson as json_parser    # fallback to pure-Python module
 
 
+def loads_json(o):
+    # deserialize a json string
+    return json_parser.loads(o)
+
 def custom_json(o):
     if hasattr(o, 'custom_json') and callable(o.custom_json):
         return o.custom_json()

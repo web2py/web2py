@@ -25,6 +25,13 @@
 <link rel="stylesheet" href="{{=cm}}/lib/util/dialog.css">
 <script src="{{=cm}}/emmet.min.js"></script>
 <script language="Javascript" type="text/javascript" src="{{=URL('static','js/ajax_editor.js')}}"></script>
+<script language="Javascript" type="text/javascript">
+jQuery(document).ready(function(){
+     doListBreakpoints({{=XML("'%s','%s://%s%s'" % (filename, 
+                request.env['wsgi_url_scheme'], request.env['http_host'],
+                URL(c='debug', f='list_breakpoints')))}});
+});
+</script>
 {{elif TEXT_EDITOR == 'ace':}}
 <script src="{{=URL(r=request,c='static',f='ace/src/ace.js')}}" type="text/javascript" charset="utf-8"></script>
 <script src="{{=URL(r=request,c='static',f='ace/src/theme-%s.js' % TEXT_EDITOR_THEME)}}" type="text/javascript" charset="utf-8"></script>
@@ -103,7 +110,7 @@ jQuery(document).ready(function(){
   {{if filetype=='python':}}
       {{=A(SPAN(T('toggle breakpoint')),
            _value="breakpoint", _name="breakpoint",
-           _onclick="return doToggleBreakpoint('%s','%s://%s%s');" % (filename, 
+           _onclick="return doToggleBreakpoint('%s','%s://%s%s',null);" % (filename, 
                 request.env['wsgi_url_scheme'], request.env['http_host'],
                 URL(c='debug', f='toggle_breakpoint')),
            _class="button special btn btn-inverse")}}
@@ -202,7 +209,13 @@ jQuery(document).ready(function(){
         autofocus: true,
         onCursorActivity: function() {
             editor.setLineClass(hlLine, null, null);
-            hlLine = editor.setLineClass(editor.getCursor().line, null, "activeline");}
+            hlLine = editor.setLineClass(editor.getCursor().line, null, "activeline");},
+        onGutterClick: function(cm, n) {
+            sel = {start: n, end: n, data: ''};
+            doToggleBreakpoint({{=XML("'%s','%s://%s%s',sel" % (filename, 
+                request.env['wsgi_url_scheme'], request.env['http_host'],
+                URL(c='debug', f='toggle_breakpoint')))}});
+          }
       };
       var editor = CodeMirror.fromTextArea(
          document.getElementById("body"),cm_opts);

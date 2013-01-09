@@ -1493,7 +1493,9 @@ def errors():
 
     else:
         for item in request.vars:
-            if item[:7] == 'delete_':
+            # delete_all} rows doesn't contain any ticket
+            # Remove anything else as requested
+            if item[:7] == 'delete_' and (not item == "delete_all}"):
                 os.unlink(apath('%s/errors/%s' % (app, item[7:]), r=request))
         func = lambda p: os.stat(apath('%s/errors/%s' %
                                        (app, p), r=request)).st_mtime

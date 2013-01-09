@@ -31,6 +31,7 @@ ALLOWED_DATATYPES = [
     'datetime',
     'upload',
     'password',
+    'json',
     ]
 
 
@@ -62,14 +63,14 @@ class TestFields(unittest.TestCase):
 
     def testFieldTypes(self):
 
-        # Check that string, text, and password default length is 512
+        # Check that string, and password default length is 512
         for typ in ['string', 'password']:
             self.assert_(Field('abc', typ).length == 512,
                          "Default length for type '%s' is not 512 or 255" % typ)
 
         # Check that upload default length is 512
         self.assert_(Field('abc', 'upload').length == 512,
-                     "Default length for type 'upload' is not 128")
+                     "Default length for type 'upload' is not 512")
 
         # Check that Tables passed in the type creates a reference
         self.assert_(Field('abc', Table(None, 'temp')).type
@@ -112,6 +113,10 @@ class TestFields(unittest.TestCase):
         db.define_table('t', Field('a', 'boolean', default=True))
         self.assertEqual(db.t.insert(a=True), 1)
         self.assertEqual(db().select(db.t.a)[0].a, True)
+        db.t.drop()
+        db.define_table('t', Field('a', 'json', default={}))
+        self.assertEqual(db.t.insert(a={}), 1)
+        self.assertEqual(db().select(db.t.a)[0].a, {})
         db.t.drop()
         db.define_table('t', Field('a', 'date',
                         default=datetime.date.today()))
