@@ -765,7 +765,7 @@ def formstyle_ul(form, fields):
 
 def formstyle_bootstrap(form, fields):
     ''' bootstrap format form layout '''
-    form['_class'] += ' form-horizontal'
+    form.add_class('form-horizontal')
     parent = FIELDSET()
     for id, label, controls, help in fields:
         # wrappers
