@@ -1866,7 +1866,7 @@ class SQLFORM(FORM):
 
         def buttons(edit=False, view=False, record=None):
             buttons = DIV(gridbutton('buttonback', 'Back', referrer),
-                          _class='form_header row_buttons %(header)s %(cornertop)s' % ui)
+                          _class='form_header row_buttons %(header)s %(cornertop)s' % ui,_nowrap=True)
             if edit and (not callable(edit) or edit(record)):
                 args = ['edit', table._tablename, request.args[-1]]
                 buttons.append(gridbutton('buttonedit', 'Edit',
