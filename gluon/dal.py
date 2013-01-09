@@ -7175,9 +7175,15 @@ def index():
             return Row({'status':200,'pattern':'list',
                         'error':None,'response':patterns})
         for pattern in patterns:
+            if isinstance(pattern,tuple):
+                pattern, basequery = pattern
+            else:
+                basequery = None
             otable=table=None
             if not isinstance(queries,dict):
                 dbset=db(queries)
+                if basequery is not None:
+                    dbset = dbset(basequery)
             i=0
             tags = pattern[1:].split('/')
             if len(tags)!=len(args):
@@ -7224,6 +7230,8 @@ def index():
                             raise RuntimeError("invalid pattern: %s" % pattern)
                         if not otable and isinstance(queries,dict):
                             dbset = db(queries[table])
+                            if basequery is not None:
+                                dbset = dbset(basequery)
                         dbset=dbset(query)
                     else:
                         raise RuntimeError("missing relation in pattern: %s" % pattern)
