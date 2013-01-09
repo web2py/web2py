@@ -4707,7 +4707,7 @@ class Wiki(object):
         return DIV(
             _class='w2p_wiki_tags',
             *[A(t.strip(), _href=URL(args='_search', vars=dict(q=t)))
-              for t in page.tags or [] if t.strip()])
+              for t in tags or [] if t.strip()])
 
     def markmin_render(self, page):
         return self.markmin_base(page.body) + self.render_tags(page.tags).xml()
