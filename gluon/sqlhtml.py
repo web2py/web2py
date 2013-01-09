@@ -540,20 +540,25 @@ class UploadWidget(FormWidget):
 
             requires = attr["requires"]
             if requires == [] or isinstance(requires, IS_EMPTY_OR):
-                inp = DIV(inp, '[',
-                          A(current.T(
-                              UploadWidget.GENERIC_DESCRIPTION), _href=url),
-                          '|',
-                          INPUT(_type='checkbox',
-                                _name=field.name + cls.ID_DELETE_SUFFIX,
-                                _id=field.name + cls.ID_DELETE_SUFFIX),
-                          LABEL(current.T(cls.DELETE_FILE),
-                                _for=field.name + cls.ID_DELETE_SUFFIX),
-                          ']', br, image)
+                inp = DIV(inp, 
+                          SPAN('[',
+                               A(current.T(
+                                UploadWidget.GENERIC_DESCRIPTION), _href=url),
+                               '|',
+                               INPUT(_type='checkbox',
+                                     _name=field.name + cls.ID_DELETE_SUFFIX,
+                                     _id=field.name + cls.ID_DELETE_SUFFIX),
+                               LABEL(current.T(cls.DELETE_FILE),
+                                     _for=field.name + cls.ID_DELETE_SUFFIX,
+                                     _style='display:inline'),
+                               ']', _style='white-space:nowrap'), 
+                          br, image)
             else:
-                inp = DIV(inp, '[',
-                          A(cls.GENERIC_DESCRIPTION, _href=url),
-                          ']', br, image)
+                inp = DIV(inp, 
+                          SPAN('[',
+                               A(cls.GENERIC_DESCRIPTION, _href=url),
+                               ']', _style='white-space:nowrap'), 
+                          br, image)
         return inp
 
     @classmethod
