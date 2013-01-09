@@ -1150,7 +1150,7 @@ class SQLFORM(FORM):
 #                 </block>
 
         # when deletable, add delete? checkbox
-        self.custom.deletable = ''
+        self.custom.delete = self.custom.deletable = ''
         if record and deletable:
             #add secondary css class for cascade delete warning
             css = 'delete'
@@ -1172,7 +1172,8 @@ class SQLFORM(FORM):
                  _id=self.FIELDKEY_DELETE_RECORD + SQLFORM.ID_LABEL_SUFFIX),
                  widget,
                  col3.get(self.FIELDKEY_DELETE_RECORD, '')))
-            self.custom.deletable = widget
+            self.custom.delete = self.custom.deletable = widget
+            
 
         # when writable, add submit button
         self.custom.submit = ''
