@@ -4993,20 +4993,19 @@ class Wiki(object):
             redirect(URL(args=slug))
         script = """
         $(function() {
-            if (!$('#wiki_page_body').length) return;
-            var pagecontent = $('#wiki_page_body');
+            if (!jQuery('#wiki_page_body').length) return;
+            var pagecontent = jQuery('#wiki_page_body');
             pagecontent.css('font-family',
                             'Monaco,Menlo,Consolas,"Courier New",monospace');
-            var prevbutton = $('<button class="btn nopreview">Preview</button>');
-            var mediabutton = $('<button class="btn nopreview">Media</button>');
-            var preview = $('<div id="preview"></div>').hide();
-            var previewmedia = $('<div id="previewmedia"></div>');
-            var table = $('form');
-            var bodylabel = $('#wiki_page_body__label');
-            preview.insertBefore(pagecontent);
-            prevbutton.insertAfter(bodylabel);
-            mediabutton.insertBefore(table);
-            previewmedia.insertBefore(table);
+            var prevbutton = jQuery('<button class="btn nopreview">Preview</button>');
+            var mediabutton = jQuery('<button class="btn nopreview">Media</button>');
+            var preview = jQuery('<div id="preview"></div>').hide();
+            var previewmedia = jQuery('<div id="previewmedia"></div>');
+            var form = pagecontent.closest('form');
+            preview.insertBefore(form);
+            prevbutton.insertBefore(form);
+            mediabutton.insertBefore(form);
+            previewmedia.insertBefore(form);
             mediabutton.toggle(function() {
                 web2py_component('%(urlmedia)s', 'previewmedia');
             }, function() {
@@ -5017,12 +5016,12 @@ class Wiki(object):
                 if (prevbutton.hasClass('nopreview')) {
                     prevbutton.addClass('preview').removeClass(
                         'nopreview').html('Edit Source');
-                    web2py_ajax_page('post', '%(url)s', {body : $('#wiki_page_body').val()}, 'preview');
-                    pagecontent.fadeOut('fast', function() {preview.fadeIn()});
+                    web2py_ajax_page('post', '%(url)s', {body : jQuery('#wiki_page_body').val()}, 'preview');
+                    form.fadeOut('fast', function() {preview.fadeIn()});
                 } else {
                     prevbutton.addClass(
                         'nopreview').removeClass('preview').html('Preview');
-                    preview.fadeOut('fast', function() {pagecontent.fadeIn()});
+                    preview.fadeOut('fast', function() {form.fadeIn()});
                 }
             })
         })
@@ -5046,7 +5045,7 @@ class Wiki(object):
         csv = True
         create = True
         if current.request.vars.embedded:
-            script = "var c = $('#wiki_page_body'); c.val(c.val() + $('%s').text()); return false;"
+            script = "var c = jQuery('#wiki_page_body'); c.val(c.val() + jQuery('%s').text()); return false;"
             fragment = self.auth.db.wiki_media.id.represent
             csv = False
             create = False
