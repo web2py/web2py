@@ -4970,7 +4970,7 @@ class Wiki(object):
                     slug.startswith(self.force_prefix)):
                 current.session.flash = 'slug must have "%s" prefix' \
                     % self.force_prefix
-                redirect(URL(args=('_edit', self.force_prefix + slug)))
+                redirect(URL(args=('_create')))
             db.wiki_page.can_read.default = [Wiki.everybody]
             db.wiki_page.can_edit.default = [auth.user_group_role()]
             db.wiki_page.title.default = title_guess
@@ -4978,8 +4978,8 @@ class Wiki(object):
             if slug == 'wiki-menu':
                 db.wiki_page.body.default = \
                     '- Menu Item > @////index\n- - Submenu > http://web2py.com'
-            else:
-                db.wiki_page.body.default = db(db.wiki_page.id==from_template).select(db.wiki_page.body)[0].body if int(from_template) > 0 else '## %s\n\npage content' % title_guess
+            #else:
+            #    db.wiki_page.body.default = db(db.wiki_page.id==from_template).select(db.wiki_page.body)[0].body if int(from_template) > 0 else '## %s\n\npage content' % title_guess
         vars = current.request.post_vars
         if vars.body:
             vars.body = vars.body.replace('://%s' % self.host, '://HOSTNAME')
@@ -5071,13 +5071,13 @@ class Wiki(object):
         slugs=db(db.wiki_page.id>0).select(db.wiki_page.id,db.wiki_page.slug)
         options=[OPTION(row.slug,_value=row.id) for row in slugs]
         options.insert(0, OPTION('',_value=''))
-        form = SQLFORM.factory(Field("slug", default=current.request.args(1),
+        form = SQLFORM.factory(Field("slug", default=current.request.args(1) or self.force_prefix,
                                      requires=(IS_SLUG(),
                                      IS_NOT_IN_DB(db,db.wiki_page.slug))),
-                               Field("from_template", "reference wiki_page",
-                                     requires=IS_EMPTY_OR(IS_IN_DB(db, db.wiki_page, '%(slug)s')),
-                                     comment=current.T("Choose Template or empty for new Page")),
-                                     _class="well span6")
+                               #Field("from_template", "reference wiki_page",
+                               #      requires=IS_EMPTY_OR(IS_IN_DB(db, db.wiki_page, '%(slug)s')),
+                               #      comment=current.T("Choose Template or empty for new Page")),
+                               _class="well span6")
         form.element("[type=submit]").attributes["_value"] = current.T("Create Page from Slug")
 
         if form.process().accepted:
