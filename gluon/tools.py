@@ -4761,7 +4761,7 @@ class Wiki(object):
                         Field('slug',
                               requires=[IS_SLUG(),
                                         IS_NOT_IN_DB(db, 'wiki_page.slug')],
-                              readable=False, writable=False),
+                              writable=False),
                         Field('title', unique=True),
                         Field('body', 'text', notnull=True),
                         Field('tags', 'list:string'),
@@ -5088,21 +5088,26 @@ class Wiki(object):
     def pages(self):
         if not self.can_manage():
             return self.not_authorized()
-        self.auth.db.wiki_page.id.represent = lambda id, row: SPAN(
-            '@////%s' % row.slug)
+        self.auth.db.wiki_page.slug.represent = lambda slug, row: SPAN(
+            '@////%s' % slug)
         self.auth.db.wiki_page.title.represent = lambda title, row: \
             A(title, _href=URL(args=row.slug))
+        wiki_table = self.auth.db.wiki_page
         content = SQLFORM.grid(
-            self.auth.db.wiki_page,
+            wiki_table,
+            fields = [wiki_table.slug,
+                      wiki_table.title, wiki_table.tags, 
+                      wiki_table.can_read, wiki_table.can_edit],
             links=[
                 lambda row:
-                    A('edit', _href=URL(args=('_edit', row.slug))),
+                    A('edit', _href=URL(args=('_edit', row.slug)),_class='btn'),
                 lambda row:
-                    A('media', _href=URL(args=('_editmedia', row.slug)))],
+                    A('media', _href=URL(args=('_editmedia', row.slug)),_class='btn')],
             details=False, editable=False, deletable=False, create=False,
             orderby=self.auth.db.wiki_page.title,
             args=['_pages'],
             user_signature=False)
+
         return dict(content=content)
 
     def media(self, id):
