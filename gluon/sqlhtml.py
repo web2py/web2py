@@ -1623,7 +1623,7 @@ class SQLFORM(FORM):
             'integer': ['=', '!=', '<', '>', '<=', '>=', 'in', 'not in'],
             'double': ['=', '!=', '<', '>', '<=', '>='],
             'id': ['=', '!=', '<', '>', '<=', '>=', 'in', 'not in'],
-            'reference': ['=', '!=', '<', '>', '<=', '>=', 'in', 'not in'],
+            'reference': ['=', '!='],
             'boolean': ['=', '!=']}
         if fields[0]._db._adapter.dbengine == 'google:datastore':
             search_options['string'] = ['=', '!=', '<', '>', '<=', '>=']
@@ -1641,15 +1641,33 @@ class SQLFORM(FORM):
                     field.label, str) and T(field.label) or field.label
                 selectfields.append(OPTION(label, _value=str(field)))
                 operators = SELECT(*[OPTION(T(option), _value=option) for option in options])
+                _id = "%s_%s" % (value_id,name)
                 if field.type == 'boolean':
+                    value_input = SQLFORM.widgets.boolean.widget(field,field.default,_id=_id)
+                elif field.type == 'double':
+                    value_input = SQLFORM.widgets.double.widget(field,field.default,_id=_id)
+                elif field.type == 'time':
+                    value_input = SQLFORM.widgets.time.widget(field,field.default,_id=_id)
+                elif field.type == 'date':
+                    value_input = SQLFORM.widgets.date.widget(field,field.default,_id=_id)
+                elif field.type == 'datetime':
+                    value_input = SQLFORM.widgets.datetime.widget(field,field.default,_id=_id)
+                elif (field.type.startswith('reference ') or 
+                      field.type.startswith('list:reference ')) and \
+                      hasattr(field.requires,'options'):
                     value_input = SELECT(
-                        OPTION(T("True"), _value="T"),
-                        OPTION(T("False"), _value="F"),
-                        _id="%s_%s" % (value_id,name))
+                        *[OPTION(v, _value=k)
+                          for k,v in field.requires.options()],
+                         **dict(_id=_id))
+                elif field.type == 'integer' or \
+                        field.type.startswith('reference ') or \
+                        field.type.startswith('list:integer') or \
+                        field.type.startswith('list:reference '):
+                    value_input = SQLFORM.widgets.integer.widget(field,field.default,_id=_id)
                 else:
-                    value_input = INPUT(_type='text',
-                                        _id="%s_%s" % (value_id,name),
-                                        _class=field.type)
+                    value_input = INPUT(
+                        _type='text', _id=_id, _class=field.type)
+                        
                 new_button = INPUT(
                     _type="button", _value=T('New'), _class="btn",
                     _onclick="%s_build_query('new','%s')" % (prefix,field))
