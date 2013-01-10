@@ -5670,6 +5670,7 @@ class IMAPAdapter(NoSQLAdapter):
         self.driver_args = driver_args
         self.adapter_args = adapter_args
         self.mailbox_size = None
+        self.static_names = None
         self.charset = sys.getfilesystemencoding()
         # imap class
         self.imap4 = None
@@ -5848,11 +5849,17 @@ class IMAPAdapter(NoSQLAdapter):
         return charset
 
     def reset_mailboxes(self):
-        self.connection.mailbox_names = None
+        "Forces the adapter to retrieve mailbox names from the server"
+        self.connection.mailbox_names = self.static_names = None
         self.get_mailboxes()
 
     def get_mailboxes(self):
         """ Query the mail database for mailbox names """
+        if self.static_names:
+            # statically defined mailbox names
+            self.connection.mailbox_names = self.static_names
+            return self.static_names.keys()
+
         mailboxes_list = self.connection.list()
         self.connection.mailbox_names = dict()
         mailboxes = list()
@@ -5864,7 +5871,8 @@ class IMAPAdapter(NoSQLAdapter):
                 sub_items = item.split("\"")
                 sub_items = [sub_item for sub_item in sub_items \
                 if len(sub_item.strip()) > 0]
-                mailbox = sub_items[len(sub_items) - 1]
+                # mailbox = sub_items[len(sub_items) -1]
+                mailbox = sub_items[-1]
                 # remove unwanted characters and store original names
                 # Don't allow leading non alphabetic characters
                 mailbox_name = re.sub('^[_0-9]*', '', re.sub('[^_\w]','',re.sub('[/ ]','_',mailbox)))
@@ -5896,7 +5904,7 @@ class IMAPAdapter(NoSQLAdapter):
         else:
             return False
 
-    def define_tables(self):
+    def define_tables(self, mailbox_names=None):
         """
         Auto create common IMAP fileds
 
@@ -5908,11 +5916,16 @@ class IMAPAdapter(NoSQLAdapter):
         Returns a dictionary with tablename, server native mailbox name
         pairs.
         """
+        if mailbox_names:
+            # optional statically declared mailboxes
+            self.static_names = mailbox_names
         if not isinstance(self.connection.mailbox_names, dict):
             self.get_mailboxes()
-        mailboxes = self.connection.mailbox_names.keys()
-        for mailbox_name in mailboxes:
-            self.db.define_table("%s" % mailbox_name,
+
+        names = self.connection.mailbox_names.keys()
+
+        for name in names:
+            self.db.define_table("%s" % name,
                             Field("uid", "string", writable=False),
                             Field("answered", "boolean"),
                             Field("created", "datetime", writable=False),
@@ -5935,8 +5948,8 @@ class IMAPAdapter(NoSQLAdapter):
 
             # Set a special _mailbox attribute for storing
             # native mailbox names
-            self.db[mailbox_name].mailbox = \
-                self.connection.mailbox_names[mailbox_name]
+            self.db[name].mailbox = \
+                self.connection.mailbox_names[name]
 
         # Set the db instance mailbox collections
         self.db.mailboxes = self.connection.mailbox_names
@@ -5969,10 +5982,14 @@ class IMAPAdapter(NoSQLAdapter):
         if isinstance(query, Query):
             tablename = self.get_table(query)
             mailbox = self.connection.mailbox_names.get(tablename, None)
-            if mailbox is not None:
+            if mailbox is None:
+                 raise ValueError("Mailbox name not found: %s" % mailbox)
+            else:
                 # select with readonly
-                selected = self.connection.select(mailbox, True)
-                self.mailbox_size = int(selected[1][0])
+                result, selected = self.connection.select(mailbox, True)
+                if result != "OK":
+                    raise Exception("IMAP error: %s" % selected)
+                self.mailbox_size = int(selected[0])
                 search_query = "(%s)" % str(query).strip()
                 search_result = self.connection.uid("search", None, search_query)
                 # Normal IMAP response OK is assumed (change this)
@@ -6014,10 +6031,12 @@ class IMAPAdapter(NoSQLAdapter):
                                     fetch_results.append(fr)
                                 else:
                                     # error retrieving the flags for this message
-                                    pass
+                                    raise Exception("IMAP error retrieving flags: %s" % fdata)
                             else:
                                 # error retrieving the message body
-                                pass
+                                raise Exception("IMAP error retrieving the body: %s" % data)
+                else:
+                    raise Exception("IMAP search error: %s" % search_result[1])
         elif isinstance(query, (Expression, basestring)):
             raise NotImplementedError()
         else:
@@ -6193,6 +6212,8 @@ class IMAPAdapter(NoSQLAdapter):
             result, data = self.connection.store(*command)
             if result == "OK":
                 rowcount += 1
+            else:
+                raise Exception("IMAP storing error: %s" % data)
         return rowcount
 
     def _count(self, query, distinct=None):
@@ -6224,6 +6245,8 @@ class IMAPAdapter(NoSQLAdapter):
                 result, data = self.connection.store(number, "+FLAGS", "(\\Deleted)")
                 if result == "OK":
                     counter += 1
+                else:
+                    raise Exception("IMAP store error: %s" % data)
             if counter > 0:
                 result, data = self.connection.expunge()
         return counter
