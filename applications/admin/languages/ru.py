@@ -134,7 +134,7 @@
 'Editing Language file': 'Правка языкового файла',
 'Editing Plural Forms File': 'Editing Plural Forms File',
 'Enterprise Web Framework': 'Enterprise Web Framework',
-'Error logs for "%(app)s"': 'Журнал ошибок для "%(app)"',
+'Error logs for "%(app)s"': 'Журнал ошибок для "%(app)s"',
 'Error snapshot': 'Error snapshot',
 'Error ticket': 'Error ticket',
 'Errors': 'Ошибка',
