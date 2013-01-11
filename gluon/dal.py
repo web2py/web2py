@@ -5623,11 +5623,22 @@ class IMAPAdapter(NoSQLAdapter):
     # mapped names (which native
     # mailbox has what table name)
 
-    db.mailboxes <dict> # tablename, server native name pairs
+    imapdb.mailboxes <dict> # tablename, server native name pairs
 
     # To retrieve a table native mailbox name use:
-    db.<table>.mailbox
+    imapdb.<table>.mailbox
 
+    ### New features v2.4.1:
+
+    # Declare mailboxes statically with tablename, name pairs
+    # This avoids the extra server names retrieval
+
+    imapdb.define_tables({"inbox": "INBOX"})
+    
+    # Selects without content/attachments/email columns will only
+    # fetch header and flags
+
+    imapdb(q).select(imapdb.INBOX.sender, imapdb.INBOX.subject)
     """
 
     types = {
@@ -5848,11 +5859,6 @@ class IMAPAdapter(NoSQLAdapter):
         charset = message.get_content_charset()
         return charset
 
-    def reset_mailboxes(self):
-        "Forces the adapter to retrieve mailbox names from the server"
-        self.connection.mailbox_names = self.static_names = None
-        self.get_mailboxes()
-
     def get_mailboxes(self):
         """ Query the mail database for mailbox names """
         if self.static_names:
@@ -5919,6 +5925,8 @@ class IMAPAdapter(NoSQLAdapter):
         if mailbox_names:
             # optional statically declared mailboxes
             self.static_names = mailbox_names
+        else:
+            self.static_names = None
         if not isinstance(self.connection.mailbox_names, dict):
             self.get_mailboxes()
 
@@ -5965,7 +5973,7 @@ class IMAPAdapter(NoSQLAdapter):
             query = self.common_filter(query, [self.get_query_mailbox(query),])
         return str(query)
 
-    def select(self,query,fields,attributes):
+    def select(self, query, fields, attributes):
         """  Search and Fetch records and return web2py rows
         """
         # move this statement elsewhere (upper-level)
@@ -5998,18 +6006,22 @@ class IMAPAdapter(NoSQLAdapter):
                     # ten records (change for non-experimental implementation)
                     # However, light responses are not guaranteed with this
                     # approach, just fewer messages.
-                    # TODO: change limitby single to 2-tuple argument
                     limitby = attributes.get('limitby', None)
                     messages_set = search_result[1][0].split()
                     # descending order
                     messages_set.reverse()
                     if limitby is not None:
-                        # TODO: asc/desc attributes
+                        # TODO: orderby, asc/desc, limitby from complete message set
                         messages_set = messages_set[int(limitby[0]):int(limitby[1])]
-                    # Partial fetches are not used since the email
-                    # library does not seem to support it (it converts
-                    # partial messages to mangled message instances)
-                    imap_fields = "(RFC822)"
+
+                    # keep the requests small for header/flags
+                    if any([(field.name in ["content",
+                                            "attachments", "email"]) for 
+                           field in fields]):
+                        imap_fields = "(RFC822 FLAGS)"
+                    else:
+                        imap_fields = "(RFC822.HEADER FLAGS)"
+
                     if len(messages_set) > 0:
                         # create fetch results object list
                         # fetch each remote message and store it in memmory
@@ -6025,13 +6037,8 @@ class IMAPAdapter(NoSQLAdapter):
                                       "raw_message": data[0][1]}
                                 fr["multipart"] = fr["email"].is_multipart()
                                 # fetch flags for the message
-                                ftyp, fdata = self.connection.uid("fetch", uid, "(FLAGS)")
-                                if ftyp == "OK":
-                                    fr["flags"] = self.driver.ParseFlags(fdata[0])
-                                    fetch_results.append(fr)
-                                else:
-                                    # error retrieving the flags for this message
-                                    raise Exception("IMAP error retrieving flags: %s" % fdata)
+                                fr["flags"] = self.driver.ParseFlags(data[1])
+                                fetch_results.append(fr)
                             else:
                                 # error retrieving the message body
                                 raise Exception("IMAP error retrieving the body: %s" % data)
@@ -6090,9 +6097,6 @@ class IMAPAdapter(NoSQLAdapter):
                 # If there is no encoding found in the message header
                 # force utf-8 replacing characters (change this to
                 # module's defaults). Applies to .sender, .to, .cc and .bcc fields
-                #############################################################################
-                # TODO: External function to manage encoding and decoding of message strings
-                #############################################################################
                 item_dict["%s.sender" % tablename] = self.encode_text(message["From"], charset)
             if "%s.to" % tablename in fieldnames:
                 item_dict["%s.to" % tablename] = self.encode_text(message["To"], charset)
