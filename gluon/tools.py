@@ -1256,6 +1256,9 @@ class Auth(object):
     def navbar(self, prefix='Welcome', action=None,
                separators=(' [ ', ' | ', ' ] '), user_identifier=DEFAULT,
                referrer_actions=DEFAULT, mode='default'):
+        def Anr(*a,**b):
+            b['_rel']='nofollow'
+            return A(*a,**b)
         referrer_actions = [] if not referrer_actions else referrer_actions
         request = current.request
         asdropdown = (mode == 'dropdown')
@@ -1286,19 +1289,19 @@ class Auth(object):
                 user_identifier = user_identifier % self.user
             if not user_identifier:
                 user_identifier = ''
-            logout = A(T('Logout'), _href='%s/logout?_next=%s' %
+            logout = Anr(T('Logout'), _href='%s/logout?_next=%s' %
                       (action, urllib.quote(self.settings.logout_next)))
-            profile = A(T('Profile'), _href=href('profile'))
-            password = A(T('Password'), _href=href('change_password'))
+            profile = Anr(T('Profile'), _href=href('profile'))
+            password = Anr(T('Password'), _href=href('change_password'))
             bar = SPAN(
                 prefix, user_identifier, s1, logout, s3, _class='auth_navbar')
 
             if asdropdown:
-                logout = LI(A(I(_class='icon-off'), ' ' + T('Logout'), _href='%s/logout?_next=%s' %
+                logout = LI(Anr(I(_class='icon-off'), ' ' + T('Logout'), _href='%s/logout?_next=%s' %
                               (action, urllib.quote(self.settings.logout_next))))  # the space before T('Logout') is intentional. It creates a gap between icon and text
-                profile = LI(A(I(_class='icon-user'), ' ' +
+                profile = LI(Anr(I(_class='icon-user'), ' ' +
                              T('Profile'), _href=href('profile')))
-                password = LI(A(I(_class='icon-lock'), ' ' +
+                password = LI(Anr(I(_class='icon-lock'), ' ' +
                               T('Password'), _href=href('change_password')))
                 bar = UL(logout, _class='dropdown-menu')
                          # logout will be the last item in list
@@ -1312,21 +1315,21 @@ class Auth(object):
                     bar.insert(-1, s2)
                 bar.insert(-1, password)
         else:
-            login = A(T('Login'), _href=href('login'))
-            register = A(T('Register'), _href=href('register'))
-            retrieve_username = A(
+            login = Anr(T('Login'), _href=href('login'))
+            register = Anr(T('Register'), _href=href('register'))
+            retrieve_username = Anr(
                 T('Forgot username?'), _href=href('retrieve_username'))
-            lost_password = A(
+            lost_password = Anr(
                 T('Lost password?'), _href=href('request_reset_password'))
             bar = SPAN(s1, login, s3, _class='auth_navbar')
 
             if asdropdown:
-                login = LI(A(I(_class='icon-off'), ' ' + T('Login'), _href=href('login')))  # the space before T('Login') is intentional. It creates a gap between icon and text
-                register = LI(A(I(_class='icon-user'),
+                login = LI(Anr(I(_class='icon-off'), ' ' + T('Login'), _href=href('login')))  # the space before T('Login') is intentional. It creates a gap between icon and text
+                register = LI(Anr(I(_class='icon-user'),
                               ' ' + T('Register'), _href=href('register')))
-                retrieve_username = LI(A(I(_class='icon-edit'), ' ' + T(
+                retrieve_username = LI(Anr(I(_class='icon-edit'), ' ' + T(
                     'Forgot username?'), _href=href('retrieve_username')))
-                lost_password = LI(A(I(_class='icon-lock'), ' ' + T(
+                lost_password = LI(Anr(I(_class='icon-lock'), ' ' + T(
                     'Lost password?'), _href=href('request_reset_password')))
                 bar = UL(login, _class='dropdown-menu')
                          # login will be the last item in list
@@ -1349,10 +1352,10 @@ class Auth(object):
         if asdropdown:
             bar.insert(-1, LI('', _class='divider'))
             if self.user_id:
-                bar = LI(A(prefix, user_identifier, _href='#'),
+                bar = LI(Anr(prefix, user_identifier, _href='#'),
                          bar, _class='dropdown')
             else:
-                bar = LI(A(T('Login'), _href='#'),
+                bar = LI(Anr(T('Login'), _href='#'),
                          bar, _class='dropdown')
         return bar
 
