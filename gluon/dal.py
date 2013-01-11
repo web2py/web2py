@@ -447,7 +447,7 @@ def pluralize(singular, rules=PLURALIZE_RULES):
         if plural: return plural
 
 def hide_password(uri):
-    return REGEX_PASSWORD.sub('://******:',uri)
+    return REGEX_NOPASSWD.sub('******',uri)
 
 def OR(a,b):
     return a|b
@@ -6884,7 +6884,7 @@ class DAL(object):
             for db in db_group:
                 if not db._uri:
                     continue
-                k = REGEX_NOPASSWD.sub('******',db._uri)
+                k = hide_password(db._uri)
                 infos[k] = dict(dbstats = [(row[0], row[1]) for row in db._timings],
                                 dbtables = {'defined':
                                     sorted(list(set(db.tables) -
