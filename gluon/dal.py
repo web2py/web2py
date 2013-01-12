@@ -6689,6 +6689,40 @@ class Row(object):
                 del d[k]
         return d
 
+    def as_json(self, mode='object', default=None, **kwargs):
+        """
+        serializes the table to a JSON list of objects
+
+        kwargs are passed to .as_dict method
+        """
+        mode = mode.lower()
+        if not mode in ['object', 'array']:
+            raise SyntaxError('Invalid JSON serialization mode: %s' % mode)
+
+        multi = any([isinstance(v, self.__class__) for v in self.values()])
+        item = dict()
+
+        if multi:
+            for k, v in self.as_dict(**kwargs).iteritems():
+                item.update(v)
+        else:
+            item = self.as_dict(**kwargs)
+
+        if mode != 'object':
+            item = item.values()
+
+        if have_serializers:
+            return serializers.json(item,
+                                    default=default or
+                                    serializers.custom_json)
+        else:
+            try:
+                import json as simplejson
+            except ImportError:
+                import gluon.contrib.simplejson as simplejson
+            return simplejson.dumps(item)
+
+
 ################################################################################
 # Everything below should be independent of the specifics of the database
 # and should work for RDBMs and some NoSQL databases
@@ -9591,7 +9625,10 @@ class Rows(object):
         import sqlhtml
         return sqlhtml.SQLTABLE(self).xml()
 
-    def json(self, mode='object', default=None):
+    def as_xml(self,row_name='row',rows_name='rows'):
+        return self.xml(strict=True, row_name=row_name, rows_name=rows_name)
+
+    def as_json(self, mode='object', default=None):
         """
         serializes the table to a JSON list of objects
         """
@@ -9633,6 +9670,7 @@ class Rows(object):
                 import gluon.contrib.simplejson as simplejson
             return simplejson.dumps(items)
 
+    json = as_json
 
 ################################################################################
 # dummy function used to define some doctests
