@@ -6689,27 +6689,21 @@ class Row(object):
                 del d[k]
         return d
 
-    def as_json(self, mode='object', default=None, **kwargs):
+    def as_json(self, default=None, **kwargs):
         """
         serializes the table to a JSON list of objects
-
         kwargs are passed to .as_dict method
+        only "object" mode supported
+        TODO: return array mode with query column order
         """
-        mode = mode.lower()
-        if not mode in ['object', 'array']:
-            raise SyntaxError('Invalid JSON serialization mode: %s' % mode)
-
         multi = any([isinstance(v, self.__class__) for v in self.values()])
         item = dict()
 
         if multi:
-            for k, v in self.as_dict(**kwargs).iteritems():
+            for v in self.as_dict(**kwargs).values():
                 item.update(v)
         else:
             item = self.as_dict(**kwargs)
-
-        if mode != 'object':
-            item = item.values()
 
         if have_serializers:
             return serializers.json(item,
