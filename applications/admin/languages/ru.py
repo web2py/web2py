@@ -92,7 +92,7 @@
 'Database': 'База данных',
 'database': 'база данных',
 'database %s select': 'Выбор базы данных %s ',
-'database administration': 'администраторирование базы данных',
+'database administration': 'администрирование базы данных',
 'Date and Time': 'Дата и время',
 'db': 'бд',
 'DB Model': 'Модель БД',
