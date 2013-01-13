@@ -7273,6 +7273,8 @@ def index():
             i = 0
             while i<len(patterns):
                 pattern = patterns[i]
+                if not isinstance(pattern,str):
+                    pattern = pattern[0]
                 tokens = pattern.split('/')
                 if tokens[-1].startswith(':auto') and re2.match(tokens[-1]):
                     new_patterns = auto_table(tokens[-1][tokens[-1].find('[')+1:-1],
