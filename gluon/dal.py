@@ -6689,32 +6689,87 @@ class Row(object):
                 del d[k]
         return d
 
-    def as_json(self, default=None, **kwargs):
+    def as_xml(self, row_name="row", colnames=None, indent='  '):
+        def f(row,field,indent='  '):
+            if isinstance(row,Row):
+                spc = indent+'  \n'
+                items = [f(row[x],x,indent+'  ') for x in row]
+                return '%s<%s>\n%s\n%s</%s>' % (
+                    indent,
+                    field,
+                    spc.join(item for item in items if item),
+                    indent,
+                    field)
+            elif not callable(row):
+                if REGEX_ALPHANUMERIC.match(field):
+                    return '%s<%s>%s</%s>' % (indent,field,row,field)
+                else:
+                    return '%s<extra name="%s">%s</extra>' % \
+                        (indent,field,row)
+            else:
+                return None
+        return f(self, row_name, indent=indent)
+
+    def as_json(self, mode="object", default=None, colnames=None,
+                serialize=True, **kwargs):
         """
         serializes the table to a JSON list of objects
         kwargs are passed to .as_dict method
-        only "object" mode supported
+        only "object" mode supported for single row
+
+        serialize = False used by Rows.as_json
         TODO: return array mode with query column order
         """
+
+        def inner_loop(record, col):
+            (t, f) = col.split('.')
+            res = None
+            if not REGEX_TABLE_DOT_FIELD.match(col):
+                key = col
+                res = record._extra[col]
+            else:
+                key = f
+                if isinstance(record.get(t, None), Row):
+                    res = record[t][f]
+                else:
+                    res = record[f]
+            if mode == 'object':
+                return (key, res)
+            else:
+                return res
+
         multi = any([isinstance(v, self.__class__) for v in self.values()])
-        item = dict()
+        mode = mode.lower()
+        if not mode in ['object', 'array']:
+            raise SyntaxError('Invalid JSON serialization mode: %s' % mode)
 
-        if multi:
-            for v in self.as_dict(**kwargs).values():
-                item.update(v)
+        if mode=='object' and colnames:
+            item = dict([inner_loop(self, col) for col in colnames])
+        elif colnames:
+            item = [inner_loop(self, col) for col in colnames]
         else:
-            item = self.as_dict(**kwargs)
+            if not mode == 'object':
+                raise SyntaxError('Invalid JSON serialization mode: %s' % mode)
 
-        if have_serializers:
-            return serializers.json(item,
-                                    default=default or
-                                    serializers.custom_json)
+            if multi:
+                item = dict()
+                [item.update(**v.as_dict(**kwargs)) for v in self.values()]
+            else:
+                item = self.as_dict(**kwargs)
+
+        if serialize:
+            if have_serializers:
+                return serializers.json(item,
+                                        default=default or
+                                        serializers.custom_json)
+            else:
+                try:
+                    import json as simplejson
+                except ImportError:
+                    import gluon.contrib.simplejson as simplejson
+                return simplejson.dumps(item)
         else:
-            try:
-                import json as simplejson
-            except ImportError:
-                import gluon.contrib.simplejson as simplejson
-            return simplejson.dumps(item)
+            return item
 
 
 ################################################################################
@@ -9592,30 +9647,14 @@ class Rows(object):
         """
         serializes the table using sqlhtml.SQLTABLE (if present)
         """
+
         if strict:
             ncols = len(self.colnames)
-            def f(row,field,indent='  '):
-                if isinstance(row,Row):
-                    spc = indent+'  \n'
-                    items = [f(row[x],x,indent+'  ') for x in row]
-                    return '%s<%s>\n%s\n%s</%s>' % (
-                        indent,
-                        field,
-                        spc.join(item for item in items if item),
-                        indent,
-                        field)
-                elif not callable(row):
-                    if REGEX_ALPHANUMERIC.match(field):
-                        return '%s<%s>%s</%s>' % (indent,field,row,field)
-                    else:
-                        return '%s<extra name="%s">%s</extra>' % \
-                            (indent,field,row)
-                else:
-                    return None
-            return '<%s>\n%s\n</%s>' % (
-                rows_name,
-                '\n'.join(f(row,row_name) for row in self),
-                rows_name)
+            return '<%s>\n%s\n</%s>' % (rows_name,
+                '\n'.join(row.as_xml(row_name=row_name,
+                                     colnames=self.colnames) for
+                          row in self), rows_name)
+
         import sqlhtml
         return sqlhtml.SQLTABLE(self).xml()
 
@@ -9626,33 +9665,12 @@ class Rows(object):
         """
         serializes the table to a JSON list of objects
         """
-        mode = mode.lower()
-        if not mode in ['object', 'array']:
-            raise SyntaxError('Invalid JSON serialization mode: %s' % mode)
 
-        def inner_loop(record, col):
-            (t, f) = col.split('.')
-            res = None
-            if not REGEX_TABLE_DOT_FIELD.match(col):
-                key = col
-                res = record._extra[col]
-            else:
-                key = f
-                if isinstance(record.get(t, None), Row):
-                    res = record[t][f]
-                else:
-                    res = record[f]
-            if mode == 'object':
-                return (key, res)
-            else:
-                return res
+        items = [record.as_json(mode=mode, default=default,
+                                serialize=False,
+                                colnames=self.colnames) for
+                 record in self]
 
-        if mode == 'object':
-            items = [dict([inner_loop(record, col) for col in
-                     self.colnames]) for record in self]
-        else:
-            items = [[inner_loop(record, col) for col in self.colnames]
-                     for record in self]
         if have_serializers:
             return serializers.json(items,
                                     default=default or
@@ -9664,6 +9682,8 @@ class Rows(object):
                 import gluon.contrib.simplejson as simplejson
             return simplejson.dumps(items)
 
+    # for consistent naming yet backwards compatible
+    as_csv = __str__
     json = as_json
 
 ################################################################################
