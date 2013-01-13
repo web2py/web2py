@@ -52,4 +52,4 @@ applications/*/*.py[oc]
 applications/examples/static/epydoc
 applications/examples/static/sphinx
 applications/admin/cron/cron.master
-./HOWTO-web2py-devel
+HOWTO-web2py-devel
