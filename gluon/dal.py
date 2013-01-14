@@ -9577,6 +9577,22 @@ class Rows(object):
         :param storage_to_dict: when True returns a dict, otherwise a list(default True)
         :param datetime_to_str: convert datetime fields as strings (default True)
         """
+
+        # test for multiple rows
+        multi = False
+        f = self.first()
+        if f:
+            multi = any([isinstance(v, f.__class__) for v in f.values()])
+            if (not "." in key) and multi:
+                # No key provided, default to int indices
+                def new_key():
+                    i = 0
+                    while True:
+                        yield i
+                        i += 1
+                key_generator = new_key()
+                key = lambda r: key_generator.next()
+
         rows = self.as_list(compact, storage_to_dict, datetime_to_str, custom_types)
         if isinstance(key,str) and key.count('.')==1:
             (table, field) = key.split('.')
