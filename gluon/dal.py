@@ -7351,15 +7351,19 @@ def index():
                     ref = tag[tag.find('[')+1:-1]
                     if '.' in ref and otable:
                         table,field = ref.split('.')
-                        # print table,field
+                        selfld = '_id'
+                        if db[table][field].type.startswith('reference '):
+                            refs = [ x.name for x in db[otable] if x.type == db[table][field].type ]
+                            if refs:
+                                selfld = refs[0]
                         if nested_select:
                             try:
-                                dbset=db(db[table][field].belongs(dbset._select(db[otable]._id)))
+                                dbset=db(db[table][field].belongs(dbset._select(db[otable][selfld])))
                             except ValueError:
                                 return Row({'status':400,'pattern':pattern,
                                             'error':'invalid path','response':None})
                         else:
-                            items = [item.id for item in dbset.select(db[otable]._id)]
+                            items = [item.id for item in dbset.select(db[otable][selfld])]
                             dbset=db(db[table][field].belongs(items))
                     else:
                         table = ref
