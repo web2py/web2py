@@ -5841,16 +5841,22 @@ class IMAPAdapter(NoSQLAdapter):
         else:
             return None
 
+    @staticmethod
+    def header_represent(f, r):
+        from email.header import decode_header
+        text, encoding = decode_header(f)[0]
+        return text
+
     def encode_text(self, text, charset, errors="replace"):
         """ convert text for mail to unicode"""
         if text is None:
             text = ""
         else:
             if isinstance(text, str):
-                if charset is not None:
-                    text = unicode(text, charset, errors)
-                else:
+                if charset is None:
                     text = unicode(text, "utf-8", errors)
+                else:
+                    text = unicode(text, charset, errors)
             else:
                 raise Exception("Unsupported mail text type %s" % type(text))
         return text.encode("utf-8")
@@ -5952,12 +5958,18 @@ class IMAPAdapter(NoSQLAdapter):
                             Field("mime", "string", writable=False),
                             Field("email", "string", writable=False, readable=False),
                             Field("attachments", "list:string", writable=False, readable=False),
+                            Field("encoding") # main charset detected
                             )
 
             # Set a special _mailbox attribute for storing
             # native mailbox names
             self.db[name].mailbox = \
                 self.connection.mailbox_names[name]
+
+            # decode quoted printable
+            self.db[name].to.represent = self.db[name].cc.represent = \
+            self.db[name].bcc.represent = self.db[name].sender.represent = \
+            self.db[name].subject.represent = self.header_represent
 
         # Set the db instance mailbox collections
         self.db.mailboxes = self.connection.mailbox_names
@@ -5981,12 +5993,11 @@ class IMAPAdapter(NoSQLAdapter):
             query = self.common_filter(query, [self.get_query_mailbox(query),])
 
         import email
-        import email.header
-        decode_header = email.header.decode_header
         # get records from imap server with search + fetch
         # convert results to a dictionary
         tablename = None
         fetch_results = list()
+
         if isinstance(query, Query):
             tablename = self.get_table(query)
             mailbox = self.connection.mailbox_names.get(tablename, None)
@@ -6087,6 +6098,8 @@ class IMAPAdapter(NoSQLAdapter):
             # pending: search flags states trough the email message
             # instances for correct output
 
+            # preserve subject encoding (ASCII/quoted printable)
+
             if "%s.id" % tablename in fieldnames:
                 item_dict["%s.id" % tablename] = n
             if "%s.created" % tablename in fieldnames:
@@ -6097,17 +6110,17 @@ class IMAPAdapter(NoSQLAdapter):
                 # If there is no encoding found in the message header
                 # force utf-8 replacing characters (change this to
                 # module's defaults). Applies to .sender, .to, .cc and .bcc fields
-                item_dict["%s.sender" % tablename] = self.encode_text(message["From"], charset)
+                item_dict["%s.sender" % tablename] = message["From"]
             if "%s.to" % tablename in fieldnames:
-                item_dict["%s.to" % tablename] = self.encode_text(message["To"], charset)
+                item_dict["%s.to" % tablename] = message["To"]
             if "%s.cc" % tablename in fieldnames:
                 if "Cc" in message.keys():
-                    item_dict["%s.cc" % tablename] = self.encode_text(message["Cc"], charset)
+                    item_dict["%s.cc" % tablename] = message["Cc"]
                 else:
                     item_dict["%s.cc" % tablename] = ""
             if "%s.bcc" % tablename in fieldnames:
                 if "Bcc" in message.keys():
-                    item_dict["%s.bcc" % tablename] = self.encode_text(message["Bcc"], charset)
+                    item_dict["%s.bcc" % tablename] = message["Bcc"]
                 else:
                     item_dict["%s.bcc" % tablename] = ""
             if "%s.deleted" % tablename in fieldnames:
@@ -6121,17 +6134,13 @@ class IMAPAdapter(NoSQLAdapter):
             if "%s.seen" % tablename in fieldnames:
                 item_dict["%s.seen" % tablename] = "\\Seen" in flags
             if "%s.subject" % tablename in fieldnames:
-                subject = message["Subject"]
-                decoded_subject = decode_header(subject)
-                text = decoded_subject[0][0]
-                encoding = decoded_subject[0][1]
-                if encoding in (None, ""):
-                    encoding = charset
-                item_dict["%s.subject" % tablename] = self.encode_text(text, encoding)
+                item_dict["%s.subject" % tablename] = message["Subject"]
             if "%s.answered" % tablename in fieldnames:
                 item_dict["%s.answered" % tablename] = "\\Answered" in flags
             if "%s.mime" % tablename in fieldnames:
                 item_dict["%s.mime" % tablename] = message.get_content_type()
+            if "%s.encoding" % tablename in fieldnames:
+                item_dict["%s.encoding" % tablename] = charset
 
             # Here goes the whole RFC822 body as an email instance
             # for controller side custom processing
@@ -6139,7 +6148,8 @@ class IMAPAdapter(NoSQLAdapter):
             # >> email.message_from_string(raw string)
             # returns a Message object for enhanced object processing
             if "%s.email" % tablename in fieldnames:
-                item_dict["%s.email" % tablename] = self.encode_text(raw_message, charset)
+                # WARNING: no encoding performed (raw message)
+                item_dict["%s.email" % tablename] = raw_message
 
             # Size measure as suggested in a Velocity Reviews post
             # by Tim Williams: "how to get size of email attachment"
@@ -6152,8 +6162,9 @@ class IMAPAdapter(NoSQLAdapter):
                         attachments.append(part.get_payload(decode=True))
                 if "%s.content" % tablename in fieldnames:
                     if "text" in part.get_content_maintype():
-                        payload = self.encode_text(part.get_payload(decode=True), charset)
-                        content.append(payload)
+                        part_charset = self.get_charset(part)
+                        payload = part.get_payload(decode=True)
+                        content.append(self.encode_text(payload, part_charset))
                 if "%s.size" % tablename in fieldnames:
                     if part is not None:
                         size += len(str(part))
