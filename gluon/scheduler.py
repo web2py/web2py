@@ -579,7 +579,7 @@ class Scheduler(MetaScheduler):
                 break
             except:
                 db.rollback()
-                logger.error('TICKER(%s): error popping tasks', self.worker_name)
+                logger.error('%s: error popping tasks', self.worker_name)
                 x += 1
                 time.sleep(0.5)
         
