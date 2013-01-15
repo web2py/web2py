@@ -510,8 +510,7 @@ class web2pyDialog(object):
 
         if not options.taskbar:
             thread.start_new_thread(start_browser,
-                                    (get_url(ip, proto=proto, port=port),),
-                                    dict(startup=True))
+                                    (get_url(ip, proto=proto, port=port), True))
 
         self.password.configure(state='readonly')
         [ip.configure(state='disabled') for ip in self.ips.values()]
