@@ -15,7 +15,13 @@ from glob import glob
 import shutil
 import platform
 try:
-    from git import *
+    import git
+    GIT_ERRORS = (git.GitCommandError, git.InvalidGitRepositoryError,
+                  git.NoSuchPathError)
+    if git.__version__ >= '0.3.1':
+        GIT_ERRORS += (git.CacheError, git.CheckoutError,
+                       git.ODBError, git.ParseError,
+                       git.UnmergedEntriesError)
     have_git = True
 except ImportError:
     have_git = False
@@ -240,10 +246,10 @@ def site():
                 redirect(URL(r=request))
             target = os.path.join(apath(r=request), form_update.vars.name)
             try:
-                new_repo = Repo.clone_from(form_update.vars.url, target)
+                new_repo = git.Repo.clone_from(form_update.vars.url, target)
                 session.flash = T('new application "%s" imported',
                                   form_update.vars.name)
-            except GitCommandError, err:
+            except git.GitCommandError, err:
                 session.flash = T('Invalid git repository specified.')
             redirect(URL(r=request))
 
@@ -1726,28 +1732,30 @@ def git_pull():
                           {T('Cancel'): URL('site')})
     if dialog.accepted:
         try:
-            repo = Repo(os.path.join(apath(r=request), app))
+            repo = git.Repo(os.path.join(apath(r=request), app))
             origin = repo.remotes.origin
             origin.fetch()
             origin.pull()
             session.flash = T("Application updated via git pull")
             redirect(URL('site'))
-        except CheckoutError, message:
-            session.flash = T("Pull failed, certain files could not be checked out. Check logs for details.")
-            redirect(URL('site'))
-        except UnmergedEntriesError:
-            session.flash = T("Pull is not possible because you have unmerged files. Fix them up in the work tree, and then try again.")
-            redirect(URL('site'))
+        except GIT_ERRORS, e:
+            error_type = type(e)
+            if 'CheckoutError' in error_type:
+                session.flash = T("Pull failed, certain files could not be checked out. Check logs for details.")
+                redirect(URL('site'))
+            elif 'UnmergedEntriesError' in error_type:
+                session.flash = T("Pull is not possible because you have unmerged files. Fix them up in the work tree, and then try again.")
+                redirect(URL('site'))
+            elif 'GitCommandError' in error_type:
+                session.flash = T(
+                    "Pull failed, git exited abnormally. See logs for details.")
+                redirect(URL('site'))
+            else:
+                session.flash = T(
+                    "Git error: %s %s" % (error_type, str(e)))
+                redirect(URL('site'))
         except AssertionError:
             session.flash = T("Pull is not possible because you have unmerged files. Fix them up in the work tree, and then try again.")
-            redirect(URL('site'))
-        except GitCommandError, status:
-            session.flash = T(
-                "Pull failed, git exited abnormally. See logs for details.")
-            redirect(URL('site'))
-        except Exception, e:
-            session.flash = T(
-                "Pull failed, git exited abnormally. See logs for details.")
             redirect(URL('site'))
     elif 'cancel' in request.vars:
         redirect(URL('site'))
@@ -1766,7 +1774,7 @@ def git_push():
     form.process()
     if form.accepted:
         try:
-            repo = Repo(os.path.join(apath(r=request), app))
+            repo = git.Repo(os.path.join(apath(r=request), app))
             index = repo.index
             index.add([apath(r=request) + app + '/*'])
             new_commit = index.commit(form.vars.changelog)
@@ -1775,11 +1783,14 @@ def git_push():
             session.flash = T(
                 "Git repo updated with latest application changes.")
             redirect(URL('site'))
-        except UnmergedEntriesError:
-            session.flash = T("Push failed, there are unmerged entries in the cache. Resolve merge issues manually and try again.")
-            redirect(URL('site'))
-        except Exception, e:
-            session.flash = T(
-                "Push failed, git exited abnormally. See logs for details.")
-            redirect(URL('site'))
+        except GIT_ERRORS, e:
+            error_type = type(e)
+            if "UnmergedEntriesError" in error_type:
+                session.flash = T("Push failed, there are unmerged entries in the cache. Resolve merge issues manually and try again.")
+                redirect(URL('site'))
+            else:
+                session.flash = T(
+                    "Git error: %s %s" % (error_type, str(e)))
+                redirect(URL('site'))
     return dict(app=app, form=form)
+
