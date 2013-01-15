@@ -5565,7 +5565,8 @@ class IMAPAdapter(NoSQLAdapter):
     subject     string
     mime        string         The mime header declaration
     email       string         The complete RFC822 message**
-    attachments list:string    Each non text decoded part as string
+    attachments <type list>    Each non text part as dict
+    encoding    string         The main detected encoding
 
     *At the application side it is measured as the length of the RFC822
     message string
@@ -5957,8 +5958,8 @@ class IMAPAdapter(NoSQLAdapter):
                             Field("subject", "string", writable=False),
                             Field("mime", "string", writable=False),
                             Field("email", "string", writable=False, readable=False),
-                            Field("attachments", "list:string", writable=False, readable=False),
-                            Field("encoding") # main charset detected
+                            Field("attachments", list, writable=False, readable=False),
+                            Field("encoding")
                             )
 
             # Set a special _mailbox attribute for storing
@@ -6070,11 +6071,11 @@ class IMAPAdapter(NoSQLAdapter):
         else:
             allfields = False
         if allfields:
-            fieldnames = ["%s.%s" % (tablename, field) for field in self.search_fields.keys()]
+            colnames = ["%s.%s" % (tablename, field) for field in self.search_fields.keys()]
         else:
-            fieldnames = ["%s.%s" % (tablename, field.name) for field in fields]
+            colnames = ["%s.%s" % (tablename, field.name) for field in fields]
 
-        for k in fieldnames:
+        for k in colnames:
             imapfields_dict[k] = k
 
         imapqry_list = list()
@@ -6100,46 +6101,46 @@ class IMAPAdapter(NoSQLAdapter):
 
             # preserve subject encoding (ASCII/quoted printable)
 
-            if "%s.id" % tablename in fieldnames:
+            if "%s.id" % tablename in colnames:
                 item_dict["%s.id" % tablename] = n
-            if "%s.created" % tablename in fieldnames:
+            if "%s.created" % tablename in colnames:
                 item_dict["%s.created" % tablename] = self.convert_date(message["Date"])
-            if "%s.uid" % tablename in fieldnames:
+            if "%s.uid" % tablename in colnames:
                 item_dict["%s.uid" % tablename] = uid
-            if "%s.sender" % tablename in fieldnames:
+            if "%s.sender" % tablename in colnames:
                 # If there is no encoding found in the message header
                 # force utf-8 replacing characters (change this to
                 # module's defaults). Applies to .sender, .to, .cc and .bcc fields
                 item_dict["%s.sender" % tablename] = message["From"]
-            if "%s.to" % tablename in fieldnames:
+            if "%s.to" % tablename in colnames:
                 item_dict["%s.to" % tablename] = message["To"]
-            if "%s.cc" % tablename in fieldnames:
+            if "%s.cc" % tablename in colnames:
                 if "Cc" in message.keys():
                     item_dict["%s.cc" % tablename] = message["Cc"]
                 else:
                     item_dict["%s.cc" % tablename] = ""
-            if "%s.bcc" % tablename in fieldnames:
+            if "%s.bcc" % tablename in colnames:
                 if "Bcc" in message.keys():
                     item_dict["%s.bcc" % tablename] = message["Bcc"]
                 else:
                     item_dict["%s.bcc" % tablename] = ""
-            if "%s.deleted" % tablename in fieldnames:
+            if "%s.deleted" % tablename in colnames:
                 item_dict["%s.deleted" % tablename] = "\\Deleted" in flags
-            if "%s.draft" % tablename in fieldnames:
+            if "%s.draft" % tablename in colnames:
                 item_dict["%s.draft" % tablename] = "\\Draft" in flags
-            if "%s.flagged" % tablename in fieldnames:
+            if "%s.flagged" % tablename in colnames:
                 item_dict["%s.flagged" % tablename] = "\\Flagged" in flags
-            if "%s.recent" % tablename in fieldnames:
+            if "%s.recent" % tablename in colnames:
                 item_dict["%s.recent" % tablename] = "\\Recent" in flags
-            if "%s.seen" % tablename in fieldnames:
+            if "%s.seen" % tablename in colnames:
                 item_dict["%s.seen" % tablename] = "\\Seen" in flags
-            if "%s.subject" % tablename in fieldnames:
+            if "%s.subject" % tablename in colnames:
                 item_dict["%s.subject" % tablename] = message["Subject"]
-            if "%s.answered" % tablename in fieldnames:
+            if "%s.answered" % tablename in colnames:
                 item_dict["%s.answered" % tablename] = "\\Answered" in flags
-            if "%s.mime" % tablename in fieldnames:
+            if "%s.mime" % tablename in colnames:
                 item_dict["%s.mime" % tablename] = message.get_content_type()
-            if "%s.encoding" % tablename in fieldnames:
+            if "%s.encoding" % tablename in colnames:
                 item_dict["%s.encoding" % tablename] = charset
 
             # Here goes the whole RFC822 body as an email instance
@@ -6147,7 +6148,7 @@ class IMAPAdapter(NoSQLAdapter):
             # The message is stored as a raw string
             # >> email.message_from_string(raw string)
             # returns a Message object for enhanced object processing
-            if "%s.email" % tablename in fieldnames:
+            if "%s.email" % tablename in colnames:
                 # WARNING: no encoding performed (raw message)
                 item_dict["%s.email" % tablename] = raw_message
 
@@ -6157,19 +6158,31 @@ class IMAPAdapter(NoSQLAdapter):
             # To retrieve the server size for representation would add a new
             # fetch transaction to the process
             for part in message.walk():
-                if "%s.attachments" % tablename in fieldnames:
-                    if not "text" in part.get_content_maintype():
-                        attachments.append(part.get_payload(decode=True))
-                if "%s.content" % tablename in fieldnames:
-                    if "text" in part.get_content_maintype():
-                        part_charset = self.get_charset(part)
+                maintype = part.get_content_maintype()
+                if ("%s.attachments" % tablename in colnames) or \
+                   ("%s.content" % tablename in colnames):
+                    if "%s.attachments" % tablename in colnames:
+                        if not ("text" in maintype):
+                            payload = part.get_payload(decode=True)
+                            if payload:
+                                attachment = {
+                                    "payload": payload,
+                                    "filename": part.get_filename(),
+                                    "encoding": part.get_content_charset(),
+                                    "mime": part.get_content_type(),
+                                    "disposition": part["Content-Disposition"]}
+                                attachments.append(attachment)
+                    if "%s.content" % tablename in colnames:
                         payload = part.get_payload(decode=True)
-                        content.append(self.encode_text(payload, part_charset))
-                if "%s.size" % tablename in fieldnames:
+                        part_charset = self.get_charset(part)
+                        if "text" in maintype:
+                            if payload:
+                                content.append(self.encode_text(payload, part_charset))
+                if "%s.size" % tablename in colnames:
                     if part is not None:
                         size += len(str(part))
             item_dict["%s.content" % tablename] = bar_encode(content)
-            item_dict["%s.attachments" % tablename] = bar_encode(attachments)
+            item_dict["%s.attachments" % tablename] = attachments
             item_dict["%s.size" % tablename] = size
             imapqry_list.append(item_dict)
 
@@ -6177,12 +6190,12 @@ class IMAPAdapter(NoSQLAdapter):
         # creation (sends an array or lists)
         for item_dict in imapqry_list:
             imapqry_array_item = list()
-            for fieldname in fieldnames:
+            for fieldname in colnames:
                 imapqry_array_item.append(item_dict[fieldname])
             imapqry_array.append(imapqry_array_item)
 
         # parse result and return a rows object
-        colnames = fieldnames
+        colnames = colnames
         processor = attributes.get('processor',self.parse)
         return processor(imapqry_array, fields, colnames)
 
