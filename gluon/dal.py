@@ -7378,8 +7378,10 @@ def index():
                         selfld = '_id'
                         if db[table][field].type.startswith('reference '):
                             refs = [ x.name for x in db[otable] if x.type == db[table][field].type ]
-                            if refs:
-                                selfld = refs[0]
+                        else:
+                            refs = [ x.name for x in db[table]._referenced_by if x.tablename==otable ]
+                        if refs:
+                            selfld = refs[0]
                         if nested_select:
                             try:
                                 dbset=db(db[table][field].belongs(dbset._select(db[otable][selfld])))
