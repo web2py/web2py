@@ -8204,7 +8204,7 @@ class Table(object):
         return fields
 
     def _insert(self, **fields):
-        fields = self._default(fields)
+        fields = self._defaults(fields)
         return self._db._adapter._insert(self, self._listify(fields))
 
     def insert(self, **fields):
