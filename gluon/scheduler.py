@@ -556,7 +556,7 @@ class Scheduler(MetaScheduler):
             self.die()
 
     def wrapped_assign_tasks(self, db):
-        db.commit()  # ?don't know if it's useful, let's be completely sure
+        db.commit()  #db.commit() only for Mysql
         x = 0
         while x < 10:
             try:
@@ -571,6 +571,7 @@ class Scheduler(MetaScheduler):
 
     def wrapped_pop_task(self):
         db = self.db
+        db.commit() #another nifty db.commit() only for Mysql
         x = 0
         while x < 10:
             try:
@@ -579,7 +580,7 @@ class Scheduler(MetaScheduler):
                 break
             except:
                 db.rollback()
-                logger.error('TICKER(%s): error popping tasks', self.worker_name)
+                logger.error('%s: error popping tasks', self.worker_name)
                 x += 1
                 time.sleep(0.5)
         

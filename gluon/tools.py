@@ -1256,6 +1256,9 @@ class Auth(object):
     def navbar(self, prefix='Welcome', action=None,
                separators=(' [ ', ' | ', ' ] '), user_identifier=DEFAULT,
                referrer_actions=DEFAULT, mode='default'):
+        def Anr(*a,**b):
+            b['_rel']='nofollow'
+            return A(*a,**b)
         referrer_actions = [] if not referrer_actions else referrer_actions
         request = current.request
         asdropdown = (mode == 'dropdown')
@@ -1286,19 +1289,19 @@ class Auth(object):
                 user_identifier = user_identifier % self.user
             if not user_identifier:
                 user_identifier = ''
-            logout = A(T('Logout'), _href='%s/logout?_next=%s' %
+            logout = Anr(T('Logout'), _href='%s/logout?_next=%s' %
                       (action, urllib.quote(self.settings.logout_next)))
-            profile = A(T('Profile'), _href=href('profile'))
-            password = A(T('Password'), _href=href('change_password'))
+            profile = Anr(T('Profile'), _href=href('profile'))
+            password = Anr(T('Password'), _href=href('change_password'))
             bar = SPAN(
                 prefix, user_identifier, s1, logout, s3, _class='auth_navbar')
 
             if asdropdown:
-                logout = LI(A(I(_class='icon-off'), ' ' + T('Logout'), _href='%s/logout?_next=%s' %
+                logout = LI(Anr(I(_class='icon-off'), ' ' + T('Logout'), _href='%s/logout?_next=%s' %
                               (action, urllib.quote(self.settings.logout_next))))  # the space before T('Logout') is intentional. It creates a gap between icon and text
-                profile = LI(A(I(_class='icon-user'), ' ' +
+                profile = LI(Anr(I(_class='icon-user'), ' ' +
                              T('Profile'), _href=href('profile')))
-                password = LI(A(I(_class='icon-lock'), ' ' +
+                password = LI(Anr(I(_class='icon-lock'), ' ' +
                               T('Password'), _href=href('change_password')))
                 bar = UL(logout, _class='dropdown-menu')
                          # logout will be the last item in list
@@ -1312,21 +1315,21 @@ class Auth(object):
                     bar.insert(-1, s2)
                 bar.insert(-1, password)
         else:
-            login = A(T('Login'), _href=href('login'))
-            register = A(T('Register'), _href=href('register'))
-            retrieve_username = A(
+            login = Anr(T('Login'), _href=href('login'))
+            register = Anr(T('Register'), _href=href('register'))
+            retrieve_username = Anr(
                 T('Forgot username?'), _href=href('retrieve_username'))
-            lost_password = A(
+            lost_password = Anr(
                 T('Lost password?'), _href=href('request_reset_password'))
             bar = SPAN(s1, login, s3, _class='auth_navbar')
 
             if asdropdown:
-                login = LI(A(I(_class='icon-off'), ' ' + T('Login'), _href=href('login')))  # the space before T('Login') is intentional. It creates a gap between icon and text
-                register = LI(A(I(_class='icon-user'),
+                login = LI(Anr(I(_class='icon-off'), ' ' + T('Login'), _href=href('login')))  # the space before T('Login') is intentional. It creates a gap between icon and text
+                register = LI(Anr(I(_class='icon-user'),
                               ' ' + T('Register'), _href=href('register')))
-                retrieve_username = LI(A(I(_class='icon-edit'), ' ' + T(
+                retrieve_username = LI(Anr(I(_class='icon-edit'), ' ' + T(
                     'Forgot username?'), _href=href('retrieve_username')))
-                lost_password = LI(A(I(_class='icon-lock'), ' ' + T(
+                lost_password = LI(Anr(I(_class='icon-lock'), ' ' + T(
                     'Lost password?'), _href=href('request_reset_password')))
                 bar = UL(login, _class='dropdown-menu')
                          # login will be the last item in list
@@ -1349,10 +1352,10 @@ class Auth(object):
         if asdropdown:
             bar.insert(-1, LI('', _class='divider'))
             if self.user_id:
-                bar = LI(A(prefix, user_identifier, _href='#'),
+                bar = LI(Anr(prefix, user_identifier, _href='#'),
                          bar, _class='dropdown')
             else:
-                bar = LI(A(T('Login'), _href='#'),
+                bar = LI(Anr(T('Login'), _href='#'),
                          bar, _class='dropdown')
         return bar
 
@@ -4761,7 +4764,7 @@ class Wiki(object):
                         Field('slug',
                               requires=[IS_SLUG(),
                                         IS_NOT_IN_DB(db, 'wiki_page.slug')],
-                              readable=False, writable=False),
+                              writable=False),
                         Field('title', unique=True),
                         Field('body', 'text', notnull=True),
                         Field('tags', 'list:string'),
@@ -4970,7 +4973,7 @@ class Wiki(object):
                     slug.startswith(self.force_prefix)):
                 current.session.flash = 'slug must have "%s" prefix' \
                     % self.force_prefix
-                redirect(URL(args=('_edit', self.force_prefix + slug)))
+                redirect(URL(args=('_create')))
             db.wiki_page.can_read.default = [Wiki.everybody]
             db.wiki_page.can_edit.default = [auth.user_group_role()]
             db.wiki_page.title.default = title_guess
@@ -4978,8 +4981,8 @@ class Wiki(object):
             if slug == 'wiki-menu':
                 db.wiki_page.body.default = \
                     '- Menu Item > @////index\n- - Submenu > http://web2py.com'
-            else:
-                db.wiki_page.body.default = db(db.wiki_page.id==from_template).select(db.wiki_page.body)[0].body if int(from_template) > 0 else '## %s\n\npage content' % title_guess
+            #else:
+            #    db.wiki_page.body.default = db(db.wiki_page.id==from_template).select(db.wiki_page.body)[0].body if int(from_template) > 0 else '## %s\n\npage content' % title_guess
         vars = current.request.post_vars
         if vars.body:
             vars.body = vars.body.replace('://%s' % self.host, '://HOSTNAME')
@@ -4993,20 +4996,19 @@ class Wiki(object):
             redirect(URL(args=slug))
         script = """
         $(function() {
-            if (!$('#wiki_page_body').length) return;
-            var pagecontent = $('#wiki_page_body');
+            if (!jQuery('#wiki_page_body').length) return;
+            var pagecontent = jQuery('#wiki_page_body');
             pagecontent.css('font-family',
                             'Monaco,Menlo,Consolas,"Courier New",monospace');
-            var prevbutton = $('<button class="btn nopreview">Preview</button>');
-            var mediabutton = $('<button class="btn nopreview">Media</button>');
-            var preview = $('<div id="preview"></div>').hide();
-            var previewmedia = $('<div id="previewmedia"></div>');
-            var table = $('form');
-            var bodylabel = $('#wiki_page_body__label');
-            preview.insertBefore(pagecontent);
-            prevbutton.insertAfter(bodylabel);
-            mediabutton.insertBefore(table);
-            previewmedia.insertBefore(table);
+            var prevbutton = jQuery('<button class="btn nopreview">Preview</button>');
+            var mediabutton = jQuery('<button class="btn nopreview">Media</button>');
+            var preview = jQuery('<div id="preview"></div>').hide();
+            var previewmedia = jQuery('<div id="previewmedia"></div>');
+            var form = pagecontent.closest('form');
+            preview.insertBefore(form);
+            prevbutton.insertBefore(form);
+            mediabutton.insertBefore(form);
+            previewmedia.insertBefore(form);
             mediabutton.toggle(function() {
                 web2py_component('%(urlmedia)s', 'previewmedia');
             }, function() {
@@ -5017,12 +5019,12 @@ class Wiki(object):
                 if (prevbutton.hasClass('nopreview')) {
                     prevbutton.addClass('preview').removeClass(
                         'nopreview').html('Edit Source');
-                    web2py_ajax_page('post', '%(url)s', {body : $('#wiki_page_body').val()}, 'preview');
-                    pagecontent.fadeOut('fast', function() {preview.fadeIn()});
+                    web2py_ajax_page('post', '%(url)s', {body : jQuery('#wiki_page_body').val()}, 'preview');
+                    form.fadeOut('fast', function() {preview.fadeIn()});
                 } else {
                     prevbutton.addClass(
                         'nopreview').removeClass('preview').html('Preview');
-                    preview.fadeOut('fast', function() {pagecontent.fadeIn()});
+                    preview.fadeOut('fast', function() {form.fadeIn()});
                 }
             })
         })
@@ -5046,7 +5048,7 @@ class Wiki(object):
         csv = True
         create = True
         if current.request.vars.embedded:
-            script = "var c = $('#wiki_page_body'); c.val(c.val() + $('%s').text()); return false;"
+            script = "var c = jQuery('#wiki_page_body'); c.val(c.val() + jQuery('%s').text()); return false;"
             fragment = self.auth.db.wiki_media.id.represent
             csv = False
             create = False
@@ -5071,13 +5073,13 @@ class Wiki(object):
         slugs=db(db.wiki_page.id>0).select(db.wiki_page.id,db.wiki_page.slug)
         options=[OPTION(row.slug,_value=row.id) for row in slugs]
         options.insert(0, OPTION('',_value=''))
-        form = SQLFORM.factory(Field("slug", default=current.request.args(1),
+        form = SQLFORM.factory(Field("slug", default=current.request.args(1) or self.force_prefix,
                                      requires=(IS_SLUG(),
                                      IS_NOT_IN_DB(db,db.wiki_page.slug))),
-                               Field("from_template", "reference wiki_page",
-                                     requires=IS_EMPTY_OR(IS_IN_DB(db, db.wiki_page, '%(slug)s')),
-                                     comment=current.T("Choose Template or empty for new Page")),
-                                     _class="well span6")
+                               #Field("from_template", "reference wiki_page",
+                               #      requires=IS_EMPTY_OR(IS_IN_DB(db, db.wiki_page, '%(slug)s')),
+                               #      comment=current.T("Choose Template or empty for new Page")),
+                               _class="well span6")
         form.element("[type=submit]").attributes["_value"] = current.T("Create Page from Slug")
 
         if form.process().accepted:
@@ -5088,21 +5090,26 @@ class Wiki(object):
     def pages(self):
         if not self.can_manage():
             return self.not_authorized()
-        self.auth.db.wiki_page.id.represent = lambda id, row: SPAN(
-            '@////%s' % row.slug)
+        self.auth.db.wiki_page.slug.represent = lambda slug, row: SPAN(
+            '@////%s' % slug)
         self.auth.db.wiki_page.title.represent = lambda title, row: \
             A(title, _href=URL(args=row.slug))
+        wiki_table = self.auth.db.wiki_page
         content = SQLFORM.grid(
-            self.auth.db.wiki_page,
+            wiki_table,
+            fields = [wiki_table.slug,
+                      wiki_table.title, wiki_table.tags, 
+                      wiki_table.can_read, wiki_table.can_edit],
             links=[
                 lambda row:
-                    A('edit', _href=URL(args=('_edit', row.slug))),
+                    A('edit', _href=URL(args=('_edit', row.slug)),_class='btn'),
                 lambda row:
-                    A('media', _href=URL(args=('_editmedia', row.slug)))],
+                    A('media', _href=URL(args=('_editmedia', row.slug)),_class='btn')],
             details=False, editable=False, deletable=False, create=False,
             orderby=self.auth.db.wiki_page.title,
             args=['_pages'],
             user_signature=False)
+
         return dict(content=content)
 
     def media(self, id):
