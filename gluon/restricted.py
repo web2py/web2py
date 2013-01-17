@@ -243,7 +243,7 @@ def snapshot(info=None, context=5, code=None, environment=None):
 
     # create a snapshot dict with some basic information
     s = {}
-    s['pyver'] = 'Python ' + sys.version.split()[0] + ': ' + sys.executable
+    s['pyver'] = 'Python ' + sys.version.split()[0] + ': ' + sys.executable + ' (prefix: %s)' % sys.prefix
     s['date'] = time.ctime(time.time())
 
     # start to process frames
