@@ -1,4 +1,3 @@
-#!/usr/bin/python
 # -*- coding: utf-8 -*-
 '''
 autoroutes writes routes for you based on a simpler routing
