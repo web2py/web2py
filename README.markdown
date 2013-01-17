@@ -28,7 +28,7 @@ That's it!!!
             contrib/               > third party libraries
             tests/                 > unittests
         applications/              > are the apps
-	    admin/                 > web based IDE
+            admin/                 > web based IDE
                 ...
             examples/              > examples, docs, links
                 ...
