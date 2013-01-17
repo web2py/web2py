@@ -41,7 +41,8 @@
         state.query = parseQuery(query);
         if (cm.lineCount() < 2000) { // This is too expensive on big documents.
           for (var cursor = getSearchCursor(cm, state.query); cursor.findNext();)
-            state.marked.push(cm.markText(cursor.from(), cursor.to(), "CodeMirror-searching"));
+            state.marked.push(cm.markText(cursor.from(), cursor.to(),
+                                          {className: "CodeMirror-searching"}));
         }
         state.posFrom = state.posTo = cm.getCursor();
         findNext(cm, rev);
@@ -76,14 +77,14 @@
       query = parseQuery(query);
       dialog(cm, replacementQueryDialog, "Replace with:", function(text) {
         if (all) {
-          cm.compoundChange(function() { cm.operation(function() {
+          cm.operation(function() {
             for (var cursor = getSearchCursor(cm, query); cursor.findNext();) {
               if (typeof query != "string") {
                 var match = cm.getRange(cursor.from(), cursor.to()).match(query);
-                cursor.replace(text.replace(/\$(\d)/, function(w, i) {return match[i];}));
+                cursor.replace(text.replace(/\$(\d)/, function(_, i) {return match[i];}));
               } else cursor.replace(text);
             }
-          });});
+          });
         } else {
           clearSearch(cm);
           var cursor = getSearchCursor(cm, query, cm.getCursor());
@@ -100,7 +101,7 @@
           }
           function doReplace(match) {
             cursor.replace(typeof query == "string" ? text :
-                           text.replace(/\$(\d)/, function(w, i) {return match[i];}));
+                           text.replace(/\$(\d)/, function(_, i) {return match[i];}));
             advance();
           }
           advance();
