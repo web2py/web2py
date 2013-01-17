@@ -5091,7 +5091,7 @@ class Wiki(object):
                                                     '%(slug)s')),
                       comment=current.T(
                         "Choose Template or empty for new Page")))
-        form = SQLFORM.factory(*fields, _class="well span6")
+        form = SQLFORM.factory(*fields, **dict(_class="well span6"))
         form.element("[type=submit]").attributes["_value"] = \
             current.T("Create Page from Slug")
 

@@ -16,7 +16,7 @@ import logging
 
 from storage import Storage
 from http import HTTP
-from html import BEAUTIFY
+from html import BEAUTIFY, XML
 
 logger = logging.getLogger("web2py")
 
@@ -131,7 +131,7 @@ class RestrictedError(Exception):
             try:
                 self.traceback = traceback.format_exc()
             except:
-                self.traceback = 'no traceback because template parting error'
+                self.traceback = 'no traceback because template parsing error'
             try:
                 self.snapshot = snapshot(context=10, code=code,
                                          environment=self.environment)
@@ -319,6 +319,6 @@ def snapshot(info=None, context=5, code=None, environment=None):
     # add web2py environment variables
     for k, v in environment.items():
         if k in ('request', 'response', 'session'):
-            s[k] = BEAUTIFY(v)
+            s[k] = XML(str(BEAUTIFY(v)))
 
     return s
