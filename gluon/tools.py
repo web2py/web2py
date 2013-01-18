@@ -4762,10 +4762,8 @@ class Wiki(object):
         perms = self.manage_permissions = manage_permissions
         self.restrict_search = restrict_search
         self.extra = extra or {}
-        if templates is None and not manage_permissions:
-            templates = db.auth_wiki.tags.contains('template')&\
-                db.auth_wiki.can_read.contains('everybody')
         self.templates = templates
+
         table_definitions = [
             ('wiki_page', {
                     'args':[
@@ -4816,6 +4814,10 @@ class Wiki(object):
                                 args.append(field)
                 args += value['args']
                 db.define_table(key, *args, **value['vars'])
+
+        if self.templates is None and not self.manage_permissions:
+            self.templates = db.wiki_page.tags.contains('template')&\
+                db.wiki_page.can_read.contains('everybody')
 
         def update_tags_insert(page, id, db=db):
             for tag in page.tags or []:
