@@ -625,6 +625,7 @@ CONTENT_TYPE = {
     '.voc': 'audio/x-voc',
     '.vor': 'application/vnd.stardivision.writer',
     '.vst': 'image/x-tga',
+    '.vtt': 'text/vtt',
     '.wav': 'audio/x-wav',
     '.wax': 'audio/x-ms-asx',
     '.wb1': 'application/x-quattropro',
