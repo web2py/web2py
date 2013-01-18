@@ -5153,15 +5153,19 @@ class Wiki(object):
                 base = match.group('base').replace(' ', '')
                 title = match.group('title')
                 link = match.group('link')
+                title_page = None
                 if link.startswith('@'):
                     items = link[2:].split('/')
                     if len(items) > 3:
+                        title_page = items[3]
                         link = URL(a=items[0] or None, c=items[1] or None,
                                    f=items[2] or None, args=items[3:])
                 parent = tree.get(base[1:], tree[''])
                 subtree = []
                 tree[base] = subtree
-                parent.append((current.T(title), False, link, subtree))
+                parent.append((current.T(title),
+                               request.args(0) == title_page,
+                               link, subtree))
         if self.can_see_menu():
             submenu = []
             menu.append((current.T('[Wiki]'), None, None, submenu))
