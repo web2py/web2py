@@ -6033,7 +6033,7 @@ class IMAPAdapter(NoSQLAdapter):
                         messages_set = messages_set[int(limitby[0]):int(limitby[1])]
 
                     # keep the requests small for header/flags
-                    if any([(field.name in ["content",
+                    if any([(field.name in ["content", "size",
                                             "attachments", "email"]) for 
                            field in fields]):
                         imap_fields = "(RFC822 FLAGS)"
