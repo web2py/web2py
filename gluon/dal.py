@@ -2570,12 +2570,18 @@ class PostgreSQLAdapter(BaseAdapter):
 
 
     def LIKE(self,first,second):
-        return '(%s LIKE %s)' % (self.expand(first),
-                                 self.expand(second,'string'))
+        args = (self.expand(first), self.expand(second,'string'))
+        if not first.type in ('string', 'text', 'json'):
+            return '(CAST(%s AS CHAR) LIKE %s)' % args
+        else:
+            return '(%s LIKE %s)' % args
 
     def ILIKE(self,first,second):
-        return '(%s ILIKE %s)' % (self.expand(first),
-                                  self.expand(second,'string'))
+        args = (self.expand(first), self.expand(second,'string'))
+        if not first.type in ('string', 'text', 'json'):
+            return '(CAST(%s AS CHAR) ILIKE %s)' % args
+        else:
+            return '(%s ILIKE %s)' % args
 
     def REGEXP(self,first,second):
         return '(%s ~ %s)' % (self.expand(first),
