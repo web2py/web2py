@@ -3317,14 +3317,17 @@ class Auth(object):
              restrict_search=False,
              resolve=True,
              extra=None,
-             menu_groups=None):
+             menu_groups=None,
+             templates=None):
+
         if not hasattr(self, '_wiki'):
             self._wiki = Wiki(self, render=render,
                               manage_permissions=manage_permissions,
                               force_prefix=force_prefix,
                               restrict_search=restrict_search,
                               env=env, extra=extra or {},
-                              menu_groups=menu_groups)
+                              menu_groups=menu_groups,
+                              templates=templates)
         else:
             self._wiki.env.update(env or {})
         # if resolve is set to True, process request as wiki call
@@ -4868,7 +4871,9 @@ class Wiki(object):
 
     def __init__(self, auth, env=None, render='markmin',
                  manage_permissions=False, force_prefix='',
-                 restrict_search=False, extra=None, menu_groups=None):
+                 restrict_search=False, extra=None,
+                 menu_groups=None, templates=None):
+        db = auth.db
         self.env = env or {}
         self.env['component'] = Wiki.component
         if render == 'markmin':
@@ -4886,7 +4891,8 @@ class Wiki(object):
         perms = self.manage_permissions = manage_permissions
         self.restrict_search = restrict_search
         self.extra = extra or {}
-        db = auth.db
+        self.templates = templates
+
         table_definitions = [
             ('wiki_page', {
                     'args':[
@@ -4937,6 +4943,10 @@ class Wiki(object):
                                 args.append(field)
                 args += value['args']
                 db.define_table(key, *args, **value['vars'])
+
+        if self.templates is None and not self.manage_permissions:
+            self.templates = db.wiki_page.tags.contains('template')&\
+                db.wiki_page.can_read.contains('everybody')
 
         def update_tags_insert(page, id, db=db):
             for tag in page.tags or []:
@@ -5110,8 +5120,8 @@ class Wiki(object):
             if slug == 'wiki-menu':
                 db.wiki_page.body.default = \
                     '- Menu Item > @////index\n- - Submenu > http://web2py.com'
-            #else:
-            #    db.wiki_page.body.default = db(db.wiki_page.id==from_template).select(db.wiki_page.body)[0].body if int(from_template) > 0 else '## %s\n\npage content' % title_guess
+            else:
+                db.wiki_page.body.default = db(db.wiki_page.id==from_template).select(db.wiki_page.body)[0].body if int(from_template) > 0 else '## %s\n\npage content' % title_guess
         vars = current.request.post_vars
         if vars.body:
             vars.body = vars.body.replace('://%s' % self.host, '://HOSTNAME')
@@ -5202,18 +5212,24 @@ class Wiki(object):
         slugs=db(db.wiki_page.id>0).select(db.wiki_page.id,db.wiki_page.slug)
         options=[OPTION(row.slug,_value=row.id) for row in slugs]
         options.insert(0, OPTION('',_value=''))
-        form = SQLFORM.factory(Field("slug", default=current.request.args(1) or self.force_prefix,
-                                     requires=(IS_SLUG(),
-                                     IS_NOT_IN_DB(db,db.wiki_page.slug))),
-                               #Field("from_template", "reference wiki_page",
-                               #      requires=IS_EMPTY_OR(IS_IN_DB(db, db.wiki_page, '%(slug)s')),
-                               #      comment=current.T("Choose Template or empty for new Page")),
-                               _class="well span6")
-        form.element("[type=submit]").attributes["_value"] = current.T("Create Page from Slug")
+        fields = [Field("slug", default=current.request.args(1) or 
+                        self.force_prefix,
+                        requires=(IS_SLUG(), IS_NOT_IN_DB(db,db.wiki_page.slug))),]
+        if self.templates:
+            fields.append(
+                Field("from_template", "reference wiki_page",
+                      requires=IS_EMPTY_OR(IS_IN_DB(db(self.templates), 
+                                                    '%(slug)s')),
+                      comment=current.T(
+                        "Choose Template or empty for new Page")))
+        form = SQLFORM.factory(*fields, **dict(_class="well span6"))
+        form.element("[type=submit]").attributes["_value"] = \
+            current.T("Create Page from Slug")
 
         if form.process().accepted:
-             # form.vars.from_template = 0 if not form.vars.from_template else form.vars.from_template
-             redirect(URL(args=('_edit',form.vars.slug,form.vars.from_template or 0))) # added param
+             form.vars.from_template = 0 if not form.vars.from_template \
+                 else form.vars.from_template
+             redirect(URL(args=('_edit', form.vars.slug,form.vars.from_template or 0))) # added param
         return dict(content=form)
 
     def pages(self):
@@ -5266,15 +5282,19 @@ class Wiki(object):
                 base = match.group('base').replace(' ', '')
                 title = match.group('title')
                 link = match.group('link')
+                title_page = None
                 if link.startswith('@'):
                     items = link[2:].split('/')
                     if len(items) > 3:
+                        title_page = items[3]
                         link = URL(a=items[0] or None, c=items[1] or None,
                                    f=items[2] or None, args=items[3:])
                 parent = tree.get(base[1:], tree[''])
                 subtree = []
                 tree[base] = subtree
-                parent.append((current.T(title), False, link, subtree))
+                parent.append((current.T(title),
+                               request.args(0) == title_page,
+                               link, subtree))
         if self.can_see_menu():
             submenu = []
             menu.append((current.T('[Wiki]'), None, None, submenu))

@@ -1991,6 +1991,7 @@ class SQLFORM(FORM):
             csv=(ExporterCSV, 'CSV'),
             xml=(ExporterXML, 'XML'),
             html=(ExporterHTML, 'HTML'),
+            json=(ExporterJSON, 'JSON'),
             tsv_with_hidden_cols=
                 (ExporterTSV, 'TSV (Excel compatible, hidden cols)'),
             tsv=(ExporterTSV, 'TSV (Excel compatible)'))
@@ -2938,10 +2939,9 @@ class ExporterCSV(ExportClass):
 
     def export(self):
         if self.rows:
-            return str(self.rows)
+            return self.rows.as_csv()
         else:
             return ''
-
 
 class ExporterHTML(ExportClass):
     label = 'HTML'
@@ -2952,18 +2952,10 @@ class ExporterHTML(ExportClass):
         ExportClass.__init__(self, rows)
 
     def export(self):
-        out = cStringIO.StringIO()
-        out.write('<html>\n<body>\n<table>\n')
         if self.rows:
-            colnames = [a.split('.') for a in self.rows.colnames]
-            for row in self.rows.records:
-                out.write('<tr>\n')
-                for col in colnames:
-                    out.write('<td>' + str(row[col[0]][col[1]]) + '</td>\n')
-                out.write('</tr>\n')
-        out.write('</table>\n</body>\n</html>')
-        return str(out.getvalue())
-
+            return self.rows.xml()
+        else:
+            return '<html>\n<body>\n<table>\n</table>\n</body>\n</html>'
 
 class ExporterXML(ExportClass):
     label = 'XML'
@@ -2974,15 +2966,22 @@ class ExporterXML(ExportClass):
         ExportClass.__init__(self, rows)
 
     def export(self):
-        out = cStringIO.StringIO()
-        out.write('<rows>\n')
         if self.rows:
-            colnames = [a.split('.') for a in self.rows.colnames]
-            for row in self.rows.records:
-                out.write('<row>\n')
-                for col in colnames:
-                    out.write(
-                        '<%s>' % col + str(row[col[0]][col[1]]) + '</%s>\n' % col)
-                out.write('</row>\n')
-        out.write('</rows>')
-        return str(out.getvalue())
+            return self.rows.as_xml()
+        else:
+            return '<rows></rows>'
+
+class ExporterJSON(ExportClass):
+    label = 'JSON'
+    file_ext = "json"
+    content_type = "application/json"
+
+    def __init__(self, rows):
+        ExportClass.__init__(self, rows)
+
+    def export(self):
+        if self.rows:
+            return self.rows.as_json()
+        else:
+            return 'null'
+
