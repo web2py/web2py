@@ -4403,7 +4403,7 @@ class Service(object):
         except Service.JsonRpcException, e:
             return return_error(None, e.code, e.info)
         
-        id, method, params = data['id'], data['method'], data.get('params', '')
+        id, method, params = data.get('id'), data['method'], data.get('params', '')
         if not method in methods:
             return return_error(id, -32601, data='Method "%s" does not exist' % method)
         try:
@@ -4413,7 +4413,7 @@ class Service(object):
                 s = methods[method](*params)
             if hasattr(s, 'as_list'):
                 s = s.as_list()
-            if not must_respond:
+            if must_respond:
                 return return_response(id, s)
             else:
                 return
