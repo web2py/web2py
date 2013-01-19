@@ -4416,7 +4416,7 @@ class Service(object):
             if must_respond:
                 return return_response(id, s)
             else:
-                return
+                return ''
         except Service.JsonRpcException, e:
             return return_error(id, e.code, e.info)
         except BaseException:
