@@ -4086,7 +4086,7 @@ class Service(object):
 
         Then call it with:
 
-            wget --post-data '{"jsonrpc": "2.0", "id": 1, "method": "mymethod", "params": {"param1": "val1", "param2":  "val2"}}' http://..../app/default/call/jsonrpc2/myfunction
+            wget --post-data '{"jsonrpc": "2.0", "id": 1, "method": "myfunction", "params": {"a": 1, "b": 2}}' http://..../app/default/call/jsonrpc2/myfunction
 
         """
         self.jsonrpc2_procedures[f.__name__] = f
