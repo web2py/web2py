@@ -115,6 +115,7 @@ server for requests.  It can be used for the optional"scope" parameters for Face
             uri += '?' + urlencode(r.get_vars)
         return uri
 
+
     def __build_url_opener(self, uri):
         """
         Build the url opener for managing HTTP Basic Athentication
