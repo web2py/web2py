@@ -4413,7 +4413,10 @@ class Service(object):
                 s = methods[method](*params)
             if hasattr(s, 'as_list'):
                 s = s.as_list()
-            return return_response(id, s)
+            if not must_respond:
+                return return_response(id, s)
+            else:
+                return
         except Service.JsonRpcException, e:
             return return_error(id, e.code, e.info)
         except BaseException:
