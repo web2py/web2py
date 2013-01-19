@@ -4308,9 +4308,9 @@ class Service(object):
         response.headers['Content-Type'] = 'application/json; charset=utf-8'
         methods = self.jsonrpc_procedures
         data = json_parser.loads(request.body.read())
-        jsonrpc_2 = dataget('jsonrpc')
+        jsonrpc_2 = data.get('jsonrpc')
         if jsonrpc_2: #hand over to version 2 of the protocol
-            self.serve_jsonrpc2(data)
+            return self.serve_jsonrpc2(data)
         id, method, params = data['id'], data['method'], data.get('params', '')
         if not method in methods:
             return return_error(id, 100, 'method "%s" does not exist' % method)
@@ -4386,17 +4386,18 @@ class Service(object):
 
         
             
+        methods = self.jsonrpc2_procedures
         if not data:
             request = current.request
             response = current.response
             response.headers['Content-Type'] = 'application/json; charset=utf-8'
-            methods = self.jsonrpc2_procedures
             try:
                 data = json_parser.loads(request.body.read())
             except ValueError: # decoding error in json lib
                 return return_error(None, -32700)
             except json_parser.JSONDecodeError: # decoding error in simplejson lib 
                 return return_error(None, -32700)
+            methods.update(self.jsonrpc_procedures)
         try:
             must_respond = validate(data)
         except Service.JsonRpcException, e:
