@@ -1444,7 +1444,7 @@ class BaseAdapter(ConnectionPool):
                     tablename,fieldname = item.split('.')
                     append(db[tablename][fieldname])
                 else:
-                    append(Expression(db,lambda:item))
+                    append(Expression(db,lambda item=item:item))
             else:
                 append(item)
         # ## if no fields specified take them all from the requested tables
