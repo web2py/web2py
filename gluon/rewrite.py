@@ -864,7 +864,7 @@ class MapUrlIn(object):
         if not self.host:
             (self.host, self.port) = ('localhost', '80')
         if ':' in self.host:
-            (self.host, self.port) = self.host.split(':')
+            (self.host, self.port) = self.host.rsplit(':',1) # for ipv6 support
         if not self.port:
             self.port = '443' if self.scheme == 'https' else '80'
 
