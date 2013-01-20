@@ -2245,7 +2245,7 @@ class BEAUTIFY(DIV):
                 if c.value:
                     components.append(c.value)                        
             if hasattr(c, 'xml') and callable(c.xml):
-                c = str(c)
+                components.append(c)
                 continue
             elif hasattr(c, 'keys') and callable(c.keys):
                 rows = []
