@@ -4086,7 +4086,7 @@ class Service(object):
 
         Then call it with:
 
-            wget --post-data '{"jsonrpc": "2.0", "id": 1, "method": "myfunction", "params": {"a": 1, "b": 2}}' http://..../app/default/call/jsonrpc2/myfunction
+            wget --post-data '{"jsonrpc": "2.0", "id": 1, "method": "myfunction", "params": {"a": 1, "b": 2}}' http://..../app/default/call/jsonrpc2
 
         """
         self.jsonrpc2_procedures[f.__name__] = f
@@ -4334,7 +4334,7 @@ class Service(object):
             etype, eval, etb = sys.exc_info()
             return return_error(id, 100, 'Exception %s: %s' % (etype, eval))
 
-    def serve_jsonrpc2(self, data=None):
+    def serve_jsonrpc2(self, data=None, batch_element=False):
                 
         def return_response(id, result):
             if not must_respond:
@@ -4386,7 +4386,6 @@ class Service(object):
 
         
             
-        methods = self.jsonrpc2_procedures
         if not data:
             request = current.request
             response = current.response
@@ -4397,7 +4396,21 @@ class Service(object):
                 return return_error(None, -32700)
             except json_parser.JSONDecodeError: # decoding error in simplejson lib 
                 return return_error(None, -32700)
-            methods.update(self.jsonrpc_procedures)
+
+        # Batch handling
+        if isinstance(data, list) and not batch_element:
+            retlist = []
+            for c in data:
+                retstr = self.serve_jsonrpc2(c, batch_element=True)
+                if retstr: # do not add empty responses
+                    retlist.append(retstr)
+            if len(retlist) == 0: # return nothing
+                return ''
+            else:
+                return "[" + ','.join(retlist) + "]"
+        methods = self.jsonrpc2_procedures
+        methods.update(self.jsonrpc_procedures)
+        
         try:
             must_respond = validate(data)
         except Service.JsonRpcException, e:
