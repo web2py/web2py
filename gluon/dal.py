@@ -7209,24 +7209,26 @@ class DAL(object):
         EXAMPLE:
 
 db.define_table('person',Field('name'),Field('info'))
-db.define_table('pet',Field('owner',db.person),Field('name'),Field('info'))
+db.define_table('pet',Field('ownedby',db.person),Field('name'),Field('info'))
 
 @request.restful()
 def index():
     def GET(*args,**vars):
         patterns = [
             "/friends[person]",
-            "/{friend.name.startswith}",
-            "/{friend.name}/:field",
-            "/{friend.name}/pets[pet.owner]",
-            "/{friend.name}/pet[pet.owner]/{pet.name}",
-            "/{friend.name}/pet[pet.owner]/{pet.name}/:field"
+            "/{person.name}/:field",
+            "/{person.name}/pets[pet.ownedby]",
+            "/{person.name}/pets[pet.ownedby]/{pet.name}",
+            "/{person.name}/pets[pet.ownedby]/{pet.name}/:field",
+            ("/dogs[pet]", db.pet.info=='dog'),
+            ("/dogs[pet]/{pet.name.startswith}", db.pet.info=='dog'),       
             ]
         parser = db.parse_as_rest(patterns,args,vars)
         if parser.status == 200:
             return dict(content=parser.response)
         else:
             raise HTTP(parser.status,parser.error)
+            
     def POST(table_name,**vars):
         if table_name == 'person':
             return db.person.validate_and_insert(**vars)
@@ -7403,7 +7405,7 @@ def index():
                             dbset = db(queries[table])
                         dbset=dbset(db[table])
                 elif tag==':field' and table:
-                    # # print 're3:'+tag
+                    # print 're3:'+tag
                     field = args[i]
                     if not field in db[table]: break
                     # hand-built patterns should respect .readable=False as well
@@ -7411,16 +7413,18 @@ def index():
                         return Row({'status':418,'pattern':pattern,
                                     'error':'I\'m a teapot','response':None})
                     try:
-                        item =  dbset.select(db[table][field],limitby=(0,1)).first()
+                        distinct = vars.get('distinct', False) == 'True'
+                        offset = int(vars.get('offset',None) or 0)
+                        limits = (offset,int(vars.get('limit',None) or 1000)+offset)
                     except ValueError:
-                        return Row({'status':400,'pattern':pattern,
-                                    'error':'invalid path','response':None})
-                    if not item:
-                        return Row({'status':404,'pattern':pattern,
-                                    'error':'record not found','response':None})
-                    else:
-                        return Row({'status':200,'response':item[field],
+                        return Row({'status':400,'error':'invalid limits','response':None})
+                    items =  dbset.select(db[table][field], distinct=distinct, limitby=limits)
+                    if items:
+                        return Row({'status':200,'response':items,
                                     'pattern':pattern})
+                    else:
+                        return Row({'status':404,'pattern':pattern,
+                                    'error':'no record found','response':None})
                 elif tag != args[i]:
                     break
                 otable = table
@@ -7437,9 +7441,9 @@ def index():
                         offset = int(vars.get('offset',None) or 0)
                         limits = (offset,int(vars.get('limit',None) or 1000)+offset)
                     except ValueError:
-                        Row({'status':400,'error':'invalid limits','response':None})
+                        return Row({'status':400,'error':'invalid limits','response':None})
                     if count > limits[1]-limits[0]:
-                        Row({'status':400,'error':'too many records','response':None})
+                        return Row({'status':400,'error':'too many records','response':None})
                     try:
                         response = dbset.select(limitby=limits,orderby=orderby,*fields)
                     except ValueError:
