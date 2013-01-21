@@ -612,6 +612,7 @@ class ConnectionPool(object):
 ###################################################################################
 
 class BaseAdapter(ConnectionPool):
+    native_json = False
     driver = None
     driver_name = None
     drivers = () # list of drivers from which to pick
@@ -1790,12 +1791,13 @@ class BaseAdapter(ConnectionPool):
             else:
                 obj = str(obj)
         elif fieldtype == 'json':
-            if have_serializers:
-                obj = serializers.json(obj)
-            elif simplejson:
-                obj = simplejson.dumps(items)
-            else:
-                raise RuntimeError("missing simplejson")
+            if not self.native_json:
+                if have_serializers:
+                    obj = serializers.json(obj)
+                elif simplejson:
+                    obj = simplejson.dumps(items)
+                else:
+                    raise RuntimeError("missing simplejson")
         if not isinstance(obj,bytes):
             obj = bytes(obj)
         try:
@@ -1928,16 +1930,17 @@ class BaseAdapter(ConnectionPool):
         return float(value)
 
     def parse_json(self, value, field_type):
-        if not isinstance(value, basestring):
-            raise RuntimeError('json data not a string')
-        if isinstance(value, unicode):
-            value = value.encode('utf-8')
-        if have_serializers:
-            value = serializers.loads_json(value)
-        elif simplejson:
-            value = simplejson.loads(value)
-        else:
-            raise RuntimeError("missing simplejson")
+        if not self.native_json:
+            if not isinstance(value, basestring):
+                raise RuntimeError('json data not a string')
+            if isinstance(value, unicode):
+                value = value.encode('utf-8')
+            if have_serializers:
+                value = serializers.loads_json(value)
+            elif simplejson:
+                value = simplejson.loads(value)
+            else:
+                raise RuntimeError("missing simplejson")
         return value
 
     def build_parsemap(self):
@@ -4959,6 +4962,7 @@ def cleanup(text):
     return text
 
 class MongoDBAdapter(NoSQLAdapter):
+    native_json = True
     drivers = ('pymongo',)
 
     uploads_in_blob = True
