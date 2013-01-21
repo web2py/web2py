@@ -8,12 +8,9 @@
 ## - download is for downloading files uploaded in the db (does streaming)
 ## - call exposes all registered services (none by default)
 #########################################################################
-import logging
-logger = logging.getLogger("web2py.app.welcome")
-logger.setLevel(logging.DEBUG)
+
 
 def index():
-    logger.error("teste")
     """
     example action using the internationalization operator T and flash
     rendered by views/default/index.html or views/generic.html
