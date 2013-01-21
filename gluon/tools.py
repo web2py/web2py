@@ -3951,6 +3951,7 @@ class Service(object):
         self.rss_procedures = {}
         self.json_procedures = {}
         self.jsonrpc_procedures = {}
+        self.jsonrpc2_procedures = {}
         self.xmlrpc_procedures = {}
         self.amfrpc_procedures = {}
         self.amfrpc3_procedures = {}
@@ -4070,6 +4071,25 @@ class Service(object):
 
         """
         self.jsonrpc_procedures[f.__name__] = f
+        return f
+
+    def jsonrpc2(self, f):
+        """
+        example:
+
+            service = Service()
+            @service.jsonrpc2
+            def myfunction(a, b):
+                return a + b
+            def call():
+                return service()
+
+        Then call it with:
+
+            wget --post-data '{"jsonrpc": "2.0", "id": 1, "method": "myfunction", "params": {"a": 1, "b": 2}}' http://..../app/default/call/jsonrpc2
+
+        """
+        self.jsonrpc2_procedures[f.__name__] = f
         return f
 
     def xmlrpc(self, f):
@@ -4253,7 +4273,20 @@ class Service(object):
 
     class JsonRpcException(Exception):
         def __init__(self, code, info):
+            jrpc_error = Service.jsonrpc_errors.get(code)
+            if jrpc_error:
+                self.message, self.description = jrpc_error
             self.code, self.info = code, info
+
+    # jsonrpc 2.0 error types.  records the following structure {code: (message,meaning)}
+    jsonrpc_errors = {
+        -32700:	("Parse error. Invalid JSON was received by the server.",  "An error occurred on the server while parsing the JSON text."),
+        -32600: ("Invalid Request", "The JSON sent is not a valid Request object."),
+        -32601: ("Method not found", "The method does not exist / is not available."),
+        -32602: ("Invalid params", "Invalid method parameter(s)."),
+        -32603: ("Internal error", "Internal JSON-RPC error."),
+        -32099: ("Server error", "Reserved for implementation-defined server-errors.")}
+
 
     def serve_jsonrpc(self):
         def return_response(id, result):
@@ -4275,6 +4308,9 @@ class Service(object):
         response.headers['Content-Type'] = 'application/json; charset=utf-8'
         methods = self.jsonrpc_procedures
         data = json_parser.loads(request.body.read())
+        jsonrpc_2 = data.get('jsonrpc')
+        if jsonrpc_2: #hand over to version 2 of the protocol
+            return self.serve_jsonrpc2(data)
         id, method, params = data['id'], data['method'], data.get('params', '')
         if not method in methods:
             return return_error(id, 100, 'method "%s" does not exist' % method)
@@ -4297,6 +4333,114 @@ class Service(object):
         except:
             etype, eval, etb = sys.exc_info()
             return return_error(id, 100, 'Exception %s: %s' % (etype, eval))
+
+    def serve_jsonrpc2(self, data=None, batch_element=False):
+                
+        def return_response(id, result):
+            if not must_respond:
+                return None
+            return serializers.json({'jsonrpc': '2.0',
+                'id': id, 'result': result})
+
+        def return_error(id, code, message=None, data=None):
+            error = {'code': code}
+            if message is None:
+                error['message'] =  Service.jsonrpc_errors[code][0]
+            else:
+                error['message'] = message
+            if data is None:
+                error['data'] = Service.jsonrpc_errors[code][1]
+            else:
+                error['data'] = data
+            return serializers.json({'jsonrpc': '2.0',
+                                     'id': id,
+                                     'error': error})
+
+        def validate(data):
+            """
+            Validate request as defined in: http://www.jsonrpc.org/specification#request_object.
+
+            :param data: The json object.
+            :type name: str.
+
+            :returns:
+                - True -- if successful
+                - False -- if no error should be reported (i.e. data is missing 'id' member)
+            
+            :raises: JsonRPCException
+            
+            """
+
+            iparms = set(data.keys())
+            mandatory_args = set(['jsonrpc', 'method'])
+            missing_args = mandatory_args - iparms
+
+            if missing_args:
+                raise Service.JsonRpcException(-32600, 'Missing arguments %s.' % list(missing_args))
+            if data['jsonrpc'] != '2.0':
+                raise Service.JsonRpcException(-32603, 'Unsupported jsonrpc version "%s"' % data['jsonrpc'])
+            if 'id' not in iparms:
+                 return False
+
+            return True
+
+        
+            
+        if not data:
+            request = current.request
+            response = current.response
+            response.headers['Content-Type'] = 'application/json; charset=utf-8'
+            try:
+                data = json_parser.loads(request.body.read())
+            except ValueError: # decoding error in json lib
+                return return_error(None, -32700)
+            except json_parser.JSONDecodeError: # decoding error in simplejson lib 
+                return return_error(None, -32700)
+
+        # Batch handling
+        if isinstance(data, list) and not batch_element:
+            retlist = []
+            for c in data:
+                retstr = self.serve_jsonrpc2(c, batch_element=True)
+                if retstr: # do not add empty responses
+                    retlist.append(retstr)
+            if len(retlist) == 0: # return nothing
+                return ''
+            else:
+                return "[" + ','.join(retlist) + "]"
+        methods = self.jsonrpc2_procedures
+        methods.update(self.jsonrpc_procedures)
+        
+        try:
+            must_respond = validate(data)
+        except Service.JsonRpcException, e:
+            return return_error(None, e.code, e.info)
+        
+        id, method, params = data.get('id'), data['method'], data.get('params', '')
+        if not method in methods:
+            return return_error(id, -32601, data='Method "%s" does not exist' % method)
+        try:
+            if isinstance(params,dict):
+                s = methods[method](**params)
+            else:
+                s = methods[method](*params)
+            if hasattr(s, 'as_list'):
+                s = s.as_list()
+            if must_respond:
+                return return_response(id, s)
+            else:
+                return ''
+        except Service.JsonRpcException, e:
+            return return_error(id, e.code, e.info)
+        except BaseException:
+            etype, eval, etb = sys.exc_info()
+            code = -32001
+            data = '%s: %s\n' % (etype.__name__, eval) + request.is_local and traceback.format_tb(etb)
+            return return_error(id, code, data=data)
+        except:
+            etype, eval, etb = sys.exc_info()
+            return return_error(id, 32099, data='Exception %s: %s' % (etype, eval))
+        
 
     def serve_xmlrpc(self):
         request = current.request
@@ -4441,6 +4585,8 @@ class Service(object):
             return self.serve_json(request.args[1:])
         elif arg0 == 'jsonrpc':
             return self.serve_jsonrpc()
+        elif arg0 == 'jsonrpc2':
+            return self.serve_jsonrpc2()
         elif arg0 == 'xmlrpc':
             return self.serve_xmlrpc()
         elif arg0 == 'amfrpc':
