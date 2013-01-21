@@ -224,6 +224,13 @@ try:
     have_serializers = True
 except ImportError:
     have_serializers = False
+    try:
+        import json as simplejson
+    except ImportError:
+        try:
+            import gluon.contrib.simplejson as simplejson
+        except ImportError:
+            simplejson = None
 
 try:
     import validators
@@ -1782,16 +1789,13 @@ class BaseAdapter(ConnectionPool):
                 obj = obj.isoformat()[:10]
             else:
                 obj = str(obj)
-        elif (fieldtype == 'json'):
-            if not isinstance(obj, basestring):
-                if have_serializers:
-                    obj = serializers.json(obj)
-                else:
-                    try:
-                        import json as simplejson
-                    except ImportError:
-                        import gluon.contrib.simplejson as simplejson
-                    obj = simplejson.dumps(items)
+        elif fieldtype == 'json':
+            if have_serializers:
+                obj = serializers.json(obj)
+            elif simplejson:
+                obj = simplejson.dumps(items)
+            else:
+                raise RuntimeError("missing simplejson")
         if not isinstance(obj,bytes):
             obj = bytes(obj)
         try:
@@ -1924,17 +1928,16 @@ class BaseAdapter(ConnectionPool):
         return float(value)
 
     def parse_json(self, value, field_type):
-        if isinstance(value, basestring):
-            if isinstance(value, unicode):
-                value = value.encode('utf-8')
-            if have_serializers:
-                value = serializers.loads_json(value)
-            else:
-                try:
-                    import json as simplejson
-                except ImportError:
-                    import gluon.contrib.simplejson as simplejson
-                value = simplejson.loads(value)
+        if not isinstance(value, basestring):
+            raise RuntimeError('json data not a string')
+        if isinstance(value, unicode):
+            value = value.encode('utf-8')
+        if have_serializers:
+            value = serializers.loads_json(value)
+        elif simplejson:
+            value = simplejson.loads(value)
+        else:
+            raise RuntimeError("missing simplejson")
         return value
 
     def build_parsemap(self):
@@ -4250,16 +4253,13 @@ class NoSQLAdapter(BaseAdapter):
             elif fieldtype == 'blob':
                 pass
             elif fieldtype == 'json':
-                if isinstance(obj, basestring):
-                    obj = self.to_unicode(obj)
-                    if have_serializers:
-                        obj = serializers.loads_json(obj)
-                    else:
-                        try:
-                            import json as simplejson
-                        except ImportError:
-                            import gluon.contrib.simplejson as simplejson
-                        obj = simplejson.loads(obj)
+                obj = self.to_unicode(obj)
+                if have_serializers:
+                    obj = serializers.loads_json(obj)
+                elif simplejson:
+                    obj = simplejson.loads(obj)
+                else:
+                    raise RuntimeError("missing simplejson")
             elif is_string and field_is_type('list:string'):
                 return map(self.to_unicode,obj)
             elif is_list:
@@ -6792,12 +6792,10 @@ class Row(object):
                 return serializers.json(item,
                                         default=default or
                                         serializers.custom_json)
-            else:
-                try:
-                    import json as simplejson
-                except ImportError:
-                    import gluon.contrib.simplejson as simplejson
+            elif simplejson:
                 return simplejson.dumps(item)
+            else:
+                raise RuntimeError("missing simplejson")
         else:
             return item
 
@@ -9733,12 +9731,10 @@ class Rows(object):
             return serializers.json(items,
                                     default=default or
                                     serializers.custom_json)
-        else:
-            try:
-                import json as simplejson
-            except ImportError:
-                import gluon.contrib.simplejson as simplejson
+        elif simplejson:
             return simplejson.dumps(items)
+        else:
+            raise RuntimeError("missing simplejson")
 
     # for consistent naming yet backwards compatible
     as_csv = __str__
