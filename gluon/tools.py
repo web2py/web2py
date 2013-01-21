@@ -5089,7 +5089,8 @@ class Wiki(object):
         if self.templates:
             fields.append(
                 Field("from_template", "reference wiki_page",
-                      requires=IS_EMPTY_OR(IS_IN_DB(db(self.templates), 
+                      requires=IS_EMPTY_OR(IS_IN_DB(db(self.templates),
+                                                    db.wiki_page._id,
                                                     '%(slug)s')),
                       comment=current.T(
                         "Choose Template or empty for new Page")))
