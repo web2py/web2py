@@ -1,4 +1,5 @@
 import logging
+import os
 
 try:
     import Tkinter
@@ -24,3 +25,11 @@ class MessageBoxHandler(logging.Handler):
             root.mainloop()
 
 
+class NotifySendHandler(logging.Handler):
+    def __init__(self):
+        logging.Handler.__init__(self)
+
+    def emit(self, record):
+        if Tkinter:
+            msg = self.format(record)
+            os.system("notify-send '%s'" % msg)
