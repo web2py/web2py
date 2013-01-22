@@ -774,7 +774,7 @@ def formstyle_bootstrap(form, fields):
     parent = FIELDSET()
     for id, label, controls, help in fields:
         # wrappers
-        _help = SPAN(help, _class='help-inline')
+        _help = SPAN(help, _class='help-block')
         # embed _help into _controls
         _controls = DIV(controls, _help, _class='controls')
         # submit unflag by default
