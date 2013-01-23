@@ -17,8 +17,6 @@ import urllib
 path = os.path.dirname(os.path.abspath(__file__))
 os.chdir(path)
 sys.path = [path] + [p for p in sys.path if not p == path]
-import gluon.main
-from gluon.fileutils import read_file, write_file
 
 
 class Servers:
@@ -92,8 +90,6 @@ class Servers:
 
     @staticmethod
     def gevent(app, address, **options):
-        from gevent import monkey
-        monkey.patch_all()
         from gevent import pywsgi
         from gevent.pool import Pool
         pywsgi.WSGIServer(address, app, spawn='workers' in options and Pool(
@@ -181,6 +177,12 @@ class Servers:
         s.start()
 
 def run(servername, ip, port, softcron=True, logging=False, profiler=None):
+    if servername == 'gevent':
+        from gevent import monkey
+        monkey.patch_all()
+
+    import gluon.main
+
     if logging:
         application = gluon.main.appfactory(wsgiapp=gluon.main.wsgibase,
                                             logfilename='httpserver.log',
@@ -301,7 +303,7 @@ def mongrel2_handler(application, conn, debug=False):
 def main():
     usage = "python anyserver.py -s tornado -i 127.0.0.1 -p 8000 -l -P"
     try:
-        version = read_file('VERSION')
+        version = open('VERSION','r')
     except IOError:
         version = ''
     parser = optparse.OptionParser(usage, None, optparse.Option, version)
