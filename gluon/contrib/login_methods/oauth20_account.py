@@ -7,7 +7,8 @@ License: LGPL v3
 
 Adds support for  OAuth 2.0 authentication to web2py.
 
-OAuth 2.0 Draft:  http://tools.ietf.org/html/draft-ietf-oauth-v2-10
+OAuth 2.0 spec: http://tools.ietf.org/html/rfc6749
+
 """
 
 import time
@@ -17,6 +18,7 @@ import urllib2
 from urllib import urlencode
 from gluon import current, redirect, HTTP
 
+import json
 
 class OAuthAccount(object):
     """
@@ -144,13 +146,18 @@ server for requests.  It can be used for the optional"scope" parameters for Face
             # reuse token until expiration
             if expires == 0 or expires > time.time():
                         return current.session.token['access_token']
-        if current.session.code:
+            
+        code = current.request.vars.code
+
+        if code:
             data = dict(client_id=self.client_id,
                         client_secret=self.client_secret,
                         redirect_uri=current.session.redirect_uri,
-                        response_type='token', code=current.session.code)
+                        code=code,
+                        grant_type='authorization_code'
+                        )
 
-            if self.args:
+            if False and self.args:
                 data.update(self.args)
             open_url = None
             opener = self.__build_url_opener(self.token_url)
@@ -158,7 +165,6 @@ server for requests.  It can be used for the optional"scope" parameters for Face
                 open_url = opener.open(self.token_url, urlencode(data))
             except urllib2.HTTPError, e:
                 tmp = e.read()
-                print tmp
                 raise Exception(tmp)
             finally:
                 del current.session.code  # throw it away
@@ -166,9 +172,20 @@ server for requests.  It can be used for the optional"scope" parameters for Face
             if open_url:
                 try:
                     data = open_url.read()
-                    tokendata = cgi.parse_qs(data)
-                    current.session.token = \
-                        dict([(k, v[-1]) for k, v in tokendata.items()])
+                    resp_type = open_url.info().get('Content-Type')
+                    # try json style first
+                    if not resp_type or resp_type == 'application/json':
+                        try:
+                            tokendata = json.loads(data)
+                            current.session.token = tokendata
+                        except Exception, e:
+                            raise Exception("Cannot parse oauth server response %s %s" % (data, e))
+                    else: # try facebook style first with x-www-form-encoded
+                        tokendata = cgi.parse_qs(data)
+                        current.session.token = \
+                          dict([(k, v[-1]) for k, v in tokendata.items()])
+                    if not tokendata: # parsing failed?
+                        raise Exception("Cannot parse oauth server response %s" % data)
                     # set expiration absolute time try to avoid broken
                     # implementations where "expires_in" becomes "expires"
                     if 'expires_in' in current.session.token:
@@ -258,20 +275,16 @@ server for requests.  It can be used for the optional"scope" parameters for Face
         accessToken()
         """
 
-        if not self.accessToken():
-            if not current.request.vars.code:
-                current.session.redirect_uri = self.__redirect_uri(next)
-                data = dict(redirect_uri=current.session.redirect_uri,
-                            response_type='code',
-                            client_id=self.client_id)
-                if self.args:
-                    data.update(self.args)
-                auth_request_url = self.auth_url + "?" + urlencode(data)
-                raise HTTP(307,
-                           "You are not authenticated: you are being redirected to the <a href='" + auth_request_url + "'> authentication server</a>",
-                           Location=auth_request_url)
-            else:
-                current.session.code = current.request.vars.code
-                self.accessToken()
-                return current.session.code
-        return None
+        token = self.accessToken()
+        if not token:
+            current.session.redirect_uri = self.__redirect_uri(next)
+            data = dict(redirect_uri=current.session.redirect_uri,
+                        response_type='code',
+                        client_id=self.client_id)
+            if self.args:
+                data.update(self.args)
+            auth_request_url = self.auth_url + "?" + urlencode(data)
+            raise HTTP(307,
+                       "You are not authenticated: you are being redirected to the <a href='" + auth_request_url + "'> authentication server</a>",
+                       Location=auth_request_url)
+        return
