@@ -12,13 +12,6 @@
 <link rel="stylesheet" href="{{=cm}}/theme/web2py.css">
 <script src="{{=cm}}/lib/codemirror.js"></script>
 <script src="{{=cm}}/mode/clike/clike.js"></script>
-<script src="{{=cm}}/lib/util/matchbrackets.js"></script>
-<script src="{{=cm}}/lib/util/closetag.js"></script>
-<link rel="stylesheet" href="{{=cm}}/lib/util/simple-hint.css">
-{{if filetype=='python':}}
-<script src="{{=cm}}/lib/util/simple-hint.js"></script>
-<script src="{{=cm}}/lib/util/python-hint.js"></script>
-{{pass}}
 {{if TEXT_EDITOR_KEYBINDING == 'emacs':}}<script src="{{=cm}}/keymap/emacs.js"></script>{{pass}}
 {{if TEXT_EDITOR_KEYBINDING == 'vi':}}<script src="{{=cm}}/keymap/vim.js"></script>{{pass}}
 <script src="{{=cm}}/mode/python/python.js"></script>
@@ -161,93 +154,74 @@ jQuery(document).ready(function(){
     {{elif TEXT_EDITOR == 'codemirror':}}
     <textarea style="width: auto; height:auto; direction:ltr;" id="body" name="data">{{=data}}</textarea>
     <script>
-function isFullScreen(instance) {
+      function isFullScreen(instance) {
           return /\bCodeMirror-fullscreen\b/.test(instance.getWrapperElement().className);
       }
       function winHeight() {
           return window.innerHeight || (document.documentElement || document.body).clientHeight;
       }
       function setFullScreen(instance, full) {
-          var wrap = instance.getWrapperElement();
+          var wrap = instance.getWrapperElement(), scroll = instance.getScrollerElement();
           if (full) {
               wrap.className += " CodeMirror-fullscreen";
-              wrap.style.height = winHeight() + "px";
+              scroll.style.height = winHeight() + "px";
               document.documentElement.style.overflow = "hidden";
           } else {
               wrap.className = wrap.className.replace(" CodeMirror-fullscreen", "");
-              wrap.style.height = "";
+              scroll.style.height = "";
               document.documentElement.style.overflow = "";
           }
           instance.refresh();
       }
-      CodeMirror.on(window, "resize", function() {
+      CodeMirror.connect(window, "resize", function() {
           var showing = document.body.getElementsByClassName("CodeMirror-fullscreen")[0];
           if (!showing) return;
-          showing.CodeMirror.getWrapperElement().style.height = winHeight() + "px";
+          showing.CodeMirror.getScrollerElement().style.height = winHeight() + "px";
       });
-	  //To autocomplete python code
-	  {{if filetype=='python':}}
-	  CodeMirror.commands.autocomplete = function(cm) {
-        CodeMirror.simpleHint(cm, CodeMirror.pythonHint);
-      }
-	  {{pass}}
-	  var editor = CodeMirror.fromTextArea(document.getElementById("body"), {
-      	  {{if filetype=='html':}}
-          mode : "text/html", 
-          lineNumbers : true, 
+      // must be here or break emmet/zencoding
+      CodeMirror.defaults.extraKeys["Ctrl-S"] = 
+        function(instance) {doClickSave();};
+      CodeMirror.defaults.extraKeys["Ctrl-F11"]= 
+        function(instance) {
+          setFullScreen(instance, !isFullScreen(instance));};
+      {{if filetype=='python':}}      
+      CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
+      {{pass}}
+      CodeMirror.defaults.extraKeys["Esc"]=
+        function(instance) {
+          if (isFullScreen(instance)) 
+             setFullScreen(instance, false);};
+      var cm_opts = {
+        {{if filetype=='html':}}
+          mode : "text/html", lineNumbers : true, 
           profile: 'xhtml',
-		  autoCloseTags: true,
         {{else:}}
           mode: { name: '{{=filetype}}'{{if filetype=='python':}},version: 2,singleLineStringErrors: false{{pass}} },
         {{pass}}
-		// extraKeys must be here or break emmet/zencoding		
-		extraKeys: {
-					  "Ctrl-S": function(instance) {doClickSave();},
-					  "Ctrl-F11": function(instance) {
-          							setFullScreen(instance, !isFullScreen(instance));},
-					{{if filetype=='python':}}      
-      				  "Tab": "indentMore",
-					  "Ctrl-Space": "autocomplete",
-					{{pass}}
-					  "Esc": function(instance) {
-          						if (isFullScreen(instance)) 
-             						setFullScreen(instance, false);}
-				   },
- 		  lineNumbers: true,
-		  indentUnit: 4,
-		  theme: "web2py",
-		  tabMode: "shift",
-		  lineWrapping: true,
-		  gutters: ["CodeMirror-linenumbers", "breakpoints"],
-		{{if TEXT_EDITOR_KEYBINDING == 'emacs':}}keyMap: "emacs",{{pass}}
-        {{if TEXT_EDITOR_KEYBINDING == 'vi':}}keyMap: "vim",{{pass}}     
-		  matchBrackets: true,
-          autofocus: true
-	  });
-	  var hlLine = editor.addLineClass(0, "background", "activeline");
-	  editor.on("cursorActivity", function() {
-	  var cur = editor.getLineHandle(editor.getCursor().line);
-		if (cur != hlLine) {
-			editor.removeLineClass(hlLine, "background", "activeline");
-			hlLine = editor.addLineClass(cur, "background", "activeline");
-		};
-	  });
-	  editor.on("gutterClick", function(cm, n) {
-		var info = cm.lineInfo(n);
-		cm.setGutterMarker(n, "breakpoints", info.gutterMarkers ? null : makeMarker());
-    sel = {start: n, end: n, data: ''};
-        doToggleBreakpoint({{=XML("'%s','%s://%s%s',sel" % (filename, 
-        	request.env['wsgi_url_scheme'], request.env['http_host'],
-        	URL(c='debug', f='toggle_breakpoint')))}});
-	  });
-
-	  function makeMarker() {
-		var marker = document.createElement("div");
-	  marker.style.color = "#822";
-	  marker.innerHTML = "●";
-	  return marker;
-	  }
-	  window.mirror = editor;
+        lineNumbers: true,
+        indentUnit: 4,
+        theme: "web2py",
+        tabMode: "shift",
+        lineWrapping: true,
+        {{if TEXT_EDITOR_KEYBINDING == 'emacs':}}keyMap: "emacs",{{pass}}
+        {{if TEXT_EDITOR_KEYBINDING == 'vi':}}keyMap: "vim",{{pass}}
+        matchBrackets: true,
+        autofocus: true,
+        onCursorActivity: function() {
+            editor.setLineClass(hlLine, null, null);
+            hlLine = editor.setLineClass(editor.getCursor().line, null, "activeline");},
+        onGutterClick: function(cm, n) {
+            sel = {start: n, end: n, data: ''};
+            doToggleBreakpoint({{=XML("'%s','%s://%s%s',sel" % (filename, 
+                request.env['wsgi_url_scheme'], request.env['http_host'],
+                URL(c='debug', f='toggle_breakpoint')))}});
+          }
+      };
+      var editor = CodeMirror.fromTextArea(
+         document.getElementById("body"),cm_opts);
+      var hlLine = editor.setLineClass(0, "activeline");
+      window.mirror = editor;
+      jQuery(function(){jQuery('.CodeMirror-scroll').css("height","auto").css("overflow-x","auto");});
     </script>
     {{elif TEXT_EDITOR == 'ace':}}
     <div id="editor" style="height: 500px; width: auto; position: relative">{{=data}}</div>
@@ -317,21 +291,19 @@ window.onload = function() {
 		<h3>{{=T("Key bindings")}}</h3>
 		<ul class="keybindings unstyled">
 			{{=shortcut('Ctrl+S', T('Save via Ajax'))}}
-	{{if filetype=='python':}}
-		  {{=shortcut('Ctrl+space', T('Autocomplete'))}}
-	{{pass}}
-    {{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
-    {{=shortcut('Ctrl-F / Cmd-F', T('Start searching'))}}
-    {{=shortcut('Ctrl-G / Cmd-G', T('Find Next'))}}
-    {{=shortcut('Shift-Ctrl-G / Shift-Cmd-G', T('Find Previous'))}}
-    {{=shortcut('Shift-Ctrl-F / Cmd-Option-F', T('Replace'))}}
-    {{=shortcut('Shift-Ctrl-R / Shift-Cmd-Option-F', T('Replace All'))}}
-  </ul>
-  {{else:}}
-  <h3>{{=T("Key bindings")}}</h3>
-  <ul>
-    {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
-  </ul>
-  {{pass}}
+			{{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
+			{{=shortcut('Ctrl-F / Cmd-F', T('Start searching'))}}
+			{{=shortcut('Ctrl-G / Cmd-G', T('Find Next'))}}
+			{{=shortcut('Shift-Ctrl-G / Shift-Cmd-G', T('Find Previous'))}}
+			{{=shortcut('Shift-Ctrl-F / Cmd-Option-F', T('Replace'))}}
+			{{=shortcut('Shift-Ctrl-R / Shift-Cmd-Option-F', T('Replace All'))}}
+		</ul>
+		{{else:}}
+		<h3>{{=T("Key bindings")}}</h3>
+		<ul class="keybindings unstyled">
+			{{=shortcut('Ctrl+S', T('Save via Ajax'))}}
+		</ul>
+		{{pass}}
+	</div>
 </div>
 <!-- end "edit" block -->

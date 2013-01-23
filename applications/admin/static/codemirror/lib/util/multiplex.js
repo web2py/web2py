@@ -68,28 +68,14 @@ CodeMirror.multiplexingMode = function(outer /*, others */) {
       return mode.indent(state.innerActive ? state.inner : state.outer, textAfter);
     },
 
-    blankLine: function(state) {
-      var mode = state.innerActive ? state.innerActive.mode : outer;
-      if (mode.blankLine) {
-        mode.blankLine(state.innerActive ? state.inner : state.outer);
-      }
-      if (!state.innerActive) {
-        for (var i = 0; i < n_others; ++i) {
-          var other = others[i];
-          if (other.open === "\n") {
-            state.innerActive = other;
-            state.inner = CodeMirror.startState(other.mode, mode.indent ? mode.indent(state.outer, "") : 0);
-          }
-        }
-      } else if (mode.close === "\n") {
-        state.innerActive = state.inner = null;
-      }
+    compareStates: function(a, b) {
+      if (a.innerActive != b.innerActive) return false;
+      var mode = a.innerActive || outer;
+      if (!mode.compareStates) return CodeMirror.Pass;
+      return mode.compareStates(a.innerActive ? a.inner : a.outer,
+                                b.innerActive ? b.inner : b.outer);
     },
 
-    electricChars: outer.electricChars,
-
-    innerMode: function(state) {
-      return state.inner ? {state: state.inner, mode: state.innerActive.mode} : {state: state.outer, mode: outer};
-    }
+    electricChars: outer.electricChars
   };
 };

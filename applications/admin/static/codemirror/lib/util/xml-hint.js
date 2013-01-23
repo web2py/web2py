@@ -12,7 +12,13 @@
             cm.setCursor(cursor);
         }
 
+        // dirty hack for simple-hint to receive getHint event on space
+        var getTokenAt = editor.getTokenAt;
+
+        editor.getTokenAt = function() { return 'disabled'; };
         CodeMirror.simpleHint(cm, getHint);
+
+        editor.getTokenAt = getTokenAt;
     };
 
     var getHint = function(cm) {
@@ -36,7 +42,7 @@
 
             text = text.slice(0, text.length - typed.length);
 
-            var path = getActiveElement(text) + simbol;
+            var path = getActiveElement(cm, text) + simbol;
             var hints = CodeMirror.xmlHints[path];
 
             if(typeof hints === 'undefined')
@@ -57,7 +63,7 @@
         };
     };
 
-    var getActiveElement = function(text) {
+    var getActiveElement = function(codeMirror, text) {
 
         var element = '';
 

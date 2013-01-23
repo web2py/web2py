@@ -28,7 +28,7 @@
 
 .cm-s-web2py {
   line-height: 1.40em;
-/*  font-family: "serif";*/
+  font-family: Monaco, Menlo,"Andale Mono","lucida console","Courier New",monospace !important;
 }
 
 /* Fullscreen mode and active line highlight */
