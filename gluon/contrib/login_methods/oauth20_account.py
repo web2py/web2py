@@ -167,7 +167,8 @@ server for requests.  It can be used for the optional"scope" parameters for Face
                 tmp = e.read()
                 raise Exception(tmp)
             finally:
-                del current.session.code  # throw it away
+                if current.session.code:
+                    del current.session.code  # throw it away
 
             if open_url:
                 try:
