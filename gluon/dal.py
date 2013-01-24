@@ -224,6 +224,13 @@ try:
     have_serializers = True
 except ImportError:
     have_serializers = False
+    try:
+        import json as simplejson
+    except ImportError:
+        try:
+            import gluon.contrib.simplejson as simplejson
+        except ImportError:
+            simplejson = None
 
 try:
     import validators
@@ -605,6 +612,7 @@ class ConnectionPool(object):
 ###################################################################################
 
 class BaseAdapter(ConnectionPool):
+    native_json = False
     driver = None
     driver_name = None
     drivers = () # list of drivers from which to pick
@@ -1444,7 +1452,7 @@ class BaseAdapter(ConnectionPool):
                     tablename,fieldname = item.split('.')
                     append(db[tablename][fieldname])
                 else:
-                    append(Expression(db,lambda:item))
+                    append(Expression(db,lambda item=item:item))
             else:
                 append(item)
         # ## if no fields specified take them all from the requested tables
@@ -1782,16 +1790,14 @@ class BaseAdapter(ConnectionPool):
                 obj = obj.isoformat()[:10]
             else:
                 obj = str(obj)
-        elif (fieldtype == 'json'):
-            if not isinstance(obj, basestring):
+        elif fieldtype == 'json':
+            if not self.native_json:
                 if have_serializers:
                     obj = serializers.json(obj)
-                else:
-                    try:
-                        import json as simplejson
-                    except ImportError:
-                        import gluon.contrib.simplejson as simplejson
+                elif simplejson:
                     obj = simplejson.dumps(items)
+                else:
+                    raise RuntimeError("missing simplejson")
         if not isinstance(obj,bytes):
             obj = bytes(obj)
         try:
@@ -1924,17 +1930,17 @@ class BaseAdapter(ConnectionPool):
         return float(value)
 
     def parse_json(self, value, field_type):
-        if isinstance(value, basestring):
+        if not self.native_json:
+            if not isinstance(value, basestring):
+                raise RuntimeError('json data not a string')
             if isinstance(value, unicode):
                 value = value.encode('utf-8')
             if have_serializers:
                 value = serializers.loads_json(value)
-            else:
-                try:
-                    import json as simplejson
-                except ImportError:
-                    import gluon.contrib.simplejson as simplejson
+            elif simplejson:
                 value = simplejson.loads(value)
+            else:
+                raise RuntimeError("missing simplejson")
         return value
 
     def build_parsemap(self):
@@ -4250,16 +4256,13 @@ class NoSQLAdapter(BaseAdapter):
             elif fieldtype == 'blob':
                 pass
             elif fieldtype == 'json':
-                if isinstance(obj, basestring):
-                    obj = self.to_unicode(obj)
-                    if have_serializers:
-                        obj = serializers.loads_json(obj)
-                    else:
-                        try:
-                            import json as simplejson
-                        except ImportError:
-                            import gluon.contrib.simplejson as simplejson
-                        obj = simplejson.loads(obj)
+                obj = self.to_unicode(obj)
+                if have_serializers:
+                    obj = serializers.loads_json(obj)
+                elif simplejson:
+                    obj = simplejson.loads(obj)
+                else:
+                    raise RuntimeError("missing simplejson")
             elif is_string and field_is_type('list:string'):
                 return map(self.to_unicode,obj)
             elif is_list:
@@ -4959,6 +4962,7 @@ def cleanup(text):
     return text
 
 class MongoDBAdapter(NoSQLAdapter):
+    native_json = True
     drivers = ('pymongo',)
 
     uploads_in_blob = True
@@ -6792,12 +6796,10 @@ class Row(object):
                 return serializers.json(item,
                                         default=default or
                                         serializers.custom_json)
-            else:
-                try:
-                    import json as simplejson
-                except ImportError:
-                    import gluon.contrib.simplejson as simplejson
+            elif simplejson:
                 return simplejson.dumps(item)
+            else:
+                raise RuntimeError("missing simplejson")
         else:
             return item
 
@@ -7209,24 +7211,26 @@ class DAL(object):
         EXAMPLE:
 
 db.define_table('person',Field('name'),Field('info'))
-db.define_table('pet',Field('owner',db.person),Field('name'),Field('info'))
+db.define_table('pet',Field('ownedby',db.person),Field('name'),Field('info'))
 
 @request.restful()
 def index():
     def GET(*args,**vars):
         patterns = [
             "/friends[person]",
-            "/{friend.name.startswith}",
-            "/{friend.name}/:field",
-            "/{friend.name}/pets[pet.owner]",
-            "/{friend.name}/pet[pet.owner]/{pet.name}",
-            "/{friend.name}/pet[pet.owner]/{pet.name}/:field"
+            "/{person.name}/:field",
+            "/{person.name}/pets[pet.ownedby]",
+            "/{person.name}/pets[pet.ownedby]/{pet.name}",
+            "/{person.name}/pets[pet.ownedby]/{pet.name}/:field",
+            ("/dogs[pet]", db.pet.info=='dog'),
+            ("/dogs[pet]/{pet.name.startswith}", db.pet.info=='dog'),       
             ]
         parser = db.parse_as_rest(patterns,args,vars)
         if parser.status == 200:
             return dict(content=parser.response)
         else:
             raise HTTP(parser.status,parser.error)
+            
     def POST(table_name,**vars):
         if table_name == 'person':
             return db.person.validate_and_insert(**vars)
@@ -7403,7 +7407,7 @@ def index():
                             dbset = db(queries[table])
                         dbset=dbset(db[table])
                 elif tag==':field' and table:
-                    # # print 're3:'+tag
+                    # print 're3:'+tag
                     field = args[i]
                     if not field in db[table]: break
                     # hand-built patterns should respect .readable=False as well
@@ -7411,16 +7415,18 @@ def index():
                         return Row({'status':418,'pattern':pattern,
                                     'error':'I\'m a teapot','response':None})
                     try:
-                        item =  dbset.select(db[table][field],limitby=(0,1)).first()
+                        distinct = vars.get('distinct', False) == 'True'
+                        offset = int(vars.get('offset',None) or 0)
+                        limits = (offset,int(vars.get('limit',None) or 1000)+offset)
                     except ValueError:
-                        return Row({'status':400,'pattern':pattern,
-                                    'error':'invalid path','response':None})
-                    if not item:
-                        return Row({'status':404,'pattern':pattern,
-                                    'error':'record not found','response':None})
-                    else:
-                        return Row({'status':200,'response':item[field],
+                        return Row({'status':400,'error':'invalid limits','response':None})
+                    items =  dbset.select(db[table][field], distinct=distinct, limitby=limits)
+                    if items:
+                        return Row({'status':200,'response':items,
                                     'pattern':pattern})
+                    else:
+                        return Row({'status':404,'pattern':pattern,
+                                    'error':'no record found','response':None})
                 elif tag != args[i]:
                     break
                 otable = table
@@ -7437,9 +7443,9 @@ def index():
                         offset = int(vars.get('offset',None) or 0)
                         limits = (offset,int(vars.get('limit',None) or 1000)+offset)
                     except ValueError:
-                        Row({'status':400,'error':'invalid limits','response':None})
+                        return Row({'status':400,'error':'invalid limits','response':None})
                     if count > limits[1]-limits[0]:
-                        Row({'status':400,'error':'too many records','response':None})
+                        return Row({'status':400,'error':'too many records','response':None})
                     try:
                         response = dbset.select(limitby=limits,orderby=orderby,*fields)
                     except ValueError:
@@ -9729,12 +9735,10 @@ class Rows(object):
             return serializers.json(items,
                                     default=default or
                                     serializers.custom_json)
-        else:
-            try:
-                import json as simplejson
-            except ImportError:
-                import gluon.contrib.simplejson as simplejson
+        elif simplejson:
             return simplejson.dumps(items)
+        else:
+            raise RuntimeError("missing simplejson")
 
     # for consistent naming yet backwards compatible
     as_csv = __str__

@@ -1,9 +1,6 @@
-// TODO actually recognize syntax of TypeScript constructs
-
 CodeMirror.defineMode("javascript", function(config, parserConfig) {
   var indentUnit = config.indentUnit;
   var jsonMode = parserConfig.json;
-  var isTS = parserConfig.typescript;
 
   // Tokenizer
 
@@ -11,8 +8,7 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     function kw(type) {return {type: type, style: "keyword"};}
     var A = kw("keyword a"), B = kw("keyword b"), C = kw("keyword c");
     var operator = kw("operator"), atom = {type: "atom", style: "atom"};
-    
-    var jsKeywords = {
+    return {
       "if": A, "while": A, "with": A, "else": B, "do": B, "try": B, "finally": B,
       "return": C, "break": C, "continue": C, "new": C, "delete": C, "throw": C,
       "var": kw("var"), "const": kw("var"), "let": kw("var"),
@@ -21,35 +17,6 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
       "in": operator, "typeof": operator, "instanceof": operator,
       "true": atom, "false": atom, "null": atom, "undefined": atom, "NaN": atom, "Infinity": atom
     };
-
-    // Extend the 'normal' keywords with the TypeScript language extensions
-    if (isTS) {
-      var type = {type: "variable", style: "variable-3"};
-      var tsKeywords = {
-        // object-like things
-        "interface": kw("interface"),
-        "class": kw("class"),
-        "extends": kw("extends"),
-        "constructor": kw("constructor"),
-
-        // scope modifiers
-        "public": kw("public"),
-        "private": kw("private"),
-        "protected": kw("protected"),
-        "static": kw("static"),
-
-        "super": kw("super"),
-
-        // types
-        "string": type, "number": type, "bool": type, "any": type
-      };
-
-      for (var attr in tsKeywords) {
-        jsKeywords[attr] = tsKeywords[attr];
-      }
-    }
-
-    return jsKeywords;
   }();
 
   var isOperatorChar = /[+\-*&%=<>!?|]/;
@@ -99,8 +66,7 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
         stream.skipToEnd();
         return ret("comment", "comment");
       }
-      else if (state.lastType == "operator" || state.lastType == "keyword c" ||
-               /^[\[{}\(,;:]$/.test(state.lastType)) {
+      else if (state.reAllowed) {
         nextUntilUnescaped(stream, "/");
         stream.eatWhile(/[gimy]/); // 'y' is "sticky" option in Mozilla
         return ret("regexp", "string-2");
@@ -121,7 +87,7 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     else {
       stream.eatWhile(/[\w\$_]/);
       var word = stream.current(), known = keywords.propertyIsEnumerable(word) && keywords[word];
-      return (known && state.lastType != ".") ? ret(known.type, known.style, word) :
+      return (known && state.kwAllowed) ? ret(known.type, known.style, word) :
                      ret("variable", "variable", word);
     }
   }
@@ -209,8 +175,8 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
 
   var defaultVars = {name: "this", next: {name: "arguments"}};
   function pushcontext() {
+    if (!cx.state.context) cx.state.localVars = defaultVars;
     cx.state.context = {prev: cx.state.context, vars: cx.state.localVars};
-    cx.state.localVars = defaultVars;
   }
   function popcontext() {
     cx.state.localVars = cx.state.context.vars;
@@ -309,32 +275,21 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     if (type == "}") return cont();
     return pass(statement, block);
   }
-  function maybetype(type) {
-    if (type == ":") return cont(typedef);
-    return pass();
-  }
-  function typedef(type) {
-    if (type == "variable"){cx.marked = "variable-3"; return cont();}
-    return pass();
-  }
   function vardef1(type, value) {
-    if (type == "variable") {
-      register(value);
-      return isTS ? cont(maybetype, vardef2) : cont(vardef2);
-    }
-    return pass();
+    if (type == "variable"){register(value); return cont(vardef2);}
+    return cont();
   }
   function vardef2(type, value) {
     if (value == "=") return cont(expression, vardef2);
     if (type == ",") return cont(vardef1);
   }
   function forspec1(type) {
-    if (type == "var") return cont(vardef1, expect(";"), forspec2);
-    if (type == ";") return cont(forspec2);
+    if (type == "var") return cont(vardef1, forspec2);
+    if (type == ";") return pass(forspec2);
     if (type == "variable") return cont(formaybein);
-    return cont(forspec2);
+    return pass(forspec2);
   }
-  function formaybein(_type, value) {
+  function formaybein(type, value) {
     if (value == "in") return cont(expression);
     return cont(maybeoperator, forspec2);
   }
@@ -351,7 +306,7 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     if (type == "(") return cont(pushlex(")"), pushcontext, commasep(funarg, ")"), poplex, statement, popcontext);
   }
   function funarg(type, value) {
-    if (type == "variable") {register(value); return isTS ? cont(maybetype) : cont();}
+    if (type == "variable") {register(value); return cont();}
   }
 
   // Interface
@@ -360,7 +315,8 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     startState: function(basecolumn) {
       return {
         tokenize: jsTokenBase,
-        lastType: null,
+        reAllowed: true,
+        kwAllowed: true,
         cc: [],
         lexical: new JSLexical((basecolumn || 0) - indentUnit, 0, "block", false),
         localVars: parserConfig.localVars,
@@ -378,34 +334,28 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
       if (stream.eatSpace()) return null;
       var style = state.tokenize(stream, state);
       if (type == "comment") return style;
-      state.lastType = type;
+      state.reAllowed = !!(type == "operator" || type == "keyword c" || type.match(/^[\[{}\(,;:]$/));
+      state.kwAllowed = type != '.';
       return parseJS(state, style, type, content, stream);
     },
 
     indent: function(state, textAfter) {
-      if (state.tokenize == jsTokenComment) return CodeMirror.Pass;
       if (state.tokenize != jsTokenBase) return 0;
       var firstChar = textAfter && textAfter.charAt(0), lexical = state.lexical;
       if (lexical.type == "stat" && firstChar == "}") lexical = lexical.prev;
       var type = lexical.type, closing = firstChar == type;
-      if (type == "vardef") return lexical.indented + (state.lastType == "operator" || state.lastType == "," ? 4 : 0);
+      if (type == "vardef") return lexical.indented + 4;
       else if (type == "form" && firstChar == "{") return lexical.indented;
-      else if (type == "form") return lexical.indented + indentUnit;
-      else if (type == "stat")
-        return lexical.indented + (state.lastType == "operator" || state.lastType == "," ? indentUnit : 0);
+      else if (type == "stat" || type == "form") return lexical.indented + indentUnit;
       else if (lexical.info == "switch" && !closing)
         return lexical.indented + (/^(?:case|default)\b/.test(textAfter) ? indentUnit : 2 * indentUnit);
       else if (lexical.align) return lexical.column + (closing ? 0 : 1);
       else return lexical.indented + (closing ? 0 : indentUnit);
     },
 
-    electricChars: ":{}",
-
-    jsonMode: jsonMode
+    electricChars: ":{}"
   };
 });
 
 CodeMirror.defineMIME("text/javascript", "javascript");
 CodeMirror.defineMIME("application/json", {name: "javascript", json: true});
-CodeMirror.defineMIME("text/typescript", { name: "javascript", typescript: true });
-CodeMirror.defineMIME("application/typescript", { name: "javascript", typescript: true });

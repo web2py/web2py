@@ -16,16 +16,12 @@ import shutil
 import platform
 try:
     import git
-    GIT_ERRORS = (git.GitCommandError, git.InvalidGitRepositoryError,
-                  git.NoSuchPathError)
-    if git.__version__ >= '0.3.1':
-        GIT_ERRORS += (git.CacheError, git.CheckoutError,
-                       git.ODBError, git.ParseError,
-                       git.UnmergedEntriesError)
+    if git.__version__ < '0.3.1':
+        raise ImportError("Your version of git is %s. Upgrade to 0.3.1 or better." % git.__version__)
     have_git = True
-except ImportError:
+except ImportError, e:
     have_git = False
-    GIT_MISSING = 'requires gitpython module, but not installed or incompatible version'
+    GIT_MISSING = 'Requires gitpython module, but not installed or incompatible version: %s' % e
 
 from gluon.languages import (read_possible_languages, read_dict, write_dict,
                              read_plural_dict, write_plural_dict)
@@ -1738,22 +1734,17 @@ def git_pull():
             origin.pull()
             session.flash = T("Application updated via git pull")
             redirect(URL('site'))
-        except GIT_ERRORS, e:
-            error_type = type(e)
-            if 'CheckoutError' in error_type:
-                session.flash = T("Pull failed, certain files could not be checked out. Check logs for details.")
-                redirect(URL('site'))
-            elif 'UnmergedEntriesError' in error_type:
-                session.flash = T("Pull is not possible because you have unmerged files. Fix them up in the work tree, and then try again.")
-                redirect(URL('site'))
-            elif 'GitCommandError' in error_type:
-                session.flash = T(
-                    "Pull failed, git exited abnormally. See logs for details.")
-                redirect(URL('site'))
-            else:
-                session.flash = T(
-                    "Git error: %s %s" % (error_type, str(e)))
-                redirect(URL('site'))
+
+        except git.CheckoutError:
+            session.flash = T("Pull failed, certain files could not be checked out. Check logs for details.")
+            redirect(URL('site'))
+        except git.UnmergedEntriesError:
+            session.flash = T("Pull is not possible because you have unmerged files. Fix them up in the work tree, and then try again.")
+            redirect(URL('site'))
+        except git.GitCommandError:
+            session.flash = T(
+                "Pull failed, git exited abnormally. See logs for details.")
+            redirect(URL('site'))
         except AssertionError:
             session.flash = T("Pull is not possible because you have unmerged files. Fix them up in the work tree, and then try again.")
             redirect(URL('site'))
@@ -1783,14 +1774,8 @@ def git_push():
             session.flash = T(
                 "Git repo updated with latest application changes.")
             redirect(URL('site'))
-        except GIT_ERRORS, e:
-            error_type = type(e)
-            if "UnmergedEntriesError" in error_type:
-                session.flash = T("Push failed, there are unmerged entries in the cache. Resolve merge issues manually and try again.")
-                redirect(URL('site'))
-            else:
-                session.flash = T(
-                    "Git error: %s %s" % (error_type, str(e)))
-                redirect(URL('site'))
+        except git.UnmergedEntriesError:
+            session.flash = T("Push failed, there are unmerged entries in the cache. Resolve merge issues manually and try again.")
+            redirect(URL('site'))
     return dict(app=app, form=form)
 

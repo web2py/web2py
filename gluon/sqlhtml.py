@@ -2017,7 +2017,12 @@ class SQLFORM(FORM):
 
             expcolumns = columns
             if export_type.endswith('with_hidden_cols'):
-                expcolumns = [f for f in fields if f._tablename in tablenames]
+                expcolumns = []
+                for table in tables:
+                    for field in table:
+                        if field.readable and field._tablename in tablenames:
+                            expcolumns.append(field)
+
             if export_type in exportManager and exportManager[export_type]:
                 if request.vars.keywords:
                     try:

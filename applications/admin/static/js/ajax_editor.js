@@ -44,7 +44,7 @@ function doHighlight(highlight) {
 	window.ace_editor.gotoLine(highlight.lineno);
     } else if (window.mirror) {
 	window.mirror.setSelection({line:highlight.lineno,ch:0},
-				   {line:highlight.lineno-1,ch:0});
+				   {line:highlight.end,ch:0});
     } else if (window.eamy) {
 	// not implemented
     } else if (window.textarea) {
@@ -180,25 +180,23 @@ function doToggleBreakpoint(filename, url, sel) {
 				.slideDown();
 		}
 	     else jQuery('.flash').hide();
-	     //try {
+	     try {
 		 if (json.error) {
 		     window.location.href=json.redirect;
 		 } else {
              if (json.ok==true && window.mirror) {
     		     // mark the breakpoint if ok=True
-                 editor.setGutterMarker(json.lineno-1, "breakpoints", makeMarker());
- 		         //editor.setMarker(json.lineno-1, 
- 		         //                "<span style='color: red'>●</span> %N%")
+ 		         editor.setMarker(json.lineno-1, 
+ 		                         "<span style='color: red'>●</span> %N%")
  		     } else if (json.ok==false && window.mirror) {
     		     // remove mark if ok=False
-                 editor.setGutterMarker(json.lineno-1, "breakpoints", null);
- 		         //editor.setMarker(json.lineno-1, "%N%")
+ 		         editor.setMarker(json.lineno-1, "%N%")
  		     } else {
     		     // do nothing if ok = null  
     		 }
 		     // alert(json.ok + json.lineno);
 		 }
-	     //} catch(e) { on_error(); }
+	     } catch(e) { on_error(); }
 		},
 		    error: function(json) { on_error(); }
 	    });
@@ -223,7 +221,7 @@ function doListBreakpoints(filename, url) {
 	  xhr.setRequestHeader('web2py-component-element',
 			       'doListBreakpoints');},
 	  success: function(json,text,xhr){
-	     //try {
+	     try {
 		     if (json.error) {
 		         window.location.href=json.redirect;
 		     } else {
@@ -231,13 +229,12 @@ function doListBreakpoints(filename, url) {
                      for (i in json.breakpoints) {
                          lineno = json.breakpoints[i];
             		     // mark the breakpoint if ok=True
-         		         editor.setGutterMarker(lineno-1, "breakpoints", makeMarker());
-                         //editor.setMarker(lineno-1, 
-         		         //                "<span style='color: red'>●</span> %N%");
+         		         editor.setMarker(lineno-1, 
+         		                         "<span style='color: red'>●</span> %N%");
          		     }
         		 }
 		     }
-	     //} catch(e) { on_error(); }
+	     } catch(e) { on_error(); }
       },
       error: function(json) { on_error(); }
 	});

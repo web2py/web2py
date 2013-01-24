@@ -1,6 +1,5 @@
 CodeMirror.defineMode("clike", function(config, parserConfig) {
   var indentUnit = config.indentUnit,
-      statementIndentUnit = parserConfig.statementIndentUnit || indentUnit,
       keywords = parserConfig.keywords || {},
       builtin = parserConfig.builtin || {},
       blockKeywords = parserConfig.blockKeywords || {},
@@ -90,10 +89,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
     this.prev = prev;
   }
   function pushContext(state, col, type) {
-    var indent = state.indented;
-    if (state.context && state.context.type == "statement")
-      indent = state.context.indented;
-    return state.context = new Context(indent, col, type, null, state.context);
+    return state.context = new Context(state.indented, col, type, null, state.context);
   }
   function popContext(state) {
     var t = state.context.type;
@@ -127,7 +123,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
       if (style == "comment" || style == "meta") return style;
       if (ctx.align == null) ctx.align = true;
 
-      if ((curPunc == ";" || curPunc == ":" || curPunc == ",") && ctx.type == "statement") popContext(state);
+      if ((curPunc == ";" || curPunc == ":") && ctx.type == "statement") popContext(state);
       else if (curPunc == "{") pushContext(state, stream.column(), "}");
       else if (curPunc == "[") pushContext(state, stream.column(), "]");
       else if (curPunc == "(") pushContext(state, stream.column(), ")");
@@ -137,18 +133,18 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
         while (ctx.type == "statement") ctx = popContext(state);
       }
       else if (curPunc == ctx.type) popContext(state);
-      else if (((ctx.type == "}" || ctx.type == "top") && curPunc != ';') || (ctx.type == "statement" && curPunc == "newstatement"))
+      else if (ctx.type == "}" || ctx.type == "top" || (ctx.type == "statement" && curPunc == "newstatement"))
         pushContext(state, stream.column(), "statement");
       state.startOfLine = false;
       return style;
     },
 
     indent: function(state, textAfter) {
-      if (state.tokenize != tokenBase && state.tokenize != null) return CodeMirror.Pass;
+      if (state.tokenize != tokenBase && state.tokenize != null) return 0;
       var ctx = state.context, firstChar = textAfter && textAfter.charAt(0);
       if (ctx.type == "statement" && firstChar == "}") ctx = ctx.prev;
       var closing = firstChar == ctx.type;
-      if (ctx.type == "statement") return ctx.indented + (firstChar == "{" ? 0 : statementIndentUnit);
+      if (ctx.type == "statement") return ctx.indented + (firstChar == "{" ? 0 : indentUnit);
       else if (ctx.align) return ctx.column + (closing ? 0 : 1);
       else return ctx.indented + (closing ? 0 : indentUnit);
     },
@@ -169,19 +165,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
 
   function cppHook(stream, state) {
     if (!state.startOfLine) return false;
-    for (;;) {
-      if (stream.skipTo("\\")) {
-        stream.next();
-        if (stream.eol()) {
-          state.tokenize = cppHook;
-          break;
-        }
-      } else {
-        stream.skipToEnd();
-        state.tokenize = null;
-        break;
-      }
-    }
+    stream.skipToEnd();
     return "meta";
   }
 
@@ -228,7 +212,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
     blockKeywords: words("catch class do else finally for if switch try while"),
     atoms: words("true false null"),
     hooks: {
-      "@": function(stream) {
+      "@": function(stream, state) {
         stream.eatWhile(/[\w\$_]/);
         return "meta";
       }
@@ -291,7 +275,7 @@ CodeMirror.defineMode("clike", function(config, parserConfig) {
     blockKeywords: words("catch class do else finally for forSome if match switch try while"),
     atoms: words("true false null"),
     hooks: {
-      "@": function(stream) {
+      "@": function(stream, state) {
         stream.eatWhile(/[\w\$_]/);
         return "meta";
       }

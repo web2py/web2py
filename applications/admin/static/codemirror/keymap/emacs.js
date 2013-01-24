@@ -18,8 +18,7 @@
     "Alt-Y": function(cm) {cm.replaceSelection(popFromRing());},
     "Ctrl-/": "undo", "Shift-Ctrl--": "undo", "Shift-Alt-,": "goDocStart", "Shift-Alt-.": "goDocEnd",
     "Ctrl-S": "findNext", "Ctrl-R": "findPrev", "Ctrl-G": "clearSearch", "Shift-Alt-5": "replace",
-    "Ctrl-Z": "undo", "Cmd-Z": "undo", "Alt-/": "autocomplete", "Alt-V": "goPageUp",
-    "Ctrl-J": "newlineAndIndent", "Enter": false, "Tab": "indentAuto",
+    "Ctrl-Z": "undo", "Cmd-Z": "undo", "Alt-/": "autocomplete",
     fallthrough: ["basic", "emacsy"]
   };
 

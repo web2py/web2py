@@ -160,7 +160,7 @@ CodeMirror.defineMode("python", function(conf, parserConf) {
         var singleline = delimiter.length == 1;
         var OUTCLASS = 'string';
         
-        function tokenString(stream, state) {
+        return function tokenString(stream, state) {
             while (!stream.eol()) {
                 stream.eatWhile(/[^'"\\]/);
                 if (stream.eat('\\')) {
@@ -183,9 +183,7 @@ CodeMirror.defineMode("python", function(conf, parserConf) {
                 }
             }
             return OUTCLASS;
-        }
-        tokenString.isString = true;
-        return tokenString;
+        };
     }
     
     function indent(stream, state, type) {
@@ -325,9 +323,9 @@ CodeMirror.defineMode("python", function(conf, parserConf) {
             return style;
         },
         
-        indent: function(state) {
+        indent: function(state, textAfter) {
             if (state.tokenize != tokenBase) {
-                return state.tokenize.isString ? CodeMirror.Pass : 0;
+                return 0;
             }
             
             return state.scopes[0].offset;

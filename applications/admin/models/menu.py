@@ -21,6 +21,12 @@ if request.vars.app or request.args:
                           _c == 'mercurial' and _f == 'commit',
                           URL(_a, 'mercurial', 'commit', args=_t)))
 
+if os.path.exists('applications/examples'):
+    response.menu.append(
+        (T('Help'), False, URL('examples', 'default', 'index')))
+else:
+    response.menu.append((T('Help'), False, 'http://web2py.com/examples'))
+
 if not session.authorized:
     response.menu = [(T('Login'), True, URL('site'))]
 else:
@@ -29,8 +35,3 @@ else:
     response.menu.append((T('Debug'), False,
                           URL(_a, 'debug', 'interact')))
 
-if os.path.exists('applications/examples'):
-    response.menu.append(
-        (T('Help'), False, URL('examples', 'default', 'index')))
-else:
-    response.menu.append((T('Help'), False, 'http://web2py.com/examples'))

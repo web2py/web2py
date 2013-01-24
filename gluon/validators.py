@@ -328,12 +328,17 @@ class IS_JSON(Validator):
         self.error_message = error_message
 
     def __call__(self, value):
+        if value is None:
+            return None
         try:
-            simplejson.loads(value)
-            return (value, None)
+            return (simplejson.loads(value), None)
         except JSONErrors:
-            pass
-        return (value, translate(self.error_message))
+            return (value, translate(self.error_message))
+
+    def formatter(self,value):
+        if value is None:
+            return None
+        return simplejson.dumps(value)
     
 
 class IS_IN_SET(Validator):
