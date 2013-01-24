@@ -2569,11 +2569,25 @@ class PostgreSQLAdapter(BaseAdapter):
     def after_connection(self):
         self.connection.set_client_encoding('UTF8')
         self.execute("SET standard_conforming_strings=on;")
+        self.try_json()
 
     def lastrowid(self,table):
         self.execute("select currval('%s')" % table._sequence_name)
         return int(self.cursor.fetchone()[0])
 
+    def try_json(self):
+        # check JSON data type support
+        # (to be added to after_connection)
+        if self.driver_name == "pg8000":
+            supports_json = self.connection.server_version >= "9.2.0"
+        elif (self.driver_name == "psycopg2") and \
+             (self.driver.__version__ >= "2.0.12"):
+            supports_json = self.connection.server_version >= 90200
+        elif self.driver_name == "zxJDBC":
+            supports_json = self.connection.dbversion >= "9.2.0"
+        else: supports_json = None
+        if supports_json: self.types["json"] = "JSON"
+        else: LOGGER.debug("Your database version does not support the JSON data type (using TEXT instead)")
 
     def LIKE(self,first,second):
         args = (self.expand(first), self.expand(second,'string'))
@@ -2797,6 +2811,7 @@ class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
         self.connection.set_client_encoding('UTF8')
         self.execute('BEGIN;')
         self.execute("SET CLIENT_ENCODING TO 'UNICODE';")
+        self.try_json()
 
 
 class OracleAdapter(BaseAdapter):
