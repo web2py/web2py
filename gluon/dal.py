@@ -7551,6 +7551,32 @@ def index():
         if on_define: on_define(table)
         return table
 
+    def as_dict(self, flat=False, sanitize=True):
+        dbname = codec = uid = uri = None
+        if not sanitize:
+            uri, dbname, codec, uid = (str(self), self._dbname,
+                                       self._db_codec, self._db_uid)
+        db_as_dict = dict(items={}, tables=[], uri=uri, dbname=dbname,
+                          codec=codec, uid=uid)
+        for table in self:
+            tablename = str(table)
+            db_as_dict["tables"].append(tablename)
+            db_as_dict["items"][tablename] = table.as_dict(flat=flat,
+                                                sanitize=sanitize)
+        return db_as_dict
+
+    def as_xml(self, sanitize=True):
+        if not have_serializers:
+            raise ImportError("No xml serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return serializers.xml(d)
+
+    def as_json(self, sanitize=True):
+        if not have_serializers:
+            raise ImportError("No json serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return serializers.json(d)
+
     def __contains__(self, tablename):
         try:
             return tablename in self.tables
@@ -8437,6 +8463,28 @@ class Table(object):
                 if id_map and cid is not None:
                     id_map_self[int(line[cid])] = new_id
 
+    def as_dict(self, flat=False, sanitize=True):
+        tablename = str(self)
+        table_as_dict = dict(name=tablename, items={}, fields=[])
+        for field in self:
+            if (field.readable or field.writable) or (not sanitize):
+                table_as_dict["fields"].append(field.name)
+                table_as_dict["items"][field.name] = \
+                    field.as_dict(flat=flat, sanitize=sanitize)
+        return table_as_dict
+
+    def as_xml(self, sanitize=True):
+        if not have_serializers:
+            raise ImportError("No xml serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return serializers.xml(d)
+
+    def as_json(self, sanitize=True):
+        if not have_serializers:
+            raise ImportError("No json serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return serializers.json(d)
+
     def with_alias(self, alias):
         return self._db._adapter.alias(self,alias)
 
@@ -9081,6 +9129,69 @@ class Field(Expression):
 
     def count(self, distinct=None):
         return Expression(self.db, self.db._adapter.COUNT, self, distinct, 'integer')
+
+    def as_dict(self, flat=False, sanitize=True):
+        attrs = ("readable", "writable", "label", "default", "name",
+                 "type", "represent", "compute")
+        SERIALIZABLE = (int, long, basestring, dict, list, float,
+                        tuple, bool, None.__class__)
+        def flatten(obj):
+            if flat:
+                if isinstance(obj, flatten.__class__):
+                    return str(type(obj))
+                elif isinstance(obj, type):
+                    try:
+                        obj = str(obj).split("'")[1]
+                    except IndexError:
+                        obj = str(obj)
+                elif not isinstance(obj, SERIALIZABLE):
+                    obj = str(obj)
+            return obj
+
+        def filter_requires(t, r):
+            if sanitize and any([keyword in str(t).upper() for
+                                 keyword in ("CRYPT", "IS_STRONG")]):
+                return None
+            for k, v in r.items():
+                if k == "other":
+                    if not isinstance(v, dict):
+                        other = v.__dict__
+                    else: other = v
+                    r[k] = {flatten(type(v)):
+                            filter_requires(type(v), other)}
+                elif flat and (not isinstance(v, SERIALIZABLE)):
+                    r[k] = str(v)
+            return r
+
+        if isinstance(self.requires, (tuple, list, set)):
+            requires = dict([(flatten(type(r)),
+                             filter_requires(type(r), r.__dict__)) for
+                             r in self.requires])
+        else:
+            requires = {flatten(type(self.requires)):
+                        filter_requires(type(self.requires),
+                            self.requires.__dict__)}
+
+        d = dict(colname="%s.%s" % (self.tablename, self.name),
+                 requires=requires)
+        d.update([(attr, flatten(getattr(self, attr))) for attr in attrs])
+        return d
+
+    def as_xml(self, sanitize=True):
+        if have_serializers:
+            xml = serializers.xml
+        else:
+            raise ImportError("No xml serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return xml(d)
+
+    def as_json(self, sanitize=True):
+        if have_serializers:
+            json = serializers.json
+        else:
+            raise ImportError("No json serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return json(d)
 
     def __nonzero__(self):
         return True
