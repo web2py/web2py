@@ -1234,11 +1234,22 @@ class BaseAdapter(ConnectionPool):
                                  self.expand('%'+second, 'string'))
 
     def CONTAINS(self, first, second):
-        if first.type in ('string', 'text', 'json'):
-            key = '%'+str(second).replace('%','%%')+'%'
-        elif first.type.startswith('list:'):
-            key = '%|'+str(second).replace('|','||').replace('%','%%')+'|%'
-        return '(%s LIKE %s)' % (self.expand(first),self.expand(key,'string'))
+        field = self.expand(first)
+        if isinstance(second,Expression):            
+            expr = self.expand(second,'string')
+            if first.type.startswith('list:'):
+                expr = 'CONCAT("|", %s, "|")' % expr
+            elif not first.type in ('string', 'text', 'json'):
+                raise RuntimeError("Expression Not Supported")
+            return 'INSTR(%s,%s)' % (field, expr)
+        else:
+            if first.type in ('string', 'text', 'json'):
+                key = '%'+str(second).replace('%','%%')+'%'
+            elif first.type.startswith('list:'):
+                key = '%|'+str(second).replace('|','||').replace('%','%%')+'|%'
+            else:
+                raise RuntimeError("Expression Not Supported")
+            return '(%s LIKE %s)' % (field,self.expand(key,'string'))
 
     def EQ(self, first, second=None):
         if second is None:
