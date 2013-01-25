@@ -157,8 +157,6 @@ server for requests.  It can be used for the optional"scope" parameters for Face
                         grant_type='authorization_code'
                         )
 
-            if False and self.args:
-                data.update(self.args)
             open_url = None
             opener = self.__build_url_opener(self.token_url)
             try:
