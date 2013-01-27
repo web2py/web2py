@@ -645,6 +645,7 @@ def edit():
             code = request.vars.data.rstrip().replace('\r\n', '\n') + '\n'
             compile(code, path, "exec", _ast.PyCF_ONLY_AST)
         except Exception, e:
+            # offset calculation is only used for textarea (start/stop)
             start = sum([len(line) + 1 for l, line
                          in enumerate(request.vars.data.split("\n"))
                          if l < e.lineno - 1])
@@ -654,7 +655,7 @@ def edit():
             else:
                 offset = 0
             highlight = {'start': start, 'end': start +
-                         offset + 1, 'lineno': e.lineno}
+                         offset + 1, 'lineno': e.lineno, 'offset': offset}
             try:
                 ex_name = e.__class__.__name__
             except:

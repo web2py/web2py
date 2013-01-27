@@ -43,8 +43,9 @@ function doHighlight(highlight) {
     if (window.ace_editor) {
 	window.ace_editor.gotoLine(highlight.lineno);
     } else if (window.mirror) {
-	window.mirror.setSelection({line:highlight.lineno,ch:0},
-				   {line:highlight.end,ch:0});
+        // Put the cursor at the offending line:
+        window.mirror.setCursor({line:highlight.lineno-1, 
+                                 ch:highlight.offset+1});
     } else if (window.eamy) {
 	// not implemented
     } else if (window.textarea) {
