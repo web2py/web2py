@@ -144,7 +144,7 @@ def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
         hash_key = hashlib.sha1(encryption_key).hexdigest()
     signature, encrypted_data = data.split(':', 1)
     actual_signature = hmac.new(hash_key, encrypted_data).hexdigest()
-    if signature != actual_signature:
+    if not compare(signature, actual_signature):
         return None
     key = pad(encryption_key[:32])
     cipher = AES_new(key)
