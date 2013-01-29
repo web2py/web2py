@@ -6670,6 +6670,8 @@ class Row(object):
     def __setitem__(self, key, value):
         setattr(self, str(key), value)
 
+    __delitem__ = delattr
+
     __copy__ = lambda self: Row(self)
 
     __call__ = __getitem__
