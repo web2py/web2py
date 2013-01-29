@@ -1,19 +1,43 @@
 #!/bin/bash
 
-# Script for installing Web2py with Nginx and Uwsgi on Centos 5
-# Created By Hutchinson
-# Modified by spametki
-# License: BSD
-
-# It was originally posted in this web2py-users group thread:
-# https://groups.google.com/forum/?fromgroups#!topic/web2py/O4c4Jfr18tM
-
-# There are lots of subtleties of ownership, and one has to take care
-# when installing python 2.6 not to stop the systems python2.4 from working.
-
-# NOTE: The only thing that should need changing for
-# each installation is the $BASEARCH (base architecture) of the machine.
-# This is determined by doing uname -i. This is needed for the nginx installation.
+# -------------------------------------------------------------------
+# Description : Installation and basic configuration of web2py,
+#               uWSGI, andNGINX.
+#               in CentOS 5.x GNU/Linux
+#       Usage : Copy the script in /home/username and run it as root,
+#               you may need to allow execution (chmod +x)
+#
+#               WARNING: This script was modified to install compiled
+#               versions of Python and other packages that may be
+#               available at your Centos package repository.
+#               This change was made in order to get the latest
+#               stable libraries available for avoiding compatibility
+#               issues.
+#
+#               It was originally posted in this web2py-users group
+#               thread: https://groups.google.com/forum/?fromgroups#
+#               !topic/web2py/O4c4Jfr18tM
+#
+#               There are lots of subtleties of ownership, and one
+#               has to take care when installing python 2.6 not to
+#               stop the systems python2.4 from working.
+#
+#               NOTE: The only thing that should need changing for
+#               each installation is the $BASEARCH (base
+#               architecture)
+#               of the machine. This is determined by doing uname -i.
+#               This is needed for the nginx installation.
+#
+#        File : setup-web2py-nginx-uwsgi-on-centos.sh
+#      Author : Hutchinson
+# Modified by : Alan Etkin
+#       Email : spametki@gmail.com
+#   Copyright : web2py
+#        Date : 2013-01-28
+# Disclaimers : This script is provided "as is", without warranty of
+#               any kind.
+#     Licence : BSD
+# -------------------------------------------------------------------
 
 # Retrieve base architecture
 BASEARCH=$(uname -i)
