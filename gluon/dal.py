@@ -7630,6 +7630,9 @@ def index():
             query = self._adapter.id_query(query)
         elif isinstance(query,Field):
             query = query!=None
+        elif isinstance(query, dict):
+            icf = query.get("ignore_common_filters")
+            if icf: ignore_common_filters = icf
         return Set(self, query, ignore_common_filters=ignore_common_filters)
 
     def commit(self):
@@ -9135,8 +9138,8 @@ class Field(Expression):
     def as_dict(self, flat=False, sanitize=True):
         attrs = ("readable", "writable", "label", "default", "name",
                  "type", "represent", "compute")
-        SERIALIZABLE = (int, long, basestring, dict, list, float,
-                        tuple, bool, None.__class__)
+        SERIALIZABLE_TYPES = (int, long, basestring, dict, list,
+                              float, tuple, bool, type(None))
         def flatten(obj):
             if flat:
                 if isinstance(obj, flatten.__class__):
@@ -9146,7 +9149,7 @@ class Field(Expression):
                         obj = str(obj).split("'")[1]
                     except IndexError:
                         obj = str(obj)
-                elif not isinstance(obj, SERIALIZABLE):
+                elif not isinstance(obj, SERIALIZABLE_TYPES):
                     obj = str(obj)
             return obj
 
@@ -9161,7 +9164,7 @@ class Field(Expression):
                     else: other = v
                     r[k] = {flatten(type(v)):
                             filter_requires(type(v), other)}
-                elif flat and (not isinstance(v, SERIALIZABLE)):
+                elif flat and (not isinstance(v, SERIALIZABLE_TYPES)):
                     r[k] = str(v)
             return r
 
@@ -9253,7 +9256,61 @@ class Query(object):
     def case(self,t=1,f=0):
         return self.db._adapter.CASE(self,t,f)
 
+    def as_dict(self, flat=False, sanitize=True):
+        """Experimental stuff
 
+        This allows to return a plain dictionary with the basic
+        query representation. Can be used with json/xml services
+        for client-side db I/O
+
+        Example:
+        >>> q = db.auth_user.id != 0
+        >>> q.as_dict(flat=True)
+        {"op": "NE", "first":{"tablename": "auth_user",
+                              "fieldname": "id"},
+                     "second":0}
+        """
+        SERIALIZABLE_TYPES = (tuple, dict, list, int, long, float,
+                              basestring, type(None), bool)
+        def loop(d):
+            newd = dict()
+            for k, v in d.items():
+                if k in ("first", "second"):
+                    if isinstance(v, self.__class__):
+                        newd[k] = loop(v.__dict__)
+                    elif isinstance(v, Field):
+                        newd[k] = {"tablename": v._tablename,
+                                   "fieldname": v.name}
+                    elif isinstance(v, Expression):
+                        newd[k] = loop(v.__dict__)
+                    elif isinstance(v, SERIALIZABLE_TYPES):
+                        newd[k] = v
+                    else: pass
+                elif k == "op":
+                    newd[k] = v.__name__
+                else: pass
+            return newd
+
+        if flat:
+            d = loop(self.__dict__)
+        else: d = self.__dict__
+        return d
+
+    def as_xml(self, sanitize=True):
+        if have_serializers:
+            xml = serializers.xml
+        else:
+            raise ImportError("No xml serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return xml(d)
+
+    def as_json(self, sanitize=True):
+        if have_serializers:
+            json = serializers.json
+        else:
+            raise ImportError("No json serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return json(d)
 
 def xorify(orderby):
     if not orderby:
@@ -9287,6 +9344,12 @@ class Set(object):
     def __init__(self, db, query, ignore_common_filters = None):
         self.db = db
         self._db = db # for backward compatibility
+        self.dquery = None
+
+        # if query is a dict, parse it
+        if isinstance(query, dict):
+            query = self.parse(query)
+
         if not ignore_common_filters is None and \
                 use_common_filters(query) == ignore_common_filters:
             query = copy.copy(query)
@@ -9333,6 +9396,82 @@ class Set(object):
         tablename = db._adapter.get_table(self.query)
         fields = db[tablename]._listify(update_fields,update=True)
         return db._adapter._update(tablename,self.query,fields)
+
+    def as_dict(self, flat=False, sanitize=True):
+        if flat:
+            uid = dbname = uri = None
+            codec = self.db._db_codec
+            if not sanitize:
+                uri, dbname, uid = (self.db._dbname, str(self.db),
+                                    self.db._db_uid)
+            d = {"query": self.query.as_dict(flat=flat)}
+            d["db"] = {"uid": uid, "codec": codec,
+                       "name": dbname, "uri": uri}
+            return d
+        else: return self.__dict__
+
+    def as_xml(self, sanitize=True):
+        if have_serializers:
+            xml = serializers.xml
+        else:
+            raise ImportError("No xml serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return xml(d)
+
+    def as_json(self, sanitize=True):
+        if have_serializers:
+            json = serializers.json
+        else:
+            raise ImportError("No json serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return json(d)
+
+    def parse(self, dquery):
+        "Experimental: Turn a dictionary into a Query object"
+        self.dquery = dquery
+        return self.build(self.dquery)
+
+    def build(self, d):
+        "Experimental: see .parse()"
+        op, first, second = (d["op"], d["first"],
+                             d.get("second", None))
+        left = right = built = None
+
+        if op in ("AND", "OR"):
+            if not (type(first), type(second)) == (dict, dict):
+                raise SyntaxError("Invalid AND/OR query")
+            if op == "AND":
+                built = self.build(first) & self.build(second)
+            else: built = self.build(first) | self.build(second)
+
+        elif op == "NOT":
+            if first is None:
+                raise SyntaxError("Invalid NOT query")
+            built = ~self.build(first)
+        else:
+            # normal operation (GT, EQ, LT, ...)
+            for k, v in {"left": first, "right": second}.items():
+                if isinstance(v, dict) and v.get("op"):
+                    v = self.build(v)
+                if isinstance(v, dict) and ("tablename" in v):
+                    v = self.db[v["tablename"]][v["fieldname"]]
+                if k == "left":
+                    left = v
+                else:
+                    right = v
+
+            if op == "EQ": built = left == right
+            elif op == "NE": built = left != right
+            elif op == "GT": built = left > right
+            elif op == "GE": built = left >= right
+            elif op == "LT": built = left < right
+            elif op == "LE": built = left <= right
+            elif op == "CONTAINS": built = left.contains(right)
+            elif op == "BELONGS": built = left.belongs(right)
+            elif op == "INVERT": built = ~left
+            else: raise SyntaxError("Operator not supported")
+
+        return built
 
     def isempty(self):
         return not self.select(limitby=(0,1))
