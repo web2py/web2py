@@ -9253,6 +9253,12 @@ class Query(object):
             return self.first
         return Query(self.db,self.db._adapter.NOT,self)
 
+    def __eq__(self, other):
+        return repr(self) == repr(other)
+
+    def __ne__(self, other):
+        return not (self == other)
+
     def case(self,t=1,f=0):
         return self.db._adapter.CASE(self,t,f)
 
@@ -9270,6 +9276,7 @@ class Query(object):
                               "fieldname": "id"},
                      "second":0}
         """
+
         SERIALIZABLE_TYPES = (tuple, dict, list, int, long, float,
                               basestring, type(None), bool)
         def loop(d):
@@ -9285,16 +9292,22 @@ class Query(object):
                         newd[k] = loop(v.__dict__)
                     elif isinstance(v, SERIALIZABLE_TYPES):
                         newd[k] = v
-                    else: pass
                 elif k == "op":
-                    newd[k] = v.__name__
-                else: pass
+                    if callable(v):
+                        newd[k] = v.__name__
+                    elif isinstance(v, basestring):
+                        newd[k] = v
+                    else: pass # not callable or string
+                elif isinstance(v, SERIALIZABLE_TYPES):
+                    if isinstance(v, dict):
+                        newd[k] = loop(v)
+                    else: newd[k] = v
             return newd
 
         if flat:
-            d = loop(self.__dict__)
-        else: d = self.__dict__
-        return d
+            return loop(self.__dict__)
+        else: return self.__dict__
+
 
     def as_xml(self, sanitize=True):
         if have_serializers:
@@ -9368,10 +9381,10 @@ class Set(object):
             query = query!=None
         if self.query:
             return Set(self.db, self.query & query,
-                       ignore_common_filters = ignore_common_filters)
+                       ignore_common_filters=ignore_common_filters)
         else:
             return Set(self.db, query,
-                       ignore_common_filters = ignore_common_filters)
+                       ignore_common_filters=ignore_common_filters)
 
     def _count(self,distinct=None):
         return self.db._adapter._count(self.query,distinct)
@@ -9455,10 +9468,11 @@ class Set(object):
                     v = self.build(v)
                 if isinstance(v, dict) and ("tablename" in v):
                     v = self.db[v["tablename"]][v["fieldname"]]
-                if k == "left":
-                    left = v
-                else:
-                    right = v
+                if k == "left": left = v
+                else: right = v
+
+            if hasattr(self.db._adapter, op):
+                opm = getattr(self.db._adapter, op)
 
             if op == "EQ": built = left == right
             elif op == "NE": built = left != right
@@ -9466,10 +9480,21 @@ class Set(object):
             elif op == "GE": built = left >= right
             elif op == "LT": built = left < right
             elif op == "LE": built = left <= right
-            elif op == "CONTAINS": built = left.contains(right)
-            elif op == "BELONGS": built = left.belongs(right)
-            elif op == "INVERT": built = ~left
-            else: raise SyntaxError("Operator not supported")
+            elif op in ("JOIN", "LEFT_JOIN", "RANDOM", "ALLOW_NULL"):
+                built = Expression(self.db, opm)
+            elif op in ("LOWER", "UPPER", "EPOCH", "PRIMARY_KEY",
+                        "COALESCE_ZERO", "RAW", "INVERT"):
+                built = Expression(self.db, opm, left)
+            elif op in ("COUNT", "EXTRACT", "AGGREGATE", "SUBSTRING",
+                        "REGEXP", "LIKE", "ILIKE", "STARTSWITH",
+                        "ENDSWITH", "ADD", "SUB", "MUL", "DIV",
+                        "MOD", "AS", "ON", "COMMA", "NOT_NULL",
+                        "COALESCE", "CONTAINS", "BELONGS"):
+                built = Expression(self.db, opm, left, right)
+            # expression as string
+            elif not (left or right): built = Expression(self.db, op)
+            else:
+                raise SyntaxError("Operator not supported: %s" % op)
 
         return built
 
