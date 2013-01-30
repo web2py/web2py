@@ -1867,7 +1867,10 @@ class SQLFORM(FORM):
         dbset = db(query)
         tablenames = db._adapter.tables(dbset.query)
         if left is not None:
-            tablenames += db._adapter.tables(left)
+            if not isinstance(left, (list, tuple)):
+                left = [left]
+            for join in left:
+                tablenames += db._adapter.tables(join)
         tables = [db[tablename] for tablename in tablenames]
         if not fields:
             fields = reduce(lambda a, b: a + b,
