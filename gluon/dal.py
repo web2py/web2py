@@ -3063,6 +3063,8 @@ class MSSQLAdapter(BaseAdapter):
         if limitby:
             (lmin, lmax) = limitby
             sql_s += ' TOP %i' % lmax
+        if 'GROUP BY' in sql_o:
+            sql_o = sql_o[:sql_o.find('ORDER BY ')]
         return 'SELECT %s %s FROM %s%s%s;' % (sql_s, sql_f, sql_t, sql_w, sql_o)
 
     TRUE = 1
@@ -3205,7 +3207,18 @@ class MSSQL3Adapter(MSSQLAdapter):
     def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
         if limitby:
             (lmin, lmax) = limitby
-            return 'SELECT %s FROM (SELECT %s ROW_NUMBER() over (order by id) AS w_row, %s FROM %s%s%s) TMP WHERE w_row BETWEEN %i AND %s;' % (sql_f,sql_s,sql_f,sql_t,sql_w,sql_o,lmin,lmax)
+            if lmin == 0:
+                sql_s += ' TOP %i' % lmax
+                return 'SELECT %s %s FROM %s%s%s;' % (sql_s, sql_f, sql_t, sql_w, sql_o)
+            lmin += 1
+            sql_o_inner = sql_o[sql_o.find('ORDER BY ')+9:]
+            sql_g_inner = sql_o[:sql_o.find('ORDER BY ')]
+            sql_f_outer = ['f_%s' % f for f in range(len(sql_f.split(',')))]
+            sql_f_inner = [f for f in sql_f.split(',')]
+            sql_f_iproxy = ['%s AS %s' % (o, n) for (o, n) in zip(sql_f_inner, sql_f_outer)]
+            sql_f_iproxy = ', '.join(sql_f_iproxy)
+            sql_f_oproxy = ', '.join(sql_f_outer)
+            return 'SELECT %s %s FROM (SELECT %s ROW_NUMBER() OVER (ORDER BY %s) AS w_row, %s FROM %s%s%s) TMP WHERE w_row BETWEEN %i AND %s;' % (sql_s,sql_f_oproxy,sql_s,sql_f,sql_f_iproxy,sql_t,sql_w,sql_g_inner,lmin,lmax)
         return 'SELECT %s %s FROM %s%s%s;' % (sql_s,sql_f,sql_t,sql_w,sql_o)
     def rowslice(self,rows,minimum=0,maximum=None):
         return rows
@@ -3249,6 +3262,7 @@ class MSSQL2Adapter(MSSQLAdapter):
 
     def execute(self,a):
         return self.log_execute(a.decode('utf8'))
+    
 
 class SybaseAdapter(MSSQLAdapter):
     drivers = ('Sybase',)
@@ -6508,6 +6522,7 @@ ADAPTERS = {
     'oracle': OracleAdapter,
     'mssql': MSSQLAdapter,
     'mssql2': MSSQL2Adapter,
+    'mssql3': MSSQL3Adapter,
     'sybase': SybaseAdapter,
     'db2': DB2Adapter,
     'teradata': TeradataAdapter,
