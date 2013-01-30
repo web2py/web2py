@@ -609,7 +609,7 @@ def protolinks_simple(proto, url):
     #elif proto == 'embed':  # NOTE: embed is a synonym to iframe now
     #    return '<a href="%s" class="%sembed">%s></a>'%(url,class_prefix,url)
     elif proto == 'qr':
-        return '<img width="80px" src="http://qrcode.kaywa.com/img.php?s=8&amp;d=%s" alt="qr code" />'%url
+        return '<img style="width:80px" src="http://qrcode.kaywa.com/img.php?s=8&amp;d=%s" alt="qr code" />'%url
     return proto+':'+url
 
 def render(text,
@@ -701,7 +701,7 @@ def render(text,
     '<p><img src="http://example.com" alt="this is an image" style="float:left" /></p>'
 
     >>> render('[[this is an image http://example.com left 200px]]')
-    '<p><img src="http://example.com" alt="this is an image" style="float:left" width="200px" /></p>'
+    '<p><img src="http://example.com" alt="this is an image" style="float:left;width:200px" /></p>'
 
     >>> render("[[Your browser doesn't support <video> HTML5 tag http://example.com video]]")
     '<p><video controls="controls"><source src="http://example.com" />Your browser doesn\\'t support &lt;video&gt; HTML5 tag</video></p>'
@@ -740,7 +740,7 @@ def render(text,
     '<p>auto-image: (<img src="http://example.com/image.jpeg" controls />)</p>'
 
     >>> render("qr: (qr:http://example.com/image.jpeg)")
-    '<p>qr: (<img width="80px" src="http://qrcode.kaywa.com/img.php?s=8&amp;d=http://example.com/image.jpeg" alt="qr code" />)</p>'
+    '<p>qr: (<img style="width:80px" src="http://qrcode.kaywa.com/img.php?s=8&amp;d=http://example.com/image.jpeg" alt="qr code" />)</p>'
 
     >>> render("embed: (embed:http://example.com/page)")
     '<p>embed: (<iframe src="http://example.com/page" frameborder="0" allowfullscreen></iframe>)</p>'
@@ -776,10 +776,10 @@ def render(text,
     '<p>title9: <img src="http://example.com" alt="test message" title="title" style="float:left" /></p>'
 
     >>> render("title10: [[test message [title] http://example.com right 100px]]")
-    '<p>title10: <img src="http://example.com" alt="test message" title="title" style="float:right" width="100px" /></p>'
+    '<p>title10: <img src="http://example.com" alt="test message" title="title" style="float:right;width:100px" /></p>'
 
     >>> render("title11: [[test message [title] http://example.com center 200px]]")
-    '<p>title11: <p style="text-align:center"><img src="http://example.com" alt="test message" title="title" width="200px" /></p></p>'
+    '<p>title11: <p style="text-align:center"><img src="http://example.com" alt="test message" title="title" style="width:200px" /></p></p>'
 
     >>> render(r"\\[[probe]]")
     '<p>[[probe]]</p>'
@@ -1236,23 +1236,24 @@ def render(text,
             return m.group(0)
         k = escape(k)
         t = t or ''
-        width = ' width="%s"' % w if w else ''
+        style = 'width:%s' % w if w else ''
         title = ' title="%s"' % escape(a).replace(META, DISABLED_META) if a else ''
-        style = p_begin = p_end = ''
+        p_begin = p_end = ''
         if p == 'center':
             p_begin = '<p style="text-align:center">'
             p_end = '</p>'+pp
         elif p in ('left','right'):
-            style = ' style="float:%s"' % p
+            style = ('float:%s' % p)+(';%s' % style if style else '')
+        if style:
+            style = ' style="%s"' % style
         if p in ('video','audio'):
             t = render(t, {}, {}, 'br', URL, environment, latex,
                        autolinks, protolinks, class_prefix, id_prefix, pretty_print)
-            return '<%(p)s controls="controls"%(title)s%(width)s><source src="%(k)s" />%(t)s</%(p)s>' \
-                    % dict(p=p, title=title, width=width, k=k, t=t)
+            return '<%(p)s controls="controls"%(title)s%(style)s><source src="%(k)s" />%(t)s</%(p)s>' \
+                    % dict(p=p, title=title, style=style, k=k, t=t)
         alt = ' alt="%s"'%escape(t).replace(META, DISABLED_META) if t else ''
-        return '%(begin)s<img src="%(k)s"%(alt)s%(title)s%(style)s%(width)s />%(end)s' \
-                % dict(begin=p_begin, k=k, alt=alt, title=title,
-                       style=style, width=width, end=p_end)
+        return '%(begin)s<img src="%(k)s"%(alt)s%(title)s%(style)s />%(end)s' \
+                % dict(begin=p_begin, k=k, alt=alt, title=title, style=style, end=p_end)
 
     def sub_link(m):
         t,a,k,p = m.group('t','a','k','p')
