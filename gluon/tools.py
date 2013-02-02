@@ -4904,8 +4904,7 @@ class Wiki(object):
             self.force_prefix = force_prefix % self.auth.user
         else:
             self.force_prefix = force_prefix
-        request = current.request
-        self.host = request.env.http_host
+        self.host = current.request.env.http_host
         perms = self.manage_permissions = manage_permissions
         self.restrict_search = restrict_search
         self.extra = extra or {}
@@ -4981,16 +4980,12 @@ class Wiki(object):
                     db.wiki_tag.insert(name=tag, wiki_page=page.id)
         db.wiki_page._after_insert.append(update_tags_insert)
         db.wiki_page._after_update.append(update_tags_update)
-        if auth.user and check_credentials(request) and \
+        if auth.user and check_credentials(current.request) and \
                 not 'wiki_editor' in auth.user_groups.values():
             group = db.auth_group(role='wiki_editor')
             gid = group.id if group else db.auth_group.insert(
                 role='wiki_editor')
             auth.add_membership(gid)
-
-        automenu = self.menu(request.controller, request.function)
-        current.response.menu += automenu
-
     # WIKI ACCESS POLICY
 
     def not_authorized(self, page=None):
@@ -5039,6 +5034,8 @@ class Wiki(object):
 
     def __call__(self):
         request = current.request
+        automenu = self.menu(request.controller, request.function)
+        current.response.menu += automenu
         zero = request.args(0) or 'index'
         if zero and zero.isdigit():
             return self.media(int(zero))
