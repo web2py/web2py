@@ -7124,8 +7124,12 @@ class DAL(object):
         :attempts (defaults to 5). Number of times to attempt connecting
         """
 
+        dbdict = None
         if uri == '<zombie>' and db_uid is not None: return
-
+        elif isinstance(uri, dict):
+            dbdict = uri
+            uri = dbdict["uri"]
+            codec = dbdict["codec"] or codec
         if not decode_credentials:
             credential_decoder = lambda cred: cred
         else:
@@ -7207,32 +7211,44 @@ class DAL(object):
         self._fake_migrate = fake_migrate
         self._migrate_enabled = migrate_enabled
         self._fake_migrate_all = fake_migrate_all
-        if auto_import:
-            self.import_table_definitions(adapter.folder)
+        if auto_import or dbdict:
+            self.import_table_definitions(adapter.folder,
+                                          items=dbdict["items"])
 
     @property
     def tables(self):
         return self._tables
 
-    def import_table_definitions(self,path,migrate=False,fake_migrate=False):
+    def import_table_definitions(self, path, migrate=False,
+                                 fake_migrate=False, items=None):
         pattern = pjoin(path,self._uri_hash+'_*.table')
-        for filename in glob.glob(pattern):
-            tfile = self._adapter.file_open(filename, 'r')
-            try:
-                sql_fields = pickle.load(tfile)
-                name = filename[len(pattern)-7:-6]
-                mf = [(value['sortable'],
-                       Field(key,
-                             type=value['type'],
-                             length=value.get('length',None),
-                             notnull=value.get('notnull',False),
-                             unique=value.get('unique',False))) \
-                          for key, value in sql_fields.iteritems()]
-                mf.sort(lambda a,b: cmp(a[0],b[0]))
-                self.define_table(name,*[item[1] for item in mf],
-                                  **dict(migrate=migrate,fake_migrate=fake_migrate))
-            finally:
-                self._adapter.file_close(tfile)
+        if items:
+            for tablename, table in items.iteritems():
+                # TODO: read all field/table options
+                fields = []
+                for fieldname, field in table["items"].iteritems():
+                    type = field["type"]
+                    fields.append(Field(fieldname, type))
+                self.define_table(tablename, *fields)
+        else:
+            for filename in glob.glob(pattern):
+                tfile = self._adapter.file_open(filename, 'r')
+                try:
+                    sql_fields = pickle.load(tfile)
+                    name = filename[len(pattern)-7:-6]
+                    mf = [(value['sortable'],
+                           Field(key,
+                                 type=value['type'],
+                                 length=value.get('length',None),
+                                 notnull=value.get('notnull',False),
+                                 unique=value.get('unique',False))) \
+                              for key, value in sql_fields.iteritems()]
+                    mf.sort(lambda a,b: cmp(a[0],b[0]))
+                    self.define_table(name,*[item[1] for item in mf],
+                                      **dict(migrate=migrate,
+                                             fake_migrate=fake_migrate))
+                finally:
+                    self._adapter.file_close(tfile)
 
     def check_reserved_keyword(self, name):
         """
@@ -7571,7 +7587,7 @@ def index():
     def as_dict(self, flat=False, sanitize=True):
         dbname = codec = uid = uri = None
         if not sanitize:
-            uri, dbname, codec, uid = (str(self), self._dbname,
+            uri, dbname, codec, uid = (self._uri, self._dbname,
                                        self._db_codec, self._db_uid)
         db_as_dict = dict(items={}, tables=[], uri=uri, dbname=dbname,
                           codec=codec, uid=uid)
