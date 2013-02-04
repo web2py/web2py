@@ -46,8 +46,8 @@ def stream_file_or_304_or_206(
     request=None,
     headers={},
     status=200,
-    error_message=None,
-):
+    error_message=None
+    ):
     if error_message is None:
         error_message = rewrite.THREAD_LOCAL.routes.error_message % 'invalid request'
     try:

@@ -308,8 +308,8 @@ class Response(Storage):
         chunk_size=DEFAULT_CHUNK_SIZE,
         request=None,
         attachment=False,
-        filename=None,
-    ):
+        filename=None
+        ):
         """
         if a controller function::
 
@@ -403,8 +403,8 @@ class Response(Storage):
             raise HTTP(404)
         headers = self.headers
         headers['Content-Type'] = contenttype(name)
-	if download_filename == None:
-	    download_filename = filename
+        if download_filename == None:
+            download_filename = filename
         if attachment:
             headers['Content-Disposition'] = \
                 'attachment; filename="%s"' % download_filename.replace('"','\"')

@@ -876,7 +876,7 @@ class BaseAdapter(ConnectionPool):
                 # The reason is that we do not want to trigger
                 # a migration simply because a default value changes.
                 not_null = self.NOT_NULL(field.default, field_type)
-                ftype = ftype.replace('NOT NULL', not_null)            
+                ftype = ftype.replace('NOT NULL', not_null)
             sql_fields_aux[field_name] = dict(sql=ftype)
             # Postgres - PostGIS:
             # geometry fields are added after the table has been created, not now
@@ -1234,7 +1234,7 @@ class BaseAdapter(ConnectionPool):
                                  self.expand('%'+second, 'string'))
 
     def CONTAINS(self, first, second, case_sensitive=False):
-        if isinstance(second,Expression):            
+        if isinstance(second,Expression):
             field = self.expand(first)
             expr = self.expand(second,'string')
             if first.type.startswith('list:'):
@@ -3265,7 +3265,7 @@ class MSSQL2Adapter(MSSQLAdapter):
 
     def execute(self,a):
         return self.log_execute(a.decode('utf8'))
-    
+
 
 class SybaseAdapter(MSSQLAdapter):
     drivers = ('Sybase',)
@@ -5037,7 +5037,7 @@ class MongoDBAdapter(NoSQLAdapter):
                 'list:reference': list,
         }
 
-    error_messages = {"javascript_needed": "This must yet be replaced" + 
+    error_messages = {"javascript_needed": "This must yet be replaced" +
                       " with javascript in order to work."}
 
     def __init__(self,db,uri='mongodb://127.0.0.1:5984/db',
@@ -5116,12 +5116,12 @@ class MongoDBAdapter(NoSQLAdapter):
                     raise ValueError(
                             "invalid objectid argument string: %s" % e)
             else:
-                raise ValueError("Invalid objectid argument string. " + 
+                raise ValueError("Invalid objectid argument string. " +
                                  "Requires an integer or base 16 value")
         elif isinstance(arg, self.ObjectId):
             return arg
         if not isinstance(arg, (int, long)):
-            raise TypeError("object_id argument must be of type " + 
+            raise TypeError("object_id argument must be of type " +
                             "ObjectId or an objectid representable integer")
         if arg == 0:
             hexvalue = "".zfill(24)
@@ -5153,7 +5153,7 @@ class MongoDBAdapter(NoSQLAdapter):
             return value
         return value
 
-    # Safe determines whether a asynchronious request is done or a 
+    # Safe determines whether a asynchronious request is done or a
     # synchronious action is done
     # For safety, we use by default synchronious requests
     def insert(self, table, fields, safe=None):
@@ -5273,7 +5273,7 @@ class MongoDBAdapter(NoSQLAdapter):
         elif len(fields) != 0:
             tablename = fields[0].tablename
         else:
-            raise SyntaxError("The table name could not be found in " + 
+            raise SyntaxError("The table name could not be found in " +
                               "the query nor from the select statement.")
 
         mongoqry_dict = self.expand(query)
@@ -5299,7 +5299,7 @@ class MongoDBAdapter(NoSQLAdapter):
                     sort=mongosort_list, snapshot=snapshot).count()}
         else:
             # pymongo cursor object
-            mongo_list_dicts = ctable.find(mongoqry_dict, 
+            mongo_list_dicts = ctable.find(mongoqry_dict,
                                 mongofields_dict, skip=limitby_skip,
                                 limit=limitby_limit, sort=mongosort_list,
                                 snapshot=snapshot)
@@ -5396,7 +5396,7 @@ class MongoDBAdapter(NoSQLAdapter):
         if safe is None:
             safe = self.safe
         amount = 0
-        amount = self.count(query, False)    
+        amount = self.count(query, False)
         if not isinstance(query, Query):
             raise RuntimeError("query type %s is not supported" % \
                                type(query))
@@ -5695,7 +5695,7 @@ class IMAPAdapter(NoSQLAdapter):
     # This avoids the extra server names retrieval
 
     imapdb.define_tables({"inbox": "INBOX"})
-    
+
     # Selects without content/attachments/email columns will only
     # fetch header and flags
 
@@ -6088,7 +6088,7 @@ class IMAPAdapter(NoSQLAdapter):
 
                     # keep the requests small for header/flags
                     if any([(field.name in ["content", "size",
-                                            "attachments", "email"]) for 
+                                            "attachments", "email"]) for
                            field in fields]):
                         imap_fields = "(RFC822 FLAGS)"
                     else:
@@ -7293,14 +7293,14 @@ def index():
             "/{person.name}/pets[pet.ownedby]/{pet.name}",
             "/{person.name}/pets[pet.ownedby]/{pet.name}/:field",
             ("/dogs[pet]", db.pet.info=='dog'),
-            ("/dogs[pet]/{pet.name.startswith}", db.pet.info=='dog'),       
+            ("/dogs[pet]/{pet.name.startswith}", db.pet.info=='dog'),
             ]
         parser = db.parse_as_rest(patterns,args,vars)
         if parser.status == 200:
             return dict(content=parser.response)
         else:
             raise HTTP(parser.status,parser.error)
-            
+
     def POST(table_name,**vars):
         if table_name == 'person':
             return db.person.validate_and_insert(**vars)
@@ -8797,7 +8797,7 @@ class Expression(object):
         return Expression(db, db._adapter.AS, self, alias, self.type)
 
     # GIS expressions
-    
+
     def st_asgeojson(self, precision=15, options=0, version=1):
         return Expression(self.db, self.db._adapter.ST_ASGEOJSON, self,
                           dict(precision=precision, options=options,
@@ -9131,7 +9131,7 @@ class Field(Expression):
             stream = self.uploadfs.open(name, 'rb')
         else:
             # ## if file is on regular filesystem
-            stream = open(pjoin(file_properties['path'], name), 'rb')
+            stream = pjoin(file_properties['path'], name)
         return (filename, stream)
 
     def retrieve_file_properties(self, name, path=None):
