@@ -7610,6 +7610,12 @@ def index():
         d = self.as_dict(flat=True, sanitize=sanitize)
         return serializers.json(d)
 
+    def as_yaml(self, sanitize=True):
+        if not have_serializers:
+            raise ImportError("No YAML serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return serializers.yaml(d)
+
     def __contains__(self, tablename):
         try:
             return tablename in self.tables
@@ -8521,6 +8527,12 @@ class Table(object):
         d = self.as_dict(flat=True, sanitize=sanitize)
         return serializers.json(d)
 
+    def as_yaml(self, sanitize=True):
+        if not have_serializers:
+            raise ImportError("No YAML serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return serializers.yaml(d)
+
     def with_alias(self, alias):
         return self._db._adapter.alias(self,alias)
 
@@ -9228,6 +9240,13 @@ class Field(Expression):
             raise ImportError("No json serializers available")
         d = self.as_dict(flat=True, sanitize=sanitize)
         return json(d)
+
+    def as_yaml(self, sanitize=True):
+        if have_serializers:
+            d = self.as_dict(flat=True, sanitize=sanitize)
+            return serializers.yaml(d)
+        else:
+            raise ImportError("No YAML serializers available")
 
     def __nonzero__(self):
         return True
