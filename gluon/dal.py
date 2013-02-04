@@ -8775,6 +8775,11 @@ class Expression(object):
         return Query(db, db._adapter.ENDSWITH, self, value)
 
     def contains(self, value, all=False, case_sensitive=False):
+        """
+        The case_sensitive parameters is only useful for PostgreSQL
+        For other RDMBs it is ignored and contains is always case in-sensitive
+        For MongoDB and GAE contains is always case sensitive
+        """
         db = self.db
         if isinstance(value,(list, tuple)):
             subqueries = [self.contains(str(v).strip(),case_sensitive=case_sensitive)
