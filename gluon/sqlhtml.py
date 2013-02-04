@@ -2552,7 +2552,7 @@ class SQLFORM(FORM):
                             links_in_grid=links_in_grid,
                             user_signature=user_signature, **kwargs)
         if isinstance(grid, DIV):
-            header = table._plural + (field and ' for ' + field.name or '')
+            header = table._plural + (field and ' for ' + field.label or '')
             breadcrumbs.append(LI(A(T(header), _class=trap_class(),
                                     _href=url()), _class='active w2p_grid_breadcrumb_elem'))
             grid.insert(
