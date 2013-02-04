@@ -1328,10 +1328,11 @@ class BaseAdapter(ConnectionPool):
             first = expression.first
             second = expression.second
             op = expression.op
+            optional_args = expression.optional_args or {}
             if not second is None:
-                return op(first, second)
+                return op(first, second, **optional_args)
             elif not first is None:
-                return op(first)
+                return op(first,**optional_args)
             elif isinstance(op, str):
                 if op.endswith(';'):
                     op=op[:-1]
@@ -8560,6 +8561,7 @@ class Expression(object):
         first=None,
         second=None,
         type=None,
+        **optional_args
         ):
 
         self.db = db
@@ -8572,6 +8574,7 @@ class Expression(object):
             self.type = first.type
         else:
             self.type = type
+        self.optional_args = optional_args
 
     def sum(self):
         db = self.db
@@ -9279,12 +9282,14 @@ class Query(object):
         first=None,
         second=None,
         ignore_common_filters = False,
+        **optional_args
         ):
         self.db = self._db = db
         self.op = op
         self.first = first
         self.second = second
         self.ignore_common_filters = ignore_common_filters
+        self.optional_args = optional_args
 
     def __repr__(self):
         return '<Query %s>' % BaseAdapter.expand(self.db._adapter,self)
