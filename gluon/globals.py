@@ -385,6 +385,8 @@ class Response(Storage):
         downloads from http://..../download/filename
         """
 
+        current.session.forget(current.response)
+
         if not request.args:
             raise HTTP(404)
         name = request.args[-1]
@@ -689,7 +691,7 @@ class Session(Storage):
 
     def forget(self, response=None):
         self._close(response)
-        self._forget = True
+        self._forget = True        
 
     def _try_store_in_cookie(self, request, response):
         if response.session_storage_type != 'cookie':
