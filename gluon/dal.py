@@ -339,7 +339,10 @@ if not 'google' in DRIVERS:
         LOGGER.debug('no Oracle driver cx_Oracle')
 
     try:
+        #try:
         import pyodbc
+        #except ImportError:
+        #    from contrib.pypyodbc import pypyodbc as pyodbc
         DRIVERS.append('MSSQL(pyodbc)')
         DRIVERS.append('DB2(pyodbc)')
         DRIVERS.append('Teradata(pyodbc)')
