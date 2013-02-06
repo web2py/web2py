@@ -565,6 +565,7 @@ def edit():
     # Load json only if it is ajax edited...
     app = get_app(request.vars.app)
     filename = '/'.join(request.args)
+    response.title = request.args[-1]
     if request.vars.app:
         path = abspath(filename)
     else:
@@ -812,6 +813,7 @@ def edit_language():
     """ Edit language file """
     app = get_app()
     filename = '/'.join(request.args)
+    response.title = request.args[-1]
     strings = read_dict(apath(filename, r=request))
 
     if '__corrupted__' in strings:
