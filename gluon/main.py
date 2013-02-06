@@ -12,6 +12,7 @@ Contains:
 
 """
 
+if False: import import_all # DO NOT REMOVE PART OF FREEZE PROCESS
 import gc
 import cgi
 import cStringIO
