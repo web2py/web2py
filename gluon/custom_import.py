@@ -61,22 +61,26 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
             and isinstance(globals, dict):
         import_tb = None
         try:
-            items = current.request.folder.split(os.path.sep)
-            if not items[-1]:
-                items = items[:-1]
-            modules_prefix = '.'.join(items[-2:]) + '.modules'
-            if not fromlist:
-                # import like "import x" or "import x.y"
-                result = None
-                for itemname in name.split("."):
-                    new_mod = base_importer(
-                        modules_prefix, globals, locals, [itemname], level)
-                    try:
-                        result = result or new_mod.__dict__[itemname]
-                    except KeyError, e:
-                        raise ImportError, 'Cannot import module %s' % str(e)
-                    modules_prefix += "." + itemname
-                return result
+            try:
+                oname = name if not name.startswith('.') else '.'+name
+                return NATIVE_IMPORTER(oname, globals, locals, fromlist, level)
+            except ImportError:
+                items = current.request.folder.split(os.path.sep)
+                if not items[-1]:
+                    items = items[:-1]
+                modules_prefix = '.'.join(items[-2:]) + '.modules'
+                if not fromlist:
+                    # import like "import x" or "import x.y"
+                    result = None
+                    for itemname in name.split("."):
+                        new_mod = base_importer(
+                            modules_prefix, globals, locals, [itemname], level)
+                        try:
+                            result = result or new_mod.__dict__[itemname]
+                        except KeyError, e:
+                            raise ImportError, 'Cannot import module %s' % str(e)
+                        modules_prefix += "." + itemname
+                    return result
             else:
                 # import like "from x import a, b, ..."
                 pname = modules_prefix + "." + name
