@@ -81,10 +81,10 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
                             raise ImportError, 'Cannot import module %s' % str(e)
                         modules_prefix += "." + itemname
                     return result
-            else:
-                # import like "from x import a, b, ..."
-                pname = modules_prefix + "." + name
-                return base_importer(pname, globals, locals, fromlist, level)
+                else:
+                    # import like "from x import a, b, ..."
+                    pname = modules_prefix + "." + name
+                    return base_importer(pname, globals, locals, fromlist, level)
         except ImportError, e1:
             import_tb = sys.exc_info()[2]
             try:
