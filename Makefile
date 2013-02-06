@@ -61,13 +61,12 @@ mdp:
 	make app
 	make win
 app:
-	echo 'did you uncomment import_all in gluon/main.py?'
-	python2.5 -c 'import compileall; compileall.compile_dir("gluon/")'
+	python2.7 -c 'import compileall; compileall.compile_dir("gluon/")'
 	#python web2py.py -S welcome -R __exit__.py
 	#cd ../web2py_osx/site-packages/; unzip ../site-packages.zip
 	find gluon -path '*.pyc' -exec cp {} ../web2py_osx/site-packages/{} \;
 	cd ../web2py_osx/site-packages/; zip -r ../site-packages.zip *
-	mv ../web2py_osx/site-packages.zip ../web2py_osx/web2py/web2py.app/Contents/Resources/lib/python2.5
+	mv ../web2py_osx/site-packages.zip ../web2py_osx/web2py/web2py.app/Contents/Resources/lib/python2.7
 	cp README.markdown ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp NEWINSTALL ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp LICENSE ../web2py_osx/web2py/web2py.app/Contents/Resources
@@ -86,7 +85,6 @@ app:
 	cd ../web2py_osx; zip -r web2py_osx.zip web2py
 	mv ../web2py_osx/web2py_osx.zip .
 win:
-	echo 'did you uncomment import_all in gluon/main.py?'
 	python2.7 -c 'import compileall; compileall.compile_dir("gluon/")'
 	#cd ../web2py_win/library/; unzip ../library.zip
 	find gluon -path '*.pyc' -exec cp {} ../web2py_win/library/{} \;
@@ -110,7 +108,7 @@ win:
 	cd ../web2py_win; zip -r web2py_win.zip web2py
 	mv ../web2py_win/web2py_win.zip .
 run:
-	python2.5 web2py.py -a hello
+	python2.7 web2py.py -a hello
 commit:
 	python web2py.py --run_system_tests
 	make src
