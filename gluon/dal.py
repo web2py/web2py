@@ -7394,10 +7394,12 @@ def index():
             return Row({'status':200,'pattern':'list',
                         'error':None,'response':patterns})
         for pattern in patterns:
+            basequery, exposedfields = None, []
             if isinstance(pattern,tuple):
-                pattern, basequery = pattern
-            else:
-                basequery = None
+                if len(pattern)==2:
+                    pattern, basequery = pattern
+                elif len(pattern)>2:
+                    pattern, basequery, exposedfields = pattern[0:3]
             otable=table=None
             if not isinstance(queries,dict):
                 dbset=db(queries)
@@ -7510,7 +7512,10 @@ def index():
                         orderby = [db[table][f] if not f.startswith('~') else ~db[table][f[1:]] for f in ofields]
                     except (KeyError, AttributeError):
                         return Row({'status':400,'error':'invalid orderby','response':None})
-                    fields = [field for field in db[table] if field.readable]
+                    if exposedfields:
+                        fields = [field for field in db[table] if str(field).split('.')[-1] in exposedfields and field.readable]
+                    else:    
+                        fields = [field for field in db[table] if field.readable]
                     count = dbset.count()
                     try:
                         offset = int(vars.get('offset',None) or 0)
