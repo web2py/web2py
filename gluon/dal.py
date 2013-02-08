@@ -2390,6 +2390,10 @@ class MySQLAdapter(BaseAdapter):
     def EPOCH(self, first):
         return "UNIX_TIMESTAMP(%s)" % self.expand(first)
 
+    def REGEXP(self,first,second):
+        return '(%s REGEXP %s)' % (self.expand(first),
+                                   self.expand(second,'string'))
+
     def _drop(self,table,mode):
         # breaks db integrity but without this mysql does not drop table
         return ['SET FOREIGN_KEY_CHECKS=0;','DROP TABLE %s;' % table,
