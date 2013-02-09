@@ -565,6 +565,7 @@ def edit():
     # Load json only if it is ajax edited...
     app = get_app(request.vars.app)
     filename = '/'.join(request.args)
+    response.title = request.args[-1]
     if request.vars.app:
         path = abspath(filename)
     else:
@@ -645,6 +646,7 @@ def edit():
             code = request.vars.data.rstrip().replace('\r\n', '\n') + '\n'
             compile(code, path, "exec", _ast.PyCF_ONLY_AST)
         except Exception, e:
+            # offset calculation is only used for textarea (start/stop)
             start = sum([len(line) + 1 for l, line
                          in enumerate(request.vars.data.split("\n"))
                          if l < e.lineno - 1])
@@ -654,7 +656,7 @@ def edit():
             else:
                 offset = 0
             highlight = {'start': start, 'end': start +
-                         offset + 1, 'lineno': e.lineno}
+                         offset + 1, 'lineno': e.lineno, 'offset': offset}
             try:
                 ex_name = e.__class__.__name__
             except:
@@ -811,6 +813,7 @@ def edit_language():
     """ Edit language file """
     app = get_app()
     filename = '/'.join(request.args)
+    response.title = request.args[-1]
     strings = read_dict(apath(filename, r=request))
 
     if '__corrupted__' in strings:

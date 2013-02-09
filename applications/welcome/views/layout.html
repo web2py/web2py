@@ -1,3 +1,4 @@
+<!--[if HTML5]><![endif]-->
 <!DOCTYPE html>
 <!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
 <!--[if lt IE 7]><html class="ie ie6 ie-lte9 ie-lte8 ie-lte7 no-js" lang="{{=T.accepted_language or 'en'}}"> <![endif]-->
@@ -6,16 +7,16 @@
 <!--[if IE 9]><html class="ie9 ie-lte9 no-js" lang="{{=T.accepted_language or 'en'}}"> <![endif]-->
 <!--[if (gt IE 9)|!(IE)]><!--> <html class="no-js" lang="{{=T.accepted_language or 'en'}}"> <!--<![endif]-->
 <head>
-  <meta charset="utf-8" />
+<title>{{=response.title or request.application}}</title>
+  <!--[if !HTML5]>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge{{=not request.is_local and ',chrome=1' or ''}}">
+  <![endif]-->
   <!-- www.phpied.com/conditional-comments-block-downloads/ -->
   <!-- Always force latest IE rendering engine
        (even in intranet) & Chrome Frame
        Remove this if you use the .htaccess -->
-  <!--[if IE]>
-      <meta http-equiv="X-UA-Compatible" content="IE=edge{{=not request.is_local and ',chrome=1' or ''}}">
-      <![endif]-->
-
-  <title>{{=response.title or request.application}}</title>
+	   
+  <meta charset="utf-8" />
 
   <!-- http://dev.w3.org/html5/markup/meta.name.html -->
   <meta name="application-name" content="{{=request.application}}" />

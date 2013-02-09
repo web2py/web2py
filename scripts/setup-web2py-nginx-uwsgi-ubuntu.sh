@@ -19,19 +19,50 @@ apt-get -y install build-essential python-dev libxml2-dev python-pip unzip
 pip install --upgrade pip
 PIPPATH=`which pip`
 $PIPPATH install --upgrade uwsgi
+# Create common nginx sections
+mkdir /etc/nginx/conf.d/web2py
+echo '
+gzip_static on;
+gzip_http_version   1.1;
+gzip_proxied        expired no-cache no-store private auth;
+gzip_disable        "MSIE [1-6]\.";
+gzip_vary           on;
+' > /etc/nginx/conf.d/web2py/gzip_static.conf
+echo '
+gzip on;
+gzip_disable "msie6";
+gzip_vary on;
+gzip_proxied any;
+gzip_comp_level 6;
+gzip_buffers 16 8k;
+gzip_http_version 1.1;
+gzip_types text/plain text/css application/json application/x-javascript text/xml application/xml application/xml+rss text/javascript;
+' > /etc/nginx/conf.d/web2py/gzip.conf
 # Create configuration file /etc/nginx/sites-available/web2py
 echo 'server {
         listen          80;
         server_name     $hostname;
-        #to enable correct use of response.static_version
+        ###to enable correct use of response.static_version
         #location ~* /(\w+)/static(?:/_[\d]+\.[\d]+\.[\d]+)?/(.*)$ {
         #    alias /home/www-data/web2py/applications/$1/static/$2;
         #    expires max;
         #}
+        ###
+        
+        ###if you use something like myapp = dict(languages=['en', 'it', 'jp'], default_language='en') in your routes.py
+        #location ~* /(\w+)/(en|it|jp)/static/(.*)$ {
+        #    alias /home/www-data/web2py/applications/$1/;
+        #    try_files static/$2/$3 static/$3 =404;
+        #}
+        ###
         location ~* /(\w+)/static/ {
             root /home/www-data/web2py/applications/;
             #remove next comment on production
             #expires max;
+            ### if you want to use pre-gzipped static files (recommended)
+            ### check scripts/zip_static_files.py and remove the comments
+            # include /etc/nginx/conf.d/web2py/gzip_static.conf;
+            ###
         }
         location / {
             #uwsgi_pass      127.0.0.1:9001;
@@ -39,6 +70,14 @@ echo 'server {
             include         uwsgi_params;
             uwsgi_param     UWSGI_SCHEME $scheme;
             uwsgi_param     SERVER_SOFTWARE    nginx/$nginx_version;
+            
+            ###remove the comments to turn on if you want gzip compression of your pages
+            # include /etc/nginx/conf.d/web2py/gzip.conf;
+            ### end gzip section
+
+            ### remove the comments if you use uploads (max 10 MB)
+            #client_max_body_size 10m;
+            ### 
         }
 }
 server {
@@ -58,7 +97,15 @@ server {
             include         uwsgi_params;
             uwsgi_param     UWSGI_SCHEME $scheme;
             uwsgi_param     SERVER_SOFTWARE    nginx/$nginx_version;
+            ###remove the comments to turn on if you want gzip compression of your pages
+            # include /etc/nginx/conf.d/web2py/gzip.conf;
+            ### end gzip section
+            ### remove the comments if you want to enable uploads (max 10 MB)
+            #client_max_body_size 10m;
+            ### 
         }
+        ## if you serve static files through https, copy here the section
+        ## from the previous server instance to manage static files
  
 }' >/etc/nginx/sites-available/web2py
  
@@ -78,25 +125,26 @@ sudo mkdir /etc/uwsgi
 sudo mkdir /var/log/uwsgi
  
 # Create configuration file /etc/uwsgi/web2py.xml
-echo '<uwsgi>
-    <socket>/tmp/web2py.socket</socket>
-    <pythonpath>/home/www-data/web2py/</pythonpath>
-    <mount>/=wsgihandler:application</mount>
-    <master/>
-    <processes>4</processes>
-    <harakiri>60</harakiri>
-    <reload-mercy>8</reload-mercy>
-    <cpu-affinity>1</cpu-affinity>
-    <stats>/tmp/stats.socket</stats>
-    <max-requests>2000</max-requests>
-    <limit-as>512</limit-as>
-    <reload-on-as>256</reload-on-as>
-    <reload-on-rss>192</reload-on-rss>
-    <uid>www-data</uid>
-    <gid>www-data</gid>
-    <cron>0 0 -1 -1 -1 python /home/www-data/web2py/web2py.py -Q -S welcome -M -R scripts/sessions2trash.py -A -o</cron>
-    <no-orphans/>
-</uwsgi>' >/etc/uwsgi/web2py.xml
+echo '[uwsgi]
+
+socket = /tmp/web2py.socket
+pythonpath = /home/www-data/web2py/
+mount = /=wsgihandler:application
+processes = 4
+master = true
+harakiri = 60
+reload-mercy = 8
+cpu-affinity = 1
+stats = /tmp/stats.socket
+max-requests = 2000
+limit-as = 512
+reload-on-as = 256
+reload-on-rss = 192
+uid = www-data
+gid = www-data
+cron = 0 0 -1 -1 -1 python /home/www-data/web2py/web2py.py -Q -S welcome -M -R scripts/sessions2trash.py -A -o
+no-orphans = true
+' >/etc/uwsgi/web2py.ini
  
 #Create a configuration file for uwsgi in emperor-mode
 #for Upstart in /etc/init/uwsgi-emperor.conf

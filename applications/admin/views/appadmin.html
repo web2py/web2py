@@ -229,7 +229,21 @@
     {{=T('pygraphviz library not found')}}
   {{elif not databases:}}
     {{=T("No databases in this application")}}
-  {{else:}}
+  {{else:}}	   
+    <div class="btn-group">
+      <a class="btn dropdown-toggle" data-toggle="dropdown" href="#">
+        <i class="icon-download"></i> {{=T('Save model as...')}}
+        <span class="caret"></span>
+      </a>
+      <ul class="dropdown-menu">
+          <li><a href="{{=URL('appadmin', 'bg_graph_model', args=['png'])}}">png</a></li>
+          <li><a href="{{=URL('appadmin', 'bg_graph_model', args=['svg'])}}">svg</a></li>
+          <li><a href="{{=URL('appadmin', 'bg_graph_model', args=['pdf'])}}">pdf</a></li>
+          <li><a href="{{=URL('appadmin', 'bg_graph_model', args=['ps'])}}">ps</a></li>          
+          <li><a href="{{=URL('appadmin', 'bg_graph_model', args=['dot'])}}">dot</a></li>                                   
+      </ul>
+    </div>
+    <br />
     {{=IMG(_src=URL('appadmin', 'bg_graph_model'))}}
   {{pass}}
 {{pass}}

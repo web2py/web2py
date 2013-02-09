@@ -19,6 +19,11 @@ except ImportError:
     except:
         import contrib.simplejson as json_parser    # fallback to pure-Python module
 
+have_yaml = True
+try:
+    import yaml
+except ImportError:
+    have_yaml = False
 
 def loads_json(o):
     # deserialize a json string
@@ -68,8 +73,12 @@ def xml(value, encoding='UTF-8', key='document', quote=True):
 
 
 def json(value, default=custom_json):
-    return json_parser.dumps(value, default=default)
-
+    # replace JavaScript incompatible spacing
+    # http://timelessrepo.com/json-isnt-a-javascript-subset
+    return json_parser.dumps(value,
+        default=default).replace(ur'\u2028',
+                                 '\\u2028').replace(ur'\2029',
+                                                    '\\u2029')
 
 def csv(value):
     return ''
@@ -119,3 +128,14 @@ def rss(feed):
                            pubDate=entry.get('created_on', now)
                            ) for entry in feed.get('entries', [])])
     return rss.to_xml(encoding='utf-8')
+
+def yaml(data):
+    if have_yaml:
+        return yaml.dump(data)
+    else: raise ImportError("No YAML serializer available")
+
+def loads_yaml(data):
+    if have_yaml:
+        return yaml.load(data)
+    else: raise ImportError("No YAML serializer available")
+

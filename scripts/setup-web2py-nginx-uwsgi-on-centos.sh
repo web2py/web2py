@@ -1,19 +1,49 @@
 #!/bin/bash
 
-# Script for installing Web2py with Nginx and Uwsgi on Centos 5
-# Created By Hutchinson
-# Modified by spametki
-# License: BSD
-
-# It was originally posted in this web2py-users group thread:
-# https://groups.google.com/forum/?fromgroups#!topic/web2py/O4c4Jfr18tM
-
-# There are lots of subtleties of ownership, and one has to take care
-# when installing python 2.6 not to stop the systems python2.4 from working.
-
-# NOTE: The only thing that should need changing for
-# each installation is the $BASEARCH (base architecture) of the machine.
-# This is determined by doing uname -i. This is needed for the nginx installation.
+# -------------------------------------------------------------------
+# Description : Installation and basic configuration of web2py,
+#               uWSGI, andNGINX.
+#               in CentOS 5.x GNU/Linux
+#       Usage : Copy the script in /home/username and run it as root,
+#               you may need to allow execution (chmod +x)
+#
+#               WARNING: This script was modified to install compiled
+#               versions of Python and other packages that may be
+#               available at your Centos package repository.
+#               This change was made in order to get the latest
+#               stable libraries available for avoiding compatibility
+#
+#               A bug was reported for the 2.7.3 version of python
+#               here http://bugs.python.org/issue14572
+#               in case you choose to change to VERSION=2.7
+#               (see below) mind that the automatic patch applied
+#               could not work for your environment. By default,
+#               Python 2.6 is installed.
+#
+#               It was originally posted in this web2py-users group
+#               thread: https://groups.google.com/forum/?fromgroups#
+#               !topic/web2py/O4c4Jfr18tM
+#
+#               There are lots of subtleties of ownership, and one
+#               has to take care when installing python 2.6 not to
+#               stop the systems python2.4 from working.
+#
+#               NOTE: The only thing that should need changing for
+#               each installation is the $BASEARCH (base
+#               architecture)
+#               of the machine. This is determined by doing uname -i.
+#               This is needed for the nginx installation.
+#
+#        File : setup-web2py-nginx-uwsgi-on-centos.sh
+#      Author : Peter Hutchinson
+# Modified by : Alan Etkin
+#       Email : spametki@gmail.com
+#   Copyright : web2py
+#        Date : 2013-01-28
+# Disclaimers : This script is provided "as is", without warranty of
+#               any kind.
+#     Licence : BSD
+# -------------------------------------------------------------------
 
 # Retrieve base architecture
 BASEARCH=$(uname -i)
@@ -32,8 +62,8 @@ bzip2-devel sqlite-devel db4-devel openssl-devel tk-devel bluez-libs-devel
 # to fit your deployment needs.
 
 # Python options
-PREFIX=2.7
-VERSION=2.7.3
+PREFIX=2.6
+VERSION=2.6.8
 
 # uWSGI options
 version=uwsgi-1.2.4
@@ -47,8 +77,10 @@ wget http://www.python.org/ftp/python/$VERSION/Python-$VERSION.tgz
 tar xvfz Python-$VERSION.tgz
 cd Python-$VERSION
 
-echo "Applying patch for sqlite3 bug from post http://bugs.python.org/msg161076"
-curl -sk https://raw.github.com/gist/2727063/ | patch -p1
+if [ "$VERSION" == "2.7.3" ]; then
+  echo "Applying patch for sqlite3 bug from post http://bugs.python.org/msg161076"
+  curl -sk https://raw.github.com/gist/2727063/ | patch -p1
+fi
 
 ./configure --prefix=/opt/python$PREFIX --with-threads --enable-shared
 make

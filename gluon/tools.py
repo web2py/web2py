@@ -5092,7 +5092,12 @@ class Wiki(object):
                 url = URL(args=('_edit', slug))
                 return dict(content=A('Create page "%s"' % slug, _href=url, _class="btn"))
             else:
-                return dict(content=XML(self.fix_hostname(page.html)))
+                return dict(title=page.title,
+                            slug=page.slug,
+                            content=XML(self.fix_hostname(page.html)),
+                            tags=page.tags,
+                            created_on=page.created_on,
+                            modified_on=page.modified_on)
         elif current.request.extension == 'load':
             return self.fix_hostname(page.html) if page else ''
         else:

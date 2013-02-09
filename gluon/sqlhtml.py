@@ -1867,7 +1867,10 @@ class SQLFORM(FORM):
         dbset = db(query)
         tablenames = db._adapter.tables(dbset.query)
         if left is not None:
-            tablenames += db._adapter.tables(left)
+            if not isinstance(left, (list, tuple)):
+                left = [left]
+            for join in left:
+                tablenames += db._adapter.tables(join)
         tables = [db[tablename] for tablename in tablenames]
         if not fields:
             fields = reduce(lambda a, b: a + b,
@@ -2511,7 +2514,7 @@ class SQLFORM(FORM):
         except (KeyError, ValueError, TypeError):
             redirect(URL(args=table._tablename))
         if nargs == len(args) + 1:
-            query = table._id > 0
+            query = table._id != None
 
         # filter out data info for displayed table
         if table._tablename in constraints:
@@ -2549,7 +2552,7 @@ class SQLFORM(FORM):
                             links_in_grid=links_in_grid,
                             user_signature=user_signature, **kwargs)
         if isinstance(grid, DIV):
-            header = table._plural + (field and ' for ' + field.name or '')
+            header = table._plural + (field and ' for ' + field.label or '')
             breadcrumbs.append(LI(A(T(header), _class=trap_class(),
                                     _href=url()), _class='active w2p_grid_breadcrumb_elem'))
             grid.insert(

@@ -54,20 +54,19 @@ src:
 	### build web2py_src.zip
 	echo '' > NEWINSTALL
 	mv web2py_src.zip web2py_src_old.zip | echo 'no old'
-	cd ..; zip -r web2py/web2py_src.zip web2py/gluon/*.py web2py/gluon/contrib/* web2py/splashlogo.gif web2py/*.py web2py/README.markdown  web2py/LICENSE web2py/CHANGELOG web2py/NEWINSTALL web2py/VERSION web2py/Makefile web2py/epydoc.css web2py/epydoc.conf web2py/app.example.yaml web2py/logging.example.conf web2py_exe.conf web2py/queue.example.yaml MANIFEST.in w2p_apps w2p_clone w2p_run startweb2py web2py/scripts/*.sh web2py/scripts/*.py web2py/applications/admin web2py/applications/examples/ web2py/applications/welcome web2py/applications/__init__.py web2py/site-packages/__init__.py web2py/gluon/tests/*.sh web2py/gluon/tests/*.py
+	cd ..; zip -r web2py/web2py_src.zip web2py/gluon/*.py web2py/gluon/contrib/* web2py/splashlogo.gif web2py/*.py web2py/README.markdown  web2py/LICENSE web2py/CHANGELOG web2py/NEWINSTALL web2py/VERSION web2py/Makefile web2py/epydoc.css web2py/epydoc.conf web2py/app.example.yaml web2py/logging.example.conf web2py/queue.example.yaml MANIFEST.in w2p_apps w2p_clone w2p_run web2py/scripts/*.sh web2py/scripts/*.py web2py/applications/admin web2py/applications/examples/ web2py/applications/welcome web2py/applications/__init__.py web2py/site-packages/__init__.py web2py/gluon/tests/*.sh web2py/gluon/tests/*.py
 
 mdp:
 	make src
 	make app
 	make win
 app:
-	echo 'did you uncomment import_all in gluon/main.py?'
-	python2.5 -c 'import compileall; compileall.compile_dir("gluon/")'
+	python2.7 -c 'import compileall; compileall.compile_dir("gluon/")'
 	#python web2py.py -S welcome -R __exit__.py
 	#cd ../web2py_osx/site-packages/; unzip ../site-packages.zip
 	find gluon -path '*.pyc' -exec cp {} ../web2py_osx/site-packages/{} \;
 	cd ../web2py_osx/site-packages/; zip -r ../site-packages.zip *
-	mv ../web2py_osx/site-packages.zip ../web2py_osx/web2py/web2py.app/Contents/Resources/lib/python2.5
+	mv ../web2py_osx/site-packages.zip ../web2py_osx/web2py/web2py.app/Contents/Resources/lib/python2.7
 	cp README.markdown ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp NEWINSTALL ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp LICENSE ../web2py_osx/web2py/web2py.app/Contents/Resources
@@ -86,7 +85,6 @@ app:
 	cd ../web2py_osx; zip -r web2py_osx.zip web2py
 	mv ../web2py_osx/web2py_osx.zip .
 win:
-	echo 'did you uncomment import_all in gluon/main.py?'
 	python2.7 -c 'import compileall; compileall.compile_dir("gluon/")'
 	#cd ../web2py_win/library/; unzip ../library.zip
 	find gluon -path '*.pyc' -exec cp {} ../web2py_win/library/{} \;
@@ -110,7 +108,7 @@ win:
 	cd ../web2py_win; zip -r web2py_win.zip web2py
 	mv ../web2py_win/web2py_win.zip .
 run:
-	python2.5 web2py.py -a hello
+	python2.7 web2py.py -a hello
 commit:
 	python web2py.py --run_system_tests
 	make src

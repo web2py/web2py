@@ -308,8 +308,8 @@ class Response(Storage):
         chunk_size=DEFAULT_CHUNK_SIZE,
         request=None,
         attachment=False,
-        filename=None,
-    ):
+        filename=None
+        ):
         """
         if a controller function::
 
@@ -385,6 +385,8 @@ class Response(Storage):
         downloads from http://..../download/filename
         """
 
+        current.session.forget(current.response)
+
         if not request.args:
             raise HTTP(404)
         name = request.args[-1]
@@ -403,8 +405,8 @@ class Response(Storage):
             raise HTTP(404)
         headers = self.headers
         headers['Content-Type'] = contenttype(name)
-	if download_filename == None:
-	    download_filename = filename
+        if download_filename == None:
+            download_filename = filename
         if attachment:
             headers['Content-Disposition'] = \
                 'attachment; filename="%s"' % download_filename.replace('"','\"')
@@ -689,7 +691,7 @@ class Session(Storage):
 
     def forget(self, response=None):
         self._close(response)
-        self._forget = True
+        self._forget = True        
 
     def _try_store_in_cookie(self, request, response):
         if response.session_storage_type != 'cookie':

@@ -339,7 +339,10 @@ if not 'google' in DRIVERS:
         LOGGER.debug('no Oracle driver cx_Oracle')
 
     try:
+        #try:
         import pyodbc
+        #except ImportError:
+        #    from contrib.pypyodbc import pypyodbc as pyodbc
         DRIVERS.append('MSSQL(pyodbc)')
         DRIVERS.append('DB2(pyodbc)')
         DRIVERS.append('Teradata(pyodbc)')
@@ -876,7 +879,7 @@ class BaseAdapter(ConnectionPool):
                 # The reason is that we do not want to trigger
                 # a migration simply because a default value changes.
                 not_null = self.NOT_NULL(field.default, field_type)
-                ftype = ftype.replace('NOT NULL', not_null)            
+                ftype = ftype.replace('NOT NULL', not_null)
             sql_fields_aux[field_name] = dict(sql=ftype)
             # Postgres - PostGIS:
             # geometry fields are added after the table has been created, not now
@@ -1233,12 +1236,24 @@ class BaseAdapter(ConnectionPool):
         return '(%s LIKE %s)' % (self.expand(first),
                                  self.expand('%'+second, 'string'))
 
-    def CONTAINS(self, first, second):
-        if first.type in ('string', 'text', 'json'):
-            key = '%'+str(second).replace('%','%%')+'%'
-        elif first.type.startswith('list:'):
-            key = '%|'+str(second).replace('|','||').replace('%','%%')+'|%'
-        return '(%s LIKE %s)' % (self.expand(first),self.expand(key,'string'))
+    def CONTAINS(self, first, second, case_sensitive=False):
+        if isinstance(second,Expression):
+            field = self.expand(first)
+            expr = self.expand(second,'string')
+            if first.type.startswith('list:'):
+                expr = 'CONCAT("|", %s, "|")' % expr
+            elif not first.type in ('string', 'text', 'json'):
+                raise RuntimeError("Expression Not Supported")
+            return 'INSTR(%s,%s)' % (field, expr)
+        else:
+            if first.type in ('string', 'text', 'json'):
+                key = '%'+str(second).replace('%','%%')+'%'
+            elif first.type.startswith('list:'):
+                key = '%|'+str(second).replace('|','||').replace('%','%%')+'|%'
+            else:
+                raise RuntimeError("Expression Not Supported")
+            op = case_sensitive and self.LIKE or self.ILIKE
+            return op(first,key)
 
     def EQ(self, first, second=None):
         if second is None:
@@ -1317,10 +1332,11 @@ class BaseAdapter(ConnectionPool):
             first = expression.first
             second = expression.second
             op = expression.op
+            optional_args = expression.optional_args or {}
             if not second is None:
-                return op(first, second)
+                return op(first, second, **optional_args)
             elif not first is None:
-                return op(first)
+                return op(first,**optional_args)
             elif isinstance(op, str):
                 if op.endswith(';'):
                     op=op[:-1]
@@ -2569,11 +2585,25 @@ class PostgreSQLAdapter(BaseAdapter):
     def after_connection(self):
         self.connection.set_client_encoding('UTF8')
         self.execute("SET standard_conforming_strings=on;")
+        self.try_json()
 
     def lastrowid(self,table):
         self.execute("select currval('%s')" % table._sequence_name)
         return int(self.cursor.fetchone()[0])
 
+    def try_json(self):
+        # check JSON data type support
+        # (to be added to after_connection)
+        if self.driver_name == "pg8000":
+            supports_json = self.connection.server_version >= "9.2.0"
+        elif (self.driver_name == "psycopg2") and \
+             (self.driver.__version__ >= "2.0.12"):
+            supports_json = self.connection.server_version >= 90200
+        elif self.driver_name == "zxJDBC":
+            supports_json = self.connection.dbversion >= "9.2.0"
+        else: supports_json = None
+        if supports_json: self.types["json"] = "JSON"
+        else: LOGGER.debug("Your database version does not support the JSON data type (using TEXT instead)")
 
     def LIKE(self,first,second):
         args = (self.expand(first), self.expand(second,'string'))
@@ -2601,12 +2631,13 @@ class PostgreSQLAdapter(BaseAdapter):
         return '(%s ILIKE %s)' % (self.expand(first),
                                   self.expand('%'+second,'string'))
 
-    def CONTAINS(self,first,second):
+    def CONTAINS(self,first,second,case_sensitive=False):
         if first.type in ('string','text', 'json'):
             key = '%'+str(second).replace('%','%%')+'%'
         elif first.type.startswith('list:'):
             key = '%|'+str(second).replace('|','||').replace('%','%%')+'|%'
-        return '(%s ILIKE %s)' % (self.expand(first),self.expand(key,'string'))
+        op = case_sensitive and self.LIKE or self.ILIKE
+        return op(first,key)
 
     # GIS functions
 
@@ -2797,6 +2828,7 @@ class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
         self.connection.set_client_encoding('UTF8')
         self.execute('BEGIN;')
         self.execute("SET CLIENT_ENCODING TO 'UNICODE';")
+        self.try_json()
 
 
 class OracleAdapter(BaseAdapter):
@@ -3037,6 +3069,8 @@ class MSSQLAdapter(BaseAdapter):
         if limitby:
             (lmin, lmax) = limitby
             sql_s += ' TOP %i' % lmax
+        if 'GROUP BY' in sql_o:
+            sql_o = sql_o[:sql_o.find('ORDER BY ')]
         return 'SELECT %s %s FROM %s%s%s;' % (sql_s, sql_f, sql_t, sql_w, sql_o)
 
     TRUE = 1
@@ -3179,7 +3213,18 @@ class MSSQL3Adapter(MSSQLAdapter):
     def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
         if limitby:
             (lmin, lmax) = limitby
-            return 'SELECT %s FROM (SELECT %s ROW_NUMBER() over (order by id) AS w_row, %s FROM %s%s%s) TMP WHERE w_row BETWEEN %i AND %s;' % (sql_f,sql_s,sql_f,sql_t,sql_w,sql_o,lmin,lmax)
+            if lmin == 0:
+                sql_s += ' TOP %i' % lmax
+                return 'SELECT %s %s FROM %s%s%s;' % (sql_s, sql_f, sql_t, sql_w, sql_o)
+            lmin += 1
+            sql_o_inner = sql_o[sql_o.find('ORDER BY ')+9:]
+            sql_g_inner = sql_o[:sql_o.find('ORDER BY ')]
+            sql_f_outer = ['f_%s' % f for f in range(len(sql_f.split(',')))]
+            sql_f_inner = [f for f in sql_f.split(',')]
+            sql_f_iproxy = ['%s AS %s' % (o, n) for (o, n) in zip(sql_f_inner, sql_f_outer)]
+            sql_f_iproxy = ', '.join(sql_f_iproxy)
+            sql_f_oproxy = ', '.join(sql_f_outer)
+            return 'SELECT %s %s FROM (SELECT %s ROW_NUMBER() OVER (ORDER BY %s) AS w_row, %s FROM %s%s%s) TMP WHERE w_row BETWEEN %i AND %s;' % (sql_s,sql_f_oproxy,sql_s,sql_f,sql_f_iproxy,sql_t,sql_w,sql_g_inner,lmin,lmax)
         return 'SELECT %s %s FROM %s%s%s;' % (sql_s,sql_f,sql_t,sql_w,sql_o)
     def rowslice(self,rows,minimum=0,maximum=None):
         return rows
@@ -3223,6 +3268,7 @@ class MSSQL2Adapter(MSSQLAdapter):
 
     def execute(self,a):
         return self.log_execute(a.decode('utf8'))
+
 
 class SybaseAdapter(MSSQLAdapter):
     drivers = ('Sybase',)
@@ -3365,13 +3411,17 @@ class FireBirdAdapter(BaseAdapter):
     def SUBSTRING(self,field,parameters):
         return 'SUBSTRING(%s from %s for %s)' % (self.expand(field), parameters[0], parameters[1])
 
-    def CONTAINS(self, first, second):
+    def CONTAINING(self,first,second):
+        "case in-sensitive like operator"
+        return '(%s CONTAINING %s)' % (self.expand(first),
+                                       self.expand(second, 'string'))
+
+    def CONTAINS(self, first, second, case_sensitive=False):
         if first.type in ('string','text'):
             key = str(second).replace('%','%%')
         elif first.type.startswith('list:'):
             key = '|'+str(second).replace('|','||').replace('%','%%')+'|'
-        return '(%s CONTAINING %s)' % (self.expand(first),
-                                       self.expand(key,'string'))
+        return self.CONTAINING(first,second)
 
     def _drop(self,table,mode):
         sequence_name = table._sequence_name
@@ -4531,7 +4581,8 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
             second = [Key.from_path(first._tablename, int(i)) for i in second]
             return [GAEF(first.name,'in',second,lambda a,b:a in b)]
 
-    def CONTAINS(self,first,second):
+    def CONTAINS(self,first,second,case_sensitive=False):
+        # silently ignoring: GAE can only do case sensitive matches!
         if not first.type.startswith('list:'):
             raise SyntaxError("Not supported")
         return [GAEF(first.name,'=',self.expand(second,first.type[5:]),lambda a,b:b in a)]
@@ -4989,7 +5040,7 @@ class MongoDBAdapter(NoSQLAdapter):
                 'list:reference': list,
         }
 
-    error_messages = {"javascript_needed": "This must yet be replaced" + 
+    error_messages = {"javascript_needed": "This must yet be replaced" +
                       " with javascript in order to work."}
 
     def __init__(self,db,uri='mongodb://127.0.0.1:5984/db',
@@ -5068,12 +5119,12 @@ class MongoDBAdapter(NoSQLAdapter):
                     raise ValueError(
                             "invalid objectid argument string: %s" % e)
             else:
-                raise ValueError("Invalid objectid argument string. " + 
+                raise ValueError("Invalid objectid argument string. " +
                                  "Requires an integer or base 16 value")
         elif isinstance(arg, self.ObjectId):
             return arg
         if not isinstance(arg, (int, long)):
-            raise TypeError("object_id argument must be of type " + 
+            raise TypeError("object_id argument must be of type " +
                             "ObjectId or an objectid representable integer")
         if arg == 0:
             hexvalue = "".zfill(24)
@@ -5105,7 +5156,7 @@ class MongoDBAdapter(NoSQLAdapter):
             return value
         return value
 
-    # Safe determines whether a asynchronious request is done or a 
+    # Safe determines whether a asynchronious request is done or a
     # synchronious action is done
     # For safety, we use by default synchronious requests
     def insert(self, table, fields, safe=None):
@@ -5225,7 +5276,7 @@ class MongoDBAdapter(NoSQLAdapter):
         elif len(fields) != 0:
             tablename = fields[0].tablename
         else:
-            raise SyntaxError("The table name could not be found in " + 
+            raise SyntaxError("The table name could not be found in " +
                               "the query nor from the select statement.")
 
         mongoqry_dict = self.expand(query)
@@ -5251,7 +5302,7 @@ class MongoDBAdapter(NoSQLAdapter):
                     sort=mongosort_list, snapshot=snapshot).count()}
         else:
             # pymongo cursor object
-            mongo_list_dicts = ctable.find(mongoqry_dict, 
+            mongo_list_dicts = ctable.find(mongoqry_dict,
                                 mongofields_dict, skip=limitby_skip,
                                 limit=limitby_limit, sort=mongosort_list,
                                 snapshot=snapshot)
@@ -5348,7 +5399,7 @@ class MongoDBAdapter(NoSQLAdapter):
         if safe is None:
             safe = self.safe
         amount = 0
-        amount = self.count(query, False)    
+        amount = self.count(query, False)
         if not isinstance(query, Query):
             raise RuntimeError("query type %s is not supported" % \
                                type(query))
@@ -5484,8 +5535,9 @@ class MongoDBAdapter(NoSQLAdapter):
         return {self.expand(first): ('/%s^/' % \
         self.expand(second, 'string'))}
 
-    def CONTAINS(self, first, second):
-        #There is a technical difference, but mongodb doesn't support
+    def CONTAINS(self, first, second, case_sensitive=False):
+        # silently ignore, only case sensitive
+        # There is a technical difference, but mongodb doesn't support
         # that, but the result will be the same
         return {self.expand(first) : ('/%s/' % \
         self.expand(second, 'string'))}
@@ -5515,7 +5567,8 @@ class MongoDBAdapter(NoSQLAdapter):
         re.escape(self.expand(second, 'string')) + '$'}}
 
     #TODO verify full compatibilty with official oracle contains operator
-    def CONTAINS(self, first, second):
+    def CONTAINS(self, first, second, case_sensitive=False):
+        # silently ignore, only case sensitive
         #There is a technical difference, but mongodb doesn't support
         # that, but the result will be the same
         #TODO contains operators need to be transformed to Regex
@@ -5645,7 +5698,7 @@ class IMAPAdapter(NoSQLAdapter):
     # This avoids the extra server names retrieval
 
     imapdb.define_tables({"inbox": "INBOX"})
-    
+
     # Selects without content/attachments/email columns will only
     # fetch header and flags
 
@@ -6038,7 +6091,7 @@ class IMAPAdapter(NoSQLAdapter):
 
                     # keep the requests small for header/flags
                     if any([(field.name in ["content", "size",
-                                            "attachments", "email"]) for 
+                                            "attachments", "email"]) for
                            field in fields]):
                         imap_fields = "(RFC822 FLAGS)"
                     else:
@@ -6305,7 +6358,8 @@ class IMAPAdapter(NoSQLAdapter):
         # result = "(%s %s)" % (self.expand(first), self.expand(second))
         return result
 
-    def CONTAINS(self, first, second):
+    def CONTAINS(self, first, second, case_sensitive=False):
+        # silently ignore, only case sensitive
         result = None
         name = self.search_fields[first.name]
 
@@ -6482,6 +6536,7 @@ ADAPTERS = {
     'oracle': OracleAdapter,
     'mssql': MSSQLAdapter,
     'mssql2': MSSQL2Adapter,
+    'mssql3': MSSQL3Adapter,
     'sybase': SybaseAdapter,
     'db2': DB2Adapter,
     'teradata': TeradataAdapter,
@@ -6643,6 +6698,8 @@ class Row(object):
 
     def __setitem__(self, key, value):
         setattr(self, str(key), value)
+
+    __delitem__ = delattr
 
     __copy__ = lambda self: Row(self)
 
@@ -7081,8 +7138,12 @@ class DAL(object):
         :attempts (defaults to 5). Number of times to attempt connecting
         """
 
+        dbdict = None
         if uri == '<zombie>' and db_uid is not None: return
-
+        elif isinstance(uri, dict):
+            dbdict = uri
+            uri = dbdict["uri"]
+            codec = dbdict["codec"] or codec
         if not decode_credentials:
             credential_decoder = lambda cred: cred
         else:
@@ -7164,32 +7225,44 @@ class DAL(object):
         self._fake_migrate = fake_migrate
         self._migrate_enabled = migrate_enabled
         self._fake_migrate_all = fake_migrate_all
-        if auto_import:
-            self.import_table_definitions(adapter.folder)
+        if auto_import or dbdict:
+            self.import_table_definitions(adapter.folder,
+                                          items=dbdict["items"])
 
     @property
     def tables(self):
         return self._tables
 
-    def import_table_definitions(self,path,migrate=False,fake_migrate=False):
+    def import_table_definitions(self, path, migrate=False,
+                                 fake_migrate=False, items=None):
         pattern = pjoin(path,self._uri_hash+'_*.table')
-        for filename in glob.glob(pattern):
-            tfile = self._adapter.file_open(filename, 'r')
-            try:
-                sql_fields = pickle.load(tfile)
-                name = filename[len(pattern)-7:-6]
-                mf = [(value['sortable'],
-                       Field(key,
-                             type=value['type'],
-                             length=value.get('length',None),
-                             notnull=value.get('notnull',False),
-                             unique=value.get('unique',False))) \
-                          for key, value in sql_fields.iteritems()]
-                mf.sort(lambda a,b: cmp(a[0],b[0]))
-                self.define_table(name,*[item[1] for item in mf],
-                                  **dict(migrate=migrate,fake_migrate=fake_migrate))
-            finally:
-                self._adapter.file_close(tfile)
+        if items:
+            for tablename, table in items.iteritems():
+                # TODO: read all field/table options
+                fields = []
+                for fieldname, field in table["items"].iteritems():
+                    type = field["type"]
+                    fields.append(Field(fieldname, type))
+                self.define_table(tablename, *fields)
+        else:
+            for filename in glob.glob(pattern):
+                tfile = self._adapter.file_open(filename, 'r')
+                try:
+                    sql_fields = pickle.load(tfile)
+                    name = filename[len(pattern)-7:-6]
+                    mf = [(value['sortable'],
+                           Field(key,
+                                 type=value['type'],
+                                 length=value.get('length',None),
+                                 notnull=value.get('notnull',False),
+                                 unique=value.get('unique',False))) \
+                              for key, value in sql_fields.iteritems()]
+                    mf.sort(lambda a,b: cmp(a[0],b[0]))
+                    self.define_table(name,*[item[1] for item in mf],
+                                      **dict(migrate=migrate,
+                                             fake_migrate=fake_migrate))
+                finally:
+                    self._adapter.file_close(tfile)
 
     def check_reserved_keyword(self, name):
         """
@@ -7223,14 +7296,14 @@ def index():
             "/{person.name}/pets[pet.ownedby]/{pet.name}",
             "/{person.name}/pets[pet.ownedby]/{pet.name}/:field",
             ("/dogs[pet]", db.pet.info=='dog'),
-            ("/dogs[pet]/{pet.name.startswith}", db.pet.info=='dog'),       
+            ("/dogs[pet]/{pet.name.startswith}", db.pet.info=='dog'),
             ]
         parser = db.parse_as_rest(patterns,args,vars)
         if parser.status == 200:
             return dict(content=parser.response)
         else:
             raise HTTP(parser.status,parser.error)
-            
+
     def POST(table_name,**vars):
         if table_name == 'person':
             return db.person.validate_and_insert(**vars)
@@ -7321,10 +7394,12 @@ def index():
             return Row({'status':200,'pattern':'list',
                         'error':None,'response':patterns})
         for pattern in patterns:
+            basequery, exposedfields = None, []
             if isinstance(pattern,tuple):
-                pattern, basequery = pattern
-            else:
-                basequery = None
+                if len(pattern)==2:
+                    pattern, basequery = pattern
+                elif len(pattern)>2:
+                    pattern, basequery, exposedfields = pattern[0:3]
             otable=table=None
             if not isinstance(queries,dict):
                 dbset=db(queries)
@@ -7437,7 +7512,10 @@ def index():
                         orderby = [db[table][f] if not f.startswith('~') else ~db[table][f[1:]] for f in ofields]
                     except (KeyError, AttributeError):
                         return Row({'status':400,'error':'invalid orderby','response':None})
-                    fields = [field for field in db[table] if field.readable]
+                    if exposedfields:
+                        fields = [field for field in db[table] if str(field).split('.')[-1] in exposedfields and field.readable]
+                    else:    
+                        fields = [field for field in db[table] if field.readable]
                     count = dbset.count()
                     try:
                         offset = int(vars.get('offset',None) or 0)
@@ -7525,6 +7603,38 @@ def index():
         if on_define: on_define(table)
         return table
 
+    def as_dict(self, flat=False, sanitize=True):
+        dbname = codec = uid = uri = None
+        if not sanitize:
+            uri, dbname, codec, uid = (self._uri, self._dbname,
+                                       self._db_codec, self._db_uid)
+        db_as_dict = dict(items={}, tables=[], uri=uri, dbname=dbname,
+                          codec=codec, uid=uid)
+        for table in self:
+            tablename = str(table)
+            db_as_dict["tables"].append(tablename)
+            db_as_dict["items"][tablename] = table.as_dict(flat=flat,
+                                                sanitize=sanitize)
+        return db_as_dict
+
+    def as_xml(self, sanitize=True):
+        if not have_serializers:
+            raise ImportError("No xml serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return serializers.xml(d)
+
+    def as_json(self, sanitize=True):
+        if not have_serializers:
+            raise ImportError("No json serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return serializers.json(d)
+
+    def as_yaml(self, sanitize=True):
+        if not have_serializers:
+            raise ImportError("No YAML serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return serializers.yaml(d)
+
     def __contains__(self, tablename):
         try:
             return tablename in self.tables
@@ -7576,6 +7686,9 @@ def index():
             query = self._adapter.id_query(query)
         elif isinstance(query,Field):
             query = query!=None
+        elif isinstance(query, dict):
+            icf = query.get("ignore_common_filters")
+            if icf: ignore_common_filters = icf
         return Set(self, query, ignore_common_filters=ignore_common_filters)
 
     def commit(self):
@@ -8411,6 +8524,34 @@ class Table(object):
                 if id_map and cid is not None:
                     id_map_self[int(line[cid])] = new_id
 
+    def as_dict(self, flat=False, sanitize=True):
+        tablename = str(self)
+        table_as_dict = dict(name=tablename, items={}, fields=[])
+        for field in self:
+            if (field.readable or field.writable) or (not sanitize):
+                table_as_dict["fields"].append(field.name)
+                table_as_dict["items"][field.name] = \
+                    field.as_dict(flat=flat, sanitize=sanitize)
+        return table_as_dict
+
+    def as_xml(self, sanitize=True):
+        if not have_serializers:
+            raise ImportError("No xml serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return serializers.xml(d)
+
+    def as_json(self, sanitize=True):
+        if not have_serializers:
+            raise ImportError("No json serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return serializers.json(d)
+
+    def as_yaml(self, sanitize=True):
+        if not have_serializers:
+            raise ImportError("No YAML serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return serializers.yaml(d)
+
     def with_alias(self, alias):
         return self._db._adapter.alias(self,alias)
 
@@ -8438,6 +8579,7 @@ class Expression(object):
         first=None,
         second=None,
         type=None,
+        **optional_args
         ):
 
         self.db = db
@@ -8450,6 +8592,7 @@ class Expression(object):
             self.type = first.type
         else:
             self.type = type
+        self.optional_args = optional_args
 
     def sum(self):
         db = self.db
@@ -8639,24 +8782,30 @@ class Expression(object):
             raise SyntaxError("endswith used with incompatible field type")
         return Query(db, db._adapter.ENDSWITH, self, value)
 
-    def contains(self, value, all=False):
+    def contains(self, value, all=False, case_sensitive=False):
+        """
+        The case_sensitive parameters is only useful for PostgreSQL
+        For other RDMBs it is ignored and contains is always case in-sensitive
+        For MongoDB and GAE contains is always case sensitive
+        """
         db = self.db
         if isinstance(value,(list, tuple)):
-            subqueries = [self.contains(str(v).strip()) for v in value if str(v).strip()]
+            subqueries = [self.contains(str(v).strip(),case_sensitive=case_sensitive)
+                          for v in value if str(v).strip()]
             if not subqueries:
                 return self.contains('')
             else:
                 return reduce(all and AND or OR,subqueries)
         if not self.type in ('string', 'text', 'json') and not self.type.startswith('list:'):
             raise SyntaxError("contains used with incompatible field type")
-        return Query(db, db._adapter.CONTAINS, self, value)
+        return Query(db, db._adapter.CONTAINS, self, value, case_sensitive=case_sensitive)
 
     def with_alias(self, alias):
         db = self.db
         return Expression(db, db._adapter.AS, self, alias, self.type)
 
     # GIS expressions
-    
+
     def st_asgeojson(self, precision=15, options=0, version=1):
         return Expression(self.db, self.db._adapter.ST_ASGEOJSON, self,
                           dict(precision=precision, options=options,
@@ -8990,7 +9139,7 @@ class Field(Expression):
             stream = self.uploadfs.open(name, 'rb')
         else:
             # ## if file is on regular filesystem
-            stream = open(pjoin(file_properties['path'], name), 'rb')
+            stream = pjoin(file_properties['path'], name)
         return (filename, stream)
 
     def retrieve_file_properties(self, name, path=None):
@@ -9056,6 +9205,76 @@ class Field(Expression):
     def count(self, distinct=None):
         return Expression(self.db, self.db._adapter.COUNT, self, distinct, 'integer')
 
+    def as_dict(self, flat=False, sanitize=True):
+        attrs = ("readable", "writable", "label", "default", "name",
+                 "type", "represent", "compute")
+        SERIALIZABLE_TYPES = (int, long, basestring, dict, list,
+                              float, tuple, bool, type(None))
+        def flatten(obj):
+            if flat:
+                if isinstance(obj, flatten.__class__):
+                    return str(type(obj))
+                elif isinstance(obj, type):
+                    try:
+                        obj = str(obj).split("'")[1]
+                    except IndexError:
+                        obj = str(obj)
+                elif not isinstance(obj, SERIALIZABLE_TYPES):
+                    obj = str(obj)
+            return obj
+
+        def filter_requires(t, r):
+            if sanitize and any([keyword in str(t).upper() for
+                                 keyword in ("CRYPT", "IS_STRONG")]):
+                return None
+            for k, v in r.items():
+                if k == "other":
+                    if not isinstance(v, dict):
+                        other = v.__dict__
+                    else: other = v
+                    r[k] = {flatten(type(v)):
+                            filter_requires(type(v), other)}
+                elif flat and (not isinstance(v, SERIALIZABLE_TYPES)):
+                    r[k] = str(v)
+            return r
+
+        if isinstance(self.requires, (tuple, list, set)):
+            requires = dict([(flatten(type(r)),
+                             filter_requires(type(r), r.__dict__)) for
+                             r in self.requires])
+        else:
+            requires = {flatten(type(self.requires)):
+                        filter_requires(type(self.requires),
+                            self.requires.__dict__)}
+
+        d = dict(colname="%s.%s" % (self.tablename, self.name),
+                 requires=requires)
+        d.update([(attr, flatten(getattr(self, attr))) for attr in attrs])
+        return d
+
+    def as_xml(self, sanitize=True):
+        if have_serializers:
+            xml = serializers.xml
+        else:
+            raise ImportError("No xml serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return xml(d)
+
+    def as_json(self, sanitize=True):
+        if have_serializers:
+            json = serializers.json
+        else:
+            raise ImportError("No json serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return json(d)
+
+    def as_yaml(self, sanitize=True):
+        if have_serializers:
+            d = self.as_dict(flat=True, sanitize=sanitize)
+            return serializers.yaml(d)
+        else:
+            raise ImportError("No YAML serializers available")
+
     def __nonzero__(self):
         return True
 
@@ -9087,12 +9306,14 @@ class Query(object):
         first=None,
         second=None,
         ignore_common_filters = False,
+        **optional_args
         ):
         self.db = self._db = db
         self.op = op
         self.first = first
         self.second = second
         self.ignore_common_filters = ignore_common_filters
+        self.optional_args = optional_args
 
     def __repr__(self):
         return '<Query %s>' % BaseAdapter.expand(self.db._adapter,self)
@@ -9111,10 +9332,77 @@ class Query(object):
             return self.first
         return Query(self.db,self.db._adapter.NOT,self)
 
+    def __eq__(self, other):
+        return repr(self) == repr(other)
+
+    def __ne__(self, other):
+        return not (self == other)
+
     def case(self,t=1,f=0):
         return self.db._adapter.CASE(self,t,f)
 
+    def as_dict(self, flat=False, sanitize=True):
+        """Experimental stuff
 
+        This allows to return a plain dictionary with the basic
+        query representation. Can be used with json/xml services
+        for client-side db I/O
+
+        Example:
+        >>> q = db.auth_user.id != 0
+        >>> q.as_dict(flat=True)
+        {"op": "NE", "first":{"tablename": "auth_user",
+                              "fieldname": "id"},
+                     "second":0}
+        """
+
+        SERIALIZABLE_TYPES = (tuple, dict, list, int, long, float,
+                              basestring, type(None), bool)
+        def loop(d):
+            newd = dict()
+            for k, v in d.items():
+                if k in ("first", "second"):
+                    if isinstance(v, self.__class__):
+                        newd[k] = loop(v.__dict__)
+                    elif isinstance(v, Field):
+                        newd[k] = {"tablename": v._tablename,
+                                   "fieldname": v.name}
+                    elif isinstance(v, Expression):
+                        newd[k] = loop(v.__dict__)
+                    elif isinstance(v, SERIALIZABLE_TYPES):
+                        newd[k] = v
+                elif k == "op":
+                    if callable(v):
+                        newd[k] = v.__name__
+                    elif isinstance(v, basestring):
+                        newd[k] = v
+                    else: pass # not callable or string
+                elif isinstance(v, SERIALIZABLE_TYPES):
+                    if isinstance(v, dict):
+                        newd[k] = loop(v)
+                    else: newd[k] = v
+            return newd
+
+        if flat:
+            return loop(self.__dict__)
+        else: return self.__dict__
+
+
+    def as_xml(self, sanitize=True):
+        if have_serializers:
+            xml = serializers.xml
+        else:
+            raise ImportError("No xml serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return xml(d)
+
+    def as_json(self, sanitize=True):
+        if have_serializers:
+            json = serializers.json
+        else:
+            raise ImportError("No json serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return json(d)
 
 def xorify(orderby):
     if not orderby:
@@ -9148,6 +9436,12 @@ class Set(object):
     def __init__(self, db, query, ignore_common_filters = None):
         self.db = db
         self._db = db # for backward compatibility
+        self.dquery = None
+
+        # if query is a dict, parse it
+        if isinstance(query, dict):
+            query = self.parse(query)
+
         if not ignore_common_filters is None and \
                 use_common_filters(query) == ignore_common_filters:
             query = copy.copy(query)
@@ -9166,10 +9460,10 @@ class Set(object):
             query = query!=None
         if self.query:
             return Set(self.db, self.query & query,
-                       ignore_common_filters = ignore_common_filters)
+                       ignore_common_filters=ignore_common_filters)
         else:
             return Set(self.db, query,
-                       ignore_common_filters = ignore_common_filters)
+                       ignore_common_filters=ignore_common_filters)
 
     def _count(self,distinct=None):
         return self.db._adapter._count(self.query,distinct)
@@ -9194,6 +9488,94 @@ class Set(object):
         tablename = db._adapter.get_table(self.query)
         fields = db[tablename]._listify(update_fields,update=True)
         return db._adapter._update(tablename,self.query,fields)
+
+    def as_dict(self, flat=False, sanitize=True):
+        if flat:
+            uid = dbname = uri = None
+            codec = self.db._db_codec
+            if not sanitize:
+                uri, dbname, uid = (self.db._dbname, str(self.db),
+                                    self.db._db_uid)
+            d = {"query": self.query.as_dict(flat=flat)}
+            d["db"] = {"uid": uid, "codec": codec,
+                       "name": dbname, "uri": uri}
+            return d
+        else: return self.__dict__
+
+    def as_xml(self, sanitize=True):
+        if have_serializers:
+            xml = serializers.xml
+        else:
+            raise ImportError("No xml serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return xml(d)
+
+    def as_json(self, sanitize=True):
+        if have_serializers:
+            json = serializers.json
+        else:
+            raise ImportError("No json serializers available")
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        return json(d)
+
+    def parse(self, dquery):
+        "Experimental: Turn a dictionary into a Query object"
+        self.dquery = dquery
+        return self.build(self.dquery)
+
+    def build(self, d):
+        "Experimental: see .parse()"
+        op, first, second = (d["op"], d["first"],
+                             d.get("second", None))
+        left = right = built = None
+
+        if op in ("AND", "OR"):
+            if not (type(first), type(second)) == (dict, dict):
+                raise SyntaxError("Invalid AND/OR query")
+            if op == "AND":
+                built = self.build(first) & self.build(second)
+            else: built = self.build(first) | self.build(second)
+
+        elif op == "NOT":
+            if first is None:
+                raise SyntaxError("Invalid NOT query")
+            built = ~self.build(first)
+        else:
+            # normal operation (GT, EQ, LT, ...)
+            for k, v in {"left": first, "right": second}.items():
+                if isinstance(v, dict) and v.get("op"):
+                    v = self.build(v)
+                if isinstance(v, dict) and ("tablename" in v):
+                    v = self.db[v["tablename"]][v["fieldname"]]
+                if k == "left": left = v
+                else: right = v
+
+            if hasattr(self.db._adapter, op):
+                opm = getattr(self.db._adapter, op)
+
+            if op == "EQ": built = left == right
+            elif op == "NE": built = left != right
+            elif op == "GT": built = left > right
+            elif op == "GE": built = left >= right
+            elif op == "LT": built = left < right
+            elif op == "LE": built = left <= right
+            elif op in ("JOIN", "LEFT_JOIN", "RANDOM", "ALLOW_NULL"):
+                built = Expression(self.db, opm)
+            elif op in ("LOWER", "UPPER", "EPOCH", "PRIMARY_KEY",
+                        "COALESCE_ZERO", "RAW", "INVERT"):
+                built = Expression(self.db, opm, left)
+            elif op in ("COUNT", "EXTRACT", "AGGREGATE", "SUBSTRING",
+                        "REGEXP", "LIKE", "ILIKE", "STARTSWITH",
+                        "ENDSWITH", "ADD", "SUB", "MUL", "DIV",
+                        "MOD", "AS", "ON", "COMMA", "NOT_NULL",
+                        "COALESCE", "CONTAINS", "BELONGS"):
+                built = Expression(self.db, opm, left, right)
+            # expression as string
+            elif not (left or right): built = Expression(self.db, op)
+            else:
+                raise SyntaxError("Operator not supported: %s" % op)
+
+        return built
 
     def isempty(self):
         return not self.select(limitby=(0,1))
