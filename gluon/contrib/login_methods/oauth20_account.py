@@ -107,7 +107,10 @@ server for requests.  It can be used for the optional"scope" parameters for Face
         if not http_host:
             http_host = r.env.http_host
 
-        url_scheme = r.env.wsgi_url_scheme
+        if r.env.https == 'on':
+            url_scheme = 'https'
+        else:
+            url_scheme = r.env.wsgi_url_scheme
         if next:
             path_info = next
         else:
