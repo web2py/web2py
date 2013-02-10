@@ -4434,12 +4434,12 @@ class Service(object):
             return return_error(id, e.code, e.info)
         except BaseException:
             etype, eval, etb = sys.exc_info()
-            code = -32001
-            data = '%s: %s\n' % (etype.__name__, eval) + request.is_local and traceback.format_tb(etb)
+            code = -32099
+            data = '%s: %s\n' % (etype.__name__, eval) + str(request.is_local and traceback.format_tb(etb))
             return return_error(id, code, data=data)
         except:
             etype, eval, etb = sys.exc_info()
-            return return_error(id, 32099, data='Exception %s: %s' % (etype, eval))
+            return return_error(id, -32099, data='Exception %s: %s' % (etype, eval))
         
 
     def serve_xmlrpc(self):

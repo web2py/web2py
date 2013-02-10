@@ -19,6 +19,7 @@ from urllib2 import urlopen
 import urllib2
 from urllib import urlencode
 
+from gluon import current
 
 class OAuthAccount(object):
     """
@@ -117,8 +118,8 @@ class OAuthAccount(object):
         self.client_id = client_id
         self.client_secret = client_secret
         self.code = None
-        self.request = g['request']
-        self.session = g['session']
+        self.request = current.request
+        self.session = current.session
         self.auth_url = auth_url
         self.token_url = token_url
         self.access_token_url = access_token_url
