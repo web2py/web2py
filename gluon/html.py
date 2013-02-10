@@ -2328,34 +2328,37 @@ class MENU(DIV):
         else:
             ul = UL(_class=self['ul_class'])
         for item in data:
-            (name, active, link) = item[:3]
-            if isinstance(link, DIV):
-                li = LI(link)
-            elif 'no_link_url' in self.attributes and self['no_link_url'] == link:
-                li = LI(DIV(name))
-            elif isinstance(link,dict):
-                li = LI(A(name, **link))
-            elif link:
-                li = LI(A(name, _href=link))
-            elif not link and isinstance(name, A):
-                li = LI(name)
+            if isinstance(item,LI):
+                ul.append(item)
             else:
-                li = LI(A(name, _href='#',
-                          _onclick='javascript:void(0);return false;'))
-            if level == 0 and item == data[0]:
-                li['_class'] = self['li_first']
-            elif level == 0 and item == data[-1]:
-                li['_class'] = self['li_last']
-            if len(item) > 3 and item[3]:
-                li['_class'] = self['li_class']
-                li.append(self.serialize(item[3], level + 1))
-            if active or ('active_url' in self.attributes and self['active_url'] == link):
-                if li['_class']:
-                    li['_class'] = li['_class'] + ' ' + self['li_active']
+                (name, active, link) = item[:3]
+                if isinstance(link, DIV):
+                    li = LI(link)
+                elif 'no_link_url' in self.attributes and self['no_link_url'] == link:
+                    li = LI(DIV(name))
+                elif isinstance(link,dict):
+                    li = LI(A(name, **link))
+                elif link:
+                    li = LI(A(name, _href=link))
+                elif not link and isinstance(name, A):
+                    li = LI(name)
                 else:
-                    li['_class'] = self['li_active']
-            if len(item) <= 4 or item[4] == True:
-                ul.append(li)
+                    li = LI(A(name, _href='#',
+                              _onclick='javascript:void(0);return false;'))
+                if level == 0 and item == data[0]:
+                    li['_class'] = self['li_first']
+                elif level == 0 and item == data[-1]:
+                    li['_class'] = self['li_last']
+                if len(item) > 3 and item[3]:
+                    li['_class'] = self['li_class']
+                    li.append(self.serialize(item[3], level + 1))
+                if active or ('active_url' in self.attributes and self['active_url'] == link):
+                    if li['_class']:
+                        li['_class'] = li['_class'] + ' ' + self['li_active']
+                    else:
+                        li['_class'] = self['li_active']
+                if len(item) <= 4 or item[4] == True:
+                    ul.append(li)
         return ul
 
     def serialize_mobile(self, data, select=None, prefix=''):
