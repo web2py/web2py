@@ -2269,7 +2269,7 @@ class Auth(object):
                     self.settings.everybody_group_id, form.vars.id)
             if self.settings.registration_requires_verification:
                 link = self.url(
-                    'user', args=('verify_email', key), scheme=True)
+                    self.settings.function, args=('verify_email', key), scheme=True)
 
                 if not self.settings.mailer or \
                    not self.settings.mailer.send(
@@ -2652,7 +2652,7 @@ class Auth(object):
 
     def email_reset_password(self, user):
         reset_password_key = str(int(time.time())) + '-' + web2py_uuid()
-        link = self.url('user',
+        link = self.url(self.settings.function,
                         args=('reset_password', reset_password_key),
                         scheme=True)
         if self.settings.mailer.send(
