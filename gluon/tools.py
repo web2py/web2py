@@ -883,6 +883,7 @@ class Auth(object):
         email_case_sensitive=True,
         username_case_sensitive=True,
         update_fields = ['email'],
+        ondelete="CASCADE",
     )
         # ## these are messages that can be customized
     default_messages = dict(
@@ -1424,6 +1425,7 @@ class Auth(object):
                                   user.get("last_name", ''))
             except:
                 return id
+        ondelete = self.settings.ondelete
         self.signature = db.Table(
             self.db, 'auth_signature',
             Field('is_active', 'boolean',
@@ -1438,7 +1440,7 @@ class Auth(object):
                   reference_user,
                   default=lazy_user, represent=represent,
                   writable=False, readable=False,
-                  label=T('Created By')),
+                  label=T('Created By'), ondelete=ondelete),
             Field('modified_on', 'datetime',
                   update=request.now, default=request.now,
                   writable=False, readable=False,
@@ -1447,7 +1449,7 @@ class Auth(object):
                   reference_user, represent=represent,
                   default=lazy_user, update=lazy_user,
                   writable=False, readable=False,
-                  label=T('Modified By')))
+                  label=T('Modified By'),  ondelete=ondelete))
 
     def define_tables(self, username=None, signature=None,
                       migrate=True, fake_migrate=False):
