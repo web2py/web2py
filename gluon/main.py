@@ -132,9 +132,8 @@ def get_client(env):
     if all fails, assume '127.0.0.1' or '::1' (running locally)
     """
     g = regex_client.search(env.get('http_x_forwarded_for', ''))
-    if g:
-        client = (g.group() or '').split(',')[0]
-    else:
+    client = (g.group() or '').split(',')[0] if g else None
+    if client in (None, '', 'unkown'):
         g = regex_client.search(env.get('remote_addr', ''))
         if g:
             client = g.group()
