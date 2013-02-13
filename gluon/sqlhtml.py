@@ -460,8 +460,10 @@ class CheckboxesWidget(OptionsWidget):
 
         if opts:
             opts.append(
-                INPUT(_class="hidden", requires=attr.get('requires', None),
-                      _disabled="disabled", _name=field.name,
+                INPUT(requires=attr.get('requires', None),
+                      _style="display:none;", 
+                      _disabled="disabled", 
+                      _name=field.name,
                       hideerror=False))
         return parent(*opts, **attr)
 
@@ -1713,7 +1715,7 @@ class SQLFORM(FORM):
                 )
         )
         return CAT(
-            DIV(_id=panel_id, _class='hidden', *criteria), fadd)
+            DIV(_id=panel_id, _style="display:none;", *criteria), fadd)
 
     @staticmethod
     def grid(query,

@@ -2051,7 +2051,7 @@ class FORM(DIV):
         if hasattr(self, 'formname') and self.formname:
             c.append(INPUT(_type='hidden', _name='_formname',
                      _value=self.formname))
-        return DIV(c, _class="hidden")
+        return DIV(c, _style="display:none;")
 
     def xml(self):
         newform = FORM(*self.components, **self.attributes)
