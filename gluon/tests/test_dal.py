@@ -597,6 +597,96 @@ class TestImportExportUuidFields(unittest.TestCase):
         db.person.drop()
         db.commit()
 
+
+class TestDALDictImportExport(unittest.TestCase):
+
+    def testRun(self):
+        db = DAL('sqlite:memory:')
+        db.define_table('person', Field('name', default="Michael"),Field('uuid'))
+        db.define_table('pet',Field('friend',db.person),Field('name'))
+        dbdict = db.as_dict(flat=True, sanitize=False)
+        assert isinstance(dbdict, dict)
+        uri = dbdict["uri"]
+        assert isinstance(uri, basestring) and uri
+        assert len(dbdict["items"]) == 2
+        assert len(dbdict["items"]["person"]["items"]) == 3
+        assert dbdict["items"]["person"]["items"]["name"]["type"] == db.person.name.type
+        assert dbdict["items"]["person"]["items"]["name"]["default"] == db.person.name.default
+        assert dbdict
+
+        db2 = DAL(dbdict)
+        assert len(db.tables) == len(db2.tables)
+        assert hasattr(db2, "pet") and isinstance(db2.pet, Table)
+        assert hasattr(db2.pet, "friend") and isinstance(db2.pet.friend, Field)
+
+        have_serializers = True
+
+        try:
+            import serializers
+            dbjson = db.as_json(sanitize=False)
+            assert isinstance(dbjson, basestring) and len(dbjson) > 0
+            db3 = DAL(serializers.loads_json(dbjson))
+            assert hasattr(db3, "person") and hasattr(db3.person, "uuid") and\
+            db3.person.uuid.type == db.person.uuid.type
+            db3.pet.drop()
+            db3.person.drop()
+            db3.commit()
+        except ImportError:
+            pass
+
+        mpfc = "Monty Python's Flying Circus"
+        dbdict4 = {"uri": 'sqlite:memory:',
+                   "items":{"staff":{"items": {"name":
+                                                   {"default":"Michael"},
+                                               "food":
+                                                   {"default":"Spam"}}},
+                            "show":{"items": {"name":
+                                                   {"default":mpfc},
+                                              "rating":
+                                                   {"type":"double"}}}}}
+        db4 = DAL(dbdict4)
+        assert "staff" in db4.tables
+        assert "name" in db4.staff
+        assert db4.show.rating.type == "double"
+        assert db4.show.insert() is not None
+        assert db4(db4.show).select().first().id == 1
+        assert db4(db4.show).select().first().name == mpfc
+
+        dbdict5 = {"uri": 'sqlite:memory:'}
+        db5 = DAL(dbdict5)
+        assert db5.tables in ([], None)
+
+        dbdict6 = {"items":{"staff":{},
+                            "show":{"items": {"name": {},
+                                              "rating":
+                                                 {"type":"double"}}}}}
+        db6 = DAL(dbdict6)
+        assert len(db6["staff"].fields) == 1
+        assert "name" in db6["show"].fields
+
+        # the following would fail (see issue 1332)
+        # assert db6.staff.insert() is not None
+        # assert db6(db6.staff).select().first().id == 1
+
+        dbdict7 = {}
+        db7 = DAL(dbdict7)
+        db7.tables() in (None, [])
+        assert not str(db7) in ("", None)
+
+        db6.staff.drop()
+        db6.show.drop()
+        db6.commit()
+        db4.staff.drop()
+        db4.show.drop()
+        db4.commit()
+        db2.pet.drop()
+        db2.person.drop()
+        db2.commit()
+        db.pet.drop()
+        db.person.drop()
+        db.commit()
+
+
 if __name__ == '__main__':
     unittest.main()
     tearDownModule()
