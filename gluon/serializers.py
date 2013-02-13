@@ -21,7 +21,7 @@ except ImportError:
 
 have_yaml = True
 try:
-    import yaml
+    import yaml as yamlib
 except ImportError:
     have_yaml = False
 
@@ -131,11 +131,11 @@ def rss(feed):
 
 def yaml(data):
     if have_yaml:
-        return yaml.dump(data)
+        return yamlib.dump(data)
     else: raise ImportError("No YAML serializer available")
 
 def loads_yaml(data):
     if have_yaml:
-        return yaml.load(data)
+        return yamlib.load(data)
     else: raise ImportError("No YAML serializer available")
 
