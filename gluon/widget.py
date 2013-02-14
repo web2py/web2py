@@ -193,7 +193,10 @@ class web2pyDialog(object):
         self.menu = Tkinter.Menu(self.root)
         servermenu = Tkinter.Menu(self.menu, tearoff=0)
         httplog = os.path.join(self.options.folder, 'httpserver.log')
-
+        iconphoto = 'web2py.gif'
+        if os.path.exists(iconphoto):
+            img = Tkinter.PhotoImage(file=iconphoto)
+            self.root.tk.call('wm', 'iconphoto', self.root._w, img)
         # Building the Menu
         item = lambda: start_browser(httplog)
         servermenu.add_command(label='View httpserver.log',
