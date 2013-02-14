@@ -753,7 +753,7 @@ class Scheduler(MetaScheduler):
                     self.worker_status[0] = KILL
                     self.die()
                 else:
-                    logger.debug('........recording heartbeat (%s) %s', self.worker_status[0], mybackedstatus)
+                    logger.debug('........recording heartbeat (%s)', self.worker_status[0])
                     db(sw.worker_name == self.worker_name).update(
                         last_heartbeat=now, status=ACTIVE)
                     self.worker_status[1] = 1  # re-activating the process
