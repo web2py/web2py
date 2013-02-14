@@ -285,6 +285,22 @@ class TestBelongs(unittest.TestCase):
         db.t.drop()
 
 
+class TestContains(unittest.TestCase):
+    def testRun(self):
+        db = DAL('sqlite:memory:')
+        db.define_table('t', Field('a', 'list:string'))
+        self.assertEqual(db.t.insert(a=['aaa','bbb']), 1)
+        self.assertEqual(db.t.insert(a=['bbb','ddd']), 2)
+        self.assertEqual(db.t.insert(a=['eee','aaa']), 3)
+        self.assertEqual(len(db(db.t.a.contains('aaa')).select()),
+                         2)
+        self.assertEqual(len(db(db.t.a.contains('bbb')).select()),
+                         2)
+        self.assertEqual(len(db(db.t.a.contains('aa')).select()),
+                         0)
+        db.t.drop()
+
+
 class TestLike(unittest.TestCase):
 
     def testRun(self):
@@ -303,6 +319,11 @@ class TestLike(unittest.TestCase):
         self.assertEqual(len(db(db.t.a.upper().like('%B%')).select()),
                          1)
         self.assertEqual(len(db(db.t.a.upper().like('%C')).select()), 1)
+        db.t.drop()
+        db.define_table('t', Field('a', 'integer'))
+        self.assertEqual(db.t.insert(a=1111111111), 1)
+        self.assertEqual(len(db(db.t.a.like('1%')).select()), 1)
+        self.assertEqual(len(db(db.t.a.like('2%')).select()), 0)
         db.t.drop()
 
 
@@ -690,4 +711,3 @@ class TestDALDictImportExport(unittest.TestCase):
 if __name__ == '__main__':
     unittest.main()
     tearDownModule()
-

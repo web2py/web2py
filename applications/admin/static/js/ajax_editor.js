@@ -11,7 +11,7 @@ function prepareMultiPartPOST(data) {
     var reqdata = '--' + boundary + '\r\n';
     //console.log(data.length);
     for (var i=0;i < data.length;i++) {
-	reqdata += 'content-disposition: form-data; name="'; 
+	reqdata += 'content-disposition: form-data; name="';
 	reqdata += data[i].Name + '"';
 	reqdata += "\r\n\r\n" ;
 	reqdata +=  data[i].Data;
@@ -44,7 +44,7 @@ function doHighlight(highlight) {
 	window.ace_editor.gotoLine(highlight.lineno);
     } else if (window.mirror) {
         // Put the cursor at the offending line:
-        window.mirror.setCursor({line:highlight.lineno-1, 
+        window.mirror.setCursor({line:highlight.lineno-1,
                                  ch:highlight.offset+1});
     } else if (window.eamy) {
 	// not implemented
@@ -57,11 +57,11 @@ function doClickSave() {
     var data = getData();
     var dataForPost = prepareMultiPartPOST(new Array(
 	prepareDataForSave('data', data),
-	prepareDataForSave('file_hash', 
+	prepareDataForSave('file_hash',
 			   jQuery("input[name='file_hash']").val()),
-	prepareDataForSave('saved_on', 
+	prepareDataForSave('saved_on',
 			   jQuery("input[name='saved_on']").val()),
-	prepareDataForSave('saved_on', 
+	prepareDataForSave('saved_on',
 			   jQuery("input[name='saved_on']").val()),
 	prepareDataForSave('from_ajax','true')));
         // console.info(area.textarea.value);
@@ -70,7 +70,7 @@ function doClickSave() {
 	jQuery("input[name='saved_on']").val('saving now...')
 	jQuery.ajax({
 	  type: "POST",
-	  contentType: 'multipart/form-data;boundary="' 
+	  contentType: 'multipart/form-data;boundary="'
 		    + dataForPost[1] + '"',
 	  url: self.location.href,
 	  dataType: "json",
@@ -106,7 +106,7 @@ function doClickSave() {
 			doHighlight(json.highlight);
 		    } else {
 			jQuery("input[name='saved_on']").attr('style','background-color:#99FF99');
-			jQuery(".flash").delay(1000).fadeOut('slow');
+			//jQuery(".flash").delay(1000).fadeOut('slow');
 		    }
 		    // console.info(jQuery("input[name='file_hash']").val());
 		    var output = '<b>exposes:</b> ';
@@ -187,13 +187,13 @@ function doToggleBreakpoint(filename, url, sel) {
 		 } else {
              if (json.ok==true && window.mirror) {
     		     // mark the breakpoint if ok=True
- 		         editor.setMarker(json.lineno-1, 
+ 		         editor.setMarker(json.lineno-1,
  		                         "<span style='color: red'>●</span> %N%")
  		     } else if (json.ok==false && window.mirror) {
     		     // remove mark if ok=False
  		         editor.setMarker(json.lineno-1, "%N%")
  		     } else {
-    		     // do nothing if ok = null  
+    		     // do nothing if ok = null
     		 }
 		     // alert(json.ok + json.lineno);
 		 }
@@ -230,7 +230,7 @@ function doListBreakpoints(filename, url) {
                      for (i in json.breakpoints) {
                          lineno = json.breakpoints[i];
             		     // mark the breakpoint if ok=True
-         		         editor.setMarker(lineno-1, 
+         		         editor.setMarker(lineno-1,
          		                         "<span style='color: red'>●</span> %N%");
          		     }
         		 }
@@ -250,4 +250,3 @@ function keepalive(url) {
 	  success: function(){},
 	  error: function(x) { on_error(); } });
 }
-

@@ -568,8 +568,14 @@ class ConnectionPool(object):
         if False and self.folder and not exists(self.folder):
             os.mkdir(self.folder)
 
+    def after_connection_hook(self):
+        """hook for the after_connection parameter"""
+        if callable(self._after_connection):
+            self._after_connection(self)
+        self.after_connection()
+
     def after_connection(self):
-        """ this it is suppoed to be overloaded by adtapters"""
+        """ this it is supposed to be overloaded by adapters"""
         pass
 
     def reconnect(self, f=None, cursor=True):
@@ -610,7 +616,7 @@ class ConnectionPool(object):
                     self.connection = f()
                     self.cursor = cursor and self.connection.cursor()
                     break
-        self.after_connection()
+        self.after_connection_hook()
 
 
 ###################################################################################
@@ -726,13 +732,14 @@ class BaseAdapter(ConnectionPool):
 
     def __init__(self, db,uri,pool_size=0, folder=None, db_codec='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={},do_connect=True):
+                 adapter_args={},do_connect=True, after_connection=None):
         self.db = db
         self.dbengine = "None"
         self.uri = uri
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         class Dummy(object):
             lastrowid = 1
             def __getattr__(self, value):
@@ -2144,7 +2151,7 @@ class SQLiteAdapter(BaseAdapter):
 
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True):
+                 adapter_args={}, do_connect=True, after_connection=None):
         self.db = db
         self.dbengine = "sqlite"
         self.uri = uri
@@ -2152,6 +2159,7 @@ class SQLiteAdapter(BaseAdapter):
         self.pool_size = 0
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.find_or_make_work_folder()
         path_encoding = sys.getfilesystemencoding() \
             or locale.getdefaultlocale()[1] or 'utf8'
@@ -2210,7 +2218,7 @@ class SpatiaLiteAdapter(SQLiteAdapter):
 
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True, srid=4326):
+                 adapter_args={}, do_connect=True, srid=4326, after_connection=None):
         self.db = db
         self.dbengine = "spatialite"
         self.uri = uri
@@ -2218,6 +2226,7 @@ class SpatiaLiteAdapter(SQLiteAdapter):
         self.pool_size = 0
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.find_or_make_work_folder()
         self.srid = srid
         path_encoding = sys.getfilesystemencoding() \
@@ -2315,7 +2324,7 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
 
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True):
+                 adapter_args={}, do_connect=True, after_connection=None):
         self.db = db
         self.dbengine = "sqlite"
         self.uri = uri
@@ -2323,6 +2332,7 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.find_or_make_work_folder()
         path_encoding = sys.getfilesystemencoding() \
             or locale.getdefaultlocale()[1] or 'utf8'
@@ -2419,7 +2429,7 @@ class MySQLAdapter(BaseAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True):
+                 adapter_args={}, do_connect=True, after_connection=None):
         self.db = db
         self.dbengine = "mysql"
         self.uri = uri
@@ -2427,6 +2437,7 @@ class MySQLAdapter(BaseAdapter):
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.find_or_make_work_folder()
         ruri = uri.split('://',1)[1]
         m = self.REGEX_URI.match(ruri)
@@ -2546,7 +2557,8 @@ class PostgreSQLAdapter(BaseAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True, srid=4326):
+                 adapter_args={}, do_connect=True, srid=4326,
+                 after_connection=None):
         self.db = db
         self.dbengine = "postgres"
         self.uri = uri
@@ -2554,6 +2566,7 @@ class PostgreSQLAdapter(BaseAdapter):
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.srid = srid
         self.find_or_make_work_folder()
         ruri = uri.split('://',1)[1]
@@ -2615,14 +2628,14 @@ class PostgreSQLAdapter(BaseAdapter):
     def LIKE(self,first,second):
         args = (self.expand(first), self.expand(second,'string'))
         if not first.type in ('string', 'text', 'json'):
-            return '(CAST(%s AS CHAR) LIKE %s)' % args
+            return '(CAST(%s AS CHAR(%s)) LIKE %s)' % (args[0], first.length, args[1])
         else:
             return '(%s LIKE %s)' % args
 
     def ILIKE(self,first,second):
         args = (self.expand(first), self.expand(second,'string'))
         if not first.type in ('string', 'text', 'json'):
-            return '(CAST(%s AS CHAR) ILIKE %s)' % args
+            return '(CAST(%s AS CHAR(%s)) LIKE %s)' % (args[0], first.length, args[1])
         else:
             return '(%s ILIKE %s)' % args
 
@@ -2799,7 +2812,7 @@ class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True):
+                 adapter_args={}, do_connect=True, after_connection=None    ):
         self.db = db
         self.dbengine = "postgres"
         self.uri = uri
@@ -2807,6 +2820,7 @@ class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.find_or_make_work_folder()
         ruri = uri.split('://',1)[1]
         m = self.REGEX_URI.match(ruri)
@@ -2926,7 +2940,7 @@ class OracleAdapter(BaseAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True):
+                 adapter_args={}, do_connect=True, after_connection=None):
         self.db = db
         self.dbengine = "oracle"
         self.uri = uri
@@ -2934,6 +2948,7 @@ class OracleAdapter(BaseAdapter):
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.find_or_make_work_folder()
         ruri = uri.split('://',1)[1]
         if not 'threaded' in driver_args:
@@ -3089,7 +3104,8 @@ class MSSQLAdapter(BaseAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True, srid=4326):
+                 adapter_args={}, do_connect=True, srid=4326,
+                 after_connection=None):
         self.db = db
         self.dbengine = "mssql"
         self.uri = uri
@@ -3097,6 +3113,7 @@ class MSSQLAdapter(BaseAdapter):
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.srid = srid
         self.find_or_make_work_folder()
         # ## read: http://bytes.com/groups/python/460325-cx_oracle-utf8
@@ -3312,7 +3329,8 @@ class SybaseAdapter(MSSQLAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True, srid=4326):
+                 adapter_args={}, do_connect=True, srid=4326,
+                 after_connection=None):
         self.db = db
         self.dbengine = "sybase"
         self.uri = uri
@@ -3320,6 +3338,7 @@ class SybaseAdapter(MSSQLAdapter):
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.srid = srid
         self.find_or_make_work_folder()
         # ## read: http://bytes.com/groups/python/460325-cx_oracle-utf8
@@ -3448,7 +3467,7 @@ class FireBirdAdapter(BaseAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True):
+                 adapter_args={}, do_connect=True, after_connection=None):
         self.db = db
         self.dbengine = "firebird"
         self.uri = uri
@@ -3456,6 +3475,7 @@ class FireBirdAdapter(BaseAdapter):
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.find_or_make_work_folder()
         ruri = uri.split('://',1)[1]
         m = self.REGEX_URI.match(ruri)
@@ -3507,7 +3527,7 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True):
+                 adapter_args={}, do_connect=True, after_connection=None):
         self.db = db
         self.dbengine = "firebird"
         self.uri = uri
@@ -3515,6 +3535,7 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.find_or_make_work_folder()
         ruri = uri.split('://',1)[1]
         m = self.REGEX_URI.match(ruri)
@@ -3615,7 +3636,7 @@ class InformixAdapter(BaseAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True):
+                 adapter_args={}, do_connect=True, after_connection=None):
         self.db = db
         self.dbengine = "informix"
         self.uri = uri
@@ -3623,6 +3644,7 @@ class InformixAdapter(BaseAdapter):
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.find_or_make_work_folder()
         ruri = uri.split('://',1)[1]
         m = self.REGEX_URI.match(ruri)
@@ -3729,7 +3751,7 @@ class DB2Adapter(BaseAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True):
+                 adapter_args={}, do_connect=True, after_connection=None):
         self.db = db
         self.dbengine = "db2"
         self.uri = uri
@@ -3737,6 +3759,7 @@ class DB2Adapter(BaseAdapter):
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.find_or_make_work_folder()
         ruri = uri.split('://', 1)[1]
         def connector(cnxn=ruri,driver_args=driver_args):
@@ -3793,7 +3816,7 @@ class TeradataAdapter(BaseAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True):
+                 adapter_args={}, do_connect=True, after_connection=None):
         self.db = db
         self.dbengine = "teradata"
         self.uri = uri
@@ -3801,6 +3824,7 @@ class TeradataAdapter(BaseAdapter):
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.find_or_make_work_folder()
         ruri = uri.split('://', 1)[1]
         def connector(cnxn=ruri,driver_args=driver_args):
@@ -3875,7 +3899,7 @@ class IngresAdapter(BaseAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True):
+                 adapter_args={}, do_connect=True, after_connection=None):
         self.db = db
         self.dbengine = "ingres"
         self.uri = uri
@@ -3883,6 +3907,7 @@ class IngresAdapter(BaseAdapter):
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.find_or_make_work_folder()
         connstr = self._uri.split(':', 1)[1]
         # Simple URI processing
@@ -4013,7 +4038,7 @@ class SAPDBAdapter(BaseAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True):
+                 adapter_args={}, do_connect=True, after_connection=None):
         self.db = db
         self.dbengine = "sapdb"
         self.uri = uri
@@ -4021,6 +4046,7 @@ class SAPDBAdapter(BaseAdapter):
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.find_or_make_work_folder()
         ruri = uri.split('://',1)[1]
         m = self.REGEX_URI.match(ruri)
@@ -4056,7 +4082,7 @@ class CubridAdapter(MySQLAdapter):
 
     def __init__(self, db, uri, pool_size=0, folder=None, db_codec='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True):
+                 adapter_args={}, do_connect=True, after_connection=None):
         self.db = db
         self.dbengine = "cubrid"
         self.uri = uri
@@ -4064,6 +4090,7 @@ class CubridAdapter(MySQLAdapter):
         self.pool_size = pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.find_or_make_work_folder()
         ruri = uri.split('://',1)[1]
         m = self.REGEX_URI.match(ruri)
@@ -4199,13 +4226,14 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
     def __init__(self, db, uri='google:sql://realm:domain/database',
                  pool_size=0, folder=None, db_codec='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True):
+                 adapter_args={}, do_connect=True, after_connection=None):
 
         self.db = db
         self.dbengine = "mysql"
         self.uri = uri
         self.pool_size = pool_size
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.folder = folder or pjoin('$HOME',THREAD_LOCAL.folder.split(
                 os.sep+'applications'+os.sep,1)[1])
         ruri = uri.split("://")[1]
@@ -4422,7 +4450,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
 
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True):
+                 adapter_args={}, do_connect=True, after_connection=None):
         self.types.update({
                 'boolean': gae.BooleanProperty,
                 'string': (lambda: gae.StringProperty(multiline=True)),
@@ -4451,6 +4479,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         self.folder = folder
         db['_lastsql'] = ''
         self.db_codec = 'UTF-8'
+        self._after_connection = after_connection
         self.pool_size = 0
         match = self.REGEX_NAMESPACE.match(uri)
         if match:
@@ -4887,7 +4916,7 @@ class CouchDBAdapter(NoSQLAdapter):
     def __init__(self,db,uri='couchdb://127.0.0.1:5984',
                  pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True):
+                 adapter_args={}, do_connect=True, after_connection=None):
         self.db = db
         self.uri = uri
         if do_connect: self.find_driver(adapter_args)
@@ -4895,6 +4924,7 @@ class CouchDBAdapter(NoSQLAdapter):
         self.folder = folder
         db['_lastsql'] = ''
         self.db_codec = 'UTF-8'
+        self._after_connection = after_connection
         self.pool_size = pool_size
 
         url='http://'+uri[10:]
@@ -5053,7 +5083,7 @@ class MongoDBAdapter(NoSQLAdapter):
     def __init__(self,db,uri='mongodb://127.0.0.1:5984/db',
                  pool_size=0, folder=None, db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={}, do_connect=True):
+                 adapter_args={}, do_connect=True, after_connection=None):
 
         self.db = db
         self.uri = uri
@@ -5073,6 +5103,7 @@ class MongoDBAdapter(NoSQLAdapter):
         self.folder = folder
         db['_lastsql'] = ''
         self.db_codec = 'UTF-8'
+        self._after_connection = after_connection
         self.pool_size = pool_size
         #this is the minimum amount of replicates that it should wait
         # for on insert/update
@@ -5737,7 +5768,9 @@ class IMAPAdapter(NoSQLAdapter):
                  db_codec ='UTF-8',
                  credential_decoder=IDENTITY,
                  driver_args={},
-                 adapter_args={}, do_connect=True):
+                 adapter_args={},
+                 do_connect=True,
+                 after_connection=None):
 
         # db uri: user@example.com:password@imap.server.com:123
         # TODO: max size adapter argument for preventing large mail transfers
@@ -5748,6 +5781,7 @@ class IMAPAdapter(NoSQLAdapter):
         self.pool_size=pool_size
         self.folder = folder
         self.db_codec = db_codec
+        self._after_connection = after_connection
         self.credential_decoder = credential_decoder
         self.driver_args = driver_args
         self.adapter_args = adapter_args
@@ -5852,7 +5886,7 @@ class IMAPAdapter(NoSQLAdapter):
                     self.connection = f()
                     self.cursor = cursor and self.connection.cursor()
                     break
-        self.after_connection()
+        self.after_connection_hook()
 
     def get_last_message(self, tablename):
         last_message = None
@@ -7124,7 +7158,7 @@ class DAL(object):
                  decode_credentials=False, driver_args=None,
                  adapter_args=None, attempts=5, auto_import=False,
                  bigint_id=False,debug=False,lazy_tables=False,
-                 db_uid=None, do_connect=True):
+                 db_uid=None, do_connect=True, after_connection=None):
         """
         Creates a new Database Abstraction Layer instance.
 
@@ -7133,7 +7167,9 @@ class DAL(object):
         :uri: string that contains information for connecting to a database.
                (default: 'sqlite://dummy.db')
         :pool_size: How many open connections to make to the database object.
-        :folder: <please update me>
+        :folder: where .table files will be created.
+                 automatically set within web2py
+                 use an explicit path when using DAL outside web2py
         :db_codec: string encoding of the database (default: 'UTF-8')
         :check_reserved: list of adapters to check tablenames and column names
                          against sql/nosql reserved keywords. (Default None)
@@ -7150,6 +7186,11 @@ class DAL(object):
         :migrate_enabled (defaults to True). If set to False disables ALL migrations
         :fake_migrate_all (defaults to False). If sets to True fake migrates ALL tables
         :attempts (defaults to 5). Number of times to attempt connecting
+        :auto_import (defaults to False). If set, import automatically table definitions from the
+                 databases folder
+        :bigint_id (defaults to False): If set, turn on bigint instead of int for id fields
+        :lazy_tables (defaults to False): delay table definition until table access
+        :after_connection (defaults to None): a callable that will be execute after the connection
         """
 
         DEFAULT_URI = 'sqlite://dummy.db'
@@ -7219,7 +7260,8 @@ class DAL(object):
                                       credential_decoder=credential_decoder,
                                       driver_args=driver_args or {},
                                       adapter_args=adapter_args or {},
-                                      do_connect=do_connect)
+                                      do_connect=do_connect,
+                                      after_connection=after_connection)
                         self._adapter = ADAPTERS[self._dbname](**kwargs)
                         types = ADAPTERS[self._dbname].types
                         # copy so multiple DAL() possible
@@ -7244,7 +7286,7 @@ class DAL(object):
         else:
             self._adapter = BaseAdapter(db=self,pool_size=0,
                                         uri='None',folder=folder,
-                                        db_codec=db_codec)
+                                        db_codec=db_codec, after_connection=after_connection)
             migrate = fake_migrate = False
         adapter = self._adapter
         self._uri_hash = hashlib_md5(adapter.uri).hexdigest()
@@ -7551,7 +7593,7 @@ def index():
                         return Row({'status':400,'error':'invalid orderby','response':None})
                     if exposedfields:
                         fields = [field for field in db[table] if str(field).split('.')[-1] in exposedfields and field.readable]
-                    else:    
+                    else:
                         fields = [field for field in db[table] if field.readable]
                     count = dbset.count()
                     try:

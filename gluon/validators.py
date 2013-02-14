@@ -339,7 +339,7 @@ class IS_JSON(Validator):
         if value is None:
             return None
         return simplejson.dumps(value)
-    
+
 
 class IS_IN_SET(Validator):
     """
@@ -626,7 +626,7 @@ class IS_NOT_IN_DB(Validator):
         (tablename, fieldname) = str(self.field).split('.')
         table = self.dbset.db[tablename]
         field = table[fieldname]
-        rows = self.dbset(field == value, ignore_common_filters=self.ignore_common_filters).select(limitby=(0, 1))
+        rows = self.dbset(field == value, ignore_common_filters=self.ignore_common_filters).select(field, limitby=(0, 1))
         if len(rows) > 0:
             if isinstance(self.record_id, dict):
                 for f in self.record_id:
