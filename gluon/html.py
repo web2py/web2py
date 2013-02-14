@@ -2143,7 +2143,7 @@ class FORM(DIV):
                     current.response.flash = message_onchange
                 elif callable(onchange):
                     onchange(self)
-                return False
+            return False
 
     def process(self, **kwargs):
         """
