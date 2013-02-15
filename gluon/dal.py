@@ -1182,9 +1182,15 @@ class BaseAdapter(ConnectionPool):
             logfile.write('success!\n')
 
     def _insert(self, table, fields):
-        keys = ','.join(f.name for f, v in fields)
-        values = ','.join(self.expand(v, f.type) for f, v in fields)
-        return 'INSERT INTO %s(%s) VALUES (%s);' % (table, keys, values)
+        if fields:
+            keys = ','.join(f.name for f, v in fields)
+            values = ','.join(self.expand(v, f.type) for f, v in fields)
+            return 'INSERT INTO %s(%s) VALUES (%s);' % (table, keys, values)
+        else:
+            return self._insert_empty(table)
+
+    def _insert_empty(self, table):
+        return 'INSERT INTO %s DEFAULT VALUES;' % table
 
     def insert(self, table, fields):
         query = self._insert(table,fields)
