@@ -7210,7 +7210,7 @@ class DAL(object):
                 newuri = DEFAULT_URI
             locals().update(uri)
             uri = newuri
-        elif not uri:
+        elif not uri and uri is not None:
             uri = DEFAULT_URI
 
         if uri == '<zombie>' and db_uid is not None: return
