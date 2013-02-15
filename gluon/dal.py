@@ -7688,7 +7688,7 @@ def index():
         if on_define: on_define(table)
         return table
 
-    def as_dict(self, flat=False, sanitize=True):
+    def as_dict(self, flat=False, sanitize=True, field_options=True):
         dbname = db_uid = uri = None
         if not sanitize:
             uri, dbname, db_uid = (self._uri, self._dbname, self._db_uid)
@@ -7707,25 +7707,29 @@ def index():
             tablename = str(table)
             db_as_dict["tables"].append(tablename)
             db_as_dict["items"][tablename] = table.as_dict(flat=flat,
-                                                sanitize=sanitize)
+                                         sanitize=sanitize,
+                                         field_options=field_options)
         return db_as_dict
 
-    def as_xml(self, sanitize=True):
+    def as_xml(self, sanitize=True, field_options=True):
         if not have_serializers:
             raise ImportError("No xml serializers available")
-        d = self.as_dict(flat=True, sanitize=sanitize)
+        d = self.as_dict(flat=True, sanitize=sanitize,
+                         field_options=field_options)
         return serializers.xml(d)
 
-    def as_json(self, sanitize=True):
+    def as_json(self, sanitize=True, field_options=True):
         if not have_serializers:
             raise ImportError("No json serializers available")
-        d = self.as_dict(flat=True, sanitize=sanitize)
+        d = self.as_dict(flat=True, sanitize=sanitize,
+                         field_options=field_options)
         return serializers.json(d)
 
-    def as_yaml(self, sanitize=True):
+    def as_yaml(self, sanitize=True, field_options=True):
         if not have_serializers:
             raise ImportError("No YAML serializers available")
-        d = self.as_dict(flat=True, sanitize=sanitize)
+        d = self.as_dict(flat=True, sanitize=sanitize,
+                         field_options=field_options)
         return serializers.yaml(d)
 
     def __contains__(self, tablename):
@@ -8617,7 +8621,7 @@ class Table(object):
                 if id_map and cid is not None:
                     id_map_self[int(line[cid])] = new_id
 
-    def as_dict(self, flat=False, sanitize=True):
+    def as_dict(self, flat=False, sanitize=True, field_options=True):
         tablename = str(self)
         table_as_dict = dict(name=tablename, items={}, fields=[],
         sequence_name=self._sequence_name,
@@ -8629,25 +8633,29 @@ class Table(object):
             if (field.readable or field.writable) or (not sanitize):
                 table_as_dict["fields"].append(field.name)
                 table_as_dict["items"][field.name] = \
-                    field.as_dict(flat=flat, sanitize=sanitize)
+                    field.as_dict(flat=flat, sanitize=sanitize,
+                                  options=field_options)
         return table_as_dict
 
-    def as_xml(self, sanitize=True):
+    def as_xml(self, sanitize=True, field_options=True):
         if not have_serializers:
             raise ImportError("No xml serializers available")
-        d = self.as_dict(flat=True, sanitize=sanitize)
+        d = self.as_dict(flat=True, sanitize=sanitize,
+                         field_options=field_options)
         return serializers.xml(d)
 
-    def as_json(self, sanitize=True):
+    def as_json(self, sanitize=True, field_options=True):
         if not have_serializers:
             raise ImportError("No json serializers available")
-        d = self.as_dict(flat=True, sanitize=sanitize)
+        d = self.as_dict(flat=True, sanitize=sanitize,
+                         field_options=field_options)
         return serializers.json(d)
 
-    def as_yaml(self, sanitize=True):
+    def as_yaml(self, sanitize=True, field_options=True):
         if not have_serializers:
             raise ImportError("No YAML serializers available")
-        d = self.as_dict(flat=True, sanitize=sanitize)
+        d = self.as_dict(flat=True, sanitize=sanitize,
+                         field_options=field_options)
         return serializers.yaml(d)
 
     def with_alias(self, alias):
@@ -9303,7 +9311,7 @@ class Field(Expression):
     def count(self, distinct=None):
         return Expression(self.db, self.db._adapter.COUNT, self, distinct, 'integer')
 
-    def as_dict(self, flat=False, sanitize=True):
+    def as_dict(self, flat=False, sanitize=True, options=True):
 
         attrs = ('type', 'length', 'default', 'required',
                  'ondelete', 'notnull', 'unique', 'uploadfield',
@@ -9317,67 +9325,92 @@ class Field(Expression):
 
         SERIALIZABLE_TYPES = (int, long, basestring, dict, list,
                               float, tuple, bool, type(None))
+
         def flatten(obj):
+            newobj = None
             if flat:
                 if isinstance(obj, flatten.__class__):
                     return str(type(obj))
                 elif isinstance(obj, type):
                     try:
-                        obj = str(obj).split("'")[1]
+                        newobj = str(obj).split("'")[1]
                     except IndexError:
-                        obj = str(obj)
+                        return str(obj)
                 elif not isinstance(obj, SERIALIZABLE_TYPES):
-                    obj = str(obj)
-            return obj
+                    return str(obj)
+                elif isinstance(obj, dict):
+                    newobj = dict()
+                    for k, v in obj.items():
+                        newobj[k] = flatten(v)
+                elif isinstance(obj, (list, tuple, set)):
+                    newobj = [flatten(v) for v in obj]
+                else:
+                    newobj = obj
+            return newobj
 
-        def filter_requires(t, r):
+        def filter_requires(t, r, options=True):
             if sanitize and any([keyword in str(t).upper() for
                                  keyword in ("CRYPT", "IS_STRONG")]):
                 return None
-            for k, v in r.items():
+
+            if not isinstance(r, dict):
+                if options and hasattr(r, "options"):
+                    if callable(r.options):
+                        r.options()
+                newr = r.__dict__
+            else:
+                newr = r
+
+            for k, v in newr.items():
                 if k == "other":
-                    if not isinstance(v, dict):
-                        other = v.__dict__
-                    else: other = v
-                    r[k] = {flatten(type(v)):
-                            filter_requires(type(v), other)}
-                elif flat and (not isinstance(v, SERIALIZABLE_TYPES)):
-                    r[k] = str(v)
-            return r
+                    if isinstance(v, dict):
+                        otype, other = v.popitem()
+                    else:    
+                        otype = flatten(type(v))
+                        other = v
+                    newr[k] = {otype: filter_requires(otype, other,
+                                                      options=options)}
+                else:
+                    newr[k] = flatten(v)
+            return newr
 
         if isinstance(self.requires, (tuple, list, set)):
             requires = dict([(flatten(type(r)),
-                             filter_requires(type(r), r.__dict__)) for
+                             filter_requires(type(r), r,
+                                             options=options)) for
                              r in self.requires])
         else:
             requires = {flatten(type(self.requires)):
                         filter_requires(type(self.requires),
-                            self.requires.__dict__)}
+                            self.requires, options=options)}
 
         d = dict(colname="%s.%s" % (self.tablename, self.name),
                  requires=requires)
         d.update([(attr, flatten(getattr(self, attr))) for attr in attrs])
         return d
 
-    def as_xml(self, sanitize=True):
+    def as_xml(self, sanitize=True, options=True):
         if have_serializers:
             xml = serializers.xml
         else:
             raise ImportError("No xml serializers available")
-        d = self.as_dict(flat=True, sanitize=sanitize)
+        d = self.as_dict(flat=True, sanitize=sanitize,
+                         options=options)
         return xml(d)
 
-    def as_json(self, sanitize=True):
+    def as_json(self, sanitize=True, options=True):
         if have_serializers:
             json = serializers.json
         else:
             raise ImportError("No json serializers available")
-        d = self.as_dict(flat=True, sanitize=sanitize)
+        d = self.as_dict(flat=True, sanitize=sanitize,
+                         options=options)
         return json(d)
 
-    def as_yaml(self, sanitize=True):
+    def as_yaml(self, sanitize=True, options=True):
         if have_serializers:
-            d = self.as_dict(flat=True, sanitize=sanitize)
+            d = self.as_dict(flat=True, sanitize=sanitize,
+                             options=options)
             return serializers.yaml(d)
         else:
             raise ImportError("No YAML serializers available")
