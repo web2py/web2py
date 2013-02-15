@@ -237,6 +237,9 @@ class IS_EXPR(Validator):
         self.environment = environment or {}
 
     def __call__(self, value):
+        if callable(self.expression):
+            return (value, self.expression(value))
+        # for backward compatibility
         self.environment.update(value=value)
         exec '__ret__=' + self.expression in self.environment
         if self.environment['__ret__']:
