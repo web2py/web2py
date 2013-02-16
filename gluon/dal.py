@@ -145,6 +145,7 @@ SPATIALLIBS = {
     'Linux':'libspatialite.so',
     'Darwin':'libspatialite.dylib'
     }
+DEFAULT_URI = 'sqlite://dummy.db'
 
 import re
 import sys
@@ -7156,7 +7157,7 @@ class DAL(object):
                 db._adapter.commit_prepared(keys[i])
         return
 
-    def __init__(self, uri=None,
+    def __init__(self, uri=DEFAULT_URI,
                  pool_size=0, folder=None,
                  db_codec='UTF-8', check_reserved=None,
                  migrate=True, fake_migrate=False,
@@ -7199,7 +7200,6 @@ class DAL(object):
         :after_connection (defaults to None): a callable that will be execute after the connection
         """
 
-        DEFAULT_URI = 'sqlite://dummy.db'
         items = None
         if isinstance(uri, dict):
             if "items" in uri:
@@ -7210,8 +7210,6 @@ class DAL(object):
                 newuri = DEFAULT_URI
             locals().update(uri)
             uri = newuri
-        elif not uri:
-            uri = DEFAULT_URI
 
         if uri == '<zombie>' and db_uid is not None: return
         if not decode_credentials:
