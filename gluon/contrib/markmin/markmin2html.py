@@ -609,7 +609,7 @@ def protolinks_simple(proto, url):
     #elif proto == 'embed':  # NOTE: embed is a synonym to iframe now
     #    return '<a href="%s" class="%sembed">%s></a>'%(url,class_prefix,url)
     elif proto == 'qr':
-        return '<img style="width:80px" src="http://qrcode.kaywa.com/img.php?s=8&amp;d=%s" alt="qr code" />'%url
+        return '<img style="width:100px" src="http://chart.apis.google.com/chart?cht=qr&chs=100x100&chl=%s&choe=UTF-8&chld=H" alt="QR Code" title="QR Code" />'%url
     return proto+':'+url
 
 def render(text,
@@ -740,7 +740,7 @@ def render(text,
     '<p>auto-image: (<img src="http://example.com/image.jpeg" controls />)</p>'
 
     >>> render("qr: (qr:http://example.com/image.jpeg)")
-    '<p>qr: (<img style="width:80px" src="http://qrcode.kaywa.com/img.php?s=8&amp;d=http://example.com/image.jpeg" alt="qr code" />)</p>'
+    '<p>qr: (<img style="width:100px" src="http://chart.apis.google.com/chart?cht=qr&chs=100x100&chl=http://example.com/image.jpeg&choe=UTF-8&chld=H" alt="QR Code" title="QR Code" />)</p>'
 
     >>> render("embed: (embed:http://example.com/page)")
     '<p>embed: (<iframe src="http://example.com/page" frameborder="0" allowfullscreen></iframe>)</p>'
