@@ -629,14 +629,18 @@ class IS_NOT_IN_DB(Validator):
         (tablename, fieldname) = str(self.field).split('.')
         table = self.dbset.db[tablename]
         field = table[fieldname]
-        rows = self.dbset(field == value, ignore_common_filters=self.ignore_common_filters).select(field, limitby=(0, 1))
-        if len(rows) > 0:
-            if isinstance(self.record_id, dict):
-                for f in self.record_id:
-                    if str(getattr(rows[0], f)) != str(self.record_id[f]):
-                        return (value, translate(self.error_message))
-            elif str(rows[0][table._id.name]) != str(self.record_id):
-                    return (value, translate(self.error_message))
+        subset = self.dbset(field == value,
+                            ignore_common_filters=self.ignore_common_filters)
+        id = self.record_id
+        if isinstance(id, dict):
+            fields = [table[f] for f in id]
+            row = subset.select(*fields, **dict(limitby=(0, 1))).first()
+            if row and any(str(row[f]) != str(id[f]) for f in id):
+                return (value, translate(self.error_message))
+        else:
+            row = subset.select(table._id, limitby=(0, 1)).first()
+            if row and str(row.id) != str(id):
+                return (value, translate(self.error_message))
         return (value, None)
 
 
