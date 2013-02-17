@@ -9325,13 +9325,12 @@ class Field(Expression):
                               float, tuple, bool, type(None))
 
         def flatten(obj):
-            newobj = None
             if flat:
                 if isinstance(obj, flatten.__class__):
                     return str(type(obj))
                 elif isinstance(obj, type):
                     try:
-                        newobj = str(obj).split("'")[1]
+                        return str(obj).split("'")[1]
                     except IndexError:
                         return str(obj)
                 elif not isinstance(obj, SERIALIZABLE_TYPES):
@@ -9340,11 +9339,14 @@ class Field(Expression):
                     newobj = dict()
                     for k, v in obj.items():
                         newobj[k] = flatten(v)
+                    return newobj
                 elif isinstance(obj, (list, tuple, set)):
-                    newobj = [flatten(v) for v in obj]
+                    return [flatten(v) for v in obj]
                 else:
-                    newobj = obj
-            return newobj
+                    return obj
+            elif isinstance(obj, (dict, set)):
+                return obj.copy()
+            else: return obj
 
         def filter_requires(t, r, options=True):
             if sanitize and any([keyword in str(t).upper() for
@@ -9355,9 +9357,14 @@ class Field(Expression):
                 if options and hasattr(r, "options"):
                     if callable(r.options):
                         r.options()
-                newr = r.__dict__
+                newr = r.__dict__.copy()
             else:
-                newr = r
+                newr = r.copy()
+
+            # remove options if not required
+            if not options and newr.has_key("labels"):
+                [newr.update({key:None}) for key in
+                 ("labels", "theset") if (key in newr)]
 
             for k, v in newr.items():
                 if k == "other":

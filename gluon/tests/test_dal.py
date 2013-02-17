@@ -660,7 +660,10 @@ class TestDALDictImportExport(unittest.TestCase):
                    "items":{"staff":{"items": {"name":
                                                    {"default":"Michael"},
                                                "food":
-                                                   {"default":"Spam"}}},
+                                                   {"default":"Spam"},
+                                               "show":
+                                                   {"type": "reference show"}
+                                               }},
                             "show":{"items": {"name":
                                                    {"default":mpfc},
                                               "rating":
@@ -669,15 +672,18 @@ class TestDALDictImportExport(unittest.TestCase):
         assert "staff" in db4.tables
         assert "name" in db4.staff
         assert db4.show.rating.type == "double"
-        assert db4.show.insert() is not None
+        assert (db4.show.insert(), db4.show.insert(name="Loriot"),
+                db4.show.insert(name="Il Mattatore")) == (1, 2, 3)
         assert db4(db4.show).select().first().id == 1
         assert db4(db4.show).select().first().name == mpfc
 
         dbdict5 = {"uri": 'sqlite:memory:'}
         db5 = DAL(dbdict5)
         assert db5.tables in ([], None)
+        assert not (str(db5) in ("", None))
 
-        dbdict6 = {"items":{"staff":{},
+        dbdict6 = {"uri": 'sqlite:memory:',
+                   "items":{"staff":{},
                             "show":{"items": {"name": {},
                                               "rating":
                                                  {"type":"double"}}}}}
@@ -685,14 +691,8 @@ class TestDALDictImportExport(unittest.TestCase):
         assert len(db6["staff"].fields) == 1
         assert "name" in db6["show"].fields
 
-        # the following would fail (see issue 1332)
-        # assert db6.staff.insert() is not None
-        # assert db6(db6.staff).select().first().id == 1
-
-        dbdict7 = {}
-        db7 = DAL(dbdict7)
-        db7.tables() in (None, [])
-        assert not str(db7) in ("", None)
+        assert db6.staff.insert() is not None
+        assert db6(db6.staff).select().first().id == 1
 
         db6.staff.drop()
         db6.show.drop()
