@@ -2960,8 +2960,9 @@ class Auth(object):
         If role is provided instead of group_id then the
         group_id is calculated.
         """
-        return self.requires(lambda: self.has_membership(
-                group_id=group_id, role=role), otherwise=otherwise)
+        def has_membership(self=self, group_id=group_id, role=role):
+            return self.has_membership(group_id=group_id, role=role)
+        return self.requires(has_membership, otherwise=otherwise)
 
     def requires_permission(self, name, table_name='', record_id=0,
                             otherwise=None):
@@ -2970,8 +2971,9 @@ class Auth(object):
         if user logged in is not a member of any group (role) that
         has 'name' access to 'table_name', 'record_id'.
         """
-        return self.requires(lambda: self.has_permission(
-                name, table_name, record_id), otherwise=otherwise)
+        def has_permission(self=self, name=name, table_name=table_name, record_id=record_id):
+            return self.has_permission(name, table_name, record_id)
+        return self.requires(has_permission, otherwise=otherwise)
 
     def requires_signature(self, otherwise=None):
         """
@@ -2980,8 +2982,9 @@ class Auth(object):
         If role is provided instead of group_id then the
         group_id is calculated.
         """
-        return self.requires(lambda: URL.verify(
-                current.request, user_signature=True), otherwise=otherwise)
+        def verify():
+            return URL.verify(current.request, user_signature=True)
+        return self.requires(verify, otherwise)
 
     def add_group(self, role, description=''):
         """
