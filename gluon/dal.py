@@ -7675,9 +7675,10 @@ def index():
             polymodel = args_get('polymodel',None)
             try:
                 GLOBAL_LOCKER.acquire()
-                self._adapter.create_table(table,migrate=migrate,
-                                           fake_migrate=fake_migrate,
-                                           polymodel=polymodel)
+                self._lastsql = self._adapter.create_table(
+                    table,migrate=migrate,
+                    fake_migrate=fake_migrate,
+                    polymodel=polymodel)
             finally:
                 GLOBAL_LOCKER.release()
         else:
