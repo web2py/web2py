@@ -2204,6 +2204,56 @@ class FORM(DIV):
         form.process()
         return form
 
+    def as_dict(self, flat=False, sanitize=True):
+        """EXPERIMENTAL
+
+        Sanitize is naive. It should catch any unsafe value
+        for client retrieval.
+        """
+        SERIALIZABLE = (int, float, bool, basestring, long,
+                        set, list, dict, tuple, Storage, type(None))
+        UNSAFE = ("PASSWORD", "CRYPT")
+        d = self.__dict__.copy()
+        def flatten(obj):
+            if flat:
+                if type(obj) in SERIALIZABLE:
+                    if isinstance(obj, (dict, Storage)):
+                        newobj = dict()
+                        for k, v in obj.copy().items():
+                            if sanitize:
+                                if any([unsafe in k.upper() for
+                                       unsafe in UNSAFE]):
+                                    # skip unsafe value
+                                    val = None
+                                else: val = flatten(v)
+                            else: val = flatten(v)
+                            newobj[flatten(k)] = val
+                        return newobj
+                    elif isinstance(obj, (list, tuple, set)):
+                        return [flatten(item) for item in obj]
+                    else:
+                        return obj
+                else: return str(obj)
+            elif isinstance(obj, (dict, Storage)):
+                return obj.copy()
+            else: obj
+        return flatten(d)
+
+    def as_json(self, sanitize=True):
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        from serializers import json
+        return json(d)
+
+    def as_yaml(self, sanitize=True):
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        from serializers import yaml
+        return yaml(d)
+
+    def as_xml(self, sanitize=True):
+        d = self.as_dict(flat=True, sanitize=sanitize)
+        from serializers import xml
+        return xml(d)
+
 
 class BEAUTIFY(DIV):
 
