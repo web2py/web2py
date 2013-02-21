@@ -211,7 +211,7 @@ def sanitize(text, permitted_tags=[
         'pre',
         'img/',
         'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
-        'table', 'tr', 'td', 'div',
+        'table', 'tbody', 'thead', 'tfoot', 'tr', 'td', 'div',
         'strong', 'span',
 ],
     allowed_attributes={
@@ -225,3 +225,4 @@ def sanitize(text, permitted_tags=[
         return str(text)
     return XssCleaner(permitted_tags=permitted_tags,
                       allowed_attributes=allowed_attributes).strip(text, escape)
+
