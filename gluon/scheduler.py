@@ -92,6 +92,7 @@ logger = logging.getLogger('web2py.scheduler.%s' % IDENTIFIER)
 
 from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB, IS_INT_IN_RANGE, IS_DATETIME
 from gluon.utils import web2py_uuid
+from gluon.storage import Storage
 
 
 QUEUED = 'QUEUED'
@@ -203,6 +204,7 @@ def executor(queue, task, out):
         def write(self, data):
             self.out_queue.put(data)
 
+    W2P_TASK = Storage({'id' : task.task_id, 'uuid' : task.uuid})
     stdout = LogOutput(out)
     try:
         if task.app:
@@ -226,6 +228,8 @@ def executor(queue, task, out):
             if not isinstance(_function, CALLABLETYPES):
                 raise NameError(
                     "name '%s' not found in scheduler's environment" % f)
+            #Inject W2P_TASK into environment
+            _env.update({'W2P_TASK' : W2P_TASK})
             globals().update(_env)
             args = loads(task.args)
             vars = loads(task.vars, object_hook=_decode_dict)
@@ -504,7 +508,7 @@ class Scheduler(MetaScheduler):
 
         db.define_table(
             'scheduler_run',
-            Field('scheduler_task', 'reference scheduler_task'),
+            Field('task_id', 'reference scheduler_task'),
             Field('status', requires=IS_IN_SET(RUN_STATUS)),
             Field('start_time', 'datetime'),
             Field('stop_time', 'datetime'),
@@ -521,7 +525,7 @@ class Scheduler(MetaScheduler):
             Field('last_heartbeat', 'datetime'),
             Field('status', requires=IS_IN_SET(WORKER_STATUS)),
             Field('is_ticker', 'boolean', default=False, writable=False),
-            Field('group_names', 'list:string', default=self.group_names),
+            Field('group_names', 'list:string', default=self.group_names),#FIXME writable=False or give the chance to update dinamically the groups?
             migrate=migrate)
         if migrate:
             db.commit()
@@ -626,7 +630,7 @@ class Scheduler(MetaScheduler):
             logger.debug('    new scheduler_run record')
             try:
                 run_id = db.scheduler_run.insert(
-                    scheduler_task=task.id,
+                    task_id=task.id,
                     status=RUNNING,
                     start_time=now,
                     worker_name=self.worker_name)
@@ -650,7 +654,8 @@ class Scheduler(MetaScheduler):
             stop_time=task.stop_time,
             retry_failed=task.retry_failed,
             times_failed=task.times_failed,
-            sync_output=task.sync_output)
+            sync_output=task.sync_output,
+            uuid=task.uuid)
 
     def report_task(self, task, task_report):
         db = self.db
@@ -983,12 +988,12 @@ class Scheduler(MetaScheduler):
         else:
             raise SyntaxError(
                 "You can retrieve results only by id, uuid or Query")
-        fields = st.ALL
+        fields = [st.ALL]
         left = False
         orderby = ~st.id
         if output:
             fields = st.ALL, sr.ALL
-            left = sr.on(sr.scheduler_task == st.id)
+            left = sr.on(sr.task_id == st.id)
             orderby = ~st.id | ~sr.id
         row = self.db(q).select(
             *fields,

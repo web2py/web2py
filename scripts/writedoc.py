@@ -17,24 +17,24 @@ def main(path):
     print '<h1>Models</h1>'
     for filename in models:
         print '<h2>%s</h2>' % filename[len(path):]
-        print CODE(open(filename).read(),lanuage='web2py').xml()
+        print CODE(open(filename).read(),language='web2py').xml()
     print '<h1>Layout Views</h1>'
     for filename in views:
         print '<h2>%s</h2>' % filename[len(path):]
-        print CODE(open(filename).read(),lanuage='html').xml()
+        print CODE(open(filename).read(),language='html').xml()
     print '<h1>Controllers and Views</h1>'
     for filename in controllers:
         print '<h2>%s</h2>' % filename[len(path):]
-        print CODE(open(filename).read(),lanuage='web2py')
+        print CODE(open(filename).read(),language='web2py')
         views = glob.glob(os.path.join(path,'views','*','*.html'))
         views.sort()
         for filename in views:
             print '<h2>%s</h2>' % filename[len(path):]
-            print CODE(open(filename).read(),lanuage='html').xml()
+            print CODE(open(filename).read(),language='html').xml()
     print '<h1>Modules</h1>'
     for filename in modules:
         print '<h2>%s</h2>' % filename[len(path):]
-        print CODE(open(filename).read(),lanuage='python').xml()
+        print CODE(open(filename).read(),language='python').xml()
     print '</body></html>'
 
 if __name__=='__main__':
