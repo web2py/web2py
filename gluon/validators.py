@@ -20,6 +20,7 @@ import decimal
 import unicodedata
 from cStringIO import StringIO
 from utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
+from dal import FieldVirtual, FieldMethod
 
 JSONErrors = (NameError, TypeError, ValueError, AttributeError,
               KeyError)
@@ -507,7 +508,9 @@ class IS_IN_DB(Validator):
         if self.fields == 'all':
             fields = [f for f in table]
         else:
-            fields = [table[k] for k in self.fields]
+            fields = [table[k] for k in self.fields]        
+        ignore = (FieldVirtual,FieldMethod)
+        fields = filter(lambda f:not isinstance(f,ignore), fields)
         if self.dbset.db._dbname != 'gae':
             orderby = self.orderby or reduce(lambda a, b: a | b, fields)
             groupby = self.groupby
