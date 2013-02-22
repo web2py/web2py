@@ -792,7 +792,7 @@ class BaseAdapter(ConnectionPool):
                         rtable = db[rtablename]
                         rfield = rtable[rfieldname]
                         # must be PK reference or unique
-                        if rfieldname in hasattr(rtable,'_primarykey') or \
+                        if rfieldname in rtable._primarykey or \
                                 rfield.unique:
                             ftype = types[rfield.type[:9]] % \
                                 dict(length=rfield.length)
