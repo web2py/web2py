@@ -4501,6 +4501,9 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
             if isinstance(polymodel,Table) and field.name in polymodel.fields():
                 continue
             attr = {}
+            if isinstance(field.custom_qaulifier, dict):
+                #this is custom properties to add to the GAE field declartion
+                attr = field.custom_qualifier
             field_type = field.type
             if isinstance(field_type, SQLCustomType):
                 ftype = self.types[field_type.native or field_type.type](**attr)
@@ -4517,10 +4520,10 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                 if field.notnull:
                     attr = dict(required=True)
                 referenced = field_type[10:].strip()
-                ftype = self.types[field_type[:9]](referenced)
+                ftype = self.types[field_type[:9]](referenced, **attr)
             elif field_type.startswith('list:reference'):
                 if field.notnull:
-                    attr = dict(required=True)
+                    attr['required'] = True
                 referenced = field_type[15:].strip()
                 ftype = self.types[field_type[:14]](**attr)
             elif field_type.startswith('list:'):
