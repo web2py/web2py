@@ -97,9 +97,6 @@ class HTTP(BaseException):
             if not body:
                 body = status
             if isinstance(body, str):
-                if len(body) < 512 and \
-                        headers['Content-Type'].startswith('text/html'):
-                    body += '<!-- %s //-->' % ('x' * 512)  # trick IE
                 headers['Content-Length'] = len(body)
         rheaders = []
         for k, v in headers.iteritems():
