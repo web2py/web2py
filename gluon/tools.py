@@ -3045,7 +3045,7 @@ class Auth(object):
         if not user_id and self.user:
             user_id = self.user.id
         membership = self.table_membership()
-        if self.db((membership.user_id == user_id)
+        if group_id and user_id and self.db((membership.user_id == user_id)
                     & (membership.group_id == group_id)).select():
             r = True
         else:
