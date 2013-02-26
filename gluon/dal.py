@@ -9027,9 +9027,20 @@ class SQLCustomType(object):
         return self._class
 
 class FieldVirtual(object):
-    def __init__(self, name, f=None):
+    def __init__(self, name, f=None, ftype='string',label=None,table_name=None):
         # for backward compatibility
         (self.name, self.f) = (name, f) if f else ('unkown', name)
+        self.type = ftype
+        self.label = label or self.name.capitalize().replace('_',' ')
+        self.represent = IDENTITY 
+        self.formatter = IDENTITY
+        self.comment = None
+        self.readable = True
+        self.writable = False
+        self.requires = None
+        self.widget = None
+        self.tablename = table_name
+        self.filter_out = None
 
 class FieldMethod(object):
     def __init__(self, name, f=None, handler=None):
