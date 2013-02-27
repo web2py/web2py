@@ -2213,30 +2213,42 @@ class FORM(DIV):
         SERIALIZABLE = (int, float, bool, basestring, long,
                         set, list, dict, tuple, Storage, type(None))
         UNSAFE = ("PASSWORD", "CRYPT")
-        d = self.__dict__.copy()
+        d = self.__dict__
+
+        def sanitizer(obj):
+            if isinstance(obj, dict):
+                for k in obj.keys():
+                    if any([unsafe in str(k).upper() for
+                           unsafe in UNSAFE]):
+                       # erease unsafe pair
+                       obj.pop(k)
+            else:
+                # not implemented
+                pass
+            return obj
+
         def flatten(obj):
+            if isinstance(obj, (dict, Storage)):
+                newobj = obj.copy()
+            else:
+                newobj = obj
+            if sanitize:
+                newobj = sanitizer(newobj)
             if flat:
                 if type(obj) in SERIALIZABLE:
-                    if isinstance(obj, (dict, Storage)):
-                        newobj = dict()
-                        for k, v in obj.copy().items():
-                            if sanitize:
-                                if any([unsafe in k.upper() for
-                                       unsafe in UNSAFE]):
-                                    # skip unsafe value
-                                    val = None
-                                else: val = flatten(v)
-                            else: val = flatten(v)
-                            newobj[flatten(k)] = val
+                    if isinstance(newobj, (dict, Storage)):
+                        for k in newobj:
+                            newk = flatten(k)
+                            newobj[newk] = flatten(newobj[k])
+                            if k != newk:
+                                newobj.pop(k)
                         return newobj
-                    elif isinstance(obj, (list, tuple, set)):
-                        return [flatten(item) for item in obj]
+                    elif isinstance(newobj, (list, tuple, set)):
+                        return [flatten(item) for item in newobj]
                     else:
-                        return obj
-                else: return str(obj)
-            elif isinstance(obj, (dict, Storage)):
-                return obj.copy()
-            else: obj
+                        return newobj
+                else: return str(newobj)
+            else: return newobj
         return flatten(d)
 
     def as_json(self, sanitize=True):
@@ -2489,6 +2501,12 @@ def test():
     <form action="#" enctype="multipart/form-data" method="post"><input class="invalidinput" name="myvar" type="text" value="as df" /><div class="error_wrapper"><div class="error" id="myvar__error">only alphanumeric!</div></div></form>
     >>> session={}
     >>> form=FORM(INPUT(value=\"Hello World\", _name=\"var\", requires=IS_MATCH('^\w+$')))
+    >>> isinstance(form.as_dict(), dict)
+    True
+    >>> form.as_dict(flat=True).has_key("vars")
+    True
+    >>> isinstance(form.as_json(), basestring) and len(form.as_json(sanitize=False)) > 0
+    True
     >>> if form.accepts({}, session,formname=None): print 'passed'
     >>> if form.accepts({'var':'test ', '_formkey': session['_formkey[None]']}, session, formname=None): print 'passed'
     """
