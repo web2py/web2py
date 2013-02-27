@@ -1,12 +1,34 @@
-## 2.4.1
+## 2.4.1- 2.4.2
 
+- 2D GEO API: geoPoint, getLine, geoPolygon
+- support for 'json' field type in DAL
+- schema export with db.as_json/as_xml, thanks Alan
+- graph representation of models
+- admin based on bootstrap, thanks Paolo
 - support for semantic versioning
 - new bootstrap based admin, thanks Paolo
+- improved scheduler (and change in scheduler field names), thanks Niphlod
 - graphiz support added to adm, thanks Jose
 - on_failure in grid
 - db.table.field.abs()
+- better wiki
 - geoPoint, getLine, geoPolygon
 - better reporting of 500 ajax errors
+- better grid
+- improved/fixed mongodb support
+- improved parse_as_rest(patterns=...), thanks Denes
+- improved IMAP DAL support, thanks Alan
+- improved security when cookies in sessions
+- Row.as_xml, as_json, as_dict, as_yaml thanks Alan
+- smarted custom_import
+- setup-ubuntu-12-04-redmine-unicorn-web2py-uwsgi-nginx.sh
+- added support for motor and pulsar servers, thanks Niphlod
+- added json-rpc2 support
+- added pypyodbc.py driver
+- allow auth.settings.ondelete='CASCADE'
+- new syntax IS_EXPR(lambda value: ...
+- using google for QR codes (although Graph API will be deprecated in 2015)
+- upgraded fpdf to 1.7.1
 - bug fixes (including issues with calendar.js and archive tables)
 
 ## 2.3.1 - 2.3.2
