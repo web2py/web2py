@@ -1890,6 +1890,8 @@ class BaseAdapter(ConnectionPool):
         return value == True or str(value)[:1].lower() == 't'
 
     def parse_date(self, value, field_type):
+        if isinstance(value, datetime.datetime):
+            return value.date()
         if not isinstance(value, (datetime.date,datetime.datetime)):
             (y, m, d) = map(int, str(value)[:10].strip().split('-'))
             value = datetime.date(y, m, d)
