@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 {
 # "singular form (0)": ["first plural form (1)", "second plural form (2)", ...],
-'vte?ina': ['vte?iny', 'vte?in'],
-'vte?inou': ['vte?inami', 'vte?inami'],
+'vteřina': ['vteřiny', 'vteřin'],
+'vteřinou': ['vteřinami', 'vteřinami'],
 'minuta': ['minuty', 'minut'],
 'minutou': ['minutami', 'minutami'],
 'hodina': ['hodiny','hodin'],
 'hodinou': ['hodinami','hodinami'],
-'den': ['dny','dn?'],
+'den': ['dny','dnů'],
 'dnem': ['dny','dny'],
-'t?den': ['t?dny','t?dn?'],
-'t?dnem': ['t?dny','t?dny'],
-'m?s?c': ['m?s?ce','m?s?c?'],
-'m?s?cem': ['m?s?ci','m?s?ci'],
+'týden': ['týdny','týdnů'],
+'týdnem': ['týdny','týdny'],
+'měsíc': ['měsíce','měsíců'],
+'měsícem': ['měsíci','měsíci'],
 'rok': ['roky','let'],
 'rokem': ['roky','lety'],
-'z?znam': ['z?znamy', 'z?znam?'],
-'soubor': ['soubory', 'soubor?']
+'záznam': ['záznamy', 'záznamů'],
+'soubor': ['soubory', 'souborů']
 }
