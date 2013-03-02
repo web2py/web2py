@@ -32,7 +32,7 @@ from gluon import *
 from gluon.contrib.autolinks import expand_one
 from gluon.contrib.markmin.markmin2html import \
     replace_at_urls, replace_autolinks, replace_components
-from gluon.dal import Row
+from gluon.dal import Row, Set, Query
 
 import gluon.serializers as serializers
 
@@ -3210,12 +3210,23 @@ class Auth(object):
         """
         if not user_id:
             user_id = self.user_id
+        db = self.db
         if isinstance(table, str) and table in self.db.tables():
             table = self.db[table]
+        elif isinstance(table, (Set, Query)):
+            # experimental: build a chained query for all tables
+            if isinstance(table, Set):
+                cquery = table.query
+            else:
+                cquery = table
+            tablenames = db._adapter.tables(cquery)
+            for tablename in tablenames:
+                cquery &= self.accessible_query(name, tablename,
+                                                user_id=user_id)
+            return cquery
         if not isinstance(table, str) and\
                 self.has_permission(name, table, 0, user_id):
             return table.id > 0
-        db = self.db
         membership = self.table_membership()
         permission = self.table_permission()
         query = table.id.belongs(
