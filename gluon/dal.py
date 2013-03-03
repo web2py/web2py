@@ -808,7 +808,7 @@ class BaseAdapter(ConnectionPool):
                                     constraint_name = constraint_name, # should be quoted
                                     foreign_key = '%s (%s)' % (rtablename,
                                                                rfieldname),
-                                    table_name = table_name,
+                                    table_name = tablename,
                                     field_name = field_name,
                                     on_delete_action=field.ondelete)
                     else:
