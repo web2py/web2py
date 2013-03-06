@@ -4505,7 +4505,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
             if isinstance(polymodel,Table) and field.name in polymodel.fields():
                 continue
             attr = {}
-            if isinstance(field.custom_qaulifier, dict):
+            if isinstance(field.custom_qualifier, dict):
                 #this is custom properties to add to the GAE field declartion
                 attr = field.custom_qualifier
             field_type = field.type
