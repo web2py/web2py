@@ -237,7 +237,8 @@ def read_possible_languages_aux(langdir):
                 construct_plural_form)  # construct_plural_form() for current language
 
     plurals = {}
-    flist = oslistdir(langdir)
+    flist = oslistdir(langdir) if isdir(langdir) else []
+        
     # scan languages directory for plural dict files:
     for pname in flist:
         if regex_plural_file.match(pname):
