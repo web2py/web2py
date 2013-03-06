@@ -2664,9 +2664,9 @@ class PostgreSQLAdapter(BaseAdapter):
 
     def CONTAINS(self,first,second,case_sensitive=False):
         if first.type in ('string','text', 'json'):
-            key = '%'+str(second).replace('%','%%')+'%'
+            second = '%'+str(second).replace('%','%%')+'%'
         elif first.type.startswith('list:'):
-            key = '%|'+str(second).replace('|','||').replace('%','%%')+'|%'
+            second = '%|'+str(second).replace('|','||').replace('%','%%')+'|%'
         op = case_sensitive and self.LIKE or self.ILIKE
         return op(first,key)
 
