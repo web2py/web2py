@@ -9535,6 +9535,10 @@ class Query(object):
                         newd[k] = loop(v.__dict__)
                     elif isinstance(v, SERIALIZABLE_TYPES):
                         newd[k] = v
+                    elif isinstance(v, (datetime.date,
+                                        datetime.time,
+                                        datetime.datetime)):
+                        newd[k] = unicode(v)
                 elif k == "op":
                     if callable(v):
                         newd[k] = v.__name__
