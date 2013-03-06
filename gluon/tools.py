@@ -22,7 +22,7 @@ import urllib
 import urllib2
 import Cookie
 import cStringIO
-from email import MIMEBase, MIMEMultipart, MIMEText, Encoders, Header, message_from_string
+from email import MIMEBase, MIMEMultipart, MIMEText, Encoders, Header, message_from_string, Charset
 
 from gluon.contenttype import contenttype
 from gluon.storage import Storage, StorageList, Settings, Messages
@@ -347,7 +347,10 @@ class Mail(object):
                      mail.send_mail() method
         self.error: Exception message or None if above was successful
         """
-
+        
+        # We don't want to use base64 encoding for unicode mail
+        Charset.add_charset('utf-8', Charset.QP, Charset.QP, 'utf-8')
+        
         def encode_header(key):
             if [c for c in key if 32 > ord(c) or ord(c) > 127]:
                 return Header.Header(key.encode('utf-8'), 'utf-8')
