@@ -15,8 +15,6 @@ Dependencies:
 import oauth2 as oauth
 import cgi
 
-from urllib2 import urlopen
-import urllib2
 from urllib import urlencode
 
 from gluon import current
@@ -64,9 +62,7 @@ class OAuthAccount(object):
         Appends the _next action to the generated url so the flows continues.
         """
         r = self.request
-        http_host = r.env.http_x_forwarded_for
-        if not http_host:
-            http_host = r.env.http_host
+        http_host = r.env.http_host
 
         url_scheme = r.env.wsgi_url_scheme
         if next:
