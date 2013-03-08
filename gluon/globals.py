@@ -56,6 +56,7 @@ current = threading.local()  # thread-local storage for request-scope globals
 css_template = '<link href="%s" rel="stylesheet" type="text/css" />'
 js_template = '<script src="%s" type="text/javascript"></script>'
 coffee_template = '<script src="%s" type="text/coffee"></script>'
+typescript_template = '<script src="%s" type="text/typescript"></script>'
 less_template = '<link href="%s" rel="stylesheet/less" type="text/css" />'
 css_inline = '<style type="text/css">\n%s\n</style>'
 js_inline = '<script type="text/javascript">\n%s\n</script>'
@@ -292,6 +293,9 @@ class Response(Storage):
                     s += js_template % item
                 elif f.endswith('.coffee'):
                     s += coffee_template % item
+                elif f.endswith('.ts'):
+                    # http://www.typescriptlang.org/
+                    s += typescript_template % item
                 elif f.endswith('.less'):
                     s += less_template % item
             elif isinstance(item, (list, tuple)):
