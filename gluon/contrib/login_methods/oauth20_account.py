@@ -103,9 +103,7 @@ server for requests.  It can be used for the optional"scope" parameters for Face
         """
 
         r = current.request
-        http_host = r.env.http_x_forwarded_for
-        if not http_host:
-            http_host = r.env.http_host
+        http_host = r.env.http_host
 
         if r.env.https == 'on':
             url_scheme = 'https'
@@ -163,7 +161,7 @@ server for requests.  It can be used for the optional"scope" parameters for Face
             open_url = None
             opener = self.__build_url_opener(self.token_url)
             try:
-                open_url = opener.open(self.token_url, urlencode(data))
+                open_url = opener.open(self.token_url, urlencode(data), self.socket_timeout)
             except urllib2.HTTPError, e:
                 tmp = e.read()
                 raise Exception(tmp)
@@ -208,7 +206,7 @@ server for requests.  It can be used for the optional"scope" parameters for Face
 
     def __init__(self, g=None,
                  client_id=None, client_secret=None,
-                 auth_url=None, token_url=None, **args):
+                 auth_url=None, token_url=None, socket_timeout=60, **args):
         """
         first argument is unused. Here only for legacy reasons.
         """
@@ -224,6 +222,7 @@ server for requests.  It can be used for the optional"scope" parameters for Face
         self.auth_url = auth_url
         self.token_url = token_url
         self.args = args
+        self.socket_timeout = socket_timeout
 
     def login_url(self, next="/"):
         self.__oauth_login(next)
