@@ -47,8 +47,8 @@ __all__ = [
 
 def parse_semantic(version="Version 1.99.0-rc.1+timestamp.2011.09.19.08.23.26"):
     "http://semver.org/"
-    re_version = re.compile('Version (\d+)\.(\d+)\.(\d+)(\-(?P<pre>[^\s+]*))?(\+(?P<build>\S*))')
-    m = re_version.match(version)
+    re_version = re.compile('(\d+)\.(\d+)\.(\d+)(\-(?P<pre>[^\s+]*))?(\+(?P<build>\S*))')
+    m = re_version.match(version.strip().split()[-1])
     if not m:
         return None
     a, b, c = int(m.group(1)), int(m.group(2)), int(m.group(3))

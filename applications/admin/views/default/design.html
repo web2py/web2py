@@ -7,7 +7,7 @@ def peekfile(path,file,vars={},title=None):
 	return A(file.replace('\\\\','/'),_title=title,_href=URL('peek', args=args, vars=vars))
 def editfile(path,file,vars={}):
 	args=(path,file) if 'app' in vars else (app,path,file)
-	return A(SPAN(T('Edit')),_class='button editbutton btn',_href=URL('edit', args=args, vars=vars))
+	return A(SPAN(T('Edit')),_class='button editbutton btn btn-mini',_href=URL('edit', args=args, vars=vars))
 def testfile(path,file):
 	return A(TAG[''](IMG(_src=URL('static', 'images/test_icon.png'), _alt=T('test')), 
 						SPAN(T("Run tests in this file (to run all files, you may also use the button labelled 'test')"))), 
@@ -17,9 +17,9 @@ def testfile(path,file):
 						**{'_data-placement':'right',
 							'_data-original-title':T("Run tests in this file (to run all files, you may also use the button labelled 'test')")})
 def editlanguagefile(path,file,vars={}):
-	return A(SPAN(T('Edit')),_class='button editbutton btn',_href=URL('edit_language', args=(app, path, file), vars=vars))
+	return A(SPAN(T('Edit')),_class='button editbutton btn btn-mini',_href=URL('edit_language', args=(app, path, file), vars=vars))
 def editpluralsfile(path,file,vars={}):
-	return A(SPAN(T('Edit')),_class='button editbutton btn',_href=URL('edit_plurals', args=(app, path, file), vars=vars))
+	return A(SPAN(T('Edit')),_class='button editbutton btn btn-mini',_href=URL('edit_plurals', args=(app, path, file), vars=vars))
 def file_upload_form(location, anchor=None):
 	form=FORM(
 			LABEL(T("upload file:")),
@@ -92,7 +92,7 @@ def deletefile(arglist, vars={}):
 <!-- MODELS -->
 <h3 id="_models" rel="pagebookmark">
 	<span class="component" onclick="collapse('models_inner');">{{=T("Models")}}</span>
-	<a href="#models" rel="tooltip" data-placement="right" data-original-title="{{=T('The data representation, define database tables and sets')}}">
+	<a href="#models" rel="tooltip" data-placement="span3" data-original-title="{{=T('The data representation, define database tables and sets')}}">
 	{{=helpicon()}}
 	<span>{{=T("The data representation, define database tables and sets")}}</span>
 	</a><span id="models" class="hashstick">&nbsp;</span><a href="#" class="tophashlink btn btn-mini btn-warning"><span>top</span></a>
@@ -125,9 +125,10 @@ def deletefile(arglist, vars={}):
 	</ul>
 	{{pass}}
 	<div class="controls formfield">
-		<div class="row-fluid">
-			<div class="span3">{{=file_create_form('%s/models/' % app, 'models')}}</div>
-		</div>
+	  <button onclick="jQuery('#form1').slideToggle()" class="btn btn-mini">Create</button>
+	  <div id="form1" class="row-fluid" style="display:none">
+	    <div class="span3">{{=file_create_form('%s/models/' % app, 'models')}}</div>
+	  </div>
 	</div>
 </div>
 
@@ -140,7 +141,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 <!-- CONTROLLERS -->
 <h3 id="_controllers" rel="pagebookmark">
 	<span class="component" onclick="collapse('controllers_inner');">{{=T("Controllers")}}</span>
-	<a href="#controllers" rel="tooltip" data-placement="right" data-original-title="{{=T('The application logic, each URL path is mapped in one exposed function in the controller')}}">
+	<a href="#controllers" rel="tooltip" data-placement="span3" data-original-title="{{=T('The application logic, each URL path is mapped in one exposed function in the controller')}}">
 	{{=helpicon()}}
 	<span>{{=T("The application logic, each URL path is mapped in one exposed function in the controller")}}</span>
 	</a><span id="controllers" class="hashstick">&nbsp;</span><a href="#" class="tophashlink btn btn-mini btn-warning"><span>top</span></a>
@@ -172,16 +173,17 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 	</ul>
 	{{pass}}
 	<div class="controls formfield">
-		<div class="row-fluid">
-			<div class="span3">{{=file_create_form('%s/controllers/' % app, 'controllers')}}</div>
-		</div>
+	  <button onclick="jQuery('#form2').slideToggle()" class="btn btn-mini">Create</button>
+	  <div id="form2" class="row-fluid" style="display:none">
+	    <div class="span3">{{=file_create_form('%s/controllers/' % app, 'controllers')}}</div>
+	  </div>
 	</div>
 </div>
 
 <!-- VIEWS -->
 <h3 id="_views" rel="pagebookmark">
 	<span class="component" onclick="collapse('views_inner');">{{=T("Views")}}</span>
-	<a href="#views" rel="tooltip" data-placement="right" data-original-title="{{=T('The presentations layer, views are also known as templates')}}">
+	<a href="#views" rel="tooltip" data-placement="span3" data-original-title="{{=T('The presentations layer, views are also known as templates')}}">
 	{{=helpicon()}}
 	<span>{{=T("The presentations layer, views are also known as templates")}}</span>
 	</a><span id="views" class="hashstick">&nbsp;</span><a href="#" class="tophashlink btn btn-mini btn-warning"><span>top</span></a>
@@ -211,16 +213,17 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 	</ul>
 	{{pass}}
 	<div class="controls formfield">
-		<div class="row-fluid">
-			<div class="span3">{{=file_create_form('%s/views/' % app, 'views')}}</div>
-		</div>
+	  <button onclick="jQuery('#form3').slideToggle()" class="btn btn-mini">Create</button>
+	  <div id="form3" class="row-fluid" style="display:none">
+	    <div class="span3">{{=file_create_form('%s/views/' % app, 'views')}}</div>
+	  </div>
 	</div>
 </div>
 
 <!-- LANGUAGES -->
 <h3 id="_languages" rel="pagebookmark">
 	<span class="component" onclick="collapse('languages_inner');">{{=T("Languages")}}</span>
-	<a href="#languages" rel="tooltip" data-placement="right" data-original-title="{{=T('Translation strings for the application')}}">
+	<a href="#languages" rel="tooltip" data-placement="span3" data-original-title="{{=T('Translation strings for the application')}}">
 	{{=helpicon()}}
 	<span>{{=T("Translation strings for the application")}}</span>
 	</a><span id="languages" class="hashstick">&nbsp;</span><a href="#" class="tophashlink btn btn-mini btn-warning"><span>top</span></a>
@@ -274,16 +277,17 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 	</ul>
 	{{pass}}
 	<div class="controls formfield">
-		<div class="row-fluid">
-			<div class="span3">{{=file_create_form('%s/languages/' % app, 'languages', T('(something like "it-it")'))}}</div>
-		</div>
+	  <button onclick="jQuery('#form4').slideToggle()" class="btn btn-mini">Create</button>
+	  <div id="form4" class="row-fluid" style="display:none">
+	    <div class="span3">{{=file_create_form('%s/languages/' % app, 'languages', T('(something like "it-it")'))}}</div>
+	  </div>
 	</div>
 </div>
 
 <!-- STATIC -->
 <h3 id="_static" rel="pagebookmark">
 	<span class="component" onclick="collapse('static_inner');">{{=T("Static")}}</span>
-	<a href="#static" rel="tooltip" data-placement="right" data-original-title="{{=T('These files are served without processing, your images go here')}}">
+	<a href="#static" rel="tooltip" data-placement="span3" data-original-title="{{=T('These files are served without processing, your images go here')}}">
 	{{=helpicon()}}
 	<span>{{=T("These files are served without processing, your images go here")}}</span>
 	</a><span id="static" class="hashstick">&nbsp;</span><a href="#" class="tophashlink btn btn-mini btn-warning"><span>top</span></a>
@@ -328,17 +332,18 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 	</ul>
 	{{pass}}
 	<div class="controls formfield">
-		<div class="row-fluid">
-			<div class="span3">{{=file_create_form('%s/static/' % app, 'static')}}<em>{{=T('or alternatively')}}</em></div>
-			<div class="span3">{{=file_upload_form('%s/static/' % app, 'static')}}</div>
-		</div>
+	  <button onclick="jQuery('#form4').slideToggle()" class="btn btn-mini">Create/Upload</button>
+	  <div id="form4" class="row-fluid" style="display:none">
+	    <div class="span3">{{=file_create_form('%s/static/' % app, 'static')}}<em>{{=T('or alternatively')}}</em></div>
+	    <div class="span3">{{=file_upload_form('%s/static/' % app, 'static')}}</div>
+	  </div>
 	</div>
 </div>
 
 <!-- MODULES -->
 <h3 id="_modules" rel="pagebookmark">
 	<span class="component" onclick="collapse('modules_inner');">{{=T("Modules")}}</span>
-	<a href="#modules" rel="tooltip" data-placement="right" data-original-title="{{=T('Additional code for your application')}}">
+	<a href="#modules" rel="tooltip" data-placement="span3" data-original-title="{{=T('Additional code for your application')}}">
 	{{=helpicon()}}
 	<span>{{=T("Additional code for your application")}}</span>
 	</a><span id="modules" class="hashstick">&nbsp;</span><a href="#" class="tophashlink btn btn-mini btn-warning"><span>top</span></a>
@@ -363,17 +368,18 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 	</ul>
 	{{pass}}
 	<div class="controls formfield">
-		<div class="row-fluid">
-			<div class="span3">{{=file_create_form('%s/modules/' % app, 'modules')}}<em>{{=T('or alternatively')}}</em></div>
-			<div class="span3">{{=file_upload_form('%s/modules/' % app, 'modules')}}</div>
-		</div>
+	  <button onclick="jQuery('#form5').slideToggle()" class="btn btn-mini">Create/Upload</button>
+	  <div id="form5" class="row-fluid" style="display:none">
+	    <div class="span3">{{=file_create_form('%s/modules/' % app, 'modules')}}<em>{{=T('or alternatively')}}</em></div>
+	    <div class="span3">{{=file_upload_form('%s/modules/' % app, 'modules')}}</div>
+	  </div>
 	</div>
 </div>
 
 <!-- PRIVATE -->
 <h3 id="_private" rel="pagebookmark">
 	<span class="component" onclick="collapse('private_inner');">{{=T("Private files")}}</span>
-	<a href="#private" rel="tooltip" data-placement="right" data-original-title="{{=T('These files are not served, they are only available from within your app')}}">
+	<a href="#private" rel="tooltip" data-placement="span3" data-original-title="{{=T('These files are not served, they are only available from within your app')}}">
 	{{=helpicon()}}
 	<span>{{=T("These files are not served, they are only available from within your app")}}</span>
 	</a><span id="private" class="hashstick">&nbsp;</span><a href="#" class="tophashlink btn btn-mini btn-warning"><span>top</span></a>
@@ -419,17 +425,18 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 	{{pass}}
 	</ul>
 	<div class="controls formfield">
-		<div class="row-fluid">
-			<div class="span3">{{=file_create_form('%s/private/' % app, 'private')}}<em>{{=T('or alternatively')}}</em></div>
-			<div class="span3">{{=file_upload_form('%s/private/' % app, 'private')}}</div>
-		</div>
+	  <button onclick="jQuery('#form6').slideToggle()" class="btn btn-mini">Create/Upload</button>
+	  <div id="form6" class="row-fluid" style="display:none">
+	    <div class="span3">{{=file_create_form('%s/private/' % app, 'private')}}<em>{{=T('or alternatively')}}</em></div>
+	    <div class="span3">{{=file_upload_form('%s/private/' % app, 'private')}}</div>
+	  </div>
 	</div>
 </div>
 
 <!-- PLUGINS -->
 <h3 id="_plugins" rel="pagebookmark">
 	<span class="component" onclick="collapse('plugins_inner');">{{=T("Plugins")}}</span>
-	<a href="#plugins" rel="tooltip" data-placement="right" data-original-title="{{=T('To create a plugin, name a file/folder plugin_[name]')}}">
+	<a href="#plugins" rel="tooltip" data-placement="span3" data-original-title="{{=T('To create a plugin, name a file/folder plugin_[name]')}}">
 	{{=helpicon()}}
 	<span>{{=T("To create a plugin, name a file/folder plugin_[name]")}}</span>
 	</a><span id="plugins" class="hashstick">&nbsp;</span><a href="#" class="tophashlink btn btn-mini btn-warning"><span>top</span></a>
@@ -451,10 +458,12 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 	<p><strong>{{=T('There are no plugins')}}</strong></p>
 	{{pass}}
 	<div class="controls formfield">
-		<div class="row-fluid">
-			<div class="span3">{{=upload_plugin_form(app, 'plugins')}}</div>
-		</div>
-	</div>
+	  <button onclick="jQuery('#form7').slideToggle()" class="btn btn-mini">Upload</button>
+	  <div id="form7" class="row-fluid" style="display:none">
+	    <div class="row-fluid">
+	      <div class="span3">{{=upload_plugin_form(app, 'plugins')}}</div>
+	    </div>
+	  </div>
 </div>
 
 <script>

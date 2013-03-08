@@ -99,7 +99,7 @@ margin-bottom:7px;
 {
 clear:right;
 margin-top:2em;
-border-top:1px dotted;
+border-top:1px solid #d1d1d1;
 padding:0 1em;
 }
 .pwdchange>.button{margin-bottom:10px;}
@@ -188,14 +188,15 @@ vertical-align:middle;
 .celled
 {
 display:inline-block;
-padding: 4px 0 0 0;
+padding: 0 0 0 4px;
 vertical-align:top;
 margin-top:4px;
 width:700px;
 }
 .folder
 {
-border-left: 1px dotted #AAA;
+list-style-type:none;
+#border-left: 1px dotted #AAA;
 }
 .folder li
 {
@@ -819,4 +820,18 @@ background-color:#FC0;
 	{
 	width:165px;
 	}
+}
+
+h4.editableapp,
+h4.currentapp {
+  padding: 5px 0 5px 54px;
+  display: inline;
+}
+
+h4.editableapp {
+  background: #fff url(../images/folder.png) no-repeat;
+}
+
+h4.currentapp {
+  background: #fff url(../images/folder_locked.png) no-repeat;
 }

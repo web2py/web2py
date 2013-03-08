@@ -23,7 +23,7 @@ if request.vars.app or request.args:
 
 if os.path.exists('applications/examples'):
     response.menu.append(
-        (T('Help'), False, URL('examples', 'default', 'index')))
+        (T('Help'), False, URL('examples', 'default', 'examples')))
 else:
     response.menu.append((T('Help'), False, 'http://web2py.com/examples'))
 

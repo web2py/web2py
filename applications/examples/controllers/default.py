@@ -76,8 +76,7 @@ def license():
 
 
 def version():
-    return 'Version %s.%s.%s (%s) %s' % request.env.web2py_version
-
+    return 'Version '+request.env.web2py_version
 
 @cache('examples', time_expire=cache_expire)
 def examples():

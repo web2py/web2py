@@ -148,9 +148,7 @@ def check_version():
     elif platform.system().lower() in ('windows', 'win32', 'win64') and os.path.exists("web2py.exe"):
         return SPAN('You should upgrade to version %s.%s.%s' % version_number[:3])
     else:
-        return sp_button(URL('upgrade_web2py'), T('upgrade now')) \
-            + XML(' <strong class="upgrade_version">%s.%s.%s</strong>'
-                  % version_number[:3])
+        return sp_button(URL('upgrade_web2py'), T('upgrade now to %s') % version_number.split('-')[0])
 
 
 def logout():
@@ -205,14 +203,12 @@ def site():
 
     is_appname = IS_VALID_APPNAME()
     form_create = SQLFORM.factory(Field('name', requires=is_appname),
-                                  table_name='appcreate',
-                                  _class='well well-small')
+                                  table_name='appcreate')
     form_update = SQLFORM.factory(Field('name', requires=is_appname),
                                   Field('file', 'upload', uploadfield=False),
                                   Field('url'),
                                   Field('overwrite', 'boolean'),
-                                  table_name='appupdate',
-                                  _class='well well-small')
+                                  table_name='appupdate')
     form_create.process()
     form_update.process()
 
@@ -1430,7 +1426,7 @@ def errors():
                     hash2error[hash]['count'] += 1
                 except KeyError:
                     error_lines = error['traceback'].split("\n")
-                    last_line = error_lines[-2]
+                    last_line = error_lines[-2] if len(error_lines)>1 else 'unknown'
                     error_causer = os.path.split(error['layer'])[1]
                     hash2error[hash] = dict(count=1, pickel=error,
                                             causer=error_causer,

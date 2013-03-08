@@ -373,12 +373,16 @@ def check_new_version(myversion, version_URL):
         the most up-to-version available
     """
     try:
-        from urllib import urlopen
-        version = parse_version(urlopen(version_URL).read())
-    except Exception:
+        from urllib import urlopen        
+        version = urlopen(version_URL).read()
+        pversion = parse_version(version)
+        pmyversion = parse_version(myversion)
+    except Exception,e:
+        import traceback
+        print traceback.format_exc()
         return -1, myversion
 
-    if version > myversion:
+    if pversion[:3]+pversion[-6:] > pmyversion[:3]+pmyversion[-6:]:
         return True, version
     else:
         return False, version

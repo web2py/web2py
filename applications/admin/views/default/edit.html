@@ -132,7 +132,7 @@ jQuery(document).ready(function(){
   <form action="{{=URL('edit',args=filename)}}" method="post" name="editform" id="editform">
 	<div class="editor-bar-column">
 		<label>{{=T('Save file:')}}</label>
-		<a value="save" name="save" onclick="return doClickSave();" class="icon saveicon btn btn-mini" style="background-image: -webkit-linear-gradient(top,white,#E6E6E6);">
+		<a value="save" name="save" onclick="return doClickSave();" class="icon saveicon" style="background-image: -webkit-linear-gradient(top,white,#E6E6E6);">
 		{{=IMG(_src=URL('static', 'images/save_icon.png'), _alt=T('Save'))}}
 		</a>
 	</div>

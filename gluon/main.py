@@ -102,16 +102,14 @@ requests = 0    # gc timer
 # pattern used to validate client address
 regex_client = re.compile('[\w\-:]+(\.[\w\-]+)*\.?')  # ## to account for IPV6
 
-#try:
-if 1:
+try:
     version_info = open(pjoin(global_settings.gluon_parent, 'VERSION'), 'r')
-    raw_version_string = version_info.read().strip()
+    raw_version_string = version_info.read().split()[-1].strip()
     version_info.close()
-    global_settings.web2py_version = parse_version(raw_version_string)
-#except:
-#    raise RuntimeError("Cannot determine web2py version")
-
-web2py_version = global_settings.web2py_version
+    global_settings.web2py_version = raw_version_string
+    web2py_version = global_settings.web2py_version
+except:
+    raise RuntimeError("Cannot determine web2py version")
 
 try:
     import rocket
