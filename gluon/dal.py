@@ -9262,7 +9262,8 @@ class Field(Expression):
             stream = self.uploadfs.open(name, 'rb')
         else:
             # ## if file is on regular filesystem
-            stream = pjoin(file_properties['path'], name)
+            fullname = pjoin(file_properties['path'], name)
+            stream = open(fullname,'rb')
         return (filename, stream)
 
     def retrieve_file_properties(self, name, path=None):
