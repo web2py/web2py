@@ -286,9 +286,9 @@ jQuery.fn.grow_input = function() {
 function pe(ul, e) {
   var new_line = ml(ul);
   rel(ul);
-  if ($(e.target).parent().is(':visible')) {
+  if (jQuery(e.target).parent().is(':visible')) {
     //make sure we didn't delete the element before we insert after
-    new_line.insertAfter($(e.target).parent());
+    new_line.insertAfter(jQuery(e.target).parent());
   } else {
     //the line we clicked on was deleted, just add to end of list
     new_line.appendTo(ul);
@@ -299,7 +299,7 @@ function pe(ul, e) {
 function rl(ul, e) {
   if (jQuery(ul).children().length > 1) {
     //only remove if we have more than 1 item so the list is never empty
-    $(e.target).parent().remove();
+    jQuery(e.target).parent().remove();
   }
 }
 function ml(ul) {
