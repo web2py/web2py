@@ -2668,7 +2668,7 @@ class PostgreSQLAdapter(BaseAdapter):
         elif first.type.startswith('list:'):
             second = '%|'+str(second).replace('|','||').replace('%','%%')+'|%'
         op = case_sensitive and self.LIKE or self.ILIKE
-        return op(first,key)
+        return op(first,second)
 
     # GIS functions
 
@@ -3455,9 +3455,9 @@ class FireBirdAdapter(BaseAdapter):
 
     def CONTAINS(self, first, second, case_sensitive=False):
         if first.type in ('string','text'):
-            key = str(second).replace('%','%%')
+            second = str(second).replace('%','%%')
         elif first.type.startswith('list:'):
-            key = '|'+str(second).replace('|','||').replace('%','%%')+'|'
+            second = '|'+str(second).replace('|','||').replace('%','%%')+'|'
         return self.CONTAINING(first,second)
 
     def _drop(self,table,mode):
