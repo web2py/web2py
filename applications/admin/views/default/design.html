@@ -332,8 +332,8 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 	</ul>
 	{{pass}}
 	<div class="controls formfield">
-	  <button onclick="jQuery('#form4').slideToggle()" class="btn btn-mini">Create/Upload</button>
-	  <div id="form4" class="row-fluid" style="display:none">
+	  <button onclick="jQuery('#form5').slideToggle()" class="btn btn-mini">Create/Upload</button>
+	  <div id="form5" class="row-fluid" style="display:none">
 	    <div class="span3">{{=file_create_form('%s/static/' % app, 'static')}}<em>{{=T('or alternatively')}}</em></div>
 	    <div class="span3">{{=file_upload_form('%s/static/' % app, 'static')}}</div>
 	  </div>
@@ -474,7 +474,7 @@ function filter_files() {
           files=data['files'];
           message=data['message'];
           for(var i=0; i<files.length; i++)
-            jQuery('li#'+files[i].replace(/\//g,'__').replace('.','__')).slideDown();
+            jQuery('li#_'+files[i].replace(/\//g,'__').replace('.','__')).slideDown();
           jQuery('.flash').html(message).slideDown();
           });
       } else {
