@@ -4454,7 +4454,7 @@ class Service(object):
         except BaseException:
             etype, eval, etb = sys.exc_info()
             code = -32099
-            data = '%s: %s\n' % (etype.__name__, eval) + str(current.request.is_local and traceback.format_tb(etb))
+            data = '%s: %s\n' % (etype.__name__, eval) + str(request.is_local and traceback.format_tb(etb))
             return return_error(id, code, data=data)
         except:
             etype, eval, etb = sys.exc_info()
