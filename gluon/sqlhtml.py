@@ -461,8 +461,8 @@ class CheckboxesWidget(OptionsWidget):
         if opts:
             opts.append(
                 INPUT(requires=attr.get('requires', None),
-                      _style="display:none;", 
-                      _disabled="disabled", 
+                      _style="display:none;",
+                      _disabled="disabled",
                       _name=field.name,
                       hideerror=False))
         return parent(*opts, **attr)
@@ -542,7 +542,7 @@ class UploadWidget(FormWidget):
 
             requires = attr["requires"]
             if requires == [] or isinstance(requires, IS_EMPTY_OR):
-                inp = DIV(inp, 
+                inp = DIV(inp,
                           SPAN('[',
                                A(current.T(
                                 UploadWidget.GENERIC_DESCRIPTION), _href=url),
@@ -553,13 +553,13 @@ class UploadWidget(FormWidget):
                                LABEL(current.T(cls.DELETE_FILE),
                                      _for=field.name + cls.ID_DELETE_SUFFIX,
                                      _style='display:inline'),
-                               ']', _style='white-space:nowrap'), 
+                               ']', _style='white-space:nowrap'),
                           br, image)
             else:
-                inp = DIV(inp, 
+                inp = DIV(inp,
                           SPAN('[',
                                A(cls.GENERIC_DESCRIPTION, _href=url),
-                               ']', _style='white-space:nowrap'), 
+                               ']', _style='white-space:nowrap'),
                           br, image)
         return inp
 
@@ -1180,7 +1180,7 @@ class SQLFORM(FORM):
                  widget,
                  col3.get(self.FIELDKEY_DELETE_RECORD, '')))
             self.custom.delete = self.custom.deletable = widget
-            
+
 
         # when writable, add submit button
         self.custom.submit = ''
@@ -1654,7 +1654,7 @@ class SQLFORM(FORM):
                     value_input = SQLFORM.widgets.date.widget(field,field.default,_id=_id)
                 elif field.type == 'datetime':
                     value_input = SQLFORM.widgets.datetime.widget(field,field.default,_id=_id)
-                elif (field.type.startswith('reference ') or 
+                elif (field.type.startswith('reference ') or
                       field.type.startswith('list:reference ')) and \
                       hasattr(field.requires,'options'):
                     value_input = SELECT(
@@ -1669,7 +1669,7 @@ class SQLFORM(FORM):
                 else:
                     value_input = INPUT(
                         _type='text', _id=_id, _class=field.type)
-                        
+
                 new_button = INPUT(
                     _type="button", _value=T('New'), _class="btn",
                     _onclick="%s_build_query('new','%s')" % (prefix,field))
@@ -1760,7 +1760,8 @@ class SQLFORM(FORM):
              editargs={},
              viewargs={},
              buttons_placement = 'right',
-             links_placement = 'right'
+             links_placement = 'right',
+             noconfirm=False
              ):
 
         # jQuery UI ThemeRoller classes (empty if ui is disabled)
@@ -1849,7 +1850,7 @@ class SQLFORM(FORM):
 
         def gridbutton(buttonclass='buttonadd', buttontext=T('Add'),
                        buttonurl=url(args=[]), callback=None,
-                       delete=None, trap=True):
+                       delete=None, trap=True, noconfirm=None):
             if showbuttontext:
                 return A(SPAN(_class=ui.get(buttonclass)),
                          SPAN(T(buttontext), _title=buttontext,
@@ -1857,12 +1858,14 @@ class SQLFORM(FORM):
                          _href=buttonurl,
                          callback=callback,
                          delete=delete,
+                         noconfirm=noconfirm,
                          _class=trap_class(ui.get('button'), trap))
             else:
                 return A(SPAN(_class=ui.get(buttonclass)),
                          _href=buttonurl,
                          callback=callback,
                          delete=delete,
+                         noconfirm=noconfirm,
                          _title=buttontext,
                          _class=trap_class(ui.get('buttontext'), trap))
 
@@ -2341,6 +2344,7 @@ class SQLFORM(FORM):
                             'buttondelete', 'Delete',
                             url(args=['delete', tablename, id]),
                             callback=url(args=['delete', tablename, id]),
+                            noconfirm=noconfirm,
                             delete='tr'))
                     if buttons_placement in ['right', 'both']:
                         trcols.append(row_buttons)
@@ -2994,4 +2998,3 @@ class ExporterJSON(ExportClass):
             return self.rows.as_json()
         else:
             return 'null'
-
