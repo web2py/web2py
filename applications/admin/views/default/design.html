@@ -92,7 +92,7 @@ def deletefile(arglist, vars={}):
 <!-- MODELS -->
 <h3 id="_models" rel="pagebookmark">
 	<span class="component" onclick="collapse('models_inner');">{{=T("Models")}}</span>
-	<a href="#models" rel="tooltip" data-placement="span3" data-original-title="{{=T('The data representation, define database tables and sets')}}">
+	<a href="#models" rel="tooltip" data-placement="right" data-original-title="{{=T('The data representation, define database tables and sets')}}">
 	{{=helpicon()}}
 	<span>{{=T("The data representation, define database tables and sets")}}</span>
 	</a><span id="models" class="hashstick">&nbsp;</span><a href="#" class="tophashlink btn btn-mini btn-warning"><span>top</span></a>
@@ -141,7 +141,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 <!-- CONTROLLERS -->
 <h3 id="_controllers" rel="pagebookmark">
 	<span class="component" onclick="collapse('controllers_inner');">{{=T("Controllers")}}</span>
-	<a href="#controllers" rel="tooltip" data-placement="span3" data-original-title="{{=T('The application logic, each URL path is mapped in one exposed function in the controller')}}">
+	<a href="#controllers" rel="tooltip" data-placement="right" data-original-title="{{=T('The application logic, each URL path is mapped in one exposed function in the controller')}}">
 	{{=helpicon()}}
 	<span>{{=T("The application logic, each URL path is mapped in one exposed function in the controller")}}</span>
 	</a><span id="controllers" class="hashstick">&nbsp;</span><a href="#" class="tophashlink btn btn-mini btn-warning"><span>top</span></a>
@@ -183,7 +183,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 <!-- VIEWS -->
 <h3 id="_views" rel="pagebookmark">
 	<span class="component" onclick="collapse('views_inner');">{{=T("Views")}}</span>
-	<a href="#views" rel="tooltip" data-placement="span3" data-original-title="{{=T('The presentations layer, views are also known as templates')}}">
+	<a href="#views" rel="tooltip" data-placement="right" data-original-title="{{=T('The presentations layer, views are also known as templates')}}">
 	{{=helpicon()}}
 	<span>{{=T("The presentations layer, views are also known as templates")}}</span>
 	</a><span id="views" class="hashstick">&nbsp;</span><a href="#" class="tophashlink btn btn-mini btn-warning"><span>top</span></a>
@@ -223,7 +223,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 <!-- LANGUAGES -->
 <h3 id="_languages" rel="pagebookmark">
 	<span class="component" onclick="collapse('languages_inner');">{{=T("Languages")}}</span>
-	<a href="#languages" rel="tooltip" data-placement="span3" data-original-title="{{=T('Translation strings for the application')}}">
+	<a href="#languages" rel="tooltip" data-placement="right" data-original-title="{{=T('Translation strings for the application')}}">
 	{{=helpicon()}}
 	<span>{{=T("Translation strings for the application")}}</span>
 	</a><span id="languages" class="hashstick">&nbsp;</span><a href="#" class="tophashlink btn btn-mini btn-warning"><span>top</span></a>
@@ -287,7 +287,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 <!-- STATIC -->
 <h3 id="_static" rel="pagebookmark">
 	<span class="component" onclick="collapse('static_inner');">{{=T("Static")}}</span>
-	<a href="#static" rel="tooltip" data-placement="span3" data-original-title="{{=T('These files are served without processing, your images go here')}}">
+	<a href="#static" rel="tooltip" data-placement="right" data-original-title="{{=T('These files are served without processing, your images go here')}}">
 	{{=helpicon()}}
 	<span>{{=T("These files are served without processing, your images go here")}}</span>
 	</a><span id="static" class="hashstick">&nbsp;</span><a href="#" class="tophashlink btn btn-mini btn-warning"><span>top</span></a>
@@ -343,7 +343,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 <!-- MODULES -->
 <h3 id="_modules" rel="pagebookmark">
 	<span class="component" onclick="collapse('modules_inner');">{{=T("Modules")}}</span>
-	<a href="#modules" rel="tooltip" data-placement="span3" data-original-title="{{=T('Additional code for your application')}}">
+	<a href="#modules" rel="tooltip" data-placement="right" data-original-title="{{=T('Additional code for your application')}}">
 	{{=helpicon()}}
 	<span>{{=T("Additional code for your application")}}</span>
 	</a><span id="modules" class="hashstick">&nbsp;</span><a href="#" class="tophashlink btn btn-mini btn-warning"><span>top</span></a>
@@ -379,7 +379,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 <!-- PRIVATE -->
 <h3 id="_private" rel="pagebookmark">
 	<span class="component" onclick="collapse('private_inner');">{{=T("Private files")}}</span>
-	<a href="#private" rel="tooltip" data-placement="span3" data-original-title="{{=T('These files are not served, they are only available from within your app')}}">
+	<a href="#private" rel="tooltip" data-placement="right" data-original-title="{{=T('These files are not served, they are only available from within your app')}}">
 	{{=helpicon()}}
 	<span>{{=T("These files are not served, they are only available from within your app")}}</span>
 	</a><span id="private" class="hashstick">&nbsp;</span><a href="#" class="tophashlink btn btn-mini btn-warning"><span>top</span></a>
@@ -436,7 +436,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 <!-- PLUGINS -->
 <h3 id="_plugins" rel="pagebookmark">
 	<span class="component" onclick="collapse('plugins_inner');">{{=T("Plugins")}}</span>
-	<a href="#plugins" rel="tooltip" data-placement="span3" data-original-title="{{=T('To create a plugin, name a file/folder plugin_[name]')}}">
+	<a href="#plugins" rel="tooltip" data-placement="right" data-original-title="{{=T('To create a plugin, name a file/folder plugin_[name]')}}">
 	{{=helpicon()}}
 	<span>{{=T("To create a plugin, name a file/folder plugin_[name]")}}</span>
 	</a><span id="plugins" class="hashstick">&nbsp;</span><a href="#" class="tophashlink btn btn-mini btn-warning"><span>top</span></a>
