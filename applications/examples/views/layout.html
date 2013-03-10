@@ -122,12 +122,12 @@
       <div class="sixteen columns">
         {{block footer}} <!-- this is default footer -->
         <div class="footer-content" >
-          {{=T('Copyright')}} &#169; {{=request.now.year}}
-	  - User communities in <a href="https://groups.google.com/forum/?fromgroups#!forum/web2py" target="_blank">English<a>, <a href="https://groups.google.com/forum/?fromgroups#!forum/web2py-fr" target="_blank">French</a>, <a href="https://groups.google.com/forum/?fromgroups#!forum/web2py-japan" target="_blank">Japanese</a>, <a href="https://groups.google.com/forum/?fromgroups#!forum/web2py-users-brazil" target="_blank">Portuguese</a>, and <a href="https://groups.google.com/forum/?fromgroups#!forum/web2py-usuarios" target="_blank">Spanish</a>.
           <div style="float: right;">
-            <a href="http://www.web2py.com/" style="float: left; padding-right: 6px;">
-            <img style="padding-bottom: 0;" src="{{=URL('static','images/poweredby.png')}}"/>
-            </a>
+	    User communities in <a href="https://groups.google.com/forum/?fromgroups#!forum/web2py" target="_blank">English<a>, <a href="https://groups.google.com/forum/?fromgroups#!forum/web2py-fr" target="_blank">French</a>, <a href="https://groups.google.com/forum/?fromgroups#!forum/web2py-japan" target="_blank">Japanese</a>, <a href="https://groups.google.com/forum/?fromgroups#!forum/web2py-users-brazil" target="_blank">Portuguese</a>, and <a href="https://groups.google.com/forum/?fromgroups#!forum/web2py-usuarios" target="_blank">Spanish</a>.
+		<br/>
+		{{=T('Copyright')}} &#169; {{=request.now.year}} - 
+		Hosted by <a href="http://pyhtonanywhere.com">PythonAnywhere</a>
+		<a href="http://www.web2py.com/" style="float: left; padding-right: 6px;"><img style="padding-bottom: 0;" src="{{=URL('static','images/poweredby.png')}}"/></a>
           </div>
         </div>
         {{end}}	
@@ -140,5 +140,8 @@
 	<script> DD_belatedPNG.fix('img, .png_bg'); //fix any <img> or .png_bg background-images </script>
 	<![endif]-->
   {{if response.google_analytics_id:}}<script>/* http://mathiasbynens.be/notes/async-analytics-snippet */ var _gaq=[['_setAccount','{{=response.google_analytics_id}}'],['_trackPageview']];(function(d,t){var g=d.createElement(t),s=d.getElementsByTagName(t)[0];g.src='//www.google-analytics.com/ga.js';s.parentNode.insertBefore(g,s)}(document,'script')) </script>{{pass}}
+  <a style="position:fixed;bottom:0;left:0;z-index:1000" href="https://groups.google.com/forum/?fromgroups#!forum/web2py" target="_blank">
+    <img src="{{=URL('static','images/questions.png')}}" />
+  </a>
 </body>
 </html>
