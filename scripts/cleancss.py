@@ -26,7 +26,7 @@ data = re.compile('\*/\s+/\*').sub(' ', data)
 data = re.compile('[ ]+\n').sub('\n', data)
 data = re.compile('\n\s*/[\*]+(?P<a>.*?)[\*]+/', re.DOTALL).sub(
     '\n/*\g<a>*/\n', data)
-data = re.compile('[ \t]+(?P<a>\S.+?){').sub('\g<a>{', data)
+data = re.compile('[ \t]+(?P<a>\S.+?){').sub(' \g<a>{', data)
 data = data.replace('}', '}\n')
 
 print data

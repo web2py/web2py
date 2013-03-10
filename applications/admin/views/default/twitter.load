@@ -27,8 +27,17 @@ Tweet attributes
 """
 }}
 
+{{import re}}
+{{hashtag = re.compile('([#@])(\w+)')}}
+{{link = re.compile('(?!<")https?\:\/\/[\w\./?&]+')}}
+<table class="twitter">
 {{ for t in tweets: }}
-  {{ =DIV(H5(t["from_user_name"])) }}
-  {{ =DIV(t["text"]) }}
-  {{ =BR() }}
+   <tr class="tweet">
+   <td><img src="{{=t['profile_image_url_https']}}"/></td>
+   <td>
+       <a href="http://twitter.com/{{=t['from_user']}}">{{=t["from_user_name"]}}</a>:
+              {{=XML(hashtag.sub('<a href="http://twitter.com/\\g<2>">\\g<1>\\g<2></a>',link.sub('<a href="\\g<0>">\\g<0></a>',t["text"])),sanitize=True)}}
+   </td>
+  </tr>
 {{ pass }}
+</table>

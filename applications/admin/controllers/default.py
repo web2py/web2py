@@ -1663,7 +1663,7 @@ def twitter():
             d = dict()
             for e in data:
                 d[e["id"]] = e
-            r = reversed(sorted(d))
+                r = reversed(sorted(d))
             return dict(tweets=[d[k] for k in r])
         else:
             return 'disabled'
