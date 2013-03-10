@@ -22,6 +22,7 @@ from settings import global_settings
 
 logger = logging.getLogger("web2py.cron")
 _cron_stopping = False
+_cron_subprocs = []
 
 
 def absolute_path_link(path):
@@ -42,7 +43,8 @@ def stopcron():
     "graceful shutdown of cron"
     global _cron_stopping
     _cron_stopping = True
-
+    while _cron_subprocs:
+        _cron_subprocs.pop().terminate()
 
 class extcron(threading.Thread):
 
@@ -232,6 +234,7 @@ class cronlauncher(threading.Thread):
 
     def run(self):
         import subprocess
+        global _cron_subprocs
         if isinstance(self.cmd, (list, tuple)):
             cmd = self.cmd
         else:
@@ -241,6 +244,7 @@ class cronlauncher(threading.Thread):
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE,
                                 shell=self.shell)
+        _cron_subprocs.append(proc)
         (stdoutdata, stderrdata) = proc.communicate()
         if proc.returncode != 0:
             logger.warning(

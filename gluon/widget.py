@@ -435,6 +435,10 @@ class web2pyDialog(object):
             except:
                 pass
             try:
+                newcron.stopcron()
+            except:
+                pass
+            try:
                 self.server.stop()
             except:
                 pass
