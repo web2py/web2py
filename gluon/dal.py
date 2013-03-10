@@ -4464,7 +4464,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                  adapter_args={}, do_connect=True, after_connection=None):
         self.types.update({
                 'boolean': gae.BooleanProperty,
-                'string': (lambda: gae.StringProperty(multiline=True)),
+                'string': (lambda **kwargs: gae.StringProperty(multiline=True, **kwargs)),
                 'text': gae.TextProperty,
                 'json': gae.TextProperty,
                 'password': gae.StringProperty,
@@ -4480,9 +4480,9 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                 'datetime': gae.DateTimeProperty,
                 'id': None,
                 'reference': gae.IntegerProperty,
-                'list:string': (lambda: gae.StringListProperty(default=None)),
-                'list:integer': (lambda: gae.ListProperty(int,default=None)),
-                'list:reference': (lambda: gae.ListProperty(int,default=None)),
+                'list:string': (lambda **kwargs: gae.StringListProperty(default=None, **kwargs)),
+                'list:integer': (lambda **kwargs: gae.ListProperty(int,default=None, **kwargs)),
+                'list:reference': (lambda **kwargs: gae.ListProperty(int,default=None, **kwargs)),
                 })
         self.db = db
         self.uri = uri
