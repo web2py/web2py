@@ -171,19 +171,29 @@ class IS_MATCH(Validator):
     """
 
     def __init__(self, expression, error_message='invalid expression',
-                 strict=False, search=False, extract=False):
+                 strict=False, search=False, extract=False,
+                 unicode=False):
         if strict or not search:
             if not expression.startswith('^'):
                 expression = '^(%s)' % expression
         if strict:
             if not expression.endswith('$'):
                 expression = '(%s)$' % expression
-        self.regex = re.compile(expression)
+        if unicode:
+            if not isinstance(expression,unicode):
+                expression = expression.decode('utf8')
+            self.regex = re.compile(expression,re.UNICODE)
+        else:
+            self.regex = re.compile(expression)
         self.error_message = error_message
         self.extract = extract
+        self.unicode = unicode
 
     def __call__(self, value):
-        match = self.regex.search(value)
+        if self.unicode and not isinstance(value,unicode):
+            match = self.regex.search(str(value).encode('utf8'))
+        else:
+            match = self.regex.search(str(value))
         if match is not None:
             return (self.extract and match.group() or value, None)
         return (value, translate(self.error_message))
