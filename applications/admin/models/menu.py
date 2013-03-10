@@ -23,9 +23,9 @@ if request.vars.app or request.args:
 
 if os.path.exists('applications/examples'):
     response.menu.append(
-        (T('Help'), False, URL('examples', 'default', 'examples')))
+        (T('Help'), False, URL('examples', 'default', 'documentation')))
 else:
-    response.menu.append((T('Help'), False, 'http://web2py.com/examples'))
+    response.menu.append((T('Help'), False, 'http://web2py.com/examples/default/documentation'))
 
 if not session.authorized:
     response.menu = [(T('Login'), True, URL('site'))]
