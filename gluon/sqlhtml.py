@@ -1817,7 +1817,7 @@ class SQLFORM(FORM):
 
         def url(**b):
             b['args'] = args + b.get('args', [])
-            localvars = request.vars.copy()
+            localvars = request.get_vars.copy()
             localvars.update(b.get('vars', {}))
             b['vars'] = localvars
             b['hash_vars'] = False
@@ -1826,7 +1826,7 @@ class SQLFORM(FORM):
 
         def url2(**b):
             b['args'] = request.args + b.get('args', [])
-            localvars = request.vars.copy()
+            localvars = request.get_vars.copy()
             localvars.update(b.get('vars', {}))
             b['vars'] = localvars
             b['hash_vars'] = False
@@ -2059,7 +2059,8 @@ class SQLFORM(FORM):
         elif not request.vars.records:
             request.vars.records = []
 
-        session['_web2py_grid_referrer_' + formname] = url2(vars=request.vars)
+        session['_web2py_grid_referrer_' + formname] = \
+            url2(vars=request.get_vars)
         console = DIV(_class='web2py_console %(header)s %(cornertop)s' % ui)
         error = None
         if create:
