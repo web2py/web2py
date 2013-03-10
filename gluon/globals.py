@@ -404,7 +404,7 @@ class Response(Storage):
         except AttributeError:
             raise HTTP(404)
         try:
-            (filename, stream) = field.retrieve(name)
+            (filename, stream) = field.retrieve(name,nameonly=True)
         except IOError:
             raise HTTP(404)
         headers = self.headers

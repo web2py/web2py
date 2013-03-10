@@ -9235,7 +9235,11 @@ class Field(Expression):
             dest_file.close()
         return newfilename
 
-    def retrieve(self, name, path=None):
+    def retrieve(self, name, path=None, nameonly=False):
+        """
+        if nameonly==True return (filename, fullfilename) instead of 
+        (filename, stream)
+        """
         self_uploadfield = self.uploadfield
         if self.custom_retrieve:
             return self.custom_retrieve(name, path)
@@ -9265,7 +9269,10 @@ class Field(Expression):
             # ## if file is on regular filesystem
             # this is intentially a sting with filename and not a stream
             # this propagates and allows stream_file_or_304_or_206 to be called
-            stream = pjoin(file_properties['path'], name)
+            fullname = pjoin(file_properties['path'],name)
+            if nameonly:
+                return (filename, stream)                             
+            stream = open(fullname,'rb')
         return (filename, stream)
 
     def retrieve_file_properties(self, name, path=None):
