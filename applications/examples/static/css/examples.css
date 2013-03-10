@@ -25,8 +25,6 @@ a.button {color: #658883}
 .sf-menu li, .sf-menu li a { border-radius: 5px;}
 
 .wrapper { 
-    background: url('../images/back-02.png') repeat-x; 
-    padding-top:10px;
 }
 h1 { font-size: 32px }
 h2 { font-size: 24px }
@@ -44,6 +42,10 @@ ul { list-style: circle outside; padding-left: 30px;}
     margin-bottom: 5px; 
 }
 
+.header {
+    background: url('../images/stripes.png') repeat-y; 
+    padding-top:10px;
+}
 .header h5 {
 	float: left;
 }

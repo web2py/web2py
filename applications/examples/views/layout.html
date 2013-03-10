@@ -75,20 +75,15 @@
         </div>
         
         <div class="sixteen columns statusbar">
-	  	{{block statusbar}}
-	  	{{is_mobile=request.user_agent().is_mobile}}
-          	<div id="menu" class="clearfix">{{=MENU(response.menu,_class='mobile-menu' if is_mobile else 'sf-menu',mobile=is_mobile)}}
+	  {{block statusbar}}
+	  {{is_mobile=request.user_agent().is_mobile}}
+          <div id="menu" class="clearfix">{{=MENU(response.menu,_class='mobile-menu' if is_mobile else 'sf-menu',mobile=is_mobile)}}
 	    {{end}}
-            <!-- AddToAny BEGIN -->
-            <div style="float:right;padding-top:6px;" class="a2a_kit a2a_default_style">
-            <a class="a2a_dd" href="http://www.addtoany.com/share_save">Share</a></div>
-            <script type="text/javascript" src="http://static.addtoany.com/menu/page.js"></script>
-            <!-- AddToAny END -->
-        	</div>
-		</div>
-		<div class="sixteen columns announce">
-	    	<a href="http://www.infoworld.com/slideshow/24605/infoworlds-2012-technology-of-the-year-award-winners-183313#slide23"target="_blank">InfoWorld's 2012 Technology of the Year Award Winner</a>
-		</div>
+          </div>
+	</div>
+	<div class="sixteen columns announce">
+	  <a href="http://www.infoworld.com/slideshow/24605/infoworlds-2012-technology-of-the-year-award-winners-183313#slide23"target="_blank">InfoWorld's 2012 Technology of the Year Award Winner</a>
+	</div>
       </div>
     </div>
     <div class="main">
@@ -118,7 +113,7 @@
   </div><!-- wrapper -->
 
   <div class="footer">
-    <div class="container header">    
+    <div class="container">    
       <div class="sixteen columns">
         {{block footer}} <!-- this is default footer -->
         <div class="footer-content" >
