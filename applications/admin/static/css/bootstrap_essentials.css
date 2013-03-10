@@ -344,6 +344,8 @@ h4.editableapp { background: #fff url(../images/folder.png) no-repeat; }
 
 h4.currentapp { background: #fff url(../images/folder_locked.png) no-repeat; }
 
+.flash { position:fixed; width:50%; top:49px; left:25%; right:25%; cursor:default; text-align:center; z-index:5620; }
+
 table.twitter{ background-color: transparent; }
 table.twitter tr td {vertical-align: top; padding: 5px; }
 table.twitter tr { border-bottom: 1px solid #a0a0a0; }
