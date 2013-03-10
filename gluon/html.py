@@ -887,9 +887,8 @@ class DIV(XmlComponent):
 
         # get the attributes for this component
         # (they start with '_', others may have special meanings)
-        fa = ''
-        for key in sorted(self.attributes):
-            value = self[key]
+        attr = []
+        for key, value in self.attributes.iteritems():
             if key[:1] != '_':
                 continue
             name = key[1:]
@@ -897,8 +896,16 @@ class DIV(XmlComponent):
                 value = name
             elif value is False or value is None:
                 continue
+            attr.append((name, value))
+        data = self.attributes.get('data',{})
+        for key, value in data.iteritems():
+            name = 'data-' + key
+            value = data[key]
+            attr.append((name,value))
+        attr.sort()
+        fa = ''
+        for name,value in attr:
             fa += ' %s="%s"' % (name, xmlescape(value, True))
-
         # get the xml for the inner components
         co = join([xmlescape(component) for component in
                    self.components])
