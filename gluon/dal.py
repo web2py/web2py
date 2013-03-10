@@ -3920,7 +3920,7 @@ class IngresAdapter(BaseAdapter):
         self.db_codec = db_codec
         self._after_connection = after_connection
         self.find_or_make_work_folder()
-        connstr = self._uri.split(':', 1)[1]
+        connstr = uri.split(':', 1)[1]
         # Simple URI processing
         connstr = connstr.lstrip()
         while connstr.startswith('/'):

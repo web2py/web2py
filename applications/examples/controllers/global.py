@@ -5,6 +5,8 @@ response.menu = [['home', False, '/%s/default/index'
                  '/%s/global/vars' % request.application]]
 
 def get(args):
+    if args[0].startswith('__'):
+        return None
     try:
         obj = globals(),get(args[0])
         for k in range(1,len(args)):        
