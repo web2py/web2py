@@ -68,6 +68,7 @@ a2enmod proxy
 a2enmod proxy_http
 a2enmod headers
 a2enmod expires
+a2enmod wsgi
 mkdir /etc/apache2/ssl
 
 echo "creating a self signed certificate"
