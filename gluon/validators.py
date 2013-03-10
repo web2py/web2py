@@ -191,7 +191,7 @@ class IS_MATCH(Validator):
 
     def __call__(self, value):
         if self.unicode and not isinstance(value,unicode):
-            match = self.regex.search(str(value).encode('utf8'))
+            match = self.regex.search(str(value).decode('utf8'))
         else:
             match = self.regex.search(str(value))
         if match is not None:
