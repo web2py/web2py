@@ -4405,9 +4405,9 @@ class Service(object):
 
         
             
+        request = current.request
+        response = current.response
         if not data:
-            request = current.request
-            response = current.response
             response.headers['Content-Type'] = 'application/json; charset=utf-8'
             try:
                 data = json_parser.loads(request.body.read())
