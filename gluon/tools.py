@@ -1755,7 +1755,7 @@ class Auth(object):
                 self.add_membership(self.settings.everybody_group_id, user_id)
         return user
 
-    def basic(self):
+    def basic(self, basic_auth_realm=False):
         """
         perform basic login.
         reads current.request.env.http_authorization
@@ -1764,10 +1764,25 @@ class Auth(object):
         if not self.settings.allow_basic_login:
             return (False, False, False)
         basic = current.request.env.http_authorization
+        if basic_auth_realm:
+            import types
+            if isinstance(basic_auth_realm, types.FunctionType):
+                basic_auth_realm = basic_auth_auth()
+            elif isinstance(basic_auth_realm, (unicode, str)):
+                basic_realm = unicode(basic_auth_realm)
+            elif basic_auth_realm is True:
+                basic_realm = u'' + current.request.application
+            http_401 = HTTP(401, u'Not Authorized', 
+                       **{u'WWW-Authenticate': u'Basic realm="' + basic_realm + '"'})
         if not basic or not basic[:6].lower() == 'basic ':
+            if basic_auth_realm:
+                raise http_401
             return (True, False, False)
         (username, password) = base64.b64decode(basic[6:]).split(':')
-        return (True, True, self.login_bare(username, password))
+        is_valid_user = self.login_bare(username, password)
+        if not is_valid_user and basic_auth_realm:
+            raise http_401
+        return (True, True, is_valid_user)
 
     def login_user(self, user):
         """
