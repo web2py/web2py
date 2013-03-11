@@ -9271,7 +9271,7 @@ class Field(Expression):
             # this propagates and allows stream_file_or_304_or_206 to be called
             fullname = pjoin(file_properties['path'],name)
             if nameonly:
-                return (filename, stream)                             
+                return (filename, fullname)
             stream = open(fullname,'rb')
         return (filename, stream)
 
