@@ -2463,6 +2463,16 @@ class SQLFORM(FORM):
         if constraints is None:
             constraints = {}
         field = None
+        name = None
+        def format(table,row):
+            if not row:
+                return 'Unknown'
+            elif isinstance(table._format,str):
+                return table._format % row
+            elif callable(table._format):
+                return table._format(row)
+            else:
+                return '#'+str(row.id)
         try:
             nargs = len(args) + 1
             previous_tablename, previous_fieldname, previous_id = \
@@ -2489,14 +2499,7 @@ class SQLFORM(FORM):
                             raise HTTP(400)
                     previous_tablename, previous_fieldname, previous_id = \
                         tablename, fieldname, id
-                    try:
-                        format = db[referee]._format
-                        if callable(format):
-                            name = format(record)
-                        else:
-                            name = format % record
-                    except TypeError:
-                        name = id
+                    name = format(db[referee],record)
                     breadcrumbs.append(
                         LI(A(T(db[referee]._plural),
                              _class=trap_class(),
@@ -2558,13 +2561,27 @@ class SQLFORM(FORM):
         grid = SQLFORM.grid(query, args=request.args[:nargs], links=links,
                             links_in_grid=links_in_grid,
                             user_signature=user_signature, **kwargs)
+
         if isinstance(grid, DIV):
-            header = table._plural + (field and ' for ' + field.label or '')
-            breadcrumbs.append(LI(A(T(header), _class=trap_class(),
-                                    _href=url()), _class='active w2p_grid_breadcrumb_elem'))
+            header = table._plural
+            next = grid.create_form or grid.update_form or grid.view_form
+            breadcrumbs.append(LI(
+                    A(T(header), _class=trap_class(),_href=url()), 
+                    SPAN(divider, _class='divider') if next else '',
+                    _class='active w2p_grid_breadcrumb_elem'))
+            if grid.create_form:
+                header = T('New %s' % table._singular)
+            elif grid.update_form:
+                header = T('Edit %s' % format(table,grid.update_form.record))
+            elif grid.view_form:
+                header = T('View %s' % format(table,grid.view_form.record))
+            if next:
+                breadcrumbs.append(LI(
+                            A(T(header), _class=trap_class(),_href=url()), 
+                            _class='active w2p_grid_breadcrumb_elem'))
             grid.insert(
                 0, DIV(UL(*breadcrumbs, **{'_class': breadcrumbs_class}),
-                              _class='web2py_breadcrumbs'))
+                       _class='web2py_breadcrumbs'))
         return grid
 
 
