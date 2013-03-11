@@ -1784,7 +1784,7 @@ class Auth(object):
             elif basic_auth_realm is True:
                 basic_realm = u'' + current.request.application
             http_401 = HTTP(401, u'Not Authorized', 
-                       **{u'WWW-Authenticate': u'Basic realm="' + basic_realm + '"'})
+                       **{'WWW-Authenticate': u'Basic realm="' + basic_realm + '"'})
         if not basic or not basic[:6].lower() == 'basic ':
             if basic_auth_realm:
                 raise http_401
