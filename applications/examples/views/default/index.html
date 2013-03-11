@@ -1,4 +1,3 @@
-{{right_sidebar_enabled=True}}
 {{extend 'layout.html'}}
 {{
 import random
@@ -14,73 +13,70 @@ quotes = [
 random.shuffle(quotes)
 }}
 
-<table width="100%">
-  <tr>
-    <td>
-      <a href="http://web2py.com/book">
-	<img src="{{=URL('static','images/book-5th.png')}}" />
-      </a>
-    </td>
-    <td>
-      <a href="http://link.packtpub.com/SUlnrN">
-	<img src="{{=URL('static','images/book-recipes.png')}}" />
-      </a>
-    </td>
-    <td>
-      <a href="http://www.youtube.com/playlist?list=PL5E2E223FE3777851">
-	<img src="{{=URL('static','images/videos.png')}}" />
-      </a>
-    </td>
-  </tr>
-</table>
-
-
-<h3>WEB2PY<sup>TM</sup> WEB FRAMEWORK</h3>
-<p>Free open source full-stack framework for rapid development of fast, scalable, <a href="http://www.web2py.com/book/default/chapter/01#security" target="_blank">secure</a> and portable database-driven web-based applications. Written and programmable in <a href="http://www.python.org" target="_blank">Python</a>. <a href="http://www.gnu.org/licenses/lgpl.html">LGPLv3 License</a>.
-Current version: <a href="{{=URL('download')}}">{{=request.env.web2py_version}}</strong></p>
-
-{{block extra}}
-<div class="container aboutW2P">
-  <div class="sixteen columns">
-    <div class="one-third column alpha">
-      <h3><a href="{{=URL('what')}}">BATTERIES INCLUDED</a></h3>
+<div class="row-fluid">
+  <div class="span12">
+    <div class="span8">
+      <table width="100%">
+	<tr>
+	  <td>
+	    <a href="http://web2py.com/book">
+	      <img src="{{=URL('static','images/book-5th.png')}}" />
+	    </a>
+	  </td>
+	  <td>
+	    <a href="http://link.packtpub.com/SUlnrN">
+	      <img src="{{=URL('static','images/book-recipes.png')}}" />
+	    </a>
+	  </td>
+	  <td>
+	    <a href="http://www.youtube.com/playlist?list=PL5E2E223FE3777851">
+	      <img src="{{=URL('static','images/videos.png')}}" />
+	    </a>
+	  </td>
+	</tr>
+      </table>
+      <h3>web2py<sup>TM</sup> Web Framework</h3>
+      <p>Free open source full-stack framework for rapid development of fast, scalable, <a href="http://www.web2py.com/book/default/chapter/01#security" target="_blank">secure</a> and portable database-driven web-based applications. Written and programmable in <a href="http://www.python.org" target="_blank">Python</a>. <a href="http://www.gnu.org/licenses/lgpl.html">LGPLv3 License</a>.</p>
+      <p>Current version: <a href="{{=URL('download')}}">{{=request.env.web2py_version}}</p>
+    </div>
+    <div class="span4">
+      <img class="scale-with-grid centered" src="{{=URL('static','images/tag-cloud-color-small.png')}}" width="300px"/><br/>
+      <a class="btn" href="{{=URL('download')}}" style="width:90%">Download Now</a><br/>
+      <a class="btn" href="http://web2py.com/demo_admin" style="width:90%">Online Demo</a><br/>
+      <a class="btn" href="http://web2py.com/poweredby" style="width:90%">Sites Powereb by web2py</a><br/>
+    </div>
+  </div>
+</div>
+<div class="row-fluid">
+  <div class="span12">
+    <div class="span4">
+      <h3><a href="{{=URL('what')}}">Batteries Included</a></h3>
       <p>Everything you need in one package including fast multi-threaded web server, SQL database and web-based interface. No third party dependencies but works with <a href={{=URL('what')}}>third party tools</a>.</p>
     </div>
-    <div class="one-third column">
-      <h3><a href="http://web2py.com/demo_admin">WEB-BASED IDE</a></h3>
+    <div class="span4">
+      <h3><a href="http://web2py.com/demo_admin">Web-Based IDE</a></h3>
       <p>Create, modify, deploy and manage application from anywhere using your browser. One web2py instance can run multiple web sites using different databases. Try the <a href="http://web2py.com/demo_admin">interactive demo</a>.</p>
     </div>
-    <div class="one-third column omega">
-      <h3><a href="{{=URL('documentation')}}">EXTENSIVE DOCS</a></h3>
+    <div class="span4">
+      <h3><a href="{{=URL('documentation')}}">Extensive Docs</a></h3>
       <p>Start with some <a href="{{=URL('examples')}}">quick examples</a>, then read the <a href="http://web2py.com/book" target="_blank">manual</a>, watch <a href="http://vimeo.com/album/178500" target="_blank">videos</a>, and join a <a href="{{=URL('default', 'usergroups')}}">user group</a> for discussion. Take advantage of the <a href="http://web2py.com/layouts" target="_blank">layouts</a>, <a href="http://dev.s-cubism.com/web2py_plugins" target="_blank">plugins</a>, <a href="http://www.web2py.com/appliances" target="_blank">appliances</a>, and <a href="http://web2pyslices.com" target="_blank">recipes</a>.</p>
     </div>
   </div>
 </div>
-<img class="scale-with-grid centered" src="/examples/static/images/shadow-bottom.png">
-<div class="container userQuotes">
-  <div class="sixteen columns">
-    <!-- img src="{{=URL('static','images/shadow-bottom.png')}}" width="100%"/ -->
+<div class="row-fluid">
+  <div class="span12">
+    <img class="scale-with-grid centered" src="/examples/static/images/shadow-bottom.png">
+  </div>
+</div>
+<div class="row-fluid">
+  <div class="span12">
     {{for k,quote in enumerate(quotes[:3]):}}
-    <div class="one-third column {{=[' alpha', '', ' omega'][k]}}">
-      <em>
-    <p>{{=quote[0]}}</p>
-      </em>
+    <div class="span4">
+      <p style="text-align: left"><em>{{=quote[0]}}</em></p>
       <span class="right">
-    <a href="{{=quote[2]}}"><em>&mdash;{{=quote[1]}}</em></a>
+	<a href="{{=quote[2]}}">{{=quote[1]}}</a>
       </span>
     </div>
     {{pass}}
   </div>
 </div>
-{{end}}
-
-{{block right_sidebar}}
-<div class="one-third column" style="text-align:center">
-  <img class="scale-with-grid centered" src="{{=URL('static','images/tag-cloud-color-small.png')}}" width="300px"/>
-  <br/>
-  <a class="button" href="{{=URL('download')}}" style="width:90%">DOWNLOAD NOW</a><br/>
-  <a class="button" href="http://web2py.com/demo_admin" style="width:90%">ONLINE DEMO</a><br/>
-  <a class="button" href="http://web2py.com/poweredby" style="width:90%">SITES POWERED BY WEB2PY</a><br/>
-  <a class="button" href="http://www.chipin.com/contribute/id/dcd384d58839aa4d" style="width:90%">SUPPORT/DONATE</a></br>
-</div>
-{{end}}

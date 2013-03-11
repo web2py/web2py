@@ -1,119 +1,15 @@
-footer-content {position: relative; bottom: 0; width: 100%;}
+@import url(http://fonts.googleapis.com/css?family=Economica);
+@@import url(http://fonts.googleapis.com/css?family=Belleza);
 
-.statusbar {
-    padding: 2px 0; 
-    border: 0; 
-    margin-bottom: 15px;
-    background-color: #C1CDCD;
-    /*background: url('../images/menu.png') repeat-x;*/
-}
-.statusbar a, .statusbar a:visited {
-    color: #406361;
-}
-
-.footer {
-    position: relative;
-}
-.footer-content {
-    height: 100%;
-    position: absolute;
-}
-
+body { font-family: Arial, Helvetica; }
 a, a:visited, a:hover, h1,h2,h3,h4,h5 {color: #658883}
-a.button {color: #658883}
-
-.sf-menu li, .sf-menu li a { border-radius: 5px;}
-
-.wrapper { 
+h1,h2,h3,h4,h5 { font-family: "Economica", Arial, Helevtica; }
+body {
+    background: url('../images/stripes.png') repeat-x;
 }
-h1 { font-size: 32px }
-h2 { font-size: 24px }
-h3 { font-size: 20px }
-h4 { font-size: 14px }
-sup  { 
-    font-size: 0.5em; 
-    line-height: 2em; 
-    vertical-align: top;
+#header {
+    margin-top: 40px;
 }
-ul { list-style: circle outside; padding-left: 30px;}
-
-.frame { 
-    border: 3px solid #959595; 
-    margin-bottom: 5px; 
-}
-
-.header {
-    background: url('../images/stripes.png') repeat-y; 
-    padding-top:10px;
-}
-.header h5 {
-	float: left;
-}
-.logo: {
-	float:left;
-}
-
-.announce {
-    text-align: center;
-    color: white;
-    top: 0;
-    font-weight: bold;
-    text-align: center;
-    left: 0;
-    position: relative;
-    background: #000;
-    border-radius: 5px;
-    margin: 7px 0 15px;
-}
-.announce a {color: white}
-
-input:focus, textarea:focus {background:#f0f0f0}
-
-table.downloads { width:100%; }
-table.downloads th, table.downloads td {text-align:center;}
-table.downloads a.button { width: 150px; }
-th,td {padding-right: 10px;}
-
-p {text-align: left;}
-
-p + p {
-	margin-bottom: .75em;
-}
-
-strong {color: inherit;}
-
-img.centered {
-    margin: 0 auto;
-    display: block;
-}
-
-.tagCloud {
-    width: 100%;
-    max-width: 489px;
-}
-.mainbody {
-    margin-bottom: 20px;
-}
-.aboutW2P {
-    margin-top: 23px;
-    margin-bottom: 15px;
-}
-.aboutW2P p {
-    padding: 0 0.5em;
-    font-size: 1.15em;
-}
-.aboutW2P h3 {
-    padding: 0 0.3em;
-}
-.userQuotes {
-    /*border-top: #eee 2px solid;*/
-    padding-top: 15px;
-}
-.userQuotes p {
-    text-align: left;
-    font-size: 111%;
-    color: #777;
-}
-#menu {
-    padding: 0.1em 0.5em;
+.btn-180 {
+    width: 180px;
 }
