@@ -74,16 +74,14 @@ def license():
     filename = os.path.join(request.env.gluon_parent, 'LICENSE')
     return response.render(dict(license=MARKMIN(read_file(filename))))
 
-
 def version():
+    if request.args(0)=='raw':
+        return request.env.web2py_version
     from gluon.fileutils import parse_version
     (a, b, c, pre_release, build) = parse_version(request.env.web2py_version)
     return 'Version %i.%i.%i (%.4i-%.2i-%.2i %.2i:%.2i:%.2i) %s' % (
         a,b,c,build.year,build.month,build.day,
         build.hour,build.minute,build.second,pre_release)
-
-def raw_version():
-    return request.env.web2py_version
 
 @cache('examples', time_expire=cache_expire)
 def examples():
