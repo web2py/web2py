@@ -319,6 +319,9 @@ def state():
 
 
 def ccache():
+    cache.ram.initialize()
+    cache.disk.initialize()
+
     form = FORM(
         P(TAG.BUTTON(
             T("Clear CACHE?"), _type="submit", _name="yes", _value="yes")),
@@ -385,7 +388,7 @@ def ccache():
 
         return (hours, minutes, seconds)
 
-    for key, value in cache.ram.storage.items():
+    for key, value in cache.ram.storage.iteritems():
         if isinstance(value, dict):
             ram['hits'] = value['hit_total'] - value['misses']
             ram['misses'] = value['misses']
