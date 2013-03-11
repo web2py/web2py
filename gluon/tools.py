@@ -1758,15 +1758,26 @@ class Auth(object):
     def basic(self, basic_auth_realm=False):
         """
         perform basic login.
+
+        :param basic_auth_realm: optional basic http authentication realm.
+        :type basic_auth_realm: str or unicode or function or callable or boolean.
+
         reads current.request.env.http_authorization
-        and returns basic_allowed,basic_accepted,user
+        and returns basic_allowed,basic_accepted,user.
+        
+        if basic_auth_realm is defined is a callable it's return value
+        is used to set the basic authentication realm, if it's a string
+        its content is used instead.  Otherwise basic authentication realm
+        is set to the application name.
+        If basic_auth_realm is None or False (the default) the behavior
+        is to skip sending any challenge.
+        
         """
         if not self.settings.allow_basic_login:
             return (False, False, False)
         basic = current.request.env.http_authorization
         if basic_auth_realm:
-            import types
-            if isinstance(basic_auth_realm, types.FunctionType):
+            if callable(basic_auth_realm):
                 basic_auth_realm = basic_auth_auth()
             elif isinstance(basic_auth_realm, (unicode, str)):
                 basic_realm = unicode(basic_auth_realm)
