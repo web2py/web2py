@@ -1,4 +1,4 @@
-## 2.4.1- 2.4.2
+## 2.4.1- 2.4.3
 
 - 2D GEO API: geoPoint, getLine, geoPolygon
 - support for 'json' field type in DAL
