@@ -1789,8 +1789,8 @@ class Auth(object):
             if basic_auth_realm:
                 raise http_401
             return (True, False, False)
-        (username, password) = base64.b64decode(basic[6:]).split(':')
-        is_valid_user = self.login_bare(username, password)
+        (username, sep, password) = base64.b64decode(basic[6:]).partition(':')
+        is_valid_user = sep and self.login_bare(username, password)
         if not is_valid_user and basic_auth_realm:
             raise http_401
         return (True, True, is_valid_user)
