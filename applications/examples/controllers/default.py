@@ -20,7 +20,7 @@ def what():
     import urllib
     try:
         images = XML(urllib.urlopen(
-            'http://web2py.com/poweredby/default/images').read())
+            'http://www.web2py.com/poweredby/default/images').read())
     except:
         images = []
     return response.render(images=images)
@@ -61,11 +61,11 @@ def videos():
 
 
 def security():
-    redirect('http://www.web2py.com/book/default/chapter/01#security')
+    redirect('http://www.web2py.com/book/default/chapter/01#Security')
 
 
 def api():
-    redirect('http://web2py.com/book/default/chapter/04#API')
+    redirect('http://www.web2py.com/book/default/chapter/04#API')
 
 
 @cache('license', time_expire=cache_expire)
