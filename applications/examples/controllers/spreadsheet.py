@@ -1,6 +1,5 @@
 from gluon.contrib.spreadsheet import Sheet
 
-
 def callback():
     return cache.ram('sheet1', lambda: None, None).process(request)
 

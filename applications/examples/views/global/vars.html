@@ -19,7 +19,7 @@
   <br/>
   {{pass}}
   
-  {{if doc:}}<br/><br/>{{=CODE(str(doc),language=None,counter=None,_class='boxCode')}}{{pass}}
+  {{if doc:}}<br/><br/>{{=MARKMIN(doc)}}{{pass}}
   <br/><br/>
   <div class="boxInfo">
     {{if attributes:}}
@@ -32,7 +32,7 @@
       <tr>
 	<td>
 	{{if key.count('.')<2:}}
-          {{=A(key,_href=URL(args=key.split('.')))}}
+          {{=A(key,_rel="nofollow",_href=URL(args=key.split('.')))}}
 	{{else:}}
           {{=key}}
         {{pass}}	
@@ -43,7 +43,7 @@
 	  {{if c1:}} belongs to class {{=c1}}{{pass}}
 	  <br/>
 	  {{pass}}
-	  {{if doc1:}}{{=XML(cgi.escape(str(doc1)).replace(chr(13),'<br/>'))}}{{pass}}
+	  {{if doc1:}}{{=MARKMIN(doc1)}}{{pass}}
     </td>
       </tr>
       <tr><td colspan=2><hr/></td></tr>

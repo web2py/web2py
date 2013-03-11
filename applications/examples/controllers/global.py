@@ -1,9 +1,5 @@
 session.forget()
 
-response.menu = [['home', False, '/%s/default/index'
-                  % request.application], ['docs', True,
-                 '/%s/global/vars' % request.application]]
-
 def get(args):
     if args[0].startswith('__'):
         return None
