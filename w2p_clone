@@ -4,7 +4,7 @@ import sys
 
 """
 Author: Christopher Steel on behalf of Voice of Access
-Copyright: Copyrighted (c) by Massimo Di Pierro (2007-2011)
+Copyright: Copyrighted (c) by Massimo Di Pierro (2007-2013)
 
 web2py_clone becomes part of the web2py distribution available
 on Pypi via 'pip install web2py'
