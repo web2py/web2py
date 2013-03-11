@@ -3,6 +3,7 @@
 
 body { font-family: Arial, Helvetica; }
 a, a:visited, a:hover, h1,h2,h3,h4,h5 {color: #658883}
+a.btn-danger, a.btn-warning, a.btn-success {color:white} 
 h1,h2,h3,h4,h5 { font-family: "Economica", Arial, Helevtica; }
 body {
     background: url('../images/stripes.png') repeat-x;
