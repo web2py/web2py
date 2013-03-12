@@ -107,6 +107,7 @@ TERMINATE = 'TERMINATE'
 DISABLED = 'DISABLED'
 KILL = 'KILL'
 PICK = 'PICK'
+STOP_TASK = 'STOP_TASK'
 EXPIRED = 'EXPIRED'
 SECONDS = 1
 HEARTBEAT = 3 * SECONDS
@@ -398,7 +399,7 @@ class MetaScheduler(threading.Thread):
 
 TASK_STATUS = (QUEUED, RUNNING, COMPLETED, FAILED, TIMEOUT, STOPPED, EXPIRED)
 RUN_STATUS = (RUNNING, COMPLETED, FAILED, TIMEOUT, STOPPED)
-WORKER_STATUS = (ACTIVE, PICK, DISABLED, TERMINATE, KILL)
+WORKER_STATUS = (ACTIVE, PICK, DISABLED, TERMINATE, KILL, STOP_TASK)
 
 
 class TYPE(object):
@@ -746,7 +747,7 @@ class Scheduler(MetaScheduler):
                     # keep sleeping
                     self.worker_status[0] = DISABLED
                     if self.worker_status[1] == MAXHIBERNATION:
-                        logger.debug('........recording heartbeat')
+                        logger.debug('........recording heartbeat (%s)', self.worker_status[0])
                         db(sw.worker_name == self.worker_name).update(
                             last_heartbeat=now)
                 elif mybackedstatus == TERMINATE:
@@ -758,6 +759,9 @@ class Scheduler(MetaScheduler):
                     self.worker_status[0] = KILL
                     self.die()
                 else:
+                    if mybackedstatus == STOP_TASK:
+                        logger.info('Asked to kill the current task')
+                        self.terminate_process()
                     logger.debug('........recording heartbeat (%s)', self.worker_status[0])
                     db(sw.worker_name == self.worker_name).update(
                         last_heartbeat=now, status=ACTIVE)
@@ -1006,6 +1010,40 @@ class Scheduler(MetaScheduler):
                 loads(row.scheduler_run.run_result,
                       object_hook=_decode_dict) or None
         return row
+
+    def stop_task(self, ref):
+        """
+        Experimental!!!
+        Shortcut for task termination.
+        If the task is RUNNING it will terminate it --> execution will be set as FAILED
+        If the task is QUEUED, its stop_time will be set as to "now",
+            the enabled flag will be set to False, status to STOPPED
+
+        :param ref: can be
+            - integer --> lookup will be done by scheduler_task.id
+            - string  --> lookup will be done by scheduler_task.uuid
+        Returns:
+            - 1 if task was stopped (meaning an update has been done)
+            - None if task was not found, or if task was not RUNNING or QUEUED
+        """
+        from gluon.dal import Query
+        st, sw = self.db.scheduler_task, self.db.scheduler_worker
+        if isinstance(ref, int):
+            q = st.id == ref
+        elif isinstance(ref, str):
+            q = st.uuid == ref
+        else:
+            raise SyntaxError(
+                "You can retrieve results only by id or uuid")
+        task = self.db(q).select(st.id, st.status, st.assigned_worker_name).first()
+        rtn = None
+        if not task:
+            return rtn
+        if task.status == 'RUNNING':
+            rtn = self.db(sw.worker_name == task.assigned_worker_name).update(status=STOP_TASK)
+        elif task.status == 'QUEUED':
+            rtn = self.db(q).update(stop_time=self.now(), enabled=False, status=STOPPED)
+        return rtn
 
 
 def main():
