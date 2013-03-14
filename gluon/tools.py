@@ -4476,7 +4476,7 @@ class Service(object):
             else:
                 return ''
         except HTTP, e:
-			raise e
+            raise e
         except Service.JsonRpcException, e:
             return return_error(id, e.code, e.info)
         except BaseException:
