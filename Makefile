@@ -5,7 +5,7 @@ all:
 clean:
 	rm -f httpserver.log 
 	rm -f parameters*.py 
-	rm -f -r applications/*/compiled     	
+	rm -f -r applications/*/compiled
 	find ./ -name '*~' -exec rm -f {} \; 
 	find ./ -name '*.orig' -exec rm -f {} \; 
 	find ./ -name '*.rej' -exec rm -f {} \; 

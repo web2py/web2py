@@ -6,6 +6,11 @@ It is written and programmable in Python. LGPLv3 License
 
 Learn more at http://web2py.com
 
+
+## Tests
+
+[![Build Status](https://travis-ci.org/web2py/web2py.png)](https://travis-ci.org/web2py/web2py)
+
 ## Installation Instructions
 
 To start web2py there is NO NEED to install it. Just unzip and do:
