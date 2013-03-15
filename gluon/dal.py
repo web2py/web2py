@@ -8817,6 +8817,8 @@ class Expression(object):
             result_type = 'integer'
         elif self.type in ['date','time','datetime','double','float']:
             result_type = 'double'
+        elif self.type.startswith('decimal('):
+            result_type = self.type
         else:
             raise SyntaxError("subtraction operation not supported for type")
         return Expression(db,db._adapter.SUB,self,other,result_type)
