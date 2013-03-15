@@ -131,7 +131,7 @@ def get_client(env):
     """
     g = regex_client.search(env.get('http_x_forwarded_for', ''))
     client = (g.group() or '').split(',')[0] if g else None
-    if client in (None, '', 'unkown'):
+    if client in (None, '', 'unknown'):
         g = regex_client.search(env.get('remote_addr', ''))
         if g:
             client = g.group()
