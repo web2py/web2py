@@ -66,7 +66,7 @@ class XssCleaner(HTMLParser):
         # The only schemes allowed in URLs (for href and src attributes).
         # Adding "javascript" or "vbscript" to this list would not be smart.
 
-        self.allowed_schemes = ['http', 'https', 'ftp']
+        self.allowed_schemes = ['http', 'https', 'ftp', 'mailto']
 
         #to strip or escape disallowed tags?
         self.strip_disallowed = strip_disallowed
@@ -151,11 +151,12 @@ class XssCleaner(HTMLParser):
 
     def url_is_acceptable(self, url):
         """
-        Accepts relative and absolute urls
+        Accepts relative, absolute, and mailto urls
         """
 
         parsed = urlparse(url)
         return (parsed[0] in self.allowed_schemes and '.' in parsed[1]) \
+            or (parsed[0] in self.allowed_schemes and '@' in parsed[2]) \
             or (parsed[0] == '' and parsed[2].startswith('/'))
 
     def strip(self, rawstring, escape=True):
