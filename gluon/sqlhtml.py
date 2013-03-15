@@ -1440,7 +1440,8 @@ class SQLFORM(FORM):
                             f = self.table[fieldname].default or ''
                             fields[fieldname] = f
                     else:
-                        fields[fieldname] = ''
+                        f = self.table[fieldname].default or ''
+                        fields[fieldname] = f
                     self.vars[fieldname] = fields[fieldname]
                     if not f:
                         continue
