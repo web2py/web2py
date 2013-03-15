@@ -1,0 +1,25 @@
+language: python
+
+python:
+  #Temporarily disable 2.5 tests - '2.5'
+  - '2.6'
+  - '2.7'
+env:
+  - DB=sqlite:memory
+  - DB=mysql://root:@localhost/test_w2p
+  - DB=postgres://postgres:@localhost/test_w2p
+before_script:
+  - pip install unittest2
+  - pip install psycopg2
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then pip install --use-mirrors pysqlite; fi
+  - mysql -e 'create database test_w2p;'
+  - psql -c 'create database test_w2p;' -U postgres
+  #Temporal solution to travis issue #155
+  - sudo chmod 777 /dev/shm
+  - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm 
+script: PYTHONPATH=. unit2 -v gluon.tests
+
+notifications:
+  email: false
+  irc:
+    channels: "irc.freenode.org#web2py"
