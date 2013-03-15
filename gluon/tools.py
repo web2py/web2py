@@ -5256,7 +5256,10 @@ class Wiki(object):
                 }
             })
         })
-        """ % dict(url=URL(args=('_preview')), urlmedia=URL(extension='load',args=('_editmedia'),vars=dict(embedded=1)))
+        """ % dict(url=URL(args=('_preview', slug)),
+                   urlmedia=URL(extension='load',
+                                args=('_editmedia',slug),
+                                vars=dict(embedded=1)))
         return dict(content=TAG[''](form, SCRIPT(script)))
 
     def editmedia(self, slug):
