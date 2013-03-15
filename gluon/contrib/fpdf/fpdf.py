@@ -450,7 +450,7 @@ class FPDF(object):
                     fh = open(unifilename, "w")
                     pickle.dump(font_dict, fh)
                     fh.close()
-                except IOError as e:
+                except IOError, e:
                     if not e.errno == errno.EACCES:
                         raise  # Not a permission error.
                 del ttf
@@ -1341,7 +1341,7 @@ class FPDF(object):
                     font_dict['range'] = range_
                     pickle.dump(font_dict, fh)
                     fh.close()
-                except IOError as e:
+                except IOError, e:
                     if not e.errno == errno.EACCES:
                         raise  # Not a permission error.
             if (font['cw'][cid] == 0):

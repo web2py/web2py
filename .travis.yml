@@ -16,7 +16,7 @@ before_script:
   - psql -c 'create database test_w2p;' -U postgres
   #Temporal solution to travis issue #155
   - sudo chmod 777 /dev/shm
-  - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm 
+  - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
 script: PYTHONPATH=. unit2 -v gluon.tests
 
 notifications:
