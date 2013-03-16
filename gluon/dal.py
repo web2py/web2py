@@ -370,7 +370,7 @@ if not 'google' in DRIVERS:
 
     try:
         import fdb
-        DRIVERS.append('Firbird(fdb)')
+        DRIVERS.append('Firebird(fdb)')
     except ImportError:
         LOGGER.debug('no Firebird driver fdb')
 #####
