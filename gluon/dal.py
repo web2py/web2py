@@ -4656,7 +4656,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         return self.expand(first)
 
     def truncate(self,table,mode):
-        self.db(table._id).delete()
+        self.db(self.db._adapter.id_query(table)).delete()
 
     def select_raw(self,query,fields=None,attributes=None):
         db = self.db
