@@ -2219,22 +2219,29 @@ class IS_DATE(Validator):
     """
 
     def __init__(self, format='%Y-%m-%d',
-                 error_message='enter date as %(format)s'):
+                 error_message='enter date as %(format)s',
+                 timezone = None):
         self.format = translate(format)
         self.error_message = str(error_message)
+        self.timezone = timezone
         self.extremes = {}
 
     def __call__(self, value):
+        ovalue = value
         if isinstance(value, datetime.date):
+            if timezone is not None:
+                value = value - datetime.timedelta(seconds=self.timezone*3600)
             return (value, None)
         try:
             (y, m, d, hh, mm, ss, t0, t1, t2) = \
                 time.strptime(value, str(self.format))
             value = datetime.date(y, m, d)
+            if timezone is not None:
+                value = value - datetime.timedelta(seconds=self.timezone*3600)
             return (value, None)
         except:
             self.extremes.update(IS_DATETIME.nice(self.format))
-            return (value, translate(self.error_message) % self.extremes)
+            return (ovalue, translate(self.error_message) % self.extremes)
 
     def formatter(self, value):
         if value is None:
@@ -2247,6 +2254,8 @@ class IS_DATE(Validator):
         if year < 1900:
             year = 2000
         d = datetime.date(year, value.month, value.day)
+        if timezone is not None:
+            d = d + datetime.timedelta(seconds=self.timezone*3600)
         return d.strftime(format)
 
 
@@ -2279,22 +2288,27 @@ class IS_DATETIME(Validator):
         return dict(format=format)
 
     def __init__(self, format='%Y-%m-%d %H:%M:%S',
-                 error_message='enter date and time as %(format)s'):
+                 error_message='enter date and time as %(format)s',
+                 timezone=None):
         self.format = translate(format)
         self.error_message = str(error_message)
         self.extremes = {}
+        self.timezone = timezone
 
     def __call__(self, value):
+        ovalue = value
         if isinstance(value, datetime.datetime):
             return (value, None)
         try:
             (y, m, d, hh, mm, ss, t0, t1, t2) = \
                 time.strptime(value, str(self.format))
             value = datetime.datetime(y, m, d, hh, mm, ss)
+            if timezone is not None:
+                value = value - datetime.timedelta(seconds=self.timezone*3600)
             return (value, None)
         except:
             self.extremes.update(IS_DATETIME.nice(self.format))
-            return (value, translate(self.error_message) % self.extremes)
+            return (ovalue, translate(self.error_message) % self.extremes)
 
     def formatter(self, value):
         if value is None:
@@ -2308,6 +2322,8 @@ class IS_DATETIME(Validator):
             year = 2000
         d = datetime.datetime(year, value.month, value.day,
                               value.hour, value.minute, value.second)
+        if timezone is not None:
+            d = d + datetime.timedelta(seconds=self.timezone*3600)
         return d.strftime(format)
 
 
@@ -2336,7 +2352,8 @@ class IS_DATE_IN_RANGE(IS_DATE):
                  minimum=None,
                  maximum=None,
                  format='%Y-%m-%d',
-                 error_message=None):
+                 error_message=None,
+                 timezone=None):
         self.minimum = minimum
         self.maximum = maximum
         if error_message is None:
@@ -2348,17 +2365,19 @@ class IS_DATE_IN_RANGE(IS_DATE):
                 error_message = "enter date in range %(min)s %(max)s"
         IS_DATE.__init__(self,
                          format=format,
-                         error_message=error_message)
+                         error_message=error_message,
+                         timezone=timezone)
         self.extremes = dict(min=minimum, max=maximum)
 
     def __call__(self, value):
+        ovalue = value
         (value, msg) = IS_DATE.__call__(self, value)
         if msg is not None:
             return (value, msg)
         if self.minimum and self.minimum > value:
-            return (value, translate(self.error_message) % self.extremes)
+            return (ovalue, translate(self.error_message) % self.extremes)
         if self.maximum and value > self.maximum:
-            return (value, translate(self.error_message) % self.extremes)
+            return (ovalue, translate(self.error_message) % self.extremes)
         return (value, None)
 
 
@@ -2386,7 +2405,8 @@ class IS_DATETIME_IN_RANGE(IS_DATETIME):
                  minimum=None,
                  maximum=None,
                  format='%Y-%m-%d %H:%M:%S',
-                 error_message=None):
+                 error_message=None,
+                 timezone=None):
         self.minimum = minimum
         self.maximum = maximum
         if error_message is None:
@@ -2398,17 +2418,19 @@ class IS_DATETIME_IN_RANGE(IS_DATETIME):
                 error_message = "enter date and time in range %(min)s %(max)s"
         IS_DATETIME.__init__(self,
                              format=format,
-                             error_message=error_message)
+                             error_message=error_message,
+                             timezone=timezone)
         self.extremes = dict(min=minimum, max=maximum)
 
     def __call__(self, value):
+        ovalue = value
         (value, msg) = IS_DATETIME.__call__(self, value)
         if msg is not None:
             return (value, msg)
         if self.minimum and self.minimum > value:
-            return (value, translate(self.error_message) % self.extremes)
+            return (ovalue, translate(self.error_message) % self.extremes)
         if self.maximum and value > self.maximum:
-            return (value, translate(self.error_message) % self.extremes)
+            return (ovalue, translate(self.error_message) % self.extremes)
         return (value, None)
 
 
