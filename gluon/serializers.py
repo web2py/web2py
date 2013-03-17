@@ -25,9 +25,52 @@ try:
 except ImportError:
     have_yaml = False
 
-def loads_json(o):
+def cast_keys(o, cast=str, encoding="utf-8"):
+    """ Builds a new object with <cast> type keys
+
+    Arguments:
+        o is the object input
+        cast (defaults to str) is an object type or function
+              which supports conversion such as:
+
+              >>> converted = cast(o)
+
+        encoding (defaults to utf-8) is the encoding for unicode
+                 keys. This is not used for custom cast functions
+
+    Use this funcion if you are in Python < 2.6.5
+    This avoids syntax errors when unpacking dictionary arguments.
+    """
+
+    if isinstance(o, (dict, Storage)):
+        if isinstance(o, dict):
+            newobj = dict()
+        else:
+            newobj = Storage()
+
+        for k, v in o.items():
+            if (cast == str) and isinstance(k, unicode):
+                key = k.encode(encoding)
+            else:
+                key = cast(k)
+            if isinstance(v, (dict, Storage)):
+                value = cast_keys(v, cast=cast, encoding=encoding)
+            else:
+                value = v
+            newobj[key] = value
+    else:
+        raise TypeError("Cannot cast keys: %s is not supported" % \
+                        type(o))
+    return newobj
+
+def loads_json(o, unicode_keys=True, **kwargs):
     # deserialize a json string
-    return json_parser.loads(o)
+    result = json_parser.loads(o, **kwargs)
+    if not unicode_keys:
+        # filter non-str keys in dictionary objects
+        result = cast_keys(result,
+                           encoding=kwargs.get("encoding", "utf-8"))
+    return result
 
 def custom_json(o):
     if hasattr(o, 'custom_json') and callable(o.custom_json):

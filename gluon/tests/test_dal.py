@@ -7,6 +7,7 @@
 import sys
 import os
 import glob
+
 if os.path.isdir('gluon'):
     sys.path.append(os.path.realpath('gluon'))
 else:
@@ -659,7 +660,12 @@ class TestDALDictImportExport(unittest.TestCase):
             import serializers
             dbjson = db.as_json(sanitize=False)
             assert isinstance(dbjson, basestring) and len(dbjson) > 0
-            db3 = DAL(serializers.loads_json(dbjson))
+
+            unicode_keys = True
+            if sys.version < "2.6.5":
+                unicode_keys = False
+            db3 = DAL(serializers.loads_json(dbjson,
+                          unicode_keys=unicode_keys))
             assert hasattr(db3, "person") and hasattr(db3.person, "uuid") and\
             db3.person.uuid.type == db.person.uuid.type
             db3.person.drop()

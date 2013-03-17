@@ -7054,15 +7054,13 @@ class DAL(object):
     Example::
 
        db = DAL('sqlite://test.db')
+
+       or
+
+       db = DAL({"uri": ..., "items": ...}) # experimental
+
        db.define_table('tablename', Field('fieldname1'),
                                     Field('fieldname2'))
-
-    (experimental)
-    you can pass a dict object as uri with the uri string
-    and table/field definitions. For an example of valid data check
-    the output of:
-
-    >>> db.as_dict(flat=True, sanitize=False)
     """
 
     def __new__(cls, uri='sqlite://dummy.db', *args, **kwargs):
@@ -7183,6 +7181,28 @@ class DAL(object):
 
         :uri: string that contains information for connecting to a database.
                (default: 'sqlite://dummy.db')
+
+                experimental: you can specify a dictionary as uri
+                parameter i.e. with
+                db = DAL({"uri": "sqlite://storage.sqlite",
+                          "items": {...}, ...})
+
+                for an example of dict input you can check the output
+                of the scaffolding db model with
+
+                db.as_dict()
+
+                Note that for compatibility with Python older than
+                version 2.6.5 you should cast your dict input keys
+                to str due to a syntax limitation on kwarg names.
+                for proper DAL dictionary input you can use one of:
+
+                obj = serializers.cast_keys(dict, [encoding="utf-8"])
+
+                or else (for parsing json input)
+
+                obj = serializers.loads_json(data, unicode_keys=False)
+
         :pool_size: How many open connections to make to the database object.
         :folder: where .table files will be created.
                  automatically set within web2py
