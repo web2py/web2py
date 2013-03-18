@@ -2419,6 +2419,9 @@ class MySQLAdapter(BaseAdapter):
         return ['SET FOREIGN_KEY_CHECKS=0;','DROP TABLE %s;' % table,
                 'SET FOREIGN_KEY_CHECKS=1;']
 
+    def _insert_empty(self, table):
+        return 'INSERT INTO %s VALUES (DEFAULT);' % table
+
     def distributed_transaction_begin(self,key):
         self.execute('XA START;')
 
@@ -3937,7 +3940,7 @@ class IngresAdapter(BaseAdapter):
             return self.driver.connect(cnxn,**driver_args)
 
         self.connector = connector
-        
+
         # TODO if version is >= 10, set types['id'] to Identity column, see http://community.actian.com/wiki/Using_Ingres_Identity_Columns
         if do_connect: self.reconnect()
 
@@ -9061,7 +9064,7 @@ class FieldVirtual(object):
         (self.name, self.f) = (name, f) if f else ('unkown', name)
         self.type = ftype
         self.label = label or self.name.capitalize().replace('_',' ')
-        self.represent = IDENTITY 
+        self.represent = IDENTITY
         self.formatter = IDENTITY
         self.comment = None
         self.readable = True
@@ -9261,7 +9264,7 @@ class Field(Expression):
 
     def retrieve(self, name, path=None, nameonly=False):
         """
-        if nameonly==True return (filename, fullfilename) instead of 
+        if nameonly==True return (filename, fullfilename) instead of
         (filename, stream)
         """
         self_uploadfield = self.uploadfield
@@ -9423,7 +9426,7 @@ class Field(Expression):
                 if k == "other":
                     if isinstance(v, dict):
                         otype, other = v.popitem()
-                    else:    
+                    else:
                         otype = flatten(type(v))
                         other = v
                     newr[k] = {otype: filter_requires(otype, other,
