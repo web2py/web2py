@@ -1,3 +1,8 @@
+## 2.4.5
+
+- travis.ci integration (thanks Marc Abramowitz and Niphlod). Passes all tests (thanks Niplod).
+- IS_DATE and IS_DATETIME can specify timezone
+
 ## 2.4.1- 2.4.3
 
 - 2D GEO API: geoPoint, getLine, geoPolygon
