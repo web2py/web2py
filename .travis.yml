@@ -1,7 +1,7 @@
 language: python
 
 python:
-  #Temporarily disable 2.5 tests - '2.5'
+  - '2.5'
   - '2.6'
   - '2.7'
 env:
