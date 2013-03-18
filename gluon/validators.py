@@ -2229,14 +2229,14 @@ class IS_DATE(Validator):
     def __call__(self, value):
         ovalue = value
         if isinstance(value, datetime.date):
-            if timezone is not None:
+            if self.timezone is not None:
                 value = value - datetime.timedelta(seconds=self.timezone*3600)
             return (value, None)
         try:
             (y, m, d, hh, mm, ss, t0, t1, t2) = \
                 time.strptime(value, str(self.format))
             value = datetime.date(y, m, d)
-            if timezone is not None:
+            if self.timezone is not None:
                 value = value - datetime.timedelta(seconds=self.timezone*3600)
             return (value, None)
         except:
@@ -2254,7 +2254,7 @@ class IS_DATE(Validator):
         if year < 1900:
             year = 2000
         d = datetime.date(year, value.month, value.day)
-        if timezone is not None:
+        if self.timezone is not None:
             d = d + datetime.timedelta(seconds=self.timezone*3600)
         return d.strftime(format)
 
@@ -2303,7 +2303,7 @@ class IS_DATETIME(Validator):
             (y, m, d, hh, mm, ss, t0, t1, t2) = \
                 time.strptime(value, str(self.format))
             value = datetime.datetime(y, m, d, hh, mm, ss)
-            if timezone is not None:
+            if self.timezone is not None:
                 value = value - datetime.timedelta(seconds=self.timezone*3600)
             return (value, None)
         except:
@@ -2322,7 +2322,7 @@ class IS_DATETIME(Validator):
             year = 2000
         d = datetime.datetime(year, value.month, value.day,
                               value.hour, value.minute, value.second)
-        if timezone is not None:
+        if self.timezone is not None:
             d = d + datetime.timedelta(seconds=self.timezone*3600)
         return d.strftime(format)
 
