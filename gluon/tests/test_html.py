@@ -206,6 +206,12 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(UL('<>', _a='1', _b='2').xml(),
                          '<ul a="1" b="2"><li>&lt;&gt;</li></ul>')
 
+class TestData(unittest.TestCase):
+
+    def testAdata(self):
+        self.assertEqual(A('<>', data=dict(abc='<def?asd>', cde='standard'), _a='1', _b='2').xml(),
+                         '<a a="1" b="2" data-abc="&lt;def?asd&gt;" data-cde="standard">&lt;&gt;</a>')
+
 
 if __name__ == '__main__':
     unittest.main()
