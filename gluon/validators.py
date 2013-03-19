@@ -31,7 +31,6 @@ except ImportError:
     from gluon.contrib.simplejson.decoder import JSONDecodeError
     JSONErrors += (JSONDecodeError,)
 
-
 __all__ = [
     'CLEANUP',
     'CRYPT',
@@ -332,7 +331,7 @@ class IS_JSON(Validator):
             requires=IS_JSON(error_message="This is not a valid json input")
 
         >>> IS_JSON()('{"a": 100}')
-        ('{"a": 100}', None)
+        ({u'a': 100}, None)
 
         >>> IS_JSON()('spam1234')
         ('spam1234', 'invalid json')
@@ -518,7 +517,7 @@ class IS_IN_DB(Validator):
         if self.fields == 'all':
             fields = [f for f in table]
         else:
-            fields = [table[k] for k in self.fields]        
+            fields = [table[k] for k in self.fields]
         ignore = (FieldVirtual,FieldMethod)
         fields = filter(lambda f:not isinstance(f,ignore), fields)
         if self.dbset.db._dbname != 'gae':
@@ -2208,6 +2207,17 @@ class IS_TIME(Validator):
             pass
         return (ivalue, translate(self.error_message))
 
+# A UTC class.
+class UTC(datetime.tzinfo):
+    """UTC"""
+    ZERO = datetime.timedelta(0)
+    def utcoffset(self, dt):
+        return UTC.ZERO
+    def tzname(self, dt):
+        return "UTC"
+    def dst(self, dt):
+        return UTC.ZERO
+utc = UTC()
 
 class IS_DATE(Validator):
     """
@@ -2221,6 +2231,9 @@ class IS_DATE(Validator):
     def __init__(self, format='%Y-%m-%d',
                  error_message='enter date as %(format)s',
                  timezone = None):
+        """
+        timezome must be None or a pytz.timezone("America/Chicago") object
+        """
         self.format = translate(format)
         self.error_message = str(error_message)
         self.timezone = timezone
@@ -2237,7 +2250,7 @@ class IS_DATE(Validator):
                 time.strptime(value, str(self.format))
             value = datetime.date(y, m, d)
             if self.timezone is not None:
-                value = value - datetime.timedelta(seconds=self.timezone*3600)
+                value = self.timezone.localize(value).astimezone(utc)
             return (value, None)
         except:
             self.extremes.update(IS_DATETIME.nice(self.format))
@@ -2255,7 +2268,7 @@ class IS_DATE(Validator):
             year = 2000
         d = datetime.date(year, value.month, value.day)
         if self.timezone is not None:
-            d = d + datetime.timedelta(seconds=self.timezone*3600)
+            d = d.replace(tzinfo=utc).astimezone(self.timezone)
         return d.strftime(format)
 
 
@@ -2290,6 +2303,9 @@ class IS_DATETIME(Validator):
     def __init__(self, format='%Y-%m-%d %H:%M:%S',
                  error_message='enter date and time as %(format)s',
                  timezone=None):
+        """
+        timezome must be None or a pytz.timezone("America/Chicago") object
+        """
         self.format = translate(format)
         self.error_message = str(error_message)
         self.extremes = {}
@@ -2304,7 +2320,7 @@ class IS_DATETIME(Validator):
                 time.strptime(value, str(self.format))
             value = datetime.datetime(y, m, d, hh, mm, ss)
             if self.timezone is not None:
-                value = value - datetime.timedelta(seconds=self.timezone*3600)
+                value = self.timezone.localize(value).astimezone(utc)
             return (value, None)
         except:
             self.extremes.update(IS_DATETIME.nice(self.format))
@@ -2323,7 +2339,7 @@ class IS_DATETIME(Validator):
         d = datetime.datetime(year, value.month, value.day,
                               value.hour, value.minute, value.second)
         if self.timezone is not None:
-            d = d + datetime.timedelta(seconds=self.timezone*3600)
+            d = d.replace(tzinfo=utc).astimezone(self.timezone)
         return d.strftime(format)
 
 
@@ -2339,7 +2355,7 @@ class IS_DATE_IN_RANGE(IS_DATE):
         (datetime.date(2008, 3, 3), None)
 
         >>> v('03/03/2010')
-        (datetime.date(2010, 3, 3), 'oops')
+        ('03/03/2010', 'oops')
 
         >>> v(datetime.date(2008,3,3))
         (datetime.date(2008, 3, 3), None)
@@ -2393,7 +2409,7 @@ class IS_DATETIME_IN_RANGE(IS_DATETIME):
         (datetime.datetime(2008, 3, 3, 12, 40), None)
 
         >>> v('03/03/2010 10:34')
-        (datetime.datetime(2010, 3, 3, 10, 34), 'oops')
+        ('03/03/2010 10:34', 'oops')
 
         >>> v(datetime.datetime(2008,3,3,0,0))
         (datetime.datetime(2008, 3, 3, 0, 0), None)
