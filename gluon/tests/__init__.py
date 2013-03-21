@@ -10,4 +10,4 @@ from test_template import *
 from test_utils import *
 from test_contribs import *
 from test_markmin import *
-# from test_web import *
+from test_web import *

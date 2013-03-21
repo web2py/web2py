@@ -15,11 +15,11 @@ mostly for testing purposes
 
 Some examples at the bottom.
 """
-
 import re
 import time
 import urllib
 import urllib2
+
 
 DEFAULT_HEADERS = {
     'user-agent': 'Mozilla/4.0',  # some servers are picky
@@ -126,7 +126,11 @@ class WebClient(object):
             self.time = time.time() - t0
             self.response = error
 
-        self.status = self.response.getcode()
+        if hasattr(self.response, 'getcode'):
+            self.status = self.response.getcode()
+        else:#python2.5
+            self.status = None
+
         self.text = self.response.read()
         self.headers = dict(self.response.headers)
 
