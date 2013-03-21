@@ -2260,7 +2260,7 @@ class SpatiaLiteAdapter(SQLiteAdapter):
         # Linux uses libspatialite.so
         # Mac OS X uses libspatialite.dylib
         libspatialite = SPATIALLIBS[platform.system()]
-        self.execute(r'SELECT load_extension("%s");') % libspatialite
+        self.execute(r'SELECT load_extension("%s");' % libspatialite)
 
         self.connection.create_function('web2py_extract', 2,
                                         SQLiteAdapter.web2py_extract)
