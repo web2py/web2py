@@ -23,7 +23,7 @@
 'Administrative Interface': 'Interfaccia Amministrativa',
 'Administrative interface': 'Interfaccia amministrativa',
 'Ajax Recipes': 'Ajax Recipes',
-'An error occured, please %s the page': "E' stato rilevato un errore, prego %s la pagina",
+'An error occured, please %s the page': "È stato rilevato un errore, prego %s la pagina",
 'And': 'E',
 'appadmin is disabled because insecure channel': 'Amministrazione (appadmin) disabilitata: comunicazione non sicura',
 'Are you sure you want to delete this object?': 'Sicuro di voler cancellare questo oggetto ?',

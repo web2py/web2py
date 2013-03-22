@@ -457,7 +457,7 @@ class Cache(object):
         public: if False forces the Cache-Control to be 'private'
         valid_statuses: by default only status codes starting with 1,2,3 will be cached.
             pass an explicit list of statuses on which turn the cache on
-        quick: Session,Vars,Lang,User-agent,Public,duration:
+        quick: Session,Vars,Lang,User-agent,Public:
             fast overrides with initial strings, e.g. 'SVLP' or 'VLP', or 'VLP'
         """
         from gluon import current
@@ -512,7 +512,7 @@ class Cache(object):
                         current.response.headers['Expires'] = expires
                         current.response.headers['Cache-Control'] = cache_control
                     if cache_model and not send_headers:
-                        cache_model.clear(cache_key)
+                        cache_model(cache_key, None)
                     return rtn
                 return func()
             wrapped_f.__name__ = func.__name__
