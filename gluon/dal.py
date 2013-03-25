@@ -4364,13 +4364,14 @@ class NoSQLAdapter(BaseAdapter):
             elif fieldtype == 'blob':
                 pass
             elif fieldtype == 'json':
-                obj = self.to_unicode(obj)
-                if have_serializers:
-                    obj = serializers.loads_json(obj)
-                elif simplejson:
-                    obj = simplejson.loads(obj)
-                else:
-                    raise RuntimeError("missing simplejson")
+                if isinstance(obj, basestring):
+                    obj = self.to_unicode(obj)
+                    if have_serializers:
+                        obj = serializers.loads_json(obj)
+                    elif simplejson:
+                        obj = simplejson.loads(obj)
+                    else:
+                        raise RuntimeError("missing simplejson")
             elif is_string and field_is_type('list:string'):
                 return map(self.to_unicode,obj)
             elif is_list:
