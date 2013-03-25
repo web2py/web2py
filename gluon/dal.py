@@ -122,6 +122,7 @@ Supported DAL URI strings:
 'google:sql' # for google app engine with sql (mysql compatible)
 'teradata://DSN=dsn;UID=user;PWD=pass; DATABASE=database' # experimental
 'imap://user:password@server:port' # experimental
+'mongodb://user:password@server:port/database' # experimental
 
 For more info:
 help(DAL)
@@ -1942,17 +1943,17 @@ class BaseAdapter(ConnectionPool):
         return value
 
     def parse_list_integers(self, value, field_type):
-        if not self.dbengine=='google:datastore':
+        if not self.dbengine in ('google:datastore', 'mongodb'):
             value = bar_decode_integer(value)
         return value
 
     def parse_list_references(self, value, field_type):
-        if not self.dbengine=='google:datastore':
+        if not self.dbengine in ('google:datastore', 'mongodb'):
             value = bar_decode_integer(value)
         return [self.parse_reference(r, field_type[5:]) for r in value]
 
     def parse_list_strings(self, value, field_type):
-        if not self.dbengine=='google:datastore':
+        if not self.dbengine in ('google:datastore', 'mongodb'):
             value = bar_decode_string(value)
         return value
 
@@ -5189,6 +5190,7 @@ class MongoDBAdapter(NoSQLAdapter):
                                  "Requires an integer or base 16 value")
         elif isinstance(arg, self.ObjectId):
             return arg
+
         if not isinstance(arg, (int, long)):
             raise TypeError("object_id argument must be of type " +
                             "ObjectId or an objectid representable integer")
@@ -5198,8 +5200,26 @@ class MongoDBAdapter(NoSQLAdapter):
             hexvalue = hex(arg)[2:].replace("L", "")
         return self.ObjectId(hexvalue)
 
+    def parse_reference(self, value, field_type):
+        # here we have to check for ObjectID before base parse
+        if isinstance(value, self.ObjectId):
+            value = int(str(value), 16)
+        return super(MongoDBAdapter,
+                     self).parse_reference(value, field_type)
+
+    def parse_id(self, value, field_type):
+        if isinstance(value, self.ObjectId):
+            value = int(str(value), 16)
+        return super(MongoDBAdapter,
+                     self).parse_id(value, field_type)
+
     def represent(self, obj, fieldtype):
-        value = NoSQLAdapter.represent(self, obj, fieldtype)
+        # the base adatpter does not support MongoDB ObjectId
+        if isinstance(obj, self.ObjectId):
+            value = obj
+        else:
+            value = NoSQLAdapter.represent(self, obj, fieldtype)
+        # reference types must be convert to ObjectID
         if fieldtype  =='date':
             if value == None:
                 return value
@@ -5216,15 +5236,24 @@ class MongoDBAdapter(NoSQLAdapter):
             # mongodb doesn't has a  time object and so it must datetime,
             # string or integer
             return datetime.datetime.combine(d, value)
-        elif fieldtype == 'list:string' or \
-             fieldtype == 'list:integer' or \
-             fieldtype == 'list:reference':
+        elif (isinstance(fieldtype, basestring) and
+              fieldtype.startswith('list:')):
+            if fieldtype.startswith('list:reference'):
+                newval = []
+                for v in value:
+                    newval.append(self.object_id(v))
+                return newval
             return value
+        elif ((isinstance(fieldtype, basestring) and
+               fieldtype.startswith("reference")) or
+               (isinstance(fieldtype, Table))):
+            value = self.object_id(value)
+
         return value
 
     # Safe determines whether a asynchronious request is done or a
     # synchronious action is done
-    # For safety, we use by default synchronious requests
+    # For safety, we use by default synchronous requests
     def insert(self, table, fields, safe=None):
         if safe==None:
             safe = self.safe
@@ -5272,14 +5301,18 @@ class MongoDBAdapter(NoSQLAdapter):
                 if expression.first.type == 'id':
                     expression.first.name = '_id'
                 # cast to Mongo ObjectId
-                expression.second = self.object_id(expression.second)
+                if isinstance(expression.second, (tuple, list, set)):
+                    expression.second = [self.object_id(item) for
+                                         item in expression.second]
+                else:
+                    expression.second = self.object_id(expression.second)
                 result = expression.op(expression.first, expression.second)
+
         if isinstance(expression, Field):
             if expression.type=='id':
                 result = "_id"
             else:
                 result =  expression.name
-
         elif isinstance(expression, (Expression, Query)):
             if not expression.second is None:
                 result = expression.op(expression.first, expression.second)
@@ -5290,7 +5323,7 @@ class MongoDBAdapter(NoSQLAdapter):
             else:
                 result = expression.op
         elif field_type:
-            result = str(self.represent(expression,field_type))
+            result = self.represent(expression,field_type)
         elif isinstance(expression,(list,tuple)):
             result = ','.join(self.represent(item,field_type) for
                               item in expression)
@@ -5344,7 +5377,6 @@ class MongoDBAdapter(NoSQLAdapter):
         else:
             raise SyntaxError("The table name could not be found in " +
                               "the query nor from the select statement.")
-
         mongoqry_dict = self.expand(query)
         fields = fields or self.db[tablename]
         for field in fields:
@@ -5394,15 +5426,12 @@ class MongoDBAdapter(NoSQLAdapter):
                 # record id's
                 if fieldname == "id": fieldname = "_id"
                 if fieldname in record:
-                    if isinstance(record[fieldname],
-                                  self.ObjectId):
-                        value = int(str(record[fieldname]), 16)
-                    else:
-                        value = record[fieldname]
+                    value = record[fieldname]
                 else:
                     value = None
                 row.append(value)
             rows.append(row)
+
         processor = attributes.get('processor', self.parse)
         result = processor(rows, fields, newnames, False)
         return result
@@ -5502,7 +5531,7 @@ class MongoDBAdapter(NoSQLAdapter):
     def BELONGS(self, first, second):
         if isinstance(second, str):
             return {self.expand(first) : {"$in" : [ second[:-1]]} }
-        elif second==[] or second==():
+        elif second==[] or second==() or second==set():
             return {1:0}
         items = [self.expand(item, first.type) for item in second]
         return {self.expand(first) : {"$in" : items} }
