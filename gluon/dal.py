@@ -200,7 +200,7 @@ TABLE_ARGS = set(
 
 SELECT_ARGS = set(
     ('orderby', 'groupby', 'limitby','required', 'cache', 'left',
-     'distinct', 'having', 'join','for_update', 'processor','cacheable'))
+     'distinct', 'having', 'join','for_update', 'processor','cacheable', 'orderby_on_limitby'))
 
 ogetattr = object.__getattribute__
 osetattr = object.__setattr__
@@ -1529,6 +1529,7 @@ class BaseAdapter(ConnectionPool):
         orderby = args_get('orderby', False)
         having = args_get('having', False)
         limitby = args_get('limitby', False)
+        orderby_on_limitby = args_get('orderby_on_limitby', True)
         for_update = args_get('for_update', False)
         if self.can_select_for_update is False and for_update is True:
             raise SyntaxError('invalid select attribute: for_update')
@@ -1620,7 +1621,7 @@ class BaseAdapter(ConnectionPool):
             else:
                 sql_o += ' ORDER BY %s' % self.expand(orderby)
         if limitby:
-            if not orderby and tablenames:
+            if orderby_on_limitby and not orderby and tablenames:
                 sql_o += ' ORDER BY %s' % ', '.join(['%s.%s'%(t,x) for t in tablenames for x in (hasattr(self.db[t],'_primarykey') and self.db[t]._primarykey or [self.db[t]._id.name])])
             # oracle does not support limitby
         sql = self.select_limitby(sql_s, sql_f, sql_t, sql_w, sql_o, limitby)
