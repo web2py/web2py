@@ -32,6 +32,7 @@ except ImportError:
     JSONErrors += (JSONDecodeError,)
 
 __all__ = [
+    'ANY_OF',
     'CLEANUP',
     'CRYPT',
     'IS_ALPHANUMERIC',
@@ -2589,6 +2590,38 @@ class IS_SLUG(Validator):
         if self.check and value != urlify(value, self.maxlen, self.keep_underscores):
             return (value, translate(self.error_message))
         return (urlify(value, self.maxlen, self.keep_underscores), None)
+
+
+class ANY_OF(Validator):
+    """
+    test if any of the validators in a list return successfully
+
+    >>> ANY_OF([IS_EMAIL(),IS_ALPHANUMERIC()])('a@b.co')
+    ('a@b.co', None)
+    >>> ANY_OF([IS_EMAIL(),IS_ALPHANUMERIC()])('abco')
+    ('abco', None)
+    >>> ANY_OF([IS_EMAIL(),IS_ALPHANUMERIC()])('@ab.co')
+    ('@ab.co', 'enter only letters, numbers, and underscore')
+    >>> ANY_OF([IS_ALPHANUMERIC(),IS_EMAIL()])('@ab.co')
+    ('@ab.co', 'enter a valid email address')
+    """
+
+    def __init__(self, subs):
+        self.subs = subs
+
+    def __call__(self, value):
+        for validator in self.subs:
+            value, error = validator(value)
+            if error == None:
+                break
+        return value, error
+
+    def formatter(self, value):
+        # Use the formatter of the first subvalidator
+        # that validates the value and has a formatter
+        for validator in self.subs:
+            if hasattr(validator, 'formatter') and validator(value)[1] != None:
+                return validator.formatter(value)
 
 
 class IS_EMPTY_OR(Validator):
