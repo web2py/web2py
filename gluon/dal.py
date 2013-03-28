@@ -1503,6 +1503,7 @@ class BaseAdapter(ConnectionPool):
             raise SyntaxError('invalid select attribute: %s' % key)
         args_get = attributes.get
         tablenames = tables(query)
+        tablenames_for_common_filters = tablenames
         for field in fields:
             if isinstance(field, basestring) \
                     and REGEX_TABLE_DOT_FIELD.match(field):
@@ -1566,6 +1567,8 @@ class BaseAdapter(ConnectionPool):
                     dict.fromkeys(tables(t))) for t in joinon]
             joinont = [t.first._tablename for t in joinon]
             [tables_to_merge.pop(t) for t in joinont if t in tables_to_merge]
+            tablenames_for_common_filters = [t for t in tablenames
+                        if not t in joinont ]
             important_tablenames = joint + joinont + tables_to_merge.keys()
             excluded = [t for t in tablenames
                         if not t in important_tablenames ]
@@ -1573,7 +1576,7 @@ class BaseAdapter(ConnectionPool):
             excluded = tablenames
 
         if use_common_filters(query):
-            query = self.common_filter(query,excluded)
+            query = self.common_filter(query,tablenames_for_common_filters)
         sql_w = ' WHERE ' + self.expand(query) if query else ''
 
         def alias(t):
