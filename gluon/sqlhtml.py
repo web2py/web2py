@@ -349,6 +349,12 @@ class RadioWidget(OptionsWidget):
         see also: :meth:`FormWidget.widget`
         """
 
+        if isinstance(value, (list,tuple)):
+            value = str(value[0])
+        else:
+            value = str(value)
+
+
         attr = cls._attributes(field, {}, **attributes)
         attr['_class'] = attr.get('_class', 'web2py_radiowidget')
 
