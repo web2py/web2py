@@ -374,10 +374,14 @@ class Mail(object):
             payload_in = MIMEMultipart.MIMEMultipart('mixed')
         else:
             # no encoding configuration for raw messages
-            if isinstance(message, basestring):
+            if not isinstance(message, basestring):
+                message = message.read()
+            if isinstance(message, unicode):
+                text = message.encode('utf-8')
+            elif not encoding=='utf-8':
                 text = message.decode(encoding).encode('utf-8')
             else:
-                text = message.read().decode(encoding).encode('utf-8')
+                text = message
             # No charset passed to avoid transport encoding
             # NOTE: some unicode encoded strings will produce
             # unreadable mail contents.
@@ -397,7 +401,8 @@ class Mail(object):
             text = html = None
         elif isinstance(message, (list, tuple)):
             text, html = message
-        elif message.strip().startswith('<html') and message.strip().endswith('</html>'):
+        elif message.strip().startswith('<html') and \
+                message.strip().endswith('</html>'):
             text = self.settings.server == 'gae' and message or None
             html = message
         else:
