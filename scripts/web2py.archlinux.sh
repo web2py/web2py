@@ -2,25 +2,39 @@
 # the script should be run
 # from WEB2PY root directory
 
-prog=`basename $0`
+prog="web2py.py"
 
-cd `pwd`
 chmod +x $prog
 
 function web2py_start {
-  nohup ./$prog -a "<recycle>" 2>/dev/null &
-  pid=`pgrep $prog | tail -1`
-  if [ $pid -ne $$ ]
+  nohup python2 ./$prog -a "<recycle>" >>/dev/null 2>/dev/null &
+  pid=`pgrep -f $prog | tail -1`
+  if [ "x$pid" != "x$$" ]
   then
-    echo "WEB2PY has been started."
+      echo "WEB2PY has been started (pid $pid). Stop it with '$0 stop'"
+  else
+    echo "Failed to start WEB2PY."
   fi
 }
+
 function web2py_stop {
-  kill -15 `pgrep $prog | grep -v $$` 2>/dev/null
-  pid=`pgrep $prog | head -1`
-  if [ $pid -ne $$ ]
-  then
-    echo "WEB2PY has been stopped."
+  pid="`pgrep -f $prog | grep -v $$`"
+  if [ "x$pid" == "x" ]
+    then
+    echo "No WEB2PY processes to stop."
+  else
+    kill -15 $pid
+    # Wait for web2py to shut down gracefully.
+    sleep 2
+    pid="`pgrep -f $prog | head -1`"
+    if [ "x$pid" == "x" ]
+    then
+      echo "WEB2PY has been stopped."
+    else
+      echo "Failed to stop WEB2PY. (Possibly, only one of several web2py processes was killed.)"
+      echo "Still running:"
+      pgrep -af $prog
+    fi
   fi
 }
 
@@ -36,7 +50,7 @@ case "$1" in
     web2py_start
   ;;
   *)
-    echo "Usage: $prog [start|stop|restart]"
+    echo "Usage: $0 [start|stop|restart]"
   ;;
 esac
 
