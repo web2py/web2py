@@ -3111,7 +3111,9 @@ class MSSQLAdapter(BaseAdapter):
             (lmin, lmax) = limitby
             sql_s += ' TOP %i' % lmax
         if 'GROUP BY' in sql_o:
-            sql_o = sql_o[:sql_o.find('ORDER BY ')]
+            orderfound = sql_o.find('ORDER BY ')
+            if orderfound >= 0:
+                sql_o = sql_o[:orderfound]
         return 'SELECT %s %s FROM %s%s%s;' % (sql_s, sql_f, sql_t, sql_w, sql_o)
 
     TRUE = 1
