@@ -582,6 +582,32 @@ class TestComputedFields(unittest.TestCase):
         db.tt.drop()
         db.commit()
 
+class TestCommonFilters(unittest.TestCase):
+
+    def testRun(self):
+        db = DAL(DEFAULT_URI, check_reserved=['all'])
+        db.define_table('t1', Field('aa'))
+        db.define_table('t2', Field('aa'), Field('b', db.t1))
+        i1 = db.t1.insert(aa='1')
+        i2 = db.t1.insert(aa='2')
+        i3 = db.t1.insert(aa='3')
+        db.t2.insert(aa='4', b=i1)
+        db.t2.insert(aa='5', b=i2)
+        db.t2.insert(aa='6', b=i2)
+        db.t1._common_filter = lambda q: db.t1.aa>1
+        self.assertEqual(db(db.t1).count(),2)
+        self.assertEqual(len(db(db.t1).select()),2)
+        q = db.t2.b==db.t1.id
+        self.assertEqual(db(q).count(),2)
+        self.assertEqual(len(db(q).select()),2)        
+        self.assertEqual(len(db(db.t1).select(left=db.t2.on(q))),3)
+        db.t2._common_filter = lambda q: db.t2.aa<6
+        self.assertEqual(db(q).count(),1)
+        self.assertEqual(len(db(q).select()),1)
+        self.assertEqual(len(db(db.t1).select(left=db.t2.on(q))),2)
+        db.t2.drop()
+        db.t1.drop()
+
 class TestImportExportFields(unittest.TestCase):
 
     def testRun(self):
