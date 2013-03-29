@@ -114,7 +114,6 @@ commit:
 	make src
 	echo '' > NEWINSTALL
 	hg commit -m "$(S)"
-	#bzr commit -m "$(S)"
 	git commit -a -m "$(S)"
 push:
 	hg push
