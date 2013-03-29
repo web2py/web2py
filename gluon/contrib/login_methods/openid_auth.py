@@ -135,7 +135,7 @@ class OpenIDAuth(object):
               Otherwise it's always 'openid' and you
               may not need it. This should be easy to changed.
               (Just remove the field of "type" and remove the
-              "and db.alt_logins.oidtype == type_" 
+              "and db.alt_logins.oidtype == type_"
               in _find_matched_openid function)
         """
         db = self.db

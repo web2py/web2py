@@ -181,4 +181,3 @@ def loads_yaml(data):
     if have_yaml:
         return yamlib.load(data)
     else: raise ImportError("No YAML serializer available")
-

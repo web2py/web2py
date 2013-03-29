@@ -347,10 +347,10 @@ class Mail(object):
                      mail.send_mail() method
         self.error: Exception message or None if above was successful
         """
-        
+
         # We don't want to use base64 encoding for unicode mail
         Charset.add_charset('utf-8', Charset.QP, Charset.QP, 'utf-8')
-        
+
         def encode_header(key):
             if [c for c in key if 32 > ord(c) or ord(c) > 127]:
                 return Header.Header(key.encode('utf-8'), 'utf-8')
@@ -1429,7 +1429,7 @@ class Auth(object):
         def represent(id, record=None, s=settings):
             try:
                 user = s.table_user(id)
-                return '%s %s' % (user.get("first_name", user.get("email")), 
+                return '%s %s' % (user.get("first_name", user.get("email")),
                                   user.get("last_name", ''))
             except:
                 return id
@@ -1769,14 +1769,14 @@ class Auth(object):
 
         reads current.request.env.http_authorization
         and returns basic_allowed,basic_accepted,user.
-        
+
         if basic_auth_realm is defined is a callable it's return value
         is used to set the basic authentication realm, if it's a string
         its content is used instead.  Otherwise basic authentication realm
         is set to the application name.
         If basic_auth_realm is None or False (the default) the behavior
         is to skip sending any challenge.
-        
+
         """
         if not self.settings.allow_basic_login:
             return (False, False, False)
@@ -1788,7 +1788,7 @@ class Auth(object):
                 basic_realm = unicode(basic_auth_realm)
             elif basic_auth_realm is True:
                 basic_realm = u'' + current.request.application
-            http_401 = HTTP(401, u'Not Authorized', 
+            http_401 = HTTP(401, u'Not Authorized',
                        **{'WWW-Authenticate': u'Basic realm="' + basic_realm + '"'})
         if not basic or not basic[:6].lower() == 'basic ':
             if basic_auth_realm:
@@ -4330,7 +4330,7 @@ class Service(object):
 
     # jsonrpc 2.0 error types.  records the following structure {code: (message,meaning)}
     jsonrpc_errors = {
-        -32700:	("Parse error. Invalid JSON was received by the server.",  "An error occurred on the server while parsing the JSON text."),
+        -32700:        ("Parse error. Invalid JSON was received by the server.",  "An error occurred on the server while parsing the JSON text."),
         -32600: ("Invalid Request", "The JSON sent is not a valid Request object."),
         -32601: ("Method not found", "The method does not exist / is not available."),
         -32602: ("Invalid params", "Invalid method parameter(s)."),
@@ -4385,7 +4385,7 @@ class Service(object):
             return return_error(id, 100, 'Exception %s: %s' % (etype, eval))
 
     def serve_jsonrpc2(self, data=None, batch_element=False):
-                
+
         def return_response(id, result):
             if not must_respond:
                 return None
@@ -4416,9 +4416,9 @@ class Service(object):
             :returns:
                 - True -- if successful
                 - False -- if no error should be reported (i.e. data is missing 'id' member)
-            
+
             :raises: JsonRPCException
-            
+
             """
 
             iparms = set(data.keys())
@@ -4434,8 +4434,8 @@ class Service(object):
 
             return True
 
-        
-            
+
+
         request = current.request
         response = current.response
         if not data:
@@ -4444,7 +4444,7 @@ class Service(object):
                 data = json_parser.loads(request.body.read())
             except ValueError: # decoding error in json lib
                 return return_error(None, -32700)
-            except json_parser.JSONDecodeError: # decoding error in simplejson lib 
+            except json_parser.JSONDecodeError: # decoding error in simplejson lib
                 return return_error(None, -32700)
 
         # Batch handling
@@ -4460,12 +4460,12 @@ class Service(object):
                 return "[" + ','.join(retlist) + "]"
         methods = self.jsonrpc2_procedures
         methods.update(self.jsonrpc_procedures)
-        
+
         try:
             must_respond = validate(data)
         except Service.JsonRpcException, e:
             return return_error(None, e.code, e.info)
-        
+
         id, method, params = data.get('id'), data['method'], data.get('params', '')
         if not method in methods:
             return return_error(id, -32601, data='Method "%s" does not exist' % method)
@@ -4492,7 +4492,7 @@ class Service(object):
         except:
             etype, eval, etb = sys.exc_info()
             return return_error(id, -32099, data='Exception %s: %s' % (etype, eval))
-        
+
 
     def serve_xmlrpc(self):
         request = current.request
@@ -5309,7 +5309,7 @@ class Wiki(object):
         slugs=db(db.wiki_page.id>0).select(db.wiki_page.id,db.wiki_page.slug)
         options=[OPTION(row.slug,_value=row.id) for row in slugs]
         options.insert(0, OPTION('',_value=''))
-        fields = [Field("slug", default=current.request.args(1) or 
+        fields = [Field("slug", default=current.request.args(1) or
                         self.settings.force_prefix,
                         requires=(IS_SLUG(), IS_NOT_IN_DB(db,db.wiki_page.slug))),]
         if self.settings.templates:
@@ -5342,7 +5342,7 @@ class Wiki(object):
         content = SQLFORM.grid(
             wiki_table,
             fields = [wiki_table.slug,
-                      wiki_table.title, wiki_table.tags, 
+                      wiki_table.title, wiki_table.tags,
                       wiki_table.can_read, wiki_table.can_edit],
             links=[
                 lambda row:

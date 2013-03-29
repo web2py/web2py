@@ -373,7 +373,7 @@ def check_new_version(myversion, version_URL):
         the most up-to-version available
     """
     try:
-        from urllib import urlopen        
+        from urllib import urlopen
         version = urlopen(version_URL).read()
         pversion = parse_version(version)
         pmyversion = parse_version(myversion)

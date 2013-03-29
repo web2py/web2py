@@ -147,7 +147,7 @@ server for requests.  It can be used for the optional"scope" parameters for Face
             # reuse token until expiration
             if expires == 0 or expires > time.time():
                         return current.session.token['access_token']
-            
+
         code = current.request.vars.code
 
         if code:

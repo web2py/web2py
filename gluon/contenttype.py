@@ -9,7 +9,7 @@ License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 CONTENT_TYPE dictionary created against freedesktop.org' shared mime info
 database version 1.1.
 
-Deviations from official standards: 
+Deviations from official standards:
 - '.md': 'application/x-genesis-rom' --> 'text/x-markdown'
 - '.png': 'image/x-apple-ios-png' --> 'image/png'
 Additions:

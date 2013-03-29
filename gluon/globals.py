@@ -695,7 +695,7 @@ class Session(Storage):
 
     def forget(self, response=None):
         self._close(response)
-        self._forget = True        
+        self._forget = True
 
     def _try_store_in_cookie(self, request, response):
         if response.session_storage_type != 'cookie':
