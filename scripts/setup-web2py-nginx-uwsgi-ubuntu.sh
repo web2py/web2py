@@ -48,7 +48,7 @@ echo 'server {
         #    expires max;
         #}
         ###
-        
+
         ###if you use something like myapp = dict(languages=['en', 'it', 'jp'], default_language='en') in your routes.py
         #location ~* /(\w+)/(en|it|jp)/static/(.*)$ {
         #    alias /home/www-data/web2py/applications/$1/;
@@ -70,14 +70,14 @@ echo 'server {
             include         uwsgi_params;
             uwsgi_param     UWSGI_SCHEME $scheme;
             uwsgi_param     SERVER_SOFTWARE    nginx/$nginx_version;
-            
+
             ###remove the comments to turn on if you want gzip compression of your pages
             # include /etc/nginx/conf.d/web2py/gzip.conf;
             ### end gzip section
 
             ### remove the comments if you use uploads (max 10 MB)
             #client_max_body_size 10m;
-            ### 
+            ###
         }
 }
 server {
@@ -102,28 +102,28 @@ server {
             ### end gzip section
             ### remove the comments if you want to enable uploads (max 10 MB)
             #client_max_body_size 10m;
-            ### 
+            ###
         }
         ## if you serve static files through https, copy here the section
         ## from the previous server instance to manage static files
- 
+
 }' >/etc/nginx/sites-available/web2py
- 
+
 ln -s /etc/nginx/sites-available/web2py /etc/nginx/sites-enabled/web2py
 rm /etc/nginx/sites-enabled/default
 mkdir /etc/nginx/ssl
 cd /etc/nginx/ssl
- 
+
 openssl genrsa 1024 > web2py.key
 chmod 400 web2py.key
 openssl req -new -x509 -nodes -sha1 -days 1780 -key web2py.key > web2py.crt
 openssl x509 -noout -fingerprint -text < web2py.crt > web2py.info
- 
- 
+
+
 # Prepare folders for uwsgi
 sudo mkdir /etc/uwsgi
 sudo mkdir /var/log/uwsgi
- 
+
 # Create configuration file /etc/uwsgi/web2py.xml
 echo '[uwsgi]
 
@@ -145,11 +145,11 @@ gid = www-data
 cron = 0 0 -1 -1 -1 python /home/www-data/web2py/web2py.py -Q -S welcome -M -R scripts/sessions2trash.py -A -o
 no-orphans = true
 ' >/etc/uwsgi/web2py.ini
- 
+
 #Create a configuration file for uwsgi in emperor-mode
 #for Upstart in /etc/init/uwsgi-emperor.conf
 echo '# Emperor uWSGI script
- 
+
 description "uWSGI Emperor"
 start on runlevel [2345]
 stop on runlevel [06]
@@ -177,7 +177,7 @@ cd /home/www-data/web2py
 sudo -u www-data python -c "from gluon.main import save_password; save_password('$PW',443)"
 start uwsgi-emperor
 /etc/init.d/nginx restart
- 
+
 ## you can reload uwsgi with
 # restart uwsgi-emperor
 ## and stop it with

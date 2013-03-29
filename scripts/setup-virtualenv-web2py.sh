@@ -1,33 +1,33 @@
 #
-# Author:			Christopher Steel
-# Organization:	Voice of Access
-# Date:				2010-11-24
-# License:			Same as Web2py, MIT / GNU
-# Email:			Christopher DOT Steel AT Voice of Access DOT org
+# Author:                        Christopher Steel
+# Organization:        Voice of Access
+# Date:                                2010-11-24
+# License:                        Same as Web2py, MIT / GNU
+# Email:                        Christopher DOT Steel AT Voice of Access DOT org
 #
 # This script will :
-#	download and install virtualenv
-#	start a virtual environment
-#	move into the virtual environment
-#	download and install latest stable version of web2py
-#	start web2py in the virtual environment
+#        download and install virtualenv
+#        start a virtual environment
+#        move into the virtual environment
+#        download and install latest stable version of web2py
+#        start web2py in the virtual environment
 #
 # To disactivate the virtual environment, shut down web2py
 # and type 'disactivate' at the command line.
 #
 # Testing:
-#	OS X
-#	should work on POSIX systems
+#        OS X
+#        should work on POSIX systems
 #
 # Usage:
-#	create a directory to hold your virtual environments, for example
-#		/home/user_name/virtual_environments
-#	place this script in the directory and make it executable
-#		chmod +x web2py-install-virtualenv.sh
-	customize the variables below to meet your needs
-#	execute from terminal
-#		./web2py-install-virtualenv.sh
-#	relax...
+#        create a directory to hold your virtual environments, for example
+#                /home/user_name/virtual_environments
+#        place this script in the directory and make it executable
+#                chmod +x web2py-install-virtualenv.sh
+        customize the variables below to meet your needs
+#        execute from terminal
+#                ./web2py-install-virtualenv.sh
+#        relax...
 
 ################ VARIABLES
 # Change to reflect version changes etc.
@@ -94,8 +94,3 @@ read -p "Press any key to start web2py…"
 echo 'starting web2py'
 echo '==============='
 ../bin/python2.5  web2py.py
-
-
-
-
-

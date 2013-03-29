@@ -11,11 +11,11 @@
 #  # chkconfig: 2345 90 10
 #  # description: web2py-scheduler
 #
-# 4) make it executable with 
+# 4) make it executable with
 #
 #  chmod 755 web2py-scheduler
 #
-# 5) add it to startup with 
+# 5) add it to startup with
 #
 #  chkconfig --add web2py-scheduler
 #
@@ -64,4 +64,3 @@ case "$1" in
     ;;
 esac
 exit 0
-

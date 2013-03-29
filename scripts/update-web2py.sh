@@ -13,13 +13,13 @@
 TARGET=web2py
 
 if [ ! -d $TARGET ]; then
-	# in case we're in web2py/
-	if [ -f ../$TARGET/VERSION ]; then
-		cd ..
-	# in case we're in web2py/scripts
-	elif [ -f ../../$TARGET/VERSION ]; then
-		cd ../..
-	fi
+        # in case we're in web2py/
+        if [ -f ../$TARGET/VERSION ]; then
+                cd ..
+        # in case we're in web2py/scripts
+        elif [ -f ../../$TARGET/VERSION ]; then
+                cd ../..
+        fi
 fi
 read a VERSION c < $TARGET/VERSION
 SAVE=$TARGET-$VERSION
@@ -32,14 +32,14 @@ SAVED=""
 #  but don't overwrite a previous save of the same version.
 #
 if [ -f $SAVE.zip ]; then
-	echo "Remove or rename $SAVE.zip first" >&2
-	exit 1
+        echo "Remove or rename $SAVE.zip first" >&2
+        exit 1
 fi
 if [ -d $TARGET ]; then
-	echo -n ">>Save old version: " >&2
-	cat $TARGET/VERSION >&2
-	zip -q -r $SAVE.zip $TARGET
-	SAVED=$SAVE.zip
+        echo -n ">>Save old version: " >&2
+        cat $TARGET/VERSION >&2
+        zip -q -r $SAVE.zip $TARGET
+        SAVED=$SAVE.zip
 fi
 #
 #  Download the new version.
@@ -54,6 +54,5 @@ rm $ZIP
 echo -n ">>New version: " >&2
 cat $TARGET/VERSION >&2
 if [ "$SAVED" != "" ]; then
-	echo ">>Old version saved as $SAVED"
+        echo ">>Old version saved as $SAVED"
 fi
-

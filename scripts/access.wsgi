@@ -46,9 +46,9 @@ def allow_access(environ,host):
     filename = os.path.join(os.path.dirname(__file__),'access.wsgi.log')
     f = open(filename,'a')
     try:
-	f.write('\n'+header+'\n'+pprint+'\n')
+        f.write('\n'+header+'\n'+pprint+'\n')
     finally:
-	f.close()
+        f.close()
     app = environ['REQUEST_URI'].split('/')[1]
     keys = [key for key in environ if key.startswith('HTTP_')]
     headers = {}
@@ -58,8 +58,7 @@ def allow_access(environ,host):
     try:
         data = urllib.urlencode({'request_uri':environ['REQUEST_URI']})
         request = urllib2.Request(URL_CHECK_ACCESS % dict(app=app),data,headers)
-	response = urllib2.urlopen(request).read().strip().lower()
-	if response.startswith('true'): return True
+        response = urllib2.urlopen(request).read().strip().lower()
+        if response.startswith('true'): return True
     except: pass
     return False
-
