@@ -66,7 +66,7 @@ def index():
 ``
 {{extend 'layout.html'}}
 <h1>Image upload form</h1>
-{{form}}
+{{=form}}
 ``:code_python
    
     Uploaded images are safely renamed to avoid directory traversal vulnerabilities, stored on the filesystem (or database) and a corresponding entry is inserted in the database, linking the file. A built-in mechanism prevents involuntary double form submission. All DB IO is transaction safe by default. Any exception in the code causes the transaction to rollback.
