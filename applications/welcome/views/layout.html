@@ -91,16 +91,18 @@
 
   <div class="container">
     <!-- Masthead ================================================== -->
+    {{if response.title:}}
     <header class="mastheader row" id="header">
         <div class="span12">
             <div class="page-header">
                 <h1>
-                    {{=response.title or request.application}}
+                    {{=response.title}}
                     <small>{{=response.subtitle or ''}}</small>
                 </h1>
             </div>
         </div>
     </header>
+    {{pass}}
 
     <section id="main" class="main row">
         {{if left_sidebar_enabled:}}

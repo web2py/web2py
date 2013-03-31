@@ -4833,14 +4833,27 @@ class PluginManager(object):
 
 
 class Expose(object):
-    def __init__(self, base=None, basename='base', extensions=None, allow_download=True):
+    def __init__(self, base=None, basename=None, extensions=None, allow_download=True):
         """
-        extensions: an optional list of file extensions for filtering displayed files:
+        Usage:
+        
+        def static():
+            return dict(files=Expose())
+
+        or
+
+        def static():
+            path = os.path.join(request.folder,'static','public')
+            return dict(files=Expose(path,basename='public'))
+
+        extensions:
+        an optional list of file extensions for filtering displayed files:
         ['.py', '.jpg']
         allow_download: whether to allow downloading selected files
         """
         current.session.forget()
         base = base or os.path.join(current.request.folder, 'static')
+        basename = basename or current.request.function
         self.basename = basename
         self.args = current.request.raw_args and \
             [arg for arg in current.request.raw_args.split('/') if arg] or []
@@ -4857,8 +4870,14 @@ class Expose(object):
                             if os.path.isdir(f) and not self.isprivate(f)]
         self.filenames = [f[len(path) - 1:] for f in sorted(glob.glob(path))
                             if not os.path.isdir(f) and not self.isprivate(f)]
+        if 'README' in self.filenames:
+            readme = open(os.path.join(filename,'README')).read()
+            self.paragraph = MARKMIN(readme)
+        else:
+            self.paragraph = None
         if extensions:
-            self.filenames = [f for f in self.filenames if os.path.splitext(f)[-1] in extensions]
+            self.filenames = [f for f in self.filenames
+                              if os.path.splitext(f)[-1] in extensions]
 
     def breadcrumbs(self, basename):
         path = []
@@ -4872,8 +4891,10 @@ class Expose(object):
 
     def table_folders(self):
         if self.folders:
-            return SPAN(H3('Folders'), TABLE(*[TR(TD(A(folder, _href=URL(args=self.args + [folder]))))
-                           for folder in self.folders]))
+            return SPAN(H3('Folders'), TABLE(
+                    *[TR(TD(A(folder, _href=URL(args=self.args + [folder]))))
+                      for folder in self.folders],
+                     **dict(_class="table")))
         return ''
 
     @staticmethod
@@ -4882,20 +4903,24 @@ class Expose(object):
 
     @staticmethod
     def isimage(f):
-        return os.path.splitext(f)[-1].lower() in ('.png', '.jpg', '.jpeg', '.gif', '.tiff')
+        return os.path.splitext(f)[-1].lower() in (
+            '.png', '.jpg', '.jpeg', '.gif', '.tiff')
 
     def table_files(self, width=160):
         if self.filenames:
-            return SPAN(H3('Files'), TABLE(*[TR(TD(A(f, _href=URL(args=self.args + [f]))),
-                          TD(IMG(_src=URL(args=self.args + [f]),
-                                 _style='max-width:%spx' % width)
-                                 if width and self.isimage(f) else ''))
-                           for f in self.filenames]))
+            return SPAN(H3('Files'),
+                        TABLE(*[TR(TD(A(f, _href=URL(args=self.args + [f]))),
+                                   TD(IMG(_src=URL(args=self.args + [f]),
+                                          _style='max-width:%spx' % width)
+                                      if width and self.isimage(f) else ''))
+                                for f in self.filenames],
+                               **dict(_class="table")))
         return ''
 
     def xml(self):
-        return DIV(
+        return DIV(            
             H2(self.breadcrumbs(self.basename)),
+            self.paragraph or '',
             self.table_folders(),
             self.table_files()).xml()
 
