@@ -160,17 +160,18 @@ def rss(feed):
     if not 'entries' in feed and 'items' in feed:
         feed['entries'] = feed['items']
     now = datetime.datetime.now()
-    rss = rss2.RSS2(title=str(feed.get('title', '(notitle)')),
-                    link=str(feed.get('link', None)),
-                    description=str(feed.get('description', '')),
+    rss = rss2.RSS2(title=str(feed.get('title', '(notitle)').encode('utf-8', 'replace')),
+                    link=str(feed.get('link', None).encode('utf-8', 'replace')),
+                    description=str(feed.get('description', '').encode('utf-8', 'replace')),
                     lastBuildDate=feed.get('created_on', now),
                     items=[rss2.RSSItem(
-                           title=str(entry.get('title', '(notitle)')),
-                           link=str(entry.get('link', None)),
-                           description=str(entry.get('description', '')),
+                           title=str(entry.get('title', '(notitle)').encode('utf-8', 'replace')),
+                           link=str(entry.get('link', None).encode('utf-8', 'replace')),
+                           description=str(entry.get('description', '').encode('utf-8', 'replace')),
                            pubDate=entry.get('created_on', now)
                            ) for entry in feed.get('entries', [])])
     return rss.to_xml(encoding='utf-8')
+
 
 def yaml(data):
     if have_yaml:
