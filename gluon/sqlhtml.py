@@ -19,6 +19,7 @@ except ImportError:
     from cgi import parse_qs as psq
 import os
 from http import HTTP
+from html import XmlComponent
 from html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT
 from html import FORM, INPUT, LABEL, OPTION, SELECT, BUTTON
 from html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
@@ -1229,7 +1230,8 @@ class SQLFORM(FORM):
                 table = TABLE()
                 for id, a, b, c in xfields:
                     newrows = formstyle(id, a, b, c)
-                    self.field_parent[id] = getattr(b, 'parent', None)
+                    self.field_parent[id] = getattr(b, 'parent', None) \
+                        if isinstance(b,XmlComponent) else None
                     if type(newrows).__name__ != "tuple":
                         newrows = [newrows]
                     for newrow in newrows:
@@ -1237,7 +1239,8 @@ class SQLFORM(FORM):
             else:
                 table = formstyle(self, xfields)
                 for id, a, b, c in xfields:
-                    self.field_parent[id] = getattr(b, 'parent', None)
+                    self.field_parent[id] = getattr(b, 'parent', None) \
+                        if isinstance(b,XmlComponent) else None
         else:
             raise RuntimeError('formstyle not supported')
         return table
