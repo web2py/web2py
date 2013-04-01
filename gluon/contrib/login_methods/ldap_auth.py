@@ -653,7 +653,8 @@ def ldap_auth(server='ldap', port=None,
         ldap_groups_of_the_user = list()
         for group_row in group_search_result:
             group = group_row[1]
-            ldap_groups_of_the_user.extend(group[group_name_attrib])
+            if type(group) == dict and group.has_key(group_name_attrib):
+                ldap_groups_of_the_user.extend(group[group_name_attrib])
 
         con.unbind()
         logger.debug('User groups: %s' % ldap_groups_of_the_user)
