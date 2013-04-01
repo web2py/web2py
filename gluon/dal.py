@@ -2614,7 +2614,11 @@ class PostgreSQLAdapter(BaseAdapter):
                    "port=%s password='%s'") \
                    % (db, user, host, port, password)
         # choose diver according uri
-        self.__version__ = "%s %s" % (self.driver.__name__, self.driver.__version__)
+        if self.driver:
+            self.__version__ = "%s %s" % (self.driver.__name__,
+                                          self.driver.__version__)
+        else:
+            self.__version__ = None
         def connector(msg=msg,driver_args=driver_args):
             return self.driver.connect(msg,**driver_args)
         self.connector = connector
@@ -2669,11 +2673,19 @@ class PostgreSQLAdapter(BaseAdapter):
         return '(%s ILIKE %s)' % (self.expand(first),
                                   self.expand('%'+second,'string'))
 
-    def CONTAINS(self,first,second,case_sensitive=False):
-        if first.type in ('string','text', 'json'):
-            second = '%'+str(second).replace('%','%%')+'%'
-        elif first.type.startswith('list:'):
-            second = '%|'+str(second).replace('|','||').replace('%','%%')+'|%'
+    def CONTAINS(self,first,second,case_sensitive=False):        
+        if isinstance(second,Expression):
+            expr = self.expand(second,'string')
+            if first.type.startswith('list:'):
+                second = Expression(None,"'%%|' || %s || '|%%'" % expr)
+            elif not first.type in ('string', 'text', 'json'):
+                raise RuntimeError("Expression Not Supported")
+        else:
+            if first.type in ('string','text', 'json'):
+                second = '%'+str(second).replace('%','%%')+'%'
+            elif first.type.startswith('list:'):
+                second = '%|'+str(second).replace('|','||')\
+                    .replace('%','%%')+'|%'            
         op = case_sensitive and self.LIKE or self.ILIKE
         return op(first,second)
 
