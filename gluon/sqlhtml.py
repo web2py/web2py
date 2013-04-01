@@ -1769,6 +1769,7 @@ class SQLFORM(FORM):
              createargs={},
              editargs={},
              viewargs={},
+             selectable_submit_button='Submit',
              buttons_placement = 'right',
              links_placement = 'right',
              noconfirm=False
@@ -2379,7 +2380,8 @@ class SQLFORM(FORM):
             htmltable.append(tbody)
             htmltable = DIV(htmltable, _style='width:100%;overflow-x:auto')
             if selectable:
-                htmltable = FORM(htmltable, INPUT(_type="submit"))
+                htmltable = FORM(htmltable, INPUT(
+                        _type="submit", _value=T(selectable_submit_button)))
                 if htmltable.process(formname=formname).accepted:
                     htmltable.vars.records = htmltable.vars.records or []
                     htmltable.vars.records = htmltable.vars.records if type(htmltable.vars.records) == list else [htmltable.vars.records]
