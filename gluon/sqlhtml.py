@@ -1590,7 +1590,7 @@ class SQLFORM(FORM):
 
         table_name = attributes.get('table_name', 'no_table')
 
-        # So it won't interfear with SQLDB.define_table
+        # So it won't interfere with SQLDB.define_table
         if 'table_name' in attributes:
             del attributes['table_name']
 
