@@ -1902,7 +1902,7 @@ class SQLFORM(FORM):
         tablename = table._tablename
         if upload == '<default>':
             upload = lambda filename: url(args=['download', filename])
-            if len(request.args) > 1 and request.args[-2] == 'download':
+            if request.args(-2) == 'download':
                 stream = response.download(request, db)
                 raise HTTP(200, stream, **response.headers)
 
@@ -1939,7 +1939,7 @@ class SQLFORM(FORM):
         create_form = update_form = view_form = search_form = None
         sqlformargs = dict(formargs)
 
-        if create and len(request.args) > 1 and request.args[-2] == 'new':
+        if create and request.args(-2) == 'new':
             table = db[request.args[-1]]
             sqlformargs.update(createargs)
             create_form = SQLFORM(
@@ -1958,7 +1958,7 @@ class SQLFORM(FORM):
             res.search_form = search_form
             return res
 
-        elif details and len(request.args) > 2 and request.args[-3] == 'view':
+        elif details and request.args(-3) == 'view':
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(referrer)
             sqlformargs.update(viewargs)
@@ -1973,7 +1973,7 @@ class SQLFORM(FORM):
             res.view_form = view_form
             res.search_form = search_form
             return res
-        elif editable and len(request.args) > 2 and request.args[-3] == 'edit':
+        elif editable and request.args(-3) == 'edit':
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(URL('error'))
             sqlformargs.update(editargs)
@@ -1998,7 +1998,7 @@ class SQLFORM(FORM):
             res.view_form = view_form
             res.search_form = search_form
             return res
-        elif deletable and len(request.args) > 2 and request.args[-3] == 'delete':
+        elif deletable and request.args(-3) == 'delete':
             table = db[request.args[-2]]
             if ondelete:
                 ondelete(table, request.args[-1])
