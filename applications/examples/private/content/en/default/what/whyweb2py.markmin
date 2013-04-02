@@ -47,7 +47,7 @@ Here is a more complex complete application that lets the visitor upload images 
 ``
 db=DAL('sqlite://storage.db')
 db.define_table('image', 
-    Field('name'),
+    Field('name', notnull=True),
     Field('file','upload'))
 ``:code_python
 
@@ -55,10 +55,10 @@ db.define_table('image',
 
 ``
 def index():
-    form = SQLFORM(db.image)
-    if form.process().accepted:
+    form = SQLFORM(db.image).process()
+    if form.accepted:
         response.flash = 'image uploaded'
-    return dict(form = form)""",counter=None,_class='boxCode')}}
+    return locals()
 ``:code_python
 
 ### In View
