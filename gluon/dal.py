@@ -1947,17 +1947,17 @@ class BaseAdapter(ConnectionPool):
         return value
 
     def parse_list_integers(self, value, field_type):
-        if not self.dbengine in ('google:datastore', 'mongodb'):
+        if not isinstance(self, NoSQLAdapter):
             value = bar_decode_integer(value)
         return value
 
     def parse_list_references(self, value, field_type):
-        if not self.dbengine in ('google:datastore', 'mongodb'):
+        if not isinstance(self, NoSQLAdapter):
             value = bar_decode_integer(value)
         return [self.parse_reference(r, field_type[5:]) for r in value]
 
     def parse_list_strings(self, value, field_type):
-        if not self.dbengine in ('google:datastore', 'mongodb'):
+        if not isinstance(self, NoSQLAdapter):
             value = bar_decode_string(value)
         return value
 
