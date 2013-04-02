@@ -27,7 +27,7 @@ from gluon.languages import (read_possible_languages, read_dict, write_dict,
                              read_plural_dict, write_plural_dict)
 
 
-if DEMO_MODE and request.function in ['change_password', 'pack', 'pack_plugin', 'upgrade_web2py', 'uninstall', 'cleanup', 'compile_app', 'remove_compiled_app', 'delete', 'delete_plugin', 'create_file', 'upload_file', 'update_languages', 'reload_routes', 'git_push', 'git_pull']:
+if DEMO_MODE and request.function in ['change_password', 'pack', 'pack_custom','pack_plugin', 'upgrade_web2py', 'uninstall', 'cleanup', 'compile_app', 'remove_compiled_app', 'delete', 'delete_plugin', 'create_file', 'upload_file', 'update_languages', 'reload_routes', 'git_push', 'git_pull']:
     session.flash = T('disabled in demo mode')
     redirect(URL('site'))
 
@@ -341,7 +341,6 @@ def pack():
         session.flash = T('internal error: %s' % e)
         redirect(URL('site'))
 
-
 def pack_plugin():
     app = get_app()
     if len(request.args) == 2:
@@ -355,6 +354,33 @@ def pack_plugin():
     else:
         session.flash = T('internal error')
         redirect(URL('plugin', args=request.args))
+
+def pack_custom():
+    app = get_app()
+    base = apath(app, r=request)
+    if request.post_vars.file:
+        files = request.post_vars.file
+        files = [files] if not isinstance(files,list) else files
+        fname = 'web2py.app.%s.w2p' % app
+        try:
+            filename = app_pack(app, request, raise_ex=True, filenames=files)
+        except Exception, e:
+            filename = None
+        if filename:
+            response.headers['Content-Type'] = 'application/w2p'
+            disposition = 'attachment; filename=%s' % fname
+            response.headers['Content-Disposition'] = disposition
+            return safe_read(filename, 'rb')
+        else:
+            session.flash = T('internal error: %s' % e)
+            redirect(URL(args=request.args))
+    def ignore(fs):
+        return [f for f in fs if not (
+                f[:1] in '#' or f.endswith('~') or f.endswith('.bak'))]
+    files = {}
+    for (r,d,f) in os.walk(base):
+        files[r] = {'folders':ignore(d),'files':ignore(f)}
+    return locals()
 
 
 def upgrade_web2py():

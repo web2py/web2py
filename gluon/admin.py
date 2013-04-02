@@ -43,7 +43,7 @@ def apath(path='', r=None):
     return os.path.join(opath, path).replace('\\', '/')
 
 
-def app_pack(app, request, raise_ex=False):
+def app_pack(app, request, raise_ex=False, filenames=None):
     """
     Builds a w2p package for the application
 
@@ -60,9 +60,9 @@ def app_pack(app, request, raise_ex=False):
         filename of the w2p file or None on error
     """
     try:
-        app_cleanup(app, request)
+        if filenames is None: app_cleanup(app, request)
         filename = apath('../deposit/web2py.app.%s.w2p' % app, request)
-        w2p_pack(filename, apath(app, request))
+        w2p_pack(filename, apath(app, request), filenames=filenames)
         return filename
     except Exception, e:
         if raise_ex:

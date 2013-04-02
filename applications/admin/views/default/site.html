@@ -25,6 +25,7 @@
 	      {{buttons.append((URL('errors',args=a), T("Errors")))}}
 	      {{buttons.append((URL('cleanup',args=a), T("Clean")))}}
 	      {{buttons.append((URL('pack',args=a), T("Pack all")))}}
+	      {{buttons.append((URL('pack_custom',args=a), T("Pack custom")))}}
 	      {{if not os.path.exists('applications/%s/compiled' % a):}}
                 {{buttons.append((URL('compile_app',args=a), T("Compile")))}}
 	      {{else:}}
