@@ -75,7 +75,7 @@ def da_du_ma(n=4):
                     [random.randint(0, 11)] for i in range(n)])
 
 
-def populate(table, n, default=True, compute=False):
+def populate(table, n, default=True, compute=False, contents={}):
     ell = Learner()
     #ell.learn(open('20417.txt','r').read())
     #ell.save('frequencies.pickle')
@@ -84,7 +84,14 @@ def populate(table, n, default=True, compute=False):
     ids = {}
     for i in range(n):
         record = {}
+
+        record.update(contents) # load user supplied contents.
+
         for fieldname in table.fields:
+
+            if record.get(fieldname) is not None:
+                continue # if user supplied it, let it be.
+
             field = table[fieldname]
             if not isinstance(field.type, (str, unicode)):
                 continue
