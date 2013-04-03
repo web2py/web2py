@@ -1255,24 +1255,15 @@ class BaseAdapter(ConnectionPool):
         return '(%s LIKE %s)' % (self.expand(first),
                                  self.expand('%'+second, 'string'))
 
-    def CONTAINS(self, first, second, case_sensitive=False):
-        if isinstance(second,Expression):
-            field = self.expand(first)
-            expr = self.expand(second,'string')
-            if first.type.startswith('list:'):
-                expr = 'CONCAT("|", %s, "|")' % expr
-            elif not first.type in ('string', 'text', 'json'):
-                raise RuntimeError("Expression Not Supported")
-            return 'INSTR(%s,%s)' % (field, expr)
-        else:
-            if first.type in ('string', 'text', 'json'):
-                key = '%'+str(second).replace('%','%%')+'%'
-            elif first.type.startswith('list:'):
-                key = '%|'+str(second).replace('|','||').replace('%','%%')+'|%'
-            else:
-                raise RuntimeError("Expression Not Supported")
-            op = case_sensitive and self.LIKE or self.ILIKE
-            return op(first,key)
+    def CONTAINS(self,first,second,case_sensitive=False):     
+        if first.type in ('string','text', 'json'):
+            second = Expression(None,self.CONCAT('%',Expression(
+                        None,self.REPLACE(second,('%','%%'))),'%'))
+        elif first.type.startswith('list:'):
+            second = Expression(None,self.CONCAT('%|',Expression(None,self.REPLACE(
+                        Expression(None,self.REPLACE(second,('%','%%'))),('|','||'))),'|%'))
+        op = case_sensitive and self.LIKE or self.ILIKE
+        return op(first,second)
 
     def EQ(self, first, second=None):
         if second is None:
@@ -1310,9 +1301,24 @@ class BaseAdapter(ConnectionPool):
         return '(%s >= %s)' % (self.expand(first),
                                self.expand(second,first.type))
 
+    def is_numerical_type(self, ftype):
+        return ftype in ('integer','boolean','double','bigint') or \
+            ftype.startswith('decimal')
+
+    def REPLACE(self, first, (second, third)):
+        return 'REPLACE(%s,%s,%s)' % (self.expand(first,'string'), 
+                                      self.expand(second,'string'),
+                                      self.expand(third,'string'))
+
+    def CONCAT(self, *items):
+        return '(%s)' % ' || '.join(self.expand(x,'string') for x in items)
+
     def ADD(self, first, second):
-        return '(%s + %s)' % (self.expand(first),
-                              self.expand(second, first.type))
+        if self.is_numerical_type(first.type):
+            return '(%s + %s)' % (self.expand(first),
+                                  self.expand(second, first.type))
+        else:
+            return self.CONCAT(first, second)
 
     def SUB(self, first, second):
         return '(%s - %s)' % (self.expand(first),
@@ -2673,22 +2679,6 @@ class PostgreSQLAdapter(BaseAdapter):
         return '(%s ILIKE %s)' % (self.expand(first),
                                   self.expand('%'+second,'string'))
 
-    def CONTAINS(self,first,second,case_sensitive=False):        
-        if isinstance(second,Expression):
-            expr = self.expand(second,'string')
-            if first.type.startswith('list:'):
-                second = Expression(None,"'%%|' || %s || '|%%'" % expr)
-            elif not first.type in ('string', 'text', 'json'):
-                raise RuntimeError("Expression Not Supported")
-        else:
-            if first.type in ('string','text', 'json'):
-                second = '%'+str(second).replace('%','%%')+'%'
-            elif first.type.startswith('list:'):
-                second = '%|'+str(second).replace('|','||')\
-                    .replace('%','%%')+'|%'            
-        op = case_sensitive and self.LIKE or self.ILIKE
-        return op(first,second)
-
     # GIS functions
 
     def ST_ASGEOJSON(self, first, second):
@@ -3215,6 +3205,9 @@ class MSSQLAdapter(BaseAdapter):
     def EPOCH(self, first):
         return "DATEDIFF(second, '1970-01-01 00:00:00', %s)" % self.expand(first)
 
+    def CONCAT(self, *items):
+        return '(%s)' % ' + '.join(self.expand(x,'string') for x in items)
+
     # GIS Spatial Extensions
 
     # No STAsGeoJSON in MSSQL
@@ -3473,17 +3466,12 @@ class FireBirdAdapter(BaseAdapter):
     def LENGTH(self, first):
         return "CHAR_LENGTH(%s)" % self.expand(first)
 
-    def CONTAINING(self,first,second):
-        "case in-sensitive like operator"
+    def CONTAINS(self,first,second,case_sensitive=False):
+        if first.type.startswith('list:'):
+            second = Expression(None,self.CONCAT('|',Expression(
+                        None,self.REPLACE(second,('|','||'))),'|'))
         return '(%s CONTAINING %s)' % (self.expand(first),
                                        self.expand(second, 'string'))
-
-    def CONTAINS(self, first, second, case_sensitive=False):
-        if first.type in ('string','text'):
-            second = str(second).replace('%','%%')
-        elif first.type.startswith('list:'):
-            second = '|'+str(second).replace('|','||').replace('%','%%')+'|'
-        return self.CONTAINING(first,second)
 
     def _drop(self,table,mode):
         sequence_name = table._sequence_name
@@ -8818,6 +8806,10 @@ class Expression(object):
     def upper(self):
         db = self.db
         return Expression(db, db._adapter.UPPER, self, None, self.type)
+
+    def replace(self,a,b):
+        db = self.db
+        return Expression(db, db._adapter.REPLACE, self, (a,b), self.type)
 
     def year(self):
         db = self.db

@@ -250,26 +250,26 @@ class TestSelect(unittest.TestCase):
         self.assertEqual(db.tt.insert(aa='1'), 1)
         self.assertEqual(db.tt.insert(aa='2'), 2)
         self.assertEqual(db.tt.insert(aa='3'), 3)
-        self.assertEqual(len(db(db.tt.id > 0).select()), 3)
+        self.assertEqual(db(db.tt.id > 0).count(), 3)
         self.assertEqual(db(db.tt.id > 0).select(orderby=~db.tt.aa
                           | db.tt.id)[0].aa, '3')
         self.assertEqual(len(db(db.tt.id > 0).select(limitby=(1, 2))), 1)
         self.assertEqual(db(db.tt.id > 0).select(limitby=(1, 2))[0].aa,
                          '2')
         self.assertEqual(len(db().select(db.tt.ALL)), 3)
-        self.assertEqual(len(db(db.tt.aa == None).select()), 0)
-        self.assertEqual(len(db(db.tt.aa != None).select()), 3)
-        self.assertEqual(len(db(db.tt.aa > '1').select()), 2)
-        self.assertEqual(len(db(db.tt.aa >= '1').select()), 3)
-        self.assertEqual(len(db(db.tt.aa == '1').select()), 1)
-        self.assertEqual(len(db(db.tt.aa != '1').select()), 2)
-        self.assertEqual(len(db(db.tt.aa < '3').select()), 2)
-        self.assertEqual(len(db(db.tt.aa <= '3').select()), 3)
-        self.assertEqual(len(db(db.tt.aa > '1')(db.tt.aa < '3').select()), 1)
-        self.assertEqual(len(db((db.tt.aa > '1') & (db.tt.aa < '3')).select()), 1)
-        self.assertEqual(len(db((db.tt.aa > '1') | (db.tt.aa < '3')).select()), 3)
-        self.assertEqual(len(db((db.tt.aa > '1') & ~(db.tt.aa > '2')).select()), 1)
-        self.assertEqual(len(db(~(db.tt.aa > '1') & (db.tt.aa > '2')).select()), 0)
+        self.assertEqual(db(db.tt.aa == None).count(), 0)
+        self.assertEqual(db(db.tt.aa != None).count(), 3)
+        self.assertEqual(db(db.tt.aa > '1').count(), 2)
+        self.assertEqual(db(db.tt.aa >= '1').count(), 3)
+        self.assertEqual(db(db.tt.aa == '1').count(), 1)
+        self.assertEqual(db(db.tt.aa != '1').count(), 2)
+        self.assertEqual(db(db.tt.aa < '3').count(), 2)
+        self.assertEqual(db(db.tt.aa <= '3').count(), 3)
+        self.assertEqual(db(db.tt.aa > '1')(db.tt.aa < '3').count(), 1)
+        self.assertEqual(db((db.tt.aa > '1') & (db.tt.aa < '3')).count(), 1)
+        self.assertEqual(db((db.tt.aa > '1') | (db.tt.aa < '3')).count(), 3)
+        self.assertEqual(db((db.tt.aa > '1') & ~(db.tt.aa > '2')).count(), 1)
+        self.assertEqual(db(~(db.tt.aa > '1') & (db.tt.aa > '2')).count(), 0)
         db.tt.drop()
 
 
@@ -281,15 +281,15 @@ class TestBelongs(unittest.TestCase):
         self.assertEqual(db.tt.insert(aa='1'), 1)
         self.assertEqual(db.tt.insert(aa='2'), 2)
         self.assertEqual(db.tt.insert(aa='3'), 3)
-        self.assertEqual(len(db(db.tt.aa.belongs(('1', '3'))).select()),
+        self.assertEqual(db(db.tt.aa.belongs(('1', '3'))).count(),
                          2)
-        self.assertEqual(len(db(db.tt.aa.belongs(db(db.tt.id
-                          > 2)._select(db.tt.aa))).select()), 1)
-        self.assertEqual(len(db(db.tt.aa.belongs(db(db.tt.aa.belongs(('1',
-                         '3')))._select(db.tt.aa))).select()), 2)
-        self.assertEqual(len(db(db.tt.aa.belongs(db(db.tt.aa.belongs(db
+        self.assertEqual(db(db.tt.aa.belongs(db(db.tt.id
+                          > 2)._select(db.tt.aa))).count(), 1)
+        self.assertEqual(db(db.tt.aa.belongs(db(db.tt.aa.belongs(('1',
+                         '3')))._select(db.tt.aa))).count(), 2)
+        self.assertEqual(db(db.tt.aa.belongs(db(db.tt.aa.belongs(db
                          (db.tt.aa.belongs(('1', '3')))._select(db.tt.aa)))._select(
-                         db.tt.aa))).select()),
+                         db.tt.aa))).count(),
                          2)
         db.tt.drop()
 
@@ -297,16 +297,17 @@ class TestBelongs(unittest.TestCase):
 class TestContains(unittest.TestCase):
     def testRun(self):
         db = DAL(DEFAULT_URI, check_reserved=['all'])
-        db.define_table('tt', Field('aa', 'list:string'))
-        self.assertEqual(db.tt.insert(aa=['aaa','bbb']), 1)
-        self.assertEqual(db.tt.insert(aa=['bbb','ddd']), 2)
-        self.assertEqual(db.tt.insert(aa=['eee','aaa']), 3)
-        self.assertEqual(len(db(db.tt.aa.contains('aaa')).select()),
-                         2)
-        self.assertEqual(len(db(db.tt.aa.contains('bbb')).select()),
-                         2)
-        self.assertEqual(len(db(db.tt.aa.contains('aa')).select()),
-                         0)
+        db.define_table('tt', Field('aa', 'list:string'), Field('bb','string'))
+        self.assertEqual(db.tt.insert(aa=['aaa','bbb'],bb='aaa'), 1)
+        self.assertEqual(db.tt.insert(aa=['bbb','ddd'],bb='abb'), 2)
+        self.assertEqual(db.tt.insert(aa=['eee','aaa'],bb='acc'), 3)
+        self.assertEqual(db(db.tt.aa.contains('aaa')).count(), 2)
+        self.assertEqual(db(db.tt.aa.contains('bbb')).count(), 2)
+        self.assertEqual(db(db.tt.aa.contains('aa')).count(), 0)
+        self.assertEqual(db(db.tt.bb.contains('a')).count(), 3)
+        self.assertEqual(db(db.tt.bb.contains('b')).count(), 1)
+        self.assertEqual(db(db.tt.bb.contains('d')).count(), 0)
+        self.assertEqual(db(db.tt.aa.contains(db.tt.bb)).count(), 1)
         db.tt.drop()
 
 
@@ -316,23 +317,23 @@ class TestLike(unittest.TestCase):
         db = DAL(DEFAULT_URI, check_reserved=['all'])
         db.define_table('tt', Field('aa'))
         self.assertEqual(db.tt.insert(aa='abc'), 1)
-        self.assertEqual(len(db(db.tt.aa.like('a%')).select()), 1)
-        self.assertEqual(len(db(db.tt.aa.like('%b%')).select()), 1)
-        self.assertEqual(len(db(db.tt.aa.like('%c')).select()), 1)
-        self.assertEqual(len(db(db.tt.aa.like('%d%')).select()), 0)
-        self.assertEqual(len(db(db.tt.aa.lower().like('A%')).select()), 1)
-        self.assertEqual(len(db(db.tt.aa.lower().like('%B%')).select()),
+        self.assertEqual(db(db.tt.aa.like('a%')).count(), 1)
+        self.assertEqual(db(db.tt.aa.like('%b%')).count(), 1)
+        self.assertEqual(db(db.tt.aa.like('%c')).count(), 1)
+        self.assertEqual(db(db.tt.aa.like('%d%')).count(), 0)
+        self.assertEqual(db(db.tt.aa.lower().like('A%')).count(), 1)
+        self.assertEqual(db(db.tt.aa.lower().like('%B%')).count(),
                          1)
-        self.assertEqual(len(db(db.tt.aa.lower().like('%C')).select()), 1)
-        self.assertEqual(len(db(db.tt.aa.upper().like('A%')).select()), 1)
-        self.assertEqual(len(db(db.tt.aa.upper().like('%B%')).select()),
+        self.assertEqual(db(db.tt.aa.lower().like('%C')).count(), 1)
+        self.assertEqual(db(db.tt.aa.upper().like('A%')).count(), 1)
+        self.assertEqual(db(db.tt.aa.upper().like('%B%')).count(),
                          1)
-        self.assertEqual(len(db(db.tt.aa.upper().like('%C')).select()), 1)
+        self.assertEqual(db(db.tt.aa.upper().like('%C')).count(), 1)
         db.tt.drop()
         db.define_table('tt', Field('aa', 'integer'))
         self.assertEqual(db.tt.insert(aa=1111111111), 1)
-        self.assertEqual(len(db(db.tt.aa.like('1%')).select()), 1)
-        self.assertEqual(len(db(db.tt.aa.like('2%')).select()), 0)
+        self.assertEqual(db(db.tt.aa.like('1%')).count(), 1)
+        self.assertEqual(db(db.tt.aa.like('2%')).count(), 0)
         db.tt.drop()
 
 
@@ -347,8 +348,8 @@ class TestDatetime(unittest.TestCase):
                          10, 30)), 2)
         self.assertEqual(db.tt.insert(aa=datetime.datetime(1970, 12, 21,
                          9, 30)), 3)
-        self.assertEqual(len(db(db.tt.aa == datetime.datetime(1971, 12,
-                         21, 11, 30)).select()), 1)
+        self.assertEqual(db(db.tt.aa == datetime.datetime(1971, 12,
+                         21, 11, 30)).count(), 1)
         self.assertEqual(db(db.tt.aa.year() == 1971).count(), 2)
         self.assertEqual(db(db.tt.aa.month() == 12).count(), 2)
         self.assertEqual(db(db.tt.aa.day() == 21).count(), 3)
@@ -596,14 +597,14 @@ class TestCommonFilters(unittest.TestCase):
         db.t2.insert(aa='6', b=i2)
         db.t1._common_filter = lambda q: db.t1.aa>1
         self.assertEqual(db(db.t1).count(),2)
-        self.assertEqual(len(db(db.t1).select()),2)
+        self.assertEqual(db(db.t1).count(),2)
         q = db.t2.b==db.t1.id
         self.assertEqual(db(q).count(),2)
-        self.assertEqual(len(db(q).select()),2)        
+        self.assertEqual(db(q).count(),2)        
         self.assertEqual(len(db(db.t1).select(left=db.t2.on(q))),3)
         db.t2._common_filter = lambda q: db.t2.aa<6
         self.assertEqual(db(q).count(),1)
-        self.assertEqual(len(db(q).select()),1)
+        self.assertEqual(db(q).count(),1)
         self.assertEqual(len(db(db.t1).select(left=db.t2.on(q))),2)
         db.t2.drop()
         db.t1.drop()
