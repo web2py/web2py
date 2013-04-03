@@ -2424,6 +2424,9 @@ class MySQLAdapter(BaseAdapter):
     def EPOCH(self, first):
         return "UNIX_TIMESTAMP(%s)" % self.expand(first)
 
+    def CONCAT(self, *items):
+        return 'CONCAT(%s)' % ','.join(self.expand(x,'string') for x in items)
+
     def REGEXP(self,first,second):
         return '(%s REGEXP %s)' % (self.expand(first),
                                    self.expand(second,'string'))
