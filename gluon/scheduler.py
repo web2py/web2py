@@ -563,16 +563,18 @@ class Scheduler(MetaScheduler):
             self.die()
 
     def wrapped_assign_tasks(self, db):
+        logger.debug('Assigning tasks...')
         db.commit()  #db.commit() only for Mysql
         x = 0
         while x < 10:
             try:
                 self.assign_tasks(db)
                 db.commit()
+                logger.debug('Tasks assigned...')
                 break
             except:
                 db.rollback()
-                logger.error('TICKER: error assigning tasks')
+                logger.error('TICKER: error assigning tasks (%s)', x)
                 x += 1
                 time.sleep(0.5)
 
@@ -766,7 +768,7 @@ class Scheduler(MetaScheduler):
                     db(sw.worker_name == self.worker_name).update(
                         last_heartbeat=now, status=ACTIVE)
                     self.worker_status[1] = 1  # re-activating the process
-                    if self.worker_status[0] <> RUNNING:
+                    if self.worker_status[0] != RUNNING:
                         self.worker_status[0] = ACTIVE
 
             self.do_assign_tasks = False
@@ -786,13 +788,17 @@ class Scheduler(MetaScheduler):
                         inactive_workers._select(sw.worker_name)))(st.status == RUNNING)\
                         .update(assigned_worker_name='', status=QUEUED)
                     inactive_workers.delete()
-                    self.is_a_ticker = self.being_a_ticker()
+                    try:
+                        self.is_a_ticker = self.being_a_ticker()
+                    except:
+                        logger.error('Error coordinating TICKER')
                     if self.worker_status[0] == ACTIVE:
                         self.do_assign_tasks = True
                 except:
-                    pass
+                    logger.error('Error cleaning up')
             db.commit()
         except:
+            logger.error('Error retrieving status')
             db.rollback()
         self.adj_hibernation()
         self.sleep()
