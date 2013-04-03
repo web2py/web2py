@@ -793,7 +793,7 @@ def console():
                       default=None,
                       help=msg)
 
-    msg = 'run schedulers alongside webserver'
+    msg = 'run schedulers alongside webserver, needs -K app1 and -a too'
     parser.add_option('-X',
                       '--with-scheduler',
                       action='store_true',
