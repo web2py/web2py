@@ -2122,7 +2122,10 @@ class SQLFORM(FORM):
             dbset = dbset(subquery)
         try:
             if left or groupby:
-                c = 'count(*)'
+                if groupby:
+                    c = 'count(distinct %s)' % str(groupby)
+                else:
+                    c = 'count(*)'
                 nrows = dbset.select(c, left=left, cacheable=True,
                                      groupby=groupby).first()[c]
             elif dbset._db._adapter.dbengine=='google:datastore':
