@@ -812,14 +812,16 @@ class Scheduler(MetaScheduler):
         ticker = all_active.find(lambda row: row.is_ticker is True).first()
         not_busy = self.worker_status[0] == ACTIVE
         if not ticker:
+            #if no other tickers are around
             if not_busy:
-                #only if this worker isn't busy, otherwise wait for a free one
+                #only if I'm not busy
                 db(sw.worker_name == self.worker_name).update(is_ticker=True)
                 db(sw.worker_name != self.worker_name).update(is_ticker=False)
                 logger.info("TICKER: I'm a ticker")
             else:
-                #giving up, only if I'm not alone
-                if len(all_active) > 1:
+                #I'm busy
+                if len(all_active) >= 1:
+                    #so I'll "downgrade" myself to a "poor worker"
                     db(sw.worker_name == self.worker_name).update(is_ticker=False)
                 else:
                     not_busy = True
