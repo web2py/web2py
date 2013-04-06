@@ -1181,9 +1181,10 @@ class SQLFORM(FORM):
             xfields.append(
                 (self.FIELDKEY_DELETE_RECORD + SQLFORM.ID_ROW_SUFFIX,
                  LABEL(
-                 delete_label, separator,
-                 _for=self.FIELDKEY_DELETE_RECORD,
-                 _id=self.FIELDKEY_DELETE_RECORD + SQLFORM.ID_LABEL_SUFFIX),
+                        T(delete_label), separator,
+                        _for=self.FIELDKEY_DELETE_RECORD,
+                        _id=self.FIELDKEY_DELETE_RECORD + \
+                            SQLFORM.ID_LABEL_SUFFIX),
                  widget,
                  col3.get(self.FIELDKEY_DELETE_RECORD, '')))
             self.custom.delete = self.custom.deletable = widget
