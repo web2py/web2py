@@ -446,7 +446,7 @@ CONTENT_TYPE = {
     '.oga': 'audio/x-speex+ogg',
     '.ogg': 'video/x-theora+ogg',
     '.ogm': 'video/x-ogm+ogg',
-    '.ogv': 'video/x-theora+ogg',
+    '.ogv': 'video/ogg',
     '.ogx': 'application/ogg',
     '.old': 'application/x-trash',
     '.oleo': 'application/x-oleo',
