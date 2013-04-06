@@ -2677,7 +2677,7 @@ class SQLTABLE(TABLE):
     :param selectid: The id you want to select
     :param renderstyle: Boolean render the style with the table
 
-    :param extracolums = [{'label':A('Extra',_href='#'),
+    :param extracolumns = [{'label':A('Extra',_href='#'),
                     'class': '', #class name of the header
                     'width':'', #width in pixels or %
                     'content':lambda row, rc: A('Edit',_href='edit/%s'%row.id),
@@ -2699,8 +2699,8 @@ class SQLTABLE(TABLE):
                                 },
                }
 
-    table = SQLTABLE(rows, headers=headers, extracolums=extracolums)
-
+    table = SQLTABLE(rows, headers=headers, extracolumns=extracolumns)
+`<
 
     """
 
