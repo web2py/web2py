@@ -266,8 +266,8 @@ class Mail(object):
     def send(
         self,
         to,
-        subject='None',
-        message='None',
+        subject = '[no subject]',
+        message = '[no message]',
         attachments=None,
         cc=None,
         bcc=None,
