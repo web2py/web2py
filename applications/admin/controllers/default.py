@@ -708,7 +708,7 @@ def edit():
         cfilename = os.path.join(request.args[0], 'controllers',
                                  request.args[2] + '.py')
         if os.path.exists(apath(cfilename, r=request)):
-            edit_controller = URL('edit', args=[cfilename])
+            edit_controller = URL('edit',args=[cfilename.replace(os.sep, "/")])
             view = request.args[3].replace('.html', '')
             view_link = URL(request.args[0], request.args[2], view)
     elif filetype == 'python' and request.args[1] == 'controllers':
