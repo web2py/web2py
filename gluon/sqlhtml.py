@@ -2121,13 +2121,15 @@ class SQLFORM(FORM):
         if subquery:
             dbset = dbset(subquery)
         try:
-            if left or groupby:
-                if groupby:
-                    c = 'count(distinct %s)' % str(groupby)
-                else:
-                    c = 'count(*)'
-                nrows = dbset.select(c, left=left, cacheable=True,
-                                     groupby=groupby).first()[c]
+            if groupby:
+                c = 'count(*)'
+                nrows = db.executesql(
+                    'select count(*) from (%s);' %
+                    dbset._select(c, left=left, cacheable=True,
+                                  groupby=groupby)[:-1])[0][0]
+            elif left:
+                c = 'count(*)'
+                nrows = dbset.select(c, left=left, cacheable=True).first()[c]
             elif dbset._db._adapter.dbengine=='google:datastore':
                 #if we don't set a limit, this can timeout for a large table
                 nrows = dbset.db._adapter.count(dbset.query, limit=1000)
