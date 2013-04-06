@@ -1,3 +1,10 @@
+## 2.4.6
+
+- better tests
+- new ANY_OF and IS_IPV6 validators
+- new custom save option
+- many small bug fixes
+
 ## 2.4.5
 
 - travis.ci integration (thanks Marc Abramowitz and Niphlod). Passes all tests (thanks Niplod).
