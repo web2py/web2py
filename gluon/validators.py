@@ -652,7 +652,7 @@ class IS_NOT_IN_DB(Validator):
             if row and any(str(row[f]) != str(id[f]) for f in id):
                 return (value, translate(self.error_message))
         else:
-            row = subset.select(table._id, limitby=(0, 1)).first()
+            row = subset.select(table._id, field, limitby=(0, 1)).first()
             if row and str(row.id) != str(id):
                 return (value, translate(self.error_message))
         return (value, None)
