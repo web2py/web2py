@@ -21,6 +21,10 @@ default_expiration: "24h"   # for static files
 
 handlers:
 
+# Warning! Static mapping - below - isn't compatible with 
+# the parametric router's language logic. 
+# You cannot use them together.
+
 - url: /(?P<a>.+?)/static/(?P<b>.+)
   static_files: applications/\1/static/\2
   upload: applications/(.+?)/static/(.+)
