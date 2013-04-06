@@ -54,6 +54,10 @@ response.menu = [[T('design'), False, URL('admin', 'default', 'design',
 # ## auxiliary functions
 # ###########################################################
 
+if False and request.tickets_db:
+    from gluon.restricted import TicketStorage
+    ts = TicketStorage()
+    ts._get_table(request.tickets_db, ts.tablename, request.application)
 
 def get_databases(request):
     dbs = {}
