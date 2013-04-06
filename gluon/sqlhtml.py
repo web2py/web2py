@@ -2384,7 +2384,9 @@ class SQLFORM(FORM):
                     tr = TR(*trcols, **dict(_class=classtr))
                 tbody.append(tr)
             htmltable.append(tbody)
-            htmltable = DIV(htmltable, _style='width:100%;overflow-x:auto')
+            htmltable = DIV(
+                htmltable, _class='web2py_htmltable',
+                _style='width:100%;overflow-x:auto;-ms-overflow-x:scroll')
             if selectable:
                 htmltable = FORM(htmltable, INPUT(
                         _type="submit", _value=T(selectable_submit_button)))
