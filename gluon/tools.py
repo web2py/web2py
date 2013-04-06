@@ -5073,8 +5073,10 @@ class Wiki(object):
                     db.wiki_tag.insert(name=tag, wiki_page=page.id)
         db.wiki_page._after_insert.append(update_tags_insert)
         db.wiki_page._after_update.append(update_tags_update)
-        if auth.user and check_credentials(current.request) and \
-                not 'wiki_editor' in auth.user_groups.values():
+       
+        if (auth.user and
+            check_credentials(current.request, gae_login=False) and
+            not 'wiki_editor' in auth.user_groups.values()):
             group = db.auth_group(role='wiki_editor')
             gid = group.id if group else db.auth_group.insert(
                 role='wiki_editor')

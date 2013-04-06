@@ -367,16 +367,19 @@ def get_session(request, other_application='admin'):
     return osession
 
 
-def check_credentials(request, other_application='admin', expiration=60 * 60):
+def check_credentials(request, other_application='admin',
+                      expiration=60 * 60, gae_login=True):
     """ checks that user is authorized to access other_application"""
     if request.env.web2py_runtime_gae:
         from google.appengine.api import users
         if users.is_current_user_admin():
             return True
-        else:
+        elif gae_login:
             login_html = '<a href="%s">Sign in with your google account</a>.' \
                 % users.create_login_url(request.env.path_info)
             raise HTTP(200, '<html><body>%s</body></html>' % login_html)
+        else:
+            return False
     else:
         dt = time.time() - expiration
         s = get_session(request, other_application)
