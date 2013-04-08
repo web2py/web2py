@@ -4,22 +4,28 @@ python:
   - '2.5'
   - '2.6'
   - '2.7'
+  - 'pypy'
 env:
   - DB=sqlite:memory
   - DB=mysql://root:@localhost/test_w2p
   - DB=postgres://postgres:@localhost/test_w2p
 before_script:
   - pip install unittest2
-  - if [[ $DB == postgres* ]]; then pip install --use-mirrors psycopg2; fi
+  - if [[ $DB == postgres* ]]; then pip install --use-mirrors psycopg2; fi;
   - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then pip install --use-mirrors pysqlite; fi
   - if [[ $DB == mysql* ]]; then mysql -e 'create database test_w2p;'; fi
   - if [[ $DB == postgres* ]]; then psql -c 'create database test_w2p;' -U postgres; fi
   #Temporal solution to travis issue #155
   - sudo chmod 777 /dev/shm
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
+matrix:
+  exclude:
+    - python: 'pypy'
+      env: DB=postgres://postgres:@localhost/test_w2p
+    - python: 'pypy'
+      env: DB=mysql://root:@localhost/test_w2p
+
 script: PYTHONPATH=. unit2 -v gluon.tests
 
 notifications:
-  email: false
-  irc:
-    channels: "irc.freenode.org#web2py"
+  email: true
