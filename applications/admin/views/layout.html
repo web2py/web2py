@@ -8,9 +8,7 @@
         <title>{{=response.title or URL()}}</title>
         {{
         response.files.append(URL('static','css/bootstrap.min.css'))
-        #response.files.append(URL('static','css/styles.css'))
         response.files.append(URL('static','css/bootstrap_essentials.css'))
-        # response.files.append(URL('static','css/bootstrap_adapters.css'))
         response.files.append(URL('static','css/bootstrap-responsive.min.css'))
         }}
         {{include 'web2py_ajax.html'}}
