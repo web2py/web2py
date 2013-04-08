@@ -586,7 +586,7 @@ class XML(XmlComponent):
         return self.text
 
     def __str__(self):
-        return self.xml()
+        return self.text
 
     def __add__(self, other):
         return '%s%s' % (self, other)
@@ -600,8 +600,9 @@ class XML(XmlComponent):
     def __hash__(self):
         return hash(str(self))
 
-    def __getattr__(self, name):
-        return getattr(str(self), name)
+#    why was this here? Break unpickling in sessions
+#    def __getattr__(self, name):
+#        return getattr(str(self), name)
 
     def __getitem__(self, i):
         return str(self)[i]
