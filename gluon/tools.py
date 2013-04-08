@@ -5257,7 +5257,7 @@ class Wiki(object):
             current.session.flash = 'page created'
             redirect(URL(args=slug))
         script = """
-        $(function() {
+        jQuery(function() {
             if (!jQuery('#wiki_page_body').length) return;
             var pagecontent = jQuery('#wiki_page_body');
             pagecontent.css('font-family',
