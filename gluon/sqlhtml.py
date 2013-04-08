@@ -1648,7 +1648,14 @@ class SQLFORM(FORM):
         selectfields = []
         for field in fields:
             name = str(field).replace('.', '-')
-            options = search_options.get(field.type.split(' ')[0], None)
+            # treat ftype 'decimal' as 'double' 
+            # (this fixes problems but needs refactoring!
+            ftype = field.type.split(' ')[0]            
+            if ftype.startswith('decimal'): ftype = 'double'
+            elif ftype=='bigint': ftype = 'integer'
+            elif ftype.startswith('big-'): ftype = ftype[4:]
+            # end
+            options = search_options.get(ftype, None)
             if options:
                 label = isinstance(
                     field.label, str) and T(field.label) or field.label
