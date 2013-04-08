@@ -118,6 +118,7 @@ commit:
 push:
 	hg push
 	git push
+	git push --tags
 tag:
 	git tag -l '$(S)'
 	hg tag -l '$(S)'

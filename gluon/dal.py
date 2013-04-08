@@ -8050,7 +8050,7 @@ class Reference(long):
 
     def __setattr__(self, key, value):
         if key.startswith('_'):
-            int.__setattr__(self, key, value)
+            long.__setattr__(self, key, value)
             return
         self.__allocate()
         self._record[key] =  value
