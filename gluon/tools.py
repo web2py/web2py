@@ -3368,7 +3368,8 @@ class Auth(object):
              resolve=True,
              extra=None,
              menu_groups=None,
-             templates=None):
+             templates=None,
+             migrate=True):
 
         if not hasattr(self, '_wiki'):
             self._wiki = Wiki(self, render=render,
@@ -3377,7 +3378,8 @@ class Auth(object):
                               restrict_search=restrict_search,
                               env=env, extra=extra or {},
                               menu_groups=menu_groups,
-                              templates=templates)
+                              templates=templates,
+                              migrate=migrate)
         else:
             self._wiki.env.update(env or {})
         # if resolve is set to True, process request as wiki call
@@ -4975,7 +4977,7 @@ class Wiki(object):
     def __init__(self, auth, env=None, render='markmin',
                  manage_permissions=False, force_prefix='',
                  restrict_search=False, extra=None,
-                 menu_groups=None, templates=None):
+                 menu_groups=None, templates=None, migrate=True):
 
         settings = self.settings = Settings()
 
@@ -5023,20 +5025,20 @@ class Wiki(object):
                               compute=self.get_render(),
                               readable=False, writable=False),
                         auth.signature],
-              'vars':{'format':'%(title)s'}}),
+                    'vars':{'format':'%(title)s', 'migrate':migrate}}),
             ('wiki_tag', {
                     'args':[
                         Field('name'),
                         Field('wiki_page', 'reference wiki_page'),
                         auth.signature],
-                    'vars':{'format':'%(name)s'}}),
+                    'vars':{'format':'%(title)s', 'migrate':migrate}}),
             ('wiki_media', {
                     'args':[
                         Field('wiki_page', 'reference wiki_page'),
                         Field('title', required=True),
                         Field('filename', 'upload', required=True),
                         auth.signature],
-                    'vars':{'format':'%(title)s'}})
+                    'vars':{'format':'%(title)s', 'migrate':migrate}}),
             ]
 
         # define only non-existent tables
