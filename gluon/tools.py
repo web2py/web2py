@@ -5263,19 +5263,21 @@ class Wiki(object):
             pagecontent.css('font-family',
                             'Monaco,Menlo,Consolas,"Courier New",monospace');
             var prevbutton = jQuery('<button class="btn nopreview">Preview</button>');
-            var mediabutton = jQuery('<button class="btn nopreview">Media</button>');
             var preview = jQuery('<div id="preview"></div>').hide();
             var previewmedia = jQuery('<div id="previewmedia"></div>');
             var form = pagecontent.closest('form');
             preview.insertBefore(form);
             prevbutton.insertBefore(form);
-            mediabutton.insertBefore(form);
-            previewmedia.insertBefore(form);
-            mediabutton.toggle(function() {
-                web2py_component('%(urlmedia)s', 'previewmedia');
-            }, function() {
-                previewmedia.empty();
-            });
+            if(%(link_media)s) {
+              var mediabutton = jQuery('<button class="btn nopreview">Media</button>');
+              mediabutton.insertBefore(form);
+              previewmedia.insertBefore(form);
+              mediabutton.toggle(function() {
+                  web2py_component('%(urlmedia)s', 'previewmedia');
+              }, function() {
+                  previewmedia.empty();
+              });
+            }
             prevbutton.click(function(e) {
                 e.preventDefault();
                 if (prevbutton.hasClass('nopreview')) {
@@ -5290,7 +5292,7 @@ class Wiki(object):
                 }
             })
         })
-        """ % dict(url=URL(args=('_preview', slug)),
+        """ % dict(url=URL(args=('_preview', slug)),link_media=('true' if page else 'false'),
                    urlmedia=URL(extension='load',
                                 args=('_editmedia',slug),
                                 vars=dict(embedded=1)))
