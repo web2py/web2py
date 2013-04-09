@@ -444,7 +444,7 @@ CONTENT_TYPE = {
     '.ods': 'application/vnd.oasis.opendocument.spreadsheet',
     '.odt': 'application/vnd.oasis.opendocument.text',
     '.oga': 'audio/x-speex+ogg',
-    '.ogg': 'video/x-theora+ogg',
+    '.ogg': 'audio/ogg',
     '.ogm': 'video/x-ogm+ogg',
     '.ogv': 'video/ogg',
     '.ogx': 'application/ogg',
