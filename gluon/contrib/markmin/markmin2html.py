@@ -859,6 +859,8 @@ def render(text,
     if autolinks=="default": autolinks = autolinks_simple
     if protolinks=="default": protolinks = protolinks_simple
     pp='\n' if pretty_print else ''
+    if isinstance(text,unicode):
+        text = text.encode('utf8')
     text = str(text or '')
     text = regex_backslash.sub(lambda m: m.group(1).translate(ttab_in), text)
     text = text.replace('\x05','') # concatenate strings separeted by \\n
