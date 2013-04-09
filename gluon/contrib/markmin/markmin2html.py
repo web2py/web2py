@@ -547,7 +547,7 @@ regex_proto = re.compile(r'(?<!["\w>/=])(?P<p>\w+):(?P<k>\w+://[\w\d\-+=?%&/:.]+
 regex_auto = re.compile(r'(?<!["\w>/=])(?P<k>\w+://[\w\d\-+_=?%&/:.,;#]+\w)',re.M)
 regex_link=re.compile(r'('+LINK+r')|\[\[(?P<s>.+?)\]\]',re.S)
 regex_link_level2=re.compile(r'^(?P<t>\S.*?)?(?:\s+\[(?P<a>.+?)\])?(?:\s+(?P<k>\S+))?(?:\s+(?P<p>popup))?\s*$',re.S)
-regex_media_level2=re.compile(r'^(?P<t>\S.*?)?(?:\s+\[(?P<a>.+?)\])?(?:\s+(?P<k>\S+))?\s+(?P<p>img|IMG|left|right|center|video|audio)(?:\s+(?P<w>\d+px))?\s*$',re.S)
+regex_media_level2=re.compile(r'^(?P<t>\S.*?)?(?:\s+\[(?P<a>.+?)\])?(?:\s+(?P<k>\S+))?\s+(?P<p>img|IMG|left|right|center|video|audio|blockleft|blockright)(?:\s+(?P<w>\d+px))?\s*$',re.S)
 
 regex_markmin_escape = re.compile(r"(\\*)(['`:*~\\[\]{}@\$+\-.#\n])")
 regex_backslash = re.compile(r"\\(['`:*~\\[\]{}@\$+\-.#\n])")
@@ -1239,26 +1239,23 @@ def render(text,
         k = escape(k)
         t = t or ''
         style = 'width:%s' % w if w else ''
-        title = escape(a).replace(META, DISABLED_META) if a else ''
+        title = ' title="%s"' % escape(a).replace(META, DISABLED_META) if a else ''
         p_begin = p_end = ''
         if p == 'center':
             p_begin = '<p style="text-align:center">'
             p_end = '</p>'+pp
-        elif p == 'leftblock':
+        elif p == 'blockleft':
             p_begin = '<p style="text-align:left">'
             p_end = '</p>'+pp
-        elif p == 'rightblock':
+        elif p == 'blockright':
             p_begin = '<p style="text-align:right">'
             p_end = '</p>'+pp
         elif p in ('left','right'):
             style = ('float:%s' % p)+(';%s' % style if style else '')
-        if title:
-            if regex_auto.match(title):
-                p_begin = p_begin + '<a href="%s">' % title
-                p_end = '</a>' + p_end
-                title = ''
-            else:
-                title = ' title="%s"' % title
+        if t and regex_auto.match(t):
+            p_begin = p_begin + '<a href="%s">' % t
+            p_end = '</a>' + p_end
+            t = ''
         if style:
             style = ' style="%s"' % style
         if p in ('video','audio'):
