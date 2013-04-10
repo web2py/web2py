@@ -3369,7 +3369,11 @@ class Auth(object):
              extra=None,
              menu_groups=None,
              templates=None,
-             migrate=True):
+             migrate=True,
+             controller=None,
+             function=None):
+
+        if controller and function: resolve = False
 
         if not hasattr(self, '_wiki'):
             self._wiki = Wiki(self, render=render,
@@ -3379,7 +3383,9 @@ class Auth(object):
                               env=env, extra=extra or {},
                               menu_groups=menu_groups,
                               templates=templates,
-                              migrate=migrate)
+                              migrate=migrate,
+                              controller=controller,
+                              function=function)
         else:
             self._wiki.env.update(env or {})
         # if resolve is set to True, process request as wiki call
@@ -4977,7 +4983,8 @@ class Wiki(object):
     def __init__(self, auth, env=None, render='markmin',
                  manage_permissions=False, force_prefix='',
                  restrict_search=False, extra=None,
-                 menu_groups=None, templates=None, migrate=True):
+                 menu_groups=None, templates=None, migrate=True,
+                 controller=None, function=None):
 
         settings = self.settings = Settings()
 
@@ -4990,6 +4997,8 @@ class Wiki(object):
         settings.extra = extra or {}
         settings.menu_groups = menu_groups
         settings.templates = templates
+        settings.controller = controller
+        settings.function = function
 
         db = auth.db
         self.env = env or {}
@@ -5085,6 +5094,13 @@ class Wiki(object):
             auth.add_membership(gid)
 
         settings.lock_keys = True
+        
+        if controller and function:
+            self.automenu = self.menu(settings.controller,
+                                      settings.function)
+            current.response.menu += self.automenu
+        else:
+            self.automenu = None
 
     # WIKI ACCESS POLICY
 
@@ -5135,8 +5151,10 @@ class Wiki(object):
 
     def __call__(self):
         request = current.request
-        automenu = self.menu(request.controller, request.function)
-        current.response.menu += automenu
+        if not self.automenu:
+            self.automenu = self.menu(request.controller,
+                                      request.function)
+            current.response.menu += self.automenu
         zero = request.args(0) or 'index'
         if zero and zero.isdigit():
             return self.media(int(zero))
@@ -5417,8 +5435,8 @@ class Wiki(object):
                     items = link[2:].split('/')
                     if len(items) > 3:
                         title_page = items[3]
-                        link = URL(a=items[0] or None, c=items[1] or None,
-                                   f=items[2] or None, args=items[3:])
+                        link = URL(a=items[0] or None, c=items[1] or controller,
+                                   f=items[2] or function, args=items[3:])
                 parent = tree.get(base[1:], tree[''])
                 subtree = []
                 tree[base] = subtree
