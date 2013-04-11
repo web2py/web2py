@@ -75,21 +75,53 @@ def da_du_ma(n=4):
                     [random.randint(0, 11)] for i in range(n)])
 
 
-def populate(table, n, default=True, compute=False, contents={}):
+def populate(table, n=None, default=True, compute=False, contents={}):
+    """Populate table with n records.
+
+    if n is None, it does not populate the database but returns a generator
+    if default=True use default values to fields.
+    if compute=False doesn't load values into computed fields.
+    if contents has data, use these values to populate related fields.
+
+    can be used in two ways:
+
+    >>> populate(db.tablename, n=100)
+    
+    or 
+
+    >>> for k,row in enumerate(populate(db.tablename)): print row
+    """
+
+    generator = populate_generator(table, default=default, 
+                                   compute=compute, contents=contents)
+    if n is not None:
+        for k,record in enumerate(generator):
+            if k>=n: break
+            table.insert(**record)
+        table._db.commit()
+
+    return generator
+
+def populate_generator(table, default=True, compute=False, contents={}):
+    """Populate table with n records.
+
+    if default=True use default values to fields.
+    if compute=False doesn't load values into computed fields.
+    if contents has data, use these values to populate related fields.
+    """
+
     ell = Learner()
     #ell.learn(open('20417.txt','r').read())
     #ell.save('frequencies.pickle')
     #ell.load('frequencies.pickle')
     ell.loadd(IUP)
     ids = {}
-    for i in range(n):
-        record = {}
 
-        record.update(contents) # load user supplied contents.
+    while True:
+        record = contents.copy() # load user supplied contents.
 
         for fieldname in table.fields:
-
-            if record.get(fieldname) is not None:
+            if fieldname in record:
                 continue # if user supplied it, let it be.
 
             field = table[fieldname]
@@ -204,8 +236,7 @@ def populate(table, n, default=True, compute=False, contents={}):
             elif field.type == 'string':
                 z = ell.generate(10, prefix=False)
                 record[fieldname] = z[:field.length].replace('\n', ' ')
-        table.insert(**record)
-    table._db.commit()
+        yield record
 
 if __name__ == '__main__':
     ell = Learner()

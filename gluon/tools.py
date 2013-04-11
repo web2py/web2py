@@ -892,6 +892,7 @@ class Auth(object):
         username_case_sensitive=True,
         update_fields = ['email'],
         ondelete="CASCADE",
+        wiki = Settings(),
     )
         # ## these are messages that can be customized
     default_messages = dict(
