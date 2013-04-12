@@ -127,7 +127,7 @@ def deletefile(arglist, vars={}):
     <div class="controls formfield">
       <button onclick="jQuery('#form1').slideToggle()" class="btn btn-mini">Create</button>
       <div id="form1" class="row-fluid" style="display:none">
-        <div class="span3">{{=file_create_form('%s/models/' % app, 'models')}}</div>
+        <div class="span4">{{=file_create_form('%s/models/' % app, 'models')}}</div>
       </div>
     </div>
 </div>
@@ -175,7 +175,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     <div class="controls formfield">
       <button onclick="jQuery('#form2').slideToggle()" class="btn btn-mini">Create</button>
       <div id="form2" class="row-fluid" style="display:none">
-        <div class="span3">{{=file_create_form('%s/controllers/' % app, 'controllers')}}</div>
+        <div class="span4">{{=file_create_form('%s/controllers/' % app, 'controllers')}}</div>
       </div>
     </div>
 </div>
@@ -215,7 +215,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     <div class="controls formfield">
       <button onclick="jQuery('#form3').slideToggle()" class="btn btn-mini">Create</button>
       <div id="form3" class="row-fluid" style="display:none">
-        <div class="span3">{{=file_create_form('%s/views/' % app, 'views')}}</div>
+        <div class="span4">{{=file_create_form('%s/views/' % app, 'views')}}</div>
       </div>
     </div>
 </div>
@@ -279,7 +279,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     <div class="controls formfield">
       <button onclick="jQuery('#form4').slideToggle()" class="btn btn-mini">Create</button>
       <div id="form4" class="row-fluid" style="display:none">
-        <div class="span3">{{=file_create_form('%s/languages/' % app, 'languages', T('(something like "it-it")'))}}</div>
+        <div class="span4">{{=file_create_form('%s/languages/' % app, 'languages', T('(something like "it-it")'))}}</div>
       </div>
     </div>
 </div>
@@ -334,8 +334,8 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     <div class="controls formfield">
       <button onclick="jQuery('#form5').slideToggle()" class="btn btn-mini">Create/Upload</button>
       <div id="form5" class="row-fluid" style="display:none">
-        <div class="span3">{{=file_create_form('%s/static/' % app, 'static')}}<em>{{=T('or alternatively')}}</em></div>
-        <div class="span3">{{=file_upload_form('%s/static/' % app, 'static')}}</div>
+        <div class="span4">{{=file_create_form('%s/static/' % app, 'static')}}<em>{{=T('or alternatively')}}</em></div>
+        <div class="span4">{{=file_upload_form('%s/static/' % app, 'static')}}</div>
       </div>
     </div>
 </div>
@@ -370,8 +370,8 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     <div class="controls formfield">
       <button onclick="jQuery('#form6').slideToggle()" class="btn btn-mini">Create/Upload</button>
       <div id="form6" class="row-fluid" style="display:none">
-        <div class="span3">{{=file_create_form('%s/modules/' % app, 'modules')}}<em>{{=T('or alternatively')}}</em></div>
-        <div class="span3">{{=file_upload_form('%s/modules/' % app, 'modules')}}</div>
+        <div class="span4">{{=file_create_form('%s/modules/' % app, 'modules')}}<em>{{=T('or alternatively')}}</em></div>
+        <div class="span4">{{=file_upload_form('%s/modules/' % app, 'modules')}}</div>
       </div>
     </div>
 </div>
@@ -427,8 +427,8 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     <div class="controls formfield">
       <button onclick="jQuery('#form7').slideToggle()" class="btn btn-mini">Create/Upload</button>
       <div id="form7" class="row-fluid" style="display:none">
-        <div class="span3">{{=file_create_form('%s/private/' % app, 'private')}}<em>{{=T('or alternatively')}}</em></div>
-        <div class="span3">{{=file_upload_form('%s/private/' % app, 'private')}}</div>
+        <div class="span4">{{=file_create_form('%s/private/' % app, 'private')}}<em>{{=T('or alternatively')}}</em></div>
+        <div class="span4">{{=file_upload_form('%s/private/' % app, 'private')}}</div>
       </div>
     </div>
 </div>
@@ -461,7 +461,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
       <button onclick="jQuery('#form8').slideToggle()" class="btn btn-mini">Upload</button>
       <div id="form8" class="row-fluid" style="display:none">
         <div class="row-fluid">
-          <div class="span3">{{=upload_plugin_form(app, 'plugins')}}</div>
+          <div class="span4">{{=upload_plugin_form(app, 'plugins')}}</div>
         </div>
       </div>
 </div>
