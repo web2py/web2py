@@ -538,7 +538,7 @@ class IS_IN_DB(Validator):
             records = self.dbset(table).select(table.ALL, **dd)
         self.theset = [str(r[self.kfield]) for r in records]
         if isinstance(self.label, str):
-            self.labels = [self.label % dict(r) for r in records]
+            self.labels = [self.label % r for r in records]
         else:
             self.labels = [self.label(r) for r in records]
 

@@ -3389,6 +3389,7 @@ class Auth(object):
                               function=function)
         else:
             self._wiki.env.update(env or {})
+
         # if resolve is set to True, process request as wiki call
         # resolve=False allows initial setup without wiki redirection
         wiki = None
@@ -3404,6 +3405,13 @@ class Auth(object):
             if isinstance(wiki, basestring):
                 wiki = XML(wiki)
             return wiki
+
+    def wikimenu(self):
+        """to be used in menu.py for app wide wiki menus"""
+        if (hasattr(self, "_wiki") and
+            self._wiki.settings.controller and
+            self._wiki.settings.function):
+            self._wiki.automenu()
 
 
 class Crud(object):
@@ -4987,7 +4995,7 @@ class Wiki(object):
                  menu_groups=None, templates=None, migrate=True,
                  controller=None, function=None):
 
-        settings = self.settings = Settings()
+        settings = self.settings = auth.settings.wiki
 
         # render: "markmin", "html", ..., <function>
         settings.render = render
@@ -5005,6 +5013,7 @@ class Wiki(object):
         self.env = env or {}
         self.env['component'] = Wiki.component
         self.auth = auth
+        self.wiki_menu_items = None
 
         if self.auth.user:
             self.settings.force_prefix = force_prefix % self.auth.user
@@ -5095,13 +5104,6 @@ class Wiki(object):
             auth.add_membership(gid)
 
         settings.lock_keys = True
-        
-        if controller and function:
-            self.automenu = self.menu(settings.controller,
-                                      settings.function)
-            current.response.menu += self.automenu
-        else:
-            self.automenu = None
 
     # WIKI ACCESS POLICY
 
@@ -5150,12 +5152,20 @@ class Wiki(object):
 
     ### END POLICY
 
+    def automenu(self):
+        """adds the menu if not present"""
+        request = current.request
+        if not self.wiki_menu_items and self.settings.controller and self.settings.function:
+            self.wiki_menu_items = self.menu(self.settings.controller,
+                                             self.settings.function)
+            current.response.menu += self.wiki_menu_items
+
     def __call__(self):
         request = current.request
-        if not self.automenu:
-            self.automenu = self.menu(request.controller,
-                                      request.function)
-            current.response.menu += self.automenu
+        settings.controller = settings.controller or request.controller
+        settings.function = settings.function or request.function
+        self.automenu()
+
         zero = request.args(0) or 'index'
         if zero and zero.isdigit():
             return self.media(int(zero))

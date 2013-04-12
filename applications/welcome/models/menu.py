@@ -137,13 +137,4 @@ def _():
          )]
 if DEVELOPMENT_MENU: _()
 
-
-#########################################################################
-## This adds the wiki menu to any action if specified in wiki settings.
-#########################################################################
-
-if "auth" in locals():
-    if auth.settings.wiki.controller and auth.settings.wiki.function:
-        auth.wiki(controller=auth.settings.wiki.controller,
-                  function=auth.settings.wiki.function)
-
+if "auth" in locals(): auth.wikimenu() 
