@@ -236,9 +236,12 @@ class TestInsert(unittest.TestCase):
         self.assertEqual(db.tt.insert(aa='1'), 2)
         self.assertEqual(db.tt.insert(aa='1'), 3)
         self.assertEqual(db(db.tt.aa == '1').count(), 3)
+        self.assertEqual(db(db.tt.aa == '2').isempty(), True)
         self.assertEqual(db(db.tt.aa == '1').update(aa='2'), 3)
         self.assertEqual(db(db.tt.aa == '2').count(), 3)
+        self.assertEqual(db(db.tt.aa == '2').isempty(), False)
         self.assertEqual(db(db.tt.aa == '2').delete(), 3)
+        self.assertEqual(db(db.tt.aa == '2').isempty(), True)
         db.tt.drop()
 
 
