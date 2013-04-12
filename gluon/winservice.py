@@ -136,6 +136,8 @@ class Web2pyService(Service):
             path=options.folder
         )
         try:
+            from rewrite import load
+            load()
             self.server.start()
         except:
 
