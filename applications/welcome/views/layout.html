@@ -91,8 +91,8 @@
 
   <div class="container">
     <!-- Masthead ================================================== -->
-    {{if response.title:}}
     <header class="mastheader row" id="header">
+      {{if response.title:}}
         <div class="span12">
             <div class="page-header">
                 <h1>
@@ -101,8 +101,8 @@
                 </h1>
             </div>
         </div>
+	{{pass}}
     </header>
-    {{pass}}
 
     <section id="main" class="main row">
         {{if left_sidebar_enabled:}}
