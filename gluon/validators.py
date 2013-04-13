@@ -648,11 +648,11 @@ class IS_NOT_IN_DB(Validator):
         id = self.record_id
         if isinstance(id, dict):
             fields = [table[f] for f in id]
-            row = subset.select(*fields, **dict(limitby=(0, 1))).first()
+            row = subset.select(*fields, **dict(limitby=(0, 1), orderby_on_limitby=False)).first()
             if row and any(str(row[f]) != str(id[f]) for f in id):
                 return (value, translate(self.error_message))
         else:
-            row = subset.select(table._id, field, limitby=(0, 1)).first()
+            row = subset.select(table._id, field, limitby=(0, 1), orderby_on_limitby=False).first()
             if row and str(row.id) != str(id):
                 return (value, translate(self.error_message))
         return (value, None)
