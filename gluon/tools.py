@@ -5162,6 +5162,7 @@ class Wiki(object):
 
     def __call__(self):
         request = current.request
+        settings = self.settings
         settings.controller = settings.controller or request.controller
         settings.function = settings.function or request.function
         self.automenu()
