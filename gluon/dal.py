@@ -9833,7 +9833,7 @@ class Set(object):
         return built
 
     def isempty(self):
-        return not self.select(limitby=(0,1))
+        return not self.select(limitby=(0,1), orderby_on_limitby=False)
 
     def count(self,distinct=None, cache=None):
         db = self.db
