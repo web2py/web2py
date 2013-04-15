@@ -191,6 +191,7 @@ div.error {
 .web2py_grid {width:100%}
 .web2py_grid table {width:100%}
 .web2py_grid tbody td {padding:2px 5px 2px 5px; vertical-align: middle;}
+.web2py_grid .web2py_form td {vertical-align: top;}
 
 .web2py_grid thead th,.web2py_grid tfoot td {
     background-color:#EAEAEA;

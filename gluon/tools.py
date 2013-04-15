@@ -1183,6 +1183,14 @@ class Auth(object):
         # ## these are messages that can be customized
         messages = self.messages = Messages(current.T)
         messages.update(Auth.default_messages)
+        messages.update(ajax_failed_authentication=DIV(H4('NOT AUTHORIZED'),
+            'Please ',
+            A('login',
+              _href=self.settings.login_url +
+              ('?_next=' + urllib.quote(current.request.env.http_web2py_component_location))
+              if current.request.env.http_web2py_component_location else ''),
+            ' to view this content.',
+            _class='not-authorized alert alert-block'))
         messages.lock_keys = True
 
         # for "remember me" option
@@ -2948,7 +2956,7 @@ class Auth(object):
                 if requires_login:
                     if not user:
                         if current.request.ajax:
-                            raise HTTP(401)
+                            raise HTTP(401, self.messages.ajax_failed_authentication)
                         elif not otherwise is None:
                             if callable(otherwise):
                                 return otherwise()
@@ -2956,8 +2964,6 @@ class Auth(object):
                         elif self.settings.allow_basic_login_only or \
                                 basic_accepted or current.request.is_restful:
                             raise HTTP(403, "Not authorized")
-                        elif current.request.ajax:
-                            return A('login', _href=self.settings.login_url)
                         else:
                             next = self.here()
                             current.session.flash = current.response.flash
