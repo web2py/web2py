@@ -11,6 +11,8 @@ Learn more at http://web2py.com
 
 [![Build Status](https://travis-ci.org/web2py/web2py.png)](https://travis-ci.org/web2py/web2py)
 
+[![Coverage Status](https://coveralls.io/repos/web2py/web2py/badge.png)](https://coveralls.io/r/web2py/web2py)
+
 ## Installation Instructions
 
 To start web2py there is NO NEED to install it. Just unzip and do:
