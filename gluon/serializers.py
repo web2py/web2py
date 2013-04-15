@@ -12,10 +12,10 @@ from languages import lazyT
 import contrib.rss2 as rss2
 
 try:
-    import json as json_parser                      # try stdlib (Python 2.6)
+    import simplejson as json_parser                # try external module
 except ImportError:
     try:
-        import simplejson as json_parser            # try external module
+        import json as json_parser                  # try stdlib (Python >= 2.6)
     except:
         import contrib.simplejson as json_parser    # fallback to pure-Python module
 

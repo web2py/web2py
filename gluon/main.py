@@ -29,6 +29,14 @@ import tempfile
 import random
 import string
 import urllib2
+try:
+    import simplejson as sj #external installed library
+except:
+    try:
+        import json as sj #standard installed library
+    except:
+        import contrib.simplejson as sj #pure python library
+
 from thread import allocate_lock
 
 from fileutils import abspath, write_file, parse_version, copystream
@@ -295,6 +303,7 @@ def environ_aux(environ, request):
     new_environ['wsgi.version'] = 1
     return new_environ
 
+ISLE25 = sys.version_info[1] <= 5
 
 def parse_get_post_vars(request, environ):
 
@@ -311,17 +320,36 @@ def parse_get_post_vars(request, environ):
             request.get_vars[key] = value
         request.vars[key] = request.get_vars[key]
 
-    # parse POST variables on POST, PUT, BOTH only in post_vars
+
     try:
         request.body = body = copystream_progress(request)
     except IOError:
         raise HTTP(400, "Bad Request - HTTP body is incomplete")
+
+    #if content-type is application/json, we must read the body
+    is_json = env.get('http_content_type', '')[:16] == 'application/json'
+
+
+    if is_json:
+        try:
+            json_vars = sj.load(body)
+            body.seek(0)
+        except:
+            # incoherent request bodies can still be parsed "ad-hoc"
+            json_vars = {}
+            pass
+        # update vars and get_vars with what was posted as json
+        request.get_vars.update(json_vars)
+        request.vars.update(json_vars)
+
+
+    # parse POST variables on POST, PUT, BOTH only in post_vars
     if (body and env.request_method in ('POST', 'PUT', 'BOTH')):
         dpost = cgi.FieldStorage(fp=body, environ=environ, keep_blank_values=1)
         # The same detection used by FieldStorage to detect multipart POSTs
         is_multipart = dpost.type[:10] == 'multipart/'
         body.seek(0)
-        isle25 = sys.version_info[1] <= 5
+
 
         def listify(a):
             return (not isinstance(a, list) and [a]) or a
@@ -348,7 +376,7 @@ def parse_get_post_vars(request, environ):
             pvalue = listify(value)
             if key in request.vars:
                 gvalue = listify(request.vars[key])
-                if isle25:
+                if ISLE25:
                     value = pvalue + gvalue
                 elif is_multipart:
                     pvalue = pvalue[len(gvalue):]
@@ -358,6 +386,9 @@ def parse_get_post_vars(request, environ):
             if len(pvalue):
                 request.post_vars[key] = (len(pvalue) >
                                           1 and pvalue) or pvalue[0]
+        if is_json:
+            # update post_vars with what was posted as json
+            request.post_vars.update(json_vars)
 
 
 def wsgibase(environ, responder):
