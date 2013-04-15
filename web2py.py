@@ -24,4 +24,10 @@ if __name__ == '__main__':
         freeze_support()
     except:
         sys.stderr.write('Sorry, -K only supported for python 2.6-2.7\n')
+    if os.environ.has_key("COVERAGE_PROCESS_START"):
+        try:
+            import coverage
+            coverage.process_startup()
+        except:
+            pass
     gluon.widget.start(cron=True)

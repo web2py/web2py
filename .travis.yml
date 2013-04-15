@@ -5,12 +5,16 @@ python:
   - '2.6'
   - '2.7'
   - 'pypy'
+install:
+  - pip install -e . --use-mirrors
 env:
   - DB=sqlite:memory
   - DB=mysql://root:@localhost/test_w2p
   - DB=postgres://postgres:@localhost/test_w2p
 before_script:
-  - pip install unittest2
+  - if [[ $TRAVIS_PYTHON_VERSION != '2.7' ]]; then pip install --use-mirrors unittest2; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --use-mirrors coverage; fi;
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --use-mirrors python-coveralls; fi
   - if [[ $DB == postgres* ]]; then pip install --use-mirrors psycopg2; fi;
   - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then pip install --use-mirrors pysqlite; fi
   - if [[ $DB == mysql* ]]; then mysql -e 'create database test_w2p;'; fi
@@ -25,7 +29,10 @@ matrix:
     - python: 'pypy'
       env: DB=mysql://root:@localhost/test_w2p
 
-script: PYTHONPATH=. unit2 -v gluon.tests
-
+script: export COVERAGE_PROCESS_START=gluon/tests/.coveragerc; ./web2py.py --run_system_tests --with_coverage
+after_success:
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then coverage combine; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then coveralls --config_file=gluon/tests/.coveragerc; fi
+  
 notifications:
   email: true
