@@ -8,17 +8,24 @@ jQuery(function(){
     if(jQuery(this).find('ul').length)
       jQuery(this).addClass('dropdown-submenu');
   });
+  function adjust_height_of_collapsed_nav() {
+        var cn = jQuery('div.collapse');
+        if (cn.get(0)) {
+            var cnh = cn.get(0).style.height;
+            if (cnh>'0px'){
+                cn.css('height','auto');
+            }
+        }
+  }
   function hoverMenu(){
-    var wid = document.documentElement.clientWidth; //faster than $(window).width() and cross browser
-    if (wid>=980){
-        jQuery('ul.nav a.dropdown-toggle').parent().hover(function(){
-            mi = jQuery(this).addClass('open');
-            mi.children('.dropdown-menu').stop(true, true).delay(200).fadeIn(400);
-        }, function(){
-            mi = jQuery(this);
-            mi.children('.dropdown-menu').stop(true, true).delay(200).fadeOut(function(){mi.removeClass('open')});
-        });
-    };
+    jQuery('ul.nav a.dropdown-toggle').parent().hover(function(){
+        adjust_height_of_collapsed_nav();
+        mi = jQuery(this).addClass('open');
+        mi.children('.dropdown-menu').stop(true, true).delay(200).fadeIn(400);
+    }, function(){
+        mi = jQuery(this);
+        mi.children('.dropdown-menu').stop(true, true).delay(200).fadeOut(function(){mi.removeClass('open')});
+    });
   }
   hoverMenu(); // first page load
   jQuery(window).resize(hoverMenu); // on resize event
