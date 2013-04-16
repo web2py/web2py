@@ -518,7 +518,7 @@ CONTENT_TYPE = {
     '.pln': 'application/x-planperfect',
     '.pls': 'audio/x-scpls',
     '.pm': 'application/x-perl',
-    '.png': 'image/x-apple-ios-png',
+    '.png': 'image/png',
     '.pnm': 'image/x-portable-anymap',
     '.pntg': 'image/x-macpaint',
     '.po': 'text/x-gettext-translation',
