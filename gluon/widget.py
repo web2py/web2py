@@ -78,7 +78,9 @@ def run_system_tests(options):
             if options.with_coverage:
                 try:
                     import coverage
-                    coverage_config = os.path.join('gluon', 'tests', '.coveragerc')
+                    coverage_config = os.environ.get("COVERAGE_PROCESS_START",
+                                        os.path.join('gluon', 'tests', 'coverage.ini')
+                                    )
                     call_args = ['coverage', 'run', '--rcfile=%s' % coverage_config, 
                                     '-m', 'unittest', '-v', 'gluon.tests']
                 except:
@@ -916,7 +918,10 @@ def console():
                       help=msg)
     
     msg = ('adds coverage reporting (needs --run_system_tests), '
-           'python 2.7 and the coverage module installed')
+           'python 2.7 and the coverage module installed. '
+           'You can alter the default path setting the environmental '
+           'var "COVERAGE_PROCESS_START". '
+           'By default it takes gluon/tests/coverage.ini')
     parser.add_option('--with_coverage',
                       action='store_true',
                       dest='with_coverage',
