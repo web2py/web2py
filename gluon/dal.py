@@ -6851,6 +6851,9 @@ class Row(object):
     def __int__(self):
         return object.__getattribute__(self,'id')
 
+    def __long__(self):
+        return long(object.__getattribute__(self,'id'))
+
     def __eq__(self,other):
         try:
             return self.as_dict() == other.as_dict()
