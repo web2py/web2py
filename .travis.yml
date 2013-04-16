@@ -29,10 +29,10 @@ matrix:
     - python: 'pypy'
       env: DB=mysql://root:@localhost/test_w2p
 
-script: export COVERAGE_PROCESS_START=gluon/tests/.coveragerc; ./web2py.py --run_system_tests --with_coverage
+script: export COVERAGE_PROCESS_START=gluon/tests/coverage.ini; ./web2py.py --run_system_tests --with_coverage
 after_success:
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then coverage combine; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then coveralls --config_file=gluon/tests/.coveragerc; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then coveralls --config_file=gluon/tests/coverage.ini; fi
   
 notifications:
   email: true
