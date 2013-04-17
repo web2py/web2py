@@ -1648,9 +1648,9 @@ class SQLFORM(FORM):
         selectfields = []
         for field in fields:
             name = str(field).replace('.', '-')
-            # treat ftype 'decimal' as 'double' 
+            # treat ftype 'decimal' as 'double'
             # (this fixes problems but needs refactoring!
-            ftype = field.type.split(' ')[0]            
+            ftype = field.type.split(' ')[0]
             if ftype.startswith('decimal'): ftype = 'double'
             elif ftype=='bigint': ftype = 'integer'
             elif ftype.startswith('big-'): ftype = ftype[4:]
@@ -1780,7 +1780,8 @@ class SQLFORM(FORM):
              selectable_submit_button='Submit',
              buttons_placement = 'right',
              links_placement = 'right',
-             noconfirm=False
+             noconfirm=False,
+             cache_count=None
              ):
 
         # jQuery UI ThemeRoller classes (empty if ui is disabled)
@@ -1833,6 +1834,32 @@ class SQLFORM(FORM):
         create = wenabled and create
         editable = wenabled and editable
         deletable = wenabled and deletable
+
+        def fetch_count(dbset):
+            ##FIXME for google:datastore cache_count is ignored
+            ## if it's not an integer
+            if cache_count is None or isinstance(cache_count, tuple):
+                if groupby:
+                    c = 'count(*)'
+                    nrows = db.executesql(
+                        'select count(*) from (%s);' %
+                        dbset._select(c, left=left, cacheable=True,
+                                      groupby=groupby, cache=cache_count)[:-1])[0][0]
+                elif left:
+                    c = 'count(*)'
+                    nrows = dbset.select(c, left=left, cacheable=True, cache=cache_count).first()[c]
+                elif dbset._db._adapter.dbengine=='google:datastore':
+                    #if we don't set a limit, this can timeout for a large table
+                    nrows = dbset.db._adapter.count(dbset.query, limit=1000)
+                else:
+                    nrows = dbset.count(cache=cache_count)
+            elif isinstance(cache_count, (int, long)):
+                    nrows = cache_count
+            elif callable(cache_count):
+                nrows = cache_count(dbset, request.vars)
+            else:
+                nrows = 0
+            return nrows
 
         def url(**b):
             b['args'] = args + b.get('args', [])
@@ -2129,20 +2156,7 @@ class SQLFORM(FORM):
         if subquery:
             dbset = dbset(subquery)
         try:
-            if groupby:
-                c = 'count(*)'
-                nrows = db.executesql(
-                    'select count(*) from (%s);' %
-                    dbset._select(c, left=left, cacheable=True,
-                                  groupby=groupby)[:-1])[0][0]
-            elif left:
-                c = 'count(*)'
-                nrows = dbset.select(c, left=left, cacheable=True).first()[c]
-            elif dbset._db._adapter.dbengine=='google:datastore':
-                #if we don't set a limit, this can timeout for a large table
-                nrows = dbset.db._adapter.count(dbset.query, limit=1000)
-            else:
-                nrows = dbset.count()
+            nrows = fetch_count(dbset)
         except:
             nrows = 0
             error = T('Unsupported query')
