@@ -412,16 +412,20 @@ class Mail(object):
         if (not text is None or not html is None) and (not raw):
             attachment = MIMEMultipart.MIMEMultipart('alternative')
             if not text is None:
-                if isinstance(text, basestring):
+                if not isinstance(text, basestring):
+                    text = text.read()
+                if isinstance(text, unicode):
+                    text = text.encode('utf-8')
+                elif not encoding=='utf-8':
                     text = text.decode(encoding).encode('utf-8')
-                else:
-                    text = text.read().decode(encoding).encode('utf-8')
                 attachment.attach(MIMEText.MIMEText(text, _charset='utf-8'))
             if not html is None:
-                if isinstance(html, basestring):
+                if not isinstance(html, basestring):
+                    html = html.read()
+                if isinstance(html, unicode):
+                    html = html.encode('utf-8')
+                elif not encoding=='utf-8':
                     html = html.decode(encoding).encode('utf-8')
-                else:
-                    html = html.read().decode(encoding).encode('utf-8')
                 attachment.attach(
                     MIMEText.MIMEText(html, 'html', _charset='utf-8'))
             payload_in.attach(attachment)

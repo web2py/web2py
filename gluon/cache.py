@@ -437,7 +437,7 @@ class Cache(object):
                 # been accounted for
                 logger.warning('no cache.disk (AttributeError)')
 
-    def client(self, time_expire=DEFAULT_TIME_EXPIRE, cache_model=None,
+    def action(self, time_expire=DEFAULT_TIME_EXPIRE, cache_model=None,
              prefix=None, session=False, vars=True, lang=True,
              user_agent=False, public=True, valid_statuses=None,
              quick=None):

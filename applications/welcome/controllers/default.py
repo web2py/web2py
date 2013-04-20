@@ -39,6 +39,7 @@ def user():
     return dict(form=auth())
 
 
+@cache.action()
 def download():
     """
     allows downloading of uploaded files
