@@ -51,7 +51,7 @@ def THUMB(image, nx=120, ny=120, gae=False, name='thumb'):
             request = current.request
             from PIL import Image
             import os
-            img = Image.open(request.folder + 'uploads/' + image)
+            img = Image.open(os.path.join(request.folder,'uploads',image))
             img.thumbnail((nx, ny), Image.ANTIALIAS)
             root, ext = os.path.splitext(image)
             thumb = '%s_%s%s' % (root, name, ext)
