@@ -2012,10 +2012,11 @@ class SQLFORM(FORM):
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(URL('error'))
             sqlformargs.update(editargs)
+            deletable_ = deletable(record) if callable(deletable) else deletable
             update_form = SQLFORM(
                 table,
                 record, upload=upload, ignore_rw=ignore_rw,
-                formstyle=formstyle, deletable=deletable,
+                formstyle=formstyle, deletable=deletable_,
                 _class='web2py_form',
                 submit_button=T('Submit'),
                 delete_label=T('Check to delete'),
@@ -2035,9 +2036,16 @@ class SQLFORM(FORM):
             return res
         elif deletable and request.args(-3) == 'delete':
             table = db[request.args[-2]]
-            if ondelete:
-                ondelete(table, request.args[-1])
-            db(table[table._id.name] == request.args[-1]).delete()
+            if not callable(deletable):
+                if ondelete:
+                    ondelete(table, request.args[-1])
+                db(table[table._id.name] == request.args[-1]).delete()
+            else:
+                record = table(request.args[-1]) or redirect(URL('error'))
+                if deletable(record):
+                    if ondelete:
+                        ondelete(table, request.args[-1])
+                    record.delete_record()
             redirect(referrer)
 
         exportManager = dict(
