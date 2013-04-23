@@ -3475,7 +3475,7 @@ class Crud(object):
 
         messages = self.messages = Messages(current.T)
         messages.submit_button = 'Submit'
-        messages.delete_label = 'Check to delete:'
+        messages.delete_label = 'Check to delete'
         messages.record_created = 'Record Created'
         messages.record_updated = 'Record Updated'
         messages.record_deleted = 'Record Deleted'
