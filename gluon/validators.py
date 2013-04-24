@@ -2654,8 +2654,8 @@ class IS_EMPTY_OR(Validator):
         if hasattr(other, 'options'):
             self.options = self._options
 
-    def _options(self):
-        options = self.other.options()
+    def _options(self, zero=False):
+        options = self.other.options(zero=zero)
         if (not options or options[0][0] != '') and not self.multiple:
             options.insert(0, ('', ''))
         return options

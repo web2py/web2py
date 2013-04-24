@@ -18,6 +18,7 @@ import portalocker
 __all__ = ['List', 'Storage', 'Settings', 'Messages',
            'StorageList', 'load_storage', 'save_storage']
 
+DEFAULT = lambda:0
 
 class Storage(dict):
     """
@@ -250,7 +251,7 @@ class List(list):
     instead of IndexOutOfBounds
     """
 
-    def __call__(self, i, default=None, cast=None, otherwise=None):
+    def __call__(self, i, default=DEFAULT, cast=None, otherwise=None):
         """
         request.args(0,default=0,cast=int,otherwise='http://error_url')
         request.args(0,default=0,cast=int,otherwise=lambda:...)
@@ -258,8 +259,10 @@ class List(list):
         n = len(self)
         if 0 <= i < n or -n <= i < 0:
             value = self[i]
+        elif default is DEFAULT:
+            value = None
         else:
-            value = default
+            value, cast = default, False
         if cast:
             try:
                 value = cast(value)
