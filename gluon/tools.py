@@ -686,9 +686,9 @@ class Mail(object):
                 else:
                     server = smtplib.SMTP(*smtp_args)
                 if self.settings.tls and not self.settings.ssl:
-                    server.ehlo()
+                    server.ehlo(self.settings.hostname)
                     server.starttls()
-                    server.ehlo()
+                    server.ehlo(self.settings.hostname)
                 if self.settings.login:
                     server.login(*self.settings.login.split(':', 1))
                 result = server.sendmail(
