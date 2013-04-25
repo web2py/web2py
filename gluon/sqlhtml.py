@@ -1073,7 +1073,7 @@ class SQLFORM(FORM):
             cond = readonly or \
                 (not ignore_rw and not field.writable and field.readable)
 
-            if default and not cond:
+            if default is not None and not cond:
                 default = field.formatter(default)
             dspval = default
             inpval = default
