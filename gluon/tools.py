@@ -248,6 +248,7 @@ class Mail(object):
         settings.sender = sender
         settings.login = login
         settings.tls = tls
+        settings.hostname = None
         settings.ssl = False
         settings.cipher_type = None
         settings.gpg_home = None
