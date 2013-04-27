@@ -1,7 +1,7 @@
 # coding: utf8
 {
-'!langcode!': 'tr-tr',
-'!langname!': 'Türkçe (TR)',
+'!langcode!': 'tr',
+'!langname!': 'Türkçe',
 '%s %%(shop)': '%s %%(shop)',
 '%s %%(shop[0])': '%s %%(shop[0])',
 '%s %%{quark[0]}': '%s %%{quark[0]}',
