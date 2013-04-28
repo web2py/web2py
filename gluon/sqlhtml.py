@@ -1834,6 +1834,7 @@ class SQLFORM(FORM):
         create = wenabled and create
         editable = wenabled and editable
         deletable = wenabled and deletable
+        rows = None
 
         def fetch_count(dbset):
             ##FIXME for google:datastore cache_count is ignored
@@ -1991,6 +1992,7 @@ class SQLFORM(FORM):
             res.update_form = update_form
             res.view_form = view_form
             res.search_form = search_form
+            res.rows = None
             return res
 
         elif details and request.args(-3) == 'view':
@@ -2007,6 +2009,7 @@ class SQLFORM(FORM):
             res.update_form = update_form
             res.view_form = view_form
             res.search_form = search_form
+            res.rows = None
             return res
         elif editable and request.args(-3) == 'edit':
             table = db[request.args[-2]]
@@ -2033,6 +2036,7 @@ class SQLFORM(FORM):
             res.update_form = update_form
             res.view_form = view_form
             res.search_form = search_form
+            res.rows = None
             return res
         elif deletable and request.args(-3) == 'delete':
             table = db[request.args[-2]]
@@ -2097,7 +2101,7 @@ class SQLFORM(FORM):
                 else:
                     rows = dbset.select(left=left, orderby=orderby,
                                     cacheable=True, *expcolumns)
-
+                
                 value = exportManager[export_type]
                 clazz = value[0] if hasattr(value, '__getitem__') else value
                 oExp = clazz(rows)
@@ -2456,6 +2460,7 @@ class SQLFORM(FORM):
         res.update_form = update_form
         res.view_form = view_form
         res.search_form = search_form
+        res.rows = rows
         return res
 
     @staticmethod
