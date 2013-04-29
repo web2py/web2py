@@ -461,60 +461,92 @@ class Cache(object):
             fast overrides with initial strings, e.g. 'SVLP' or 'VLP', or 'VLP'
         """
         from gluon import current
+        from gluon.http import HTTP
         def wrap(func):
             def wrapped_f():
-                if current.request.env.request_method == 'GET':
-                    if time_expire:
-                        cache_control = 'max-age=%(time_expire)s, s-maxage=%(time_expire)s' % dict(time_expire=time_expire)
-                        if quick:
-                            session_ = True if 'S' in quick else False
-                            vars_ = True if 'V' in quick else False
-                            lang_ = True if 'L' in quick else False
-                            user_agent_ = True if 'U' in quick else False
-                            public_ = True if 'P' in quick else False
-                        else:
-                            session_, vars_, lang_, user_agent_, public_ = session, vars, lang, user_agent, public
-                        if not session_ and public_:
-                            cache_control += ', public'
-                            expires = (current.request.utcnow + datetime.timedelta(seconds=time_expire)).strftime('%a, %d %b %Y %H:%M:%S GMT')
-                            vary = None
-                        else:
-                            cache_control += ', private'
-                            expires = 'Fri, 01 Jan 1990 00:00:00 GMT'
-                    if cache_model:
-                        cache_key = [current.request.env.path_info, current.response.view]
-                        if session_:
-                            cache_key.append(current.response.session_id)
-                        elif user_agent_:
-                            if user_agent_ is True:
-                                cache_key.append("%(is_mobile)s_%(is_tablet)s" % current.request.user_agent())
-                            else:
-                                cache_key.append(str(user_agent_.items()))
-                        if vars_:
-                            cache_key.append(current.request.env.query_string)
-                        if lang_:
-                            cache_key.append(current.T.accepted_language)
-                        cache_key = hashlib.md5('__'.join(cache_key)).hexdigest()
-                        if prefix:
-                            cache_key = prefix + cache_key
-                        rtn = cache_model(cache_key, lambda : func(), time_expire=time_expire)
+                if current.request.env.request_method != 'GET':
+                    return func()
+                if time_expire:
+                    cache_control = 'max-age=%(time_expire)s, s-maxage=%(time_expire)s' % dict(time_expire=time_expire)
+                    if quick:
+                        session_ = True if 'S' in quick else False
+                        vars_ = True if 'V' in quick else False
+                        lang_ = True if 'L' in quick else False
+                        user_agent_ = True if 'U' in quick else False
+                        public_ = True if 'P' in quick else False
                     else:
+                        session_, vars_, lang_, user_agent_, public_ = session, vars, lang, user_agent, public
+                    if not session_ and public_:
+                        cache_control += ', public'
+                        expires = (current.request.utcnow + datetime.timedelta(seconds=time_expire)).strftime('%a, %d %b %Y %H:%M:%S GMT')
+                        vary = None
+                    else:
+                        cache_control += ', private'
+                        expires = 'Fri, 01 Jan 1990 00:00:00 GMT'
+                if cache_model:
+                    #figure out the correct cache key
+                    cache_key = [current.request.env.path_info, current.response.view]
+                    if session_:
+                        cache_key.append(current.response.session_id)
+                    elif user_agent_:
+                        if user_agent_ is True:
+                            cache_key.append("%(is_mobile)s_%(is_tablet)s" % current.request.user_agent())
+                        else:
+                            cache_key.append(str(user_agent_.items()))
+                    if vars_:
+                        cache_key.append(current.request.env.query_string)
+                    if lang_:
+                        cache_key.append(current.T.accepted_language)
+                    cache_key = hashlib.md5('__'.join(cache_key)).hexdigest()
+                    if prefix:
+                        cache_key = prefix + cache_key
+                    try:
+                        #action returns something
+                        rtn = cache_model(cache_key, lambda : func(), time_expire=time_expire)
+                        http, status = None, current.response.status
+                    except HTTP, e:
+                        #action raises HTTP (can still be valid)
+                        rtn = cache_model(cache_key, lambda : e.body, time_expire=time_expire)
+                        http, status = HTTP(e.status, rtn, **e.headers), e.status
+                    else:
+                        #action raised a generic exception
+                        http = None
+                else:
+                    #no server-cache side involved
+                    try:
+                        #action returns something
                         rtn = func()
-                    send_headers = False
-                    if isinstance(valid_statuses, list):
-                        if current.response.status in valid_statuses:
-                            send_headers = True
-                    elif valid_statuses is None:
-                        if str(current.response.status)[0] in '123':
-                            send_headers = True
+                        http, status = None, current.response.status
+                    except HTTP, e:
+                        #action raises HTTP (can still be valid)
+                        status = e.status
+                        http = HTTP(e.status, e.body, **e.headers)
+                    else:
+                        #action raised a generic exception
+                        http = None
+                send_headers = False
+                if http and isinstance(valid_statuses, list):
+                    if status in valid_statuses:
+                        send_headers = True
+                elif valid_statuses is None:
+                    if str(status)[0] in '123':
+                        send_headers = True
+                if send_headers:
+                    headers = {
+                        'Pragma' : None,
+                        'Expires' : expires,
+                        'Cache-Control' : cache_control
+                        }
+                    current.response.headers.update(headers)
+                if cache_model and not send_headers:
+                    #we cached already the value, but the status is not valid
+                    #so we need to delete the cached value
+                    cache_model(cache_key, None)
+                if http:
                     if send_headers:
-                        current.response.headers['Pragma'] = None
-                        current.response.headers['Expires'] = expires
-                        current.response.headers['Cache-Control'] = cache_control
-                    if cache_model and not send_headers:
-                        cache_model(cache_key, None)
-                    return rtn
-                return func()
+                        http.headers.update(current.response.headers)
+                    raise http
+                return rtn
             wrapped_f.__name__ = func.__name__
             wrapped_f.__doc__ = func.__doc__
             return wrapped_f
