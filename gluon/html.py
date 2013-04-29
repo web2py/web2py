@@ -1992,7 +1992,7 @@ class FORM(DIV):
         status = True
         changed = False
         request_vars = self.request_vars
-        if session:
+        if session is not None:
             formkey = session.get('_formkey[%s]' % formname, None)
             # check if user tampering with form and void CSRF
             if formkey != request_vars._formkey:
