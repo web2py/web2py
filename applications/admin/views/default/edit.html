@@ -3,6 +3,16 @@
 {{
   def shortcut(combo, description):
     return XML('<li><span class="teletype-text">%s</span><span>%s</span></li>' % (combo, description))
+  def listfiles(app, dir, regexp='.*\.py$'):
+      files = sorted(
+         listdir(apath('%(app)s/%(dir)s/' % {'app':app, 'dir':dir}, r=request), regexp))
+      files = [x.replace('\\', '/') for x in files if not x.endswith('.bak')]
+      return files
+
+  def editfile(path,file,vars={}):
+    args=(path,file) if 'app' in vars else (app,path,file)
+    return A(file, _class='', _href=URL('edit', args=args, vars=vars), _style='word-wrap: break-word;')
+
 }}
 {{if TEXT_EDITOR == 'amy':}}
 {{include 'default/amy_ajax.html'}}
@@ -128,8 +138,31 @@ jQuery(document).ready(function(){
   <a class="button btn" href="http://www.web2py.com/examples/static/epydoc/index.html" target="_blank"><span>{{=T('docs')}}</span></a>
 </p>
 </div>
-<div id="editor_area">
-  <form action="{{=URL('edit',args=filename)}}" method="post" name="editform" id="editform">
+<div id="editor_area" class="row-fluid">
+
+<ul class="nav nav-list span2 well" rel="pagebookmark">
+{{dirs=[{'name':'models', 'reg':'.*\.py$'}, 
+	{'name':'controllers', 'reg':'.*\.py$'},
+	{'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
+	{'name':'modules', 'reg':'.*\.py$'},
+	{'name':'private', 'reg': '[^\.#].*'}]}}
+{{for dir in dirs:}}
+<li class="nav-header component" onclick="collapse('{{="%s_files" % dir['name']}}');">{{=dir['name']}}</li>
+<li id="{{="%s_files" % dir['name']}}">
+	<ul class="nav nav-list">	
+	{{for f in listfiles(app, dir['name'], regexp=dir['reg'] ):}}
+	{{id="%s__" % dir['name'] + f.replace('.','__')}}
+	{{current_file = request.args(len(request.args) - 1)}} 
+	<li class="{{='active' if current_file==f else ''}}">
+	{{=editfile(dir['name'], f, dict(id=id))}}	
+	</li>
+	{{pass}}
+	</ul>
+</li>
+{{pass}}	
+</ul>
+
+  <form action="{{=URL('edit',args=filename)}}" method="post" name="editform" id="editform" class="span10">
 	<div class="editor-bar-column">
 		<label>{{=T('Save file:')}}</label>
 		<a value="save" name="save" onclick="return doClickSave();" class="icon saveicon" style="background-image: -webkit-linear-gradient(top,white,#E6E6E6);">
