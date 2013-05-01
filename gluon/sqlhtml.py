@@ -21,7 +21,7 @@ import os
 from http import HTTP
 from html import XmlComponent
 from html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT
-from html import FORM, INPUT, LABEL, OPTION, SELECT, BUTTON
+from html import FORM, INPUT, LABEL, OPTION, SELECT
 from html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
 from html import URL, truncate_string, FIELDSET
 from dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
@@ -36,7 +36,7 @@ import datetime
 import urllib
 import re
 import cStringIO
-from gluon import current, redirect, A, URL, DIV, H3, UL, LI, SPAN, INPUT
+from gluon import current, redirect
 import inspect
 import settings
 is_gae = settings.global_settings.web2py_runtime_gae
@@ -2269,7 +2269,7 @@ class SQLFORM(FORM):
                 message = T('at least %(nrows)s records found') % dict(nrows=nrows)
             else:
                 message = T('%(nrows)s records found') % dict(nrows=nrows)
-        console.append(DIV(message,_class='web2py_counter'))
+        console.append(DIV(message or T('None'),_class='web2py_counter'))
 
         paginator = UL()
         if paginate and dbset._db._adapter.dbengine=='google:datastore':
@@ -2356,9 +2356,9 @@ class SQLFORM(FORM):
                         if value:
                             if callable(upload):
                                 value = A(
-                                    current.T('file'), _href=upload(value))
+                                    T('file'), _href=upload(value))
                             elif upload:
-                                value = A(current.T('file'),
+                                value = A(T('file'),
                                           _href='%s/%s' % (upload, value))
                         else:
                             value = ''
@@ -2430,7 +2430,7 @@ class SQLFORM(FORM):
                     selectable(records)
                     redirect(referrer)
         else:
-            htmltable = DIV(current.T('No records found'))
+            htmltable = DIV(T('No records found'))
 
         if csv and nrows:
             export_links = []
@@ -2520,7 +2520,7 @@ class SQLFORM(FORM):
         name = None
         def format(table,row):
             if not row:
-                return 'Unknown'
+                return T('Unknown')
             elif isinstance(table._format,str):
                 return table._format % row
             elif callable(table._format):
@@ -2650,11 +2650,11 @@ class SQLFORM(FORM):
                     SPAN(divider, _class='divider') if next else '',
                     _class='active w2p_grid_breadcrumb_elem'))
             if grid.create_form:
-                header = T('New %s' % table._singular)
+                header = T('New %(entity)s') % dict(entity=table._singular)
             elif grid.update_form:
-                header = T('Edit %s' % format(table,grid.update_form.record))
+                header = T('Edit %(entity)s') % dict(entity=format(table,grid.update_form.record))
             elif grid.view_form:
-                header = T('View %s' % format(table,grid.view_form.record))
+                header = T('View %(entity)s') % dict(entity=format(table,grid.view_form.record))
             if next:
                 breadcrumbs.append(LI(
                             A(T(header), _class=trap_class(),_href=url()),
