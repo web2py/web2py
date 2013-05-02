@@ -176,7 +176,7 @@ class OAuthAccount(object):
 
             HTTP = self.globals['HTTP']
 
-            raise HTTP(307,
+            raise HTTP(302,
                        "You are not authenticated: you are being redirected to the <a href='" + auth_request_url + "'> authentication server</a>",
                        Location=auth_request_url)
 
