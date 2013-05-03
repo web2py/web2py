@@ -706,17 +706,20 @@ class IS_INT_IN_RANGE(Validator):
         self.minimum = self.maximum = None
         if minimum is None:
             if maximum is None:
-                self.error_message = error_message or 'enter an integer'
+                self.error_message = translate(
+                    error_message or 'enter an integer')
             else:
                 self.maximum = int(maximum)
                 if error_message is None:
-                    error_message = 'enter an integer less than or equal to %(max)g'
+                    error_message = \
+                        'enter an integer less than or equal to %(max)g'
                 self.error_message = translate(
                     error_message) % dict(max=self.maximum - 1)
         elif maximum is None:
             self.minimum = int(minimum)
             if error_message is None:
-                error_message = 'enter an integer greater than or equal to %(min)g'
+                error_message = \
+                    'enter an integer greater than or equal to %(min)g'
             self.error_message = translate(
                 error_message) % dict(min=self.minimum)
         else:
