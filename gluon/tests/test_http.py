@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-""" Unit tests for storage.py """
+"""Unit tests for http.py """
 
 import sys
 import os
