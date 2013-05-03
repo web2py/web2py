@@ -51,6 +51,7 @@ __all__ = [
     'IS_INT_IN_RANGE',
     'IS_IPV4',
     'IS_IPV6',
+    'IS_IPADDRESS',
     'IS_LENGTH',
     'IS_LIST_OF',
     'IS_LOWER',
