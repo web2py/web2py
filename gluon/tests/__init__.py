@@ -1,3 +1,4 @@
+from test_http import *
 from test_cache import *
 from test_dal import *
 from test_html import *
