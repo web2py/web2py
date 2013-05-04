@@ -457,6 +457,8 @@ def pluralize(singular, rules=PLURALIZE_RULES):
         if plural: return plural
 
 def hide_password(uri):
+    if isinstance(uri,(list,tuple)):
+        return [hide_password(item) for item in uri]
     return REGEX_NOPASSWD.sub('******',uri)
 
 def OR(a,b):
