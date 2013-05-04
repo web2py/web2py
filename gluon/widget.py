@@ -15,7 +15,6 @@ import cStringIO
 import time
 import thread
 import threading
-import re
 import os
 import socket
 import signal
@@ -25,10 +24,10 @@ import newcron
 import getpass
 import main
 
-from fileutils import w2p_pack, read_file, write_file, create_welcome_w2p
+from fileutils import read_file, write_file, create_welcome_w2p
 from settings import global_settings
 from shell import run, test
-from utils import is_valid_ip_address, is_loopback_ip_address
+from utils import is_valid_ip_address, is_loopback_ip_address, getipaddrinfo
 
 try:
     import Tkinter
@@ -338,7 +337,6 @@ class web2pyDialog(object):
             self.tb = None
 
     def update_schedulers(self, start=False):
-        x = 0
         apps = []
         available_apps = [arq for arq in os.listdir('applications/')]
         available_apps = [arq for arq in available_apps
@@ -942,8 +940,8 @@ def console():
 
     try:
         options.ips = list(set([
-            ip[4][0] for ip in socket.getaddrinfo(socket.getfqdn(), 0)
-            if not is_loopback_ip_address(ip[4][0])]))
+            addrinfo[4][0] for addrinfo in getipaddrinfo(socket.getfqdn())
+            if not is_loopback_ip_address(addrinfo=addrinfo)]))
     except socket.gaierror:
         options.ips = []
 

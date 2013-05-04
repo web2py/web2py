@@ -295,14 +295,28 @@ def is_valid_ip_address(address):
         return True
 
 
-def is_loopback_ip_address(ip):
-    """Determines whether the IP address appears to be a loopback address.
+def is_loopback_ip_address(ip=None, addrinfo=None):
+    """
+    Determines whether the address appears to be a loopback address.
 
     This assumes that the IP is valid.  The IPv6 check is limited to '::1'.
 
     """
+    if addrinfo:    # see socket.getaddrinfo() for layout of addrinfo tuple
+        if addrinfo[0] == socket.AF_NET or addrinfo[0] == socket.AF_INET6:
+            ip = addrinfo[4]
     if not ip:
         return False
-    if ip.count('.') == 3:  # IPv4
+    if isinstance(ip, basestring) and ip.count('.') == 3:  # IPv4
         return ip.startswith('127') or ip.startswith('::ffff:127')
     return ip == '::1'  # IPv6
+
+
+def getipaddrinfo(host):
+    """
+    Filter out non-IP and bad IP addresses from getaddrinfo
+    """
+    return [addrinfo for addrinfo in socket.getaddrinfo(host, None)
+            if (addrinfo[0] == socket.AF_INET or addrinfo[0] == socket.AF_INET6)
+                and isinstance(addrinfo[4][0], basestring)]
+
