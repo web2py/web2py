@@ -69,12 +69,14 @@ class HTTP(BaseException):
         status,
         body='',
         cookies=None,
+        status_message='',
         **headers
     ):
         self.status = status
         self.body = body
         self.headers = headers
         self.cookies2headers(cookies)
+        self.status_message = status_message
 
     def cookies2headers(self, cookies):
         if cookies and len(cookies) > 0:
@@ -85,10 +87,14 @@ class HTTP(BaseException):
         env = env or {}
         status = self.status
         headers = self.headers
+        status_message = status
         if status in defined_status:
-            status = '%d %s' % (status, defined_status[status])
+            if status_message:
+                status = str(status) + ' ' + str(status_message)
+            else:
+                status = '%d %s' % (status, defined_status[status])
         else:
-            status = str(status)
+            status = str(status) + ' ' + status_message
             if not regex_status.match(status):
                 status = '500 %s' % (defined_status[500])
         headers.setdefault('Content-Type', 'text/html; charset=UTF-8')
@@ -124,12 +130,17 @@ class HTTP(BaseException):
         message elements that are not defined are omitted
         """
         msg = '%(status)d'
-        if self.status in defined_status:
+        status_message = ''
+        if self.status_message:
+            status_message = self.status_message
+        elif self.status in defined_status:
+            status_message = defined_status.get(self.status)
+        if status_message:
             msg = '%(status)d %(defined_status)s'
         if 'web2py_error' in self.headers:
             msg += ' [%(web2py_error)s]'
         return msg % dict(status=self.status,
-                          defined_status=defined_status.get(self.status),
+                          defined_status=status_message,
                           web2py_error=self.headers.get('web2py_error'))
 
     def __str__(self):
