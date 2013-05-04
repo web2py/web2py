@@ -279,14 +279,15 @@ def update():
     (db, table) = get_table(request)
     keyed = hasattr(db[table], '_primarykey')
     record = None
+    db[table]._common_filter = None
     if keyed:
         key = [f for f in request.vars if f in db[table]._primarykey]
         if key:
             record = db(db[table][key[0]] == request.vars[key[
-                        0]], ignore_common_filters=True).select().first()
+                        0]]).select().first()
     else:
         record = db(db[table].id == request.args(
-            2), ignore_common_filters=True).select().first()
+            2)).select().first()
 
     if not record:
         qry = query_by_table_type(table, db)
