@@ -8091,6 +8091,22 @@ def Reference_pickler(data):
 
 copyreg.pickle(Reference, Reference_pickler, Reference_unpickler)
 
+class MethodAdder(object):
+    def __init__(self,table):
+        self.table = table
+    def __call__(self):
+        return self.register()
+    def __getattr__(self,method_name):
+        return self.register(method_name)
+    def register(self,method_name=None):
+        def _decorated(f):
+            instance = self.table
+            import types
+            method = types.MethodType(f, instance, instance.__class__)
+            name = method_name or f.func_name
+            setattr(instance, name, method)
+            return f
+        return _decorated
 
 class Table(object):
 
@@ -8144,6 +8160,8 @@ class Table(object):
         self._after_insert = []
         self._after_update = []
         self._after_delete = []
+
+        self.add_method = MethodAdder(self)
 
         fieldnames,newfields=set(),[]
         if hasattr(self,'_primarykey'):

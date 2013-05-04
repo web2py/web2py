@@ -275,6 +275,20 @@ class TestSelect(unittest.TestCase):
         self.assertEqual(db(~(db.tt.aa > '1') & (db.tt.aa > '2')).count(), 0)
         db.tt.drop()
 
+class TestAddMethod(unittest.TestCase):
+
+    def testRun(self):
+        db = DAL(DEFAULT_URI, check_reserved=['all'])
+        db.define_table('tt', Field('aa'))
+        @db.tt.add_method.all
+        def select_all(table,orderby=None):
+            return table._db(table).select(orderby=orderby)
+        self.assertEqual(db.tt.insert(aa='1'), 1)
+        self.assertEqual(db.tt.insert(aa='2'), 2)
+        self.assertEqual(db.tt.insert(aa='3'), 3)
+        self.assertEqual(len(db.tt.all()), 3)
+        db.tt.drop()
+
 
 class TestBelongs(unittest.TestCase):
 
