@@ -303,7 +303,7 @@ def is_loopback_ip_address(ip=None, addrinfo=None):
 
     """
     if addrinfo:    # see socket.getaddrinfo() for layout of addrinfo tuple
-        if addrinfo[0] == socket.AF_NET or addrinfo[0] == socket.AF_INET6:
+        if addrinfo[0] == socket.AF_INET or addrinfo[0] == socket.AF_INET6:
             ip = addrinfo[4]
     if not ip:
         return False
