@@ -9744,7 +9744,9 @@ class Set(object):
         return '<Set %s>' % BaseAdapter.expand(self.db._adapter,self.query)
 
     def __call__(self, query, ignore_common_filters=False):
-        if isinstance(query,Table):
+        if query is None:
+            return self
+        elif isinstance(query,Table):
             query = self.db._adapter.id_query(query)
         elif isinstance(query,str):
             query = Expression(self.db,query)
