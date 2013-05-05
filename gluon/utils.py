@@ -305,8 +305,8 @@ def is_loopback_ip_address(ip=None, addrinfo=None):
             ip = addrinfo[4]
     if not isinstance(ip, basestring):
         return False
-    if ip.count('.') == 3:  # IPv4
-        return ip.startswith('127') or ip.startswith('::127') or ip.startswith(' 0:0:0:0:0:0:127')
+    if ip.count('.') == 3:  # IPv4 or IPv6-embedded IPv4 or IPv4-compatible IPv6
+        return ip.lower().startswith(('127', '::127', '0:0:0:0:0:0:127', '::ffff:127', '0:0:0:0:0:ffff:127'))
     return ip == '::1' or ip == '0:0:0:0:0:0:0:1'   # IPv6 loopback
 
 
