@@ -471,11 +471,11 @@ def wsgibase(environ, responder):
                             local_hosts.add(socket.gethostname())
                             local_hosts.add(fqdn)
                             local_hosts.update([
-                                ip[4][0] for ip in getipaddrinfo(fqdn)])
+                                addrinfo[4][0] for addrinfo in getipaddrinfo(fqdn)])
                             if env.server_name:
                                 local_hosts.add(env.server_name)
                                 local_hosts.update([
-                                    ip[4][0] for ip in getipaddrinfo(env.server_name)])
+                                    addrinfo[4][0] for addrinfo in getipaddrinfo(env.server_name)])
                         except (socket.gaierror, TypeError):
                             pass
                     global_settings.local_hosts = list(local_hosts)

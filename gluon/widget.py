@@ -939,9 +939,9 @@ def console():
     global_settings.cmd_args = args
 
     try:
-        options.ips = list(set([
-            addrinfo[4][0] for addrinfo in getipaddrinfo(socket.getfqdn())
-            if not is_loopback_ip_address(addrinfo=addrinfo)]))
+        options.ips = list(set( # no duplicates
+            [addrinfo[4][0] for addrinfo in getipaddrinfo(socket.getfqdn())
+             if not is_loopback_ip_address(addrinfo=addrinfo)]))
     except socket.gaierror:
         options.ips = []
 
