@@ -897,6 +897,7 @@ class Auth(object):
         username_case_sensitive=True,
         update_fields = ['email'],
         ondelete="CASCADE",
+        client_side = True,
         wiki = Settings(),
     )
         # ## these are messages that can be customized
@@ -2134,7 +2135,7 @@ class Auth(object):
                     callback(onfail, None)
                     redirect(
                         self.url(args=request.args, vars=request.get_vars),
-                        client_side=True)
+                        client_side=self.settings.client_side)
 
         else:
             # use a central authentication server
@@ -2151,7 +2152,8 @@ class Auth(object):
             else:
                 # we need to pass through login again before going on
                 next = self.url(self.settings.function, args='login')
-                redirect(cas.login_url(next), client_side=True)
+                redirect(cas.login_url(next),
+                         client_side=self.settings.client_side)
 
         # process authenticated users
         if user:
@@ -2174,7 +2176,7 @@ class Auth(object):
                 if next == session._auth_next:
                     session._auth_next = None
                 next = replace_id(next, form)
-                redirect(next, client_side=True)
+                redirect(next, client_side=self.settings.client_side)
 
             table_user[username].requires = old_requires
             return form
@@ -2183,7 +2185,7 @@ class Auth(object):
 
         if next == session._auth_next:
             del session._auth_next
-        redirect(next, client_side=True)
+        redirect(next, client_side=self.settings.client_side)
 
     def logout(self, next=DEFAULT, onlogout=DEFAULT, log=DEFAULT):
         """
@@ -2235,7 +2237,8 @@ class Auth(object):
         response = current.response
         session = current.session
         if self.is_logged_in():
-            redirect(self.settings.logged_url, client_side=True)
+            redirect(self.settings.logged_url,
+                     client_side=self.settings.client_side)
         if next is DEFAULT:
             next = self.next or self.settings.register_next
         if onvalidation is DEFAULT:
@@ -2351,7 +2354,7 @@ class Auth(object):
                 next = self.url(args=request.args)
             else:
                 next = replace_id(next, form)
-            redirect(next, client_side=True)
+            redirect(next, client_side=self.settings.client_side)
         return form
 
     def is_logged_in(self):
@@ -2599,7 +2602,7 @@ class Auth(object):
                 raise Exception
         except Exception:
             session.flash = self.messages.invalid_reset_password
-            redirect(next, client_side=True)
+            redirect(next, client_side=self.settings.client_side)
         passfield = self.settings.password_field
         form = SQLFORM.factory(
             Field('new_password', 'password',
@@ -2624,7 +2627,7 @@ class Auth(object):
             session.flash = self.messages.password_changed
             if self.settings.login_after_password_change:
                 self.login_user(user)
-            redirect(next, client_side=True)
+            redirect(next, client_side=self.settings.client_side)
         return form
 
     def request_reset_password(
@@ -2682,10 +2685,12 @@ class Auth(object):
             user = table_user(email=form.vars.email)
             if not user:
                 session.flash = self.messages.invalid_email
-                redirect(self.url(args=request.args), client_side=True)
+                redirect(self.url(args=request.args),
+                         client_side=self.settings.client_side)
             elif user.registration_key in ('pending', 'disabled', 'blocked'):
                 session.flash = self.messages.registration_pending
-                redirect(self.url(args=request.args), client_side=True)
+                redirect(self.url(args=request.args),
+                         client_side=self.settings.client_side)
             if self.email_reset_password(user):
                 session.flash = self.messages.email_sent
             else:
@@ -2696,7 +2701,7 @@ class Auth(object):
                 next = self.url(args=request.args)
             else:
                 next = replace_id(next, form)
-            redirect(next, client_side=True)
+            redirect(next, client_side=self.settings.client_side)
         # old_requires = table_user.email.requires
         return form
 
@@ -2741,7 +2746,8 @@ class Auth(object):
         """
 
         if not self.is_logged_in():
-            redirect(self.settings.login_url, client_side=True)
+            redirect(self.settings.login_url,
+                     client_side=self.settings.client_side)
         db = self.db
         table_user = self.table_user()
         s = db(table_user.id == self.user.id)
@@ -2791,7 +2797,7 @@ class Auth(object):
                     next = self.url(args=request.args)
                 else:
                     next = replace_id(next, form)
-                redirect(next, client_side=True)
+                redirect(next, client_side=self.settings.client_side)
         return form
 
     def profile(
@@ -2811,7 +2817,8 @@ class Auth(object):
 
         table_user = self.table_user()
         if not self.is_logged_in():
-            redirect(self.settings.login_url, client_side=True)
+            redirect(self.settings.login_url,
+                     client_side=self.settings.client_side)
         passfield = self.settings.password_field
         table_user[passfield].writable = False
         request = current.request
@@ -2847,7 +2854,7 @@ class Auth(object):
                 next = self.url(args=request.args)
             else:
                 next = replace_id(next, form)
-            redirect(next, client_side=True)
+            redirect(next, client_side=self.settings.client_side)
         return form
 
     def is_impersonating(self):
