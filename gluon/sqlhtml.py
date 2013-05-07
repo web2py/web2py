@@ -1456,8 +1456,8 @@ class SQLFORM(FORM):
                     if not f:
                         continue
                     else:
-                        f = os.path.join(current.request.folder,
-                                         os.path.normpath(f))
+                        ufolder = field.uploadfolder or current.request.folder
+                        f = os.path.join(ufolder, os.path.normpath(f))
                         source_file = open(f, 'rb')
                         original_filename = os.path.split(f)[1]
                 elif hasattr(f, 'file'):
