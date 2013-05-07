@@ -1753,7 +1753,7 @@ class Auth(object):
         if 'registration_id' in checks \
                 and user \
                 and user.registration_id \
-                and user.registration_id != keys.get('registration_id', None):
+                and ('registration_id' not in keys or user.registration_id != str(keys['registration_id'])):
             user = None  # THINK MORE ABOUT THIS? DO WE TRUST OPENID PROVIDER?
         if user:
             update_keys = dict(registration_id=keys['registration_id'])
