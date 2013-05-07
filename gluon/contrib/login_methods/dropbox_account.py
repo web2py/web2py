@@ -94,9 +94,8 @@ class DropboxAccount(object):
         return form
 
     def logout_url(self, next="/"):
-        current.session.dropbox_request_token = None
+        self.sess.unlink()
         current.session.auth = None
-        redirect('https://www.dropbox.com/logout')
         return next
 
     def get_client(self):
