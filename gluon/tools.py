@@ -2249,7 +2249,9 @@ class Auth(object):
             log = self.messages.register_log
 
         table_user = self.table_user()
-        if 'username' in table_user.fields:
+        if self.settings.login_userfield:
+            username = self.settings.login_userfield
+        elif 'username' in table_user.fields:
             username = 'username'
         else:
             username = 'email'
