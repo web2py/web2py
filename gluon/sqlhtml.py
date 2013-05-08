@@ -1467,6 +1467,10 @@ class SQLFORM(FORM):
                     ### do not know why this happens, it should not
                     (source_file, original_filename) = \
                         (cStringIO.StringIO(f), 'file.txt')
+                else:
+                    # this should never happen, why does it happen?
+                    print 'f=',repr(f)
+                    continue
                 newfilename = field.store(source_file, original_filename,
                                           field.uploadfolder)
                 # this line was for backward compatibility but problematic
