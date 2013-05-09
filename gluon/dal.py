@@ -196,7 +196,7 @@ CALLABLETYPES = (types.LambdaType, types.FunctionType,
 TABLE_ARGS = set(
     ('migrate','primarykey','fake_migrate','format','redefine',
      'singular','plural','trigger_name','sequence_name',
-     'common_filter','polymodel','table_class','on_define',))
+     'common_filter','polymodel','table_class','on_define','actual_name'))
 
 SELECT_ARGS = set(
     ('orderby', 'groupby', 'limitby','required', 'cache', 'left',
@@ -1186,7 +1186,7 @@ class BaseAdapter(ConnectionPool):
             self.file_delete(table._dbt)
             logfile.write('success!\n')
 
-    def _insert(self, table, fields):
+    def _insert(self, table, fields):        
         if fields:
             keys = ','.join(f.name for f, v in fields)
             values = ','.join(self.expand(v, f.type) for f, v in fields)
@@ -1380,13 +1380,16 @@ class BaseAdapter(ConnectionPool):
         else:
             return str(expression)
 
+    def table_alias(self,name):
+        return str(name if isinstance(name,Table) else self.db[name])
+
     def alias(self, table, alias):
         """
         Given a table object, makes a new table object
         with alias name.
         """
         other = copy.copy(table)
-        other['_ot'] = other._tablename
+        other['_ot'] = other._ot or other._tablename
         other['ALL'] = SQLALL(other)
         other['_tablename'] = alias
         for fieldname in other.fields:
@@ -1588,20 +1591,19 @@ class BaseAdapter(ConnectionPool):
             query = self.common_filter(query,tablenames_for_common_filters)
         sql_w = ' WHERE ' + self.expand(query) if query else ''
 
-        def alias(t):
-            return str(self.db[t])
         if inner_join and not left:
-            sql_t = ', '.join([alias(t) for t in iexcluded + \
+            sql_t = ', '.join([self.table_alias(t) for t in iexcluded + \
                                    itables_to_merge.keys()])
             for t in ijoinon:
-                sql_t += ' %s %s' % (icommand, str(t))
+                sql_t += ' %s %s' % (icommand, t)
         elif not inner_join and left:
-            sql_t = ', '.join([alias(t) for t in excluded + \
+            sql_t = ', '.join([self.table_alias(t) for t in excluded + \
                                    tables_to_merge.keys()])
             if joint:
-                sql_t += ' %s %s' % (command, ','.join([t for t in joint]))
+                sql_t += ' %s %s' % (command, 
+                                     ','.join([self.table_alias(t) for t in joint]))
             for t in joinon:
-                sql_t += ' %s %s' % (command, str(t))
+                sql_t += ' %s %s' % (command, t)
         elif inner_join and left:
             all_tables_in_query = set(important_tablenames + \
                                       iimportant_tablenames + \
@@ -1609,15 +1611,16 @@ class BaseAdapter(ConnectionPool):
             tables_in_joinon = set(joinont + ijoinont)
             tables_not_in_joinon = \
                 all_tables_in_query.difference(tables_in_joinon)
-            sql_t = ','.join([alias(t) for t in tables_not_in_joinon])
+            sql_t = ','.join([self.table_alias(t) for t in tables_not_in_joinon])
             for t in ijoinon:
-                sql_t += ' %s %s' % (icommand, str(t))
+                sql_t += ' %s %s' % (icommand, t)
             if joint:
-                sql_t += ' %s %s' % (command, ','.join([t for t in joint]))
+                sql_t += ' %s %s' % (command, 
+                                     ','.join([self.table_alias(t) for t in joint]))
             for t in joinon:
-                sql_t += ' %s %s' % (command, str(t))
+                sql_t += ' %s %s' % (command, t)
         else:
-            sql_t = ', '.join(alias(t) for t in tablenames)
+            sql_t = ', '.join(self.table_alias(t) for t in tablenames)
         if groupby:
             if isinstance(groupby, (list, tuple)):
                 groupby = xorify(groupby)
@@ -1699,7 +1702,7 @@ class BaseAdapter(ConnectionPool):
             sql_w = ' WHERE ' + self.expand(query)
         else:
             sql_w = ''
-        sql_t = ','.join(tablenames)
+        sql_t = ','.join(self.table_alias(t) for t in tablenames)
         if distinct:
             if isinstance(distinct,(list, tuple)):
                 distinct = xorify(distinct)
@@ -6678,7 +6681,6 @@ ADAPTERS = {
     'imap': IMAPAdapter
 }
 
-
 def sqlhtml_validators(field):
     """
     Field type validation, using web2py's validators mechanism.
@@ -8142,19 +8144,20 @@ class Table(object):
         """
         self._actual = False # set to True by define_table()
         self._tablename = tablename
-        self._sequence_name = args.get('sequence_name',None) or \
+        self._ot = args.get('actual_name')
+        self._sequence_name = args.get('sequence_name') or \
             db and db._adapter.sequence_name(tablename)
-        self._trigger_name = args.get('trigger_name',None) or \
+        self._trigger_name = args.get('trigger_name') or \
             db and db._adapter.trigger_name(tablename)
-        self._common_filter = args.get('common_filter', None)
-        self._format = args.get('format',None)
+        self._common_filter = args.get('common_filter')
+        self._format = args.get('format')
         self._singular = args.get(
             'singular',tablename.replace('_',' ').capitalize())
         self._plural = args.get(
             'plural',pluralize(self._singular.lower()).capitalize())
         # horrible but for backard compatibility of appamdin:
         if 'primarykey' in args and args['primarykey']:
-            self._primarykey = args.get('primarykey', None)
+            self._primarykey = args.get('primarykey')
 
         self._before_insert = []
         self._before_update = [Set.delete_uploaded_files]
@@ -8450,8 +8453,8 @@ class Table(object):
     def __repr__(self):
         return '<Table %s (%s)>' % (self._tablename,','.join(self.fields()))
 
-    def __str__(self):
-        if hasattr(self,'_ot') and self._ot is not None:
+    def __str__(self):        
+        if self._ot is not None:
             if 'Oracle' in str(type(self._db._adapter)):     # <<< patch
                 return '%s %s' % (self._ot, self._tablename) # <<< patch
             return '%s AS %s' % (self._ot, self._tablename)
