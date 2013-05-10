@@ -585,10 +585,14 @@ class ConnectionPool(object):
         if the connection is not active (closed by db server) it will loop
         if not self.pool_size or no active connections in pool makes a new one
         """
-        if getattr(self,'connection',None) != None:
+        if getattr(self,'connection', None) != None:
             return
         if f is None:
             f = self.connector
+
+        if not hasattr(self, "driver") or self.driver is None:
+            LOGGER.debug("Skipping connection since there's no driver")
+            return
 
         if not self.pool_size:
             self.connection = f()
