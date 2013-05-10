@@ -3327,6 +3327,71 @@ class MSSQL2Adapter(MSSQLAdapter):
     def execute(self,a):
         return self.log_execute(a.decode('utf8'))
 
+class VerticaAdapter(MSSQLAdapter):
+    drivers = ('pyodbc',)
+    T_SEP = ' '
+
+    types = {
+        'boolean': 'BOOLEAN',
+        'string': 'VARCHAR(%(length)s)',
+        'text': 'BYTEA',
+        'json': 'VARCHAR(%(length)s)',
+        'password': 'VARCHAR(%(length)s)',
+        'blob': 'BYTEA',
+        'upload': 'VARCHAR(%(length)s)',
+        'integer': 'INT',
+        'bigint': 'BIGINT',
+        'float': 'FLOAT',
+        'double': 'DOUBLE PRECISION',
+        'decimal': 'DECIMAL(%(precision)s,%(scale)s)',
+        'date': 'DATE',
+        'time': 'TIME',
+        'datetime': 'DATETIME',
+        'id': 'IDENTITY',
+        'reference': 'INT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'list:integer': 'BYTEA',
+        'list:string': 'BYTEA',
+        'list:reference': 'BYTEA',
+        'big-reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        }
+
+    def EXTRACT(self, first, what):
+        return "DATE_PART('%s', TIMESTAMP %s)" % (what, self.expand(first))
+
+    def _truncate(self, table, mode=''):
+        tablename = table._tablename
+        return ['TRUNCATE %s %s;' % (tablename, mode or '')]
+
+    def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
+        if limitby:
+            (lmin, lmax) = limitby
+            sql_o += ' LIMIT %i OFFSET %i' % (lmax - lmin, lmin)
+        return 'SELECT %s %s FROM %s%s%s;' % \
+            (sql_s, sql_f, sql_t, sql_w, sql_o)
+
+    def lastrowid(self,table):
+        self.execute('SELECT LAST_INSERT_ID();')
+        return long(self.cursor.fetchone()[0])
+
+    
+    regex_timestamp = re.compile('\.timestamp')
+
+    @staticmethod
+    def quote_timestamp(a):
+        tokens = a.split('.timestamp')
+        c, a = 0, ''
+        for token in tokens:
+            if a=='':
+                a=token
+            else:
+                if c%2==0: a+='."timestamp"'+token
+                else: a+='.timestamp'+token
+            c+=token.count("'")
+        return a
+    
+    def execute(self, a):
+        a = self.quote_timestamp(a)
+        return self.log_execute(a)
 
 class SybaseAdapter(MSSQLAdapter):
     drivers = ('Sybase',)
@@ -6659,6 +6724,7 @@ ADAPTERS = {
     'mssql': MSSQLAdapter,
     'mssql2': MSSQL2Adapter,
     'mssql3': MSSQL3Adapter,
+    'vertica': VerticaAdapter,
     'sybase': SybaseAdapter,
     'db2': DB2Adapter,
     'teradata': TeradataAdapter,
