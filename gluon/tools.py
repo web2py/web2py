@@ -371,15 +371,16 @@ class Mail(object):
         if not isinstance(sender, str):
             raise Exception('Sender address not specified')
 
-        if not raw:
+        if not raw and attachments:
+            # Use multipart/mixed if there is attachments
             payload_in = MIMEMultipart.MIMEMultipart('mixed')
-        else:
+        elif raw:
             # no encoding configuration for raw messages
             if not isinstance(message, basestring):
                 message = message.read()
             if isinstance(message, unicode):
                 text = message.encode('utf-8')
-            elif not encoding=='utf-8':
+            elif not encoding == 'utf-8':
                 text = message.decode(encoding).encode('utf-8')
             else:
                 text = message
@@ -411,25 +412,43 @@ class Mail(object):
             html = None
 
         if (not text is None or not html is None) and (not raw):
-            attachment = MIMEMultipart.MIMEMultipart('alternative')
+
             if not text is None:
                 if not isinstance(text, basestring):
                     text = text.read()
                 if isinstance(text, unicode):
                     text = text.encode('utf-8')
-                elif not encoding=='utf-8':
+                elif not encoding == 'utf-8':
                     text = text.decode(encoding).encode('utf-8')
-                attachment.attach(MIMEText.MIMEText(text, _charset='utf-8'))
             if not html is None:
                 if not isinstance(html, basestring):
                     html = html.read()
                 if isinstance(html, unicode):
                     html = html.encode('utf-8')
-                elif not encoding=='utf-8':
+                elif not encoding == 'utf-8':
                     html = html.decode(encoding).encode('utf-8')
+
+            # Construct mime part only if needed
+            if text and html:
+                # We have text and html we need multipart/alternative
+                attachment = MIMEMultipart.MIMEMultipart('alternative')
+                attachment.attach(MIMEText.MIMEText(text, _charset='utf-8'))
                 attachment.attach(
                     MIMEText.MIMEText(html, 'html', _charset='utf-8'))
-            payload_in.attach(attachment)
+            elif text:
+                attachment = MIMEText.MIMEText(text, _charset='utf-8')
+            elif html:
+                attachment = \
+                    MIMEText.MIMEText(html, 'html', _charset='utf-8')
+
+            if attachments:
+                # If there is attachments put text and html into
+                # multipart/mixed
+                payload_in.attach(attachment)
+            else:
+                # No attachments no multipart/mixed
+                payload_in = attachment
+
         if (attachments is None) or raw:
             pass
         elif isinstance(attachments, (list, tuple)):

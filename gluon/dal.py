@@ -472,6 +472,11 @@ def IDENTITY(x): return x
 def varquote_aux(name,quotestr='%s'):
     return name if REGEX_W.match(name) else quotestr % name
 
+def quote_keyword(a,keyword='timestamp'):
+    regex = re.compile('\.keyword(?=\w)')
+    a = regex.sub('."%s"' % keyword,a)
+    return a
+    
 if 'google' in DRIVERS:
 
     is_jdbc = False
@@ -1764,6 +1769,8 @@ class BaseAdapter(ConnectionPool):
     def log_execute(self, *a, **b):
         if not self.connection: return None
         command = a[0]
+        if hasattr(self,'filter_sql_command'):
+            command = self.filter_sql_command(command)
         if self.db._debug:
             LOGGER.debug('SQL: %s' % command)
         self.db._lastsql = command
@@ -3377,24 +3384,7 @@ class VerticaAdapter(MSSQLAdapter):
         self.execute('SELECT LAST_INSERT_ID();')
         return long(self.cursor.fetchone()[0])
 
-    
-    regex_timestamp = re.compile('\.timestamp')
-
-    @staticmethod
-    def quote_timestamp(a):
-        tokens = a.split('.timestamp')
-        c, a = 0, ''
-        for token in tokens:
-            if a=='':
-                a=token
-            else:
-                if c%2==0: a+='."timestamp"'+token
-                else: a+='.timestamp'+token
-            c+=token.count("'")
-        return a
-    
     def execute(self, a):
-        a = self.quote_timestamp(a)
         return self.log_execute(a)
 
 class SybaseAdapter(MSSQLAdapter):
