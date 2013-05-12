@@ -891,6 +891,7 @@ class Auth(object):
         on_failed_authentication=lambda x: redirect(x),
         formstyle="table3cols",
         label_separator=": ",
+        allow_delete_accounts=False,
         password_field='password',
         table_user_name='auth_user',
         table_group_name='auth_group',
@@ -2862,11 +2863,13 @@ class Auth(object):
             delete_label=self.messages.delete_label,
             upload=self.settings.download_url,
             formstyle=self.settings.formstyle,
-            separator=self.settings.label_separator
+            separator=self.settings.label_separator,
+            deletable=self.settings.allow_delete_accounts,
             )
         if form.accepts(request, session,
                         formname='profile',
-                        onvalidation=onvalidation, hideerror=self.settings.hideerror):
+                        onvalidation=onvalidation,
+                        hideerror=self.settings.hideerror):
             self.user.update(table_user._filter_fields(form.vars))
             session.flash = self.messages.profile_updated
             self.log_event(log, self.user)
