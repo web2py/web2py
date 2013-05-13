@@ -815,7 +815,7 @@ class Connection(object):
         outrec = Record(FCGI_UNKNOWN_TYPE)
         outrec.contentData = struct.pack(FCGI_UnknownTypeBody, inrec.type)
         outrec.contentLength = FCGI_UnknownTypeBody_LEN
-        self.writeRecord(rec)
+        self.writeRecord(outrec)
 
 class MultiplexedConnection(Connection):
     """
