@@ -155,11 +155,7 @@ class MockQuery(object):
         if self.op == 'eq' and self.field == 'id' and self.value:
             #means that someone wants to retrieve the key self.value
             rtn = self.db.hgetall("%s:%s" % (self.keyprefix, self.value))
-            if rtn == dict():
-                #return an empty resultset for non existing key
-                return []
-            else:
-                return [Storage(rtn)]
+            return [Storage(rtn)] if rtn else []
         elif self.op == 'ge' and self.field == 'id' and self.value == 0:
             #means that someone wants the complete list
             rtn = []
@@ -168,13 +164,11 @@ class MockQuery(object):
             allkeys = self.db.smembers(id_idx)
             for sess in allkeys:
                 val = self.db.hgetall(sess)
-                if val == dict():
+                if not val:
                     if self.session_expiry:
                         #clean up the idx, because the key expired
                         self.db.srem(id_idx, sess)
-                        continue
-                    else:
-                        continue
+                    continue
                 val = Storage(val)
                 #add a delete_record method (necessary for sessions2trash.py)
                 val.delete_record = RecordDeleter(
