@@ -186,7 +186,8 @@ class MockQuery(object):
     def update(self, **kwargs):
         #means that the session has been found and needs an update
         if self.op == 'eq' and self.field == 'id' and self.value:
-            rtn = self.db.hmset("%s:%s" % (self.keyprefix, self.value), kwargs)
+            key = "%s:%s" % (self.keyprefix, self.value)
+            rtn = self.db.hmset(key, kwargs)
             if self.session_expiry:
                 self.db.expire(key, self.session.expiry)
             return rtn
