@@ -926,7 +926,7 @@ class Auth(object):
         register_button='Register',
         password_reset_button='Request reset password',
         password_change_button='Change password',
-        profile_save_button='Save profile',
+        profile_save_button='Apply changes',
         submit_button='Submit',
         verify_password='Verify Password',
         delete_label='Check to delete',
@@ -2874,6 +2874,8 @@ class Auth(object):
             session.flash = self.messages.profile_updated
             self.log_event(log, self.user)
             callback(onaccept, form)
+            if form.deleted:
+                return self.logout()
             if not next:
                 next = self.url(args=request.args)
             else:
