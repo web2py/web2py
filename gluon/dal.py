@@ -8216,7 +8216,7 @@ class Table(object):
         self._plural = args.get(
             'plural',pluralize(self._singular.lower()).capitalize())
         # horrible but for backard compatibility of appamdin:
-        if 'primarykey' in args and args['primarykey']:
+        if 'primarykey' in args and args['primarykey'] is not None:
             self._primarykey = args.get('primarykey')
 
         self._before_insert = []
