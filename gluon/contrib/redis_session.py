@@ -29,11 +29,12 @@ def RedisSession(*args, **vars):
 
     locker.acquire()
     try:
-        if not hasattr(RedisSession, 'redis_instance'):
-            RedisSession.redis_instance = RedisClient(*args, **vars)
+        instance_name = 'redis_instance_' + current.request.application
+        if not hasattr(RedisSession, instance_name):
+            setattr(RedisSession, instance_name, RedisClient(*args, **vars))
+        return getattr(RedisSession, instance_name)
     finally:
         locker.release()
-    return RedisSession.redis_instance
 
 
 class RedisClient(object):
