@@ -189,7 +189,7 @@ class MockQuery(object):
             key = "%s:%s" % (self.keyprefix, self.value)
             rtn = self.db.hmset(key, kwargs)
             if self.session_expiry:
-                self.db.expire(key, self.session.expiry)
+                self.db.expire(key, self.session_expiry)
             return rtn
 
 
