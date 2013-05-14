@@ -29,11 +29,12 @@ def RedisSession(*args, **vars):
 
     locker.acquire()
     try:
-        if not hasattr(RedisSession, 'redis_instance'):
-            RedisSession.redis_instance = RedisClient(*args, **vars)
+        instance_name = 'redis_instance_' + current.request.application
+        if not hasattr(RedisSession, instance_name):
+            setattr(RedisSession, instance_name, RedisClient(*args, **vars))
+        return getattr(RedisSession, instance_name)
     finally:
         locker.release()
-    return RedisSession.redis_instance
 
 
 class RedisClient(object):
@@ -186,9 +187,10 @@ class MockQuery(object):
     def update(self, **kwargs):
         #means that the session has been found and needs an update
         if self.op == 'eq' and self.field == 'id' and self.value:
-            rtn = self.db.hmset("%s:%s" % (self.keyprefix, self.value), kwargs)
+            key = "%s:%s" % (self.keyprefix, self.value)
+            rtn = self.db.hmset(key, kwargs)
             if self.session_expiry:
-                self.db.expire(key, self.session.expiry)
+                self.db.expire(key, self.session_expiry)
             return rtn
 
 
