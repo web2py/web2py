@@ -80,7 +80,7 @@ class MemcacheClientObj(Client):
         newKey = self.__keyFormat__(key)
         obj = Client.get(self, newKey)
         if obj:
-            if isinstance(obj,(int,double,long)):
+            if isinstance(obj,(int,float,long)):
                 return Client.incr(self, newKey, value)
             else:
                 value += obj[1]
