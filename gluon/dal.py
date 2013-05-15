@@ -928,7 +928,7 @@ class BaseAdapter(ConnectionPool):
                 foreign_key = ', '.join(pkeys),
                 on_delete_action = field.ondelete)
 
-        if hasattr(table,'_primarykey'):
+        if getattr(table,'_primarykey',None):
             query = "CREATE TABLE %s(\n    %s,\n    %s) %s" % \
                 (tablename, fields,
                  self.PRIMARY_KEY(', '.join(table._primarykey)),other)
@@ -1775,7 +1775,7 @@ class BaseAdapter(ConnectionPool):
             LOGGER.debug('SQL: %s' % command)
         self.db._lastsql = command
         t0 = time.time()
-        ret = self.cursor.execute(command,*a[1:], **b)
+        ret = self.cursor.execute(command, *a[1:], **b)
         self.db._timings.append((command,time.time()-t0))
         del self.db._timings[:-TIMINGSSIZE]
         return ret
@@ -1856,7 +1856,7 @@ class BaseAdapter(ConnectionPool):
                 if have_serializers:
                     obj = serializers.json(obj)
                 elif simplejson:
-                    obj = simplejson.dumps(obj)
+                    obj = simplejson.dumps(items)
                 else:
                     raise RuntimeError("missing simplejson")
         if not isinstance(obj,bytes):
@@ -3365,6 +3365,7 @@ class VerticaAdapter(MSSQLAdapter):
         'list:reference': 'BYTEA',
         'big-reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         }
+
 
     def EXTRACT(self, first, what):
         return "DATE_PART('%s', TIMESTAMP %s)" % (what, self.expand(first))
