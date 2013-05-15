@@ -2514,17 +2514,18 @@ class IS_UPPER(Validator):
         return (value.decode('utf8').upper().encode('utf8'), None)
 
 
-def urlify(value, maxlen=80, keep_underscores=False):
+def urlify(s, maxlen=80, keep_underscores=False):
     """
     Convert incoming string to a simplified ASCII subset.
     if (keep_underscores): underscores are retained in the string
     else: underscores are translated to hyphens (default)
     """
-    s = value.lower()                     # to lowercase
-    s = s.decode('utf-8')                 # to utf-8
+    if isinstance(s, str):
+        s = s.decode('utf-8')             # to unicode
+    s = s.lower()                         # to lowercase
     s = unicodedata.normalize('NFKD', s)  # normalize eg è => e, ñ => n
-    s = s.encode('ASCII', 'ignore')       # encode as ASCII
-    s = re.sub('&\w+;', '', s)            # strip html entities
+    s = s.encode('ascii', 'ignore')       # encode as ASCII
+    s = re.sub('&\w+?;', '', s)           # strip html entities
     if keep_underscores:
         s = re.sub('\s+', '-', s)         # whitespace to hyphens
         s = re.sub('[^\w\-]', '', s)
