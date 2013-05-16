@@ -266,7 +266,7 @@ REGEX_STORE_PATTERN = re.compile('\.(?P<e>\w{1,5})$')
 REGEX_QUOTES = re.compile("'[^']*'")
 REGEX_ALPHANUMERIC = re.compile('^[0-9a-zA-Z]\w*$')
 REGEX_PASSWORD = re.compile('\://([^:@]*)\:')
-REGEX_NOPASSWD = re.compile('(?<=\:)([^:@/]+)(?=@.+)')
+REGEX_NOPASSWD = re.compile('\/\/[\w\.\-]+[\:\/](.+)(?=@)') # was '(?<=[\:\/])([^:@/]+)(?=@.+)'
 
 # list of drivers will be built on the fly
 # and lists only what is available
