@@ -1913,7 +1913,7 @@ class BaseAdapter(ConnectionPool):
         return value
 
     def parse_boolean(self, value, field_type):
-        return value == True or str(value)[:1].lower() == 't'
+        return value == self.TRUE or str(value)[:1].lower() == 't'
 
     def parse_date(self, value, field_type):
         if isinstance(value, datetime.datetime):
