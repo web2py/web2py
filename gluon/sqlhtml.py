@@ -2055,7 +2055,7 @@ class SQLFORM(FORM):
                     if ondelete:
                         ondelete(table, request.args[-1])
                     record.delete_record()
-            redirect(referrer)
+            redirect(referrer, client_side=True)
 
         exportManager = dict(
             csv_with_hidden_cols=(ExporterCSV, 'CSV (hidden cols)'),
