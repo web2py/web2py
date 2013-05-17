@@ -1786,7 +1786,8 @@ class SQLFORM(FORM):
              buttons_placement = 'right',
              links_placement = 'right',
              noconfirm=False,
-             cache_count=None
+             cache_count=None,
+             client_side_delete=False,
              ):
 
         # jQuery UI ThemeRoller classes (empty if ui is disabled)
@@ -2055,7 +2056,7 @@ class SQLFORM(FORM):
                     if ondelete:
                         ondelete(table, request.args[-1])
                     record.delete_record()
-            redirect(referrer, client_side=True)
+            redirect(referrer, client_side=client_side_delete)
 
         exportManager = dict(
             csv_with_hidden_cols=(ExporterCSV, 'CSV (hidden cols)'),
