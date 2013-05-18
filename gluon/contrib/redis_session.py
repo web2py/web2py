@@ -242,4 +242,5 @@ end
 
 
 def release_lock(conn, lockname, identifier):
-    return RedisClient._release_script(keys=[lockname], args=[identifier])
+    return RedisClient._release_script(keys=[lockname], args=[identifier],
+            client=conn)
