@@ -1906,7 +1906,7 @@ class SQLFORM(FORM):
                        delete=None, trap=True, noconfirm=None):
             if showbuttontext:
                 return A(SPAN(_class=ui.get(buttonclass)),
-                         SPAN(T(buttontext), _title=buttontext,
+                         SPAN(T(buttontext), _title=T(buttontext),
                               _class=ui.get('buttontext')),
                          _href=buttonurl,
                          callback=callback,
@@ -1919,7 +1919,7 @@ class SQLFORM(FORM):
                          callback=callback,
                          delete=delete,
                          noconfirm=noconfirm,
-                         _title=buttontext,
+                         _title=T(buttontext),
                          _class=trap_class(ui.get('buttontext'), trap))
 
         dbset = db(query)
