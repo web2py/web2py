@@ -5269,6 +5269,7 @@ class Wiki(object):
             else:
                 return dict(title=page.title,
                             slug=page.slug,
+                            page=page,
                             content=XML(self.fix_hostname(page.html)),
                             tags=page.tags,
                             created_on=page.created_on,
@@ -5281,6 +5282,7 @@ class Wiki(object):
             else:
                 return dict(title=page.title,
                             slug=page.slug,
+                            page=page,
                             content=page.body,
                             tags=page.tags,
                             created_on=page.created_on,
