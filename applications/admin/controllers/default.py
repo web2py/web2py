@@ -138,17 +138,17 @@ def check_version():
     session.forget()
     session._unlock(response)
 
-    new_version, version_number = check_new_version(request.env.web2py_version,
-                                                    WEB2PY_VERSION_URL)
+    new_version, version = check_new_version(request.env.web2py_version,
+                                             WEB2PY_VERSION_URL)
 
     if new_version == -1:
         return A(T('Unable to check for upgrades'), _href=WEB2PY_URL)
     elif new_version != True:
         return A(T('web2py is up to date'), _href=WEB2PY_URL)
     elif platform.system().lower() in ('windows', 'win32', 'win64') and os.path.exists("web2py.exe"):
-        return SPAN('You should upgrade to version %s' % version_number)
+        return SPAN('You should upgrade to %s' % version.split('(')[0])
     else:
-        return sp_button(URL('upgrade_web2py'), T('upgrade now to %s') % version_number.split('-')[0])
+        return sp_button(URL('upgrade_web2py'), T('upgrade now to %s') % version.split('(')[0])
 
 
 def logout():
