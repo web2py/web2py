@@ -2522,6 +2522,9 @@ class MySQLAdapter(BaseAdapter):
         self.execute('select last_insert_id();')
         return int(self.cursor.fetchone()[0])
 
+    def integrity_error_class(self):
+        return self.cursor.IntegrityError
+
 class PostgreSQLAdapter(BaseAdapter):
     drivers = ('psycopg2','pg8000')
 
