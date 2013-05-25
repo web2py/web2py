@@ -3102,3 +3102,4 @@ class ExporterJSON(ExportClass):
             return self.rows.as_json()
         else:
             return 'null'
+
