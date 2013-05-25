@@ -1856,7 +1856,7 @@ class BaseAdapter(ConnectionPool):
                 if have_serializers:
                     obj = serializers.json(obj)
                 elif simplejson:
-                    obj = simplejson.dumps(items)
+                    obj = simplejson.dumps(obj)
                 else:
                     raise RuntimeError("missing simplejson")
         if not isinstance(obj,bytes):
