@@ -25,7 +25,13 @@ handlers:
 # the parametric router's language logic. 
 # You cannot use them together.
 
-- url: /(?P<a>.+?)/static/(?P<b>.+)
+- url: /(.+?)/[^_]*\/?static/_\d.\d.\d\/?(.+)
+  static_files: applications/\1/static/\2
+  upload: applications/(.+?)/static/(.+)
+  secure: optional
+  expiration: "365d"
+
+- url: /(.+?)/[^_]*\/?static/?(.+)
   static_files: applications/\1/static/\2
   upload: applications/(.+?)/static/(.+)
   secure: optional
