@@ -10370,7 +10370,7 @@ class Rows(object):
         # test for multiple rows
         multi = False
         f = self.first()
-        if f:
+        if f and isinstance(key, basestring):
             multi = any([isinstance(v, f.__class__) for v in f.values()])
             if (not "." in key) and multi:
                 # No key provided, default to int indices
