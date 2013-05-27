@@ -315,15 +315,21 @@ class IS_LENGTH(Validator):
                     length = 0
             if self.minsize <= length <= self.maxsize:
                 return (value, None)
-        elif isinstance(value, (str, unicode, list)):
+        elif isinstance(value, str):
+            try:
+                lvalue = len(value.decode('utf8'))
+            except:
+                lvalue = len(value)
+            if self.minsize <= lvalue <= self.maxsize:
+                return (value, None)
+        elif isinstance(value, unicode):
+            if self.minsize <= len(value) <= self.maxsize:
+                return (value.encode('utf8'), None)
+        elif isinstance(value, (tuple, list)):
             if self.minsize <= len(value) <= self.maxsize:
                 return (value, None)
         elif self.minsize <= len(str(value)) <= self.maxsize:
-            try:
-                value.decode('utf8')
-                return (value, None)
-            except:
-                pass
+            return (str(value), None)
         return (value, translate(self.error_message)
                 % dict(min=self.minsize, max=self.maxsize))
 
