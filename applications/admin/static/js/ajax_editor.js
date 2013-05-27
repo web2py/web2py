@@ -54,25 +54,28 @@ function doHighlight(highlight) {
 }
 
 function doClickSave() {
-    var data = getData();
+	var currentTabID = '#' + jQuery('#edit_placeholder div.tab-pane.active').attr('id');
+	var editor = jQuery (currentTabID + ' textarea').data('editor');
+   var data = editor.getValue();
     var dataForPost = prepareMultiPartPOST(new Array(
 	prepareDataForSave('data', data),
 	prepareDataForSave('file_hash',
-			   jQuery("input[name='file_hash']").val()),
+			   jQuery(currentTabID + " input[name='file_hash']").val()),
 	prepareDataForSave('saved_on',
-			   jQuery("input[name='saved_on']").val()),
+			   jQuery(currentTabID + " input[name='saved_on']").val()),
 	prepareDataForSave('saved_on',
-			   jQuery("input[name='saved_on']").val()),
+			   jQuery(currentTabID + " input[name='saved_on']").val()),
 	prepareDataForSave('from_ajax','true')));
         // console.info(area.textarea.value);
-        jQuery("input[name='saved_on']").attr('style',
+        jQuery(currentTabID + " input[name='saved_on']").attr('style',
 					      'background-color:yellow');
-	jQuery("input[name='saved_on']").val('saving now...')
+	jQuery(currentTabID + " input[name='saved_on']").val('saving now...')
+	currentUrl =  jQuery(currentTabID + ' form').attr('action');
 	jQuery.ajax({
 	  type: "POST",
 	  contentType: 'multipart/form-data;boundary="'
 		    + dataForPost[1] + '"',
-	  url: self.location.href,
+	  url: currentUrl,
 	  dataType: "json",
 	  data: dataForPost[0],
 	  timeout: 5000,
@@ -100,12 +103,12 @@ function doClickSave() {
 		    window.location.href=json.redirect;
 		} else {
 		    // console.info( json.file_hash );
-		    jQuery("input[name='file_hash']").val(json.file_hash);
-		    jQuery("input[name='saved_on']").val(json.saved_on);
+		    jQuery(currentTabID + " input[name='file_hash']").val(json.file_hash);
+		    jQuery(currentTabID + " input[name='saved_on']").val(json.saved_on);
 		    if (json.highlight) {
 			doHighlight(json.highlight);
 		    } else {
-			jQuery("input[name='saved_on']").attr('style','background-color:#99FF99');
+			jQuery(currentTabID + " input[name='saved_on']").attr('style','background-color:#99FF99');
 			//jQuery(".flash").delay(1000).fadeOut('slow');
 		    }
 		    // console.info(jQuery("input[name='file_hash']").val());
@@ -134,10 +137,12 @@ function getSelectionRange() {
         sel['end'] = range.end.row;
         sel['data'] = '';
     } else if (window.mirror) {
-	sel = {};
-	sel['start'] = window.mirror.getCursor(true).line;
-	sel['end'] = window.mirror.getCursor(false).line;
-	sel['data'] = '';
+		var currentTabID = '#' + jQuery('#edit_placeholder div.tab-pane.active').attr('id');
+		var editor = jQuery (currentTabID + ' textarea').data('editor');
+		sel = {};
+		sel['start'] = editor.getCursor(true).line;
+		sel['end'] = editor.getCursor(false).line;
+		sel['data'] = '';
     } else if (window.eamy) {
 	sel = {};
 	// not implemented
@@ -150,6 +155,9 @@ function getSelectionRange() {
 }
 
 function doToggleBreakpoint(filename, url, sel) {
+	var currentTabID = '#' + jQuery('#edit_placeholder div.tab-pane.active').attr('id');
+	var editor = jQuery (currentTabID + ' textarea').data('editor');
+
     if (sel==null) {
         // use cursor position to determine the breakpoint line
         // (gutter already tell us the selected line)
@@ -222,16 +230,17 @@ function doListBreakpoints(filename, url) {
 	  xhr.setRequestHeader('web2py-component-element',
 			       'doListBreakpoints');},
 	  success: function(json,text,xhr){
-	     try {
-		     if (json.error) {
-		         window.location.href=json.redirect;
-		     } else {
-                 if (window.mirror) {
+		try {
+			if (json.error) {
+				window.location.href=json.redirect;
+			} else {
+				var currentTabID = '#' + jQuery('#edit_placeholder div.tab-pane.active').attr('id');
+				var editor = jQuery (currentTabID + ' textarea').data('editor');
+				if (window.mirror) {
                      for (i in json.breakpoints) {
                          lineno = json.breakpoints[i];
             		     // mark the breakpoint if ok=True
-         		         editor.setMarker(lineno-1,
-         		                         "<span style='color: red'>●</span> %N%");
+         		         editor.setMarker(lineno-1, "<span style='color: red'>●</span> %N%");
          		     }
         		 }
 		     }
@@ -249,4 +258,30 @@ function keepalive(url) {
 	  timeout: 1000,
 	  success: function(){},
 	  error: function(x) { on_error(); } });
+}
+
+function load_file (url) {
+	jQuery.ajax({
+		type: "GET",
+		dataType: 'json',
+		url: url,
+		timeout: 1000,
+		success: function(json){
+			if (typeof(json['plain_html']) !== undefined) {
+				if (jQuery('#' + json['id']).length === 0 || json['force'] === true) {			
+					// Create a tab and put the code in it
+					var tab_header = '<li><a href="#idDefault" data-toggle="tab">filenameDefault<button type="button" class="close">&times;</button></a></li>'.replace(/idDefault/, json['id']).replace(/filenameDefault/, json['filename'] );
+					var tab_body = '<div id="idDefault" class="tab-pane fade in " >htmlDefault</div>'.replace(/htmlDefault/, json['plain_html']).replace(/idDefault/, json['id']);
+					if (json['force'] === false) {
+						jQuery('#filesTab').append(jQuery(tab_header));
+						jQuery('#myTabContent').append(jQuery(tab_body));
+					} else {
+						jQuery('#' + json['id']).html(jQuery(tab_body));										
+					}
+				}
+				jQuery("a[href='#" + json['id'] + "']" ).click();
+			}
+		},
+		error: function(x) { on_error(); }
+	});
 }
