@@ -33,17 +33,14 @@
 <script src="{{=cm}}/emmet.min.js"></script>
 <script language="Javascript" type="text/javascript" src="{{=URL('static','js/ajax_editor.js')}}"></script>
 <script language="Javascript" type="text/javascript">
-jQuery(document).ready(function(){
-     doListBreakpoints({{=XML("'%s','%s://%s%s'" % ('currentFilenameJS', 
-                request.env['wsgi_url_scheme'], request.env['http_host'],
-                URL(c='debug', f='list_breakpoints')))}});
-});
 
 jQuery(document).on('shown click', 'a[data-toggle="tab"]', function (e) {
 	var tab_id = jQuery(this).attr('href');
 	var editor = jQuery(tab_id + " textarea").data('editor');
-	editor.setSize(jQuery(tab_id).width(),  jQuery(tab_id).height());
-	editor.refresh();
+	if (editor) {
+		editor.setSize(jQuery(tab_id).width(),  jQuery(tab_id).height());
+		editor.refresh();
+	}
 	//jQuery(function(){jQuery('.CodeMirror-scroll').css("height","auto").css("overflow-x","auto");});
 });
 
@@ -69,7 +66,6 @@ jQuery(document).on('click', '#restore', function (e) {
 	e.preventDefault();
 	load_file(jQuery(this).attr("href"));
 });
-
 
 // open the selected file
 jQuery(document).on('click', 'a.editor_filelink', function (e) {

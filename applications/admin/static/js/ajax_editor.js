@@ -11,12 +11,12 @@ function prepareMultiPartPOST(data) {
     var reqdata = '--' + boundary + '\r\n';
     //console.log(data.length);
     for (var i=0;i < data.length;i++) {
-	reqdata += 'content-disposition: form-data; name="';
-	reqdata += data[i].Name + '"';
-	reqdata += "\r\n\r\n" ;
-	reqdata +=  data[i].Data;
-	reqdata += "\r\n" ;
-	reqdata += '--' + boundary + '\r\n';
+		reqdata += 'content-disposition: form-data; name="';
+		reqdata += data[i].Name + '"';
+		reqdata += "\r\n\r\n" ;
+		reqdata +=  data[i].Data;
+		reqdata += "\r\n" ;
+		reqdata += '--' + boundary + '\r\n';
     }
     return new Array(reqdata,boundary);
 }
@@ -26,37 +26,10 @@ function on_error() {
     jQuery("input[name='saved_on']").val('communication error');
 }
 
-function getData() {
-    if (window.ace_editor) {
-        var data = window.ace_editor.getSession().getValue();
-    } else if (window.mirror) {
-	var data = window.mirror.getValue();
-    } else if (window.eamy) {
-	var data = window.eamy.instances[0].getText();
-    } else if (window.textarea) {
-	var data = textarea.value;
-    }
-    return data;
-}
-
-function doHighlight(highlight) {
-    if (window.ace_editor) {
-	window.ace_editor.gotoLine(highlight.lineno);
-    } else if (window.mirror) {
-        // Put the cursor at the offending line:
-        window.mirror.setCursor({line:highlight.lineno-1,
-                                 ch:highlight.offset+1});
-    } else if (window.eamy) {
-	// not implemented
-    } else if (window.textarea) {
-	editAreaLoader.setSelectionRange('body', highlight.start, highlight.end);
-    }
-}
-
 function doClickSave() {
 	var currentTabID = '#' + jQuery('#edit_placeholder div.tab-pane.active').attr('id');
-	var editor = jQuery (currentTabID + ' textarea').data('editor');
-   var data = editor.getValue();
+	var editor = jQuery (currentTabID + ' textarea').data('editor');	
+	var data = editor.getValue();
     var dataForPost = prepareMultiPartPOST(new Array(
 	prepareDataForSave('data', data),
 	prepareDataForSave('file_hash',
@@ -87,12 +60,7 @@ function doClickSave() {
 		},
           success: function(json,text,xhr){
 
-	    // show flash message (if any)
-	    var flash=xhr.getResponseHeader('web2py-component-flash');
-            if (flash) {
-		var flashhtml = decodeURIComponent(flash);
-		jQuery('.flash').html(flashhtml).slideDown();
-	    } else jQuery('.flash').hide();
+
 
             // reenable disabled submit button
 		    var t=jQuery("input[name='save']");
@@ -100,24 +68,25 @@ function doClickSave() {
             t.attr('disabled','');
 	    try {
 		if (json.error) {
-		    window.location.href=json.redirect;
+			window.location.href=json.redirect;
 		} else {
 		    // console.info( json.file_hash );
 		    jQuery(currentTabID + " input[name='file_hash']").val(json.file_hash);
 		    jQuery(currentTabID + " input[name='saved_on']").val(json.saved_on);
 		    if (json.highlight) {
-			doHighlight(json.highlight);
+				// Put the cursor at the offending line:
+				editor.setCursor({line:highlight.lineno-1, ch:highlight.offset+1});
 		    } else {
-			jQuery(currentTabID + " input[name='saved_on']").attr('style','background-color:#99FF99');
+				jQuery(currentTabID + " input[name='saved_on']").attr('style','background-color:#99FF99');
 			//jQuery(".flash").delay(1000).fadeOut('slow');
 		    }
 		    // console.info(jQuery("input[name='file_hash']").val());
 		    var output = '<b>exposes:</b> ';
 		    for ( var i in json.functions) {
-			output += ' <a href="/' + json.application + '/' + json.controller + '/' + json.functions[i] + '">' + json.functions[i] + '</a>,';
+			output += ' <a target="_blank" href="/' + json.application + '/' + json.controller + '/' + json.functions[i] + '">' + json.functions[i] + '</a>,';
 		    }
 		    if(output!='<b>exposes:</b> ') {
-			jQuery("#exposed").html( output.substring(0, output.length-1));
+				jQuery(currentTabID + " .exposed").html( output.substring(0, output.length-1));
 		    }
 		}
 	    } catch(e) { on_error();}
@@ -127,37 +96,22 @@ function doClickSave() {
 	return false;
 }
 
-function getSelectionRange() {
-    var sel;
-    if (window.ace_editor) {
-	sel = {};
-        range = window.ace_editor.getSelectionRange();
-        // passing the line number directly, no need to read the text
-        sel['start'] = range.start.row;
-        sel['end'] = range.end.row;
-        sel['data'] = '';
-    } else if (window.mirror) {
-		var currentTabID = '#' + jQuery('#edit_placeholder div.tab-pane.active').attr('id');
-		var editor = jQuery (currentTabID + ' textarea').data('editor');
-		sel = {};
-		sel['start'] = editor.getCursor(true).line;
-		sel['end'] = editor.getCursor(false).line;
-		sel['data'] = '';
-    } else if (window.eamy) {
-	sel = {};
-	// not implemented
-    } else if (window.textarea) {
-        // passing offset, needs the text to calculate the line:
-        sel = editAreaLoader.getSelectionRange('body');
-        sel['data'] = getData();
-    }
-    return sel;
-}
-
-function doToggleBreakpoint(filename, url, sel) {
+function getActiveEditor() {
 	var currentTabID = '#' + jQuery('#edit_placeholder div.tab-pane.active').attr('id');
 	var editor = jQuery (currentTabID + ' textarea').data('editor');
+	return editor;
+}
 
+function getSelectionRange() {
+	var editor = getActiveEditor();
+    var sel = {};
+	sel['start'] = editor.getCursor(true).line;
+	sel['end'] = editor.getCursor(false).line;
+	sel['data'] = '';
+	return sel;
+}
+
+function doToggleBreakpoint(filename, url, sel, editor) {
     if (sel==null) {
         // use cursor position to determine the breakpoint line
         // (gutter already tell us the selected line)
@@ -193,17 +147,14 @@ function doToggleBreakpoint(filename, url, sel) {
 		 if (json.error) {
 		     window.location.href=json.redirect;
 		 } else {
-             if (json.ok==true && window.mirror) {
+             if (json.ok==true) {
     		     // mark the breakpoint if ok=True
  		         editor.setMarker(json.lineno-1,
  		                         "<span style='color: red'>●</span> %N%")
- 		     } else if (json.ok==false && window.mirror) {
+ 		     } else if (json.ok==false) {
     		     // remove mark if ok=False
  		         editor.setMarker(json.lineno-1, "%N%")
- 		     } else {
-    		     // do nothing if ok = null
-    		 }
-		     // alert(json.ok + json.lineno);
+ 		     } 
 		 }
 	     } catch(e) { on_error(); }
 		},
@@ -234,16 +185,13 @@ function doListBreakpoints(filename, url) {
 			if (json.error) {
 				window.location.href=json.redirect;
 			} else {
-				var currentTabID = '#' + jQuery('#edit_placeholder div.tab-pane.active').attr('id');
-				var editor = jQuery (currentTabID + ' textarea').data('editor');
-				if (window.mirror) {
-                     for (i in json.breakpoints) {
-                         lineno = json.breakpoints[i];
-            		     // mark the breakpoint if ok=True
-         		         editor.setMarker(lineno-1, "<span style='color: red'>●</span> %N%");
-         		     }
-        		 }
-		     }
+				var editor = getActiveEditor();
+				for (i in json.breakpoints) {
+					lineno = json.breakpoints[i];
+					// mark the breakpoint if ok=True
+					editor.setMarker(lineno-1, "<span style='color: red'>●</span> %N%");
+				}
+			}
 	     } catch(e) { on_error(); }
       },
       error: function(json) { on_error(); }

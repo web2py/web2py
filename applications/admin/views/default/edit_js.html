@@ -1,8 +1,5 @@
 {{def shortcut(combo, description):
     return XML('<li><span class="teletype-text">%s</span><span>%s</span></li>' % (combo, description))
-
-##TODO
-#eseguire dolistbreakpoint ogni volta che si fa una load
 }}
 
 <form action="{{=URL('edit', args=filename)}}" method="post" name="editform" id="editform" class="form-inline">
@@ -26,7 +23,7 @@
 {{pass}}
 <p class="formfield">
 {{if functions:}}
-	<span style="text-align:left;" id="exposed">
+	<span style="text-align:left;" class="exposed">
 	{{=B(T('exposes:'))}} {{=XML(', '.join([A(f,_target="_blank", _href=URL(a=app,c=controller,f=f)).xml() for f in functions]))}}
 	</span>
 {{if editviewlinks:}}<br/>
@@ -75,6 +72,11 @@
 		jQuery("#{{=id}} textarea").data('editor', editor);
 		var hlLine = editor.setLineClass(0, "activeline");
 		window.mirror = editor; 	//backward compatibility
+
+		doListBreakpoints({{=XML("'%s','%s://%s%s'" % (filename, 
+				request.env['wsgi_url_scheme'], request.env['http_host'],
+				URL(c='debug', f='list_breakpoints')))}}, editor);
+
 	</script>
     
 	<div class="editor-bar-bottom" style="margin-top:9px;">
