@@ -111,7 +111,8 @@ function getSelectionRange() {
 	return sel;
 }
 
-function doToggleBreakpoint(filename, url, sel, editor) {
+function doToggleBreakpoint(filename, url, sel) {
+	var editor = getActiveEditor();
     if (sel==null) {
         // use cursor position to determine the breakpoint line
         // (gutter already tell us the selected line)
@@ -164,7 +165,7 @@ function doToggleBreakpoint(filename, url, sel, editor) {
 }
 
 // on load, update all breakpoints markers:
-function doListBreakpoints(filename, url) {
+function doListBreakpoints(filename, url, editor) {
     var dataForPost = prepareMultiPartPOST(new Array(
 	    prepareDataForSave('filename', filename)
         ));
