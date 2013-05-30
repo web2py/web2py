@@ -52,12 +52,8 @@ class DropboxAccount(object):
         self.sess = session.DropboxSession(
             self.key, self.secret, self.access_type)
 
-    def get_user(self):
-        request = self.request
-        if not current.session.dropbox_request_token:
-            return None
-        elif not current.session.dropbox_access_token:
-
+    def get_token(self):
+        if not current.session.dropbox_access_token:            
             request_token = current.session.dropbox_request_token
             self.sess.set_request_token(request_token[0], request_token[1])
             access_token = self.sess.obtain_access_token(self.sess.token)
@@ -67,6 +63,10 @@ class DropboxAccount(object):
             access_token = current.session.dropbox_access_token
             self.sess.set_token(access_token[0], access_token[1])
 
+    def get_user(self):
+        if not current.session.dropbox_request_token:
+            return None
+        self.get_token()
         user = Storage()
         self.client = client.DropboxClient(self.sess)
         data = self.client.account_info()
@@ -99,8 +99,7 @@ class DropboxAccount(object):
         return next
 
     def get_client(self):
-        access_token = current.session.dropbox_access_token
-        self.sess.set_token(access_token[0], access_token[1])
+        self.get_token()
         self.client = client.DropboxClient(self.sess)
 
     def put(self, filename, file):
