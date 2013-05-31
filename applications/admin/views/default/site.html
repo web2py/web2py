@@ -145,14 +145,8 @@
 	<p>{{=button(URL('wizard','index'), T('Start wizard'))}}<br/>
 	  {{=T("(requires internet access, experimental)")}}</p>
       </div> <!-- /APP WIZARD -->
-      {{if TWITTER_HASH:}}
-      <!-- TWITTER -->
-      <div class="box">
-	<h4>{{=T("%s Recent Tweets"%TWITTER_HASH)}}</h4>
-	<div id="tweets">{{=T('loading...')}}</div>
-	<script>jQuery(document).ready(function(){jQuery('#tweets').load('{{=URL('twitter.load')}}');});</script>
-      </div> <!-- /TWITTER -->
-      {{pass}}
+      <a class="twitter-timeline" href="https://twitter.com/web2py" data-widget-id="340456915207327745">Tweets by @web2py</a>
+      <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0],p=/^http:/.test(d.location)?'http':'https';if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src=p+"://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");</script>
     </div>
   </div> <!-- /sidebar -->
 </div> <!-- /row-fluid
