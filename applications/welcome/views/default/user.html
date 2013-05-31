@@ -1,4 +1,23 @@
 {{extend 'layout.html'}}
+{{if request.args(0) == 'manage':}}
+<h2>{{=T('Manage Access Control')}}</h2>
+<ul class="nav nav-tabs">
+  <li class="active"><a href="#users" data-toggle="tab">Users</a></li>
+  <li><a href="#roles" data-toggle="tab">Roles</a></li>
+  <li><a href="#permissions" data-toggle="tab">Permissions</a></li>
+</ul>
+<div class="tab-content">
+  <div class="tab-pane active" id="users">
+    {{=LOAD(f='user.load', args=[request.args(0), auth.settings.table_user_name], ajax=True, user_signature=True)}}
+  </div>
+  <div class="tab-pane" id="roles">
+    {{=LOAD(f='user.load', args=[request.args(0), auth.settings.table_group_name], ajax=True, user_signature=True)}}
+  </div>
+  <div class="tab-pane" id="permissions">
+    {{=LOAD(f='user.load', args=[request.args(0), auth.settings.table_permission_name], ajax=True, user_signature=True)}}
+  </div>
+</div>
+{{else:}}
 <h2>{{=T( request.args(0).replace('_',' ').capitalize() )}}</h2>
 <div id="web2py_user_form">
 {{
@@ -21,3 +40,4 @@ jQuery("#web2py_user_form input:visible:enabled:first").focus();
     web2py_validate_entropy(jQuery('#no_table_new_password'),100);
 {{pass}}
 //--></script>
+{{pass}}

@@ -31,12 +31,14 @@ def user():
     http://..../[app]/default/user/profile
     http://..../[app]/default/user/retrieve_password
     http://..../[app]/default/user/change_password
+    http://..../[app]/default/user/manage_users (requires membership in 
     use @auth.requires_login()
         @auth.requires_membership('group name')
         @auth.requires_permission('read','table name',record_id)
     to decorate functions that need access control
     """
-    return dict(form=auth())
+    auth.settings.manager_group_id=1
+    return auth() if request.extension=='load' else dict(form=auth())
 
 
 @cache.action()
