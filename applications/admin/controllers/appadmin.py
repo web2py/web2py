@@ -38,8 +38,7 @@ elif (remote_addr not in hosts) and (remote_addr != "127.0.0.1"):
     raise HTTP(200, T('appadmin is disabled because insecure channel'))
 
 if request.function in ('auth_manage','manage') and 'auth' in globals():
-    if not auth.has_membership(auth.settings.manager_group_id):
-        raise HTTP(404)
+    auth.requires_membership(auth.settings.manager_group_role)(lambda: None)()
     menu = False
 elif (request.application == 'admin' and not session.authorized) or \
         (request.application != 'admin' and not gluon.fileutils.check_credentials(request)):    
