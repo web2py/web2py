@@ -683,12 +683,6 @@ class BaseAdapter(ConnectionPool):
             return str(obj)
         return self.adapt(str(obj))
 
-    def integrity_error(self):
-        return self.driver.IntegrityError
-
-    def operational_error(self):
-        return self.driver.OperationalError
-
     def file_exists(self, filename):
         """
         to be used ONLY for files that on GAE may not be on filesystem
@@ -737,7 +731,6 @@ class BaseAdapter(ConnectionPool):
             self.driver = globals().get(self.driver_name)
         else:
             raise RuntimeError("no driver available %s" % str(self.drivers))
-
 
     def __init__(self, db,uri,pool_size=0, folder=None, db_codec='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
@@ -1212,8 +1205,8 @@ class BaseAdapter(ConnectionPool):
             self.execute(query)
         except Exception:
             e = sys.exc_info()[1]
-            if isinstance(e,self.integrity_error_class()):
-                return None
+            if hasattr(table,'_on_insert_error'):
+                return table._on_insert_error(table,fields,e)
             raise e
         if hasattr(table,'_primarykey'):
             return dict([(k[0].name, k[1]) for k in fields \
@@ -1449,7 +1442,14 @@ class BaseAdapter(ConnectionPool):
 
     def update(self, tablename, query, fields):
         sql = self._update(tablename, query, fields)
-        self.execute(sql)
+        try:
+            self.execute(sql)
+        except Exception:
+            e = sys.exc_info()[1]
+            table = self.db[tablename]
+            if hasattr(table,'_on_update_error'):
+                return table._on_update_error(table,query,fields,e)
+            raise e
         try:
             return self.cursor.rowcount
         except:
@@ -1872,9 +1872,6 @@ class BaseAdapter(ConnectionPool):
 
     def lastrowid(self, table):
         return None
-
-    def integrity_error_class(self):
-        return type(None)
 
     def rowslice(self, rows, minimum=0, maximum=None):
         """
@@ -3216,9 +3213,6 @@ class MSSQLAdapter(BaseAdapter):
         self.execute('SELECT SCOPE_IDENTITY();')
         return long(self.cursor.fetchone()[0])
 
-    def integrity_error_class(self):
-        return pyodbc.IntegrityError
-
     def rowslice(self,rows,minimum=0,maximum=None):
         if maximum is None:
             return rows[minimum:]
@@ -3481,9 +3475,6 @@ class SybaseAdapter(MSSQLAdapter):
             return self.driver.connect(dsn,**driver_args)
         self.connector = connector
         if do_connect: self.reconnect()
-
-    def integrity_error_class(self):
-        return RuntimeError # FIX THIS
 
 
 class FireBirdAdapter(BaseAdapter):
@@ -3775,9 +3766,6 @@ class InformixAdapter(BaseAdapter):
     def lastrowid(self,table):
         return self.cursor.sqlerrd[1]
 
-    def integrity_error_class(self):
-        return informixdb.IntegrityError
-
 class InformixSEAdapter(InformixAdapter):
     """ work in progress """
 
@@ -4049,9 +4037,6 @@ class IngresAdapter(BaseAdapter):
         tmp_seqname='%s_iisq' % table
         self.execute('select current value for %s' % tmp_seqname)
         return long(self.cursor.fetchone()[0]) # don't really need int type cast here...
-
-    def integrity_error_class(self):
-        return self._driver.IntegrityError
 
 
 class IngresUnicodeAdapter(IngresAdapter):
@@ -4528,7 +4513,6 @@ class NoSQLAdapter(BaseAdapter):
     def execute(self,*a,**b): raise SyntaxError("Not supported")
     def represent_exceptions(self, obj, fieldtype): raise SyntaxError("Not supported")
     def lastrowid(self,table): raise SyntaxError("Not supported")
-    def integrity_error_class(self): raise SyntaxError("Not supported")
     def rowslice(self,rows,minimum=0,maximum=None): raise SyntaxError("Not supported")
 
 
