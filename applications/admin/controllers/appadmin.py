@@ -37,14 +37,21 @@ if request.env.http_x_forwarded_for or request.is_https:
 elif (remote_addr not in hosts) and (remote_addr != "127.0.0.1"):
     raise HTTP(200, T('appadmin is disabled because insecure channel'))
 
-if (request.application == 'admin' and not session.authorized) or \
-        (request.application != 'admin' and not gluon.fileutils.check_credentials(request)):
+if request.function in ('auth_manage','manage') and 'auth' in globals():
+    if not auth.has_membership(auth.settings.manager_group_id):
+        raise HTTP(404)
+    menu = False
+elif (request.application == 'admin' and not session.authorized) or \
+        (request.application != 'admin' and not gluon.fileutils.check_credentials(request)):    
     redirect(URL('admin', 'default', 'index',
                  vars=dict(send=URL(args=request.args, vars=request.vars))))
+else:
+    menu = True
 
 ignore_rw = True
 response.view = 'appadmin.html'
-response.menu = [[T('design'), False, URL('admin', 'default', 'design',
+if menu:
+    response.menu = [[T('design'), False, URL('admin', 'default', 'design',
                  args=[request.application])], [T('db'), False,
                  URL('index')], [T('state'), False,
                  URL('state')], [T('cache'), False,
@@ -573,3 +580,35 @@ def bg_graph_model():
 
 def graph_model():    
     return dict(databases=databases, pgv=pgv)
+
+def auth_manage():
+    tablename = request.args(0)
+    if not tablename or not tablename in auth.db.tables:
+        return dict()
+    table = auth.db[tablename]
+    formname = '%s_grid' % tablename
+    if tablename == auth.settings.table_user_name:
+        auth.settings.table_user._plural = T('Users')
+        auth.settings.table_membership._plural = T('Roles')
+        auth.settings.table_membership._id.readable = False
+        auth.settings.table_membership.user_id.label = T('User')
+        auth.settings.table_membership.group_id.label = T('Role')
+        grid = SQLFORM.smartgrid(table, args=request.args[:1], user_signature=True,
+                                 linked_tables=[auth.settings.table_membership_name],
+                                 maxtextlength=1000, formname=formname)
+    else:
+        table._id.readable = False
+        auth.settings.table_permission.group_id.label = T('Role')
+        auth.settings.table_permission.name.label = T('Permission')
+        orderby = 'role' if table == auth.settings.table_group_name else 'group_id'
+        grid = SQLFORM.grid(table, args=request.args[:1], orderby=table[orderby],
+                            user_signature=True, maxtextlength=1000, formname=formname)    
+    return grid if request.extension=='load' else dict(grid=grid)
+
+def manage():
+    tablename = request.args(0)
+    if tablename in auth.db.tables:
+        grid = SQLFORM.smartgrid(auth.db[tablename], args=request.args[:1])
+    else:
+        return dict()
+    return grid if request.extension=='load' else dict(grid=grid)

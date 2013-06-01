@@ -247,3 +247,39 @@
     {{=IMG(_src=URL('appadmin', 'bg_graph_model'))}}
   {{pass}}
 {{pass}}
+
+{{if request.function == 'auth_manage':}}
+<h2>{{=T('Manage Access Control')}}</h2>
+<ul class="nav nav-tabs">
+  <li class="active"><a href="#users" data-toggle="tab">Users</a></li>
+  <li><a href="#roles" data-toggle="tab">Roles</a></li>
+  <li><a href="#permissions" data-toggle="tab">Permissions</a></li>
+</ul>
+
+<div class="tab-content">
+  <div class="tab-pane active" id="users">
+    {{=LOAD(f='auth_manage.load', args=auth.settings.table_user_name,ajax=True)}}
+  </div>
+  <div class="tab-pane" id="roles">
+    {{=LOAD(f='auth_manage.load', args=auth.settings.table_group_name,ajax=True)}}
+  </div>
+  <div class="tab-pane" id="permissions">
+    {{=LOAD(f='auth_manage.load', args=auth.settings.table_permission_name,ajax=True)}}
+  </div>
+</div>
+{{elif request.function == 'manage':}}
+<h2>{{=T('Manage Access Control')}}</h2>
+<ul class="nav nav-tabs">
+  {{for k,tablename in enumerate(auth.db.tables):}}
+  <li><a href="#table-{{=tablename}}" data-toggle="tab">{{=tablename}}</a></li>
+  {{pass}}
+</ul>
+
+<div class="tab-content">
+  {{for tablename in auth.db.tables:}}
+  <div class="tab-pane" id="table-{{=tablename}}">
+    {{=LOAD(f='manage.load', args=tablename,ajax=True)}}
+  </div>
+  {{pass}}
+</div>
+{{pass}}

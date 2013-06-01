@@ -37,9 +37,7 @@ def user():
         @auth.requires_permission('read','table name',record_id)
     to decorate functions that need access control
     """
-    auth.settings.manager_group_id=1
-    return auth() if request.extension=='load' else dict(form=auth())
-
+    return dict(form=auth())
 
 @cache.action()
 def download():
