@@ -1279,7 +1279,7 @@ class Auth(object):
                        'retrieve_username', 'retrieve_password',
                        'reset_password', 'request_reset_password',
                        'change_password', 'profile', 'groups',
-                       'impersonate', 'not_authorized','manage'):
+                       'impersonate', 'not_authorized'):
             if len(request.args) >= 2 and args[0] == 'impersonate':
                 return getattr(self, args[0])(request.args[1])
             else:
@@ -2935,40 +2935,6 @@ class Auth(object):
         if requested_id is DEFAULT and not request.post_vars:
             return SQLFORM.factory(Field('user_id', 'integer'))
         return SQLFORM(table_user, user.id, readonly=True)
-
-    def manage(self):
-        T = current.T
-        request = current.request
-        db = self.db
-        tablename = request.args(1)
-        if not self.has_membership(self.settings.manager_group_id):
-            # not URL.verify(request, user_signature=True, hash_vars=False):
-            raise HTTP(403)
-        if not tablename or not tablename in db.tables:
-            return ''
-        table = db[tablename]
-        formname = '%s_grid' % tablename
-        if tablename == self.settings.table_user_name:
-            self.settings.table_user._plural = T('Users')
-            self.settings.table_membership._plural = T('Roles')
-            self.settings.table_membership._id.readable = False
-            self.settings.table_membership.user_id.label = T('User')
-            self.settings.table_membership.group_id.label = T('Role')
-            grid = SQLFORM.smartgrid(
-                table, args=request.args[:2], 
-                user_signature=True,
-                linked_tables=[self.settings.table_membership_name],
-                maxtextlength=1000, formname=formname)
-        else:
-            table._id.readable = False
-            self.settings.table_permission.group_id.label = T('Role')
-            self.settings.table_permission.name.label = T('Permission')
-            orderby = 'role' if tablename == self.settings.table_group_name \
-                else 'group_id'
-            grid = SQLFORM.grid(
-                table, args=request.args[:2], orderby=table[orderby],
-                user_signature=True, maxtextlength=1000, formname=formname)
-        return grid
 
     def update_groups(self):
         if not self.user:
