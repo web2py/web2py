@@ -78,6 +78,7 @@ jQuery(function() {
    if(flash.html()) flash.append('<span id="closeflash">&times;</span>').slideDown();
    web2py_ajax_init(document);
    web2py_event_handlers();
+   web2py_show_if();
 });
 
 function web2py_trap_form(action,target) {
@@ -216,3 +217,26 @@ function web2py_validate_entropy(myfield, req_entropy) {
     if(!myfield.hasClass('entropy_check')) myfield.on('keyup', validator).on('keydown', validator).addClass('entropy_check');
 }
 
+function web2py_show_if() {
+    var triggers = {};
+    var show_if = function() {
+        var t = jQuery(this);	
+	var id = t.attr('id');
+	t.attr('value',t.val());
+	for(var k=0; k<triggers[id].length; k++) {
+            var dep = jQuery('#'+triggers[id][k]);
+            var tr = jQuery('#'+triggers[id][k]+'__row');
+	    if(t.is(dep.attr('data-show-if'))) tr.slideDown();
+            else tr.hide();
+	}
+    };
+    jQuery('[data-show-trigger]').each(function(){	
+	var name = jQuery(this).attr('data-show-trigger');
+        if(!triggers[name]) triggers[name] = [];
+	triggers[name].push(jQuery(this).attr('id'));
+    });
+    for(var name in triggers) {
+	jQuery('#'+name).change(show_if).keyup(show_if);
+        show_if.call(jQuery('#'+name));
+    };
+}

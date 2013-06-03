@@ -81,6 +81,27 @@ def safe_float(x):
         return 0
 
 
+def show_if(cond):
+    if not cond:
+        return None
+    base = "%s_%s" % (cond.first.tablename, cond.first.name)
+    if ((cond.op.__name__ == 'EQ' and cond.second == True) or 
+        (cond.op.__name__ == 'NE' and cond.second == False)):            
+        return base,":checked"
+    if ((cond.op.__name__ == 'EQ' and cond.second == False) or
+        (cond.op.__name__ == 'NE' and cond.second == True)):
+        return base,":not(:checked)"
+    if cond.op.__name__ == 'EQ':
+        return base,"[value='%s']" % cond.second
+    if cond.op.__name__ == 'NE':
+        return base,"[value!='%s']" % cond.second
+    if cond.op.__name__ == 'CONTAINS':
+        return base,"[value~='%s']" % cond.second    
+    if cond.op.__name__ == 'BELONGS' and isinstance(cond.second,(list,tuple)):
+        return base,','.join("[value='%s']" % (v) for v in cond.second)
+    raise RuntimeError("Not Implemented Error")
+
+
 class FormWidget(object):
     """
     helper for SQLFORM to generate form input fields
@@ -104,9 +125,13 @@ class FormWidget(object):
             _id='%s_%s' % (field._tablename, field.name),
             _class=cls._class or
                 widget_class.match(str(field.type)).group(),
-            _name=field.name,
+            _name=field.name,            
             requires=field.requires,
         )
+        if getattr(field,'show_if',None):
+            trigger, cond = show_if(field.show_if)
+            attr['_data-show-trigger'] = trigger
+            attr['_data-show-if'] = cond
         attr.update(widget_attributes)
         attr.update(attributes)
         return attr
@@ -1739,6 +1764,7 @@ class SQLFORM(FORM):
         )
         return CAT(
             DIV(_id=panel_id, _style="display:none;", *criteria), fadd)
+
 
     @staticmethod
     def grid(query,
