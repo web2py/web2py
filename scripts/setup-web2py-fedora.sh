@@ -314,7 +314,7 @@ NameVirtualHost *:443
     </Files>
   </Directory>
 
-  AliasMatch ^/([^/]+)/static/(.*) /opt/web-apps/web2py/applications/\$1/static/\$2
+  AliasMatch ^/([^/]+)/static/(?:_[\d]+.[\d]+.[\d]+/)?(.*) /opt/web-apps/web2py/applications/\$1/static/\$2
 
   <Directory /opt/web-apps/web2py/applications/*/static>
     Options -Indexes
@@ -352,7 +352,7 @@ NameVirtualHost *:443
     </Files>
   </Directory>
 
-  AliasMatch ^/([^/]+)/static/(.*) /opt/web-apps/web2py/applications/\$1/static/\$2
+  AliasMatch ^/([^/]+)/static/(?:_[\d]+.[\d]+.[\d]+/)?(.*) /opt/web-apps/web2py/applications/\$1/static/\$2
 
   <Directory /opt/web-apps/web2py/applications/*/static>
     Options -Indexes
