@@ -106,7 +106,7 @@ WSGIDaemonProcess web2py user=www-data group=www-data
     </Files>
   </Directory>
 
-  AliasMatch ^/([^/]+)/static/(.*) \
+  AliasMatch ^/([^/]+)/static/(?:_[\d]+.[\d]+.[\d]+/)?(.*) \
            /home/www-data/web2py/applications/$1/static/$2
   <Directory /home/www-data/web2py/applications/*/static/>
     Options -Indexes
@@ -144,7 +144,7 @@ WSGIDaemonProcess web2py user=www-data group=www-data
     </Files>
   </Directory>
 
-  AliasMatch ^/([^/]+)/static/(.*) \
+  AliasMatch ^/([^/]+)/static/(?:_[\d]+.[\d]+.[\d]+/)?(.*) \
         /home/www-data/web2py/applications/$1/static/$2
 
   <Directory /home/www-data/web2py/applications/*/static/>
@@ -167,7 +167,7 @@ WSGIDaemonProcess web2py user=www-data group=www-data
 # ln -s /etc/pam.d/apache2 /etc/pam.d/httpd
 # usermod -a -G shadow www-data
 
-echo "restarting apage"
+echo "restarting apache"
 echo "================"
 
 /etc/init.d/apache2 restart
