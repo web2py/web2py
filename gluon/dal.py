@@ -8409,7 +8409,7 @@ class Table(object):
                 return rows[0]
             return None
         elif str(key).isdigit() or 'google' in DRIVERS and isinstance(key, Key):
-            return self._db(self._id == key).select(limitby=(0,1)).first()
+            return self._db(self._id == key).select(limitby=(0,1), orderby_on_limitby=False).first()
         elif key:
             return ogetattr(self, str(key))
 
@@ -8423,19 +8423,19 @@ class Table(object):
         if not key is DEFAULT:
             if isinstance(key, Query):
                 record = self._db(key).select(
-                    limitby=(0,1),for_update=for_update, orderby=orderby).first()
+                    limitby=(0,1),for_update=for_update, orderby=orderby, orderby_on_limitby=False).first()
             elif not str(key).isdigit():
                 record = None
             else:
                 record = self._db(self._id == key).select(
-                    limitby=(0,1),for_update=for_update, orderby=orderby).first()
+                    limitby=(0,1),for_update=for_update, orderby=orderby, orderby_on_limitby=False).first()
             if record:
                 for k,v in kwargs.iteritems():
                     if record[k]!=v: return None
             return record
         elif kwargs:
             query = reduce(lambda a,b:a&b,[self[k]==v for k,v in kwargs.iteritems()])
-            return self._db(query).select(limitby=(0,1),for_update=for_update, orderby=orderby).first()
+            return self._db(query).select(limitby=(0,1),for_update=for_update, orderby=orderby, orderby_on_limitby=False).first()
         else:
             return None
 
