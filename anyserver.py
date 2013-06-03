@@ -180,6 +180,9 @@ def run(servername, ip, port, softcron=True, logging=False, profiler=None):
     if servername == 'gevent':
         from gevent import monkey
         monkey.patch_all()
+    elif servername == 'eventlet':
+        import eventlet
+        eventlet.monkey_patch()
 
     import gluon.main
 
