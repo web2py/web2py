@@ -1198,6 +1198,13 @@ def TAG_pickler(data):
     return (TAG_unpickler, (marshal_dump,))
 
 
+class __tag__(DIV):
+    def __init__(self,name,*a,**b):
+        DIV.__init__(self,*a,**b)
+        self.tag = name
+
+copy_reg.pickle(__tag__, TAG_pickler, TAG_unpickler)
+
 class __TAG__(XmlComponent):
 
     """
@@ -1216,11 +1223,7 @@ class __TAG__(XmlComponent):
             name = name[:-1] + '/'
         if isinstance(name, unicode):
             name = name.encode('utf-8')
-
-        class __tag__(DIV):
-            tag = name
-        copy_reg.pickle(__tag__, TAG_pickler, TAG_unpickler)
-        return lambda *a, **b: __tag__(*a, **b)
+        return lambda *a,**b: __tag__(name,*a,**b)
 
     def __call__(self, html):
         return web2pyHTMLParser(decoder.decoder(html)).tree
