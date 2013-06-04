@@ -18,6 +18,7 @@ try:
 except ImportError:
     from cgi import parse_qs as psq
 import os
+import copy
 from http import HTTP
 from html import XmlComponent
 from html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT
