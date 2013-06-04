@@ -9204,7 +9204,7 @@ class FieldVirtual(object):
         (self.name, self.f) = (name, f) if f else ('unkown', name)
         self.type = ftype
         self.label = label or self.name.capitalize().replace('_',' ')
-        self.represent = IDENTITY
+        self.represent = lambda v,r:v
         self.formatter = IDENTITY
         self.comment = None
         self.readable = True
@@ -9213,6 +9213,8 @@ class FieldVirtual(object):
         self.widget = None
         self.tablename = table_name
         self.filter_out = None
+    def __str__(self):
+        return '%s.%s' % (self.tablename, self.name)
 
 class FieldMethod(object):
     def __init__(self, name, f=None, handler=None):

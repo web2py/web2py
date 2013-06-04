@@ -122,7 +122,7 @@ class FormWidget(object):
         :param attributes: any other supplied attributes
         """
         attr = dict(
-            _id='%s_%s' % (field._tablename, field.name),
+            _id='%s_%s' % (field.tablename, field.name),
             _class=cls._class or
                 widget_class.match(str(field.type)).group(),
             _name=field.name,            
@@ -286,7 +286,7 @@ class ListWidget(StringWidget):
 
     @classmethod
     def widget(cls, field, value, **attributes):
-        _id = '%s_%s' % (field._tablename, field.name)
+        _id = '%s_%s' % (field.tablename, field.name)
         _name = field.name
         if field.type == 'list:integer':
             _class = 'integer'
@@ -1956,14 +1956,20 @@ class SQLFORM(FORM):
             for join in left:
                 tablenames += db._adapter.tables(join)
         tables = [db[tablename] for tablename in tablenames]
-        if not fields:
-            fields = reduce(lambda a, b: a + b,
-                            [[field for field in table] for table in tables])
+        if fields:
+            columns = copy.copy(fields)
+        else:
+            fields = []
+            columns = []
+            for table in tables:
+                fields += [f for f in table]
+                columns +=  [f for f in table]
+                for k,f in table.iteritems():
+                    if isinstance(f,Field.Virtual) and f.readable:
+                        f.tablename = table._tablename
+                        columns.append(f)
         if not field_id:
             field_id = tables[0]._id
-        columns = [str(field) for field in fields
-                   if field._tablename in tablenames]
-
         if not any(str(f)==str(field_id) for f in fields):
             fields = [f for f in fields]+[field_id]
         table = field_id.table
@@ -2113,12 +2119,12 @@ class SQLFORM(FORM):
                     if sign == '~':
                         orderby = ~orderby
 
-            expcolumns = columns
+            expcolumns = [str(f) for f in columns]
             if export_type.endswith('with_hidden_cols'):
                 expcolumns = []
                 for table in tables:
                     for field in table:
-                        if field.readable and field._tablename in tablenames:
+                        if field.readable and field.tablename in tablenames:
                             expcolumns.append(field)
 
             if export_type in exportManager and exportManager[export_type]:
@@ -2219,9 +2225,7 @@ class SQLFORM(FORM):
         headcols = []
         if selectable:
             headcols.append(TH(_class=ui.get('default')))
-        for field in fields:
-            if columns and not str(field) in columns:
-                continue
+        for field in columns:
             if not field.readable:
                 continue
             key = str(field)
@@ -2275,7 +2279,7 @@ class SQLFORM(FORM):
             limitby = None
 
         try:
-            table_fields = [f for f in fields if f._tablename in tablenames]
+            table_fields = [f for f in fields if f.tablename in tablenames]
             if dbset._db._adapter.dbengine=='google:datastore':
                 rows = dbset.select(left=left,orderby=orderby,
                                     groupby=groupby,limitby=limitby,
@@ -2363,14 +2367,12 @@ class SQLFORM(FORM):
                     trcols.append(
                         INPUT(_type="checkbox", _name="records", _value=id,
                                     value=request.vars.records))
-                for field in fields:
-                    if not str(field) in columns:
-                        continue
+                for field in columns:
                     if not field.readable:
                         continue
                     if field.type == 'blob':
                         continue
-                    value = row[field]
+                    value = row[str(field)]
                     maxlength = maxtextlengths.get(str(field), maxtextlength)
                     if field.represent:
                         try:
@@ -2378,7 +2380,7 @@ class SQLFORM(FORM):
                         except KeyError:
                             try:
                                 value = field.represent(
-                                    value, row[field._tablename])
+                                    value, row[field.tablename])
                             except KeyError:
                                 pass
                     elif field.type == 'boolean':
