@@ -344,7 +344,7 @@ def parse_get_post_vars(request, environ):
 
 
     # parse POST variables on POST, PUT, BOTH only in post_vars
-    if (body and env.request_method in ('POST', 'PUT', 'BOTH')):
+    if (body and env.request_method in ('POST', 'PUT', 'DELETE', 'BOTH')):
         dpost = cgi.FieldStorage(fp=body, environ=environ, keep_blank_values=1)
         # The same detection used by FieldStorage to detect multipart POSTs
         is_multipart = dpost.type[:10] == 'multipart/'
