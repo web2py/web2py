@@ -586,6 +586,24 @@ def edit():
     """ File edit handler """
     # Load json only if it is ajax edited...
     app = get_app(request.vars.app)
+
+    if not(request.ajax):	
+        # return the scaffolding, the rest will be through ajax requests
+        response.title = T('Editing %s' % app)
+        editarea_preferences = {}
+       	editarea_preferences['FONT_SIZE'] = '10'
+        editarea_preferences['FULL_SCREEN'] = 'false'
+        editarea_preferences['ALLOW_TOGGLE'] = 'true'
+        editarea_preferences['REPLACE_TAB_BY_SPACES'] = '4'
+        editarea_preferences['DISPLAY'] = 'onload'
+        for key in editarea_preferences:
+            if key in globals():
+                editarea_preferences[key] = globals()[key]
+        return response.render ('default/edit.html', dict(app=request.args[0], editarea_preferences=editarea_preferences))
+	
+    """ File edit handler """
+    # Load json only if it is ajax edited...
+    app = get_app(request.vars.app)
     filename = '/'.join(request.args)
     response.title = request.args[-1]
     if request.vars.app:
@@ -708,7 +726,7 @@ def edit():
         cfilename = os.path.join(request.args[0], 'controllers',
                                  request.args[2] + '.py')
         if os.path.exists(apath(cfilename, r=request)):
-            edit_controller = URL('edit',args=[cfilename.replace(os.sep, "/")])
+            edit_controller = URL('edit', args=[cfilename.replace(os.sep, "/")])
             view = request.args[3].replace('.html', '')
             view_link = URL(request.args[0], request.args[2], view)
     elif filetype == 'python' and request.args[1] == 'controllers':
@@ -730,6 +748,7 @@ def edit():
                 vf = os.path.split(v)[-1]
                 vargs = "/".join([viewpath.replace(os.sep, "/"), vf])
                 editviewlinks.append(A(vf.split(".")[0],
+                                       _class="editor_filelink",	
                                        _href=URL('edit', args=[vargs])))
 
     if len(request.args) > 2 and request.args[1] == 'controllers':
@@ -741,17 +760,7 @@ def edit():
     if 'from_ajax' in request.vars:
         return response.json({'file_hash': file_hash, 'saved_on': saved_on, 'functions': functions, 'controller': controller, 'application': request.args[0], 'highlight': highlight})
     else:
-
-        editarea_preferences = {}
-        editarea_preferences['FONT_SIZE'] = '10'
-        editarea_preferences['FULL_SCREEN'] = 'false'
-        editarea_preferences['ALLOW_TOGGLE'] = 'true'
-        editarea_preferences['REPLACE_TAB_BY_SPACES'] = '4'
-        editarea_preferences['DISPLAY'] = 'onload'
-        for key in editarea_preferences:
-            if key in globals():
-                editarea_preferences[key] = globals()[key]
-        return dict(app=request.args[0],
+        file_details = dict(app=request.args[0],
                     filename=filename,
                     filetype=filetype,
                     data=data,
@@ -761,9 +770,13 @@ def edit():
                     controller=controller,
                     functions=functions,
                     view_link=view_link,
-                    editarea_preferences=editarea_preferences,
-                    editviewlinks=editviewlinks)
-
+                    editviewlinks=editviewlinks,
+                    id=IS_SLUG()(filename)[0],
+					force= True if (request.vars.restore or request.vars.revert) else False)
+        plain_html = response.render('default/edit_js.html', file_details)
+        file_details['plain_html'] = plain_html
+        return response.json(file_details)
+		
 
 def resolve():
     """
