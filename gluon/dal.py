@@ -6991,10 +6991,11 @@ class Row(object):
                 key = col
                 res = record._extra[col]
             else:
-                key = f
                 if isinstance(record.get(t, None), Row):
+                    key = f
                     res = record[t][f]
                 else:
+                    key = f
                     res = record[f]
             if mode == 'object':
                 return (key, res)

@@ -2,7 +2,7 @@
     return XML('<li><span class="teletype-text">%s</span><span>%s</span></li>' % (combo, description))
 }}
 
-<form action="{{=URL('edit', args=filename)}}" method="post" name="editform" id="editform" class="form-inline">
+<form action="{{=URL('edit', args=filename)}}" method="post" name="editform" id="editform" class="form-inline row-fluid">
 <div class="span12 well well-small">
 	<label class="">{{=T('Save file:')}}</label>
 	<a value="save" title="{{=T('Save file: %s', filename)}}" href="#" name="save" onclick="return doClickSave();" class="icon saveicon" style="background-image: -webkit-linear-gradient(top,white,#E6E6E6);">{{=IMG(_src=URL('static', 'images/save_icon.png'), _alt=T('Save'))}}</a>
