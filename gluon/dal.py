@@ -5317,29 +5317,9 @@ class MongoDBAdapter(NoSQLAdapter):
             return value
         elif ((isinstance(fieldtype, basestring) and
                fieldtype.startswith("reference")) or
-               (isinstance(fieldtype, Table))):
+               (isinstance(fieldtype, Table)) or fieldtype=="id"):
             value = self.object_id(value)
-
         return value
-
-    # Safe determines whether a asynchronious request is done or a
-    # synchronious action is done
-    # For safety, we use by default synchronous requests
-    def insert(self, table, fields, safe=None):
-        if safe==None:
-            safe = self.safe
-        ctable = self.connection[table._tablename]
-        values = dict()
-        for k, v in fields:
-            if not k.name in ["id", "safe"]:
-                fieldname = k.name
-                fieldtype = table[k.name].type
-                if ("reference" in fieldtype) or (fieldtype=="id"):
-                    values[fieldname] = self.object_id(v)
-                else:
-                    values[fieldname] = self.represent(v, fieldtype)
-        ctable.insert(values, safe=safe)
-        return long(str(values['_id']), 16)
 
     def create_table(self, table, migrate=True, fake_migrate=False,
                      polymodel=None, isCapped=False):
@@ -5402,6 +5382,16 @@ class MongoDBAdapter(NoSQLAdapter):
             result = expression
         return result
 
+    def drop(self, table, mode=''):
+        ctable = self.connection[table._tablename]
+        ctable.drop()
+
+    def truncate(self, table, mode, safe=None):
+        if safe == None:
+            safe=self.safe
+        ctable = self.connection[table._tablename]
+        ctable.remove(None, safe=True)
+
     def _select(self, query, fields, attributes):
         if 'for_update' in attributes:
             logging.warn('mongodb does not support for_update')
@@ -5427,7 +5417,6 @@ class MongoDBAdapter(NoSQLAdapter):
                     mongosort_list.append((f[1:], -1))
                 else:
                     mongosort_list.append((f, 1))
-
         if limitby:
             limitby_skip, limitby_limit = limitby
         else:
@@ -5455,7 +5444,6 @@ class MongoDBAdapter(NoSQLAdapter):
 
         return tablename, mongoqry_dict, mongofields_dict, mongosort_list, \
             limitby_limit, limitby_skip
-
 
     def select(self, query, fields, attributes, count=False,
                snapshot=False):
@@ -5507,23 +5495,28 @@ class MongoDBAdapter(NoSQLAdapter):
         result = processor(rows, fields, newnames, False)
         return result
 
+    def _insert(self, table, fields):
+        values = dict()
+        for k, v in fields:
+            if not k.name in ["id", "safe"]:
+                fieldname = k.name
+                fieldtype = table[k.name].type
+                values[fieldname] = self.represent(v, fieldtype)
+        return values
 
-    def INVERT(self, first):
-        #print "in invert first=%s" % first
-        return '-%s' % self.expand(first)
-
-    def drop(self, table, mode=''):
+    # Safe determines whether a asynchronious request is done or a
+    # synchronious action is done
+    # For safety, we use by default synchronous requests
+    def insert(self, table, fields, safe=None):
+        if safe==None:
+            safe = self.safe
         ctable = self.connection[table._tablename]
-        ctable.drop()
+        values = self._insert(table, fields)
+        ctable.insert(values, safe=safe)
+        return long(str(values['_id']), 16)
 
-
-    def truncate(self, table, mode, safe=None):
-        if safe == None:
-            safe=self.safe
-        ctable = self.connection[table._tablename]
-        ctable.remove(None, safe=True)
-
-    def oupdate(self, tablename, query, fields):
+    #this function returns a dict with the where clause and update fields
+    def _update(self, tablename, query, fields):
         if not isinstance(query, Query):
             raise SyntaxError("Not Supported")
         filter = None
@@ -5541,7 +5534,7 @@ class MongoDBAdapter(NoSQLAdapter):
         if not isinstance(query, Query):
             raise RuntimeError("Not implemented")
         amount = self.count(query, False)
-        modify, filter = self.oupdate(tablename, query, fields)
+        modify, filter = self._update(tablename, query, fields)
         try:
             result = self.connection[tablename].update(filter,
                        modify, multi=True, safe=safe)
@@ -5557,27 +5550,28 @@ class MongoDBAdapter(NoSQLAdapter):
             # TODO Reverse update query to verifiy that the query succeded
             raise RuntimeError("uncaught exception when updating rows: %s" % e)
 
-    #this function returns a dict with the where clause and update fields
-    def _update(self,tablename,query,fields):
-        return str(self.oupdate(tablename, query, fields))
+    def _delete(self, tablename, query):
+        if not isinstance(query, Query):
+            raise RuntimeError("query type %s is not supported" % \
+                               type(query))
+        return self.expand(query)
 
     def delete(self, tablename, query, safe=None):
         if safe is None:
             safe = self.safe
         amount = 0
         amount = self.count(query, False)
-        if not isinstance(query, Query):
-            raise RuntimeError("query type %s is not supported" % \
-                               type(query))
-        filter = self.expand(query)
-        self._delete(tablename, filter, safe=safe)
+        filter = self._delete(tablename, query)
+        self.connection[tablename].remove(filter, safe=safe)
         return amount
-
-    def _delete(self, tablename, filter, safe=None):
-        return self.connection[tablename].remove(filter, safe=safe)
 
     def bulk_insert(self, table, items):
         return [self.insert(table,item) for item in items]
+
+    ## OPERATORS
+    def INVERT(self, first):
+        #print "in invert first=%s" % first
+        return '-%s' % self.expand(first)
 
     # TODO This will probably not work:(
     def NOT(self, first):
