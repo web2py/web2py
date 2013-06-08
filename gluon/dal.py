@@ -6976,51 +6976,17 @@ class Row(object):
     def as_json(self, mode="object", default=None, colnames=None,
                 serialize=True, **kwargs):
         """
-        serializes the table to a JSON list of objects
+        serializes the row to a JSON object
         kwargs are passed to .as_dict method
-        only "object" mode supported for single row
+        only "object" mode supported
 
         serialize = False used by Rows.as_json
         TODO: return array mode with query column order
+
+        mode and colnames are not implemented
         """
 
-        def inner_loop(record, col):
-            (t, f) = col.split('.')
-            res = None
-            if not REGEX_TABLE_DOT_FIELD.match(col):
-                key = col
-                res = record._extra[col]
-            else:
-                if isinstance(record.get(t, None), Row):
-                    key = f
-                    res = record[t][f]
-                else:
-                    key = f
-                    res = record[f]
-            if mode == 'object':
-                return (key, res)
-            else:
-                return res
-
-        multi = any([isinstance(v, self.__class__) for v in self.values()])
-        mode = mode.lower()
-        if not mode in ['object', 'array']:
-            raise SyntaxError('Invalid JSON serialization mode: %s' % mode)
-
-        if mode=='object' and colnames:
-            item = dict([inner_loop(self, col) for col in colnames])
-        elif colnames:
-            item = [inner_loop(self, col) for col in colnames]
-        else:
-            if not mode == 'object':
-                raise SyntaxError('Invalid JSON serialization mode: %s' % mode)
-
-            if multi:
-                item = dict()
-                [item.update(**v.as_dict(**kwargs)) for v in self.values()]
-            else:
-                item = self.as_dict(**kwargs)
-
+        item = self.as_dict(**kwargs)
         if serialize:
             if have_serializers:
                 return serializers.json(item,
@@ -10459,7 +10425,9 @@ class Rows(object):
 
     def as_json(self, mode='object', default=None):
         """
-        serializes the table to a JSON list of objects
+        serializes the rows to a JSON list or object with objects
+        mode='object' is not implemented (should return a nested
+        object structure)
         """
 
         items = [record.as_json(mode=mode, default=default,
