@@ -1375,8 +1375,6 @@ class BaseAdapter(ConnectionPool):
                 out = '(%s)' % op
             else:
                 out = op()
-            if field_type == 'string':
-                out = 'CAST(%s AS %s)' % (out, self.types['text'])
             return out
         elif field_type:
             return str(self.represent(expression,field_type))
