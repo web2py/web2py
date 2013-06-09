@@ -8675,12 +8675,6 @@ class Table(object):
                 value = None
             elif field.type=='blob':
                 value = base64.b64decode(value)
-            elif field.type=='json':
-                try:
-                    json = serializers.json
-                    value = json(value)
-                except TypeError:
-                    pass
             elif field.type=='double' or field.type=='float':
                 if not value.strip():
                     value = None
