@@ -8017,21 +8017,36 @@ def index():
         ofile.write('END')
 
     def import_from_csv_file(self, ifile, id_map=None, null='<NULL>',
-                             unique='uuid', *args, **kwargs):
+                             unique='uuid', map_tablenames=None, 
+                             ignore_missing_tables=False,
+                             *args, **kwargs):
         #if id_map is None: id_map={}
         id_offset = {} # only used if id_map is None
+        map_tablenames = map_tablenames or {}
         for line in ifile:
             line = line.strip()
             if not line:
                 continue
             elif line == 'END':
                 return
-            elif not line.startswith('TABLE ') or not line[6:] in self.tables:
+            elif not line.startswith('TABLE ') or \
+                    not line[6:] in self.tables:
                 raise SyntaxError('invalid file format')
             else:
                 tablename = line[6:]
-                self[tablename].import_from_csv_file(
-                    ifile, id_map, null, unique, id_offset, *args, **kwargs)
+                tablename = map_tablenames.get(tablename,tablename)
+                if tablename is not None and tablename in self.tables:
+                    self[tablename].import_from_csv_file(
+                        ifile, id_map, null, unique, id_offset, 
+                        *args, **kwargs)
+                elif tablename is None or ignore_missing_tables:
+                    # skip all non-empty lines
+                    for line in ifile:
+                        if not line.strip():
+                            breal
+                else:
+                    raise RuntimeError("Unable to import table that does not exist.\nTry db.import_from_csv_file(..., map_tablenames={'table':'othertable'},ignore_missing_tables=True)")
+
 
 def DAL_unpickler(db_uid):
     return DAL('<zombie>',db_uid=db_uid)
