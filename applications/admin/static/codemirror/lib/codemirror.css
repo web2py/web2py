@@ -3,7 +3,7 @@
 .CodeMirror {
   /* Set height, width, borders, and global font properties here */
   font-family: monospace;
-  height: 300px;
+  height: auto;
 }
 
 .CodeMirror-scroll {
@@ -12,17 +12,13 @@
 }
 
 /* Fullscreen */
-
 .CodeMirror-fullscreen {
-        display: block;
-        position: absolute;
-        top: 0; left: 0;
-        width: 100% ! important;;
-        z-index: 9999;
-      }
-
-
-
+	display: block;
+	position: absolute ! important;
+	top: 0; left: 0;
+	width: 100% ! important;
+	z-index: 9999;
+}
 
 /* BREAKPOINTS */
 
