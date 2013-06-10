@@ -27,8 +27,9 @@
 /* Editor styling */
 
 .cm-s-web2py {
-  line-height: 1.40em;
-  font-family: Monaco, Menlo,"Andale Mono","lucida console","Courier New",monospace !important;
+	line-height: 1.40em;
+	font-family: Monaco, Menlo,"Andale Mono","lucida console","Courier New",monospace !important;
+	background: white;
 }
 
 
