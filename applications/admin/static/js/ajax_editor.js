@@ -26,6 +26,13 @@ function on_error() {
     jQuery("input[name='saved_on']").val('communication error');
 }
 
+function doHighlight(highlight) {
+    // Put the cursor at the offending line:
+    editor.setCursor({line:highlight.lineno-1,
+                                 ch:highlight.offset+1});
+    }
+
+
 function doClickSave() {
 	var currentTabID = '#' + jQuery('#edit_placeholder div.tab-pane.active').attr('id');
 	var editor = jQuery (currentTabID + ' textarea').data('editor');	
@@ -74,8 +81,7 @@ function doClickSave() {
 		    jQuery(currentTabID + " input[name='file_hash']").val(json.file_hash);
 		    jQuery(currentTabID + " input[name='saved_on']").val(json.saved_on);
 		    if (json.highlight) {
-				// Put the cursor at the offending line:
-				editor.setCursor({line:highlight.lineno-1, ch:highlight.offset+1});
+			doHighlight(json.highlight);
 		    } else {
 				jQuery(currentTabID + " input[name='saved_on']").attr('style','background-color:#99FF99');
 			//jQuery(".flash").delay(1000).fadeOut('slow');
@@ -150,11 +156,10 @@ function doToggleBreakpoint(filename, url, sel) {
 		 } else {
              if (json.ok==true) {
     		     // mark the breakpoint if ok=True
- 		         editor.setMarker(json.lineno-1,
- 		                         "<span style='color: red'>●</span> %N%")
+				 editor.setGutterMarker(json.lineno-1, "breakpoints", makeMarker());
  		     } else if (json.ok==false) {
     		     // remove mark if ok=False
- 		         editor.setMarker(json.lineno-1, "%N%")
+				  editor.setGutterMarker(json.lineno-1, "breakpoints", null);
  		     } 
 		 }
 	     } catch(e) { on_error(); }
@@ -190,7 +195,7 @@ function doListBreakpoints(filename, url, editor) {
 				for (i in json.breakpoints) {
 					lineno = json.breakpoints[i];
 					// mark the breakpoint if ok=True
-					editor.setMarker(lineno-1, "<span style='color: red'>●</span> %N%");
+					editor.setGutterMarker(lineno-1, "breakpoints",makeMarker());
 				}
 			}
 	     } catch(e) { on_error(); }
@@ -199,6 +204,15 @@ function doListBreakpoints(filename, url, editor) {
 	});
 	return false;
 }
+
+		function makeMarker() {
+			var marker = document.createElement("div");
+		   marker.style.color = "#822";
+		   marker.innerHTML = "●";
+			marker.className = "breakpoint";
+	  return marker;
+	  }
+
 
 function keepalive(url) {
 	jQuery.ajax({

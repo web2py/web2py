@@ -40,37 +40,89 @@
 
     <textarea style=" height:100%; direction:ltr;" id="textarea_{{=id}}" class="input-block-level" name="data" >{{=data}}</textarea>
     <script>
-	var cm_opts = {
+   var editor = CodeMirror.fromTextArea(document.getElementById("textarea_{{=id}}"),{
 	{{if filetype=='html':}}
-		mode : "text/html", lineNumbers : true, 
+		mode : "text/html", 
+		lineNumbers : true, 
 		profile: 'xhtml',
 	{{else:}}
-		mode: { name: '{{=filetype}}'{{if filetype=='python':}},version: 2,singleLineStringErrors: false{{pass}} },
+		mode: { name: '{{=filetype}}'{{if filetype=='python':}},version: 2,singleLineStringErrors: false, {{pass}} },
 	{{pass}}
-		lineNumbers: true,
+		  lineNumbers: true,
         indentUnit: 4,
-        theme: current_theme,
+		  styleActiveLine: true,
+		  autoCloseTags: true,
+        theme: "web2py",
         tabMode: "shift",
         lineWrapping: true,
+		  gutters: ["CodeMirror-linenumbers", "breakpoints"],
         {{if TEXT_EDITOR_KEYBINDING == 'emacs':}}keyMap: "emacs",{{pass}}
         {{if TEXT_EDITOR_KEYBINDING == 'vi':}}keyMap: "vim",{{pass}}
         matchBrackets: true,
         autofocus: false,
-		height: "350px",
-        onCursorActivity: function() {
-            editor.setLineClass(hlLine, null, null);
-            hlLine = editor.setLineClass(editor.getCursor().line, null, "activeline");},
-        onGutterClick: function(cm, n) {
-            sel = {start: n, end: n, data: ''};
-            doToggleBreakpoint({{=XML("'%s','%s://%s%s',sel" % (filename, 
-                request.env['wsgi_url_scheme'], request.env['http_host'],
-                URL(c='debug', f='toggle_breakpoint')))}});
-		}
-      };
-		var editor = CodeMirror.fromTextArea(document.getElementById("textarea_{{=id}}"),cm_opts);
+		  height: "350px"
+      });
+	  var hlLine = editor.addLineClass(0, "background", "activeline");
+	  editor.on("cursorActivity", function() {
+	  		var cur = editor.getLineHandle(editor.getCursor().line);
+			if (cur != hlLine) {
+				editor.removeLineClass(hlLine, "background", "activeline");
+				hlLine = editor.addLineClass(cur, "background", "activeline");
+			};
+	  });
+		editor.on("gutterClick", function(cm, n) {
+		var info = cm.lineInfo(n);
+	   cm.setGutterMarker(n, "breakpoints", info.gutterMarkers ? null : makeMarker());
+  		sel = {start: n, end: n, data: ''};
+      doToggleBreakpoint({{=XML("'%s','%s://%s%s',sel" % (filename, 
+   				             request.env['wsgi_url_scheme'], request.env['http_host'],
+               				 URL(c='debug', f='toggle_breakpoint')))}});
+		  });
+		function makeMarker() {
+			var marker = document.createElement("div");
+		   marker.style.color = "#822";
+		   marker.innerHTML = "●";
+			marker.className = "breakpoint";
+	  		return marker;
+	   }
+
+		{{if filetype=='html':}}
+		// must be here or break emmet/zencoding for html
+		CodeMirror.defaults.extraKeys["Ctrl-S"] = 
+			function(instance) {
+				doClickSave();};
+		CodeMirror.defaults.extraKeys["Ctrl-F11"]= 
+			function(instance) {
+				setFullScreen(instance, !isFullScreen(instance));};
+		CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
+		CodeMirror.defaults.extraKeys["Esc"]=
+			function(instance) {
+				if (isFullScreen(instance)) {
+					setFullScreen(instance, false);};}
+		{{pass}}
+		{{if filetype=='python':}}
+			// must be here or break emmet/zencoding for python
+			CodeMirror.defaults.extraKeys["Ctrl-S"] = 
+				function(instance) {
+					doClickSave();};
+			CodeMirror.defaults.extraKeys["Ctrl-Space"] = 
+					"autocomplete";
+			CodeMirror.defaults.extraKeys["Ctrl-F11"]= 
+				function(instance) {
+					setFullScreen(instance, !isFullScreen(instance));};
+			CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
+			CodeMirror.defaults.extraKeys["Esc"]=
+				function(instance) {
+					if (isFullScreen(instance)) {
+						setFullScreen(instance, false);};}
+		//for autocomplete
+		CodeMirror.commands.autocomplete = function(cm) {
+        CodeMirror.showHint(cm, CodeMirror.pythonHint);
+      }
+		{{pass}}
 		// save the editor as textarea data attribute	
 		jQuery("#{{=id}} textarea").data('editor', editor);
-		var hlLine = editor.setLineClass(0, "activeline");
+		var hlLine = editor.addLineClass(0, "background", "activeline");
 		window.mirror = editor; 	//backward compatibility
 
 		doListBreakpoints({{=XML("'%s','%s://%s%s'" % (filename, 
@@ -107,6 +159,9 @@
 		<ul class="keybindings unstyled">
 			{{=shortcut('Ctrl+S', T('Save via Ajax'))}}
 			{{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
+			{{if filetype=='python':}}
+		   	{{=shortcut('Ctrl-Space', T('Autocomplete Python Code'))}} 
+  		   {{pass}}			
 			{{=shortcut('Ctrl-F / Cmd-F', T('Start searching'))}}
 			{{=shortcut('Ctrl-G / Cmd-G', T('Find Next'))}}
 			{{=shortcut('Shift-Ctrl-G / Shift-Cmd-G', T('Find Previous'))}}

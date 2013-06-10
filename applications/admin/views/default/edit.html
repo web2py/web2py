@@ -19,6 +19,8 @@
 <link rel="stylesheet" href="{{=cm}}/theme/web2py.css">
 <script src="{{=cm}}/lib/codemirror.js"></script>
 <script src="{{=cm}}/mode/clike/clike.js"></script>
+<script src="{{=cm}}/addon/edit/matchbrackets.js"></script>
+<script src="{{=cm}}/addon/edit/closetag.js"></script>
 {{if TEXT_EDITOR_KEYBINDING == 'emacs':}}<script src="{{=cm}}/keymap/emacs.js"></script>{{pass}}
 {{if TEXT_EDITOR_KEYBINDING == 'vi':}}<script src="{{=cm}}/keymap/vim.js"></script>{{pass}}
 <script src="{{=cm}}/mode/python/python.js"></script>
@@ -26,24 +28,23 @@
 <script src="{{=cm}}/mode/css/css.js"></script>
 <script src="{{=cm}}/mode/javascript/javascript.js"></script>
 <script src="{{=cm}}/mode/htmlmixed/htmlmixed.js"></script>
-<script src="{{=cm}}/lib/util/search.js"></script>
-<script src="{{=cm}}/lib/util/searchcursor.js"></script>
-<script src="{{=cm}}/lib/util/dialog.js"></script>
-<link rel="stylesheet" href="{{=cm}}/lib/util/dialog.css">
+<script src="{{=cm}}/addon/hint/show-hint.js"></script>
+<script src="{{=cm}}/addon/hint/python-hint.js"></script>
+<link rel="stylesheet" href="{{=cm}}/addon/hint/show-hint.css">
+<script src="{{=cm}}/addon/search/search.js"></script>
+<script src="{{=cm}}/addon/search/searchcursor.js"></script>
+<script src="{{=cm}}/addon/dialog/dialog.js"></script>
+<link rel="stylesheet" href="{{=cm}}/addon/dialog/dialog.css">
+<script src="{{=cm}}/addon/selection/active-line.js"></script>
 <script src="{{=cm}}/emmet.min.js"></script>
-<script language="Javascript" type="text/javascript" src="{{=URL('static','js/ajax_editor.js')}}"></script>
-<style>
-.CodeMirror-fullscreen {
-	display: block;
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100% !important;
-	z-index: 9999;
-}
+
+<style type="text/css">
+	
 </style>
+
+<script language="Javascript" type="text/javascript" src="{{=URL('static','js/ajax_editor.js')}}"></script>
 <script language="Javascript" type="text/javascript">
-var current_theme = "web2py";	//Default theme
+
 jQuery(document).on('shown click', 'a[data-toggle="tab"]', function (e) {
 	var tab_id = jQuery(this).attr('href');
 	var editor = jQuery(tab_id + " textarea").data('editor');
@@ -101,7 +102,6 @@ jQuery(document).on('click', '#themes a', function (e) {
 		editor.setOption("theme", name);
 	});
 	jQuery('#themeName').html(name);
-	current_theme = name;
 //#TODO save on session
 });
 
@@ -124,24 +124,12 @@ jQuery(document).on('click', '#themes a', function (e) {
 		}
 		instance.refresh();
 	}
-	CodeMirror.connect(window, "resize", function() {
+	CodeMirror.on(window, "resize", function() {
 		var showing = document.body.getElementsByClassName("CodeMirror-fullscreen")[0];
 		if (!showing) return;
 		console.log('CodeMirror.connect()',winHeight() );
 		showing.CodeMirror.getScrollerElement().style.height = winHeight() + "px";
 	});
-	// must be here or break emmet/zencoding
-	CodeMirror.defaults.extraKeys["Ctrl-S"] = 
-		function(instance) {
-			doClickSave();};
-	CodeMirror.defaults.extraKeys["Ctrl-F11"]= 
-		function(instance) {
-			setFullScreen(instance, !isFullScreen(instance));};
-	CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
-	CodeMirror.defaults.extraKeys["Esc"]=
-		function(instance) {
-			if (isFullScreen(instance)) {
-				setFullScreen(instance, false);};}
 
 	{{if len(request.args) > 1:}}
 		load_file('{{=URL(f='edit', args=request.args, vars=request.get_vars)}}');
@@ -152,8 +140,8 @@ jQuery(document).on('click', '#themes a', function (e) {
 
 
 <div class='row-fluid'>
-<div class="right controls btn-toolbar pull-right">
-<div class="dropdown btn-group pull-left">
+<div class="right controls pull-right">
+<div class="dropdown pull-left">
 	<a class="dropdown-toggle button btn" data-target="themes" data-toggle="dropdown" href="#" >Theme: <span id="themeName" style="color: #E8953C">Web2py</span> <span class="caret"></span></a>
 	<ul class="dropdown-menu" role="menu" id="themes">	
 		{{for f in listfiles('admin', "static/codemirror/theme", regexp='.*\.css$' ):}}
@@ -161,13 +149,12 @@ jQuery(document).on('click', '#themes a', function (e) {
 		{{pass}}
 	</ul>
 </div>
-<div class="btn-group">
   {{=button(URL('design',args=request.vars.app if request.vars.app else request.args[0], anchor=request.vars.id), T('back'))}}
   {{#if request.args[1]=='models':}}
   <a class="button btn" href="http://www.web2py.com/sqldesigner" target="_blank"><span>{{=T('online designer')}}</span></a>
   {{#pass}}
   <a class="button btn" href="http://www.web2py.com/examples/static/epydoc/index.html" target="_blank"><span>{{=T('docs')}}</span></a>
-</div>
+
 </div>
 </div>
 <div id="editor_area" class="row-fluid">
