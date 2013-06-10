@@ -38,13 +38,9 @@
 <script src="{{=cm}}/addon/selection/active-line.js"></script>
 <script src="{{=cm}}/emmet.min.js"></script>
 
-<style type="text/css">
-	
-</style>
-
 <script language="Javascript" type="text/javascript" src="{{=URL('static','js/ajax_editor.js')}}"></script>
 <script language="Javascript" type="text/javascript">
-
+var current_theme = "web2py";  //Default theme
 jQuery(document).on('shown click', 'a[data-toggle="tab"]', function (e) {
 	var tab_id = jQuery(this).attr('href');
 	var editor = jQuery(tab_id + " textarea").data('editor');
@@ -102,6 +98,7 @@ jQuery(document).on('click', '#themes a', function (e) {
 		editor.setOption("theme", name);
 	});
 	jQuery('#themeName').html(name);
+	current_theme = name;
 //#TODO save on session
 });
 
@@ -115,10 +112,13 @@ jQuery(document).on('click', '#themes a', function (e) {
 		var wrap = instance.getWrapperElement(), scroll = instance.getScrollerElement();
 		if (full) {
 			wrap.className += " CodeMirror-fullscreen";
+			jQuery(wrap).css('width', "100%");
+			jQuery(wrap).css('position', "absolute");
 			scroll.style.height = winHeight() + "px";
 			document.documentElement.style.overflow = "hidden";
 		} else {
 			wrap.className = wrap.className.replace(" CodeMirror-fullscreen", "");
+			jQuery(wrap).css('position', "relative");
 			scroll.style.height = "";
 			document.documentElement.style.overflow = "";
 		}
@@ -140,8 +140,8 @@ jQuery(document).on('click', '#themes a', function (e) {
 
 
 <div class='row-fluid'>
-<div class="right controls pull-right">
-<div class="dropdown pull-left">
+<div class="right controls btn-toolbar pull-right">
+<div class="dropdown btn-group pull-left">
 	<a class="dropdown-toggle button btn" data-target="themes" data-toggle="dropdown" href="#" >Theme: <span id="themeName" style="color: #E8953C">Web2py</span> <span class="caret"></span></a>
 	<ul class="dropdown-menu" role="menu" id="themes">	
 		{{for f in listfiles('admin', "static/codemirror/theme", regexp='.*\.css$' ):}}
@@ -149,12 +149,13 @@ jQuery(document).on('click', '#themes a', function (e) {
 		{{pass}}
 	</ul>
 </div>
+<div class="btn-group">
   {{=button(URL('design',args=request.vars.app if request.vars.app else request.args[0], anchor=request.vars.id), T('back'))}}
   {{#if request.args[1]=='models':}}
   <a class="button btn" href="http://www.web2py.com/sqldesigner" target="_blank"><span>{{=T('online designer')}}</span></a>
   {{#pass}}
   <a class="button btn" href="http://www.web2py.com/examples/static/epydoc/index.html" target="_blank"><span>{{=T('docs')}}</span></a>
-
+</div>
 </div>
 </div>
 <div id="editor_area" class="row-fluid">
