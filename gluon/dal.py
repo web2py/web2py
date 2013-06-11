@@ -5194,7 +5194,6 @@ class MongoDBAdapter(NoSQLAdapter):
         self.uri = uri
         if do_connect: self.find_driver(adapter_args)
         import random
-        from collections import Iterable
         from bson.objectid import ObjectId
         from bson.son import SON
         import pymongo.uri_parser
@@ -5339,11 +5338,8 @@ class MongoDBAdapter(NoSQLAdapter):
             if not k.name in ["id", "safe"]:
                 fieldname = k.name
                 fieldtype = table[k.name].type
-                if ("reference" in fieldtype) or (fieldtype=="id"):
-                    if isinstance(v,Iterable):
-                        values[fieldname] = map(self.object_id,v)
-                    else:
-                        values[fieldname] = self.object_id(v)
+                if fieldtype=="id":
+                    values[fieldname] = self.object_id(v)
                 else:
                     values[fieldname] = self.represent(v, fieldtype)
         ctable.insert(values, safe=safe)
