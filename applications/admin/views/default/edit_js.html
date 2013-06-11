@@ -62,14 +62,7 @@
         autofocus: false,
 		  height: "350px"
       });
-	  var hlLine = editor.addLineClass(0, "background", "activeline");
-	  editor.on("cursorActivity", function() {
-	  		var cur = editor.getLineHandle(editor.getCursor().line);
-			if (cur != hlLine) {
-				editor.removeLineClass(hlLine, "background", "activeline");
-				hlLine = editor.addLineClass(cur, "background", "activeline");
-			};
-	  });
+	  
 		editor.on("gutterClick", function(cm, n) {
 		var info = cm.lineInfo(n);
 	   cm.setGutterMarker(n, "breakpoints", info.gutterMarkers ? null : makeMarker());
