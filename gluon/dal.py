@@ -5194,6 +5194,7 @@ class MongoDBAdapter(NoSQLAdapter):
         self.uri = uri
         if do_connect: self.find_driver(adapter_args)
         import random
+        from collections import Iterable
         from bson.objectid import ObjectId
         from bson.son import SON
         import pymongo.uri_parser
@@ -5325,6 +5326,28 @@ class MongoDBAdapter(NoSQLAdapter):
                (isinstance(fieldtype, Table)) or fieldtype=="id"):
             value = self.object_id(value)
         return value
+
+    # Safe determines whether a asynchronious request is done or a
+    # synchronious action is done
+    # For safety, we use by default synchronous requests
+    def insert(self, table, fields, safe=None):
+        if safe==None:
+            safe = self.safe
+        ctable = self.connection[table._tablename]
+        values = dict()
+        for k, v in fields:
+            if not k.name in ["id", "safe"]:
+                fieldname = k.name
+                fieldtype = table[k.name].type
+                if ("reference" in fieldtype) or (fieldtype=="id"):
+                    if isinstance(v,Iterable):
+                        values[fieldname] = map(self.object_id,v)
+                    else:
+                        values[fieldname] = self.object_id(v)
+                else:
+                    values[fieldname] = self.represent(v, fieldtype)
+        ctable.insert(values, safe=safe)
+        return long(str(values['_id']), 16)
 
     def create_table(self, table, migrate=True, fake_migrate=False,
                      polymodel=None, isCapped=False):
