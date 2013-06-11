@@ -1305,3 +1305,4 @@ a[rel='tooltip'] span{background:#9fb364;color:#eef1d9;border:1px solid #eef1d9;
 .shell a[rel="tooltip"]{margin-left:8px;}
 .shell .clearfix{clear:both;}
 .shell #caret{padding-top:9px;}
+.small-font {font-size: 0.8em; white-space: nowrap}
