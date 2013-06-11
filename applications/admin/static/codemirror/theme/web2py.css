@@ -27,19 +27,10 @@
 /* Editor styling */
 
 .cm-s-web2py {
-  line-height: 1.40em;
-  font-family: Monaco, Menlo,"Andale Mono","lucida console","Courier New",monospace !important;
+	line-height: 1.40em;
+	font-family: Monaco, Menlo,"Andale Mono","lucida console","Courier New",monospace !important;
+	background: white;
 }
 
-/* Fullscreen mode and active line highlight */
 
-.cm-s-web2py .CodeMirror-fullscreen {
-  display: block;
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  z-index: 9999;
-}
-
-.cm-s-web2py .activeline {background: #e8f2ff !important;}
+.CodeMirror-activeline-background {background: #e8f2ff !important;}

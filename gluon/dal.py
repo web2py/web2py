@@ -1309,7 +1309,7 @@ class BaseAdapter(ConnectionPool):
         return ftype in ('integer','boolean','double','bigint') or \
             ftype.startswith('decimal')
 
-    def REPLACE(self, first, (second, third)):
+    def REPLACE(self, first, (second, third)):        
         return 'REPLACE(%s,%s,%s)' % (self.expand(first,'string'),
                                       self.expand(second,'string'),
                                       self.expand(third,'string'))
@@ -1356,22 +1356,27 @@ class BaseAdapter(ConnectionPool):
 
     def expand(self, expression, field_type=None):
         if isinstance(expression, Field):
-            return '%s.%s' % (expression.tablename, expression.name)
+            out = '%s.%s' % (expression.tablename, expression.name)
+            if field_type == 'string' and not expression.type in (
+                'string','text','json','password'):
+                out = 'CAST(%s AS %s)' % (out, self.types['text'])
+            return out
         elif isinstance(expression, (Expression, Query)):
             first = expression.first
             second = expression.second
             op = expression.op
             optional_args = expression.optional_args or {}
             if not second is None:
-                return op(first, second, **optional_args)
+                out = op(first, second, **optional_args)
             elif not first is None:
-                return op(first,**optional_args)
+                out = op(first,**optional_args)
             elif isinstance(op, str):
                 if op.endswith(';'):
                     op=op[:-1]
-                return '(%s)' % op
+                out = '(%s)' % op
             else:
-                return op()
+                out = op()
+            return out
         elif field_type:
             return str(self.represent(expression,field_type))
         elif isinstance(expression,(list,tuple)):
@@ -5189,7 +5194,6 @@ class MongoDBAdapter(NoSQLAdapter):
         self.uri = uri
         if do_connect: self.find_driver(adapter_args)
         import random
-        from collections import Iterable
         from bson.objectid import ObjectId
         from bson.son import SON
         import pymongo.uri_parser
@@ -5318,32 +5322,9 @@ class MongoDBAdapter(NoSQLAdapter):
             return value
         elif ((isinstance(fieldtype, basestring) and
                fieldtype.startswith("reference")) or
-               (isinstance(fieldtype, Table))):
+               (isinstance(fieldtype, Table)) or fieldtype=="id"):
             value = self.object_id(value)
-
         return value
-
-    # Safe determines whether a asynchronious request is done or a
-    # synchronious action is done
-    # For safety, we use by default synchronous requests
-    def insert(self, table, fields, safe=None):
-        if safe==None:
-            safe = self.safe
-        ctable = self.connection[table._tablename]
-        values = dict()
-        for k, v in fields:
-            if not k.name in ["id", "safe"]:
-                fieldname = k.name
-                fieldtype = table[k.name].type
-                if ("reference" in fieldtype) or (fieldtype=="id"):
-                    if isinstance(v,Iterable):
-                        values[fieldname] = map(self.object_id,v)
-                    else:
-                        values[fieldname] = self.object_id(v)
-                else:
-                    values[fieldname] = self.represent(v, fieldtype)
-        ctable.insert(values, safe=safe)
-        return long(str(values['_id']), 16)
 
     def create_table(self, table, migrate=True, fake_migrate=False,
                      polymodel=None, isCapped=False):
