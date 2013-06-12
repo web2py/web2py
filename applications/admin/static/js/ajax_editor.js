@@ -66,9 +66,8 @@ function doClickSave() {
 					 'doClickSave');
 		},
           success: function(json,text,xhr){
-
-
-
+			jQuery(editor).data('saved', true);	// Set as saved
+			editor.on("change", store_changes_function);	// Re-enable change watcher
             // reenable disabled submit button
 		    var t=jQuery("input[name='save']");
 		    t.attr('class','');
