@@ -247,3 +247,6 @@ function load_file (url) {
 		error: function(x) { on_error(); }
 	});
 }
+
+var template_js = '<p class="repo-name">{{{a_tag}}}</p><small>{{address}}</small>';
+

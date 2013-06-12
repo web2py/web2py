@@ -37,8 +37,8 @@
 <link rel="stylesheet" href="{{=cm}}/addon/dialog/dialog.css">
 <script src="{{=cm}}/addon/selection/active-line.js"></script>
 <script src="{{=cm}}/emmet.min.js"></script>
-
 <script language="Javascript" type="text/javascript" src="{{=URL('static','js/ajax_editor.js')}}"></script>
+<link rel="stylesheet" href="{{=URL('static/css','typeahead.js-bootstrap.css')}}">
 <script language="Javascript" type="text/javascript">
 var current_theme = "web2py";  //Default theme
 jQuery(document).on('shown click', 'a[data-toggle="tab"]', function (e) {
@@ -136,6 +136,7 @@ jQuery(document).on('click', '#themes a', function (e) {
 	{{if len(request.args) > 1:}}
 		load_file('{{=URL(f='edit', args=request.args, vars=request.get_vars)}}');
 	{{pass}}
+
 </script>
 
 {{block sectionclass}}edit{{end}}
@@ -162,11 +163,13 @@ jQuery(document).on('click', '#themes a', function (e) {
 </div>
 <div id="editor_area" class="row-fluid">
 	<ul class="nav nav-list span2 well" rel="pagebookmark" id="filelist">
+	<li><input type="text" placeholder="{{=T('Rapid Search')}}" class="input-block-level typeahead search-query"></li>
 	{{dirs=[{'name':'models', 'reg':'.*\.py$'}, 
 		{'name':'controllers', 'reg':'.*\.py$'},
 		{'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
 		{'name':'modules', 'reg':'.*\.py$'},
 		{'name':'private', 'reg': '[^\.#].*'}]}}
+	{{auto_complete_list=[]}}
 	{{for dir in dirs:}}
 	<li class="nav-header component" onclick="collapse('{{="%s_files" % dir['name']}}');">{{=dir['name']}}</li>
 	<li id="{{="%s_files" % dir['name']}}">
@@ -175,7 +178,9 @@ jQuery(document).on('click', '#themes a', function (e) {
 		{{id="%s__" % dir['name'] + f.replace('.','__')}}
 		{{current_file = request.args(len(request.args) - 1)}} 
 		<li class="{{#='active' if current_file==f else ''}}">
-		{{=editfile(dir['name'], f, dict(id=id))}}	
+		{{a_tag=editfile(dir['name'], f, dict(id=id))}}	
+		{{=a_tag}}
+		{{auto_complete_list.append({'value':f, 'tokens':f.split('/'), 'a_tag':a_tag})}}
 		</li>
 		{{pass}}
 		</ul>
@@ -189,4 +194,19 @@ jQuery(document).on('click', '#themes a', function (e) {
 		</div>
 	</div>
 </div>
+<!-- Typeahead scripts here so the page load faster -->
+<script src="{{=URL('static/js', 'typeahead.min.js')}}"></script>
+<script src="{{=URL('static/js', 'hogan-2.0.0.js')}}"></script>
+<script>
+	jQuery('.typeahead').typeahead({                                
+		name: 'files', 
+		local:{{from gluon.serializers import json}}{{=XML(json(auto_complete_list))}},
+		template: template_js,
+		engine: Hogan,
+	});	
+	jQuery(document).on("typeahead:selected", '.typeahead', function(e, datum) {
+		load_file(datum.link);
+		jQuery(this).val('');
+	});
+</script>
 <!-- end "edit" block -->
