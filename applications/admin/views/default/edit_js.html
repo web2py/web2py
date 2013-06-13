@@ -122,7 +122,7 @@
 		jQuery("#{{=id}} textarea").data('editor', editor);
 		var hlLine = editor.addLineClass(0, "background", "activeline");
 		window.mirror = editor; 	//backward compatibility
-
+		set_font(editor, current_font_incr);
 		doListBreakpoints({{=XML("'%s','%s://%s%s'" % (filename, 
 				request.env['wsgi_url_scheme'], request.env['http_host'],
 				URL(c='debug', f='list_breakpoints')))}}, editor);

@@ -248,5 +248,15 @@ function load_file (url) {
 	});
 }
 
+function set_font(editor, incr) {
+	var fontSize = '';
+	if (incr !== 0) {
+		fontSize = parseInt(jQuery(editor.getWrapperElement()).css('font-size'));
+		fontSize = fontSize + incr + "px";
+	}
+	jQuery(editor.getWrapperElement()).css('font-size', fontSize);
+	editor.refresh();
+}
+
 var template_js = '<p class="repo-name">{{{a_tag}}}</p><small>{{address}}</small>';
 

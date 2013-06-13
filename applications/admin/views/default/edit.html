@@ -41,6 +41,7 @@
 <link rel="stylesheet" href="{{=URL('static/css','typeahead.js-bootstrap.css')}}">
 <script language="Javascript" type="text/javascript">
 var current_theme = "web2py";  //Default theme
+var current_font_incr = 0;	// Default font-size, 0 means don't set
 jQuery(document).on('shown click', 'a[data-toggle="tab"]', function (e) {
 	var tab_id = jQuery(this).attr('href');
 	var editor = jQuery(tab_id + " textarea").data('editor');
@@ -108,6 +109,22 @@ jQuery(document).on('click', '#themes a', function (e) {
 //#TODO save on session
 });
 
+// incr/decr editor font-size
+jQuery(document).on('click', 'a.font_button', function (e) {
+	e.preventDefault();
+	var id = jQuery(this).attr('id');
+	var new_font_incr;
+	switch (id) {
+		case 'incr': new_incr = 2; break;
+		case 'decr': new_incr = -2; break;
+		case 'default': new_incr = 0; break;
+	}
+	jQuery('textarea[name="data"]') .each(function(id, ta) {
+		editor = jQuery(ta).data('editor');
+		set_font(editor, new_incr);
+	});
+	current_font_incr = (new_incr !== 0) ? current_font_incr + new_incr : 0;
+});
 	function isFullScreen(instance) {
 		return /\bCodeMirror-fullscreen\b/.test(instance.getWrapperElement().className);
 	}
@@ -151,6 +168,11 @@ jQuery(document).on('click', '#themes a', function (e) {
 		<li class=""><a href="{{=URL('static/codemirror/theme', f, host=True)}}">{{=f[:-4]}}</a></li>
 		{{pass}}
 	</ul>
+</div>
+<div class="btn-group">
+	<a id="decr" class="button btn font_button">-</a>
+	<a id="default" class="button btn font_button" >A</a>
+	<a id="incr" class="button btn font_button">+</a>
 </div>
 <div class="btn-group">
   {{=button(URL('design',args=request.vars.app if request.vars.app else request.args[0], anchor=request.vars.id), T('back'))}}
