@@ -163,7 +163,7 @@ jQuery(document).on('click', '#themes a', function (e) {
 </div>
 <div id="editor_area" class="row-fluid">
 	<ul class="nav nav-list span2 well" rel="pagebookmark" id="filelist">
-	<li><input type="text" placeholder="{{=T('Rapid Search')}}" class="input-block-level typeahead search-query"></li>
+	<li><input type="text" placeholder="{{=T('Rapid Search')}}" class="input-block-level typeahead-tw search-query"></li>
 	{{dirs=[{'name':'models', 'reg':'.*\.py$'}, 
 		{'name':'controllers', 'reg':'.*\.py$'},
 		{'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
@@ -198,7 +198,7 @@ jQuery(document).on('click', '#themes a', function (e) {
 <script src="{{=URL('static/js', 'typeahead.min.js')}}"></script>
 <script src="{{=URL('static/js', 'hogan-2.0.0.js')}}"></script>
 <script>
-	jQuery('.typeahead').typeahead({                                
+	jQuery('.typeahead-tw').typeahead({                                
 		name: 'files', 
 		local:{{from gluon.serializers import json}}{{=XML(json(auto_complete_list))}},
 		template: template_js,
