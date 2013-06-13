@@ -236,7 +236,7 @@ class Table(DALStorage):
                                                             field.name))
             elif not field.type in self._db._translator\
                     or not self._db._translator[field.type]:
-                raise SyntaxError('Field: unkown field type %s' % field.type)
+                raise SyntaxError('Field: unknown field type %s' % field.type)
         self._tableobj = self._db.client
         return None
 
