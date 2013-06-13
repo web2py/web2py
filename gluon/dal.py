@@ -5704,8 +5704,9 @@ class MongoDBAdapter(NoSQLAdapter):
         # silently ignore, only case sensitive
         # There is a technical difference, but mongodb doesn't support
         # that, but the result will be the same
-        return {self.expand(first) : ('/%s/' % \
-        self.expand(second, 'string'))}
+        val = second if isinstance(second,self.ObjectId) else \
+            {' $regex':".*" + re.escape(self.expand(second, 'string')) + ".*"}
+        return {self.expand(first) : val}
 
     def LIKE(self, first, second):
         import re
