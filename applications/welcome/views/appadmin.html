@@ -249,7 +249,6 @@
 {{pass}}
 
 {{if request.function == 'manage':}}
-{{labels = ['Users', 'Roles', 'Permissions'] if request.args(0) == 'auth' else [name.replace('_', ' ').title() for name in tablenames]}}
 <h2>{{=heading}}</h2>
 <ul class="nav nav-tabs">
   {{for k, tablename in enumerate(tablenames):}}
