@@ -133,7 +133,7 @@ def pad(s, n=32, padchar=' '):
 def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
     if not hash_key:
         hash_key = hashlib.sha1(encryption_key).hexdigest()
-    dump = pickle.dumps(data)
+    dump = pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
     if compression_level:
         dump = zlib.compress(dump, compression_level)
     key = pad(encryption_key[:32])
@@ -306,7 +306,7 @@ def is_loopback_ip_address(ip=None, addrinfo=None):
     if not isinstance(ip, basestring):
         return False
     # IPv4 or IPv6-embedded IPv4 or IPv4-compatible IPv6
-    if ip.count('.') == 3:  
+    if ip.count('.') == 3:
         return ip.lower().startswith(('127', '::127', '0:0:0:0:0:0:127',
                                       '::ffff:127', '0:0:0:0:0:ffff:127'))
     return ip == '::1' or ip == '0:0:0:0:0:0:0:1'   # IPv6 loopback
@@ -318,7 +318,7 @@ def getipaddrinfo(host):
     """
     try:
         return [addrinfo for addrinfo in socket.getaddrinfo(host, None)
-                if (addrinfo[0] == socket.AF_INET or 
+                if (addrinfo[0] == socket.AF_INET or
                     addrinfo[0] == socket.AF_INET6)
                 and isinstance(addrinfo[4][0], basestring)]
     except socket.error:

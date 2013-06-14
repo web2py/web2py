@@ -2914,7 +2914,7 @@ class Auth(object):
             user = table_user(user_id)
             if not user:
                 raise HTTP(401, "Not Authorized")
-            auth.impersonator = cPickle.dumps(session)
+            auth.impersonator = cPickle.dumps(session, cPickle.HIGHEST_PROTOCOL)
             auth.user.update(
                 table_user._filter_fields(user, True))
             self.user = auth.user
@@ -4899,7 +4899,7 @@ class Expose(object):
     def __init__(self, base=None, basename=None, extensions=None, allow_download=True):
         """
         Usage:
-        
+
         def static():
             return dict(files=Expose())
 
@@ -4981,7 +4981,7 @@ class Expose(object):
         return ''
 
     def xml(self):
-        return DIV(            
+        return DIV(
             H2(self.breadcrumbs(self.basename)),
             self.paragraph or '',
             self.table_folders(),
@@ -5140,7 +5140,7 @@ class Wiki(object):
                     db.wiki_tag.insert(name=tag, wiki_page=page.id)
         db.wiki_page._after_insert.append(update_tags_insert)
         db.wiki_page._after_update.append(update_tags_update)
-       
+
         if (auth.user and
             check_credentials(current.request, gae_login=False) and
             not 'wiki_editor' in auth.user_groups.values()):

@@ -161,7 +161,7 @@ class RedisClient(object):
         expireat = int(time.time() + time_expire) + 120
         bucket_key = "%s:%s" % (cache_set_key, expireat / 60)
         value = f()
-        value_ = pickle.dumps(value)
+        value_ = pickle.dumps(value, pickle.HIGHEST_PROTOCOL)
         if time_expire == 0:
             time_expire = 1
         self.r_server.setex(key, value_, time_expire)

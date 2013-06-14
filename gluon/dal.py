@@ -476,7 +476,7 @@ def quote_keyword(a,keyword='timestamp'):
     regex = re.compile('\.keyword(?=\w)')
     a = regex.sub('."%s"' % keyword,a)
     return a
-    
+
 if 'google' in DRIVERS:
 
     is_jdbc = False
@@ -969,7 +969,7 @@ class BaseAdapter(ConnectionPool):
                     table._db.commit()
             if table._dbt:
                 tfile = self.file_open(table._dbt, 'w')
-                pickle.dump(sql_fields, tfile)
+                pickle.dump(sql_fields, tfile, pickle.HIGHEST_PROTOCOL)
                 self.file_close(tfile)
                 if fake_migrate:
                     logfile.write('faked!\n')
@@ -1098,21 +1098,21 @@ class BaseAdapter(ConnectionPool):
                         if db._adapter.commit_on_alter_table:
                             db.commit()
                             tfile = self.file_open(table._dbt, 'w')
-                            pickle.dump(sql_fields_current, tfile)
+                            pickle.dump(sql_fields_current, tfile, pickle.HIGHEST_PROTOCOL)
                             self.file_close(tfile)
                             logfile.write('success!\n')
                     else:
                         logfile.write('faked!\n')
             elif metadata_change:
                 tfile = self.file_open(table._dbt, 'w')
-                pickle.dump(sql_fields_current, tfile)
+                pickle.dump(sql_fields_current, tfile, pickle.HIGHEST_PROTOCOL)
                 self.file_close(tfile)
 
         if metadata_change and \
                 not (query and self.dbengine in ('mysql','oracle','firebird')):
             db.commit()
             tfile = self.file_open(table._dbt, 'w')
-            pickle.dump(sql_fields_current, tfile)
+            pickle.dump(sql_fields_current, tfile, pickle.HIGHEST_PROTOCOL)
             self.file_close(tfile)
 
     def LOWER(self, first):
@@ -1188,7 +1188,7 @@ class BaseAdapter(ConnectionPool):
             self.file_delete(table._dbt)
             logfile.write('success!\n')
 
-    def _insert(self, table, fields):        
+    def _insert(self, table, fields):
         if fields:
             keys = ','.join(f.name for f, v in fields)
             values = ','.join(self.expand(v, f.type) for f, v in fields)
@@ -1309,7 +1309,7 @@ class BaseAdapter(ConnectionPool):
         return ftype in ('integer','boolean','double','bigint') or \
             ftype.startswith('decimal')
 
-    def REPLACE(self, first, (second, third)):        
+    def REPLACE(self, first, (second, third)):
         return 'REPLACE(%s,%s,%s)' % (self.expand(first,'string'),
                                       self.expand(second,'string'),
                                       self.expand(third,'string'))
@@ -1614,7 +1614,7 @@ class BaseAdapter(ConnectionPool):
             sql_t = ', '.join([self.table_alias(t) for t in excluded + \
                                    tables_to_merge.keys()])
             if joint:
-                sql_t += ' %s %s' % (command, 
+                sql_t += ' %s %s' % (command,
                                      ','.join([self.table_alias(t) for t in joint]))
             for t in joinon:
                 sql_t += ' %s %s' % (command, t)
@@ -1629,7 +1629,7 @@ class BaseAdapter(ConnectionPool):
             for t in ijoinon:
                 sql_t += ' %s %s' % (icommand, t)
             if joint:
-                sql_t += ' %s %s' % (command, 
+                sql_t += ' %s %s' % (command,
                                      ','.join([self.table_alias(t) for t in joint]))
             for t in joinon:
                 sql_t += ' %s %s' % (command, t)
@@ -8023,7 +8023,7 @@ def index():
         ofile.write('END')
 
     def import_from_csv_file(self, ifile, id_map=None, null='<NULL>',
-                             unique='uuid', map_tablenames=None, 
+                             unique='uuid', map_tablenames=None,
                              ignore_missing_tables=False,
                              *args, **kwargs):
         #if id_map is None: id_map={}
@@ -8043,7 +8043,7 @@ def index():
                 tablename = map_tablenames.get(tablename,tablename)
                 if tablename is not None and tablename in self.tables:
                     self[tablename].import_from_csv_file(
-                        ifile, id_map, null, unique, id_offset, 
+                        ifile, id_map, null, unique, id_offset,
                         *args, **kwargs)
                 elif tablename is None or ignore_missing_tables:
                     # skip all non-empty lines
@@ -8483,7 +8483,7 @@ class Table(object):
     def __repr__(self):
         return '<Table %s (%s)>' % (self._tablename,','.join(self.fields()))
 
-    def __str__(self):        
+    def __str__(self):
         if self._ot is not None:
             if 'Oracle' in str(type(self._db._adapter)):     # <<< patch
                 return '%s %s' % (self._ot, self._tablename) # <<< patch

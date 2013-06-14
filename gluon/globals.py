@@ -716,7 +716,7 @@ class Session(Storage):
         if not previous_session_hash and not \
                 any(value is not None for value in self.itervalues()):
             return True
-        session_pickled = cPickle.dumps(dict(self))
+        session_pickled = cPickle.dumps(dict(self), cPickle.HIGHEST_PROTOCOL)
         session_hash = hashlib.md5(session_pickled).hexdigest()
         if previous_session_hash == session_hash:
             return True
@@ -739,7 +739,7 @@ class Session(Storage):
         dd = dict(locked=False,
                   client_ip=request.client.replace(':', '.'),
                   modified_datetime=request.now,
-                  session_data=cPickle.dumps(dict(self)),
+                  session_data=cPickle.dumps(dict(self), cPickle.HIGHEST_PROTOCOL),
                   unique_key=unique_key)
         if record_id:
             table._db(table.id == record_id).update(**dd)
@@ -772,7 +772,7 @@ class Session(Storage):
                 response.session_locked = True
 
             if response.session_file:
-                cPickle.dump(dict(self), response.session_file)
+                cPickle.dump(dict(self), response.session_file, cPickle.HIGHEST_PROTOCOL)
                 response.session_file.truncate()
         finally:
             self._close(response)
