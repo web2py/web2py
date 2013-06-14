@@ -1194,7 +1194,7 @@ def TAG_unpickler(data):
 def TAG_pickler(data):
     d = DIV()
     d.__dict__ = data.__dict__
-    marshal_dump = cPickle.dumps(d)
+    marshal_dump = cPickle.dumps(d, cPickle.HIGHEST_PROTOCOL)
     return (TAG_unpickler, (marshal_dump,))
 
 

@@ -50,14 +50,14 @@ class TicketStorage(Storage):
     def _store_in_db(self, request, ticket_id, ticket_data):
         table = self._get_table(self.db, self.tablename, request.application)
         table.insert(ticket_id=ticket_id,
-                     ticket_data=cPickle.dumps(ticket_data),
+                     ticket_data=cPickle.dumps(ticket_data, cPickle.HIGHEST_PROTOCOL),
                      created_datetime=request.now)
         logger.error('In FILE: %(layer)s\n\n%(traceback)s\n' % ticket_data)
 
     def _store_on_disk(self, request, ticket_id, ticket_data):
         ef = self._error_file(request, ticket_id, 'wb')
         try:
-            cPickle.dump(ticket_data, ef)
+            cPickle.dump(ticket_data, ef, cPickle.HIGHEST_PROTOCOL)
         finally:
             ef.close()
 

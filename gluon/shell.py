@@ -1,444 +1,268 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
+#
+# Copyright 2007 Google Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Modified by Massimo Di Pierro so it works with and without GAE with web2py
+# the modified version of this file is still released under the original Apache license
+# and it is not released under the web2py license.
+#
+# This should be compatible with the Apache license since it states:
+# "For the purposes of this License, Derivative Works shall not include works
+#   that remain separable from, or merely link (or bind by name) to the interfaces of,
+#   the Work and Derivative Works thereof."
+#
+# In fact this file is Apache-licensed and it is separable from the rest of web2py.
+
 
 """
-This file is part of the web2py Web Framework
-Developed by Massimo Di Pierro <mdipierro@cs.depaul.edu>,
-limodou <limodou@gmail.com> and srackham <srackham@gmail.com>.
-License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
-
+An interactive, stateful AJAX shell that runs Python code on the server.
 """
 
-import os
-import sys
-import code
 import logging
-import types
-import re
-import optparse
-import glob
+import new
+import os
+import cPickle
+import sys
 import traceback
-import fileutils
-from settings import global_settings
-from utils import web2py_uuid
-from compileapp import build_environment, read_pyc, run_models_in
-from restricted import RestrictedError
-from globals import Request, Response, Session
-from storage import Storage
-from admin import w2p_unpack
-from dal import BaseAdapter
+import types
+import wsgiref.handlers
+import StringIO
+import threading
+locker = threading.RLock()
 
-logger = logging.getLogger("web2py")
+# Set to True if stack traces should be shown in the browser, etc.
+_DEBUG = True
+
+# The entity kind for shell historys. Feel free to rename to suit your app.
+_HISTORY_KIND = '_Shell_History'
+
+# Types that can't be pickled.
+UNPICKLABLE_TYPES = (
+    types.ModuleType,
+    types.TypeType,
+    types.ClassType,
+    types.FunctionType,
+)
+
+# Unpicklable statements to seed new historys with.
+INITIAL_UNPICKLABLES = [
+    'import logging',
+    'import os',
+    'import sys',
+]
 
 
-def exec_environment(
-    pyfile='',
-    request=None,
-    response=None,
-    session=None,
-):
+class History:
+    """A shell history. Stores the history's globals.
+
+    Each history globals is stored in one of two places:
+
+    If the global is picklable, it's stored in the parallel globals and
+    global_names list properties. (They're parallel lists to work around the
+    unfortunate fact that the datastore can't store dictionaries natively.)
+
+    If the global is not picklable (e.g. modules, classes, and functions), or if
+    it was created by the same statement that created an unpicklable global,
+    it's not stored directly. Instead, the statement is stored in the
+    unpicklables list property. On each request, before executing the current
+    statement, the unpicklable statements are evaluated to recreate the
+    unpicklable globals.
+
+    The unpicklable_names property stores all of the names of globals that were
+    added by unpicklable statements. When we pickle and store the globals after
+    executing a statement, we skip the ones in unpicklable_names.
+
+    Using Text instead of string is an optimization. We don't query on any of
+    these properties, so they don't need to be indexed.
     """
-    .. function:: gluon.shell.exec_environment([pyfile=''[, request=Request()
-        [, response=Response[, session=Session()]]]])
+    global_names = []
+    globals = []
+    unpicklable_names = []
+    unpicklables = []
 
-        Environment builder and module loader.
+    def set_global(self, name, value):
+        """Adds a global, or updates it if it already exists.
 
+        Also removes the global from the list of unpicklable names.
 
-        Builds a web2py environment and optionally executes a Python
-        file into the environment.
-        A Storage dictionary containing the resulting environment is returned.
-        The working directory must be web2py root -- this is the web2py default.
+        Args:
+            name: the name of the global to remove
+            value: any picklable value
+        """
+        blob = cPickle.dumps(value, cPickle.HIGHEST_PROTOCOL)
 
-    """
-
-    if request is None:
-        request = Request()
-    if response is None:
-        response = Response()
-    if session is None:
-        session = Session()
-
-    if request.folder is None:
-        mo = re.match(r'(|.*/)applications/(?P<appname>[^/]+)', pyfile)
-        if mo:
-            appname = mo.group('appname')
-            request.folder = os.path.join('applications', appname)
+        if name in self.global_names:
+            index = self.global_names.index(name)
+            self.globals[index] = blob
         else:
-            request.folder = ''
-    env = build_environment(request, response, session, store_current=False)
-    if pyfile:
-        pycfile = pyfile + 'c'
-        if os.path.isfile(pycfile):
-            exec read_pyc(pycfile) in env
-        else:
-            execfile(pyfile, env)
-    return Storage(env)
+            self.global_names.append(name)
+            self.globals.append(blob)
+
+        self.remove_unpicklable_name(name)
+
+    def remove_global(self, name):
+        """Removes a global, if it exists.
+
+        Args:
+            name: string, the name of the global to remove
+        """
+        if name in self.global_names:
+            index = self.global_names.index(name)
+            del self.global_names[index]
+            del self.globals[index]
+
+    def globals_dict(self):
+        """Returns a dictionary view of the globals.
+        """
+        return dict((name, cPickle.loads(val))
+                    for name, val in zip(self.global_names, self.globals))
+
+    def add_unpicklable(self, statement, names):
+        """Adds a statement and list of names to the unpicklables.
+
+        Also removes the names from the globals.
+
+        Args:
+            statement: string, the statement that created new unpicklable global(s).
+            names: list of strings; the names of the globals created by the statement.
+        """
+        self.unpicklables.append(statement)
+
+        for name in names:
+            self.remove_global(name)
+            if name not in self.unpicklable_names:
+                self.unpicklable_names.append(name)
+
+    def remove_unpicklable_name(self, name):
+        """Removes a name from the list of unpicklable names, if it exists.
+
+        Args:
+            name: string, the name of the unpicklable global to remove
+        """
+        if name in self.unpicklable_names:
+            self.unpicklable_names.remove(name)
 
 
-def env(
-    a,
-    import_models=False,
-    c=None,
-    f=None,
-    dir='',
-    extra_request={},
-):
+def represent(obj):
+    """Returns a string representing the given object's value, which should allow the
+    code below to determine whether the object changes over time.
     """
-    Return web2py execution environment for application (a), controller (c),
-    function (f).
-    If import_models is True the exec all application models into the
-    environment.
+    try:
+        return cPickle.dumps(obj, cPickle.HIGHEST_PROTOCOL)
+    except:
+        return repr(obj)
 
-    extra_request allows you to pass along any extra
-    variables to the request object before your models
-    get executed. This was mainly done to support
-    web2py_utils.test_runner, however you can use it
-    with any wrapper scripts that need access to the
-    web2py environment.
+
+def run(history, statement, env={}):
     """
+    Evaluates a python statement in a given history and returns the result.
+    """
+    history.unpicklables = INITIAL_UNPICKLABLES
 
-    request = Request()
-    response = Response()
-    session = Session()
-    request.application = a
+    # extract the statement to be run
+    if not statement:
+        return ''
 
-    # Populate the dummy environment with sensible defaults.
+    # the python compiler doesn't like network line endings
+    statement = statement.replace('\r\n', '\n')
 
-    if not dir:
-        request.folder = os.path.join('applications', a)
-    else:
-        request.folder = dir
-    request.controller = c or 'default'
-    request.function = f or 'index'
-    response.view = '%s/%s.html' % (request.controller,
-                                    request.function)
-    request.env.path_info = '/%s/%s/%s' % (a, c, f)
-    request.env.http_host = '127.0.0.1:8000'
-    request.env.remote_addr = '127.0.0.1'
-    request.env.web2py_runtime_gae = global_settings.web2py_runtime_gae
+    # add a couple newlines at the end of the statement. this makes
+    # single-line expressions such as 'class Foo: pass' evaluate happily.
+    statement += '\n\n'
 
-    for k, v in extra_request.items():
-        request[k] = v
+    # log and compile the statement up front
+    try:
+        logging.info('Compiling and evaluating:\n%s' % statement)
+        compiled = compile(statement, '<string>', 'single')
+    except:
+        return str(traceback.format_exc())
 
-    # Monkey patch so credentials checks pass.
+    # create a dedicated module to be used as this statement's __main__
+    statement_module = new.module('__main__')
 
-    def check_credentials(request, other_application='admin'):
-        return True
+    # use this request's __builtin__, since it changes on each request.
+    # this is needed for import statements, among other things.
+    import __builtin__
+    statement_module.__builtins__ = __builtin__
 
-    fileutils.check_credentials = check_credentials
+    # load the history from the datastore
+    history = History()
 
-    environment = build_environment(request, response, session)
+    # swap in our custom module for __main__. then unpickle the history
+    # globals, run the statement, and re-pickle the history globals, all
+    # inside it.
+    old_main = sys.modules.get('__main__')
+    output = StringIO.StringIO()
+    try:
+        sys.modules['__main__'] = statement_module
+        statement_module.__name__ = '__main__'
+        statement_module.__dict__.update(env)
 
-    if import_models:
+        # re-evaluate the unpicklables
+        for code in history.unpicklables:
+            exec code in statement_module.__dict__
+
+        # re-initialize the globals
+        for name, val in history.globals_dict().items():
+            try:
+                statement_module.__dict__[name] = val
+            except:
+                msg = 'Dropping %s since it could not be unpickled.\n' % name
+                output.write(msg)
+                logging.warning(msg + traceback.format_exc())
+                history.remove_global(name)
+
+        # run!
+        old_globals = dict((key, represent(
+            value)) for key, value in statement_module.__dict__.items())
         try:
-            run_models_in(environment)
-        except RestrictedError, e:
-            sys.stderr.write(e.traceback + '\n')
-            sys.exit(1)
+            old_stdout, old_stderr = sys.stdout, sys.stderr
+            try:
+                sys.stderr = sys.stdout = output
+                locker.acquire()
+                exec compiled in statement_module.__dict__
+            finally:
+                locker.release()
+                sys.stdout, sys.stderr = old_stdout, old_stderr
+        except:
+            output.write(str(traceback.format_exc()))
+            return output.getvalue()
 
-    environment['__name__'] = '__main__'
-    return environment
+        # extract the new globals that this statement added
+        new_globals = {}
+        for name, val in statement_module.__dict__.items():
+            if name not in old_globals or represent(val) != old_globals[name]:
+                new_globals[name] = val
 
-
-def exec_pythonrc():
-    pythonrc = os.environ.get('PYTHONSTARTUP')
-    if pythonrc and os.path.isfile(pythonrc):
-        def execfile_getlocals(file):
-            execfile(file)
-            return locals()
-        try:
-            return execfile_getlocals(pythonrc)
-        except NameError:
-            pass
-    return dict()
-
-
-def run(
-    appname,
-    plain=False,
-    import_models=False,
-    startfile=None,
-    bpython=False,
-    python_code=False
-):
-    """
-    Start interactive shell or run Python script (startfile) in web2py
-    controller environment. appname is formatted like:
-
-    a      web2py application name
-    a/c    exec the controller c into the application environment
-    """
-
-    (a, c, f) = parse_path_info(appname)
-    errmsg = 'invalid application name: %s' % appname
-    if not a:
-        die(errmsg)
-    adir = os.path.join('applications', a)
-    if not os.path.exists(adir):
-        if sys.stdin and not sys.stdin.name == '/dev/null':
-            confirm = raw_input(
-                'application %s does not exist, create (y/n)?' % a)
+        if True in [isinstance(val, UNPICKLABLE_TYPES)
+                    for val in new_globals.values()]:
+            # this statement added an unpicklable global. store the statement and
+            # the names of all of the globals it added in the unpicklables.
+            history.add_unpicklable(statement, new_globals.keys())
+            logging.debug('Storing this statement as an unpicklable.')
         else:
-            logging.warn('application does not exist and will not be created')
-            return
-        if confirm.lower() in ['y', 'yes']:
+            # this statement didn't add any unpicklables. pickle and store the
+            # new globals back into the datastore.
+            for name, val in new_globals.items():
+                if not name.startswith('__'):
+                    history.set_global(name, val)
 
-            os.mkdir(adir)
-            w2p_unpack('welcome.w2p', adir)
-            for subfolder in ['models', 'views', 'controllers', 'databases',
-                              'modules', 'cron', 'errors', 'sessions',
-                              'languages', 'static', 'private', 'uploads']:
-                subpath = os.path.join(adir, subfolder)
-                if not os.path.exists(subpath):
-                    os.mkdir(subpath)
-            db = os.path.join(adir, 'models/db.py')
-            if os.path.exists(db):
-                data = fileutils.read_file(db)
-                data = data.replace(
-                    '<your secret key>', 'sha512:' + web2py_uuid())
-                fileutils.write_file(db, data)
-
-    if c:
-        import_models = True
-    _env = env(a, c=c, f=f, import_models=import_models)
-    if c:
-        cfile = os.path.join('applications', a, 'controllers', c + '.py')
-        if not os.path.isfile(cfile):
-            cfile = os.path.join('applications', a, 'compiled',
-                                 "controllers_%s_%s.pyc" % (c, f))
-            if not os.path.isfile(cfile):
-                die(errmsg)
-            else:
-                exec read_pyc(cfile) in _env
-        else:
-            execfile(cfile, _env)
-
-    if f:
-        exec ('print %s()' % f, _env)
-        return
-
-    _env.update(exec_pythonrc())
-    if startfile:
-        try:
-            ccode = None
-            if startfile.endswith('.pyc'):
-                ccode = read_pyc(startfile)
-                exec ccode in _env
-            else:
-                execfile(startfile, _env)
-
-            if import_models:
-                BaseAdapter.close_all_instances('commit')
-        except Exception, e:
-            print traceback.format_exc()
-            if import_models:
-                BaseAdapter.close_all_instances('rollback')
-    elif python_code:
-        try:
-            exec(python_code, _env)
-            if import_models:
-                BaseAdapter.close_all_instances('commit')
-        except Exception, e:
-            print traceback.format_exc()
-            if import_models:
-                BaseAdapter.close_all_instances('rollback')
-    else:
-        if not plain:
-            if bpython:
-                try:
-                    import bpython
-                    bpython.embed(locals_=_env)
-                    return
-                except:
-                    logger.warning(
-                        'import bpython error; trying ipython...')
-            else:
-                try:
-                    import IPython
-                    if IPython.__version__ >= '0.11':
-                        from IPython.frontend.terminal.embed import InteractiveShellEmbed
-                        shell = InteractiveShellEmbed(user_ns=_env)
-                        shell()
-                        return
-                    else:
-                        # following 2 lines fix a problem with
-                        # IPython; thanks Michael Toomim
-                        if '__builtins__' in _env:
-                            del _env['__builtins__']
-                        shell = IPython.Shell.IPShell(argv=[], user_ns=_env)
-                        shell.mainloop()
-                        return
-                except:
-                    logger.warning(
-                        'import IPython error; use default python shell')
-        try:
-            import readline
-            import rlcompleter
-        except ImportError:
-            pass
-        else:
-            readline.set_completer(rlcompleter.Completer(_env).complete)
-            readline.parse_and_bind('tab:complete')
-        code.interact(local=_env)
-
-
-def parse_path_info(path_info):
-    """
-    Parse path info formatted like a/c/f where c and f are optional
-    and a leading / accepted.
-    Return tuple (a, c, f). If invalid path_info a is set to None.
-    If c or f are omitted they are set to None.
-    """
-
-    mo = re.match(r'^/?(?P<a>\w+)(/(?P<c>\w+)(/(?P<f>\w+))?)?$',
-                  path_info)
-    if mo:
-        return (mo.group('a'), mo.group('c'), mo.group('f'))
-    else:
-        return (None, None, None)
-
-
-def die(msg):
-    print >> sys.stderr, msg
-    sys.exit(1)
-
-
-def test(testpath, import_models=True, verbose=False):
-    """
-    Run doctests in web2py environment. testpath is formatted like:
-
-    a      tests all controllers in application a
-    a/c    tests controller c in application a
-    a/c/f  test function f in controller c, application a
-
-    Where a, c and f are application, controller and function names
-    respectively. If the testpath is a file name the file is tested.
-    If a controller is specified models are executed by default.
-    """
-
-    import doctest
-    if os.path.isfile(testpath):
-        mo = re.match(r'(|.*/)applications/(?P<a>[^/]+)', testpath)
-        if not mo:
-            die('test file is not in application directory: %s'
-                % testpath)
-        a = mo.group('a')
-        c = f = None
-        files = [testpath]
-    else:
-        (a, c, f) = parse_path_info(testpath)
-        errmsg = 'invalid test path: %s' % testpath
-        if not a:
-            die(errmsg)
-        cdir = os.path.join('applications', a, 'controllers')
-        if not os.path.isdir(cdir):
-            die(errmsg)
-        if c:
-            cfile = os.path.join(cdir, c + '.py')
-            if not os.path.isfile(cfile):
-                die(errmsg)
-            files = [cfile]
-        else:
-            files = glob.glob(os.path.join(cdir, '*.py'))
-    for testfile in files:
-        globs = env(a, import_models)
-        ignores = globs.keys()
-        execfile(testfile, globs)
-
-        def doctest_object(name, obj):
-            """doctest obj and enclosed methods and classes."""
-
-            if type(obj) in (types.FunctionType, types.TypeType,
-                             types.ClassType, types.MethodType,
-                             types.UnboundMethodType):
-
-                # Reload environment before each test.
-
-                globs = env(a, c=c, f=f, import_models=import_models)
-                execfile(testfile, globs)
-                doctest.run_docstring_examples(obj, globs=globs,
-                                               name='%s: %s' % (os.path.basename(testfile),
-                                                                name), verbose=verbose)
-                if type(obj) in (types.TypeType, types.ClassType):
-                    for attr_name in dir(obj):
-
-                        # Execute . operator so decorators are executed.
-
-                        o = eval('%s.%s' % (name, attr_name), globs)
-                        doctest_object(attr_name, o)
-
-        for (name, obj) in globs.items():
-            if name not in ignores and (f is None or f == name):
-                doctest_object(name, obj)
-
-
-def get_usage():
-    usage = """
-  %prog [options] pythonfile
-"""
-    return usage
-
-
-def execute_from_command_line(argv=None):
-    if argv is None:
-        argv = sys.argv
-
-    parser = optparse.OptionParser(usage=get_usage())
-
-    parser.add_option('-S', '--shell', dest='shell', metavar='APPNAME',
-                      help='run web2py in interactive shell or IPython(if installed) ' +
-                      'with specified appname')
-    msg = 'run web2py in interactive shell or bpython (if installed) with'
-    msg += ' specified appname (if app does not exist it will be created).'
-    msg += '\n Use combined with --shell'
-    parser.add_option(
-        '-B',
-        '--bpython',
-        action='store_true',
-        default=False,
-        dest='bpython',
-        help=msg,
-    )
-    parser.add_option(
-        '-P',
-        '--plain',
-        action='store_true',
-        default=False,
-        dest='plain',
-        help='only use plain python shell, should be used with --shell option',
-    )
-    parser.add_option(
-        '-M',
-        '--import_models',
-        action='store_true',
-        default=False,
-        dest='import_models',
-        help='auto import model files, default is False, ' +
-        ' should be used with --shell option',
-    )
-    parser.add_option(
-        '-R',
-        '--run',
-        dest='run',
-        metavar='PYTHON_FILE',
-        default='',
-        help='run PYTHON_FILE in web2py environment, ' +
-        'should be used with --shell option',
-    )
-
-    (options, args) = parser.parse_args(argv[1:])
-
-    if len(sys.argv) == 1:
-        parser.print_help()
-        sys.exit(0)
-
-    if len(args) > 0:
-        startfile = args[0]
-    else:
-        startfile = ''
-    run(options.shell, options.plain, startfile=startfile,
-        bpython=options.bpython)
-
+    finally:
+        sys.modules['__main__'] = old_main
+    return output.getvalue()
 
 if __name__ == '__main__':
-    execute_from_command_line()
+    history = History()
+    while True:
+        print run(history, raw_input('>>> ')).rstrip()

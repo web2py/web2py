@@ -135,7 +135,7 @@ class Token(object):
                     logger.warning('WEB2PY CRON: Stale cron.master detected')
                 logger.debug('WEB2PY CRON: Acquiring lock')
                 self.master.seek(0)
-                cPickle.dump((self.now, 0), self.master)
+                cPickle.dump((self.now, 0), self.master, cPickle.HIGHEST_PROTOCOL)
         finally:
             portalocker.unlock(self.master)
         if not ret:
@@ -155,7 +155,7 @@ class Token(object):
             (start, stop) = cPickle.load(self.master)
             if start == self.now:  # if this is my lock
                 self.master.seek(0)
-                cPickle.dump((self.now, time.time()), self.master)
+                cPickle.dump((self.now, time.time()), self.master, cPickle.HIGHEST_PROTOCOL)
             portalocker.unlock(self.master)
             self.master.close()
 

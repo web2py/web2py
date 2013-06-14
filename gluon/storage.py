@@ -153,7 +153,7 @@ def save_storage(storage, filename):
     fp = None
     try:
         fp = portalocker.LockedFile(filename, 'wb')
-        cPickle.dump(dict(storage), fp)
+        cPickle.dump(dict(storage), fp, cPickle.HIGHEST_PROTOCOL)
     finally:
         if fp:
             fp.close()
