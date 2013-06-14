@@ -2688,9 +2688,13 @@ class SQLFORM(FORM):
             if grid.create_form:
                 header = T('New %(entity)s') % dict(entity=table._singular)
             elif grid.update_form:
-                header = T('Edit %(entity)s') % dict(entity=format(table,grid.update_form.record))
+                header = T('Edit %(entity)s') % dict(
+                    entity=format(grid.update_form.table,
+                                  grid.update_form.record))
             elif grid.view_form:
-                header = T('View %(entity)s') % dict(entity=format(table,grid.view_form.record))
+                header = T('View %(entity)s') % dict(
+                    entity=format(grid.view_form.table,
+                                  grid.view_form.record))                
             if next:
                 breadcrumbs.append(LI(
                             A(T(header), _class=trap_class(),_href=url()),

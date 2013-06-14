@@ -248,37 +248,21 @@
   {{pass}}
 {{pass}}
 
-{{if request.function == 'auth_manage':}}
-<h2>{{=T('Manage Access Control')}}</h2>
+{{if request.function == 'manage':}}
+{{labels = ['Users', 'Roles', 'Permissions'] if request.args(0) == 'auth' else [name.replace('_', ' ').title() for name in tablenames]}}
+<h2>{{=heading}}</h2>
 <ul class="nav nav-tabs">
-  <li class="active"><a href="#users" data-toggle="tab">Users</a></li>
-  <li><a href="#roles" data-toggle="tab">Roles</a></li>
-  <li><a href="#permissions" data-toggle="tab">Permissions</a></li>
-</ul>
-
-<div class="tab-content">
-  <div class="tab-pane active" id="users">
-    {{=LOAD(f='auth_manage.load', args=auth.settings.table_user_name,ajax=True)}}
-  </div>
-  <div class="tab-pane" id="roles">
-    {{=LOAD(f='auth_manage.load', args=auth.settings.table_group_name,ajax=True)}}
-  </div>
-  <div class="tab-pane" id="permissions">
-    {{=LOAD(f='auth_manage.load', args=auth.settings.table_permission_name,ajax=True)}}
-  </div>
-</div>
-{{elif request.function == 'manage':}}
-<h2>{{=T('Manage Access Control')}}</h2>
-<ul class="nav nav-tabs">
-  {{for k,tablename in enumerate(auth.db.tables):}}
-  <li><a href="#table-{{=tablename}}" data-toggle="tab">{{=tablename}}</a></li>
+  {{for k, tablename in enumerate(tablenames):}}
+  <li{{=XML(' class="active"') if k == 0 else ''}}>
+    <a href="#table-{{=tablename}}" data-toggle="tab">{{=labels[k]}}</a>
+  </li>
   {{pass}}
 </ul>
 
 <div class="tab-content">
-  {{for tablename in auth.db.tables:}}
-  <div class="tab-pane" id="table-{{=tablename}}">
-    {{=LOAD(f='manage.load', args=tablename,ajax=True)}}
+  {{for k, tablename in enumerate(tablenames):}}
+  <div class="tab-pane{{=XML(' active') if k == 0 else ''}}" id="table-{{=tablename}}">
+    {{=LOAD(f='manage.load', args=[request.args(0), k], ajax=True)}}
   </div>
   {{pass}}
 </div>

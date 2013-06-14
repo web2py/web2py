@@ -1007,7 +1007,7 @@ class BaseAdapter(ConnectionPool):
         def fix(item):
             k,v=item
             if not isinstance(v,dict):
-                v=dict(type='unkown',sql=v)
+                v=dict(type='unknown',sql=v)
             return k.lower(),v
         # make sure all field names are lower case to avoid
         # migrations because of case cahnge
@@ -5704,8 +5704,9 @@ class MongoDBAdapter(NoSQLAdapter):
         # silently ignore, only case sensitive
         # There is a technical difference, but mongodb doesn't support
         # that, but the result will be the same
-        return {self.expand(first) : ('/%s/' % \
-        self.expand(second, 'string'))}
+        val = second if isinstance(second,self.ObjectId) else \
+            {' $regex':".*" + re.escape(self.expand(second, 'string')) + ".*"}
+        return {self.expand(first) : val}
 
     def LIKE(self, first, second):
         import re
@@ -9176,7 +9177,7 @@ class SQLCustomType(object):
 class FieldVirtual(object):
     def __init__(self, name, f=None, ftype='string',label=None,table_name=None):
         # for backward compatibility
-        (self.name, self.f) = (name, f) if f else ('unkown', name)
+        (self.name, self.f) = (name, f) if f else ('unknown', name)
         self.type = ftype
         self.label = label or self.name.capitalize().replace('_',' ')
         self.represent = lambda v,r:v
@@ -9194,7 +9195,7 @@ class FieldVirtual(object):
 class FieldMethod(object):
     def __init__(self, name, f=None, handler=None):
         # for backward compatibility
-        (self.name, self.f) = (name, f) if f else ('unkown', name)
+        (self.name, self.f) = (name, f) if f else ('unknown', name)
         self.handler = handler
 
 def list_represent(x,r=None):
