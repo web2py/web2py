@@ -66,9 +66,8 @@ function doClickSave() {
 					 'doClickSave');
 		},
           success: function(json,text,xhr){
-
-
-
+			jQuery(editor).data('saved', true);	// Set as saved
+			editor.on("change", store_changes_function);	// Re-enable change watcher
             // reenable disabled submit button
 		    var t=jQuery("input[name='save']");
 		    t.attr('class','');
@@ -248,3 +247,16 @@ function load_file (url) {
 		error: function(x) { on_error(); }
 	});
 }
+
+function set_font(editor, incr) {
+	var fontSize = '';
+	if (incr !== 0) {
+		fontSize = parseInt(jQuery(editor.getWrapperElement()).css('font-size'));
+		fontSize = fontSize + incr + "px";
+	}
+	jQuery(editor.getWrapperElement()).css('font-size', fontSize);
+	editor.refresh();
+}
+
+var template_js = '<p class="repo-name">{{{a_tag}}}</p><small>{{address}}</small>';
+
