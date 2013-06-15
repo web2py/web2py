@@ -37,10 +37,11 @@
 <link rel="stylesheet" href="{{=cm}}/addon/dialog/dialog.css">
 <script src="{{=cm}}/addon/selection/active-line.js"></script>
 <script src="{{=cm}}/emmet.min.js"></script>
-
 <script language="Javascript" type="text/javascript" src="{{=URL('static','js/ajax_editor.js')}}"></script>
+<link rel="stylesheet" href="{{=URL('static/css','typeahead.js-bootstrap.css')}}">
 <script language="Javascript" type="text/javascript">
 var current_theme = "web2py";  //Default theme
+var current_font_incr = 0;	// Default font-size, 0 means don't set
 jQuery(document).on('shown click', 'a[data-toggle="tab"]', function (e) {
 	var tab_id = jQuery(this).attr('href');
 	var editor = jQuery(tab_id + " textarea").data('editor');
@@ -55,12 +56,18 @@ jQuery(document).on('shown click', 'a[data-toggle="tab"]', function (e) {
 jQuery(document).on('click', '#filesTab button[class="close"]', function (e) {
 	var tab_body   = jQuery(jQuery(this).parent().attr("href"));  // it should be a div
 	var tab_header = jQuery(this).parent().parent();              // it should be a li
-
-	if (tab_header.hasClass('active') === true) { 	//Set active an other tab
-		jQuery(tab_header).prev().children('a[data-toggle="tab"]').tab('show'); // Select first tab		
+	var saved = jQuery(tab_body.find('textarea').data('editor')).data('saved');
+	var close = true;
+	if (saved === false) {
+		close = confirm("You are closing an unsaved file")
 	}
-	tab_header.remove(); //remove li of tab
-	tab_body.remove();   //remove li of tab
+	if (close) {
+		if (tab_header.hasClass('active') === true) { 	//Set active an other tab
+			jQuery(tab_header).prev().children('a[data-toggle="tab"]').tab('show'); // Select first tab		
+		}
+		tab_header.remove(); //remove li of tab
+		tab_body.remove();   //remove li of tab
+	}
 });
 
 // Revert current file
@@ -102,6 +109,22 @@ jQuery(document).on('click', '#themes a', function (e) {
 //#TODO save on session
 });
 
+// incr/decr editor font-size
+jQuery(document).on('click', 'a.font_button', function (e) {
+	e.preventDefault();
+	var id = jQuery(this).attr('id');
+	var new_font_incr;
+	switch (id) {
+		case 'incr': new_incr = 2; break;
+		case 'decr': new_incr = -2; break;
+		case 'default': new_incr = 0; break;
+	}
+	jQuery('textarea[name="data"]') .each(function(id, ta) {
+		editor = jQuery(ta).data('editor');
+		set_font(editor, new_incr);
+	});
+	current_font_incr = (new_incr !== 0) ? current_font_incr + new_incr : 0;
+});
 	function isFullScreen(instance) {
 		return /\bCodeMirror-fullscreen\b/.test(instance.getWrapperElement().className);
 	}
@@ -130,6 +153,7 @@ jQuery(document).on('click', '#themes a', function (e) {
 	{{if len(request.args) > 1:}}
 		load_file('{{=URL(f='edit', args=request.args, vars=request.get_vars)}}');
 	{{pass}}
+
 </script>
 
 {{block sectionclass}}edit{{end}}
@@ -146,6 +170,11 @@ jQuery(document).on('click', '#themes a', function (e) {
 	</ul>
 </div>
 <div class="btn-group">
+	<a id="decr" class="button btn font_button">-</a>
+	<a id="default" class="button btn font_button" >A</a>
+	<a id="incr" class="button btn font_button">+</a>
+</div>
+<div class="btn-group">
   {{=button(URL('design',args=request.vars.app if request.vars.app else request.args[0], anchor=request.vars.id), T('back'))}}
   {{#if request.args[1]=='models':}}
   <a class="button btn" href="http://www.web2py.com/sqldesigner" target="_blank"><span>{{=T('online designer')}}</span></a>
@@ -156,11 +185,13 @@ jQuery(document).on('click', '#themes a', function (e) {
 </div>
 <div id="editor_area" class="row-fluid">
 	<ul class="nav nav-list span2 well" rel="pagebookmark" id="filelist">
+	<li><input type="text" placeholder="{{=T('Rapid Search')}}" class="input-block-level typeahead-tw search-query"></li>
 	{{dirs=[{'name':'models', 'reg':'.*\.py$'}, 
 		{'name':'controllers', 'reg':'.*\.py$'},
 		{'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
 		{'name':'modules', 'reg':'.*\.py$'},
 		{'name':'private', 'reg': '[^\.#].*'}]}}
+	{{auto_complete_list=[]}}
 	{{for dir in dirs:}}
 	<li class="nav-header component" onclick="collapse('{{="%s_files" % dir['name']}}');">{{=dir['name']}}</li>
 	<li id="{{="%s_files" % dir['name']}}">
@@ -169,7 +200,9 @@ jQuery(document).on('click', '#themes a', function (e) {
 		{{id="%s__" % dir['name'] + f.replace('.','__')}}
 		{{current_file = request.args(len(request.args) - 1)}} 
 		<li class="{{#='active' if current_file==f else ''}}">
-		{{=editfile(dir['name'], f, dict(id=id))}}	
+		{{a_tag=editfile(dir['name'], f, dict(id=id))}}	
+		{{=a_tag}}
+		{{auto_complete_list.append({'value':f, 'tokens':f.split('/'), 'a_tag':a_tag})}}
 		</li>
 		{{pass}}
 		</ul>
@@ -183,4 +216,19 @@ jQuery(document).on('click', '#themes a', function (e) {
 		</div>
 	</div>
 </div>
+<!-- Typeahead scripts here so the page load faster -->
+<script src="{{=URL('static/js', 'typeahead.min.js')}}"></script>
+<script src="{{=URL('static/js', 'hogan-2.0.0.js')}}"></script>
+<script>
+	jQuery('.typeahead-tw').typeahead({                                
+		name: 'files', 
+		local:{{from gluon.serializers import json}}{{=XML(json(auto_complete_list))}},
+		template: template_js,
+		engine: Hogan,
+	});	
+	jQuery(document).on("typeahead:selected", '.typeahead', function(e, datum) {
+		load_file(datum.link);
+		jQuery(this).val('');
+	});
+</script>
 <!-- end "edit" block -->
