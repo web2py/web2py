@@ -490,6 +490,108 @@ class Session(Storage):
     """
     defines the session object and the default values of its members (None)
     """
+    def renew(
+        self,
+        request=None,
+        response=None,
+        db=None,
+        tablename='web2py_session',
+        masterapp=None,
+        clear_session=False
+    ):
+        return
+
+        if request is None:
+            request = current.request
+        if response is None:
+            response = current.response
+
+        #check if session is separate
+        separate = None
+        if response.session_id[2:3] == "/":
+            separate = lambda session_name: session_name[-2:]
+
+        self._unlock(response)
+
+        if not masterapp:
+            masterapp = request.application
+
+        # Load session data from cookie
+        cookies = request.cookies
+
+        # check if there is a session_id in cookies
+        if response.session_id_name in cookies:
+            response.session_id = \
+                cookies[response.session_id_name].value
+        else:
+            response.session_id = None
+
+        # if the session goes in file
+        if response.session_storage_type == 'file':
+            if global_settings.db_sessions is True \
+                    or masterapp in global_settings.db_sessions:
+                return
+
+            client = request.client and request.client.replace(':', '.')
+
+            uuid = web2py_uuid()
+            response.session_id = '%s-%s' % (client, uuid)
+            if separate:
+                prefix = separate(response.session_id)
+                response.session_id = '%s/%s' % \
+                    (prefix, response.session_id)
+            response.session_filename = \
+                os.path.join(up(request.folder), masterapp,
+                             'sessions', response.session_id)
+            response.session_new = True
+
+        # else the session goes in db
+        elif response.session_storage_type == 'db':
+
+            # verify if tablename was set or used in connect
+            if response.session_table_name and tablename == 'web2py_session':
+                tablename = response.session_table_name
+
+            if global_settings.db_sessions is not True:
+                global_settings.db_sessions.add(masterapp)
+
+            if response.session_file:
+                self._close(response)
+            if settings.global_settings.web2py_runtime_gae:
+                # in principle this could work without GAE
+                request.tickets_db = db
+
+            tname = tablename + '_' + masterapp
+
+            if not db:
+                raise Exception('No database parameter passed: "db=database"')
+
+            table = db.get(tname, None)
+            if table is None:
+                raise Exception('No session to renew')
+
+            # Get session data out of the database
+            (record_id, unique_key) = response.session_id.split(':')
+            if record_id == '0':
+                raise Exception('record_id == 0')
+            # Select from database
+            row = db(table.id == record_id).select().first()
+            # Make sure the session data exists in the database
+            if not row or row.unique_key != unique_key:
+                raise Exception('No record')
+
+            unique_key = web2py_uuid()
+            row.update_record(unique_key=unique_key)
+            response.session_id = '%s:%s' % (record_id, unique_key)
+            response.session_db_table = table
+            response.session_db_record_id = record_id
+            response.session_db_unique_key = unique_key
+
+        rcookies = response.cookies
+        rcookies[response.session_id_name] = response.session_id
+        rcookies[response.session_id_name]['path'] = '/'
+        if clear_session:
+            self.clear()
 
     def connect(
         self,
@@ -653,6 +755,8 @@ class Session(Storage):
             response.session_db_table = table
             response.session_db_record_id = record_id
             response.session_db_unique_key = unique_key
+            # keep tablename parameter for use in session renew
+            response.session_table_name = tablename
         rcookies = response.cookies
         rcookies[response.session_id_name] = response.session_id
         rcookies[response.session_id_name]['path'] = '/'

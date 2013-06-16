@@ -920,6 +920,8 @@ class Auth(object):
         update_fields = ['email'],
         ondelete="CASCADE",
         client_side = True,
+        keep_session_onlogin=True,
+        keep_session_onlogout=False,
         wiki = Settings(),
     )
         # ## these are messages that can be customized
@@ -1850,6 +1852,8 @@ class Auth(object):
             for key,value in user.items():
                 if callable(value) or key=='password':
                     delattr(user,key)
+        current.session.renew(
+            clear_session=not self.settings.keep_session_onlogin, db=self.db)
         current.session.auth = Storage(
             user = user,
             last_visit=current.request.now,
@@ -2236,6 +2240,8 @@ class Auth(object):
 
         current.session.auth = None
         current.session.flash = self.messages.logged_out
+        current.session.renew(
+            clear_session=not self.settings.keep_session_onlogout, db=self.db)
         if not next is None:
             redirect(next)
 
