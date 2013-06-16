@@ -3024,6 +3024,7 @@ class OracleAdapter(BaseAdapter):
 
     def create_sequence_and_triggers(self, query, table, **args):
         tablename = table._tablename
+        id_name = table._id.name
         sequence_name = table._sequence_name
         trigger_name = table._trigger_name
         self.execute(query)
@@ -3035,18 +3036,19 @@ class OracleAdapter(BaseAdapter):
                 diff_val NUMBER;
                 PRAGMA autonomous_transaction;
             BEGIN
-                IF :NEW.id IS NOT NULL THEN
+                IF :NEW.%(id)s IS NOT NULL THEN
                     EXECUTE IMMEDIATE 'SELECT %(sequence_name)s.nextval FROM dual' INTO curr_val;
-                    diff_val := :NEW.id - curr_val - 1;
+                    diff_val := :NEW.%(id)s - curr_val - 1;
                     IF diff_val != 0 THEN
                       EXECUTE IMMEDIATE 'alter sequence %(sequence_name)s increment by '|| diff_val;
                       EXECUTE IMMEDIATE 'SELECT %(sequence_name)s.nextval FROM dual' INTO curr_val;
                       EXECUTE IMMEDIATE 'alter sequence %(sequence_name)s increment by 1';
                     END IF;
                 END IF;
-                SELECT %(sequence_name)s.nextval INTO :NEW.id FROM DUAL;
+                SELECT %(sequence_name)s.nextval INTO :NEW.%(id)s FROM DUAL;
             END;
-        """ % dict(trigger_name=trigger_name, tablename=tablename, sequence_name=sequence_name))
+        """ % dict(trigger_name=trigger_name, tablename=tablename, 
+                   sequence_name=sequence_name,id=id_name))
 
     def lastrowid(self,table):
         sequence_name = table._sequence_name
