@@ -3,6 +3,20 @@
 ==============================================================*/
 
 body{height:auto;} /* to avoid vertical scroll bar */
+
+a{}
+a:visited{}
+a:hover{}
+a:focus{}
+a:active{}
+
+h1{}
+h2{}
+h3{}
+h4{}
+h5{}
+h6{}
+
 div.flash.flash-center{left:25%;right:25%;}
 div.flash.flash-top,div.flash.flash-top:hover{
   position:relative;
@@ -38,6 +52,7 @@ div.flash.flash-top,div.flash.flash-top:hover{
 }
 /* auth navbar - primitive style */
 .auth_navbar,.auth_navbar a{color:inherit;}
+.navbar-inner {-webkit-border-radius:0;-moz-border-radius:0;border-radius:0}
 .ie-lte7 .auth_navbar,.auth_navbar a{color:expression(this.parentNode.currentStyle['color']); /* ie7 doesn't support inherit */}
 .auth_navbar a{white-space:nowrap;} /* to avoid the nav split on more lines */
 .auth_navbar a:hover{color:white;text-decoration:none;}
