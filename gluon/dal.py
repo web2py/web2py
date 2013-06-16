@@ -5223,18 +5223,14 @@ class MongoDBAdapter(NoSQLAdapter):
             m = {"database" : m[1]}
         if m.get('database')==None:
             raise SyntaxError("Database is required!")
+
         def connector(uri=self.uri,m=m):
-            try:
-                # Connection() is deprecated
-                if hasattr(self.driver, "MongoClient"):
-                    Connection = self.driver.MongoClient
-                else:
-                    Connection = self.driver.Connection
-                return Connection(uri)[m.get('database')]
-            except self.driver.errors.ConnectionFailure:
-                inst = sys.exc_info()[1]
-                raise SyntaxError("The connection to " +
-                                  uri + " could not be made")
+            # Connection() is deprecated
+            if hasattr(self.driver, "MongoClient"):
+                Connection = self.driver.MongoClient
+            else:
+                Connection = self.driver.Connection
+            return Connection(uri)[m.get('database')]
 
         self.reconnect(connector,cursor=False)
 
