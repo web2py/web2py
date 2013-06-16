@@ -2919,14 +2919,14 @@ class Auth(object):
                 table_user._filter_fields(user, True))
             self.user = auth.user
             onaccept = self.settings.login_onaccept
+            log = self.messages.impersonate_log
+            self.log_event(log, dict(id=current_id, other_id=auth.user.id))
             if onaccept:
                 form = Storage(dict(vars=self.user))
                 if not isinstance(onaccept,(list, tuple)):
                     onaccept = [onaccept]
                 for callback in onaccept:
                     callback(form)
-            log = self.messages.impersonate_log
-            self.log_event(log, dict(id=current_id, other_id=auth.user.id))
         elif user_id in (0, '0'):
             if self.is_impersonating():
                 session.clear()
