@@ -8306,11 +8306,14 @@ class Table(object):
         if archive_name in archive_db.tables():
             return # do not try define the archive if already exists
         fieldnames = self.fields()
-        field_type = self if archive_db is self._db else 'bigint'
+        same_db = archive_db is self._db
+        field_type = self if same_db else 'bigint'
+        clones = []
+        for field in self:
+            clones.append(field.clone(
+                    unique=False, type=field.type if same_db else 'bigint'))
         archive_db.define_table(
-            archive_name,
-            Field(current_record,field_type),
-            *[field.clone(unique=False) for field in self])
+            archive_name, Field(current_record,field_type), *clones)
         self._before_update.append(
             lambda qset,fs,db=archive_db,an=archive_name,cn=current_record:
                 archive_record(qset,fs,db[an],cn))
