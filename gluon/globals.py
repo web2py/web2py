@@ -499,7 +499,6 @@ class Session(Storage):
         masterapp=None,
         clear_session=False
     ):
-        return
 
         if request is None:
             request = current.request
@@ -588,6 +587,7 @@ class Session(Storage):
             response.session_db_unique_key = unique_key
 
         rcookies = response.cookies
+        print response.session_id_name, response.session_id
         rcookies[response.session_id_name] = response.session_id
         rcookies[response.session_id_name]['path'] = '/'
         if clear_session:

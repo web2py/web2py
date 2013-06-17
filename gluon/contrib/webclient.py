@@ -19,6 +19,7 @@ import re
 import time
 import urllib
 import urllib2
+import cookielib
 
 
 DEFAULT_HEADERS = {
@@ -68,19 +69,34 @@ class WebClient(object):
         cookies = cookies or {}
         headers = headers or {}
 
+        cj = cookielib.CookieJar()
+        args = [
+            urllib2.HTTPCookieProcessor(cj),
+            urllib2.HTTPHandler(debuglevel=0)
+            ]
         # if required do basic auth
         if auth:
             auth_handler = urllib2.HTTPBasicAuthHandler()
             auth_handler.add_password(**auth)
-            opener = urllib2.build_opener(auth_handler)
-        else:
-            opener = urllib2.build_opener()
+            args.append(auth_handler)
+
+        opener = urllib2.build_opener(*args)
 
         # copy headers from dict to list of key,value
         headers_list = []
         for key, value in self.default_headers.iteritems():
             if not key in headers:
                 headers[key] = value
+        for key, value in headers.iteritems():
+            if isinstance(value, (list, tuple)):
+                for v in value:
+                    headers_list.append((key, v))
+            else:
+                headers_list.append((key, value))
+
+        # move cookies to headers
+        for key, value in cookies.iteritems():
+            headers_list.append(('Cookie', '%s=%s' % (key, value)))
 
         # add headers to request
         for key, value in headers_list:
@@ -89,6 +105,8 @@ class WebClient(object):
         # assume everything is ok and make http request
         error = None
         try:
+            if isinstance(data,str):
+                self.method = 'POST' if method=='auto' else method
             if isinstance(data, dict):
                 self.method = 'POST' if method=='auto' else method
                 # if there is only one form, set _formname automatically
@@ -102,20 +120,11 @@ class WebClient(object):
 
                 # time the POST request
                 data = urllib.urlencode(data)
-                req = urllib2.Request(self.url, data=data, headers=headers)
-            elif isinstance(data,str):
-                self.method = 'POST' if method=='auto' else method
-                req = urllib2.Request(self.url, data=data, headers=headers)
             else:
                 self.method = 'GET' if method=='auto' else method
-                req = urllib2.Request(self.url, headers=headers)
-            
-            # move cookies to headers
-            for key, value in cookies.iteritems():
-                req.add_header('Cookie', '%s=%s' % (key, value))
-            t0 = time.time()
-            urllib2.install_opener(opener)
-            self.response = urllib2.urlopen(req)
+                data = None
+            t0 = time.time()            
+            self.response = opener.open(self.url, data)
             self.time = time.time() - t0
         except urllib2.HTTPError, error:
             # catch HTTP errors
@@ -151,7 +160,7 @@ class WebClient(object):
                 if match:
                     name = match.group('name')
                     if name in self.sessions and self.sessions[name] != value:
-                        raise RuntimeError('Broken sessions %s' % name)
+                        print RuntimeError('Changed session ID %s' % name)
                     self.sessions[name] = value
 
         # find all forms and formkeys in page
