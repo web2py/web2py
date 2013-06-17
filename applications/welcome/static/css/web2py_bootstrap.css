@@ -90,6 +90,7 @@ div.controls select +.error_wrapper {margin-left:5px;}
 .ie-lte7 div.error{color:#fff;}
 
 /* beautify brand */
+.navbar {margin-bottom:0}
 .navbar-inverse .brand{color:#c6cecc;}
 .navbar-inverse .brand b{display:inline-block;margin-top:-1px;}
 .navbar-inverse .brand b>span{font-size:22px;color:white}

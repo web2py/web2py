@@ -2232,7 +2232,7 @@ class SQLFORM(FORM):
                 continue
             key = str(field)
             header = headers.get(str(field), field.label or key)
-            if sortable:
+            if sortable and not isinstance(field, Field.Virtual):
                 if key == order:
                     key, marker = '~' + order, sorter_icons[0]
                 elif key == order[1:]:
