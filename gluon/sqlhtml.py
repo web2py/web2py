@@ -1959,7 +1959,7 @@ class SQLFORM(FORM):
                 tablenames += db._adapter.tables(join)
         tables = [db[tablename] for tablename in tablenames]
         if fields:
-            columns = copy.copy(fields)
+            columns = [f for f in fields if f.tablename in tablenames]
         else:
             fields = []
             columns = []
