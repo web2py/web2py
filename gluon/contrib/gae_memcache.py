@@ -47,6 +47,9 @@ class MemcacheClient(object):
             value = obj[1] + value
         self.client.set(key, (time.time(), value))
         return value
+    
+    def incr(self, key, value=1):
+        return self.increment(key, value)
 
     def clear(self, key=None):
         if key:
