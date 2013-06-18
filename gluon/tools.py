@@ -3906,6 +3906,7 @@ class Crud(object):
         """
         table = tables[0]
         fields = args.get('fields', table.fields)
+        validate = args.get('validate',True)
         request = current.request
         db = self.db
         if not (isinstance(table, db.Table) or table in db.tables):
@@ -3960,13 +3961,15 @@ class Crud(object):
                     if field.type[0:10] == 'reference ':
                         refsearch.append(self.get_query(field,
                                     opval, txtval, refsearch=True))
-                    else:
+                    elif validate:
                         value, error = field.validate(txtval)
                         if not error:
                             ### TODO deal with 'starts with', 'ends with', 'contains' on GAE
                             query &= self.get_query(field, opval, value)
                         else:
                             row[3].append(DIV(error, _class='error'))
+                    else:
+                        query &= self.get_query(field, opval, txtval)
                 selected.append(field)
         form = FORM(tbl, INPUT(_type="submit"))
         if selected:
