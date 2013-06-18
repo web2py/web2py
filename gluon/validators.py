@@ -812,7 +812,7 @@ class IS_FLOAT_IN_RANGE(Validator):
         dot='.'
     ):
         self.minimum = self.maximum = None
-        self.dot = dot
+        self.dot = str(dot)
         if minimum is None:
             if maximum is None:
                 if error_message is None:
@@ -918,7 +918,7 @@ class IS_DECIMAL_IN_RANGE(Validator):
         dot='.'
     ):
         self.minimum = self.maximum = None
-        self.dot = dot
+        self.dot = str(dot)
         if minimum is None:
             if maximum is None:
                 if error_message is None:
