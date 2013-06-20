@@ -9,7 +9,7 @@
 
     thanks and credits to the web2py community
 
-    This custom authenticator allows web2py to authenticate using browserid (https://browserid.org/)
+    This custom authenticator allows web2py to authenticate using browserid (https://login.persona.org/)
     BrowserID is a project by Mozilla Labs (http://mozillalabs.com/)
     to Know how browserid works please visit http://identity.mozilla.com/post/7616727542/introducing-browserid-a-better-way-to-sign-in
 
@@ -39,10 +39,10 @@ class BrowserID(object):
                  audience="",
                  assertion_post_url="",
                  prompt="BrowserID Login",
-                 issuer="browserid.org",
-                 verify_url="https://browserid.org/verify",
-                 browserid_js="https://browserid.org/include.js",
-                 browserid_button="https://browserid.org/i/sign_in_red.png",
+                 issuer="login.persona.org",
+                 verify_url="https://login.persona.org/verify",
+                 browserid_js="https://login.persona.org/include.js",
+                 browserid_button="https://login.persona.org/i/sign_in_red.png",
                  crypto_js="https://crypto-js.googlecode.com/files/2.2.0-crypto-md5.js",
                  on_login_failure=None,
                  ):
@@ -76,9 +76,13 @@ class BrowserID(object):
             if j["status"] == "okay" and j["audience"] == audience and j['issuer'] == issuer and j['expires'] >= epoch_time:
                 return dict(email=j['email'])
             elif self.on_login_failure:
-                redirect('http://google.com')
+                #print "status:  ", j["status"]=="okay", j["status"]
+                #print "audience:", j["audience"]==audience, j["audience"], audience
+                #print "issuer:  ", j["issuer"]==issuer, j["issuer"], issuer
+                #print "expires:  ", j["expires"] >= epoch_time, j["expires"], epoch_time
+                redirect(self.on_login_failure)
             else:
-                redirect('http://google.com')
+                redirect('https://login.persona.org')
         return None
 
     def login_form(self):

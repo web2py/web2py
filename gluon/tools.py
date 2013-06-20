@@ -969,6 +969,7 @@ class Auth(object):
         new_password='New password',
         old_password='Old password',
         group_description='Group uniquely assigned to user %(id)s',
+        logging_enabled = True,
         register_log='User %(id)s Registered',
         login_log='User %(id)s Logged-in',
         login_failed_log=None,
@@ -1739,7 +1740,7 @@ class Auth(object):
 
             auth.log_event(description='this happened', origin='auth')
         """
-        if not description:
+        if not self.settings.logging_enabled or not description:
             return
         elif self.is_logged_in():
             user_id = self.user.id
@@ -1845,7 +1846,7 @@ class Auth(object):
         """
         from gluon.settings import global_settings
         if global_settings.web2py_runtime_gae:
-            user = Row(self.db.auth_user._filter_fields(user, id=True))
+            user = Row(self.settings.table_user._filter_fields(user, id=True))
             delattr(user,'password')
         else:
             user = Row(user)

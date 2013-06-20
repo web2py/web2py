@@ -499,7 +499,7 @@ class Session(Storage):
         masterapp=None,
         clear_session=False
     ):
-
+        
         if request is None:
             request = current.request
         if response is None:
