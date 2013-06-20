@@ -8547,7 +8547,7 @@ class Table(object):
                 except (KeyError, AttributeError):
                     # error sinlently unless field is required!
                     if ofield.required:
-                        raise SyntaxError('unable to comput field: %s' % name)
+                        raise SyntaxError('unable to compute field: %s' % name)
         return new_fields.values()
 
     def _attempt_upload(self, fields):
