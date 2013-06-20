@@ -8542,6 +8542,8 @@ class Table(object):
                 # try compute it
                 try:
                     new_fields[name] = (ofield,ofield.compute(row))
+                    __,fields[name] = new_fields[name]  #the value is the second element of the tuple
+                    row = Row(fields)  #allow later compute fields to refer to this value
                 except (KeyError, AttributeError):
                     # error sinlently unless field is required!
                     if ofield.required:
