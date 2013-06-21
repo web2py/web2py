@@ -128,13 +128,13 @@ function web2py_component(action, target, timeout, times){
     var jelement = jQuery("#" + target);
     var element = jelement.get(0);
     var statement = "jQuery('#" + target + "').get(0).reload();";
-    element.reload = function (){
+    jelement.reload = function (){
         // Continue if times is Infinity or
         // the times limit is not reached
-        if (this.reload_check()){
+        if (element.reload_check()){
             web2py_ajax_page('get', action, null, target);} }; // reload
     // Method to check timing limit
-    element.reload_check = function (){
+    element.reload_check = function (){	
         if (jelement.hasClass('w2p_component_stop')) {clearInterval(this.timing);return false;}
         if (this.reload_counter == Infinity){return true;}
         else {
