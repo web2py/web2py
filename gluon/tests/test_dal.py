@@ -599,6 +599,19 @@ class TestComputedFields(unittest.TestCase):
         self.assertEqual(db.tt[id].cc,'zx')
         db.tt.drop()
         db.commit()
+        
+        # test checking that a compute field can refer to earlier-defined computed fields
+        db.define_table('tt',
+                        Field('aa'),
+                        Field('bb',default='x'),
+                        Field('cc',compute=lambda r: r.aa+r.bb),
+                        Field('dd',compute=lambda r: r.bb + r.cc))
+        db.commit()
+        id = db.tt.insert(aa="z")
+        self.assertEqual(db.tt[id].dd,'xzx')  
+        db.tt.drop()
+        db.commit()
+        
 
 class TestCommonFilters(unittest.TestCase):
 
