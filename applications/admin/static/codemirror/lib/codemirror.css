@@ -3,27 +3,12 @@
 .CodeMirror {
   /* Set height, width, borders, and global font properties here */
   font-family: monospace;
-  height: auto;
+  height: 300px;
 }
-
 .CodeMirror-scroll {
   /* Set scrolling behaviour here */
   overflow: auto;
 }
-
-/* Fullscreen */
-.CodeMirror-fullscreen {
-	display: block;
-	position: absolute ! important;
-	top: 0; left: 0;
-	width: 100% ! important;
-	z-index: 9999;
-}
-
-/* BREAKPOINTS */
-
-.breakpoints {width: .8em;}
-.breakpoint { color: #822; }
 
 /* PADDING */
 
@@ -220,7 +205,6 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
 }
 
 .CodeMirror-widget {
-  display: inline-block;
 }
 
 .CodeMirror-wrap .CodeMirror-scroll {

@@ -39,38 +39,38 @@
 </div>
 
     <textarea style=" height:100%; direction:ltr;" id="textarea_{{=id}}" class="input-block-level" name="data" >{{=data}}</textarea>
-    <script>
-   var editor = CodeMirror.fromTextArea(document.getElementById("textarea_{{=id}}"),{
+    <script>	
+	var editor = CodeMirror.fromTextArea(document.getElementById("textarea_{{=id}}"),{
 	{{if filetype=='html':}}
 		mode : "text/html", 
-		lineNumbers : true, 
 		profile: 'xhtml',
 	{{else:}}
 		mode: { name: '{{=filetype}}'{{if filetype=='python':}},version: 2,singleLineStringErrors: false, {{pass}} },
 	{{pass}}
-		  lineNumbers: true,
-        indentUnit: 4,
-		  styleActiveLine: true,
-		  autoCloseTags: true,
-        theme: current_theme,
-        tabMode: "shift",
-        lineWrapping: true,
-		  gutters: ["CodeMirror-linenumbers", "breakpoints"],
-        {{if TEXT_EDITOR_KEYBINDING == 'emacs':}}keyMap: "emacs",{{pass}}
-        {{if TEXT_EDITOR_KEYBINDING == 'vi':}}keyMap: "vim",{{pass}}
-        matchBrackets: true,
-        autofocus: false,
-		  height: "350px"
-      });
+		lineNumbers: true,
+		indentUnit: 4,
+		styleActiveLine: true,
+		autoCloseTags: true,
+		theme: current_theme,
+		tabMode: "shift",
+		lineWrapping: true,
+		gutters: ["CodeMirror-linenumbers", "breakpoints"],
+		{{if TEXT_EDITOR_KEYBINDING == 'emacs':}}keyMap: "emacs",{{pass}}
+		{{if TEXT_EDITOR_KEYBINDING == 'vi':}}keyMap: "vim",{{pass}}
+		matchBrackets: true,
+		autofocus: false,
+		height: "350px",
+		showTrailingSpace: true
+	});
 	  
-		editor.on("gutterClick", function(cm, n) {
+	editor.on("gutterClick", function(cm, n) {
 		var info = cm.lineInfo(n);
-	   cm.setGutterMarker(n, "breakpoints", info.gutterMarkers ? null : makeMarker());
-  		sel = {start: n, end: n, data: ''};
-      doToggleBreakpoint({{=XML("'%s','%s://%s%s',sel" % (filename, 
+		cm.setGutterMarker(n, "breakpoints", info.gutterMarkers ? null : makeMarker());
+		sel = {start: n, end: n, data: ''};
+		doToggleBreakpoint({{=XML("'%s','%s://%s%s'" % (filename, 
    				             request.env['wsgi_url_scheme'], request.env['http_host'],
-               				 URL(c='debug', f='toggle_breakpoint')))}});
-		  });
+               				 URL(c='debug', f='toggle_breakpoint')))}}, sel);
+	});
 		function makeMarker() {
 			var marker = document.createElement("div");
 		   marker.style.color = "#822";
@@ -138,8 +138,8 @@
     <br/>
   </form>
 
-<div class="span10 row-fluid">
-	<div class="help span4 alert alert-block alert-info">
+<div class="row-fluid">
+	<div class="help alert alert-block alert-info">
 		{{if TEXT_EDITOR == 'codemirror' and filetype=='html':}}
 		<h3>{{=T('Key bindings for ZenCoding Plugin')}}</h3>
 		<ul class="keybindings unstyled">
