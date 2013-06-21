@@ -2,6 +2,7 @@
 
 CodeMirror.defineMode("javascript", function(config, parserConfig) {
   var indentUnit = config.indentUnit;
+  var statementIndent = parserConfig.statementIndent;
   var jsonMode = parserConfig.json;
   var isTS = parserConfig.typescript;
 
@@ -226,8 +227,9 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
   }
   function pushlex(type, info) {
     var result = function() {
-      var state = cx.state;
-      state.lexical = new JSLexical(state.indented, cx.stream.column(), type, null, state.lexical, info);
+      var state = cx.state, indent = state.indented;
+      if (state.lexical.type == "stat") indent = state.lexical.indented;
+      state.lexical = new JSLexical(indent, cx.stream.column(), type, null, state.lexical, info);
     };
     result.lex = true;
     return result;
@@ -270,17 +272,18 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     return pass(pushlex("stat"), expression, expect(";"), poplex);
   }
   function expression(type) {
-    return expressionInner(type, maybeoperatorComma);
+    return expressionInner(type, false);
   }
   function expressionNoComma(type) {
-    return expressionInner(type, maybeoperatorNoComma);
+    return expressionInner(type, true);
   }
-  function expressionInner(type, maybeop) {
+  function expressionInner(type, noComma) {
+    var maybeop = noComma ? maybeoperatorNoComma : maybeoperatorComma;
     if (atomicTypes.hasOwnProperty(type)) return cont(maybeop);
     if (type == "function") return cont(functiondef);
-    if (type == "keyword c") return cont(maybeexpression);
+    if (type == "keyword c") return cont(noComma ? maybeexpressionNoComma : maybeexpression);
     if (type == "(") return cont(pushlex(")"), maybeexpression, expect(")"), poplex, maybeop);
-    if (type == "operator") return cont(expression);
+    if (type == "operator") return cont(noComma ? expressionNoComma : expression);
     if (type == "[") return cont(pushlex("]"), commasep(expressionNoComma, "]"), poplex, maybeop);
     if (type == "{") return cont(pushlex("}"), commasep(objprop, "}"), poplex, maybeop);
     return cont();
@@ -289,9 +292,13 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
     if (type.match(/[;\}\)\],]/)) return pass();
     return pass(expression);
   }
+  function maybeexpressionNoComma(type) {
+    if (type.match(/[;\}\)\],]/)) return pass();
+    return pass(expressionNoComma);
+  }
 
   function maybeoperatorComma(type, value) {
-    if (type == ",") return pass();
+    if (type == ",") return cont(expression);
     return maybeoperatorNoComma(type, value, maybeoperatorComma);
   }
   function maybeoperatorNoComma(type, value, me) {
@@ -435,18 +442,16 @@ CodeMirror.defineMode("javascript", function(config, parserConfig) {
       if (state.tokenize != jsTokenBase) return 0;
       var firstChar = textAfter && textAfter.charAt(0), lexical = state.lexical;
       if (lexical.type == "stat" && firstChar == "}") lexical = lexical.prev;
+      if (statementIndent && lexical.type == ")" && lexical.prev.type == "stat")
+        lexical = lexical.prev;
       var type = lexical.type, closing = firstChar == type;
-      if (parserConfig.statementIndent != null) {
-        if (type == ")" && lexical.prev && lexical.prev.type == "stat") lexical = lexical.prev;
-        if (lexical.type == "stat") return lexical.indented + parserConfig.statementIndent;
-      }
 
       if (type == "vardef") return lexical.indented + (state.lastType == "operator" || state.lastType == "," ? 4 : 0);
       else if (type == "form" && firstChar == "{") return lexical.indented;
       else if (type == "form") return lexical.indented + indentUnit;
       else if (type == "stat")
-        return lexical.indented + (state.lastType == "operator" || state.lastType == "," ? indentUnit : 0);
-      else if (lexical.info == "switch" && !closing)
+        return lexical.indented + (state.lastType == "operator" || state.lastType == "," ? statementIndent || indentUnit : 0);
+      else if (lexical.info == "switch" && !closing && parserConfig.doubleIndentSwitch != false)
         return lexical.indented + (/^(?:case|default)\b/.test(textAfter) ? indentUnit : 2 * indentUnit);
       else if (lexical.align) return lexical.column + (closing ? 0 : 1);
       else return lexical.indented + (closing ? 0 : indentUnit);
