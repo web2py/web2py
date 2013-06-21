@@ -10294,6 +10294,39 @@ class Rows(object):
                 grouped_row_group[value].append(row)
         return grouped_row_group
 
+    def repr(self, i=None, fields=None):
+        """
+        Takes an index and returns a copy of the indexed row with values
+        transformed via the "represent" attributes of the associated fields.
+        
+        If no index is specified, a generator is returned for iteration
+        over all the rows.
+        
+        fields -- a list of fields to transform (if None, all fields with
+                  "represent" attributes will be transformed).
+        """
+
+
+        if i is None:
+            return (self.repr(i, fields=fields) for i in range(len(self)))
+        import sqlhtml
+        row = copy.copy(self.records[i])
+        keys = row.keys()
+        tables = [f.tablename for f in fields] if fields \
+            else [k for k in keys if k != '_extra']
+        for table in tables:
+            repr_fields = [f.name for f in fields if f.tablename == table] \
+                if fields else [k for k in row[table].keys()
+                                if (hasattr(self.db[table], k) and
+                                    isinstance(self.db[table][k], Field)
+                                    and self.db[table][k].represent)]
+            for field in repr_fields:
+                row[table][field] = sqlhtml.represent(
+                    self.db[table][field], row[table][field], row[table])
+        if self.compact and len(keys) == 1 and keys[0] != '_extra':
+            return row[keys[0]]
+        return row
+
     def as_list(self,
                 compact=True,
                 storage_to_dict=True,
