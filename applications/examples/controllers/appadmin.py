@@ -42,9 +42,9 @@ if request.function == 'manage':
     if manager_action is None and request.args(0) == 'auth':
         manager_action = dict(role=auth.settings.auth_manager_role,
                               heading=T('Manage Access Control'),
-                              tables=[auth.settings.table_user,
-                                      auth.settings.table_group,
-                                      auth.settings.table_permission])
+                              tables=[auth.table_user(),
+                                      auth.table_group(),
+                                      auth.table_permission()])
     manager_role = manager_action.get('role', None) if manager_action else None
     auth.requires_membership(manager_role)(lambda: None)()
     menu = False
@@ -596,10 +596,10 @@ def manage():
         db = globals()[db] if isinstance(db, str) else db
         tables = [db[table] for table in tables]
     if request.args(0) == 'auth':
-        auth.settings.table_user._plural = T('Users')
-        auth.settings.table_group._plural = T('Roles')
-        auth.settings.table_membership._plural = T('Memberships')
-        auth.settings.table_permission._plural = T('Permissions')
+        auth.table_user()._plural = T('Users')
+        auth.table_group()._plural = T('Roles')
+        auth.table_membership()._plural = T('Memberships')
+        auth.table_permission()._plural = T('Permissions')
     if request.extension != 'load':
         return dict(heading=manager_action.get('heading',
                     T('Manage %(action)s') % dict(action=request.args(0).replace('_', ' ').title())),
@@ -610,18 +610,18 @@ def manage():
     formname = '%s_grid' % table._tablename
     linked_tables = orderby = None
     if request.args(0) == 'auth':
-        auth.settings.table_group._id.readable = \
-        auth.settings.table_membership._id.readable = \
-        auth.settings.table_permission._id.readable = False
-        auth.settings.table_membership.user_id.label = T('User')
-        auth.settings.table_membership.group_id.label = T('Role')
-        auth.settings.table_permission.group_id.label = T('Role')
-        auth.settings.table_permission.name.label = T('Permission')
-        if table == auth.settings.table_user:
+        auth.table_group()._id.readable = \
+        auth.table_membership()._id.readable = \
+        auth.table_permission()._id.readable = False
+        auth.table_membership().user_id.label = T('User')
+        auth.table_membership().group_id.label = T('Role')
+        auth.table_permission().group_id.label = T('Role')
+        auth.table_permission().name.label = T('Permission')
+        if table == auth.table_user():
             linked_tables=[auth.settings.table_membership_name]
-        elif table == auth.settings.table_group:
+        elif table == auth.table_group():
             orderby = 'role' if not request.args(3) or '.group_id' not in request.args(3) else None
-        elif table == auth.settings.table_permission:
+        elif table == auth.table_permission():
             orderby = 'group_id'
     grid = SQLFORM.smartgrid(table, args=request.args[:2], user_signature=True,
                              orderby=orderby, linked_tables=linked_tables,
