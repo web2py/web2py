@@ -135,7 +135,6 @@ help(Field)
 
 __all__ = ['DAL', 'Field']
 
-MAXCHARLENGTH = 2**15 # not quite but reasonable default max char length
 DEFAULTLENGTH = {'string':512,
                  'password':512,
                  'upload':512,
@@ -637,7 +636,6 @@ class BaseAdapter(ConnectionPool):
     driver_name = None
     drivers = () # list of drivers from which to pick
     connection = None
-    maxcharlength = MAXCHARLENGTH
     commit_on_alter_table = False
     support_distributed_transaction = False
     uploads_in_blob = False
@@ -2401,7 +2399,6 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
 class MySQLAdapter(BaseAdapter):
     drivers = ('MySQLdb','pymysql')
 
-    maxcharlength = 255
     commit_on_alter_table = True
     support_distributed_transaction = True
     types = {
@@ -8272,9 +8269,6 @@ class Table(object):
             field.tablename = field._tablename = tablename
             field.table = field._table = self
             field.db = field._db = db
-            if db and not field.type in ('text', 'blob', 'json') and \
-                    db._adapter.maxcharlength < field.length:
-                field.length = db._adapter.maxcharlength
         self.ALL = SQLALL(self)
 
         if hasattr(self,'_primarykey'):
@@ -9236,10 +9230,6 @@ class Field(Expression):
     allowed field types:
     string, boolean, integer, double, text, blob,
     date, time, datetime, upload, password
-
-    strings must have a length of Adapter.maxcharlength by default (512 or 255 for mysql)
-    fields should have a default or they will be required in SQLFORMs
-    the requires argument is used to validate the field input in SQLFORMs
 
     """
 
