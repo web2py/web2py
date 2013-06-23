@@ -507,6 +507,7 @@ class web2pyDialog(object):
                 profiler_filename=options.profiler_filename,
                 ssl_certificate=options.ssl_certificate,
                 ssl_private_key=options.ssl_private_key,
+                ssl_ca_certificate=options.ssl_ca_certificate,
                 min_threads=options.minthreads,
                 max_threads=options.maxthreads,
                 server_name=options.server_name,
