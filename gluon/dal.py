@@ -1043,16 +1043,16 @@ class BaseAdapter(ConnectionPool):
             elif not key in sql_fields:
                 del sql_fields_current[key]
                 ftype = sql_fields_old[key]['type']
-                if self.dbengine in ('postgres',) \
-                        and ftype.startswith('geometry'):
+                if self.dbengine in ('postgres',) and ftype.startswith('geometry'):
                     geotype, parms = ftype[:-1].split('(')
                     schema = parms.split(',')[0]
-                    query = [ "SELECT DropGeometryColumn ('%(schema)s', '%(table)s', '%(field)s');" % dict(schema=schema, table=tablename, field=key,) ]
-                elif not self.dbengine in ('firebird',):
+                    query = [ "SELECT DropGeometryColumn ('%(schema)s', '%(table)s', '%(field)s');" % 
+                              dict(schema=schema, table=tablename, field=key,) ]
+                elif self.dbengine in ('firebird',):
+                    query = ['ALTER TABLE %s DROP %s;' % (tablename, key)]
+                else:
                     query = ['ALTER TABLE %s DROP COLUMN %s;'
                              % (tablename, key)]
-                else:
-                    query = ['ALTER TABLE %s DROP %s;' % (tablename, key)]
                 metadata_change = True
             elif sql_fields[key]['sql'] != sql_fields_old[key]['sql'] \
                   and not (key in table.fields and
@@ -1063,20 +1063,16 @@ class BaseAdapter(ConnectionPool):
                 sql_fields_current[key] = sql_fields[key]
                 t = tablename
                 tt = sql_fields_aux[key]['sql'].replace(', ', new_add)
-                if not self.dbengine in ('firebird',):
-                    query = ['ALTER TABLE %s ADD %s__tmp %s;' % (t, key, tt),
-                             'UPDATE %s SET %s__tmp=%s;' % (t, key, key),
-                             'ALTER TABLE %s DROP COLUMN %s;' % (t, key),
-                             'ALTER TABLE %s ADD %s %s;' % (t, key, tt),
-                             'UPDATE %s SET %s=%s__tmp;' % (t, key, key),
-                             'ALTER TABLE %s DROP COLUMN %s__tmp;' % (t, key)]
+                if self.dbengine in ('firebird',):
+                    drop_expr = 'ALTER TABLE %s DROP %s;'
                 else:
-                    query = ['ALTER TABLE %s ADD %s__tmp %s;' % (t, key, tt),
-                             'UPDATE %s SET %s__tmp=%s;' % (t, key, key),
-                             'ALTER TABLE %s DROP %s;' % (t, key),
-                             'ALTER TABLE %s ADD %s %s;' % (t, key, tt),
-                             'UPDATE %s SET %s=%s__tmp;' % (t, key, key),
-                             'ALTER TABLE %s DROP %s__tmp;' % (t, key)]
+                    drop_expr = 'ALTER TABLE %s DROP COLUMN %s;'
+                query = ['ALTER TABLE %s ADD %s__tmp %s;' % (t, key, tt),
+                         'UPDATE %s SET %s__tmp=%s;' % (t, key, key),
+                         drop_expr % (t, key),
+                         'ALTER TABLE %s ADD %s %s;' % (t, key, tt),
+                         'UPDATE %s SET %s=%s__tmp;' % (t, key, key),
+                         drop_expr % (t, key)]
                 metadata_change = True
             elif sql_fields[key]['type'] != sql_fields_old[key]['type']:
                 sql_fields_current[key] = sql_fields[key]
@@ -1088,30 +1084,32 @@ class BaseAdapter(ConnectionPool):
                 db['_lastsql'] = '\n'.join(query)
                 for sub_query in query:
                     logfile.write(sub_query + '\n')
-                    if not fake_migrate:
+                    if fake_migrate:
+                        if db._adapter.commit_on_alter_table:
+                            self.save_dbt(table,sql_fields_current)
+                        logfile.write('faked!\n')
+                    else:
                         self.execute(sub_query)
                         # Caveat: mysql, oracle and firebird do not allow multiple alter table
                         # in one transaction so we must commit partial transactions and
                         # update table._dbt after alter table.
                         if db._adapter.commit_on_alter_table:
                             db.commit()
-                            tfile = self.file_open(table._dbt, 'w')
-                            pickle.dump(sql_fields_current, tfile)
-                            self.file_close(tfile)
+                            self.save_dbt(table,sql_fields_current)
                             logfile.write('success!\n')
-                    else:
-                        logfile.write('faked!\n')
+                        
             elif metadata_change:
-                tfile = self.file_open(table._dbt, 'w')
-                pickle.dump(sql_fields_current, tfile)
-                self.file_close(tfile)
+                self.save_dbt(table,sql_fields_current)
 
-        if metadata_change and \
-                not (query and self.dbengine in ('mysql','oracle','firebird')):
+        if metadata_change and not (query and db._adapter.commit_on_alter_table):
             db.commit()
-            tfile = self.file_open(table._dbt, 'w')
-            pickle.dump(sql_fields_current, tfile)
-            self.file_close(tfile)
+            self.save_dbt(table,sql_fields_current)
+            logfile.write('success!\n')
+
+    def save_dbt(self,table, sql_fields_current):
+        tfile = self.file_open(table._dbt, 'w')
+        pickle.dump(sql_fields_current, tfile)
+        self.file_close(tfile)
 
     def LOWER(self, first):
         return 'LOWER(%s)' % self.expand(first)
