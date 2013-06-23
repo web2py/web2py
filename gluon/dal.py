@@ -6406,7 +6406,7 @@ class IMAPAdapter(NoSQLAdapter):
                 if "%s.size" % tablename in colnames:
                     if part is not None:
                         size += len(str(part))
-            item_dict["%s.content" % tablename] = bar_encode(content)
+            item_dict["%s.content" % tablename] = content
             item_dict["%s.attachments" % tablename] = attachments
             item_dict["%s.size" % tablename] = size
             imapqry_list.append(item_dict)
