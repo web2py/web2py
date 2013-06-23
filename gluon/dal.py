@@ -6186,7 +6186,7 @@ class IMAPAdapter(NoSQLAdapter):
                             Field("mime", "string", writable=False),
                             Field("email", "string", writable=False, readable=False),
                             Field("attachments", list, writable=False, readable=False),
-                            Field("encoding")
+                            Field("encoding", writable=False)
                             )
 
             # Set a special _mailbox attribute for storing
