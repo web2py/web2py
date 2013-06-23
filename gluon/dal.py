@@ -6045,25 +6045,25 @@ class IMAPAdapter(NoSQLAdapter):
 
         add <timedelta> adds to the date object
         """
-        months = [None, "Jan","Feb","Mar","Apr","May","Jun",
-                  "Jul", "Aug","Sep","Oct","Nov","Dec"]
+        months = [None, "JAN","FEB","MAR","APR","MAY","JUN",
+                  "JUL", "AUG","SEP","OCT","NOV","DEC"]
         if isinstance(date, basestring):
             # Prevent unexpected date response format
             try:
                 dayname, datestring = date.split(",")
-            except (ValueError):
-                LOGGER.debug("Could not parse date text: %s" % date)
+                date_list = datestring.strip().split()
+                year = int(date_list[2])
+                month = months.index(date_list[1].upper())
+                day = int(date_list[0])
+                hms = map(int, date_list[3].split(":"))
+                return datetime.datetime(year, month, day,
+                    hms[0], hms[1], hms[2]) + add
+            except (ValueError, AttributeError, IndexError), e:
+                LOGGER.error("Could not parse date text: %s. %s" %
+                             (date, e))
                 return None
-            date_list = datestring.strip().split()
-            year = int(date_list[2])
-            month = months.index(date_list[1])
-            day = int(date_list[0])
-            hms = map(int, date_list[3].split(":"))
-            return datetime.datetime(year, month, day,
-                                     hms[0], hms[1], hms[2]) + add
         elif isinstance(date, (datetime.datetime, datetime.date)):
             return (date + add).strftime("%d-%b-%Y")
-
         else:
             return None
 
