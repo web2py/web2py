@@ -546,6 +546,9 @@ class Session(Storage):
 
         # else the session goes in db
         elif response.session_storage_type == 'db':
+            # verify that session_id exists
+            if not response.session_id:
+                return
 
             # verify if tablename was set or used in connect
             if response.session_table_name and tablename == 'web2py_session':
