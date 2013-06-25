@@ -1255,13 +1255,22 @@ class BaseAdapter(ConnectionPool):
         return '(%s LIKE %s)' % (self.expand(first),
                                  self.expand('%'+second, 'string'))
 
-    def CONTAINS(self,first,second,case_sensitive=False):
+    def CONTAINS(self,first,second,case_sensitive=False):        
         if first.type in ('string','text', 'json'):
-            second = Expression(None,self.CONCAT('%',Expression(
-                        None,self.REPLACE(second,('%','%%'))),'%'))
+            if isinstance(second,Expression):
+                second = Expression(None,self.CONCAT('%',Expression(
+                            None,self.REPLACE(second,('%','%%'))),'%'))
+            else:
+                second = '%'+str(second).replace('%','%%')+'%'
         elif first.type.startswith('list:'):
-            second = Expression(None,self.CONCAT('%|',Expression(None,self.REPLACE(
-                        Expression(None,self.REPLACE(second,('%','%%'))),('|','||'))),'|%'))
+            if isinstance(second,Expression):
+                second = Expression(None,self.CONCAT(
+                        '%|',Expression(None,self.REPLACE(
+                                Expression(None,self.REPLACE(
+                                        second,('%','%%'))),('|','||'))),'|%'))
+            else:
+                second = '%|'+str(second).replace('%','%%')\
+                    .replace('|','||')+'|%'
         op = case_sensitive and self.LIKE or self.ILIKE
         return op(first,second)
 
@@ -6866,7 +6875,7 @@ class Row(object):
     def __setitem__(self, key, value):
         setattr(self, str(key), value)
 
-    __delitem__ = delattr
+    __delitem__ = object.__delattr__
 
     __copy__ = lambda self: Row(self)
 
