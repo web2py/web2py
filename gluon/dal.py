@@ -1069,12 +1069,13 @@ class BaseAdapter(ConnectionPool):
                     drop_expr = 'ALTER TABLE %s DROP %s;'
                 else:
                     drop_expr = 'ALTER TABLE %s DROP COLUMN %s;'
-                query = ['ALTER TABLE %s ADD %s__tmp %s;' % (t, key, tt),
-                         'UPDATE %s SET %s__tmp=%s;' % (t, key, key),
+                key_tmp = key + '__tmp'
+                query = ['ALTER TABLE %s ADD %s %s;' % (t, key_tmp, tt),
+                         'UPDATE %s SET %s=%s;' % (t, key_tmp, key),
                          drop_expr % (t, key),
                          'ALTER TABLE %s ADD %s %s;' % (t, key, tt),
-                         'UPDATE %s SET %s=%s__tmp;' % (t, key, key),
-                         drop_expr % (t, key)]
+                         'UPDATE %s SET %s=%s;' % (t, key, key_tmp),
+                         drop_expr % (t, key_tmp)]
                 metadata_change = True
             elif sql_fields[key]['type'] != sql_fields_old[key]['type']:
                 sql_fields_current[key] = sql_fields[key]
