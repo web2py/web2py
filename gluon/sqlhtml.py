@@ -2615,7 +2615,7 @@ class SQLFORM(FORM):
         except (KeyError, ValueError, TypeError):
             redirect(URL(args=table._tablename))
         if nargs == len(args) + 1:
-            query = table._id != None
+            query = table._db._adapter.id_query(table)
 
         # filter out data info for displayed table
         if table._tablename in constraints:
