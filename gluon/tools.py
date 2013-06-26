@@ -5201,12 +5201,13 @@ class Wiki(object):
         return True
 
     def can_see_menu(self):
-        if self.settings.menu_groups is None:
-            return True
         if self.auth.user:
-            groups = self.auth.user_groups.values()
-            if any(t in self.settings.menu_groups for t in groups):
+            if self.settings.menu_groups is None:
                 return True
+            else:
+                groups = self.auth.user_groups.values()
+                if any(t in self.settings.menu_groups for t in groups):
+                    return True
         return False
 
     ### END POLICY
