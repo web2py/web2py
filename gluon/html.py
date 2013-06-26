@@ -1479,29 +1479,29 @@ class A(DIV):
     def xml(self):
         if not self.components and self['_href']:
             self.append(self['_href'])
+        if not self['_disable_with']:
+            self['_data-w2p_disable_with'] = 'default'
         if self['delete']:
-            d = "jQuery(this).closest('%s').remove();" % self['delete']
-        else:
-            d = ''
+            self['_data-w2p_remove'] = self['delete']
+        if self['target']:
+            self['_data-w2p_target'] = self['target']
         if self['component']:
-            self['_onclick'] = "web2py_component('%s','%s');%sreturn false;" % \
-                (self['component'], self['target'] or '', d)
-            self['_href'] = self['_href'] or '#null'
+            self['_data-w2p_method'] = 'GET'
+            self['_href'] = self['component']
         elif self['callback']:
-            returnfalse = "var e = arguments[0] || window.event; e.cancelBubble=true; if (e.stopPropagation) {e.stopPropagation(); e.stopImmediatePropagation(); e.preventDefault();}"
-            if d and not self['noconfirm']:
-                self['_onclick'] = "if(confirm(w2p_ajax_confirm_message||'Are you sure you want to delete this object?')){ajax('%s',[],'%s');%s};%s" % \
-                    (self['callback'], self['target'] or '', d, returnfalse)
-            else:
-                self['_onclick'] = "ajax('%s',[],'%s');%sreturn false" % \
-                    (self['callback'], self['target'] or '', d)
-            self['_href'] = self['_href'] or '#null'
+            self['_data-w2p_method'] = 'POST'
+            self['_href'] = self['callback']
+            if self['delete'] and not self['noconfirm']:
+                if not self['confirm']:
+                    self['_data-w2p_confirm'] = 'default'
+                else:
+                    self['_data-w2p_confirm'] = self['confirm']
         elif self['cid']:
-            pre = self['pre_call'] + ';' if self['pre_call'] else ''
-            self['_onclick'] = '%sweb2py_component("%s","%s");%sreturn false;' % \
-                (pre,self['_href'], self['cid'], d)
+            self['_data-w2p_method'] = 'GET'
+            self['_data-w2p_target'] = self['cid']
+            if self['pre_call']:
+                self['_data-w2p_pre_call'] = self['pre_call']
         return DIV.xml(self)
-
 
 class BUTTON(DIV):
 
@@ -2481,7 +2481,7 @@ def test():
 
     >>> from validators import *
     >>> print DIV(A('click me', _href=URL(a='a', c='b', f='c')), BR(), HR(), DIV(SPAN(\"World\"), _class='unknown')).xml()
-    <div><a href=\"/a/b/c\">click me</a><br /><hr /><div class=\"unknown\"><span>World</span></div></div>
+    <div><a data-w2p_disable_with="default" href="/a/b/c">click me</a><br /><hr /><div class=\"unknown\"><span>World</span></div></div>
     >>> print DIV(UL(\"doc\",\"cat\",\"mouse\")).xml()
     <div><ul><li>doc</li><li>cat</li><li>mouse</li></ul></div>
     >>> print DIV(UL(\"doc\", LI(\"cat\", _class='feline'), 18)).xml()
