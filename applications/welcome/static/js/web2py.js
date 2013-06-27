@@ -20,7 +20,7 @@
       if(window.focus) newwindow.focus();
       return false;
     },
-    collapse: function () {
+    collapse: function (id) {
       $('#' + id).slideToggle();
     },
     fade: function (id, value) {
@@ -144,6 +144,7 @@
       web2py.manage_errors(target);
       web2py.ajax_fields(target);
       web2py.show_if_handler(target);
+      web2py.component_handler(target);
     },
     //manage errors in forms
     manage_errors: function(target) {
@@ -275,7 +276,7 @@
         var jelement = $("#" + target);
         var element = jelement.get(0);
         var statement = "jQuery('#" + target + "').get(0).reload();";
-        jelement.reload = function () {
+        element.reload = function () {
           // Continue if times is Infinity or
           // the times limit is not reached
           if(element.reload_check()) {
@@ -483,6 +484,18 @@
             $('#' + name, target).change(show_if).keyup(show_if);
             show_if.call($('#' + name, target));
         };
+    },
+    component_handler : function (target) {
+      $('div[data-w2p_remote]', target).each(function () {
+        var remote, times, timeout, target;
+        var el = $(this);
+        remote = el.data('w2p_remote');
+        times = el.data('w2p_times');
+        timeout = el.data('w2p_timeout');
+        target = el.attr('id');
+        web2py.component(remote, target, timeout, times, $(this));
+        }
+      )
     },
     a_handler: function (el, e) {
       e.preventDefault();
