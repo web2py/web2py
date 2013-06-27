@@ -339,8 +339,9 @@ def parse_get_post_vars(request, environ):
             json_vars = {}
             pass
         # update vars and get_vars with what was posted as json
-        request.get_vars.update(json_vars)
-        request.vars.update(json_vars)
+        if isinstance(json_vars,dict):
+            request.get_vars.update(json_vars)
+            request.vars.update(json_vars)
 
 
     # parse POST variables on POST, PUT, BOTH only in post_vars
@@ -386,7 +387,7 @@ def parse_get_post_vars(request, environ):
             if len(pvalue):
                 request.post_vars[key] = (len(pvalue) >
                                           1 and pvalue) or pvalue[0]
-        if is_json:
+        if is_json and isinstance(json_vars,dict):
             # update post_vars with what was posted as json
             request.post_vars.update(json_vars)
 
