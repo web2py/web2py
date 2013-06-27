@@ -6866,7 +6866,6 @@ class Row(object):
             return _extra.get(key)
             if v:
                 return v
-        #m = REGEX_TABLE_DOT_FIELD.match(key)
         idot = key.find('.')
         if idot != -1:
             m = (key[:idot],key[idot+1:])
