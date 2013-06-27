@@ -594,9 +594,9 @@ class ConnectionPool(object):
         if f is None:
             f = self.connector
 
-        if not hasattr(self, "driver") or self.driver is None:
-            LOGGER.debug("Skipping connection since there's no driver")
-            return
+        # if not hasattr(self, "driver") or self.driver is None:
+        #     LOGGER.debug("Skipping connection since there's no driver")
+        #     return
 
         if not self.pool_size:
             self.connection = f()
