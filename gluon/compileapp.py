@@ -167,15 +167,15 @@ def LOAD(c=None, f='index', args=None, vars=None,
             elif timeout <= 0:
                 raise ValueError(
                     "Timeout argument must be greater than zero or None")
-            statement = "web2py_component('%s','%s', %s, %s);" \
+            statement = "$.web2py.component('%s','%s', %s, %s);" \
                 % (url, target, timeout, times)
+            attr['_data-w2p_timeout'] = timeout
+            attr['_data-w2p_times'] = times
         else:
-            statement = "web2py_component('%s','%s');" % (url, target)
-        script = SCRIPT(statement, _type="text/javascript")
-        if not content is None:
-            return TAG[''](script, DIV(content, **attr))
-        else:
-            return TAG[''](script)
+            statement = "$.web2py.component('%s','%s');" % (url, target)
+        attr['_data-w2p_remote'] = url
+        if not target is None:
+            return DIV(content, **attr)
 
     else:
         if not isinstance(args, (list, tuple)):
@@ -226,7 +226,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
             link = URL(request.application, c, f, r=request,
                        args=args, vars=vars, extension=extension,
                        user_signature=user_signature)
-            js = "web2py_trap_form('%s','%s');" % (link, target)
+            js = "$.web2py.trap_form('%s','%s');" % (link, target)
         script = js and SCRIPT(js, _type="text/javascript") or ''
         return TAG[''](DIV(XML(page), **attr), script)
 
@@ -254,7 +254,7 @@ class LoadFactory(object):
             url = url or html.URL(request.application, c, f, r=request,
                                   args=args, vars=vars, extension=extension,
                                   user_signature=user_signature)
-            script = html.SCRIPT('web2py_component("%s","%s")' % (url, target),
+            script = html.SCRIPT('$.web2py.component("%s","%s")' % (url, target),
                                  _type="text/javascript")
             return html.TAG[''](script, html.DIV(content, **attr))
         else:
@@ -305,7 +305,7 @@ class LoadFactory(object):
                 link = html.URL(request.application, c, f, r=request,
                                 args=args, vars=vars, extension=extension,
                                 user_signature=user_signature)
-                js = "web2py_trap_form('%s','%s');" % (link, target)
+                js = "$.web2py.trap_form('%s','%s');" % (link, target)
             script = js and html.SCRIPT(js, _type="text/javascript") or ''
             return html.TAG[''](html.DIV(html.XML(page), **attr), script)
 
