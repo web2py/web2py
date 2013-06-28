@@ -6866,13 +6866,12 @@ class Row(object):
             return _extra.get(key)
             if v:
                 return v
-        idot = key.find('.')
-        if idot != -1:
-            m = (key[:idot],key[idot+1:])
+        m = REGEX_TABLE_DOT_FIELD.match(key)
+        if m:
             try:
-                return ogetattr(self, m[0])[m[1]]
+                return ogetattr(self, m.group(1))[m.group(2)]
             except (KeyError,AttributeError,TypeError):
-                key = m[1]
+                key = m.group(2)
         return ogetattr(self, key)
 
     __setitem__ = lambda self, key, value: setattr(self, str(key), value)
@@ -6883,7 +6882,7 @@ class Row(object):
 
     __call__ = __getitem__
 
-    get = lambda self, key, default: self.__dict__.get(key,default)
+    get = lambda self, key, default=None: self.__dict__.get(key,default)
 
 
     has_key = __contains__ = lambda self, key: key in self.__dict__
