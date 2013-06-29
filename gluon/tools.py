@@ -1545,7 +1545,7 @@ class Auth(object):
                 settings.table_user_name, []) + signature_list
             if username or settings.cas_provider:
                 is_unique_username = \
-                    [IS_MATCH('[\w\.\-]+'),
+                    [IS_MATCH('[\w\.\-]+', strict=True),
                      IS_NOT_IN_DB(db, '%s.username' % settings.table_user_name)]
                 if not settings.username_case_sensitive:
                     is_unique_username.insert(1, IS_LOWER())
