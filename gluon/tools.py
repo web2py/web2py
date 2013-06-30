@@ -4437,7 +4437,9 @@ class Service(object):
         jsonrpc_2 = data.get('jsonrpc')
         if jsonrpc_2: #hand over to version 2 of the protocol
             return self.serve_jsonrpc2(data)
-        id, method, params = data['id'], data['method'], data.get('params', '')
+        id, method, params = data.get('id'), data.get('method'), data.get('params', [])
+        if id is None:
+            return return_error(0, 100, 'missing id')
         if not method in methods:
             return return_error(id, 100, 'method "%s" does not exist' % method)
         try:
@@ -4450,15 +4452,12 @@ class Service(object):
             return return_response(id, s)
         except Service.JsonRpcException, e:
             return return_error(id, e.code, e.info)
-        except BaseException:
-            etype, eval, etb = sys.exc_info()
-            code = 100
-            message = '%s: %s' % (etype.__name__, eval)
-            data = request.is_local and traceback.format_tb(etb)
-            return return_error(id, code, message, data)
         except:
             etype, eval, etb = sys.exc_info()
-            return return_error(id, 100, 'Exception %s: %s' % (etype, eval))
+            message = '%s: %s' % (etype.__name__, eval)
+            data = request.is_local and traceback.format_tb(etb)
+            logger.warning('jsonrpc exception %s\n%s' % (message, traceback.format_tb(etb)))
+            return return_error(id, 100, message, data)
 
     def serve_jsonrpc2(self, data=None, batch_element=False):
 
@@ -4560,14 +4559,11 @@ class Service(object):
             raise e
         except Service.JsonRpcException, e:
             return return_error(id, e.code, e.info)
-        except BaseException:
-            etype, eval, etb = sys.exc_info()
-            code = -32099
-            data = '%s: %s\n' % (etype.__name__, eval) + str(request.is_local and traceback.format_tb(etb))
-            return return_error(id, code, data=data)
         except:
             etype, eval, etb = sys.exc_info()
-            return return_error(id, -32099, data='Exception %s: %s' % (etype, eval))
+            data = '%s: %s\n' % (etype.__name__, eval) + str(request.is_local and traceback.format_tb(etb))
+            logger.warning('%s: %s\n%s') % (etype.__name__, eval, traceback.format_tb(etb))
+            return return_error(id, -32099, data=data)
 
 
     def serve_xmlrpc(self):
@@ -5214,7 +5210,6 @@ class Wiki(object):
 
     def automenu(self):
         """adds the menu if not present"""
-        request = current.request
         if not self.wiki_menu_items and self.settings.controller and self.settings.function:
             self.wiki_menu_items = self.menu(self.settings.controller,
                                              self.settings.function)
