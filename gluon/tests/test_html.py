@@ -46,7 +46,7 @@ class TestBareHelpers(unittest.TestCase):
 
     def testA(self):
         self.assertEqual(A('<>', _a='1', _b='2').xml(),
-                         '<a a="1" b="2">&lt;&gt;</a>')
+                         '<a a="1" b="2" data-w2p_disable_with="default">&lt;&gt;</a>')
 
     def testB(self):
         self.assertEqual(B('<>', _a='1', _b='2').xml(),
@@ -209,8 +209,7 @@ class TestBareHelpers(unittest.TestCase):
 class TestData(unittest.TestCase):
 
     def testAdata(self):
-        self.assertEqual(A('<>', data=dict(abc='<def?asd>', cde='standard'), _a='1', _b='2').xml(),
-                         '<a a="1" b="2" data-abc="&lt;def?asd&gt;" data-cde="standard">&lt;&gt;</a>')
+        self.assertEqual(A('<>', data=dict(abc='<def?asd>', cde='standard'), _a='1', _b='2').xml(),'<a a="1" b="2" data-abc="&lt;def?asd&gt;" data-cde="standard" data-w2p_disable_with="default">&lt;&gt;</a>')
 
 
 if __name__ == '__main__':

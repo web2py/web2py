@@ -1545,7 +1545,7 @@ class Auth(object):
                 settings.table_user_name, []) + signature_list
             if username or settings.cas_provider:
                 is_unique_username = \
-                    [IS_MATCH('[\w\.\-]+'),
+                    [IS_MATCH('[\w\.\-]+', strict=True),
                      IS_NOT_IN_DB(db, '%s.username' % settings.table_user_name)]
                 if not settings.username_case_sensitive:
                     is_unique_username.insert(1, IS_LOWER())
@@ -1824,7 +1824,7 @@ class Auth(object):
         basic = current.request.env.http_authorization
         if basic_auth_realm:
             if callable(basic_auth_realm):
-                basic_auth_realm = basic_auth_auth()
+                basic_auth_realm = basic_auth_realm()
             elif isinstance(basic_auth_realm, (unicode, str)):
                 basic_realm = unicode(basic_auth_realm)
             elif basic_auth_realm is True:
@@ -5201,12 +5201,13 @@ class Wiki(object):
         return True
 
     def can_see_menu(self):
-        if self.settings.menu_groups is None:
-            return True
         if self.auth.user:
-            groups = self.auth.user_groups.values()
-            if any(t in self.settings.menu_groups for t in groups):
+            if self.settings.menu_groups is None:
                 return True
+            else:
+                groups = self.auth.user_groups.values()
+                if any(t in self.settings.menu_groups for t in groups):
+                    return True
         return False
 
     ### END POLICY

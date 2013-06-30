@@ -638,6 +638,8 @@ def regex_url_in(request, environ):
     if match.group('c') == 'static':
         application = match.group('a')
         version, filename = None, match.group('z')
+        if not filename:
+            raise HTTP(404)
         items = filename.split('/', 1)
         if regex_version.match(items[0]):
             version, filename = items

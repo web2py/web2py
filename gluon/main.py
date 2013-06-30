@@ -257,51 +257,55 @@ def serve_controller(request, response, session):
     raise HTTP(response.status, page, **response.headers)
 
 
-def start_response_aux(status, headers, exc_info, response=None):
-    """
-    in controller you can use::
-
-    - request.wsgi.environ
-    - request.wsgi.start_response
-
-    to call third party WSGI applications
-    """
-    response.status = str(status).split(' ', 1)[0]
-    response.headers = dict(headers)
-    return lambda *args, **kargs: response.write(escape=False, *args, **kargs)
-
-
-def middleware_aux(request, response, *middleware_apps):
-    """
-    In you controller use::
-
+class LazyWSGI(object):
+    def __init__(self, environ, request, response):
+        self.wsgi_environ = environ
+        self.request = request
+        self.response = response
+    @property
+    def environ(self):
+        if not hasattr(self,'_environ'):
+            new_environ = self.wsgi_environ
+            new_environ['wsgi.input'] = self.request.body
+            new_environ['wsgi.version'] = 1
+            self._environ = new_environ
+        return self._environ
+    def start_response(self,status='200', headers=[], exec_info=None):
+        """
+        in controller you can use::
+        
+        - request.wsgi.environ
+        - request.wsgi.start_response
+        
+        to call third party WSGI applications
+        """
+        self.response.status = str(status).split(' ', 1)[0]
+        self.response.headers = dict(headers)
+        return lambda *args, **kargs: \
+            self.response.write(escape=False, *args, **kargs)
+    def middleware(self,*a):
+        """
+        In you controller use::
+        
         @request.wsgi.middleware(middleware1, middleware2, ...)
-
-    to decorate actions with WSGI middleware. actions must return strings.
-    uses a simulated environment so it may have weird behavior in some cases
-    """
-    def middleware(f):
-        def app(environ, start_response):
-            data = f()
-            start_response(response.status, response.headers.items())
-            if isinstance(data, list):
-                return data
-            return [data]
-        for item in middleware_apps:
-            app = item(app)
-
-        def caller(app):
-            wsgi = request.wsgi
-            return app(wsgi.environ, wsgi.start_response)
-        return lambda caller=caller, app=app: caller(app)
-    return middleware
-
-
-def environ_aux(environ, request):
-    new_environ = copy.copy(environ)
-    new_environ['wsgi.input'] = request.body
-    new_environ['wsgi.version'] = 1
-    return new_environ
+        
+        to decorate actions with WSGI middleware. actions must return strings.
+        uses a simulated environment so it may have weird behavior in some cases
+        """
+        def middleware(f):
+            def app(environ, start_response):
+                data = f()
+                start_response(self.response.status, 
+                               self.response.headers.items())
+                if isinstance(data, list):
+                    return data
+                return [data]
+            for item in middleware_apps:
+                app = item(app)
+            def caller(app):                
+                return app(self.environ, self.start_response)
+            return lambda caller=caller, app=app: caller(app)
+        return middleware
 
 ISLE25 = sys.version_info[1] <= 5
 
@@ -339,8 +343,9 @@ def parse_get_post_vars(request, environ):
             json_vars = {}
             pass
         # update vars and get_vars with what was posted as json
-        request.get_vars.update(json_vars)
-        request.vars.update(json_vars)
+        if isinstance(json_vars,dict):
+            request.get_vars.update(json_vars)
+            request.vars.update(json_vars)
 
 
     # parse POST variables on POST, PUT, BOTH only in post_vars
@@ -386,7 +391,7 @@ def parse_get_post_vars(request, environ):
             if len(pvalue):
                 request.post_vars[key] = (len(pvalue) >
                                           1 and pvalue) or pvalue[0]
-        if is_json:
+        if is_json and isinstance(json_vars,dict):
             # update post_vars with what was posted as json
             request.post_vars.update(json_vars)
 
@@ -536,13 +541,7 @@ def wsgibase(environ, responder):
                 # expose wsgi hooks for convenience
                 # ##################################################
 
-                request.wsgi.environ = environ_aux(environ, request)
-                request.wsgi.start_response = \
-                    lambda status='200', headers=[], \
-                    exec_info=None, response=response: \
-                    start_response_aux(status, headers, exec_info, response)
-                request.wsgi.middleware = \
-                    lambda *a: middleware_aux(request, response, *a)
+                request.wsgi = LazyWSGI(environ, request, response)
 
                 # ##################################################
                 # load cookies
