@@ -83,7 +83,6 @@ class Request(Storage):
 
     def __init__(self):
         Storage.__init__(self)
-        self.wsgi = Storage()  # hooks to environ and start_response
         self.env = Storage()
         self.cookies = Cookie.SimpleCookie()
         self.get_vars = Storage()
