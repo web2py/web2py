@@ -1824,7 +1824,7 @@ class Auth(object):
         basic = current.request.env.http_authorization
         if basic_auth_realm:
             if callable(basic_auth_realm):
-                basic_auth_realm = basic_auth_auth()
+                basic_auth_realm = basic_auth_realm()
             elif isinstance(basic_auth_realm, (unicode, str)):
                 basic_realm = unicode(basic_auth_realm)
             elif basic_auth_realm is True:
