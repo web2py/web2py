@@ -8485,10 +8485,10 @@ class Table(object):
 
     def __str__(self):
         if self._ot is not None:
-            return self._db._adapter.QUOTE_TEMPLATE % self._ot
-            #if 'Oracle' in str(type(self._db._adapter)):     # <<< patch
-            #    return '%s %s' % (self._ot, self._tablename) # <<< patch
-            #return '%s AS %s' % (self._ot, self._tablename)
+            ot = self._db._adapter.QUOTE_TEMPLATE % self._ot
+            if 'Oracle' in str(type(self._db._adapter)):
+                return '%s %s' % (ot, self._tablename)
+            return '%s AS %s' % (ot, self._tablename)
         return self._tablename
 
     def _drop(self, mode = ''):

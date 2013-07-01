@@ -51,18 +51,10 @@ defined_status = {
     505: 'HTTP VERSION NOT SUPPORTED',
 }
 
-# If web2py is executed with python2.4 we need
-# to use Exception instead of BaseException
-
-try:
-    BaseException
-except NameError:
-    BaseException = Exception
-
 regex_status = re.compile('^\d{3} \w+$')
 
 
-class HTTP(BaseException):
+class HTTP(Exception):
 
     def __init__(
         self,
