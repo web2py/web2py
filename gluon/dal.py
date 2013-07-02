@@ -1364,7 +1364,7 @@ class BaseAdapter(ConnectionPool):
 
     def expand(self, expression, field_type=None):
         if isinstance(expression, Field):
-            out = '%s.%s' % (expression.table, expression.name)
+            out = '%s.%s' % (expression.table._tablename, expression.name)
             if field_type == 'string' and not expression.type in (
                 'string','text','json','password'):
                 out = 'CAST(%s AS %s)' % (out, self.types['text'])
@@ -6869,11 +6869,8 @@ class Row(object):
 
     def __getitem__(self, k):
         key=str(k)
-        _extra = getattr(self, '_extra', None)
-        if _extra:
-            return _extra.get(key)
-            if v:
-                return v
+        if key in self.get('_extra',{}):
+            return self._extra[key]
         m = REGEX_TABLE_DOT_FIELD.match(key)
         if m:
             try:
@@ -8485,10 +8482,10 @@ class Table(object):
 
     def __str__(self):
         if self._ot is not None:
-            return self._db._adapter.QUOTE_TEMPLATE % self._ot
-            #if 'Oracle' in str(type(self._db._adapter)):     # <<< patch
-            #    return '%s %s' % (self._ot, self._tablename) # <<< patch
-            #return '%s AS %s' % (self._ot, self._tablename)
+            ot = self._db._adapter.QUOTE_TEMPLATE % self._ot
+            if 'Oracle' in str(type(self._db._adapter)):
+                return '%s %s' % (ot, self._tablename)
+            return '%s AS %s' % (ot, self._tablename)
         return self._tablename
 
     def _drop(self, mode = ''):

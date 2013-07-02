@@ -15,7 +15,7 @@ from gluon import current
 DEFAULT_TIME_EXPIRE = 300 # seconds (must be the same as cache.ram)
 
 def MemcacheClient(*a, **b):
-    if not hasattr(current,'__mc_instance'):
+    if not hasattr(current,'__memcache_client'):
         current.__memcache_client = MemcacheClientObj(*a, **b)
     return current.__memcache_client
 

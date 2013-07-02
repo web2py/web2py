@@ -377,7 +377,7 @@ def check_new_version(myversion, version_URL):
         version = urlopen(version_URL).read()
         pversion = parse_version(version)
         pmyversion = parse_version(myversion)
-    except Exception,e:
+    except IOError:
         import traceback
         print traceback.format_exc()
         return -1, myversion
