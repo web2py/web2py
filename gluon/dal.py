@@ -6869,11 +6869,8 @@ class Row(object):
 
     def __getitem__(self, k):
         key=str(k)
-        _extra = getattr(self, '_extra', None)
-        if _extra:
-            return _extra.get(key)
-            if v:
-                return v
+        if key in self.get('_extra',{}):
+            return self._extra[key]
         m = REGEX_TABLE_DOT_FIELD.match(key)
         if m:
             try:
