@@ -1364,7 +1364,7 @@ class BaseAdapter(ConnectionPool):
 
     def expand(self, expression, field_type=None):
         if isinstance(expression, Field):
-            out = '%s.%s' % (expression.table, expression.name)
+            out = '%s.%s' % (expression.table._tablename, expression.name)
             if field_type == 'string' and not expression.type in (
                 'string','text','json','password'):
                 out = 'CAST(%s AS %s)' % (out, self.types['text'])
