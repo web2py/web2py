@@ -232,8 +232,8 @@ function load_file (url) {
 			if (typeof(json['plain_html']) !== undefined) {
 				if (jQuery('#' + json['id']).length === 0 || json['force'] === true) {			
 					// Create a tab and put the code in it
-					var tab_header = '<li><a href="#idDefault" data-toggle="tab">filenameDefault<button type="button" class="close">&times;</button></a></li>'.replace(/idDefault/, json['id']).replace(/filenameDefault/, json['filename'] );
-					var tab_body = '<div id="idDefault" class="tab-pane fade in " >htmlDefault</div>'.replace(/htmlDefault/, json['plain_html']).replace(/idDefault/, json['id']);
+				    var tab_header = '<li><a href="#'+json['id']+'" data-toggle="tab">'+json['filename']+'<button type="button" class="close">&times;</button></a></li>';
+					var tab_body = '<div id="' + json['id'] + '" class="tab-pane fade in " >' + json['plain_html'] + '</div>';
 					if (json['force'] === false) {
 						jQuery('#filesTab').append(jQuery(tab_header));
 						jQuery('#myTabContent').append(jQuery(tab_body));
