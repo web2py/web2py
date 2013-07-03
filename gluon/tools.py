@@ -1751,7 +1751,7 @@ class Auth(object):
             description=str(description % vars),
             origin=origin, user_id=user_id)
 
-    def get_or_create_user(self, keys, update_fields=['email']):
+    def get_or_create_user(self, keys, update_fields=['email'], login=True):
         """
         Used for alternate login methods:
             If the user exists already then password is updated.
@@ -1791,7 +1791,7 @@ class Auth(object):
                 guess = keys.get('email', 'anonymous').split('@')[0]
                 keys['first_name'] = keys.get('username', guess)
             user_id = table_user.insert(**table_user._filter_fields(keys))
-            user = self.user = table_user[user_id]            
+            user = table_user[user_id]            
             print user
             if self.settings.create_user_groups:
                 group_id = self.add_group(
@@ -1799,6 +1799,8 @@ class Auth(object):
                 self.add_membership(group_id, user_id)
             if self.settings.everybody_group_id:
                 self.add_membership(self.settings.everybody_group_id, user_id)
+            if login:
+                self.user = user
         return user
 
     def basic(self, basic_auth_realm=False):
