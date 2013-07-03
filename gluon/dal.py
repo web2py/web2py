@@ -5718,7 +5718,7 @@ class MongoDBAdapter(NoSQLAdapter):
         # There is a technical difference, but mongodb doesn't support
         # that, but the result will be the same
         val = second if isinstance(second,self.ObjectId) else \
-            {' $regex':".*" + re.escape(self.expand(second, 'string')) + ".*"}
+            {'$regex':".*" + re.escape(self.expand(second, 'string')) + ".*"}
         return {self.expand(first) : val}
 
     def LIKE(self, first, second):
@@ -5751,7 +5751,7 @@ class MongoDBAdapter(NoSQLAdapter):
         #There is a technical difference, but mongodb doesn't support
         # that, but the result will be the same
         #TODO contains operators need to be transformed to Regex
-        return {self.expand(first) : {' $regex': \
+        return {self.expand(first) : {'$regex': \
         ".*" + re.escape(self.expand(second, 'string')) + ".*"}}
 
 
