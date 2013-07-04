@@ -4564,7 +4564,7 @@ class Service(object):
         except:
             etype, eval, etb = sys.exc_info()
             data = '%s: %s\n' % (etype.__name__, eval) + str(request.is_local and traceback.format_tb(etb))
-            logger.warning('%s: %s\n%s') % (etype.__name__, eval, traceback.format_tb(etb))
+            logger.warning('%s: %s\n%s' % (etype.__name__, eval, traceback.format_tb(etb)))
             return return_error(id, -32099, data=data)
 
 

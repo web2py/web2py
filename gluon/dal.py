@@ -10289,7 +10289,7 @@ class Rows(object):
                 grouped_row_group[value].append(row)
         return grouped_row_group
 
-    def repr(self, i=None, fields=None):
+    def render(self, i=None, fields=None):
         """
         Takes an index and returns a copy of the indexed row with values
         transformed via the "represent" attributes of the associated fields.
