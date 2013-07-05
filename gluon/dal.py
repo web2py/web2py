@@ -6870,7 +6870,7 @@ class Row(object):
     def __getitem__(self, k):
         key=str(k)
         _extra = self.__dict__.get('_extra', None)
-        if _extra:
+        if _extra is not None:
             v = _extra.get(key, None)
             if v:
                 return v
