@@ -10308,7 +10308,7 @@ class Rows(object):
         if i is None:
             return (self.repr(i, fields=fields) for i in range(len(self)))
         import sqlhtml
-        row = copy.copy(self.records[i])
+        row = copy.deepcopy(self.records[i])
         keys = row.keys()
         tables = [f.tablename for f in fields] if fields \
             else [k for k in keys if k != '_extra']

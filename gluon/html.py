@@ -1481,9 +1481,13 @@ class A(DIV):
             self.append(self['_href'])
         if not self['_disable_with']:
             self['_data-w2p_disable_with'] = 'default'
+        if self['callback'] and not self['_id']:
+            self['_id'] = web2py_uuid()        
         if self['delete']:
             self['_data-w2p_remove'] = self['delete']
         if self['target']:
+            if self['target'] == '<self>':
+                self['target'] = self['_id']
             self['_data-w2p_target'] = self['target']
         if self['component']:
             self['_data-w2p_method'] = 'GET'
