@@ -256,7 +256,7 @@
             element.trigger('ajax:error', [xhr, status, error]);
           },
           'complete': function (xhr, status) {
-	      // element.trigger('ajax:complete', [xhr, status]);
+	    element.trigger('ajax:complete', [xhr, status]);
             var html = xhr.responseText;
             var content = xhr.getResponseHeader('web2py-component-content');
             var t = jQuery('#' + target);
@@ -424,7 +424,7 @@
       el.addClass('disabled');
       var method = el.prop('type') == 'submit' ? 'val' : 'html';
       // store enabled state
-      el.data('w2p:enable-with', el[method]);
+      el.data('w2p:enable-with', el[method]());
       /* little addition by default*/
       if((el.data('w2p_disable_with') == 'default') || (el.data('w2p_disable_with') === undefined)) {
         el.data('w2p_disable_with', 'Working...');
