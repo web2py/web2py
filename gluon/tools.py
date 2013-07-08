@@ -2330,7 +2330,7 @@ class Auth(object):
 
                     if formstyle == 'bootstrap':
                         form.custom.widget.password_two[
-                            '_class'] = 'input-xlarge'
+                            '_class'] = 'span4'
 
                     addrow(
                         form, self.messages.verify_password +
