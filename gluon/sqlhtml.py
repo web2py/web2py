@@ -1772,6 +1772,7 @@ class SQLFORM(FORM):
              noconfirm=False,
              cache_count=None,
              client_side_delete=False,
+             selectable_submit_button_class=None
              ):
 
         # jQuery UI ThemeRoller classes (empty if ui is disabled)
@@ -2413,13 +2414,36 @@ class SQLFORM(FORM):
                 htmltable, _class='web2py_htmltable',
                 _style='width:100%;overflow-x:auto;-ms-overflow-x:scroll')
             if selectable:
-                htmltable = FORM(htmltable, INPUT(
-                        _type="submit", _value=T(selectable_submit_button)))
+                if not callable(selectable):
+                    #now expect that selectable and related parameters are iterator (list, tuple, etc)
+                    inputs = []
+                    for i, (submit_button, submit_button_class) in enumerate(zip(selectable_submit_button,
+                                                                                 selectable_submit_button_class)):
+                        input_ctrl = INPUT(_type="submit", _name='submit_%d' % i, _value=T(submit_button))
+                        if submit_button_class:
+                            input_ctrl.add_class(submit_button_class)
+                        inputs.append(input_ctrl)
+                else:
+                    input_ctrl = INPUT(_type="submit", _value=T(selectable_submit_button))
+                    if selectable_submit_button_class:
+                        input_ctrl.add_class(selectable_submit_button_class)
+                    inputs = [input_ctrl]
+
+                if formstyle == 'bootstrap':
+                    htmltable = FORM(htmltable, DIV(*inputs, _class='form-actions'))
+                else:
+                    htmltable = FORM(htmltable, *inputs)
                 if htmltable.process(formname=formname).accepted:
                     htmltable.vars.records = htmltable.vars.records or []
                     htmltable.vars.records = htmltable.vars.records if type(htmltable.vars.records) == list else [htmltable.vars.records]
                     records = [int(r) for r in htmltable.vars.records]
-                    selectable(records)
+                    if not callable(selectable):
+                        for i, selectable_callback in enumerate(selectable):
+                            if htmltable.vars.get('submit_%d' % i, False):
+                                selectable_callback(records)
+                                break
+                    else:
+                        selectable(records)
                     redirect(referrer)
         else:
             htmltable = DIV(T('No records found'))
