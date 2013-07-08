@@ -773,7 +773,7 @@ def formstyle_bootstrap(form, fields):
         _submit = False
 
         if isinstance(controls, INPUT):
-            controls.add_class('input-xlarge')
+            controls.add_class('span4')
             if controls['_type'] == 'submit':
                 # flag submit button
                 _submit = True
@@ -783,13 +783,13 @@ def formstyle_bootstrap(form, fields):
 
         # For password fields, which are wrapped in a CAT object.
         if isinstance(controls, CAT) and isinstance(controls[0], INPUT):
-            controls[0].add_class('input-xlarge')
+            controls[0].add_class('span4')
 
         if isinstance(controls, SELECT):
-            controls.add_class('input-xlarge')
+            controls.add_class('span4')
 
         if isinstance(controls, TEXTAREA):
-            controls.add_class('input-xlarge')
+            controls.add_class('span4')
 
         if isinstance(label, LABEL):
             label['_class'] = 'control-label'
