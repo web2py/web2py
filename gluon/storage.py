@@ -175,7 +175,7 @@ class Messages(Settings):
     def __getattr__(self, key):
         value = self[key]
         if isinstance(value, str):
-            return self.T(value)
+            return str(self.T(value))
         return value
 
 class FastStorage(dict):
