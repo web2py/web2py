@@ -10328,12 +10328,12 @@ class Rows(object):
     def as_list(self,
                 compact=True,
                 storage_to_dict=True,
-                datetime_to_str=True,
+                datetime_to_str=False,
                 custom_types=None):
         """
         returns the data as a list or dictionary.
         :param storage_to_dict: when True returns a dict, otherwise a list(default True)
-        :param datetime_to_str: convert datetime fields as strings (default True)
+        :param datetime_to_str: convert datetime fields as strings (default False)
         """
         (oc, self.compact) = (self.compact, compact)
         if storage_to_dict:
@@ -10348,7 +10348,7 @@ class Rows(object):
                 key='id',
                 compact=True,
                 storage_to_dict=True,
-                datetime_to_str=True,
+                datetime_to_str=False,
                 custom_types=None):
         """
         returns the data as a dictionary of dictionaries (storage_to_dict=True) or records (False)
@@ -10356,7 +10356,7 @@ class Rows(object):
         :param key: the name of the field to be used as dict key, normally the id
         :param compact: ? (default True)
         :param storage_to_dict: when True returns a dict, otherwise a list(default True)
-        :param datetime_to_str: convert datetime fields as strings (default True)
+        :param datetime_to_str: convert datetime fields as strings (default False)
         """
 
         # test for multiple rows

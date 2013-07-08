@@ -1747,6 +1747,9 @@ class Auth(object):
         else:
             user_id = None  # user unknown
         vars = vars or {}
+        # log messages should not be translated
+        if type(descrption).__name__ == 'lazyT':
+            description = description.m
         self.table_event().insert(
             description=str(description % vars),
             origin=origin, user_id=user_id)
