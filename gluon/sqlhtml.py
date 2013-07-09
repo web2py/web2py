@@ -39,9 +39,12 @@ import re
 import cStringIO
 from gluon import current, redirect
 import inspect
-import settings
-is_gae = settings.global_settings.web2py_runtime_gae
 
+try:
+    import settings
+    is_gae = settings.global_settings.web2py_runtime_gae
+except ImportError:
+    is_gae = False
 
 
 
