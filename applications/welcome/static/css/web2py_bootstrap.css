@@ -223,6 +223,10 @@ td.w2p_fw ul{margin-left:0px;}
 /* auth_user_remember checkbox extrapadding in IE fix */
 .ie-lte9 input#auth_user_remember.checkbox {padding-left:0;}
 
+div.controls .error {
+    width: auto;
+}
+
 /*=============================================================
                        MEDIA QUERIES
 ==============================================================*/
