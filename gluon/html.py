@@ -98,6 +98,7 @@ __all__ = [
     'TFOOT',
     'TITLE',
     'TR',
+#    'TRHEAD',
     'TT',
     'URL',
     'XHTML',
@@ -1198,12 +1199,12 @@ def TAG_pickler(data):
     return (TAG_unpickler, (marshal_dump,))
 
 
-class __tag__(DIV):
+class __tag_div__(DIV):
     def __init__(self,name,*a,**b):
         DIV.__init__(self,*a,**b)
         self.tag = name
 
-copy_reg.pickle(__tag__, TAG_pickler, TAG_unpickler)
+copy_reg.pickle(__tag_div__, TAG_pickler, TAG_unpickler)
 
 class __TAG__(XmlComponent):
 
@@ -1223,7 +1224,7 @@ class __TAG__(XmlComponent):
             name = name[:-1] + '/'
         if isinstance(name, unicode):
             name = name.encode('utf-8')
-        return lambda *a,**b: __tag__(name,*a,**b)
+        return lambda *a,**b: __tag_div__(name,*a,**b)
 
     def __call__(self, html):
         return web2pyHTMLParser(decoder.decoder(html)).tree
@@ -1640,12 +1641,27 @@ class TR(DIV):
         self._wrap_components((TD, TH), TD)
 
 
+class TRHEAD(DIV):
+    """
+    TRHEAD Component.
+
+    If subcomponents are not TD/TH-components they will be wrapped in a TH
+
+    see also :class:`DIV`
+    """
+
+    tag = 'tr'
+
+    def _fixup(self):
+        self._wrap_components((TD, TH), TH)
+
+
 class THEAD(DIV):
 
     tag = 'thead'
 
     def _fixup(self):
-        self._wrap_components(TR, TR)
+        self._wrap_components((TRHEAD, TR), TRHEAD)
 
 
 class TBODY(DIV):
