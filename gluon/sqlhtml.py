@@ -2413,13 +2413,38 @@ class SQLFORM(FORM):
                 htmltable, _class='web2py_htmltable',
                 _style='width:100%;overflow-x:auto;-ms-overflow-x:scroll')
             if selectable:
-                htmltable = FORM(htmltable, INPUT(
-                        _type="submit", _value=T(selectable_submit_button)))
+                if not callable(selectable):
+                    #now expect that selectable and related parameters are iterator (list, tuple, etc)
+                    inputs = []
+                    for i, submit_info in enumerate(selectable):
+                        submit_text = submit_info[0]
+                        submit_class = submit_info[2] if len(submit_info) > 2 else ''
+
+                        input_ctrl = INPUT(_type="submit", _name='submit_%d' % i, _value=T(submit_text))
+                        input_ctrl.add_class(submit_class)
+                        inputs.append(input_ctrl)
+                else:
+                    inputs = [INPUT(_type="submit", _value=T(selectable_submit_button))]
+
+                if formstyle == 'bootstrap':
+                    # add space between buttons
+                    #inputs = sum([[inp, ' '] for inp in inputs], [])[:-1]
+                    htmltable = FORM(htmltable, DIV(*inputs, _class='form-actions'))
+                else:
+                    htmltable = FORM(htmltable, *inputs)
+
                 if htmltable.process(formname=formname).accepted:
                     htmltable.vars.records = htmltable.vars.records or []
                     htmltable.vars.records = htmltable.vars.records if type(htmltable.vars.records) == list else [htmltable.vars.records]
                     records = [int(r) for r in htmltable.vars.records]
-                    selectable(records)
+                    if not callable(selectable):
+                        for i, submit_info in enumerate(selectable):
+                            submit_callback = submit_info[1]
+                            if htmltable.vars.get('submit_%d' % i, False):
+                                submit_callback(records)
+                                break
+                    else:
+                        selectable(records)
                     redirect(referrer)
         else:
             htmltable = DIV(T('No records found'))
