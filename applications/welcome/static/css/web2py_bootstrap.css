@@ -233,10 +233,11 @@ div.controls .error {
 
 @media only screen and (max-width:979px){
   body{padding-top:0px;}
-  #navbar{top:5px;}
+  #navbar{/*top:5px;*/}
   div.flash{right:5px;}
   .dropdown-menu ul{visibility:visible;}
 }
+
 @media only screen and (max-width:479px){
   body{
     padding-left:10px;
@@ -249,4 +250,11 @@ div.controls .error {
   input[type="text"],input[type="password"],select{
     width:95%;
   }
+}
+
+@media (max-width: 767px) {
+    .navbar {
+        margin-right: -20px;
+        margin-left: -20px;
+    }
 }
