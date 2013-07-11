@@ -98,7 +98,6 @@ __all__ = [
     'TFOOT',
     'TITLE',
     'TR',
-#    'TRHEAD',
     'TT',
     'URL',
     'XHTML',
@@ -1641,9 +1640,9 @@ class TR(DIV):
         self._wrap_components((TD, TH), TD)
 
 
-class TRHEAD(DIV):
+class __TRHEAD__(DIV):
     """
-    TRHEAD Component.
+    __TRHEAD__ Component, internal only
 
     If subcomponents are not TD/TH-components they will be wrapped in a TH
 
@@ -1661,7 +1660,7 @@ class THEAD(DIV):
     tag = 'thead'
 
     def _fixup(self):
-        self._wrap_components((TRHEAD, TR), TRHEAD)
+        self._wrap_components((__TRHEAD__, TR), __TRHEAD__)
 
 
 class TBODY(DIV):
