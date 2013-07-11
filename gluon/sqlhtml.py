@@ -37,16 +37,15 @@ import datetime
 import urllib
 import re
 import cStringIO
-from gluon import current, redirect
+from globals import current
+from http import redirect
 import inspect
 
 try:
     import settings
     is_gae = settings.global_settings.web2py_runtime_gae
 except ImportError:
-    is_gae = False
-
-
+    is_gae = False # this is an assumption (if settings missing)
 
 table_field = re.compile('[\w_]+\.[\w_]+')
 widget_class = re.compile('^\w*')
