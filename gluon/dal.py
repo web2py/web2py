@@ -6872,7 +6872,7 @@ class Row(object):
         _extra = self.__dict__.get('_extra', None)
         if _extra is not None:
             v = _extra.get(key, None)
-            if v:
+            if v is not None:
                 return v
         m = REGEX_TABLE_DOT_FIELD.match(key)
         if m:
