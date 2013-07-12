@@ -43,19 +43,19 @@ echo 'server {
         listen          80;
         server_name     $hostname;
         ###to enable correct use of response.static_version
-        #location ~* /(\w+)/static(?:/_[\d]+\.[\d]+\.[\d]+)?/(.*)$ {
+        #location ~* ^/(\w+)/static(?:/_[\d]+\.[\d]+\.[\d]+)?/(.*)$ {
         #    alias /home/www-data/web2py/applications/$1/static/$2;
         #    expires max;
         #}
         ###
 
         ###if you use something like myapp = dict(languages=['en', 'it', 'jp'], default_language='en') in your routes.py
-        #location ~* /(\w+)/(en|it|jp)/static/(.*)$ {
+        #location ~* ^/(\w+)/(en|it|jp)/static/(.*)$ {
         #    alias /home/www-data/web2py/applications/$1/;
         #    try_files static/$2/$3 static/$3 =404;
         #}
         ###
-        location ~* /(\w+)/static/ {
+        location ~* ^/(\w+)/static/ {
             root /home/www-data/web2py/applications/;
             #remove next comment on production
             #expires max;
