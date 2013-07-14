@@ -16,7 +16,7 @@
     <tr>
       <th>Python</th>
       <td>{{=snapshot.get('pyver','')}}</td>
-	</tr>
+    </tr>
     {{pass}}
   </tbody>
 </table>
@@ -45,14 +45,14 @@
     <div class="inspect">
       <h4>{{=T("Exception instance attributes")}}</h4>
       <table>
-	<tbody>
-	  {{for k,v in snapshot['exception'].items():}}
-	  <tr>
-	    <th>{{=k}}</th>
-	    <td>{{=v}}</td>
-	  </tr>
-	  {{pass}}
-	</tbody>
+    <tbody>
+      {{for k,v in snapshot['exception'].items():}}
+      <tr>
+        <th>{{=k}}</th>
+        <td>{{=v}}</td>
+      </tr>
+      {{pass}}
+    </tbody>
       </table>
     </div>
   </div>
@@ -65,36 +65,36 @@
     <li>
       {{is_hidden = (i != len(snapshot['frames'])-1 and 'hide' or 'inspect')}}
       <div class="framefile inspect controls">
-	<p>
-	  <strong>File {{="%s in %s at line %s" % (frame['file'], frame['func'], frame['lnum'])}}</strong>
-	  <a class="button tbbutton btn" onclick="collapse('{{='%s_code_inner' % i}}');"><span>{{=T("code")}}</span></a>
-	  <a class="button tbbutton btn" onclick="collapse('{{='%s_args_inner' % i}}');"><span>{{=T("arguments")}}</span></a>
-	  <a class="button tbbutton btn" onclick="collapse('{{='%s_vars_inner' % i}}');"><span>{{=T("variables")}}</span></a>
-	</p>
-	<div id="{{='%s_args_inner' % i}}" class="{{=is_hidden}}" style="width:100%;overflow:auto">
-	  <h5>Function argument list</h5>
-	  <p>{{=frame['call']}}</p>
-	</div>
-	<div id="{{='%s_code_inner' % i}}" class="{{=is_hidden}}" style="width:100%;overflow:auto">
-	  <h5>Code listing</h5>
-	  {{if frame['lines']:}}
-	  <pre>{{=CODE('\n'.join([x[1] for x in sorted(frame['lines'].items(),key=lambda x: x[0])]),
-	    language='python', link=None, counter=min(frame['lines'].keys()), highlight_line=frame['lnum'])}}</pre>
-	  {{pass}}
-	</div>
-	<div id="{{='%s_vars_inner' % i}}" class="{{=is_hidden}}" style="width:100%;overflow:auto">
-	  <h5>Variables</h5>
-	  <table>
-	    <tbody>
-	      {{for k,v in frame['dump'].items():}}
-	      <tr>
-		<th>{{=k}}</th>
-		<td>{{=v}}</td>
-	      </tr>
-	      {{pass}}
-	    </tbody>
-	  </table>
-	</div>
+    <p>
+      <strong>File {{="%s in %s at line %s" % (frame['file'], frame['func'], frame['lnum'])}}</strong>
+      <a class="button tbbutton btn" onclick="collapse('{{='%s_code_inner' % i}}');"><span>{{=T("code")}}</span></a>
+      <a class="button tbbutton btn" onclick="collapse('{{='%s_args_inner' % i}}');"><span>{{=T("arguments")}}</span></a>
+      <a class="button tbbutton btn" onclick="collapse('{{='%s_vars_inner' % i}}');"><span>{{=T("variables")}}</span></a>
+    </p>
+    <div id="{{='%s_args_inner' % i}}" class="{{=is_hidden}}" style="width:100%;overflow:auto">
+      <h5>Function argument list</h5>
+      <p>{{=frame['call']}}</p>
+    </div>
+    <div id="{{='%s_code_inner' % i}}" class="{{=is_hidden}}" style="width:100%;overflow:auto">
+      <h5>Code listing</h5>
+      {{if frame['lines']:}}
+      <pre>{{=CODE('\n'.join([x[1] for x in sorted(frame['lines'].items(),key=lambda x: x[0])]),
+        language='python', link=None, counter=min(frame['lines'].keys()), highlight_line=frame['lnum'])}}</pre>
+      {{pass}}
+    </div>
+    <div id="{{='%s_vars_inner' % i}}" class="{{=is_hidden}}" style="width:100%;overflow:auto">
+      <h5>Variables</h5>
+      <table>
+        <tbody>
+          {{for k,v in frame['dump'].items():}}
+          <tr>
+        <th>{{=k}}</th>
+        <td>{{=v}}</td>
+          </tr>
+          {{pass}}
+        </tbody>
+      </table>
+    </div>
       </div>
     </li>
     {{pass}}
