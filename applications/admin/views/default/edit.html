@@ -12,7 +12,7 @@
   def editfile(path,file,vars={}):
 	args=(path,file) if 'app' in vars else (app,path,file)
 	url = URL('edit', args=args, vars=vars)
-    return A(file, _class='editor_filelink', _href=url, _style='word-wrap: break-word;')
+    return A(file, _class='editor_filelink', _href=url, _style='word-wrap: nowrap;')
 }}
 {{cm=URL('static','codemirror')}}
 <link rel="stylesheet" href="{{=cm}}/lib/codemirror.css">
@@ -163,6 +163,9 @@ jQuery(document).on('click', 'a.font_button', function (e) {
 
 <div class='row-fluid'>
 <div class="right controls btn-toolbar pull-right">
+<div class="btn-group">
+  <a class="button btn" onclick="jQuery('#files').toggle(); return false" href="#">Files toggle</a>
+</div>
 <div class="dropdown btn-group pull-left">
 	<a class="dropdown-toggle button btn" data-target="themes" data-toggle="dropdown" href="#" >Theme: <span id="themeName" style="color: #E8953C">Web2py</span> <span class="caret"></span></a>
 	<ul class="dropdown-menu" role="menu" id="themes">	
@@ -186,6 +189,7 @@ jQuery(document).on('click', 'a.font_button', function (e) {
 </div>
 </div>
 <div id="editor_area" class="row-fluid">
+  <div id="files">
 	<ul class="nav nav-list span2 well" rel="pagebookmark" id="filelist">
 	<li><input type="text" placeholder="{{=T('Rapid Search')}}" class="input-block-level typeahead-tw search-query"></li>
 	{{dirs=[{'name':'models', 'reg':'.*\.py$'}, 
@@ -201,7 +205,7 @@ jQuery(document).on('click', 'a.font_button', function (e) {
 		{{for f in listfiles(app, dir['name'], regexp=dir['reg'] ):}}
 		{{id="%s__" % dir['name'] + f.replace('.','__')}}
 		{{current_file = request.args(len(request.args) - 1)}} 
-		<li class="{{#='active' if current_file==f else ''}}">
+		<li class="{{#='active' if current_file==f else ''}}" style="overflow:hidden">
 		{{a_tag=editfile(dir['name'], f, dict(id=id))}}	
 		{{=a_tag}}
 		{{auto_complete_list.append({'value':f, 'tokens':f.split('/'), 'a_tag':a_tag})}}
@@ -211,6 +215,7 @@ jQuery(document).on('click', 'a.font_button', function (e) {
 	</li>
 	{{pass}}	
 	</ul>
+	</div>
 	<div class="span10" id="edit_placeholder">
 		<ul class="nav nav-tabs " id="filesTab">
 		</ul>
