@@ -2429,7 +2429,7 @@ class SQLFORM(FORM):
                 if formstyle == 'bootstrap':
                     # add space between buttons
                     #inputs = sum([[inp, ' '] for inp in inputs], [])[:-1]
-                    htmltable = FORM(htmltable, DIV(*inputs, _class='form-actions'))
+                    htmltable = FORM(htmltable, DIV(_class='form-actions', *inputs))
                 else:
                     htmltable = FORM(htmltable, *inputs)
 
