@@ -9,18 +9,18 @@
     <ul class="collapsible">
       {{for file in files[path]['files']:}}
        <li style="list-style-type: none;">
-	 {{p = os.path.relpath(os.path.join(path,file),base)}}
-	 <input type="checkbox" value="{{=p}}" name="file" checked="checked"/>
-	 {{=file}}
+     {{p = os.path.relpath(os.path.join(path,file),base)}}
+     <input type="checkbox" value="{{=p}}" name="file" checked="checked"/>
+     {{=file}}
        </li>
        {{pass}}
        {{for dir in files[path]['folders']:}}
        <li style="list-style-type: none;">
-	 {{tree(os.path.join(path,dir))}}
+     {{tree(os.path.join(path,dir))}}
        </li>
        {{pass}}
-    </ul> 
-    {{return}}    
+    </ul>
+    {{return}}
 
 <form action="{{=URL(args=request.args)}}" method="POST">
 <h2>{{=T('Select Files to Package')}}</h2>
