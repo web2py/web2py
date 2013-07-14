@@ -29,6 +29,9 @@ import tempfile
 import random
 import string
 import urllib2
+import locale
+locale.setlocale(locale.LC_CTYPE, "C") # IMPORTANT, web2py requires locale "C"
+
 try:
     import simplejson as sj #external installed library
 except:
