@@ -506,7 +506,7 @@ class Session(Storage):
 
         #check if session is separate
         separate = None
-        if response.session_id[2:3] == "/":
+        if response.session and response.session_id[2:3] == "/":
             separate = lambda session_name: session_name[-2:]
 
         self._unlock(response)
@@ -589,8 +589,9 @@ class Session(Storage):
             response.session_db_unique_key = unique_key
 
         rcookies = response.cookies
-        rcookies[response.session_id_name] = response.session_id
-        rcookies[response.session_id_name]['path'] = '/'
+        if response.session_id_name:
+            rcookies[response.session_id_name] = response.session_id
+            rcookies[response.session_id_name]['path'] = '/'
         if clear_session:
             self.clear()
 
