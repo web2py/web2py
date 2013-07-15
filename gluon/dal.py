@@ -1857,7 +1857,7 @@ class BaseAdapter(ConnectionPool):
             if isinstance(obj, datetime.datetime):
                 obj = obj.isoformat(self.T_SEP)[:19]
             elif isinstance(obj, datetime.date):
-                obj = obj.isoformat()[:10]+' 00:00:00'
+                obj = obj.isoformat()[:10]+self.T_SEP+'00:00:00'
             else:
                 obj = str(obj)
         elif fieldtype == 'time':
