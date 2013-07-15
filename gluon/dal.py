@@ -8307,8 +8307,9 @@ class Table(object):
         field_type = self if same_db else 'bigint'
         clones = []
         for field in self:
+            nfk = same_db or field.type.startswith('reference')
             clones.append(field.clone(
-                    unique=False, type=field.type if same_db else 'bigint'))
+                    unique=False, type=field.type if nfk else 'bigint'))
         archive_db.define_table(
             archive_name, Field(current_record,field_type), *clones)
         self._before_update.append(
