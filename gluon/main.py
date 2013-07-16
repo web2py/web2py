@@ -172,7 +172,7 @@ def copystream_progress(request, chunk_size=10 ** 5):
         size = int(env.content_length)
     except ValueError:
         raise HTTP(400, "Invalid Content-Length header")
-    dest = tempfile.TemporaryFile()
+    dest = tempfile.NamedTemporaryFile()
     if not 'X-Progress-ID' in request.vars:
         copystream(source, dest, size, chunk_size)
         return dest
