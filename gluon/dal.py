@@ -5540,8 +5540,9 @@ class MongoDBAdapter(NoSQLAdapter):
         filter = None
         if query:
             filter = self.expand(query)
+        # do not try to update id fields to avoid backend errors
         modify = {'$set': dict((k.name, self.represent(v, k.type)) for
-                  k, v in fields)}
+                  k, v in fields if (not k.name in ("_id", "id")))}
         return modify, filter
 
     def update(self, tablename, query, fields, safe=None):

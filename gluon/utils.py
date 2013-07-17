@@ -80,7 +80,7 @@ def compare(a, b):
 
 def md5_hash(text):
     """ Generate a md5 hash with the given text """
-    return md5(text).hexdigest()
+    return md5.new(text).hexdigest()
 
 
 def simple_hash(text, key='', salt='', digest_alg='md5'):
