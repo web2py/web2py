@@ -14,6 +14,7 @@ from gluon.utils import web2py_uuid
 from glob import glob
 import shutil
 import platform
+import ConfigParser
 try:
     import git
     if git.__version__ < '0.3.1':
@@ -560,6 +561,16 @@ def edit():
     """ File edit handler """
     # Load json only if it is ajax edited...
     app = get_app(request.vars.app)
+    admin_path = apath("admin", r=request)
+    editor_defaults={'theme':'web2py'}
+    config = ConfigParser.ConfigParser(editor_defaults)
+    config.read( os.path.join(admin_path, 'settings.cfg') )
+    if not config.has_section('editor'):
+        config.add_section('editor')
+    if not( isinstance(session.editor_settings, dict) ):
+        preferences = dict(config.items('editor'))
+    else:
+        preferences = session.editor_settings
 
     if not(request.ajax):
         # return the scaffolding, the rest will be through ajax requests
@@ -573,7 +584,25 @@ def edit():
         for key in editarea_preferences:
             if key in globals():
                 editarea_preferences[key] = globals()[key]
-        return response.render ('default/edit.html', dict(app=request.args[0], editarea_preferences=editarea_preferences))
+        return response.render ('default/edit.html', dict(app=request.args[0], editor_settings=preferences, editarea_preferences=editarea_preferences))
+
+	# show settings tab and save prefernces
+    if 'settings' in request.vars:
+        if request.post_vars:	#save new preferences
+            for option, value in request.post_vars.items():
+                config.set('editor', option, value)
+            try:			
+                config.write(open(os.path.join(admin_path, 'settings.cfg'), 'w'))
+                response.headers["web2py-component-flash"] = T('Preferences saved correctly')
+            except:
+                response.headers["web2py-component-flash"] = T('Preferences saved on session only')	
+                session.editor_settings = dict(config.items('editor'))		
+            response.headers["web2py-component-command"] = "update_theme('%s'); jQuery('a[href=#editor_settings] button.close').click();" % config.get('editor', 'theme')
+            return
+        else:
+            details = {'filename':'settings', 'id':'editor_settings', 'force': False}
+            details['plain_html'] = response.render('default/editor_settings.html', {'editor_settings':preferences})
+            return response.json(details)
 
     """ File edit handler """
     # Load json only if it is ajax edited...
