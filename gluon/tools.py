@@ -1794,7 +1794,7 @@ class Auth(object):
                 guess = keys.get('email', 'anonymous').split('@')[0]
                 keys['first_name'] = keys.get('username', guess)
             user_id = table_user.insert(**table_user._filter_fields(keys))
-            user = table_user[user_id]            
+            user = table_user[user_id]
             print user
             if self.settings.create_user_groups:
                 group_id = self.add_group(
@@ -1856,11 +1856,14 @@ class Auth(object):
             delattr(user,'password')
         else:
             user = Row(user)
-            for key,value in user.items():
+            for key, value in user.items():
                 if callable(value) or key=='password':
                     delattr(user,key)
+        sessdb = current.response.session_db_table and current.response.session_db_table._db or None
         current.session.renew(
-            clear_session=not self.settings.keep_session_onlogin, db=self.db)
+            clear_session=not self.settings.keep_session_onlogin,
+            db=sessdb
+            )
         current.session.auth = Storage(
             user = user,
             last_visit=current.request.now,
@@ -2247,8 +2250,10 @@ class Auth(object):
 
         current.session.auth = None
         current.session.flash = self.messages.logged_out
+        sessdb = current.response.session_db_table and current.response.session_db_table._db or None
         current.session.renew(
-            clear_session=not self.settings.keep_session_onlogout, db=self.db)
+            clear_session=not self.settings.keep_session_onlogout,
+            db=sessdb)
         if not next is None:
             redirect(next)
 
@@ -4913,7 +4918,7 @@ class Expose(object):
     def __init__(self, base=None, basename=None, extensions=None, allow_download=True):
         """
         Usage:
-        
+
         def static():
             return dict(files=Expose())
 
@@ -4995,7 +5000,7 @@ class Expose(object):
         return ''
 
     def xml(self):
-        return DIV(            
+        return DIV(
             H2(self.breadcrumbs(self.basename)),
             self.paragraph or '',
             self.table_folders(),
@@ -5154,7 +5159,7 @@ class Wiki(object):
                     db.wiki_tag.insert(name=tag, wiki_page=page.id)
         db.wiki_page._after_insert.append(update_tags_insert)
         db.wiki_page._after_update.append(update_tags_update)
-       
+
         if (auth.user and
             check_credentials(current.request, gae_login=False) and
             not 'wiki_editor' in auth.user_groups.values()):
