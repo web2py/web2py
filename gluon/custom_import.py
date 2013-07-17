@@ -57,7 +57,7 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
     # if not relative and not from applications:
     if hasattr(current, 'request') \
             and level <= 0 \
-            and not name.split('.')[0] in INVALID_MODULES \
+            and not name.partition('.')[0] in INVALID_MODULES \
             and isinstance(globals, dict):
         import_tb = None
         try:
