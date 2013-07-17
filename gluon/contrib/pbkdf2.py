@@ -40,15 +40,32 @@
     :copyright: (c) Copyright 2011 by Armin Ronacher.
     :license: BSD, see LICENSE for more details.
 """
-import hmac
-import hashlib
+#import hmac
+#import hashlib
+try:
+    # Use PyCrypto (if available).
+    from Crypto.Hash import HMAC as hmac, SHA as sha1
+except ImportError:
+    # PyCrypto not available.  Use the Python standard library.
+    import hmac
+    try:
+        from hashlib import sha1
+    except ImportError:
+        # hashlib not available.  Use the old sha module.
+        import sha as sha1
+
 from struct import Struct
 from operator import xor
 from itertools import izip, starmap
-
+from collections import deque
 
 _pack_int = Struct('>I').pack
 
+try:
+    from Crypto.Util.strxor import strxor
+except ImportError:
+    def strxor(a, b):
+        return ''.join(chr(xor(ord(x), ord(y))) for x,y in  izip(a, b))
 
 def pbkdf2_hex(data, salt, iterations=1000, keylen=24, hashfunc=None):
     """Like :func:`pbkdf2_bin` but returns a hex encoded string."""
@@ -61,20 +78,20 @@ def pbkdf2_bin(data, salt, iterations=1000, keylen=24, hashfunc=None):
     key of `keylen` bytes.  By default SHA-1 is used as hash function,
     a different hashlib `hashfunc` can be provided.
     """
-    hashfunc = hashfunc or hashlib.sha1
+    hashfunc = hashfunc or sha1
     mac = hmac.new(data, None, hashfunc)
     def _pseudorandom(x, mac=mac):
         h = mac.copy()
         h.update(x)
-        return map(ord, h.digest())
-    buf = []
+        return h.digest()
+    buf = deque()
     for block in xrange(1, -(-keylen // mac.digest_size) + 1):
         rv = u = _pseudorandom(salt + _pack_int(block))
         for i in xrange(iterations - 1):
-            u = _pseudorandom(''.join(map(chr, u)))
-            rv = starmap(xor, izip(rv, u))
+            u = _pseudorandom(u)
+            rv = strxor(rv, u)
         buf.extend(rv)
-    return ''.join(map(chr, buf))[:keylen]
+    return ''.join(buf)[:keylen]
 
 
 def test():
