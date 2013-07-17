@@ -24,6 +24,8 @@ import socket
 import base64
 import zlib
 
+_struct_2_long_long = struct.Struct('=QQ')
+
 python_version = sys.version_info[0]
 
 if python_version == 2:
@@ -31,6 +33,15 @@ if python_version == 2:
 else:
     import pickle
 
+try:
+    from Crypto.Hash import MD5 as md5, \
+        SHA as sha1, \
+        SHA224 as sha224, \
+        SHA256 as sha256, \
+        SHA384 as sha384, \
+        SHA512 as sha512
+except ImportError:
+    from hashlib import md5, sha1, sha224, sha256, sha384, sha512
 
 try:
     from Crypto.Cipher import AES
@@ -69,7 +80,7 @@ def compare(a, b):
 
 def md5_hash(text):
     """ Generate a md5 hash with the given text """
-    return hashlib.md5(text).hexdigest()
+    return md5(text).hexdigest()
 
 
 def simple_hash(text, key='', salt='', digest_alg='md5'):
@@ -102,17 +113,17 @@ def get_digest(value):
         return value
     value = value.lower()
     if value == "md5":
-        return hashlib.md5
+        return md5
     elif value == "sha1":
-        return hashlib.sha1
+        return sha1
     elif value == "sha224":
-        return hashlib.sha224
+        return sha224
     elif value == "sha256":
-        return hashlib.sha256
+        return sha256
     elif value == "sha384":
-        return hashlib.sha384
+        return sha384
     elif value == "sha512":
-        return hashlib.sha512
+        return sha512
     else:
         raise ValueError("Invalid digest algorithm: %s" % value)
 
@@ -212,7 +223,7 @@ This is not specific to web2py; consider deploying on a different operating syst
         packed = ''.join(chr(x) for x in ctokens) # python 2
     else:
         packed = bytes([]).join(bytes([x]) for x in ctokens) # python 3
-    unpacked_ctokens = struct.unpack('=QQ', packed)
+    unpacked_ctokens = _struct_2_long_long.unpack(packed)
     return unpacked_ctokens, have_urandom
 UNPACKED_CTOKENS, HAVE_URANDOM = initialize_urandom()
 
@@ -244,14 +255,12 @@ def web2py_uuid(ctokens=UNPACKED_CTOKENS):
     """
     rand_longs = (random.getrandbits(64), random.getrandbits(64))
     if HAVE_URANDOM:
-        urand_longs = struct.unpack('=QQ', fast_urandom16())
-        byte_s = struct.pack('=QQ',
-                             rand_longs[0] ^ urand_longs[0] ^ ctokens[0],
-                             rand_longs[1] ^ urand_longs[1] ^ ctokens[1])
+        urand_longs = _struct_2_long_long.unpack(fast_urandom16())
+        byte_s = _struct_2_long_long.pack(rand_longs[0] ^ urand_longs[0] ^ ctokens[0],
+                                          rand_longs[1] ^ urand_longs[1] ^ ctokens[1])
     else:
-        byte_s = struct.pack('=QQ',
-                             rand_longs[0] ^ ctokens[0],
-                             rand_longs[1] ^ ctokens[1])
+        byte_s = _struct_2_long_long.pack(rand_longs[0] ^ ctokens[0],
+                                          rand_longs[1] ^ ctokens[1])
     return str(uuid.UUID(bytes=byte_s, version=4))
 
 REGEX_IPv4 = re.compile('(\d+)\.(\d+)\.(\d+)\.(\d+)')
