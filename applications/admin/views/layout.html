@@ -17,7 +17,7 @@
 
     <body class="{{=T('direction: ltr') == 'direction: rtl' and 'RTLbody' or ''}} {{block sectionclass}}home{{end}}">
 
-        <!-- NAVBAR 
+        <!-- NAVBAR
         ============== -->
         <div id="header" class="navbar navbar-inverse navbar-fixed-top">
             <div class="navbar-inner">
@@ -43,7 +43,7 @@
             </div><!-- /navbar-inner -->
         </div><!-- /#header -->
 
-        <!-- MAIN 
+        <!-- MAIN
         =========== -->
             <div id="main" class="container-fluid">
                 <div id="main_inner" class="row-fluid">
@@ -54,7 +54,7 @@
                 </div><!-- /main row-fluid -->
             </div><!-- /#main -->
 
-        <!-- FOOTER 
+        <!-- FOOTER
         ============== -->
         <footer id="footer" class="fixed">
             <p><span>{{=T('Powered by')}} {{=A('web2py', _href='http://www.web2py.com')}}&trade; {{=T('created by')}} Massimo Di Pierro &copy;2007-{{=request.now.year}}
@@ -70,19 +70,43 @@
             </p>
         </footer><!-- /#footer -->
 
-        <!-- BS JAVASCRIPT 
+        <!-- BS JAVASCRIPT
         ====================== -->
         <script src="{{=URL('static','js/bootstrap.min.js')}}"></script>
-        <script type="text/javascript">  
-            jQuery(document).ready(function(){  
-                jQuery("[rel=tooltip]").tooltip();  
+        <script type="text/javascript">
+            jQuery(document).ready(function(){
+                jQuery("[rel=tooltip]").tooltip();
             });
         </script>
-	{{if request.function in ('index','site'):}}
-	<a style="position:fixed;bottom:0;left:0;z-index:1000" href="https://groups.google.com/forum/?fromgroups#!forum/web2py" target="_blank">
-	  <!-- http://webchat.freenode.net/?channels=web2py" //-->
-	  <img src="{{=URL('static','images/questions.png')}}" />
-	</a>
-	{{pass}}
+        <script>
+            // ====================
+            // upload input mask
+            // ====================
+
+            function FileSelectHandler(e) {
+                e.stopPropagation();
+                var filename = e.target.value.split(/\\|\//).pop();
+                jQuery('#fileselect>span').removeClass('txtPlaceholder').text(filename)
+            }
+
+            jQuery(document).ready(function(){
+                var iupload = jQuery('#appupdate_file');
+                var ow = 300, oh = 20;
+                var iplaceholder = jQuery('<span class="txtPlaceholder">{{=T("no package selected")}}</span>'),
+                    iuploadbtn = jQuery('<button class="btn btn-inverse btn-mini uploadbtn"><i class="icon-white icon-circle-arrow-up"></i></button>');
+                iupload
+                    .addClass('masked')
+                    .wrap('<div id="fileselect" style="width:'+ow+'px;height:'+oh+'px"></div>')
+                    .on('change', function(event){FileSelectHandler(event)});
+                jQuery('#fileselect').append(iplaceholder, iuploadbtn);
+            });
+        </script>
+
+        {{if request.function in ('index','site'):}}
+        <a style="position:fixed;bottom:0;left:0;z-index:1000" href="https://groups.google.com/forum/?fromgroups#!forum/web2py" target="_blank">
+            <!-- http://webchat.freenode.net/?channels=web2py" //-->
+            <img src="{{=URL('static','images/questions.png')}}" />
+        </a>
+        {{pass}}
     </body>
 </html>

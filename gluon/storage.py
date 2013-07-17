@@ -178,7 +178,6 @@ class Messages(Settings):
             return str(self.T(value))
         return value
 
-
 class FastStorage(dict):
     """
     Eventually this should replace class Storage but causes memory leak

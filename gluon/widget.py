@@ -29,15 +29,6 @@ from settings import global_settings
 from shell import run, test
 from utils import is_valid_ip_address, is_loopback_ip_address, getipaddrinfo
 
-try:
-    import Tkinter
-    import tkMessageBox
-    import contrib.taskbar_widget
-    from winservice import register_service_handler, Web2pyService
-    have_winservice = True
-except:
-    have_winservice = False
-
 
 ProgramName = 'web2py Web Framework'
 ProgramAuthor = 'Created by Massimo Di Pierro, Copyright 2007-' + str(
@@ -138,6 +129,7 @@ def start_browser(url, startup=False):
 
 def presentation(root):
     """ Draw the splash screen """
+    import Tkinter
 
     root.withdraw()
 
@@ -193,6 +185,9 @@ class web2pyDialog(object):
 
     def __init__(self, root, options):
         """ web2pyDialog constructor  """
+
+        import Tkinter
+        import tkMessageBox
 
         root.title('web2py server')
         self.root = Tkinter.Toplevel(root)
@@ -321,6 +316,7 @@ class web2pyDialog(object):
         self.button_stop.configure(state='disabled')
 
         if options.taskbar:
+            import contrib.taskbar_widget
             self.tb = contrib.taskbar_widget.TaskBarIcon()
             self.checkTaskBar()
 
@@ -460,6 +456,7 @@ class web2pyDialog(object):
     def error(self, message):
         """ Show error message """
 
+        import tkMessageBox
         tkMessageBox.showerror('web2py start server', message)
 
     def start(self):
@@ -1142,12 +1139,13 @@ def start(cron=True):
     # ## if -W install/start/stop web2py as service
     if options.winservice:
         if os.name == 'nt':
-            if have_winservice:
+            try:
+                from winservice import register_service_handler, Web2pyService
                 register_service_handler(
                     argv=['', options.winservice],
                     opt_file=options.config,
                     cls=Web2pyService)
-            else:
+            except ImportError:
                 print 'Error: Missing python module winservice'
                 sys.exit(1)
         else:
@@ -1188,6 +1186,7 @@ def start(cron=True):
             logger.warn(
                 'GUI not available because Tk library is not installed')
             havetk = False
+            options.nogui = True
 
         if options.password == '<ask>' and havetk or options.taskbar and havetk:
             try:

@@ -282,6 +282,52 @@ td.cbcentered>input, th.cbcentered>input { margin-top:-1px; }
 .languageform input.untranslated { background-color:#FC0; }
 
 /*=============================================================
+MASKED UPLOAD INPUT (NO BOOTSTRAP RELATED)
+==============================================================*/
+#appupdate_file.masked {
+margin: 0;
+opacity: 0;
+-ms-filter: "progid:DXImageTransform.Microsoft.Alpha(Opacity=0)"; /* IE 8 */
+filter: alpha(opacity=0); /* IE 7 */
+font-size: 100px;
+position: absolute;
+top: 0;
+right: 0;
+z-index: 410;
+}
+
+#fileselect {
+padding: 4px 6px;
+border: 1px solid #ccc;
+border-radius: 4px;
+color: #555;
+cursor: default;
+position: relative;
+z-index: 400;
+font-size: 14px;
+background-color: #fff;
+margin-bottom: 10px;
+overflow: hidden;
+}
+
+#fileselect span {
+position: absolute;
+left: 6px;
+top: 4px;
+}
+
+.uploadbtn {
+position: absolute;
+top: 3px;
+right: 3px;
+}
+
+.txtPlaceholder {
+font-style: italic;
+color: #ccc;
+}
+
+/*=============================================================
  MEDIA QUERIES
 ==============================================================*/
  @media (max-width: 800px) { .step [rel="pagebookmark"]>.hashstick { /*top:-54px;*/ display:block; }

@@ -623,7 +623,10 @@ def manage():
             orderby = 'role' if not request.args(3) or '.group_id' not in request.args(3) else None
         elif table == auth.table_permission():
             orderby = 'group_id'
-    grid = SQLFORM.smartgrid(table, args=request.args[:2], user_signature=True,
-                             orderby=orderby, linked_tables=linked_tables,
-                             maxtextlength=1000, formname=formname)
+    kwargs = dict(user_signature=True, maxtextlength=1000,
+                  orderby=orderby, linked_tables=linked_tables)
+    smartgrid_args = manager_action.get('smartgrid_args', {})
+    kwargs.update(**smartgrid_args.get('DEFAULT', {}))
+    kwargs.update(**smartgrid_args.get(table._tablename, {}))
+    grid = SQLFORM.smartgrid(table, args=request.args[:2], formname=formname, **kwargs)
     return grid

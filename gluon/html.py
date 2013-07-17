@@ -1198,12 +1198,12 @@ def TAG_pickler(data):
     return (TAG_unpickler, (marshal_dump,))
 
 
-class __tag__(DIV):
+class __tag_div__(DIV):
     def __init__(self,name,*a,**b):
         DIV.__init__(self,*a,**b)
         self.tag = name
 
-copy_reg.pickle(__tag__, TAG_pickler, TAG_unpickler)
+copy_reg.pickle(__tag_div__, TAG_pickler, TAG_unpickler)
 
 class __TAG__(XmlComponent):
 
@@ -1223,7 +1223,7 @@ class __TAG__(XmlComponent):
             name = name[:-1] + '/'
         if isinstance(name, unicode):
             name = name.encode('utf-8')
-        return lambda *a,**b: __tag__(name,*a,**b)
+        return lambda *a,**b: __tag_div__(name,*a,**b)
 
     def __call__(self, html):
         return web2pyHTMLParser(decoder.decoder(html)).tree
@@ -1481,9 +1481,13 @@ class A(DIV):
             self.append(self['_href'])
         if not self['_disable_with']:
             self['_data-w2p_disable_with'] = 'default'
+        if self['callback'] and not self['_id']:
+            self['_id'] = web2py_uuid()        
         if self['delete']:
             self['_data-w2p_remove'] = self['delete']
         if self['target']:
+            if self['target'] == '<self>':
+                self['target'] = self['_id']
             self['_data-w2p_target'] = self['target']
         if self['component']:
             self['_data-w2p_method'] = 'GET'
@@ -1636,12 +1640,27 @@ class TR(DIV):
         self._wrap_components((TD, TH), TD)
 
 
+class __TRHEAD__(DIV):
+    """
+    __TRHEAD__ Component, internal only
+
+    If subcomponents are not TD/TH-components they will be wrapped in a TH
+
+    see also :class:`DIV`
+    """
+
+    tag = 'tr'
+
+    def _fixup(self):
+        self._wrap_components((TD, TH), TH)
+
+
 class THEAD(DIV):
 
     tag = 'thead'
 
     def _fixup(self):
-        self._wrap_components(TR, TR)
+        self._wrap_components((__TRHEAD__, TR), __TRHEAD__)
 
 
 class TBODY(DIV):
@@ -2283,7 +2302,7 @@ class BEAUTIFY(DIV):
     example::
 
         >>> BEAUTIFY(['a', 'b', {'hello': 'world'}]).xml()
-        '<div><table><tr><td><div>a</div></td></tr><tr><td><div>b</div></td></tr><tr><td><div><table><tr><td style="font-weight:bold;vertical-align:top">hello</td><td valign="top">:</td><td><div>world</div></td></tr></table></div></td></tr></table></div>'
+        '<div><table><tr><td><div>a</div></td></tr><tr><td><div>b</div></td></tr><tr><td><div><table><tr><td style="font-weight:bold;vertical-align:top;">hello</td><td style="vertical-align:top;">:</td><td><div>world</div></td></tr></table></div></td></tr></table></div>'
 
     turns any list, dictionary, etc into decent looking html.
     Two special attributes are
@@ -2335,8 +2354,8 @@ class BEAUTIFY(DIV):
                             continue
                         rows.append(
                             TR(
-                                TD(filtered_key, _style='font-weight:bold;vertical-align:top'),
-                                TD(':', _valign='top'),
+                                TD(filtered_key, _style='font-weight:bold;vertical-align:top;'),
+                                TD(':', _style='vertical-align:top;'),
                                 TD(BEAUTIFY(value, **attributes))))
                     components.append(TABLE(*rows, **attributes))
                     continue

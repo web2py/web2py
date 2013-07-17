@@ -90,6 +90,7 @@ div.controls select +.error_wrapper {margin-left:5px;}
 .ie-lte7 div.error{color:#fff;}
 
 /* beautify brand */
+.navbar {margin-bottom:0}
 .navbar-inverse .brand{color:#c6cecc;}
 .navbar-inverse .brand b{display:inline-block;margin-top:-1px;}
 .navbar-inverse .brand b>span{font-size:22px;color:white}
@@ -221,6 +222,10 @@ td.w2p_fw ul{margin-left:0px;}
 .web2py_grid form table{width:auto;}
 /* auth_user_remember checkbox extrapadding in IE fix */
 .ie-lte9 input#auth_user_remember.checkbox {padding-left:0;}
+
+div.controls .error {
+    width: auto;
+}
 
 /*=============================================================
                        MEDIA QUERIES

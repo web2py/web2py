@@ -188,6 +188,10 @@ class TestBareHelpers(unittest.TestCase):
 
     def testTHEAD(self):
         self.assertEqual(THEAD('<>', _a='1', _b='2').xml(),
+                         '<thead a="1" b="2"><tr><th>&lt;&gt;</th></tr></thead>')
+        #self.assertEqual(THEAD(TRHEAD('<>'), _a='1', _b='2').xml(),
+        #                 '<thead a="1" b="2"><tr><th>&lt;&gt;</th></tr></thead>')
+        self.assertEqual(THEAD(TR('<>'), _a='1', _b='2').xml(),
                          '<thead a="1" b="2"><tr><td>&lt;&gt;</td></tr></thead>')
 
     def testTITLE(self):

@@ -37,13 +37,15 @@ import datetime
 import urllib
 import re
 import cStringIO
-from gluon import current, redirect
+from globals import current
+from http import redirect
 import inspect
-import settings
-is_gae = settings.global_settings.web2py_runtime_gae
 
-
-
+try:
+    import settings
+    is_gae = settings.global_settings.web2py_runtime_gae
+except ImportError:
+    is_gae = False # this is an assumption (if settings missing)
 
 table_field = re.compile('[\w_]+\.[\w_]+')
 widget_class = re.compile('^\w*')
@@ -773,7 +775,7 @@ def formstyle_bootstrap(form, fields):
         _submit = False
 
         if isinstance(controls, INPUT):
-            controls.add_class('input-xlarge')
+            controls.add_class('span4')
             if controls['_type'] == 'submit':
                 # flag submit button
                 _submit = True
@@ -783,13 +785,13 @@ def formstyle_bootstrap(form, fields):
 
         # For password fields, which are wrapped in a CAT object.
         if isinstance(controls, CAT) and isinstance(controls[0], INPUT):
-            controls[0].add_class('input-xlarge')
+            controls[0].add_class('span4')
 
         if isinstance(controls, SELECT):
-            controls.add_class('input-xlarge')
+            controls.add_class('span4')
 
         if isinstance(controls, TEXTAREA):
-            controls.add_class('input-xlarge')
+            controls.add_class('span4')
 
         if isinstance(label, LABEL):
             label['_class'] = 'control-label'
@@ -2413,13 +2415,38 @@ class SQLFORM(FORM):
                 htmltable, _class='web2py_htmltable',
                 _style='width:100%;overflow-x:auto;-ms-overflow-x:scroll')
             if selectable:
-                htmltable = FORM(htmltable, INPUT(
-                        _type="submit", _value=T(selectable_submit_button)))
+                if not callable(selectable):
+                    #now expect that selectable and related parameters are iterator (list, tuple, etc)
+                    inputs = []
+                    for i, submit_info in enumerate(selectable):
+                        submit_text = submit_info[0]
+                        submit_class = submit_info[2] if len(submit_info) > 2 else ''
+
+                        input_ctrl = INPUT(_type="submit", _name='submit_%d' % i, _value=T(submit_text))
+                        input_ctrl.add_class(submit_class)
+                        inputs.append(input_ctrl)
+                else:
+                    inputs = [INPUT(_type="submit", _value=T(selectable_submit_button))]
+
+                if formstyle == 'bootstrap':
+                    # add space between buttons
+                    #inputs = sum([[inp, ' '] for inp in inputs], [])[:-1]
+                    htmltable = FORM(htmltable, DIV(_class='form-actions', *inputs))
+                else:
+                    htmltable = FORM(htmltable, *inputs)
+
                 if htmltable.process(formname=formname).accepted:
                     htmltable.vars.records = htmltable.vars.records or []
                     htmltable.vars.records = htmltable.vars.records if type(htmltable.vars.records) == list else [htmltable.vars.records]
                     records = [int(r) for r in htmltable.vars.records]
-                    selectable(records)
+                    if not callable(selectable):
+                        for i, submit_info in enumerate(selectable):
+                            submit_callback = submit_info[1]
+                            if htmltable.vars.get('submit_%d' % i, False):
+                                submit_callback(records)
+                                break
+                    else:
+                        selectable(records)
                     redirect(referrer)
         else:
             htmltable = DIV(T('No records found'))

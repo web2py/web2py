@@ -223,16 +223,21 @@ td.w2p_fw ul{margin-left:0px;}
 /* auth_user_remember checkbox extrapadding in IE fix */
 .ie-lte9 input#auth_user_remember.checkbox {padding-left:0;}
 
+div.controls .error {
+    width: auto;
+}
+
 /*=============================================================
                        MEDIA QUERIES
 ==============================================================*/
 
 @media only screen and (max-width:979px){
   body{padding-top:0px;}
-  #navbar{top:5px;}
+  #navbar{/*top:5px;*/}
   div.flash{right:5px;}
   .dropdown-menu ul{visibility:visible;}
 }
+
 @media only screen and (max-width:479px){
   body{
     padding-left:10px;
@@ -245,4 +250,11 @@ td.w2p_fw ul{margin-left:0px;}
   input[type="text"],input[type="password"],select{
     width:95%;
   }
+}
+
+@media (max-width: 767px) {
+    .navbar {
+        margin-right: -20px;
+        margin-left: -20px;
+    }
 }

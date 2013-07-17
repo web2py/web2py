@@ -333,7 +333,7 @@ def highlight(
                   == '_' and value])
     if fa:
         fa = ' ' + fa
-    return '<table%s><tr valign="top"><td style="width:40px; text-align: right;"><pre style="%s">%s</pre></td><td><pre style="%s">%s</pre></td></tr></table>'\
+    return '<table%s><tr style="vertical-align:top;"><td style="width:40px; text-align: right;"><pre style="%s">%s</pre></td><td><pre style="%s">%s</pre></td></tr></table>'\
         % (fa, linenumbers_style, numbers, code_style, code)
 
 

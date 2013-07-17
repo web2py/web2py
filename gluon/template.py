@@ -800,8 +800,8 @@ class DummyResponse():
     def write(self, data, escape=True):
         if not escape:
             self.body.write(str(data))
-        elif hasattr(data, 'as_html') and callable(data.as_html):
-            self.body.write(data.as_html())
+        elif hasattr(data, 'xml') and callable(data.xml):
+            self.body.write(data.xml())
         else:
             # make it a string
             if not isinstance(data, (str, unicode)):

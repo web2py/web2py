@@ -7,6 +7,10 @@
    * Released under the MIT license
    *
    */
+  if($.web2py !== undefined) {
+    $.error('web2py.js has already been loaded!');
+  }
+
 
   String.prototype.reverse = function () {
     return this.split('').reverse().join('');
@@ -36,12 +40,13 @@
         }
       } else {
         pcs = [];
-        if(s != null && s != undefined) for(i = 0; i < s.length; i++) {
+        if(s != null && s != undefined)
+          for(i = 0; i < s.length; i++) {
             q = $("[name=" + s[i] + "]").serialize();
             if(q) {
               pcs.push(q);
             }
-        }
+          }
         if(pcs.length > 0) {
           query = pcs.join("&");
         }
@@ -147,9 +152,9 @@
       web2py.component_handler(target);
     },
     //manage errors in forms
-    manage_errors: function(target) {
+    manage_errors: function (target) {
       $('.error', target).hide().slideDown('slow');
-      //$('.error', target).hide().fadeIn('slow');
+      //jQuery('.error', target).hide().fadeIn('slow');
     },
     event_handlers: function () {
       /* This is called once for page
@@ -172,7 +177,8 @@
       });
       var confirm_message = (typeof w2p_ajax_confirm_message != 'undefined') ? w2p_ajax_confirm_message : "Are you sure you want to delete this object?";
       doc.on('click', "input[type='checkbox'].delete", function () {
-        if(this.checked) if(!web2py.confirm(confirm_message)) this.checked = false;
+        if(this.checked)
+          if(!web2py.confirm(confirm_message)) this.checked = false;
       });
 
       doc.ajaxSuccess(function (e, xhr) {
@@ -424,7 +430,7 @@
       el.addClass('disabled');
       var method = el.prop('type') == 'submit' ? 'val' : 'html';
       // store enabled state
-      el.data('w2p:enable-with', el[method]);
+      el.data('w2p:enable-with', el[method]());
       /* little addition by default*/
       if((el.data('w2p_disable_with') == 'default') || (el.data('w2p_disable_with') === undefined)) {
         el.data('w2p_disable_with', 'Working...');
@@ -441,7 +447,7 @@
     enableElement: function (el) {
       var method = el.prop('type') == 'submit' ? 'val' : 'html';
       if(el.data('w2p:enable-with') !== undefined) {
-         // set to old enabled state
+        // set to old enabled state
         el[method](el.data('w2p:enable-with'));
         el.removeData('w2p:enable-with'); // clean up cache
       }
@@ -453,39 +459,39 @@
       web2py.component(action, target, 0, 1, element);
     },
     //helper for flash messages
-    flash: function(message, status) {
+    flash: function (message, status) {
       var flash = $('.flash');
       web2py.hide_flash();
       flash.html(message).addClass(status);
       if(flash.html()) flash.append('<span id="closeflash"> &times; </span>').slideDown();
     },
-    hide_flash: function() {
+    hide_flash: function () {
       $('.flash').hide().html('');
     },
-    show_if_handler: function(target) {
-        var triggers = {};
-        var show_if = function () {
-          var t = $(this);
-          var id = t.attr('id');
-          t.attr('value', t.val());
-          for(var k = 0; k < triggers[id].length; k++) {
-            var dep = $('#' + triggers[id][k], target);
-            var tr = $('#' + triggers[id][k] + '__row', target);
-            if(t.is(dep.attr('data-show-if'))) tr.slideDown();
-            else tr.hide();
-          }
-        };
-        $('[data-show-trigger]', target).each(function () {
-          var name = $(this).attr('data-show-trigger');
-          if(!triggers[name]) triggers[name] = [];
-          triggers[name].push($(this).attr('id'));
-        });
-        for(var name in triggers) {
-            $('#' + name, target).change(show_if).keyup(show_if);
-            show_if.call($('#' + name, target));
-        };
+    show_if_handler: function (target) {
+      var triggers = {};
+      var show_if = function () {
+        var t = $(this);
+        var id = t.attr('id');
+        t.attr('value', t.val());
+        for(var k = 0; k < triggers[id].length; k++) {
+          var dep = $('#' + triggers[id][k], target);
+          var tr = $('#' + triggers[id][k] + '__row', target);
+          if(t.is(dep.attr('data-show-if'))) tr.slideDown();
+          else tr.hide();
+        }
+      };
+      $('[data-show-trigger]', target).each(function () {
+        var name = $(this).attr('data-show-trigger');
+        if(!triggers[name]) triggers[name] = [];
+        triggers[name].push($(this).attr('id'));
+      });
+      for(var name in triggers) {
+        $('#' + name, target).change(show_if).keyup(show_if);
+        show_if.call($('#' + name, target));
+      };
     },
-    component_handler : function (target) {
+    component_handler: function (target) {
       $('div[data-w2p_remote]', target).each(function () {
         var remote, times, timeout, target;
         var el = $(this);
@@ -494,8 +500,7 @@
         timeout = el.data('w2p_timeout');
         target = el.attr('id');
         web2py.component(remote, target, timeout, times, $(this));
-        }
-      )
+      })
     },
     a_handler: function (el, e) {
       e.preventDefault();
@@ -517,14 +522,16 @@
       }
       if(target == undefined) {
         if(method == 'GET') {
-          web2py.simple_component(action, el.attr('id'), el); //not working with original
+          web2py.ajax_page('get', action, [], 'bogus', el); //fixme?
+          //web2py.simple_component(action, el.attr('id'), el); //not working with original
         } else if(method == 'POST') {
           //should be web2py.ajax(action, [], ''); but it's too simple
           web2py.ajax_page('post', action, [], 'bogus', el); //fixme?
         }
       } else {
         if(method == 'GET') {
-          web2py.simple_component(action, target, el);
+          web2py.ajax_page('get', action, [], target, el);
+          //web2py.simple_component(action, target, el);
         } else if(method == 'POST') {
           //should be web2py.ajax(action, [], target); but it's too simple
           web2py.ajax_page('post', action, [], target, el);
@@ -539,7 +546,7 @@
         toremove = el.closest(toremove);
         if(!toremove.length) {
           //this enables removal of whatever selector if a closest is not found
-          toremove = $(toremove);
+          toremove = jQuery(toremove);
         }
         toremove.remove();
       }
@@ -571,16 +578,17 @@
         web2py.enableElement($(this));
       });
     },
-     /* Disables form elements:
+    /* Disables form elements:
   - Caches element value in 'ujs:enable-with' data store
   - Replaces element text with value of 'data-disable-with' attribute
   - Sets disabled property to true
     */
-    disableFormElements: function(form) {
-      form.find(web2py.disableSelector).each(function() {
-        var element = $(this), method = element.is('button') ? 'html' : 'val';
+    disableFormElements: function (form) {
+      form.find(web2py.disableSelector).each(function () {
+        var element = $(this),
+          method = element.is('button') ? 'html' : 'val';
         var disable_with = element.data('w2p_disable_with');
-        if (disable_with == undefined) {
+        if(disable_with == undefined) {
           element.data('w2p_disable_with', element[method]())
         }
         element.data('w2p:enable-with', element[method]());
@@ -593,14 +601,15 @@
   -     Replaces element text with cached value from 'ujs:enable-with' data store (created in `disableFormElements`)
   -     Sets disabled property to false
     */
-    enableFormElements: function(form) {
-      form.find(web2py.enableSelector).each(function() {
-        var element = $(this), method = element.is('button') ? 'html' : 'val';
-        if (element.data('w2p:enable-with')) element[method](element.data('w2p:enable-with'));
+    enableFormElements: function (form) {
+      form.find(web2py.enableSelector).each(function () {
+        var element = $(this),
+          method = element.is('button') ? 'html' : 'val';
+        if(element.data('w2p:enable-with')) element[method](element.data('w2p:enable-with'));
         element.prop('disabled', false);
       });
     },
-    form_handlers: function() {
+    form_handlers: function () {
       var el = $(document);
       el.on('ajax:beforeSend', 'form[data-w2p_target]', function (e) {
         web2py.disableFormElements($(this));
@@ -626,28 +635,28 @@
 })(jQuery);
 
 /* compatibility code - start */
-ajax = $.web2py.ajax;
-web2py_component = $.web2py.component;
-web2py_websocket = $.web2py.websocket;
-web2py_ajax_page = $.web2py.ajax_page;
+ajax = jQuery.web2py.ajax;
+web2py_component = jQuery.web2py.component;
+web2py_websocket = jQuery.web2py.websocket;
+web2py_ajax_page = jQuery.web2py.ajax_page;
 //needed for IS_STRONG(entropy)
-web2py_validate_entropy = $.web2py.validate_entropy;
+web2py_validate_entropy = jQuery.web2py.validate_entropy;
 //needed for crud.search and SQLFORM.grid's search
-web2py_ajax_fields = $.web2py.ajax_fields;
+web2py_ajax_fields = jQuery.web2py.ajax_fields;
 //used for LOAD(ajax=False)
-web2py_trap_form = $.web2py.trap_form;
+web2py_trap_form = jQuery.web2py.trap_form;
 
 /*undocumented - rare*/
-popup = $.web2py.popup;
-collapse = $.web2py.collapse;
-fade = $.web2py.fade;
+popup = jQuery.web2py.popup;
+collapse = jQuery.web2py.collapse;
+fade = jQuery.web2py.fade;
 
 /* internals - shouldn't be needed
 
-web2py_ajax_init = $.web2py.ajax_init;
-web2py_event_handlers = $.web2py.event_handlers;
+web2py_ajax_init = jQuery.web2py.ajax_init;
+web2py_event_handlers = jQuery.web2py.event_handlers;
 
-web2py_trap_link = $.web2py.trap_link;
-web2py_calc_entropy = $.web2py.calc_entropy;
+web2py_trap_link = jQuery.web2py.trap_link;
+web2py_calc_entropy = jQuery.web2py.calc_entropy;
 */
 /* compatibility code - end*/

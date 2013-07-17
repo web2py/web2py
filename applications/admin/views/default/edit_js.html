@@ -4,168 +4,168 @@
 
 <form action="{{=URL('edit', args=filename)}}" method="post" name="editform" id="editform" class="form-inline row-fluid">
 <div class="span12 well well-small">
-	<label class="">{{=T('Save file:')}}</label>
-	<a value="save" title="{{=T('Save file: %s', filename)}}" href="#" name="save" onclick="return doClickSave();" class="icon saveicon" style="background-image: -webkit-linear-gradient(top,white,#E6E6E6);">{{=IMG(_src=URL('static', 'images/save_icon.png'), _alt=T('Save'))}}</a>
-	<label class="">{{=T('Saved file hash:')}}</label>
-	<input type="input" name="file_hash" value="{{=file_hash}}" class="input-long uneditable-input" readonly="readonly"/>
-	<label>{{=T('Last saved on:')}}</label>
-	<input type="input" name="saved_on" value="{{=saved_on}}" class="input-normal uneditable-input" readonly="readonly"/>
+    <label class="">{{=T('Save file:')}}</label>
+    <a value="save" title="{{=T('Save file: %s', filename)}}" href="#" name="save" onclick="return doClickSave();" class="icon saveicon" style="background-image: -webkit-linear-gradient(top,white,#E6E6E6);">{{=IMG(_src=URL('static', 'images/save_icon.png'), _alt=T('Save'))}}</a>
+    <label class="">{{=T('Saved file hash:')}}</label>
+    <input type="input" name="file_hash" value="{{=file_hash}}" class="input-long uneditable-input" readonly="readonly"/>
+    <label>{{=T('Last saved on:')}}</label>
+    <input type="input" name="saved_on" value="{{=saved_on}}" class="input-normal uneditable-input" readonly="readonly"/>
 {{if filetype=='python':}}
       {{=A(SPAN(T('toggle breakpoint')),
            _value="breakpoint", _name="breakpoint",
-           _onclick="return doToggleBreakpoint('%s','%s://%s%s',null);" % (filename, 
+           _onclick="return doToggleBreakpoint('%s','%s://%s%s',null);" % (filename,
                 request.env['wsgi_url_scheme'], request.env['http_host'],
                 URL(c='debug', f='toggle_breakpoint')),
            _class="button special btn btn-inverse")}}
-{{pass}} 
+{{pass}}
 {{if view_link:}}
-	{{=button(view_link, T('try view'))}}
+    {{=button(view_link, T('try view'))}}
 {{pass}}
 <p class="formfield">
 {{if functions:}}
-	<span style="text-align:left;" class="exposed">
-	{{=B(T('exposes:'))}} {{=XML(', '.join([A(f,_target="_blank", _href=URL(a=app,c=controller,f=f)).xml() for f in functions]))}}
-	</span>
+    <span style="text-align:left;" class="exposed">
+    {{=B(T('exposes:'))}} {{=XML(', '.join([A(f,_target="_blank", _href=URL(a=app,c=controller,f=f)).xml() for f in functions]))}}
+    </span>
 {{if editviewlinks:}}<br/>
-	{{=B(T('edit views:'))}}
-	{{=XML(', '.join([v.xml() for v in editviewlinks]))}}
+    {{=B(T('edit views:'))}}
+    {{=XML(', '.join([v.xml() for v in editviewlinks]))}}
 {{pass}}
 {{pass}}
 {{if edit_controller:}}
-	{{=B(T('edit controller:'))}}
-	{{=A(request.args[2]+'.py', _class="editor_filelink", _target="_blank", _href=edit_controller)}}
+    {{=B(T('edit controller:'))}}
+    {{=A(request.args[2]+'.py', _class="editor_filelink", _target="_blank", _href=edit_controller)}}
 {{pass}}
 </p>
 </div>
 
     <textarea style=" height:100%; direction:ltr;" id="textarea_{{=id}}" class="input-block-level" name="data" >{{=data}}</textarea>
-    <script>	
-	var editor = CodeMirror.fromTextArea(document.getElementById("textarea_{{=id}}"),{
-	{{if filetype=='html':}}
-		mode : "text/html", 
-		profile: 'xhtml',
-	{{else:}}
-		mode: { name: '{{=filetype}}'{{if filetype=='python':}},version: 2,singleLineStringErrors: false, {{pass}} },
-	{{pass}}
-		lineNumbers: true,
-		indentUnit: 4,
-		styleActiveLine: true,
-		autoCloseTags: true,
-		theme: current_theme,
-		tabMode: "shift",
-		lineWrapping: true,
-		gutters: ["CodeMirror-linenumbers", "breakpoints"],
-		{{if TEXT_EDITOR_KEYBINDING == 'emacs':}}keyMap: "emacs",{{pass}}
-		{{if TEXT_EDITOR_KEYBINDING == 'vi':}}keyMap: "vim",{{pass}}
-		matchBrackets: true,
-		autofocus: false,
-		height: "350px",
-		showTrailingSpace: true
-	});
-	  
-	editor.on("gutterClick", function(cm, n) {
-		var info = cm.lineInfo(n);
-		cm.setGutterMarker(n, "breakpoints", info.gutterMarkers ? null : makeMarker());
-		sel = {start: n, end: n, data: ''};
-		doToggleBreakpoint({{=XML("'%s','%s://%s%s'" % (filename, 
-   				             request.env['wsgi_url_scheme'], request.env['http_host'],
-               				 URL(c='debug', f='toggle_breakpoint')))}}, sel);
-	});
-		function makeMarker() {
-			var marker = document.createElement("div");
-		   marker.style.color = "#822";
-		   marker.innerHTML = "●";
-			marker.className = "breakpoint";
-	  		return marker;
-	   }
+    <script>
+    var editor = CodeMirror.fromTextArea(document.getElementById("textarea_{{=id}}"),{
+    {{if filetype=='html':}}
+        mode : "text/html",
+        profile: 'xhtml',
+    {{else:}}
+        mode: { name: '{{=filetype}}'{{if filetype=='python':}},version: 2,singleLineStringErrors: false, {{pass}} },
+    {{pass}}
+        lineNumbers: true,
+        indentUnit: 4,
+        styleActiveLine: true,
+        autoCloseTags: true,
+        theme: current_theme,
+        tabMode: "shift",
+        lineWrapping: true,
+        gutters: ["CodeMirror-linenumbers", "breakpoints"],
+        {{if TEXT_EDITOR_KEYBINDING == 'emacs':}}keyMap: "emacs",{{pass}}
+        {{if TEXT_EDITOR_KEYBINDING == 'vi':}}keyMap: "vim",{{pass}}
+        matchBrackets: true,
+        autofocus: false,
+        height: "350px",
+        showTrailingSpace: true
+    });
 
-		{{if filetype=='html':}}
-		// must be here or break emmet/zencoding for html
-		CodeMirror.defaults.extraKeys["Ctrl-S"] = 
-			function(instance) {
-				doClickSave();};
-		CodeMirror.defaults.extraKeys["Ctrl-F11"]= 
-			function(instance) {
-				setFullScreen(instance, !isFullScreen(instance));};
-		CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
-		CodeMirror.defaults.extraKeys["Esc"]=
-			function(instance) {
-				if (isFullScreen(instance)) {
-					setFullScreen(instance, false);};}
-		{{pass}}
-		{{if filetype=='python':}}
-			// must be here or break emmet/zencoding for python
-			CodeMirror.defaults.extraKeys["Ctrl-S"] = 
-				function(instance) {
-					doClickSave();};
-			CodeMirror.defaults.extraKeys["Ctrl-Space"] = 
-					"autocomplete";
-			CodeMirror.defaults.extraKeys["Ctrl-F11"]= 
-				function(instance) {
-					setFullScreen(instance, !isFullScreen(instance));};
-			CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
-			CodeMirror.defaults.extraKeys["Esc"]=
-				function(instance) {
-					if (isFullScreen(instance)) {
-						setFullScreen(instance, false);};}
-		//for autocomplete
-		CodeMirror.commands.autocomplete = function(cm) {
+    editor.on("gutterClick", function(cm, n) {
+        var info = cm.lineInfo(n);
+        cm.setGutterMarker(n, "breakpoints", info.gutterMarkers ? null : makeMarker());
+        sel = {start: n, end: n, data: ''};
+        doToggleBreakpoint({{=XML("'%s','%s://%s%s'" % (filename,
+                             request.env['wsgi_url_scheme'], request.env['http_host'],
+                             URL(c='debug', f='toggle_breakpoint')))}}, sel);
+    });
+        function makeMarker() {
+            var marker = document.createElement("div");
+           marker.style.color = "#822";
+           marker.innerHTML = "●";
+            marker.className = "breakpoint";
+            return marker;
+       }
+
+        {{if filetype=='html':}}
+        // must be here or break emmet/zencoding for html
+        CodeMirror.defaults.extraKeys["Ctrl-S"] =
+            function(instance) {
+                doClickSave();};
+        CodeMirror.defaults.extraKeys["Ctrl-F11"]=
+            function(instance) {
+                setFullScreen(instance, !isFullScreen(instance));};
+        CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
+        CodeMirror.defaults.extraKeys["Esc"]=
+            function(instance) {
+                if (isFullScreen(instance)) {
+                    setFullScreen(instance, false);};}
+        {{pass}}
+        {{if filetype=='python':}}
+            // must be here or break emmet/zencoding for python
+            CodeMirror.defaults.extraKeys["Ctrl-S"] =
+                function(instance) {
+                    doClickSave();};
+            CodeMirror.defaults.extraKeys["Ctrl-Space"] =
+                    "autocomplete";
+            CodeMirror.defaults.extraKeys["Ctrl-F11"]=
+                function(instance) {
+                    setFullScreen(instance, !isFullScreen(instance));};
+            CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
+            CodeMirror.defaults.extraKeys["Esc"]=
+                function(instance) {
+                    if (isFullScreen(instance)) {
+                        setFullScreen(instance, false);};}
+        //for autocomplete
+        CodeMirror.commands.autocomplete = function(cm) {
         CodeMirror.showHint(cm, CodeMirror.pythonHint);
       }
-		{{pass}}
-	store_changes_function = function(instance, changeObj) {
-		jQuery(instance).data('saved', false);
-		instance.off("change", store_changes_function);
-	}
-	editor.on("change", store_changes_function);
-		// save the editor as textarea data attribute	
-		jQuery("#{{=id}} textarea").data('editor', editor);
-		var hlLine = editor.addLineClass(0, "background", "activeline");
-		window.mirror = editor; 	//backward compatibility
-		set_font(editor, current_font_incr);
-		doListBreakpoints({{=XML("'%s','%s://%s%s'" % (filename, 
-				request.env['wsgi_url_scheme'], request.env['http_host'],
-				URL(c='debug', f='list_breakpoints')))}}, editor);
+        {{pass}}
+    store_changes_function = function(instance, changeObj) {
+        jQuery(instance).data('saved', false);
+        instance.off("change", store_changes_function);
+    }
+    editor.on("change", store_changes_function);
+        // save the editor as textarea data attribute
+        jQuery("#{{=id}} textarea").data('editor', editor);
+        var hlLine = editor.addLineClass(0, "background", "activeline");
+        window.mirror = editor; 	//backward compatibility
+        set_font(editor, current_font_incr);
+        doListBreakpoints({{=XML("'%s','%s://%s%s'" % (filename,
+                request.env['wsgi_url_scheme'], request.env['http_host'],
+                URL(c='debug', f='list_breakpoints')))}}, editor);
 
-	</script>
-    
-	<div class="editor-bar-bottom" style="margin-top:9px;">
-		<a class="editbutton btn" href="{{=URL('edit', args=request.args, vars={'restore':True})}}" id="restore">{{=T('restore')}}</a>
-		{{=T('currently saved or')}}
-		<a class="editbutton btn" href="{{=URL('edit', args=request.args, vars={'revert':True})}}" id="revert">{{=T('revert')}}</a>
-		{{=T('to  previous version.')}}
-	</div>
+    </script>
+
+    <div class="editor-bar-bottom" style="margin-top:9px;">
+        <a class="editbutton btn" href="{{=URL('edit', args=request.args, vars={'restore':True})}}" id="restore">{{=T('restore')}}</a>
+        {{=T('currently saved or')}}
+        <a class="editbutton btn" href="{{=URL('edit', args=request.args, vars={'revert':True})}}" id="revert">{{=T('revert')}}</a>
+        {{=T('to  previous version.')}}
+    </div>
     <br/>
   </form>
 
 <div class="row-fluid">
-	<div class="help alert alert-block alert-info">
-		{{if TEXT_EDITOR == 'codemirror' and filetype=='html':}}
-		<h3>{{=T('Key bindings for ZenCoding Plugin')}}</h3>
-		<ul class="keybindings unstyled">
-			{{=shortcut('Ctrl+S', T('Save via Ajax'))}}
-			{{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
-			{{=shortcut('Ctrl-F / Cmd-F', T('Start searching'))}}
-			{{=shortcut('Ctrl-G / Cmd-G', T('Find Next'))}}
-			{{=shortcut('Shift-Ctrl-G / Shift-Cmd-G', T('Find Previous'))}}
-			{{=shortcut('Shift-Ctrl-F / Cmd-Option-F', T('Replace'))}}
-			{{=shortcut('Shift-Ctrl-R / Shift-Cmd-Option-F', T('Replace All'))}}
-			{{=shortcut('Tab', T('Expand Abbreviation'))}}
-		</ul>
-		{{elif TEXT_EDITOR == 'codemirror':}}
-		<h3>{{=T("Key bindings")}}</h3>
-		<ul class="keybindings unstyled">
-			{{=shortcut('Ctrl+S', T('Save via Ajax'))}}
-			{{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
-			{{if filetype=='python':}}
-		   	{{=shortcut('Ctrl-Space', T('Autocomplete Python Code'))}} 
-  		   {{pass}}			
-			{{=shortcut('Ctrl-F / Cmd-F', T('Start searching'))}}
-			{{=shortcut('Ctrl-G / Cmd-G', T('Find Next'))}}
-			{{=shortcut('Shift-Ctrl-G / Shift-Cmd-G', T('Find Previous'))}}
-			{{=shortcut('Shift-Ctrl-F / Cmd-Option-F', T('Replace'))}}
-			{{=shortcut('Shift-Ctrl-R / Shift-Cmd-Option-F', T('Replace All'))}}
-		</ul>
-		{{pass}}
-	</div>
+    <div class="help alert alert-block alert-info">
+        {{if TEXT_EDITOR == 'codemirror' and filetype=='html':}}
+        <h3>{{=T('Key bindings for ZenCoding Plugin')}}</h3>
+        <ul class="keybindings unstyled">
+            {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
+            {{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
+            {{=shortcut('Ctrl-F / Cmd-F', T('Start searching'))}}
+            {{=shortcut('Ctrl-G / Cmd-G', T('Find Next'))}}
+            {{=shortcut('Shift-Ctrl-G / Shift-Cmd-G', T('Find Previous'))}}
+            {{=shortcut('Shift-Ctrl-F / Cmd-Option-F', T('Replace'))}}
+            {{=shortcut('Shift-Ctrl-R / Shift-Cmd-Option-F', T('Replace All'))}}
+            {{=shortcut('Tab', T('Expand Abbreviation'))}}
+        </ul>
+        {{elif TEXT_EDITOR == 'codemirror':}}
+        <h3>{{=T("Key bindings")}}</h3>
+        <ul class="keybindings unstyled">
+            {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
+            {{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
+            {{if filetype=='python':}}
+            {{=shortcut('Ctrl-Space', T('Autocomplete Python Code'))}}
+           {{pass}}
+            {{=shortcut('Ctrl-F / Cmd-F', T('Start searching'))}}
+            {{=shortcut('Ctrl-G / Cmd-G', T('Find Next'))}}
+            {{=shortcut('Shift-Ctrl-G / Shift-Cmd-G', T('Find Previous'))}}
+            {{=shortcut('Shift-Ctrl-F / Cmd-Option-F', T('Replace'))}}
+            {{=shortcut('Shift-Ctrl-R / Shift-Cmd-Option-F', T('Replace All'))}}
+        </ul>
+        {{pass}}
+    </div>
 </div>

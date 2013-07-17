@@ -561,11 +561,11 @@ def edit():
     # Load json only if it is ajax edited...
     app = get_app(request.vars.app)
 
-    if not(request.ajax):	
+    if not(request.ajax):
         # return the scaffolding, the rest will be through ajax requests
         response.title = T('Editing %s' % app)
         editarea_preferences = {}
-       	editarea_preferences['FONT_SIZE'] = '10'
+        editarea_preferences['FONT_SIZE'] = '10'
         editarea_preferences['FULL_SCREEN'] = 'false'
         editarea_preferences['ALLOW_TOGGLE'] = 'true'
         editarea_preferences['REPLACE_TAB_BY_SPACES'] = '4'
@@ -574,7 +574,7 @@ def edit():
             if key in globals():
                 editarea_preferences[key] = globals()[key]
         return response.render ('default/edit.html', dict(app=request.args[0], editarea_preferences=editarea_preferences))
-	
+
     """ File edit handler """
     # Load json only if it is ajax edited...
     app = get_app(request.vars.app)
@@ -722,7 +722,7 @@ def edit():
                 vf = os.path.split(v)[-1]
                 vargs = "/".join([viewpath.replace(os.sep, "/"), vf])
                 editviewlinks.append(A(vf.split(".")[0],
-                                       _class="editor_filelink",	
+                                       _class="editor_filelink",
                                        _href=URL('edit', args=[vargs])))
 
     if len(request.args) > 2 and request.args[1] == 'controllers':
@@ -746,11 +746,11 @@ def edit():
                     view_link=view_link,
                     editviewlinks=editviewlinks,
                     id=IS_SLUG()(filename)[0],
-					force= True if (request.vars.restore or request.vars.revert) else False)
+                    force= True if (request.vars.restore or request.vars.revert) else False)
         plain_html = response.render('default/edit_js.html', file_details)
         file_details['plain_html'] = plain_html
         return response.json(file_details)
-		
+
 
 def resolve():
     """
@@ -1770,4 +1770,3 @@ def git_push():
             session.flash = T("Push failed, there are unmerged entries in the cache. Resolve merge issues manually and try again.")
             redirect(URL('site'))
     return dict(app=app, form=form)
-

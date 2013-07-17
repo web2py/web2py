@@ -1857,7 +1857,7 @@ class BaseAdapter(ConnectionPool):
             if isinstance(obj, datetime.datetime):
                 obj = obj.isoformat(self.T_SEP)[:19]
             elif isinstance(obj, datetime.date):
-                obj = obj.isoformat()[:10]+' 00:00:00'
+                obj = obj.isoformat()[:10]+self.T_SEP+'00:00:00'
             else:
                 obj = str(obj)
         elif fieldtype == 'time':
@@ -6872,7 +6872,7 @@ class Row(object):
         _extra = self.__dict__.get('_extra', None)
         if _extra is not None:
             v = _extra.get(key, None)
-            if v:
+            if v is not None:
                 return v
         m = REGEX_TABLE_DOT_FIELD.match(key)
         if m:
@@ -8307,8 +8307,9 @@ class Table(object):
         field_type = self if same_db else 'bigint'
         clones = []
         for field in self:
+            nfk = same_db or not field.type.startswith('reference')
             clones.append(field.clone(
-                    unique=False, type=field.type if same_db else 'bigint'))
+                    unique=False, type=field.type if nfk else 'bigint'))
         archive_db.define_table(
             archive_name, Field(current_record,field_type), *clones)
         self._before_update.append(
@@ -8386,10 +8387,7 @@ class Table(object):
         elif isinstance(key, dict):
             """ for keyed table """
             query = self._build_query(key)
-            rows = self._db(query).select()
-            if rows:
-                return rows[0]
-            return None
+            return self._db(query).select(limitby=(0,1), orderby_on_limitby=False).first()
         elif str(key).isdigit() or 'google' in DRIVERS and isinstance(key, Key):
             return self._db(self._id == key).select(limitby=(0,1), orderby_on_limitby=False).first()
         elif key:
@@ -10308,7 +10306,7 @@ class Rows(object):
         if i is None:
             return (self.repr(i, fields=fields) for i in range(len(self)))
         import sqlhtml
-        row = copy.copy(self.records[i])
+        row = copy.deepcopy(self.records[i])
         keys = row.keys()
         tables = [f.tablename for f in fields] if fields \
             else [k for k in keys if k != '_extra']
@@ -10328,12 +10326,12 @@ class Rows(object):
     def as_list(self,
                 compact=True,
                 storage_to_dict=True,
-                datetime_to_str=True,
+                datetime_to_str=False,
                 custom_types=None):
         """
         returns the data as a list or dictionary.
         :param storage_to_dict: when True returns a dict, otherwise a list(default True)
-        :param datetime_to_str: convert datetime fields as strings (default True)
+        :param datetime_to_str: convert datetime fields as strings (default False)
         """
         (oc, self.compact) = (self.compact, compact)
         if storage_to_dict:
@@ -10348,7 +10346,7 @@ class Rows(object):
                 key='id',
                 compact=True,
                 storage_to_dict=True,
-                datetime_to_str=True,
+                datetime_to_str=False,
                 custom_types=None):
         """
         returns the data as a dictionary of dictionaries (storage_to_dict=True) or records (False)
@@ -10356,7 +10354,7 @@ class Rows(object):
         :param key: the name of the field to be used as dict key, normally the id
         :param compact: ? (default True)
         :param storage_to_dict: when True returns a dict, otherwise a list(default True)
-        :param datetime_to_str: convert datetime fields as strings (default True)
+        :param datetime_to_str: convert datetime fields as strings (default False)
         """
 
         # test for multiple rows

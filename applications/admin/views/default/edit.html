@@ -10,9 +10,9 @@
       return files
 
   def editfile(path,file,vars={}):
-	args=(path,file) if 'app' in vars else (app,path,file)
-	url = URL('edit', args=args, vars=vars)
-    return A(file, _class='editor_filelink', _href=url, _style='word-wrap: break-word;')
+      args=(path,file) if 'app' in vars else (app,path,file)
+      url = URL('edit', args=args, vars=vars)
+      return A(file, _class='editor_filelink', _href=url, _style='word-wrap: nowrap;')
 }}
 {{cm=URL('static','codemirror')}}
 <link rel="stylesheet" href="{{=cm}}/lib/codemirror.css">
@@ -38,123 +38,123 @@
 <link rel="stylesheet" href="{{=cm}}/addon/dialog/dialog.css">
 <script src="{{=cm}}/addon/selection/active-line.js"></script>
 <script src="{{=cm}}/emmet.min.js"></script>
-<script language="Javascript" type="text/javascript" src="{{=URL('static','js/ajax_editor.js')}}"></script>
+<script src="{{=URL('static','js/ajax_editor.js')}}"></script>
 <link rel="stylesheet" href="{{=URL('static/css','typeahead.js-bootstrap.css')}}">
 <link rel="stylesheet" href="{{=URL('static/css','web2py-codemirror.css')}}">
-<script language="Javascript" type="text/javascript">
+<script type="text/javascript">
 var current_theme = "web2py";  //Default theme
-var current_font_incr = 0;	// Default font-size, 0 means don't set
+var current_font_incr = 0; // Default font-size, 0 means don't set
 jQuery(document).on('shown click', 'a[data-toggle="tab"]', function (e) {
-	var tab_id = jQuery(this).attr('href');
-	var editor = jQuery(tab_id + " textarea").data('editor');
-	if (editor) {
-		editor.setSize(jQuery(tab_id).width(),  jQuery(tab_id).height());
-		editor.refresh();
-	}
-	//jQuery(function(){jQuery('.CodeMirror-scroll').css("height","auto").css("overflow-x","auto");});
+    var tab_id = jQuery(this).attr('href');
+    var editor = jQuery(tab_id + " textarea").data('editor');
+    if (editor) {
+        editor.setSize(jQuery(tab_id).width(),  jQuery(tab_id).height());
+        editor.refresh();
+    }
+    //jQuery(function(){jQuery('.CodeMirror-scroll').css("height","auto").css("overflow-x","auto");});
 });
 
 // Close the selected tab
 jQuery(document).on('click', '#filesTab button[class="close"]', function (e) {
-	var tab_body   = jQuery(jQuery(this).parent().attr("href"));  // it should be a div
-	var tab_header = jQuery(this).parent().parent();              // it should be a li
-	var saved = jQuery(tab_body.find('textarea').data('editor')).data('saved');
-	var close = true;
-	if (saved === false) {
-		close = confirm("You are closing an unsaved file")
-	}
-	if (close) {
-		if (tab_header.hasClass('active') === true) { 	//Set active an other tab
-			jQuery(tab_header).prev().children('a[data-toggle="tab"]').tab('show'); // Select first tab		
-		}
-		tab_header.remove(); //remove li of tab
-		tab_body.remove();   //remove li of tab
-	}
+    var tab_body   = jQuery(jQuery(this).parent().attr("href"));  // it should be a div
+    var tab_header = jQuery(this).parent().parent();              // it should be a li
+    var saved = jQuery(tab_body.find('textarea').data('editor')).data('saved');
+    var close = true;
+    if (saved === false) {
+        close = confirm("You are closing an unsaved file")
+    }
+    if (close) {
+        if (tab_header.hasClass('active') === true) { 	//Set active an other tab
+            jQuery(tab_header).prev().children('a[data-toggle="tab"]').tab('show'); // Select first tab
+        }
+        tab_header.remove(); //remove li of tab
+        tab_body.remove();   //remove li of tab
+    }
 });
 
 // Revert current file
 jQuery(document).on('click', '#revert', function (e) {
-	e.preventDefault();
-	load_file(jQuery(this).attr("href"));
+    e.preventDefault();
+    load_file(jQuery(this).attr("href"));
 });
 // Restore current file
 jQuery(document).on('click', '#restore', function (e) {
-	e.preventDefault();
-	load_file(jQuery(this).attr("href"));
+    e.preventDefault();
+    load_file(jQuery(this).attr("href"));
 });
 
 // open the selected file
 jQuery(document).on('click', 'a.editor_filelink', function (e) {
-	e.preventDefault();
-	var url = jQuery(this).attr("href");
-	load_file(url);
+    e.preventDefault();
+    var url = jQuery(this).attr("href");
+    load_file(url);
 });
 
 // change the codemirror theme
 jQuery(document).on('click', '#themes a', function (e) {
-	e.preventDefault();
-	var href = jQuery(this).attr('href');
-	var name = jQuery(this).text().replace('.css', '');
-	var link = jQuery("<link>");
-	link.attr({
-		type: 'text/css',
-		rel: 'stylesheet',
-		href: href
-	});
-	jQuery("head").append( link ); 
-	jQuery('textarea[name="data"]') .each(function(id, ta) {
-		editor = jQuery(ta).data('editor');
-		editor.setOption("theme", name);
-	});
-	jQuery('#themeName').html(name);
-	current_theme = name;
+    e.preventDefault();
+    var href = jQuery(this).attr('href');
+    var name = jQuery(this).text().replace('.css', '');
+    var link = jQuery("<link>");
+    link.attr({
+        type: 'text/css',
+        rel: 'stylesheet',
+        href: href
+    });
+    jQuery("head").append( link );
+    jQuery('textarea[name="data"]') .each(function(id, ta) {
+        editor = jQuery(ta).data('editor');
+        editor.setOption("theme", name);
+    });
+    jQuery('#themeName').html(name);
+    current_theme = name;
 //#TODO save on session
 });
 
 // incr/decr editor font-size
 jQuery(document).on('click', 'a.font_button', function (e) {
-	e.preventDefault();
-	var id = jQuery(this).attr('id');
-	var new_font_incr;
-	switch (id) {
-		case 'incr': new_incr = 2; break;
-		case 'decr': new_incr = -2; break;
-		case 'default': new_incr = 0; break;
-	}
-	jQuery('textarea[name="data"]') .each(function(id, ta) {
-		editor = jQuery(ta).data('editor');
-		set_font(editor, new_incr);
-	});
-	current_font_incr = (new_incr !== 0) ? current_font_incr + new_incr : 0;
+    e.preventDefault();
+    var id = jQuery(this).attr('id');
+    var new_font_incr;
+    switch (id) {
+        case 'incr': new_incr = 2; break;
+        case 'decr': new_incr = -2; break;
+        case 'default': new_incr = 0; break;
+    }
+    jQuery('textarea[name="data"]') .each(function(id, ta) {
+        editor = jQuery(ta).data('editor');
+        set_font(editor, new_incr);
+    });
+    current_font_incr = (new_incr !== 0) ? current_font_incr + new_incr : 0;
 });
-	function isFullScreen(instance) {
-		return /\bCodeMirror-fullscreen\b/.test(instance.getWrapperElement().className);
-	}
-	function winHeight() {
-		return window.innerHeight || (document.documentElement || document.body).clientHeight;
-	}
-	function setFullScreen(instance, full) {
-		var wrap = instance.getWrapperElement()
-		if (full) {
-			wrap.className += " CodeMirror-fullscreen";
-			wrap.style.height = winHeight() + "px";
-			document.documentElement.style.overflow = "hidden";
-		} else {
-			wrap.className = wrap.className.replace(" CodeMirror-fullscreen", "");
-			wrap.style.height = "";
-			document.documentElement.style.overflow = "";
-		}
-		instance.refresh();
-	}
-	CodeMirror.on(window, "resize", function() {
-		var showing = document.body.getElementsByClassName("CodeMirror-fullscreen")[0];
-		if (!showing) return;
-		showing.CodeMirror.getWrappererElement().style.height = winHeight() + "px";
-	});
+    function isFullScreen(instance) {
+        return /\bCodeMirror-fullscreen\b/.test(instance.getWrapperElement().className);
+    }
+    function winHeight() {
+        return window.innerHeight || (document.documentElement || document.body).clientHeight;
+    }
+    function setFullScreen(instance, full) {
+        var wrap = instance.getWrapperElement()
+        if (full) {
+            wrap.className += " CodeMirror-fullscreen";
+            wrap.style.height = winHeight() + "px";
+            document.documentElement.style.overflow = "hidden";
+        } else {
+            wrap.className = wrap.className.replace(" CodeMirror-fullscreen", "");
+            wrap.style.height = "";
+            document.documentElement.style.overflow = "";
+        }
+        instance.refresh();
+    }
+    CodeMirror.on(window, "resize", function() {
+        var showing = document.body.getElementsByClassName("CodeMirror-fullscreen")[0];
+        if (!showing) return;
+        showing.CodeMirror.getWrappererElement().style.height = winHeight() + "px";
+    });
 
-	{{if len(request.args) > 1:}}
-		load_file('{{=URL(f='edit', args=request.args, vars=request.get_vars)}}');
-	{{pass}}
+    {{if len(request.args) > 1:}}
+        load_file('{{=URL(f='edit', args=request.args, vars=request.get_vars)}}');
+    {{pass}}
 
 </script>
 
@@ -163,18 +163,21 @@ jQuery(document).on('click', 'a.font_button', function (e) {
 
 <div class='row-fluid'>
 <div class="right controls btn-toolbar pull-right">
+<div class="btn-group">
+  <a class="button btn" onclick="jQuery('#files').toggle(); return false" href="#">Files toggle</a>
+</div>
 <div class="dropdown btn-group pull-left">
-	<a class="dropdown-toggle button btn" data-target="themes" data-toggle="dropdown" href="#" >Theme: <span id="themeName" style="color: #E8953C">Web2py</span> <span class="caret"></span></a>
-	<ul class="dropdown-menu" role="menu" id="themes">	
-		{{for f in listfiles('admin', "static/codemirror/theme", regexp='.*\.css$' ):}}
-		<li class=""><a href="{{=URL('static/codemirror/theme', f, host=True)}}">{{=f[:-4]}}</a></li>
-		{{pass}}
-	</ul>
+    <a class="dropdown-toggle button btn" data-target="themes" data-toggle="dropdown" href="#" >Theme: <span id="themeName" style="color: #E8953C">Web2py</span> <span class="caret"></span></a>
+    <ul class="dropdown-menu" role="menu" id="themes">
+        {{for f in listfiles('admin', "static/codemirror/theme", regexp='.*\.css$' ):}}
+        <li class=""><a href="{{=URL('static/codemirror/theme', f, host=True)}}">{{=f[:-4]}}</a></li>
+        {{pass}}
+    </ul>
 </div>
 <div class="btn-group">
-	<a id="decr" class="button btn font_button">-</a>
-	<a id="default" class="button btn font_button" >A</a>
-	<a id="incr" class="button btn font_button">+</a>
+    <a id="decr" class="button btn font_button">-</a>
+    <a id="default" class="button btn font_button" >A</a>
+    <a id="incr" class="button btn font_button">+</a>
 </div>
 <div class="btn-group">
   {{=button(URL('design',args=request.vars.app if request.vars.app else request.args[0], anchor=request.vars.id), T('back'))}}
@@ -186,51 +189,53 @@ jQuery(document).on('click', 'a.font_button', function (e) {
 </div>
 </div>
 <div id="editor_area" class="row-fluid">
-	<ul class="nav nav-list span2 well" rel="pagebookmark" id="filelist">
-	<li><input type="text" placeholder="{{=T('Rapid Search')}}" class="input-block-level typeahead-tw search-query"></li>
-	{{dirs=[{'name':'models', 'reg':'.*\.py$'}, 
-		{'name':'controllers', 'reg':'.*\.py$'},
-		{'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
-		{'name':'modules', 'reg':'.*\.py$'},
-		{'name':'private', 'reg': '[^\.#].*'}]}}
-	{{auto_complete_list=[]}}
-	{{for dir in dirs:}}
-	<li class="nav-header component" onclick="collapse('{{="%s_files" % dir['name']}}');">{{=dir['name']}}</li>
-	<li id="{{="%s_files" % dir['name']}}">
-		<ul class="nav nav-list small-font">	
-		{{for f in listfiles(app, dir['name'], regexp=dir['reg'] ):}}
-		{{id="%s__" % dir['name'] + f.replace('.','__')}}
-		{{current_file = request.args(len(request.args) - 1)}} 
-		<li class="{{#='active' if current_file==f else ''}}">
-		{{a_tag=editfile(dir['name'], f, dict(id=id))}}	
-		{{=a_tag}}
-		{{auto_complete_list.append({'value':f, 'tokens':f.split('/'), 'a_tag':a_tag})}}
-		</li>
-		{{pass}}
-		</ul>
-	</li>
-	{{pass}}	
-	</ul>
-	<div class="span10" id="edit_placeholder">
-		<ul class="nav nav-tabs " id="filesTab">
-		</ul>
-		<div id="myTabContent" class="tab-content">
-		</div>
-	</div>
+  <div id="files">
+    <ul class="nav nav-list span2 well" rel="pagebookmark" id="filelist">
+    <li><input type="text" placeholder="{{=T('Rapid Search')}}" class="input-block-level typeahead-tw search-query"></li>
+    {{dirs=[{'name':'models', 'reg':'.*\.py$'},
+        {'name':'controllers', 'reg':'.*\.py$'},
+        {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
+        {'name':'modules', 'reg':'.*\.py$'},
+        {'name':'private', 'reg': '[^\.#].*'}]}}
+    {{auto_complete_list=[]}}
+    {{for dir in dirs:}}
+    <li class="nav-header component" onclick="collapse('{{="%s_files" % dir['name']}}');">{{=dir['name']}}</li>
+    <li id="{{="%s_files" % dir['name']}}">
+        <ul class="nav nav-list small-font">
+        {{for f in listfiles(app, dir['name'], regexp=dir['reg'] ):}}
+        {{id="%s__" % dir['name'] + f.replace('.','__')}}
+        {{current_file = request.args(len(request.args) - 1)}}
+        <li class="{{#='active' if current_file==f else ''}}" style="overflow:hidden">
+        {{a_tag=editfile(dir['name'], f, dict(id=id))}}
+        {{=a_tag}}
+        {{auto_complete_list.append({'value':f, 'tokens':f.split('/'), 'a_tag':a_tag})}}
+        </li>
+        {{pass}}
+        </ul>
+    </li>
+    {{pass}}
+    </ul>
+    </div>
+    <div class="span10" id="edit_placeholder">
+        <ul class="nav nav-tabs " id="filesTab">
+        </ul>
+        <div id="myTabContent" class="tab-content">
+        </div>
+    </div>
 </div>
 <!-- Typeahead scripts here so the page load faster -->
 <script src="{{=URL('static/js', 'typeahead.min.js')}}"></script>
 <script src="{{=URL('static/js', 'hogan-2.0.0.js')}}"></script>
 <script>
-	jQuery('.typeahead-tw').typeahead({                                
-		name: 'files', 
-		local:{{from gluon.serializers import json}}{{=XML(json(auto_complete_list))}},
-		template: template_js,
-		engine: Hogan,
-	});	
-	jQuery(document).on("typeahead:selected", '.typeahead', function(e, datum) {
-		load_file(datum.link);
-		jQuery(this).val('');
-	});
+    jQuery('.typeahead-tw').typeahead({
+        name: 'files',
+        local:{{from gluon.serializers import json}}{{=XML(json(auto_complete_list))}},
+        template: template_js,
+        engine: Hogan,
+    });
+    jQuery(document).on("typeahead:selected", '.typeahead', function(e, datum) {
+        load_file(datum.link);
+        jQuery(this).val('');
+    });
 </script>
 <!-- end "edit" block -->
