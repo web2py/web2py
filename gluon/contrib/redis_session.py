@@ -143,7 +143,6 @@ class MockTable(object):
             release_lock(self.r_server, key_lock, newid)
         return newid
 
-
 class MockQuery(object):
     """a fake Query object that supports querying by id
        and listing all keys. No other operation is supported
