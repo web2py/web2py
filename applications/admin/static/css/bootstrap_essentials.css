@@ -328,6 +328,89 @@ color: #ccc;
 }
 
 /*=============================================================
+EDIT PAGE SLIDING FILES MENU
+==============================================================*/
+@media (max-width: 979px) {
+    body.edit div#header {position:relative; z-index: 1030 !important;}
+}
+
+#editor_area, #edit_placeholder {
+    margin: 0;
+    padding: 0;
+}
+
+#editor_area {
+    position: relative;
+    box-sizing: border-box;
+}
+
+#files {
+    width: auto;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    position: fixed;
+    top: 0px;
+    left: 0px;
+    z-index: 1029;
+    border-right: 3px solid #000;
+    /* animation (it doesn't work in IE<10) */
+    -moz-transition: all 0.4s;
+    -webkit-transition: all 0.4s;
+    -o-transition: all 0.4s;
+    transition: all 0.4s;
+}
+
+#files:hover, #files:focus {
+    left: 0px !important;
+}
+
+#files, .files-toggle {
+    background: #1b1b1b;
+    opacity: 0.98;
+}
+
+.files-toggle {
+    width: 18px;
+    height: 86px;
+    border-radius: 0px 4px 4px 0px;
+    color: #999;
+    position: absolute;
+    top: 60px;
+    right: -18px;
+    cursor: default;
+}
+
+.arrow {
+    display: block;
+    position: absolute;
+    top: 8px;
+    width: 18px;
+    height: 70px;
+    background: url(../images/files_toggle.png) no-repeat;
+}
+
+.files-menu {
+    height: 100%;
+    overflow: auto;
+}
+
+#filelist {
+    position: relative;
+    top: 60px;
+    padding-bottom: 60px;
+}
+
+#filelist li {
+    padding-right: 8px;
+    width: 100%;
+}
+
+#filelist li>a {
+    text-shadow: none;
+}
+
+/*=============================================================
  MEDIA QUERIES
 ==============================================================*/
  @media (max-width: 800px) { .step [rel="pagebookmark"]>.hashstick { /*top:-54px;*/ display:block; }
