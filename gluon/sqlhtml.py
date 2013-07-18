@@ -2240,10 +2240,7 @@ class SQLFORM(FORM):
             limitby = None
 
         try:
-            table_fields = list()
-            for f in fields:
-                if f.tablename in tablenames:
-                    table_fields.append(f)
+            table_fields = [f for f in fields if f.tablename in tablenames]
             if dbset._db._adapter.dbengine=='google:datastore':
                 rows = dbset.select(left=left,orderby=orderby,
                                     groupby=groupby,limitby=limitby,
