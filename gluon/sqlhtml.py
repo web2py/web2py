@@ -1928,6 +1928,7 @@ class SQLFORM(FORM):
                     if isinstance(f,Field.Virtual) and f.readable:
                         f.tablename = table._tablename
                         columns.append(f)
+                        fields.append(f)
         if not field_id:
             field_id = tables[0]._id
         if not any(str(f)==str(field_id) for f in fields):
