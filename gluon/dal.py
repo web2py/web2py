@@ -2112,14 +2112,10 @@ class BaseAdapter(ConnectionPool):
         for tablename in virtualtables:
             ### new style virtual fields
             table = db[tablename]
-#            fields_virtual = [(f,v) for (f,v) in table.iteritems()
-#                              if isinstance(v,FieldVirtual)]
-#            print('fields_virtual(old): %s' %fields_virtual)
             fields_virtual = [(f,v) for (f,v) in table.iteritems()
                               if isinstance(v,FieldVirtual) and v.name in [f_.name for f_ in fields] and v.tablename == tablename]
             fields_lazy = [(f,v) for (f,v) in table.iteritems()
                            if isinstance(v,FieldMethod) and v.name in [f_.name for f_ in fields] and v.tablename == tablename]
-#            print('fields_virtual(new): %s' %fields_virtual)
             if fields_virtual or fields_lazy:
                 for row in rowsobj.records:
                     box = row[tablename]

@@ -2248,7 +2248,6 @@ class SQLFORM(FORM):
                                     cacheable=True,*table_fields)
                 next_cursor = dbset._db.get('_lastcursor', None)
             else:
-#                print('table_fields: %s' %([f_.name for f_ in table_fields],))
                 rows = dbset.select(left=left,orderby=orderby,
                                     groupby=groupby,limitby=limitby,
                                     cacheable=True,*table_fields)
