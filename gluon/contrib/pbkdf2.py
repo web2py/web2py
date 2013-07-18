@@ -40,19 +40,12 @@
     :copyright: (c) Copyright 2011 by Armin Ronacher.
     :license: BSD, see LICENSE for more details.
 """
-#import hmac
-#import hashlib
+import hmac
 try:
-    # Use PyCrypto (if available).
-    from Crypto.Hash import HMAC as hmac, SHA as sha1
+    from hashlib import sha1
 except ImportError:
-    # PyCrypto not available.  Use the Python standard library.
-    import hmac
-    try:
-        from hashlib import sha1
-    except ImportError:
-        # hashlib not available.  Use the old sha module.
-        import sha as sha1
+    # hashlib not available.  Use the old sha module.
+    import sha as sha1
 
 from struct import Struct
 from operator import xor
@@ -121,9 +114,8 @@ def test():
     check('pass\x00word', 'sa\x00lt', 4096, 16,
           '56fa6aa75548099dcc37d7f03425e0c3')
     # This one is from the RFC but it just takes for ages
-    ##check('password', 'salt', 16777216, 20,
-    ##      'eefe3d61cd4da4e4e9945b3d6ba2158c2634e984')
-
+    check('password', 'salt', 16777216, 20,
+          'eefe3d61cd4da4e4e9945b3d6ba2158c2634e984')
     # From Crypt-PBKDF2
     check('password', 'ATHENA.MIT.EDUraeburn', 1, 16,
           'cdedb5281bb2f801565a1122b2563515')
