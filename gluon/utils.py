@@ -11,8 +11,8 @@ This file specifically includes utilities for security.
 
 import threading
 import struct
-import hashlib
-import hmac
+#import hashlib
+#import hmac
 import uuid
 import random
 import time
@@ -23,6 +23,7 @@ import logging
 import socket
 import base64
 import zlib
+from types import ModuleType
 
 _struct_2_long_long = struct.Struct('=QQ')
 
@@ -33,20 +34,14 @@ if python_version == 2:
 else:
     import pickle
 
-try:
-    from Crypto.Hash import MD5 as md5, \
-        SHA as sha1, \
-        SHA224 as sha224, \
-        SHA256 as sha256, \
-        SHA384 as sha384, \
-        SHA512 as sha512
-except ImportError:
-    from hashlib import md5, sha1, sha224, sha256, sha384, sha512
+from hashlib import md5, sha1, sha224, sha256, sha384, sha512
 
 try:
     from Crypto.Cipher import AES
 except ImportError:
     import contrib.aes as AES
+
+import hmac
 
 try:
     from contrib.pbkdf2 import pbkdf2_hex
@@ -80,11 +75,7 @@ def compare(a, b):
 
 def md5_hash(text):
     """ Generate a md5 hash with the given text """
-    if hasattr(md5,'new'):
-        return md5.new(text).hexdigest()
-    else:
-        return md5(text).hexdigest()
-
+    return md5(text).hexdigest()
 
 def simple_hash(text, key='', salt='', digest_alg='md5'):
     """
@@ -103,7 +94,7 @@ def simple_hash(text, key='', salt='', digest_alg='md5'):
         digest_alg = get_digest(digest_alg)
         h = hmac.new(key + salt, text, digest_alg)
     else:  # compatible with third party systems
-        h = hashlib.new(digest_alg)
+        h = get_digest(digest_alg)()
         h.update(text + salt)
     return h.hexdigest()
 
@@ -146,7 +137,7 @@ def pad(s, n=32, padchar=' '):
 
 def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
     if not hash_key:
-        hash_key = hashlib.sha1(encryption_key).hexdigest()
+        hash_key = sha1(encryption_key).hexdigest()
     dump = pickle.dumps(data)
     if compression_level:
         dump = zlib.compress(dump, compression_level)
@@ -161,7 +152,7 @@ def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
     if not ':' in data:
         return None
     if not hash_key:
-        hash_key = hashlib.sha1(encryption_key).hexdigest()
+        hash_key = sha1(encryption_key).hexdigest()
     signature, encrypted_data = data.split(':', 1)
     actual_signature = hmac.new(hash_key, encrypted_data).hexdigest()
     if not compare(signature, actual_signature):
