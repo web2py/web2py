@@ -1538,6 +1538,7 @@ class BaseAdapter(ConnectionPool):
         args_get = attributes.get
         tablenames = tables(query)
         tablenames_for_common_filters = tablenames
+        fields = [f for f in fields if not isinstance(f,Field.Virtual)] #  skip virtual fields
         for field in fields:
             if isinstance(field, basestring) \
                     and REGEX_TABLE_DOT_FIELD.match(field):
@@ -2111,10 +2112,14 @@ class BaseAdapter(ConnectionPool):
         for tablename in virtualtables:
             ### new style virtual fields
             table = db[tablename]
+#            fields_virtual = [(f,v) for (f,v) in table.iteritems()
+#                              if isinstance(v,FieldVirtual)]
+#            print('fields_virtual(old): %s' %fields_virtual)
             fields_virtual = [(f,v) for (f,v) in table.iteritems()
-                              if isinstance(v,FieldVirtual)]
+                              if isinstance(v,FieldVirtual) and v.name in [f_.name for f_ in fields] and v.tablename == tablename]
             fields_lazy = [(f,v) for (f,v) in table.iteritems()
-                           if isinstance(v,FieldMethod)]
+                           if isinstance(v,FieldMethod) and v.name in [f_.name for f_ in fields] and v.tablename == tablename]
+#            print('fields_virtual(new): %s' %fields_virtual)
             if fields_virtual or fields_lazy:
                 for row in rowsobj.records:
                     box = row[tablename]
