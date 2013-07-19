@@ -42,7 +42,7 @@ input[type="file"] { margin-bottom:9px; }
 
 .form-inline input[type="file"] { margin-bottom:0px; }
 
-input + .help-block { margin-top:-5px; margin-bottom:4px; }
+input + .help-block { margin-top:-10px; margin-bottom:4px; }
 
 #confirm_form input.btn, .generatedbyw2p input { margin-right:4px; }
 
@@ -467,6 +467,9 @@ EDIT PAGE SLIDING FILES MENU
 
  }
 
+/*-----------------------------------
+miscellaneous
+-------------------------------------*/
 h4.editableapp, h4.currentapp { padding: 5px 0 5px 54px; display: inline; }
 
 h4.editableapp { background: #fff url(../images/folder.png) no-repeat; }
@@ -474,7 +477,13 @@ h4.editableapp { background: #fff url(../images/folder.png) no-repeat; }
 h4.currentapp { background: #fff url(../images/folder_locked.png) no-repeat; }
 
 .flash { position:fixed; width:50%; top:49px; left:25%; right:25%; cursor:default; text-align:center; z-index:5620; }
+span#closeflash {position:absolute; top:1px; right:-1px; font-size:150%; border:1px solid black; border-color: transparent transparent #fbeed5 #fbeed5; border-radius: 0 0 0 4px; width:22px; }
+span#closeflash:hover {font-weight:bold; cursor:pointer; }
 
 table.twitter{ background-color: transparent; }
 table.twitter tr td {vertical-align: top; padding: 5px; }
 table.twitter tr { border-bottom: 1px solid #a0a0a0; }
+
+div.error_wrapper {margin-top:-10px; margin-bottom:8px; padding-left:2px; color:#d62e2b; }
+
+.twitter-timeline >iframe{padding: 1em 0;}
