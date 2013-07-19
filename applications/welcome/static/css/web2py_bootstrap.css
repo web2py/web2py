@@ -145,6 +145,10 @@ div>input[type="radio"],div>input[type="checkbox"]{margin:0;}
 /* bootstrap has button instead of input */
 input[type="button"], input[type="submit"]{margin-right:8px;}
 
+/* web2py radio widget adjustment */
+.generic-widget input[type='radio'] {margin:-1px 0 0 0; vertical-align: middle;}
+.generic-widget input[type='radio'] + label {display:inline-block; margin:0 0 0 6px; vertical-align: middle;}
+
 /*=============================================================
 RULES FOR SOLVING CONFLICTS BETWEEN WEB2PY.CSS AND BOOTSTRAP.CSS
 ==============================================================*/
