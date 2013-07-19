@@ -1928,6 +1928,7 @@ class SQLFORM(FORM):
                     if isinstance(f,Field.Virtual) and f.readable:
                         f.tablename = table._tablename
                         columns.append(f)
+                        fields.append(f)
         if not field_id:
             field_id = tables[0]._id
         if not any(str(f)==str(field_id) for f in fields):
@@ -2239,7 +2240,7 @@ class SQLFORM(FORM):
             limitby = None
 
         try:
-            table_fields = [f for f in fields if f.tablename in tablenames]
+            table_fields = filter(lambda f: f.tablename in tablenames, fields)
             if dbset._db._adapter.dbengine=='google:datastore':
                 rows = dbset.select(left=left,orderby=orderby,
                                     groupby=groupby,limitby=limitby,
@@ -2247,6 +2248,7 @@ class SQLFORM(FORM):
                                     cacheable=True,*table_fields)
                 next_cursor = dbset._db.get('_lastcursor', None)
             else:
+#                print('table_fields: %s' %([f_.name for f_ in table_fields],))
                 rows = dbset.select(left=left,orderby=orderby,
                                     groupby=groupby,limitby=limitby,
                                     cacheable=True,*table_fields)
