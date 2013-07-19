@@ -951,7 +951,7 @@ class BaseAdapter(ConnectionPool):
                 dbpath, '%s_%s.table' % (table._db._uri_hash, tablename))
 
         if table._dbt:
-            logfilename = self._adepter.adapter_args.get('logfile','sql.log')
+            logfilename = self.adapter_args.get('logfile','sql.log')
             table._loggername = pjoin(dbpath, logfilename)
             logfile = self.file_open(table._loggername, 'a')
         else:
