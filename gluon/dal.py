@@ -710,6 +710,7 @@ class BaseAdapter(ConnectionPool):
         os.unlink(filename)
 
     def find_driver(self,adapter_args,uri=None):
+        self.adapter_args = adapter_args
         if getattr(self,'driver',None) != None:
             return
         drivers_available = [driver for driver in self.drivers
@@ -950,7 +951,8 @@ class BaseAdapter(ConnectionPool):
                 dbpath, '%s_%s.table' % (table._db._uri_hash, tablename))
 
         if table._dbt:
-            table._loggername = pjoin(dbpath, 'sql.log')
+            logfilename = self._adepter.adapter_args.get('logfile','sql.log')
+            table._loggername = pjoin(dbpath, logfilename)
             logfile = self.file_open(table._loggername, 'a')
         else:
             logfile = None
