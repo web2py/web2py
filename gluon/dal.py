@@ -2570,6 +2570,8 @@ class PostgreSQLAdapter(BaseAdapter):
 
         }
 
+    QUOTE_TEMPLATE = '%s'
+
     def varquote(self,name):
         return varquote_aux(name,'"%s"')
 
