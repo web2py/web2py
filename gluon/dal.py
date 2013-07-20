@@ -1540,7 +1540,6 @@ class BaseAdapter(ConnectionPool):
         args_get = attributes.get
         tablenames = tables(query)
         tablenames_for_common_filters = tablenames
-        fields = [f for f in fields if not isinstance(f,Field.Virtual)] #  skip virtual fields
         for field in fields:
             if isinstance(field, basestring) \
                     and REGEX_TABLE_DOT_FIELD.match(field):
@@ -2111,18 +2110,20 @@ class BaseAdapter(ConnectionPool):
             new_rows.append(new_row)
         rowsobj = Rows(db, new_rows, colnames, rawrows=rows)
 
+
         for tablename in virtualtables:
             table = db[tablename]
-            all_fields = filter(lambda nv: nv[1] in fields and
-                                isinstance(nv[1],(FieldVirtual,FieldMethod)),
-                                table.iteritems())            
-            if all_fields:
+            fields_virtual = [(f,v) for (f,v) in table.iteritems()
+                              if isinstance(v,FieldVirtual)]
+            fields_lazy = [(f,v) for (f,v) in table.iteritems()
+                           if isinstance(v,FieldMethod)]
+            if fields_virtual or fields_lazy:
                 for row in rowsobj.records:
-                    box = row[tablename] # CHECK THIS
-                    for fieldname,field in all_fields:
-                        box[fieldname] = field.f(row) \
-                            if isinstance(field,FieldVirtual) else \
-                            (field.handler or VirtualCommand)(field.f,row)
+                    box = row[tablename]
+                    for f,v in fields_virtual:
+                        box[f] = v.f(row)
+                    for f,v in fields_lazy:
+                        box[f] = (v.handler or VirtualCommand)(v.f,row)
 
             ### old style virtual fields
             for item in table.virtualfields:
@@ -4245,15 +4246,15 @@ class DatabaseStoredFile:
         return self.db._adapter.escape(obj)
 
     def __init__(self,db,filename,mode):
-        if not db._adapter.dbengine in ('mysql', 'postgres'):
-            raise RuntimeError("only MySQL/Postgres can store metadata .table files in database for now")
+        if not db._adapter.dbengine in ('mysql', 'postgres', 'sqlite'):
+            raise RuntimeError("only MySQL/Postgres/SQLite can store metadata .table files in database for now")
         self.db = db
         self.filename = filename
         self.mode = mode
         if not self.web2py_filesystem:
             if db._adapter.dbengine == 'mysql':
                 sql = "CREATE TABLE IF NOT EXISTS web2py_filesystem (path VARCHAR(255), content LONGTEXT, PRIMARY KEY(path) ) ENGINE=InnoDB;"
-            elif db._adapter.dbengine == 'postgres':
+            elif db._adapter.dbengine in ('postgres', 'sqlite'):
                 sql = "CREATE TABLE IF NOT EXISTS web2py_filesystem (path VARCHAR(255), content TEXT, PRIMARY KEY(path));"
             self.db.executesql(sql)
             DatabaseStoredFile.web2py_filesystem = True
