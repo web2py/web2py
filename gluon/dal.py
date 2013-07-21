@@ -6781,7 +6781,7 @@ def sqlhtml_validators(field):
     if field_type in (('string', 'text', 'password')):
         requires.append(validators.IS_LENGTH(field_length))
     elif field_type == 'json':
-        requires.append(validators.IS_EMPTY_OR(validators.IS_JSON()))
+        requires.append(validators.IS_EMPTY_OR(validators.IS_JSON(native_json=field.db._adapter.native_json)))
     elif field_type == 'double' or field_type == 'float':
         requires.append(validators.IS_FLOAT_IN_RANGE(-1e100, 1e100))
     elif field_type in ('integer','bigint'):
