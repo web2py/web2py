@@ -346,13 +346,17 @@ class IS_JSON(Validator):
         ('spam1234', 'invalid json')
     """
 
-    def __init__(self, error_message='invalid json'):
+    def __init__(self, error_message='invalid json', native_json=False):
+        self.native_json = native_json
         self.error_message = error_message
 
     def __call__(self, value):
         if value is None:
             return None
         try:
+            if self.native_json:
+                simplejson.dumps(value) # raises error in case of malformed json
+                return (value, None) #  the serialized value is not passed
             return (simplejson.loads(value), None)
         except JSONErrors:
             return (value, translate(self.error_message))
