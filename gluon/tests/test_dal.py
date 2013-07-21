@@ -387,6 +387,10 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(db.tt.insert(aa=3), 3)
         self.assertEqual(db(db.tt.aa == 3).update(aa=db.tt.aa + 1), 1)
         self.assertEqual(db(db.tt.aa == 4).count(), 1)
+        self.assertEqual(db(db.tt.aa == -2).count(), 0)
+        sum = (db.tt.aa + 1).sum()
+        self.assertEqual(db(db.tt.aa == 2).select(sum).first()[sum], 3)
+        self.assertEqual(db(db.tt.aa == -2).select(sum).first()[sum], None)
         db.tt.drop()
 
 
