@@ -640,6 +640,8 @@ class BaseAdapter(ConnectionPool):
     support_distributed_transaction = False
     uploads_in_blob = False
     can_select_for_update = True
+    dbpath = None
+    folder = None
 
     TRUE = 'T'
     FALSE = 'F'
@@ -732,6 +734,29 @@ class BaseAdapter(ConnectionPool):
             self.driver = globals().get(self.driver_name)
         else:
             raise RuntimeError("no driver available %s" % str(self.drivers))
+
+    def log(self, message, table=None):
+        """ Logs migrations
+
+        It will not log changes if logfile is not specified. Defaults
+        to sql.log
+        """
+
+        isabs = None
+        logfilename = self.adapter_args.get('logfile','sql.log')
+        writelog = bool(logfilename)
+        if writelog:
+            isabs = os.path.isabs(logfilename)
+
+        if table and table._dbt and writelog and self.folder:
+            if isabs:
+                table._loggername = logfilename
+            else:
+                table._loggername = pjoin(self.folder, logfilename)
+            logfile = self.file_open(table._loggername, 'a')
+            logfile.write(message)
+            self.file_close(logfile)
+
 
     def __init__(self, db,uri,pool_size=0, folder=None, db_codec='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
@@ -950,17 +975,11 @@ class BaseAdapter(ConnectionPool):
             table._dbt = pjoin(
                 dbpath, '%s_%s.table' % (table._db._uri_hash, tablename))
 
-        if table._dbt:
-            logfilename = self.adapter_args.get('logfile','sql.log')
-            table._loggername = pjoin(dbpath, logfilename)
-            logfile = self.file_open(table._loggername, 'a')
-        else:
-            logfile = None
         if not table._dbt or not self.file_exists(table._dbt):
             if table._dbt:
-                logfile.write('timestamp: %s\n'
-                               % datetime.datetime.today().isoformat())
-                logfile.write(query + '\n')
+                self.log('timestamp: %s\n%s\n'
+                         % (datetime.datetime.today().isoformat(),
+                            query), table)
             if not fake_migrate:
                 self.create_sequence_and_triggers(query,table)
                 table._db.commit()
@@ -974,24 +993,22 @@ class BaseAdapter(ConnectionPool):
                 pickle.dump(sql_fields, tfile)
                 self.file_close(tfile)
                 if fake_migrate:
-                    logfile.write('faked!\n')
+                    self.log('faked!\n', table)
                 else:
-                    logfile.write('success!\n')
+                    self.log('success!\n', table)
         else:
             tfile = self.file_open(table._dbt, 'r')
             try:
                 sql_fields_old = pickle.load(tfile)
             except EOFError:
                 self.file_close(tfile)
-                self.file_close(logfile)
                 raise RuntimeError('File %s appears corrupted' % table._dbt)
             self.file_close(tfile)
             if sql_fields != sql_fields_old:
                 self.migrate_table(table,
                                    sql_fields, sql_fields_old,
-                                   sql_fields_aux, logfile,
+                                   sql_fields_aux, None,
                                    fake_migrate=fake_migrate)
-        self.file_close(logfile)
         return query
 
     def migrate_table(
@@ -1003,6 +1020,8 @@ class BaseAdapter(ConnectionPool):
         logfile,
         fake_migrate=False,
         ):
+
+        # logfile is deprecated (moved to adapter.log method)
         db = table._db
         db._migrated.append(table._tablename)
         tablename = table._tablename
@@ -1084,15 +1103,15 @@ class BaseAdapter(ConnectionPool):
                 metadata_change = True
 
             if query:
-                logfile.write('timestamp: %s\n'
-                              % datetime.datetime.today().isoformat())
+                self.log('timestamp: %s\n'
+                    % datetime.datetime.today().isoformat(), table)
                 db['_lastsql'] = '\n'.join(query)
                 for sub_query in query:
-                    logfile.write(sub_query + '\n')
+                    self.log(sub_query + '\n', table)
                     if fake_migrate:
                         if db._adapter.commit_on_alter_table:
                             self.save_dbt(table,sql_fields_current)
-                        logfile.write('faked!\n')
+                        self.log('faked!\n', table)
                     else:
                         self.execute(sub_query)
                         # Caveat: mysql, oracle and firebird do not allow multiple alter table
@@ -1101,7 +1120,7 @@ class BaseAdapter(ConnectionPool):
                         if db._adapter.commit_on_alter_table:
                             db.commit()
                             self.save_dbt(table,sql_fields_current)
-                            logfile.write('success!\n')
+                            self.log('success!\n', table)
 
             elif metadata_change:
                 self.save_dbt(table,sql_fields_current)
@@ -1109,7 +1128,7 @@ class BaseAdapter(ConnectionPool):
         if metadata_change and not (query and db._adapter.commit_on_alter_table):
             db.commit()
             self.save_dbt(table,sql_fields_current)
-            logfile.write('success!\n')
+            self.log('success!\n', table)
 
     def save_dbt(self,table, sql_fields_current):
         tfile = self.file_open(table._dbt, 'w')
@@ -1174,12 +1193,10 @@ class BaseAdapter(ConnectionPool):
 
     def drop(self, table, mode=''):
         db = table._db
-        if table._dbt:
-            logfile = self.file_open(table._loggername, 'a')
         queries = self._drop(table, mode)
         for query in queries:
             if table._dbt:
-                logfile.write(query + '\n')
+                self.log(query + '\n', table)
             self.execute(query)
         db.commit()
         del db[table._tablename]
@@ -1187,7 +1204,7 @@ class BaseAdapter(ConnectionPool):
         db._remove_references_to(table)
         if table._dbt:
             self.file_delete(table._dbt)
-            logfile.write('success!\n')
+            self.log('success!\n', table)
 
     def _insert(self, table, fields):
         if fields:
@@ -1423,25 +1440,15 @@ class BaseAdapter(ConnectionPool):
 
     def truncate(self, table, mode= ' '):
         # Prepare functions "write_to_logfile" and "close_logfile"
-        if table._dbt:
-            logfile = self.file_open(table._loggername, 'a')
-        else:
-            class Logfile(object):
-                def write(self, value):
-                    pass
-                def close(self):
-                    pass
-            logfile = Logfile()
-
         try:
             queries = table._db._adapter._truncate(table, mode)
             for query in queries:
-                logfile.write(query + '\n')
+                self.log(query + '\n', table)
                 self.execute(query)
             table._db.commit()
-            logfile.write('success!\n')
+            self.log('success!\n', table)
         finally:
-            logfile.close()
+            pass
 
     def _update(self, tablename, query, fields):
         if query:
@@ -2214,20 +2221,20 @@ class SQLiteAdapter(BaseAdapter):
         path_encoding = sys.getfilesystemencoding() \
             or locale.getdefaultlocale()[1] or 'utf8'
         if uri.startswith('sqlite:memory'):
-            dbpath = ':memory:'
+            self.dbpath = ':memory:'
         else:
-            dbpath = uri.split('://',1)[1]
-            if dbpath[0] != '/':
+            self.dbpath = uri.split('://',1)[1]
+            if self.dbpath[0] != '/':
                 if PYTHON_VERSION == 2:
-                    dbpath = pjoin(
-                        self.folder.decode(path_encoding).encode('utf8'), dbpath)
+                    self.dbpath = pjoin(
+                        self.folder.decode(path_encoding).encode('utf8'), self.dbpath)
                 else:
-                    dbpath = pjoin(self.folder, dbpath)
+                    self.dbpath = pjoin(self.folder, self.dbpath)
         if not 'check_same_thread' in driver_args:
             driver_args['check_same_thread'] = False
         if not 'detect_types' in driver_args and do_connect:
             driver_args['detect_types'] = self.driver.PARSE_DECLTYPES
-        def connector(dbpath=dbpath, driver_args=driver_args):
+        def connector(dbpath=self.dbpath, driver_args=driver_args):
             return self.driver.Connection(dbpath, **driver_args)
         self.connector = connector
         if do_connect: self.reconnect()
@@ -2282,17 +2289,17 @@ class SpatiaLiteAdapter(SQLiteAdapter):
         path_encoding = sys.getfilesystemencoding() \
             or locale.getdefaultlocale()[1] or 'utf8'
         if uri.startswith('spatialite:memory'):
-            dbpath = ':memory:'
+            self.dbpath = ':memory:'
         else:
-            dbpath = uri.split('://',1)[1]
-            if dbpath[0] != '/':
-                dbpath = pjoin(
-                    self.folder.decode(path_encoding).encode('utf8'), dbpath)
+            self.dbpath = uri.split('://',1)[1]
+            if self.dbpath[0] != '/':
+                self.dbpath = pjoin(
+                    self.folder.decode(path_encoding).encode('utf8'), self.dbpath)
         if not 'check_same_thread' in driver_args:
             driver_args['check_same_thread'] = False
         if not 'detect_types' in driver_args and do_connect:
             driver_args['detect_types'] = self.driver.PARSE_DECLTYPES
-        def connector(dbpath=dbpath, driver_args=driver_args):
+        def connector(dbpath=self.dbpath, driver_args=driver_args):
             return self.driver.Connection(dbpath, **driver_args)
         self.connector = connector
         if do_connect: self.reconnect()
@@ -2387,13 +2394,13 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
         path_encoding = sys.getfilesystemencoding() \
             or locale.getdefaultlocale()[1] or 'utf8'
         if uri.startswith('sqlite:memory'):
-            dbpath = ':memory:'
+            self.dbpath = ':memory:'
         else:
-            dbpath = uri.split('://',1)[1]
-            if dbpath[0] != '/':
-                dbpath = pjoin(
-                    self.folder.decode(path_encoding).encode('utf8'), dbpath)
-        def connector(dbpath=dbpath,driver_args=driver_args):
+            self.dbpath = uri.split('://',1)[1]
+            if self.dbpath[0] != '/':
+                self.dbpath = pjoin(
+                    self.folder.decode(path_encoding).encode('utf8'), self.dbpath)
+        def connector(dbpath=self.dbpath,driver_args=driver_args):
             return self.driver.connect(
                 self.driver.getConnection('jdbc:sqlite:'+dbpath),
                 **driver_args)
@@ -10491,6 +10498,7 @@ class Rows(object):
     # for consistent naming yet backwards compatible
     as_csv = __str__
     json = as_json
+
 
 ################################################################################
 # dummy function used to define some doctests
