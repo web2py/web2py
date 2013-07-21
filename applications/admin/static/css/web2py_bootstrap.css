@@ -145,6 +145,10 @@ div>input[type="radio"],div>input[type="checkbox"]{margin:0;}
 /* bootstrap has button instead of input */
 input[type="button"], input[type="submit"]{margin-right:8px;}
 
+/* web2py radio widget adjustment */
+.generic-widget input[type='radio'] {margin:-1px 0 0 0; vertical-align: middle;}
+.generic-widget input[type='radio'] + label {display:inline-block; margin:0 0 0 6px; vertical-align: middle;}
+
 /*=============================================================
 RULES FOR SOLVING CONFLICTS BETWEEN WEB2PY.CSS AND BOOTSTRAP.CSS
 ==============================================================*/
@@ -233,10 +237,11 @@ div.controls .error {
 
 @media only screen and (max-width:979px){
   body{padding-top:0px;}
-  #navbar{top:5px;}
+  #navbar{/*top:5px;*/}
   div.flash{right:5px;}
   .dropdown-menu ul{visibility:visible;}
 }
+
 @media only screen and (max-width:479px){
   body{
     padding-left:10px;
@@ -249,4 +254,11 @@ div.controls .error {
   input[type="text"],input[type="password"],select{
     width:95%;
   }
+}
+
+@media (max-width: 767px) {
+    .navbar {
+        margin-right: -20px;
+        margin-left: -20px;
+    }
 }

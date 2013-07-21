@@ -710,6 +710,7 @@ class BaseAdapter(ConnectionPool):
         os.unlink(filename)
 
     def find_driver(self,adapter_args,uri=None):
+        self.adapter_args = adapter_args
         if getattr(self,'driver',None) != None:
             return
         drivers_available = [driver for driver in self.drivers
@@ -950,7 +951,8 @@ class BaseAdapter(ConnectionPool):
                 dbpath, '%s_%s.table' % (table._db._uri_hash, tablename))
 
         if table._dbt:
-            table._loggername = pjoin(dbpath, 'sql.log')
+            logfilename = self.adapter_args.get('logfile','sql.log')
+            table._loggername = pjoin(dbpath, logfilename)
             logfile = self.file_open(table._loggername, 'a')
         else:
             logfile = None
@@ -2108,8 +2110,8 @@ class BaseAdapter(ConnectionPool):
             new_rows.append(new_row)
         rowsobj = Rows(db, new_rows, colnames, rawrows=rows)
 
+
         for tablename in virtualtables:
-            ### new style virtual fields
             table = db[tablename]
             fields_virtual = [(f,v) for (f,v) in table.iteritems()
                               if isinstance(v,FieldVirtual)]
@@ -2568,6 +2570,8 @@ class PostgreSQLAdapter(BaseAdapter):
         'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
 
         }
+
+    QUOTE_TEMPLATE = '%s'
 
     def varquote(self,name):
         return varquote_aux(name,'"%s"')
@@ -4242,15 +4246,15 @@ class DatabaseStoredFile:
         return self.db._adapter.escape(obj)
 
     def __init__(self,db,filename,mode):
-        if not db._adapter.dbengine in ('mysql', 'postgres'):
-            raise RuntimeError("only MySQL/Postgres can store metadata .table files in database for now")
+        if not db._adapter.dbengine in ('mysql', 'postgres', 'sqlite'):
+            raise RuntimeError("only MySQL/Postgres/SQLite can store metadata .table files in database for now")
         self.db = db
         self.filename = filename
         self.mode = mode
         if not self.web2py_filesystem:
             if db._adapter.dbengine == 'mysql':
                 sql = "CREATE TABLE IF NOT EXISTS web2py_filesystem (path VARCHAR(255), content LONGTEXT, PRIMARY KEY(path) ) ENGINE=InnoDB;"
-            elif db._adapter.dbengine == 'postgres':
+            elif db._adapter.dbengine in ('postgres', 'sqlite'):
                 sql = "CREATE TABLE IF NOT EXISTS web2py_filesystem (path VARCHAR(255), content TEXT, PRIMARY KEY(path));"
             self.db.executesql(sql)
             DatabaseStoredFile.web2py_filesystem = True

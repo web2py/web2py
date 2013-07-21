@@ -65,10 +65,15 @@ jQuery(document).on('click', '#filesTab button[class="close"]', function (e) {
     }
     if (close) {
         if (tab_header.hasClass('active') === true) { 	//Set active an other tab
-            jQuery(tab_header).prev().children('a[data-toggle="tab"]').tab('show'); // Select first tab
+            var $prev = jQuery(tab_header).prev();
+            if ($prev.length) {
+                $prev.children('a[data-toggle="tab"]').tab('show'); // select previous tab
+            } else {
+                jQuery(tab_header).next().children('a[data-toggle="tab"]').tab('show'); // select next tab
+            }
         }
         tab_header.remove(); //remove li of tab
-        tab_body.remove();   //remove li of tab
+        tab_body.remove();   //remove tab content (div)
     }
 });
 

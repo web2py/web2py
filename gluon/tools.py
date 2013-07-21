@@ -1500,7 +1500,7 @@ class Auth(object):
                   label=T('Modified By'),  ondelete=ondelete))
 
     def define_tables(self, username=None, signature=None,
-                      migrate=True, fake_migrate=False):
+                      migrate=None, fake_migrate=None):
         """
         to be called unless tables are defined manually
 
@@ -1516,6 +1516,8 @@ class Auth(object):
         """
 
         db = self.db
+        if migrate is None: migrate = db._migrate
+        if fake_migrate is None: fake_migrate = db._fake_migrate
         settings = self.settings
         if username is None:
             username = settings.use_username

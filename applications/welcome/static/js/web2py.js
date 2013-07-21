@@ -72,6 +72,7 @@
       var date_format = (typeof w2p_ajax_date_format != 'undefined') ? w2p_ajax_date_format : "%Y-%m-%d";
       var datetime_format = (typeof w2p_ajax_datetime_format != 'undefined') ? w2p_ajax_datetime_format : "%Y-%m-%d %H:%M:%S";
       $("input.date", target).each(function () {
+        $(this).attr('autocomplete','off');
         Calendar.setup({
           inputField: this,
           ifFormat: date_format,
@@ -79,6 +80,7 @@
         });
       });
       $("input.datetime", target).each(function () {
+        $(this).attr('autocomplete','off');
         Calendar.setup({
           inputField: this,
           ifFormat: datetime_format,
@@ -87,7 +89,7 @@
         });
       });
       $("input.time", target).each(function () {
-        $(this).timeEntry();
+        $(this).timeEntry().attr('autocomplete','off');
       });
       /*adds btn class to buttons*/
       $('button', target).addClass('btn');

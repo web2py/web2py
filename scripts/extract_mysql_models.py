@@ -79,8 +79,9 @@ def mysql(database_name, username, password):
         if 'CREATE' in sql_create_stmnt:  # check if the table exists
             #remove garbage lines from sql statement
             sql_lines = sql_create_stmnt.split('\n')
-            sql_lines = [x for x in sql_lines if not(
-                x.startswith('--') or x.startswith('/*') or x == '')]
+            sql_lines = filter(
+                lambda x: not(x in ('','\r') or x[:2] in ('--','/*')),
+                sql_lines)
             #generate the web2py code from the create statement
             web2py_table_code = ''
             table_name = re.search(
