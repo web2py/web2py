@@ -4316,8 +4316,13 @@ class DatabaseStoredFile:
         if exists(filename):
             return True
         query = "SELECT path FROM web2py_filesystem WHERE path='%s'" % filename
-        if db.executesql(query):
-            return True
+        try:
+            if db.executesql(query):
+                return True
+        except IOError, e:
+            # no web2py_filesystem found?
+            LOGGER.error("Could not retrieve %s. %s" % (filename, e))
+            pass
         return False
 
 
