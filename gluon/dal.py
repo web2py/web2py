@@ -8320,12 +8320,13 @@ class Table(object):
                                   archive_name = '%(tablename)s_archive',
                                   current_record = 'current_record',
                                   is_active = 'is_active'):
-        archive_db = archive_db or self._db
+        db = self._db
+        archive_db = archive_db or db
         archive_name = archive_name % dict(tablename=self._tablename)
         if archive_name in archive_db.tables():
             return # do not try define the archive if already exists
         fieldnames = self.fields()
-        same_db = archive_db is self._db
+        same_db = archive_db is db
         field_type = self if same_db else 'bigint'
         clones = []
         for field in self:
@@ -8340,7 +8341,10 @@ class Table(object):
         if is_active and is_active in fieldnames:
             self._before_delete.append(
                 lambda qset: qset.update(is_active=False))
-            newquery = lambda query, t=self: t.is_active == True
+            newquery = lambda query, t=self: \
+                reduce(AND,[db[tn].is_active == True
+                            for tn in db._adapter.tables(query)
+                            if tn==t.name or getattr(db[tn],'_ot',None)==t.name])
             query = self._common_filter
             if query:
                 newquery = query & newquery
