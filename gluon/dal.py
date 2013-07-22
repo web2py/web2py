@@ -4324,10 +4324,10 @@ class DatabaseStoredFile:
         try:
             if db.executesql(query):
                 return True
-        except IOError, e:
+        except Exception:
             # no web2py_filesystem found?
-            LOGGER.error("Could not retrieve %s. %s" % (filename, e))
-            pass
+            tb = traceback.format_exc()
+            LOGGER.error("Could not retrieve %s\n%s" % (filename, tb))
         return False
 
 
