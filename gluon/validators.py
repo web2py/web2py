@@ -359,7 +359,7 @@ class IS_JSON(Validator):
                 return (value, None) #  the serialized value is not passed
             return (simplejson.loads(value), None)
         except JSONErrors, e:
-            return (value, translate(self.error_message) + ': '+ e.message)
+            return (value, translate(self.error_message))
 
     def formatter(self,value):
         if value is None:
