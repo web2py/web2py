@@ -5,7 +5,7 @@
 ## 2.5.1
 
 - New style virtual fields in grid
-- Conditional fields (experimental) ``db.table.field.show_id = db.table.otherfield==True`` or ``db.table.field.show_id = db.table.otherfiel.contains(values)``
+- Conditional fields (experimental) ``db.table.field.show_if = db.table.otherfield==True`` or ``db.table.field.show_if = db.table.otherfiel.contains(values)``
 - auth.settings.manager_group_role="manager" enables http://.../app/appadmin/auth_manage and http://.../app/appadmin/manage for members of the "manager" group. (also experimental)
 - support for POST variables in DELETE
 - Fixed memory leak when using the TAG helper

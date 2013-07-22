@@ -567,6 +567,11 @@ class ConnectionPool(object):
         """ this actually does not make the folder. it has to be there """
         self.folder = getattr(THREAD_LOCAL,'folder','')
 
+        if (os.path.isabs(self.folder) and 
+            isinstance(self, UseDatabaseStoredFile) and
+            self.folder.startswith(os.getcwd())):
+            self.folder = os.path.relpath(self.folder, os.getcwd())
+
         # Creating the folder if it does not exist
         if False and self.folder and not exists(self.folder):
             os.mkdir(self.folder)
@@ -4316,8 +4321,13 @@ class DatabaseStoredFile:
         if exists(filename):
             return True
         query = "SELECT path FROM web2py_filesystem WHERE path='%s'" % filename
-        if db.executesql(query):
-            return True
+        try:
+            if db.executesql(query):
+                return True
+        except IOError, e:
+            # no web2py_filesystem found?
+            LOGGER.error("Could not retrieve %s. %s" % (filename, e))
+            pass
         return False
 
 
@@ -8310,12 +8320,13 @@ class Table(object):
                                   archive_name = '%(tablename)s_archive',
                                   current_record = 'current_record',
                                   is_active = 'is_active'):
-        archive_db = archive_db or self._db
+        db = self._db
+        archive_db = archive_db or db
         archive_name = archive_name % dict(tablename=self._tablename)
         if archive_name in archive_db.tables():
             return # do not try define the archive if already exists
         fieldnames = self.fields()
-        same_db = archive_db is self._db
+        same_db = archive_db is db
         field_type = self if same_db else 'bigint'
         clones = []
         for field in self:
@@ -8330,7 +8341,10 @@ class Table(object):
         if is_active and is_active in fieldnames:
             self._before_delete.append(
                 lambda qset: qset.update(is_active=False))
-            newquery = lambda query, t=self: t.is_active == True
+            newquery = lambda query, t=self: \
+                reduce(AND,[db[tn].is_active == True
+                            for tn in db._adapter.tables(query)
+                            if tn==t.name or getattr(db[tn],'_ot',None)==t.name])
             query = self._common_filter
             if query:
                 newquery = query & newquery
