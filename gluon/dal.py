@@ -567,6 +567,11 @@ class ConnectionPool(object):
         """ this actually does not make the folder. it has to be there """
         self.folder = getattr(THREAD_LOCAL,'folder','')
 
+        if (os.path.isabs(self.folder) and 
+            isinstance(self, UseDatabaseStoredFile) and
+            self.folder.startswith(os.getcwd())):
+            self.folder = os.path.relpath(self.folder, os.getcwd())
+
         # Creating the folder if it does not exist
         if False and self.folder and not exists(self.folder):
             os.mkdir(self.folder)
