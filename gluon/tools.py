@@ -2046,7 +2046,12 @@ class Auth(object):
         ### pass
 
         if next is DEFAULT:
-            next = self.next or self.settings.login_next
+            # important for security
+            next = self.settings.login_next
+            if self.next:
+                host = self.next.split('//',1)[-1].split('/')[0]
+                if host in self.settings.cas_domains:
+                    next = self.next
         if onvalidation is DEFAULT:
             onvalidation = self.settings.login_onvalidation
         if onaccept is DEFAULT:
