@@ -2048,10 +2048,15 @@ class Auth(object):
         if next is DEFAULT:
             # important for security
             next = self.settings.login_next
-            if self.next:
-                host = self.next.split('//',1)[-1].split('/')[0]
-                if host in self.settings.cas_domains:
-                    next = self.next
+            user_next = self.next
+            if user_next:
+                external = user_next.split('://')
+                if external[0].lower() in ['http', 'https', 'ftp']:
+                    host_next = user_next.split('//', 1)[-1].split('/')[0]
+                    if host_next in self.settings.cas_domains:
+                        next = user_next
+                else:
+                    next = user_next
         if onvalidation is DEFAULT:
             onvalidation = self.settings.login_onvalidation
         if onaccept is DEFAULT:
