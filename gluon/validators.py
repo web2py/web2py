@@ -351,14 +351,12 @@ class IS_JSON(Validator):
         self.error_message = error_message
 
     def __call__(self, value):
-        if value is None:
-            return None
         try:
             if self.native_json:
                 simplejson.loads(value) # raises error in case of malformed json
                 return (value, None) #  the serialized value is not passed
             return (simplejson.loads(value), None)
-        except JSONErrors, e:
+        except JSONErrors:
             return (value, translate(self.error_message))
 
     def formatter(self,value):
