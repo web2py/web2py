@@ -679,6 +679,11 @@ class BaseAdapter(ConnectionPool):
         'big-reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         }
 
+    def isOperationalError(self,exception):
+        if not hasattr(self.driver, "OperationalError"):
+            return None
+        return isinstance(exception, self.driver.OperationalError)
+
     def id_query(self, table):
         return table._id != None
 
@@ -4324,7 +4329,9 @@ class DatabaseStoredFile:
         try:
             if db.executesql(query):
                 return True
-        except Exception:
+        except Exception, e:
+            if not db._adapter.isOperationalError(e):
+                raise
             # no web2py_filesystem found?
             tb = traceback.format_exc()
             LOGGER.error("Could not retrieve %s\n%s" % (filename, tb))
