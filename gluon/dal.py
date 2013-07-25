@@ -5464,7 +5464,7 @@ class MongoDBAdapter(NoSQLAdapter):
                 else:
                     mongosort_list.append((f, 1))
         if limitby:
-            limitby_skip, limitby_limit = limitby
+            limitby_skip, limitby_limit = limitby[0], int(limitby[1])
         else:
             limitby_skip = limitby_limit = 0
 
