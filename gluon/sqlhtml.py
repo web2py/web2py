@@ -2621,25 +2621,24 @@ class SQLFORM(FORM):
         if isinstance(linked_tables, dict):
             for tbl in linked_tables.keys():
                 tb = db[tbl]
+                if isinstance(linked_tables[tbl], list) and len(linked_tables[tbl])==1:
+                    linked_tables[tbl] = linked_tables[tbl][0]
                 if isinstance(linked_tables[tbl], list):
-                        if len(linked_tables[tbl]) > 1:
-                            t = T('%s(%s)' %(tbl, fld))
-                        else:
-                            t = T(tb._plural)
-                        for fld in linked_tables[tbl]:
-                            if fld not in db[tbl].fields:
-                                raise ValueError('Field %s not in table' %fld)
-                            args0 = tbl + '.' + fld
-                            links.append(
-                                lambda row, t=t, nargs=nargs, args0=args0:
+                    for fld in linked_tables[tbl]:
+                        if fld not in db[tbl].fields:
+                            raise ValueError('Field %s not in table' %fld)
+                        args0 = tbl + '.' + fld
+                        t = T('%s(%s)' %(tbl, fld))
+                        links.append(
+                            lambda row, t=t, nargs=nargs, args0=args0:
                                 A(SPAN(t), _class=trap_class(), _href=url(
-                                  args=[args0, row[id_field_name]])))
+                                    args=[args0, row[id_field_name]])))
                 else:
-                    t = T(tb._plural)
                     fld = linked_tables[tbl]
                     if fld not in db[tbl].fields:
                         raise ValueError('Field %s not in table' %fld)
                     args0 = tbl + '.' + fld
+                    t = T(tb._plural)
                     links.append(
                         lambda row, t=t, nargs=nargs, args0=args0:
                         A(SPAN(t), _class=trap_class(), _href=url(
