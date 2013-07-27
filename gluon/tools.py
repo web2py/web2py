@@ -893,6 +893,7 @@ class Auth(object):
         on_failed_authentication=lambda x: redirect(x),
         formstyle="table3cols",
         label_separator=": ",
+        logging_enabled = True,
         allow_delete_accounts=False,
         password_field='password',
         table_user_name='auth_user',
@@ -969,7 +970,6 @@ class Auth(object):
         new_password='New password',
         old_password='Old password',
         group_description='Group uniquely assigned to user %(id)s',
-        logging_enabled = True,
         register_log='User %(id)s Registered',
         login_log='User %(id)s Logged-in',
         login_failed_log=None,
@@ -1750,7 +1750,7 @@ class Auth(object):
             user_id = None  # user unknown
         vars = vars or {}
         # log messages should not be translated
-        if type(descrption).__name__ == 'lazyT':
+        if type(description).__name__ == 'lazyT':
             description = description.m
         self.table_event().insert(
             description=str(description % vars),
