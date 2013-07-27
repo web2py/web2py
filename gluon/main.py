@@ -172,7 +172,10 @@ def copystream_progress(request, chunk_size=10 ** 5):
         size = int(env.content_length)
     except ValueError:
         raise HTTP(400, "Invalid Content-Length header")
-    dest = tempfile.NamedTemporaryFile()
+    try: # Android requires this
+        dest = tempfile.NamedTemporaryFile()
+    except NotImplementedError: # and GAE this
+        dest = tempfile.TemporaryFile()
     if not 'X-Progress-ID' in request.vars:
         copystream(source, dest, size, chunk_size)
         return dest

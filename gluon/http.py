@@ -27,6 +27,7 @@ defined_status = {
     307: 'TEMPORARY REDIRECT',
     400: 'BAD REQUEST',
     401: 'UNAUTHORIZED',
+    402: 'PAYMENT REQUIRED',
     403: 'FORBIDDEN',
     404: 'NOT FOUND',
     405: 'METHOD NOT ALLOWED',
@@ -79,6 +80,8 @@ class HTTP(Exception):
         headers = self.headers
         if status in defined_status:
             status = '%d %s' % (status, defined_status[status])
+        elif isinstance(status, int):
+            status = '%d UNKNOWN ERROR' % status
         else:
             status = str(status)
             if not regex_status.match(status):
