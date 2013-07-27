@@ -2618,38 +2618,30 @@ class SQLFORM(FORM):
         for rfield in table._referenced_by:
             check[rfield.tablename] = \
                 check.get(rfield.tablename, []) + [rfield.name]
+        if linked_tables is None:
+            linked_tables = db.tables()
         if isinstance(linked_tables, dict):
-            for tbl in linked_tables.keys():
-                tb = db[tbl]
-                if isinstance(linked_tables[tbl], list) and len(linked_tables[tbl])==1:
-                    linked_tables[tbl] = linked_tables[tbl][0]
-                if isinstance(linked_tables[tbl], list):
-                    for fld in linked_tables[tbl]:
-                        if fld not in db[tbl].fields:
-                            raise ValueError('Field %s not in table' %fld)
-                        args0 = tbl + '.' + fld
-                        t = T('%s(%s)' %(tbl, fld))
-                        links.append(
-                            lambda row, t=t, nargs=nargs, args0=args0:
-                                A(SPAN(t), _class=trap_class(), _href=url(
-                                    args=[args0, row[id_field_name]])))
+            linked_tables = linked_tables.get(table._tablename,[])
+        if linked_tables:
+            for item in linked_tables:
+                tb = None
+                if isinstance(item,Table) and item._tablename in check:
+                    tablename = item._tablename
+                    linked_fieldnames = check[tablename]
+                    td = item                
+                elif isinstance(item,str) and item in check:
+                    tablename = item
+                    linked_fieldnames = check[item]
+                    tb = db[item]
+                elif isinstance(item,Field) and item.name in check.get(item._tablename,[]):
+                    tablename = item._tablename
+                    linked_fieldnames = [item.name]
+                    tb = item.table
                 else:
-                    fld = linked_tables[tbl]
-                    if fld not in db[tbl].fields:
-                        raise ValueError('Field %s not in table' %fld)
-                    args0 = tbl + '.' + fld
-                    t = T(tb._plural)
-                    links.append(
-                        lambda row, t=t, nargs=nargs, args0=args0:
-                        A(SPAN(t), _class=trap_class(), _href=url(
-                          args=[args0, row[id_field_name]])))
-        else:
-            for tablename in sorted(check):
-                linked_fieldnames = check[tablename]
-                tb = db[tablename]
-                multiple_links = len(linked_fieldnames) > 1
-                for fieldname in linked_fieldnames:
-                    if linked_tables is None or tablename in linked_tables:
+                    linked_fieldnames = []
+                if tb:
+                    multiple_links = len(linked_fieldnames) > 1
+                    for fieldname in linked_fieldnames:
                         t = T(tb._plural) if not multiple_links else \
                             T(tb._plural + '(' + fieldname + ')')
                         args0 = tablename + '.' + fieldname
