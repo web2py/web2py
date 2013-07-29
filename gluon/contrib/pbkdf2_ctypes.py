@@ -1,11 +1,11 @@
 # -*- coding: utf-8 -*-
-""" 
+"""
     pbkdf2_ctypes
     ~~~~~~
 
     This module implements pbkdf2 for Python using crypto lib from
-    openssl.  
-    
+    openssl.
+
     Note: This module is intended as a plugin replacement of pbkdf2.py
     by Armin Ronacher.
 
@@ -16,30 +16,35 @@
 """
 
 import ctypes
+import ctypes.util
 import hashlib
 import platform
+import os.path
 
-
-try: # check that we have proper OpenSSL on the system.
-    if platform.system()=='Windows':
+try:  # check that we have proper OpenSSL on the system.
+    system = platform.system()
+    if system == 'Windows':
         if platform.architecture()[0] == '64bit':
-            crypto = ctypes.CDLL('libeay64.dll')
+            crypto = ctypes.CDLL(os.path.basename(
+                ctypes.util.find_library('libeay64')))
         else:
-            crypto = ctypes.CDLL('libeay32.dll')
-    else: # should work on most unix os'.
-        crypto = ctypes.CDLL('libcrypto.so')
+            crypto = ctypes.CDLL(os.path.basename(
+                ctypes.util.find_library('libeay32')))
+    else:
+        crypto = ctypes.CDLL(os.path.basename(
+            ctypes.util.find_library('crypto')))
 
     PKCS5_PBKDF2_HMAC = crypto.PKCS5_PBKDF2_HMAC
 
-    hashlib_to_crypto_map =  {hashlib.md5: crypto.EVP_md5,
-                              hashlib.sha1: crypto.EVP_sha1,
-                              hashlib.sha256: crypto.EVP_sha256,
-                              hashlib.sha224: crypto.EVP_sha224,
-                              hashlib.sha384: crypto.EVP_sha384,
-                              hashlib.sha512: crypto.EVP_sha512
-    }
+    hashlib_to_crypto_map = {hashlib.md5: crypto.EVP_md5,
+                             hashlib.sha1: crypto.EVP_sha1,
+                             hashlib.sha256: crypto.EVP_sha256,
+                             hashlib.sha224: crypto.EVP_sha224,
+                             hashlib.sha384: crypto.EVP_sha384,
+                             hashlib.sha512: crypto.EVP_sha512}
 except OSError, AttributeError:
-    raise ImportError('Cannot find a compatible OpenSSL installation on your system')
+    raise ImportError('Cannot find a compatible OpenSSL installation '
+                      'on your system')
 
 
 def pkcs5_pbkdf2_hmac(data, salt, iterations=1000, keylen=24, hashfunc=None):
@@ -58,7 +63,7 @@ def pkcs5_pbkdf2_hmac(data, salt, iterations=1000, keylen=24, hashfunc=None):
     else:
         crypto.EVP_sha1.restype = ctypes.c_void_p
         c_digest = ctypes.c_void_p(crypto.EVP_sha1())
-    c_buff = ctypes.create_string_buffer('\000' * (keylen + 1))
+    c_buff = ctypes.create_string_buffer('\000' * keylen)
     err = PKCS5_PBKDF2_HMAC(c_pass, c_passlen,
                             c_salt, c_saltlen,
                             c_iter,
@@ -70,14 +75,14 @@ def pkcs5_pbkdf2_hmac(data, salt, iterations=1000, keylen=24, hashfunc=None):
         raise ValueError('wrong parameters')
     return c_buff.raw[:keylen]
 
+
 def pbkdf2_hex(data, salt, iterations=1000, keylen=24, hashfunc=None):
-    return pkcs5_pbkdf2_hmac(data, salt, iterations, keylen, hashfunc).encode('hex')
+    return pkcs5_pbkdf2_hmac(data, salt, iterations, keylen, hashfunc).\
+        encode('hex')
+
 
 def pbkdf2_bin(data, salt, iterations=1000, keylen=24, hashfunc=None):
     return pkcs5_pbkdf2_hmac(data, salt, iterations, keylen, hashfunc)
-
-
-
 
 if __name__ == '__main__':
     crypto.SSLeay_version.restype = ctypes.c_char_p
