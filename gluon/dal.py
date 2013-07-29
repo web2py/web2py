@@ -8348,10 +8348,10 @@ class Table(object):
         if is_active and is_active in fieldnames:
             self._before_delete.append(
                 lambda qset: qset.update(is_active=False))
-            newquery = lambda query, t=self: \
+            newquery = lambda query, t=self, name=self._tablename: \
                 reduce(AND,[db[tn].is_active == True
                             for tn in db._adapter.tables(query)
-                            if tn==t.name or getattr(db[tn],'_ot',None)==t.name])
+                            if tn==name or getattr(db[tn],'_ot',None)==name])
             query = self._common_filter
             if query:
                 newquery = query & newquery
@@ -8584,7 +8584,7 @@ class Table(object):
         for field in self:
             if field.type=='upload' and field.name in fields:
                 value = fields[field.name]
-                if value and not isinstance(value,str):
+                if value is not None and not isinstance(value,str):
                     if hasattr(value,'file') and hasattr(value,'filename'):
                         new_name = field.store(value.file,filename=value.filename)
                     elif hasattr(value,'read') and hasattr(value,'name'):
