@@ -30,6 +30,25 @@ from dal import BaseAdapter
 
 logger = logging.getLogger("web2py")
 
+def enable_autocomplete_and_history(adir,env):
+    try:
+        import rlcompleter
+        import atexit
+        import readline
+    except ImportError:
+        pass
+    else:
+        readline.parse_and_bind("bind ^I rl_complete" 
+                                if sys.platform == 'darwin'
+                                else "tab: complete")
+        history_file = os.path.join(adir,'.pythonhistory')
+        try:
+            readline.read_history_file(history_file)
+        except IOError:
+            open(history_file, 'a').close()
+        atexit.register(readline.write_history_file, history_file)
+        readline.set_completer(rlcompleter.Completer(env).complete)
+
 
 def exec_environment(
     pyfile='',
@@ -159,8 +178,7 @@ def run(
     import_models=False,
     startfile=None,
     bpython=False,
-    python_code=False
-):
+    python_code=False):
     """
     Start interactive shell or run Python script (startfile) in web2py
     controller environment. appname is formatted like:
@@ -174,6 +192,7 @@ def run(
     if not a:
         die(errmsg)
     adir = os.path.join('applications', a)
+
     if not os.path.exists(adir):
         if sys.stdin and not sys.stdin.name == '/dev/null':
             confirm = raw_input(
@@ -271,14 +290,7 @@ def run(
                 except:
                     logger.warning(
                         'import IPython error; use default python shell')
-        try:
-            import readline
-            import rlcompleter
-        except ImportError:
-            pass
-        else:
-            readline.set_completer(rlcompleter.Completer(_env).complete)
-            readline.parse_and_bind('tab:complete')
+        enable_autocomplete_and_history(adir,_env)
         code.interact(local=_env)
 
 
