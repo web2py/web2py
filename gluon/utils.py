@@ -46,7 +46,7 @@ import hmac
 try:
     try:
         from contrib.pbkdf2_ctypes import pbkdf2_hex
-    except ImportError:
+    except (ImportError, AttributeError):
         from contrib.pbkdf2 import pbkdf2_hex
     HAVE_PBKDF2 = True
 except ImportError:
