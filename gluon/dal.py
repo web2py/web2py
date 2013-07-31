@@ -8369,21 +8369,23 @@ class Table(object):
         db = self._db
         pr = db._pending_references
         self._referenced_by = []
+        self._references = []
         for field in self:
             fieldname = field.name
-            field_type = field.type
+            field_type = field.type            
             if isinstance(field_type,str) and field_type[:10] == 'reference ':
                 ref = field_type[10:].strip()
-                if not ref.split():
+                if not ref.strip():
                     raise SyntaxError('Table: reference to nothing: %s' %ref)
-                refs = ref.split('.')
-                rtablename = refs[0]
+                if '.' in ref:
+                    rtablename, rfieldname = ref.split('.',1)
+                else:
+                    rtablename, rfieldname = ref, None                
                 if not rtablename in db:
                     pr[rtablename] = pr.get(rtablename,[]) + [field]
                     continue
                 rtable = db[rtablename]
-                if len(refs)==2:
-                    rfieldname = refs[1]
+                if rfieldname:
                     if not hasattr(rtable,'_primarykey'):
                         raise SyntaxError(
                             'keyed tables can only reference other keyed tables (for now)')
@@ -8391,10 +8393,17 @@ class Table(object):
                         raise SyntaxError(
                             "invalid field '%s' for referenced table '%s' in table '%s'" \
                             % (rfieldname, rtablename, self._tablename))
+                    rfield = rtable[rfieldname]
+                else:
+                    rfield = rtable._id
                 rtable._referenced_by.append(field)
+                field.referent = rfield
+                self._references.append(field)
+            else:
+                field.referent = None
         for referee in pr.get(self._tablename,[]):
             self._referenced_by.append(referee)
-
+            
     def _filter_fields(self, record, id=False):
         return dict([(k, v) for (k, v) in record.iteritems() if k
                      in self.fields and (self[k].type!='id' or id)])
