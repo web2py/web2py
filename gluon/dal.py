@@ -8369,6 +8369,7 @@ class Table(object):
         db = self._db
         pr = db._pending_references
         self._referenced_by = []
+        self._references = []
         for field in self:
             fieldname = field.name
             field_type = field.type            
@@ -8397,11 +8398,12 @@ class Table(object):
                     rfield = rtable._id
                 rtable._referenced_by.append(field)
                 field.referent = rfield
+                self._references.append(field)
             else:
                 field.referent = None
         for referee in pr.get(self._tablename,[]):
             self._referenced_by.append(referee)
-
+            
     def _filter_fields(self, record, id=False):
         return dict([(k, v) for (k, v) in record.iteritems() if k
                      in self.fields and (self[k].type!='id' or id)])
