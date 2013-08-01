@@ -25,7 +25,7 @@ def file_upload_form(location, anchor=None):
             LABEL(T("upload file:")),
             INPUT(_type="file",_name="file"),
             LABEL(T("and rename it:")),
-            INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY,_class=""),
+            INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY(),_class=""),
             DIV(TAG['BUTTON'](T("Upload"),_type="submit",_class="btn"),_class="controls"),
             INPUT(_type="hidden",_name="location",_value=location),
             INPUT(_type="hidden",_name="token",_value=session.token),
@@ -36,7 +36,7 @@ def file_upload_form(location, anchor=None):
 def file_create_form(location, anchor=None, helptext=""):
     form=FORM(
             LABEL(T("create file with filename:")),
-            INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY,_class=''),
+            INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY(),_class=''),
             TAG['SMALL'](helptext,_class="help-block"),
             DIV(TAG['BUTTON'](T("Create"),_type="submit",_class="btn"),_class="controls"),
             INPUT(_type="hidden",_name="location",_value=location),
