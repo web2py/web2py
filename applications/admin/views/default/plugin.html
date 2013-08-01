@@ -20,7 +20,7 @@ def editlanguagefile(path,file):
 def file_upload_form(location):
     form=FORM(T("upload file:")," ",
               INPUT(_type="file",_name="file")," ",T("and rename it:")," ",
-              INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY),
+              INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY()),
               INPUT(_type="hidden",_name="location",_value=location),
               INPUT(_type="hidden",_name="token",_value=session.token),
               INPUT(_type="hidden",_name="sender",_value=URL('design/'+app)),
@@ -28,7 +28,7 @@ def file_upload_form(location):
     return form
 def file_create_form(location):
     form=FORM(T("create file with filename:")," ",
-              INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY),
+              INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY()),
               INPUT(_type="hidden",_name="location",_value=location),
               INPUT(_type="hidden",_name="token",_value=session.token),
               INPUT(_type="hidden",_name="sender",_value=URL('design/'+app)),
