@@ -9,6 +9,8 @@
     Note: This module is intended as a plugin replacement of pbkdf2.py
     by Armin Ronacher.
 
+    Git repository: 
+    $ git clone https://github.com/michele-comitini/pbkdf2_ctypes.git
 
     :copyright: Copyright (c) 2013: Michele Comitini <mcm@glisco.it>
     :license: LGPLv3
@@ -42,7 +44,7 @@ try:  # check that we have proper OpenSSL on the system.
                              hashlib.sha224: crypto.EVP_sha224,
                              hashlib.sha384: crypto.EVP_sha384,
                              hashlib.sha512: crypto.EVP_sha512}
-except OSError, AttributeError:
+except (OSError, AttributeError), e:
     raise ImportError('Cannot find a compatible OpenSSL installation '
                       'on your system')
 
