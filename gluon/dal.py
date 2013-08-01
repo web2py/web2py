@@ -2058,7 +2058,6 @@ class BaseAdapter(ConnectionPool):
 
     def parse(self, rows, fields, colnames, blob_decode=True,
               cacheable = False):
-        self.build_parsemap()
         db = self.db
         virtualtables = []
         new_rows = []
@@ -7410,6 +7409,7 @@ class DAL(object):
                         types = ADAPTERS[self._dbname].types
                         # copy so multiple DAL() possible
                         self._adapter.types = copy.copy(types)
+                        self._adapter.build_parsemap()
                         if bigint_id:
                             if 'big-id' in types and 'reference' in types:
                                 self._adapter.types['id'] = types['big-id']
