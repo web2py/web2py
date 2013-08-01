@@ -1676,10 +1676,9 @@ class BaseAdapter(ConnectionPool):
                 sql_o += ' ORDER BY %s' % self.RANDOM()
             else:
                 sql_o += ' ORDER BY %s' % self.expand(orderby)
-        if limitby:
-            if orderby_on_limitby and not orderby and tablenames:
-                sql_o += ' ORDER BY %s' % ', '.join(['%s.%s'%(t,x) for t in tablenames for x in (hasattr(self.db[t],'_primarykey') and self.db[t]._primarykey or [self.db[t]._id.name])])
-            # oracle does not support limitby
+        if (limitby and not groupby and tablenames and orderby_on_limitby):
+            sql_o += ' ORDER BY %s' % ', '.join(['%s.%s'%(t,x) for t in tablenames for x in (hasattr(self.db[t],'_primarykey') and self.db[t]._primarykey or [self.db[t]._id.name])])
+        # oracle does not support limitby
         sql = self.select_limitby(sql_s, sql_f, sql_t, sql_w, sql_o, limitby)
         if for_update and self.can_select_for_update is True:
             sql = sql.rstrip(';') + ' FOR UPDATE;'
@@ -3173,10 +3172,6 @@ class MSSQLAdapter(BaseAdapter):
         if limitby:
             (lmin, lmax) = limitby
             sql_s += ' TOP %i' % lmax
-        if 'GROUP BY' in sql_o:
-            orderfound = sql_o.find('ORDER BY ')
-            if orderfound >= 0:
-                sql_o = sql_o[:orderfound]
         return 'SELECT %s %s FROM %s%s%s;' % (sql_s, sql_f, sql_t, sql_w, sql_o)
 
     TRUE = 1
