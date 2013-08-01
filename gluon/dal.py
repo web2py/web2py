@@ -567,7 +567,7 @@ class ConnectionPool(object):
         """ this actually does not make the folder. it has to be there """
         self.folder = getattr(THREAD_LOCAL,'folder','')
 
-        if (os.path.isabs(self.folder) and 
+        if (os.path.isabs(self.folder) and
             isinstance(self, UseDatabaseStoredFile) and
             self.folder.startswith(os.getcwd())):
             self.folder = os.path.relpath(self.folder, os.getcwd())
@@ -770,7 +770,7 @@ class BaseAdapter(ConnectionPool):
 
     def __init__(self, db,uri,pool_size=0, folder=None, db_codec='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
-                 adapter_args={},do_connect=True, after_connection=None):
+                 adapter_args={}, do_connect=True, after_connection=None):
         self.db = db
         self.dbengine = "None"
         self.uri = uri
@@ -778,6 +778,7 @@ class BaseAdapter(ConnectionPool):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         class Dummy(object):
             lastrowid = 1
             def __getattr__(self, value):
@@ -2058,7 +2059,6 @@ class BaseAdapter(ConnectionPool):
 
     def parse(self, rows, fields, colnames, blob_decode=True,
               cacheable = False):
-        self.build_parsemap()
         db = self.db
         virtualtables = []
         new_rows = []
@@ -2227,6 +2227,7 @@ class SQLiteAdapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.find_or_make_work_folder()
         path_encoding = sys.getfilesystemencoding() \
             or locale.getdefaultlocale()[1] or 'utf8'
@@ -2294,6 +2295,7 @@ class SpatiaLiteAdapter(SQLiteAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.find_or_make_work_folder()
         self.srid = srid
         path_encoding = sys.getfilesystemencoding() \
@@ -2400,6 +2402,7 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.find_or_make_work_folder()
         path_encoding = sys.getfilesystemencoding() \
             or locale.getdefaultlocale()[1] or 'utf8'
@@ -2512,6 +2515,7 @@ class MySQLAdapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.find_or_make_work_folder()
         ruri = uri.split('://',1)[1]
         m = self.REGEX_URI.match(ruri)
@@ -2647,6 +2651,7 @@ class PostgreSQLAdapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.srid = srid
         self.find_or_make_work_folder()
         ruri = uri.split('://',1)[1]
@@ -2899,6 +2904,7 @@ class JDBCPostgreSQLAdapter(PostgreSQLAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.find_or_make_work_folder()
         ruri = uri.split('://',1)[1]
         m = self.REGEX_URI.match(ruri)
@@ -3027,6 +3033,7 @@ class OracleAdapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.find_or_make_work_folder()
         ruri = uri.split('://',1)[1]
         if not 'threaded' in driver_args:
@@ -3199,6 +3206,7 @@ class MSSQLAdapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.srid = srid
         self.find_or_make_work_folder()
         # ## read: http://bytes.com/groups/python/460325-cx_oracle-utf8
@@ -3473,6 +3481,7 @@ class SybaseAdapter(MSSQLAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.srid = srid
         self.find_or_make_work_folder()
         # ## read: http://bytes.com/groups/python/460325-cx_oracle-utf8
@@ -3605,6 +3614,7 @@ class FireBirdAdapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.find_or_make_work_folder()
         ruri = uri.split('://',1)[1]
         m = self.REGEX_URI.match(ruri)
@@ -3665,6 +3675,7 @@ class FireBirdEmbeddedAdapter(FireBirdAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.find_or_make_work_folder()
         ruri = uri.split('://',1)[1]
         m = self.REGEX_URI.match(ruri)
@@ -3774,6 +3785,7 @@ class InformixAdapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.find_or_make_work_folder()
         ruri = uri.split('://',1)[1]
         m = self.REGEX_URI.match(ruri)
@@ -3886,6 +3898,7 @@ class DB2Adapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.find_or_make_work_folder()
         ruri = uri.split('://', 1)[1]
         def connector(cnxn=ruri,driver_args=driver_args):
@@ -3951,6 +3964,7 @@ class TeradataAdapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.find_or_make_work_folder()
         ruri = uri.split('://', 1)[1]
         def connector(cnxn=ruri,driver_args=driver_args):
@@ -4035,6 +4049,7 @@ class IngresAdapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.find_or_make_work_folder()
         connstr = uri.split(':', 1)[1]
         # Simple URI processing
@@ -4176,6 +4191,7 @@ class SAPDBAdapter(BaseAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.find_or_make_work_folder()
         ruri = uri.split('://',1)[1]
         m = self.REGEX_URI.match(ruri)
@@ -4220,6 +4236,7 @@ class CubridAdapter(MySQLAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.find_or_make_work_folder()
         ruri = uri.split('://',1)[1]
         m = self.REGEX_URI.match(ruri)
@@ -4370,6 +4387,7 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
         self.pool_size = pool_size
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.folder = folder or pjoin('$HOME',THREAD_LOCAL.folder.split(
                 os.sep+'applications'+os.sep,1)[1])
         ruri = uri.split("://")[1]
@@ -4617,6 +4635,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         db['_lastsql'] = ''
         self.db_codec = 'UTF-8'
         self._after_connection = after_connection
+        self.build_parsemap()
         self.pool_size = 0
         match = self.REGEX_NAMESPACE.match(uri)
         if match:
@@ -5075,6 +5094,7 @@ class CouchDBAdapter(NoSQLAdapter):
         db['_lastsql'] = ''
         self.db_codec = 'UTF-8'
         self._after_connection = after_connection
+        self.build_parsemap()
         self.pool_size = pool_size
 
         url='http://'+uri[10:]
@@ -5254,6 +5274,7 @@ class MongoDBAdapter(NoSQLAdapter):
         db['_lastsql'] = ''
         self.db_codec = 'UTF-8'
         self._after_connection = after_connection
+        self.build_parsemap()
         self.pool_size = pool_size
         #this is the minimum amount of replicates that it should wait
         # for on insert/update
@@ -5952,6 +5973,7 @@ class IMAPAdapter(NoSQLAdapter):
         self.folder = folder
         self.db_codec = db_codec
         self._after_connection = after_connection
+        self.build_parsemap()
         self.credential_decoder = credential_decoder
         self.driver_args = driver_args
         self.adapter_args = adapter_args
