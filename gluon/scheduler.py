@@ -73,13 +73,10 @@ import optparse
 import types
 import Queue
 
-if 'WEB2PY_PATH' in os.environ:
-    sys.path.append(os.environ['WEB2PY_PATH'])
-else:
-    os.environ['WEB2PY_PATH'] = os.getcwd()
+path = os.getcwd()
 
-if not os.environ['WEB2PY_PATH'] in sys.path:
-    sys.path.append(os.environ['WEB2PY_PATH'])
+if 'WEB2PY_PATH' not in os.environ:
+    os.environ['WEB2PY_PATH'] = path
 
 try:
     from gluon.contrib.simplejson import loads, dumps
@@ -90,7 +87,8 @@ IDENTIFIER = "%s#%s" % (socket.gethostname(),os.getpid())
 
 logger = logging.getLogger('web2py.scheduler.%s' % IDENTIFIER)
 
-from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB, IS_INT_IN_RANGE, IS_DATETIME
+from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB
+from gluon import IS_INT_IN_RANGE, IS_DATETIME
 from gluon.utils import web2py_uuid
 from gluon.storage import Storage
 
@@ -253,6 +251,7 @@ class MetaScheduler(threading.Thread):
         self.process = None     # the background process
         self.have_heartbeat = True   # set to False to kill
         self.empty_runs = 0
+
 
     def async(self, task):
         """
