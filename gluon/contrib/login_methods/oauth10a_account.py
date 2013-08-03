@@ -109,7 +109,7 @@ class OAuthAccount(object):
         self.session.access_token = None
         return None
 
-    def __init__(self, g, client_id, client_secret, auth_url, token_url, access_token_url):
+    def __init__(self, g, client_id, client_secret, auth_url, token_url, access_token_url, socket_timeout=60):
         self.globals = g
         self.client_id = client_id
         self.client_secret = client_secret
@@ -119,6 +119,7 @@ class OAuthAccount(object):
         self.auth_url = auth_url
         self.token_url = token_url
         self.access_token_url = access_token_url
+        self.socket_timeout = socket_timeout
 
         # consumer init
         self.consumer = oauth.Consumer(self.client_id, self.client_secret)
@@ -154,7 +155,7 @@ class OAuthAccount(object):
 
         if not self.accessToken():
             # setup the client
-            client = oauth.Client(self.consumer, None)
+            client = oauth.Client(self.consumer, None, timeout=self.socket_timeout)
             # Get a request token.
             # oauth_callback *is REQUIRED* for OAuth1.0a
             # putting it in the body seems to work.

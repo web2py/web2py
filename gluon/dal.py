@@ -567,7 +567,7 @@ class ConnectionPool(object):
         """ this actually does not make the folder. it has to be there """
         self.folder = getattr(THREAD_LOCAL,'folder','')
 
-        if (os.path.isabs(self.folder) and 
+        if (os.path.isabs(self.folder) and
             isinstance(self, UseDatabaseStoredFile) and
             self.folder.startswith(os.getcwd())):
             self.folder = os.path.relpath(self.folder, os.getcwd())
@@ -1676,10 +1676,9 @@ class BaseAdapter(ConnectionPool):
                 sql_o += ' ORDER BY %s' % self.RANDOM()
             else:
                 sql_o += ' ORDER BY %s' % self.expand(orderby)
-        if limitby:
-            if orderby_on_limitby and not orderby and tablenames:
-                sql_o += ' ORDER BY %s' % ', '.join(['%s.%s'%(t,x) for t in tablenames for x in (hasattr(self.db[t],'_primarykey') and self.db[t]._primarykey or [self.db[t]._id.name])])
-            # oracle does not support limitby
+        if (limitby and not groupby and tablenames and orderby_on_limitby and not orderby):
+            sql_o += ' ORDER BY %s' % ', '.join(['%s.%s'%(t,x) for t in tablenames for x in (hasattr(self.db[t],'_primarykey') and self.db[t]._primarykey or [self.db[t]._id.name])])
+        # oracle does not support limitby
         sql = self.select_limitby(sql_s, sql_f, sql_t, sql_w, sql_o, limitby)
         if for_update and self.can_select_for_update is True:
             sql = sql.rstrip(';') + ' FOR UPDATE;'
@@ -2058,7 +2057,6 @@ class BaseAdapter(ConnectionPool):
 
     def parse(self, rows, fields, colnames, blob_decode=True,
               cacheable = False):
-        self.build_parsemap()
         db = self.db
         virtualtables = []
         new_rows = []
@@ -3174,10 +3172,6 @@ class MSSQLAdapter(BaseAdapter):
         if limitby:
             (lmin, lmax) = limitby
             sql_s += ' TOP %i' % lmax
-        if 'GROUP BY' in sql_o:
-            orderfound = sql_o.find('ORDER BY ')
-            if orderfound >= 0:
-                sql_o = sql_o[:orderfound]
         return 'SELECT %s %s FROM %s%s%s;' % (sql_s, sql_f, sql_t, sql_w, sql_o)
 
     TRUE = 1
@@ -7410,6 +7404,7 @@ class DAL(object):
                         types = ADAPTERS[self._dbname].types
                         # copy so multiple DAL() possible
                         self._adapter.types = copy.copy(types)
+                        self._adapter.build_parsemap()
                         if bigint_id:
                             if 'big-id' in types and 'reference' in types:
                                 self._adapter.types['id'] = types['big-id']
@@ -8078,7 +8073,7 @@ def index():
                     # skip all non-empty lines
                     for line in ifile:
                         if not line.strip():
-                            breal
+                            break
                 else:
                     raise RuntimeError("Unable to import table that does not exist.\nTry db.import_from_csv_file(..., map_tablenames={'table':'othertable'},ignore_missing_tables=True)")
 
@@ -8372,7 +8367,7 @@ class Table(object):
         self._references = []
         for field in self:
             fieldname = field.name
-            field_type = field.type            
+            field_type = field.type
             if isinstance(field_type,str) and field_type[:10] == 'reference ':
                 ref = field_type[10:].strip()
                 if not ref.strip():
@@ -8380,7 +8375,7 @@ class Table(object):
                 if '.' in ref:
                     rtablename, rfieldname = ref.split('.',1)
                 else:
-                    rtablename, rfieldname = ref, None                
+                    rtablename, rfieldname = ref, None
                 if not rtablename in db:
                     pr[rtablename] = pr.get(rtablename,[]) + [field]
                     continue
@@ -8403,7 +8398,7 @@ class Table(object):
                 field.referent = None
         for referee in pr.get(self._tablename,[]):
             self._referenced_by.append(referee)
-            
+
     def _filter_fields(self, record, id=False):
         return dict([(k, v) for (k, v) in record.iteritems() if k
                      in self.fields and (self[k].type!='id' or id)])
