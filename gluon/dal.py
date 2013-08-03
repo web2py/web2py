@@ -8073,7 +8073,7 @@ def index():
                     # skip all non-empty lines
                     for line in ifile:
                         if not line.strip():
-                            breal
+                            break
                 else:
                     raise RuntimeError("Unable to import table that does not exist.\nTry db.import_from_csv_file(..., map_tablenames={'table':'othertable'},ignore_missing_tables=True)")
 
