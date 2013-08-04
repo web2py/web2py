@@ -40,11 +40,11 @@
   <script src="{{=URL('static','js/modernizr.custom.js')}}"></script>
 
   <!-- include stylesheets -->
-  {{  
-  response.files.append(URL('static','css/web2py.css'))
-  response.files.append(URL('static','css/bootstrap.min.css'))
-  response.files.append(URL('static','css/bootstrap-responsive.min.css'))
-  response.files.append(URL('static','css/web2py_bootstrap.css'))
+  {{
+  response.files.insert(0,URL('static','css/web2py.css'))
+  response.files.insert(1,URL('static','css/bootstrap.min.css'))
+  response.files.insert(2,URL('static','css/bootstrap-responsive.min.css'))
+  response.files.insert(3,URL('static','css/web2py_bootstrap.css'))
   }}
 
   {{include 'web2py_ajax.html'}}
