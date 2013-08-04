@@ -5106,7 +5106,7 @@ class Wiki(object):
                               requires=[IS_SLUG(),
                                         IS_NOT_IN_DB(db, 'wiki_page.slug')],
                               writable=False),
-                        Field('title', unique=True),
+                        Field('title', length=255, unique=True),
                         Field('body', 'text', notnull=True),
                         Field('tags', 'list:string'),
                         Field('can_read', 'list:string',
