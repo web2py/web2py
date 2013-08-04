@@ -454,6 +454,15 @@ class Scheduler(MetaScheduler):
 
         self.define_tables(db, migrate=migrate)
 
+    def __get_migrate(self, tablename, migrate=True):
+        if migrate is False:
+            return False
+        elif migrate is True:
+            return True
+        elif isinstance(migrate, str):
+            return "%s%s.table" % (migrate , tablename)
+        return True
+
     def now(self):
         return self.utc_time and datetime.datetime.utcnow() or datetime.datetime.now()
 
@@ -505,7 +514,8 @@ class Scheduler(MetaScheduler):
             Field('last_run_time', 'datetime', writable=False, readable=False),
             Field('assigned_worker_name', default='', writable=False),
             on_define=self.set_requirements,
-            migrate=migrate, format='%(task_name)s')
+            migrate=self.__get_migrate('scheduler_task', migrate),
+            format='%(task_name)s')
 
         db.define_table(
             'scheduler_run',
@@ -517,7 +527,8 @@ class Scheduler(MetaScheduler):
             Field('run_result', 'text'),
             Field('traceback', 'text'),
             Field('worker_name', default=self.worker_name),
-            migrate=migrate)
+            migrate=self.__get_migrate('scheduler_run', migrate)
+            )
 
         db.define_table(
             'scheduler_worker',
@@ -526,9 +537,11 @@ class Scheduler(MetaScheduler):
             Field('last_heartbeat', 'datetime'),
             Field('status', requires=IS_IN_SET(WORKER_STATUS)),
             Field('is_ticker', 'boolean', default=False, writable=False),
-            Field('group_names', 'list:string', default=self.group_names),#FIXME writable=False or give the chance to update dinamically the groups?
-            migrate=migrate)
-        if migrate:
+            Field('group_names', 'list:string', default=self.group_names),
+            migrate=self.__get_migrate('scheduler_worker', migrate)
+            )
+
+        if migrate is not False:
             db.commit()
 
     def loop(self, worker_name=None):
