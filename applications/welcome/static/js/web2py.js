@@ -211,12 +211,13 @@
 
     },
     trap_form: function (action, target) {
+      var disable_with_message = (typeof w2p_ajax_disable_with_message != 'undefined') ? w2p_ajax_disable_with_message : "Working...";
       $('#' + target + ' form').each(function (i) {
         var form = $(this);
         form.attr('data-w2p_target', target);
         if(!form.hasClass('no_trap')) {
           //should be there by default ?
-          form.find('input[type=submit]').attr('data-w2p_disable_with', 'Working...');
+          form.find('input[type=submit]').attr('data-w2p_disable_with', disable_with_message);
           form.submit(function (e) {
             web2py.hide_flash();
             web2py.ajax_page('post', action, form.serialize(), target, form);
@@ -431,11 +432,12 @@
     disableElement: function (el) {
       el.addClass('disabled');
       var method = el.prop('type') == 'submit' ? 'val' : 'html';
+      var disable_with_message = (typeof w2p_ajax_disable_with_message != 'undefined') ? w2p_ajax_disable_with_message : "Working...";
       // store enabled state
       el.data('w2p:enable-with', el[method]());
       /* little addition by default*/
       if((el.data('w2p_disable_with') == 'default') || (el.data('w2p_disable_with') === undefined)) {
-        el.data('w2p_disable_with', 'Working...');
+        el.data('w2p_disable_with', disable_with_message);
       }
       // set to disabled state
       el[method](el.data('w2p_disable_with'));
