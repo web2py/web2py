@@ -34,14 +34,29 @@ def commoncrypto_hashlib_to_crypto_map_get(hashfunc):
         raise ValueError('Unkwnown digest %s' % hashfunc)
     return crypto_hashfunc
 
-def commoncrypto_pbkdf2(c_pass, c_passlen,
-               c_salt, c_saltlen,
-               c_iter, digest, c_keylen, c_buff):
+def commoncrypto_pbkdf2(data, salt, iterations, digest, keylen):
     """Common Crypto compatibile wrapper
     """
-    c_hashfunc = ctypes.c_int(commoncrypto_hashlib_to_crypto_map_get(digest))
+    c_hashfunc = ctypes.c_uint32(commoncrypto_hashlib_to_crypto_map_get(digest))
+    c_pass = ctypes.c_char_p(data)
+    c_passlen = ctypes.c_size_t(len(data))
+    c_salt = ctypes.c_char_p(salt)
+    c_saltlen = ctypes.c_size_t(len(salt))
+    c_iter = ctypes.c_uint(iterations)
+    c_keylen = ctypes.c_size_t(keylen)
+    c_buff = ctypes.create_string_buffer(keylen)
 
-    return 1 - crypto.CCKeyDerivationPBKDF(2, # hardcoded 2-> PBKDF2
+    crypto.CCKeyDerivationPBKDF.restype = ctypes.c_int
+    crypto.CCKeyDerivationPBKDF.argtypes = [ctypes.c_uint32,
+                                            ctypes.c_char_p,
+                                            ctypes.c_size_t,
+                                            ctypes.c_char_p,
+                                            ctypes.c_size_t,
+                                            ctypes.c_uint32,
+                                            ctypes.c_uint,
+                                            ctypes.c_char_p,
+                                            ctypes.c_size_t]
+    ret = crypto.CCKeyDerivationPBKDF(2, # hardcoded 2-> PBKDF2
                                            c_pass, c_passlen,
                                            c_salt, c_saltlen,
                                            c_hashfunc,
@@ -49,6 +64,7 @@ def commoncrypto_pbkdf2(c_pass, c_passlen,
                                            c_buff,
                                            c_keylen)
 
+    return (1 - ret, c_buff)
 
 def openssl_hashlib_to_crypto_map_get(hashfunc):
     hashlib_to_crypto_map = {hashlib.md5: crypto.EVP_md5,
@@ -64,58 +80,76 @@ def openssl_hashlib_to_crypto_map_get(hashfunc):
     return crypto_hashfunc()
 
     
-def openssl_pbkdf2(c_pass, c_passlen,
-                   c_salt, c_saltlen,
-                   c_iter, digest, c_keylen, c_buff):
+def openssl_pbkdf2(data, salt, iterations, digest, keylen):
     """OpenSSL compatibile wrapper
     """
     c_hashfunc = ctypes.c_void_p(openssl_hashlib_to_crypto_map_get(digest))
 
-    return crypto.PKCS5_PBKDF2_HMAC(c_pass, c_passlen,
-                            c_salt, c_saltlen,
-                            c_iter,
-                            c_hashfunc,
-                            c_keylen,
-                            c_buff)
-
-try:  # check that we have proper OpenSSL or Common Crypto on the system.
-    system = platform.system()
-    if system == 'Windows':
-        if platform.architecture()[0] == '64bit':
-            crypto = ctypes.CDLL(os.path.basename(
-                ctypes.util.find_library('libeay64')))
-        else:
-            crypto = ctypes.CDLL(os.path.basename(
-                ctypes.util.find_library('libeay32')))
-        _pbkdf2_hmac = openssl_pbkdf2
-        crypto.PKCS5_PBKDF2_HMAC # test compatibility
-    elif system == 'Darwin': # think different(TM)! i.e. break things!
-        raise ImportError('Not yet available on OS X')
-    else:
-        crypto = ctypes.CDLL(os.path.basename(
-            ctypes.util.find_library('crypto')))
-        _pbkdf2_hmac = openssl_pbkdf2
-        crypto.PKCS5_PBKDF2_HMAC # test compatibility
-
-except (OSError, AttributeError), e:
-    raise ImportError('Cannot find a compatible OpenSSL installation '
-                      'on your system')
-
-
-def pkcs5_pbkdf2_hmac(data, salt, iterations=1000, keylen=24, hashfunc=None):
     c_pass = ctypes.c_char_p(data)
     c_passlen = ctypes.c_int(len(data))
     c_salt = ctypes.c_char_p(salt)
     c_saltlen = ctypes.c_int(len(salt))
     c_iter = ctypes.c_int(iterations)
     c_keylen = ctypes.c_int(keylen)
-    c_buff = ctypes.create_string_buffer('\000' * keylen)
-    err = _pbkdf2_hmac(c_pass, c_passlen,
+    c_buff = ctypes.create_string_buffer(keylen)
+    
+    # PKCS5_PBKDF2_HMAC(const char *pass, int passlen,
+    #                            const unsigned char *salt, int saltlen, int iter,
+    #                            const EVP_MD *digest,
+    #                       int keylen, unsigned char *out);
+
+    crypto.PKCS5_PBKDF2_HMAC.argtypes = [ctypes.c_char_p, ctypes.c_int,
+                                         ctypes.c_char_p, ctypes.c_int,
+                                         ctypes.c_int, ctypes.c_void_p,
+                                         ctypes.c_int, ctypes.c_char_p]
+                                         
+    crypto.PKCS5_PBKDF2_HMAC.restype = ctypes.c_int
+    err = crypto.PKCS5_PBKDF2_HMAC(c_pass, c_passlen,
                             c_salt, c_saltlen,
                             c_iter,
-                            hashfunc,
+                            c_hashfunc,
                             c_keylen,
                             c_buff)
+    return (err, c_buff)
+
+try:  # check that we have proper OpenSSL or Common Crypto on the system.
+    system = platform.system()
+    if system == 'Windows':
+        if platform.architecture()[0] == '64bit':
+            libname = ctypes.util.find_library('libeay64')
+            if not libname:
+                raise OSError('Library not found')
+            crypto = ctypes.CDLL(os.path.basename(libname))
+        else:
+            libname = ctypes.util.find_library('libeay32')
+            if not libname:
+                raise OSError('Library not found')
+
+            crypto = ctypes.CDLL(os.path.basename(libname))
+        _pbkdf2_hmac = openssl_pbkdf2
+        crypto.PKCS5_PBKDF2_HMAC # test compatibility
+    elif system == 'Darwin': # think different(TM)! i.e. break things!
+        libname = ctypes.util.find_library('System')
+        if not libname:
+            raise OSError('Library not found')
+
+        crypto = ctypes.CDLL(os.path.basename(libname))
+        _pbkdf2_hmac = commoncrypto_pbkdf2
+    else:
+        libname = ctypes.util.find_library('crypto')
+        if not libname:
+            raise OSError('not found')
+        crypto = ctypes.CDLL(os.path.basename(libname))
+        _pbkdf2_hmac = openssl_pbkdf2
+        crypto.PKCS5_PBKDF2_HMAC # test compatibility
+
+except (OSError, AttributeError), e:
+    raise ImportError('Cannot find a compatible cryptographic library '
+                      'on your system')
+
+
+def pkcs5_pbkdf2_hmac(data, salt, iterations=1000, keylen=24, hashfunc=None):
+    err, c_buff = _pbkdf2_hmac(data, salt, iterations, hashfunc, keylen)
 
     if err == 0:
         raise ValueError('wrong parameters')
@@ -135,8 +169,8 @@ if __name__ == '__main__':
         crypto.SSLeay_version.restype = ctypes.c_char_p
         print crypto.SSLeay_version(0)
     except:
-        print "Not using OpenSSL"
+        pass
 
     for h in [hashlib.sha1, hashlib.sha224, hashlib.sha256,
               hashlib.sha384, hashlib.sha512]:
-        pkcs5_pbkdf2_hmac('secret' * 11, 'salt', hashfunc=h)
+        print pkcs5_pbkdf2_hmac('secret' * 11, 'salt', hashfunc=h).encode('hex')
