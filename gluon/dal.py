@@ -10312,22 +10312,56 @@ class Rows(object):
         rows.records = sorted(self,key=f,reverse=reverse)
         return rows
 
-
-    def group_by_value(self, field):
+    def group_by_value(self, *fields, **args):
         """
         regroups the rows, by one of the fields
         """
+        one_result = False
+        if 'one_result' in args:
+            one_result = args['one_result']
+            
+        def build_fields_struct(row, fields, num, groups):
+            ''' helper function: 
+            '''
+            if num > len(fields)-1:
+                if one_result:
+                    return row
+                else:
+                    return [row]
+            
+            key = fields[num]
+            value = row[key]
+            
+            if value not in groups:
+                groups[value] = build_fields_struct(row, fields, num+1, {})
+            else:
+                struct = build_fields_struct(row, fields, num+1, groups[ value ])
+                
+                # still have more grouping to do
+                if type(struct) == type(dict()):
+                    groups[value].update()
+                # no more grouping, first only is off
+                elif type(struct) == type(list()):
+                    groups[value] += struct
+                # no more grouping, first only on
+                else:
+                    groups[value] = struct
+            
+            return groups
+        
+        if len(fields) == 0:
+            return self
+        
+        # if select returned no results
         if not self.records:
             return {}
-        key = str(field)
+        
         grouped_row_group = dict()
 
+        # build the struct
         for row in self:
-            value = row[key]
-            if not value in grouped_row_group:
-                grouped_row_group[value] = [row]
-            else:
-                grouped_row_group[value].append(row)
+            build_fields_struct(row, fields, 0, grouped_row_group)
+                
         return grouped_row_group
 
     def render(self, i=None, fields=None):
