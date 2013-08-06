@@ -4,7 +4,7 @@ import glob
 import shutil
 import re
 
-regex_link = re.compile("""(href|src)\s=\s("|')(.+?)("|')""")
+regex_link = re.compile("""(href|src)\s*=\s*("|')(.+?)("|')""")
 
 def getname(filename):
     return re.compile('\W').sub('',filename.split('/')[-1].rsplit('.',1)[0])
@@ -18,23 +18,27 @@ def make_controller(html_files):
 
 def fix_links(html,prefix):
     def fix(match):
-        href,link = match.group(1), match.group(2)
-        if not link.contains('://'):
-            if links.startswith('./'):
-                link = "{{=URL('static','%s','%s')}}" % (prefix,link[2:])
-            if link.startswith('/'):
-                link = "{{=URL('static','%s','%s')}}" % (prefix,link[1:])
+        href,link = match.group(1), match.group(3)
+        if not '://' in link:
+            if link.lower().endswith('.html') and not '/' in link:
+                link = "{{=URL('%s','%s')}}" % (prefix, getname(link))
+            elif link.startswith('./'):
+                link = "{{=URL('static','%s/%s')}}" % (prefix,link[2:])
+            elif link.startswith('/'):
+                link = "{{=URL('static','%s/%s')}}" % (prefix,link[1:])
             else:
-                link = "{{=URL('static','%s','%s')}}" % (prefix,link)
+                link = "{{=URL('static','%s/%s')}}" % (prefix,link)
         return '%s="%s"' % (href,link)
     return regex_link.sub(fix,html)
         
 def make_views(html_files,prefix):
     views = {}
+    layout_name = os.path.join(prefix,'layout.html')
+    extend = "{{extend '%s'}}" % layout_name
     for filename in html_files:
         html = open(filename).read()
         name = getname(filename)
-        views[prefix+'/'+name+'.html'] = fix_links(html,prefix)
+        views[os.path.join(prefix,name+'.html')] = fix_links(html,prefix)
     start = stop = None
     k = 0
     while start is None or stop is None:
@@ -56,9 +60,9 @@ def make_views(html_files,prefix):
         html = views[name]
         n = len(html)
         header, views[name], footer = \
-            html[:start], html[start:n-stop], html[n-stop:]
+            html[:start], extend+html[start:n-stop], html[n-stop:]
     layout_html = header+'{{include}}'+footer
-    views['layout.html'] = layout_html
+    views[layout_name] = layout_html
     return views
 
 def recursive_overwrite(src, dest, ignore=None):
