@@ -5346,10 +5346,12 @@ class MongoDBAdapter(NoSQLAdapter):
             d = datetime.date(2000, 1, 1)
             # mongodb doesn't has a  time object and so it must datetime,
             # string or integer
-            return datetime.datetime.combine(d, value)
+            return datetime.datetime.combine(d, value)        
         elif fieldtype == "blob":
             from bson import Binary
-            return Binary(value)
+            if not isinstance(value, Binary):
+                return Binary(value)
+            return value
         elif (isinstance(fieldtype, basestring) and
               fieldtype.startswith('list:')):
             if fieldtype.startswith('list:reference'):
