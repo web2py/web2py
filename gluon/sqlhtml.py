@@ -1822,10 +1822,11 @@ class SQLFORM(FORM):
         session = current.session
         response = current.response
         logged = session.auth and session.auth.user
-        wenabled = (not user_signature or logged)
+        wenabled = (not user_signature or logged) and not groupby
         create = wenabled and create
         editable = wenabled and editable
         deletable = wenabled and deletable
+        details = details and not groupby
         rows = None
 
         def fetch_count(dbset):
