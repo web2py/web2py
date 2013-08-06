@@ -38,7 +38,7 @@ def enable_autocomplete_and_history(adir,env):
     except ImportError:
         pass
     else:
-        readline.parse_and_bind("bind ^I rl_complete" 
+        readline.parse_and_bind("bind ^I rl_complete"
                                 if sys.platform == 'darwin'
                                 else "tab: complete")
         history_file = os.path.join(adir,'.pythonhistory')
@@ -71,7 +71,7 @@ def exec_environment(
     """
 
     if request is None:
-        request = Request()
+        request = Request({})
     if response is None:
         response = Response()
     if session is None:
@@ -116,7 +116,7 @@ def env(
     web2py environment.
     """
 
-    request = Request()
+    request = Request({})
     response = Response()
     session = Session()
     request.application = a

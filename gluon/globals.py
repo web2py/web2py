@@ -36,6 +36,11 @@ import os
 import sys
 import traceback
 import threading
+import cgi
+import copy
+import tempfile
+from cache import CacheInRam
+from fileutils import copystream
 
 FMT = '%a, %d-%b-%Y %H:%M:%S PST'
 PAST = 'Sat, 1-Jan-1971 00:00:00'
@@ -46,6 +51,15 @@ try:
     have_minify = True
 except ImportError:
     have_minify = False
+
+
+try:
+    import simplejson as sj #external installed library
+except:
+    try:
+        import json as sj #standard installed library
+    except:
+        import contrib.simplejson as sj #pure python library
 
 regex_session_id = re.compile('^([\w\-]+/)?[\w\-\.]+$')
 
@@ -61,6 +75,52 @@ less_template = '<link href="%s" rel="stylesheet/less" type="text/css" />'
 css_inline = '<style type="text/css">\n%s\n</style>'
 js_inline = '<script type="text/javascript">\n%s\n</script>'
 
+
+def copystream_progress(request, chunk_size=10 ** 5):
+    """
+    copies request.env.wsgi_input into request.body
+    and stores progress upload status in cache_ram
+    X-Progress-ID:length and X-Progress-ID:uploaded
+    """
+    env = request.env
+    if not env.content_length:
+        return cStringIO.StringIO()
+    source = env.wsgi_input
+    try:
+        size = int(env.content_length)
+    except ValueError:
+        raise HTTP(400, "Invalid Content-Length header")
+    try: # Android requires this
+        dest = tempfile.NamedTemporaryFile()
+    except NotImplementedError: # and GAE this
+        dest = tempfile.TemporaryFile()
+    if not 'X-Progress-ID' in request.vars:
+        copystream(source, dest, size, chunk_size)
+        return dest
+    cache_key = 'X-Progress-ID:' + request.vars['X-Progress-ID']
+    cache_ram = CacheInRam(request)  # same as cache.ram because meta_storage
+    cache_ram(cache_key + ':length', lambda: size, 0)
+    cache_ram(cache_key + ':uploaded', lambda: 0, 0)
+    while size > 0:
+        if size < chunk_size:
+            data = source.read(size)
+            cache_ram.increment(cache_key + ':uploaded', size)
+        else:
+            data = source.read(chunk_size)
+            cache_ram.increment(cache_key + ':uploaded', chunk_size)
+        length = len(data)
+        if length > size:
+            (data, length) = (data[:size], size)
+        size -= length
+        if length == 0:
+            break
+        dest.write(data)
+        if length < chunk_size:
+            break
+    dest.seek(0)
+    cache_ram(cache_key + ':length', None)
+    cache_ram(cache_key + ':uploaded', None)
+    return dest
 
 class Request(Storage):
 
@@ -81,13 +141,15 @@ class Request(Storage):
     - restful()
     """
 
-    def __init__(self):
+    def __init__(self, env):
         Storage.__init__(self)
-        self.env = Storage()
+        self.env = Storage(env)
+        self.env.web2py_path = global_settings.applications_parent
+        self.env.update(global_settings)
         self.cookies = Cookie.SimpleCookie()
-        self.get_vars = Storage()
-        self.post_vars = Storage()
-        self.vars = Storage()
+        self._get_vars = None
+        self._post_vars = None
+        self._vars = None
         self.folder = None
         self.application = None
         self.function = None
@@ -99,6 +161,105 @@ class Request(Storage):
         self.is_https = False
         self.is_local = False
         self.global_settings = settings.global_settings
+
+    def parse_get_vars(self):
+        query_string = self.env.get('QUERY_STRING','')
+        dget = cgi.parse_qs(query_string, keep_blank_values=1)
+        get_vars = self._get_vars = Storage(dget)
+        for (key, value) in get_vars.iteritems():
+            if isinstance(value,list) and len(value)==1:
+                get_vars[key] = value[0]
+
+    def parse_post_vars(self):
+        env = self.env
+        post_vars = self._post_vars = Storage()
+        try:
+            self.body = body = copystream_progress(self)
+        except IOError:
+            raise HTTP(400, "Bad Request - HTTP body is incomplete")
+
+        #if content-type is application/json, we must read the body
+        is_json = env.get('content_type', '')[:16] == 'application/json'
+
+        if is_json:
+            try:
+                json_vars = sj.load(body)
+            except:
+                # incoherent request bodies can still be parsed "ad-hoc"
+                json_vars = {}
+                pass
+            # update vars and get_vars with what was posted as json
+            if isinstance(json_vars, dict):
+                post_vars.update(json_vars)
+
+            body.seek(0)
+
+        # parse POST variables on POST, PUT, BOTH only in post_vars
+        if (body and
+                env.request_method in ('POST', 'PUT', 'DELETE', 'BOTH') and
+                not is_json):
+            dpost = cgi.FieldStorage(fp=body, environ=env, keep_blank_values=1)
+            post_vars.update(dpost)
+            # The same detection used by FieldStorage to detect multipart POSTs
+            is_multipart = dpost.type[:10] == 'multipart/'
+            body.seek(0)
+
+            def listify(a):
+                return (not isinstance(a, list) and [a]) or a
+            try:
+                keys = sorted(dpost)
+            except TypeError:
+                keys = []
+            for key in keys:
+                if key is None:
+                    continue  # not sure why cgi.FieldStorage returns None key
+                dpk = dpost[key]
+                # if an element is not a file replace it with its value else leave it alone
+                if isinstance(dpk, list):
+                    value = []
+                    for _dpk in dpk:
+                        if not _dpk.filename:
+                            value.append(_dpk.value)
+                        else:
+                            value.append(_dpk)
+                elif not dpk.filename:
+                    value = dpk.value
+                else:
+                    value = dpk
+                pvalue = listify(value)
+                if len(pvalue):
+                    post_vars[key] = (len(pvalue) > 1 and pvalue) or pvalue[0]
+
+    def parse_all_vars(self):
+        self._vars = copy.copy(self.get_vars)
+        for key,value in self.post_vars.iteritems():
+            if not key in self._vars:
+                self._vars[key] = value
+            else:
+                if not isinstance(self._vars[key],list):
+                    self._vars[key] = [self._vars[key]]
+                self._vars[key] += value if isinstance(value,list) else [value]
+
+    @property
+    def get_vars(self):
+        "lazily parse the query string into get_vars"
+        if self._get_vars is None:
+            self.parse_get_vars()
+        return self._get_vars
+
+    @property
+    def post_vars(self):
+        "lazily parse the body into post_vars"
+        if self._post_vars is None:
+            self.parse_post_vars()
+        return self._post_vars
+
+    @property
+    def vars(self):
+        "lazily parse all get_vars and post_vars to fill vars"
+        if self._vars is None:
+            self.parse_all_vars()
+        return self._vars
 
     def compute_uuid(self):
         self.uuid = '%s/%s.%s.%s' % (
