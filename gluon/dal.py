@@ -5349,6 +5349,8 @@ class MongoDBAdapter(NoSQLAdapter):
             return datetime.datetime.combine(d, value)
         elif fieldtype == "blob":
             from bson import Binary
+            if not isinstance(value, str):
+                return Binary(str(value))
             return Binary(value)
         elif (isinstance(fieldtype, basestring) and
               fieldtype.startswith('list:')):
