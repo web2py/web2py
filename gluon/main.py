@@ -292,7 +292,7 @@ class LazyWSGI(object):
         self.response.headers = dict(headers)
         return lambda *args, **kargs: \
             self.response.write(escape=False, *args, **kargs)
-    def middleware(self,*a):
+    def middleware(self,*middleware_apps):
         """
         In you controller use::
         
@@ -311,7 +311,7 @@ class LazyWSGI(object):
                 return [data]
             for item in middleware_apps:
                 app = item(app)
-            def caller(app):                
+            def caller(app):              
                 return app(self.environ, self.start_response)
             return lambda caller=caller, app=app: caller(app)
         return middleware
