@@ -1834,11 +1834,12 @@ class SQLFORM(FORM):
             ## if it's not an integer
             if cache_count is None or isinstance(cache_count, tuple):
                 if groupby:
-                    c = 'count(*)'
+                    c = 'count(*) _tmp'
                     nrows = db.executesql(
                         'select count(*) from (%s);' %
                         dbset._select(c, left=left, cacheable=True,
-                                      groupby=groupby, cache=cache_count)[:-1])[0][0]
+                                      groupby=groupby, 
+                                      cache=cache_count)[:-1])[0][0]
                 elif left:
                     c = 'count(*)'
                     nrows = dbset.select(c, left=left, cacheable=True, cache=cache_count).first()[c]
