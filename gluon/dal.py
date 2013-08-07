@@ -1076,16 +1076,18 @@ class BaseAdapter(ConnectionPool):
             elif not key in sql_fields:
                 del sql_fields_current[key]
                 ftype = sql_fields_old[key]['type']
-                if self.dbengine in ('postgres',) and ftype.startswith('geometry'):
+                if (self.dbengine in ('postgres',) and 
+                    ftype.startswith('geometry')):
                     geotype, parms = ftype[:-1].split('(')
                     schema = parms.split(',')[0]
-                    query = [ "SELECT DropGeometryColumn ('%(schema)s', '%(table)s', '%(field)s');" %
+                    query = [ "SELECT DropGeometryColumn ('%(schema)s', "+
+                              "'%(table)s', '%(field)s');" %
                               dict(schema=schema, table=tablename, field=key,) ]
                 elif self.dbengine in ('firebird',):
                     query = ['ALTER TABLE %s DROP %s;' % (tablename, key)]
                 else:
-                    query = ['ALTER TABLE %s DROP COLUMN %s;'
-                             % (tablename, key)]
+                    query = ['ALTER TABLE %s DROP COLUMN %s;' % 
+                             (tablename, key)]
                 metadata_change = True
             elif sql_fields[key]['sql'] != sql_fields_old[key]['sql'] \
                   and not (key in table.fields and
@@ -1124,8 +1126,10 @@ class BaseAdapter(ConnectionPool):
                         self.log('faked!\n', table)
                     else:
                         self.execute(sub_query)
-                        # Caveat: mysql, oracle and firebird do not allow multiple alter table
-                        # in one transaction so we must commit partial transactions and
+                        # Caveat: mysql, oracle and firebird 
+                        # do not allow multiple alter table
+                        # in one transaction so we must commit 
+                        # partial transactions and
                         # update table._dbt after alter table.
                         if db._adapter.commit_on_alter_table:
                             db.commit()
