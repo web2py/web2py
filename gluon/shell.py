@@ -24,7 +24,7 @@ from utils import web2py_uuid
 from compileapp import build_environment, read_pyc, run_models_in
 from restricted import RestrictedError
 from globals import Request, Response, Session
-from storage import Storage
+from storage import Storage, List
 from admin import w2p_unpack
 from dal import BaseAdapter
 
@@ -131,13 +131,21 @@ def env(
     request.function = f or 'index'
     response.view = '%s/%s.html' % (request.controller,
                                     request.function)
-    request.env.path_info = '/%s/%s/%s' % (a, c, f)
     request.env.http_host = '127.0.0.1:8000'
     request.env.remote_addr = '127.0.0.1'
     request.env.web2py_runtime_gae = global_settings.web2py_runtime_gae
 
     for k, v in extra_request.items():
         request[k] = v
+    
+    path_info = '/%s/%s/%s' % (a, c, f)
+    if request.args:
+        path_info = '%s/%s' % (path_info, '/'.join(request.args))
+    if request.vars:
+        vars = ['%s=%s' % (k,v) if v else '%s' % k 
+                for (k,v) in request.vars.iteritems()]
+        path_info = '%s?%s' % (path_info, '&'.join(vars))
+    request.env.path_info = path_info
 
     # Monkey patch so credentials checks pass.
 
@@ -187,7 +195,7 @@ def run(
     a/c    exec the controller c into the application environment
     """
 
-    (a, c, f) = parse_path_info(appname)
+    (a, c, f, args, vars) = parse_path_info(appname, av=True)
     errmsg = 'invalid application name: %s' % appname
     if not a:
         die(errmsg)
@@ -219,18 +227,23 @@ def run(
 
     if c:
         import_models = True
-    _env = env(a, c=c, f=f, import_models=import_models)
+    extra_request = {}
+    if args:
+        extra_request['args'] = args
+    if vars:
+        extra_request['vars'] = vars
+    _env = env(a, c=c, f=f, import_models=import_models, extra_request=extra_request)
     if c:
-        cfile = os.path.join('applications', a, 'controllers', c + '.py')
-        if not os.path.isfile(cfile):
-            cfile = os.path.join('applications', a, 'compiled',
+        pyfile = os.path.join('applications', a, 'controllers', c + '.py')
+        pycfile = os.path.join('applications', a, 'compiled',
                                  "controllers_%s_%s.pyc" % (c, f))
-            if not os.path.isfile(cfile):
-                die(errmsg)
-            else:
-                exec read_pyc(cfile) in _env
+        if ((cronjob and os.path.isfile(pycfile)) 
+            or not os.path.isfile(pyfile)):
+            exec read_pyc(pycfile) in _env
+        elif os.path.isfile(pyfile):
+            execfile(pyfile, _env)
         else:
-            execfile(cfile, _env)
+            die(errmsg)
 
     if f:
         exec ('print %s()' % f, _env)
@@ -294,13 +307,25 @@ def run(
         code.interact(local=_env)
 
 
-def parse_path_info(path_info):
+def parse_path_info(path_info, av=False):
     """
     Parse path info formatted like a/c/f where c and f are optional
     and a leading / accepted.
     Return tuple (a, c, f). If invalid path_info a is set to None.
     If c or f are omitted they are set to None.
+    If av=True, parse args and vars
     """
+    if av:
+        vars = None
+        if '?' in path_info:
+            path_info, query = path_info.split('?', 2)
+            vars = Storage()
+            for var in query.split('&'):
+                (var, val) = var.split('=', 2) if '=' in var else (var, None)
+                vars[var] = val
+        items = List(path_info.split('/'))
+        args = List(items[3:]) if len(items) > 3 else None
+        return (items(0), items(1), items(2), args, vars)
 
     mo = re.match(r'^/?(?P<a>\w+)(/(?P<c>\w+)(/(?P<f>\w+))?)?$',
                   path_info)
@@ -368,9 +393,10 @@ def test(testpath, import_models=True, verbose=False):
 
                 globs = env(a, c=c, f=f, import_models=import_models)
                 execfile(testfile, globs)
-                doctest.run_docstring_examples(obj, globs=globs,
-                                               name='%s: %s' % (os.path.basename(testfile),
-                                                                name), verbose=verbose)
+                doctest.run_docstring_examples(
+                    obj, globs=globs,
+                    name='%s: %s' % (os.path.basename(testfile),
+                                     name), verbose=verbose)
                 if type(obj) in (types.TypeType, types.ClassType):
                     for attr_name in dir(obj):
 
@@ -398,8 +424,8 @@ def execute_from_command_line(argv=None):
     parser = optparse.OptionParser(usage=get_usage())
 
     parser.add_option('-S', '--shell', dest='shell', metavar='APPNAME',
-                      help='run web2py in interactive shell or IPython(if installed) ' +
-                      'with specified appname')
+                      help='run web2py in interactive shell ' + 
+                      'or IPython(if installed) with specified appname')
     msg = 'run web2py in interactive shell or bpython (if installed) with'
     msg += ' specified appname (if app does not exist it will be created).'
     msg += '\n Use combined with --shell'

@@ -63,11 +63,13 @@ def run_system_tests(options):
             if options.with_coverage:
                 try:
                     import coverage
-                    coverage_config = os.environ.get("COVERAGE_PROCESS_START",
-                                        os.path.join('gluon', 'tests', 'coverage.ini')
-                                    )
-                    call_args = ['coverage', 'run', '--rcfile=%s' % coverage_config, 
-                                    '-m', 'unittest', '-v', 'gluon.tests']
+                    coverage_config = os.environ.get(
+                        "COVERAGE_PROCESS_START",
+                        os.path.join('gluon', 'tests', 'coverage.ini'))
+                        
+                    call_args = ['coverage', 'run', '--rcfile=%s' % 
+                                 coverage_config, 
+                                 '-m', 'unittest', '-v', 'gluon.tests']
                 except:
                     sys.stderr.write('Coverage was not installed, skipping\n')
             sys.stderr.write("Python 2.7\n")
@@ -157,7 +159,8 @@ def presentation(root):
         # Prevent garbage collection of img
         pnl.image = img
 
-    def add_label(text='Change Me', font_size=12, foreground='#195866', height=1):
+    def add_label(text='Change Me', font_size=12, 
+                  foreground='#195866', height=1):
         return Tkinter.Label(
             master=canvas,
             width=250,
@@ -331,11 +334,13 @@ class web2pyDialog(object):
         apps = []
         available_apps = [arq for arq in os.listdir('applications/')]
         available_apps = [arq for arq in available_apps
-                          if os.path.exists('applications/%s/models/scheduler.py' % arq)]
+                          if os.path.exists(
+                'applications/%s/models/scheduler.py' % arq)]
         if start:
             #the widget takes care of starting the scheduler
             if self.options.scheduler and self.options.with_scheduler:
-                apps = [app.strip() for app in self.options.scheduler.split(',')
+                apps = [app.strip() for app 
+                        in self.options.scheduler.split(',')
                         if app in available_apps]
         for app in apps:
             self.try_start_scheduler(app)
@@ -419,13 +424,14 @@ class web2pyDialog(object):
         """ Connect pages """
         #reset the menu
         available_apps = [arq for arq in os.listdir('applications/')
-                          if os.path.exists('applications/%s/__init__.py' % arq)]
+                          if os.path.exists(
+                'applications/%s/__init__.py' % arq)]
         self.pagesmenu.delete(0, len(available_apps))
         for arq in available_apps:
             url = self.url + arq
-            self.pagesmenu.add_command(label=url,
-                                       command=lambda u=url: start_browser(u))
-
+            self.pagesmenu.add_command(
+                label=url, command=lambda u=url: start_browser(u))
+            
     def quit(self, justHide=False):
         """ Finish the program execution """
         if justHide:
@@ -478,7 +484,8 @@ class web2pyDialog(object):
             return self.error('invalid port number')
 
         # Check for non default value for ssl inputs
-        if (len(self.options.ssl_certificate) > 0) or (len(self.options.ssl_private_key) > 0):
+        if (len(self.options.ssl_certificate) > 0 or 
+            len(self.options.ssl_private_key) > 0):
             proto = 'https'
         else:
             proto = 'http'
@@ -521,8 +528,8 @@ class web2pyDialog(object):
         self.button_stop.configure(state='normal')
 
         if not options.taskbar:
-            thread.start_new_thread(start_browser,
-                                    (get_url(ip, proto=proto, port=port), True))
+            thread.start_new_thread(
+                start_browser, (get_url(ip, proto=proto, port=port), True))
 
         self.password.configure(state='readonly')
         [ip.configure(state='disabled') for ip in self.ips.values()]
@@ -1110,7 +1117,7 @@ def start(cron=True):
         if not options.args is None:
             sys.argv[:] = options.args
         run(options.shell, plain=options.plain, bpython=options.bpython,
-            import_models=options.import_models, startfile=options.run)
+            import_models=options.import_models, startfile=options.run, cronjob=options.cronjob)
         return
 
     # ## if -C start cron run (extcron) and exit
