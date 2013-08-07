@@ -26,7 +26,7 @@ from html import FORM, INPUT, LABEL, OPTION, SELECT
 from html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
 from html import URL, truncate_string, FIELDSET
 from dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
-    bar_encode, Reference, REGEX_TABLE_DOT_FIELD
+    bar_encode, Reference, REGEX_TABLE_DOT_FIELD, Expression
 from storage import Storage
 from utils import md5_hash
 from validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE, \
@@ -1834,11 +1834,11 @@ class SQLFORM(FORM):
             ## if it's not an integer
             if cache_count is None or isinstance(cache_count, tuple):
                 if groupby:
-                    c = 'count(*) _tmp'
+                    c = 'count(*)'
                     nrows = db.executesql(
-                        'select count(*) from (%s);' %
+                        'select count(*) from (%s) _tmp;' %
                         dbset._select(c, left=left, cacheable=True,
-                                      groupby=groupby, 
+                                      groupby=groupby,
                                       cache=cache_count)[:-1])[0][0]
                 elif left:
                     c = 'count(*)'
@@ -1932,11 +1932,16 @@ class SQLFORM(FORM):
                         columns.append(f)
                         fields.append(f)
         if not field_id:
-            field_id = tables[0]._id
-        if not any(str(f)==str(field_id) for f in fields):
-            fields = [f for f in fields]+[field_id]
+            if groupby is None:
+                field_id = tables[0]._id
+            elif groupby and isinstance(groupby, Field):
+                field_id = groupby #take the field passed as groupby
+            elif groupby and isinstance(groupby, Expression):
+                field_id = groupby.first #take the first groupby field
         table = field_id.table
         tablename = table._tablename
+        if not any(str(f)==str(field_id) for f in fields):
+            fields = [f for f in fields]+[field_id]
         if upload == '<default>':
             upload = lambda filename: url(args=['download', filename])
             if request.args(-2) == 'download':
@@ -2630,7 +2635,7 @@ class SQLFORM(FORM):
                 if isinstance(item,Table) and item._tablename in check:
                     tablename = item._tablename
                     linked_fieldnames = check[tablename]
-                    td = item                
+                    td = item
                 elif isinstance(item,str) and item in check:
                     tablename = item
                     linked_fieldnames = check[item]
