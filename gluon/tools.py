@@ -1154,9 +1154,6 @@ class Auth(object):
                 del session.auth
         # ## what happens after login?
 
-        self.next = current.request.vars._next
-        if isinstance(self.next, (list, tuple)):
-            self.next = self.next[0]
         url_index = URL(controller, 'index')
         url_login = URL(controller, function, args='login')
         # ## what happens after registration?
@@ -1234,6 +1231,12 @@ class Auth(object):
             self.define_signature()
         else:
             self.signature = None
+
+    def get_vars_next(self):
+        next = current.request.vars._next
+        if isinstance(next, (list, tuple)):
+            next = next[0]
+        return next
 
     def _get_user_id(self):
         "accessor for auth.user_id"
@@ -2038,17 +2041,18 @@ class Auth(object):
         except:
             pass
 
-        ### use session for federated login
-        if self.next:
-            session._auth_next = self.next
+        ### use session for federated login        
+        snext = self.get_vars_next()
+        if snext:
+            session._auth_next = snext
         elif session._auth_next:
-            self.next = session._auth_next
+            snext = session._auth_next
         ### pass
 
         if next is DEFAULT:
             # important for security
             next = self.settings.login_next
-            user_next = self.next
+            user_next = snext
             if user_next:
                 external = user_next.split('://')
                 if external[0].lower() in ['http', 'https', 'ftp']:
@@ -2292,7 +2296,7 @@ class Auth(object):
             redirect(self.settings.logged_url,
                      client_side=self.settings.client_side)
         if next is DEFAULT:
-            next = self.next or self.settings.register_next
+            next = self.get_vars_next() or self.settings.register_next
         if onvalidation is DEFAULT:
             onvalidation = self.settings.register_onvalidation
         if onaccept is DEFAULT:
@@ -2487,7 +2491,7 @@ class Auth(object):
             response.flash = self.messages.function_disabled
             return ''
         if next is DEFAULT:
-            next = self.next or self.settings.retrieve_username_next
+            next = self.get_vars_next() or self.settings.retrieve_username_next
         if onvalidation is DEFAULT:
             onvalidation = self.settings.retrieve_username_onvalidation
         if onaccept is DEFAULT:
@@ -2569,7 +2573,7 @@ class Auth(object):
             response.flash = self.messages.function_disabled
             return ''
         if next is DEFAULT:
-            next = self.next or self.settings.retrieve_password_next
+            next = self.get_vars_next() or self.settings.retrieve_password_next
         if onvalidation is DEFAULT:
             onvalidation = self.settings.retrieve_password_onvalidation
         if onaccept is DEFAULT:
@@ -2645,7 +2649,7 @@ class Auth(object):
         session = current.session
 
         if next is DEFAULT:
-            next = self.next or self.settings.reset_password_next
+            next = self.get_vars_next() or self.settings.reset_password_next
         try:
             key = request.vars.key or getarg(-1)
             t0 = int(key.split('-')[0])
@@ -2706,7 +2710,7 @@ class Auth(object):
                 (self.settings.retrieve_password_captcha != False and self.settings.captcha)
 
         if next is DEFAULT:
-            next = self.next or self.settings.request_reset_password_next
+            next = self.get_vars_next() or self.settings.request_reset_password_next
         if not self.settings.mailer:
             response.flash = self.messages.function_disabled
             return ''
@@ -2809,7 +2813,7 @@ class Auth(object):
         request = current.request
         session = current.session
         if next is DEFAULT:
-            next = self.next or self.settings.change_password_next
+            next = self.get_vars_next() or self.settings.change_password_next
         if onvalidation is DEFAULT:
             onvalidation = self.settings.change_password_onvalidation
         if onaccept is DEFAULT:
@@ -2878,7 +2882,7 @@ class Auth(object):
         request = current.request
         session = current.session
         if next is DEFAULT:
-            next = self.next or self.settings.profile_next
+            next = self.get_vars_next() or self.settings.profile_next
         if onvalidation is DEFAULT:
             onvalidation = self.settings.profile_onvalidation
         if onaccept is DEFAULT:
