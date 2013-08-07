@@ -194,7 +194,7 @@ CALLABLETYPES = (types.LambdaType, types.FunctionType,
 
 TABLE_ARGS = set(
     ('migrate','primarykey','fake_migrate','format','redefine',
-     'singular','plural','trigger_name','sequence_name',
+     'singular','plural','trigger_name','sequence_name','fields',
      'common_filter','polymodel','table_class','on_define','actual_name'))
 
 SELECT_ARGS = set(
@@ -7766,6 +7766,8 @@ def index():
         *fields,
         **args
         ):
+        if not fields and 'fields' in args:
+            fields = args.get('fields',())
         if not isinstance(tablename,str):
             raise SyntaxError("missing table name")
         elif hasattr(self,tablename) or tablename in self.tables:
@@ -8246,24 +8248,27 @@ class Table(object):
             fieldnames.add('id')
             self._id = field
         virtual_fields = []
+        def include_new(field):
+            newfields.append(field)
+            fieldnames.add(field.name)
+            if field.type=='id':
+                self._id = field
         for field in fields:
             if isinstance(field, (FieldMethod, FieldVirtual)):
-                virtual_fields.append(field)
+                virtual_fields.append(field)            
             elif isinstance(field, Field) and not field.name in fieldnames:
                 if field.db is not None:
-                    field = copy.copy(field)
-                newfields.append(field)
-                fieldnames.add(field.name)
-                if field.type=='id':
-                    self._id = field
+                    field = copy.copy(field)                
+                include_new(field)
+            elif isinstance(field, dict) and 'fieldname' and \
+                    not field['fieldname'] in fieldnames:
+                include_new(Field(**field))
             elif isinstance(field, Table):
                 table = field
                 for field in table:
                     if not field.name in fieldnames and not field.type=='id':
                         t2 = not table._actual and self._tablename
-                        field = field.clone(point_self_references_to=t2)
-                        newfields.append(field)
-                        fieldnames.add(field.name)
+                        include_new(field.clone(point_self_references_to=t2))
             elif not isinstance(field, (Field, Table)):
                 raise SyntaxError(
                     'define_table argument is not a Field or Table: %s' % field)
