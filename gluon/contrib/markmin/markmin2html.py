@@ -1014,8 +1014,8 @@ def render(text,
         # - is empty -> this is an <hr /> tag
         # - consists '|' -> table
         # - consists other characters -> blockquote
-        if ( lineno+1 >= strings_len or
-             not (s.count('-') == len(s) and len(s)>3) ):
+        if (lineno+1 >= strings_len or
+            not(s.count('-') == len(s) and len(s)>3)):
            return (s, mtag, lineno)
 
         lineno+=1
@@ -1034,7 +1034,8 @@ def render(text,
                 while lineno < strings_len:
                     s = strings[lineno].strip()
                     if s[:1] == '=':
-                        if s.count('=')==len(s) and len(s)>3:  # header or footer
+                        # header or footer
+                        if s.count('=')==len(s) and len(s)>3:  
                             if not thead: # if thead list is empty:
                                 thead = tout
                             else:
@@ -1054,16 +1055,16 @@ def render(text,
                        tr = '<tr class="even">'
                     else:
                        tr = '<tr class="first">' if rownum == 0 else '<tr>'
-                    tout.append(tr+''.join(['<td%s>%s</td>'% \
-                                              (' class="num"'
-                                                  if regex_num.match(f)
-                                                  else '',
-                                               f.strip()
-                                              ) for f in s.split('|')])+'</tr>'+pp)
+                    tout.append(tr + ''.join(['<td%s>%s</td>' % (
+                                    ' class="num"' 
+                                    if regex_num.match(f) else '',
+                                    f.strip()
+                                    ) for f in s.split('|')])+'</tr>'+pp)
                     rownum+=1
                     lineno+=1
 
-                t_cls = ' class="%s%s"'%(class_prefix, t_cls) if t_cls and t_cls != 'id' else ''
+                t_cls = ' class="%s%s"'%(class_prefix, t_cls) \
+                    if t_cls and t_cls != 'id' else ''
                 t_id  = ' id="%s%s"'%(id_prefix, t_id) if t_id else ''
                 s = ''
                 if thead:
@@ -1080,7 +1081,7 @@ def render(text,
             else:
                 # parse blockquote:
                 bq_begin=lineno
-                t_mode = False # embidded table
+                t_mode = False # embedded table
                 t_cls = ''
                 t_id = ''
 
@@ -1090,13 +1091,15 @@ def render(text,
                     if not t_mode:
                         m = regex_tq.match(s)
                         if m:
-                            if lineno+1 == strings_len or '|' not in strings[lineno+1]:
+                            if (lineno+1 == strings_len or 
+                                '|' not in strings[lineno+1]):
                                t_cls = m.group('c') or ''
                                t_id = m.group('p') or ''
                                break
 
                         if regex_bq_headline.match(s):
-                            if lineno+1 < strings_len and strings[lineno+1].strip():
+                            if (lineno+1 < strings_len and 
+                                strings[lineno+1].strip()):
                                     t_mode = True
                             lineno+=1
                             continue
@@ -1107,25 +1110,15 @@ def render(text,
 
                     lineno+=1
 
-                t_cls = ' class="%s%s"'%(class_prefix,t_cls) if t_cls and t_cls != 'id' else ''
-                t_id  = ' id="%s%s"'%(id_prefix,t_id) if t_id else ''
+                t_cls = ' class="%s%s"'%(class_prefix,t_cls) \
+                    if t_cls and t_cls != 'id' else ''
+                t_id  = ' id="%s%s"'%(id_prefix,t_id) \
+                    if t_id else ''
+                
                 s = '<blockquote%s%s>%s</blockquote>%s' \
                          % (t_cls,
                             t_id,
-                            render('\n'.join(strings[bq_begin:lineno]),
-                                   extra,
-                                   allowed,
-                                   'br',
-                                   URL,
-                                   environment,
-                                   latex,
-                                   autolinks,
-                                   protolinks,
-                                   class_prefix,
-                                   id_prefix,
-                                   pretty_print),
-                            pp
-                           )
+                            '\n'.join(strings[bq_begin:lineno]),pp)
                 mtag='q'
         else:
             s = '<hr />'
@@ -1440,4 +1433,4 @@ if __name__ == '__main__':
         print "       file.markmin  [file.css] - process file.markmin + built in file.css (optional)"
         print "       file.markmin  [@path_to/css] - process file.markmin + link path_to/css (optional)"
         run_doctests()
-
+        
