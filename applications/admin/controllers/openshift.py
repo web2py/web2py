@@ -10,6 +10,10 @@ except ImportError:
     session.flash = T('requires python-git, but not installed')
     redirect(URL('default', 'site'))
 
+from gluon.settings import settings
+if not settings.is_source:
+    session.flash = 'Requires running web2py from source'
+    redirect(URL(request.application, 'default', 'site'))
 
 def deploy():
     apps = sorted(file for file in os.listdir(apath(r=request)))
