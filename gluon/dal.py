@@ -253,7 +253,7 @@ REGEX_TYPE = re.compile('^([\w\_\:]+)')
 REGEX_DBNAME = re.compile('^(\w+)(\:\w+)*')
 REGEX_W = re.compile('^\w+$')
 REGEX_TABLE_DOT_FIELD = re.compile('^(\w+)\.(\w+)$')
-REGEX_UPLOAD_PATTERN = re.compile('(?P<table>[\w\-]+)\.(?P<field>[\w\-]+)\.(?P<uuidkey>[\w\-]+)\.(?P<name>\w+)\.\w+$')
+REGEX_UPLOAD_PATTERN = re.compile('(?P<table>[\w\-]+)\.(?P<field>[\w\-]+)\.(?P<uuidkey>[\w\-]+)(\.(?P<name>\w+))?\.\w+$')
 REGEX_CLEANUP_FN = re.compile('[\'"\s;]+')
 REGEX_UNPACK = re.compile('(?<!\|)\|(?!\|)')
 REGEX_PYTHON_KEYWORDS = re.compile('^(and|del|from|not|while|as|elif|global|or|with|assert|else|if|pass|yield|break|except|import|print|class|exec|in|raise|continue|finally|is|return|def|for|lambda|try)$')
@@ -9442,9 +9442,6 @@ class Field(Expression):
                 raise http.HTTP(404)
         if self.authorize and not self.authorize(row):
             raise http.HTTP(403)
-        m = REGEX_UPLOAD_PATTERN.match(name)
-        if not m or not self.isattachment:
-            raise TypeError('Can\'t retrieve %s' % name)
         file_properties = self.retrieve_file_properties(name,path)
         filename = file_properties['filename']
         if isinstance(self_uploadfield, str):  # ## if file is in DB
@@ -9468,35 +9465,35 @@ class Field(Expression):
         return (filename, stream)
 
     def retrieve_file_properties(self, name, path=None):
+        m = REGEX_UPLOAD_PATTERN.match(name)
+        if not m or not self.isattachment:
+            raise TypeError('Can\'t retrieve %s file properties' % name)
         self_uploadfield = self.uploadfield
         if self.custom_retrieve_file_properties:
             return self.custom_retrieve_file_properties(name, path)
-        try:
-            m = REGEX_UPLOAD_PATTERN.match(name)
-            if not m or not self.isattachment:
-                raise TypeError('Can\'t retrieve %s file properties' % name)
-            filename = base64.b16decode(m.group('name'), True)
-            filename = REGEX_CLEANUP_FN.sub('_', filename)
-        except (TypeError, AttributeError):
-            filename = name
-        if isinstance(self_uploadfield, str):  # ## if file is in DB
-            return dict(path=None,filename=filename)
-        elif isinstance(self_uploadfield,Field):
-            return dict(path=None,filename=filename)
+        if m.group('name'):
+            try:
+                filename = base64.b16decode(m.group('name'), True)
+                filename = REGEX_CLEANUP_FN.sub('_', filename)
+            except (TypeError, AttributeError):
+                filename = name
         else:
-            # ## if file is on filesystem
-            if path:
-                pass
-            elif self.uploadfolder:
+            filename = name
+        # ## if file is in DB
+        if isinstance(self_uploadfield, (str, Field)):  
+            return dict(path=None,filename=filename)
+        # ## if file is on filesystem
+        if not path:
+            if self.uploadfolder:
                 path = self.uploadfolder
             else:
                 path = pjoin(self.db._adapter.folder, '..', 'uploads')
-            if self.uploadseparate:
-                t = m.group('table')
-                f = m.group('field')
-                u = m.group('uuidkey')
-                path = pjoin(path,"%s.%s" % (t,f),u[:2])
-            return dict(path=path,filename=filename)
+        if self.uploadseparate:
+            t = m.group('table')
+            f = m.group('field')
+            u = m.group('uuidkey')
+            path = pjoin(path,"%s.%s" % (t,f),u[:2])
+        return dict(path=path,filename=filename)
 
 
     def formatter(self, value):
