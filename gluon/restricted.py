@@ -49,10 +49,11 @@ class TicketStorage(Storage):
 
     def _store_in_db(self, request, ticket_id, ticket_data):
         table = self._get_table(self.db, self.tablename, request.application)
+        table._db.rollback()
         table.insert(ticket_id=ticket_id,
                      ticket_data=cPickle.dumps(ticket_data),
                      created_datetime=request.now)
-        self.db.commit()
+        table._db.commit()
         logger.error('In FILE: %(layer)s\n\n%(traceback)s\n' % ticket_data)
 
     def _store_on_disk(self, request, ticket_id, ticket_data):
