@@ -1263,12 +1263,17 @@ class BaseAdapter(ConnectionPool):
         return '(%s OR %s)' % (self.expand(first), self.expand(second))
 
     def BELONGS(self, first, second):
-        if isinstance(second, str):
-            return '(%s IN (%s))' % (self.expand(first), second[:-1])
-        elif not second:
-            return '(1=0)'
-        items = ','.join(self.expand(item, first.type) for item in second)
-        return '(%s IN (%s))' % (self.expand(first), items)
+       if isinstance(second, str):
+           return '(%s IN (%s))' % (self.expand(first), second[:-1])
+       if not second:
+           return '(1=0)'
+       if isinstance(second, (list,tuple,frozenset)):
+           second = set(second) # remove duplicates, make mutable
+       if isinstance(second, set) and None in second:
+           second = second.remove(None)
+           return self.OR(self.EQ(first, None), self.BELONGS(first, second))
+       items = ','.join(self.expand(item, first.type) for item in second)
+       return '(%s IN (%s))' % (self.expand(first), items)
 
     def REGEXP(self, first, second):
         "regular expression operator"
