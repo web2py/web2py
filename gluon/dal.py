@@ -1270,7 +1270,7 @@ class BaseAdapter(ConnectionPool):
        if isinstance(second, (list,tuple,frozenset)):
            second = set(second) # remove duplicates, make mutable
        if isinstance(second, set) and None in second:
-           second = second.remove(None)
+           second.remove(None)
            return self.OR(self.EQ(first, None), self.BELONGS(first, second))
        items = ','.join(self.expand(item, first.type) for item in second)
        return '(%s IN (%s))' % (self.expand(first), items)
