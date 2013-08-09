@@ -1454,7 +1454,7 @@ class SQLFORM(FORM):
                         (cStringIO.StringIO(f), 'file.txt')
                 else:
                     # this should never happen, why does it happen?
-                    print 'f=',repr(f)
+                    #print 'f=',repr(f)
                     continue
                 newfilename = field.store(source_file, original_filename,
                                           field.uploadfolder)
@@ -2182,8 +2182,8 @@ class SQLFORM(FORM):
         order = request.vars.order or ''
         if sortable:
             if order and not order == 'None':
-                tablename, fieldname = order.split('~')[-1].split('.', 1)
-                sort_field = db[tablename][fieldname]
+                otablename, ofieldname = order.split('~')[-1].split('.', 1)
+                sort_field = db[otablename][ofieldname]
                 exception = sort_field.type in ('date', 'datetime', 'time')
                 if exception:
                     orderby = (order[:1] == '~' and sort_field) or ~sort_field
