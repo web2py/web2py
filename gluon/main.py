@@ -379,7 +379,8 @@ def wsgibase(environ, responder):
                 # ##################################################
                 # access the requested application
                 # ##################################################
-
+                
+                disabled = pjoin(request.folder, 'DISABLED')
                 if not exists(request.folder):
                     if app == rwthread.routes.default_application \
                             and app != 'welcome':
@@ -394,8 +395,13 @@ def wsgibase(environ, responder):
                         raise HTTP(404, rwthread.routes.error_message
                                    % 'invalid request',
                                    web2py_error='invalid application')
-                elif not request.is_local and \
-                        exists(pjoin(request.folder, 'DISABLED')):
+                elif request.is_local and exists(disabled):
+                    data = dict([item.strip() for item in line.split(':',1)] 
+                                for line in open(disabled) if line.strip())
+                    if 'redirect' in data:
+                        redirect(data['redirect'])
+                    if 'message' in data:
+                        raise HTTP(503, data['message'])
                     raise HTTP(503, "<html><body><h1>Temporarily down for maintenance</h1></body></html>")
 
                 # ##################################################
