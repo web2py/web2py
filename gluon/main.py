@@ -514,11 +514,17 @@ def wsgibase(environ, responder):
                 # on application error, rollback database
                 # ##################################################
 
-                ticket = e.log(request) or 'unknown'
+                # log tickets before rollback if not in DB
+                if not request.tickets_db:
+                    ticket = e.log(request) or 'unknown'
+                # rollback
                 if response._custom_rollback:
                     response._custom_rollback()
                 else:
                     BaseAdapter.close_all_instances('rollback')
+                # if tickets in db, reconnect and store it in db
+                if request.tickets_db:
+                    ticket = e.log(request) or 'unknown'
 
                 http_response = \
                     HTTP(500, rwthread.routes.error_message_ticket %
