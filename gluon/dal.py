@@ -4373,6 +4373,7 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
         self.pool_size = pool_size
         self.db_codec = db_codec
         self._after_connection = after_connection
+        if do_connect: self.find_driver(adapter_args, uri)
         self.folder = folder or pjoin('$HOME',THREAD_LOCAL.folder.split(
                 os.sep+'applications'+os.sep,1)[1])
         ruri = uri.split("://")[1]
@@ -4402,6 +4403,10 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
 
     def execute(self, command, *a, **b):
         return self.log_execute(command.decode('utf8'), *a, **b)
+
+    def find_driver(self,adapter_args,uri=None):
+        self.adapter_args = adapter_args
+        self.driver = "google"        
 
 class NoSQLAdapter(BaseAdapter):
     can_select_for_update = False
