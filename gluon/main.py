@@ -398,11 +398,12 @@ def wsgibase(environ, responder):
                 elif request.is_local and exists(disabled):
                     data = dict([item.strip() for item in line.split(':',1)] 
                                 for line in open(disabled) if line.strip())
-                    if 'redirect' in data:
-                        redirect(data['redirect'])
-                    if 'message' in data:
-                        raise HTTP(503, data['message'])
-                    raise HTTP(503, "<html><body><h1>Temporarily down for maintenance</h1></body></html>")
+                    if data.get('disabled','True').lower() != 'false':
+                        if 'redirect' in data:
+                            redirect(data['redirect'])
+                        if 'message' in data:
+                            raise HTTP(503, data['message'])
+                        raise HTTP(503, "<html><body><h1>Temporarily down for maintenance</h1></body></html>")
 
                 # ##################################################
                 # build missing folders
