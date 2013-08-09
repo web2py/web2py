@@ -186,7 +186,8 @@ def run(
     import_models=False,
     startfile=None,
     bpython=False,
-    python_code=False):
+    python_code=False,
+    cronjob=False):
     """
     Start interactive shell or run Python script (startfile) in web2py
     controller environment. appname is formatted like:
