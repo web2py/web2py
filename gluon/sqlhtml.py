@@ -13,12 +13,7 @@ Holds:
 - form_factory: provides a SQLFORM for an non-db backed table
 
 """
-try:
-    from urlparse import parse_qs as psq
-except ImportError:
-    from cgi import parse_qs as psq
 import os
-import copy
 from http import HTTP
 from html import XmlComponent
 from html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT
@@ -2193,18 +2188,32 @@ class SQLFORM(FORM):
         headcols = []
         if selectable:
             headcols.append(TH(_class=ui.get('default')))
+
+        ordermatch, marker = orderby, ''
+        if orderby:
+            #if orderby is a single column, remember to put the marker
+            if isinstance(orderby, Expression):
+                if orderby.first and not orderby.second:
+                    ordermatch, marker = orderby.first, '~'
+        ordermatch = marker + str(ordermatch)
         for field in columns:
             if not field.readable:
                 continue
             key = str(field)
             header = headers.get(str(field), field.label or key)
             if sortable and not isinstance(field, Field.Virtual):
-                if key == order:
-                    key, marker = '~' + order, sorter_icons[0]
-                elif key == order[1:]:
-                    marker = sorter_icons[1]
+                marker = ''
+                if order:
+                    if key == order:
+                        key, marker = '~' + order, sorter_icons[0]
+                    elif key == order[1:]:
+                        marker = sorter_icons[1]
                 else:
-                    marker = ''
+                    print 'a', key, ordermatch
+                    if key == ordermatch:
+                        key, marker = '~' + order, sorter_icons[0]
+                    elif key == ordermatch[1:]:
+                        marker = sorter_icons[1]
                 header = A(header, marker, _href=url(vars=dict(
                     keywords=request.vars.keywords or '',
                     order=key)), _class=trap_class())
