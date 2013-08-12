@@ -26,7 +26,7 @@ from html import FORM, INPUT, LABEL, OPTION, SELECT
 from html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
 from html import URL, truncate_string, FIELDSET
 from dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
-    bar_encode, Reference, REGEX_TABLE_DOT_FIELD
+    bar_encode, Reference, REGEX_TABLE_DOT_FIELD, Expression
 from storage import Storage
 from utils import md5_hash
 from validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE, \
@@ -1454,7 +1454,7 @@ class SQLFORM(FORM):
                         (cStringIO.StringIO(f), 'file.txt')
                 else:
                     # this should never happen, why does it happen?
-                    print 'f=',repr(f)
+                    #print 'f=',repr(f)
                     continue
                 newfilename = field.store(source_file, original_filename,
                                           field.uploadfolder)
@@ -1822,10 +1822,11 @@ class SQLFORM(FORM):
         session = current.session
         response = current.response
         logged = session.auth and session.auth.user
-        wenabled = (not user_signature or logged)
+        wenabled = (not user_signature or logged) and not groupby
         create = wenabled and create
         editable = wenabled and editable
         deletable = wenabled and deletable
+        details = details and not groupby
         rows = None
 
         def fetch_count(dbset):
@@ -1835,9 +1836,10 @@ class SQLFORM(FORM):
                 if groupby:
                     c = 'count(*)'
                     nrows = db.executesql(
-                        'select count(*) from (%s);' %
+                        'select count(*) from (%s) _tmp;' %
                         dbset._select(c, left=left, cacheable=True,
-                                      groupby=groupby, cache=cache_count)[:-1])[0][0]
+                                      groupby=groupby,
+                                      cache=cache_count)[:-1])[0][0]
                 elif left:
                     c = 'count(*)'
                     nrows = dbset.select(c, left=left, cacheable=True, cache=cache_count).first()[c]
@@ -1930,11 +1932,16 @@ class SQLFORM(FORM):
                         columns.append(f)
                         fields.append(f)
         if not field_id:
-            field_id = tables[0]._id
-        if not any(str(f)==str(field_id) for f in fields):
-            fields = [f for f in fields]+[field_id]
+            if groupby is None:
+                field_id = tables[0]._id
+            elif groupby and isinstance(groupby, Field):
+                field_id = groupby #take the field passed as groupby
+            elif groupby and isinstance(groupby, Expression):
+                field_id = groupby.first #take the first groupby field
         table = field_id.table
         tablename = table._tablename
+        if not any(str(f)==str(field_id) for f in fields):
+            fields = [f for f in fields]+[field_id]
         if upload == '<default>':
             upload = lambda filename: url(args=['download', filename])
             if request.args(-2) == 'download':
@@ -2175,8 +2182,8 @@ class SQLFORM(FORM):
         order = request.vars.order or ''
         if sortable:
             if order and not order == 'None':
-                tablename, fieldname = order.split('~')[-1].split('.', 1)
-                sort_field = db[tablename][fieldname]
+                otablename, ofieldname = order.split('~')[-1].split('.', 1)
+                sort_field = db[otablename][ofieldname]
                 exception = sort_field.type in ('date', 'datetime', 'time')
                 if exception:
                     orderby = (order[:1] == '~' and sort_field) or ~sort_field
@@ -2628,7 +2635,7 @@ class SQLFORM(FORM):
                 if isinstance(item,Table) and item._tablename in check:
                     tablename = item._tablename
                     linked_fieldnames = check[tablename]
-                    td = item                
+                    td = item
                 elif isinstance(item,str) and item in check:
                     tablename = item
                     linked_fieldnames = check[item]

@@ -491,12 +491,10 @@ def enable():
     if is_gae:
         return SPAN(T('Not supported'), _style='color:yellow')
     elif os.path.exists(filename):
-        os.unlink(filename)
         return SPAN(T('Disable'), _style='color:green')
     else:
-        safe_open(filename, 'wb').write(time.ctime())
+        safe_open(filename, 'wb').write('disabled: True\ntime-disabled: %s' % request.now)
         return SPAN(T('Enable'), _style='color:red')
-
 
 def peek():
     """ Visualize object code """

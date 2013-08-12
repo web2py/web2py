@@ -16,6 +16,11 @@ if MULTI_USER_MODE and not is_manager():
     session.flash = 'Not Authorized'
     redirect(URL('default', 'site'))
 
+from gluon.settings import settings
+if not settings.is_source:
+    session.flash = 'Requires running web2py from source'
+    redirect(URL(request.application, 'default', 'site'))
+
 forever = 10 ** 8
 
 

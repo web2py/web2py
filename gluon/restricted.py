@@ -48,11 +48,19 @@ class TicketStorage(Storage):
             self._store_on_disk(request, ticket_id, ticket_data)
 
     def _store_in_db(self, request, ticket_id, ticket_data):
-        table = self._get_table(self.db, self.tablename, request.application)
-        table.insert(ticket_id=ticket_id,
-                     ticket_data=cPickle.dumps(ticket_data),
-                     created_datetime=request.now)
-        logger.error('In FILE: %(layer)s\n\n%(traceback)s\n' % ticket_data)
+        self.db._adapter.reconnect()        
+        try:
+            table = self._get_table(self.db, self.tablename, request.application)
+            id = table.insert(ticket_id=ticket_id,
+                         ticket_data=cPickle.dumps(ticket_data),
+                         created_datetime=request.now)
+            self.db.commit()
+            message = 'In FILE: %(layer)s\n\n%(traceback)s\n'
+        except Exception, e:
+            self.db.rollback()
+            message =' Unable to store in FILE: %(layer)s\n\n%(traceback)s\n'
+        self.db.close()
+        logger.error(message % ticket_data)
 
     def _store_on_disk(self, request, ticket_id, ticket_data):
         ef = self._error_file(request, ticket_id, 'wb')
@@ -71,16 +79,13 @@ class TicketStorage(Storage):
 
     def _get_table(self, db, tablename, app):
         tablename = tablename + '_' + app
-        table = db.get(tablename, None)
-        if table is None:
-            db.rollback()   # not necessary but one day
-                            # any app may store tickets on DB
+        table = db.get(tablename)
+        if not table:
             table = db.define_table(
                 tablename,
                 db.Field('ticket_id', length=100),
                 db.Field('ticket_data', 'text'),
-                db.Field('created_datetime', 'datetime'),
-            )
+                db.Field('created_datetime', 'datetime'))
         return table
 
     def load(

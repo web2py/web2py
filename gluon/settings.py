@@ -36,3 +36,6 @@ global_settings.is_jython = \
     'java' in sys.platform.lower() or \
     hasattr(sys, 'JYTHON_JAR') or \
     str(sys.copyright).find('Jython') > 0
+
+global_settings.is_source = os.path.exists(os.path.join(
+        global_settings.gluon_parent,'web2py.py'))
