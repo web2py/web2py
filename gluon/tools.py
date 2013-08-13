@@ -1899,8 +1899,8 @@ class Auth(object):
         logins user as specified by username (or email) and password
         """
         settings = self._get_login_settings()
-        user = self.db(settings.table_user[settings.userfield] == \
-                       username).select().first()
+        user = settings.table_user(**{settings.userfield: \
+                       username})
         if user and user.get(settings.passfield, False):
             password = settings.table_user[
                 settings.passfield].validate(password)[0]
@@ -2168,8 +2168,7 @@ class Auth(object):
 
                 accepted_form = True
                 # check for username in db
-                user = self.db(table_user[username]
-                               == form.vars[username]).select().first()
+                user = table_user(**{username: form.vars[username]})
                 if user:
                     # user in db, check if registration pending or disabled
                     temp_user = user
@@ -2440,9 +2439,7 @@ class Auth(object):
                 if not self.settings.registration_requires_verification:
                     table_user[form.vars.id] = dict(registration_key='')
                 session.flash = self.messages.registration_successful
-                user = self.db(
-                    table_user[username] == form.vars[username]
-                    ).select().first()
+                user = table_user(**{username: form.vars[username]})
                 self.login_user(user)
                 session.flash = self.messages.logged_in
             self.log_event(log, form.vars)
@@ -2882,7 +2879,7 @@ class Auth(object):
                         onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
 
-            if not form.vars['old_password'] == s.select().first()[passfield]:
+            if not form.vars['old_password'] == s.select(limitby=(0,1), orderby_on_limitby=False).first()[passfield]:
                 form.errors['old_password'] = self.messages.invalid_password
             else:
                 d = {passfield: str(form.vars.new_password)}
@@ -3320,7 +3317,7 @@ class Auth(object):
         if group_id == 0:
             group_id = self.user_group()
         record = self.db(permission.group_id == group_id)(permission.name == name)(permission.table_name == str(table_name))(
-                permission.record_id == long(record_id)).select().first()
+                permission.record_id == long(record_id)).select(limitby=(0,1), orderby_on_limitby=False).first()
         if record:
             id = record.id
         else:
@@ -5204,7 +5201,7 @@ class Wiki(object):
                     db.wiki_tag.insert(name=tag, wiki_page=id)
 
         def update_tags_update(dbset, page, db=db):
-            page = dbset.select().first()
+            page = dbset.select(limitby=(0,1)).first()
             db(db.wiki_tag.wiki_page == page.id).delete()
             for tag in page.tags or []:
                 tag = tag.strip().lower()
