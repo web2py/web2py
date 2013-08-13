@@ -4584,8 +4584,6 @@ class Service(object):
                 data = json_parser.loads(request.body.read())
             except ValueError: # decoding error in json lib
                 return return_error(None, -32700)
-            except json_parser.JSONDecodeError: # decoding error in simplejson lib
-                return return_error(None, -32700)
 
         # Batch handling
         if isinstance(data, list) and not batch_element:
