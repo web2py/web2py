@@ -83,21 +83,21 @@ def copystream_progress(request, chunk_size=10 ** 5):
     X-Progress-ID:length and X-Progress-ID:uploaded
     """
     env = request.env
-    if not env.content_length:
+    if not env.get('CONTENT_LENGTH', None):
         return cStringIO.StringIO()
-    source = env.wsgi_input
+    source = env['wsgi.input']
     try:
-        size = int(env.content_length)
+        size = int(env['CONTENT_LENGTH'])
     except ValueError:
         raise HTTP(400, "Invalid Content-Length header")
     try: # Android requires this
         dest = tempfile.NamedTemporaryFile()
     except NotImplementedError: # and GAE this
         dest = tempfile.TemporaryFile()
-    if not 'X-Progress-ID' in request.vars:
+    if not 'X-Progress-ID' in request.get_vars:
         copystream(source, dest, size, chunk_size)
         return dest
-    cache_key = 'X-Progress-ID:' + request.vars['X-Progress-ID']
+    cache_key = 'X-Progress-ID:' + request.get_vars['X-Progress-ID']
     cache_ram = CacheInRam(request)  # same as cache.ram because meta_storage
     cache_ram(cache_key + ':length', lambda: size, 0)
     cache_ram(cache_key + ':uploaded', lambda: 0, 0)
@@ -150,6 +150,7 @@ class Request(Storage):
         self._get_vars = None
         self._post_vars = None
         self._vars = None
+        self._body = None
         self.folder = None
         self.application = None
         self.function = None
@@ -162,6 +163,7 @@ class Request(Storage):
         self.is_local = False
         self.global_settings = settings.global_settings
 
+
     def parse_get_vars(self):
         query_string = self.env.get('QUERY_STRING','')
         dget = cgi.parse_qs(query_string, keep_blank_values=1)
@@ -173,11 +175,7 @@ class Request(Storage):
     def parse_post_vars(self):
         env = self.env
         post_vars = self._post_vars = Storage()
-        try:
-            self.body = body = copystream_progress(self)
-        except IOError:
-            raise HTTP(400, "Bad Request - HTTP body is incomplete")
-
+        body = self.body
         #if content-type is application/json, we must read the body
         is_json = env.get('content_type', '')[:16] == 'application/json'
 
@@ -229,6 +227,15 @@ class Request(Storage):
                 pvalue = listify(value)
                 if len(pvalue):
                     post_vars[key] = (len(pvalue) > 1 and pvalue) or pvalue[0]
+
+    @property
+    def body(self):
+        if self._body is None:
+            try:
+                self._body = copystream_progress(self)
+            except IOError:
+                raise HTTP(400, "Bad Request - HTTP body is incomplete")
+        return self._body
 
     def parse_all_vars(self):
         self._vars = copy.copy(self.get_vars)
@@ -296,8 +303,6 @@ class Request(Storage):
         else:
             current.session.forget()
             redirect(URL(scheme='https', args=self.args, vars=self.vars))
-
-
 
     def restful(self):
         def wrapper(action, self=self):
