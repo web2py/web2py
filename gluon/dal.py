@@ -1263,17 +1263,12 @@ class BaseAdapter(ConnectionPool):
         return '(%s OR %s)' % (self.expand(first), self.expand(second))
 
     def BELONGS(self, first, second):
-       if isinstance(second, str):
-           return '(%s IN (%s))' % (self.expand(first), second[:-1])
-       if not second:
-           return '(1=0)'
-       if isinstance(second, (list,tuple,frozenset)):
-           second = set(second) # remove duplicates, make mutable
-       if isinstance(second, set) and None in second:
-           second.remove(None)
-           return self.OR(self.EQ(first, None), self.BELONGS(first, second))
-       items = ','.join(self.expand(item, first.type) for item in second)
-       return '(%s IN (%s))' % (self.expand(first), items)
+        if isinstance(second, str):
+            return '(%s IN (%s))' % (self.expand(first), second[:-1])
+        if not second:
+            return '(1=0)'
+        items = ','.join(self.expand(item, first.type) for item in second)
+        return '(%s IN (%s))' % (self.expand(first), items)
 
     def REGEXP(self, first, second):
         "regular expression operator"
@@ -9070,7 +9065,7 @@ class Expression(object):
         db = self.db
         return Query(db, db._adapter.REGEXP, self, value)
 
-    def belongs(self, *value):
+    def belongs(self, *value, **kwattr):
         """
         Accepts the following inputs:
            field.belongs(1,2)
@@ -9085,6 +9080,11 @@ class Expression(object):
             value = value[0]
         if isinstance(value,Query):
             value = db(value)._select(value.first._table._id)
+        elif not isinstance(value, basestring):
+            value = set(value)
+            if kwattr.get('null') and None in value:
+                value.remove(None)
+                return (self == None) | Query(db, db._adapter.BELONGS, self, value)
         return Query(db, db._adapter.BELONGS, self, value)
 
     def startswith(self, value):
