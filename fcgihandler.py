@@ -42,7 +42,7 @@ import gluon.contrib.gateways.fcgi as fcgi
 if LOGGING:
     application = gluon.main.appfactory(wsgiapp=gluon.main.wsgibase,
                                         logfilename='httpserver.log',
-                                        profilerfilename=None)
+                                        profiler_dir=None)
 else:
     application = gluon.main.wsgibase
 

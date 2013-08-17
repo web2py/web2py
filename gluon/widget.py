@@ -66,9 +66,9 @@ def run_system_tests(options):
                     coverage_config = os.environ.get(
                         "COVERAGE_PROCESS_START",
                         os.path.join('gluon', 'tests', 'coverage.ini'))
-                        
-                    call_args = ['coverage', 'run', '--rcfile=%s' % 
-                                 coverage_config, 
+
+                    call_args = ['coverage', 'run', '--rcfile=%s' %
+                                 coverage_config,
                                  '-m', 'unittest', '-v', 'gluon.tests']
                 except:
                     sys.stderr.write('Coverage was not installed, skipping\n')
@@ -159,7 +159,7 @@ def presentation(root):
         # Prevent garbage collection of img
         pnl.image = img
 
-    def add_label(text='Change Me', font_size=12, 
+    def add_label(text='Change Me', font_size=12,
                   foreground='#195866', height=1):
         return Tkinter.Label(
             master=canvas,
@@ -339,7 +339,7 @@ class web2pyDialog(object):
         if start:
             #the widget takes care of starting the scheduler
             if self.options.scheduler and self.options.with_scheduler:
-                apps = [app.strip() for app 
+                apps = [app.strip() for app
                         in self.options.scheduler.split(',')
                         if app in available_apps]
         for app in apps:
@@ -431,7 +431,7 @@ class web2pyDialog(object):
             url = self.url + arq
             self.pagesmenu.add_command(
                 label=url, command=lambda u=url: start_browser(u))
-            
+
     def quit(self, justHide=False):
         """ Finish the program execution """
         if justHide:
@@ -484,7 +484,7 @@ class web2pyDialog(object):
             return self.error('invalid port number')
 
         # Check for non default value for ssl inputs
-        if (len(self.options.ssl_certificate) > 0 or 
+        if (len(self.options.ssl_certificate) > 0 or
             len(self.options.ssl_private_key) > 0):
             proto = 'https'
         else:
@@ -503,7 +503,7 @@ class web2pyDialog(object):
                 password,
                 pid_filename=options.pid_filename,
                 log_filename=options.log_filename,
-                profiler_filename=options.profiler_filename,
+                profiler_dir=options.profiler_dir,
                 ssl_certificate=options.ssl_certificate,
                 ssl_private_key=options.ssl_private_key,
                 ssl_ca_certificate=options.ssl_ca_certificate,
@@ -865,9 +865,9 @@ def console():
 
     parser.add_option('-F',
                       '--profiler',
-                      dest='profiler_filename',
+                      dest='profiler_dir',
                       default=None,
-                      help='profiler filename')
+                      help='profiler dir')
 
     parser.add_option('-t',
                       '--taskbar',
@@ -914,7 +914,7 @@ def console():
                       dest='run_system_tests',
                       default=False,
                       help=msg)
-    
+
     msg = ('adds coverage reporting (needs --run_system_tests), '
            'python 2.7 and the coverage module installed. '
            'You can alter the default path setting the environmental '
@@ -925,7 +925,7 @@ def console():
                       dest='with_coverage',
                       default=False,
                       help=msg)
-                      
+
     if '-A' in sys.argv:
         k = sys.argv.index('-A')
     elif '--args' in sys.argv:
@@ -1117,7 +1117,8 @@ def start(cron=True):
         if not options.args is None:
             sys.argv[:] = options.args
         run(options.shell, plain=options.plain, bpython=options.bpython,
-            import_models=options.import_models, startfile=options.run, cronjob=options.cronjob)
+            import_models=options.import_models, startfile=options.run,
+            cronjob=options.cronjob)
         return
 
     # ## if -C start cron run (extcron) and exit
@@ -1267,7 +1268,7 @@ end tell
                              password=options.password,
                              pid_filename=options.pid_filename,
                              log_filename=options.log_filename,
-                             profiler_filename=options.profiler_filename,
+                             profiler_dir=options.profiler_dir,
                              ssl_certificate=options.ssl_certificate,
                              ssl_private_key=options.ssl_private_key,
                              ssl_ca_certificate=options.ssl_ca_certificate,
