@@ -110,8 +110,8 @@ class Template:
             pdf.set_auto_page_break(False,margin=0)
 
             for element in sorted(self.elements,key=lambda x: x['priority']):
-                #print "dib",element['type'], element['name'], element['x1'], element['y1'], element['x2'], element['y2']
-                element = element.copy()
+                # make a copy of the element:
+                element = dict(element)
                 element['text'] = self.texts[pg].get(element['name'].lower(), element['text'])
                 if 'rotate' in element:
                     pdf.rotate(element['rotate'], element['x1'], element['y1'])
