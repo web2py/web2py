@@ -2642,9 +2642,10 @@ class Auth(object):
                 redirect(self.url(args=request.args))
             password = self.random_password()
             passfield = self.settings.password_field
-            d = dict(
-                passfield=str(table_user[passfield].validate(password)[0]),
-                registration_key='')
+            d = {
+                passfield: str(table_user[passfield].validate(password)[0]),
+                'registration_key': ''
+                }
             user.update_record(**d)
             if self.settings.mailer and \
                self.settings.mailer.send(to=form.vars.email,
