@@ -684,6 +684,11 @@ class BaseAdapter(ConnectionPool):
             return None
         return isinstance(exception, self.driver.OperationalError)
 
+    def isProgrammingError(self,exception):
+        if not hasattr(self.driver, "ProgrammingError"):
+            return None
+        return isinstance(exception, self.driver.ProgrammingError)
+
     def id_query(self, table):
         return table._id != None
 
@@ -4328,7 +4333,8 @@ class DatabaseStoredFile:
             if db.executesql(query):
                 return True
         except Exception, e:
-            if not db._adapter.isOperationalError(e):
+            if not (db._adapter.isOperationalError(e) or
+                    db._adapter.isProgrammingError(e)):
                 raise
             # no web2py_filesystem found?
             tb = traceback.format_exc()
