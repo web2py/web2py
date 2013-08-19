@@ -6489,6 +6489,71 @@ class IMAPAdapter(NoSQLAdapter):
         processor = attributes.get('processor',self.parse)
         return processor(imapqry_array, fields, colnames)
 
+    def _insert(self, table, fields):
+        def add_payload(message, obj):
+            payload = Message()
+            charset = obj.get("encoding", "utf-8")
+            payload.set_type(obj.get("mime", None))
+            payload.set_charset(charset)
+            if "text" in obj:
+                payload.set_payload(obj["text"])
+            elif "payload" in obj:
+                payload.set_payload(obj["payload"])
+            if "filename" in obj and obj["filename"]:
+                payload.add_header("Content-Disposition",
+                    "attachment", filename=obj["filename"])
+            message.attach(payload)
+
+        mailbox = table.mailbox
+        d = dict(((k.name, v) for k, v in fields))
+        date_time = (d.get("created", datetime.datetime.now())).timetuple()
+        if len(d) > 0:
+            message = d.get("email", None)
+            attachments = d.get("attachments", [])
+            content = d.get("content", [])
+            flags = " ".join(["\\%s" % flag.capitalize() for flag in
+                     ("answered", "deleted", "draft", "flagged",
+                      "recent", "seen") if d.get(flag, False)])
+            if not message:
+                from email.message import Message
+                mime = d.get("mime", None)
+                charset = d.get("encoding", None)
+                message = Message()
+                message["from"] = d.get("sender", "")
+                message["subject"] = d.get("subject", "")
+                if mime:
+                    message.set_type(mime)
+                if charset:
+                    message.set_charset(charset)
+                for item in ("to", "cc", "bcc"):
+                    value = d.get(item, "")
+                    if isinstance(value, basestring):
+                        message[item] = value
+                    else:
+                        message[item] = ";".join([i for i in
+                            value])
+                if not message.is_multipart():
+                    if isinstance(content, basestring):
+                        message.set_payload(content)
+                    elif len(content) > 0:
+                        message.set_payload(content[0]["text"])
+                else:
+                    [add_payload(message, c) for c in content]
+                    [add_payload(message, a) for a in attachments]
+                message = message.as_string()
+            return (mailbox, flags, date_time, message)
+        else:
+            raise NotImplementedError("IMAP empty insert is not implemented")
+
+    def insert(self, table, fields):
+        values = self._insert(table, fields)
+        result, data = self.connection.append(*values)
+        if result == "OK":
+            uid = int(re.findall("\d+", str(data))[-1])
+            return self.db(table.uid==uid).select(table.id).first().id
+        else:
+            raise Exception("IMAP message append failed: %s" % data)
+
     def _update(self, tablename, query, fields, commit=False):
         # TODO: the adapter should implement an .expand method
         commands = list()
