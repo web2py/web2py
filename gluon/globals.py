@@ -738,9 +738,10 @@ class Session(Storage):
 
             # Get session data out of the database
             (record_id, unique_key) = response.session_id.split(':')
-            if record_id == '0':
+            if not record_id.isdigit() or long(record_id)<1:
                 raise Exception('record_id == 0')
             # Select from database
+            record_id = long(record_id)
             row = record_id and db(table.id == record_id).select()
             row = row and row[0] or None
             # Make sure the session data exists in the database
