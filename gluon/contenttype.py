@@ -848,6 +848,8 @@ def contenttype(filename, default='text/plain'):
         j = filename.rfind('.', 0, i)
         if j >= 0:
             default = CONTENT_TYPE.get(filename[j:].lower(), default)
+    else:
+        default = CONTENT_TYPE.get('.' + filename.lower(), default)
     if default.startswith('text/'):
         default += '; charset=utf-8'
     return default
