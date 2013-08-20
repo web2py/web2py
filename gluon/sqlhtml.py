@@ -2209,7 +2209,6 @@ class SQLFORM(FORM):
                     elif key == order[1:]:
                         marker = sorter_icons[1]
                 else:
-                    print 'a', key, ordermatch
                     if key == ordermatch:
                         key, marker = '~' + order, sorter_icons[0]
                     elif key == ordermatch[1:]:
