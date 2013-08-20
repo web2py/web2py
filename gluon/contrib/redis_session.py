@@ -168,7 +168,7 @@ class MockQuery(object):
     def select(self):
         if self.op == 'eq' and self.field == 'id' and self.value:
             #means that someone wants to retrieve the key self.value
-            key = self.keyprefix + ':' + self.value
+            key = self.keyprefix + ':' + str(self.value)
             if self.with_lock:
                 acquire_lock(self.db, key + ':lock', self.value)
             rtn = self.db.hgetall(key)
