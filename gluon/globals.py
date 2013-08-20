@@ -982,6 +982,10 @@ class Session(Storage):
         # or no changes to session
 
         if not response.session_db_table or self._forget or self._unchanged():
+            if (not response.session_db_table and 
+                global_settings.db_sessions is not True and
+                response.session_masterapp in global_settings.db_sessions):
+                global_settings.db_sessions.remove(response.session_masterapp)
             return False
 
         table = response.session_db_table
