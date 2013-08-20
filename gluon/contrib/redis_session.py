@@ -198,7 +198,7 @@ class MockQuery(object):
     def update(self, **kwargs):
         #means that the session has been found and needs an update
         if self.op == 'eq' and self.field == 'id' and self.value:
-            key = "%s:%s" % (self.keyprefix, self.value)
+            key = self.keyprefix + ':' + str(self.value)
             with self.db.pipeline() as pipe:
                 pipe.hmset(key, kwargs)
                 if self.session_expiry:
