@@ -1750,7 +1750,7 @@ class SQLFORM(FORM):
              oncreate=None,
              onupdate=None,
              ondelete=None,
-             sorter_icons=(XML('&#x2191;'), XML('&#x2193;')),
+             sorter_icons=(XML('&#x25B2;'), XML('&#x25BC;')),
              ui = 'web2py',
              showbuttontext=True,
              _class="web2py_grid",
@@ -2210,7 +2210,7 @@ class SQLFORM(FORM):
                         marker = sorter_icons[1]
                 else:
                     if key == ordermatch:
-                        key, marker = '~' + order, sorter_icons[0]
+                        key, marker = '~' + ordermatch, sorter_icons[0]
                     elif key == ordermatch[1:]:
                         marker = sorter_icons[1]
                 header = A(header, marker, _href=url(vars=dict(
