@@ -3095,10 +3095,7 @@ class ExporterHTML(ExportClass):
         ExportClass.__init__(self, rows)
 
     def export(self):
-        if self.rows:
-            return self.rows.xml()
-        else:
-            return '<html>\n<body>\n<table>\n</table>\n</body>\n</html>'
+        return '<html>\n<head>\n<meta http-equiv="content-type" content="text/html; charset=UTF-8" />\n</head>\n<body>\n%s\n</body>\n</html>' % (self.rows.xml() or '')
 
 class ExporterXML(ExportClass):
     label = 'XML'
