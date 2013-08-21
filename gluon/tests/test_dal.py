@@ -701,12 +701,13 @@ class TestDALDictImportExport(unittest.TestCase):
         assert isinstance(dbdict, dict)
         uri = dbdict["uri"]
         assert isinstance(uri, basestring) and uri
-        assert len(dbdict["tables"]) == 2
-        assert len(dbdict["tables"][0]["fields"]) == 3
-        assert dbdict["tables"][0]["fields"][1]["type"] == db.person.name.type
-        assert dbdict["tables"][0]["fields"][1]["default"] == db.person.name.default
+        assert len(dbdict["items"]) == 2
+        assert len(dbdict["items"]["person"]["items"]) == 3
+        assert dbdict["items"]["person"]["items"]["name"]["type"] == db.person.name.type
+        assert dbdict["items"]["person"]["items"]["name"]["default"] == db.person.name.default
+        assert dbdict
 
-        db2 = DAL(**dbdict)
+        db2 = DAL(dbdict, check_reserved=['all'])
         assert len(db.tables) == len(db2.tables)
         assert hasattr(db2, "pet") and isinstance(db2.pet, Table)
         assert hasattr(db2.pet, "friend") and isinstance(db2.pet.friend, Field)
@@ -724,7 +725,7 @@ class TestDALDictImportExport(unittest.TestCase):
             unicode_keys = True
             if sys.version < "2.6.5":
                 unicode_keys = False
-            db3 = DAL(**serializers.loads_json(dbjson,
+            db3 = DAL(serializers.loads_json(dbjson,
                           unicode_keys=unicode_keys))
             assert hasattr(db3, "person") and hasattr(db3.person, "uuid") and\
             db3.person.uuid.type == db.person.uuid.type
@@ -735,19 +736,18 @@ class TestDALDictImportExport(unittest.TestCase):
 
         mpfc = "Monty Python's Flying Circus"
         dbdict4 = {"uri": DEFAULT_URI,
-                   "tables":[{"tablename": "staff",
-                              "fields": [{"fieldname": "name",
-                                          "default":"Michael"},
-                                         {"fieldname": "food",
-                                          "default":"Spam"},
-                                         {"fieldname": "tvshow",
-                                          "type": "reference tvshow"}]},
-                             {"tablename": "tvshow",
-                              "fields": [{"fieldname": "name",
-                                          "default":mpfc},
-                                         {"fieldname": "rating",
-                                          "type":"double"}]}]}
-        db4 = DAL(**dbdict4)
+                   "items":{"staff":{"items": {"name":
+                                                   {"default":"Michael"},
+                                               "food":
+                                                   {"default":"Spam"},
+                                               "tvshow":
+                                                   {"type": "reference tvshow"}
+                                               }},
+                            "tvshow":{"items": {"name":
+                                                   {"default":mpfc},
+                                              "rating":
+                                                   {"type":"double"}}}}}
+        db4 = DAL(dbdict4, check_reserved=['all'])
         assert "staff" in db4.tables
         assert "name" in db4.staff
         assert db4.tvshow.rating.type == "double"
@@ -761,19 +761,20 @@ class TestDALDictImportExport(unittest.TestCase):
         db4.commit()
 
         dbdict5 = {"uri": DEFAULT_URI}
-        db5 = DAL(**dbdict5)
+        db5 = DAL(dbdict5, check_reserved=['all'])
         assert db5.tables in ([], None)
         assert not (str(db5) in ("", None))
 
         dbdict6 = {"uri": DEFAULT_URI,
-                   "tables":[{"tablename": "staff"},
-                             {"tablename": "tvshow",
-                              "fields": [{"fieldname": "name"},
-                                         {"fieldname": "rating", "type":"double"}
-                                        ]
-                             }]
-                  }
-        db6 = DAL(**dbdict6)
+                   "items":{"staff":{},
+                            "tvshow":{"items": {"name": {},
+                                              "rating":
+                                                 {"type":"double"}
+                                                 }
+                                }
+                            }
+                    }
+        db6 = DAL(dbdict6, check_reserved=['all'])
 
         assert len(db6["staff"].fields) == 1
         assert "name" in db6["tvshow"].fields
@@ -781,12 +782,15 @@ class TestDALDictImportExport(unittest.TestCase):
         assert db6.staff.insert() is not None
         assert db6(db6.staff).select().first().id == 1
 
+
         db6.staff.drop()
         db6.tvshow.drop()
         db6.commit()
 
 
+
+
+
 if __name__ == '__main__':
     unittest.main()
     tearDownModule()
-
