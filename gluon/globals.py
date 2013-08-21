@@ -882,7 +882,7 @@ class Session(Storage):
             # Get session data out of the database
             if response.session_id is None:
                 return
-            (record_id, unique_key) = response.session_id.partition(':')
+            (record_id, sep, unique_key) = response.session_id.partition(':')
 
             if record_id.isdigit() and long(record_id)>1:
                 new_unique_key = web2py_uuid()
