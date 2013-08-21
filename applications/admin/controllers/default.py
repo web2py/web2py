@@ -296,8 +296,8 @@ def site():
         apps = [f for f in apps if f in FILTER_APPS]
 
     apps = sorted(apps, lambda a, b: cmp(a.upper(), b.upper()))
-
-    return dict(app=None, apps=apps, myversion=myversion,
+    myplatform = platform.python_version()
+    return dict(app=None, apps=apps, myversion=myversion, myplatform=myplatform,
                 form_create=form_create, form_update=form_update)
 
 
