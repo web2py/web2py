@@ -5836,7 +5836,7 @@ class IMAPAdapter(NoSQLAdapter):
     uid         string
     answered    boolean        Flag
     created     date
-    content     list:string    A list of text or html parts
+    content     list:string    A list of dict text or html parts
     to          string
     cc          string
     bcc         string
@@ -5978,8 +5978,9 @@ class IMAPAdapter(NoSQLAdapter):
 
         """ MESSAGE is an identifier for sequence number"""
 
-        self.flags = ['\\Deleted', '\\Draft', '\\Flagged',
-                      '\\Recent', '\\Seen', '\\Answered']
+        self.flags = {'deleted': '\\Deleted', 'draft': '\\Draft',
+                      'flagged': '\\Flagged', 'recent': '\\Recent',
+                      'seen': '\\Seen', 'answered': '\\Answered'}
         self.search_fields = {
             'id': 'MESSAGE', 'created': 'DATE',
             'uid': 'UID', 'sender': 'FROM',
@@ -6202,7 +6203,7 @@ class IMAPAdapter(NoSQLAdapter):
         return tablename
 
     def is_flag(self, flag):
-        if self.search_fields.get(flag, None) in self.flags:
+        if self.search_fields.get(flag, None) in self.flags.values():
             return True
         else:
             return False
@@ -6234,7 +6235,7 @@ class IMAPAdapter(NoSQLAdapter):
                             Field("uid", "string", writable=False),
                             Field("answered", "boolean"),
                             Field("created", "datetime", writable=False),
-                            Field("content", "list:string", writable=False),
+                            Field("content", list, writable=False),
                             Field("to", "string", writable=False),
                             Field("cc", "string", writable=False),
                             Field("bcc", "string", writable=False),
@@ -6451,23 +6452,23 @@ class IMAPAdapter(NoSQLAdapter):
                 maintype = part.get_content_maintype()
                 if ("%s.attachments" % tablename in colnames) or \
                    ("%s.content" % tablename in colnames):
-                    if "%s.attachments" % tablename in colnames:
-                        if not ("text" in maintype):
-                            payload = part.get_payload(decode=True)
-                            if payload:
-                                attachment = {
-                                    "payload": payload,
-                                    "filename": part.get_filename(),
-                                    "encoding": part.get_content_charset(),
-                                    "mime": part.get_content_type(),
-                                    "disposition": part["Content-Disposition"]}
-                                attachments.append(attachment)
-                    if "%s.content" % tablename in colnames:
-                        payload = part.get_payload(decode=True)
-                        part_charset = self.get_charset(part)
-                        if "text" in maintype:
-                            if payload:
-                                content.append(self.encode_text(payload, part_charset))
+                    payload = part.get_payload(decode=True)
+                    if payload:
+                        filename = part.get_filename()
+                        values = {"mime": part.get_content_type()}
+                        if ((filename or not "text" in maintype) and
+                            ("%s.attachments" % tablename in colnames)):
+                            values.update({"payload": payload,
+                                "filename": filename,
+                                "encoding": part.get_content_charset(),
+                                "disposition": part["Content-Disposition"]})
+                            attachments.append(values)
+                        elif (("text" in maintype) and
+                              ("%s.content" % tablename in colnames)):
+                            values.update({"text": self.encode_text(payload,
+                                               self.get_charset(part))})
+                            content.append(values)
+
                 if "%s.size" % tablename in colnames:
                     if part is not None:
                         size += len(str(part))
@@ -6787,7 +6788,7 @@ class IMAPAdapter(NoSQLAdapter):
             elif name == "DATE":
                 result = "ON %s" % self.convert_date(second)
 
-            elif name in self.flags:
+            elif name in self.flags.values():
                 if second:
                     result = "%s" % (name.upper()[1:])
                 else:
