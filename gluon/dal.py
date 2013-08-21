@@ -1778,13 +1778,18 @@ class BaseAdapter(ConnectionPool):
         return list(tables)
 
     def commit(self):
-        if self.connection: return self.connection.commit()
+        if self.connection:
+            return self.connection.commit()
 
     def rollback(self):
-        if self.connection: return self.connection.rollback()
+        if self.connection:
+            return self.connection.rollback()
 
     def close_connection(self):
-        if self.connection: return self.connection.close()
+        if self.connection: 
+            r = self.connection.close()
+            self.connection = None
+            return r
 
     def distributed_transaction_begin(self, key):
         return
