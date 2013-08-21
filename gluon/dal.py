@@ -8732,6 +8732,32 @@ class Table(object):
             response.id = None
         return response
 
+    def validate_and_update(self, _key=DEFAULT, **fields):
+        response = Row()
+        response.errors = Row()
+        new_fields = copy.copy(fields)
+
+        for key,value in fields.iteritems():
+            value,error = self[key].validate(value)
+            if error:
+                response.errors[key] = "%s" % error
+            else:
+                new_fields[key] = value
+
+        if _key is DEFAULT:
+           record = self(**values)
+        elif isinstance(_key,dict):
+            record = self(**_key)
+        else:
+            record = self(_key)
+
+        if not response.errors and record:
+            row = self._db(self._id==_key)
+            response.id = row.update(**fields)
+        else:
+            response.id = None
+        return response
+
     def update_or_insert(self, _key=DEFAULT, **values):
         if _key is DEFAULT:
             record = self(**values)
