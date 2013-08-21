@@ -78,7 +78,8 @@
     <h4>{{=T("Version")}}</h4>
     <p>
       <tt>{{=myversion}}</tt><br/>
-      ({{=T("Running on %s", request.env.server_software)}})
+      {{running_on = T("Running on %s", request.env.server_software or 'Unknown')}}
+      ({{="%s, Python %s" % (running_on, myplatform)}})
     </p>
     <p id="check_version" class="row-buttons">
       {{if session.check_version:}}

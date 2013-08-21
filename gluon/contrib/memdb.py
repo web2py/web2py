@@ -299,6 +299,11 @@ class Table(DALStorage):
     def __str__(self):
         return self._tablename
 
+    def __call__(self, id):
+        return self.get(id)
+
+    def __getitem__(self,id):
+        return self.get(id)
 
 class Expression(object):
 
@@ -502,9 +507,8 @@ class Query(object):
                 'Query: right side of filter must be a value or entity')
         if isinstance(left, Field) and left.name == 'id':
             if op == '=':
-                self.get_one = \
-                    QueryException(tablename=left._tablename,
-                                   id=long(right))
+                self.get_one = QueryException(
+                    tablename=left._tablename, id=long(right or 0))
                 return
             else:
                 raise SyntaxError('only equality by id is supported')

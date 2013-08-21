@@ -684,6 +684,11 @@ class BaseAdapter(ConnectionPool):
             return None
         return isinstance(exception, self.driver.OperationalError)
 
+    def isProgrammingError(self,exception):
+        if not hasattr(self.driver, "ProgrammingError"):
+            return None
+        return isinstance(exception, self.driver.ProgrammingError)
+
     def id_query(self, table):
         return table._id != None
 
@@ -1263,17 +1268,12 @@ class BaseAdapter(ConnectionPool):
         return '(%s OR %s)' % (self.expand(first), self.expand(second))
 
     def BELONGS(self, first, second):
-       if isinstance(second, str):
-           return '(%s IN (%s))' % (self.expand(first), second[:-1])
-       if not second:
-           return '(1=0)'
-       if isinstance(second, (list,tuple,frozenset)):
-           second = set(second) # remove duplicates, make mutable
-       if isinstance(second, set) and None in second:
-           second.remove(None)
-           return self.OR(self.EQ(first, None), self.BELONGS(first, second))
-       items = ','.join(self.expand(item, first.type) for item in second)
-       return '(%s IN (%s))' % (self.expand(first), items)
+        if isinstance(second, str):
+            return '(%s IN (%s))' % (self.expand(first), second[:-1])
+        if not second:
+            return '(1=0)'
+        items = ','.join(self.expand(item, first.type) for item in second)
+        return '(%s IN (%s))' % (self.expand(first), items)
 
     def REGEXP(self, first, second):
         "regular expression operator"
@@ -1778,13 +1778,18 @@ class BaseAdapter(ConnectionPool):
         return list(tables)
 
     def commit(self):
-        if self.connection: return self.connection.commit()
+        if self.connection:
+            return self.connection.commit()
 
     def rollback(self):
-        if self.connection: return self.connection.rollback()
+        if self.connection:
+            return self.connection.rollback()
 
     def close_connection(self):
-        if self.connection: return self.connection.close()
+        if self.connection: 
+            r = self.connection.close()
+            self.connection = None
+            return r
 
     def distributed_transaction_begin(self, key):
         return
@@ -4333,7 +4338,8 @@ class DatabaseStoredFile:
             if db.executesql(query):
                 return True
         except Exception, e:
-            if not db._adapter.isOperationalError(e):
+            if not (db._adapter.isOperationalError(e) or
+                    db._adapter.isProgrammingError(e)):
                 raise
             # no web2py_filesystem found?
             tb = traceback.format_exc()
@@ -5835,7 +5841,7 @@ class IMAPAdapter(NoSQLAdapter):
     uid         string
     answered    boolean        Flag
     created     date
-    content     list:string    A list of text or html parts
+    content     list:string    A list of dict text or html parts
     to          string
     cc          string
     bcc         string
@@ -5977,8 +5983,9 @@ class IMAPAdapter(NoSQLAdapter):
 
         """ MESSAGE is an identifier for sequence number"""
 
-        self.flags = ['\\Deleted', '\\Draft', '\\Flagged',
-                      '\\Recent', '\\Seen', '\\Answered']
+        self.flags = {'deleted': '\\Deleted', 'draft': '\\Draft',
+                      'flagged': '\\Flagged', 'recent': '\\Recent',
+                      'seen': '\\Seen', 'answered': '\\Answered'}
         self.search_fields = {
             'id': 'MESSAGE', 'created': 'DATE',
             'uid': 'UID', 'sender': 'FROM',
@@ -6201,7 +6208,7 @@ class IMAPAdapter(NoSQLAdapter):
         return tablename
 
     def is_flag(self, flag):
-        if self.search_fields.get(flag, None) in self.flags:
+        if self.search_fields.get(flag, None) in self.flags.values():
             return True
         else:
             return False
@@ -6233,7 +6240,7 @@ class IMAPAdapter(NoSQLAdapter):
                             Field("uid", "string", writable=False),
                             Field("answered", "boolean"),
                             Field("created", "datetime", writable=False),
-                            Field("content", "list:string", writable=False),
+                            Field("content", list, writable=False),
                             Field("to", "string", writable=False),
                             Field("cc", "string", writable=False),
                             Field("bcc", "string", writable=False),
@@ -6450,23 +6457,23 @@ class IMAPAdapter(NoSQLAdapter):
                 maintype = part.get_content_maintype()
                 if ("%s.attachments" % tablename in colnames) or \
                    ("%s.content" % tablename in colnames):
-                    if "%s.attachments" % tablename in colnames:
-                        if not ("text" in maintype):
-                            payload = part.get_payload(decode=True)
-                            if payload:
-                                attachment = {
-                                    "payload": payload,
-                                    "filename": part.get_filename(),
-                                    "encoding": part.get_content_charset(),
-                                    "mime": part.get_content_type(),
-                                    "disposition": part["Content-Disposition"]}
-                                attachments.append(attachment)
-                    if "%s.content" % tablename in colnames:
-                        payload = part.get_payload(decode=True)
-                        part_charset = self.get_charset(part)
-                        if "text" in maintype:
-                            if payload:
-                                content.append(self.encode_text(payload, part_charset))
+                    payload = part.get_payload(decode=True)
+                    if payload:
+                        filename = part.get_filename()
+                        values = {"mime": part.get_content_type()}
+                        if ((filename or not "text" in maintype) and
+                            ("%s.attachments" % tablename in colnames)):
+                            values.update({"payload": payload,
+                                "filename": filename,
+                                "encoding": part.get_content_charset(),
+                                "disposition": part["Content-Disposition"]})
+                            attachments.append(values)
+                        elif (("text" in maintype) and
+                              ("%s.content" % tablename in colnames)):
+                            values.update({"text": self.encode_text(payload,
+                                               self.get_charset(part))})
+                            content.append(values)
+
                 if "%s.size" % tablename in colnames:
                     if part is not None:
                         size += len(str(part))
@@ -6487,6 +6494,71 @@ class IMAPAdapter(NoSQLAdapter):
         colnames = colnames
         processor = attributes.get('processor',self.parse)
         return processor(imapqry_array, fields, colnames)
+
+    def _insert(self, table, fields):
+        def add_payload(message, obj):
+            payload = Message()
+            charset = obj.get("encoding", "utf-8")
+            payload.set_type(obj.get("mime", None))
+            payload.set_charset(charset)
+            if "text" in obj:
+                payload.set_payload(obj["text"])
+            elif "payload" in obj:
+                payload.set_payload(obj["payload"])
+            if "filename" in obj and obj["filename"]:
+                payload.add_header("Content-Disposition",
+                    "attachment", filename=obj["filename"])
+            message.attach(payload)
+
+        mailbox = table.mailbox
+        d = dict(((k.name, v) for k, v in fields))
+        date_time = (d.get("created", datetime.datetime.now())).timetuple()
+        if len(d) > 0:
+            message = d.get("email", None)
+            attachments = d.get("attachments", [])
+            content = d.get("content", [])
+            flags = " ".join(["\\%s" % flag.capitalize() for flag in
+                     ("answered", "deleted", "draft", "flagged",
+                      "recent", "seen") if d.get(flag, False)])
+            if not message:
+                from email.message import Message
+                mime = d.get("mime", None)
+                charset = d.get("encoding", None)
+                message = Message()
+                message["from"] = d.get("sender", "")
+                message["subject"] = d.get("subject", "")
+                if mime:
+                    message.set_type(mime)
+                if charset:
+                    message.set_charset(charset)
+                for item in ("to", "cc", "bcc"):
+                    value = d.get(item, "")
+                    if isinstance(value, basestring):
+                        message[item] = value
+                    else:
+                        message[item] = ";".join([i for i in
+                            value])
+                if not message.is_multipart():
+                    if isinstance(content, basestring):
+                        message.set_payload(content)
+                    elif len(content) > 0:
+                        message.set_payload(content[0]["text"])
+                else:
+                    [add_payload(message, c) for c in content]
+                    [add_payload(message, a) for a in attachments]
+                message = message.as_string()
+            return (mailbox, flags, date_time, message)
+        else:
+            raise NotImplementedError("IMAP empty insert is not implemented")
+
+    def insert(self, table, fields):
+        values = self._insert(table, fields)
+        result, data = self.connection.append(*values)
+        if result == "OK":
+            uid = int(re.findall("\d+", str(data))[-1])
+            return self.db(table.uid==uid).select(table.id).first().id
+        else:
+            raise Exception("IMAP message append failed: %s" % data)
 
     def _update(self, tablename, query, fields, commit=False):
         # TODO: the adapter should implement an .expand method
@@ -6721,7 +6793,7 @@ class IMAPAdapter(NoSQLAdapter):
             elif name == "DATE":
                 result = "ON %s" % self.convert_date(second)
 
-            elif name in self.flags:
+            elif name in self.flags.values():
                 if second:
                     result = "%s" % (name.upper()[1:])
                 else:
@@ -7180,7 +7252,7 @@ class DAL(object):
 
        or
 
-       db = DAL({"uri": ..., "items": ...}) # experimental
+       db = DAL(**{"uri": ..., "tables": [...]...}) # experimental
 
        db.define_table('tablename', Field('fieldname1'),
                                     Field('fieldname2'))
@@ -7295,8 +7367,9 @@ class DAL(object):
                  migrate_enabled=True, fake_migrate_all=False,
                  decode_credentials=False, driver_args=None,
                  adapter_args=None, attempts=5, auto_import=False,
-                 bigint_id=False,debug=False,lazy_tables=False,
-                 db_uid=None, do_connect=True, after_connection=None):
+                 bigint_id=False, debug=False, lazy_tables=False,
+                 db_uid=None, do_connect=True,
+                 after_connection=None, tables=None):
         """
         Creates a new Database Abstraction Layer instance.
 
@@ -7308,7 +7381,7 @@ class DAL(object):
                 experimental: you can specify a dictionary as uri
                 parameter i.e. with
                 db = DAL({"uri": "sqlite://storage.sqlite",
-                          "items": {...}, ...})
+                          "tables": {...}, ...})
 
                 for an example of dict input you can check the output
                 of the scaffolding db model with
@@ -7352,18 +7425,6 @@ class DAL(object):
         :lazy_tables (defaults to False): delay table definition until table access
         :after_connection (defaults to None): a callable that will be execute after the connection
         """
-
-        items = None
-        if isinstance(uri, dict):
-            if "items" in uri:
-                items = uri.pop("items")
-            try:
-                newuri = uri.pop("uri")
-            except KeyError:
-                newuri = DEFAULT_URI
-            locals().update(uri)
-            uri = newuri
-
         if uri == '<zombie>' and db_uid is not None: return
         if not decode_credentials:
             credential_decoder = lambda cred: cred
@@ -7456,31 +7517,20 @@ class DAL(object):
         self._fake_migrate = fake_migrate
         self._migrate_enabled = migrate_enabled
         self._fake_migrate_all = fake_migrate_all
-        if auto_import or items:
+        if auto_import or tables:
             self.import_table_definitions(adapter.folder,
-                                          items=items)
+                                          tables=tables)
 
     @property
     def tables(self):
         return self._tables
 
     def import_table_definitions(self, path, migrate=False,
-                                 fake_migrate=False, items=None):
+                                 fake_migrate=False, tables=None):
         pattern = pjoin(path,self._uri_hash+'_*.table')
-        if items:
-            for tablename, table in items.iteritems():
-                # TODO: read all field/table options
-                fields = []
-                # remove unsupported/illegal Table arguments
-                [table.pop(name) for name in ("name", "fields") if
-                 name in table]
-                if "items" in table:
-                    for fieldname, field in table.pop("items").iteritems():
-                        # remove unsupported/illegal Field arguments
-                        [field.pop(key) for key in ("requires", "name",
-                         "compute", "colname") if key in field]
-                        fields.append(Field(str(fieldname), **field))
-                self.define_table(str(tablename), *fields, **table)
+        if tables:
+            for table in tables:
+                self.define_table(**table)
         else:
             for filename in glob.glob(pattern):
                 tfile = self._adapter.file_open(filename, 'r')
@@ -7778,8 +7828,14 @@ def index():
         ):
         if not fields and 'fields' in args:
             fields = args.get('fields',())
-        if not isinstance(tablename,str):
-            raise SyntaxError("missing table name")
+        if not isinstance(tablename, str):
+            if isinstance(tablename, unicode):
+                try:
+                    tablename = str(tablename)
+                except UnicodeEncodeError:
+                    raise SyntaxError("invalid unicode table name")
+            else:
+                raise SyntaxError("missing table name")
         elif hasattr(self,tablename) or tablename in self.tables:
             if not args.get('redefine',False):
                 raise SyntaxError('table already defined: %s' % tablename)
@@ -7843,48 +7899,40 @@ def index():
         if on_define: on_define(table)
         return table
 
-    def as_dict(self, flat=False, sanitize=True, field_options=True):
-        dbname = db_uid = uri = None
+    def as_dict(self, flat=False, sanitize=True):
+        db_uid = uri = None
         if not sanitize:
-            uri, dbname, db_uid = (self._uri, self._dbname, self._db_uid)
-        db_as_dict = dict(items={}, tables=[], uri=uri, dbname=dbname,
-                          db_uid=db_uid,
-                          **dict([(k, getattr(self, "_" + k)) for
-                          k in 'pool_size','folder','db_codec',
+            uri, db_uid = (self._uri, self._db_uid)
+        db_as_dict = dict(tables=[], uri=uri, db_uid=db_uid,
+                          **dict([(k, getattr(self, "_" + k, None))
+                          for k in 'pool_size','folder','db_codec',
                           'check_reserved','migrate','fake_migrate',
                           'migrate_enabled','fake_migrate_all',
                           'decode_credentials','driver_args',
                           'adapter_args', 'attempts',
                           'bigint_id','debug','lazy_tables',
                           'do_connect']))
-
         for table in self:
-            tablename = str(table)
-            db_as_dict["tables"].append(tablename)
-            db_as_dict["items"][tablename] = table.as_dict(flat=flat,
-                                         sanitize=sanitize,
-                                         field_options=field_options)
+            db_as_dict["tables"].append(table.as_dict(flat=flat,
+                                        sanitize=sanitize))
         return db_as_dict
 
-    def as_xml(self, sanitize=True, field_options=True):
+    def as_xml(self, sanitize=True):
         if not have_serializers:
             raise ImportError("No xml serializers available")
-        d = self.as_dict(flat=True, sanitize=sanitize,
-                         field_options=field_options)
+        d = self.as_dict(flat=True, sanitize=sanitize)
         return serializers.xml(d)
 
-    def as_json(self, sanitize=True, field_options=True):
+    def as_json(self, sanitize=True):
         if not have_serializers:
             raise ImportError("No json serializers available")
-        d = self.as_dict(flat=True, sanitize=sanitize,
-                         field_options=field_options)
+        d = self.as_dict(flat=True, sanitize=sanitize)
         return serializers.json(d)
 
-    def as_yaml(self, sanitize=True, field_options=True):
+    def as_yaml(self, sanitize=True):
         if not have_serializers:
             raise ImportError("No YAML serializers available")
-        d = self.as_dict(flat=True, sanitize=sanitize,
-                         field_options=field_options)
+        d = self.as_dict(flat=True, sanitize=sanitize)
         return serializers.yaml(d)
 
     def __contains__(self, tablename):
@@ -8252,7 +8300,9 @@ class Table(object):
             if len(self._primarykey)==1:
                 self._id = [f for f in fields if isinstance(f,Field) \
                                 and f.name==self._primarykey[0]][0]
-        elif not [f for f in fields if isinstance(f,Field) and f.type=='id']:
+        elif not [f for f in fields if (isinstance(f,Field) and
+                  f.type=='id') or (isinstance(f, dict) and
+                  f.get("type", None)=="id")]:
             field = Field('id', 'id')
             newfields.append(field)
             fieldnames.add('id')
@@ -8270,8 +8320,7 @@ class Table(object):
                 if field.db is not None:
                     field = copy.copy(field)                
                 include_new(field)
-            elif isinstance(field, dict) and 'fieldname' and \
-                    not field['fieldname'] in fieldnames:
+            elif isinstance(field, dict) and not field['fieldname'] in fieldnames:
                 include_new(Field(**field))
             elif isinstance(field, Table):
                 table = field
@@ -8826,9 +8875,8 @@ class Table(object):
                 if id_map and cid is not None:
                     id_map_self[long(line[cid])] = new_id
 
-    def as_dict(self, flat=False, sanitize=True, field_options=True):
-        tablename = str(self)
-        table_as_dict = dict(name=tablename, items={}, fields=[],
+    def as_dict(self, flat=False, sanitize=True):
+        table_as_dict = dict(tablename=str(self), fields=[],
         sequence_name=self._sequence_name,
         trigger_name=self._trigger_name,
         common_filter=self._common_filter, format=self._format,
@@ -8836,31 +8884,26 @@ class Table(object):
 
         for field in self:
             if (field.readable or field.writable) or (not sanitize):
-                table_as_dict["fields"].append(field.name)
-                table_as_dict["items"][field.name] = \
-                    field.as_dict(flat=flat, sanitize=sanitize,
-                                  options=field_options)
+                table_as_dict["fields"].append(field.as_dict(
+                    flat=flat, sanitize=sanitize))
         return table_as_dict
 
-    def as_xml(self, sanitize=True, field_options=True):
+    def as_xml(self, sanitize=True):
         if not have_serializers:
             raise ImportError("No xml serializers available")
-        d = self.as_dict(flat=True, sanitize=sanitize,
-                         field_options=field_options)
+        d = self.as_dict(flat=True, sanitize=sanitize)
         return serializers.xml(d)
 
-    def as_json(self, sanitize=True, field_options=True):
+    def as_json(self, sanitize=True):
         if not have_serializers:
             raise ImportError("No json serializers available")
-        d = self.as_dict(flat=True, sanitize=sanitize,
-                         field_options=field_options)
+        d = self.as_dict(flat=True, sanitize=sanitize)
         return serializers.json(d)
 
-    def as_yaml(self, sanitize=True, field_options=True):
+    def as_yaml(self, sanitize=True):
         if not have_serializers:
             raise ImportError("No YAML serializers available")
-        d = self.as_dict(flat=True, sanitize=sanitize,
-                         field_options=field_options)
+        d = self.as_dict(flat=True, sanitize=sanitize)
         return serializers.yaml(d)
 
     def with_alias(self, alias):
@@ -9070,7 +9113,7 @@ class Expression(object):
         db = self.db
         return Query(db, db._adapter.REGEXP, self, value)
 
-    def belongs(self, *value):
+    def belongs(self, *value, **kwattr):
         """
         Accepts the following inputs:
            field.belongs(1,2)
@@ -9085,6 +9128,11 @@ class Expression(object):
             value = value[0]
         if isinstance(value,Query):
             value = db(value)._select(value.first._table._id)
+        elif not isinstance(value, basestring):
+            value = set(value)
+            if kwattr.get('null') and None in value:
+                value.remove(None)
+                return (self == None) | Query(db, db._adapter.BELONGS, self, value)
         return Query(db, db._adapter.BELONGS, self, value)
 
     def startswith(self, value):
@@ -9336,8 +9384,13 @@ class Field(Expression):
         self.op = None
         self.first = None
         self.second = None
+        if isinstance(fieldname, unicode):
+            try:
+                fieldname = str(fieldname)
+            except UnicodeEncodeError:
+                raise SyntaxError('Field: invalid unicode field name')
         self.name = fieldname = cleanup(fieldname)
-        if not isinstance(fieldname,str) or hasattr(Table,fieldname) or \
+        if not isinstance(fieldname, str) or hasattr(Table, fieldname) or \
                 fieldname[0] == '_' or REGEX_PYTHON_KEYWORDS.match(fieldname):
             raise SyntaxError('Field: invalid field name: %s' % fieldname)
         self.type = type if not isinstance(type, (Table,Field)) else 'reference %s' % type
@@ -9537,113 +9590,61 @@ class Field(Expression):
     def count(self, distinct=None):
         return Expression(self.db, self.db._adapter.COUNT, self, distinct, 'integer')
 
-    def as_dict(self, flat=False, sanitize=True, options=True):
-
-        attrs = ('type', 'length', 'default', 'required',
-                 'ondelete', 'notnull', 'unique', 'uploadfield',
-                 'widget', 'label', 'comment', 'writable', 'readable',
-                 'update', 'authorize', 'autodelete', 'represent',
-                 'uploadfolder', 'uploadseparate', 'uploadfs',
-                 'compute', 'custom_store', 'custom_retrieve',
-                 'custom_retrieve_file_properties', 'custom_delete',
-                 'filter_in', 'filter_out', 'custom_qualifier',
-                 'map_none', 'name')
-
-        SERIALIZABLE_TYPES = (int, long, basestring, dict, list,
-                              float, tuple, bool, type(None))
+    def as_dict(self, flat=False, sanitize=True):
+        attrs = ("name", 'authorize', 'represent', 'ondelete',
+        'custom_store', 'autodelete', 'custom_retrieve',
+        'filter_out', 'uploadseparate', 'widget', 'uploadfs',
+        'update', 'custom_delete', 'uploadfield', 'uploadfolder',
+        'custom_qualifier', 'unique', 'writable', 'compute',
+        'map_none', 'default', 'type', 'required', 'readable',
+        'requires', 'comment', 'label', 'length', 'notnull',
+        'custom_retrieve_file_properties', 'filter_in')
+        serializable = (int, long, basestring, float, tuple,
+                        bool, type(None))
 
         def flatten(obj):
-            if flat:
-                if isinstance(obj, flatten.__class__):
-                    return str(type(obj))
-                elif isinstance(obj, type):
-                    try:
-                        return str(obj).split("'")[1]
-                    except IndexError:
-                        return str(obj)
-                elif not isinstance(obj, SERIALIZABLE_TYPES):
-                    return str(obj)
-                elif isinstance(obj, dict):
-                    newobj = dict()
-                    for k, v in obj.items():
-                        newobj[k] = flatten(v)
-                    return newobj
-                elif isinstance(obj, (list, tuple, set)):
-                    return [flatten(v) for v in obj]
-                else:
-                    return obj
-            elif isinstance(obj, (dict, set)):
-                return obj.copy()
-            else: return obj
-
-        def filter_requires(t, r, options=True):
-            if sanitize and any([keyword in str(t).upper() for
-                                 keyword in ("CRYPT", "IS_STRONG")]):
+            if isinstance(obj, dict):
+                return dict((flatten(k), flatten(v)) for k, v in
+                             obj.items())
+            elif isinstance(obj, (tuple, list, set)):
+                return [flatten(v) for v in obj]
+            elif isinstance(obj, serializable):
+                return obj
+            elif isinstance(obj, (datetime.datetime,
+                                  datetime.date, datetime.time)):
+                return str(obj)
+            else:
                 return None
 
-            if not isinstance(r, dict):
-                if options and hasattr(r, "options"):
-                    if callable(r.options):
-                        r.options()
-                newr = r.__dict__.copy()
-            else:
-                newr = r.copy()
-
-            # remove options if not required
-            if not options and newr.has_key("labels"):
-                [newr.update({key:None}) for key in
-                 ("labels", "theset") if (key in newr)]
-
-            for k, v in newr.items():
-                if k == "other":
-                    if isinstance(v, dict):
-                        otype, other = v.popitem()
-                    else:
-                        otype = flatten(type(v))
-                        other = v
-                    newr[k] = {otype: filter_requires(otype, other,
-                                                      options=options)}
-                else:
-                    newr[k] = flatten(v)
-            return newr
-
-        if isinstance(self.requires, (tuple, list, set)):
-            requires = dict([(flatten(type(r)),
-                             filter_requires(type(r), r,
-                                             options=options)) for
-                             r in self.requires])
-        else:
-            requires = {flatten(type(self.requires)):
-                        filter_requires(type(self.requires),
-                            self.requires, options=options)}
-
-        d = dict(colname="%s.%s" % (self.tablename, self.name),
-                 requires=requires)
-        d.update([(attr, flatten(getattr(self, attr))) for attr in attrs])
+        d = dict()
+        if not (sanitize and not (self.readable or self.writable)):
+            for attr in attrs:
+               if flat:
+                   d.update({attr: flatten(getattr(self, attr))})
+               else:
+                   d.update({attr: getattr(self, attr)})
+            d["fieldname"] = d.pop("name")
         return d
 
-    def as_xml(self, sanitize=True, options=True):
+    def as_xml(self, sanitize=True):
         if have_serializers:
             xml = serializers.xml
         else:
             raise ImportError("No xml serializers available")
-        d = self.as_dict(flat=True, sanitize=sanitize,
-                         options=options)
+        d = self.as_dict(flat=True, sanitize=sanitize)
         return xml(d)
 
-    def as_json(self, sanitize=True, options=True):
+    def as_json(self, sanitize=True):
         if have_serializers:
             json = serializers.json
         else:
             raise ImportError("No json serializers available")
-        d = self.as_dict(flat=True, sanitize=sanitize,
-                         options=options)
+        d = self.as_dict(flat=True, sanitize=sanitize)
         return json(d)
 
-    def as_yaml(self, sanitize=True, options=True):
+    def as_yaml(self, sanitize=True):
         if have_serializers:
-            d = self.as_dict(flat=True, sanitize=sanitize,
-                             options=options)
+            d = self.as_dict(flat=True, sanitize=sanitize)
             return serializers.yaml(d)
         else:
             raise ImportError("No YAML serializers available")

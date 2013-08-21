@@ -61,7 +61,7 @@ wsgiapp = WSGIFilterMiddleware(gluon.main.wsgibase, GzipWSGIFilter)
 if LOGGING:
     application = gluon.main.appfactory(wsgiapp=wsgiapp,
                                         logfilename='httpserver.log',
-                                        profilerfilename=None)
+                                        profiler_dir=None)
 else:
     application = wsgiapp
 

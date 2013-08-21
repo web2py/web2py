@@ -1868,11 +1868,7 @@ class Auth(object):
             for key, value in user.items():
                 if callable(value) or key=='password':
                     delattr(user,key)
-        sessdb = current.response.session_db_table and current.response.session_db_table._db or None
-        current.session.renew(
-            clear_session=not self.settings.keep_session_onlogin,
-            db=sessdb
-            )
+        current.session.renew(clear_session=not self.settings.keep_session_onlogin)
         current.session.auth = Storage(
             user = user,
             last_visit=current.request.now,
@@ -2304,10 +2300,7 @@ class Auth(object):
 
         current.session.auth = None
         current.session.flash = self.messages.logged_out
-        sessdb = current.response.session_db_table and current.response.session_db_table._db or None
-        current.session.renew(
-            clear_session=not self.settings.keep_session_onlogout,
-            db=sessdb)
+        current.session.renew(clear_session=not self.settings.keep_session_onlogout)
         if not next is None:
             redirect(next)
 
@@ -2642,9 +2635,10 @@ class Auth(object):
                 redirect(self.url(args=request.args))
             password = self.random_password()
             passfield = self.settings.password_field
-            d = dict(
-                passfield=str(table_user[passfield].validate(password)[0]),
-                registration_key='')
+            d = {
+                passfield: str(table_user[passfield].validate(password)[0]),
+                'registration_key': ''
+                }
             user.update_record(**d)
             if self.settings.mailer and \
                self.settings.mailer.send(to=form.vars.email,

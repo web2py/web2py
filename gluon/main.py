@@ -26,6 +26,7 @@ import signal
 import socket
 import random
 import urllib2
+import string
 
 
 try:
@@ -40,6 +41,7 @@ from thread import allocate_lock
 
 from fileutils import abspath, write_file
 from settings import global_settings
+from utils import web2py_uuid
 from admin import add_path_first, create_missing_folders, create_missing_app_folders
 from globals import current
 
@@ -379,7 +381,7 @@ def wsgibase(environ, responder):
                 # ##################################################
                 # access the requested application
                 # ##################################################
-                
+
                 disabled = pjoin(request.folder, 'DISABLED')
                 if not exists(request.folder):
                     if app == rwthread.routes.default_application \
@@ -396,7 +398,7 @@ def wsgibase(environ, responder):
                                    % 'invalid request',
                                    web2py_error='invalid application')
                 elif request.is_local and exists(disabled):
-                    data = dict([item.strip() for item in line.split(':',1)] 
+                    data = dict([item.strip() for item in line.split(':',1)]
                                 for line in open(disabled) if line.strip())
                     if data.get('disabled','True').lower() != 'false':
                         if 'redirect' in data:
@@ -605,7 +607,7 @@ def save_password(password, port):
 
 def appfactory(wsgiapp=wsgibase,
                logfilename='httpserver.log',
-               profilerfilename='profiler.log'):
+               profiler_dir=None):
     """
     generates a wsgi application that does logging and profiling and calls
     wsgibase
@@ -616,9 +618,22 @@ def appfactory(wsgiapp=wsgibase,
             [, profilerfilename='profiler.log']]])
 
     """
-    if profilerfilename and exists(profilerfilename):
-        os.unlink(profilerfilename)
-    locker = allocate_lock()
+
+    if profiler_dir:
+        profiler_dir = abspath(profiler_dir)
+        logger.warn('profiler is on. will use dir %s', profiler_dir)
+        if not os.path.isdir(profiler_dir):
+            try:
+                os.makedirs(profiler_dir)
+            except:
+                raise BaseException, "Can't create dir %s" % profiler_dir
+        filepath = pjoin(profiler_dir, 'wtest')
+        try:
+            filehandle = open( filepath, 'w' )
+            filehandle.close()
+            os.unlink(filepath)
+        except IOError:
+            raise BaseException, "Unable to write to dir %s" % profiler_dir
 
     def app_with_logging(environ, responder):
         """
@@ -636,25 +651,17 @@ def appfactory(wsgiapp=wsgibase,
 
         time_in = time.time()
         ret = [0]
-        if not profilerfilename:
+        if not profiler_dir:
             ret[0] = wsgiapp(environ, responder2)
         else:
             import cProfile
-            import pstats
-            logger.warn('profiler is on. this makes web2py slower and serial')
+            prof = cProfile.Profile()
+            prof.enable()
+            ret[0] = wsgiapp(environ, responder2)
+            prof.disable()
+            destfile = pjoin(profiler_dir, "req_%s.prof" % web2py_uuid())
+            prof.dump_stats(destfile)
 
-            locker.acquire()
-            cProfile.runctx('ret[0] = wsgiapp(environ, responder2)',
-                            globals(), locals(), profilerfilename + '.tmp')
-            stat = pstats.Stats(profilerfilename + '.tmp')
-            stat.stream = cStringIO.StringIO()
-            stat.strip_dirs().sort_stats("time").print_stats(80)
-            profile_out = stat.stream.getvalue()
-            profile_file = open(profilerfilename, 'a')
-            profile_file.write('%s\n%s\n%s\n%s\n\n' %
-                               ('=' * 60, environ['PATH_INFO'], '=' * 60, profile_out))
-            profile_file.close()
-            locker.release()
         try:
             line = '%s, %s, %s, %s, %s, %s, %f\n' % (
                 environ['REMOTE_ADDR'],
@@ -677,7 +684,6 @@ def appfactory(wsgiapp=wsgibase,
 
     return app_with_logging
 
-
 class HttpServer(object):
     """
     the web2py web server (Rocket)
@@ -690,7 +696,7 @@ class HttpServer(object):
         password='',
         pid_filename='httpserver.pid',
         log_filename='httpserver.log',
-        profiler_filename=None,
+        profiler_dir=None,
         ssl_certificate=None,
         ssl_private_key=None,
         ssl_ca_certificate=None,
@@ -755,7 +761,7 @@ class HttpServer(object):
             logger.info('SSL is ON')
         app_info = {'wsgi_app': appfactory(wsgibase,
                                            log_filename,
-                                           profiler_filename)}
+                                           profiler_dir)}
 
         self.server = rocket.Rocket(interfaces or tuple(sock_list),
                                     method='wsgi',

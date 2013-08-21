@@ -1075,10 +1075,8 @@ class DIV(XmlComponent):
         matches = []
         # check if the component has an attribute with the same
         # value as provided
-        check = True
         tag = getattr(self, 'tag').replace('/', '')
-        if args and tag not in args:
-            check = False
+        check = not (args and tag not in args)
         for (key, value) in kargs.iteritems():
             if key not in ['first_only', 'replace', 'find_text']:
                 if isinstance(value, (str, int)):
@@ -1109,24 +1107,28 @@ class DIV(XmlComponent):
         def replace_component(i):
             if replace is None:
                 del self[i]
-            elif callable(replace):
-                self[i] = replace(self[i])
+                return i
             else:
-                self[i] = replace
+                self[i] = replace(self[i]) if callable(replace) else replace
+                return i+1
         # loop the components
         if find_text or find_components:
-            for i, c in enumerate(self.components):
+            i = 0
+            while i<len(self.components):
+                c = self[i]
+                j = i+1
                 if check and find_text and isinstance(c, str) and \
                         ((is_regex and find_text.search(c)) or (str(find_text) in c)):
-                    replace_component(i)
-                if find_components and isinstance(c, XmlComponent):
+                    j = replace_component(i)
+                elif find_components and isinstance(c, XmlComponent):
                     child_matches = c.elements(*args, **kargs)
                     if len(child_matches):
                         if not find_text and replace is not False and child_matches[0] is c:
-                            replace_component(i)
+                            j = replace_component(i)
                         if first_only:
                             return child_matches
                         matches.extend(child_matches)
+                i = j
         return matches
 
     def element(self, *args, **kargs):
