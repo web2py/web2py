@@ -310,10 +310,9 @@ class Request(Storage):
                 self.is_restful = True
                 method = _self.env.request_method
                 if len(_self.args) and '.' in _self.args[-1]:
-                    _self.args[-
-                               1], _self.extension = _self.args[-1].rsplit('.', 1)
+                    _self.args[-1], _, self.extension = self.args[-1].rpartition('.')
                     current.response.headers['Content-Type'] = \
-                        contenttype(_self.extension.lower())
+                        contenttype('.' + _self.extension.lower())
                 if not method in ['GET', 'POST', 'DELETE', 'PUT']:
                     raise HTTP(400, "invalid method")
                 rest_action = _action().get(method, None)
@@ -656,7 +655,7 @@ class Session(Storage):
 
         response.session_storage_type   : 'file', 'db', or 'cookie'
         response.session_cookie_compression_level :
-        response.session_cookie_expires : cookie expiration 
+        response.session_cookie_expires : cookie expiration
         response.session_cookie_key     : for encrypted sessions in cookies
         response.session_id             : a number or None if no session
         response.session_id_name        :
@@ -666,7 +665,7 @@ class Session(Storage):
 
     if session in cookie:
 
-        response.session_data_name      : name of the cookie for session data 
+        response.session_data_name      : name of the cookie for session data
 
     if session in db:
 
@@ -705,7 +704,7 @@ class Session(Storage):
         cookies = request.cookies
 
         self._unlock(response)
-        
+
         response.session_masterapp = masterapp
         response.session_id_name = 'session_id_%s' % masterapp.lower()
         response.session_data_name = 'session_data_%s' % masterapp.lower()
@@ -733,7 +732,7 @@ class Session(Storage):
             if (global_settings.db_sessions is True or
                 masterapp in global_settings.db_sessions):
                 return
-           
+
         if response.session_storage_type == 'cookie':
             # check if there is session data in cookies
             if response.session_data_name in cookies:
@@ -761,7 +760,7 @@ class Session(Storage):
                                      'sessions', response.session_id)
                     try:
                         response.session_file = \
-                            open(response.session_filename, 'rb+')                
+                            open(response.session_filename, 'rb+')
                         portalocker.lock(response.session_file,
                                          portalocker.LOCK_EX)
                         response.session_locked = True
@@ -821,7 +820,7 @@ class Session(Storage):
                     record_id = None
 
                 # Select from database
-                if record_id:                    
+                if record_id:
                     row = table(record_id) #,unique_key=unique_key)
                     # Make sure the session data exists in the database
                     if row:
@@ -838,7 +837,7 @@ class Session(Storage):
                 else:
                     response.session_id = None
                     response.session_new = True
- 
+
         if self.flash:
             (response.flash, self.flash) = (self.flash, None)
 
@@ -853,7 +852,7 @@ class Session(Storage):
         masterapp = response.session_masterapp
         cookies = request.cookies
 
-        if response.session_storage_type == 'cookie': 
+        if response.session_storage_type == 'cookie':
             return
 
         # if the session goes in file
@@ -882,14 +881,14 @@ class Session(Storage):
                 return
             # Get session data out of the database
             (record_id, unique_key) = response.session_id.split(':')
-        
+
             if record_id.isdigit() and long(record_id)>1:
                 new_unique_key = web2py_uuid()
                 rows = db(table.id==record_id)(table.unique_key==unique_key)\
                     .update(unique_key=new_unique_key)
             else:
                 rows = None
-            if rows:              
+            if rows:
                 response.session_id = '%s:%s' % (record_id, unique_key)
                 response.session_db_record_id = record_id
                 response.session_db_unique_key = new_unique_key
@@ -982,7 +981,7 @@ class Session(Storage):
         # or no changes to session
 
         if not response.session_db_table or self._forget or self._unchanged():
-            if (not response.session_db_table and 
+            if (not response.session_db_table and
                 global_settings.db_sessions is not True and
                 response.session_masterapp in global_settings.db_sessions):
                 global_settings.db_sessions.remove(response.session_masterapp)
