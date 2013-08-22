@@ -429,13 +429,13 @@ class Mail(object):
                     html = html.decode(encoding).encode('utf-8')
 
             # Construct mime part only if needed
-            if text and html:
+            if text is not None and html:
                 # We have text and html we need multipart/alternative
                 attachment = MIMEMultipart.MIMEMultipart('alternative')
                 attachment.attach(MIMEText.MIMEText(text, _charset='utf-8'))
                 attachment.attach(
                     MIMEText.MIMEText(html, 'html', _charset='utf-8'))
-            elif text:
+            elif text is not None:
                 attachment = MIMEText.MIMEText(text, _charset='utf-8')
             elif html:
                 attachment = \
