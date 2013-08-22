@@ -196,8 +196,11 @@ class Request(Storage):
         if (body and
                 env.request_method in ('POST', 'PUT', 'DELETE', 'BOTH') and
                 not is_json):
+            query_string = env.pop('QUERY_STRING') if 'QUERY_STRING' in env else None
             dpost = cgi.FieldStorage(fp=body, environ=env, keep_blank_values=1)
             post_vars.update(dpost)
+            if query_string is not None:
+                env['QUERY_STRING'] = query_string
             # The same detection used by FieldStorage to detect multipart POSTs
             is_multipart = dpost.type[:10] == 'multipart/'
             body.seek(0)
