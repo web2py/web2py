@@ -165,8 +165,11 @@ class Request(Storage):
 
 
     def parse_get_vars(self):
-        query_string = self.env.get('QUERY_STRING','')
-        dget = cgi.parse_qs(query_string, keep_blank_values=1)
+        if self.env.request_method != 'GET':
+            dget = {}
+        else:
+            query_string = self.env.get('QUERY_STRING','')
+            dget = cgi.parse_qs(query_string, keep_blank_values=1)
         get_vars = self._get_vars = Storage(dget)
         for (key, value) in get_vars.iteritems():
             if isinstance(value,list) and len(value)==1:
@@ -196,13 +199,8 @@ class Request(Storage):
         if (body and
                 env.request_method in ('POST', 'PUT', 'DELETE', 'BOTH') and
                 not is_json):
-            query_string = env.pop('QUERY_STRING') if 'QUERY_STRING' in env else None
             dpost = cgi.FieldStorage(fp=body, environ=env, keep_blank_values=1)
             post_vars.update(dpost)
-            if query_string is not None:
-                env['QUERY_STRING'] = query_string
-            # The same detection used by FieldStorage to detect multipart POSTs
-            is_multipart = dpost.type[:10] == 'multipart/'
             body.seek(0)
 
             def listify(a):
