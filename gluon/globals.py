@@ -917,9 +917,12 @@ class Session(Storage):
         if response.session_id:
             rcookies[response.session_id_name] = response.session_id
             rcookies[response.session_id_name]['path'] = '/'
-            if response.session_cookie_expires:
+            if isinstance(response.session_cookie_expires,datetime.datetime):
                 rcookies[response.session_id_name]['expires'] = \
                     response.session_cookie_expires.strftime(FMT)
+            elif isinstance(response.session_cookie_expires,str):
+                rcookies[response.session_id_name]['expires'] = \
+                    response.session_cookie_expires
 
     def clear(self):
         previous_session_hash = self.pop('_session_hash', None)
