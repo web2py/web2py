@@ -6932,7 +6932,7 @@ def sqlhtml_validators(field):
                 refs = reduce(lambda a,b:a&b, [count(ids[i:i+30]) for i in rx])
             else:
                 refs = db(id.belongs(ids)).select(id)
-            return (refs and ', '.join(str(f(r,x.id)) for x in refs) or '')
+            return (refs and ', '.join(f(r,x.id) for x in refs) or '')            
         field.represent = field.represent or list_ref_repr
         if hasattr(referenced, '_format') and referenced._format:
             requires = validators.IS_IN_DB(db,referenced._id,
