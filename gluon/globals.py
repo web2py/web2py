@@ -889,11 +889,14 @@ class Session(Storage):
 
             if record_id.isdigit() and long(record_id)>1:
                 new_unique_key = web2py_uuid()
-                rows = db(table.id==record_id)(table.unique_key==unique_key)\
-                    .update(unique_key=new_unique_key)
+                row = table(record_id)
+                if row and row.unique_key==unique_key:
+                    row.update_record(unique_key=new_unique_key)
+                else:
+                    row = None
             else:
-                rows = None
-            if rows:
+                row = None
+            if row:
                 response.session_id = '%s:%s' % (record_id, unique_key)
                 response.session_db_record_id = record_id
                 response.session_db_unique_key = new_unique_key
@@ -1008,7 +1011,11 @@ class Session(Storage):
                   session_data=cPickle.dumps(dict(self)),
                   unique_key=unique_key)
         if record_id:
-            table(record_id).update_record(**dd)
+            row = table(record_id)
+            if row:
+                row.update_record(**dd)
+            else:
+                record_id
         if not record_id:
             record_id = table.insert(**dd)
             response.session_id = '%s:%s' % (record_id, unique_key)
