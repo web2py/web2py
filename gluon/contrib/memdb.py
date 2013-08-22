@@ -302,8 +302,6 @@ class Table(DALStorage):
     def __call__(self, id):
         return self.get(id)
 
-    def __getitem__(self,id):
-        return self.get(id)
 
 class Expression(object):
 

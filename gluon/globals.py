@@ -196,8 +196,11 @@ class Request(Storage):
         if (body and
                 env.request_method in ('POST', 'PUT', 'DELETE', 'BOTH') and
                 not is_json):
+            query_string = env.pop('QUERY_STRING') if 'QUERY_STRING' in env else None
             dpost = cgi.FieldStorage(fp=body, environ=env, keep_blank_values=1)
             post_vars.update(dpost)
+            if query_string is not None:
+                env['QUERY_STRING'] = query_string
             # The same detection used by FieldStorage to detect multipart POSTs
             is_multipart = dpost.type[:10] == 'multipart/'
             body.seek(0)
@@ -880,7 +883,9 @@ class Session(Storage):
             if response.session_new:
                 return
             # Get session data out of the database
-            (record_id, unique_key) = response.session_id.split(':')
+            if response.session_id is None:
+                return
+            (record_id, sep, unique_key) = response.session_id.partition(':')
 
             if record_id.isdigit() and long(record_id)>1:
                 new_unique_key = web2py_uuid()
@@ -912,9 +917,12 @@ class Session(Storage):
         if response.session_id:
             rcookies[response.session_id_name] = response.session_id
             rcookies[response.session_id_name]['path'] = '/'
-            if response.session_cookie_expires:
+            if isinstance(response.session_cookie_expires,datetime.datetime):
                 rcookies[response.session_id_name]['expires'] = \
                     response.session_cookie_expires.strftime(FMT)
+            elif isinstance(response.session_cookie_expires,str):
+                rcookies[response.session_id_name]['expires'] = \
+                    response.session_cookie_expires
 
     def clear(self):
         previous_session_hash = self.pop('_session_hash', None)

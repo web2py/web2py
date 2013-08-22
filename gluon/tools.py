@@ -1225,8 +1225,7 @@ class Auth(object):
         response = current.response
         if auth and auth.remember:
             # when user wants to be logged in for longer
-            response.cookies[response.session_id_name]["expires"] = \
-                auth.expiration
+            response.session_cookie_expires = auth.expiration
         if signature:
             self.define_signature()
         else:
