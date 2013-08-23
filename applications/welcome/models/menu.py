@@ -8,7 +8,7 @@
 response.logo = A(B('web',SPAN(2),'py'),XML('&trade;&nbsp;'),
                   _class="brand",_href="http://www.web2py.com/")
 response.title = request.application.replace('_',' ').title()
-response.subtitle = T('customize me!')
+response.subtitle = ''
 
 ## read more at http://dev.w3.org/html5/markup/meta.name.html
 response.meta.author = 'Your Name <you@example.com>'
