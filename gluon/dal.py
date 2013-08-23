@@ -5667,7 +5667,7 @@ class MongoDBAdapter(NoSQLAdapter):
         items = [self.expand(item, first.type) for item in second]
         return {self.expand(first) : {"$in" : items} }
 
-    def EQ(self,first,second):
+    def EQ(self,first,second=None):
         result = {}
         result[self.expand(first)] = self.expand(second)
         return result
