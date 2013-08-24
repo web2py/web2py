@@ -238,10 +238,10 @@ def executor(queue, task, out):
             result = eval(task.function)(
                 *loads(task.args, object_hook=_decode_dict),
                 **loads(task.vars, object_hook=_decode_dict))
-        queue.put(TaskReport(COMPLETED, result=result))
+        queue.put(TaskReport('COMPLETED', result=result))
     except BaseException, e:
         tb = traceback.format_exc()
-        queue.put(TaskReport(FAILED, tb=tb))
+        queue.put(TaskReport('FAILED', tb=tb))
     del stdout
 
 
