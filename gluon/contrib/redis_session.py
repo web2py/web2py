@@ -110,6 +110,19 @@ class MockTable(object):
         self.session_expiry = session_expiry
         self.with_lock = with_lock
 
+    def __call__(self, record_id):
+        # Support DAL shortcut query: table(record_id)
+
+        q = self.id  # This will call the __getattr__ below
+                     # returning a MockQuery
+
+        # Instructs MockQuery, to behave as db(table.id == record_id)
+        q.op = 'eq'
+        q.value = record_id
+
+        row = q.select()
+        return row[0] if row else Storage()
+
     def __getattr__(self, key):
         if key == 'id':
             #return a fake query. We need to query it just by id for normal operations
@@ -172,6 +185,7 @@ class MockQuery(object):
             if self.with_lock:
                 acquire_lock(self.db, key + ':lock', self.value)
             rtn = self.db.hgetall(key)
+            rtn['update_record'] = self.update  # update record support
             return [Storage(rtn)] if rtn else []
         elif self.op == 'ge' and self.field == 'id' and self.value == 0:
             #means that someone wants the complete list
