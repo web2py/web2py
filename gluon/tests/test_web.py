@@ -5,22 +5,56 @@
 """
 import sys
 import os
-if os.path.isdir('gluon'):
-    sys.path.append(os.path.realpath('gluon'))
-else:
-    sys.path.append(os.path.realpath('../'))
-
 import unittest
 import subprocess
 import time
 import signal
+
+
+def fix_sys_path():
+    """
+    logic to have always the correct sys.path
+     '', web2py/gluon, web2py/site-packages, web2py/ ...
+    """
+
+    def add_path_first(path):
+        sys.path = [path] + [p for p in sys.path if (
+            not p == path and not p == (path + '/'))]
+
+    path = os.path.dirname(os.path.abspath(__file__))
+
+    if not os.path.isfile(os.path.join(path,'web2py.py')):
+        i = 0
+        while i<10:
+            i += 1
+            if os.path.exists(os.path.join(path,'web2py.py')):
+                break
+            path = os.path.abspath(os.path.join(path, '..'))
+
+    paths = [path,
+             os.path.abspath(os.path.join(path, 'site-packages')),
+             os.path.abspath(os.path.join(path, 'gluon')),
+             '']
+    [add_path_first(path) for path in paths]
+
+fix_sys_path()
+
 from contrib.webclient import WebClient
 
 webserverprocess = None
 
 def startwebserver():
     global webserverprocess
-    webserverprocess = subprocess.Popen([sys.executable, 'web2py.py', '-a',  'testpass'])
+    path = path = os.path.dirname(os.path.abspath(__file__))
+    if not os.path.isfile(os.path.join(path,'web2py.py')):
+        i = 0
+        while i<10:
+            i += 1
+            if os.path.exists(os.path.join(path,'web2py.py')):
+                break
+            path = os.path.abspath(os.path.join(path, '..'))
+    web2py_exec = os.path.join(path, 'web2py.py')
+    webserverprocess = subprocess.Popen([sys.executable, web2py_exec, '-a',  'testpass'])
     print 'Sleeping before web2py starts...'
     for a in range(1,11):
         time.sleep(1)
@@ -29,7 +63,7 @@ def startwebserver():
 
 def terminate_process(pid):
     #Taken from http://stackoverflow.com/questions/1064335/in-python-2-5-how-do-i-kill-a-subprocess
-    # all this shit is because we are stuck with Python 2.5 and \
+    # all this **blah** is because we are stuck with Python 2.5 and \
     #we cannot use Popen.terminate()
     if sys.platform.startswith('win'):
         import ctypes
