@@ -202,7 +202,6 @@ class Request(Storage):
             if query_string is not None:
                 env['QUERY_STRING'] = query_string
             # The same detection used by FieldStorage to detect multipart POSTs
-            is_multipart = dpost.type[:10] == 'multipart/'
             body.seek(0)
 
             def listify(a):
@@ -1015,7 +1014,7 @@ class Session(Storage):
             if row:
                 row.update_record(**dd)
             else:
-                record_id
+                record_id = None
         if not record_id:
             record_id = table.insert(**dd)
             response.session_id = '%s:%s' % (record_id, unique_key)
