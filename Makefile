@@ -1,7 +1,7 @@
 all:
-	echo "The Makefile is used to build the distribution."
-	echo "In order to run web2py you do not need to make anything."
-	echo "just run web2py.py"
+	@echo "The Makefile is used to build the distribution."
+	@echo "In order to run web2py you do not need to make anything."
+	@echo "just run web2py.py"
 clean:
 	rm -f httpserver.log 
 	rm -f parameters*.py 
