@@ -20,7 +20,7 @@ clean:
 epydoc:
 	### build epydoc
 	rm -f -r applications/examples/static/epydoc/ 
-	epydoc --config epydoc.conf
+	epydoc --config extras/epydoc/epydoc.conf
 	cp applications/examples/static/title.png applications/examples/static/epydoc
 tests:
 	python web2py.py --run_system_tests
@@ -54,7 +54,7 @@ src:
 	### build web2py_src.zip
 	echo '' > NEWINSTALL
 	mv web2py_src.zip web2py_src_old.zip | echo 'no old'
-	cd ..; zip -r web2py/web2py_src.zip web2py/gluon/*.py web2py/gluon/contrib/* web2py/splashlogo.gif web2py/*.py web2py/README.markdown  web2py/LICENSE web2py/CHANGELOG web2py/NEWINSTALL web2py/VERSION web2py/Makefile web2py/epydoc.css web2py/epydoc.conf web2py/app.example.yaml web2py/logging.example.conf web2py/queue.example.yaml web2py/MANIFEST.in web2py/w2p_apps web2py/w2p_clone web2py/w2p_run web2py/web2py.cio web2py/web2py.gif web2py/scripts/*.sh web2py/scripts/*.py web2py/applications/admin web2py/applications/examples/ web2py/applications/welcome web2py/applications/__init__.py web2py/site-packages/__init__.py web2py/gluon/tests/*.sh web2py/gluon/tests/*.py
+	cd ..; zip -r web2py/web2py_src.zip web2py/gluon/*.py web2py/gluon/contrib/* web2py/extras/* web2py/examples/* web2py/README.markdown  web2py/LICENSE web2py/CHANGELOG web2py/NEWINSTALL web2py/VERSION web2py/MANIFEST.in web2py/scripts/*.sh web2py/scripts/*.py web2py/applications/admin web2py/applications/examples/ web2py/applications/welcome web2py/applications/__init__.py web2py/site-packages/__init__.py web2py/gluon/tests/*.sh web2py/gluon/tests/*.py
 
 mdp:
 	make src

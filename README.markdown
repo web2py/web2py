@@ -33,7 +33,7 @@ That's it!!!
         ...                        > other handlers and example files
         gluon/                     > the core libraries
             contrib/               > third party libraries
-            tests/                 > unittests
+            tests/                 > unittests	
         applications/              > are the apps
             admin/                 > web based IDE
                 ...
@@ -54,6 +54,8 @@ That's it!!!
                 cron/
                 tests/
             ...                    > your own apps
+        examples/                  > example config files, mv .. and customize
+        extras/                    > other files which are required for building web2py
         scripts/                   > utility and installation scripts
         site-packages/             > additional optional modules
 
