@@ -8,17 +8,41 @@ import sys
 import os
 import glob
 
-if os.path.isdir('gluon'):
-    sys.path.append(os.path.realpath('gluon'))
-else:
-    sys.path.append(os.path.realpath('../'))
-
 import unittest
 import datetime
 try:
     import cStringIO as StringIO
 except:
     from io import StringIO
+
+def fix_sys_path():
+    """
+    logic to have always the correct sys.path
+     '', web2py/gluon, web2py/site-packages, web2py/ ...
+    """
+
+    def add_path_first(path):
+        sys.path = [path] + [p for p in sys.path if (
+            not p == path and not p == (path + '/'))]
+
+    path = os.path.dirname(os.path.abspath(__file__))
+
+    if not os.path.isfile(os.path.join(path,'web2py.py')):
+        i = 0
+        while i<10:
+            i += 1
+            if os.path.exists(os.path.join(path,'web2py.py')):
+                break
+            path = os.path.abspath(os.path.join(path, '..'))
+
+    paths = [path,
+             os.path.abspath(os.path.join(path, 'site-packages')),
+             os.path.abspath(os.path.join(path, 'gluon')),
+             '']
+    [add_path_first(path) for path in paths]
+
+fix_sys_path()
+
 from dal import DAL, Field, Table, SQLALL
 
 #for travis-ci
@@ -603,7 +627,7 @@ class TestComputedFields(unittest.TestCase):
         self.assertEqual(db.tt[id].cc,'zx')
         db.tt.drop()
         db.commit()
-        
+
         # test checking that a compute field can refer to earlier-defined computed fields
         db.define_table('tt',
                         Field('aa'),
@@ -612,10 +636,10 @@ class TestComputedFields(unittest.TestCase):
                         Field('dd',compute=lambda r: r.bb + r.cc))
         db.commit()
         id = db.tt.insert(aa="z")
-        self.assertEqual(db.tt[id].dd,'xzx')  
+        self.assertEqual(db.tt[id].dd,'xzx')
         db.tt.drop()
         db.commit()
-        
+
 
 class TestCommonFilters(unittest.TestCase):
 
@@ -634,7 +658,7 @@ class TestCommonFilters(unittest.TestCase):
         self.assertEqual(db(db.t1).count(),2)
         q = db.t2.b==db.t1.id
         self.assertEqual(db(q).count(),2)
-        self.assertEqual(db(q).count(),2)        
+        self.assertEqual(db(q).count(),2)
         self.assertEqual(len(db(db.t1).select(left=db.t2.on(q))),3)
         db.t2._common_filter = lambda q: db.t2.aa<6
         self.assertEqual(db(q).count(),1)
@@ -788,6 +812,29 @@ class TestDALDictImportExport(unittest.TestCase):
         db6.commit()
 
 
+class TestValidateAndInsert(unittest.TestCase):
+
+    def testRun(self):
+        import datetime
+        from gluon.validators import IS_INT_IN_RANGE
+        db = DAL(DEFAULT_URI, check_reserved=['all'])
+        db.define_table('val_and_insert',
+                        Field('aa'),
+                        Field('bb', 'integer',
+                              requires=IS_INT_IN_RANGE(1,5))
+                       )
+        rtn = db.val_and_insert.validate_and_insert(aa='test1', bb=2)
+        self.assertEqual(rtn.id, 1)
+        #errors should be empty
+        self.assertEqual(len(rtn.errors.keys()), 0)
+        #this insert won't pass
+        rtn = db.val_and_insert.validate_and_insert(bb="a")
+        #the returned id should be None
+        self.assertEqual(rtn.id, None)
+        #an error message should be in rtn.errors.bb
+        self.assertNotEqual(rtn.errors.bb, None)
+        #cleanup table
+        db.val_and_insert.drop()
 
 
 
