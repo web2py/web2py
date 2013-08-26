@@ -83,20 +83,20 @@ def step1():
     from gluon.contrib.simplejson import loads
     import urllib
     if not session.themes:
-        url = LAYOUTS_APP + '/default/layouts.json'
-        try:
-            data = urllib.urlopen(url).read()
-            session.themes = ['Default'] + loads(data)['layouts']
-        except:
-            session.themes = ['Default']
+        #url = LAYOUTS_APP + '/default/layouts.json'
+        #try:
+        #    data = urllib.urlopen(url).read()
+        #    session.themes = ['Default'] + loads(data)['layouts']
+        #except:
+        session.themes = ['Default']
     themes = session.themes
     if not session.plugins:
-        url = PLUGINS_APP + '/default/plugins.json'
-        try:
-            data = urllib.urlopen(url).read()
-            session.plugins = loads(data)['plugins']
-        except:
-            session.plugins = []
+        #url = PLUGINS_APP + '/default/plugins.json'
+        #try:
+        #    data = urllib.urlopen(url).read()
+        #    session.plugins = loads(data)['plugins']
+        #except:
+        session.plugins = []
     plugins = [x.split('.')[2] for x in session.plugins]
     response.view = 'wizard/step.html'
     params = dict(session.app['params'])
