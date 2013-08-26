@@ -66,7 +66,7 @@ def start():
                     'gluon/tests',
                     ],
           package_data={'gluon': ['env.tar']},
-          scripts=['w2p_apps', 'w2p_run', 'w2p_clone'],
+#          scripts=['w2p_apps', 'w2p_run', 'w2p_clone'],
           )
 
 if __name__ == '__main__':
