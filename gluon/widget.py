@@ -151,7 +151,7 @@ def presentation(root):
     canvas.pack()
     root.update()
 
-    logo = 'splashlogo.gif'
+    logo = 'extras/icons/splashlogo.gif'
     if os.path.exists(logo):
         img = Tkinter.PhotoImage(file=logo)
         pnl = Tkinter.Label(canvas, image=img, background='white', bd=0)
@@ -199,7 +199,7 @@ class web2pyDialog(object):
         self.menu = Tkinter.Menu(self.root)
         servermenu = Tkinter.Menu(self.menu, tearoff=0)
         httplog = os.path.join(self.options.folder, 'httpserver.log')
-        iconphoto = 'web2py.gif'
+        iconphoto = 'extras/icons/web2py.gif'
         if os.path.exists(iconphoto):
             img = Tkinter.PhotoImage(file=iconphoto)
             self.root.tk.call('wm', 'iconphoto', self.root._w, img)
