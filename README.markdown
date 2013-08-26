@@ -58,7 +58,8 @@ That's it!!!
         extras/                    > other files which are required for building web2py
         scripts/                   > utility and installation scripts
         site-packages/             > additional optional modules
-
+        logs/                      > log files will go in there
+        deposit/                   > a place where web2py stores apps temporarily
 
 ## Issues?
 
