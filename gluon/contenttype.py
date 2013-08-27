@@ -822,6 +822,7 @@ CONTENT_TYPE = {
     '.xsd': 'application/xml',
     '.xsl': 'application/xslt+xml',
     '.xslfo': 'text/x-xslfo',
+    '.xslm' : 'application/vnd.ms-excel.sheet.macroEnabled.12',
     '.xslt': 'application/xslt+xml',
     '.xspf': 'application/xspf+xml',
     '.xul': 'application/vnd.mozilla.xul+xml',
