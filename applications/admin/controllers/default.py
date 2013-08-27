@@ -85,13 +85,11 @@ def safe_write(a, value, b='w'):
 
 
 def get_app(name=None):
-    app = name or request.args(0)
-    folder = request.folder if not request.folder.endswith('/') else request.folder[:-1]
-    if (app and os.path.exists(os.path.join(os.path.dirname(folder),app)) and
+    if (app and os.path.exists(apath(name, r=request)) and 
         (not MULTI_USER_MODE or is_manager() or
          db(db.app.name == app)(db.app.owner == auth.user.id).count())):
         return app
-    session.flash = T('App does not exist or your are not authorized')
+    session.flash = T('App does not exist or you are not authorized')
     redirect(URL('site'))
 
 
