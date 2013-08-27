@@ -23,13 +23,13 @@ from http import HTTP, redirect
 from fileutils import up
 from serializers import json, custom_json
 import settings
-import monkey_patch_pickle
 from utils import web2py_uuid, secure_dumps, secure_loads
 from settings import global_settings
 import hashlib
 import portalocker
 import cPickle
-import pickle
+from pickle import Pickler, MARK, DICT, EMPTY_DICT
+from types import DictionaryType
 import cStringIO
 import datetime
 import re
@@ -54,7 +54,6 @@ try:
 except ImportError:
     have_minify = False
 
-
 try:
     import simplejson as sj #external installed library
 except:
@@ -77,6 +76,23 @@ less_template = '<link href="%s" rel="stylesheet/less" type="text/css" />'
 css_inline = '<style type="text/css">\n%s\n</style>'
 js_inline = '<script type="text/javascript">\n%s\n</script>'
 
+# IMPORTANT:
+# this is required so that pickled dict(s) and class.__dict__
+# are sorted and web2py can detect without ambiguity when a session changes
+class SortingPickler(Pickler):
+    def save_dict(self, obj):
+        self.write(EMPTY_DICT if self.bin else MARK+DICT)
+        self.memoize(obj)
+        self._batch_setitems([(key,obj[key]) for key in sorted(obj)])
+
+SortingPickler.dispatch = copy.copy(Pickler.dispatch)
+SortingPickler.dispatch[DictionaryType] = SortingPickler.save_dict          
+
+def sorting_dumps(obj, protocol=None):
+    file = cStringIO.StringIO()
+    SortingPickler(file, protocol).dump(obj)
+    return file.getvalue()
+# END #####################################################################
 
 def copystream_progress(request, chunk_size=10 ** 5):
     """
@@ -979,7 +995,7 @@ class Session(Storage):
         if not previous_session_hash and not \
                 any(value is not None for value in self.itervalues()):
             return True
-        session_pickled = pickle.dumps(dict(self)) # requires monkey patched pickle
+        session_pickled = sorting_dumps(dict(self))
         session_hash = hashlib.md5(session_pickled).hexdigest()
         if previous_session_hash == session_hash:
             return True
