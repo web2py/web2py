@@ -434,6 +434,10 @@ class TemplateParser(object):
         # Get the filename; filename looks like ``"template.html"``.
         # We need to eval to remove the quotes and get the string type.
         filename = eval(filename, context)
+        
+        # Allow empty filename for conditional extend and include directives.
+        if not filename:
+            return ''
 
         # Get the path of the file on the system.
         filepath = self.path and os.path.join(self.path, filename) or filename
@@ -468,7 +472,8 @@ class TemplateParser(object):
         Extend ``filename``. Anything not declared in a block defined by the
         parent will be placed in the parent templates ``{{include}}`` block.
         """
-        text = self._get_file_text(filename)
+        # If no filename, create a dummy layout with only an {{include}}.
+        text = self._get_file_text(filename) or '%sinclude%s' % tuple(self.delimiters)
 
         # Create out nodes list to send to the parent
         super_nodes = []
