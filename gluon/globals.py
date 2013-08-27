@@ -23,11 +23,13 @@ from http import HTTP, redirect
 from fileutils import up
 from serializers import json, custom_json
 import settings
+import monkey_patch_pickle
 from utils import web2py_uuid, secure_dumps, secure_loads
 from settings import global_settings
 import hashlib
 import portalocker
 import cPickle
+import pickle
 import cStringIO
 import datetime
 import re
@@ -977,7 +979,7 @@ class Session(Storage):
         if not previous_session_hash and not \
                 any(value is not None for value in self.itervalues()):
             return True
-        session_pickled = cPickle.dumps(dict(self))
+        session_pickled = pickle.dumps(dict(self)) # requires monkey patched pickle
         session_hash = hashlib.md5(session_pickled).hexdigest()
         if previous_session_hash == session_hash:
             return True
