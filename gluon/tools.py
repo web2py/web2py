@@ -1304,23 +1304,22 @@ class Auth(object):
         else:
             raise HTTP(404)
 
-    def navbar(self, prefix='Welcome', action=None,
-               separators=(' [ ', ' | ', ' ] '), user_identifier=DEFAULT,
-               referrer_actions=DEFAULT, mode='default'):
-        def Anr(*a,**b):
-            b['_rel']='nofollow'
-            return A(*a,**b)
-        referrer_actions = [] if not referrer_actions else referrer_actions
-        request = current.request
-        asdropdown = (mode == 'dropdown')
+    def navbar(self, mode='Default', action=None, prefix='Welcome', referrer_actions=DEFAULT, user_identifier=DEFAULT):
+        """Navbar with support for more templates
+        This uses some code from the old navbar.
+
+        Keyword arguments:
+        mode -- see options for list of
+
+        """
+        items = [] #Hold all menu items in a list
+        self.bar = '' #The final 
         T = current.T
-        if isinstance(prefix, str):
-            prefix = T(prefix)
-        if prefix:
-            prefix = prefix.strip() + ' '
+        referrer_actions = [] if not referrer_actions else referrer_actions
         if not action:
             action = self.url(self.settings.function)
-        s1, s2, s3 = separators
+        
+        request = current.request
         if URL() == action:
             next = ''
         else:
@@ -1328,8 +1327,22 @@ class Auth(object):
                                                 vars=request.get_vars))
         href = lambda function: '%s/%s%s' % (action, function,
                                              next if referrer_actions is DEFAULT or function in referrer_actions else '')
+        if isinstance(prefix, str):
+            prefix = T(prefix)
+        if prefix:
+            prefix = prefix.strip() + ' '
 
-        if self.user_id:
+        def Anr(*a,**b):
+            b['_rel']='nofollow'
+            return A(*a,**b)
+        
+        if self.user_id: #User is logged in
+            items.append({'name': T('Logout'), 'href': '%s/logout?_next=%s' % (action, urllib.quote(self.settings.logout_next)), 'icon': 'icon-off'})
+            if not 'profile' in self.settings.actions_disabled:
+                items.append({'name': T('Profile'), 'href': href('profile'), 'icon': 'icon-user'})
+            if not 'change_password' in self.settings.actions_disabled:
+                items.append({'name': T('Password'), 'href': href('change_password'), 'icon': 'icon-lock'})
+
             if user_identifier is DEFAULT:
                 user_identifier = '%(first_name)s'
             if callable(user_identifier):
@@ -1340,75 +1353,48 @@ class Auth(object):
                 user_identifier = user_identifier % self.user
             if not user_identifier:
                 user_identifier = ''
-            logout = Anr(T('Logout'), _href='%s/logout?_next=%s' %
-                      (action, urllib.quote(self.settings.logout_next)))
-            profile = Anr(T('Profile'), _href=href('profile'))
-            password = Anr(T('Password'), _href=href('change_password'))
-            bar = SPAN(
-                prefix, user_identifier, s1, logout, s3, _class='auth_navbar')
-
-            if asdropdown:
-                logout = LI(Anr(I(_class='icon-off'), ' ' + T('Logout'), _href='%s/logout?_next=%s' %
-                              (action, urllib.quote(self.settings.logout_next))))  # the space before T('Logout') is intentional. It creates a gap between icon and text
-                profile = LI(Anr(I(_class='icon-user'), ' ' +
-                             T('Profile'), _href=href('profile')))
-                password = LI(Anr(I(_class='icon-lock'), ' ' +
-                              T('Password'), _href=href('change_password')))
-                bar = UL(logout, _class='dropdown-menu')
-                         # logout will be the last item in list
-
-            if not 'profile' in self.settings.actions_disabled:
-                if not asdropdown:
-                    bar.insert(-1, s2)
-                bar.insert(-1, profile)
-            if not 'change_password' in self.settings.actions_disabled:
-                if not asdropdown:
-                    bar.insert(-1, s2)
-                bar.insert(-1, password)
-        else:
-            login = Anr(T('Login'), _href=href('login'))
-            register = Anr(T('Register'), _href=href('register'))
-            retrieve_username = Anr(
-                T('Forgot username?'), _href=href('retrieve_username'))
-            lost_password = Anr(
-                T('Lost password?'), _href=href('request_reset_password'))
-            bar = SPAN(s1, login, s3, _class='auth_navbar')
-
-            if asdropdown:
-                login = LI(Anr(I(_class='icon-off'), ' ' + T('Login'), _href=href('login')))  # the space before T('Login') is intentional. It creates a gap between icon and text
-                register = LI(Anr(I(_class='icon-user'),
-                              ' ' + T('Register'), _href=href('register')))
-                retrieve_username = LI(Anr(I(_class='icon-edit'), ' ' + T(
-                    'Forgot username?'), _href=href('retrieve_username')))
-                lost_password = LI(Anr(I(_class='icon-lock'), ' ' + T(
-                    'Lost password?'), _href=href('request_reset_password')))
-                bar = UL(login, _class='dropdown-menu')
-                         # login will be the last item in list
-
+        else: #User is not logged in
+            items.append({'name': T('Login'), 'href': href('login'), 'icon': 'icon-off'})
             if not 'register' in self.settings.actions_disabled:
-                if not asdropdown:
-                    bar.insert(-1, s2)
-                bar.insert(-1, register)
-            if self.settings.use_username and not 'retrieve_username' \
-                    in self.settings.actions_disabled:
-                if not asdropdown:
-                    bar.insert(-1, s2)
-                bar.insert(-1, retrieve_username)
-            if not 'request_reset_password' \
-                    in self.settings.actions_disabled:
-                if not asdropdown:
-                    bar.insert(-1, s2)
-                bar.insert(-1, lost_password)
+                items.append({'name': T('Register'), 'href': href('register'), 'icon': 'icon-user'})
+            if not 'request_reset_password' in self.settings.actions_disabled:
+                items.append({'name': T('Lost password?'), 'href': href('request_reset_password'), 'icon': 'icon-lock'})
+            if self.settings.use_username and not 'retrieve_username' in self.settings.actions_disabled:
+                items.append({'name': T('Forgot username?'), 'href': href('retrieve_username'), 'icon': 'icon-edit'})
+        
+        def menu(): #For inclusion in MENU
+            self.bar = [(items[0]['name'], False, items[0]['href'], [])]
+            del items[0]
+            for item in items:
+                self.bar[0][3].append((item['name'], False, item['href']))
 
-        if asdropdown:
-            bar.insert(-1, LI('', _class='divider'))
+        def bootstrap(): #Default web2py scaffolding
+            self.bar = UL(LI(Anr(I(_class=items[0]['icon']), ' ' + items[0]['name'], _href=items[0]['href'])), _class='dropdown-menu')
+            del items[0]
+            for item in items:
+                self.bar.insert(-1, LI(Anr(I(_class=item['icon']), ' ' + item['name'], _href=item['href'])))
+            self.bar.insert(-1, LI('', _class='divider'))
             if self.user_id:
-                bar = LI(Anr(prefix, user_identifier, _href='#'),
-                         bar, _class='dropdown')
+                self.bar = LI(Anr(prefix, user_identifier, _href='#'), self.bar, _class='dropdown')
             else:
-                bar = LI(Anr(T('Login'), _href='#'),
-                         bar, _class='dropdown')
-        return bar
+                self.bar = LI(Anr(T('Login'), _href='#'), self.bar, _class='dropdown')
+
+        options = {'asmenu' : menu,
+            'dropdown' : bootstrap
+        } #Define custom modes.
+        try:
+            options[mode]()
+        except KeyError: #KeyError if mode is not in options (do Default)
+            if self.user_id:
+                self.bar = SPAN(prefix, user_identifier, '[', Anr(items[0]['name'], _href=items[0]['href']), ']', _class='auth_navbar')
+            else:
+                self.bar = SPAN('[', Anr(items[0]['name'], _href=items[0]['href']), ']', _class='auth_navbar')
+            del items[0]
+            for item in items:
+                self.bar.insert(-1, ']')
+                self.bar.insert(-1, Anr(item['name'], _href=item['href']))
+
+        return self.bar
 
     def __get_migrate(self, tablename, migrate=True):
 
