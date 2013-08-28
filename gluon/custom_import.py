@@ -119,8 +119,6 @@ class TrackImporter(object):
         globals = globals or {}
         locals = locals or {}
         fromlist = fromlist or []
-        if not hasattr(self.THREAD_LOCAL, '_modules_loaded'):
-            self.THREAD_LOCAL._modules_loaded = set()
         try:
             # Check the date and reload if needed:
             self._update_dates(name, globals, locals, fromlist, level)
@@ -175,16 +173,14 @@ class TrackImporter(object):
             if reload_mod or not date or new_date > date:
                 self._import_dates[file] = new_date
             if reload_mod or (date and new_date > date):
-                if module not in self.THREAD_LOCAL._modules_loaded:
-                    if mod_to_pack:
-                        # Module turning into a package:
-                        mod_name = module.__name__
-                        del sys.modules[mod_name]  # Delete the module
-                        # Reload the module:
-                        NATIVE_IMPORTER(mod_name, globals, locals, [], level)
-                    else:
-                        reload(module)
-                        self.THREAD_LOCAL._modules_loaded.add(module)
+                if mod_to_pack:
+                    # Module turning into a package:
+                    mod_name = module.__name__
+                    del sys.modules[mod_name]  # Delete the module
+                    # Reload the module:
+                    NATIVE_IMPORTER(mod_name, globals, locals, [], level)
+                else:
+                    reload(module)
 
     def _get_module_file(self, module):
         """
