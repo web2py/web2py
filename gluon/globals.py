@@ -682,6 +682,8 @@ class Session(Storage):
         response.session_locked         :
         response.session_masterapp      :
         response.session_new            : a new session obj is being created
+        response.session_hash           : hash of the pickled loaded session
+        response.session_pickled        : picked session
 
     if session in cookie:
 
@@ -861,6 +863,9 @@ class Session(Storage):
         if self.flash:
             (response.flash, self.flash) = (self.flash, None)
 
+        session_pickled = cPickle.dumps(self)
+        response.session_hash = hashlib.md5(session_pickled).hexdigest()
+
     def renew(self, clear_session=False):
 
         if clear_session:
@@ -943,10 +948,7 @@ class Session(Storage):
                     response.session_cookie_expires
 
     def clear(self):
-        previous_session_hash = self.pop('_session_hash', None)
         Storage.clear(self)
-        if previous_session_hash:
-            self._session_hash = previous_session_hash
 
     def is_new(self):
         if self._start_timestamp:
@@ -972,7 +974,7 @@ class Session(Storage):
         self._forget = True
 
     def _try_store_in_cookie(self, request, response):
-        if self._forget or self._unchanged():
+        if self._forget or self._unchanged(response):
             return False
         name = response.session_data_name
         compression_level = response.session_cookie_compression_level
@@ -988,25 +990,18 @@ class Session(Storage):
             rcookies[name]['expires'] = expires.strftime(FMT)
         return True
 
-    def _unchanged(self):
-        previous_session_hash = self.pop('_session_hash', None)
-        if not previous_session_hash and not \
-                any(value is not None for value in self.itervalues()):
-            return True
-        session_pickled = sorting_dumps(dict(self))
+    def _unchanged(self,response):
+        session_pickled = cPickle.dumps(self)
+        response.session_pickled = session_pickled
         session_hash = hashlib.md5(session_pickled).hexdigest()
-        if previous_session_hash == session_hash:
-            return True
-        else:
-            self._session_hash = session_hash
-            return False
+        return response.session_hash == session_hash
 
     def _try_store_in_db(self, request, response):
         # don't save if file-based sessions,
         # no session id, or session being forgotten
         # or no changes to session
 
-        if not response.session_db_table or self._forget or self._unchanged():
+        if not response.session_db_table or self._forget or self._unchanged(response):
             if (not response.session_db_table and
                 global_settings.db_sessions is not True and
                 response.session_masterapp in global_settings.db_sessions):
@@ -1020,10 +1015,12 @@ class Session(Storage):
         else:
             unique_key = response.session_db_unique_key
 
+        session_pickled = response.session_pickled or cPickle.dumps(self)
+
         dd = dict(locked=False,
                   client_ip=response.session_client,
                   modified_datetime=request.now,
-                  session_data=cPickle.dumps(dict(self)),
+                  session_data=session_pickled,
                   unique_key=unique_key)
         if record_id:
             if not table._db(table.id==record_id).update(**dd):
@@ -1045,18 +1042,18 @@ class Session(Storage):
 
     def _try_store_in_file(self, request, response):
         try:
-            if not response.session_id or self._forget or self._unchanged():
+            if not response.session_id or self._forget or self._unchanged(response):
                 return False
             if response.session_new or not response.session_file:
                 # Tests if the session sub-folder exists, if not, create it
                 session_folder = os.path.dirname(response.session_filename)
-                if not os.path.exists(session_folder):
-                    os.mkdir(session_folder)
+                if not os.path.exists(session_folder): os.mkdir(session_folder)
                 response.session_file = open(response.session_filename, 'wb')
                 portalocker.lock(response.session_file, portalocker.LOCK_EX)
                 response.session_locked = True
             if response.session_file:
-                cPickle.dump(dict(self), response.session_file)
+                session_pickled = response.session_pickled or cPickle.dumps(self)
+                response.session_file.write(session_pickled)
                 response.session_file.truncate()
         finally:
             self._close(response)
