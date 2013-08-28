@@ -86,7 +86,7 @@ class SortingPickler(Pickler):
         self._batch_setitems([(key,obj[key]) for key in sorted(obj)])
 
 SortingPickler.dispatch = copy.copy(Pickler.dispatch)
-SortingPickler.dispatch[DictionaryType] = SortingPickler.save_dict          
+SortingPickler.dispatch[DictionaryType] = SortingPickler.save_dict
 
 def sorting_dumps(obj, protocol=None):
     file = cStringIO.StringIO()
@@ -975,6 +975,7 @@ class Session(Storage):
 
     def _try_store_in_cookie(self, request, response):
         if self._forget or self._unchanged(response):
+            self.save_session_id_cookie()
             return False
         name = response.session_data_name
         compression_level = response.session_cookie_compression_level
@@ -1006,6 +1007,7 @@ class Session(Storage):
                 global_settings.db_sessions is not True and
                 response.session_masterapp in global_settings.db_sessions):
                 global_settings.db_sessions.remove(response.session_masterapp)
+            self.save_session_id_cookie()
             return False
 
         table = response.session_db_table
@@ -1043,6 +1045,7 @@ class Session(Storage):
     def _try_store_in_file(self, request, response):
         try:
             if not response.session_id or self._forget or self._unchanged(response):
+                self.save_session_id_cookie()
                 return False
             if response.session_new or not response.session_file:
                 # Tests if the session sub-folder exists, if not, create it
