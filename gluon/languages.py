@@ -423,6 +423,10 @@ class lazyT(object):
             return lazyT(self)
         return lazyT(self.m, symbols, self.T, self.f, self.t, self.M)
 
+def pickle_lazyT(c):
+    return str, (c.xml(),)
+
+copy_reg.pickle(lazyT, pickle_lazyT)
 
 class translator(object):
     """
@@ -925,18 +929,6 @@ def findT(path, language=DEFAULT_LANGUAGE):
             DEFAULT_LANGUAGE_NAME if language in ('default', DEFAULT_LANGUAGE)
             else sentences['!langcode!'])
     write_dict(lang_file, sentences)
-
-### important to allow safe session.flash=T(....)
-
-
-def lazyT_unpickle(data):
-    return marshal.loads(data)
-
-
-def lazyT_pickle(data):
-    return lazyT_unpickle, (marshal.dumps(str(data)),)
-copy_reg.pickle(lazyT, lazyT_pickle, lazyT_unpickle)
-
 
 def update_all_languages(application_path):
     path = pjoin(application_path, 'languages/')
