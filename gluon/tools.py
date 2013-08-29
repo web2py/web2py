@@ -1304,44 +1304,55 @@ class Auth(object):
         else:
             raise HTTP(404)
 
-    def navbar(self, mode='Default', action=None, prefix='Welcome', referrer_actions=DEFAULT, user_identifier=DEFAULT):
-        """Navbar with support for more templates
+    def navbar(self, mode='Default', action=None, prefix='Welcome',
+               referrer_actions=DEFAULT, user_identifier=DEFAULT):
+        """ Navbar with support for more templates
         This uses some code from the old navbar.
 
         Keyword arguments:
         mode -- see options for list of
 
         """
-        items = [] #Hold all menu items in a list
-        self.bar = '' #The final 
+        items = []  # Hold all menu items in a list
+        self.bar = ''  # The final
         T = current.T
         referrer_actions = [] if not referrer_actions else referrer_actions
         if not action:
             action = self.url(self.settings.function)
-        
+
         request = current.request
         if URL() == action:
             next = ''
         else:
             next = '?_next=' + urllib.quote(URL(args=request.args,
                                                 vars=request.get_vars))
-        href = lambda function: '%s/%s%s' % (action, function,
-                                             next if referrer_actions is DEFAULT or function in referrer_actions else '')
+        href = lambda function: '%s/%s%s' % (action, function, next
+                                             if referrer_actions is DEFAULT
+                                             or function in referrer_actions
+                                             else '')
         if isinstance(prefix, str):
             prefix = T(prefix)
         if prefix:
             prefix = prefix.strip() + ' '
 
-        def Anr(*a,**b):
-            b['_rel']='nofollow'
-            return A(*a,**b)
-        
-        if self.user_id: #User is logged in
-            items.append({'name': T('Logout'), 'href': '%s/logout?_next=%s' % (action, urllib.quote(self.settings.logout_next)), 'icon': 'icon-off'})
+        def Anr(*a, **b):
+            b['_rel'] = 'nofollow'
+            return A(*a, **b)
+
+        if self.user_id:  # User is logged in
+            logout_next = self.settings.logout_next
+            items.append({'name': T('Logout'),
+                          'href': '%s/logout?_next=%s' % (action,
+                                                          urllib.quote(
+                                                          logout_next)),
+                          'icon': 'icon-off'})
             if not 'profile' in self.settings.actions_disabled:
-                items.append({'name': T('Profile'), 'href': href('profile'), 'icon': 'icon-user'})
+                items.append({'name': T('Profile'), 'href': href('profile'),
+                              'icon': 'icon-user'})
             if not 'change_password' in self.settings.actions_disabled:
-                items.append({'name': T('Password'), 'href': href('change_password'), 'icon': 'icon-lock'})
+                items.append({'name': T('Password'),
+                              'href': href('change_password'),
+                              'icon': 'icon-lock'})
 
             if user_identifier is DEFAULT:
                 user_identifier = '%(first_name)s'
@@ -1353,42 +1364,144 @@ class Auth(object):
                 user_identifier = user_identifier % self.user
             if not user_identifier:
                 user_identifier = ''
-        else: #User is not logged in
-            items.append({'name': T('Login'), 'href': href('login'), 'icon': 'icon-off'})
+        else:  # User is not logged in
+            items.append({'name': T('Login'), 'href': href('login'),
+                          'icon': 'icon-off'})
             if not 'register' in self.settings.actions_disabled:
-                items.append({'name': T('Register'), 'href': href('register'), 'icon': 'icon-user'})
+                items.append({'name': T('Register'), 'href': href('register'),
+                              'icon': 'icon-user'})
             if not 'request_reset_password' in self.settings.actions_disabled:
-                items.append({'name': T('Lost password?'), 'href': href('request_reset_password'), 'icon': 'icon-lock'})
-            if self.settings.use_username and not 'retrieve_username' in self.settings.actions_disabled:
-                items.append({'name': T('Forgot username?'), 'href': href('retrieve_username'), 'icon': 'icon-edit'})
-        
-        def menu(): #For inclusion in MENU
+                items.append({'name': T('Lost password?'),
+                              'href': href('request_reset_password'),
+                              'icon': 'icon-lock'})
+            if (self.settings.use_username and not
+                    'retrieve_username' in self.settings.actions_disabled):
+                items.append({'name': T('Forgot username?'),
+                             'href': href('retrieve_username'),
+                             'icon': 'icon-edit'})
+
+        def menu():  # For inclusion in MENU
             self.bar = [(items[0]['name'], False, items[0]['href'], [])]
             del items[0]
             for item in items:
                 self.bar[0][3].append((item['name'], False, item['href']))
 
-        def bootstrap(): #Default web2py scaffolding
-            self.bar = UL(LI(Anr(I(_class=items[0]['icon']), ' ' + items[0]['name'], _href=items[0]['href'])), _class='dropdown-menu')
+        def bootstrap():  # Default web2py scaffolding
+            self.bar = UL(LI(Anr(I(_class=items[0]['icon']),
+                                 ' ' + items[0]['name'],
+                                 _href=items[0]['href'])),
+                          _class='dropdown-menu')
             del items[0]
             for item in items:
-                self.bar.insert(-1, LI(Anr(I(_class=item['icon']), ' ' + item['name'], _href=item['href'])))
+                self.bar.insert(-1, LI(Anr(I(_class=item['icon']),
+                                           ' ' + item['name'],
+                                           _href=item['href'])))
             self.bar.insert(-1, LI('', _class='divider'))
             if self.user_id:
-                self.bar = LI(Anr(prefix, user_identifier, _href='#'), self.bar, _class='dropdown')
+                self.bar = LI(Anr(prefix, user_identifier, _href='#'),
+                              self.bar,
+                              _class='dropdown')
             else:
-                self.bar = LI(Anr(T('Login'), _href='#'), self.bar, _class='dropdown')
+                self.bar = LI(Anr(T('Login'), _href='#'), self.bar,
+                              _class='dropdown')
 
-        options = {'asmenu' : menu,
-            'dropdown' : bootstrap
-        } #Define custom modes.
+        def bare():
+            """ In order to do advanced customization we only need the
+            prefix, the user_identifier and the href attribute of items
+
+            Example:
+
+            # in module custom_layout.py
+            from gluon import *
+            def navbar(auth_navbar):
+                bar = auth_navbar
+                user = bar["user"]
+
+                if not user:
+                    btn_login = A(current.T("Login"),
+                                  _href=bar["login"],
+                                  _class="btn btn-success",
+                                  _rel="nofollow")
+                    btn_register = A(current.T("Sign up"),
+                                     _href=bar["register"],
+                                     _class="btn btn-primary",
+                                     _rel="nofollow")
+                    return DIV(btn_register, btn_login, _class="btn-group")
+                else:
+                    toggletext = "%s back %s" % (bar["prefix"], user)
+                    toggle = A(toggletext,
+                               _href="#",
+                               _class="dropdown-toggle",
+                               _rel="nofollow",
+                               **{"_data-toggle": "dropdown"})
+                    li_profile = LI(A(I(_class="icon-user"), ' ',
+                                      current.T("Account details"),
+                                      _href=bar["profile"], _rel="nofollow"))
+                    li_custom = LI(A(I(_class="icon-book"), ' ',
+                                     current.T("My Agenda"),
+                                     _href="#", rel="nofollow"))
+                    li_logout = LI(A(I(_class="icon-off"), ' ',
+                                     current.T("logout"),
+                                     _href=bar["logout"], _rel="nofollow"))
+                    dropdown = UL(li_profile,
+                                  li_custom,
+                                  LI('', _class="divider"),
+                                  li_logout,
+                                  _class="dropdown-menu", _role="menu")
+
+                    return LI(toggle, dropdown, _class="dropdown")
+
+            # in models db.py
+            import custom_layout as custom
+
+            # in layout.html
+            <ul id="navbar" class="nav pull-right">
+                {{='auth' in globals() and \
+                  custom.navbar(auth.navbar(mode='bare')) or ''}}</ul>
+
+            """
+            bare = {}
+
+            bare['prefix'] = prefix
+            bare['user'] = user_identifier if self.user_id else None
+
+            for i in items:
+                if i['name'] == T('Login'):
+                    k = 'login'
+                elif i['name'] == T('Register'):
+                    k = 'register'
+                elif i['name'] == T('Lost password?'):
+                    k = 'request_reset_password'
+                elif i['name'] == T('Forgot username?'):
+                    k = 'retrieve_username'
+                elif i['name'] == T('Logout'):
+                    k = 'logout'
+                elif i['name'] == T('Profile'):
+                    k = 'profile'
+                elif i['name'] == T('Password'):
+                    k = 'change_password'
+
+                bare[k] = i['href']
+
+            self.bar = bare
+
+        options = {'asmenu': menu,
+                   'dropdown': bootstrap,
+                   'bare': bare
+                   }  # Define custom modes.
+
         try:
             options[mode]()
-        except KeyError: #KeyError if mode is not in options (do Default)
+        except KeyError:  # KeyError if mode is not in options (do Default)
             if self.user_id:
-                self.bar = SPAN(prefix, user_identifier, '[', Anr(items[0]['name'], _href=items[0]['href']), ']', _class='auth_navbar')
+                self.bar = SPAN(prefix, user_identifier, '[',
+                                Anr(items[0]['name'],
+                                _href=items[0]['href']), ']',
+                                _class='auth_navbar')
             else:
-                self.bar = SPAN('[', Anr(items[0]['name'], _href=items[0]['href']), ']', _class='auth_navbar')
+                self.bar = SPAN('[', Anr(items[0]['name'],
+                                _href=items[0]['href']), ']',
+                                _class='auth_navbar')
             del items[0]
             for item in items:
                 self.bar.insert(-1, ']')
