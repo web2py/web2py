@@ -454,8 +454,10 @@ def wsgibase(environ, responder):
                 serve_controller(request, response, session)
 
             except HTTP, http_response:
-
-                if static_file:
+                
+                # if this is a static file
+                # or the application does not exist
+                if static_file or not hasattr(current,'request'):
                     return http_response.to(responder, env=env)
 
                 if request.body:
