@@ -455,58 +455,57 @@ def wsgibase(environ, responder):
 
             except HTTP, http_response:
                 
-                # if this is a static file
-                # or the application does not exist
-                if static_file or not hasattr(current,'request'):
+                if static_file:
                     return http_response.to(responder, env=env)
 
                 if request.body:
                     request.body.close()
 
-                # ##################################################
-                # on success, try store session in database
-                # ##################################################
-                session._try_store_in_db(request, response)
+                if hasattr(current,'request'):
 
-                # ##################################################
-                # on success, commit database
-                # ##################################################
+                    # ##################################################
+                    # on success, try store session in database
+                    # ##################################################
+                    session._try_store_in_db(request, response)
 
-                if response.do_not_commit is True:
-                    BaseAdapter.close_all_instances(None)
-                # elif response._custom_commit:
-                #     response._custom_commit()
-                elif response.custom_commit:
-                    BaseAdapter.close_all_instances(response.custom_commit)
-                else:
-                    BaseAdapter.close_all_instances('commit')
+                    # ##################################################
+                    # on success, commit database
+                    # ##################################################
+                    
+                    if response.do_not_commit is True:
+                        BaseAdapter.close_all_instances(None)
+                    elif response.custom_commit:
+                        BaseAdapter.close_all_instances(response.custom_commit)
+                    else:
+                        BaseAdapter.close_all_instances('commit')
 
-                # ##################################################
-                # if session not in db try store session on filesystem
-                # this must be done after trying to commit database!
-                # ##################################################
+                    # ##################################################
+                    # if session not in db try store session on filesystem
+                    # this must be done after trying to commit database!
+                    # ##################################################
 
-                session._try_store_in_cookie_or_file(request, response)
+                    session._try_store_in_cookie_or_file(request, response)
 
-                if request.cid:
-                    if response.flash:
-                        http_response.headers['web2py-component-flash'] = \
-                            urllib2.quote(xmlescape(response.flash)\
-                                              .replace('\n',''))
-                    if response.js:
-                        http_response.headers['web2py-component-command'] = \
-                            urllib2.quote(response.js.replace('\n',''))
+                    if request.cid:
+                        if response.flash:
+                            http_response.headers['web2py-component-flash'] = \
+                                urllib2.quote(xmlescape(response.flash)\
+                                                  .replace('\n',''))
+                        if response.js:
+                            http_response.headers['web2py-component-command'] = \
+                                urllib2.quote(response.js.replace('\n',''))
+                            
+                    # ##################################################
+                    # store cookies in headers
+                    # ##################################################
 
-                # ##################################################
-                # store cookies in headers
-                # ##################################################
+                    rcookies = response.cookies
+                    if session._forget and response.session_id_name in rcookies:
+                        del rcookies[response.session_id_name]
+                    elif session._secure:
+                        rcookies[response.session_id_name]['secure'] = True
+                    http_response.cookies2headers(rcookies)
 
-                rcookies = response.cookies
-                if session._forget and response.session_id_name in rcookies:
-                    del rcookies[response.session_id_name]
-                elif session._secure:
-                    rcookies[response.session_id_name]['secure'] = True
-                http_response.cookies2headers(rcookies)
                 ticket = None
 
             except RestrictedError, e:
