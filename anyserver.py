@@ -189,7 +189,7 @@ def run(servername, ip, port, softcron=True, logging=False, profiler=None):
     if logging:
         application = gluon.main.appfactory(wsgiapp=gluon.main.wsgibase,
                                             logfilename='httpserver.log',
-                                            profilerfilename=profiler)
+                                            profiler_dir=profiler)
     else:
         application = gluon.main.wsgibase
     if softcron:
@@ -319,8 +319,8 @@ def main():
     parser.add_option('-P',
                       '--profiler',
                       default=False,
-                      dest='profiler',
-                      help='profiler filename')
+                      dest='profiler_dir',
+                      help='profiler dir')
     servers = ', '.join(x for x in dir(Servers) if not x[0] == '_')
     parser.add_option('-s',
                       '--server',
@@ -346,7 +346,7 @@ def main():
     print 'starting %s on %s:%s...' % (
         options.server, options.ip, options.port)
     run(options.server, options.ip, options.port,
-        logging=options.logging, profiler=options.profiler)
+        logging=options.logging, profiler=options.profiler_dir)
 
 if __name__ == '__main__':
     main()
