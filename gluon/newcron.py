@@ -246,6 +246,7 @@ class cronlauncher(threading.Thread):
                                 shell=self.shell)
         _cron_subprocs.append(proc)
         (stdoutdata, stderrdata) = proc.communicate()
+        _cron_subprocs.remove(proc)
         if proc.returncode != 0:
             logger.warning(
                 'WEB2PY CRON Call returned code %s:\n%s' %
