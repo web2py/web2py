@@ -1549,9 +1549,11 @@ class Auth(object):
         does automatically.
 
         """
-        tables = [table for table in tables]
         for table in tables:
-            if '_id' in table.fields() and 'modified_on' in table.fields() and not current_record in table.fields():
+            fieldnames = table.fields()
+            if ('id' in fieldnames and 
+                'modified_on' in fieldnames and 
+                not current_record in fieldnames):
                 table._enable_record_versioning(
                     archive_db=archive_db,
                     archive_name=archive_names,
