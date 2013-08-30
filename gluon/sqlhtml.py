@@ -2073,14 +2073,13 @@ class SQLFORM(FORM):
             order = request.vars.order or ''
             if sortable:
                 if order and not order == 'None':
-                    if order[:1] == '~':
-                        sign, rorder = '~', order[1:]
+                    otablename, ofieldname = order.split('~')[-1].split('.', 1)
+                    sort_field = db[otablename][ofieldname]
+                    exception = sort_field.type in ('date', 'datetime', 'time')
+                    if exception:
+                        orderby = (order[:1] == '~' and sort_field) or ~sort_field
                     else:
-                        sign, rorder = '', order
-                    tablename, fieldname = rorder.split('.', 1)
-                    orderby = db[tablename][fieldname]
-                    if sign == '~':
-                        orderby = ~orderby
+                        orderby = (order[:1] == '~' and ~sort_field) or sort_field
 
             expcolumns = [str(f) for f in columns]
             if export_type.endswith('with_hidden_cols'):
@@ -2095,7 +2094,8 @@ class SQLFORM(FORM):
                     try:
                         dbset = dbset(SQLFORM.build_query(
                             fields, request.vars.get('keywords', '')))
-                        rows = dbset.select(cacheable=True, *expcolumns)
+                        rows = dbset.select(left=left, orderby=orderby,
+                                            cacheable=True, *expcolumns)
                     except Exception, e:
                         response.flash = T('Internal Error')
                         rows = []
