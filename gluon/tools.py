@@ -5629,7 +5629,7 @@ class Wiki(object):
         return dict(content=content)
 
     def media(self, id):
-        request, db = current.request, self.auth.db
+        request, response, db = current.request, current.response, self.auth.db
         media = db.wiki_media(id)
         if media:
             if self.settings.manage_permissions:
@@ -5637,7 +5637,15 @@ class Wiki(object):
                 if not self.can_read(page):
                     return self.not_authorized(page)
             request.args = [media.filename]
-            return current.response.download(request, db)
+            m = response.download(request, db)
+            current.session.forget() # get rid of the cookie
+            response.headers['Last-Modified'] = \
+                request.utcnow.strftime("%a, %d %b %Y %H:%M:%S GMT")
+            if 'Content-Disposition' in response.headers:
+                del response.headers['Content-Disposition']
+            response.headers['Pragma'] = 'cache'
+            response.headers['Cache-Control'] = 'private'
+            return m
         else:
             raise HTTP(404)
 
