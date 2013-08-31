@@ -122,6 +122,7 @@ mkdir ./web-apps
 cd ./web-apps
 curl -O http://www.web2py.com/examples/static/web2py_src.zip
 unzip web2py_src.zip
+mv web2py/handlers/wsgihandler.py web2py/wsgihandler.py
 
 echo "Set the ownership for web2py application to uwsgi"
 chown -R uwsgi /opt/web-apps/web2py

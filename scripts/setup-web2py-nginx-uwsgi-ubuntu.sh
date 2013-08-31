@@ -169,9 +169,8 @@ mkdir /home/www-data
 cd /home/www-data
 wget http://web2py.com/examples/static/web2py_src.zip
 unzip web2py_src.zip
+mv web2py/handlers/wsgihandler.py web2py/wsgihandler.py
 rm web2py_src.zip
-# Download latest version of sessions2trash.py
-wget http://web2py.googlecode.com/hg/scripts/sessions2trash.py -O /home/www-data/web2py/scripts/sessions2trash.py
 chown -R www-data:www-data web2py
 cd /home/www-data/web2py
 sudo -u www-data python -c "from gluon.main import save_password; save_password('$PW',443)"
