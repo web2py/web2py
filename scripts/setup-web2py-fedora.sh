@@ -159,6 +159,7 @@ fi
 
 wget http://web2py.com/examples/static/web2py_src.zip
 unzip web2py_src.zip
+mv web2py/handlers/wsgihandler.py web2py/wsgihandler.py
 chown -R apache:apache web2py
 
 ###
