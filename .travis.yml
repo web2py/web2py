@@ -6,17 +6,17 @@ python:
   - '2.7'
   - 'pypy'
 install:
-  - pip install -e . --use-mirrors
+  - pip install -e .
 env:
   - DB=sqlite:memory
   - DB=mysql://root:@localhost/test_w2p
   - DB=postgres://postgres:@localhost/test_w2p
 before_script:
-  - if [[ $TRAVIS_PYTHON_VERSION != '2.7' ]]; then pip install --use-mirrors unittest2; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --use-mirrors coverage; fi;
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --use-mirrors python-coveralls; fi
-  - if [[ $DB == postgres* ]]; then pip install --use-mirrors psycopg2; fi;
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then pip install --use-mirrors pysqlite; fi
+  - if [[ $TRAVIS_PYTHON_VERSION != '2.7' ]]; then pip install unittest2; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install coverage; fi;
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install python-coveralls; fi
+  - if [[ $DB == postgres* ]]; then pip install psycopg2; fi;
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then pip install pysqlite; fi
   - if [[ $DB == mysql* ]]; then mysql -e 'create database test_w2p;'; fi
   - if [[ $DB == postgres* ]]; then psql -c 'create database test_w2p;' -U postgres; fi
   #Temporal solution to travis issue #155
