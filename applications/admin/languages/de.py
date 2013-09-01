@@ -248,6 +248,7 @@
 'Next Edit Point': 'nächster Bearbeitungsschritt',
 'NO': 'NEIN',
 'No databases in this application': 'Keine Datenbank in dieser Anwendung',
+'no package selected': 'no package selected',
 'No ticket_storage.txt found under /private folder': 'No ticket_storage.txt found under /private folder',
 'online designer': 'online designer',
 'or alternatively': 'or alternatively',
