@@ -6943,9 +6943,11 @@ def sqlhtml_validators(field):
                                            referenced._format,multiple=True)
         else:
             requires = validators.IS_IN_DB(db,referenced._id,
-                                           multiple=True)
+                                           multiple=True)        
         if field.unique:
             requires._and = validators.IS_NOT_IN_DB(db,field)
+        if not field.notnull:
+            requires = validators.IS_EMPTY_OR(requires)
         return requires
     elif field_type.startswith('list:'):
         def repr_list(values,row=None): return', '.join(str(v) for v in (values or []))
