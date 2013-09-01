@@ -360,12 +360,21 @@ def get_session(request, other_application='admin'):
         raise KeyError
     try:
         session_id = request.cookies['session_id_' + other_application].value
-        osession = storage.load_storage(os.path.join(
-            up(request.folder), other_application, 'sessions', session_id))
+        session_filename = os.path.join(
+            up(request.folder), other_application, 'sessions', session_id)
+        osession = storage.load_storage(session_filename)
     except Exception, e:
         osession = storage.Storage()
     return osession
 
+def set_session(request, session, other_application='admin'):
+    """ checks that user is authorized to access other_application"""
+    if request.application == other_application:
+        raise KeyError
+    session_id = request.cookies['session_id_' + other_application].value
+    session_filename = os.path.join(
+        up(request.folder), other_application, 'sessions', session_id)
+    storage.save_storage(session,session_filename)
 
 def check_credentials(request, other_application='admin',
                       expiration=60 * 60, gae_login=True):
@@ -381,9 +390,14 @@ def check_credentials(request, other_application='admin',
         else:
             return False
     else:
-        dt = time.time() - expiration
+        t0 = time.time()
+        dt = t0 - expiration
         s = get_session(request, other_application)
-        return (s.authorized and s.last_time and s.last_time > dt)
+        r = (s.authorized and s.last_time and s.last_time > dt)
+        if r:
+            s.last_time = t0
+            set_session(request,s,other_application)
+        return r
 
 
 def fix_newlines(path):
