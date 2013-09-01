@@ -8881,24 +8881,31 @@ class Table(object):
 
         first = True
         unique_idx = None
-        for line in reader:
+        for lineno, line in enumerate(reader):
             if not line:
                 break
             if not colnames:
+                # assume this is the first line of the input, contains colnames
                 colnames = [x.split('.',1)[-1] for x in line][:len(line)]
                 cols, cid = [], None
                 for i,colname in enumerate(colnames):
                     if is_id(colname):
                         cid = i
-                    else:
-                        cols.append(i)
+                    elif colname in self.fields:
+                        cols.append((i,self[colname]))
                     if colname == unique:
                         unique_idx = i
             else:
-                items = [fix(self[colnames[i]], line[i], id_map, id_offset) \
-                             for i in cols if colnames[i] in self.fields]
-
-                if not id_map and cid is not None and id_offset is not None and not unique_idx:
+                # every other line contains instead data
+                items = []
+                for i, field in cols:
+                    try:
+                        items.append(fix(field, line[i], id_map, id_offset))
+                    except ValueError:
+                        raise RuntimeError("Unable to parse line:%s field:%s value:'%s'"
+                                           % (lineno+1,field,line[i]))
+                    
+                if not (id_map or cid is None or id_offset is None or unique_idx):
                     csv_id = long(line[cid])
                     curr_id = self.insert(**dict(items))
                     if first:
@@ -8906,10 +8913,8 @@ class Table(object):
                         # First curr_id is bigger than csv_id,
                         # then we are not restoring but
                         # extending db table with csv db table
-                        if curr_id>csv_id:
-                            id_offset[self._tablename] = curr_id-csv_id
-                        else:
-                            id_offset[self._tablename] = 0
+                        id_offset[self._tablename] = (curr_id-csv_id) \
+                            if curr_id>csv_id else 0
                     # create new id until we get the same as old_id+offset
                     while curr_id<csv_id+id_offset[self._tablename]:
                         self._db(self._db[self][colnames[cid]] == curr_id).delete()
