@@ -759,18 +759,18 @@ class TestDALDictImportExport(unittest.TestCase):
 
         mpfc = "Monty Python's Flying Circus"
         dbdict4 = {"uri": DEFAULT_URI,
-                   "tables":[{"tablename": "staff",
+                   "tables":[{"tablename": "tvshow",
+                              "fields": [{"fieldname": "name",
+                                          "default":mpfc},
+                                         {"fieldname": "rating",
+                                          "type":"double"}]},
+                             {"tablename": "staff",
                               "fields": [{"fieldname": "name",
                                           "default":"Michael"},
                                          {"fieldname": "food",
                                           "default":"Spam"},
                                          {"fieldname": "tvshow",
-                                          "type": "reference tvshow"}]},
-                             {"tablename": "tvshow",
-                              "fields": [{"fieldname": "name",
-                                          "default":mpfc},
-                                         {"fieldname": "rating",
-                                          "type":"double"}]}]}
+                                          "type": "reference tvshow"}]}]}
         db4 = DAL(**dbdict4)
         assert "staff" in db4.tables
         assert "name" in db4.staff
