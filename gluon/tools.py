@@ -3585,7 +3585,8 @@ class Auth(object):
              templates=None,
              migrate=True,
              controller=None,
-             function=None):
+             function=None,
+             force_render=False):
 
         if controller and function: resolve = False
 
@@ -3609,7 +3610,7 @@ class Auth(object):
         if resolve:
             action = str(current.request.args(0)).startswith("_")
             if slug and not action:
-                wiki = self._wiki.read(slug)
+                wiki = self._wiki.read(slug,force_render)
                 if isinstance(wiki, dict) and wiki.has_key('content'):
                     # We don't want to return a dict object, just the wiki
                     wiki = wiki['content']
@@ -5190,7 +5191,7 @@ class Wiki(object):
         controller, function, args = items[0], items[1], items[2:]
         return LOAD(controller, function, args=args, ajax=True).xml()
 
-    def get_render(self):
+    def get_renderer(self):
         if isinstance(self.settings.render, basestring):
             r = getattr(self, "%s_render" % self.settings.render)
         elif callable(self.settings.render):
@@ -5251,7 +5252,7 @@ class Wiki(object):
                               default=[Wiki.everybody]),
                         Field('changelog'),
                         Field('html', 'text',
-                              compute=self.get_render(),
+                              compute=self.get_renderer(),
                               readable=False, writable=False),
                         auth.signature],
                     'vars':{'format':'%(title)s', 'migrate':migrate}}),
@@ -5404,7 +5405,7 @@ class Wiki(object):
         elif zero == '_cloud':
             return self.cloud()
         elif zero == '_preview':
-            return self.preview(self.get_render())
+            return self.preview(self.get_renderer())
 
     def first_paragraph(self, page):
         if not self.can_read(page):
@@ -5418,7 +5419,7 @@ class Wiki(object):
     def fix_hostname(self, body):
         return (body or '').replace('://HOSTNAME', '://%s' % self.host)
 
-    def read(self, slug):
+    def read(self, slug, force_render=False):
         if slug in '_cloud':
             return self.cloud()
         elif slug in '_search':
@@ -5433,10 +5434,12 @@ class Wiki(object):
                 url = URL(args=('_edit', slug))
                 return dict(content=A('Create page "%s"' % slug, _href=url, _class="btn"))
             else:
+                html = page.html if not force_render else self.get_renderer(page)
+                content = XML(self.fix_hostname(html))
                 return dict(title=page.title,
                             slug=page.slug,
                             page=page,
-                            content=XML(self.fix_hostname(page.html)),
+                            content=content,
                             tags=page.tags,
                             created_on=page.created_on,
                             modified_on=page.modified_on)
