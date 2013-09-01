@@ -5196,8 +5196,13 @@ class Wiki(object):
             r = getattr(self, "%s_render" % self.settings.render)
         elif callable(self.settings.render):
             r = self.settings.render
+        elif isinstance(self.settings.render, dict):
+            return lambda page: self.settings.render.get(page.render,
+                getattr(self,
+                    "%s_render" % (page.render or 'markmin')))(page)
         else:
-            raise ValueError("Invalid render type %s" % type(render))
+            raise ValueError(
+                "Invalid render type %s" % type(self.settings.render))
         return r
 
     def __init__(self, auth, env=None, render='markmin',
@@ -5208,7 +5213,24 @@ class Wiki(object):
 
         settings = self.settings = auth.settings.wiki
 
-        # render: "markmin", "html", ..., <function>
+        """render argument options:
+                - "markmin"
+                - "html"
+                - <function>
+                    Sets a custom render function
+                - dict(html=<function>, markmin=...):
+                    dict(...) allows multiple custom render functions
+                - "multiple"
+                    Is the same as {}. It enables per-record formats
+                    using builtins
+        """
+        engines = set(['markmin', 'html'])
+        show_engine = False
+        if render == "multiple":
+            render = {}
+        if isinstance(render, dict):
+            [engines.add(key) for key in render]
+            show_engine = True
         settings.render = render
         perms = settings.manage_permissions = manage_permissions
 
@@ -5254,6 +5276,11 @@ class Wiki(object):
                         Field('html', 'text',
                               compute=self.get_renderer(),
                               readable=False, writable=False),
+                        Field('render', default="markmin",
+                              readable=show_engine,
+                              writable=show_engine,
+                              requires=IS_EMPTY_OR(
+                                  IS_IN_SET(engines))),
                         auth.signature],
                     'vars':{'format':'%(title)s', 'migrate':migrate}}),
             ('wiki_tag', {
@@ -5528,7 +5555,11 @@ class Wiki(object):
                 if (prevbutton.hasClass('nopreview')) {
                     prevbutton.addClass('preview').removeClass(
                         'nopreview').html('Edit Source');
-                    web2py_ajax_page('post', '%(url)s', {body : jQuery('#wiki_page_body').val()}, 'preview');
+                    try{var wiki_render = jQuery('#wiki_page_render').val()}
+                    catch(e){var wiki_render = null;}
+                    web2py_ajax_page('post', \
+                        '%(url)s', {body: jQuery('#wiki_page_body').val(), \
+                                    render: wiki_render}, 'preview');
                     form.fadeOut('fast', function() {preview.fadeIn()});
                 } else {
                     prevbutton.addClass(
@@ -5802,6 +5833,10 @@ class Wiki(object):
 
     def preview(self, render):
         request = current.request
+        # FIXME: This is an ugly hack to ensure a default render
+        # engine if not specified (with multiple render engines)
+        if not "render" in request.post_vars:
+            request.post_vars.render = None
         return render(request.post_vars)
 
 
