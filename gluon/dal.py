@@ -8422,8 +8422,9 @@ class Table(object):
     def _enable_record_versioning(self,
                                   archive_db=None,
                                   archive_name = '%(tablename)s_archive',
+                                  is_active = 'is_active',
                                   current_record = 'current_record',
-                                  is_active = 'is_active'):
+                                  current_record_label = None):
         db = self._db
         archive_db = archive_db or db
         archive_name = archive_name % dict(tablename=self._tablename)
@@ -8438,7 +8439,8 @@ class Table(object):
             clones.append(field.clone(
                     unique=False, type=field.type if nfk else 'bigint'))
         archive_db.define_table(
-            archive_name, Field(current_record,field_type), *clones)
+            archive_name, Field(current_record,field_type,
+                                label=current_record_label), *clones)
         self._before_update.append(
             lambda qset,fs,db=archive_db,an=archive_name,cn=current_record:
                 archive_record(qset,fs,db[an],cn))
