@@ -4,6 +4,7 @@
 # recreated by Vladyslav Kozlovskyy
 # license MIT/BSD/GPL
 import re
+import ast
 from cgi import escape
 from string import maketrans
 
@@ -532,7 +533,7 @@ LINK = '\x07'
 DISABLED_META = '\x08'
 LATEX = '<img src="http://chart.apis.google.com/chart?cht=tx&chl=%s" />'
 regex_URL=re.compile(r'@/(?P<a>\w*)/(?P<c>\w*)/(?P<f>\w*(\.\w+)?)(/(?P<args>[\w\.\-/]+))?')
-regex_env=re.compile(r'@\{(?P<a>[\w\-\.]+?)(\:(?P<b>.*?))?\}')
+regex_env2=re.compile(r'@\{(?P<a>[\w\-\.]+?)(\:(?P<b>.*?))?\}')
 regex_expand_meta = re.compile('('+META+'|'+DISABLED_META+'|````)')
 regex_dd=re.compile(r'\$\$(?P<latex>.*?)\$\$')
 regex_code = re.compile('('+META+'|'+DISABLED_META+r'|````)|(``(?P<t>.+?)``(?::(?P<c>[a-zA-Z][_a-zA-Z\-\d]*)(?:\[(?P<p>[^\]]*)\])?)?)',re.S)
@@ -553,6 +554,53 @@ regex_markmin_escape = re.compile(r"(\\*)(['`:*~\\[\]{}@\$+\-.#\n])")
 regex_backslash = re.compile(r"\\(['`:*~\\[\]{}@\$+\-.#\n])")
 ttab_in  = maketrans("'`:*~\\[]{}@$+-.#\n", '\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x05')
 ttab_out = maketrans('\x0b\x0c\x0e\x0f\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1a\x1b\x05',"'`:*~\\[]{}@$+-.#\n")
+regex_quote = re.compile('(?P<name>\w+?)\s*\=\s*')
+
+def make_dict(b):
+    return '{%s}' % regex_quote.sub("'\g<name>':",b)
+    
+def safe_eval(node_or_string, env):
+    """
+    Safely evaluate an expression node or a string containing a Python
+    expression.  The string or node provided may only consist of the following
+    Python literal structures: strings, numbers, tuples, lists, dicts, booleans,
+    and None.
+    """
+    _safe_names = {'None': None, 'True': True, 'False': False}
+    _safe_names.update(env)
+    if isinstance(node_or_string, basestring):
+        node_or_string = ast.parse(node_or_string, mode='eval')
+    if isinstance(node_or_string, ast.Expression):
+        node_or_string = node_or_string.body
+    def _convert(node):
+        if isinstance(node, ast.Str):
+            return node.s
+        elif isinstance(node, ast.Num):
+            return node.n
+        elif isinstance(node, ast.Tuple):
+            return tuple(map(_convert, node.elts))
+        elif isinstance(node, ast.List):
+            return list(map(_convert, node.elts))
+        elif isinstance(node, ast.Dict):
+            return dict((_convert(k), _convert(v)) for k, v
+                        in zip(node.keys, node.values))
+        elif isinstance(node, ast.Name):
+            if node.id in _safe_names:
+                return _safe_names[node.id]
+        elif isinstance(node, ast.BinOp) and \
+             isinstance(node.op, (Add, Sub)) and \
+             isinstance(node.right, Num) and \
+             isinstance(node.right.n, complex) and \
+             isinstance(node.left, Num) and \
+             isinstance(node.left.n, (int, long, float)):
+            left = node.left.n
+            right = node.right.n
+            if isinstance(node.op, Add):
+                return left + right
+            else:
+                return left - right
+        raise ValueError('malformed string')
+    return _convert(node_or_string)
 
 def markmin_escape(text):
     """ insert \\ before markmin control characters: '`:*~[]{}@$ """
@@ -571,15 +619,22 @@ def replace_at_urls(text,url):
     return regex_URL.sub(u1,text)
 
 def replace_components(text,env):
+    # not perfect but acceptable
     def u2(match, env=env):
         f = env.get(match.group('a'), match.group(0))
         if callable(f):
+            b = match.group('b')
             try:
-                f = f(match.group('b'))
+                b = safe_eval(make_dict(b),env)
+            except:
+                pass
+            try:
+                f = f(**b) if isinstance(b,dict) else f(b)
             except Exception, e:
                 f = 'ERROR: %s' % e
             return str(f)
-    return regex_env.sub(u2, text)
+    text = regex_env2.sub(u2, text)
+    return text
 
 def autolinks_simple(url):
     """
@@ -842,6 +897,9 @@ def render(text,
     '<p>this is <span style="color: green;">a green text</span></p>'
 
     >>> render("**@{probe:1}**", environment=dict(probe=lambda t:"test %s" % t))
+    '<p><strong>test 1</strong></p>'
+
+    >>> render("**@{probe:t=a}**", environment=dict(probe=lambda t:"test %s" % t, a=1))
     '<p><strong>test 1</strong></p>'
 
     >>> render('[[id1 [span **messag** in ''markmin''] ]] ... [[**link** to id [link\\\'s title] #mark1]]')
