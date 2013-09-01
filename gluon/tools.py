@@ -1304,8 +1304,9 @@ class Auth(object):
         else:
             raise HTTP(404)
 
-    def navbar(self, mode='Default', action=None, prefix='Welcome',
-               referrer_actions=DEFAULT, user_identifier=DEFAULT):
+    def navbar(self, prefix='Welcome', action=None,
+               separators=(' [ ', ' | ', ' ] '), user_identifier=DEFAULT,
+               referrer_actions=DEFAULT, mode='default'):
         """ Navbar with support for more templates
         This uses some code from the old navbar.
 
@@ -1490,21 +1491,21 @@ class Auth(object):
                    'bare': bare
                    }  # Define custom modes.
 
-        try:
+        if mode in options and callable(options[mode]):
             options[mode]()
-        except KeyError:  # KeyError if mode is not in options (do Default)
+        else:
+            s1, s2, s3 = separators
             if self.user_id:
-                self.bar = SPAN(prefix, user_identifier, '[',
+                self.bar = SPAN(prefix, user_identifier, s1,
                                 Anr(items[0]['name'],
-                                _href=items[0]['href']), ']',
+                                _href=items[0]['href']), s3,
                                 _class='auth_navbar')
             else:
-                self.bar = SPAN('[', Anr(items[0]['name'],
-                                _href=items[0]['href']), ']',
+                self.bar = SPAN(s1, Anr(items[0]['name'],
+                                _href=items[0]['href']), s3,
                                 _class='auth_navbar')
-            del items[0]
             for item in items:
-                self.bar.insert(-1, ']')
+                self.bar.insert(-1, s2)
                 self.bar.insert(-1, Anr(item['name'], _href=item['href']))
 
         return self.bar
