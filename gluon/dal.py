@@ -690,7 +690,11 @@ class BaseAdapter(ConnectionPool):
         return isinstance(exception, self.driver.ProgrammingError)
 
     def id_query(self, table):
-        return table._id != None
+        pkeys = getattr(table,'_primarykey',None)
+        if pkeys:
+            return table[pkeys[0]] != None
+        else:
+            return table._id != None
 
     def adapt(self, obj):
         return "'%s'" % obj.replace("'", "''")
