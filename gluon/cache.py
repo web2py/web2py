@@ -68,7 +68,7 @@ class CacheAbstract(object):
 
     def __init__(self, request=None):
         """
-        Paremeters
+        Parameters
         ----------
         request:
             the global request object

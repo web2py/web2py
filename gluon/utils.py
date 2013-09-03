@@ -11,8 +11,6 @@ This file specifically includes utilities for security.
 
 import threading
 import struct
-#import hashlib
-#import hmac
 import uuid
 import random
 import time
@@ -23,7 +21,7 @@ import logging
 import socket
 import base64
 import zlib
-from types import ModuleType
+
 
 _struct_2_long_long = struct.Struct('=QQ')
 

@@ -845,9 +845,9 @@ def render(content="hello world",
     'hello world'
     >>> render(content='abc')
     'abc'
-    >>> render(content='abc\\'')
+    >>> render(content='abc\'')
     "abc'"
-    >>> render(content='a"\\'bc')
+    >>> render(content='a"\'bc')
     'a"\\'bc'
     >>> render(content='a\\nbc')
     'a\\nbc'
