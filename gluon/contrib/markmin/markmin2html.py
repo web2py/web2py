@@ -4,7 +4,6 @@
 # recreated by Vladyslav Kozlovskyy
 # license MIT/BSD/GPL
 import re
-import ast
 from cgi import escape
 from string import maketrans
 try:
