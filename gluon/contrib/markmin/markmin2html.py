@@ -7,6 +7,12 @@ import re
 import ast
 from cgi import escape
 from string import maketrans
+try:
+   from ast import parse as ast_parse
+   import ast
+except ImportError: # python 2.5
+    from compiler import parse
+    import compiler.ast as ast
 
 """
 TODO: next version should use MathJax
@@ -569,7 +575,7 @@ def safe_eval(node_or_string, env):
     _safe_names = {'None': None, 'True': True, 'False': False}
     _safe_names.update(env)
     if isinstance(node_or_string, basestring):
-        node_or_string = ast.parse(node_or_string, mode='eval')
+        node_or_string = ast_parse(node_or_string, mode='eval')
     if isinstance(node_or_string, ast.Expression):
         node_or_string = node_or_string.body
     def _convert(node):
