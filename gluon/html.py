@@ -2457,15 +2457,23 @@ class MENU(DIV):
     def serialize_mobile(self, data, select=None, prefix=''):
         if not select:
             select = SELECT(**self.attributes)
+        custom_items = []
         for item in data:
-            if len(item) <= 4 or item[4] == True:
+            # Custom item aren't serialized as mobile
+            if len(item) >= 3 and (not item[0]) or (isinstance(item[0], DIV) and not (item[2])):
+            # ex: ('', False,A('title',_href=URL(...),_title="title"))
+            # ex: (A('title',_href=URL(...),_title="title"), False, None)
+                custom_items.append(item)
+            elif len(item) <= 4 or item[4] == True:
                 select.append(OPTION(CAT(prefix, item[0]),
                                      _value=item[2], _selected=item[1]))
                 if len(item) > 3 and len(item[3]):
                     self.serialize_mobile(
                         item[3], select, prefix=CAT(prefix, item[0], '/'))
         select['_onchange'] = 'window.location=this.value'
-        return select
+        # avoid to wrap the select if no custom items are present
+        html = DIV(select,  self.serialize(custom_items)) if len( custom_items) else select
+        return html
 
     def xml(self):
         if self['mobile']:
