@@ -1,5 +1,5 @@
 import codecs
-import encodings
+
 
 """Caller will hand this library a buffer and ask it to either convert
 it or auto-detect the type.

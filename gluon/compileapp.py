@@ -13,7 +13,6 @@ FOR INTERNAL USE ONLY
 """
 
 import re
-import sys
 import fnmatch
 import os
 import copy

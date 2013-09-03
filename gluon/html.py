@@ -1961,7 +1961,7 @@ class FORM(DIV):
     example::
 
         >>> from validators import IS_NOT_EMPTY
-        >>> form=FORM(INPUT(_name=\"test\", requires=IS_NOT_EMPTY()))
+        >>> form=FORM(INPUT(_name="test", requires=IS_NOT_EMPTY()))
         >>> form.xml()
         '<form action=\"#\" enctype=\"multipart/form-data\" method=\"post\"><input name=\"test\" type=\"text\" /></form>'
 
@@ -2501,11 +2501,11 @@ def test():
     Example:
 
     >>> from validators import *
-    >>> print DIV(A('click me', _href=URL(a='a', c='b', f='c')), BR(), HR(), DIV(SPAN(\"World\"), _class='unknown')).xml()
+    >>> print DIV(A('click me', _href=URL(a='a', c='b', f='c')), BR(), HR(), DIV(SPAN("World"), _class='unknown')).xml()
     <div><a data-w2p_disable_with="default" href="/a/b/c">click me</a><br /><hr /><div class=\"unknown\"><span>World</span></div></div>
-    >>> print DIV(UL(\"doc\",\"cat\",\"mouse\")).xml()
+    >>> print DIV(UL("doc","cat","mouse")).xml()
     <div><ul><li>doc</li><li>cat</li><li>mouse</li></ul></div>
-    >>> print DIV(UL(\"doc\", LI(\"cat\", _class='feline'), 18)).xml()
+    >>> print DIV(UL("doc", LI("cat", _class='feline'), 18)).xml()
     <div><ul><li>doc</li><li class=\"feline\">cat</li><li>18</li></ul></div>
     >>> print TABLE(['a', 'b', 'c'], TR('d', 'e', 'f'), TR(TD(1), TD(2), TD(3))).xml()
     <table><tr><td>a</td><td>b</td><td>c</td></tr><tr><td>d</td><td>e</td><td>f</td></tr><tr><td>1</td><td>2</td><td>3</td></tr></table>
@@ -2531,7 +2531,7 @@ def test():
     >>> print form.xml()
     <form action="#" enctype="multipart/form-data" method="post"><input class="invalidinput" name="myvar" type="text" value="as df" /><div class="error_wrapper"><div class="error" id="myvar__error">only alphanumeric!</div></div></form>
     >>> session={}
-    >>> form=FORM(INPUT(value=\"Hello World\", _name=\"var\", requires=IS_MATCH('^\w+$')))
+    >>> form=FORM(INPUT(value="Hello World", _name="var", requires=IS_MATCH('^\w+$')))
     >>> isinstance(form.as_dict(), dict)
     True
     >>> form.as_dict(flat=True).has_key("vars")

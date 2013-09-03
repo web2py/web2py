@@ -7,7 +7,6 @@ Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
 License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
 
-import sys
 import storage
 import os
 import re

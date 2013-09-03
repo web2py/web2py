@@ -10703,7 +10703,7 @@ class Rows(object):
 def test_all():
     """
 
-    >>> if len(sys.argv)<2: db = DAL(\"sqlite://test.db\")
+    >>> if len(sys.argv)<2: db = DAL("sqlite://test.db")
     >>> if len(sys.argv)>1: db = DAL(sys.argv[1])
     >>> tmp = db.define_table('users',\
               Field('stringf', 'string', length=32, required=True),\
@@ -10739,8 +10739,8 @@ def test_all():
               Field('name'),\
               Field('birth','date'),\
               migrate='test_person.table')
-    >>> person_id = db.person.insert(name=\"Marco\",birth='2005-06-22')
-    >>> person_id = db.person.insert(name=\"Massimo\",birth='1971-12-21')
+    >>> person_id = db.person.insert(name='Marco',birth='2005-06-22')
+    >>> person_id = db.person.insert(name='Massimo',birth='1971-12-21')
 
     commented len(db().select(db.person.ALL))
     commented 2
@@ -10766,7 +10766,7 @@ def test_all():
 
     Update a single record
 
-    >>> me.update_record(name=\"Max\")
+    >>> me.update_record(name="Max")
     <Row {'name': 'Max', 'birth': datetime.date(1971, 12, 21), 'id': 2}>
     >>> me.name
     'Max'
