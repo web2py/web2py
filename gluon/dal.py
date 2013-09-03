@@ -8212,8 +8212,12 @@ class Reference(long):
     def __getattr__(self, key):
         if key == 'id':
             return long(self)
-        self.__allocate()
-        return self._record.get(key, None)
+        if key in self._table:
+            self.__allocate()
+        if self._record:
+            return self._record.get(key,None) # to deal with case self.update_record()
+        else:
+            return None
 
     def get(self, key, default=None):
         return self.__getattr__(key, default)
