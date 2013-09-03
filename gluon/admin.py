@@ -18,7 +18,7 @@ from fileutils import up, fix_newlines, abspath, recursive_unlink
 from fileutils import read_file, write_file, parse_version
 from restricted import RestrictedError
 from settings import global_settings
-from http import HTTP
+
 
 if not global_settings.web2py_runtime_gae:
     import site

@@ -15,7 +15,6 @@ import re
 import sys
 import pkgutil
 import logging
-import marshal
 from cgi import escape
 from threading import RLock
 
