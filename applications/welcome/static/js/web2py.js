@@ -74,28 +74,6 @@
        * Ideally all events should be bound to the document, so we can avoid calling
        * this over and over... all will be bound to the document
        */
-      var date_format = (typeof w2p_ajax_date_format != 'undefined') ? w2p_ajax_date_format : "%Y-%m-%d";
-      var datetime_format = (typeof w2p_ajax_datetime_format != 'undefined') ? w2p_ajax_datetime_format : "%Y-%m-%d %H:%M:%S";
-      $("input.date", target).each(function () {
-        $(this).attr('autocomplete', 'off');
-        Calendar.setup({
-          inputField: this,
-          ifFormat: date_format,
-          showsTime: false
-        });
-      });
-      $("input.datetime", target).each(function () {
-        $(this).attr('autocomplete', 'off');
-        Calendar.setup({
-          inputField: this,
-          ifFormat: datetime_format,
-          showsTime: true,
-          timeFormat: "24"
-        });
-      });
-      $("input.time", target).each(function () {
-        $(this).timeEntry().attr('autocomplete', 'off');
-      });
       /*adds btn class to buttons*/
       $('button', target).addClass('btn');
       $('form input[type="submit"], form input[type="button"]', target).addClass('btn');
@@ -181,18 +159,13 @@
       /*
        * This is called once for page
        * Ideally it should bound all the things that are needed
+       * and require no dom manipulations
        */
       var doc = $(document);
       doc.on('click', '.flash', function (e) {
         var t = $(this);
         if(t.css('top') == '0px') t.slideUp('slow');
         else t.fadeOut();
-        /* if I want to display a clickable something
-         * inside flash, I should not be prevented to follow it
-         *
-         * e.preventDefault();
-         */
-
       });
       doc.on('keyup', 'input.integer', function () {
         this.value = this.value.reverse().replace(/[^0-9\-]|\-(?=.)/g, '').reverse();
@@ -205,7 +178,48 @@
         if(this.checked)
           if(!web2py.confirm(confirm_message)) this.checked = false;
       });
-
+      var datetime_format = (typeof w2p_ajax_datetime_format != 'undefined') ? w2p_ajax_datetime_format : "%Y-%m-%d %H:%M:%S";
+      doc.on('click', "input.datetime", function () {
+        var tformat = $(this).data('w2p_datetime_format')
+        var active = $(this).data('w2p_datetime');
+        var format = (typeof tformat != 'undefined') ? tformat : datetime_format;
+        if(active === undefined) {
+          Calendar.setup({
+            inputField: this,
+            ifFormat: format,
+            showsTime: true,
+            timeFormat: "24"
+          });
+          $(this).attr('autocomplete', 'off');
+          $(this).data('w2p_datetime', 1);
+          $(this).trigger('click');
+        }
+      });
+      var date_format = (typeof w2p_ajax_date_format != 'undefined') ? w2p_ajax_date_format : "%Y-%m-%d";
+      doc.on('click', "input.date", function () {
+        var tformat = $(this).data('w2p_date_format')
+        var active = $(this).data('w2p_date');
+        var format = (typeof tformat != 'undefined') ? tformat : date_format;
+        if(active === undefined) {
+          Calendar.setup({
+            inputField: this,
+            ifFormat: format,
+            showsTime: false
+          });
+          $(this).data('w2p_date', 1);
+          $(this).attr('autocomplete', 'off');
+          $(this).trigger('click');
+        }
+      });
+      doc.on('focus', "input.time", function () {
+        var active = $(this).data('w2p_time');
+        if(active === undefined) {
+          $(this).timeEntry({
+            spinnerImage: ''
+          }).attr('autocomplete', 'off');
+          $(this).data('w2p_time', 1);
+        }
+      });
       doc.ajaxSuccess(function (e, xhr) {
         var redirect = xhr.getResponseHeader('web2py-redirect-location');
         if(redirect !== null) {
