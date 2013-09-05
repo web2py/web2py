@@ -1121,7 +1121,7 @@ class Auth(object):
     def __init__(self, environment=None, db=None, mailer=True,
                  hmac_key=None, controller='default', function='user',
                  cas_provider=None, signature=True, secure=False,
-                 csrf_on=True):
+                 csrf_prevention=True):
         """
         auth=Auth(db)
 
@@ -1137,7 +1137,7 @@ class Auth(object):
             db = environment
         self.db = db
         self.environment = current
-        self.csrf_on = csrf_on
+        self.csrf_prevention = csrf_prevention
         request = current.request
         session = current.session
         auth = session.auth
@@ -2269,7 +2269,7 @@ class Auth(object):
                        settings.formstyle, 'captcha__row')
             accepted_form = False
 
-            if form.accepts(request, session if self.csrf_on else None,
+            if form.accepts(request, session if self.csrf_prevention else None,
                             formname='login', dbio=False,
                             onvalidation=onvalidation,
                             hideerror=settings.hideerror):
@@ -2511,7 +2511,7 @@ class Auth(object):
                    captcha.comment, self.settings.formstyle, 'captcha__row')
 
         table_user.registration_key.default = key = web2py_uuid()
-        if form.accepts(request, session if self.csrf_on else None, 
+        if form.accepts(request, session if self.csrf_prevention else None, 
                         formname='register',
                         onvalidation=onvalidation, 
                         hideerror=self.settings.hideerror):
@@ -2657,7 +2657,7 @@ class Auth(object):
             addrow(form, captcha.label, captcha,
                    captcha.comment, self.settings.formstyle, 'captcha__row')
 
-        if form.accepts(request, session if self.csrf_on else None,
+        if form.accepts(request, session if self.csrf_prevention else None,
                         formname='retrieve_username', dbio=False,
                         onvalidation=onvalidation, hideerror=self.settings.hideerror):
             user = table_user(email=form.vars.email)
@@ -2735,7 +2735,7 @@ class Auth(object):
                        formstyle=self.settings.formstyle,
                        separator=self.settings.label_separator
                        )
-        if form.accepts(request, session if self.csrf_on else None,
+        if form.accepts(request, session if self.csrf_prevention else None,
                         formname='retrieve_password', dbio=False,
                         onvalidation=onvalidation, hideerror=self.settings.hideerror):
             user = table_user(email=form.vars.email)
@@ -2880,7 +2880,7 @@ class Auth(object):
         if captcha:
             addrow(form, captcha.label, captcha,
                    captcha.comment, self.settings.formstyle, 'captcha__row')
-        if form.accepts(request, session if self.csrf_on else None,
+        if form.accepts(request, session if self.csrf_prevention else None,
                         formname='reset_password', dbio=False,
                         onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
