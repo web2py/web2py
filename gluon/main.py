@@ -485,7 +485,12 @@ def wsgibase(environ, responder):
 
                     session._try_store_in_cookie_or_file(request, response)
 
+                    # Set header so client can distinguish component requests.
                     if request.cid:
+                        http_response.headers.setdefault(
+                            'web2py-component-content', 'replace')
+                    
+                    if request.ajax:
                         if response.flash:
                             http_response.headers['web2py-component-flash'] = \
                                 urllib2.quote(xmlescape(response.flash)\
