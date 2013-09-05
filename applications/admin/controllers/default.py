@@ -1016,8 +1016,9 @@ def design():
     privates.sort()
 
     # Get all static files
+    MAXNFILES = 1000
     statics = listdir(apath('%s/static/' % app, r=request), '[^\.#].*')
-    statics = [x.replace('\\', '/') for x in statics]
+    statics = [x.replace('\\', '/') for x in statics[:MAXNFILES]]
     statics.sort()
 
     # Get all languages

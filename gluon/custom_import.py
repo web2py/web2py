@@ -3,7 +3,6 @@
 
 import __builtin__
 import os
-import re
 import sys
 import threading
 import traceback

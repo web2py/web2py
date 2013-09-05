@@ -59,6 +59,7 @@ cd www-data
 rm web2py_src.zip*
 wget http://web2py.com/examples/static/web2py_src.zip
 unzip web2py_src.zip
+mv web2py/handlers/wsgihandler.py web2py/wsgihandler.py
 chown -R www-data:www-data web2py
 
 echo "setting up apache modules"

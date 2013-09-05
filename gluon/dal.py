@@ -690,7 +690,11 @@ class BaseAdapter(ConnectionPool):
         return isinstance(exception, self.driver.ProgrammingError)
 
     def id_query(self, table):
-        return table._id != None
+        pkeys = getattr(table,'_primarykey',None)
+        if pkeys:
+            return table[pkeys[0]] != None
+        else:
+            return table._id != None
 
     def adapt(self, obj):
         return "'%s'" % obj.replace("'", "''")
@@ -6939,9 +6943,11 @@ def sqlhtml_validators(field):
                                            referenced._format,multiple=True)
         else:
             requires = validators.IS_IN_DB(db,referenced._id,
-                                           multiple=True)
+                                           multiple=True)        
         if field.unique:
             requires._and = validators.IS_NOT_IN_DB(db,field)
+        if not field.notnull:
+            requires = validators.IS_EMPTY_OR(requires)
         return requires
     elif field_type.startswith('list:'):
         def repr_list(values,row=None): return', '.join(str(v) for v in (values or []))
@@ -8206,8 +8212,12 @@ class Reference(long):
     def __getattr__(self, key):
         if key == 'id':
             return long(self)
-        self.__allocate()
-        return self._record.get(key, None)
+        if key in self._table:
+            self.__allocate()
+        if self._record:
+            return self._record.get(key,None) # to deal with case self.update_record()
+        else:
+            return None
 
     def get(self, key, default=None):
         return self.__getattr__(key, default)
@@ -8416,8 +8426,9 @@ class Table(object):
     def _enable_record_versioning(self,
                                   archive_db=None,
                                   archive_name = '%(tablename)s_archive',
+                                  is_active = 'is_active',
                                   current_record = 'current_record',
-                                  is_active = 'is_active'):
+                                  current_record_label = None):
         db = self._db
         archive_db = archive_db or db
         archive_name = archive_name % dict(tablename=self._tablename)
@@ -8432,7 +8443,8 @@ class Table(object):
             clones.append(field.clone(
                     unique=False, type=field.type if nfk else 'bigint'))
         archive_db.define_table(
-            archive_name, Field(current_record,field_type), *clones)
+            archive_name, Field(current_record,field_type,
+                                label=current_record_label), *clones)
         self._before_update.append(
             lambda qset,fs,db=archive_db,an=archive_name,cn=current_record:
                 archive_record(qset,fs,db[an],cn))
@@ -8875,24 +8887,31 @@ class Table(object):
 
         first = True
         unique_idx = None
-        for line in reader:
+        for lineno, line in enumerate(reader):
             if not line:
                 break
             if not colnames:
+                # assume this is the first line of the input, contains colnames
                 colnames = [x.split('.',1)[-1] for x in line][:len(line)]
                 cols, cid = [], None
                 for i,colname in enumerate(colnames):
                     if is_id(colname):
                         cid = i
-                    else:
-                        cols.append(i)
+                    elif colname in self.fields:
+                        cols.append((i,self[colname]))
                     if colname == unique:
                         unique_idx = i
             else:
-                items = [fix(self[colnames[i]], line[i], id_map, id_offset) \
-                             for i in cols if colnames[i] in self.fields]
-
-                if not id_map and cid is not None and id_offset is not None and not unique_idx:
+                # every other line contains instead data
+                items = []
+                for i, field in cols:
+                    try:
+                        items.append(fix(field, line[i], id_map, id_offset))
+                    except ValueError:
+                        raise RuntimeError("Unable to parse line:%s field:%s value:'%s'"
+                                           % (lineno+1,field,line[i]))
+                    
+                if not (id_map or cid is None or id_offset is None or unique_idx):
                     csv_id = long(line[cid])
                     curr_id = self.insert(**dict(items))
                     if first:
@@ -8900,10 +8919,8 @@ class Table(object):
                         # First curr_id is bigger than csv_id,
                         # then we are not restoring but
                         # extending db table with csv db table
-                        if curr_id>csv_id:
-                            id_offset[self._tablename] = curr_id-csv_id
-                        else:
-                            id_offset[self._tablename] = 0
+                        id_offset[self._tablename] = (curr_id-csv_id) \
+                            if curr_id>csv_id else 0
                     # create new id until we get the same as old_id+offset
                     while curr_id<csv_id+id_offset[self._tablename]:
                         self._db(self._db[self][colnames[cid]] == curr_id).delete()
@@ -10690,7 +10707,7 @@ class Rows(object):
 def test_all():
     """
 
-    >>> if len(sys.argv)<2: db = DAL(\"sqlite://test.db\")
+    >>> if len(sys.argv)<2: db = DAL("sqlite://test.db")
     >>> if len(sys.argv)>1: db = DAL(sys.argv[1])
     >>> tmp = db.define_table('users',\
               Field('stringf', 'string', length=32, required=True),\
@@ -10726,8 +10743,8 @@ def test_all():
               Field('name'),\
               Field('birth','date'),\
               migrate='test_person.table')
-    >>> person_id = db.person.insert(name=\"Marco\",birth='2005-06-22')
-    >>> person_id = db.person.insert(name=\"Massimo\",birth='1971-12-21')
+    >>> person_id = db.person.insert(name='Marco',birth='2005-06-22')
+    >>> person_id = db.person.insert(name='Massimo',birth='1971-12-21')
 
     commented len(db().select(db.person.ALL))
     commented 2
@@ -10753,7 +10770,7 @@ def test_all():
 
     Update a single record
 
-    >>> me.update_record(name=\"Max\")
+    >>> me.update_record(name="Max")
     <Row {'name': 'Max', 'birth': datetime.date(1971, 12, 21), 'id': 2}>
     >>> me.name
     'Max'

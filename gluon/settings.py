@@ -6,7 +6,6 @@ License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 
 import os
 import sys
-import socket
 import platform
 from storage import Storage
 

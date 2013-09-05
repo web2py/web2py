@@ -841,8 +841,8 @@ class DIV(XmlComponent):
                 c.latest = self.latest
                 c.session = self.session
                 c.formname = self.formname
-                c['hideerror'] = hideerror or \
-                        self.attributes.get('hideerror', False)
+                if not c.attributes.get('hideerror'):
+                    c['hideerror'] = hideerror or self.attributes.get('hideerror')
                 newstatus = c._traverse(status, hideerror) and newstatus
 
         # for input, textarea, select, option
@@ -1961,7 +1961,7 @@ class FORM(DIV):
     example::
 
         >>> from validators import IS_NOT_EMPTY
-        >>> form=FORM(INPUT(_name=\"test\", requires=IS_NOT_EMPTY()))
+        >>> form=FORM(INPUT(_name="test", requires=IS_NOT_EMPTY()))
         >>> form.xml()
         '<form action=\"#\" enctype=\"multipart/form-data\" method=\"post\"><input name=\"test\" type=\"text\" /></form>'
 
@@ -2457,15 +2457,23 @@ class MENU(DIV):
     def serialize_mobile(self, data, select=None, prefix=''):
         if not select:
             select = SELECT(**self.attributes)
+        custom_items = []
         for item in data:
-            if len(item) <= 4 or item[4] == True:
+            # Custom item aren't serialized as mobile
+            if len(item) >= 3 and (not item[0]) or (isinstance(item[0], DIV) and not (item[2])):
+            # ex: ('', False,A('title',_href=URL(...),_title="title"))
+            # ex: (A('title',_href=URL(...),_title="title"), False, None)
+                custom_items.append(item)
+            elif len(item) <= 4 or item[4] == True:
                 select.append(OPTION(CAT(prefix, item[0]),
                                      _value=item[2], _selected=item[1]))
                 if len(item) > 3 and len(item[3]):
                     self.serialize_mobile(
                         item[3], select, prefix=CAT(prefix, item[0], '/'))
         select['_onchange'] = 'window.location=this.value'
-        return select
+        # avoid to wrap the select if no custom items are present
+        html = DIV(select,  self.serialize(custom_items)) if len( custom_items) else select
+        return html
 
     def xml(self):
         if self['mobile']:
@@ -2501,11 +2509,11 @@ def test():
     Example:
 
     >>> from validators import *
-    >>> print DIV(A('click me', _href=URL(a='a', c='b', f='c')), BR(), HR(), DIV(SPAN(\"World\"), _class='unknown')).xml()
+    >>> print DIV(A('click me', _href=URL(a='a', c='b', f='c')), BR(), HR(), DIV(SPAN("World"), _class='unknown')).xml()
     <div><a data-w2p_disable_with="default" href="/a/b/c">click me</a><br /><hr /><div class=\"unknown\"><span>World</span></div></div>
-    >>> print DIV(UL(\"doc\",\"cat\",\"mouse\")).xml()
+    >>> print DIV(UL("doc","cat","mouse")).xml()
     <div><ul><li>doc</li><li>cat</li><li>mouse</li></ul></div>
-    >>> print DIV(UL(\"doc\", LI(\"cat\", _class='feline'), 18)).xml()
+    >>> print DIV(UL("doc", LI("cat", _class='feline'), 18)).xml()
     <div><ul><li>doc</li><li class=\"feline\">cat</li><li>18</li></ul></div>
     >>> print TABLE(['a', 'b', 'c'], TR('d', 'e', 'f'), TR(TD(1), TD(2), TD(3))).xml()
     <table><tr><td>a</td><td>b</td><td>c</td></tr><tr><td>d</td><td>e</td><td>f</td></tr><tr><td>1</td><td>2</td><td>3</td></tr></table>
@@ -2531,7 +2539,7 @@ def test():
     >>> print form.xml()
     <form action="#" enctype="multipart/form-data" method="post"><input class="invalidinput" name="myvar" type="text" value="as df" /><div class="error_wrapper"><div class="error" id="myvar__error">only alphanumeric!</div></div></form>
     >>> session={}
-    >>> form=FORM(INPUT(value=\"Hello World\", _name=\"var\", requires=IS_MATCH('^\w+$')))
+    >>> form=FORM(INPUT(value="Hello World", _name="var", requires=IS_MATCH('^\w+$')))
     >>> isinstance(form.as_dict(), dict)
     True
     >>> form.as_dict(flat=True).has_key("vars")

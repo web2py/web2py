@@ -10,7 +10,6 @@ License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
 
 import logging
-import os
 import pdb
 import Queue
 import sys

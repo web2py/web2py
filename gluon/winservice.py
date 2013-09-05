@@ -36,6 +36,7 @@ class Service(win32serviceutil.ServiceFramework):
 
     _svc_name_ = '_unNamed'
     _svc_display_name_ = '_Service Template'
+    _svc_description_ = '_Service Template description'
 
     def __init__(self, *args):
         win32serviceutil.ServiceFramework.__init__(self, *args)
@@ -43,6 +44,12 @@ class Service(win32serviceutil.ServiceFramework):
 
     def log(self, msg):
         servicemanager.LogInfoMsg(str(msg))
+
+    def log_error(self, msg):
+        """
+        Log an error message to windows application event log.
+        """
+        servicemanager.LogErrorMsg(str(msg))
 
     def SvcDoRun(self):
         self.ReportServiceStatus(win32service.SERVICE_START_PENDING)
@@ -80,6 +87,7 @@ class Web2pyService(Service):
 
     _svc_name_ = 'web2py'
     _svc_display_name_ = 'web2py Service'
+    _svc_description_ = 'Web2py application framework service'
     _exe_args_ = 'options'
     server = None
 
@@ -132,17 +140,16 @@ class Web2pyService(Service):
             server_name=options.server_name,
             request_queue_size=options.request_queue_size,
             timeout=options.timeout,
+            socket_timeout=options.socket_timeout,
             shutdown_timeout=options.shutdown_timeout,
-            path=options.folder
+            path=options.folder,
+            interfaces=options.interfaces
         )
         try:
             from rewrite import load
             load()
             self.server.start()
         except:
-
-            # self.server.stop()
-
             self.server = None
             raise
 
@@ -159,12 +166,18 @@ class Web2pyCronService(Web2pyService):
 
     _svc_name_ = 'web2py_cron'
     _svc_display_name_ = 'web2py Cron Service'
+    _svc_description_ = 'web2py Windows cron service for scheduled tasks'
     _exe_args_ = 'options'
 
     def start(self):
         import newcron
-        import global_settings
-        self.log('web2py server starting')
+        import logging
+        import logging.config
+        from settings import global_settings
+        from fileutils import abspath
+        from os.path import exists, join
+        
+        self.log('web2py Cron service starting')
         if not self.chdir():
             return
         if len(sys.argv) == 2:
@@ -172,25 +185,50 @@ class Web2pyCronService(Web2pyService):
         else:
             opt_mod = self._exe_args_
         options = __import__(opt_mod, [], [], '')
-        global_settings.global_settings.web2py_crontype = 'external'
+        logpath = abspath(join(options.folder, "logging.conf"))
+        
+        if exists(logpath):
+            logging.config.fileConfig(logpath)
+        else:
+            logging.basicConfig()
+        logger = logging.getLogger("web2py.cron")
+        global_settings.web2py_crontype = 'external'
         if options.scheduler:   # -K
             apps = [app.strip() for app in options.scheduler.split(
                     ',') if check_existent_app(options, app.strip())]
         else:
             apps = None
-        self.extcron = newcron.extcron(options.folder, apps=apps)
-        try:
-            self.extcron.start()
-        except:
-            # self.server.stop()
-            self.extcron = None
-            raise
+
+        misfire_gracetime = float(options.misfire_gracetime) if 'misfire_gracetime' in dir(options) else 0.0
+        logger.info('Starting Window cron service with %0.2f secs gracetime.' % misfire_gracetime)
+        self._started = True
+        wait_full_min = lambda: 60 - time.time() % 60
+        while True:
+            try:
+                if wait_full_min() >= misfire_gracetime: # an offset of max. 5 secs before full minute (e.g. time.sleep(60) == 58.99 secs)
+                    self.extcron = newcron.extcron(options.folder, apps=apps)
+                    self.extcron.start()
+                    time.sleep(wait_full_min())
+                else:
+                    logger.debug('time.sleep() offset detected: %0.3f s' % wait_full_min())
+                    while wait_full_min() <= misfire_gracetime:
+                        pass
+                if apps != None:
+                    break
+                if not self._started:
+                    break
+            except Exception, ex:
+                self.extcron = None
+                self.log_error('%s, restarting service.' % ex)
+                logger.exception('Exception! Restarting Windows cron service.' % ex)
+                self.start()
 
     def stop(self):
-        self.log('web2py cron stopping')
+        self.log('web2py Cron service stopping')
         if not self.chdir():
             return
         if self.extcron:
+            self._started = False
             self.extcron.join()
 
 def register_service_handler(argv=None, opt_file='options', cls=Web2pyService):
