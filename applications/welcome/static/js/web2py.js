@@ -142,7 +142,6 @@
     /* manage errors in forms */
     manage_errors: function (target) {
       $('.error', target).hide().slideDown('slow');
-      /* jQuery('.error', target).hide().fadeIn('slow'); */
     },
     after_ajax: function (xhr) {
       /* called whenever an ajax request completes */
@@ -220,6 +219,11 @@
           $(this).data('w2p_time', 1);
         }
       });
+      /* help preventing double form submission for normal form (not LOADed) */
+      $(doc).on('submit', 'form', function () {
+        var submit_button = $(this).find(web2py.formInputClickSelector);
+        web2py.disableElement(submit_button);
+      });
       doc.ajaxSuccess(function (e, xhr) {
         var redirect = xhr.getResponseHeader('web2py-redirect-location');
         if(redirect !== null) {
@@ -252,7 +256,7 @@
         form.attr('data-w2p_target', target);
         if(!form.hasClass('no_trap')) {
           /* should be there by default */
-          form.find('input[type=submit]').attr('data-w2p_disable_with', disable_with_message);
+          form.find(web2py.formInputClickSelector).attr('data-w2p_disable_with', disable_with_message);
           form.submit(function (e) {
             web2py.hide_flash();
             web2py.ajax_page('post', action, form.serialize(), target, form);
