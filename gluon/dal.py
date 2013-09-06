@@ -2083,7 +2083,7 @@ class BaseAdapter(ConnectionPool):
             if not REGEX_TABLE_DOT_FIELD.match(colname):
                 tmps.append(None)
             else:
-                (tablename, fieldname) = colname.split('.')
+                (tablename, _the_sep_, fieldname) = colname.partition('.')
                 table = db[tablename]
                 field = table[fieldname]
                 ft = field.type
@@ -2123,6 +2123,8 @@ class BaseAdapter(ConnectionPool):
                             id = value
                         colset.update_record = RecordUpdater(colset,table,id)
                         colset.delete_record = RecordDeleter(table,id)
+                        if table._db._lazy_tables:
+                            colset['__get_lazy_reference__'] = LazyReferenceGetter(table, id)
                         for rfield in table._referenced_by:
                             referee_link = db._referee_name and \
                                 db._referee_name % dict(
@@ -7000,7 +7002,13 @@ class Row(object):
                 return ogetattr(self, m.group(1))[m.group(2)]
             except (KeyError,AttributeError,TypeError):
                 key = m.group(2)
-        return ogetattr(self, key)
+        try:
+            return ogetattr(self, key)
+        except (KeyError,AttributeError,TypeError), ae:
+            try:
+                return ogetattr(self,'__get_lazy_reference__')(key)
+            except:
+                raise ae
 
     __setitem__ = lambda self, key, value: setattr(self, str(key), value)
 
@@ -7010,8 +7018,12 @@ class Row(object):
 
     __call__ = __getitem__
 
-    get = lambda self, key, default=None: self.__dict__.get(key,default)
 
+    def get(self, key, default=None):
+        try:
+            return self.__getitem__(key)
+        except(KeyError, AttributeError, TypeError):
+            return self.__dict__.get(key,default)
 
     has_key = __contains__ = lambda self, key: key in self.__dict__
 
@@ -7035,6 +7047,16 @@ class Row(object):
 
     __long__ = lambda self: long(object.__getattribute__(self,'id'))
 
+    __getattr__ = __getitem__
+
+    # def __getattribute__(self, key):
+    #     try:
+    #         return object.__getattribute__(self, key)
+    #     except AttributeError, ae:
+    #         try:
+    #             return self.__get_lazy_reference__(key)
+    #         except:
+    #             raise ae
 
     def __eq__(self,other):
         try:
@@ -8455,10 +8477,10 @@ class Table(object):
             field_type = field.type
             if isinstance(field_type,str) and field_type[:10] == 'reference ':
                 ref = field_type[10:].strip()
-                if not ref.strip():
-                    raise SyntaxError('Table: reference to nothing: %s' %ref)
+                if not ref:
+                    SyntaxError('Table: reference to nothing: %s' %ref)
                 if '.' in ref:
-                    rtablename, rfieldname = ref.split('.',1)
+                    rtablename, throw_it,rfieldname = ref.partition('.')
                 else:
                     rtablename, rfieldname = ref, None
                 if not rtablename in db:
@@ -10153,6 +10175,20 @@ class RecordDeleter(object):
         self.db, self.tablename, self.id = table._db, table._tablename, id
     def __call__(self):
         return self.db(self.db[self.tablename]._id==self.id).delete()
+
+class LazyReferenceGetter(object):
+    def __init__(self, table, id):
+        self.db, self.tablename, self.id = table._db, table._tablename, id
+    def __call__(self, other_tablename):
+        if self.db._lazy_tables is False:
+            raise AttributeError()
+        table = self.db[self.tablename]
+        other_table = self.db[other_tablename]
+        for rfield in table._referenced_by:
+            if rfield.table == other_table:
+                return LazySet(rfield, self.id)
+
+        raise AttributeError()
 
 class LazySet(object):
     def __init__(self, field, id):
