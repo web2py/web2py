@@ -563,7 +563,8 @@ def edit():
     app = get_app(request.vars.app)
     app_path = apath(app, r=request)
     editor_defaults={'theme':'web2py'}
-    config = Config(os.path.join(app_path, 'settings.cfg'), section='editor', default_values=editor_defaults)
+    config = Config(os.path.join(request.folder, 'settings.cfg'),
+                    section='editor', default_values=editor_defaults)
     preferences = config.read()
 
     if not(request.ajax):
