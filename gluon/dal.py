@@ -8325,14 +8325,15 @@ class Table(object):
         self.add_method = MethodAdder(self)
 
         fieldnames,newfields=set(),[]
-        if hasattr(self,'_primarykey'):
-            if not isinstance(self._primarykey,list):
+        _primarykey = getattr(self, '_primarykey', None)
+        if _primarykey is not None:
+            if not isinstance(_primarykey, list):
                 raise SyntaxError(
                     "primarykey must be a list of fields from table '%s'" \
                     % tablename)
-            if len(self._primarykey)==1:
+            if len(_primarykey)==1:
                 self._id = [f for f in fields if isinstance(f,Field) \
-                                and f.name==self._primarykey[0]][0]
+                                and f.name==_primarykey[0]][0]
         elif not [f for f in fields if (isinstance(f,Field) and
                   f.type=='id') or (isinstance(f, dict) and
                   f.get("type", None)=="id")]:
@@ -8384,18 +8385,21 @@ class Table(object):
 
         lower_fieldnames = set()
         reserved = dir(Table) + ['fields']
+        if (db and db.check_reserved):
+            check_reserved = db.check_reserved_keyword
+        else:
+            def check_reserved(field_name):
+              if field_name in reserved:
+                raise SyntaxError("field name %s not allowed" % field_name)
         for field in fields:
             field_name = field.name
-            if db and db.check_reserved:
-                db.check_reserved_keyword(field_name)
-            elif field_name in reserved:
-                raise SyntaxError("field name %s not allowed" % field_name)
-
-            if field_name.lower() in lower_fieldnames:
+            check_reserved(field_name)
+            fn_lower = field_name.lower()
+            if fn_lower in lower_fieldnames:
                 raise SyntaxError("duplicate field %s in table %s" \
                     % (field_name, tablename))
             else:
-                lower_fieldnames.add(field_name.lower())
+                lower_fieldnames.add(fn_lower)
 
             self.fields.append(field_name)
             self[field_name] = field
@@ -8406,8 +8410,8 @@ class Table(object):
             field.db = field._db = db
         self.ALL = SQLALL(self)
 
-        if hasattr(self,'_primarykey'):
-            for k in self._primarykey:
+        if _primarykey is not None:
+            for k in _primarykey:
                 if k not in self.fields:
                     raise SyntaxError(
                         "primarykey must be a list of fields from table '%s " % tablename)
