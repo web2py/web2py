@@ -7049,14 +7049,14 @@ class Row(object):
 
     __getattr__ = __getitem__
 
-    def __getattribute__(self, key):
-        try:
-            return object.__getattribute__(self, key)
-        except AttributeError, ae:
-            try:
-                return self.__get_lazy_reference__(key)
-            except:
-                raise ae
+    # def __getattribute__(self, key):
+    #     try:
+    #         return object.__getattribute__(self, key)
+    #     except AttributeError, ae:
+    #         try:
+    #             return self.__get_lazy_reference__(key)
+    #         except:
+    #             raise ae
 
     def __eq__(self,other):
         try:
@@ -10180,13 +10180,15 @@ class LazyReferenceGetter(object):
     def __init__(self, table, id):
         self.db, self.tablename, self.id = table._db, table._tablename, id
     def __call__(self, other_tablename):
+        if self.db._lazy_tables is False:
+            raise AttributeError()
         table = self.db[self.tablename]
         other_table = self.db[other_tablename]
         for rfield in table._referenced_by:
             if rfield.table == other_table:
                 return LazySet(rfield, self.id)
 
-        return None
+        raise AttributeError()
 
 class LazySet(object):
     def __init__(self, field, id):
