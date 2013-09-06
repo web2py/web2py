@@ -33,6 +33,19 @@ def file_upload_form(location, anchor=None):
             _action=URL('upload_file'),
             _class="generatedbyw2p well well-small")
     return form
+
+def http_download_file(location, anchor=None):
+    form=FORM(
+            LABEL(T("download files via http:")),
+            INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY,_class=""),
+            DIV(TAG['BUTTON'](T("Download"),_type="submit",_class="btn"),_class="controls"),
+            INPUT(_type="hidden",_name="location",_value=location),
+            INPUT(_type="hidden",_name="token",_value=session.token),
+            INPUT(_type="hidden",_name="sender",_value=URL('design',args=app, anchor=anchor)),
+            _action=URL('http_download_file'),
+            _class="generatedbyw2p well well-small")
+    return form
+
 def file_create_form(location, anchor=None, helptext=""):
     form=FORM(
             LABEL(T("create file with filename:")),
@@ -336,6 +349,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
       <div id="form5" class="row-fluid" style="display:none">
         <div class="span3">{{=file_create_form('%s/static/' % app, 'static')}}<em>{{=T('or alternatively')}}</em></div>
         <div class="span3">{{=file_upload_form('%s/static/' % app, 'static')}}</div>
+        <div class="span3">{{=http_download_file('%s/static/' % app, 'static')}}</div>
       </div>
     </div>
 </div>
