@@ -1185,74 +1185,7 @@ def plugin():
                 languages=languages,
                 crontab=crontab)
 
-def http_download_file():
-    '''
-    allows downloading files via http.
-    example:
-        in the input request.var.filename puts:
-            http://masonry.desandro.com/masonry.pkgd.min.js
 
-        This will download the file to the folder masonry.pkgd.min.js
-        automatically.
-
-    for save it in a subdirectory alone passes the name of the folder:
-        js/http://masonry.desandro.com/masonry.pkgd.min.js
-
-    ---- if does not exist the folder is created automatically. ----
-    '''
-
-    import urllib2
-
-    if request.vars and not request.vars.token == session.token:
-        redirect(URL('logout'))
-    try:
-        filename = None
-        http = request.vars.location.split('/')[0]
-        app = get_app(name=http)
-        path = apath(request.vars.location, r=request)
-        
-        #nombre del archivo
-        if request.vars.filename:
-            filename = request.vars.filename.split('/')[-1]
-        else:
-            filename = re.sub('[^\w\./]+', '_', request.vars.filename)
-            
-        filename = os.path.join(path, filename)
-        dirpath = os.path.dirname(filename)
-        
-        #recuperamos el registro http
-        newdir = dirpath + '/' + request.vars.filename.split('/')[0]
-        insert = request.vars.filename.split('http://')
-        insert.append('http://')
-        
-        if not os.path.exists(newdir):
-            os.makedirs(newdir)
-
-        urls = insert[-1] + insert[-2]
-        get_url = urllib2.urlopen(urls)
-        
-        data = get_url.read()
-        fil = request.vars.filename.split('http://')
-        lineno = count_lines(data)
-        if fil[0] != '':
-            filename = filename.split('/')
-            filename.insert(-1, fil[0][:-1])
-            ruta = '/' + '/'.join(filename)
-            safe_write(ruta, data, 'wb')
-        else:
-            safe_write(filename, data, 'wb')          
-        log_progress(app, 'HTTP', filename, lineno)
-        session.flash = T('file "%(filename)s" downloaded',
-                          dict(filename=request.vars.filename.split('/')[-1]))
-    except Exception:
-        if filename:
-            d = dict(filename=filename[len(path):])
-        else:
-            d = dict(filename='unkown')
-        session.flash = T('cannot download file "%(filename)s"', d)
-
-    redirect(request.vars.sender)
-    
 def create_file():
     """ Create files handler """
     if request.vars and not request.vars.token == session.token:
