@@ -7006,7 +7006,7 @@ class Row(object):
             return ogetattr(self, key)
         except (KeyError,AttributeError,TypeError), ae:
             try:
-                return self.__get_lazy_reference__(key)
+                return ogetattr(self,'__get_lazy_reference__')(key)
             except:
                 raise ae
 
