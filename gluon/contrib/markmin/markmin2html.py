@@ -745,8 +745,8 @@ def render(text,
     >>> render("----\\nhello world\\n----\\n")
     '<blockquote>hello world</blockquote>'
 
-    >>> render('[[http://example.com]]')
-    '<p><span class="anchor" id="markmin_http://example.com"></span></p>'
+    >>> render('[[myanchor]]')
+    '<p><span class="anchor" id="markmin_myanchor"></span></p>'
 
     >>> render('[[ http://example.com]]')
     '<p><a href="http://example.com">http://example.com</a></p>'
@@ -1369,7 +1369,7 @@ def render(text,
     def expand_meta(m):
         code,b,p,s = segments.pop(0)
         if code==None or m.group() == DISABLED_META:
-           return escape(s)
+            return escape(s)
         if b in extra:
             if code[:1]=='\n': code=code[1:]
             if code[-1:]=='\n': code=code[:-1]
@@ -1379,8 +1379,8 @@ def render(text,
                 return str(extra[b](code))
         elif b=='cite':
             return '['+','.join('<a href="#%s" class="%s">%s</a>' \
-                  % (d,b,d) \
-                  for d in escape(code).split(','))+']'
+                                   % (id_prefix+d,b,d) \
+                                   for d in escape(code).split(','))+']'
         elif b=='latex':
             return LATEX % code.replace('"','\"').replace('\n',' ')
         elif b in html_colors:
