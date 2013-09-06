@@ -1,3 +1,7 @@
+.twitter-typeahead {
+	width: 100%;
+}
+
 .twitter-typeahead .tt-query,
 .twitter-typeahead .tt-hint {
 	margin-bottom: 0px;

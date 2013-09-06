@@ -22,6 +22,7 @@ import urllib
 import urllib2
 import Cookie
 import cStringIO
+import ConfigParser
 from email import MIMEBase, MIMEMultipart, MIMEText, Encoders, Header, message_from_string, Charset
 
 from gluon.contenttype import contenttype
@@ -5852,6 +5853,37 @@ class Wiki(object):
             request.post_vars.render = None
         return render(request.post_vars)
 
+class Config(object):
+    def __init__(
+        self,
+		filename,
+        section,
+        default_values={}
+    ):
+        self.config = ConfigParser.ConfigParser(default_values)
+        self.config.read(filename)
+        if not self.config.has_section(section):
+            self.config.add_section(section)
+        self.section  = section
+        self.filename = filename
+
+    def read(self):
+        if not( isinstance(current.session['settings_%s' % self.section], dict) ):
+            settings = dict(self.config.items(self.section))
+        else:
+            settings = current.session['settings_%s' % self.section]
+        return settings
+
+    def save(self, options):
+        for option, value in options:
+            self.config.set(self.section, option, value)
+        try:        
+            self.config.write(open(self.filename, 'w'))
+            result = True
+        except:
+            current.session['settings_%s' % self.section] = dict(self.config.items(self.section))		
+            result = False
+        return result
 
 if __name__ == '__main__':
     import doctest

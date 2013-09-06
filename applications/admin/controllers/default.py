@@ -11,9 +11,11 @@ import re
 from gluon.admin import *
 from gluon.fileutils import abspath, read_file, write_file
 from gluon.utils import web2py_uuid
+from gluon.tools import Config
 from glob import glob
 import shutil
 import platform
+
 try:
     import git
     if git.__version__ < '0.3.1':
@@ -559,6 +561,10 @@ def edit():
     """ File edit handler """
     # Load json only if it is ajax edited...
     app = get_app(request.vars.app)
+    app_path = apath(app, r=request)
+    editor_defaults={'theme':'web2py'}
+    config = Config(os.path.join(app_path, 'settings.cfg'), section='editor', default_values=editor_defaults)
+    preferences = config.read()
 
     if not(request.ajax):
         # return the scaffolding, the rest will be through ajax requests
@@ -572,7 +578,21 @@ def edit():
         for key in editarea_preferences:
             if key in globals():
                 editarea_preferences[key] = globals()[key]
-        return response.render ('default/edit.html', dict(app=request.args[0], editarea_preferences=editarea_preferences))
+        return response.render ('default/edit.html', dict(app=request.args[0], editor_settings=preferences, editarea_preferences=editarea_preferences))
+
+    # show settings tab and save prefernces
+    if 'settings' in request.vars:
+        if request.post_vars:	#save new preferences
+            if config.save(request.post_vars.items()):
+                response.headers["web2py-component-flash"] = T('Preferences saved correctly')
+            else:
+                response.headers["web2py-component-flash"] = T('Preferences saved on session only')	
+            response.headers["web2py-component-command"] = "update_theme('%s'); jQuery('a[href=#editor_settings] button.close').click();" % config.read()['theme']
+            return
+        else:
+            details = {'filename':'settings', 'id':'editor_settings', 'force': False}
+            details['plain_html'] = response.render('default/editor_settings.html', {'editor_settings':preferences})
+            return response.json(details)
 
     """ File edit handler """
     # Load json only if it is ajax edited...
