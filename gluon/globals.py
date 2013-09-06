@@ -643,6 +643,12 @@ class Response(Storage):
                                lazy=v['dbtables']['lazy'] or '[no lazy tables]')
         u = web2py_uuid()
         backtotop = A('Back to top', _href="#totop-%s" % u)
+        # Convert lazy request.vars from property to Storage so they
+        # will be displayed in the toolbar.
+        request = copy.copy(current.request)
+        request.update(vars=current.request.vars,
+            get_vars=current.request.get_vars,
+            post_vars=current.request.post_vars)
         return DIV(
             BUTTON('design', _onclick="document.location='%s'" % admin),
             BUTTON('request',
@@ -655,7 +661,7 @@ class Response(Storage):
                    _onclick="jQuery('#db-tables-%s').slideToggle()" % u),
             BUTTON('db stats',
                    _onclick="jQuery('#db-stats-%s').slideToggle()" % u),
-            DIV(BEAUTIFY(current.request), backtotop,
+            DIV(BEAUTIFY(request), backtotop,
                 _class="hidden", _id="request-%s" % u),
             DIV(BEAUTIFY(current.session), backtotop,
                 _class="hidden", _id="session-%s" % u),
