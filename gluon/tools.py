@@ -1912,7 +1912,6 @@ class Auth(object):
                 keys['first_name'] = keys.get('username', guess)
             user_id = table_user.insert(**table_user._filter_fields(keys))
             user = table_user[user_id]
-            print user
             if self.settings.create_user_groups:
                 group_id = self.add_group(
                     self.settings.create_user_groups % user)
