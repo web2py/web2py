@@ -915,7 +915,7 @@ class Session(Storage):
                 return
             (record_id, sep, unique_key) = response.session_id.partition(':')
 
-            if record_id.isdigit() and long(record_id):
+            if record_id.isdigit() and long(record_id)>0:
                 new_unique_key = web2py_uuid()
                 row = table(record_id)
                 if row and row.unique_key==unique_key:
