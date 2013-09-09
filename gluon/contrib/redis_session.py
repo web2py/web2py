@@ -185,7 +185,8 @@ class MockQuery(object):
             if self.with_lock:
                 acquire_lock(self.db, key + ':lock', self.value)
             rtn = self.db.hgetall(key)
-            rtn['update_record'] = self.update  # update record support
+            if rtn:
+                rtn['update_record'] = self.update  # update record support
             return [Storage(rtn)] if rtn else []
         elif self.op == 'ge' and self.field == 'id' and self.value == 0:
             #means that someone wants the complete list
