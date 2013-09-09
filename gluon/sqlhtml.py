@@ -1654,9 +1654,11 @@ class SQLFORM(FORM):
                 elif field.type == 'time':
                     value_input = SQLFORM.widgets.time.widget(field,field.default,_id=_id)
                 elif field.type == 'date':
-                    value_input = SQLFORM.widgets.date.widget(field,field.default,_id=_id)
+                    iso_format = {'_data-w2p_date_format' : '%Y-%m-%d'}
+                    value_input = SQLFORM.widgets.date.widget(field,field.default,_id=_id, **iso_format)
                 elif field.type == 'datetime':
-                    value_input = SQLFORM.widgets.datetime.widget(field,field.default,_id=_id)
+                    iso_format = iso_format = {'_data-w2p_datetime_format' : '%Y-%m-%d %H:%M:%S'}
+                    value_input = SQLFORM.widgets.datetime.widget(field,field.default,_id=_id, **iso_format)
                 elif (field.type.startswith('reference ') or
                       field.type.startswith('list:reference ')) and \
                       hasattr(field.requires,'options'):
