@@ -291,7 +291,7 @@
             /*bummer for form submissions....the element is not there after complete
              *because it gets replaced by the new response....
              */
-            web2py.fire(element, 'ajax:success', [xhr, status], target);
+            web2py.fire(element, 'ajax:success', [data, status, xhr], target);
           },
           'error': function (xhr, status, error) {
             /*bummer for form submissions....in addition to the element being not there after
@@ -299,7 +299,7 @@
              *handling just returns the same status code for good and bad
              *form submissions (i.e. that triggered a validator error)
              */
-            web2py.fire(element, 'ajax:error', [xhr, status], target);
+            web2py.fire(element, 'ajax:error', [xhr, status, error], target);
           },
           'complete': function (xhr, status) {
             web2py.fire(element, 'ajax:complete', [xhr, status], target);
