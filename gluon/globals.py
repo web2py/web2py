@@ -629,7 +629,7 @@ class Response(Storage):
     def toolbar(self):
         from html import DIV, SCRIPT, BEAUTIFY, TAG, URL, A
         BUTTON = TAG.button
-        admin = URL("admin", "default", "design",
+        admin = URL("admin", "default", "design", extension='html',
                     args=current.request.application)
         from gluon.dal import DAL
         dbstats = []
