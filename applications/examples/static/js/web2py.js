@@ -277,7 +277,7 @@
     ajax_page: function (method, action, data, target, element) {
       /* element is a new parameter, but should be put be put in front */
       if(element == undefined) element = $(document);
-      if(web2py.fire(element, 'ajax:before')) { /*test a usecase, should stop here if returns false */
+      if(web2py.fire(element, 'ajax:before', null, target )) { /*test a usecase, should stop here if returns false */
         $.ajax({
           'type': method,
           'url': action,
@@ -285,13 +285,13 @@
           'beforeSend': function (xhr, settings) {
             xhr.setRequestHeader('web2py-component-location', document.location);
             xhr.setRequestHeader('web2py-component-element', target);
-            return web2py.fire(element, 'ajax:beforeSend', [xhr, settings]); //test a usecase, should stop here if returns false
+            return web2py.fire(element, 'ajax:beforeSend', [xhr, settings], target); //test a usecase, should stop here if returns false
           },
           'success': function (data, status, xhr) {
             /*bummer for form submissions....the element is not there after complete
              *because it gets replaced by the new response....
              */
-            element.trigger('ajax:success', [data, status, xhr]);
+            web2py.fire(element, 'ajax:success', [data, status, xhr], target);
           },
           'error': function (xhr, status, error) {
             /*bummer for form submissions....in addition to the element being not there after
@@ -299,10 +299,10 @@
              *handling just returns the same status code for good and bad
              *form submissions (i.e. that triggered a validator error)
              */
-            element.trigger('ajax:error', [xhr, status, error]);
+            web2py.fire(element, 'ajax:error', [xhr, status, error], target);
           },
           'complete': function (xhr, status) {
-            element.trigger('ajax:complete', [xhr, status]);
+            web2py.fire(element, 'ajax:complete', [xhr, status], target);
             var html = xhr.responseText;
             var content = xhr.getResponseHeader('web2py-component-content');
             var t = $('#' + target);
@@ -452,8 +452,8 @@
     /* Form input elements re-enabled after form submission */
     enableSelector: 'input:disabled, button:disabled, textarea:disabled, select:disabled',
     /* Triggers an event on an element and returns false if the event result is false */
-    fire: function (obj, name, data) {
-      var event = $.Event(name);
+    fire: function (obj, type, data, target) {
+      var event = $.Event(type, {'containerTarget': $('#' + target)[0]});
       obj.trigger(event, data);
       return event.result !== false;
     },
