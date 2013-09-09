@@ -9804,7 +9804,7 @@ class Query(object):
                      "second":0}
         """
 
-        SERIALIZABLE_TYPES = (tuple, dict, list, int, long, float,
+        SERIALIZABLE_TYPES = (tuple, dict, set, list, int, long, float,
                               basestring, type(None), bool)
         def loop(d):
             newd = dict()
