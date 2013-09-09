@@ -1,3 +1,44 @@
+## 2.6,1
+
+Attention all users: For pre 2.6 applications to work with web2py >=2.6, you must copy static/js/web2py.js, controllers/appadmin.py, and views/appadmin.html from the welcome app to your own apps (all of them).
+
+Attention production users: The updated handlers and examples are in handlers/ and examples/. The updated ones will not override the existing ones. To use the new ones it is not sufficient to upgrade web2py, you also need to copy the desired handler/example in the root web2py/ folder.
+
+Attention MySQL users: The length of string fields changed from 255 to 512 bytes. If you have migrations enabled this will trigger a large migration. To prevent it, first set migrate_enabled=False, upgrade, check everything is ok, then add length=255 to your string Fields, then re-enable migrations with migrate_enabled=True if needed.
+
+- better directory structure: handlers/ extras/ examples/
+- better MongoDb support, thanks Alan
+- better Admin editor interface, thanks Paolo, Roberto (codemirror 3), and Lightdot
+- better layout.html and web2py_bootstra.css, thanks Paolo
+- refectored web2py.js makes code more readable, thanks Niphlod
+- compute fields can depend on other compute fields
+- more functions in addadmin (/manage/auth), thanks Anthony
+- support for CASTin in SQL generation
+- new API jQuery('#component').reload()
+- new API rows.render()
+- new API table.field.referent, table._references
+- new API db(...).validate_and_update(...)
+- new API Wiki(..., force_render=True) renders the page source again instead of using cached
+- Wiki now automatically parses named component arguments @{f:a=1,b='twp',c=variable}
+- auth.get_or_create_user(login=False)
+- auth = Auth(crsf_protection = False) prevents creating sessions in login/register forms.
+- enable multiple renderers in wiki, thanks Alan
+- log messages from Auth are no longr translated (for speed and readability)
+- update jQuery mobile to 1.3.1
+- reduced memory footprint by conditionally loading Tk
+- faster pbkdf2 uses OpenSSL, thanks Michele
+- many speed improvements, thanks Michele
+- better session logic, prevents false positive when detecting session changes.
+- scripts/import_static.py converts a static site to a web2py app (experimental)
+- support for new http error code 451
+- profiler saves dump in dir, thanks Niphlod
+- upgraded pyfpdf, thanks Mariano
+- gluon/contrib/pdfinvoice.py for generating PDF invoices (assumes reportlab)
+- no more double submission of forms (even without crsf protection), thanks Niphlod
+- speedup for define_table, thanks Michele
+- settings.cfg to admin, thanks Paolo
+- many bugs fixed, thanks Niphlod, Michele, Roberto, Jonathan, and many ohers.
+
 ## 2.5.2
 
 - Web editor with tabs, thanks ilvalle
