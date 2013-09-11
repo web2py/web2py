@@ -4640,13 +4640,12 @@ class Service(object):
 
         def return_error(id, code, message=None, data=None):
             error = {'code': code}
-            if message is None:
-                error['message'] =  Service.jsonrpc_errors[code][0]
-            else:
-                error['message'] = message
-            if data is None:
+            if Service.jsonrpc_errors.has_key(code):
+                error['message'] = Service.jsonrpc_errors[code][0]
                 error['data'] = Service.jsonrpc_errors[code][1]
-            else:
+            if message is not None:
+                error['message'] = message
+            if data is not None:
                 error['data'] = data
             return serializers.json({'jsonrpc': '2.0',
                                      'id': id,
