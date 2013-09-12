@@ -921,7 +921,9 @@ class Auth(object):
         username_case_sensitive=True,
         update_fields = ['email'],
         ondelete="CASCADE",
-        client_side = True,
+        client_side = True, 
+        renew_session_onlogin=True,
+        renew_session_onlogout=True,
         keep_session_onlogin=True,
         keep_session_onlogout=False,
         wiki = Settings(),
@@ -1975,7 +1977,8 @@ class Auth(object):
             for key, value in user.items():
                 if callable(value) or key=='password':
                     delattr(user,key)
-        current.session.renew(clear_session=not self.settings.keep_session_onlogin)
+        if self.settings.renew_session_onlogin:
+            current.session.renew(clear_session=not self.settings.keep_session_onlogin)
         current.session.auth = Storage(
             user = user,
             last_visit=current.request.now,
@@ -2412,7 +2415,8 @@ class Auth(object):
 
         current.session.auth = None
         current.session.flash = self.messages.logged_out
-        current.session.renew(clear_session=not self.settings.keep_session_onlogout)
+        if self.settings.renew_session_onlogout:
+            current.session.renew(clear_session=not self.settings.keep_session_onlogout)
         if not next is None:
             redirect(next)
 
