@@ -2411,8 +2411,8 @@ class Auth(object):
                 next = cas.logout_url(next)
 
         current.session.auth = None
-        current.session.flash = self.messages.logged_out
         current.session.renew(clear_session=not self.settings.keep_session_onlogout)
+        current.session.flash = self.messages.logged_out
         if not next is None:
             redirect(next)
 
