@@ -24,9 +24,9 @@ import marshal
 from HTMLParser import HTMLParser
 from htmlentitydefs import name2codepoint
 
-from storage import Storage
-from utils import web2py_uuid, simple_hash, compare
-from highlight import highlight
+from gluon.storage import Storage
+from gluon.utils import web2py_uuid, simple_hash, compare
+from gluon.highlight import highlight
 
 regex_crlf = re.compile('\r|\n')
 
@@ -2713,7 +2713,7 @@ class MARKMIN(XmlComponent):
         """
         calls the gluon.contrib.markmin render function to convert the wiki syntax
         """
-        from contrib.markmin.markmin2html import render
+        from gluon.contrib.markmin.markmin2html import render
         return render(self.text, extra=self.extra,
                       allowed=self.allowed, sep=self.sep, latex=self.latex,
                       URL=self.url, environment=self.environment,

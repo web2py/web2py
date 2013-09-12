@@ -18,27 +18,27 @@ import os
 import copy
 import random
 import __builtin__
-from storage import Storage, List
-from template import parse_template
-from restricted import restricted, compile2
-from fileutils import mktree, listdir, read_file, write_file
-from myregex import regex_expose
-from languages import translator
-from dal import BaseAdapter, SQLDB, SQLField, DAL, Field
-from sqlhtml import SQLFORM, SQLTABLE
-from cache import Cache
-from globals import current, Response
-import settings
-from cfs import getcfs
-import html
-import validators
-from http import HTTP, redirect
+from gluon.storage import Storage, List
+from gluon.template import parse_template
+from gluon.restricted import restricted, compile2
+from gluon.fileutils import mktree, listdir, read_file, write_file
+from gluon.myregex import regex_expose
+from gluon.languages import translator
+from gluon.dal import BaseAdapter, SQLDB, SQLField, DAL, Field
+from gluon.sqlhtml import SQLFORM, SQLTABLE
+from gluon.cache import Cache
+from gluon.globals import current, Response
+from gluon import settings
+from gluon.cfs import getcfs
+from gluon import html
+from gluon import validators
+from gluon.http import HTTP, redirect
 import marshal
 import shutil
 import imp
 import logging
 logger = logging.getLogger("web2py")
-import rewrite
+from gluon import rewrite
 from custom_import import custom_import_install
 
 try:

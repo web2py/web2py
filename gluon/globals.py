@@ -14,17 +14,17 @@ Contains the classes for the global used variables:
 
 """
 
-from storage import Storage, List
-from streamer import streamer, stream_file_or_304_or_206, DEFAULT_CHUNK_SIZE
-from xmlrpc import handler
-from contenttype import contenttype
-from html import xmlescape, TABLE, TR, PRE, URL
-from http import HTTP, redirect
-from fileutils import up
-from serializers import json, custom_json
-import settings
-from utils import web2py_uuid, secure_dumps, secure_loads
-from settings import global_settings
+from gluon.storage import Storage, List
+from gluon.streamer import streamer, stream_file_or_304_or_206, DEFAULT_CHUNK_SIZE
+from gluon.xmlrpc import handler
+from gluon.contenttype import contenttype
+from gluon.html import xmlescape, TABLE, TR, PRE, URL
+from gluon.http import HTTP, redirect
+from gluon.fileutils import up
+from gluon.serializers import json, custom_json
+import gluon.settings as settings
+from gluon.utils import web2py_uuid, secure_dumps, secure_loads
+from gluon.settings import global_settings
 import hashlib
 import portalocker
 import cPickle
@@ -41,8 +41,8 @@ import threading
 import cgi
 import copy
 import tempfile
-from cache import CacheInRam
-from fileutils import copystream
+from gluon.cache import CacheInRam
+from gluon.fileutils import copystream
 
 FMT = '%a, %d-%b-%Y %H:%M:%S PST'
 PAST = 'Sat, 1-Jan-1971 00:00:00'
@@ -60,7 +60,7 @@ except:
     try:
         import json as sj #standard installed library
     except:
-        import contrib.simplejson as sj #pure python library
+        import gluon.contrib.simplejson as sj #pure python library
 
 regex_session_id = re.compile('^([\w\-]+/)?[\w\-\.]+$')
 

@@ -12,12 +12,12 @@ import traceback
 import zipfile
 import urllib
 from shutil import rmtree
-from utils import web2py_uuid
-from fileutils import w2p_pack, w2p_unpack, w2p_pack_plugin, w2p_unpack_plugin
-from fileutils import up, fix_newlines, abspath, recursive_unlink
-from fileutils import read_file, write_file, parse_version
-from restricted import RestrictedError
-from settings import global_settings
+from gluon.utils import web2py_uuid
+from gluon.fileutils import w2p_pack, w2p_unpack, w2p_pack_plugin, w2p_unpack_plugin
+from gluon.fileutils import up, fix_newlines, abspath, recursive_unlink
+from gluon.fileutils import read_file, write_file, parse_version
+from gluon.restricted import RestrictedError
+from gluon.settings import global_settings
 
 
 if not global_settings.web2py_runtime_gae:

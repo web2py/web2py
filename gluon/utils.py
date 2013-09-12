@@ -37,15 +37,15 @@ from hashlib import md5, sha1, sha224, sha256, sha384, sha512
 try:
     from Crypto.Cipher import AES
 except ImportError:
-    import contrib.aes as AES
+    import gluon.contrib.aes as AES
 
 import hmac
 
 try:
     try:
-        from contrib.pbkdf2_ctypes import pbkdf2_hex
+        from gluon.contrib.pbkdf2_ctypes import pbkdf2_hex
     except (ImportError, AttributeError):
-        from contrib.pbkdf2 import pbkdf2_hex
+        from gluon.contrib.pbkdf2 import pbkdf2_hex
     HAVE_PBKDF2 = True
 except ImportError:
     try:

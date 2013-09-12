@@ -22,10 +22,10 @@ import logging
 import traceback
 import threading
 import urllib
-from storage import Storage, List
-from http import HTTP
-from fileutils import abspath, read_file
-from settings import global_settings
+from gluon.storage import Storage, List
+from gluon.http import HTTP
+from gluon.fileutils import abspath, read_file
+from gluon.settings import global_settings
 
 isdir = os.path.isdir
 isfile = os.path.isfile

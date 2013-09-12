@@ -10,17 +10,17 @@ import tempfile
 import logging
 
 if os.path.isdir('gluon'):
-    sys.path.append(os.path.realpath('gluon'))  # running from web2py base
+    sys.path.insert(0,os.path.realpath('gluon'))  # running from web2py base
 else:
-    sys.path.append(os.path.realpath('../'))  # running from gluon/tests/
+    sys.path.insert(0,os.path.realpath('../'))  # running from gluon/tests/
     os.environ['web2py_path'] = os.path.realpath('../../')  # for settings
 
-from rewrite import load, filter_url, filter_err, get_effective_router, map_url_out
-from html import URL
-from fileutils import abspath
-from settings import global_settings
-from http import HTTP
-from storage import Storage
+from gluon.rewrite import load, filter_url, filter_err, get_effective_router, map_url_out
+from gluon.html import URL
+from gluon.fileutils import abspath
+from gluon.settings import global_settings
+from gluon.http import HTTP
+from gluon.storage import Storage
 
 logger = None
 oldcwd = None

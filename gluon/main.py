@@ -34,15 +34,15 @@ except:
     try:
         import json as sj #standard installed library
     except:
-        import contrib.simplejson as sj #pure python library
+        import gluon.contrib.simplejson as sj #pure python library
 
 from thread import allocate_lock
 
-from fileutils import abspath, write_file
-from settings import global_settings
-from utils import web2py_uuid
-from admin import add_path_first, create_missing_folders, create_missing_app_folders
-from globals import current
+from gluon.fileutils import abspath, write_file
+from gluon.settings import global_settings
+from gluon.utils import web2py_uuid
+from gluon.admin import add_path_first, create_missing_folders, create_missing_app_folders
+from gluon.globals import current
 
 #  Remarks:
 #  calling script has inserted path to script directory into sys.path
@@ -89,19 +89,19 @@ else:
     logging.basicConfig()
 logger = logging.getLogger("web2py")
 
-from restricted import RestrictedError
-from http import HTTP, redirect
-from globals import Request, Response, Session
-from compileapp import build_environment, run_models_in, \
+from gluon.restricted import RestrictedError
+from gluon.http import HTTP, redirect
+from gluon.globals import Request, Response, Session
+from gluon.compileapp import build_environment, run_models_in, \
     run_controller_in, run_view_in
-from contenttype import contenttype
-from dal import BaseAdapter
-from validators import CRYPT
-from html import URL, xmlescape
-from utils import is_valid_ip_address, getipaddrinfo
-from rewrite import load, url_in, THREAD_LOCAL as rwthread, \
+from gluon.contenttype import contenttype
+from gluon.dal import BaseAdapter
+from gluon.validators import CRYPT
+from gluon.html import URL, xmlescape
+from gluon.utils import is_valid_ip_address, getipaddrinfo
+from gluon.rewrite import load, url_in, THREAD_LOCAL as rwthread, \
     try_rewrite_on_error, fixup_missing_path_info
-import newcron
+from gluon import newcron
 
 __all__ = ['wsgibase', 'save_password', 'appfactory', 'HttpServer']
 
@@ -123,7 +123,7 @@ except:
     raise RuntimeError("Cannot determine web2py version")
 
 try:
-    import rocket
+    from gluon import rocket
 except:
     if not global_settings.web2py_runtime_gae:
         logger.warn('unable to import Rocket')

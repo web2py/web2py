@@ -22,12 +22,12 @@ import math
 import logging
 import newcron
 import getpass
-import main
+import gluon.main as main
 
-from fileutils import read_file, write_file, create_welcome_w2p
-from settings import global_settings
-from shell import run, test
-from utils import is_valid_ip_address, is_loopback_ip_address, getipaddrinfo
+from gluon.fileutils import read_file, write_file, create_welcome_w2p
+from gluon.settings import global_settings
+from gluon.shell import run, test
+from gluon.utils import is_valid_ip_address, is_loopback_ip_address, getipaddrinfo
 
 
 ProgramName = 'web2py Web Framework'
@@ -319,7 +319,7 @@ class web2pyDialog(object):
         self.button_stop.configure(state='disabled')
 
         if options.taskbar:
-            import contrib.taskbar_widget
+            import gluon.contrib.taskbar_widget
             self.tb = contrib.taskbar_widget.TaskBarIcon()
             self.checkTaskBar()
 

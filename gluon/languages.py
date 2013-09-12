@@ -23,14 +23,14 @@ try:
 except ImportError:
     import copy_reg # python 2
 
-from portalocker import read_locked, LockedFile
+from gluon.portalocker import read_locked, LockedFile
 from utf8 import Utf8
 
-from fileutils import listdir
-import settings
-from cfs import getcfs
-from html import XML, xmlescape
-from contrib.markmin.markmin2html import render, markmin_escape
+from gluon.fileutils import listdir
+import gluon.settings as settings
+from gluon.cfs import getcfs
+from gluon.html import XML, xmlescape
+from gluon.contrib.markmin.markmin2html import render, markmin_escape
 from string import maketrans
 
 __all__ = ['translator', 'findT', 'update_all_languages']
@@ -178,7 +178,7 @@ def read_possible_plural_rules():
     """
     plurals = {}
     try:
-        import contrib.plural_rules as package
+        import gluon.contrib.plural_rules as package
         for importer, modname, ispkg in pkgutil.iter_modules(package.__path__):
             if len(modname) == 2:
                 module = __import__(package.__name__ + '.' + modname,

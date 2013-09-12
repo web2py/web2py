@@ -25,8 +25,8 @@ except:
 
 try:
     # have web2py
-    from restricted import RestrictedError
-    from globals import current
+    from gluon.restricted import RestrictedError
+    from gluon.globals import current
 except ImportError:
     # do not have web2py
     current = None

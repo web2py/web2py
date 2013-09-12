@@ -18,15 +18,15 @@ import re
 import optparse
 import glob
 import traceback
-import fileutils
-from settings import global_settings
-from utils import web2py_uuid
-from compileapp import build_environment, read_pyc, run_models_in
-from restricted import RestrictedError
-from globals import Request, Response, Session
-from storage import Storage, List
-from admin import w2p_unpack
-from dal import BaseAdapter
+import gluon.fileutils as fileutils
+from gluon.settings import global_settings
+from gluon.utils import web2py_uuid
+from gluon.compileapp import build_environment, read_pyc, run_models_in
+from gluon.restricted import RestrictedError
+from gluon.globals import Request, Response, Session
+from gluon.storage import Storage, List
+from gluon.admin import w2p_unpack
+from gluon.dal import BaseAdapter
 
 logger = logging.getLogger("web2py")
 

@@ -19,8 +19,8 @@ import struct
 import decimal
 import unicodedata
 from cStringIO import StringIO
-from utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
-from dal import FieldVirtual, FieldMethod
+from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
+from gluon.dal import FieldVirtual, FieldMethod
 
 JSONErrors = (NameError, TypeError, ValueError, AttributeError,
               KeyError)
@@ -3523,7 +3523,7 @@ class IS_IPV6(Validator):
         try:
             import ipaddress
         except ImportError:
-            from contrib import ipaddr as ipaddress
+            from gluon.contrib import ipaddr as ipaddress
 
         try:
             ip = ipaddress.IPv6Address(value)
@@ -3746,7 +3746,7 @@ class IS_IPADDRESS(Validator):
         try:
             import ipaddress
         except ImportError:
-            from contrib import ipaddr as ipaddress
+            from gluon.contrib import ipaddr as ipaddress
 
         try:
             ip = ipaddress.ip_address(value)

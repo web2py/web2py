@@ -5,11 +5,10 @@ License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
 import datetime
 import decimal
-from storage import Storage
-from html import TAG, XmlComponent
-from html import xmlescape
-from languages import lazyT
-import contrib.rss2 as rss2
+from gluon.storage import Storage
+from gluon.html import TAG, XmlComponent, xmlescape
+from gluon.languages import lazyT
+import gluon.contrib.rss2 as rss2
 
 try:
     import simplejson as json_parser                # try external module
@@ -17,7 +16,7 @@ except ImportError:
     try:
         import json as json_parser                  # try stdlib (Python >= 2.6)
     except:
-        import contrib.simplejson as json_parser    # fallback to pure-Python module
+        import gluon.contrib.simplejson as json_parser    # fallback to pure-Python module
 
 have_yaml = True
 try:

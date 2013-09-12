@@ -26,7 +26,7 @@ except:
         print "Warning, winservice is unable to install the Mark Hammond Win32 extensions"
 import servicemanager
 import _winreg
-from fileutils import up
+from gluon.fileutils import up
 
 
 __all__ = ['web2py_windows_service_handler']
@@ -125,7 +125,7 @@ class Web2pyService(Service):
                 options.minthreads = None
             if not hasattr(options, 'maxthreads'):
                 options.maxthreads = None
-        import main
+        from gluon import main
         self.server = main.HttpServer(
             ip=options.ip,
             port=options.port,
@@ -146,7 +146,7 @@ class Web2pyService(Service):
             interfaces=options.interfaces
         )
         try:
-            from rewrite import load
+            from gluon.rewrite import load
             load()
             self.server.start()
         except:
@@ -170,11 +170,11 @@ class Web2pyCronService(Web2pyService):
     _exe_args_ = 'options'
 
     def start(self):
-        import newcron
+        from gluon import newcron
         import logging
         import logging.config
-        from settings import global_settings
-        from fileutils import abspath
+        from gluon.settings import global_settings
+        from gluon.fileutils import abspath
         from os.path import exists, join
         
         self.log('web2py Cron service starting')

@@ -30,7 +30,7 @@ import re
 import hashlib
 import datetime
 try:
-    import settings
+    from gluon import settings
     have_settings = True
 except ImportError:
     have_settings = False
@@ -423,7 +423,7 @@ class Cache(object):
         """
         # GAE will have a special caching
         if have_settings and settings.global_settings.web2py_runtime_gae:
-            from contrib.gae_memcache import MemcacheClient
+            from gluon.contrib.gae_memcache import MemcacheClient
             self.ram = self.disk = MemcacheClient(request)
         else:
             # Otherwise use ram (and try also disk)

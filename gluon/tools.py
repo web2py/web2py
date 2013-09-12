@@ -46,7 +46,7 @@ except ImportError:
         import simplejson as json_parser
     except:
         # fallback to pure-Python module
-        import contrib.simplejson as json_parser
+        import gluon.contrib.simplejson as json_parser
 
 __all__ = ['Mail', 'Auth', 'Recaptcha', 'Crud', 'Service', 'Wiki',
            'PluginManager', 'fetch', 'geocode', 'prettydate']
@@ -1028,7 +1028,7 @@ class Auth(object):
 
     Authentication Example:
 
-        from contrib.utils import *
+        from gluon.contrib.utils import *
         mail=Mail()
         mail.settings.server='smtp.gmail.com:587'
         mail.settings.sender='you@somewhere.com'
@@ -4772,7 +4772,7 @@ class Service(object):
 
     def serve_soap(self, version="1.1"):
         try:
-            from contrib.pysimplesoap.server import SoapDispatcher
+            from gluon.contrib.pysimplesoap.server import SoapDispatcher
         except:
             return "pysimplesoap not installed in contrib"
         request = current.request

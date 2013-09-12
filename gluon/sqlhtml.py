@@ -14,30 +14,30 @@ Holds:
 
 """
 import os
-from http import HTTP
-from html import XmlComponent
-from html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT
-from html import FORM, INPUT, LABEL, OPTION, SELECT
-from html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
-from html import URL, truncate_string, FIELDSET
-from dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
+from gluon.http import HTTP
+from gluon.html import XmlComponent
+from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT
+from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT
+from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
+from gluon.html import URL, truncate_string, FIELDSET
+from gluon.dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
     bar_encode, Reference, REGEX_TABLE_DOT_FIELD, Expression
-from storage import Storage
-from utils import md5_hash
-from validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE, \
+from gluon.storage import Storage
+from gluon.utils import md5_hash
+from gluon.validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE, \
     IS_DATETIME, IS_INT_IN_RANGE, IS_FLOAT_IN_RANGE, IS_STRONG
 
-import serializers
+import gluon.serializers as serializers
 import datetime
 import urllib
 import re
 import cStringIO
-from globals import current
-from http import redirect
+from gluon.globals import current
+from gluon.http import redirect
 import inspect
 
 try:
-    import settings
+    import gluon.settings as settings
     is_gae = settings.global_settings.web2py_runtime_gae
 except ImportError:
     is_gae = False # this is an assumption (if settings missing)

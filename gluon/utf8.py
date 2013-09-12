@@ -45,7 +45,7 @@ def sort_key(s):
     """
     global sort_key
     try:
-        from contrib.pyuca import unicode_collator
+        from gluon.contrib.pyuca import unicode_collator
         unicode_sort_key = unicode_collator.sort_key
         sort_key = lambda s: unicode_sort_key(
             unicode(s, 'utf-8') if isinstance(s, str) else s)

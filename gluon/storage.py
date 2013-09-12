@@ -13,7 +13,7 @@ Provides:
 """
 
 import cPickle
-import portalocker
+import gluon.portalocker as portalocker
 
 __all__ = ['List', 'Storage', 'Settings', 'Messages',
            'StorageList', 'load_storage', 'save_storage']

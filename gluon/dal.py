@@ -210,7 +210,7 @@ pjoin = os.path.join
 # following checks allow the use of dal without web2py, as a standalone module
 ###################################################################################
 try:
-    from utils import web2py_uuid
+    from gluon.utils import web2py_uuid
 except (ImportError, SystemError):
     import uuid
     def web2py_uuid(): return str(uuid.uuid4())
@@ -222,7 +222,7 @@ except ImportError:
     have_portalocker = False
 
 try:
-    import serializers
+    from gluon import serializers
     have_serializers = True
 except ImportError:
     have_serializers = False
@@ -235,7 +235,7 @@ except ImportError:
             simplejson = None
 
 try:
-    import validators
+    from gluon import validators
     have_validators = True
 except (ImportError, SyntaxError):
     have_validators = False
@@ -298,7 +298,7 @@ if not 'google' in DRIVERS:
     try:
         # first try contrib driver, then from site-packages (if installed)
         try:
-            import contrib.pymysql as pymysql
+            import gluon.contrib.pymysql as pymysql
             # monkeypatch pymysql because they havent fixed the bug:
             # https://github.com/petehunt/PyMySQL/issues/86
             pymysql.ESCAPE_REGEX = re.compile("'")
@@ -327,7 +327,7 @@ if not 'google' in DRIVERS:
     try:
         # first try contrib driver, then from site-packages (if installed)
         try:
-            import contrib.pg8000.dbapi as pg8000
+            import gluon.contrib.pg8000.dbapi as pg8000
         except ImportError:
             import pg8000.dbapi as pg8000
         DRIVERS.append('PostgreSQL(pg8000)')
@@ -345,7 +345,7 @@ if not 'google' in DRIVERS:
             import pyodbc
         except ImportError:
             try:
-                import contrib.pypyodbc as pyodbc
+                import gluon.contrib.pypyodbc as pyodbc
             except Exception, e:
                 raise ImportError(str(e))
         DRIVERS.append('MSSQL(pyodbc)')
