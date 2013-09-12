@@ -5854,7 +5854,7 @@ class Wiki(object):
 class Config(object):
     def __init__(
         self,
-		filename,
+        filename,
         section,
         default_values={}
     ):
