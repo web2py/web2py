@@ -46,7 +46,7 @@ class PDF(object):
             canvas.setLineWidth(4)
             canvas.line(0, -1.25 * cm, 21.7 * cm, -1.25 * cm)
             canvas.restoreState()
-            
+
             canvas.saveState()
             notes = listify(invoice.get('notes',''))
             textobject = canvas.beginText(1 * cm, -25 * cm)
@@ -57,7 +57,7 @@ class PDF(object):
             textobject.textLine('Pag.%s/%s' % (page+1,pages))
             canvas.drawText(textobject)
             canvas.restoreState()
-        
+
             canvas.saveState()
             business_details = listify(invoice.get('from','FROM:'))
             canvas.setFont(self.font_face, 9)
@@ -66,13 +66,13 @@ class PDF(object):
                 textobject.textLine(line)
             canvas.drawText(textobject)
             canvas.restoreState()
-        
+
             canvas.saveState()
             client_info = listify(invoice.get('to','TO:'))
             textobject = canvas.beginText(1.5 * cm, -2.5 * cm)
             for line in client_info:
                 textobject.textLine(line)
-            canvas.drawText(textobject)            
+            canvas.drawText(textobject)
             canvas.restoreState()
 
             textobject = canvas.beginText(1.5 * cm, -6.75 * cm)
@@ -86,7 +86,7 @@ class PDF(object):
                 data = [invoice_items[0]]
                 for item in items:
                     data.append([
-                            self.format_currency(x) 
+                            self.format_currency(x)
                             if isinstance(x,float) else x
                             for x in item])
                 righta = [k for k,v in enumerate(items[0])
@@ -116,10 +116,10 @@ class PDF(object):
                     data = [invoice['totals'][0]]
                     for item in items:
                         data.append([
-                                self.format_currency(x) 
+                                self.format_currency(x)
                                 if isinstance(x,float) else x
                                 for x in item])
-                    righta = [k for k,v in enumerate(items[0]) 
+                    righta = [k for k,v in enumerate(items[0])
                               if isinstance(v,(int,float,Decimal))]
                     total = self.format_currency(invoice['total'])
                     data.append(['']*(len(items[0])-1)+[total])

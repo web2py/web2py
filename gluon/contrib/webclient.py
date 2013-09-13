@@ -123,7 +123,7 @@ class WebClient(object):
             else:
                 self.method = 'GET' if method=='auto' else method
                 data = None
-            t0 = time.time()            
+            t0 = time.time()
             self.response = opener.open(self.url, data)
             self.time = time.time() - t0
         except urllib2.HTTPError, error:

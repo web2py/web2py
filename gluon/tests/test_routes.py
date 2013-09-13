@@ -114,7 +114,7 @@ class TestRoutes(unittest.TestCase):
         except AttributeError:
             pass
         """
-        # outgoing        
+        # outgoing
         self.assertEqual(filter_url('http://domain.com/init/default/index',
                          out=True), '/init/default/index')
         self.assertEqual(filter_url('http://domain.com/init/default/index/arg1', out=True), '/init/default/index/arg1')

@@ -3495,7 +3495,7 @@ class IS_IPV6(Validator):
     ('2001::8ffa:fe22:b3af', None)
     >>> IS_IPV6(subnets='invalidsubnet')('2001::8ffa:fe22:b3af')
     ('2001::8ffa:fe22:b3af', 'invalid subnet provided')
-    
+
     """
 
     def __init__(

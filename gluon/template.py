@@ -434,7 +434,7 @@ class TemplateParser(object):
         # Get the filename; filename looks like ``"template.html"``.
         # We need to eval to remove the quotes and get the string type.
         filename = eval(filename, context)
-        
+
         # Allow empty filename for conditional extend and include directives.
         if not filename:
             return ''

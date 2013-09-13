@@ -1484,7 +1484,7 @@ class A(DIV):
         if not self['_disable_with']:
             self['_data-w2p_disable_with'] = 'default'
         if self['callback'] and not self['_id']:
-            self['_id'] = web2py_uuid()        
+            self['_id'] = web2py_uuid()
         if self['delete']:
             self['_data-w2p_remove'] = self['delete']
         if self['target']:

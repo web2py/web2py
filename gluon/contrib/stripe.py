@@ -65,7 +65,7 @@ class Stripe:
 
     def refund(self, charge_id):
         params = urllib.urlencode({})
-        u = urllib.urlopen(self.URL_REFUND % (self.key, charge_id), 
+        u = urllib.urlopen(self.URL_REFUND % (self.key, charge_id),
                            params)
         return simplejson.loads(u.read())
 

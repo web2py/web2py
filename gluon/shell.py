@@ -137,12 +137,12 @@ def env(
 
     for k, v in extra_request.items():
         request[k] = v
-    
+
     path_info = '/%s/%s/%s' % (a, c, f)
     if request.args:
         path_info = '%s/%s' % (path_info, '/'.join(request.args))
     if request.vars:
-        vars = ['%s=%s' % (k,v) if v else '%s' % k 
+        vars = ['%s=%s' % (k,v) if v else '%s' % k
                 for (k,v) in request.vars.iteritems()]
         path_info = '%s?%s' % (path_info, '&'.join(vars))
     request.env.path_info = path_info
@@ -238,7 +238,7 @@ def run(
         pyfile = os.path.join('applications', a, 'controllers', c + '.py')
         pycfile = os.path.join('applications', a, 'compiled',
                                  "controllers_%s_%s.pyc" % (c, f))
-        if ((cronjob and os.path.isfile(pycfile)) 
+        if ((cronjob and os.path.isfile(pycfile))
             or not os.path.isfile(pyfile)):
             exec read_pyc(pycfile) in _env
         elif os.path.isfile(pyfile):
@@ -425,7 +425,7 @@ def execute_from_command_line(argv=None):
     parser = optparse.OptionParser(usage=get_usage())
 
     parser.add_option('-S', '--shell', dest='shell', metavar='APPNAME',
-                      help='run web2py in interactive shell ' + 
+                      help='run web2py in interactive shell ' +
                       'or IPython(if installed) with specified appname')
     msg = 'run web2py in interactive shell or bpython (if installed) with'
     msg += ' specified appname (if app does not exist it will be created).'

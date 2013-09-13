@@ -244,15 +244,15 @@ def try_rewrite_on_error(http_response, request, environ, ticket=None):
                     url = path_info + '?' + query_string
                     message = 'You are being redirected <a href="%s">here</a>'
                     return HTTP(303, message % url, Location=url), environ
-                elif not environ.get('__ROUTES_ONERROR__', False):            
-                    # wsgibase will be called recursively with 
+                elif not environ.get('__ROUTES_ONERROR__', False):
+                    # wsgibase will be called recursively with
                     # the routes_onerror path.
                     environ['__ROUTES_ONERROR__'] = True # limit recursion
-                    path_info = '/' + path_info.lstrip('/')                   
-                    environ['PATH_INFO'] = path_info                           
-                    environ['QUERY_STRING'] = query_string                    
+                    path_info = '/' + path_info.lstrip('/')
+                    environ['PATH_INFO'] = path_info
+                    environ['QUERY_STRING'] = query_string
                     environ['WEB2PY_STATUS_CODE'] = status
-                    return None, environ 
+                    return None, environ
     # do nothing!
     return http_response, environ
 

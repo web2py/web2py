@@ -176,7 +176,7 @@ class Web2pyCronService(Web2pyService):
         from gluon.settings import global_settings
         from gluon.fileutils import abspath
         from os.path import exists, join
-        
+
         self.log('web2py Cron service starting')
         if not self.chdir():
             return
@@ -186,7 +186,7 @@ class Web2pyCronService(Web2pyService):
             opt_mod = self._exe_args_
         options = __import__(opt_mod, [], [], '')
         logpath = abspath(join(options.folder, "logging.conf"))
-        
+
         if exists(logpath):
             logging.config.fileConfig(logpath)
         else:

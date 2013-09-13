@@ -212,7 +212,7 @@ def toggle_breakpoint():
     except Exception, e:
         session.flash = str(e)
     return response.json({'ok': ok, 'lineno': lineno})
-    
+
 def list_breakpoints():
     "Return a list of linenumbers for current breakpoints"
 
@@ -234,4 +234,3 @@ def list_breakpoints():
         session.flash = str(e)
         ok = False
     return response.json({'ok': ok, 'breakpoints': breakpoints})
-

@@ -90,13 +90,13 @@ def populate(table, n=None, default=True, compute=False, contents={}):
     can be used in two ways:
 
     >>> populate(db.tablename, n=100)
-    
-    or 
+
+    or
 
     >>> for k,row in enumerate(populate(db.tablename)): print row
     """
 
-    generator = populate_generator(table, default=default, 
+    generator = populate_generator(table, default=default,
                                    compute=compute, contents=contents)
     if n is not None:
         for k,record in enumerate(generator):
@@ -246,8 +246,8 @@ def populate_generator(table, default=True, compute=False, contents={}):
                         record[fieldname] = random.choice(LAST_NAMES)
                     elif fieldname.find('username')>=0:
                         record[fieldname] = random.choice(FIRST_NAMES).lower()+str(random.randint(1000,9999))
-                    else:    
-                        record[fieldname] = random.choice(FIRST_NAMES)+' '+random.choice(LAST_NAMES)                    
+                    else:
+                        record[fieldname] = random.choice(FIRST_NAMES)+' '+random.choice(LAST_NAMES)
                 elif fieldname.find('phone')>=0:
                     record[fieldname] = '(%s%s%s) %s%s%s-%s%s%s%s' % (
                         random.choice('1234567890'),random.choice('1234567890'),random.choice('1234567890'),random.choice('1234567890'),random.choice('1234567890'),random.choice('1234567890'),random.choice('1234567890'),random.choice('1234567890'),random.choice('1234567890'),random.choice('1234567890'))

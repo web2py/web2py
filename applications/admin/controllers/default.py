@@ -88,7 +88,7 @@ def safe_write(a, value, b='w'):
 
 def get_app(name=None):
     app = name or request.args(0)
-    if (app and os.path.exists(apath(app, r=request)) and 
+    if (app and os.path.exists(apath(app, r=request)) and
         (not MULTI_USER_MODE or is_manager() or
          db(db.app.name == app)(db.app.owner == auth.user.id).count())):
         return app
@@ -583,11 +583,11 @@ def edit():
 
     # show settings tab and save prefernces
     if 'settings' in request.vars:
-        if request.post_vars:	#save new preferences
+        if request.post_vars:        #save new preferences
             if config.save(request.post_vars.items()):
                 response.headers["web2py-component-flash"] = T('Preferences saved correctly')
             else:
-                response.headers["web2py-component-flash"] = T('Preferences saved on session only')	
+                response.headers["web2py-component-flash"] = T('Preferences saved on session only')
             response.headers["web2py-component-command"] = "update_theme('%s'); jQuery('a[href=#editor_settings] button.close').click();" % config.read()['theme']
             return
         else:

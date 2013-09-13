@@ -120,7 +120,7 @@ class TestWeb(LiveTest):
 
         # check registration and login were successful
         client.get('index')
-        
+
         # COMMENTED BECAUSE FAILS BUT WHY?
         self.assertTrue('Welcome Homer' in client.text)
 

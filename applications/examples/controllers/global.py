@@ -5,12 +5,12 @@ def get(args):
         return None
     try:
         obj = globals(),get(args[0])
-        for k in range(1,len(args)):        
+        for k in range(1,len(args)):
             obj = getattr(obj,args[k])
         return obj
     except:
         return None
-            
+
 def vars():
     """the running controller function!"""
     title = '.'.join(request.args)
@@ -27,7 +27,7 @@ def vars():
             d = getattr(obj,'__bases__',None)
 
             for key in keys:
-                a = getattr(obj,key,None)        
+                a = getattr(obj,key,None)
                 if a and not isinstance(a,DAL):
                     doc1 = getattr(a, '__doc__', '')
                     t1 = type(a)
@@ -38,7 +38,7 @@ def vars():
         else:
             doc = 'Unkown'
             keys = []
-            t = c = d = None            
+            t = c = d = None
     else:
         raise HTTP(400)
     return dict(

@@ -921,7 +921,7 @@ class Auth(object):
         username_case_sensitive=True,
         update_fields = ['email'],
         ondelete="CASCADE",
-        client_side = True, 
+        client_side = True,
         renew_session_onlogin=True,
         renew_session_onlogout=True,
         keep_session_onlogin=True,
@@ -1560,8 +1560,8 @@ class Auth(object):
             current_record.replace('_',' ').title())
         for table in tables:
             fieldnames = table.fields()
-            if ('id' in fieldnames and 
-                'modified_on' in fieldnames and 
+            if ('id' in fieldnames and
+                'modified_on' in fieldnames and
                 not current_record in fieldnames):
                 table._enable_record_versioning(
                     archive_db=archive_db,
@@ -2167,17 +2167,17 @@ class Auth(object):
         elif 'username' in table_user.fields:
             username = 'username'
         else:
-            username = 'email'        
+            username = 'email'
         settings = self.settings
         if 'username' in table_user.fields or \
                 not settings.login_email_validate:
             tmpvalidator = IS_NOT_EMPTY(error_message=self.messages.is_empty)
             if not settings.username_case_sensitive:
-                tmpvalidator = [IS_LOWER(), tmpvalidator]                
+                tmpvalidator = [IS_LOWER(), tmpvalidator]
         else:
             tmpvalidator = IS_EMAIL(error_message=self.messages.invalid_email)
             if not settings.email_case_sensitive:
-                tmpvalidator = [IS_LOWER(), tmpvalidator]                
+                tmpvalidator = [IS_LOWER(), tmpvalidator]
         old_requires = table_user[username].requires
         table_user[username].requires = tmpvalidator
 
@@ -2191,7 +2191,7 @@ class Auth(object):
         except:
             pass
 
-        ### use session for federated login        
+        ### use session for federated login
         snext = self.get_vars_next()
         if snext:
             session._auth_next = snext
@@ -2515,9 +2515,9 @@ class Auth(object):
                    captcha.comment, self.settings.formstyle, 'captcha__row')
 
         table_user.registration_key.default = key = web2py_uuid()
-        if form.accepts(request, session if self.csrf_prevention else None, 
+        if form.accepts(request, session if self.csrf_prevention else None,
                         formname='register',
-                        onvalidation=onvalidation, 
+                        onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
             description = self.messages.group_description % form.vars
             if self.settings.create_user_groups:
@@ -5858,7 +5858,7 @@ class Wiki(object):
 class Config(object):
     def __init__(
         self,
-		filename,
+                filename,
         section,
         default_values={}
     ):
@@ -5879,11 +5879,11 @@ class Config(object):
     def save(self, options):
         for option, value in options:
             self.config.set(self.section, option, value)
-        try:        
+        try:
             self.config.write(open(self.filename, 'w'))
             result = True
         except:
-            current.session['settings_%s' % self.section] = dict(self.config.items(self.section))		
+            current.session['settings_%s' % self.section] = dict(self.config.items(self.section))
             result = False
         return result
 

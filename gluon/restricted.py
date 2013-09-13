@@ -48,7 +48,7 @@ class TicketStorage(Storage):
             self._store_on_disk(request, ticket_id, ticket_data)
 
     def _store_in_db(self, request, ticket_id, ticket_data):
-        self.db._adapter.reconnect()        
+        self.db._adapter.reconnect()
         try:
             table = self._get_table(self.db, self.tablename, request.application)
             id = table.insert(ticket_id=ticket_id,

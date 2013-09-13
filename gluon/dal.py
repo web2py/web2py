@@ -1085,7 +1085,7 @@ class BaseAdapter(ConnectionPool):
             elif not key in sql_fields:
                 del sql_fields_current[key]
                 ftype = sql_fields_old[key]['type']
-                if (self.dbengine in ('postgres',) and 
+                if (self.dbengine in ('postgres',) and
                     ftype.startswith('geometry')):
                     geotype, parms = ftype[:-1].split('(')
                     schema = parms.split(',')[0]
@@ -1095,7 +1095,7 @@ class BaseAdapter(ConnectionPool):
                 elif self.dbengine in ('firebird',):
                     query = ['ALTER TABLE %s DROP %s;' % (tablename, key)]
                 else:
-                    query = ['ALTER TABLE %s DROP COLUMN %s;' % 
+                    query = ['ALTER TABLE %s DROP COLUMN %s;' %
                              (tablename, key)]
                 metadata_change = True
             elif sql_fields[key]['sql'] != sql_fields_old[key]['sql'] \
@@ -1135,9 +1135,9 @@ class BaseAdapter(ConnectionPool):
                         self.log('faked!\n', table)
                     else:
                         self.execute(sub_query)
-                        # Caveat: mysql, oracle and firebird 
+                        # Caveat: mysql, oracle and firebird
                         # do not allow multiple alter table
-                        # in one transaction so we must commit 
+                        # in one transaction so we must commit
                         # partial transactions and
                         # update table._dbt after alter table.
                         if db._adapter.commit_on_alter_table:
@@ -1790,7 +1790,7 @@ class BaseAdapter(ConnectionPool):
             return self.connection.rollback()
 
     def close_connection(self):
-        if self.connection: 
+        if self.connection:
             r = self.connection.close()
             self.connection = None
             return r
@@ -4418,7 +4418,7 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
 
     def find_driver(self,adapter_args,uri=None):
         self.adapter_args = adapter_args
-        self.driver = "google"        
+        self.driver = "google"
 
 class NoSQLAdapter(BaseAdapter):
     can_select_for_update = False
@@ -5372,7 +5372,7 @@ class MongoDBAdapter(NoSQLAdapter):
             d = datetime.date(2000, 1, 1)
             # mongodb doesn't has a  time object and so it must datetime,
             # string or integer
-            return datetime.datetime.combine(d, value)        
+            return datetime.datetime.combine(d, value)
         elif fieldtype == "blob":
             from bson import Binary
             if not isinstance(value, Binary):
@@ -6938,14 +6938,14 @@ def sqlhtml_validators(field):
                 refs = reduce(lambda a,b:a&b, [count(ids[i:i+30]) for i in rx])
             else:
                 refs = db(id.belongs(ids)).select(id)
-            return (refs and ', '.join(f(r,x.id) for x in refs) or '')            
+            return (refs and ', '.join(f(r,x.id) for x in refs) or '')
         field.represent = field.represent or list_ref_repr
         if hasattr(referenced, '_format') and referenced._format:
             requires = validators.IS_IN_DB(db,referenced._id,
                                            referenced._format,multiple=True)
         else:
             requires = validators.IS_IN_DB(db,referenced._id,
-                                           multiple=True)        
+                                           multiple=True)
         if field.unique:
             requires._and = validators.IS_NOT_IN_DB(db,field)
         if not field.notnull:
@@ -8349,10 +8349,10 @@ class Table(object):
                 self._id = field
         for field in fields:
             if isinstance(field, (FieldMethod, FieldVirtual)):
-                virtual_fields.append(field)            
+                virtual_fields.append(field)
             elif isinstance(field, Field) and not field.name in fieldnames:
                 if field.db is not None:
-                    field = copy.copy(field)                
+                    field = copy.copy(field)
                 include_new(field)
             elif isinstance(field, dict) and not field['fieldname'] in fieldnames:
                 include_new(Field(**field))
@@ -8914,7 +8914,7 @@ class Table(object):
                     except ValueError:
                         raise RuntimeError("Unable to parse line:%s field:%s value:'%s'"
                                            % (lineno+1,field,line[i]))
-                    
+
                 if not (id_map or cid is None or id_offset is None or unique_idx):
                     csv_id = long(line[cid])
                     curr_id = self.insert(**dict(items))
@@ -9613,7 +9613,7 @@ class Field(Expression):
         else:
             filename = name
         # ## if file is in DB
-        if isinstance(self_uploadfield, (str, Field)):  
+        if isinstance(self_uploadfield, (str, Field)):
             return dict(path=None,filename=filename)
         # ## if file is on filesystem
         if not path:
@@ -10422,24 +10422,24 @@ class Rows(object):
         one_result = False
         if 'one_result' in args:
             one_result = args['one_result']
-            
+
         def build_fields_struct(row, fields, num, groups):
-            ''' helper function: 
+            ''' helper function:
             '''
             if num > len(fields)-1:
                 if one_result:
                     return row
                 else:
                     return [row]
-            
+
             key = fields[num]
             value = row[key]
-            
+
             if value not in groups:
                 groups[value] = build_fields_struct(row, fields, num+1, {})
             else:
                 struct = build_fields_struct(row, fields, num+1, groups[ value ])
-                
+
                 # still have more grouping to do
                 if type(struct) == type(dict()):
                     groups[value].update()
@@ -10449,22 +10449,22 @@ class Rows(object):
                 # no more grouping, first only on
                 else:
                     groups[value] = struct
-            
+
             return groups
-        
+
         if len(fields) == 0:
             return self
-        
+
         # if select returned no results
         if not self.records:
             return {}
-        
+
         grouped_row_group = dict()
 
         # build the struct
         for row in self:
             build_fields_struct(row, fields, 0, grouped_row_group)
-                
+
         return grouped_row_group
 
     def render(self, i=None, fields=None):

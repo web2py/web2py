@@ -453,7 +453,7 @@ def wsgibase(environ, responder):
                 serve_controller(request, response, session)
 
             except HTTP, http_response:
-                
+
                 if static_file:
                     return http_response.to(responder, env=env)
 
@@ -470,7 +470,7 @@ def wsgibase(environ, responder):
                     # ##################################################
                     # on success, commit database
                     # ##################################################
-                    
+
                     if response.do_not_commit is True:
                         BaseAdapter.close_all_instances(None)
                     elif response.custom_commit:
@@ -489,7 +489,7 @@ def wsgibase(environ, responder):
                     if request.cid:
                         http_response.headers.setdefault(
                             'web2py-component-content', 'replace')
-                    
+
                     if request.ajax:
                         if response.flash:
                             http_response.headers['web2py-component-flash'] = \
@@ -498,7 +498,7 @@ def wsgibase(environ, responder):
                         if response.js:
                             http_response.headers['web2py-component-command'] = \
                                 urllib2.quote(response.js.replace('\n',''))
-                            
+
                     # ##################################################
                     # store cookies in headers
                     # ##################################################

@@ -244,7 +244,7 @@ def run(history, statement, env={}):
         for name, val in statement_module.__dict__.items():
             if name not in old_globals or represent(val) != old_globals[name]:
                 new_globals[name] = val
-            
+
         if True in [isinstance(val, tuple(UNPICKLABLE_TYPES))
                     for val in new_globals.values()]:
             # this statement added an unpicklable global. store the statement and
