@@ -234,12 +234,6 @@ except ImportError:
         except ImportError:
             simplejson = None
 
-try:
-    from gluon import validators
-    have_validators = True
-except (ImportError, SyntaxError):
-    have_validators = False
-
 LOGGER = logging.getLogger("web2py.dal")
 DEFAULT = lambda:0
 
@@ -6872,7 +6866,9 @@ def sqlhtml_validators(field):
     fieldtype
     """
     db = field.db
-    if not have_validators:
+    try:
+        from gluon import validators
+    except ImportError:
         return []
     field_type, field_length = field.type, field.length
     if isinstance(field_type, SQLCustomType):
