@@ -179,7 +179,7 @@
       });
       var datetime_format = (typeof w2p_ajax_datetime_format != 'undefined') ? w2p_ajax_datetime_format : "%Y-%m-%d %H:%M:%S";
       doc.on('click', "input.datetime", function () {
-        var tformat = $(this).data('w2p_datetime_format')
+        var tformat = $(this).data('w2p_datetime_format');
         var active = $(this).data('w2p_datetime');
         var format = (typeof tformat != 'undefined') ? tformat : datetime_format;
         if(active === undefined) {
@@ -196,7 +196,7 @@
       });
       var date_format = (typeof w2p_ajax_date_format != 'undefined') ? w2p_ajax_date_format : "%Y-%m-%d";
       doc.on('click', "input.date", function () {
-        var tformat = $(this).data('w2p_date_format')
+        var tformat = $(this).data('w2p_date_format');
         var active = $(this).data('w2p_date');
         var format = (typeof tformat != 'undefined') ? tformat : date_format;
         if(active === undefined) {
