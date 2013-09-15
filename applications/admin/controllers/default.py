@@ -108,7 +108,7 @@ def index():
     if session.authorized:
         redirect(send)
     elif request.vars.password:
-        if verify_password(request.vars.password):
+        if verify_password(request.vars.password[:1024]):
             session.authorized = True
             login_record(True)
 
