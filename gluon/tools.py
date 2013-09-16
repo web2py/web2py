@@ -1509,7 +1509,7 @@ class Auth(object):
                 self.bar = SPAN(s1, Anr(items[0]['name'],
                                 _href=items[0]['href']), s3,
                                 _class='auth_navbar')
-            for item in items:
+            for item in items[1:]:
                 self.bar.insert(-1, s2)
                 self.bar.insert(-1, Anr(item['name'], _href=item['href']))
 
