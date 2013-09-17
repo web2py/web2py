@@ -5,7 +5,7 @@
 Usage:
     Install py2exe: http://sourceforge.net/projects/py2exe/files/
     Copy script to the web2py directory
-    c:\bin\python26\python build_windows_exe.py py2exe
+    c:\bin\python26\python setup_exe.py py2exe
 
 Adapted from http://bazaar.launchpad.net/~flavour/sahana-eden/trunk/view/head:/static/scripts/tools/standalone_exe.py
 """
@@ -42,18 +42,18 @@ remove_build_files = Config.getboolean("Setup", "remove_build_files")
 
 
 # Python base version
-python_version = sys.version[:3]
+python_version = sys.version_info[:3]
 
 # List of modules deprecated in python2.6 that are in the above set
 py26_deprecated = ['mhlib', 'multifile', 'mimify', 'sets', 'MimeWriter']
 
-if python_version == '2.6':
-    base_modules += ['json', 'multiprocessing']
+if python_version > (2,5):
+    base_modules += ['json', 'multiprocessing', 'ldap']
     base_modules = list(set(base_modules).difference(set(py26_deprecated)))
 
 
 #I don't know if this is even necessary
-if python_version == '2.6':
+if python_version > (2,5):
     # Python26 compatibility: http://www.py2exe.org/index.cgi/Tutorial#Step52
     try:
         shutil.copytree('C:\Bin\Microsoft.VC90.CRT', 'dist/')
@@ -62,8 +62,11 @@ if python_version == '2.6':
 
 
 setup(
-    console=['web2py.py'],
+    console=[{'script':'web2py.py',
+              'icon_resources': [(0, 'extras/icons/web2py.ico')]
+              }],
     windows=[{'script':'web2py.py',
+              'icon_resources': [(1, 'extras/icons/web2py.ico')],
               'dest_base':'web2py_no_console'  # MUST NOT be just 'web2py' otherwise it overrides the standard web2py.exe
               }],
     name="web2py",
@@ -72,14 +75,9 @@ setup(
     author="Massimo DiPierro",
     license="LGPL v3",
     data_files=[
-        'ABOUT',
-        'LICENSE',
-        'VERSION',
-        'splashlogo.gif',
-        'logging.example.conf',
-        'options_std.py',
-        'app.example.yaml',
-        'queue.example.yaml'
+        'ABOUT', 
+        'LICENSE', 
+        'VERSION'
     ],
     options={'py2exe': {
              'packages': contributed_modules,
@@ -125,6 +123,10 @@ else:
     copy_folders('applications/welcome', 'applications/welcome')
     copy_folders('applications/examples', 'applications/examples')
     print "Only web2py's admin, examples & welcome applications have been added"
+
+copy_folders('extras', 'extras')
+copy_folders('examples', 'examples')
+copy_folders('handlers', 'handlers')
 
 
 #should we copy project's site-packages into dist/site-packages
