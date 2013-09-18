@@ -2150,9 +2150,15 @@ class BaseAdapter(ConnectionPool):
                 for row in rowsobj.records:
                     box = row[tablename]
                     for f,v in fields_virtual:
-                        box[f] = v.f(row)
+                        try:
+                            box[f] = v.f(row)
+                        except AttributeError:
+                            pass # not enough fields to define virtual field
                     for f,v in fields_lazy:
-                        box[f] = (v.handler or VirtualCommand)(v.f,row)
+                        try:
+                            box[f] = (v.handler or VirtualCommand)(v.f,row)
+                        except AttributeError:
+                            pass # not enough fields to define virtual field
 
             ### old style virtual fields
             for item in table.virtualfields:
