@@ -376,9 +376,10 @@
     updatePage: function (xhr, target) {
         var t = $('#' + target);
         var html = $.parseHTML(xhr.responseText, document, true);
-        var title = $(html).filter('title').last().text();
+        var title_elements = $(html).filter('title').add($(html).find('title'));
+        var title = title_elements.last().text();
         if (title) {
-            $(html).find('title').remove(); /* Remove any title elements from the response */
+            title_elements.remove();        /* Remove any title elements from the response */
             document.title = $.trim(title); /* Set the new document title */
         }
         var content = xhr.getResponseHeader('web2py-component-content');
