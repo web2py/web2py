@@ -1160,7 +1160,7 @@ class Auth(object):
         # ## what happens after login?
 
         url_index = URL(controller, 'index')
-        url_login = URL(controller, function, args='login')
+        url_login = URL(controller, function, args='login', extension=False)
         # ## what happens after registration?
 
         settings = self.settings = Settings()
