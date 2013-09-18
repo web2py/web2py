@@ -79,8 +79,8 @@
             return marker;
        }
 
-        {{if filetype=='html':}}
-        // must be here or break emmet/zencoding for html
+        {{if filetype in ('html', 'js', 'css'):}}
+        // must be here or break emmet/zencoding 
         CodeMirror.defaults.extraKeys["Ctrl-S"] =
             function(instance) {
                 doClickSave();};
