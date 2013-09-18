@@ -6504,9 +6504,10 @@ class IMAPAdapter(NoSQLAdapter):
     def _insert(self, table, fields):
         def add_payload(message, obj):
             payload = Message()
-            charset = obj.get("encoding", "utf-8")
-            payload.set_type(obj.get("mime", None))
-            payload.set_charset(charset)
+            payload.set_charset(obj.get("encoding", "utf-8"))
+            mime = obj.get("mime", None)
+            if mime:
+                payload.set_type(mime)
             if "text" in obj:
                 payload.set_payload(obj["text"])
             elif "payload" in obj:
@@ -6544,7 +6545,9 @@ class IMAPAdapter(NoSQLAdapter):
                     else:
                         message[item] = ";".join([i for i in
                             value])
-                if not message.is_multipart():
+                if (not message.is_multipart() and 
+                   (not message.get_content_type().startswith(
+                        "multipart"))):
                     if isinstance(content, basestring):
                         message.set_payload(content)
                     elif len(content) > 0:
