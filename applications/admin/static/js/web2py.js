@@ -303,12 +303,7 @@
           },
           'complete': function (xhr, status) {
             web2py.fire(element, 'ajax:complete', [xhr, status], target);
-            var html = xhr.responseText;
-            var content = xhr.getResponseHeader('web2py-component-content');
-            var t = $('#' + target);
-            if(content == 'prepend') t.prepend(html);
-            else if(content == 'append') t.append(html);
-            else if(content != 'hide') t.html(html);
+            web2py.updatePage(xhr, target);	/* Parse and load the html received */
             web2py.trap_form(action, target);
             web2py.trap_link(target);
             web2py.ajax_init('#' + target);
@@ -377,6 +372,20 @@
           web2py.ajax_page('get', action, null, target, el);
         }
       });
+    },
+    updatePage: function (xhr, target) {
+        var t = $('#' + target);
+        var html = $.parseHTML(xhr.responseText, document, true);
+        var title_elements = $(html).filter('title').add($(html).find('title'));
+        var title = title_elements.last().text();
+        if (title) {
+            title_elements.remove();        /* Remove any title elements from the response */
+            document.title = $.trim(title); /* Set the new document title */
+        }
+        var content = xhr.getResponseHeader('web2py-component-content');
+        if(content == 'prepend') t.prepend(xhr.responseText);
+        else if(content == 'append') t.append(xhr.responseText);
+        else if(content != 'hide') t.html(html);
     },
     calc_entropy: function (mystring) {
       /* calculate a simple entropy for a given string */
