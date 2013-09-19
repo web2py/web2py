@@ -211,10 +211,9 @@ class Request(Storage):
             body.seek(0)
 
         # parse POST variables on POST, PUT, BOTH only in post_vars
-        if (body and
-                env.request_method in ('POST', 'PUT', 'DELETE', 'BOTH') and
-                not is_json):
-            query_string = env.pop('QUERY_STRING') if 'QUERY_STRING' in env else None
+        if (body and not is_json
+            and env.request_method in ('POST', 'PUT', 'DELETE', 'BOTH')):
+            query_string = env.pop('QUERY_STRING',None)
             dpost = cgi.FieldStorage(fp=body, environ=env, keep_blank_values=1)
             post_vars.update(dpost)
             if query_string is not None:
@@ -232,19 +231,13 @@ class Request(Storage):
                 if key is None:
                     continue  # not sure why cgi.FieldStorage returns None key
                 dpk = dpost[key]
-                # if an element is not a file replace it with its value else leave it alone
-                if isinstance(dpk, list):
-                    value = []
-                    for _dpk in dpk:
-                        if not _dpk.filename:
-                            value.append(_dpk.value)
-                        else:
-                            value.append(_dpk)
-                elif not dpk.filename:
-                    value = dpk.value
-                else:
-                    value = dpk
-                pvalue = listify(value)
+                # if an element is not a file replace it with 
+                # its value else leave it alone
+                
+                pvalue = listify([(_dpk if _dpk.filename else _dpk.value) 
+                                  for _dpk in dpk] 
+                                 if isinstance(dpk, list) else
+                                 (dpk if dpk.filename else dpk.value))
                 if len(pvalue):
                     post_vars[key] = (len(pvalue) > 1 and pvalue) or pvalue[0]
 
