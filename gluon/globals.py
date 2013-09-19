@@ -939,12 +939,11 @@ class Session(Storage):
         if response.session_id:
             rcookies[response.session_id_name] = response.session_id
             rcookies[response.session_id_name]['path'] = '/'
-            if isinstance(response.session_cookie_expires,datetime.datetime):
-                rcookies[response.session_id_name]['expires'] = \
-                    response.session_cookie_expires.strftime(FMT)
-            elif isinstance(response.session_cookie_expires,str):
-                rcookies[response.session_id_name]['expires'] = \
-                    response.session_cookie_expires
+            expires = response.session_cookie_expires
+            if isinstance(expires,datetime.datetime):
+                expires = expires.strftime(FMT)
+            if expires:
+                rcookies[response.session_id_name]['expires'] = expires
 
     def clear(self):
         Storage.clear(self)
@@ -981,13 +980,15 @@ class Session(Storage):
         value = secure_dumps(dict(self),
                              response.session_cookie_key,
                              compression_level=compression_level)
-        expires = response.session_cookie_expires
         rcookies = response.cookies
         rcookies.pop(name, None)
         rcookies[name] = value
         rcookies[name]['path'] = '/'
+        expires = response.session_cookie_expires
+        if isinstance(expires,datetime.datetime):
+            expires = expires.strftime(FMT)
         if expires:
-            rcookies[name]['expires'] = expires.strftime(FMT)
+            rcookies[name]['expires'] = expires
         return True
 
     def _unchanged(self,response):
