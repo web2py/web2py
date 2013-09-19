@@ -332,7 +332,7 @@ class Request(Storage):
                 if not rest_action:
                     raise HTTP(400, "method not supported")
                 try:
-                    return rest_action(*_self.args, **_self.vars)
+                    return rest_action(*_self.args, **getattr(_self,'vars',{}))
                 except TypeError, e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
                     if len(traceback.extract_tb(exc_traceback)) == 1:
