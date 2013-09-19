@@ -277,6 +277,8 @@
     ajax_page: function (method, action, data, target, element) {
       /* element is a new parameter, but should be put be put in front */
       if(element == undefined) element = $(document);
+      /* if target is not there, fill it with something that there isn't in the page*/
+      if(target == undefined || target == '') target = 'w2p_none';
       if(web2py.fire(element, 'ajax:before', null, target )) { /*test a usecase, should stop here if returns false */
         $.ajax({
           'type': method,
@@ -578,9 +580,9 @@
       }
       if(target == undefined) {
         if(method == 'GET') {
-          web2py.ajax_page('get', action, [], 'bogus', el); //fixme?
+          web2py.ajax_page('get', action, [], '', el);
         } else if(method == 'POST') {
-          web2py.ajax_page('post', action, [], 'bogus', el); //fixme?
+          web2py.ajax_page('post', action, [], '', el);
         }
       } else {
         if(method == 'GET') {
@@ -698,3 +700,4 @@ web2py_trap_link = jQuery.web2py.trap_link;
 web2py_calc_entropy = jQuery.web2py.calc_entropy;
 */
 /* compatibility code - end*/
+
