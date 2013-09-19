@@ -173,6 +173,7 @@ mv web2py/handlers/wsgihandler.py web2py/wsgihandler.py
 rm web2py_src.zip
 chown -R www-data:www-data web2py
 cd /home/www-data/web2py
+cp /home/www-data/web2py/handlers/wsgihandler.py /home/www-data/web2py/
 sudo -u www-data python -c "from gluon.main import save_password; save_password('$PW',443)"
 start uwsgi-emperor
 /etc/init.d/nginx restart
