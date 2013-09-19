@@ -9212,13 +9212,13 @@ class Expression(object):
 
     def startswith(self, value):
         db = self.db
-        if not self.type in ('string', 'text', 'json'):
+        if not self.type in ('string', 'text', 'json', 'upload'):
             raise SyntaxError("startswith used with incompatible field type")
         return Query(db, db._adapter.STARTSWITH, self, value)
 
     def endswith(self, value):
         db = self.db
-        if not self.type in ('string', 'text', 'json'):
+        if not self.type in ('string', 'text', 'json', 'upload'):
             raise SyntaxError("endswith used with incompatible field type")
         return Query(db, db._adapter.ENDSWITH, self, value)
 
@@ -9236,7 +9236,7 @@ class Expression(object):
                 return self.contains('')
             else:
                 return reduce(all and AND or OR,subqueries)
-        if not self.type in ('string', 'text', 'json') and not self.type.startswith('list:'):
+        if not self.type in ('string', 'text', 'json', 'upload') and not self.type.startswith('list:'):
             raise SyntaxError("contains used with incompatible field type")
         return Query(db, db._adapter.CONTAINS, self, value, case_sensitive=case_sensitive)
 
