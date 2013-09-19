@@ -735,10 +735,11 @@ class Session(Storage):
         response.session_cookie_compression_level = compression_level
 
         # check if there is a session_id in cookies
-        try:
-            response.session_id = cookies[response.session_id_name].value
+        try:            
+            old_session_id = cookies[response.session_id_name].value
         except KeyError:
-            response.session_id = None
+            old_session_id = None
+        response.session_id = old_session_id
 
         # if we are supposed to use cookie based session data
         if cookie_key:
@@ -862,8 +863,17 @@ class Session(Storage):
         if self.flash:
             (response.flash, self.flash) = (self.flash, None)
 
+        # set the cookie now if you know the session_id so user can set
+        # cookie attributes in controllers/models
+        # cookie will be reset later
+        # yet cookie may be reset later
+        if (isinstance(response.session_id,str) and 
+            response.session_id!=old_session_id):
+            response.cookies[response.session_id_name] = response.session_id
+
         session_pickled = cPickle.dumps(self)
         response.session_hash = hashlib.md5(session_pickled).hexdigest()
+
 
     def renew(self, clear_session=False):
 
@@ -922,6 +932,22 @@ class Session(Storage):
             else:
                 response.session_new = True
 
+    def clear_session_cookies(sefl):
+        request = current.request
+        response = current.response
+        session = response.session
+        masterapp = response.session_masterapp
+        cookies = request.cookies
+        rcookies = response.cookies
+        # if not cookie_key, but session_data_name in cookies
+        # expire session_data_name from cookies
+        if response.session_data_name in cookies:
+            rcookies[response.session_data_name] = 'expired'
+            rcookies[response.session_data_name]['path'] = '/'
+            rcookies[response.session_data_name]['expires'] = PAST
+        if response.session_id_name in rcookies:
+            del rcookies[response.session_id_name]
+
     def save_session_id_cookie(self):
         request = current.request
         response = current.response
@@ -973,6 +999,7 @@ class Session(Storage):
 
     def _try_store_in_cookie(self, request, response):
         if self._forget or self._unchanged(response):
+            # self.clear_session_cookies()
             self.save_session_id_cookie()
             return False
         name = response.session_data_name
@@ -1002,11 +1029,13 @@ class Session(Storage):
         # no session id, or session being forgotten
         # or no changes to session
 
-        if not response.session_db_table or self._forget or self._unchanged(response):
+        if (not response.session_db_table or 
+            self._forget or self._unchanged(response)):
             if (not response.session_db_table and
                 global_settings.db_sessions is not True and
                 response.session_masterapp in global_settings.db_sessions):
                 global_settings.db_sessions.remove(response.session_masterapp)
+            # self.clear_session_cookies()
             self.save_session_id_cookie()
             return False
 
@@ -1044,7 +1073,9 @@ class Session(Storage):
 
     def _try_store_in_file(self, request, response):
         try:
-            if not response.session_id or self._forget or self._unchanged(response):
+            if (not response.session_id or self._forget 
+                or self._unchanged(response)):
+                # self.clear_session_cookies()
                 self.save_session_id_cookie()
                 return False
             if response.session_new or not response.session_file:
