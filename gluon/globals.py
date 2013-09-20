@@ -326,10 +326,9 @@ class Request(Storage):
                     _self.args[-1], _, self.extension = self.args[-1].rpartition('.')
                     current.response.headers['Content-Type'] = \
                         contenttype('.' + _self.extension.lower())
-                if not method in ['GET', 'POST', 'DELETE', 'PUT']:
-                    raise HTTP(400, "invalid method")
                 rest_action = _action().get(method, None)
-                if not rest_action:
+                if not (rest_action and method==method.upper() 
+                        and callable(rest_action)):
                     raise HTTP(400, "method not supported")
                 try:
                     return rest_action(*_self.args, **getattr(_self,'vars',{}))
