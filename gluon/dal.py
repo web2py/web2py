@@ -8457,8 +8457,10 @@ class Table(object):
             clones.append(field.clone(
                     unique=False, type=field.type if nfk else 'bigint'))
         archive_db.define_table(
-            archive_name, Field(current_record,field_type,
-                                label=current_record_label), *clones)
+            archive_name, 
+            Field(current_record,field_type,label=current_record_label),
+            *clones,**dict(format=self._format))
+                  
         self._before_update.append(
             lambda qset,fs,db=archive_db,an=archive_name,cn=current_record:
                 archive_record(qset,fs,db[an],cn))
