@@ -858,15 +858,23 @@ class Session(Storage):
                 else:
                     response.session_id = None
                     response.session_new = True
-
+            # if there is no session id yet, we'll need to create a 
+            # new session
+            else:
+                response.session_new = True
 
         # set the cookie now if you know the session_id so user can set
         # cookie attributes in controllers/models
         # cookie will be reset later
         # yet cookie may be reset later
-        if (isinstance(response.session_id,str) and 
-            response.session_id!=old_session_id):
+        #   Removed comparison between old and new session ids - should send
+        #    the cookie all the time
+        if isinstance(response.session_id,str):
             response.cookies[response.session_id_name] = response.session_id
+            response.cookies[response.session_id_name]['path'] = '/'
+            if cookie_expires:
+                response.cookies[response.session_id_name]['expires'] = \
+                    cookie_expires.strftime(FMT)
 
         session_pickled = cPickle.dumps(self)
         response.session_hash = hashlib.md5(session_pickled).hexdigest()
@@ -1035,10 +1043,10 @@ class Session(Storage):
     def _try_store_in_db(self, request, response):
         # don't save if file-based sessions,
         # no session id, or session being forgotten
-        # or no changes to session
-
+        # or no changes to session (Unless the session is new)
         if (not response.session_db_table or 
-            self._forget or self._unchanged(response)):
+            self._forget or 
+            (self._unchanged(response) and not response.session_new)):
             if (not response.session_db_table and
                 global_settings.db_sessions is not True and
                 response.session_masterapp in global_settings.db_sessions):
