@@ -932,6 +932,14 @@ class Session(Storage):
             else:
                 response.session_new = True
 
+    def _fixup_before_save(self):
+        response = current.response
+        rcookies = response.cookies
+        if self._forget and response.session_id_name in rcookies:
+            del rcookies[response.session_id_name]
+        elif self._secure and response.session_id_name in rcookies:
+            rcookies[response.session_id_name]['secure'] = True
+
     def clear_session_cookies(sefl):
         request = current.request
         response = current.response

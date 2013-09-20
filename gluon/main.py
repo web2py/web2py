@@ -503,12 +503,8 @@ def wsgibase(environ, responder):
                     # store cookies in headers
                     # ##################################################
 
-                    rcookies = response.cookies
-                    if session._forget and response.session_id_name in rcookies:
-                        del rcookies[response.session_id_name]
-                    elif session._secure:
-                        rcookies[response.session_id_name]['secure'] = True
-                    http_response.cookies2headers(rcookies)
+                    session._fixup_before_save()
+                    http_response.cookies2headers(response.cookies)
 
                 ticket = None
 
