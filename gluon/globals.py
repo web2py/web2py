@@ -860,8 +860,6 @@ class Session(Storage):
                     response.session_id = None
                     response.session_new = True
 
-        if self.flash:
-            (response.flash, self.flash) = (self.flash, None)
 
         # set the cookie now if you know the session_id so user can set
         # cookie attributes in controllers/models
@@ -873,6 +871,9 @@ class Session(Storage):
 
         session_pickled = cPickle.dumps(self)
         response.session_hash = hashlib.md5(session_pickled).hexdigest()
+
+        if self.flash:
+            (response.flash, self.flash) = (self.flash, None)
 
 
     def renew(self, clear_session=False):
