@@ -310,6 +310,11 @@ if not 'google' in DRIVERS:
     except ImportError:
         LOGGER.debug('no MySQL driver MySQLDB')
 
+    try:
+        import mysql.connector as mysqlconnector
+        DRIVERS.append("MySQL(mysqlconnector)")
+    except ImportError:
+        LOGGER.debug("no driver mysql.connector")
 
     try:
         import psycopg2
@@ -2445,7 +2450,7 @@ class JDBCSQLiteAdapter(SQLiteAdapter):
 
 
 class MySQLAdapter(BaseAdapter):
-    drivers = ('MySQLdb','pymysql')
+    drivers = ('MySQLdb','pymysql', 'mysqlconnector')
 
     commit_on_alter_table = True
     support_distributed_transaction = True
