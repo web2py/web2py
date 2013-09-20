@@ -67,8 +67,8 @@ regex_param = re.compile(r'{(?P<s>.+?)}')
 
 # pattern for a valid accept_language
 regex_language = \
-    re.compile('([a-z]{2}(?:\-[a-z]{2})?(?:\-[a-z]{2})?)(?:[,;]|$)')
-regex_langfile = re.compile('^[a-z]{2}(-[a-z]{2})?\.py$')
+    re.compile('([a-z]{2,3}(?:\-[a-z]{2})?(?:\-[a-z]{2})?)(?:[,;]|$)')
+regex_langfile = re.compile('^[a-z]{2,3}(-[a-z]{2})?\.py$')
 regex_backslash = re.compile(r"\\([\\{}%])")
 regex_plural = re.compile('%({.+?})')
 regex_plural_dict = re.compile('^{(?P<w>[^()[\]][^()[\]]*?)\((?P<n>[^()\[\]]+)\)}$')  # %%{word(varname or number)}
