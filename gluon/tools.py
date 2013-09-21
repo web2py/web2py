@@ -883,6 +883,7 @@ class Auth(object):
         auth_manager_role=None,
         login_captcha=None,
         register_captcha=None,
+        pre_registration_div=None,
         retrieve_username_captcha=None,
         retrieve_password_captcha=None,
         captcha=None,
@@ -2539,6 +2540,12 @@ class Auth(object):
         if captcha:
             addrow(form, captcha.label, captcha,
                    captcha.comment, self.settings.formstyle, 'captcha__row')
+
+        #Add a message if specified
+        if self.settings.pre_registration_div:
+            addrow(form, '',
+                   DIV(_id="pre-reg", *self.settings.pre_registration_div),
+                   '', formstyle, '')
 
         table_user.registration_key.default = key = web2py_uuid()
         if form.accepts(request, session if self.csrf_prevention else None,
