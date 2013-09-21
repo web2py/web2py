@@ -960,7 +960,7 @@ class Auth(object):
         invalid_password='Invalid password',
         is_empty="Cannot be empty",
         mismatched_password="Password fields don't match",
-        verify_email='Click on the link %(link)s to verify your email',
+        verify_email='Welcome %(username)s! Click on the link %(link)s to verify your email',
         verify_email_subject='Email verification',
         username_sent='Your username was emailed to you',
         new_password_sent='A new password was emailed to you',
@@ -2562,7 +2562,8 @@ class Auth(object):
                     to=form.vars.email,
                     subject=self.messages.verify_email_subject,
                     message=self.messages.verify_email
-                        % dict(key=key, link=link)):
+                        % dict(key=key, link=link,
+                               username=form.vars[username])):
                     self.db.rollback()
                     response.flash = self.messages.unable_send_email
                     return form
