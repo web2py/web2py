@@ -942,6 +942,7 @@ class Auth(object):
         access_denied='Insufficient privileges',
         registration_verifying='Registration needs verification',
         registration_pending='Registration is pending approval',
+        email_taken='This email already has an account',
         login_disabled='Login disabled by administrator',
         logged_in='Logged in',
         email_sent='Email sent',
@@ -1651,7 +1652,8 @@ class Auth(object):
                            min_length=settings.password_min_length)
         is_unique_email = [
             IS_EMAIL(error_message=self.messages.invalid_email),
-            IS_NOT_IN_DB(db, '%s.email' % settings.table_user_name)]
+            IS_NOT_IN_DB(db, '%s.email' % settings.table_user_name,
+                         error_message=self.messages.email_taken)]
         if not settings.email_case_sensitive:
             is_unique_email.insert(1, IS_LOWER())
         if not settings.table_user_name in db.tables:
