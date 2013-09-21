@@ -2516,6 +2516,7 @@ class Auth(object):
                 if item:
                     form.custom.widget.password_two = \
                         INPUT(_name="password_two", _type="password",
+                              _class="password",
                               requires=IS_EXPR(
                               'value==%s' %
                               repr(request.vars.get(passfield, None)),
