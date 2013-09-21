@@ -913,6 +913,7 @@ class Auth(object):
         use_username=False,
         login_email_validate=True,
         login_userfield=None,
+        multi_login=False,
         logout_onlogout=None,
         register_fields=None,
         register_verify_password=True,
@@ -2168,12 +2169,6 @@ class Auth(object):
         """
 
         table_user = self.table_user()
-        if self.settings.login_userfield:
-            username = self.settings.login_userfield
-        elif 'username' in table_user.fields:
-            username = 'username'
-        else:
-            username = 'email'
         settings = self.settings
         if 'username' in table_user.fields or \
                 not settings.login_email_validate:
@@ -2184,8 +2179,6 @@ class Auth(object):
             tmpvalidator = IS_EMAIL(error_message=self.messages.invalid_email)
             if not settings.email_case_sensitive:
                 tmpvalidator = [IS_LOWER(), tmpvalidator]
-        old_requires = table_user[username].requires
-        table_user[username].requires = tmpvalidator
 
         request = current.request
         response = current.response
@@ -2227,6 +2220,21 @@ class Auth(object):
         onfail = settings.login_onfail
 
         user = None  # default
+
+
+        #Setup the default field used for the form
+        multi_login = False
+        if self.settings.login_userfield:
+            username = self.settings.login_userfield
+        else:
+            if 'username' in table_user.fields:
+                username = 'username'
+            else:
+                username = 'email'
+            if self.settings.multi_login:
+                multi_login = True
+        old_requires = table_user[username].requires
+        table_user[username].requires = tmpvalidator
 
         # do we use our own login form, or from a central source?
         if settings.login_form == self:
@@ -2285,7 +2293,18 @@ class Auth(object):
 
                 accepted_form = True
                 # check for username in db
-                user = table_user(**{username: form.vars[username]})
+                if multi_login:
+                    entered_username = form.vars[username]
+                    if entered_username.find('@') < 0:
+                        #no @, look for a username
+                        #TODO: Is this still true?
+                        #NOTE: @ is no allowed for usernames, so a username will
+                        #  never have an @ symbol unless an admin made it
+                        user = table_user(**{'username': entered_username})
+                    else:
+                        user = table_user(**{'email': entered_username})
+                else:
+                    user = table_user(**{username: form.vars[username]})
                 if user:
                     # user in db, check if registration pending or disabled
                     temp_user = user
