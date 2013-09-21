@@ -943,6 +943,8 @@ class Auth(object):
         registration_verifying='Registration needs verification',
         registration_pending='Registration is pending approval',
         email_taken='This email already has an account',
+        invalid_username='Invalid username',
+        username_taken='Username already taken',
         login_disabled='Login disabled by administrator',
         logged_in='Logged in',
         email_sent='Email sent',
@@ -1662,8 +1664,10 @@ class Auth(object):
                 settings.table_user_name, []) + signature_list
             if username or settings.cas_provider:
                 is_unique_username = \
-                    [IS_MATCH('[\w\.\-]+', strict=True),
-                     IS_NOT_IN_DB(db, '%s.username' % settings.table_user_name)]
+                    [IS_MATCH('[\w\.\-]+', strict=True,
+                              error_message=self.messages.invalid_username),
+                     IS_NOT_IN_DB(db, '%s.username' % settings.table_user_name,
+                                  error_message=self.messages.username_taken)]
                 if not settings.username_case_sensitive:
                     is_unique_username.insert(1, IS_LOWER())
                 db.define_table(
