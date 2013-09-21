@@ -42,6 +42,7 @@ __all__ = [
     'IS_DATETIME',
     'IS_DECIMAL_IN_RANGE',
     'IS_EMAIL',
+    'IS_LIST_OF_EMAILS',
     'IS_EMPTY_OR',
     'IS_EXPR',
     'IS_FLOAT_IN_RANGE',
@@ -1178,6 +1179,39 @@ class IS_EMAIL(Validator):
                 return (value, None)
         return (value, translate(self.error_message))
 
+class IS_LIST_OF_EMAILS(object):
+    """
+    use as follows:
+    Field('emails','list:string',
+          widget=SQLFORM.widgets.text.widget,
+          requires=IS_LIST_OF_EMAILS(),
+          represent=lambda v,r: \
+             SPAN(*[A(x,_href='mailto:'+x) for x in (v or [])])
+          )
+    """
+    split_emails = re.compile('[^,;\s]+')
+    def __init__(self, error_message = 'Invalid emails: %s'):
+        self.error_message = error_message
+
+    def __call__(self, value):
+        bad_emails = []
+        emails = []
+        f = IS_EMAIL()
+        for email in self.split_emails.findall(value):
+            if not email in emails:
+                emails.append(email)
+            error = f(email)[1]
+            if error and not email in bad_emails:
+                bad_emails.append(email)
+        if not bad_emails:
+            return (value, None)
+        else:
+            return (value, 
+                    translate(self.error_message) % ', '.join(bad_emails))
+
+    def formatter(self,value,row=None):
+        return ', '.join(value or [])
+    
 
 # URL scheme source:
 # <http://en.wikipedia.org/wiki/URI_scheme> obtained on 2008-Nov-10
