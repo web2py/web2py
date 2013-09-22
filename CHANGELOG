@@ -1,4 +1,4 @@
-## 2.6.1
+## 2.6.1 - 2.6.4
 
 Attention all users: For pre 2.6 applications to work with web2py >=2.6, you must copy static/js/web2py.js, controllers/appadmin.py, and views/appadmin.html from the welcome app to your own apps (all of them).
 
@@ -38,6 +38,8 @@ Attention MySQL users: The length of string fields changed from 255 to 512 bytes
 - speedup for define_table, thanks Michele
 - settings.cfg to admin, thanks Paolo
 - many bugs fixed, thanks Niphlod, Michele, Roberto, Jonathan, and many others
+- 2.6,3 specifically fixed a possible DoS vulnerability
+- 2.6.4 specifically fixes major problem introduced in 2.6.1 with session logic
 
 ## 2.5.2
 
