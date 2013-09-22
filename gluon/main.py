@@ -608,7 +608,8 @@ def save_password(password, port):
 
 def appfactory(wsgiapp=wsgibase,
                logfilename='httpserver.log',
-               profiler_dir=None):
+               profiler_dir=None,
+               profilerfilename=None):
     """
     generates a wsgi application that does logging and profiling and calls
     wsgibase
@@ -619,7 +620,8 @@ def appfactory(wsgiapp=wsgibase,
             [, profilerfilename='profiler.log']]])
 
     """
-
+    if profilerfilename is not None:
+        raise BaseException("Deprecated API")
     if profiler_dir:
         profiler_dir = abspath(profiler_dir)
         logger.warn('profiler is on. will use dir %s', profiler_dir)
@@ -627,14 +629,14 @@ def appfactory(wsgiapp=wsgibase,
             try:
                 os.makedirs(profiler_dir)
             except:
-                raise BaseException, "Can't create dir %s" % profiler_dir
+                raise BaseException("Can't create dir %s" % profiler_dir)
         filepath = pjoin(profiler_dir, 'wtest')
         try:
             filehandle = open( filepath, 'w' )
             filehandle.close()
             os.unlink(filepath)
         except IOError:
-            raise BaseException, "Unable to write to dir %s" % profiler_dir
+            raise BaseException("Unable to write to dir %s" % profiler_dir)
 
     def app_with_logging(environ, responder):
         """
