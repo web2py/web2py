@@ -55,8 +55,7 @@
         tabMode: "shift",
         lineWrapping: true,
         gutters: ["CodeMirror-linenumbers", "breakpoints"],
-        {{if TEXT_EDITOR_KEYBINDING == 'emacs':}}keyMap: "emacs",{{pass}}
-        {{if TEXT_EDITOR_KEYBINDING == 'vi':}}keyMap: "vim",{{pass}}
+        keyMap: current_editor,
         matchBrackets: true,
         autofocus: false,
         height: "350px",
@@ -88,7 +87,7 @@
             function(instance) {
                 setFullScreen(instance, !isFullScreen(instance));};
         CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
-        CodeMirror.defaults.extraKeys["Esc"]=
+        CodeMirror.defaults.extraKeys["Shift-Esc"]=
             function(instance) {
                 if (isFullScreen(instance)) {
                     setFullScreen(instance, false);};}
@@ -104,7 +103,7 @@
                 function(instance) {
                     setFullScreen(instance, !isFullScreen(instance));};
             CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
-            CodeMirror.defaults.extraKeys["Esc"]=
+            CodeMirror.defaults.extraKeys["Shift-Esc"]=
                 function(instance) {
                     if (isFullScreen(instance)) {
                         setFullScreen(instance, false);};}
@@ -145,6 +144,7 @@
         <ul class="keybindings unstyled">
             {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
             {{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
+			{{=shortcut('Shift+Esc', T('Exit Fullscreen'))}}
             {{=shortcut('Ctrl-F / Cmd-F', T('Start searching'))}}
             {{=shortcut('Ctrl-G / Cmd-G', T('Find Next'))}}
             {{=shortcut('Shift-Ctrl-G / Shift-Cmd-G', T('Find Previous'))}}
@@ -157,6 +157,7 @@
         <ul class="keybindings unstyled">
             {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
             {{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
+			{{=shortcut('Shift+Esc', T('Exit Fullscreen'))}}
             {{if filetype=='python':}}
             {{=shortcut('Ctrl-Space', T('Autocomplete Python Code'))}}
            {{pass}}

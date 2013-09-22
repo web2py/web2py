@@ -6,10 +6,13 @@
       return files
 }}
 {{themes = [f[:-4] for f in listfiles('admin', "static/codemirror/theme", regexp='.*\.css$' )]}}
+{{editors = ['default', 'vim', 'emacs']}}
 <form id="editor_settings_form" class="form-horizontal">
 <div class="control-group">
     <label class="control-label" for="selectTheme">{{=T('Theme')}}</label>
 	<div class="controls">{{=SELECT(themes, value=editor_settings['theme'], _name="theme" )}}</div>
+	<label class="control-label" for="selectEditor">{{=T('Editor')}}</label>
+	<div class="controls">{{=SELECT(editors, value=editor_settings['editor'], _name="editor" )}}</div>
 </div>
 <div class="control-group">
 	<div class="controls"><button type="submit" class="disabled btn btn-primary">{{=T('Save')}}</button></div>
