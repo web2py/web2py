@@ -1,3 +1,10 @@
+## 2.7.1
+
+- jQuery 1.10.2
+- Namespaces in translator T("Welcome", ns="namespace"), thanks jamarcer
+- More Auth options, thanks Charles
+- More Admin configuration, thanks Roberto
+
 ## 2.6.1 - 2.6.4
 
 Attention all users: For pre 2.6 applications to work with web2py >=2.6, you must copy static/js/web2py.js, controllers/appadmin.py, and views/appadmin.html from the welcome app to your own apps (all of them).
