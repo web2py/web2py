@@ -81,6 +81,7 @@ app:
 	cp -r applications/examples ../web2py_osx/web2py/web2py.app/Contents/Resources/applications
 	cp applications/__init__.py ../web2py_osx/web2py/web2py.app/Contents/Resources/applications
 	cd ../web2py_osx; zip -r web2py_osx.zip web2py
+		
 	mv ../web2py_osx/web2py_osx.zip .
 win:
 	python2.7 -c 'import compileall; compileall.compile_dir("gluon/")'

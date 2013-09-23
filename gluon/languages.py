@@ -474,6 +474,8 @@ class translator(object):
         self.otherTs = {}
         self.filter = markmin
         self.ftag = 'markmin'
+        
+        self.ns = None
 
     def get_possible_languages_info(self, lang=None):
         """
@@ -665,26 +667,46 @@ class translator(object):
         set_plural(self.accepted_language)
         return languages
 
-    def __call__(self, message, symbols={}, language=None, lazy=None):
+    def __call__(self, message, symbols={}, language=None, lazy=None, ns=None):
         """
         get cached translated plain text message with inserted parameters(symbols)
         if lazy==True lazyT object is returned
         """
         if lazy is None:
             lazy = self.lazy
-        if not language:
+        if not language and not ns:
             if lazy:
                 return lazyT(message, symbols, self)
             else:
                 return self.translate(message, symbols)
         else:
-            try:
-                otherT = self.otherTs[language]
-            except KeyError:
-                otherT = self.otherTs[language] = translator(
-                    self.langpath, self.http_accept_language)
-                otherT.force(language)
+            if ns:
+                if ns != self.ns:
+                    self.langpath = os.path.join(self.langpath, ns)
+                if self.ns is None:
+                    self.ns = ns
+            otherT = self.__get_otherT__(language, ns)
             return otherT(message, symbols, lazy=lazy)
+        
+    def __get_otherT__(self, language=None, namespace=None):
+        if not language and not namespace:
+            raise Exception('Incorrect parameters')
+        
+        if namespace:
+            if language:
+                index = '%s/%s' % (namespace, language)
+            else:
+                index = namespace
+        else:
+            index = language
+        try:
+            otherT = self.otherTs[index]
+        except KeyError:
+            otherT = self.otherTs[index] = translator(self.langpath, \
+                                                      self.http_accept_language)
+            if language:
+                otherT.force(language)
+        return otherT
 
     def apply_filter(self, message, symbols={}, filter=None, ftag=None):
         def get_tr(message, prefix, filter):
@@ -714,24 +736,22 @@ class translator(object):
         return XML(message.translate(ttab_out))
 
     def M(self, message, symbols={}, language=None,
-          lazy=None, filter=None, ftag=None):
+          lazy=None, filter=None, ftag=None, ns=None):
         """
         get cached translated markmin-message with inserted parametes
         if lazy==True lazyT object is returned
         """
         if lazy is None:
             lazy = self.lazy
-        if not language:
+        if not language and not ns:
             if lazy:
                 return lazyT(message, symbols, self, filter, ftag, True)
             else:
                 return self.apply_filter(message, symbols, filter, ftag)
         else:
-            try:
-                otherT = self.otherTs[language]
-            except KeyError:
-                otherT = self.otherTs[language] = translator(self.request)
-                otherT.force(language)
+            if ns:
+                self.langpath = os.path.join(self.langpath, ns)
+            otherT = self.__get_otherT__(language, ns)
             return otherT.M(message, symbols, lazy=lazy)
 
     def get_t(self, message, prefix=''):
