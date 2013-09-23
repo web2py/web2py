@@ -73,6 +73,12 @@ function doClickSave() {
       var t = jQuery("input[name='save']");
       t.attr('class', '');
       t.attr('disabled', '');
+	  var flash = xhr.getResponseHeader('web2py-component-flash');
+      if(flash) {
+        jQuery('.flash').html(decodeURIComponent(flash))
+          .append('<a href="#" class="close">&times;</a>')
+          .slideDown();
+      } else jQuery('.flash').hide();
       try {
         if(json.error) {
           window.location.href = json.redirect;

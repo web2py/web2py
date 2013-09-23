@@ -562,7 +562,7 @@ def edit():
     # Load json only if it is ajax edited...
     app = get_app(request.vars.app)
     app_path = apath(app, r=request)
-    editor_defaults={'theme':'web2py'}
+    editor_defaults={'theme':'web2py', 'editor': 'default'}
     config = Config(os.path.join(request.folder, 'settings.cfg'),
                     section='editor', default_values=editor_defaults)
     preferences = config.read()
@@ -588,7 +588,7 @@ def edit():
                 response.headers["web2py-component-flash"] = T('Preferences saved correctly')
             else:
                 response.headers["web2py-component-flash"] = T('Preferences saved on session only')
-            response.headers["web2py-component-command"] = "update_theme('%s'); jQuery('a[href=#editor_settings] button.close').click();" % config.read()['theme']
+            response.headers["web2py-component-command"] = "update_theme('%s');update_editor('%s');jQuery('a[href=#editor_settings] button.close').click();" % (config.read()['theme'], config.read()['editor'])
             return
         else:
             details = {'filename':'settings', 'id':'editor_settings', 'force': False}
@@ -604,7 +604,7 @@ def edit():
         path = abspath(filename)
     else:
         path = apath(filename, r=request)
-     # Try to discover the file type
+    # Try to discover the file type
     if filename[-3:] == '.py':
         filetype = 'python'
     elif filename[-5:] == '.html':
@@ -700,7 +700,6 @@ def edit():
                                  offset and ' ' +
                                  T('at char %s', offset) or '',
                                  PRE(str(e)))
-
     if data_or_revert and request.args[1] == 'modules':
         # Lets try to reload the modules
         try:
