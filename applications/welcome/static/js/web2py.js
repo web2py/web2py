@@ -269,7 +269,7 @@
         var link = $(this);
         link.click(function (e) {
           web2py.hide_flash();
-          web2py.ajax_page('get', link.attr('href'), [], target);
+          web2py.ajax_page('get', link.attr('href'), [], target, $(this));
           e.preventDefault();
         });
       });
