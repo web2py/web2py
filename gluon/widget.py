@@ -1263,6 +1263,25 @@ end tell
         print '\t', url
         print 'use "kill -SIGTERM %i" to shutdown the web2py server' % os.getpid()
 
+    # enhance linecache.getline (used by debugger) to look at the source file
+    # if the line was not found (under py2exe & when file was modified)
+    import linecache
+    py2exe_getline = linecache.getline
+    def getline(filename, lineno, *args, **kwargs):
+        line = py2exe_getline(filename, lineno, *args, **kwargs)
+        if not line:                
+            f = open(filename, "r")
+            try:
+                for i, line in enumerate(f):
+                    if lineno == i + 1:
+                        break
+                else:
+                    line = None
+            finally:
+                f.close()
+        return line
+    linecache.getline = getline
+
     server = main.HttpServer(ip=ip,
                              port=port,
                              password=options.password,
