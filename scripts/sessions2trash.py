@@ -20,6 +20,12 @@ Typical usage:
 
     # Delete all sessions regardless of expiry and exit.
     python web2py.py -S app -M -R scripts/sessions2trash.py -A -o -x 0
+    
+    # Delete session in a module (move to the modules folder)
+    from sessions2trash import single_loop
+    def delete_sessions():
+        single_loop()
+    
 """
 
 from __future__ import with_statement
@@ -109,7 +115,7 @@ class SessionSetFiles(SessionSet):
 
     def get(self):
         """Return list of SessionFile instances for existing sessions."""
-        path = os.path.join(request.folder, 'sessions')
+        path = os.path.join(current.request.folder, 'sessions')
         return [SessionFile(os.path.join(path, x)) for x in os.listdir(path)]
 
 
@@ -149,7 +155,10 @@ class SessionFile(object):
         self.filename = filename
 
     def delete(self):
-        os.unlink(self.filename)
+        try:
+            os.unlink(self.filename)
+        except:
+            pass
 
     def get(self):
         session = Storage()
@@ -175,6 +184,17 @@ def total_seconds(delta):
     return (delta.microseconds + (delta.seconds + (delta.days * 24 * 3600)) *
             10 ** 6) / 10 ** 6
 
+def single_loop(expiration=None, force=False, verbose=False):
+    if expiration is None:
+        try:
+            expiration = auth.settings.expiration
+        except:
+            expiration = EXPIRATION_MINUTES * 60
+
+    set_db = SessionSetDb(expiration, force, verbose)
+    set_files = SessionSetFiles(expiration, force, verbose)
+    set_db.trash()
+    set_files.trash()
 
 def main():
     """Main processing."""
@@ -206,17 +226,9 @@ def main():
     (options, unused_args) = parser.parse_args()
 
     expiration = options.expiration
-    if expiration is None:
-        try:
-            expiration = auth.settings.expiration
-        except:
-            expiration = EXPIRATION_MINUTES * 60
 
-    set_db = SessionSetDb(expiration, options.force, options.verbose)
-    set_files = SessionSetFiles(expiration, options.force, options.verbose)
     while True:
-        set_db.trash()
-        set_files.trash()
+        single_loop(expiration, options.force, options.verbose)
 
         if options.once:
             break
@@ -225,5 +237,5 @@ def main():
                 print 'Sleeping %s seconds' % (options.sleep)
             time.sleep(options.sleep)
 
-
-main()
+if __name__ == '__main__':
+    main()
