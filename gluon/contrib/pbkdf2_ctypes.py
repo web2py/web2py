@@ -182,7 +182,13 @@ if __name__ == '__main__':
     except:
         pass
 
+    import platform
+    if platform.python_version_tuple() < ('3', '0', '0'):
+        def bytes(*args):
+            return str(args[0])
+
     for h in [hashlib.sha1, hashlib.sha224, hashlib.sha256,
               hashlib.sha384, hashlib.sha512]:
-        print(binascii.hexlify(pkcs5_pbkdf2_hmac(b'secret' * 11, b'salt',
+        print(binascii.hexlify(pkcs5_pbkdf2_hmac(bytes('secret', 'utf-8') * 11,
+                                                 bytes('salt', 'utf-8'),
                                                  hashfunc=h)))
