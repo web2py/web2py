@@ -215,8 +215,9 @@ class Request(Storage):
             and env.request_method in ('POST', 'PUT', 'DELETE', 'BOTH')):
             query_string = env.pop('QUERY_STRING',None)
             dpost = cgi.FieldStorage(fp=body, environ=env, keep_blank_values=1)
-            if len(dpost):
+            try:
                 post_vars.update(dpost)
+            except: pass
             if query_string is not None:
                 env['QUERY_STRING'] = query_string
             # The same detection used by FieldStorage to detect multipart POSTs
