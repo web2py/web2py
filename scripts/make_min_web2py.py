@@ -13,12 +13,12 @@ it will mkdir minweb2py and build a minimal web2py installation
 REQUIRED = """
 VERSION
 web2py.py
-fcgihandler.py
-gaehandler.py
-wsgihandler.py
 anyserver.py
 applications/__init__.py
 applications/welcome/controllers/default.py
+handlers/fcgihandler.py
+handlers/gaehandler.py
+handlers/wsgihandler.py
 """
 
 # files and folders to exclude from gluon folder (comment with # if needed)
