@@ -54,7 +54,7 @@
         {{pass}}
           </ul>
         </div>
-        {{=button_enable(URL('enable',args=a), a)}}
+        {{=button_enable(URL('enable',args=a), a) if a!='admin' else ''}}
       </td>
     </tr>
     {{pass}}
