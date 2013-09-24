@@ -25,6 +25,7 @@ import hashlib
 import platform
 import os.path
 import binascii
+import sys
 
 __all__ = ['pkcs5_pbkdf2_hmac', 'pbkdf2_bin', 'pbkdf2_hex']
 __version__ = '0.99.3'
@@ -151,7 +152,8 @@ try:  # check that we have proper OpenSSL or Common Crypto on the system.
         _pbkdf2_hmac = _openssl_pbkdf2
         crypto.PKCS5_PBKDF2_HMAC # test compatibility
 
-except (OSError, AttributeError) as e:
+except (OSError, AttributeError):
+    _, e, _ = sys.exc_info()
     raise ImportError('Cannot find a compatible cryptographic library '
                       'on your system. %s' % e)
 
