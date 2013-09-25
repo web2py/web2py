@@ -2378,7 +2378,7 @@ class SQLFORM(FORM):
                         value = truncate_string(value, maxlength)
                     elif not isinstance(value, DIV):
                         value = field.formatter(value)
-                    trcols.append(TD(value))
+                    trcols.append(TD(value,_class='%s_%s' % (field.tablename,field.name)))
                 row_buttons = TD(_class='row_buttons',_nowrap=True)
                 if links and links_in_grid:
                     toadd = []
