@@ -234,7 +234,7 @@
 'Verify Password': 'Verifica Password',
 'Videos': 'Videos',
 'View': 'Vista',
-'Welcome': 'Welcome',
+'Welcome': 'Benvenuto',
 'Welcome %s': 'Benvenuto %s',
 'Welcome to web2py': 'Benvenuto su web2py',
 'Welcome to web2py!': 'Benvenuto in web2py!',
