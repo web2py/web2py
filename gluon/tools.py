@@ -2294,18 +2294,12 @@ class Auth(object):
 
                 accepted_form = True
                 # check for username in db
-                if multi_login:
-                    entered_username = form.vars[username]
-                    if entered_username.find('@') < 0:
-                        #no @, look for a username
-                        #TODO: Is this still true?
-                        #NOTE: @ is no allowed for usernames, so a username will
-                        #  never have an @ symbol unless an admin made it
-                        user = table_user(**{'username': entered_username})
-                    else:
-                        user = table_user(**{'email': entered_username})
+                entered_username = form.vars[username]
+                if multi_login and '@' in entered_username:
+                    # if '@' in username check for email, not username
+                    user = table_user(email = entered_username)
                 else:
-                    user = table_user(**{username: form.vars[username]})
+                    user = table_user(**{username: entered_username})
                 if user:
                     # user in db, check if registration pending or disabled
                     temp_user = user
