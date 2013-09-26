@@ -8786,7 +8786,7 @@ class Table(object):
             response.id = None
         return response
 
-    def update_or_insert(self, _key=DEFAULT, **values):
+    def update_or_insert(self, _key=DEFAULT, _return_record=False, **values):
         if _key is DEFAULT:
             record = self(**values)
         elif isinstance(_key,dict):
@@ -8795,7 +8795,10 @@ class Table(object):
             record = self(_key)
         if record:
             record.update_record(**values)
-            newid = None
+            if _return_record:
+                newid = record
+            else:
+                newid = None
         else:
             newid = self.insert(**values)
         return newid
