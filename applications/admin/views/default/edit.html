@@ -36,6 +36,8 @@
 <script src="{{=cm}}/addon/edit/trailingspace.js"></script>
 <link rel="stylesheet" href="{{=cm}}/addon/dialog/dialog.css">
 <script src="{{=cm}}/addon/selection/active-line.js"></script>
+<script src="{{=cm}}/addon/display/fullscreen.js"></script>
+<link rel="stylesheet" href="{{=cm}}/addon/display/fullscreen.css">
 <script src="{{=cm}}/emmet.min.js"></script>
 <script src="{{=URL('static','js/ajax_editor.js')}}"></script>
 <link rel="stylesheet" href="{{=URL('static/css','typeahead.js-bootstrap.css')}}">
@@ -145,24 +147,9 @@ jQuery(document).on('click', 'a.font_button', function (e) {
     });
     current_font_incr = (new_incr !== 0) ? current_font_incr + new_incr : 0;
 });
-    function isFullScreen(instance) {
-        return /\bCodeMirror-fullscreen\b/.test(instance.getWrapperElement().className);
-    }
+
     function winHeight() {
         return window.innerHeight || (document.documentElement || document.body).clientHeight;
-    }
-    function setFullScreen(instance, full) {
-        var wrap = instance.getWrapperElement()
-        if (full) {
-            wrap.className += " CodeMirror-fullscreen";
-            wrap.style.height = winHeight() + "px";
-            document.documentElement.style.overflow = "hidden";
-        } else {
-            wrap.className = wrap.className.replace(" CodeMirror-fullscreen", "");
-            wrap.style.height = "";
-            document.documentElement.style.overflow = "";
-        }
-        instance.refresh();
     }
     CodeMirror.on(window, "resize", function() {
         var showing = document.body.getElementsByClassName("CodeMirror-fullscreen")[0];

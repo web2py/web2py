@@ -259,7 +259,7 @@ CodeMirror.defineMode('coffeescript', function(conf) {
         if (current === '.') {
             style = state.tokenize(stream, state);
             current = stream.current();
-            if (style === 'variable') {
+            if (/^\.[\w$]+$/.test(current)) {
                 return 'variable';
             } else {
                 return ERRORCLASS;
@@ -339,7 +339,8 @@ CodeMirror.defineMode('coffeescript', function(conf) {
             return state.scopes[0].offset;
         },
 
-        lineComment: "#"
+        lineComment: "#",
+        fold: "indent"
     };
     return external;
 });

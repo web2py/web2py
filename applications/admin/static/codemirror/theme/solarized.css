@@ -99,35 +99,13 @@ http://ethanschoonover.com/solarized/img/solarized-palette.png
   color: #586e75;
 }
 
-.cm-s-solarized.cm-s-dark .CodeMirror-focused .CodeMirror-selected {
-  background: #386774;
-  color: inherit;
-}
-
-.cm-s-solarized.cm-s-dark ::selection {
-  background: #386774;
-  color: inherit;
-}
-
 .cm-s-solarized.cm-s-dark .CodeMirror-selected {
-  background: #586e75;
-}
-
-.cm-s-solarized.cm-s-light .CodeMirror-focused .CodeMirror-selected {
-  background: #eee8d5;
-  color: inherit;
-}
-
-.cm-s-solarized.cm-s-light ::selection {
-  background: #eee8d5;
-  color: inherit;
+  background: #073642;
 }
 
 .cm-s-solarized.cm-s-light .CodeMirror-selected {
-  background: #93a1a1;
+  background: #eee8d5;
 }
-
-
 
 /* Editor styling */
 
@@ -186,15 +164,10 @@ http://ethanschoonover.com/solarized/img/solarized-palette.png
 Active line. Negative margin compensates left padding of the text in the
 view-port
 */
-.cm-s-solarized .activeline {
-  margin-left: -20px;
-}
-
-.cm-s-solarized.cm-s-dark .activeline {
+.cm-s-solarized.cm-s-dark .CodeMirror-activeline-background {
   background: rgba(255, 255, 255, 0.05);
-
 }
-.cm-s-solarized.cm-s-light .activeline {
+.cm-s-solarized.cm-s-light .CodeMirror-activeline-background {
   background: rgba(0, 0, 0, 0.05);
 }
 
