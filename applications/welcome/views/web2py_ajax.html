@@ -4,7 +4,7 @@
     var w2p_ajax_disable_with_message = "{{=T('Working...')}}";
     var w2p_ajax_date_format = "{{=T('%Y-%m-%d')}}";
     var w2p_ajax_datetime_format = "{{=T('%Y-%m-%d %H:%M:%S')}}";
-    var ajax_error_500 = '{{=XML(T('An error occured, please %s the page') % A(T('reload'), _href=URL(args=request.args, vars=request.get_vars))) }}'
+    var ajax_error_500 = '{{=T.M('An error occured, please [[reload %s]] the page') % URL(args=request.args, vars=request.get_vars) }}'
     //--></script>
 {{
 response.files.insert(0,URL('static','js/jquery.js'))
