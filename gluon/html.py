@@ -2019,9 +2019,9 @@ class FORM(DIV):
         if session is not None:
             formkey = request_vars._formkey
             keyname = '_formkey[%s]' % formname
-            formkeys = session.get(keyname, [])
+            formkeys = list(session.get(keyname, []))
             # check if user tampering with form and void CSRF
-            if not formkeys or formkey not in formkeys:
+            if not (formkey and formkeys and formkey in formkeys):
                 status = False
             else:
                 session[keyname].remove(formkey)
@@ -2062,7 +2062,7 @@ class FORM(DIV):
                 formkey = web2py_uuid()
             self.formkey = formkey
             keyname = '_formkey[%s]' % formname
-            session[keyname] = session.get(keyname,[])[-9:] + [formkey]
+            session[keyname] = list(session.get(keyname,[]))[-9:] + [formkey]
         if status and not keepvalues:
             self._traverse(False, hideerror)
         self.accepted = status
