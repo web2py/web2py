@@ -352,7 +352,7 @@ EDIT PAGE SLIDING FILES MENU
     position: fixed;
     top: 0px;
     left: 0px;
-    z-index: 1029;
+    z-index: 1031;
     border-right: 3px solid #000;
     /* animation (it doesn't work in IE<10) */
     -moz-transition: all 0.4s;

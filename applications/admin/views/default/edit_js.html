@@ -83,34 +83,31 @@
         CodeMirror.defaults.extraKeys["Ctrl-S"] =
             function(instance) {
                 doClickSave();};
-        CodeMirror.defaults.extraKeys["Ctrl-F11"]=
-            function(instance) {
-                setFullScreen(instance, !isFullScreen(instance));};
         CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
-        CodeMirror.defaults.extraKeys["Shift-Esc"]=
-            function(instance) {
-                if (isFullScreen(instance)) {
-                    setFullScreen(instance, false);};}
+        CodeMirror.defaults.extraKeys["Ctrl-F11"] = function(cm) {
+            cm.setOption("fullScreen", !cm.getOption("fullScreen"));
+        },
+        CodeMirror.defaults.extraKeys["Shift-Esc"] = function(cm) {
+            if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
+        }
         {{pass}}
         {{if filetype=='python':}}
             // must be here or break emmet/zencoding for python
             CodeMirror.defaults.extraKeys["Ctrl-S"] =
                 function(instance) {
                     doClickSave();};
-            CodeMirror.defaults.extraKeys["Ctrl-Space"] =
-                    "autocomplete";
-            CodeMirror.defaults.extraKeys["Ctrl-F11"]=
-                function(instance) {
-                    setFullScreen(instance, !isFullScreen(instance));};
+            CodeMirror.defaults.extraKeys["Ctrl-Space"] = "autocomplete";
             CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
-            CodeMirror.defaults.extraKeys["Shift-Esc"]=
-                function(instance) {
-                    if (isFullScreen(instance)) {
-                        setFullScreen(instance, false);};}
-        //for autocomplete
-        CodeMirror.commands.autocomplete = function(cm) {
-        CodeMirror.showHint(cm, CodeMirror.pythonHint);
-      }
+            CodeMirror.defaults.extraKeys["Ctrl-F11"] = function(cm) {
+		        cm.setOption("fullScreen", !cm.getOption("fullScreen"));
+		    },
+		    CodeMirror.defaults.extraKeys["Shift-Esc"] = function(cm) {
+		        if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
+		    }
+            //for autocomplete
+            CodeMirror.commands.autocomplete = function(cm) {
+                CodeMirror.showHint(cm, CodeMirror.pythonHint);
+            }
         {{pass}}
     store_changes_function = function(instance, changeObj) {
         jQuery(instance).data('saved', false);

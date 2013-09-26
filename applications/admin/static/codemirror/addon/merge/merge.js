@@ -1,5 +1,6 @@
 (function() {
   "use strict";
+  // declare global: diff_match_patch, DIFF_INSERT, DIFF_DELETE, DIFF_EQUAL
 
   var Pos = CodeMirror.Pos;
   var svgNS = "http://www.w3.org/2000/svg";
@@ -8,18 +9,18 @@
     this.mv = mv;
     this.type = type;
     this.classes = type == "left"
-      ? {chunk: "CodeMirror-diff-l-chunk",
-         start: "CodeMirror-diff-l-chunk-start",
-         end: "CodeMirror-diff-l-chunk-end",
-         insert: "CodeMirror-diff-l-inserted",
-         del: "CodeMirror-diff-l-deleted",
-         connect: "CodeMirror-diff-l-connect"}
-      : {chunk: "CodeMirror-diff-r-chunk",
-         start: "CodeMirror-diff-r-chunk-start",
-         end: "CodeMirror-diff-r-chunk-end",
-         insert: "CodeMirror-diff-r-inserted",
-         del: "CodeMirror-diff-r-deleted",
-         connect: "CodeMirror-diff-r-connect"};
+      ? {chunk: "CodeMirror-merge-l-chunk",
+         start: "CodeMirror-merge-l-chunk-start",
+         end: "CodeMirror-merge-l-chunk-end",
+         insert: "CodeMirror-merge-l-inserted",
+         del: "CodeMirror-merge-l-deleted",
+         connect: "CodeMirror-merge-l-connect"}
+      : {chunk: "CodeMirror-merge-r-chunk",
+         start: "CodeMirror-merge-r-chunk-start",
+         end: "CodeMirror-merge-r-chunk-end",
+         insert: "CodeMirror-merge-r-inserted",
+         del: "CodeMirror-merge-r-deleted",
+         connect: "CodeMirror-merge-r-connect"};
   }
 
   DiffView.prototype = {
@@ -31,9 +32,17 @@
       this.diff = getDiff(orig, options.value);
       this.diffOutOfDate = false;
 
+      this.showDifferences = options.showDifferences !== false;
       this.forceUpdate = registerUpdate(this);
       setScrollLock(this, true, false);
       registerScroll(this);
+    },
+    setShowDifferences: function(val) {
+      val = val !== false;
+      if (val != this.showDifferences) {
+        this.showDifferences = val;
+        this.forceUpdate("full");
+      }
     }
   };
 
@@ -41,26 +50,38 @@
     var edit = {from: 0, to: 0, marked: []};
     var orig = {from: 0, to: 0, marked: []};
     var debounceChange;
-    function update() {
+    function update(mode) {
+      if (mode == "full") {
+        if (dv.svg) clear(dv.svg);
+        clear(dv.copyButtons);
+        clearMarks(dv.edit, edit.marked, dv.classes);
+        clearMarks(dv.orig, orig.marked, dv.classes);
+        edit.from = edit.to = orig.from = orig.to = 0;
+      }
       if (dv.diffOutOfDate) {
         dv.diff = getDiff(dv.orig.getValue(), dv.edit.getValue());
         dv.diffOutOfDate = false;
+        CodeMirror.signal(dv.edit, "updateDiff", dv.diff);
       }
-      updateMarks(dv.edit, dv.diff, edit, DIFF_INSERT, dv.classes);
-      updateMarks(dv.orig, dv.diff, orig, DIFF_DELETE, dv.classes);
+      if (dv.showDifferences) {
+        updateMarks(dv.edit, dv.diff, edit, DIFF_INSERT, dv.classes);
+        updateMarks(dv.orig, dv.diff, orig, DIFF_DELETE, dv.classes);
+      }
       drawConnectors(dv);
     }
     function set(slow) {
       clearTimeout(debounceChange);
       debounceChange = setTimeout(update, slow == true ? 250 : 100);
     }
-    dv.edit.on("change", function() {
+    function change() {
       if (!dv.diffOutOfDate) {
         dv.diffOutOfDate = true;
         edit.from = edit.to = orig.from = orig.to = 0;
       }
       set(true);
-    });
+    }
+    dv.edit.on("change", change);
+    dv.orig.on("change", change);
     dv.edit.on("viewportChange", set);
     dv.orig.on("viewportChange", set);
     update();
@@ -93,7 +114,21 @@
     var off = getOffsets(editor, type == DIFF_INSERT ? around.edit : around.orig);
     var offOther = getOffsets(other, type == DIFF_INSERT ? around.orig : around.edit);
     var ratio = (midY - off.top) / (off.bot - off.top);
-    other.scrollTo(null, (offOther.top - halfScreen) + ratio * (offOther.bot - offOther.top));
+    var targetPos = (offOther.top - halfScreen) + ratio * (offOther.bot - offOther.top);
+
+    var botDist, mix;
+    // Some careful tweaking to make sure no space is left out of view
+    // when scrolling to top or bottom.
+    if (targetPos > sInfo.top && (mix = sInfo.top / halfScreen) < 1) {
+      targetPos = targetPos * mix + sInfo.top * (1 - mix);
+    } else if ((botDist = sInfo.height - sInfo.clientHeight - sInfo.top) < halfScreen) {
+      var otherInfo = other.getScrollInfo();
+      var botDistOther = otherInfo.height - otherInfo.clientHeight - targetPos;
+      if (botDistOther > botDist && (mix = botDist / halfScreen) < 1)
+        targetPos = targetPos * mix + (otherInfo.height - otherInfo.clientHeight - botDist) * (1 - mix);
+    }
+
+    other.scrollTo(sInfo.left, targetPos);
     other.state.scrollSetAt = now;
     other.state.scrollSetBy = dv;
     return true;
@@ -197,6 +232,8 @@
   // Updating the gap between editor and original
 
   function drawConnectors(dv) {
+    if (!dv.showDifferences) return;
+
     if (dv.svg) {
       clear(dv.svg);
       var w = dv.gap.offsetWidth;
@@ -208,8 +245,8 @@
     var vpEdit = dv.edit.getViewport(), vpOrig = dv.orig.getViewport();
     var sTopEdit = dv.edit.getScrollInfo().top, sTopOrig = dv.orig.getScrollInfo().top;
     iterateChunks(dv.diff, function(topOrig, botOrig, topEdit, botEdit) {
-      if (topEdit >= vpEdit.to || botEdit < vpEdit.from ||
-          topOrig >= vpOrig.to || botOrig < vpOrig.from)
+      if (topEdit > vpEdit.to || botEdit < vpEdit.from ||
+          topOrig > vpOrig.to || botOrig < vpOrig.from)
         return;
       var topLpx = dv.orig.heightAtLine(topOrig, "local") - sTopOrig, top = topLpx;
       if (dv.svg) {
@@ -225,7 +262,7 @@
               "class", dv.classes.connect);
       }
       var copy = dv.copyButtons.appendChild(elt("div", dv.type == "left" ? "\u21dd" : "\u21dc",
-                                                "CodeMirror-diff-copy"));
+                                                "CodeMirror-merge-copy"));
       copy.title = "Revert chunk";
       copy.chunk = {topEdit: topEdit, botEdit: botEdit, topOrig: topOrig, botOrig: botOrig};
       copy.style.top = top + "px";
@@ -250,23 +287,25 @@
 
     if (hasLeft) {
       left = this.left = new DiffView(this, "left");
-      var leftPane = elt("div", null, "CodeMirror-diff-pane");
+      var leftPane = elt("div", null, "CodeMirror-merge-pane");
       wrap.push(leftPane);
       wrap.push(buildGap(left));
     }
 
-    var editPane = elt("div", null, "CodeMirror-diff-pane");
+    var editPane = elt("div", null, "CodeMirror-merge-pane");
     wrap.push(editPane);
 
     if (hasRight) {
       right = this.right = new DiffView(this, "right");
       wrap.push(buildGap(right));
-      var rightPane = elt("div", null, "CodeMirror-diff-pane");
+      var rightPane = elt("div", null, "CodeMirror-merge-pane");
       wrap.push(rightPane);
     }
 
+    (hasRight ? rightPane : editPane).className += " CodeMirror-merge-pane-rightmost";
+
     wrap.push(elt("div", null, null, "height: 0; clear: both;"));
-    var wrapElt = this.wrap = node.appendChild(elt("div", wrap, "CodeMirror-diff CodeMirror-diff-" + panes + "pane"));
+    var wrapElt = this.wrap = node.appendChild(elt("div", wrap, "CodeMirror-merge CodeMirror-merge-" + panes + "pane"));
     this.edit = CodeMirror(editPane, copyObj(options));
 
     if (left) left.init(leftPane, origLeft, options);
@@ -284,11 +323,11 @@
   };
 
   function buildGap(dv) {
-    var lock = dv.lockButton = elt("div", null, "CodeMirror-diff-scrolllock");
+    var lock = dv.lockButton = elt("div", null, "CodeMirror-merge-scrolllock");
     lock.title = "Toggle locked scrolling";
-    var lockWrap = elt("div", [lock], "CodeMirror-diff-scrolllock-wrap");
+    var lockWrap = elt("div", [lock], "CodeMirror-merge-scrolllock-wrap");
     CodeMirror.on(lock, "click", function() { setScrollLock(dv, !dv.lockScroll); });
-    dv.copyButtons = elt("div", null, "CodeMirror-diff-copybuttons-" + dv.type);
+    dv.copyButtons = elt("div", null, "CodeMirror-merge-copybuttons-" + dv.type);
     CodeMirror.on(dv.copyButtons, "click", function(e) {
       var node = e.target || e.srcElement;
       if (node.chunk) copyChunk(dv, node.chunk);
@@ -299,14 +338,18 @@
     dv.svg = svg;
     if (svg) gapElts.push(svg);
 
-    return dv.gap = elt("div", gapElts, "CodeMirror-diff-gap");
+    return dv.gap = elt("div", gapElts, "CodeMirror-merge-gap");
   }
 
   MergeView.prototype = {
     constuctor: MergeView,
     editor: function() { return this.edit; },
     rightOriginal: function() { return this.right && this.right.orig; },
-    leftOriginal: function() { return this.left && this.left.orig; }
+    leftOriginal: function() { return this.left && this.left.orig; },
+    setShowDifferences: function(val) {
+      if (this.right) this.right.setShowDifferences(val);
+      if (this.left) this.left.setShowDifferences(val);
+    }
   };
 
   // Operations on diffs
