@@ -1770,6 +1770,7 @@ class SQLFORM(FORM):
              noconfirm=False,
              cache_count=None,
              client_side_delete=False,
+             td_attributes=None
              ):
 
         # jQuery UI ThemeRoller classes (empty if ui is disabled)
@@ -2378,7 +2379,8 @@ class SQLFORM(FORM):
                         value = truncate_string(value, maxlength)
                     elif not isinstance(value, DIV):
                         value = field.formatter(value)
-                    trcols.append(TD(value))
+                    td = TD(value)
+                    trcols.append(td_attributes(td,field,row) if callable(td_attributes) else td)
                 row_buttons = TD(_class='row_buttons',_nowrap=True)
                 if links and links_in_grid:
                     toadd = []
