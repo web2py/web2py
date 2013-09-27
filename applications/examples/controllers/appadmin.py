@@ -54,7 +54,7 @@ elif (request.application == 'admin' and not session.authorized) or \
     redirect(URL('admin', 'default', 'index',
                  vars=dict(send=URL(args=request.args, vars=request.vars))))
 else:
-    response.subtitle = 'Database Administration (appadmin)'
+    response.subtitle = T('Database Administration (appadmin)')
     menu = True
 
 ignore_rw = True

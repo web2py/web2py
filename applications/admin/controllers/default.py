@@ -570,7 +570,7 @@ def edit():
 
     if not(request.ajax):
         # return the scaffolding, the rest will be through ajax requests
-        response.title = T('Editing %s' % app)
+        response.title = T('Editing %s') % app
         editarea_preferences = {}
         editarea_preferences['FONT_SIZE'] = '10'
         editarea_preferences['FULL_SCREEN'] = 'false'

@@ -43,14 +43,14 @@ def commit():
     app = request.args(0)
     path = apath(app, r=request)
     repo = hg_repo(path)
-    form = FORM('Comment:', INPUT(_name='comment', requires=IS_NOT_EMPTY()),
+    form = FORM(T('Comment:'), INPUT(_name='comment', requires=IS_NOT_EMPTY()),
                 INPUT(_type='submit', _value=T('Commit')))
     if form.accepts(request.vars, session):
         oldid = repo[repo.lookup('.')]
         addremove(repo)
         repo.commit(text=form.vars.comment)
         if repo[repo.lookup('.')] == oldid:
-            response.flash = 'no changes'
+            response.flash = T('no changes')
     try:
         files = TABLE(*[TR(file) for file in repo[repo.lookup('.')].files()])
         changes = TABLE(TR(TH('revision'), TH('description')))
@@ -75,7 +75,7 @@ def revision():
     form = FORM(INPUT(_type='submit', _value=T('Revert')))
     if form.accepts(request.vars):
         hg.update(repo, revision)
-        session.flash = "reverted to revision %s" % ctx.rev()
+        session.flash = T("reverted to revision %s") % ctx.rev()
         redirect(URL('default', 'design', args=app))
     return dict(
         files=ctx.files(),

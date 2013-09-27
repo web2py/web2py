@@ -3,9 +3,9 @@
 {{block sectionclass}}errors{{end}}
 <!-- begin "errors" block -->
 {{if db_ready['status'] == False:
-    switchbutton = A(SPAN("switch to : db"), _href=db_ready['errlink'], _class="button unavailable btn btn-danger", _title="%s" % (db_ready['errmessage']))
+    switchbutton = A(SPAN(T("switch to : db")), _href=db_ready['errlink'], _class="button unavailable btn btn-danger", _title="%s" % (db_ready['errmessage']))
 else:
-    switchbutton = A(SPAN("switch to : db"), _href=URL(args=[app, 'dbnew']), _class="button btn")
+    switchbutton = A(SPAN(T("switch to : db")), _href=URL(args=[app, 'dbnew']), _class="button btn")
 pass}}
 <h2>{{=T('Error logs for "%(app)s"',dict(app=app))}}</h2>
 <div class="errorform">
@@ -16,12 +16,12 @@ pass}}
             <div class="controls controls-row">
                 {{if 'db' in method:}}
                 <span class="uneditable-input">source : db</span>
-                <a class="button btn" href="{{=URL(args=[app, 'new'])}}"><span>switch to : filesystem</span></a>
-                <a class="button btn" href="{{=URL(args=[app, 'dbold'])}}"><span>lists by ticket</span></a>
+                <a class="button btn" href="{{=URL(args=[app, 'new'])}}"><span>{{=T('switch to : filesystem')}}</span></a>
+                <a class="button btn" href="{{=URL(args=[app, 'dbold'])}}"><span>{{=T('lists by ticket')}}</span></a>
                 {{else:}}
                 <span class="uneditable-input">source : filesystem</span>
                 {{=switchbutton}}
-                <a class="button btn" href="{{=URL(args=[app, 'old'])}}"><span>lists by ticket</span></a>
+                <a class="button btn" href="{{=URL(args=[app, 'old'])}}"><span>{{=T('lists by ticket')}}</span></a>
                 {{pass}}
             </div>
         </p>
@@ -67,12 +67,12 @@ pass}}
             <div class="controls controls-row">
                 {{if 'db' in method:}}
                 <span class="uneditable-input">source : db</span>
-                <a class="button btn" href="{{=URL(args=[app, 'old'])}}"><span>switch to : filesystem</span></a>
-                <a class="button btn" href="{{=URL(args=[app, 'dbnew'])}}"><span>lists by exception</span></a>
+                <a class="button btn" href="{{=URL(args=[app, 'old'])}}"><span>{{=T('switch to : filesystem')}}</span></a>
+                <a class="button btn" href="{{=URL(args=[app, 'dbnew'])}}"><span>{{=T('lists by exception')}}</span></a>
                 {{else:}}
                 <span class="uneditable-input">source : filesystem</span>
                 {{=switchbutton}}
-                <a class="button btn" href="{{=URL(args=[app, 'new'])}}"><span>lists by exception</span></a>
+                <a class="button btn" href="{{=URL(args=[app, 'new'])}}"><span>{{=T('lists by exception')}}</span></a>
                 {{pass}}
             </div>
         </p>
