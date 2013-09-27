@@ -1770,6 +1770,7 @@ class SQLFORM(FORM):
              noconfirm=False,
              cache_count=None,
              client_side_delete=False,
+             ignore_common_filters=None,
              ):
 
         # jQuery UI ThemeRoller classes (empty if ui is disabled)
@@ -1906,7 +1907,7 @@ class SQLFORM(FORM):
                          _title=T(buttontext),
                          _class=trap_class(ui.get('buttontext'), trap))
 
-        dbset = db(query)
+        dbset = db(query,ignore_common_filters=ignore_common_filters)
         tablenames = db._adapter.tables(dbset.query)
         if left is not None:
             if not isinstance(left, (list, tuple)):
