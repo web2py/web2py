@@ -320,7 +320,7 @@ class web2pyDialog(object):
 
         if options.taskbar:
             import gluon.contrib.taskbar_widget
-            self.tb = contrib.taskbar_widget.TaskBarIcon()
+            self.tb = gluon.contrib.taskbar_widget.TaskBarIcon()
             self.checkTaskBar()
 
             if options.password != '<ask>':
