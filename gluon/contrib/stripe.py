@@ -185,9 +185,7 @@ jQuery(function(){
 });
 </script>
 
-<h2>Secure Payment with Stripe.com</h2>
-<h3>Payment Amount: {{=currency_symbol}} {{="%.2f" % amount}}</h3>
-
+<h3>Payment Amount: {{=currency_symbol}} {{="%.2f" % (0.01*amount)}}</h3>
 <form action="" method="POST" id="payment-form" class="form-horizontal">
 
   <div class="form-row control-group">
