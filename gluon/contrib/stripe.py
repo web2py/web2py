@@ -96,8 +96,8 @@ class StripeForm(object):
                  security_notice = True,
                  disclosure_notice = True,
                  template = None):
-        from gluon import current
-        if not current.request.is_local or current.request.is_https:
+        from gluon import current, redirect, URL
+        if not (current.request.is_local or current.request.is_https):
             redirect(URL(args=current.request.args,scheme='https'))
         self.pk = pk
         self.sk = sk
@@ -185,7 +185,7 @@ jQuery(function(){
 });
 </script>
 
-<h1>Secure Payment with Stripe.com</h1>
+<h2>Secure Payment with Stripe.com</h2>
 <h3>Payment Amount: {{=currency_symbol}} {{="%.2f" % amount}}</h3>
 
 <form action="" method="POST" id="payment-form" class="form-horizontal">
@@ -202,7 +202,7 @@ jQuery(function(){
     <label class="control-label">CVC</label>	
     <div class="controls">
       <input type="text" size="4" style="width:80px" data-stripe="cvc"
-	     placeholder="000"/>
+	     placeholder="XXX"/>
       <a href="http://en.wikipedia.org/wiki/Card_Verification_Code" target="_blank">What is this?</a>
     </div>
   </div>
@@ -211,10 +211,10 @@ jQuery(function(){
     <label class="control-label">Expiration</label>	
     <div class="controls">
       <input type="text" size="2" style="width:40px" data-stripe="exp-month"
-	     placeholder="12"/> (MM)
+	     placeholder="MM"/>
       /
       <input type="text" size="4" style="width:80px" data-stripe="exp-year"
-	     placeholder="2018"/> (YYYY)
+	     placeholder="YYYY"/>
     </div>
   </div>
   
