@@ -3095,6 +3095,15 @@ class Auth(object):
             redirect(next, client_side=self.settings.client_side)
         return form
 
+    def run_login_onaccept(self):
+         onaccept = self.settings.login_onaccept
+         if onaccept:
+             form = Storage(dict(vars=self.user))
+             if not isinstance(onaccept,(list, tuple)):
+                 onaccept = [onaccept]
+             for callback in onaccept:
+                 callback(form)
+
     def is_impersonating(self):
         return self.is_logged_in() and 'impersonator' in current.session.auth
 
@@ -3128,22 +3137,17 @@ class Auth(object):
             auth.user.update(
                 table_user._filter_fields(user, True))
             self.user = auth.user
-            self.update_groups()
-            onaccept = self.settings.login_onaccept
+            self.update_groups()            
             log = self.messages['impersonate_log']
             self.log_event(log, dict(id=current_id, other_id=auth.user.id))
-            if onaccept:
-                form = Storage(dict(vars=self.user))
-                if not isinstance(onaccept,(list, tuple)):
-                    onaccept = [onaccept]
-                for callback in onaccept:
-                    callback(form)
+            self.run_login_onaccept()
         elif user_id in (0, '0'):
             if self.is_impersonating():
                 session.clear()
                 session.update(cPickle.loads(auth.impersonator))
                 self.user = session.auth.user
                 self.update_groups()
+                self.run_login_onaccept()
             return None
         if requested_id is DEFAULT and not request.post_vars:
             return SQLFORM.factory(Field('user_id', 'integer'))
