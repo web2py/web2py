@@ -1403,12 +1403,15 @@ class BaseAdapter(ConnectionPool):
     def COMMA(self, first, second):
         return '%s, %s' % (self.expand(first), self.expand(second))
 
+    def CAST(self, first, second):
+        return 'CAST(%s AS %s)' % (first, second)
+
     def expand(self, expression, field_type=None):
         if isinstance(expression, Field):
             out = '%s.%s' % (expression.table._tablename, expression.name)
             if field_type == 'string' and not expression.type in (
                 'string','text','json','password'):
-                out = 'CAST(%s AS %s)' % (out, self.types['text'])
+                out = self.CAST(out, self.types['text'])
             return out
         elif isinstance(expression, (Expression, Query)):
             first = expression.first
@@ -2737,14 +2740,16 @@ class PostgreSQLAdapter(BaseAdapter):
     def LIKE(self,first,second):
         args = (self.expand(first), self.expand(second,'string'))
         if not first.type in ('string', 'text', 'json'):
-            return '(CAST(%s AS CHAR(%s)) LIKE %s)' % (args[0], first.length, args[1])
+            return '(%s LIKE %s)' % (
+                self.CAST(args[0], 'CHAR(%s)' % first.length), args[1])
         else:
             return '(%s LIKE %s)' % args
 
     def ILIKE(self,first,second):
         args = (self.expand(first), self.expand(second,'string'))
         if not first.type in ('string', 'text', 'json'):
-            return '(CAST(%s AS CHAR(%s)) LIKE %s)' % (args[0], first.length, args[1])
+            return '(%s LIKE %s)' % (
+                self.CAST(args[0], 'CHAR(%s)' % first.length), args[1])
         else:
             return '(%s ILIKE %s)' % args
 
@@ -3180,6 +3185,9 @@ class MSSQLAdapter(BaseAdapter):
 
     def ALLOW_NULL(self):
         return ' NULL'
+
+    def CAST(self, first, second):
+        return first # apparently no cast necessary in MSSQL
 
     def SUBSTRING(self,field,parameters):
         return 'SUBSTRING(%s,%s,%s)' % (self.expand(field), parameters[0], parameters[1])
