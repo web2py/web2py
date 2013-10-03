@@ -62,10 +62,10 @@ class MemcacheClient(object):
         return self.client.delete(*a, **b)
 
     def get(self, *a, **b):
-        return self.client.delete(*a, **b)
+        return self.client.get(*a, **b)
 
     def set(self, *a, **b):
-        return self.client.delete(*a, **b)
+        return self.client.set(*a, **b)
 
     def flush_all(self, *a, **b):
         return self.client.delete(*a, **b)
