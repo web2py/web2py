@@ -1978,7 +1978,7 @@ class Auth(object):
         """
         from gluon.settings import global_settings
         if global_settings.web2py_runtime_gae:
-            user = Row(self.settings.table_user._filter_fields(user, id=True))
+            user = Row(self.table_user()._filter_fields(user, id=True))
             delattr(user,'password')
         else:
             user = Row(user)
@@ -3127,7 +3127,7 @@ class Auth(object):
             user_id = current.request.post_vars.user_id
         if user_id and user_id != self.user.id and user_id != '0':
             if not self.has_permission('impersonate',
-                                       self.settings.table_user_name,
+                                       self.table_user(),
                                        user_id):
                 raise HTTP(403, "Forbidden")
             user = table_user(user_id)
@@ -3180,7 +3180,7 @@ class Auth(object):
             table_membership.user_id == self.user.id).select()
         table = TABLE()
         for membership in memberships:
-            table_group = self.db[self.settings.table_group_name]
+            table_group = self.table_group()
             groups = self.db(table_group.id == membership.group_id).select()
             if groups:
                 group = groups[0]
