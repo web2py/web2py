@@ -641,6 +641,9 @@ def ldap_auth(server='ldap', port=None,
                 # bind as anonymous
                 con.simple_bind_s('', '')
 
+       # if username is None, return empty list
+       if username is None:
+               return list()
         # search for groups where user is in
         filter = '(&(%s=%s)(%s))' % (ldap.filter.escape_filter_chars(
                                                             group_member_attrib
