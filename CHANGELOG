@@ -11,6 +11,7 @@
 - more translations, thanks Vladyslav
 - better session2trash.py, works with scheduler, thanks niphlod
 - fixed problem with ENABLED/DISABLED
+- many bug fixes, thanks niphlod, michele, anthony, roberto, tim, and others
 
 ## 2.6.1 - 2.6.4
 
