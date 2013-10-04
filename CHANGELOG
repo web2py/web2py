@@ -1,9 +1,16 @@
 ## 2.7.1
 
 - jQuery 1.10.2
-- Namespaces in translator T("Welcome", ns="namespace"), thanks jamarcer
-- More Auth options, thanks Charles
-- More Admin configuration, thanks Roberto
+- codemirror 3.18, thanks Paolo
+- namespaces in T("Welcome", ns="namespace"), thanks jamarcer (experimental)
+- more Auth options, thanks Charles
+- more admin configuration, thanks Roberto
+- new gluon.contrib.strip.StripeForm for PCI compliant payments
+- webclient can hendle lists, thanks Yair
+- allows SQLFORM.grid(...,ignore_common_filters=True)
+- more translations, thanks Vladyslav
+- better session2trash.py, works with scheduler, thanks niphlod
+- fixed problem with ENABLED/DISABLED
 
 ## 2.6.1 - 2.6.4
 

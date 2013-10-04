@@ -9,7 +9,8 @@ WEB2PY_VERSION_URL = WEB2PY_URL + '/examples/default/version'
 # browser.
 
 ## Default editor (to change editor you need web2py.admin.editors.zip)
-TEXT_EDITOR = 'codemirror' or 'ace' or 'edit_area' or 'amy'
+## old editors like 'ace' or 'edit_area' or 'amy' are no longer supported
+TEXT_EDITOR = 'codemirror'
 
 ## Editor Color scheme (only for ace)
 TEXT_EDITOR_THEME = (

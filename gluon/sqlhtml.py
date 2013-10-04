@@ -1922,14 +1922,15 @@ class SQLFORM(FORM):
             columns = []
             for table in tables:
                 for k,f in table.iteritems():
-                    if isinstance(f,Field):
-                        fields.append(f) # these are selected
-                        if f.readable:
-                            columns.append(f) # these are displayed/exported
-                    elif isinstance(f,Field.Virtual) and f.readable:
-                        f.tablename = table._tablename
-                        columns.append(f)
-                        fields.append(f)
+                    if not k.startswith('_'):
+                        if isinstance(f,Field):
+                            fields.append(f) # these are selected
+                            if f.readable:
+                                columns.append(f) # these are displayed
+                        elif isinstance(f,Field.Virtual) and f.readable:
+                            f.tablename = table._tablename
+                            columns.append(f)
+                            fields.append(f)
                         
         if not field_id:
             if groupby is None:
