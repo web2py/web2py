@@ -12,7 +12,7 @@
   }
 
 
-  String.prototype.reverse = function () {
+  String.prototype.reverse = function (this) {
     return this.split('').reverse().join('');
   };
   var web2py;
