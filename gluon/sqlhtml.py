@@ -45,11 +45,6 @@ except ImportError:
 table_field = re.compile('[\w_]+\.[\w_]+')
 widget_class = re.compile('^\w*')
 
-
-def trap_class(_class=None, trap=True):
-    return (trap and 'w2p_trap' or '') + (_class and ' ' + _class or '')
-
-
 def represent(field, value, record):
     f = field.represent
     if not callable(f):
@@ -1897,7 +1892,8 @@ class SQLFORM(FORM):
                          callback=callback,
                          delete=delete,
                          noconfirm=noconfirm,
-                         _class=trap_class(ui.get('button'), trap))
+                         _class=ui.get('button'),
+                         cid=request.cid)
             else:
                 return A(SPAN(_class=ui.get(buttonclass)),
                          _href=buttonurl,
@@ -1905,7 +1901,8 @@ class SQLFORM(FORM):
                          delete=delete,
                          noconfirm=noconfirm,
                          _title=T(buttontext),
-                         _class=trap_class(ui.get('buttontext'), trap))
+                         _class=ui.get('buttontext'),
+                         cid=request.cid)
 
         dbset = db(query,ignore_common_filters=ignore_common_filters)
         tablenames = db._adapter.tables(dbset.query)
@@ -2057,7 +2054,22 @@ class SQLFORM(FORM):
                     if ondelete:
                         ondelete(table, request.args[-1])
                     record.delete_record()
-            redirect(referrer, client_side=client_side_delete)
+            if request.ajax:
+                #this means javascript is enabled, so we don't need to do
+                #a redirect
+                if not client_side_delete:
+                    #if it's an ajax request and we don't need to reload the
+                    #entire page, let's just inform that there have been no
+                    #exceptions and don't regenerate the grid
+                    raise HTTP(200)
+                else:
+                    #if it's requested that the grid gets reloaded on delete
+                    #on ajax, the redirect should be on the original location
+                    newloc = request.env.http_web2py_component_location
+                    redirect(newloc, client_side=client_side_delete)
+            else:
+                #we need to do a redirect because javascript is not enabled
+                redirect(referrer, client_side=client_side_delete)
 
         exportManager = dict(
             csv_with_hidden_cols=(ExporterCSV, 'CSV (hidden cols)'),
@@ -2221,7 +2233,7 @@ class SQLFORM(FORM):
                         marker = sorter_icons[1]
                 header = A(header, marker, _href=url(vars=dict(
                     keywords=request.vars.keywords or '',
-                    order=key)), _class=trap_class())
+                    order=key)), cid=request.cid)
             headcols.append(TH(header, _class=ui.get('default')))
 
         toadd = []
@@ -2269,7 +2281,6 @@ class SQLFORM(FORM):
                                     cacheable=True,*table_fields)
                 next_cursor = dbset._db.get('_lastcursor', None)
             else:
-#                print('table_fields: %s' %([f_.name for f_ in table_fields],))
                 rows = dbset.select(left=left,orderby=orderby,
                                     groupby=groupby,limitby=limitby,
                                     cacheable=True,*table_fields)
@@ -2303,7 +2314,7 @@ class SQLFORM(FORM):
                 if order: d['order']=order
                 if request.vars.keywords: d['keywords']=request.vars.keywords
                 paginator.append(LI(
-                    A('next',_href=url(vars=d),_class=trap_class())))
+                    A('next',_href=url(vars=d),cid=request.cid)))
         elif paginate and paginate<nrows:
             npages, reminder = divmod(nrows, paginate)
             if reminder:
@@ -2319,7 +2330,7 @@ class SQLFORM(FORM):
                     d['order'] = order
                 if request.vars.keywords:
                     d['keywords'] = request.vars.keywords
-                return A(name, _href=url(vars=d), _class=trap_class())
+                return A(name, _href=url(vars=d), cid=request.cid)
             NPAGES = 5  # window is 2*NPAGES
             if page > NPAGES + 1:
                 paginator.append(LI(self_link('<<', 0)))
@@ -2329,7 +2340,7 @@ class SQLFORM(FORM):
             for p in pages:
                 if p == page:
                     paginator.append(LI(A(p + 1, _onclick='return false'),
-                                        _class=trap_class('current')))
+                                        _class='current'))
                 else:
                     paginator.append(LI(self_link(p + 1, p)))
             if page < npages - NPAGES:
@@ -2598,13 +2609,13 @@ class SQLFORM(FORM):
                     name = format(db[referee],record)
                     breadcrumbs.append(
                         LI(A(T(db[referee]._plural),
-                             _class=trap_class(),
+                             cid=request.cid,
                              _href=url()),
                            SPAN(divider, _class='divider'),
                            _class='w2p_grid_breadcrumb_elem'))
                     if kwargs.get('details', True):
                         breadcrumbs.append(
-                            LI(A(name, _class=trap_class(),
+                            LI(A(name, cid=request.cid,
                                  _href=url(args=['view', referee, id])),
                                SPAN(divider, _class='divider'),
                                _class='w2p_grid_breadcrumb_elem'))
@@ -2617,7 +2628,7 @@ class SQLFORM(FORM):
                 # if isinstance(linked_tables, dict):
                 #     linked_tables = linked_tables.get(table._tablename, [])
                 if linked_tables is None or referee in linked_tables:
-                    field.represent = lambda id, r=None, referee=referee, rep=field.represent: A(callable(rep) and rep(id) or id, _class=trap_class(), _href=url(args=['view', referee, id]))
+                    field.represent = lambda id, r=None, referee=referee, rep=field.represent: A(callable(rep) and rep(id) or id, cid=request.cid, _href=url(args=['view', referee, id]))
         except (KeyError, ValueError, TypeError):
             redirect(URL(args=table._tablename))
         if nargs == len(args) + 1:
@@ -2668,7 +2679,7 @@ class SQLFORM(FORM):
                         args0 = tablename + '.' + fieldname
                         links.append(
                             lambda row, t=t, nargs=nargs, args0=args0:
-                            A(SPAN(t), _class=trap_class(), _href=url(
+                            A(SPAN(t), cid=request.cid, _href=url(
                               args=[args0, row[id_field_name]])))
 
         grid = SQLFORM.grid(query, args=request.args[:nargs], links=links,
@@ -2679,7 +2690,7 @@ class SQLFORM(FORM):
             header = table._plural
             next = grid.create_form or grid.update_form or grid.view_form
             breadcrumbs.append(LI(
-                    A(T(header), _class=trap_class(),_href=url()),
+                    A(T(header), cid=request.cid,_href=url()),
                     SPAN(divider, _class='divider') if next else '',
                     _class='active w2p_grid_breadcrumb_elem'))
             if grid.create_form:
@@ -2694,7 +2705,7 @@ class SQLFORM(FORM):
                                   grid.view_form.record))
             if next:
                 breadcrumbs.append(LI(
-                            A(T(header), _class=trap_class(),_href=url()),
+                            A(T(header), cid=request.cid,_href=url()),
                             _class='active w2p_grid_breadcrumb_elem'))
             grid.insert(
                 0, DIV(UL(*breadcrumbs, **{'_class': breadcrumbs_class}),

@@ -264,16 +264,6 @@
         }
       });
     },
-    trap_link: function (target) {
-      $('#' + target + ' a.w2p_trap').each(function (i) {
-        var link = $(this);
-        link.click(function (e) {
-          web2py.hide_flash();
-          web2py.ajax_page('get', link.attr('href'), [], target, $(this));
-          e.preventDefault();
-        });
-      });
-    },
     ajax_page: function (method, action, data, target, element) {
       /* element is a new parameter, but should be put be put in front */
       if(element == undefined) element = $(document);
@@ -307,7 +297,6 @@
             web2py.fire(element, 'ajax:complete', [xhr, status], target);
             web2py.updatePage(xhr, target);	/* Parse and load the html received */
             web2py.trap_form(action, target);
-            web2py.trap_link(target);
             web2py.ajax_init('#' + target);
             web2py.after_ajax(xhr);
           }
@@ -692,10 +681,8 @@ collapse = jQuery.web2py.collapse;
 fade = jQuery.web2py.fade;
 
 /* internals - shouldn't be needed
-
 web2py_ajax_init = jQuery.web2py.ajax_init;
 web2py_event_handlers = jQuery.web2py.event_handlers;
-
 web2py_trap_link = jQuery.web2py.trap_link;
 web2py_calc_entropy = jQuery.web2py.calc_entropy;
 */
