@@ -181,7 +181,7 @@ class OpenIDAuth(object):
         if current.session.w2popenid:
             w2popenid = current.session.w2popenid
             db = self.db
-            if (w2popenid.ok is True and w2popenid.oid):  # OpenID authenticated
+            if w2popenid.ok is True and w2popenid.oid:  # OpenID authenticated
                 if self._w2popenid_expired(w2popenid):
                     del(current.session.w2popenid)
                     flash = self.messages.flash_openid_expired
@@ -414,7 +414,7 @@ width: 400px;
             delete_link = A(messages.a_delete, _href=delete_href)
             l.append(LI(username, " ", delete_link))
 
-        profile_url = URL(r=request, f='user', args=['profile'])
+        #profile_url = URL(r=request, f='user', args=['profile'])
         #return_to_url = self.return_to_url + '?' + self.nextvar + '=' + profile_url
         openid_list = DIV(H3(messages.h_openid_list), UL(l),
                           self._login_form(

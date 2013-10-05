@@ -40,8 +40,7 @@ class LinkedInAccount(object):
         return ''
 
     def get_user(self):
-        result = self.request.vars.verifier and self.api.accessToken(
-            verifier=self.request.vars.verifier)
+        result = self.request.vars.verifier and self.api.accessToken
         if result:
             profile = self.api.GetProfile()
             profile = self.api.GetProfile(

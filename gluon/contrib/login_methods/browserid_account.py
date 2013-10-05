@@ -21,7 +21,6 @@
 """
 import time
 from gluon import *
-from gluon.storage import Storage
 from gluon.tools import fetch
 import gluon.contrib.simplejson as json
 

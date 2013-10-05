@@ -5,11 +5,10 @@ import __builtin__
 import os
 import sys
 import threading
-import traceback
 from gluon import current
 
 NATIVE_IMPORTER = __builtin__.__import__
-INVALID_MODULES = set(('', 'gluon', 'applications', 'custom_import'))
+INVALID_MODULES = {'', 'gluon', 'applications', 'custom_import'}
 
 # backward compatibility API
 

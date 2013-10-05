@@ -14,7 +14,6 @@ FOR INTERNAL USE ONLY
 
 from os import stat
 import thread
-import logging
 from gluon.fileutils import read_file
 
 cfs = {}  # for speed-up

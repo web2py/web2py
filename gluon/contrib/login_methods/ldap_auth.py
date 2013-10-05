@@ -531,7 +531,7 @@ def ldap_auth(server='ldap', port=None,
             for group_to_del in db_groups_of_the_user:
                 if ldap_groups_of_the_user.count(group_to_del) == 0:
                     db((db.auth_membership.user_id == db_user_id) &
-                       (db.auth_membership.group_id == \
+                       (db.auth_membership.group_id ==
                          db_group_id[group_to_del])).delete()
 
             #
@@ -642,8 +642,8 @@ def ldap_auth(server='ldap', port=None,
                 con.simple_bind_s('', '')
 
        # if username is None, return empty list
-       if username is None:
-               return list()
+        if username is None:
+            return list()
         # search for groups where user is in
         filter = '(&(%s=%s)(%s))' % (ldap.filter.escape_filter_chars(
                                                             group_member_attrib

@@ -67,8 +67,8 @@ class X509Auth(object):
         return next
 
     def get_user(self):
-        '''Returns the user info contained in the certificate.
-        '''
+        """Returns the user info contained in the certificate.
+        """
 
         # We did not get the client cert?
         if not self.ssl_client_raw_cert:

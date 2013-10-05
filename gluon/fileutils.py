@@ -45,7 +45,7 @@ __all__ = [
 
 
 def parse_semantic(version="Version 1.99.0-rc.1+timestamp.2011.09.19.08.23.26"):
-    "http://semver.org/"
+    """http://semver.org/"""
     re_version = re.compile('(\d+)\.(\d+)\.(\d+)(\-(?P<pre>[^\s+]*))?(\+(?P<build>\S*))')
     m = re_version.match(version.strip().split()[-1])
     if not m:
@@ -72,7 +72,7 @@ def parse_version(version):
     return version_tuple
 
 def read_file(filename, mode='r'):
-    "returns content from filename, making sure to close the file explicitly on exit."
+    """returns content from filename, making sure to close the file explicitly on exit."""
     f = open(filename, mode)
     try:
         return f.read()
@@ -81,7 +81,7 @@ def read_file(filename, mode='r'):
 
 
 def write_file(filename, value, mode='w'):
-    "writes <value> to filename, making sure to close the file explicitly on exit."
+    """writes <value> to filename, making sure to close the file explicitly on exit."""
     f = open(filename, mode)
     try:
         return f.write(value)
@@ -90,7 +90,7 @@ def write_file(filename, value, mode='w'):
 
 
 def readlines_file(filename, mode='r'):
-    "applies .split('\n') to the output of read_file()"
+    """applies .split('\n') to the output of read_file()"""
     return read_file(filename, mode).split('\n')
 
 
@@ -452,7 +452,7 @@ from settings import global_settings  # we need to import settings here because
 
 
 def abspath(*relpath, **base):
-    "convert relative path to absolute path based (by default) on applications_parent"
+    """convert relative path to absolute path based (by default) on applications_parent"""
     path = os.path.join(*relpath)
     gluon = base.get('gluon', False)
     if os.path.isabs(path):

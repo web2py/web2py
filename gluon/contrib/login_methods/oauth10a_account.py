@@ -134,16 +134,16 @@ class OAuthAccount(object):
         return next
 
     def get_user(self):
-        '''Get user data.
+        """Get user data.
 
         Since OAuth does not specify what a user
         is, this function must be implemented for the specific
         provider.
-        '''
+        """
         raise NotImplementedError("Must override get_user()")
 
     def __oauth_login(self, next):
-        '''This method redirects the user to the authenticating form
+        """This method redirects the user to the authenticating form
         on authentication server if the authentication code
         and the authentication token are not available to the
         application yet.
@@ -151,7 +151,7 @@ class OAuthAccount(object):
         Once the authentication code has been received this method is
         called to set the access token into the session by calling
         accessToken()
-        '''
+        """
 
         if not self.accessToken():
             # setup the client

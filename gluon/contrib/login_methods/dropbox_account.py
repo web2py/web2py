@@ -10,13 +10,9 @@ Same License as Web2py License
 # mind here session is dropbox session, not current.session
 
 import os
-import re
-import urllib
 from dropbox import client, rest, session
 from gluon import *
-from gluon.tools import fetch
 from gluon.storage import Storage
-import gluon.contrib.simplejson as json
 
 
 class DropboxAccount(object):

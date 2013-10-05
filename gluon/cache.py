@@ -19,7 +19,6 @@ When web2py is running on Google App Engine,
 caching will be provided by the GAE memcache
 (see gluon.contrib.gae_memcache)
 """
-import traceback
 import time
 import portalocker
 import shelve
@@ -278,7 +277,7 @@ class CacheOnDisk(CacheAbstract):
                 storage = shelve.open(self.shelve_name)
             except:
                 logger.error('corrupted cache file %s, will try rebuild it'
-                             % (self.shelve_name))
+                             % self.shelve_name)
                 storage = None
             if not storage and os.path.exists(self.shelve_name):
                 os.unlink(self.shelve_name)

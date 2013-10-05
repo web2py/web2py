@@ -79,7 +79,7 @@ class RPXAccount(object):
     def get_user(self):
         request = self.request
         if request.vars.token:
-            user = Storage()
+            #user = Storage()
             data = urllib.urlencode(
                 dict(apiKey=self.api_key, token=request.vars.token))
             auth_info_json = fetch(self.auth_url + '?' + data)
@@ -97,7 +97,7 @@ class RPXAccount(object):
 
     def login_form(self):
         request = self.request
-        args = request.args
+        #args = request.args
         if self.embed:
             JANRAIN_URL = \
                 "https://%s.rpxnow.com/openid/embed?token_url=%s&language_preference=%s"
@@ -126,7 +126,7 @@ def use_janrain(auth, filename='private/janrain.key', **kwargs):
     if os.path.exists(path):
         request = current.request
         domain, key = open(path, 'r').read().strip().split(':')
-        host = current.request.env.http_host
+        #host = current.request.env.http_host
         url = URL('default', 'user', args='login', scheme=True)
         auth.settings.actions_disabled = \
             ['register', 'change_password', 'request_reset_password']
