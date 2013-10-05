@@ -1005,7 +1005,7 @@ def console():
         if not os.path.exists('applications/__init__.py'):
             write_file('applications/__init__.py', '')
 
-    return (options, args)
+    return options, args
 
 
 def check_existent_app(options, appname):
@@ -1022,7 +1022,7 @@ def get_code_for_scheduler(app, options):
         code = code % ("','".join(app[1:]))
     app_ = app[0]
     if not check_existent_app(options, app_):
-        print "Application '%s' doesn't exist, skipping" % (app_)
+        print "Application '%s' doesn't exist, skipping" % app_
         return None, None
     return app_, code
 
