@@ -33,7 +33,7 @@ class Servers:
     @staticmethod
     def wsgiref(app, address, **options):  # pragma: no cover
         from wsgiref.simple_server import make_server, WSGIRequestHandler
-
+        options = {}
         class QuietHandler(WSGIRequestHandler):
             def log_request(*args, **kw):
                 pass
@@ -71,6 +71,7 @@ class Servers:
 
     @staticmethod
     def paste(app, address, **options):
+        options = {}
         from paste import httpserver
         from paste.translogger import TransLogger
         httpserver.serve(app, host=address[0], port=address[1], **options)
@@ -90,10 +91,12 @@ class Servers:
 
     @staticmethod
     def gevent(app, address, **options):
+        options = options['options']
+        workers = options.workers
         from gevent import pywsgi
         from gevent.pool import Pool
-        pywsgi.WSGIServer(address, app, spawn='workers' in options and Pool(
-            int(options.workers)) or 'default').serve_forever()
+        pywsgi.WSGIServer(address, app, spawn=workers and Pool(
+            int(options.workers)) or 'default', log=None).serve_forever()
 
     @staticmethod
     def bjoern(app, address, **options):
@@ -130,6 +133,7 @@ class Servers:
 
     @staticmethod
     def gunicorn(app, address, **options):
+        options = {}
         from gunicorn.app.base import Application
         config = {'bind': "%s:%d" % address}
         config.update(options)
@@ -175,27 +179,6 @@ class Servers:
         sys.argv = ['anyserver.py']
         s = wsgi.WSGIServer(callable=app, bind="%s:%d" % address)
         s.start()
-
-def run(servername, ip, port, softcron=True, logging=False, profiler=None):
-    if servername == 'gevent':
-        from gevent import monkey
-        monkey.patch_all()
-    elif servername == 'eventlet':
-        import eventlet
-        eventlet.monkey_patch()
-
-    import gluon.main
-
-    if logging:
-        application = gluon.main.appfactory(wsgiapp=gluon.main.wsgibase,
-                                            logfilename='httpserver.log',
-                                            profiler_dir=profiler)
-    else:
-        application = gluon.main.wsgibase
-    if softcron:
-        from gluon.settings import global_settings
-        global_settings.web2py_crontype = 'soft'
-    getattr(Servers, servername)(application, (ip, int(port)))
 
 
 def mongrel2_handler(application, conn, debug=False):
@@ -303,6 +286,30 @@ def mongrel2_handler(application, conn, debug=False):
             req, data, code=code, status=status, headers=headers)
 
 
+def run(servername, ip, port, softcron=True, logging=False, profiler=None,
+        options=None):
+    if servername == 'gevent':
+        from gevent import monkey
+        monkey.patch_all()
+    elif servername == 'eventlet':
+        import eventlet
+        eventlet.monkey_patch()
+
+    import gluon.main
+
+    if logging:
+        application = gluon.main.appfactory(wsgiapp=gluon.main.wsgibase,
+                                            logfilename='httpserver.log',
+                                            profiler_dir=profiler)
+    else:
+        application = gluon.main.wsgibase
+    if softcron:
+        from gluon.settings import global_settings
+        global_settings.web2py_crontype = 'soft'
+    getattr(Servers, servername)(application, (ip, int(port)), options=options)
+
+
+
 def main():
     usage = "python anyserver.py -s tornado -i 127.0.0.1 -p 8000 -l -P"
     try:
@@ -339,14 +346,15 @@ def main():
                       help='port number')
     parser.add_option('-w',
                       '--workers',
-                      default='',
+                      default=None,
                       dest='workers',
                       help='number of workers number')
     (options, args) = parser.parse_args()
     print 'starting %s on %s:%s...' % (
         options.server, options.ip, options.port)
     run(options.server, options.ip, options.port,
-        logging=options.logging, profiler=options.profiler_dir)
+        logging=options.logging, profiler=options.profiler_dir,
+        options=options)
 
 if __name__ == '__main__':
     main()
