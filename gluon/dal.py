@@ -6150,8 +6150,8 @@ class IMAPAdapter(NoSQLAdapter):
                 LOGGER.error("Could not parse date text: %s. %s" %
                              (date, e))
                 return None
-        elif isinstance(date, (datetime.datetime, datetime.date)):
-            return (date + add).strftime("%d-%b-%Y")
+        elif isinstance(date, (datetime.date, datetime.datetime)):
+            return (date + add).strftime("%a, %d %b %Y %H:%M:%S %z")
         else:
             return None
 
@@ -6532,7 +6532,8 @@ class IMAPAdapter(NoSQLAdapter):
 
         mailbox = table.mailbox
         d = dict(((k.name, v) for k, v in fields))
-        date_time = (d.get("created", datetime.datetime.now())).timetuple()
+        date_time = d.get("created", datetime.datetime.now())
+        struct_time = date_time.timetuple()
         if len(d) > 0:
             message = d.get("email", None)
             attachments = d.get("attachments", [])
@@ -6547,6 +6548,8 @@ class IMAPAdapter(NoSQLAdapter):
                 message = Message()
                 message["from"] = d.get("sender", "")
                 message["subject"] = d.get("subject", "")
+                message["date"] = self.convert_date(date_time)
+
                 if mime:
                     message.set_type(mime)
                 if charset:
@@ -6569,7 +6572,7 @@ class IMAPAdapter(NoSQLAdapter):
                     [add_payload(message, c) for c in content]
                     [add_payload(message, a) for a in attachments]
                 message = message.as_string()
-            return (mailbox, flags, date_time, message)
+            return (mailbox, flags, struct_time, message)
         else:
             raise NotImplementedError("IMAP empty insert is not implemented")
 
