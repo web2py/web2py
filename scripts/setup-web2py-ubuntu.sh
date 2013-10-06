@@ -91,7 +91,7 @@ NameVirtualHost *:443
 # within a virtual host container, only WSGI applications associated with
 # virtual hosts with the same server name as that virtual host can be
 # delegated to that set of daemon processes.
-WSGIDaemonProcess web2py user=www-data group=www-data
+WSGIDaemonProcess web2py user=www-data group=www-data processes=1 threads=1
 
 <VirtualHost *:80>
   WSGIProcessGroup web2py
