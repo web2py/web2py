@@ -54,8 +54,7 @@ defined_status = {
     505: 'HTTP VERSION NOT SUPPORTED',
 }
 
-regex_status = re.compile('^\d{3} \w+$')
-
+regex_status = re.compile('^\d{3} [0-9A-Z ]+$')
 
 class HTTP(Exception):
 
