@@ -137,7 +137,7 @@ class Validator(object):
 
     def __call__(self, value):
         raise NotImplementedError
-        return (value, None)
+        return value, None
 
 
 class IS_MATCH(Validator):
@@ -199,7 +199,7 @@ class IS_MATCH(Validator):
             match = self.regex.search(str(value))
         if match is not None:
             return (self.extract and match.group() or value, None)
-        return (value, translate(self.error_message))
+        return value, translate(self.error_message)
 
 
 class IS_EQUAL_TO(Validator):
@@ -225,8 +225,8 @@ class IS_EQUAL_TO(Validator):
 
     def __call__(self, value):
         if value == self.expression:
-            return (value, None)
-        return (value, translate(self.error_message))
+            return value, None
+        return value, translate(self.error_message)
 
 
 class IS_EXPR(Validator):
@@ -252,13 +252,13 @@ class IS_EXPR(Validator):
 
     def __call__(self, value):
         if callable(self.expression):
-            return (value, self.expression(value))
+            return value, self.expression(value)
         # for backward compatibility
         self.environment.update(value=value)
         exec '__ret__=' + self.expression in self.environment
         if self.environment['__ret__']:
-            return (value, None)
-        return (value, translate(self.error_message))
+            return value, None
+        return value, translate(self.error_message)
 
 
 class IS_LENGTH(Validator):
@@ -302,7 +302,7 @@ class IS_LENGTH(Validator):
         if value is None:
             length = 0
             if self.minsize <= length <= self.maxsize:
-                return (value, None)
+                return value, None
         elif isinstance(value, cgi.FieldStorage):
             if value.file:
                 value.file.seek(0, os.SEEK_END)
@@ -315,22 +315,22 @@ class IS_LENGTH(Validator):
                 else:
                     length = 0
             if self.minsize <= length <= self.maxsize:
-                return (value, None)
+                return value, None
         elif isinstance(value, str):
             try:
                 lvalue = len(value.decode('utf8'))
             except:
                 lvalue = len(value)
             if self.minsize <= lvalue <= self.maxsize:
-                return (value, None)
+                return value, None
         elif isinstance(value, unicode):
             if self.minsize <= len(value) <= self.maxsize:
-                return (value.encode('utf8'), None)
+                return value.encode('utf8'), None
         elif isinstance(value, (tuple, list)):
             if self.minsize <= len(value) <= self.maxsize:
-                return (value, None)
+                return value, None
         elif self.minsize <= len(str(value)) <= self.maxsize:
-            return (str(value), None)
+            return str(value), None
         return (value, translate(self.error_message)
                 % dict(min=self.minsize, max=self.maxsize))
 
@@ -355,10 +355,10 @@ class IS_JSON(Validator):
         try:
             if self.native_json:
                 simplejson.loads(value) # raises error in case of malformed json
-                return (value, None) #  the serialized value is not passed
-            return (simplejson.loads(value), None)
+                return value, None #  the serialized value is not passed
+            return simplejson.loads(value), None
         except JSONErrors:
-            return (value, translate(self.error_message))
+            return value, translate(self.error_message)
 
     def formatter(self,value):
         if value is None:
@@ -967,7 +967,7 @@ class IS_DECIMAL_IN_RANGE(Validator):
 
 
 def is_empty(value, empty_regex=None):
-    "test empty field"
+    """test empty field"""
     if isinstance(value, (str, unicode)):
         value = value.strip()
         if empty_regex is not None and empty_regex.match(value):
@@ -1361,7 +1361,7 @@ label_split_regex = re.compile(u'[\u002e\u3002\uff0e\uff61]')
 
 
 def escape_unicode(string):
-    '''
+    """
     Converts a unicode string into US-ASCII, using a simple conversion scheme.
     Each unicode character that does not have a US-ASCII equivalent is
     converted into a URL escaped form based on its hexadecimal value.
@@ -1373,7 +1373,7 @@ def escape_unicode(string):
     :rtype: string
 
     @author: Jonathan Benn
-    '''
+    """
     returnValue = StringIO()
 
     for character in string:
@@ -1388,7 +1388,7 @@ def escape_unicode(string):
 
 
 def unicode_to_ascii_authority(authority):
-    '''
+    """
     Follows the steps in RFC 3490, Section 4 to convert a unicode authority
     string into its ASCII equivalent.
     For example, u'www.Alliancefran\xe7aise.nu' will be converted into
@@ -1403,7 +1403,7 @@ def unicode_to_ascii_authority(authority):
         authority
 
     @author: Jonathan Benn
-    '''
+    """
     #RFC 3490, Section 4, Step 1
     #The encodings.idna Python module assumes that AllowUnassigned == True
 
@@ -1434,7 +1434,7 @@ def unicode_to_ascii_authority(authority):
 
 
 def unicode_to_ascii_url(url, prepend_scheme):
-    '''
+    """
     Converts the inputed unicode url into a US-ASCII equivalent. This function
     goes a little beyond RFC 3490, which is limited in scope to the domain name
     (authority) only. Here, the functionality is expanded to what was observed
@@ -1462,7 +1462,7 @@ def unicode_to_ascii_url(url, prepend_scheme):
     :rtype: string
 
     @author: Jonathan Benn
-    '''
+    """
     #convert the authority component of the URL into an ASCII punycode string,
     #but encode the rest using the regular URI character encoding
 
@@ -2958,7 +2958,7 @@ otherset = frozenset(
 
 
 def calc_entropy(string):
-    " calculate a simple entropy for a given string "
+    """ calculate a simple entropy for a given string """
     import math
     alphabet = 0    # alphabet size
     other = set()
