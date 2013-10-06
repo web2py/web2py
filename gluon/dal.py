@@ -10501,7 +10501,7 @@ class Rows(object):
 
 
         if i is None:
-            return (self.repr(i, fields=fields) for i in range(len(self)))
+            return (self.render(i, fields=fields) for i in range(len(self)))
         import sqlhtml
         row = copy.deepcopy(self.records[i])
         keys = row.keys()
