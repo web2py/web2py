@@ -288,7 +288,10 @@ def run(
             else:
                 try:
                     import IPython
-                    if IPython.__version__ >= '0.11':
+                    if IPython.__version__ >= '1.0':
+                        IPython.start_ipython(user_ns=_env)
+                        return
+                    elif IPython.__version__ >= '0.11':
                         from IPython.frontend.terminal.embed import InteractiveShellEmbed
                         shell = InteractiveShellEmbed(user_ns=_env)
                         shell()
