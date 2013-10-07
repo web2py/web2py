@@ -8,6 +8,7 @@ from gluon.fileutils import read_file
 # ## make sure administrator is on localhost or https
 # ###########################################################
 
+
 http_host = request.env.http_host.split(':')[0]
 
 if request.env.web2py_runtime_gae:
@@ -144,6 +145,10 @@ elif session.is_mobile == 'false':
     is_mobile = False
 else:
     is_mobile = request.user_agent().is_mobile
+
+if DEMO_MODE:
+    session.authorized = True
+    session.forget()
 
 if request.controller == "webservices":
     basic = request.env.http_authorization
