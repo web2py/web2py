@@ -1912,11 +1912,17 @@ class SQLFORM(FORM):
             for join in left:
                 tablenames += db._adapter.tables(join)
         tables = [db[tablename] for tablename in tablenames]
+        #add missing tablename to virtual fields
+        for table in tables:
+            for k,f in table.iteritems():
+                if isinstance(f,Field.Virtual):
+                    f.tablename = table._tablename
         if fields:
             columns = [f for f in fields if f.tablename in tablenames]
         else:
             fields = []
             columns = []
+            virtual_columns = []
             for table in tables:
                 for k,f in table.iteritems():
                     if not k.startswith('_'):
@@ -1925,9 +1931,11 @@ class SQLFORM(FORM):
                             if f.readable:
                                 columns.append(f) # these are displayed
                         elif isinstance(f,Field.Virtual) and f.readable:
-                            f.tablename = table._tablename
-                            columns.append(f)
-                            fields.append(f)
+                            #f.tablename = table._tablename now set above
+                            #keep virtual fields at end
+                            virtual_columns.append(f) #add to fields as well
+            fields = fields + virtual_columns
+            columns = columns + virtual_columns
                         
         if not field_id:
             if groupby is None:
@@ -2273,7 +2281,6 @@ class SQLFORM(FORM):
             limitby = None
 
         try:
-    #        table_fields = filter(lambda f: f.tablename in tablenames, fields)
             table_fields = filter(lambda f: (f.tablename in tablenames) and (not(isinstance(f,Field.Virtual))),fields)
             if dbset._db._adapter.dbengine=='google:datastore':
                 rows = dbset.select(left=left,orderby=orderby,
