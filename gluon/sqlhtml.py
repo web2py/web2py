@@ -1914,9 +1914,9 @@ class SQLFORM(FORM):
         tables = [db[tablename] for tablename in tablenames]
         #add missing tablename to virtual fields
         for table in tables:
-                for k,f in table.iteritems():
-                    if isinstance(f,Field.Virtual):
-                        f.tablename = table._tablename
+            for k,f in table.iteritems():
+                if isinstance(f,Field.Virtual):
+                    f.tablename = table._tablename
         if fields:
             columns = [f for f in fields if f.tablename in tablenames]
         else:
