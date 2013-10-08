@@ -1922,7 +1922,6 @@ class SQLFORM(FORM):
         else:
             fields = []
             columns = []
-            virtual_fields = []
             virtual_columns = []
             for table in tables:
                 for k,f in table.iteritems():
@@ -1934,9 +1933,8 @@ class SQLFORM(FORM):
                         elif isinstance(f,Field.Virtual) and f.readable:
                             #f.tablename = table._tablename now set above
                             #keep virtual fields at end
-                            virtual_columns.append(f)
-                            virtual_fields.append(f)
-            fields = fields + virtual_fields
+                            virtual_columns.append(f) #add to fields as well
+            fields = fields + virtual_columns
             columns = columns + virtual_columns
                         
         if not field_id:
