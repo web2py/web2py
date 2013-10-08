@@ -2273,7 +2273,8 @@ class SQLFORM(FORM):
             limitby = None
 
         try:
-            table_fields = filter(lambda f: f.tablename in tablenames, fields)
+    #        table_fields = filter(lambda f: f.tablename in tablenames, fields)
+            table_fields = filter(lambda f: (f.tablename in tablenames) and (not(isinstance(f,Field.Virtual))),fields)
             if dbset._db._adapter.dbengine=='google:datastore':
                 rows = dbset.select(left=left,orderby=orderby,
                                     groupby=groupby,limitby=limitby,
