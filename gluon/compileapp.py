@@ -512,35 +512,39 @@ def run_models_in(environment):
 
     folder = environment['request'].folder
     c = environment['request'].controller
-    f = environment['request'].function
+    f = environment['request'].function    
+    response = environment['response']
+
+    path = pjoin(folder, 'models')
     cpath = pjoin(folder, 'compiled')
-    if os.path.exists(cpath):
-        for model in sorted(listdir(cpath, '^models[_.].+\.pyc$', 0),
-                            model_cmp):
-            restricted(read_pyc(model), environment, layer=model)
-        path = pjoin(cpath, 'models')
-        models = listdir(path, '^\w+\.pyc$', 0, sort=False)
-        compiled = True
+    compiled = os.path.exists(cpath)
+    if compiled:
+        models = sorted(listdir(cpath, '^models[_.][\w.]+\.pyc$', 0),model_cmp)
     else:
-        path = pjoin(folder, 'models')
-        models = listdir(path, '^\w+\.py$', 0, sort=False)
-        compiled = False
-    n = len(path) + 1
+        models = sorted(listdir(path, '^\w+\.py$', 0, sort=False),model_cmp)
+    n = len(path)+1
+
+    models_to_run = None    
     for model in models:
-        regex = environment['response'].models_to_run
-        if isinstance(regex, list):
-            regex = re_compile('|'.join(regex))
-        file = model[n:].replace(os.path.sep, '/').replace('.pyc', '.py')
-        if not regex.search(file) and c != 'appadmin':
-            continue
-        elif compiled:
-            code = read_pyc(model)
-        elif is_gae:
-            code = getcfs(model, model,
-                          lambda: compile2(read_file(model), model))
-        else:
-            code = getcfs(model, model, None)
-        restricted(code, environment, layer=model)
+        if response.models_to_run != models_to_run:
+            regex = models_to_run = response.models_to_run
+            if isinstance(regex, list):
+                regex = re_compile('|'.join(regex))
+        if models_to_run:
+            if compiled:
+                fname = model[n:-4].replace('.','/')+'.py'
+            else:
+                fname = model[n:].replace(os.path.sep,'/')        
+            if not regex.search(fname) and c != 'appadmin':
+                continue
+            elif compiled:
+                code = read_pyc(model)
+            elif is_gae:
+                code = getcfs(model, model,
+                              lambda: compile2(read_file(model), model))
+            else:
+                code = getcfs(model, model, None)
+            restricted(code, environment, layer=model)
 
 
 def run_controller_in(controller, function, environment):
