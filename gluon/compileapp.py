@@ -380,7 +380,6 @@ _base_environment_['SQLFORM'] = SQLFORM
 _base_environment_['SQLTABLE'] = SQLTABLE
 _base_environment_['LOAD'] = LOAD
 
-
 def build_environment(request, response, session, store_current=True):
     """
     Build the environment dictionary into which web2py files are executed.
@@ -392,8 +391,11 @@ def build_environment(request, response, session, store_current=True):
         request.env = Storage()
     # Enable standard conditional models (i.e., /*.py, /[controller]/*.py, and
     # /[controller]/[function]/*.py)
-    response.models_to_run = [r'^\w+\.py$', r'^%s/\w+\.py$' % request.controller,
-                              r'^%s/%s/\w+\.py$' % (request.controller, request.function)]
+    response.models_to_run = [
+        r'^\w+\.py$', 
+        r'^%s/\w+\.py$' % request.controller,
+        r'^%s/%s/\w+\.py$' % (request.controller, request.function)
+        ]
 
     t = environment['T'] = translator(os.path.join(request.folder,'languages'),
                                       request.env.http_accept_language)
@@ -452,12 +454,12 @@ def compile_views(folder):
     """
 
     path = pjoin(folder, 'views')
-    for file in listdir(path, '^[\w/\-]+(\.\w+)*$'):
+    for fname in listdir(path, '^[\w/\-]+(\.\w+)*$'):
         try:
-            data = parse_template(file, path)
+            data = parse_template(fname, path)
         except Exception, e:
-            raise Exception("%s in %s" % (e, file))
-        filename = ('views/%s.py' % file).replace('/', '_').replace('\\', '_')
+            raise Exception("%s in %s" % (e, fname))
+        filename = 'views.%s.py' % fname.replace(os.path.sep, '.')
         filename = pjoin(folder, 'compiled', filename)
         write_file(filename, data)
         save_pyc(filename)
@@ -470,9 +472,10 @@ def compile_models(folder):
     """
 
     path = pjoin(folder, 'models')
-    for file in listdir(path, '.+\.py$'):
-        data = read_file(pjoin(path, file))
-        filename = pjoin(folder, 'compiled', 'models', file)
+    for fname in listdir(path, '.+\.py$'):
+        data = read_file(pjoin(path, fname))
+        modelfile = 'models.'+fname.replace(os.path.sep,'.')
+        filename = pjoin(folder, 'compiled', modelfile)
         mktree(filename)
         write_file(filename, data)
         save_pyc(filename)
@@ -485,20 +488,21 @@ def compile_controllers(folder):
     """
 
     path = pjoin(folder, 'controllers')
-    for file in listdir(path, '.+\.py$'):
+    for fname in listdir(path, '.+\.py$'):
         ### why is this here? save_pyc(pjoin(path, file))
-        data = read_file(pjoin(path, file))
+        data = read_file(pjoin(path, fname))
         exposed = regex_expose.findall(data)
         for function in exposed:
             command = data + "\nresponse._vars=response._caller(%s)\n" % \
                 function
-            filename = pjoin(folder, 'compiled', ('controllers/'
-                                     + file[:-3]).replace('/', '_')
-                             + '_' + function + '.py')
+            filename = pjoin(folder, 'compiled', 
+                             'controllers.%s.%s.py' % (fname[:-3],function))
             write_file(filename, command)
             save_pyc(filename)
             os.unlink(filename)
 
+def model_cmp(a,b):
+    return cmp(a.count('.'),b.count('.')) or cmp(a,b)
 
 def run_models_in(environment):
     """
@@ -511,7 +515,8 @@ def run_models_in(environment):
     f = environment['request'].function
     cpath = pjoin(folder, 'compiled')
     if os.path.exists(cpath):
-        for model in listdir(cpath, '^models_\w+\.pyc$', 0):
+        for model in sorted(listdir(cpath, '^models[_.].+\.pyc$', 0),
+                            model_cmp):
             restricted(read_pyc(model), environment, layer=model)
         path = pjoin(cpath, 'models')
         models = listdir(path, '^\w+\.pyc$', 0, sort=False)
@@ -551,12 +556,17 @@ def run_controller_in(controller, function, environment):
     badc = 'invalid controller (%s/%s)' % (controller, function)
     badf = 'invalid function (%s/%s)' % (controller, function)
     if os.path.exists(path):
-        filename = pjoin(path, 'controllers_%s_%s.pyc'
+        filename = pjoin(path, 'controllers.%s.%s.pyc'
                          % (controller, function))
         if not os.path.exists(filename):
-            raise HTTP(404,
-                       rewrite.THREAD_LOCAL.routes.error_message % badf,
-                       web2py_error=badf)
+            ### for backward compatibility
+            filename = pjoin(path, 'controllers_%s_%s.pyc'
+                             % (controller, function))
+            ### end for backward compatibility
+            if not os.path.exists(filename):                
+                raise HTTP(404,
+                           rewrite.THREAD_LOCAL.routes.error_message % badf,
+                           web2py_error=badf)
         restricted(read_pyc(filename), environment, layer=filename)
     elif function == '_TEST':
         # TESTING: adjust the path to include site packages
@@ -631,11 +641,15 @@ def run_view_in(environment):
                                context=environment)
         restricted(ccode, environment, 'file stream')
     elif os.path.exists(path):
+        x = view.replace('/', '.')
+        files = ['views.%s.pyc' % x]
+        if allow_generic:
+            files.append('views.generic.%s.pyc' % request.extension)
+        # for backward compatibility
         x = view.replace('/', '_')
-        files = ['views_%s.pyc' % x]
+        files.append('views_%s.pyc' % x)
         if allow_generic:
             files.append('views_generic.%s.pyc' % request.extension)
-        # for backward compatibility
         if request.extension == 'html':
             files.append('views_%s.pyc' % x[:-5])
             if allow_generic:
