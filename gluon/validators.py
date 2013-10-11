@@ -692,7 +692,7 @@ class IS_INT_IN_RANGE(Validator):
         >>> IS_INT_IN_RANGE(1,5)(5)
         (5, 'enter an integer between 1 and 4')
         >>> IS_INT_IN_RANGE(1,5)(3.5)
-        (3, 'enter an integer between 1 and 4')
+        (3.5, 'enter an integer between 1 and 4')
         >>> IS_INT_IN_RANGE(None,5)('4')
         (4, None)
         >>> IS_INT_IN_RANGE(None,5)('6')
@@ -741,23 +741,12 @@ class IS_INT_IN_RANGE(Validator):
                 % dict(min=self.minimum, max=self.maximum - 1)
 
     def __call__(self, value):
-        try:
-            fvalue = float(value)
+        if value and str(value).isdigit():
             value = int(value)
-            if value != fvalue:
-                return (value, self.error_message)
-            if self.minimum is None:
-                if self.maximum is None or value < self.maximum:
-                    return (value, None)
-            elif self.maximum is None:
-                if value >= self.minimum:
-                    return (value, None)
-            elif self.minimum <= value < self.maximum:
-                    return (value, None)
-        except ValueError:
-            pass
+            if ((self.minimum is None or value >= self.minimum) and
+                (self.maximum is None or value < self.maximum)):
+                return (value, None)
         return (value, self.error_message)
-
 
 def str2dec(number):
     s = str(number)
