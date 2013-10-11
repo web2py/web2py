@@ -1917,14 +1917,14 @@ class SQLFORM(FORM):
         else:
             fields = []
             columns = []
+            filter1 = lambda f:isinstance(f,Field)
+            filter2 = lambda f:isinstance(f,Field) and f.readable
             for table in tables:
+                fields += filter(filter1, table)
+                columns += filter(filter2, table)
                 for k,f in table.iteritems():
                     if not k.startswith('_'):
-                        if isinstance(f,Field):
-                            fields.append(f) # these are selected
-                            if f.readable:
-                                columns.append(f) # these are displayed
-                        elif isinstance(f,Field.Virtual) and f.readable:
+                        if isinstance(f,Field.Virtual) and f.readable:
                             f.tablename = table._tablename
                             columns.append(f)
                             fields.append(f)
@@ -2368,6 +2368,7 @@ class SQLFORM(FORM):
                         continue
                     if field.type == 'blob':
                         continue
+                    print row
                     value = row[str(field)]
                     maxlength = maxtextlengths.get(str(field), maxtextlength)
                     if field.represent:
