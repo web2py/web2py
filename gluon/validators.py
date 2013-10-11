@@ -22,6 +22,8 @@ from cStringIO import StringIO
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from gluon.dal import FieldVirtual, FieldMethod
 
+regex_isint = re.compile('^\-?\d+$')
+
 JSONErrors = (NameError, TypeError, ValueError, AttributeError,
               KeyError)
 try:
@@ -741,7 +743,7 @@ class IS_INT_IN_RANGE(Validator):
                 % dict(min=self.minimum, max=self.maximum - 1)
 
     def __call__(self, value):
-        if value and str(value).isdigit():
+        if value and regex_isint.match(str(value)):
             v = int(value)
             if ((self.minimum is None or v >= self.minimum) and
                 (self.maximum is None or v < self.maximum)):
