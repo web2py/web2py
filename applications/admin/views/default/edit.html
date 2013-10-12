@@ -18,7 +18,6 @@
 <link rel="stylesheet" href="{{=cm}}/lib/codemirror.css">
 <link rel="stylesheet" href="{{='%s/theme/%s.css' % (cm, editor_settings['theme'])}}">
 <script src="{{=cm}}/lib/codemirror.js"></script>
-<script src="{{=cm}}/mode/clike/clike.js"></script>
 <script src="{{=cm}}/addon/edit/matchbrackets.js"></script>
 <script src="{{=cm}}/addon/edit/closetag.js"></script>
 {{if editor_settings['editor'] != 'default':}}<script src="{{='%s/keymap/%s.js' % (cm, editor_settings['editor'])}}"></script>{{pass}}
@@ -45,6 +44,12 @@
 <script type="text/javascript">
 var current_theme = "{{=editor_settings['theme']}}";  //Default theme
 var current_editor = "{{=editor_settings['editor']}}";  //Default editor
+{{if editor_settings['closetag'] == 'true':}}
+	var current_closetag = true;  //Default closetag
+{{else:}}
+	var current_closetag = false;  //Default closetag
+{{pass}}
+
 var current_font_incr = 0; // Default font-size, 0 means don't set
 jQuery(document).on('shown click', 'a[data-toggle="tab"]', function (e) {
     var tab_id = jQuery(this).attr('href');
@@ -97,23 +102,15 @@ jQuery(document).on('click', 'a.editor_filelink, a#editor_settingslink', functio
 	load_file(url);
 });
 
-function update_theme(name) {
-	var href = "{{="%s/theme/" % cm}}" + name + ".css";
+function update_editor(editor_theme, editor_name, editor_closetag) {
+	var href = "{{="%s/theme/" % cm}}" + editor_theme + ".css";
 	var link = jQuery("<link>");
 	link.attr({
 		type: 'text/css',
 		rel: 'stylesheet',
 		href: href
 	});
-	jQuery("head").append( link ); 
-	jQuery('textarea[name="data"]') .each(function(id, ta) {
-		editor = jQuery(ta).data('editor');
-		editor.setOption("theme", name);
-	});
-	current_theme = name;
-}
-
-function update_editor(editor_name) {
+	jQuery("head").append( link );
 	if (editor_name !='default'){
 		var src = "{{='%s/keymap/' % cm}}" + editor_name + ".js"; 
 		//var src = "/admin/static/codemirror/keymap/" + editor_name + ".js"; 
@@ -122,13 +119,19 @@ function update_editor(editor_name) {
 			src: src
 		});
 		jQuery("head").append( script ); 
+	}	
+	current_theme = editor_theme;
+	current_editor = editor_name;
+	switch (editor_closetag){
+		case 'true': current_closetag = true; break;
+		case 'false': current_closetag = false;
 	}
 	jQuery('textarea[name="data"]') .each(function(id, ta) {
 		editor = jQuery(ta).data('editor');
-		editor.setOption("keyMap", editor_name);
+		editor.setOption("theme", current_theme);					
+		editor.setOption("keyMap", current_editor);
+		editor.setOption("autoCloseTags", current_closetag);	
 	});
-	current_editor = editor_name;
-
 }
 
 // incr/decr editor font-size
@@ -139,7 +142,7 @@ jQuery(document).on('click', 'a.font_button', function (e) {
     switch (id) {
         case 'incr': new_incr = 2; break;
         case 'decr': new_incr = -2; break;
-        case 'default': new_incr = 0; break;
+        case 'default': new_incr = 0;
     }
     jQuery('textarea[name="data"]').each(function(id, ta) {
         editor = jQuery(ta).data('editor');

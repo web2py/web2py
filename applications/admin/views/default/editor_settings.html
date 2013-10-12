@@ -7,12 +7,15 @@
 }}
 {{themes = [f[:-4] for f in listfiles('admin', "static/codemirror/theme", regexp='.*\.css$' )]}}
 {{editors = ['default', 'vim', 'emacs']}}
+{{closetag = ['true', 'false']}}
 <form id="editor_settings_form" class="form-horizontal">
 <div class="control-group">
     <label class="control-label" for="selectTheme">{{=T('Theme')}}</label>
 	<div class="controls">{{=SELECT(themes, value=editor_settings['theme'], _name="theme" )}}</div>
 	<label class="control-label" for="selectEditor">{{=T('Editor')}}</label>
 	<div class="controls">{{=SELECT(editors, value=editor_settings['editor'], _name="editor" )}}</div>
+	<label class="control-label" for="closeTag">{{=T('Enable Close-Tag')}}</label>
+	<div class="controls">{{=SELECT(closetag, value=editor_settings['closetag'], _name="closetag" )}}</div>
 </div>
 <div class="control-group">
 	<div class="controls"><button type="submit" class="disabled btn btn-primary">{{=T('Save')}}</button></div>
