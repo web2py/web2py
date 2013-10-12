@@ -6124,7 +6124,7 @@ class IMAPAdapter(NoSQLAdapter):
         else:
             return (uid_list[0], uid_list[-1])
 
-    def convert_date(self, date, add=None):
+    def convert_date(self, date, add=None, imf=False):
         if add is None:
             add = datetime.timedelta()
         """ Convert a date object to a string
@@ -6138,7 +6138,10 @@ class IMAPAdapter(NoSQLAdapter):
         if isinstance(date, basestring):
             # Prevent unexpected date response format
             try:
-                dayname, datestring = date.split(",")
+                if "," in date:
+                    dayname, datestring = date.split(",")
+                else:
+                    dayname, datestring = None, date
                 date_list = datestring.strip().split()
                 year = int(date_list[2])
                 month = months.index(date_list[1].upper())
@@ -6150,8 +6153,10 @@ class IMAPAdapter(NoSQLAdapter):
                 LOGGER.error("Could not parse date text: %s. %s" %
                              (date, e))
                 return None
-        elif isinstance(date, (datetime.datetime, datetime.date)):
-            return (date + add).strftime("%d-%b-%Y")
+        elif isinstance(date, (datetime.date, datetime.datetime)):
+            if imf: date_format = "%a, %d %b %Y %H:%M:%S %z"
+            else: date_format = "%d-%b-%Y"
+            return (date + add).strftime(date_format)
         else:
             return None
 
@@ -6532,7 +6537,8 @@ class IMAPAdapter(NoSQLAdapter):
 
         mailbox = table.mailbox
         d = dict(((k.name, v) for k, v in fields))
-        date_time = (d.get("created", datetime.datetime.now())).timetuple()
+        date_time = d.get("created", datetime.datetime.now())
+        struct_time = date_time.timetuple()
         if len(d) > 0:
             message = d.get("email", None)
             attachments = d.get("attachments", [])
@@ -6547,6 +6553,8 @@ class IMAPAdapter(NoSQLAdapter):
                 message = Message()
                 message["from"] = d.get("sender", "")
                 message["subject"] = d.get("subject", "")
+                message["date"] = self.convert_date(date_time, imf=True)
+
                 if mime:
                     message.set_type(mime)
                 if charset:
@@ -6569,7 +6577,7 @@ class IMAPAdapter(NoSQLAdapter):
                     [add_payload(message, c) for c in content]
                     [add_payload(message, a) for a in attachments]
                 message = message.as_string()
-            return (mailbox, flags, date_time, message)
+            return (mailbox, flags, struct_time, message)
         else:
             raise NotImplementedError("IMAP empty insert is not implemented")
 
@@ -6918,7 +6926,7 @@ def sqlhtml_validators(field):
     elif field_type == 'double' or field_type == 'float':
         requires.append(validators.IS_FLOAT_IN_RANGE(-1e100, 1e100))
     elif field_type in ('integer','bigint'):
-        requires.append(validators.IS_INT_IN_RANGE(-1e100, 1e100))
+        requires.append(validators.IS_INT_IN_RANGE(-2**31, 2**31-1))
     elif field_type.startswith('decimal'):
         requires.append(validators.IS_DECIMAL_IN_RANGE(-10**10, 10**10))
     elif field_type == 'date':
@@ -8842,7 +8850,7 @@ class Table(object):
             (typically a uuid field)
         'restore' argument is default False;
             if set True will remove old values in table first.
-        'id_map' ff set to None will not map ids.
+        'id_map' if set to None will not map ids.
         The import will keep the id numbers in the restored table.
         This assumes that there is an field of type id that
         is integer and in incrementing order.

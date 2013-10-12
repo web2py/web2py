@@ -37,7 +37,7 @@ class MemcacheClient(object):
                 self.client.delete(key)
         else:
             value = f()
-            self.client.set(key, (time.time(), value))
+            self.client.set(key, (time.time(), value), time=time_expire)
         return value
 
     def increment(self, key, value=1):

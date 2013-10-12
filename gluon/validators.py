@@ -22,6 +22,8 @@ from cStringIO import StringIO
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from gluon.dal import FieldVirtual, FieldMethod
 
+regex_isint = re.compile('^[+-]?\d+$')
+
 JSONErrors = (NameError, TypeError, ValueError, AttributeError,
               KeyError)
 try:
@@ -692,15 +694,15 @@ class IS_INT_IN_RANGE(Validator):
         >>> IS_INT_IN_RANGE(1,5)(5)
         (5, 'enter an integer between 1 and 4')
         >>> IS_INT_IN_RANGE(1,5)(3.5)
-        (3, 'enter an integer between 1 and 4')
+        (3.5, 'enter an integer between 1 and 4')
         >>> IS_INT_IN_RANGE(None,5)('4')
         (4, None)
         >>> IS_INT_IN_RANGE(None,5)('6')
-        (6, 'enter an integer less than or equal to 4')
+        ('6', 'enter an integer less than or equal to 4')
         >>> IS_INT_IN_RANGE(1,None)('4')
         (4, None)
         >>> IS_INT_IN_RANGE(1,None)('0')
-        (0, 'enter an integer greater than or equal to 1')
+        ('0', 'enter an integer greater than or equal to 1')
         >>> IS_INT_IN_RANGE()(6)
         (6, None)
         >>> IS_INT_IN_RANGE()('abc')
@@ -741,23 +743,12 @@ class IS_INT_IN_RANGE(Validator):
                 % dict(min=self.minimum, max=self.maximum - 1)
 
     def __call__(self, value):
-        try:
-            fvalue = float(value)
-            value = int(value)
-            if value != fvalue:
-                return (value, self.error_message)
-            if self.minimum is None:
-                if self.maximum is None or value < self.maximum:
-                    return (value, None)
-            elif self.maximum is None:
-                if value >= self.minimum:
-                    return (value, None)
-            elif self.minimum <= value < self.maximum:
-                    return (value, None)
-        except ValueError:
-            pass
+        if value and regex_isint.match(str(value)):
+            v = int(value)
+            if ((self.minimum is None or v >= self.minimum) and
+                (self.maximum is None or v < self.maximum)):
+                return (v, None)
         return (value, self.error_message)
-
 
 def str2dec(number):
     s = str(number)
@@ -839,17 +830,12 @@ class IS_FLOAT_IN_RANGE(Validator):
     def __call__(self, value):
         try:
             if self.dot == '.':
-                fvalue = float(value)
+                v = float(value)
             else:
-                fvalue = float(str(value).replace(self.dot, '.'))
-            if self.minimum is None:
-                if self.maximum is None or fvalue <= self.maximum:
-                    return (fvalue, None)
-            elif self.maximum is None:
-                if fvalue >= self.minimum:
-                    return (fvalue, None)
-            elif self.minimum <= fvalue <= self.maximum:
-                    return (fvalue, None)
+                v = float(str(value).replace(self.dot, '.'))
+            if ((self.minimum is None or v >= self.minimum) and
+                (self.maximum is None or v <= self.maximum)):
+                return (v, None)
         except (ValueError, TypeError):
             pass
         return (value, self.error_message)
@@ -948,14 +934,9 @@ class IS_DECIMAL_IN_RANGE(Validator):
                 v = value
             else:
                 v = decimal.Decimal(str(value).replace(self.dot, '.'))
-            if self.minimum is None:
-                if self.maximum is None or v <= self.maximum:
-                    return (v, None)
-            elif self.maximum is None:
-                if v >= self.minimum:
-                    return (v, None)
-            elif self.minimum <= v <= self.maximum:
-                    return (v, None)
+            if ((self.minimum is None or v >= self.minimum) and
+                (self.maximum is None or v <= self.maximum)):
+                return (v, None)
         except (ValueError, TypeError, decimal.InvalidOperation):
             pass
         return (value, self.error_message)
