@@ -50,7 +50,7 @@
         lineNumbers: true,
         indentUnit: 4,
         styleActiveLine: true,
-        autoCloseTags: true,
+        autoCloseTags: current_closetag,
         theme: current_theme,
         tabMode: "shift",
         lineWrapping: true,
@@ -98,6 +98,7 @@
                     doClickSave();};
             CodeMirror.defaults.extraKeys["Ctrl-Space"] = "autocomplete";
             CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
+            CodeMirror.defaults.extraKeys["Shift-Tab"] = "indentLess";
             CodeMirror.defaults.extraKeys["Ctrl-F11"] = function(cm) {
 		        cm.setOption("fullScreen", !cm.getOption("fullScreen"));
 		    },

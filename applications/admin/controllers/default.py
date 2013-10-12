@@ -563,7 +563,7 @@ def edit():
     # Load json only if it is ajax edited...
     app = get_app(request.vars.app)
     app_path = apath(app, r=request)
-    editor_defaults={'theme':'web2py', 'editor': 'default'}
+    editor_defaults={'theme':'web2py', 'editor': 'default', 'closetag': 'true'}
     config = Config(os.path.join(request.folder, 'settings.cfg'),
                     section='editor', default_values=editor_defaults)
     preferences = config.read()
@@ -589,7 +589,7 @@ def edit():
                 response.headers["web2py-component-flash"] = T('Preferences saved correctly')
             else:
                 response.headers["web2py-component-flash"] = T('Preferences saved on session only')
-            response.headers["web2py-component-command"] = "update_theme('%s');update_editor('%s');jQuery('a[href=#editor_settings] button.close').click();" % (config.read()['theme'], config.read()['editor'])
+            response.headers["web2py-component-command"] = "update_editor('%s', '%s', '%s');jQuery('a[href=#editor_settings] button.close').click();" % (config.read()['theme'], config.read()['editor'], config.read()['closetag'])
             return
         else:
             details = {'filename':'settings', 'id':'editor_settings', 'force': False}
