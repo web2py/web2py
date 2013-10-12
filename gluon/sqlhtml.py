@@ -1912,9 +1912,8 @@ class SQLFORM(FORM):
             for join in left:
                 tablenames += db._adapter.tables(join)
         tables = [db[tablename] for tablename in tablenames]
-       
         if fields:
-             #add missing tablename to virtual fields
+            #add missing tablename to virtual fields
             for table in tables:
                 for k,f in table.iteritems():
                     if isinstance(f,Field.Virtual):
@@ -1923,21 +1922,17 @@ class SQLFORM(FORM):
         else:
             fields = []
             columns = []
-            virtual_columns = []
+            filter1 = lambda f:isinstance(f,Field)
+            filter2 = lambda f:isinstance(f,Field) and f.readable
             for table in tables:
+                fields += filter(filter1, table)
+                columns += filter(filter2, table)
                 for k,f in table.iteritems():
                     if not k.startswith('_'):
-                        if isinstance(f,Field):
-                            fields.append(f)  #what gets selected
-                            if f.readable:
-                                columns.append(f) #what gets shown
-                        elif isinstance(f,Field.Virtual) and f.readable:
+                        if isinstance(f,Field.Virtual) and f.readable:
                             f.tablename = table._tablename
-                            #show virtual fields after real fields so put at end of list
-                            virtual_columns.append(f) #add to fields as well
-            fields = fields + virtual_columns
-            columns = columns + virtual_columns
-                        
+                            fields.append(f)
+                            columns.append(f)
         if not field_id:
             if groupby is None:
                 field_id = tables[0]._id
