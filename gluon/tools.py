@@ -2418,7 +2418,7 @@ class Auth(object):
         """
 
         if next is DEFAULT:
-            next = self.settings.logout_next
+            next = self.get_vars_next() or self.settings.logout_next
         if onlogout is DEFAULT:
             onlogout = self.settings.logout_onlogout
         if onlogout:
