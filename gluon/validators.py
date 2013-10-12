@@ -736,7 +736,7 @@ class IS_INT_IN_RANGE(Validator):
             error_message, 'an integer', self.minimum, self.maximum)
 
     def __call__(self, value):
-        if value is not None and regex_isint.match(str(value)):
+        if regex_isint.match(str(value)):
             v = int(value)
             if ((self.minimum is None or v >= self.minimum) and
                 (self.maximum is None or v < self.maximum)):
