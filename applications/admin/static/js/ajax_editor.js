@@ -249,6 +249,8 @@ function keepalive(url) {
 function load_file(url) {
   jQuery.ajax({
     type: "GET",
+    contentType: 'application/json',
+    cache: false,
     dataType: 'json',
     url: url,
     timeout: 1000,
