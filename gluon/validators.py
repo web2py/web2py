@@ -718,8 +718,9 @@ class IS_INT_IN_RANGE(Validator):
         self.minimum = self.maximum = None
         if minimum is None:
             if maximum is None:
-                self.error_message = translate(
-                    error_message or 'enter an integer')
+                if error_message is None:
+                    error_message = 'enter an integer'
+                self.error_message = translate(error_message)
             else:
                 self.maximum = int(maximum)
                 if error_message is None:
@@ -896,7 +897,7 @@ class IS_DECIMAL_IN_RANGE(Validator):
         >>> IS_DECIMAL_IN_RANGE(0,99)('12.34')
         (Decimal('12.34'), None)
         >>> IS_DECIMAL_IN_RANGE()('abc')
-        ('abc', 'enter a decimal number')
+        ('abc', 'enter a number')
     """
 
     def __init__(
@@ -911,7 +912,7 @@ class IS_DECIMAL_IN_RANGE(Validator):
         if minimum is None:
             if maximum is None:
                 if error_message is None:
-                    error_message = 'enter a decimal number'
+                    error_message = 'enter a number'
             else:
                 self.maximum = decimal.Decimal(str(maximum))
                 if error_message is None:
