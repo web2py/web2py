@@ -8850,7 +8850,7 @@ class Table(object):
             (typically a uuid field)
         'restore' argument is default False;
             if set True will remove old values in table first.
-        'id_map' ff set to None will not map ids.
+        'id_map' if set to None will not map ids.
         The import will keep the id numbers in the restored table.
         This assumes that there is an field of type id that
         is integer and in incrementing order.

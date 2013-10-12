@@ -22,7 +22,7 @@ from cStringIO import StringIO
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from gluon.dal import FieldVirtual, FieldMethod
 
-regex_isint = re.compile('^\-?\d+$')
+regex_isint = re.compile('^[\+\-]?\d+$')
 
 JSONErrors = (NameError, TypeError, ValueError, AttributeError,
               KeyError)
