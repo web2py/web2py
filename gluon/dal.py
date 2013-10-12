@@ -6522,7 +6522,12 @@ class IMAPAdapter(NoSQLAdapter):
     def _insert(self, table, fields):
         def add_payload(message, obj):
             payload = Message()
-            payload.set_charset(obj.get("encoding", "utf-8"))
+            encoding = obj.get("encoding", "utf-8")
+            if encoding and (encoding.upper() in
+                             ("BASE64", "7BIT", "8BIT", "BINARY")):
+                payload.add_header("Content-Transfer-Encoding", encoding)
+            else:
+                payload.set_charset(encoding)
             mime = obj.get("mime", None)
             if mime:
                 payload.set_type(mime)
