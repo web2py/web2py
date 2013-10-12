@@ -124,7 +124,7 @@ class Utf8(str):
             return str.__new__(cls, unicode(content, codepage).encode('utf-8'))
 
     def __repr__(self):
-        r''' # note that we use raw strings to avoid having to use double back slashes below
+        r""" # note that we use raw strings to avoid having to use double back slashes below
         NOTE! This function is a clone of web2py:gluon.languages.utf_repl() function
 
         utf8.__repr__() works same as str.repr() when processing ascii string
@@ -150,7 +150,7 @@ class Utf8(str):
         True
         >>> repr(Utf8('中\r\n文')) == "'中\\r\\n文'" != repr('中\r\n文') # Test for \r, \n
         True
-        '''
+        """
         if str.find(self, "'") >= 0 and str.find(self, '"') < 0:  # only single quote exists
             return '"' + unicode(self, 'utf-8').translate(repr_escape_tab).encode('utf-8') + '"'
         else:

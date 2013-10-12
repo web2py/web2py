@@ -1248,7 +1248,7 @@ class Auth(object):
         return next
 
     def _get_user_id(self):
-        "accessor for auth.user_id"
+        """accessor for auth.user_id"""
         return self.user and self.user.id or None
 
     user_id = property(_get_user_id, doc="user.id or None")
