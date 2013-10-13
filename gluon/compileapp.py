@@ -522,7 +522,6 @@ def run_models_in(environment):
         models = sorted(listdir(cpath, '^models[_.][\w.]+\.pyc$', 0),model_cmp)
     else:
         models = sorted(listdir(path, '^\w+\.py$', 0, sort=False),model_cmp)
-    n = len(path)+1
 
     models_to_run = None    
     for model in models:
@@ -532,8 +531,10 @@ def run_models_in(environment):
                 regex = re_compile('|'.join(regex))
         if models_to_run:
             if compiled:
+                n = len(cpath)+8
                 fname = model[n:-4].replace('.','/')+'.py'
             else:
+                n = len(path)+1
                 fname = model[n:].replace(os.path.sep,'/')        
             if not regex.search(fname) and c != 'appadmin':
                 continue
