@@ -177,14 +177,15 @@ class IS_MATCH(Validator):
 
     def __init__(self, expression, error_message='invalid expression',
                  strict=False, search=False, extract=False,
-                 unicode=False):
+                 is_unicode=False):
+
         if strict or not search:
             if not expression.startswith('^'):
                 expression = '^(%s)' % expression
         if strict:
             if not expression.endswith('$'):
                 expression = '(%s)$' % expression
-        if unicode:
+        if is_unicode:
             if not isinstance(expression,unicode):
                 expression = expression.decode('utf8')
             self.regex = re.compile(expression,re.UNICODE)
@@ -192,10 +193,10 @@ class IS_MATCH(Validator):
             self.regex = re.compile(expression)
         self.error_message = error_message
         self.extract = extract
-        self.unicode = unicode
+        self.is_unicode = is_unicode
 
     def __call__(self, value):
-        if self.unicode and not isinstance(value,unicode):
+        if self.is_unicode and not isinstance(value,unicode):
             match = self.regex.search(str(value).decode('utf8'))
         else:
             match = self.regex.search(str(value))
@@ -1149,12 +1150,12 @@ class IS_LIST_OF_EMAILS(object):
         if not bad_emails:
             return (value, None)
         else:
-            return (value, 
+            return (value,
                     translate(self.error_message) % ', '.join(bad_emails))
 
     def formatter(self,value,row=None):
         return ', '.join(value or [])
-    
+
 
 # URL scheme source:
 # <http://en.wikipedia.org/wiki/URI_scheme> obtained on 2008-Nov-10
@@ -3763,9 +3764,3 @@ class IS_IPADDRESS(Validator):
             retval = (value, translate(self.error_message))
 
         return retval
-
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod(
-        optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS)
