@@ -14,7 +14,7 @@
       url = URL('edit', args=args, vars=vars)
       return A(file, _class='editor_filelink', _href=url, _style='word-wrap: nowrap;')
 }}
-{{cm=URL('static','codemirror')}}
+{{cm=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''),'codemirror')}}
 <link rel="stylesheet" href="{{=cm}}/lib/codemirror.css">
 <link rel="stylesheet" href="{{='%s/theme/%s.css' % (cm, editor_settings['theme'])}}">
 <script src="{{=cm}}/lib/codemirror.js"></script>
@@ -45,9 +45,9 @@
 var current_theme = "{{=editor_settings['theme']}}";  //Default theme
 var current_editor = "{{=editor_settings['editor']}}";  //Default editor
 {{if editor_settings['closetag'] == 'true':}}
-	var current_closetag = true;  //Default closetag
+    var current_closetag = true;  //Default closetag
 {{else:}}
-	var current_closetag = false;  //Default closetag
+    var current_closetag = false;  //Default closetag
 {{pass}}
 
 var current_font_incr = 0; // Default font-size, 0 means don't set
@@ -71,7 +71,7 @@ jQuery(document).on('click', '#filesTab button[class="close"]', function (e) {
         close = confirm("You are closing an unsaved file")
     }
     if (close) {
-        if (tab_header.hasClass('active') === true) { 	//Set active an other tab
+        if (tab_header.hasClass('active') === true) {     //Set active an other tab
             var $prev = jQuery(tab_header).prev();
             if ($prev.length) {
                 $prev.children('a[data-toggle="tab"]').tab('show'); // select previous tab
@@ -97,41 +97,41 @@ jQuery(document).on('click', '#restore', function (e) {
 
 // open the selected file
 jQuery(document).on('click', 'a.editor_filelink, a#editor_settingslink', function (e) {
-	e.preventDefault();
-	var url = jQuery(this).attr("href");
-	load_file(url);
+    e.preventDefault();
+    var url = jQuery(this).attr("href");
+    load_file(url);
 });
 
 function update_editor(editor_theme, editor_name, editor_closetag) {
-	var href = "{{="%s/theme/" % cm}}" + editor_theme + ".css";
-	var link = jQuery("<link>");
-	link.attr({
-		type: 'text/css',
-		rel: 'stylesheet',
-		href: href
-	});
-	jQuery("head").append( link );
-	if (editor_name !='default'){
-		var src = "{{='%s/keymap/' % cm}}" + editor_name + ".js"; 
-		//var src = "/admin/static/codemirror/keymap/" + editor_name + ".js"; 
-		var script = jQuery("<script>");
-		script.attr({
-			src: src
-		});
-		jQuery("head").append( script ); 
-	}	
-	current_theme = editor_theme;
-	current_editor = editor_name;
-	switch (editor_closetag){
-		case 'true': current_closetag = true; break;
-		case 'false': current_closetag = false;
-	}
-	jQuery('textarea[name="data"]') .each(function(id, ta) {
-		editor = jQuery(ta).data('editor');
-		editor.setOption("theme", current_theme);					
-		editor.setOption("keyMap", current_editor);
-		editor.setOption("autoCloseTags", current_closetag);	
-	});
+    var href = "{{="%s/theme/" % cm}}" + editor_theme + ".css";
+    var link = jQuery("<link>");
+    link.attr({
+        type: 'text/css',
+        rel: 'stylesheet',
+        href: href
+    });
+    jQuery("head").append( link );
+    if (editor_name !='default'){
+        var src = "{{='%s/keymap/' % cm}}" + editor_name + ".js";
+        //var src = "/admin/static/codemirror/keymap/" + editor_name + ".js";
+        var script = jQuery("<script>");
+        script.attr({
+            src: src
+        });
+        jQuery("head").append( script );
+    }
+    current_theme = editor_theme;
+    current_editor = editor_name;
+    switch (editor_closetag){
+        case 'true': current_closetag = true; break;
+        case 'false': current_closetag = false;
+    }
+    jQuery('textarea[name="data"]') .each(function(id, ta) {
+        editor = jQuery(ta).data('editor');
+        editor.setOption("theme", current_theme);
+        editor.setOption("keyMap", current_editor);
+        editor.setOption("autoCloseTags", current_closetag);
+    });
 }
 
 // incr/decr editor font-size
@@ -235,8 +235,8 @@ jQuery(document).ready(function() {
 });
 </script>
 <!-- Typeahead scripts here so the page load faster -->
-<script src="{{=URL('static/js', 'typeahead.min.js')}}"></script>
-<script src="{{=URL('static/js', 'hogan-2.0.0.js')}}"></script>
+<script src="{{=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''), 'js/typeahead.min.js')}}"></script>
+<script src="{{=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''), 'js/hogan-2.0.0.js')}}"></script>
 <script>
     jQuery('.typeahead-tw').typeahead({
         name: 'files',
