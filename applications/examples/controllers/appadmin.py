@@ -577,8 +577,8 @@ def bg_graph_model():
                 graph.add_edge(n1, n2, color="#4C4C4C", label='')
 
     graph.layout()
-    #return graph.draw(format='png', prog='dot')
     if not request.args:
+        response.headers['Content-Type'] = 'image/png'
         return graph.draw(format='png', prog='dot')
     else:
         response.headers['Content-Disposition']='attachment;filename=graph.%s'%request.args(0)
