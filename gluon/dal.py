@@ -3365,6 +3365,22 @@ class MSSQL3Adapter(MSSQLAdapter):
     def rowslice(self,rows,minimum=0,maximum=None):
         return rows
 
+class MSSQL4Adapter(MSSQLAdapter):
+    """ support for true pagination in MSSQL >= 2012"""
+        
+    def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
+        if not sql_o:
+            #if there is no orderby, we can't use the brand new statements
+            #that being said, developer chose its own poison, so be it random
+            sql_o += ' ORDER BY %s' % self.RANDOM()
+        if limitby:
+            (lmin, lmax) = limitby
+            sql_o += ' OFFSET %i ROWS FETCH NEXT %i ROWS ONLY' % (lmin, lmax - lmin)
+        return 'SELECT %s %s FROM %s%s%s;' % \
+            (sql_s, sql_f, sql_t, sql_w, sql_o)
+
+    def rowslice(self,rows,minimum=0,maximum=None):
+        return rows        
 
 class MSSQL2Adapter(MSSQLAdapter):
     drivers = ('pyodbc',)
@@ -6870,6 +6886,7 @@ ADAPTERS = {
     'mssql': MSSQLAdapter,
     'mssql2': MSSQL2Adapter,
     'mssql3': MSSQL3Adapter,
+    'mssql4' : MSSQL4Adapter,
     'vertica': VerticaAdapter,
     'sybase': SybaseAdapter,
     'db2': DB2Adapter,
