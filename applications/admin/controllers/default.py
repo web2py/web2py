@@ -1791,3 +1791,55 @@ def git_push():
             session.flash = T("Push failed, there are unmerged entries in the cache. Resolve merge issues manually and try again.")
             redirect(URL('site'))
     return dict(app=app, form=form)
+
+def plugins():
+    app = request.args(0)
+    from serializers import loads_json
+    if not session.plugins:
+        rawlist = urllib.urlopen("http://www.web2pyslices.com/" +
+            "public/api.json/action/list/content/Package?package" +
+            "_type=plugin&search_index=false").read()
+        session.plugins = loads_json(rawlist)
+    plugins = TABLE(
+        *[TR(TD(H5(article["article"]["title"]),
+                A(T("Install"),
+                    _href=URL(c="default",
+                        f="install_plugin",
+                        args=[app,],
+                        vars={"source":
+                              article["package_data"]["download"],
+                              "plugin": article["article"]["title"]}
+                             ))),
+             TD(article["article"]["description"], BR(),
+                A(T("Plugin page"),
+                  _href="http://www.web2pyslices.com/slice/show/%s/" % \
+                  article["article"]["id"])),
+             TD(IMG(_src="http://www.web2pyslices.com/download/%s" % \
+                 article["article"]["thumbnail"])))
+          for article in session.plugins["results"]])
+    return dict(plugins=plugins, app=request.args(0))
+
+def install_plugin():
+    app = request.args(0)
+    source = request.vars.source
+    plugin = request.vars.plugin
+    if not (source and app):
+        raise HTTP(500, T("Invalid request"))
+    form = SQLFORM.factory()
+    result = None
+    if form.process().accepted:
+        # get w2p plugin
+        if "web2py.plugin." in source:
+            filename = "web2py.plugin.%s.w2p" % \
+                source.split("web2py.plugin.")[-1].split(".w2p")[0]
+        else:
+            filename = "web2py.plugin.%s.w2p" % cleanpath(plugin)
+        if plugin_install(app, urllib.urlopen(source),
+                          request, filename):
+            session.flash = T('New plugin installed: %s' % filename)
+        else:
+            session.flash = \
+                T('unable to create application "%s"', filename)
+        redirect(URL(f="plugins", args=[app,]))
+    return dict(form=form, app=app, plugin=plugin, source=source)
+
