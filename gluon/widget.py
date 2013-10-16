@@ -1269,16 +1269,19 @@ end tell
     py2exe_getline = linecache.getline
     def getline(filename, lineno, *args, **kwargs):
         line = py2exe_getline(filename, lineno, *args, **kwargs)
-        if not line:                
-            f = open(filename, "r")
+        if not line:
             try:
-                for i, line in enumerate(f):
-                    if lineno == i + 1:
-                        break
-                else:
-                    line = None
-            finally:
-                f.close()
+                f = open(filename, "r")
+                try:
+                    for i, line in enumerate(f):
+                        if lineno == i + 1:
+                            break
+                    else:
+                        line = None
+                finally:
+                    f.close()
+            except (IOError, OSError):
+                line = None
         return line
     linecache.getline = getline
 
