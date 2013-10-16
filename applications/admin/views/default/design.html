@@ -443,7 +443,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 </h3>
 <div id="plugins_inner" class="component_contents">
     <div class="controls comptools">
-        {{=button(PLUGINS_APP, T('download plugins'))}}
+        {{=button(URL(c="default", f="plugins", args=[app,]), T('download plugins'))}}
     </div>
     {{if plugins:}}
     <ul class="unstyled act_edit">
