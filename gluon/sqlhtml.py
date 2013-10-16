@@ -490,7 +490,7 @@ class UploadWidget(FormWidget):
 
     DEFAULT_WIDTH = '150px'
     ID_DELETE_SUFFIX = '__delete'
-    GENERIC_DESCRIPTION = 'file'
+    GENERIC_DESCRIPTION = 'file ## download'
     DELETE_FILE = 'delete'
 
     @classmethod
@@ -540,7 +540,7 @@ class UploadWidget(FormWidget):
             else:
                 inp = DIV(inp,
                           SPAN('[',
-                               A(cls.GENERIC_DESCRIPTION, _href=url),
+                               A(current.T(cls.GENERIC_DESCRIPTION),_href=url),
                                ']', _style='white-space:nowrap'),
                           br, image)
         return inp
@@ -559,7 +559,7 @@ class UploadWidget(FormWidget):
         :param download_url: url for the file download (default = None)
         """
 
-        inp = cls.GENERIC_DESCRIPTION
+        inp = current.T(cls.GENERIC_DESCRIPTION)
 
         if download_url and value:
             if callable(download_url):
