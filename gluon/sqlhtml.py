@@ -2370,7 +2370,6 @@ class SQLFORM(FORM):
                         continue
                     if field.type == 'blob':
                         continue
-                    print row
                     value = row[str(field)]
                     maxlength = maxtextlengths.get(str(field), maxtextlength)
                     if field.represent:
