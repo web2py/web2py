@@ -78,7 +78,7 @@
             return marker;
        }
 
-        {{if filetype in ('html', 'js', 'css'):}}
+        {{if filetype in ('html', 'javascript', 'css'):}}
         // must be here or break emmet/zencoding 
         CodeMirror.defaults.extraKeys["Ctrl-S"] =
             function(instance) {

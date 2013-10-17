@@ -606,7 +606,7 @@ def edit():
     elif filename[-4:] == '.css':
         filetype = 'css'
     elif filename[-3:] == '.js':
-        filetype = 'js'
+        filetype = 'javascript'
     else:
         filetype = 'html'
 
