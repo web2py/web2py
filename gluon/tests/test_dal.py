@@ -836,6 +836,158 @@ class TestValidateAndInsert(unittest.TestCase):
         db.val_and_insert.drop()
 
 
+class TestZRName(unittest.TestCase):
+    """
+    tests for highly experimental rname attribute
+    """
+    def testSelect(self):
+        db = DAL(DEFAULT_URI, check_reserved=['all'])
+        rname = db._adapter.QUOTE_TEMPLATE % 'a very complicated tablename'
+        db.define_table(
+            'easy_name',
+            Field('a_field'),
+            rname=rname
+            )
+        rtn = db.easy_name.insert(a_field='a')
+        self.assertEqual(rtn.id, 1)
+        rtn = db(db.easy_name.a_field == 'a').select()
+        self.assertEqual(len(rtn), 1)
+        self.assertEqual(rtn[0].id, 1)
+        self.assertEqual(rtn[0].a_field, 'a')
+        db.easy_name.insert(a_field='b')
+        rtn = db(db.easy_name.id > 0).delete()
+        self.assertEqual(rtn, 2)
+        rtn = db(db.easy_name.id > 0).count()
+        self.assertEqual(rtn, 0)
+        db.easy_name.insert(a_field='a')
+        db.easy_name.insert(a_field='b')
+        rtn = db(db.easy_name.id > 0).count()
+        self.assertEqual(rtn, 2)
+        rtn = db(db.easy_name.a_field == 'a').update(a_field='c')
+        rtn = db(db.easy_name.a_field == 'c').count()
+        self.assertEqual(rtn, 1)
+        rtn = db(db.easy_name.a_field != 'c').count()
+        self.assertEqual(rtn, 1)
+        avg = db.easy_name.id.avg()
+        rtn = db(db.easy_name.id > 0).select(avg)
+        self.assertEqual(rtn[0][avg], 3)
+        rname = db._adapter.QUOTE_TEMPLATE % 'this is the person table'
+        db.define_table(
+            'person',
+            Field('name', default="Michael"),
+            Field('uuid'),
+            rname=rname
+            )
+        rname = db._adapter.QUOTE_TEMPLATE % 'this is the pet table'
+        db.define_table(
+            'pet',
+            Field('friend','reference person'),
+            Field('name'),
+            rname=rname
+            )
+        michael = db.person.insert() #default insert
+        john = db.person.insert(name='John')
+        luke = db.person.insert(name='Luke')
+
+        #michael owns Phippo
+        phippo = db.pet.insert(friend=michael, name="Phippo")
+        #john owns Dunstin and Gertie
+        dunstin = db.pet.insert(friend=john, name="Dunstin")
+        gertie = db.pet.insert(friend=john, name="Gertie")
+
+        rtn = db(db.person.id == db.pet.friend).select(orderby=db.person.id|db.pet.id)
+        self.assertEqual(len(rtn), 3)
+        self.assertEqual(rtn[0].person.id, michael)
+        self.assertEqual(rtn[0].person.name, 'Michael')
+        self.assertEqual(rtn[0].pet.id, phippo)
+        self.assertEqual(rtn[0].pet.name, 'Phippo')
+        self.assertEqual(rtn[1].person.id, john)
+        self.assertEqual(rtn[1].person.name, 'John')
+        self.assertEqual(rtn[1].pet.name, 'Dunstin')
+        self.assertEqual(rtn[2].pet.name, 'Gertie')
+        #fetch owners, eventually with pet
+        #main point is retrieving Luke with no pets
+        rtn = db(db.person.id > 0).select(
+            orderby=db.person.id|db.pet.id,
+            left=db.pet.on(db.person.id == db.pet.friend)
+            )
+        self.assertEqual(rtn[0].person.id, michael)
+        self.assertEqual(rtn[0].person.name, 'Michael')
+        self.assertEqual(rtn[0].pet.id, phippo)
+        self.assertEqual(rtn[0].pet.name, 'Phippo')
+        self.assertEqual(rtn[3].person.name, 'Luke')
+        self.assertEqual(rtn[3].person.id, luke)
+        self.assertEqual(rtn[3].pet.name, None)
+        #lets test a subquery
+        subq = db(db.pet.name == "Gertie")._select(db.pet.friend)
+        rtn = db(db.person.id.belongs(subq)).select()
+        self.assertEqual(rtn[0].id, 2)
+        self.assertEqual(rtn[0]('person.name'), 'John')
+        #as dict
+        rtn = db(db.person.id > 0).select().as_dict()
+        self.assertEqual(rtn[1]['name'], 'Michael')
+        #as list
+        rtn = db(db.person.id > 0).select().as_list()
+        self.assertEqual(rtn[0]['name'], 'Michael')
+        #isempty
+        rtn = db(db.person.id > 0).isempty()
+        self.assertEqual(rtn, False)
+        #join argument
+        rtn = db(db.person).select(orderby=db.person.id|db.pet.id,
+                                   join=db.pet.on(db.person.id==db.pet.friend))
+        self.assertEqual(len(rtn), 3)
+        self.assertEqual(rtn[0].person.id, michael)
+        self.assertEqual(rtn[0].person.name, 'Michael')
+        self.assertEqual(rtn[0].pet.id, phippo)
+        self.assertEqual(rtn[0].pet.name, 'Phippo')
+        self.assertEqual(rtn[1].person.id, john)
+        self.assertEqual(rtn[1].person.name, 'John')
+        self.assertEqual(rtn[1].pet.name, 'Dunstin')
+        self.assertEqual(rtn[2].pet.name, 'Gertie')
+
+        #aliases
+        rname = db._adapter.QUOTE_TEMPLATE % 'the cubs'
+        db.define_table('pet_farm',
+            Field('name'),
+            Field('father','reference pet_farm'),
+            Field('mother','reference pet_farm'),
+            rname=rname
+        )
+
+        minali = db.pet_farm.insert(name='Minali')
+        osbert = db.pet_farm.insert(name='Osbert')
+        #they had a cub
+        selina = db.pet_farm.insert(name='Selina', father=osbert, mother=minali)
+
+        father = db.pet_farm.with_alias('father')
+        mother = db.pet_farm.with_alias('mother')
+
+        #fetch pets with relatives
+        rtn = db().select(
+            db.pet_farm.name, father.name, mother.name,
+            left=[
+                father.on(father.id == db.pet_farm.father),
+                mother.on(mother.id == db.pet_farm.mother)
+            ],
+            orderby=db.pet_farm.id
+        )
+
+        self.assertEqual(len(rtn), 3)
+        self.assertEqual(rtn[0].pet_farm.name, 'Minali')
+        self.assertEqual(rtn[0].father.name, None)
+        self.assertEqual(rtn[0].mother.name, None)
+        self.assertEqual(rtn[1].pet_farm.name, 'Osbert')
+        self.assertEqual(rtn[2].pet_farm.name, 'Selina')
+        self.assertEqual(rtn[2].father.name, 'Osbert')
+        self.assertEqual(rtn[2].mother.name, 'Minali')
+
+        #clean up
+        db.pet_farm.drop()
+        db.pet.drop()
+        db.person.drop()
+        db.easy_name.drop()
+
+
 
 if __name__ == '__main__':
     unittest.main()
