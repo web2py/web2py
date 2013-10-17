@@ -5,11 +5,8 @@
     return XML('<li><tt>%s</tt> %s</li>' % (combo, description))
 }}
 
-{{if TEXT_EDITOR == 'amy':}}
-{{include 'default/amy_ajax.html'}}
-{{else:}}
 <script language="Javascript" type="text/javascript" src="{{=URL(r=request,c='static',f='edit_area/edit_area_full.js')}}"></script><script language="Javascript" type="text/javascript">
-editAreaLoader.init({id: "body",start_highlight: true,allow_resize: "both",allow_toggle: {{=editarea_preferences['ALLOW_TOGGLE']}},language: "en",syntax: "{{=filetype}}",replace_tab_by_spaces: {{=editarea_preferences['REPLACE_TAB_BY_SPACES']}}, font_size: {{=editarea_preferences['FONT_SIZE']}}, fullscreen: {{=editarea_preferences['FULL_SCREEN']}}, display: "{{=editarea_preferences['DISPLAY']}}", show_line_colors: true, word_wrap: true, save_callback: "doClickSave" {{if filetype=='html':}},plugins: "zencoding"{{pass}} });
+editAreaLoader.init({id: "body",start_highlight: true,allow_resize: "both",allow_toggle: {{=editarea_preferences['ALLOW_TOGGLE']}},language: "en",syntax: "{{=filetype}}",replace_tab_by_spaces: {{=editarea_preferences['REPLACE_TAB_BY_SPACES']}}, fullscreen: {{=editarea_preferences['FULL_SCREEN']}}, display: "{{=editarea_preferences['DISPLAY']}}", show_line_colors: true, word_wrap: true, save_callback: "doClickSave" {{if filetype=='html':}},plugins: "zencoding"{{pass}} });
 </script>
 <script language="Javascript" type="text/javascript" src="{{=URL('static','js/ajax_editor.js')}}"></script>
 <script language="Javascript" type="text/javascript">
@@ -17,7 +14,7 @@ jQuery(document).ready(function(){
      setTimeout("keepalive('{{=URL('keepalive')}}')",10000);
 });
 </script>
-{{pass}}
+
 
 {{block sectionclass}}edit {{filename}}{{end}}
 
@@ -41,11 +38,7 @@ jQuery(document).ready(function(){
     {{=T('Saved file hash:')}}
     <input type="input" name="file_hash" value="{{=file_hash}}" readonly="readonly"/>
     {{=T('Last saved on:')}} <input type="input" name="saved_on" value="{{=saved_on}}" readonly="readonly"/>
-    {{if TEXT_EDITOR=='amy':}}
-    <textarea style="width: auto; height:400px;direction:ltr;" rows="58" cols="100" -amy-enabled="true" id="body" name="data">{{=data}}</textarea>
-    {{else:}}
     <textarea cols="80" rows="25" id="body" style="direction:ltr;" name="data">{{=data}}</textarea>
-    {{pass}}
     <button onclick="window.location.reload(); return false">{{=T('restore')}}</button>
     <button type="submit" name="revert">{{=T('revert')}}</button>
     <br/>
