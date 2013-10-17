@@ -8,22 +8,6 @@ WEB2PY_VERSION_URL = WEB2PY_URL + '/examples/default/version'
 # the user-interface feature that allows you to edit files in your web
 # browser.
 
-# Displays the editor in full screen mode. The value must be 'true' or 'false'
-FULL_SCREEN = 'false'
-
-# Display a check box under the editor to allow the user to switch
-# between the editor and a simple
-# HTML text area. The value must be 'true' or 'false'
-ALLOW_TOGGLE = 'true'
-
-# Replaces tab characters with space characters.
-# The value can be 'false' (meaning that tabs are not replaced),
-# or an integer > 0 that specifies the number of spaces to replace a tab with.
-REPLACE_TAB_BY_SPACES = 4
-
-# Toggle on/off the code editor instead of textarea on startup
-DISPLAY = "onload" or "later"
-
 # if demo mode is True then admin works readonly and does not require login
 DEMO_MODE = False
 
