@@ -568,7 +568,7 @@ def edit():
                     section='editor', default_values=editor_defaults)
     preferences = config.read()
 
-    if not(request.ajax):
+    if not(request.ajax) and not(is_mobile):
         # return the scaffolding, the rest will be through ajax requests
         response.title = T('Editing %s') % app
         editarea_preferences = {}
@@ -769,7 +769,10 @@ def edit():
                     force= True if (request.vars.restore or request.vars.revert) else False)
         plain_html = response.render('default/edit_js.html', file_details)
         file_details['plain_html'] = plain_html
-        return response.json(file_details)
+        if is_mobile:
+            return response.render('default.mobile/edit.html', file_details, editor_settings=preferences)
+        else:
+            return response.json(file_details)
 
 
 def resolve():
