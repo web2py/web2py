@@ -568,19 +568,10 @@ def edit():
                     section='editor', default_values=editor_defaults)
     preferences = config.read()
 
-    if not(request.ajax):
+    if not(request.ajax) and not(is_mobile):
         # return the scaffolding, the rest will be through ajax requests
         response.title = T('Editing %s') % app
-        editarea_preferences = {}
-        editarea_preferences['FONT_SIZE'] = '10'
-        editarea_preferences['FULL_SCREEN'] = 'false'
-        editarea_preferences['ALLOW_TOGGLE'] = 'true'
-        editarea_preferences['REPLACE_TAB_BY_SPACES'] = '4'
-        editarea_preferences['DISPLAY'] = 'onload'
-        for key in editarea_preferences:
-            if key in globals():
-                editarea_preferences[key] = globals()[key]
-        return response.render ('default/edit.html', dict(app=request.args[0], editor_settings=preferences, editarea_preferences=editarea_preferences))
+        return response.render ('default/edit.html', dict(app=request.args[0], editor_settings=preferences))
 
     # show settings tab and save prefernces
     if 'settings' in request.vars:
@@ -615,7 +606,7 @@ def edit():
     elif filename[-4:] == '.css':
         filetype = 'css'
     elif filename[-3:] == '.js':
-        filetype = 'js'
+        filetype = 'javascript'
     else:
         filetype = 'html'
 
@@ -769,7 +760,10 @@ def edit():
                     force= True if (request.vars.restore or request.vars.revert) else False)
         plain_html = response.render('default/edit_js.html', file_details)
         file_details['plain_html'] = plain_html
-        return response.json(file_details)
+        if is_mobile:
+            return response.render('default.mobile/edit.html', file_details, editor_settings=preferences)
+        else:
+            return response.json(file_details)
 
 
 def resolve():
