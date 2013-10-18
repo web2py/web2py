@@ -78,7 +78,7 @@
             return marker;
        }
 
-        {{if filetype in ('html', 'js', 'css'):}}
+        {{if filetype in ('html', 'javascript', 'css'):}}
         // must be here or break emmet/zencoding 
         CodeMirror.defaults.extraKeys["Ctrl-S"] =
             function(instance) {
@@ -137,7 +137,7 @@
 
 <div class="row-fluid">
     <div class="help alert alert-block alert-info">
-        {{if TEXT_EDITOR == 'codemirror' and filetype=='html':}}
+        {{if filetype=='html':}}
         <h3>{{=T('Key bindings for ZenCoding Plugin')}}</h3>
         <ul class="keybindings unstyled">
             {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
@@ -150,15 +150,15 @@
             {{=shortcut('Shift-Ctrl-R / Shift-Cmd-Option-F', T('Replace All'))}}
             {{=shortcut('Tab', T('Expand Abbreviation'))}}
         </ul>
-        {{elif TEXT_EDITOR == 'codemirror':}}
+        {{else:}}
         <h3>{{=T("Key bindings")}}</h3>
         <ul class="keybindings unstyled">
             {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
             {{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
 			{{=shortcut('Shift+Esc', T('Exit Fullscreen'))}}
             {{if filetype=='python':}}
-            {{=shortcut('Ctrl-Space', T('Autocomplete Python Code'))}}
-           {{pass}}
+                {{=shortcut('Ctrl-Space', T('Autocomplete Python Code'))}}
+   			{{pass}}
             {{=shortcut('Ctrl-F / Cmd-F', T('Start searching'))}}
             {{=shortcut('Ctrl-G / Cmd-G', T('Find Next'))}}
             {{=shortcut('Shift-Ctrl-G / Shift-Cmd-G', T('Find Previous'))}}
