@@ -6225,7 +6225,7 @@ class IMAPAdapter(NoSQLAdapter):
                 sub_items = [sub_item for sub_item in sub_items \
                 if len(sub_item.strip()) > 0]
                 # mailbox = sub_items[len(sub_items) -1]
-                mailbox = sub_items[-1]
+                mailbox = sub_items[-1].strip()
                 # remove unwanted characters and store original names
                 # Don't allow leading non alphabetic characters
                 mailbox_name = re.sub('^[_0-9]*', '', re.sub('[^_\w]','',re.sub('[/ ]','_',mailbox)))
