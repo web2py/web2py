@@ -6115,16 +6115,20 @@ class IMAPAdapter(NoSQLAdapter):
 
     def get_last_message(self, tablename):
         last_message = None
-        # request mailbox list to the server
-        # if needed
+        # request mailbox list to the server if needed.
         if not isinstance(self.connection.mailbox_names, dict):
             self.get_mailboxes()
         try:
-            result = self.connection.select(self.connection.mailbox_names[tablename])
+            result = self.connection.select(
+                self.connection.mailbox_names[tablename])
             last_message = int(result[1][0])
+            # Last message must be a positive integer
+            if last_message == 0:
+                last_message = 1
         except (IndexError, ValueError, TypeError, KeyError):
             e = sys.exc_info()[1]
-            LOGGER.debug("Error retrieving the last mailbox sequence number. %s" % str(e))
+            LOGGER.debug("Error retrieving the last mailbox" +
+                         " sequence number. %s" % str(e))
         return last_message
 
     def get_uid_bounds(self, tablename):
