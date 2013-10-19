@@ -37,6 +37,13 @@
 <script src="{{=cm}}/addon/selection/active-line.js"></script>
 <script src="{{=cm}}/addon/display/fullscreen.js"></script>
 <link rel="stylesheet" href="{{=cm}}/addon/display/fullscreen.css">
+<script src="{{=cm}}/addon/fold/brace-fold.js"></script>
+<script src="{{=cm}}/addon/fold/comment-fold.js"></script>
+<script src="{{=cm}}/addon/fold/foldcode.js"></script>
+<script src="{{=cm}}/addon/fold/foldgutter.js"></script>
+<script src="{{=cm}}/addon/fold/indent-fold.js"></script>
+<script src="{{=cm}}/addon/fold/xml-fold.js"></script>
+<link rel="stylesheet" href="{{=cm}}/addon/fold/foldgutter.css">
 <script src="{{=cm}}/emmet.min.js"></script>
 <script src="{{=URL('static','js/ajax_editor.js')}}"></script>
 <link rel="stylesheet" href="{{=URL('static/css','typeahead.js-bootstrap.css')}}">
@@ -49,6 +56,7 @@ var current_editor = "{{=editor_settings['editor']}}";  //Default editor
 {{else:}}
     var current_closetag = false;  //Default closetag
 {{pass}}
+var current_codefolding = {{=editor_settings['codefolding']}};  //Default codefolding
 
 var current_font_incr = 0; // Default font-size, 0 means don't set
 jQuery(document).on('shown click', 'a[data-toggle="tab"]', function (e) {
@@ -102,7 +110,7 @@ jQuery(document).on('click', 'a.editor_filelink, a#editor_settingslink', functio
     load_file(url);
 });
 
-function update_editor(editor_theme, editor_name, editor_closetag) {
+function update_editor(editor_theme, editor_name, editor_closetag, editor_codefolding) {
     var href = "{{="%s/theme/" % cm}}" + editor_theme + ".css";
     var link = jQuery("<link>");
     link.attr({
@@ -122,15 +130,14 @@ function update_editor(editor_theme, editor_name, editor_closetag) {
     }
     current_theme = editor_theme;
     current_editor = editor_name;
-    switch (editor_closetag){
-        case 'true': current_closetag = true; break;
-        case 'false': current_closetag = false;
-    }
+    current_codefolding = editor_codefolding;
+    current_closetag = editor_closetag;
     jQuery('textarea[name="data"]') .each(function(id, ta) {
         editor = jQuery(ta).data('editor');
         editor.setOption("theme", current_theme);
         editor.setOption("keyMap", current_editor);
         editor.setOption("autoCloseTags", current_closetag);
+        editor.setOption("foldGutter", current_codefolding);
     });
 }
 

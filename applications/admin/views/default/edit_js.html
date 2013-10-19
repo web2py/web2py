@@ -54,15 +54,18 @@
         theme: current_theme,
         tabMode: "shift",
         lineWrapping: true,
-        gutters: ["CodeMirror-linenumbers", "breakpoints"],
+        foldGutter: current_codefolding,
+        gutters: ["CodeMirror-linenumbers", "breakpoints", "CodeMirror-foldgutter"],
         keyMap: current_editor,
         matchBrackets: true,
         autofocus: false,
         height: "350px",
         showTrailingSpace: true
     });
+    editor.foldCode(CodeMirror.Pos(8, 0));
 
-    editor.on("gutterClick", function(cm, n) {
+    editor.on("gutterClick", function(cm, n, gutter) {
+        if (gutter !== "breakpoints" ) return;
         var info = cm.lineInfo(n);
         cm.setGutterMarker(n, "breakpoints", info.gutterMarkers ? null : makeMarker());
         sel = {start: n, end: n, data: ''};
