@@ -235,18 +235,18 @@ def select():
         if match:
             table = match.group('table')
         try:
-            nrows = db(query).count()
+            nrows = db(query, ignore_common_filters=True).count()
             if form.vars.update_check and form.vars.update_fields:
-                db(query).update(**eval_in_global_env('dict(%s)'
-                                                      % form.vars.update_fields))
+                db(query, ignore_common_filters=True).update(
+                    **eval_in_global_env('dict(%s)' % form.vars.update_fields))
                 response.flash = T('%s %%{row} updated', nrows)
             elif form.vars.delete_check:
-                db(query).delete()
+                db(query, ignore_common_filters=True).delete()
                 response.flash = T('%s %%{row} deleted', nrows)
-            nrows = db(query).count()
+            nrows = db(query, ignore_common_filters=True).count()
             if orderby:
                 rows = db(query, ignore_common_filters=True).select(limitby=(
-                    start, stop), orderby=eval_in_global_env(orderby))
+                        start, stop), orderby=eval_in_global_env(orderby))
             else:
                 rows = db(query, ignore_common_filters=True).select(
                     limitby=(start, stop))
