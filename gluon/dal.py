@@ -2274,8 +2274,7 @@ class SQLiteAdapter(BaseAdapter):
         self.db = db
         self.dbengine = "sqlite"
         self.uri = uri
-        if adapter_args.get('foreign_keys',True) and not after_connection:
-            after_connection = lambda db: db.execute('PRAGMA foreign_keys=ON;')
+        self.adapter_args = adapter_args
         if do_connect: self.find_driver(adapter_args)
         self.pool_size = 0
         self.folder = folder
@@ -2308,6 +2307,9 @@ class SQLiteAdapter(BaseAdapter):
                                         SQLiteAdapter.web2py_extract)
         self.connection.create_function("REGEXP", 2,
                                         SQLiteAdapter.web2py_regexp)
+        
+        if self.adapter_args.get('foreign_keys',True):
+            self.execute('PRAGMA foreign_keys=ON;')
 
     def _truncate(self, table, mode=''):
         tablename = table._tablename
