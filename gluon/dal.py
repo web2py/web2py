@@ -195,7 +195,7 @@ CALLABLETYPES = (types.LambdaType, types.FunctionType,
 TABLE_ARGS = set(
     ('migrate','primarykey','fake_migrate','format','redefine',
      'singular','plural','trigger_name','sequence_name','fields',
-     'common_filter','polymodel','table_class','on_define','rname'))
+     'common_filter','polymodel','table_class','on_define','actual_name'))
 
 SELECT_ARGS = set(
     ('orderby', 'groupby', 'limitby','required', 'cache', 'left',
@@ -864,12 +864,11 @@ class BaseAdapter(ConnectionPool):
                             id_fieldname = table._id.name
                         else: #make a guess
                             id_fieldname = 'id'
-                        real_referenced = db[referenced]._rname or db[referenced]
                         ftype = types[field_type[:9]] % dict(
                             index_name = field_name+'__idx',
                             field_name = field_name,
                             constraint_name = constraint_name,
-                            foreign_key = '%s (%s)' % (real_referenced,
+                            foreign_key = '%s (%s)' % (referenced,
                                                        id_fieldname),
                             on_delete_action=field.ondelete)
             elif field_type.startswith('list:reference'):
@@ -966,16 +965,13 @@ class BaseAdapter(ConnectionPool):
                 foreign_key = ', '.join(pkeys),
                 on_delete_action = field.ondelete)
 
-        #if there's a _rname, let's use that instead
-        table_rname = table._rname or tablename
-
         if getattr(table,'_primarykey',None):
             query = "CREATE TABLE %s(\n    %s,\n    %s) %s" % \
-                (table_rname, fields,
+                (tablename, fields,
                  self.PRIMARY_KEY(', '.join(table._primarykey)),other)
         else:
             query = "CREATE TABLE %s(\n    %s\n)%s" % \
-                (table_rname, fields, other)
+                (tablename, fields, other)
 
         if self.uri.startswith('sqlite:///') \
                 or self.uri.startswith('spatialite:///'):
@@ -1027,12 +1023,10 @@ class BaseAdapter(ConnectionPool):
                 raise RuntimeError('File %s appears corrupted' % table._dbt)
             self.file_close(tfile)
             if sql_fields != sql_fields_old:
-                self.migrate_table(
-                    table,
-                    sql_fields, sql_fields_old,
-                    sql_fields_aux, None,
-                    fake_migrate=fake_migrate
-                    )
+                self.migrate_table(table,
+                                   sql_fields, sql_fields_old,
+                                   sql_fields_aux, None,
+                                   fake_migrate=fake_migrate)
         return query
 
     def migrate_table(
@@ -1217,8 +1211,7 @@ class BaseAdapter(ConnectionPool):
         return 'PRIMARY KEY(%s)' % key
 
     def _drop(self, table, mode):
-        table_rname = table._rname or table
-        return ['DROP TABLE %s;' % table_rname]
+        return ['DROP TABLE %s;' % table]
 
     def drop(self, table, mode=''):
         db = table._db
@@ -1236,17 +1229,15 @@ class BaseAdapter(ConnectionPool):
             self.log('success!\n', table)
 
     def _insert(self, table, fields):
-        table_rname = table._rname or table
         if fields:
             keys = ','.join(f.name for f, v in fields)
             values = ','.join(self.expand(v, f.type) for f, v in fields)
-            return 'INSERT INTO %s(%s) VALUES (%s);' % (table_rname, keys, values)
+            return 'INSERT INTO %s(%s) VALUES (%s);' % (table, keys, values)
         else:
             return self._insert_empty(table)
 
     def _insert_empty(self, table):
-        table_rname = table._rname or table
-        return 'INSERT INTO %s DEFAULT VALUES;' % table_rname
+        return 'INSERT INTO %s DEFAULT VALUES;' % table
 
     def insert(self, table, fields):
         query = self._insert(table,fields)
@@ -1402,10 +1393,9 @@ class BaseAdapter(ConnectionPool):
         return '%s AS %s' % (self.expand(first), second)
 
     def ON(self, first, second):
-        table_rname = first._ot and first or first._rname or first._tablename
         if use_common_filters(second):
             second = self.common_filter(second,[first._tablename])
-        return '%s ON %s' % (self.expand(table_rname), self.expand(second))
+        return '%s ON %s' % (self.expand(first), self.expand(second))
 
     def INVERT(self, first):
         return '%s DESC' % self.expand(first)
@@ -1416,14 +1406,9 @@ class BaseAdapter(ConnectionPool):
     def CAST(self, first, second):
         return 'CAST(%s AS %s)' % (first, second)
 
-    def expand(self, expression, field_type=None, colnames=False):
+    def expand(self, expression, field_type=None):
         if isinstance(expression, Field):
-            et = expression.table
-            if not colnames:
-                table_rname = et._ot and et._tablename or et._rname or et._tablename
-            else:
-                table_rname = et._tablename
-            out = '%s.%s' % (table_rname, expression.name)
+            out = '%s.%s' % (expression.table._tablename, expression.name)
             if field_type == 'string' and not expression.type in (
                 'string','text','json','password'):
                 out = self.CAST(out, self.types['text'])
@@ -1455,9 +1440,7 @@ class BaseAdapter(ConnectionPool):
             return str(expression)
 
     def table_alias(self,name):
-        if not isinstance(name, Table):
-            name = self.db[name]._rname or self.db[name]
-        return str(name)
+        return str(name if isinstance(name,Table) else self.db[name])
 
     def alias(self, table, alias):
         """
@@ -1465,7 +1448,7 @@ class BaseAdapter(ConnectionPool):
         with alias name.
         """
         other = copy.copy(table)
-        other['_ot'] = other._ot or other._rname or other._tablename
+        other['_ot'] = other._ot or other._tablename
         other['ALL'] = SQLALL(other)
         other['_tablename'] = alias
         for fieldname in other.fields:
@@ -1477,7 +1460,7 @@ class BaseAdapter(ConnectionPool):
         return other
 
     def _truncate(self, table, mode=''):
-        tablename = table._rname or table._tablename
+        tablename = table._tablename
         return ['TRUNCATE TABLE %s %s;' % (tablename, mode or '')]
 
     def truncate(self, table, mode= ' '):
@@ -1502,7 +1485,7 @@ class BaseAdapter(ConnectionPool):
         sql_v = ','.join(['%s=%s' % (field.name,
                                      self.expand(value, field.type)) \
                               for (field, value) in fields])
-        tablename = "%s" % (self.db[tablename]._rname or tablename)
+        tablename = "%s" % self.db[tablename]
         return 'UPDATE %s SET %s%s;' % (tablename, sql_v, sql_w)
 
     def update(self, tablename, query, fields):
@@ -1527,7 +1510,6 @@ class BaseAdapter(ConnectionPool):
             sql_w = ' WHERE ' + self.expand(query)
         else:
             sql_w = ''
-        tablename = '%s' % (self.db[tablename]._rname or tablename)
         return 'DELETE FROM %s%s;' % (tablename, sql_w)
 
     def delete(self, tablename, query):
@@ -1601,9 +1583,7 @@ class BaseAdapter(ConnectionPool):
 
         if len(tablenames) < 1:
             raise SyntaxError('Set: no tables selected')
-        def colexpand(field):
-            return self.expand(field, colnames=True)
-        self._colnames = map(colexpand, fields)
+        self._colnames = map(self.expand, fields)
         def geoexpand(field):
             if isinstance(field.type,str) and field.type.startswith('geometry'):
                 field = field.st_astext()
@@ -1712,13 +1692,7 @@ class BaseAdapter(ConnectionPool):
             else:
                 sql_o += ' ORDER BY %s' % self.expand(orderby)
         if (limitby and not groupby and tablenames and orderby_on_limitby and not orderby):
-            sql_o += ' ORDER BY %s' % ', '.join(
-                ['%s.%s'%(t,x) for t in tablenames for x in (
-                    hasattr(self.db[t],'_primarykey') and self.db[t]._primarykey
-                    or [self.db[t]._id.name]
-                    )
-                 ]
-                )
+            sql_o += ' ORDER BY %s' % ', '.join(['%s.%s'%(t,x) for t in tablenames for x in (hasattr(self.db[t],'_primarykey') and self.db[t]._primarykey or [self.db[t]._id.name])])
         # oracle does not support limitby
         sql = self.select_limitby(sql_s, sql_f, sql_t, sql_w, sql_o, limitby)
         if for_update and self.can_select_for_update is True:
@@ -2534,8 +2508,7 @@ class MySQLAdapter(BaseAdapter):
 
     def _drop(self,table,mode):
         # breaks db integrity but without this mysql does not drop table
-        table_rname = table._rname or table
-        return ['SET FOREIGN_KEY_CHECKS=0;','DROP TABLE %s;' % table_rname,
+        return ['SET FOREIGN_KEY_CHECKS=0;','DROP TABLE %s;' % table,
                 'SET FOREIGN_KEY_CHECKS=1;']
 
     def _insert_empty(self, table):
@@ -2643,7 +2616,7 @@ class PostgreSQLAdapter(BaseAdapter):
 
         }
 
-    QUOTE_TEMPLATE = '"%s"'
+    QUOTE_TEMPLATE = '%s'
 
     def varquote(self,name):
         return varquote_aux(name,'"%s"')
@@ -2657,7 +2630,7 @@ class PostgreSQLAdapter(BaseAdapter):
             return "'%s'" % str(obj).replace("'","''")
 
     def sequence_name(self,table):
-        return '%s_id_seq' % table
+        return '%s_id_Seq' % table
 
     def RANDOM(self):
         return 'RANDOM()'
@@ -2747,7 +2720,7 @@ class PostgreSQLAdapter(BaseAdapter):
         self.try_json()
 
     def lastrowid(self,table):
-        self.execute("""select currval('"%s"')""" % table._sequence_name)
+        self.execute("select currval('%s')" % table._sequence_name)
         return int(self.cursor.fetchone()[0])
 
     def try_json(self):
@@ -3396,7 +3369,7 @@ class MSSQL3Adapter(MSSQLAdapter):
 
 class MSSQL4Adapter(MSSQLAdapter):
     """ support for true pagination in MSSQL >= 2012"""
-
+        
     def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
         if not sql_o:
             #if there is no orderby, we can't use the brand new statements
@@ -3409,7 +3382,7 @@ class MSSQL4Adapter(MSSQLAdapter):
             (sql_s, sql_f, sql_t, sql_w, sql_o)
 
     def rowslice(self,rows,minimum=0,maximum=None):
-        return rows
+        return rows        
 
 class MSSQL2Adapter(MSSQLAdapter):
     drivers = ('pyodbc',)
@@ -6620,7 +6593,7 @@ class IMAPAdapter(NoSQLAdapter):
                     else:
                         message[item] = ";".join([i for i in
                             value])
-                if (not message.is_multipart() and
+                if (not message.is_multipart() and 
                    (not message.get_content_type().startswith(
                         "multipart"))):
                     if isinstance(content, basestring):
@@ -8383,14 +8356,9 @@ class Table(object):
         """
         self._actual = False # set to True by define_table()
         self._tablename = tablename
-        self._rname = args.get('rname')
-        if not self._rname:
-            self._sequence_name = args.get('sequence_name') or \
-                db and db._adapter.sequence_name(tablename)
-        else:
-            tb = self._rname[1:-1]
-            self._sequence_name = args.get('sequence_name') or \
-                db and db._adapter.sequence_name(tb)
+        self._ot = args.get('actual_name')
+        self._sequence_name = args.get('sequence_name') or \
+            db and db._adapter.sequence_name(tablename)
         self._trigger_name = args.get('trigger_name') or \
             db and db._adapter.trigger_name(tablename)
         self._common_filter = args.get('common_filter')
@@ -8535,10 +8503,10 @@ class Table(object):
             clones.append(field.clone(
                     unique=False, type=field.type if nfk else 'bigint'))
         archive_db.define_table(
-            archive_name,
+            archive_name, 
             Field(current_record,field_type,label=current_record_label),
             *clones,**dict(format=self._format))
-
+                  
         self._before_update.append(
             lambda qset,fs,db=archive_db,an=archive_name,cn=current_record:
                 archive_record(qset,fs,db[an],cn))
@@ -8722,7 +8690,7 @@ class Table(object):
 
     def __str__(self):
         if self._ot is not None:
-            ot = self._ot
+            ot = self._db._adapter.QUOTE_TEMPLATE % self._ot
             if 'Oracle' in str(type(self._db._adapter)):
                 return '%s %s' % (ot, self._tablename)
             return '%s AS %s' % (ot, self._tablename)
