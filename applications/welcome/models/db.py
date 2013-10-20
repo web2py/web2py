@@ -11,7 +11,7 @@
 
 if not request.env.web2py_runtime_gae:
     ## if NOT running on Google App Engine use SQLite or other DB
-    db = DAL('sqlite://storage.sqlite',pool_size=1,check_reserved=['all'])
+    db = DAL('sqlite://storage.sqlite',pool_size=1,check_reserved=['all'], after_connection = lambda(db) : db.execute('PRAGMA foreign_keys = ON;'))
 else:
     ## connect to Google BigTable (optional 'google:datastore://namespace')
     db = DAL('google:datastore')
@@ -28,7 +28,8 @@ response.generic_patterns = ['*'] if request.is_local else []
 ## (optional) optimize handling of static files
 # response.optimize_css = 'concat,minify,inline'
 # response.optimize_js = 'concat,minify,inline'
-
+## (optional) static assets folder versioning
+# response.static_version = '0.0.0'
 #########################################################################
 ## Here is sample code if you need for
 ## - email capabilities
