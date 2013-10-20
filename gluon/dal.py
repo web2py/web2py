@@ -2248,6 +2248,8 @@ class SQLiteAdapter(BaseAdapter):
         self.db = db
         self.dbengine = "sqlite"
         self.uri = uri
+        if adapter_args.get('foreign_keys',True) and not after_connection:
+            after_connection = lambda db: db.execute('PRAGMA foreign_keys=ON;')
         if do_connect: self.find_driver(adapter_args)
         self.pool_size = 0
         self.folder = folder
@@ -2271,7 +2273,7 @@ class SQLiteAdapter(BaseAdapter):
         if not 'detect_types' in driver_args and do_connect:
             driver_args['detect_types'] = self.driver.PARSE_DECLTYPES
         def connector(dbpath=self.dbpath, driver_args=driver_args):
-            return self.driver.Connection(dbpath, **driver_args)
+            return self.driver.Connection(dbpath, **driver_args)        
         self.connector = connector
         if do_connect: self.reconnect()
 
