@@ -27,6 +27,14 @@
 		<div class="controls">{{=SELECT(booleanOptions, value=editor_settings['codefolding'], _name="codefolding" )}}</div>
 	</div>
 	<div class="control-group">
+		<label class="control-label" for="codefolding">{{=T('Tab width (# characters)')}}</label>
+		<div class="controls">{{=SELECT(range(1,9, 1), value=editor_settings['tabwidth'], _name="tabwidth" )}}</div>
+	</div>
+	<div class="control-group">
+		<label class="control-label" for="codefolding">{{=T('Indent with tabs')}}</label>
+		<div class="controls">{{=SELECT(booleanOptions, value=editor_settings['indentwithtabs'], _name="indentwithtabs" )}}</div>
+	</div>
+	<div class="control-group">
 		<div class="controls"><button type="submit" class="disabled btn btn-primary">{{=T('Save')}}</button></div>
 	</div>
 </form>
