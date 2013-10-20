@@ -6281,25 +6281,25 @@ class IMAPAdapter(NoSQLAdapter):
 
         for name in names:
             self.db.define_table("%s" % name,
-                            Field("uid", "string", writable=False),
-                            Field("answered", "boolean"),
+                            Field("uid", writable=False),
                             Field("created", "datetime", writable=False),
-                            Field("content", list, writable=False),
-                            Field("to", "string", writable=False),
-                            Field("cc", "string", writable=False),
-                            Field("bcc", "string", writable=False),
+                            Field("content", "text", writable=False),
+                            Field("to", writable=False),
+                            Field("cc", writable=False),
+                            Field("bcc", writable=False),
+                            Field("sender", writable=False),
                             Field("size", "integer", writable=False),
+                            Field("subject", writable=False),
+                            Field("mime", writable=False),
+                            Field("email", "text", writable=False, readable=False),
+                            Field("attachments", "text", writable=False, readable=False),
+                            Field("encoding", writable=False),
+                            Field("answered", "boolean"),
                             Field("deleted", "boolean"),
                             Field("draft", "boolean"),
                             Field("flagged", "boolean"),
-                            Field("sender", "string", writable=False),
                             Field("recent", "boolean", writable=False),
-                            Field("seen", "boolean"),
-                            Field("subject", "string", writable=False),
-                            Field("mime", "string", writable=False),
-                            Field("email", "string", writable=False, readable=False),
-                            Field("attachments", list, writable=False, readable=False),
-                            Field("encoding", writable=False)
+                            Field("seen", "boolean")
                             )
 
             # Set a special _mailbox attribute for storing
@@ -6562,7 +6562,7 @@ class IMAPAdapter(NoSQLAdapter):
 
         mailbox = table.mailbox
         d = dict(((k.name, v) for k, v in fields))
-        date_time = d.get("created", datetime.datetime.now())
+        date_time = d.get("created") or datetime.datetime.now()
         struct_time = date_time.timetuple()
         if len(d) > 0:
             message = d.get("email", None)
