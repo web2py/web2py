@@ -195,8 +195,7 @@ CALLABLETYPES = (types.LambdaType, types.FunctionType,
 TABLE_ARGS = set(
     ('migrate','primarykey','fake_migrate','format','redefine',
      'singular','plural','trigger_name','sequence_name','fields',
-     'common_filter','polymodel','table_class','on_define','actual_name',
-     'rname'))
+     'common_filter','polymodel','table_class','on_define','rname'))
 
 SELECT_ARGS = set(
     ('orderby', 'groupby', 'limitby','required', 'cache', 'left',
@@ -8384,7 +8383,7 @@ class Table(object):
         """
         self._actual = False # set to True by define_table()
         self._tablename = tablename
-        self._ot = args.get('actual_name')
+        self._ot = None # args.get('rname')
         self._rname = args.get('rname')
         if not self._rname:
             self._sequence_name = args.get('sequence_name') or \
