@@ -10652,7 +10652,7 @@ class Rows(object):
             return dict([(key(r),r) for r in rows])
 
 
-    def as_tree(self, parent_name='parent_id', children_name='children'):
+    def as_trees(self, parent_name='parent_id', children_name='children'):
         roots = []
         drows = {}
         for row in self:
