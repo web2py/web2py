@@ -559,8 +559,13 @@ class TestMigrations(unittest.TestCase):
 
 class TestReference(unittest.TestCase):
 
-    def testRun(self):
+    def testRun(self): 
         db = DAL(DEFAULT_URI, check_reserved=['all'])
+        if DEFAULT_URI.startswith('mssql'):
+            #multiple cascade gotcha
+            for key in ['reference','reference FK']:
+                db._adapter.types[key]=db._adapter.types[key].replace(
+                '%(on_delete_action)s','NO ACTION')
         db.define_table('tt', Field('name'), Field('aa','reference tt'))
         db.commit()
         x = db.tt.insert(name='max')
@@ -836,7 +841,7 @@ class TestValidateAndInsert(unittest.TestCase):
         db.val_and_insert.drop()
 
 
-class TestZRName(unittest.TestCase):
+class TestRName(unittest.TestCase):
     """
     tests for highly experimental rname attribute
     """
@@ -946,6 +951,11 @@ class TestZRName(unittest.TestCase):
         self.assertEqual(rtn[2].pet.name, 'Gertie')
 
         #aliases
+        if DEFAULT_URI.startswith('mssql'):
+            #multiple cascade gotcha
+            for key in ['reference','reference FK']:
+                db._adapter.types[key]=db._adapter.types[key].replace(
+                '%(on_delete_action)s','NO ACTION')
         rname = db._adapter.QUOTE_TEMPLATE % 'the cubs'
         db.define_table('pet_farm',
             Field('name'),
