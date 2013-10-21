@@ -10651,6 +10651,20 @@ class Rows(object):
         else:
             return dict([(key(r),r) for r in rows])
 
+
+    def as_tree(self, parent_name='parent_id', children_name='children'):
+        roots = []
+        drows = {}
+        for row in self:
+            drows[row.id] = row
+            row[children_name] = []
+            parent = row[parent_name]
+            if parent is None:
+                roots.append(row)
+            else:
+                drows[parent][children_name].append(row)
+        return roots
+
     def export_to_csv_file(self, ofile, null='<NULL>', *args, **kwargs):
         """
         export data to csv, the first line contains the column names
