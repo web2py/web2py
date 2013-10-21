@@ -10658,6 +10658,7 @@ class Rows(object):
         for row in self:
             drows[row.id] = row
             row[children_name] = []
+        for row in self:
             parent = row[parent_name]
             if parent is None:
                 roots.append(row)
