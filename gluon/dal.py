@@ -1261,7 +1261,7 @@ class BaseAdapter(ConnectionPool):
             return dict([(k[0].name, k[1]) for k in fields \
                              if k[0].name in table._primarykey])
         id = self.lastrowid(table)
-        if not isinstance(id,int):
+        if not isinstance(id, (int, long)):
             return id
         rid = Reference(id)
         (rid._table, rid._record) = (table, None)
