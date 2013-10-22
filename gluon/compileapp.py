@@ -501,8 +501,8 @@ def compile_controllers(folder):
             save_pyc(filename)
             os.unlink(filename)
 
-def model_cmp(a,b):
-    return cmp(a.count('.'),b.count('.')) or cmp(a,b)
+def model_cmp(a, b, sep):
+    return cmp(a.count(sep), b.count(sep)) or cmp(a, b)
 
 def run_models_in(environment):
     """
@@ -519,10 +519,11 @@ def run_models_in(environment):
     cpath = pjoin(folder, 'compiled')
     compiled = os.path.exists(cpath)
     if compiled:
-        models = sorted(listdir(cpath, '^models[_.][\w.]+\.pyc$', 0),model_cmp)
+        models = sorted(listdir(cpath, '^models[_.][\w.]+\.pyc$', 0),
+                        lambda a, b: model_cmp(a, b, sep='.'))
     else:
-        models = sorted(listdir(path, '^\w+\.py$', 0, sort=False),model_cmp)
-
+        models = sorted(listdir(path, '^\w+\.py$', 0, sort=False),
+                        lambda a, b: model_cmp(a, b, sep=os.path.sep))
     models_to_run = None    
     for model in models:
         if response.models_to_run != models_to_run:
