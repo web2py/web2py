@@ -576,7 +576,10 @@ def edit():
     # show settings tab and save prefernces
     if 'settings' in request.vars:
         if request.post_vars:        #save new preferences
-            if config.save(request.post_vars.items()):
+            post_vars = request.post_vars.items()
+            # Since unchecked checkbox are not serialized, we must set them as false by hand to store the correct preference in the settings 
+            post_vars+= [(opt, 'false') for opt in editor_defaults if opt not in request.post_vars ]
+            if config.save(post_vars):
                 response.headers["web2py-component-flash"] = T('Preferences saved correctly')
             else:
                 response.headers["web2py-component-flash"] = T('Preferences saved on session only')
