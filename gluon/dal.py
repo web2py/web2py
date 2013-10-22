@@ -10412,9 +10412,9 @@ class Rows(object):
     def __or__(self,other):
         if self.colnames!=other.colnames:
             raise Exception('Cannot | incompatible Rows objects')
-        records = self.records
-        records += [record for record in other.records \
-                        if not record in records]
+        records = [record for record in other.records
+                   if not record in self.records]
+        records = self.records + records
         return Rows(self.db,records,self.colnames)
 
     def __nonzero__(self):
