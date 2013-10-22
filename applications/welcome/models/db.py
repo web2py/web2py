@@ -28,7 +28,8 @@ response.generic_patterns = ['*'] if request.is_local else []
 ## (optional) optimize handling of static files
 # response.optimize_css = 'concat,minify,inline'
 # response.optimize_js = 'concat,minify,inline'
-
+## (optional) static assets folder versioning
+# response.static_version = '0.0.0'
 #########################################################################
 ## Here is sample code if you need for
 ## - email capabilities

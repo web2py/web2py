@@ -41,11 +41,7 @@ fix_sys_path()
 
 def load_tests(loader, tests, ignore):
 
-    tests.addTests(
-        doctest.DocTestSuite('validators',
-            optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS,
-        )
-    )
+    
     tests.addTests(
         doctest.DocTestSuite('html')
         )

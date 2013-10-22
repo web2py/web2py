@@ -822,12 +822,6 @@ def console():
                       default=None,
                       help=msg)
 
-    parser.add_option('-W',
-                      '--winservice',
-                      dest='winservice',
-                      default='',
-                      help='-W install|start|stop as Windows service')
-
     msg = 'trigger a cron run manually; usually invoked from a system crontab'
     parser.add_option('-C',
                       '--cron',
@@ -1144,23 +1138,6 @@ def start(cron=True):
             pass
         return
 
-    # ## if -W install/start/stop web2py as service
-    if options.winservice:
-        if os.name == 'nt':
-            try:
-                from winservice import register_service_handler, Web2pyService
-                register_service_handler(
-                    argv=['', options.winservice],
-                    opt_file=options.config,
-                    cls=Web2pyService)
-            except ImportError:
-                print 'Error: Missing python module winservice'
-                sys.exit(1)
-        else:
-            print 'Error: Windows services not supported on this platform'
-            sys.exit(1)
-        return
-
     # ## if -H cron is enabled in this *process*
     # ## if --softcron use softcron
     # ## use hardcron in all other cases
@@ -1269,16 +1246,19 @@ end tell
     py2exe_getline = linecache.getline
     def getline(filename, lineno, *args, **kwargs):
         line = py2exe_getline(filename, lineno, *args, **kwargs)
-        if not line:                
-            f = open(filename, "r")
+        if not line:
             try:
-                for i, line in enumerate(f):
-                    if lineno == i + 1:
-                        break
-                else:
-                    line = None
-            finally:
-                f.close()
+                f = open(filename, "r")
+                try:
+                    for i, line in enumerate(f):
+                        if lineno == i + 1:
+                            break
+                    else:
+                        line = None
+                finally:
+                    f.close()
+            except (IOError, OSError):
+                line = None
         return line
     linecache.getline = getline
 

@@ -186,6 +186,10 @@ def select():
     import re
     db = get_database(request)
     dbname = request.args[0]
+    try:
+        is_imap = db._uri.startswith("imap://")
+    except (KeyError, AttributeError, TypeError):
+        is_imap = False
     regex = re.compile('(?P<table>\w+)\.(?P<field>\w+)=(?P<value>\d+)')
     if len(request.args) > 1 and hasattr(db[request.args[1]], '_primarykey'):
         regex = re.compile('(?P<table>\w+)\.(?P<field>\w+)=(?P<value>.+)')
@@ -203,7 +207,15 @@ def select():
     else:
         start = 0
     nrows = 0
-    stop = start + 100
+
+    step = 100
+    fields = []
+
+    if is_imap:
+        step = 3
+ 
+    stop = start + step
+
     table = None
     rows = []
     orderby = request.vars.orderby
@@ -235,21 +247,27 @@ def select():
         if match:
             table = match.group('table')
         try:
-            nrows = db(query).count()
+            nrows = db(query, ignore_common_filters=True).count()
             if form.vars.update_check and form.vars.update_fields:
-                db(query).update(**eval_in_global_env('dict(%s)'
-                                                      % form.vars.update_fields))
+                db(query, ignore_common_filters=True).update(
+                    **eval_in_global_env('dict(%s)' % form.vars.update_fields))
                 response.flash = T('%s %%{row} updated', nrows)
             elif form.vars.delete_check:
-                db(query).delete()
+                db(query, ignore_common_filters=True).delete()
                 response.flash = T('%s %%{row} deleted', nrows)
-            nrows = db(query).count()
+            nrows = db(query, ignore_common_filters=True).count()
+
+            if is_imap:
+                fields = [db[table][name] for name in
+                    ("id", "uid", "created", "to",
+                     "sender", "subject")]
             if orderby:
-                rows = db(query, ignore_common_filters=True).select(limitby=(
-                    start, stop), orderby=eval_in_global_env(orderby))
+                rows = db(query, ignore_common_filters=True).select(
+                              *fields, limitby=(start, stop),
+                              orderby=eval_in_global_env(orderby))
             else:
                 rows = db(query, ignore_common_filters=True).select(
-                    limitby=(start, stop))
+                    *fields, limitby=(start, stop))
         except Exception, e:
             import traceback
             tb = traceback.format_exc()
@@ -278,11 +296,12 @@ def select():
         table=table,
         start=start,
         stop=stop,
+        step=step,
         nrows=nrows,
         rows=rows,
         query=request.vars.query,
         formcsv=formcsv,
-        tb=tb,
+        tb=tb
     )
 
 
@@ -577,8 +596,8 @@ def bg_graph_model():
                 graph.add_edge(n1, n2, color="#4C4C4C", label='')
 
     graph.layout()
-    #return graph.draw(format='png', prog='dot')
     if not request.args:
+        response.headers['Content-Type'] = 'image/png'
         return graph.draw(format='png', prog='dot')
     else:
         response.headers['Content-Disposition']='attachment;filename=graph.%s'%request.args(0)

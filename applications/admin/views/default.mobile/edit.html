@@ -1,55 +1,41 @@
 {{extend 'default.mobile/layout.html'}}
-
-{{
-  def shortcut(combo, description):
-    return XML('<li><tt>%s</tt> %s</li>' % (combo, description))
-}}
-
-{{if TEXT_EDITOR == 'amy':}}
-{{include 'default/amy_ajax.html'}}
+<script>
+var current_theme = "{{=editor_settings['theme']}}";  //Default theme
+var current_editor = "{{=editor_settings['editor']}}";  //Default editor
+{{if editor_settings['closetag'] == 'true':}}
+    var current_closetag = true;  //Default closetag
 {{else:}}
-<script language="Javascript" type="text/javascript" src="{{=URL(r=request,c='static',f='edit_area/edit_area_full.js')}}"></script><script language="Javascript" type="text/javascript">
-editAreaLoader.init({id: "body",start_highlight: true,allow_resize: "both",allow_toggle: {{=editarea_preferences['ALLOW_TOGGLE']}},language: "en",syntax: "{{=filetype}}",replace_tab_by_spaces: {{=editarea_preferences['REPLACE_TAB_BY_SPACES']}}, font_size: {{=editarea_preferences['FONT_SIZE']}}, fullscreen: {{=editarea_preferences['FULL_SCREEN']}}, display: "{{=editarea_preferences['DISPLAY']}}", show_line_colors: true, word_wrap: true, save_callback: "doClickSave" {{if filetype=='html':}},plugins: "zencoding"{{pass}} });
-</script>
-<script language="Javascript" type="text/javascript" src="{{=URL('static','js/ajax_editor.js')}}"></script>
-<script language="Javascript" type="text/javascript">
-jQuery(document).ready(function(){
-     setTimeout("keepalive('{{=URL('keepalive')}}')",10000);
-});
-</script>
+    var current_closetag = false;  //Default closetag
 {{pass}}
-
-{{block sectionclass}}edit {{filename}}{{end}}
-
-{{if functions:}}
-  <p>
-<span style="text-align:left;" id="exposed">
-  {{=B(T('exposes:'))}}{{=XML(', '.join([A(f,_href=URL(a=app,c=controller,f=f)).xml() for f in functions]))}}
-</span>
-  {{if editviewlinks:}}<br/>
-  {{=B(T('edit views:'))}}
-  {{=XML(', '.join([v.xml() for v in editviewlinks]))}}
-  {{pass}}
-  </p>
-{{pass}}
-
-<div id="editor_area">
-  <form action="{{=URL('edit',args=filename)}}" method="post" name="editform" id="editform">
-    <a value="save" name="save" onclick="return doClickSave();">
-      {{=IMG(_src=URL('static', 'images/save_icon.png'), _alt=T('Save'))}}
-    </a>
-    {{=T('Saved file hash:')}}
-    <input type="input" name="file_hash" value="{{=file_hash}}" readonly="readonly"/>
-    {{=T('Last saved on:')}} <input type="input" name="saved_on" value="{{=saved_on}}" readonly="readonly"/>
-    {{if TEXT_EDITOR=='amy':}}
-    <textarea style="width: auto; height:400px;direction:ltr;" rows="58" cols="100" -amy-enabled="true" id="body" name="data">{{=data}}</textarea>
-    {{else:}}
-    <textarea cols="80" rows="25" id="body" style="direction:ltr;" name="data">{{=data}}</textarea>
-    {{pass}}
-    <button onclick="window.location.reload(); return false">{{=T('restore')}}</button>
-    <button type="submit" name="revert">{{=T('revert')}}</button>
-    <br/>
-  </form>
-</div>
+var current_font_incr = 0; // Default font-size, 0 means don't set
+</script>
+{{cm=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''),'codemirror')}}
+<link rel="stylesheet" href="{{=cm}}/lib/codemirror.css">
+<link rel="stylesheet" href="{{='%s/theme/%s.css' % (cm, editor_settings['theme'])}}">
+<script src="{{=cm}}/lib/codemirror.js"></script>
+<script src="{{=cm}}/addon/edit/matchbrackets.js"></script>
+<script src="{{=cm}}/addon/edit/closetag.js"></script>
+{{if editor_settings['editor'] != 'default':}}<script src="{{='%s/keymap/%s.js' % (cm, editor_settings['editor'])}}"></script>{{pass}}
+<script src="{{=cm}}/mode/python/python.js"></script>
+<script src="{{=cm}}/mode/xml/xml.js"></script>
+<script src="{{=cm}}/mode/css/css.js"></script>
+<script src="{{=cm}}/mode/javascript/javascript.js"></script>
+<script src="{{=cm}}/mode/htmlmixed/htmlmixed.js"></script>
+<script src="{{=cm}}/addon/hint/show-hint.js"></script>
+<script src="{{=cm}}/addon/hint/python-hint.js"></script>
+<link rel="stylesheet" href="{{=cm}}/addon/hint/show-hint.css">
+<script src="{{=cm}}/addon/search/search.js"></script>
+<script src="{{=cm}}/addon/search/searchcursor.js"></script>
+<script src="{{=cm}}/addon/dialog/dialog.js"></script>
+<script src="{{=cm}}/addon/edit/trailingspace.js"></script>
+<link rel="stylesheet" href="{{=cm}}/addon/dialog/dialog.css">
+<script src="{{=cm}}/addon/selection/active-line.js"></script>
+<script src="{{=cm}}/addon/display/fullscreen.js"></script>
+<link rel="stylesheet" href="{{=cm}}/addon/display/fullscreen.css">
+<script src="{{=cm}}/emmet.min.js"></script>
+<script src="{{=URL('static','js/ajax_editor.js')}}"></script>
+<link rel="stylesheet" href="{{=URL('static/css','typeahead.js-bootstrap.css')}}">
+<link rel="stylesheet" href="{{=URL('static/css','web2py-codemirror.css')}}">
 
 
+<div id='edit_placeholder'><div id="{{=id}}" class="tab-pane active" >{{=XML(plain_html)}}</div></div>

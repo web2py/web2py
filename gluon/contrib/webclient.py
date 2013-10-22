@@ -48,18 +48,6 @@ class WebClient(object):
         self.sessions = {}
         self.session_regex = session_regex and re.compile(session_regex)
 
-    def web2py_url_encode(self, data):
-        output = []
-        for var in data:
-            val = data[var]
-            if type(val)==list:
-                for item in val:
-                    output += ['%s=%s' % (urllib.quote_plus(var), urllib.quote_plus(item)),]
-            else:
-                output += ['%s=%s' % (urllib.quote_plus(var), urllib.quote_plus(val)),]
-        
-        return '&'.join(output)
-    
     def get(self, url, cookies=None, headers=None, auth=None):
         return self.post(url, data=None, cookies=cookies,
                          headers=headers, method='GET')
@@ -131,7 +119,7 @@ class WebClient(object):
                     data['_formkey'] = self.forms[data['_formname']]
 
                 # time the POST request
-                data = self.web2py_url_encode(data)
+                data = urllib.urlencode(data, doseq=True)
             else:
                 self.method = 'GET' if method=='auto' else method
                 data = None

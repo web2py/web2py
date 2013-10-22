@@ -48,21 +48,25 @@
         mode: { name: '{{=filetype}}'{{if filetype=='python':}},version: 2,singleLineStringErrors: false, {{pass}} },
     {{pass}}
         lineNumbers: true,
-        indentUnit: 4,
+        indentUnit: current_tabwidth,
+        indentWithTabs: current_indentwithtabs,
+        tabSize: current_tabwidth,
         styleActiveLine: true,
-        autoCloseTags: true,
+        autoCloseTags: current_closetag,
         theme: current_theme,
-        tabMode: "shift",
         lineWrapping: true,
-        gutters: ["CodeMirror-linenumbers", "breakpoints"],
+        foldGutter: current_codefolding,
+        gutters: ["CodeMirror-linenumbers", "breakpoints", "CodeMirror-foldgutter"],
         keyMap: current_editor,
         matchBrackets: true,
         autofocus: false,
         height: "350px",
         showTrailingSpace: true
     });
+    editor.foldCode(CodeMirror.Pos(8, 0));
 
-    editor.on("gutterClick", function(cm, n) {
+    editor.on("gutterClick", function(cm, n, gutter) {
+        if (gutter !== "breakpoints" ) return;
         var info = cm.lineInfo(n);
         cm.setGutterMarker(n, "breakpoints", info.gutterMarkers ? null : makeMarker());
         sel = {start: n, end: n, data: ''};
@@ -78,7 +82,7 @@
             return marker;
        }
 
-        {{if filetype in ('html', 'js', 'css'):}}
+        {{if filetype in ('html', 'javascript', 'css'):}}
         // must be here or break emmet/zencoding 
         CodeMirror.defaults.extraKeys["Ctrl-S"] =
             function(instance) {
@@ -98,6 +102,7 @@
                     doClickSave();};
             CodeMirror.defaults.extraKeys["Ctrl-Space"] = "autocomplete";
             CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
+            CodeMirror.defaults.extraKeys["Shift-Tab"] = "indentLess";
             CodeMirror.defaults.extraKeys["Ctrl-F11"] = function(cm) {
 		        cm.setOption("fullScreen", !cm.getOption("fullScreen"));
 		    },
@@ -136,7 +141,7 @@
 
 <div class="row-fluid">
     <div class="help alert alert-block alert-info">
-        {{if TEXT_EDITOR == 'codemirror' and filetype=='html':}}
+        {{if filetype=='html':}}
         <h3>{{=T('Key bindings for ZenCoding Plugin')}}</h3>
         <ul class="keybindings unstyled">
             {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
@@ -149,15 +154,15 @@
             {{=shortcut('Shift-Ctrl-R / Shift-Cmd-Option-F', T('Replace All'))}}
             {{=shortcut('Tab', T('Expand Abbreviation'))}}
         </ul>
-        {{elif TEXT_EDITOR == 'codemirror':}}
+        {{else:}}
         <h3>{{=T("Key bindings")}}</h3>
         <ul class="keybindings unstyled">
             {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
             {{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
 			{{=shortcut('Shift+Esc', T('Exit Fullscreen'))}}
             {{if filetype=='python':}}
-            {{=shortcut('Ctrl-Space', T('Autocomplete Python Code'))}}
-           {{pass}}
+                {{=shortcut('Ctrl-Space', T('Autocomplete Python Code'))}}
+   			{{pass}}
             {{=shortcut('Ctrl-F / Cmd-F', T('Start searching'))}}
             {{=shortcut('Ctrl-G / Cmd-G', T('Find Next'))}}
             {{=shortcut('Shift-Ctrl-G / Shift-Cmd-G', T('Find Previous'))}}

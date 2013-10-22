@@ -25,6 +25,7 @@
       {{pass}}
       {{=LI(A(T('Errors'),_href=URL('errors',args=a)))}}
       {{=LI(A(T('Clean'),_href=URL('cleanup',args=a)))}}
+
 	{{if not os.path.exists('applications/%s/compiled' % a):}}
       {{=LI(A(T('Compile'),_href=URL('compile_app',args=a)))}}
       {{else:}}
@@ -33,6 +34,8 @@
 	{{=LI(A(T('Remove compiled'),_href=URL('remove_compiled_app',args=a)))}}
       {{pass}}
       {{pass}}
+      {{=LI(A(T('Git Pull'),_href=URL('git_pull',args=a)))}}
+      {{=LI(A(T('Git Push'),_href=URL('git_push',args=a)))}}
       {{if a!=request.application:}}
       {{=LI(A(T('Uninstall'),_href=URL('uninstall',args=a)))}}
       {{=LI(button_enable(URL('enable',args=a), a))}}

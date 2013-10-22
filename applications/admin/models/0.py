@@ -8,42 +8,6 @@ WEB2PY_VERSION_URL = WEB2PY_URL + '/examples/default/version'
 # the user-interface feature that allows you to edit files in your web
 # browser.
 
-## Default editor (to change editor you need web2py.admin.editors.zip)
-## old editors like 'ace' or 'edit_area' or 'amy' are no longer supported
-TEXT_EDITOR = 'codemirror'
-
-## Editor Color scheme (only for ace)
-TEXT_EDITOR_THEME = (
-    "chrome", "clouds", "clouds_midnight", "cobalt", "crimson_editor", "dawn",
-    "dreamweaver", "eclipse", "idle_fingers", "kr_theme", "merbivore",
-    "merbivore_soft", "monokai", "mono_industrial", "pastel_on_dark",
-    "solarized_dark", "solarized_light", "textmate", "tomorrow",
-    "tomorrow_night", "tomorrow_night_blue", "tomorrow_night_bright",
-    "tomorrow_night_eighties", "twilight", "vibrant_ink")[0]
-
-## Editor Keyboard bindings (only for ace and codemirror)
-TEXT_EDITOR_KEYBINDING = ''  # 'emacs' or 'vi'
-
-### edit_area only
-# The default font size, measured in 'points'. The value must be an integer > 0
-FONT_SIZE = 10
-
-# Displays the editor in full screen mode. The value must be 'true' or 'false'
-FULL_SCREEN = 'false'
-
-# Display a check box under the editor to allow the user to switch
-# between the editor and a simple
-# HTML text area. The value must be 'true' or 'false'
-ALLOW_TOGGLE = 'true'
-
-# Replaces tab characters with space characters.
-# The value can be 'false' (meaning that tabs are not replaced),
-# or an integer > 0 that specifies the number of spaces to replace a tab with.
-REPLACE_TAB_BY_SPACES = 4
-
-# Toggle on/off the code editor instead of textarea on startup
-DISPLAY = "onload" or "later"
-
 # if demo mode is True then admin works readonly and does not require login
 DEMO_MODE = False
 
@@ -79,3 +43,6 @@ PLUGINS_APP = 'http://web2py.com/plugins'
 # set the language
 if 'adminLanguage' in request.cookies and not (request.cookies['adminLanguage'] is None):
     T.force(request.cookies['adminLanguage'].value)
+
+#set static_version
+response.static_version = '2.7.3'
