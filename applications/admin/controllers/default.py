@@ -583,7 +583,7 @@ def edit():
                 response.headers["web2py-component-flash"] = T('Preferences saved correctly')
             else:
                 response.headers["web2py-component-flash"] = T('Preferences saved on session only')
-            response.headers["web2py-component-command"] = "update_editor(%s);jQuery('a[href=#editor_settings] button.close').click();" % response.json(config.read())
+            response.headers["web2py-component-command"] = "update_editor(%s);$('a[href=#editor_settings] button.close').click();" % response.json(config.read())
             return
         else:
             details = {'filename':'settings', 'id':'editor_settings', 'force': False}
