@@ -749,6 +749,7 @@ def edit():
         return response.json({'file_hash': file_hash, 'saved_on': saved_on, 'functions': functions, 'controller': controller, 'application': request.args[0], 'highlight': highlight})
     else:
         file_details = dict(app=request.args[0],
+                    editor_settings=preferences,
                     filename=filename,
                     filetype=filetype,
                     data=data,
