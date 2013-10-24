@@ -136,6 +136,13 @@ function update_editor(preferences) {
         editor.setOption("indentUnit", parseInt(preferences.tabwidth));
         editor.setOption("tabSize", parseInt(preferences.tabwidth));
         editor.setOption("indentWithTabs", (preferences.indentwithtabs === 'true'));
+        if (preferences.linenumbers === 'true') {
+            gutters = editor.getOption("gutters");
+            gutters.splice(0, 0, 'CodeMirror-linenumbers');
+            editor.setOption("gutter", gutters);
+        }
+        editor.setOption("lineNumbers", (preferences.linenumbers === 'true'));
+        editor.setOption("styleActiveLine", (preferences.highlightline === 'true'));
     });
 }
 

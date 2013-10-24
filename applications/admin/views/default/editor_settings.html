@@ -26,13 +26,21 @@
 		<div class="controls">{{=stateWidget("codefolding", value=editor_settings['codefolding'])}}</div>
 	</div>
 	<div class="control-group">
-		<label class="control-label" for="codefolding">{{=T('Tab width (# characters)')}}</label>
+		<label class="control-label" for="tabwidth">{{=T('Tab width (# characters)')}}</label>
 		<div class="controls">{{=SELECT(range(1,9, 1), value=editor_settings['tabwidth'], _name="tabwidth" )}}</div>
 	</div>
 	<div class="control-group">
-		<label class="control-label" for="codefolding">{{=T('Indent with tabs')}}</label>
+		<label class="control-label" for="indentwithtabs">{{=T('Indent with tabs')}}</label>
 		<div class="controls">{{=stateWidget("indentwithtabs", value=editor_settings['indentwithtabs'])}}</div>
 	</div>
+    <div class="control-group">
+        <label class="control-label" for="linenumbers">{{=T('Display line numbers')}}</label>
+        <div class="controls">{{=stateWidget("linenumbers", value=editor_settings['linenumbers'])}}</div>
+    </div>
+    <div class="control-group">
+        <label class="control-label" for="highlightline">{{=T('Highlight current line')}}</label>
+        <div class="controls">{{=stateWidget("highlightline", value=editor_settings['highlightline'])}}</div>
+    </div>
 	<div class="control-group">
 		<div class="controls"><button type="submit" class="disabled btn btn-primary">{{=T('Save')}}</button></div>
 	</div>

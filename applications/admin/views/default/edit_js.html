@@ -47,11 +47,11 @@
     {{else:}}
         mode: { name: '{{=filetype}}'{{if filetype=='python':}},version: 2,singleLineStringErrors: false, {{pass}} },
     {{pass}}
-        lineNumbers: true,
+        lineNumbers: {{=editor_settings['linenumbers']}},
         indentUnit: {{=editor_settings['tabwidth']}},
         indentWithTabs: {{=editor_settings['indentwithtabs']}},
         tabSize: {{=editor_settings['tabwidth']}},
-        styleActiveLine: true,
+        styleActiveLine: {{=editor_settings['highlightline']}},
         autoCloseTags: {{=editor_settings['closetag']}},
         theme: "{{=editor_settings['theme']}}",
         lineWrapping: true,
