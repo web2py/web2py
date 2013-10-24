@@ -229,6 +229,9 @@ def executor(queue, task, out):
                     "name '%s' not found in scheduler's environment" % f)
             #Inject W2P_TASK into environment
             _env.update({'W2P_TASK' : W2P_TASK})
+            #Inject W2P_TASK into current
+            from gluon import current
+            current.W2P_TASK = W2P_TASK
             globals().update(_env)
             args = loads(task.args)
             vars = loads(task.vars, object_hook=_decode_dict)
