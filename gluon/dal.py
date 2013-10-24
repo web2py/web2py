@@ -864,7 +864,20 @@ class BaseAdapter(ConnectionPool):
                             id_fieldname = table._id.name
                         else: #make a guess
                             id_fieldname = 'id'
-                        real_referenced = db[referenced]._rname or db[referenced]
+                        #gotcha: the referenced table must be defined before
+                        #the referencing one to be able to create the table
+                        #Also if it's not recommended, we can still support
+                        #references to tablenames without rname to make
+                        #migrations and model relationship work also if tables
+                        #are not defined in order
+                        if referenced == tablename:
+                            real_referenced = db[referenced]._rname or db[referenced]
+                        else:
+                            real_referenced = (
+                                referenced in db and
+                                (db[referenced]._rname or db[referenced])
+                                or referenced
+                            )
                         ftype = types[field_type[:9]] % dict(
                             index_name = field_name+'__idx',
                             field_name = field_name,
