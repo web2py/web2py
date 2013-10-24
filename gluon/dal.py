@@ -8614,8 +8614,11 @@ class Table(object):
                 self._references.append(field)
             else:
                 field.referent = None
-        for referee in pr.get(self._tablename,[]):
-            self._referenced_by.append(referee)
+        if self._tablename in pr:
+            referees = pr.pop(self._tablename)
+            for referee in referees:
+                self._referenced_by.append(referee)
+        
 
     def _filter_fields(self, record, id=False):
         return dict([(k, v) for (k, v) in record.iteritems() if k
