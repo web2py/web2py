@@ -39,7 +39,7 @@
 </form>
 <script>
 web2py_trap_form("{{=URL('default', 'edit', args=request.args, vars={'settings':True})}}", "editor_settings");
-jQuery("#editor_settings_form").on('change', 'select, input', function (e) {
-	jQuery("#editor_settings_form button[type=submit]").removeClass('disabled');
+$("#editor_settings_form").on('change', 'select, input', function (e) {
+	$("#editor_settings_form button[type=submit]").removeClass('disabled');
 });
 </script>
