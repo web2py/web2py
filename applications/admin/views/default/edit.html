@@ -59,6 +59,10 @@ $(document).on('shown click', 'a[data-toggle="tab"]', function (e) {
         editor.setSize($(tab_id).width(),  $(tab_id).height());
         editor.refresh();
     }
+    var n_li = $('#filesTab li').length;
+    $.each($('#filesTab li'), function(index, element) {
+        $(element).css('max-width', 100/n_li + '%' );
+    });
     //$(function(){$('.CodeMirror-scroll').css("height","auto").css("overflow-x","auto");});
 });
 

@@ -571,7 +571,7 @@ def edit():
     if not(request.ajax) and not(is_mobile):
         # return the scaffolding, the rest will be through ajax requests
         response.title = T('Editing %s') % app
-        return response.render ('default/edit.html', dict(app=request.args[0], editor_settings=preferences))
+        return response.render ('default/edit.html', dict(app=app, editor_settings=preferences))
 
     # show settings tab and save prefernces
     if 'settings' in request.vars:
@@ -594,7 +594,7 @@ def edit():
     # Load json only if it is ajax edited...
     app = get_app(request.vars.app)
     filename = '/'.join(request.args)
-    response.title = request.args[-1]
+    realfilename = request.args[-1]
     if request.vars.app:
         path = abspath(filename)
     else:
@@ -751,6 +751,7 @@ def edit():
         file_details = dict(app=request.args[0],
                     editor_settings=preferences,
                     filename=filename,
+                    realfilename=realfilename,
                     filetype=filetype,
                     data=data,
                     edit_controller=edit_controller,
