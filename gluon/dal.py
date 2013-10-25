@@ -8135,7 +8135,8 @@ def index():
 
     def executesql(self, query, placeholders=None, as_dict=False, 
                    fields=None, colnames=None, as_ordered_dict=False):
-        """placeholders is optional and will always be None.
+        """
+        placeholders is optional and will always be None.
         If using raw SQL with placeholders, placeholders may be
         a sequence of values to be substituted in
         or, (if supported by the DB driver), a dictionary with keys
