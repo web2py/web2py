@@ -15,6 +15,8 @@
       return A(file, _class='editor_filelink', _href=url, _style='word-wrap: nowrap;')
 }}
 {{cm=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''),'codemirror')}}
+{{js_url=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''),'js')}}
+{{css_url=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''),'css')}}
 <link rel="stylesheet" href="{{=cm}}/lib/codemirror.css">
 <link rel="stylesheet" href="{{='%s/theme/%s.css' % (cm, editor_settings['theme'])}}">
 <script src="{{=cm}}/lib/codemirror.js"></script>
@@ -45,48 +47,37 @@
 <script src="{{=cm}}/addon/fold/xml-fold.js"></script>
 <link rel="stylesheet" href="{{=cm}}/addon/fold/foldgutter.css">
 <script src="{{=cm}}/emmet.min.js"></script>
-<script src="{{=URL('static','js/ajax_editor.js')}}"></script>
-<link rel="stylesheet" href="{{=URL('static/css','typeahead.js-bootstrap.css')}}">
-<link rel="stylesheet" href="{{=URL('static/css','web2py-codemirror.css')}}">
+<script src="{{=js_url}}/ajax_editor.js"></script>
+<link rel="stylesheet" href="{{=css_url}}/typeahead.js-bootstrap.css">
+<link rel="stylesheet" href="{{=css_url}}/web2py-codemirror.css">
 <script type="text/javascript">
-var current_theme = "{{=editor_settings['theme']}}";  //Default theme
-var current_editor = "{{=editor_settings['editor']}}";  //Default editor
-{{if editor_settings['closetag'] == 'true':}}
-    var current_closetag = true;  //Default closetag
-{{else:}}
-    var current_closetag = false;  //Default closetag
-{{pass}}
-var current_codefolding = {{=editor_settings['codefolding']}};  //Default codefolding
-var current_indentwithtabs = {{=editor_settings['indentwithtabs']}};
-var current_tabwidth = {{=editor_settings['tabwidth']}};
-
 var current_font_incr = 0; // Default font-size, 0 means don't set
-jQuery(document).on('shown click', 'a[data-toggle="tab"]', function (e) {
-    var tab_id = jQuery(this).attr('href');
-    var editor = jQuery(tab_id + " textarea").data('editor');
+$(document).on('shown click', 'a[data-toggle="tab"]', function (e) {
+    var tab_id = $(this).attr('href');
+    var editor = $(tab_id + " textarea").data('editor');
     if (editor) {
-        editor.setSize(jQuery(tab_id).width(),  jQuery(tab_id).height());
+        editor.setSize($(tab_id).width(),  $(tab_id).height());
         editor.refresh();
     }
-    //jQuery(function(){jQuery('.CodeMirror-scroll').css("height","auto").css("overflow-x","auto");});
+    //$(function(){$('.CodeMirror-scroll').css("height","auto").css("overflow-x","auto");});
 });
 
 // Close the selected tab
-jQuery(document).on('click', '#filesTab button[class="close"]', function (e) {
-    var tab_body   = jQuery(jQuery(this).parent().attr("href"));  // it should be a div
-    var tab_header = jQuery(this).parent().parent();              // it should be a li
-    var saved = jQuery(tab_body.find('textarea').data('editor')).data('saved');
+$(document).on('click', '#filesTab button[class="close"]', function (e) {
+    var tab_body   = $($(this).parent().attr("href"));  // it should be a div
+    var tab_header = $(this).parent().parent();              // it should be a li
+    var saved = $(tab_body.find('textarea').data('editor')).data('saved');
     var close = true;
     if (saved === false) {
         close = confirm("You are closing an unsaved file")
     }
     if (close) {
         if (tab_header.hasClass('active') === true) {     //Set active an other tab
-            var $prev = jQuery(tab_header).prev();
+            var $prev = $(tab_header).prev();
             if ($prev.length) {
                 $prev.children('a[data-toggle="tab"]').tab('show'); // select previous tab
             } else {
-                jQuery(tab_header).next().children('a[data-toggle="tab"]').tab('show'); // select next tab
+                $(tab_header).next().children('a[data-toggle="tab"]').tab('show'); // select next tab
             }
         }
         tab_header.remove(); //remove li of tab
@@ -95,72 +86,67 @@ jQuery(document).on('click', '#filesTab button[class="close"]', function (e) {
 });
 
 // Revert current file
-jQuery(document).on('click', '#revert', function (e) {
+$(document).on('click', '#revert', function (e) {
     e.preventDefault();
-    load_file(jQuery(this).attr("href"));
+    load_file($(this).attr("href"));
 });
 // Restore current file
-jQuery(document).on('click', '#restore', function (e) {
+$(document).on('click', '#restore', function (e) {
     e.preventDefault();
-    load_file(jQuery(this).attr("href"));
+    load_file($(this).attr("href"));
 });
 
 // open the selected file
-jQuery(document).on('click', 'a.editor_filelink, a#editor_settingslink', function (e) {
+$(document).on('click', 'a.editor_filelink, a#editor_settingslink', function (e) {
     e.preventDefault();
-    var url = jQuery(this).attr("href");
+    var url = $(this).attr("href");
     load_file(url);
 });
 
-function update_editor(config) {
-    var href = "{{="%s/theme/" % cm}}" + config.theme + ".css";
-    var link = jQuery("<link>");
+/* This method updates all editors already instantiated with the selected preferences*/
+function update_editor(preferences) {
+    var href = "{{="%s/theme/" % cm}}" + preferences.theme + ".css";
+    var link = $("<link>");
     link.attr({
         type: 'text/css',
         rel: 'stylesheet',
         href: href
     });
-    jQuery("head").append( link );
-    if ( config.editor != 'default'){
-        var src = "{{='%s/keymap/' % cm}}" + config.editor + ".js";
+    $("head").append( link );
+    if ( preferences.editor != 'default'){
+        var src = "{{='%s/keymap/' % cm}}" + preferences.editor + ".js";
         //var src = "/admin/static/codemirror/keymap/" + editor_name + ".js";
-        var script = jQuery("<script>");
+        var script = $("<script>");
         script.attr({
             src: src
         });
-        jQuery("head").append( script );
+        $("head").append( script );
     }
-    current_theme = config.theme;
-    current_editor = config.editor;
-    current_codefolding = (config.codefolding === 'true');
-    current_closetag = (config.closetag === 'true');
-    current_indentwithtabs = (config.indentwithtabs === 'true');
-    current_tabwidth = parseInt(config.tabwidth);
 
-    jQuery('textarea[name="data"]') .each(function(id, ta) {
-        editor = jQuery(ta).data('editor');
-        editor.setOption("theme", current_theme);
-        editor.setOption("keyMap", current_editor);
-        editor.setOption("autoCloseTags", current_closetag);
-        editor.setOption("foldGutter", current_codefolding);
-        editor.setOption("indentUnit", current_tabwidth);
-        editor.setOption("tabSize", current_tabwidth);
-        editor.setOption("indentWithTabs", current_indentwithtabs);
+    $('textarea[name="data"]') .each(function(id, ta) {
+        editor = $(ta).data('editor');
+        editor.setOption("theme", preferences.theme);
+        editor.setOption("keyMap", preferences.editor);
+        editor.setOption("autoCloseTags", (preferences.closetag === 'true'));
+        editor.setOption("foldGutter", (preferences.codefolding === 'true'));
+        editor.setOption("indentUnit", parseInt(preferences.tabwidth));
+        editor.setOption("tabSize", parseInt(preferences.tabwidth));
+        editor.setOption("indentWithTabs", (preferences.indentwithtabs === 'true'));
     });
 }
 
 // incr/decr editor font-size
-jQuery(document).on('click', 'a.font_button', function (e) {
+$(document).on('click', 'a.font_button', function (e) {
     e.preventDefault();
-    var id = jQuery(this).attr('id');
+    var id = $(this).attr('id');
     var new_font_incr;
     switch (id) {
         case 'incr': new_incr = 2; break;
         case 'decr': new_incr = -2; break;
         case 'default': new_incr = 0;
     }
-    jQuery('textarea[name="data"]').each(function(id, ta) {
-        editor = jQuery(ta).data('editor');
+    $('textarea[name="data"]').each(function(id, ta) {
+        editor = $(ta).data('editor');
         set_font(editor, new_incr);
     });
     current_font_incr = (new_incr !== 0) ? current_font_incr + new_incr : 0;
@@ -186,7 +172,7 @@ jQuery(document).on('click', 'a.font_button', function (e) {
 <div class='row-fluid'>
 <div class="right controls btn-toolbar pull-right">
 <div class="btn-group">
-  <a class="button btn" onclick="jQuery('#files').toggle(); return false" href="#">Files toggle</a>
+  <a class="button btn" onclick="$('#files').toggle(); return false" href="#">Files toggle</a>
 </div>
 <div class="btn-group">
     <a id="decr" class="button btn font_button">-</a>
@@ -242,26 +228,26 @@ jQuery(document).on('click', 'a.font_button', function (e) {
     </div>
 </div>
 <script>
-jQuery(document).ready(function() {
-    var filesMenu = jQuery('#files');
+$(document).ready(function() {
+    var filesMenu = $('#files');
     var ow = filesMenu.outerWidth();
     filesMenu.width(ow);
-    setTimeout( function(){jQuery('#files').css('left', '-'+ow+'px');}, 1000);
+    setTimeout( function(){$('#files').css('left', '-'+ow+'px');}, 1000);
 });
 </script>
 <!-- Typeahead scripts here so the page load faster -->
 <script src="{{=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''), 'js/typeahead.min.js')}}"></script>
 <script src="{{=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''), 'js/hogan-2.0.0.js')}}"></script>
 <script>
-    jQuery('.typeahead-tw').typeahead({
+    $('.typeahead-tw').typeahead({
         name: 'files',
         local:{{from gluon.serializers import json}}{{=XML(json(auto_complete_list))}},
         template: template_js,
         engine: Hogan,
     });
-    jQuery(document).on("typeahead:selected", '.typeahead', function(e, datum) {
+    $(document).on("typeahead:selected", '.typeahead', function(e, datum) {
         load_file(datum.link);
-        jQuery(this).val('');
+        $(this).val('');
     });
 </script>
 <!-- end "edit" block -->

@@ -864,7 +864,20 @@ class BaseAdapter(ConnectionPool):
                             id_fieldname = table._id.name
                         else: #make a guess
                             id_fieldname = 'id'
-                        real_referenced = db[referenced]._rname or db[referenced]
+                        #gotcha: the referenced table must be defined before
+                        #the referencing one to be able to create the table
+                        #Also if it's not recommended, we can still support
+                        #references to tablenames without rname to make
+                        #migrations and model relationship work also if tables
+                        #are not defined in order
+                        if referenced == tablename:
+                            real_referenced = db[referenced]._rname or db[referenced]
+                        else:
+                            real_referenced = (
+                                referenced in db and
+                                (db[referenced]._rname or db[referenced])
+                                or referenced
+                            )
                         ftype = types[field_type[:9]] % dict(
                             index_name = field_name+'__idx',
                             field_name = field_name,
@@ -8601,8 +8614,11 @@ class Table(object):
                 self._references.append(field)
             else:
                 field.referent = None
-        for referee in pr.get(self._tablename,[]):
-            self._referenced_by.append(referee)
+        if self._tablename in pr:
+            referees = pr.pop(self._tablename)
+            for referee in referees:
+                self._referenced_by.append(referee)
+        
 
     def _filter_fields(self, record, id=False):
         return dict([(k, v) for (k, v) in record.iteritems() if k
@@ -10412,9 +10428,9 @@ class Rows(object):
     def __or__(self,other):
         if self.colnames!=other.colnames:
             raise Exception('Cannot | incompatible Rows objects')
-        records = self.records
-        records += [record for record in other.records \
-                        if not record in records]
+        records = [record for record in other.records
+                   if not record in self.records]
+        records = self.records + records
         return Rows(self.db,records,self.colnames)
 
     def __nonzero__(self):

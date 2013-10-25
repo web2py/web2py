@@ -12,7 +12,6 @@
         response.files.append(URL('static','css/bootstrap-responsive.min.css'))
         }}
         {{include 'web2py_ajax.html'}}
-        <script>jQuery.noConflict();</script>
     </head>
 
     <body class="{{=T('direction: ltr') == 'direction: rtl' and 'RTLbody' or ''}} {{block sectionclass}}home{{end}}">
