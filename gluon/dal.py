@@ -5449,6 +5449,8 @@ class MongoDBAdapter(NoSQLAdapter):
         elif fieldtype == "blob":
             from bson import Binary
             if not isinstance(value, Binary):
+                if not isinstance(value, basestring):
+                    return Binary(str(value))
                 return Binary(value)
             return value
         elif (isinstance(fieldtype, basestring) and
