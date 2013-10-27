@@ -294,6 +294,7 @@
 'previous 100 rows': '100 filas anteriores',
 'Private files': 'Archivos privados',
 'private files': 'archivos privados',
+'Project Progress': 'Project Progress',
 'Query:': 'Consulta:',
 'Rapid Search': 'Rapid Search',
 'record': 'registro',

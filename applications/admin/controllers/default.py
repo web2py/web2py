@@ -230,7 +230,7 @@ def site():
             redirect(URL('design', args=appname))
         else:
             session.flash = \
-                DIV(T('unable to create application "%s"' % appname),
+                DIV(T('unable to create application "%s"', appname),
                     PRE(error))
         redirect(URL(r=request))
 
@@ -341,7 +341,7 @@ def pack():
         response.headers['Content-Disposition'] = disposition
         return safe_read(filename, 'rb')
     else:
-        session.flash = T('internal error: %s' % e)
+        session.flash = T('internal error: %s', e)
         redirect(URL('site'))
 
 def pack_plugin():
@@ -375,7 +375,7 @@ def pack_custom():
             response.headers['Content-Disposition'] = disposition
             return safe_read(filename, 'rb')
         else:
-            session.flash = T('internal error: %s' % e)
+            session.flash = T('internal error: %s', e)
             redirect(URL(args=request.args))
     def ignore(fs):
         return [f for f in fs if not (
@@ -1835,7 +1835,7 @@ def install_plugin():
             filename = "web2py.plugin.%s.w2p" % cleanpath(plugin)
         if plugin_install(app, urllib.urlopen(source),
                           request, filename):
-            session.flash = T('New plugin installed: %s' % filename)
+            session.flash = T('New plugin installed: %s', filename)
         else:
             session.flash = \
                 T('unable to create application "%s"', filename)
