@@ -4046,6 +4046,12 @@ class TeradataAdapter(BaseAdapter):
         self.connector = connector
         if do_connect: self.reconnect()
 
+    def close(self,action='commit',really=True):
+        # Teradata does not implicitly close off the cursor
+        # leading to SQL_ACTIVE_STATEMENTS limit errors
+        self.cursor.close()
+        ConnectionPool.close(self, action, really)
+
     def LEFT_JOIN(self):
         return 'LEFT OUTER JOIN'
 

@@ -513,7 +513,7 @@
       if(flash.html()) flash.append('<span id="closeflash"> &times; </span>').slideDown();
     },
     hide_flash: function () {
-      $('.flash').hide().html('');
+	  $('.flash').fadeOut(0).html('');
     },
     show_if_handler: function (target) {
       var triggers = {};
