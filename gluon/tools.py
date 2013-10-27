@@ -5245,9 +5245,16 @@ class Wiki(object):
         elif callable(self.settings.render):
             r = self.settings.render
         elif isinstance(self.settings.render, dict):
-            return lambda page: self.settings.render.get(page.render,
-                getattr(self,
-                    "%s_render" % (page.render or 'markmin')))(page)
+            def custom_render(page):
+                if page.render:
+                    if page.render in self.settings.render.keys():
+                        my_render = self.settings.render[page.render]
+                    else:
+                        my_render = getattr(self, "%s_render" % page.render)
+                else:
+                    my_render = self.markmin_render
+                return my_render(page)
+            r = custom_render
         else:
             raise ValueError(
                 "Invalid render type %s" % type(self.settings.render))
