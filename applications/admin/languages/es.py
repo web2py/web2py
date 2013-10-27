@@ -253,6 +253,7 @@
 'New plugin installed: web2py.plugin.attachment.w2p': 'New plugin installed: web2py.plugin.attachment.w2p',
 'New plugin installed: web2py.plugin.dialog.w2p': 'New plugin installed: web2py.plugin.dialog.w2p',
 'New plugin installed: web2py.plugin.math2py.w2p': 'New plugin installed: web2py.plugin.math2py.w2p',
+'New plugin installed: web2py.plugin.timezone.w2p': 'New plugin installed: web2py.plugin.timezone.w2p',
 'New Record': 'Registro nuevo',
 'new record inserted': 'nuevo registro insertado',
 'New simple application': 'Nueva aplicación',
