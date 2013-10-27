@@ -172,6 +172,7 @@ import uuid
 import glob
 import traceback
 import platform
+import collections
 
 PYTHON_VERSION = sys.version_info[0]
 if PYTHON_VERSION == 2:
@@ -8134,8 +8135,8 @@ def index():
             if not db_group:
                 del THREAD_LOCAL.db_instances[self._db_uid]
 
-    def executesql(self, query, placeholders=None, as_dict=False,
-                   fields=None, colnames=None):
+    def executesql(self, query, placeholders=None, as_dict=False, 
+                   fields=None, colnames=None, as_ordered_dict=False):
         """
         placeholders is optional and will always be None.
         If using raw SQL with placeholders, placeholders may be
@@ -8144,13 +8145,17 @@ def index():
         matching named placeholders in your SQL.
 
         Added 2009-12-05 "as_dict" optional argument. Will always be
-        None when using DAL. If using raw SQL can be set to True
-        and the results cursor returned by the DB driver will be
-        converted to a sequence of dictionaries keyed with the db
-        field names. Tested with SQLite but should work with any database
-        since the cursor.description used to get field names is part of the
-        Python dbi 2.0 specs. Results returned with as_dict=True are
-        the same as those returned when applying .to_list() to a DAL query.
+        None when using DAL. If using raw SQL can be set to True and
+        the results cursor returned by the DB driver will be converted
+        to a sequence of dictionaries keyed with the db field
+        names. Tested with SQLite but should work with any database
+        since the cursor.description used to get field names is part
+        of the Python dbi 2.0 specs. Results returned with
+        as_dict=True are the same as those returned when applying
+        .to_list() to a DAL query.  If "as_ordered_dict"=True the
+        behaviour is the same as when "as_dict"=True with the keys
+        (field names) guaranteed to be in the same order as returned
+        by the select name executed on the database.
 
         [{field1: value1, field2: value2}, {field1: value1b, field2: value2b}]
 
@@ -8182,13 +8187,14 @@ def index():
         be dummy tables and do not have to represent any real tables in the
         database. Also, note that the "fields" and "colnames" must be in the
         same order as the fields in the results cursor returned from the DB.
+
         """
         adapter = self._adapter
         if placeholders:
             adapter.execute(query, placeholders)
         else:
             adapter.execute(query)
-        if as_dict:
+        if as_dict or as_ordered_dict:
             if not hasattr(adapter.cursor,'description'):
                 raise RuntimeError("database does not support executesql(...,as_dict=True)")
             # Non-DAL legacy db query, converts cursor results to dict.
@@ -8201,7 +8207,11 @@ def index():
             data = adapter._fetchall()
             # convert the list for each row into a dictionary so it's
             # easier to work with. row['field_name'] rather than row[0]
-            return [dict(zip(fields,row)) for row in data]
+            if as_ordered_dict:
+                _dict = collections.OrderedDict
+            else:
+                _dict = dict
+            return [_dict(zip(fields,row)) for row in data]
         try:
             data = adapter._fetchall()
         except:
