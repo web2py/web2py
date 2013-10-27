@@ -16,3 +16,23 @@
 	background-repeat: repeat-x;
 }
 
+/* Close button on tab*/
+.nav-tabs li a > .close {
+    font-size: 18px;
+    padding-left: 5px;
+    float: right;
+    margin-right: -10px;
+    padding-right: 5px;
+}
+
+.nav-tabs>li>a {
+    overflow: hidden;
+    white-space: nowrap;
+    word-wrap: normal;
+    -o-text-overflow: ellipsis;
+    text-overflow: ellipsis;
+}
+
+/*.nav-tabs>li {
+    min-width: 100px;
+}*/

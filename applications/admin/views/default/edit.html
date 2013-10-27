@@ -59,6 +59,10 @@ $(document).on('shown click', 'a[data-toggle="tab"]', function (e) {
         editor.setSize($(tab_id).width(),  $(tab_id).height());
         editor.refresh();
     }
+    var n_li = $('#filesTab li').length;
+    $.each($('#filesTab li'), function(index, element) {
+        $(element).css('max-width', 100/n_li + '%' );
+    });
     //$(function(){$('.CodeMirror-scroll').css("height","auto").css("overflow-x","auto");});
 });
 
@@ -132,6 +136,13 @@ function update_editor(preferences) {
         editor.setOption("indentUnit", parseInt(preferences.tabwidth));
         editor.setOption("tabSize", parseInt(preferences.tabwidth));
         editor.setOption("indentWithTabs", (preferences.indentwithtabs === 'true'));
+        if (preferences.linenumbers === 'true') {
+            gutters = editor.getOption("gutters");
+            gutters.splice(0, 0, 'CodeMirror-linenumbers');
+            editor.setOption("gutter", gutters);
+        }
+        editor.setOption("lineNumbers", (preferences.linenumbers === 'true'));
+        editor.setOption("styleActiveLine", (preferences.highlightline === 'true'));
     });
 }
 
