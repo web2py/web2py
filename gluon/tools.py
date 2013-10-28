@@ -3635,7 +3635,8 @@ class Auth(object):
              migrate=True,
              controller=None,
              function=None,
-             force_render=False):
+             force_render=False,
+             groups=None):
 
         if controller and function: resolve = False
 
@@ -3649,7 +3650,8 @@ class Auth(object):
                               templates=templates,
                               migrate=migrate,
                               controller=controller,
-                              function=function)
+                              function=function,
+                              groups=groups)
         else:
             self._wiki.env.update(env or {})
 
@@ -5264,7 +5266,7 @@ class Wiki(object):
                  manage_permissions=False, force_prefix='',
                  restrict_search=False, extra=None,
                  menu_groups=None, templates=None, migrate=True,
-                 controller=None, function=None):
+                 controller=None, function=None, groups=None):
 
         settings = self.settings = auth.settings.wiki
 
@@ -5296,6 +5298,7 @@ class Wiki(object):
         settings.templates = templates
         settings.controller = controller
         settings.function = function
+        settings.groups = groups
 
         db = auth.db
         self.env = env or {}
@@ -5390,7 +5393,8 @@ class Wiki(object):
 
         if (auth.user and
             check_credentials(current.request, gae_login=False) and
-            not 'wiki_editor' in auth.user_groups.values()):
+            not 'wiki_editor' in auth.user_groups.values() and
+            self.settings.groups is None):
             group = db.auth_group(role='wiki_editor')
             gid = group.id if group else db.auth_group.insert(
                 role='wiki_editor')
@@ -5403,12 +5407,17 @@ class Wiki(object):
     def not_authorized(self, page=None):
         raise HTTP(401)
 
+    def get_groups(self):
+        if self.settings.groups is not None:
+            return self.settings.groups
+        return self.auth.user_groups.values()
+
     def can_read(self, page):
         if 'everybody' in page.can_read or not \
             self.settings.manage_permissions:
             return True
         elif self.auth.user:
-            groups = self.auth.user_groups.values()
+            groups = self.get_groups()
             if ('wiki_editor' in groups or
                 set(groups).intersection(set(page.can_read + page.can_edit)) or
                 page.created_by == self.auth.user.id):
@@ -5418,7 +5427,7 @@ class Wiki(object):
     def can_edit(self, page=None):
         if not self.auth.user:
             redirect(self.auth.settings.login_url)
-        groups = self.auth.user_groups.values()
+        groups = self.get_groups()
         return ('wiki_editor' in groups or
                 (page is None and 'wiki_author' in groups) or
                 not page is None and (
@@ -5428,7 +5437,7 @@ class Wiki(object):
     def can_manage(self):
         if not self.auth.user:
             return False
-        groups = self.auth.user_groups.values()
+        groups = self.get_groups()
         return 'wiki_editor' in groups
 
     def can_search(self):
@@ -5439,7 +5448,7 @@ class Wiki(object):
             if self.settings.menu_groups is None:
                 return True
             else:
-                groups = self.auth.user_groups.values()
+                groups = self.get_groups()
                 if any(t in self.settings.menu_groups for t in groups):
                     return True
         return False
