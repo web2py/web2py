@@ -5453,7 +5453,9 @@ class Wiki(object):
 
     def automenu(self):
         """adds the menu if not present"""
-        if not self.wiki_menu_items and self.settings.controller and self.settings.function:
+        if (not self.wiki_menu_items and 
+            self.settings.controller and 
+            self.settings.function):
             self.wiki_menu_items = self.menu(self.settings.controller,
                                              self.settings.function)
             current.response.menu += self.wiki_menu_items
