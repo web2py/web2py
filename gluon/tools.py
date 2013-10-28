@@ -3635,7 +3635,8 @@ class Auth(object):
              migrate=True,
              controller=None,
              function=None,
-             force_render=False):
+             force_render=False,
+             groups=None):
 
         if controller and function: resolve = False
 
@@ -3649,7 +3650,8 @@ class Auth(object):
                               templates=templates,
                               migrate=migrate,
                               controller=controller,
-                              function=function)
+                              function=function,
+                              groups=groups)
         else:
             self._wiki.env.update(env or {})
 
@@ -5264,7 +5266,7 @@ class Wiki(object):
                  manage_permissions=False, force_prefix='',
                  restrict_search=False, extra=None,
                  menu_groups=None, templates=None, migrate=True,
-                 controller=None, function=None):
+                 controller=None, function=None, groups=None):
 
         settings = self.settings = auth.settings.wiki
 
@@ -5296,7 +5298,9 @@ class Wiki(object):
         settings.templates = templates
         settings.controller = controller
         settings.function = function
-
+        settings.groups = auth.user_groups.values() \
+            if groups is None else groups
+        
         db = auth.db
         self.env = env or {}
         self.env['component'] = Wiki.component
@@ -5390,7 +5394,8 @@ class Wiki(object):
 
         if (auth.user and
             check_credentials(current.request, gae_login=False) and
-            not 'wiki_editor' in auth.user_groups.values()):
+            not 'wiki_editor' in auth.user_groups.values() and
+            self.settings.groups is None):
             group = db.auth_group(role='wiki_editor')
             gid = group.id if group else db.auth_group.insert(
                 role='wiki_editor')
@@ -5408,7 +5413,7 @@ class Wiki(object):
             self.settings.manage_permissions:
             return True
         elif self.auth.user:
-            groups = self.auth.user_groups.values()
+            groups = self.settings.groups
             if ('wiki_editor' in groups or
                 set(groups).intersection(set(page.can_read + page.can_edit)) or
                 page.created_by == self.auth.user.id):
@@ -5418,7 +5423,7 @@ class Wiki(object):
     def can_edit(self, page=None):
         if not self.auth.user:
             redirect(self.auth.settings.login_url)
-        groups = self.auth.user_groups.values()
+        groups = self.settings.groups
         return ('wiki_editor' in groups or
                 (page is None and 'wiki_author' in groups) or
                 not page is None and (
@@ -5428,7 +5433,7 @@ class Wiki(object):
     def can_manage(self):
         if not self.auth.user:
             return False
-        groups = self.auth.user_groups.values()
+        groups = self.settings.groups
         return 'wiki_editor' in groups
 
     def can_search(self):
@@ -5439,7 +5444,7 @@ class Wiki(object):
             if self.settings.menu_groups is None:
                 return True
             else:
-                groups = self.auth.user_groups.values()
+                groups = self.settings.groups
                 if any(t in self.settings.menu_groups for t in groups):
                     return True
         return False
@@ -5448,7 +5453,9 @@ class Wiki(object):
 
     def automenu(self):
         """adds the menu if not present"""
-        if not self.wiki_menu_items and self.settings.controller and self.settings.function:
+        if (not self.wiki_menu_items and 
+            self.settings.controller and 
+            self.settings.function):
             self.wiki_menu_items = self.menu(self.settings.controller,
                                              self.settings.function)
             current.response.menu += self.wiki_menu_items
@@ -5538,17 +5545,6 @@ class Wiki(object):
                             tags=page.tags,
                             created_on=page.created_on,
                             modified_on=page.modified_on)
-
-    def check_editor(self, role='wiki_editor', act=False):
-        if not self.auth.user:
-            if not act:
-                return False
-            redirect(self.auth.settings.login_url)
-        elif not self.auth.has_membership(role):
-            if not act:
-                return False
-            raise HTTP(401, "Not Authorized")
-        return True
 
     def edit(self,slug,from_template=0):
         auth = self.auth
