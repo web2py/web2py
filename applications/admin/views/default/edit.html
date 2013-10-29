@@ -136,8 +136,8 @@ function update_editor(preferences) {
         editor.setOption("indentUnit", parseInt(preferences.tabwidth));
         editor.setOption("tabSize", parseInt(preferences.tabwidth));
         editor.setOption("indentWithTabs", (preferences.indentwithtabs === 'true'));
-        if (preferences.linenumbers === 'true') {
-            gutters = editor.getOption("gutters");
+        gutters = editor.getOption("gutters");
+        if ( preferences.linenumbers === 'true' && $.inArray('CodeMirror-linenumbers', gutters) === -1 ) {
             gutters.splice(0, 0, 'CodeMirror-linenumbers');
             editor.setOption("gutter", gutters);
         }
