@@ -39,24 +39,24 @@
 <script src="{{=cm}}/addon/selection/active-line.js"></script>
 <script src="{{=cm}}/addon/display/fullscreen.js"></script>
 <link rel="stylesheet" href="{{=cm}}/addon/display/fullscreen.css">
-<script src="{{=cm}}/addon/fold/brace-fold.js"></script>
-<script src="{{=cm}}/addon/fold/comment-fold.js"></script>
 <script src="{{=cm}}/addon/fold/foldcode.js"></script>
 <script src="{{=cm}}/addon/fold/foldgutter.js"></script>
-<script src="{{=cm}}/addon/fold/indent-fold.js"></script>
+<script src="{{=cm}}/addon/fold/brace-fold.js"></script>
 <script src="{{=cm}}/addon/fold/xml-fold.js"></script>
+<script src="{{=cm}}/addon/fold/comment-fold.js"></script>
+<script src="{{=cm}}/addon/fold/indent-fold.js"></script>
 <link rel="stylesheet" href="{{=cm}}/addon/fold/foldgutter.css">
 <script src="{{=cm}}/emmet.min.js"></script>
 <script src="{{=js_url}}/ajax_editor.js"></script>
 <link rel="stylesheet" href="{{=css_url}}/typeahead.js-bootstrap.css">
 <link rel="stylesheet" href="{{=css_url}}/web2py-codemirror.css">
 <script type="text/javascript">
-var current_font_incr = 0; // Default font-size, 0 means don't set
+var current_font_incr = 0; // Default font-size, 0 means isn't set
 $(document).on('shown click', 'a[data-toggle="tab"]', function (e) {
     var tab_id = $(this).attr('href');
     var editor = $(tab_id + " textarea").data('editor');
     if (editor) {
-        editor.setSize($(tab_id).width(),  $(tab_id).height());
+        editor.setSize('100%',  $(tab_id).height());
         editor.refresh();
     }
     var n_li = $('#filesTab li').length;
@@ -136,8 +136,8 @@ function update_editor(preferences) {
         editor.setOption("indentUnit", parseInt(preferences.tabwidth));
         editor.setOption("tabSize", parseInt(preferences.tabwidth));
         editor.setOption("indentWithTabs", (preferences.indentwithtabs === 'true'));
-        if (preferences.linenumbers === 'true') {
-            gutters = editor.getOption("gutters");
+        gutters = editor.getOption("gutters");
+        if ( preferences.linenumbers === 'true' && $.inArray('CodeMirror-linenumbers', gutters) === -1 ) {
             gutters.splice(0, 0, 'CodeMirror-linenumbers');
             editor.setOption("gutter", gutters);
         }
@@ -163,18 +163,9 @@ $(document).on('click', 'a.font_button', function (e) {
     current_font_incr = (new_incr !== 0) ? current_font_incr + new_incr : 0;
 });
 
-    function winHeight() {
-        return window.innerHeight || (document.documentElement || document.body).clientHeight;
-    }
-    CodeMirror.on(window, "resize", function() {
-        var showing = document.body.getElementsByClassName("CodeMirror-fullscreen")[0];
-        if (!showing) return;
-        showing.CodeMirror.getWrappererElement().style.height = winHeight() + "px";
-    });
-
-    {{if len(request.args) > 1:}}
-        load_file('{{=URL(f='edit', args=request.args, vars=request.get_vars)}}');
-    {{pass}}
+{{if len(request.args) > 1:}}
+    load_file('{{=URL(f='edit', args=request.args, vars=request.get_vars)}}');
+{{pass}}
 
 </script>
 
