@@ -559,7 +559,7 @@ class TestMigrations(unittest.TestCase):
 
 class TestReference(unittest.TestCase):
 
-    def testRun(self): 
+    def testRun(self):
         db = DAL(DEFAULT_URI, check_reserved=['all'])
         if DEFAULT_URI.startswith('mssql'):
             #multiple cascade gotcha
@@ -840,11 +840,27 @@ class TestValidateAndInsert(unittest.TestCase):
         #cleanup table
         db.val_and_insert.drop()
 
+class TestSelectAsDict(unittest.TestCase):
 
-class TestRName(unittest.TestCase):
-    """
-    tests for highly experimental rname attribute
-    """
+    def testSelect(self):
+        db = DAL(DEFAULT_URI, check_reserved=['all'])
+        db.define_table(
+            'a_table',
+            Field('b_field'),
+            Field('a_field'),
+            )
+        db.a_table.insert(a_field="aa1", b_field="bb1")
+        rtn = db.executesql("SELECT id, b_field, a_field FROM a_table", as_dict=True)
+        self.assertEqual(rtn[0]['b_field'], 'bb1')
+        rtn = db.executesql("SELECT id, b_field, a_field FROM a_table", as_ordered_dict=True)
+        self.assertEqual(rtn[0]['b_field'], 'bb1')
+        self.assertEqual(rtn[0].keys(), ['id', 'b_field', 'a_field'])
+        db.a_table.drop()
+
+
+class TestRNameTable(unittest.TestCase):
+    #tests for highly experimental rname attribute
+
     def testSelect(self):
         db = DAL(DEFAULT_URI, check_reserved=['all'])
         rname = db._adapter.QUOTE_TEMPLATE % 'a very complicated tablename'
@@ -997,6 +1013,385 @@ class TestRName(unittest.TestCase):
         db.person.drop()
         db.easy_name.drop()
 
+    def testJoin(self):
+        db = DAL(DEFAULT_URI, check_reserved=['all'])
+        rname = db._adapter.QUOTE_TEMPLATE % 'this is table t1'
+        rname2 = db._adapter.QUOTE_TEMPLATE % 'this is table t2'
+        db.define_table('t1', Field('aa'), rname=rname)
+        db.define_table('t2', Field('aa'), Field('b', db.t1), rname=rname2)
+        i1 = db.t1.insert(aa='1')
+        i2 = db.t1.insert(aa='2')
+        i3 = db.t1.insert(aa='3')
+        db.t2.insert(aa='4', b=i1)
+        db.t2.insert(aa='5', b=i2)
+        db.t2.insert(aa='6', b=i2)
+        self.assertEqual(len(db(db.t1.id
+                          == db.t2.b).select(orderby=db.t1.aa
+                          | db.t2.aa)), 3)
+        self.assertEqual(db(db.t1.id == db.t2.b).select(orderby=db.t1.aa
+                          | db.t2.aa)[2].t1.aa, '2')
+        self.assertEqual(db(db.t1.id == db.t2.b).select(orderby=db.t1.aa
+                          | db.t2.aa)[2].t2.aa, '6')
+        self.assertEqual(len(db().select(db.t1.ALL, db.t2.ALL,
+                         left=db.t2.on(db.t1.id == db.t2.b),
+                         orderby=db.t1.aa | db.t2.aa)), 4)
+        self.assertEqual(db().select(db.t1.ALL, db.t2.ALL,
+                         left=db.t2.on(db.t1.id == db.t2.b),
+                         orderby=db.t1.aa | db.t2.aa)[2].t1.aa, '2')
+        self.assertEqual(db().select(db.t1.ALL, db.t2.ALL,
+                         left=db.t2.on(db.t1.id == db.t2.b),
+                         orderby=db.t1.aa | db.t2.aa)[2].t2.aa, '6')
+        self.assertEqual(db().select(db.t1.ALL, db.t2.ALL,
+                         left=db.t2.on(db.t1.id == db.t2.b),
+                         orderby=db.t1.aa | db.t2.aa)[3].t1.aa, '3')
+        self.assertEqual(db().select(db.t1.ALL, db.t2.ALL,
+                         left=db.t2.on(db.t1.id == db.t2.b),
+                         orderby=db.t1.aa | db.t2.aa)[3].t2.aa, None)
+        self.assertEqual(len(db().select(db.t1.aa, db.t2.id.count(),
+                         left=db.t2.on(db.t1.id == db.t2.b),
+                         orderby=db.t1.aa, groupby=db.t1.aa)),
+                         3)
+        self.assertEqual(db().select(db.t1.aa, db.t2.id.count(),
+                         left=db.t2.on(db.t1.id == db.t2.b),
+                         orderby=db.t1.aa,
+                         groupby=db.t1.aa)[0]._extra[db.t2.id.count()],
+                         1)
+        self.assertEqual(db().select(db.t1.aa, db.t2.id.count(),
+                         left=db.t2.on(db.t1.id == db.t2.b),
+                         orderby=db.t1.aa,
+                         groupby=db.t1.aa)[1]._extra[db.t2.id.count()],
+                         2)
+        self.assertEqual(db().select(db.t1.aa, db.t2.id.count(),
+                         left=db.t2.on(db.t1.id == db.t2.b),
+                         orderby=db.t1.aa,
+                         groupby=db.t1.aa)[2]._extra[db.t2.id.count()],
+                         0)
+        db.t2.drop()
+        db.t1.drop()
+
+        db.define_table('person',Field('name'), rname=rname)
+        id = db.person.insert(name="max")
+        self.assertEqual(id.name,'max')
+        db.define_table('dog',Field('name'),Field('ownerperson','reference person'), rname=rname2)
+        db.dog.insert(name='skipper',ownerperson=1)
+        row = db(db.person.id==db.dog.ownerperson).select().first()
+        self.assertEqual(row[db.person.name],'max')
+        self.assertEqual(row['person.name'],'max')
+        db.dog.drop()
+        self.assertEqual(len(db.person._referenced_by),0)
+        db.person.drop()
+
+
+class TestRNameFields(unittest.TestCase):
+    # tests for highly experimental rname attribute
+    def testSelect(self):
+        db = DAL(DEFAULT_URI, check_reserved=['all'])
+        rname = db._adapter.QUOTE_TEMPLATE % 'a very complicated fieldname'
+        rname2 = db._adapter.QUOTE_TEMPLATE % 'rrating from 1 to 10'
+        db.define_table(
+            'easy_name',
+            Field('a_field', rname=rname),
+            Field('rating', 'integer', rname=rname2, default=2)
+            )
+        rtn = db.easy_name.insert(a_field='a')
+        self.assertEqual(rtn.id, 1)
+        rtn = db(db.easy_name.a_field == 'a').select()
+        self.assertEqual(len(rtn), 1)
+        self.assertEqual(rtn[0].id, 1)
+        self.assertEqual(rtn[0].a_field, 'a')
+        db.easy_name.insert(a_field='b')
+        rtn = db(db.easy_name.id > 0).delete()
+        self.assertEqual(rtn, 2)
+        rtn = db(db.easy_name.id > 0).count()
+        self.assertEqual(rtn, 0)
+        db.easy_name.insert(a_field='a')
+        db.easy_name.insert(a_field='b')
+        rtn = db(db.easy_name.id > 0).count()
+        self.assertEqual(rtn, 2)
+        rtn = db(db.easy_name.a_field == 'a').update(a_field='c')
+        rtn = db(db.easy_name.a_field == 'c').count()
+        self.assertEqual(rtn, 1)
+        rtn = db(db.easy_name.a_field != 'c').count()
+        self.assertEqual(rtn, 1)
+        avg = db.easy_name.id.avg()
+        rtn = db(db.easy_name.id > 0).select(avg)
+        self.assertEqual(rtn[0][avg], 3)
+
+        avg = db.easy_name.rating.avg()
+        rtn = db(db.easy_name.id > 0).select(avg)
+        self.assertEqual(rtn[0][avg], 2)
+
+        rname = db._adapter.QUOTE_TEMPLATE % 'this is the person name'
+        db.define_table(
+            'person',
+            Field('name', default="Michael", rname=rname),
+            Field('uuid')
+            )
+        rname = db._adapter.QUOTE_TEMPLATE % 'this is the pet name'
+        db.define_table(
+            'pet',
+            Field('friend','reference person'),
+            Field('name', rname=rname)
+            )
+        michael = db.person.insert() #default insert
+        john = db.person.insert(name='John')
+        luke = db.person.insert(name='Luke')
+
+        #michael owns Phippo
+        phippo = db.pet.insert(friend=michael, name="Phippo")
+        #john owns Dunstin and Gertie
+        dunstin = db.pet.insert(friend=john, name="Dunstin")
+        gertie = db.pet.insert(friend=john, name="Gertie")
+
+        rtn = db(db.person.id == db.pet.friend).select(orderby=db.person.id|db.pet.id)
+        self.assertEqual(len(rtn), 3)
+        self.assertEqual(rtn[0].person.id, michael)
+        self.assertEqual(rtn[0].person.name, 'Michael')
+        self.assertEqual(rtn[0].pet.id, phippo)
+        self.assertEqual(rtn[0].pet.name, 'Phippo')
+        self.assertEqual(rtn[1].person.id, john)
+        self.assertEqual(rtn[1].person.name, 'John')
+        self.assertEqual(rtn[1].pet.name, 'Dunstin')
+        self.assertEqual(rtn[2].pet.name, 'Gertie')
+        #fetch owners, eventually with pet
+        #main point is retrieving Luke with no pets
+        rtn = db(db.person.id > 0).select(
+            orderby=db.person.id|db.pet.id,
+            left=db.pet.on(db.person.id == db.pet.friend)
+            )
+        self.assertEqual(rtn[0].person.id, michael)
+        self.assertEqual(rtn[0].person.name, 'Michael')
+        self.assertEqual(rtn[0].pet.id, phippo)
+        self.assertEqual(rtn[0].pet.name, 'Phippo')
+        self.assertEqual(rtn[3].person.name, 'Luke')
+        self.assertEqual(rtn[3].person.id, luke)
+        self.assertEqual(rtn[3].pet.name, None)
+        #lets test a subquery
+        subq = db(db.pet.name == "Gertie")._select(db.pet.friend)
+        rtn = db(db.person.id.belongs(subq)).select()
+        self.assertEqual(rtn[0].id, 2)
+        self.assertEqual(rtn[0]('person.name'), 'John')
+        #as dict
+        rtn = db(db.person.id > 0).select().as_dict()
+        self.assertEqual(rtn[1]['name'], 'Michael')
+        #as list
+        rtn = db(db.person.id > 0).select().as_list()
+        self.assertEqual(rtn[0]['name'], 'Michael')
+        #isempty
+        rtn = db(db.person.id > 0).isempty()
+        self.assertEqual(rtn, False)
+        #join argument
+        rtn = db(db.person).select(orderby=db.person.id|db.pet.id,
+                                   join=db.pet.on(db.person.id==db.pet.friend))
+        self.assertEqual(len(rtn), 3)
+        self.assertEqual(rtn[0].person.id, michael)
+        self.assertEqual(rtn[0].person.name, 'Michael')
+        self.assertEqual(rtn[0].pet.id, phippo)
+        self.assertEqual(rtn[0].pet.name, 'Phippo')
+        self.assertEqual(rtn[1].person.id, john)
+        self.assertEqual(rtn[1].person.name, 'John')
+        self.assertEqual(rtn[1].pet.name, 'Dunstin')
+        self.assertEqual(rtn[2].pet.name, 'Gertie')
+
+        #aliases
+        rname = db._adapter.QUOTE_TEMPLATE % 'the cub name'
+        if DEFAULT_URI.startswith('mssql'):
+            #multiple cascade gotcha
+            for key in ['reference','reference FK']:
+                db._adapter.types[key]=db._adapter.types[key].replace(
+                '%(on_delete_action)s','NO ACTION')
+        db.define_table('pet_farm',
+            Field('name', rname=rname),
+            Field('father','reference pet_farm'),
+            Field('mother','reference pet_farm'),
+        )
+
+        minali = db.pet_farm.insert(name='Minali')
+        osbert = db.pet_farm.insert(name='Osbert')
+        #they had a cub
+        selina = db.pet_farm.insert(name='Selina', father=osbert, mother=minali)
+
+        father = db.pet_farm.with_alias('father')
+        mother = db.pet_farm.with_alias('mother')
+
+        #fetch pets with relatives
+        rtn = db().select(
+            db.pet_farm.name, father.name, mother.name,
+            left=[
+                father.on(father.id == db.pet_farm.father),
+                mother.on(mother.id == db.pet_farm.mother)
+            ],
+            orderby=db.pet_farm.id
+        )
+
+        self.assertEqual(len(rtn), 3)
+        self.assertEqual(rtn[0].pet_farm.name, 'Minali')
+        self.assertEqual(rtn[0].father.name, None)
+        self.assertEqual(rtn[0].mother.name, None)
+        self.assertEqual(rtn[1].pet_farm.name, 'Osbert')
+        self.assertEqual(rtn[2].pet_farm.name, 'Selina')
+        self.assertEqual(rtn[2].father.name, 'Osbert')
+        self.assertEqual(rtn[2].mother.name, 'Minali')
+
+        #clean up
+        db.pet_farm.drop()
+        db.pet.drop()
+        db.person.drop()
+        db.easy_name.drop()
+
+    def testRun(self):
+        db = DAL(DEFAULT_URI, check_reserved=['all'])
+        rname = db._adapter.QUOTE_TEMPLATE % 'a very complicated fieldname'
+        for ft in ['string', 'text', 'password', 'upload', 'blob']:
+            db.define_table('tt', Field('aa', ft, default='', rname=rname))
+            self.assertEqual(db.tt.insert(aa='x'), 1)
+            self.assertEqual(db().select(db.tt.aa)[0].aa, 'x')
+            db.tt.drop()
+        db.define_table('tt', Field('aa', 'integer', default=1, rname=rname))
+        self.assertEqual(db.tt.insert(aa=3), 1)
+        self.assertEqual(db().select(db.tt.aa)[0].aa, 3)
+        db.tt.drop()
+        db.define_table('tt', Field('aa', 'double', default=1, rname=rname))
+        self.assertEqual(db.tt.insert(aa=3.1), 1)
+        self.assertEqual(db().select(db.tt.aa)[0].aa, 3.1)
+        db.tt.drop()
+        db.define_table('tt', Field('aa', 'boolean', default=True, rname=rname))
+        self.assertEqual(db.tt.insert(aa=True), 1)
+        self.assertEqual(db().select(db.tt.aa)[0].aa, True)
+        db.tt.drop()
+        db.define_table('tt', Field('aa', 'json', default={}, rname=rname))
+        self.assertEqual(db.tt.insert(aa={}), 1)
+        self.assertEqual(db().select(db.tt.aa)[0].aa, {})
+        db.tt.drop()
+        db.define_table('tt', Field('aa', 'date',
+                        default=datetime.date.today(), rname=rname))
+        t0 = datetime.date.today()
+        self.assertEqual(db.tt.insert(aa=t0), 1)
+        self.assertEqual(db().select(db.tt.aa)[0].aa, t0)
+        db.tt.drop()
+        db.define_table('tt', Field('aa', 'datetime',
+                        default=datetime.datetime.today(), rname=rname))
+        t0 = datetime.datetime(
+            1971,
+            12,
+            21,
+            10,
+            30,
+            55,
+            0,
+            )
+        self.assertEqual(db.tt.insert(aa=t0), 1)
+        self.assertEqual(db().select(db.tt.aa)[0].aa, t0)
+
+        ## Row APIs
+        row = db().select(db.tt.aa)[0]
+        self.assertEqual(db.tt[1].aa,t0)
+        self.assertEqual(db.tt['aa'],db.tt.aa)
+        self.assertEqual(db.tt(1).aa,t0)
+        self.assertTrue(db.tt(1,aa=None)==None)
+        self.assertFalse(db.tt(1,aa=t0)==None)
+        self.assertEqual(row.aa,t0)
+        self.assertEqual(row['aa'],t0)
+        self.assertEqual(row['tt.aa'],t0)
+        self.assertEqual(row('tt.aa'),t0)
+
+        ## Lazy and Virtual fields
+        db.tt.b = Field.Virtual(lambda row: row.tt.aa)
+        db.tt.c = Field.Lazy(lambda row: row.tt.aa)
+        row = db().select(db.tt.aa)[0]
+        self.assertEqual(row.b,t0)
+        self.assertEqual(row.c(),t0)
+
+        db.tt.drop()
+        db.define_table('tt', Field('aa', 'time', default='11:30', rname=rname))
+        t0 = datetime.time(10, 30, 55)
+        self.assertEqual(db.tt.insert(aa=t0), 1)
+        self.assertEqual(db().select(db.tt.aa)[0].aa, t0)
+        db.tt.drop()
+
+    def testInsert(self):
+        db = DAL(DEFAULT_URI, check_reserved=['all'])
+        rname = db._adapter.QUOTE_TEMPLATE % 'a very complicated fieldname'
+        db.define_table('tt', Field('aa', rname=rname))
+        self.assertEqual(db.tt.insert(aa='1'), 1)
+        self.assertEqual(db.tt.insert(aa='1'), 2)
+        self.assertEqual(db.tt.insert(aa='1'), 3)
+        self.assertEqual(db(db.tt.aa == '1').count(), 3)
+        self.assertEqual(db(db.tt.aa == '2').isempty(), True)
+        self.assertEqual(db(db.tt.aa == '1').update(aa='2'), 3)
+        self.assertEqual(db(db.tt.aa == '2').count(), 3)
+        self.assertEqual(db(db.tt.aa == '2').isempty(), False)
+        self.assertEqual(db(db.tt.aa == '2').delete(), 3)
+        self.assertEqual(db(db.tt.aa == '2').isempty(), True)
+        db.tt.drop()
+
+    def testJoin(self):
+        db = DAL(DEFAULT_URI, check_reserved=['all'])
+        rname = db._adapter.QUOTE_TEMPLATE % 'this is field aa'
+        rname2 = db._adapter.QUOTE_TEMPLATE % 'this is field b'
+        db.define_table('t1', Field('aa', rname=rname))
+        db.define_table('t2', Field('aa', rname=rname), Field('b', db.t1, rname=rname2))
+        i1 = db.t1.insert(aa='1')
+        i2 = db.t1.insert(aa='2')
+        i3 = db.t1.insert(aa='3')
+        db.t2.insert(aa='4', b=i1)
+        db.t2.insert(aa='5', b=i2)
+        db.t2.insert(aa='6', b=i2)
+        self.assertEqual(len(db(db.t1.id
+                          == db.t2.b).select(orderby=db.t1.aa
+                          | db.t2.aa)), 3)
+        self.assertEqual(db(db.t1.id == db.t2.b).select(orderby=db.t1.aa
+                          | db.t2.aa)[2].t1.aa, '2')
+        self.assertEqual(db(db.t1.id == db.t2.b).select(orderby=db.t1.aa
+                          | db.t2.aa)[2].t2.aa, '6')
+        self.assertEqual(len(db().select(db.t1.ALL, db.t2.ALL,
+                         left=db.t2.on(db.t1.id == db.t2.b),
+                         orderby=db.t1.aa | db.t2.aa)), 4)
+        self.assertEqual(db().select(db.t1.ALL, db.t2.ALL,
+                         left=db.t2.on(db.t1.id == db.t2.b),
+                         orderby=db.t1.aa | db.t2.aa)[2].t1.aa, '2')
+        self.assertEqual(db().select(db.t1.ALL, db.t2.ALL,
+                         left=db.t2.on(db.t1.id == db.t2.b),
+                         orderby=db.t1.aa | db.t2.aa)[2].t2.aa, '6')
+        self.assertEqual(db().select(db.t1.ALL, db.t2.ALL,
+                         left=db.t2.on(db.t1.id == db.t2.b),
+                         orderby=db.t1.aa | db.t2.aa)[3].t1.aa, '3')
+        self.assertEqual(db().select(db.t1.ALL, db.t2.ALL,
+                         left=db.t2.on(db.t1.id == db.t2.b),
+                         orderby=db.t1.aa | db.t2.aa)[3].t2.aa, None)
+        self.assertEqual(len(db().select(db.t1.aa, db.t2.id.count(),
+                         left=db.t2.on(db.t1.id == db.t2.b),
+                         orderby=db.t1.aa, groupby=db.t1.aa)),
+                         3)
+        self.assertEqual(db().select(db.t1.aa, db.t2.id.count(),
+                         left=db.t2.on(db.t1.id == db.t2.b),
+                         orderby=db.t1.aa,
+                         groupby=db.t1.aa)[0]._extra[db.t2.id.count()],
+                         1)
+        self.assertEqual(db().select(db.t1.aa, db.t2.id.count(),
+                         left=db.t2.on(db.t1.id == db.t2.b),
+                         orderby=db.t1.aa,
+                         groupby=db.t1.aa)[1]._extra[db.t2.id.count()],
+                         2)
+        self.assertEqual(db().select(db.t1.aa, db.t2.id.count(),
+                         left=db.t2.on(db.t1.id == db.t2.b),
+                         orderby=db.t1.aa,
+                         groupby=db.t1.aa)[2]._extra[db.t2.id.count()],
+                         0)
+        db.t2.drop()
+        db.t1.drop()
+
+        db.define_table('person',Field('name', rname=rname))
+        id = db.person.insert(name="max")
+        self.assertEqual(id.name,'max')
+        db.define_table('dog',Field('name', rname=rname),Field('ownerperson','reference person', rname=rname2))
+        db.dog.insert(name='skipper',ownerperson=1)
+        row = db(db.person.id==db.dog.ownerperson).select().first()
+        self.assertEqual(row[db.person.name],'max')
+        self.assertEqual(row['person.name'],'max')
+        db.dog.drop()
+        self.assertEqual(len(db.person._referenced_by),0)
+        db.person.drop()
 
 
 if __name__ == '__main__':
