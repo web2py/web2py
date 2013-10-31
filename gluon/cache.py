@@ -279,8 +279,9 @@ class CacheOnDisk(CacheAbstract):
                 logger.error('corrupted cache file %s, will try rebuild it'
                              % self.shelve_name)
                 storage = None
-            if not storage and os.path.exists(self.shelve_name):
-                os.unlink(self.shelve_name)
+            if storage is None:
+                if os.path.exists(self.shelve_name):
+                    os.unlink(self.shelve_name)
                 storage = shelve.open(self.shelve_name)
             if not CacheAbstract.cache_stats_name in storage.keys():
                 storage[CacheAbstract.cache_stats_name] = {
