@@ -6,7 +6,7 @@
   def listfiles(app, dir, regexp='.*\.py$'):
       files = sorted(
          listdir(apath('%(app)s/%(dir)s/' % {'app':app, 'dir':dir}, r=request), regexp))
-      files = [x.replace('\\', '/') for x in files if not x.endswith('.bak')]
+      files = [x.replace(os.path.sep, '/') for x in files if not x.endswith('.bak')]
       return files
 
   def editfile(path,file,vars={}):
@@ -198,10 +198,9 @@ $(document).on('click', 'a.font_button', function (e) {
             <ul class="nav nav-list" rel="pagebookmark" id="filelist">
             <li><input type="text" placeholder="{{=T('Rapid Search')}}" class="input-block-level typeahead-tw search-query"></li>
             {{dirs=[{'name':'models', 'reg':'.*\.py$'},
-                {'name':'controllers', 'reg':'.*\.py$'},
-                {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
-                {'name':'modules', 'reg':'.*\.py$'},
-                {'name':'private', 'reg': '[^\.#].*'}]}}
+                    {'name':'controllers', 'reg':'.*\.py$'},
+                    {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
+                    {'name':'modules', 'reg':'.*\.py$'}, ]}}
             {{auto_complete_list=[]}}
             {{for dir in dirs:}}
             <li class="nav-header component" onclick="collapse('{{="%s_files" % dir['name']}}');">{{=dir['name']}}</li>

@@ -405,7 +405,7 @@ def detect(agent):
             result['exception'] = ex
     # hack to address https://code.google.com/p/web2py/issues/detail?id=1755
     if not 'browser' in result:
-        result['browser'] = Storage({'name':'IE11'})
+        result['browser'] = {'name':'IE11'}
     return result
 
 
