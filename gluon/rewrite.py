@@ -41,9 +41,6 @@ regex_redirect = re.compile(r'(\d+)->(.*)')
 regex_full_url = re.compile(
     r'^(?P<scheme>http|https|HTTP|HTTPS)\://(?P<host>[^/]*)(?P<uri>.*)')
 regex_version = re.compile(r'^(_[\d]+\.[\d]+\.[\d]+)$')
-# pattern to replace spaces with underscore in URL
-#   also the html escaped variants '+' and '%20' are covered
-regex_space = re.compile('(\+|\s|%20)+')
 
 # pattern to find valid paths in url /application/controller/...
 #   this could be:
@@ -625,8 +622,8 @@ def regex_url_in(request, environ):
     # serve if a static file
     # ##################################################
 
-    path = request.env.path_info.replace('\\', '/') or '/'
-    path = regex_space.sub('_', path)
+    path = urllib.unquote(request.env.path_info) or '/'
+    path = path.replace('\\', '/').replace(' ','_')
     if path.endswith('/') and len(path) > 1:
         path = path[:-1]
     match = regex_url.match(path)
