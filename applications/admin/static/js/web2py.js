@@ -295,7 +295,7 @@
           },
           'complete': function (xhr, status) {
             web2py.fire(element, 'ajax:complete', [xhr, status], target);
-            web2py.updatePage(xhr, target);	/* Parse and load the html received */
+            web2py.updatePage(xhr, target);    /* Parse and load the html received */
             web2py.trap_form(action, target);
             web2py.ajax_init('#' + target);
             web2py.after_ajax(xhr);
@@ -445,8 +445,8 @@
       } else return false; /* not supported */
     },
     /* new from here */
-    /* Form input elements bound by jquery-uj */
-    formInputClickSelector: 'input[type=submit], input[type=image], button[type=submit], button:not([type])',
+    /* Form input elements bound by web2py.js */
+    formInputClickSelector: 'input[type=submit]:not([name]), input[type=image]:not([name]), button[type=submit]:not([name]), button:not([type]):not([name])',
     /* Form input elements disabled during form submission */
     disableSelector: 'input, button, textarea, select',
     /* Form input elements re-enabled after form submission */
@@ -513,7 +513,7 @@
       if(flash.html()) flash.append('<span id="closeflash"> &times; </span>').slideDown();
     },
     hide_flash: function () {
-      $('.flash').hide().html('');
+      $('.flash').fadeOut(0).html('');
     },
     show_if_handler: function (target) {
       var triggers = {};
