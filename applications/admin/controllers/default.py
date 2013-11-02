@@ -1,6 +1,7 @@
 # coding: utf8
 
 EXPERIMENTAL_STUFF = True
+MAXNFILES = 1000
 
 if EXPERIMENTAL_STUFF:
     if is_mobile:
@@ -762,11 +763,13 @@ def edit():
                     view_link=view_link,
                     editviewlinks=editviewlinks,
                     id=IS_SLUG()(filename)[0],
-                    force= True if (request.vars.restore or request.vars.revert) else False)
+                    force= True if (request.vars.restore or 
+                                    request.vars.revert) else False)
         plain_html = response.render('default/edit_js.html', file_details)
         file_details['plain_html'] = plain_html
         if is_mobile:
-            return response.render('default.mobile/edit.html', file_details, editor_settings=preferences)
+            return response.render('default.mobile/edit.html', 
+                                   file_details, editor_settings=preferences)
         else:
             return response.json(file_details)
 
@@ -1036,9 +1039,9 @@ def design():
     privates.sort()
 
     # Get all static files
-    MAXNFILES = 1000
-    statics = listdir(apath('%s/static/' % app, r=request), '[^\.#].*')
-    statics = [x.replace('\\', '/') for x in statics[:MAXNFILES]]
+    statics = listdir(apath('%s/static/' % app, r=request), '[^\.#].*',
+                      maxnum = MAXNFILES)
+    statics = [x.replace(os.path.sep, '/') for x in statics]
     statics.sort()
 
     # Get all languages
@@ -1172,8 +1175,9 @@ def plugin():
     privates.sort()
 
     # Get all static files
-    statics = listdir(apath('%s/static/' % app, r=request), '[^\.#].*')
-    statics = [x.replace('\\', '/') for x in statics]
+    statics = listdir(apath('%s/static/' % app, r=request), '[^\.#].*',
+                      maxnum = MAXNFILES)
+    statics = [x.replace(os.path.sep, '/') for x in statics]
     statics.sort()
 
     # Get all languages
@@ -1324,7 +1328,8 @@ def create_file():
                    from gluon import *\n""")[1:]
 
         elif (path[-8:] == '/static/') or (path[-9:] == '/private/'):
-            if request.vars.plugin and not filename.startswith('plugin_%s/' % request.vars.plugin):
+            if (request.vars.plugin and 
+                not filename.startswith('plugin_%s/' % request.vars.plugin)):
                 filename = 'plugin_%s/%s' % (request.vars.plugin, filename)
             text = ''
 

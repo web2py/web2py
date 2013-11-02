@@ -109,6 +109,7 @@ def listdir(
     drop=True,
     add_dirs=False,
     sort=True,
+    maxnum = None,
 ):
     """
     like os.listdir() but you can specify a regex pattern to filter files.
@@ -121,7 +122,7 @@ def listdir(
     else:
         n = 0
     regex = re.compile(expression)
-    items = []
+    items = []    
     for (root, dirs, files) in os.walk(path, topdown=True):
         for dir in dirs[:]:
             if dir.startswith('.'):
@@ -131,6 +132,8 @@ def listdir(
         for file in sorted(files):
             if regex.match(file) and not file.startswith('.'):
                 items.append(os.path.join(root, file)[n:])
+            if maxnum and len(items)>=maxnum:
+                break
     if sort:
         return sorted(items)
     else:

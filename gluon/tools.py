@@ -751,7 +751,8 @@ class Recaptcha(DIV):
         error=None,
         error_message='invalid',
         label='Verify:',
-        options=''
+        options='',
+        comment = ''
     ):
         self.request_vars = request and request.vars or current.request.vars
         self.remote_addr = request.env.remote_addr
@@ -765,7 +766,7 @@ class Recaptcha(DIV):
         self.attributes = {}
         self.label = label
         self.options = options
-        self.comment = ''
+        self.comment = comment
 
     def _validate(self):
 

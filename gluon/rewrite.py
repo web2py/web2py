@@ -41,9 +41,6 @@ regex_redirect = re.compile(r'(\d+)->(.*)')
 regex_full_url = re.compile(
     r'^(?P<scheme>http|https|HTTP|HTTPS)\://(?P<host>[^/]*)(?P<uri>.*)')
 regex_version = re.compile(r'^(_[\d]+\.[\d]+\.[\d]+)$')
-# pattern to replace spaces with underscore in URL
-#   also the html escaped variants '+' and '%20' are covered
-regex_space = re.compile('(\+|\s|%20)+')
 
 # pattern to find valid paths in url /application/controller/...
 #   this could be:
@@ -56,7 +53,7 @@ regex_space = re.compile('(\+|\s|%20)+')
 #   apps in routes_apps_raw must parse raw_args into args
 
 regex_url = re.compile('^/((?P<a>\w+)(/(?P<c>\w+)(/(?P<z>(?P<f>\w+)(\.(?P<e>[\w.]+))?(?P<s>.*)))?)?)?$')
-regex_args = re.compile('^[/\w@=-]*(\.[/\w@=-]+)*$')
+regex_args = re.compile('[^\w/.@=-]')
 
 
 def _router_default():
@@ -625,8 +622,8 @@ def regex_url_in(request, environ):
     # serve if a static file
     # ##################################################
 
-    path = request.env.path_info.replace('\\', '/') or '/'
-    path = regex_space.sub('_', path)
+    path = urllib.unquote(request.env.path_info) or '/'
+    path = path.replace('\\', '/')
     if path.endswith('/') and len(path) > 1:
         path = path[:-1]
     match = regex_url.match(path)
@@ -637,7 +634,7 @@ def regex_url_in(request, environ):
         request.raw_args = request.raw_args[1:]
     if match.group('c') == 'static':
         application = match.group('a')
-        version, filename = None, match.group('z')
+        version, filename = None, match.group('z').replace(' ','_')
         if not filename:
             raise HTTP(404)
         items = filename.split('/', 1)
@@ -661,10 +658,9 @@ def regex_url_in(request, environ):
         if request.application in routes.routes_apps_raw:
             # application is responsible for parsing args
             request.args = None
-        elif not regex_args.match(request.raw_args):
-            invalid_url(routes)
         elif request.raw_args:
-            request.args = List(request.raw_args.split('/'))
+            args = regex_args.sub('_',request.raw_args)
+            request.args = List(args.split('/'))
         else:
             request.args = List([])
     return (None, None, environ)

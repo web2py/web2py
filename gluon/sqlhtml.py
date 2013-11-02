@@ -17,7 +17,7 @@ import os
 from gluon.http import HTTP
 from gluon.html import XmlComponent
 from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT
-from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT
+from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT, COL, COLGROUP
 from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
 from gluon.html import URL, truncate_string, FIELDSET
 from gluon.dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
@@ -2411,7 +2411,11 @@ class SQLFORM(FORM):
             limitby = None
 
         if rows:
-            htmltable = TABLE(THEAD(head))
+            cols = [COL(_id=str(c).replace('.','-'),data={'position':i+1}) 
+                    for i,c in enumerate(columns)]
+            n = len(head.components)
+            cols += [COL(data={'position':i+1}) for i in range(len(cols),n)]
+            htmltable = TABLE(COLGROUP(*cols),THEAD(head))
             tbody = TBODY()
             numrec = 0
             for row in rows:
@@ -2863,6 +2867,7 @@ class SQLTABLE(TABLE):
         selectid=None,
         renderstyle=False,
         cid=None,
+        colgroup=False,
         **attributes
         ):
 
@@ -2886,6 +2891,14 @@ class SQLTABLE(TABLE):
                 (t, f) = c.split('.')
                 field = sqlrows.db[t][f]
                 headers[c] = field.label
+        if colgroup:
+            cols = [COL(_id=c.replace('.','-'),data={'position':i+1}) 
+                    for i,c in enumerate(columns)]
+            if extracolumns:
+                cols += [COL(data={'position':len(cols)+i+1})
+                         for i,c in enumerate(extracolumns)]
+            components.append(COLGROUP(*cols))
+            
         if headers is None:
             headers = {}
         else:
