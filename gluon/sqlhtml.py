@@ -17,7 +17,7 @@ import os
 from gluon.http import HTTP
 from gluon.html import XmlComponent
 from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT
-from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT
+from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT, COL, COLGROUP
 from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
 from gluon.html import URL, truncate_string, FIELDSET
 from gluon.dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
@@ -2411,9 +2411,9 @@ class SQLFORM(FORM):
             limitby = None
 
         if rows:
-            cols = [TAG.col(_id=str(c).replace('.','-'),data={'position':i}) 
+            cols = [COL(_id=str(c).replace('.','-'),data={'position':i}) 
                     for i,c in enumerate(columns)]
-            htmltable = TABLE(TAG.colgroup(*cols),THEAD(head))
+            htmltable = TABLE(COLGROUP(*cols),THEAD(head))
             tbody = TBODY()
             numrec = 0
             for row in rows:
@@ -2890,9 +2890,9 @@ class SQLTABLE(TABLE):
                 field = sqlrows.db[t][f]
                 headers[c] = field.label
         if colgroup:
-            cols = [TAG.col(_id=c.replace('.','-'),data={'position':i}) 
+            cols = [COL(_id=c.replace('.','-'),data={'position':i}) 
                     for i,c in enumerate(columns)]
-            components.append(TAG.colgroup(*cols))
+            components.append(COLGROUP(*cols))
             
         if headers is None:
             headers = {}
