@@ -2297,14 +2297,18 @@ class SQLFORM(FORM):
             headcols.append(TH(header, _class=ui.get('default')))
 
         toadd = []
+        left_cols = 0
+        right_cols = 0
         if links and links_in_grid:
             for link in links:
                 if isinstance(link, dict):
                     toadd.append(TH(link['header'], _class=ui.get('default')))
             if links_placement in ['right', 'both']:
                 headcols.extend(toadd)
+                right_cols += len(toadd)
             if links_placement in ['left', 'both']:
                 linsert(headcols, 0, toadd)
+                left_cols += len(toadd)
 
         # Include extra column for buttons if needed.
         include_buttons_column = (details or editable or deletable or
@@ -2313,8 +2317,10 @@ class SQLFORM(FORM):
         if include_buttons_column:
             if buttons_placement in ['right', 'both']:
                 headcols.append(TH(_class=ui.get('default','')))
+                right_cols += 1
             if buttons_placement in ['left', 'both']:
                 headcols.insert(0, TH(_class=ui.get('default','')))
+                left_cols += 1
 
         head = TR(*headcols, **dict(_class=ui.get('header')))
 
@@ -2414,7 +2420,8 @@ class SQLFORM(FORM):
             cols = [COL(_id=str(c).replace('.','-'),data={'position':i+1}) 
                     for i,c in enumerate(columns)]
             n = len(head.components)
-            cols += [COL(data={'position':i+1}) for i in range(len(cols),n)]
+            cols = [COL() for i in range(left_cols)] + cols + [
+                COL() for i in range(right_cols)]
             htmltable = TABLE(COLGROUP(*cols),THEAD(head))
             tbody = TBODY()
             numrec = 0
