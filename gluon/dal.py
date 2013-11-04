@@ -4011,8 +4011,8 @@ class TeradataAdapter(BaseAdapter):
     types = {
         'boolean': 'CHAR(1)',
         'string': 'VARCHAR(%(length)s)',
-        'text': 'CLOB',
-        'json': 'CLOB',
+        'text': 'VARCHAR(2000)',
+        'json': 'VARCHAR(4000)',
         'password': 'VARCHAR(%(length)s)',
         'blob': 'BLOB',
         'upload': 'VARCHAR(%(length)s)',
@@ -4028,9 +4028,9 @@ class TeradataAdapter(BaseAdapter):
         # Teradata does not support ON DELETE.
         'id': 'INT GENERATED ALWAYS AS IDENTITY',  # Teradata Specific
         'reference': 'INT',
-        'list:integer': 'CLOB',
-        'list:string': 'CLOB',
-        'list:reference': 'CLOB',
+        'list:integer': 'VARCHAR(4000)',
+        'list:string': 'VARCHAR(4000)',
+        'list:reference': 'VARCHAR(4000)',
         'big-id': 'BIGINT GENERATED ALWAYS AS IDENTITY',  # Teradata Specific
         'big-reference': 'BIGINT',
         'reference FK': ' REFERENCES %(foreign_key)s',
