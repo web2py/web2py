@@ -250,22 +250,20 @@
       });
 
     },
+
     trap_form: function (action, target) {
       /* traps any LOADed form */
       $('#' + target + ' form').each(function (i) {
         var form = $(this);
-        if(form.hasClass('no_trap')) {
+        if (form.hasClass('no_trap')) {
           return;
         }
 
         form.attr('data-w2p_target', target);
-        var url;
+        var url = form.attr('action');
 
-        if(form.hasClass('trap_use_form_action')) {
-          /* submit using form own action, instead of component url */
-          url = form.attr('action');
-        } else {
-          /* should be there by default */
+        if ((url === "") || (url === "#")) {
+          /* form has no action. Use component url. */
           url = action;
         }
 
@@ -275,8 +273,10 @@
           web2py.ajax_page('post', url, form.serialize(), target, form);
           e.preventDefault();
         });
-    });
+      });
     },
+
+
     ajax_page: function (method, action, data, target, element) {
       /* element is a new parameter, but should be put be put in front */
       if(element == undefined) element = $(document);
