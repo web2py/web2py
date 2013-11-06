@@ -167,10 +167,12 @@
         else t.fadeOut();
       });
       doc.on('keyup', 'input.integer', function () {
-        this.value = this.value.reverse().replace(/[^0-9\-]|\-(?=.)/g, '').reverse();
+	var nvalue = this.value.reverse().replace(/[^0-9\-]|\-(?=.)/g, '').reverse();
+        if(this.value!=nvalue) this.value = nvalue;
       });
       doc.on('keyup', 'input.double, input.decimal', function () {
-        this.value = this.value.reverse().replace(/[^0-9\-\.,]|[\-](?=.)|[\.,](?=[0-9]*[\.,])/g, '').reverse();
+        var nvalue = this.value.reverse().replace(/[^0-9\-\.,]|[\-](?=.)|[\.,](?=[0-9]*[\.,])/g, '').reverse();
+        if(this.value!=nvalue) this.value = nvalue;
       });
       var confirm_message = (typeof w2p_ajax_confirm_message != 'undefined') ? w2p_ajax_confirm_message : "Are you sure you want to delete this object?";
       doc.on('click', "input[type='checkbox'].delete", function () {
@@ -252,17 +254,28 @@
       /* traps any LOADed form */
       $('#' + target + ' form').each(function (i) {
         var form = $(this);
-        form.attr('data-w2p_target', target);
-        if(!form.hasClass('no_trap')) {
-          /* should be there by default */
-          form.submit(function (e) {
-            web2py.disableElement(form.find(web2py.formInputClickSelector));
-            web2py.hide_flash();
-            web2py.ajax_page('post', action, form.serialize(), target, form);
-            e.preventDefault();
-          });
+        if(form.hasClass('no_trap')) {
+          return;
         }
-      });
+
+        form.attr('data-w2p_target', target);
+        var url;
+
+        if(form.hasClass('trap_use_form_action')) {
+          /* submit using form own action, instead of component url */
+          url = form.attr('action');
+        } else {
+          /* should be there by default */
+          url = action;
+        }
+
+        form.submit(function (e) {
+          web2py.disableElement(form.find(web2py.formInputClickSelector));
+          web2py.hide_flash();
+          web2py.ajax_page('post', url, form.serialize(), target, form);
+          e.preventDefault();
+        });
+    });
     },
     ajax_page: function (method, action, data, target, element) {
       /* element is a new parameter, but should be put be put in front */
@@ -295,7 +308,7 @@
           },
           'complete': function (xhr, status) {
             web2py.fire(element, 'ajax:complete', [xhr, status], target);
-            web2py.updatePage(xhr, target);	/* Parse and load the html received */
+            web2py.updatePage(xhr, target);    /* Parse and load the html received */
             web2py.trap_form(action, target);
             web2py.ajax_init('#' + target);
             web2py.after_ajax(xhr);
@@ -445,8 +458,8 @@
       } else return false; /* not supported */
     },
     /* new from here */
-    /* Form input elements bound by jquery-uj */
-    formInputClickSelector: 'input[type=submit], input[type=image], button[type=submit], button:not([type])',
+    /* Form input elements bound by web2py.js */
+    formInputClickSelector: 'input[type=submit]:not([name]), input[type=image]:not([name]), button[type=submit]:not([name]), button:not([type]):not([name])',
     /* Form input elements disabled during form submission */
     disableSelector: 'input, button, textarea, select',
     /* Form input elements re-enabled after form submission */
@@ -513,7 +526,7 @@
       if(flash.html()) flash.append('<span id="closeflash"> &times; </span>').slideDown();
     },
     hide_flash: function () {
-      $('.flash').hide().html('');
+      $('.flash').fadeOut(0).html('');
     },
     show_if_handler: function (target) {
       var triggers = {};

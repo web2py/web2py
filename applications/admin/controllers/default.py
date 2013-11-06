@@ -1,6 +1,7 @@
 # coding: utf8
 
 EXPERIMENTAL_STUFF = True
+MAXNFILES = 1000
 
 if EXPERIMENTAL_STUFF:
     if is_mobile:
@@ -230,7 +231,7 @@ def site():
             redirect(URL('design', args=appname))
         else:
             session.flash = \
-                DIV(T('unable to create application "%s"' % appname),
+                DIV(T('unable to create application "%s"', appname),
                     PRE(error))
         redirect(URL(r=request))
 
@@ -341,7 +342,7 @@ def pack():
         response.headers['Content-Disposition'] = disposition
         return safe_read(filename, 'rb')
     else:
-        session.flash = T('internal error: %s' % e)
+        session.flash = T('internal error: %s', e)
         redirect(URL('site'))
 
 def pack_plugin():
@@ -375,7 +376,7 @@ def pack_custom():
             response.headers['Content-Disposition'] = disposition
             return safe_read(filename, 'rb')
         else:
-            session.flash = T('internal error: %s' % e)
+            session.flash = T('internal error: %s', e)
             redirect(URL(args=request.args))
     def ignore(fs):
         return [f for f in fs if not (
@@ -563,7 +564,7 @@ def edit():
     # Load json only if it is ajax edited...
     app = get_app(request.vars.app)
     app_path = apath(app, r=request)
-    editor_defaults={'theme':'web2py', 'editor': 'default', 'closetag': 'true', 'codefolding': 'false', 'tabwidth':'4', 'indentwithtabs':'false'}
+    editor_defaults={'theme':'web2py', 'editor': 'default', 'closetag': 'true', 'codefolding': 'false', 'tabwidth':'4', 'indentwithtabs':'false', 'linenumbers':'true', 'highlightline':'true'}
     config = Config(os.path.join(request.folder, 'settings.cfg'),
                     section='editor', default_values=editor_defaults)
     preferences = config.read()
@@ -571,7 +572,7 @@ def edit():
     if not(request.ajax) and not(is_mobile):
         # return the scaffolding, the rest will be through ajax requests
         response.title = T('Editing %s') % app
-        return response.render ('default/edit.html', dict(app=request.args[0], editor_settings=preferences))
+        return response.render ('default/edit.html', dict(app=app, editor_settings=preferences))
 
     # show settings tab and save prefernces
     if 'settings' in request.vars:
@@ -586,7 +587,7 @@ def edit():
             response.headers["web2py-component-command"] = "update_editor(%s);$('a[href=#editor_settings] button.close').click();" % response.json(config.read())
             return
         else:
-            details = {'filename':'settings', 'id':'editor_settings', 'force': False}
+            details = {'realfilename':'settings', 'filename':'settings', 'id':'editor_settings', 'force': False}
             details['plain_html'] = response.render('default/editor_settings.html', {'editor_settings':preferences})
             return response.json(details)
 
@@ -594,7 +595,7 @@ def edit():
     # Load json only if it is ajax edited...
     app = get_app(request.vars.app)
     filename = '/'.join(request.args)
-    response.title = request.args[-1]
+    realfilename = request.args[-1]
     if request.vars.app:
         path = abspath(filename)
     else:
@@ -751,6 +752,7 @@ def edit():
         file_details = dict(app=request.args[0],
                     editor_settings=preferences,
                     filename=filename,
+                    realfilename=realfilename,
                     filetype=filetype,
                     data=data,
                     edit_controller=edit_controller,
@@ -761,11 +763,13 @@ def edit():
                     view_link=view_link,
                     editviewlinks=editviewlinks,
                     id=IS_SLUG()(filename)[0],
-                    force= True if (request.vars.restore or request.vars.revert) else False)
+                    force= True if (request.vars.restore or 
+                                    request.vars.revert) else False)
         plain_html = response.render('default/edit_js.html', file_details)
         file_details['plain_html'] = plain_html
         if is_mobile:
-            return response.render('default.mobile/edit.html', file_details, editor_settings=preferences)
+            return response.render('default.mobile/edit.html', 
+                                   file_details, editor_settings=preferences)
         else:
             return response.json(file_details)
 
@@ -1035,9 +1039,9 @@ def design():
     privates.sort()
 
     # Get all static files
-    MAXNFILES = 1000
-    statics = listdir(apath('%s/static/' % app, r=request), '[^\.#].*')
-    statics = [x.replace('\\', '/') for x in statics[:MAXNFILES]]
+    statics = listdir(apath('%s/static/' % app, r=request), '[^\.#].*',
+                      maxnum = MAXNFILES)
+    statics = [x.replace(os.path.sep, '/') for x in statics]
     statics.sort()
 
     # Get all languages
@@ -1171,8 +1175,9 @@ def plugin():
     privates.sort()
 
     # Get all static files
-    statics = listdir(apath('%s/static/' % app, r=request), '[^\.#].*')
-    statics = [x.replace('\\', '/') for x in statics]
+    statics = listdir(apath('%s/static/' % app, r=request), '[^\.#].*',
+                      maxnum = MAXNFILES)
+    statics = [x.replace(os.path.sep, '/') for x in statics]
     statics.sort()
 
     # Get all languages
@@ -1323,7 +1328,8 @@ def create_file():
                    from gluon import *\n""")[1:]
 
         elif (path[-8:] == '/static/') or (path[-9:] == '/private/'):
-            if request.vars.plugin and not filename.startswith('plugin_%s/' % request.vars.plugin):
+            if (request.vars.plugin and 
+                not filename.startswith('plugin_%s/' % request.vars.plugin)):
                 filename = 'plugin_%s/%s' % (request.vars.plugin, filename)
             text = ''
 
@@ -1834,7 +1840,7 @@ def install_plugin():
             filename = "web2py.plugin.%s.w2p" % cleanpath(plugin)
         if plugin_install(app, urllib.urlopen(source),
                           request, filename):
-            session.flash = T('New plugin installed: %s' % filename)
+            session.flash = T('New plugin installed: %s', filename)
         else:
             session.flash = \
                 T('unable to create application "%s"', filename)

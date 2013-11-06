@@ -173,8 +173,8 @@ import glob
 import traceback
 import platform
 
-PYTHON_VERSION = sys.version_info[0]
-if PYTHON_VERSION == 2:
+PYTHON_VERSION = sys.version_info[:3]
+if PYTHON_VERSION[0] == 2:
     import cPickle as pickle
     import cStringIO as StringIO
     import copy_reg as copyreg
@@ -187,6 +187,12 @@ else:
     long = int
     hashlib_md5 = lambda s: hashlib.md5(bytes(s,'utf8'))
     bytes, unicode = bytes, str
+
+if PYTHON_VERSION[:2] < (2, 7):
+    from gluon.contrib.ordereddict import OrderedDict
+else:
+    from collections import OrderedDict
+
 
 CALLABLETYPES = (types.LambdaType, types.FunctionType,
                  types.BuiltinFunctionType,
@@ -854,7 +860,7 @@ class BaseAdapter(ConnectionPool):
                                     foreign_key = '%s (%s)' % (rtablename,
                                                                rfieldname),
                                     table_name = tablename,
-                                    field_name = field_name,
+                                    field_name = field._rname or field.name,
                                     on_delete_action=field.ondelete)
                     else:
                         # make a guess here for circular references
@@ -880,7 +886,7 @@ class BaseAdapter(ConnectionPool):
                             )
                         ftype = types[field_type[:9]] % dict(
                             index_name = field_name+'__idx',
-                            field_name = field_name,
+                            field_name = field._rname or field.name,
                             constraint_name = constraint_name,
                             foreign_key = '%s (%s)' % (real_referenced,
                                                        id_fieldname),
@@ -957,13 +963,15 @@ class BaseAdapter(ConnectionPool):
             # geometry fields are added after the table has been created, not now
             if not (self.dbengine == 'postgres' and \
                         field_type.startswith('geom')):
-                fields.append('%s %s' % (field_name, ftype))
+                #fetch the rname if it's there
+                field_rname = "%s" % (field._rname or field_name)
+                fields.append('%s %s' % (field_rname, ftype))
         other = ';'
 
         # backend-specific extensions to fields
         if self.dbengine == 'mysql':
             if not hasattr(table, "_primarykey"):
-                fields.append('PRIMARY KEY(%s)' % table._id.name)
+                fields.append('PRIMARY KEY(%s)' % (table._id.name or table._id._rname))
             other = ' ENGINE=InnoDB CHARACTER SET utf8;'
 
         fields = ',\n    '.join(fields)
@@ -978,7 +986,6 @@ class BaseAdapter(ConnectionPool):
                 foreign_table = rtablename,
                 foreign_key = ', '.join(pkeys),
                 on_delete_action = field.ondelete)
-
         #if there's a _rname, let's use that instead
         table_rname = table._rname or tablename
 
@@ -1251,7 +1258,7 @@ class BaseAdapter(ConnectionPool):
     def _insert(self, table, fields):
         table_rname = table._rname or table
         if fields:
-            keys = ','.join(f.name for f, v in fields)
+            keys = ','.join(f._rname or f.name for f, v in fields)
             values = ','.join(self.expand(v, f.type) for f, v in fields)
             return 'INSERT INTO %s(%s) VALUES (%s);' % (table_rname, keys, values)
         else:
@@ -1436,7 +1443,10 @@ class BaseAdapter(ConnectionPool):
                 table_rname = et._ot and et._tablename or et._rname or et._tablename
             else:
                 table_rname = et._tablename
-            out = '%s.%s' % (table_rname, expression.name)
+            if not colnames:
+                out = '%s.%s' % (table_rname, expression._rname or expression.name)
+            else:
+                out = '%s.%s' % (table_rname, expression.name)
             if field_type == 'string' and not expression.type in (
                 'string','text','json','password'):
                 out = self.CAST(out, self.types['text'])
@@ -1512,7 +1522,7 @@ class BaseAdapter(ConnectionPool):
             sql_w = ' WHERE ' + self.expand(query)
         else:
             sql_w = ''
-        sql_v = ','.join(['%s=%s' % (field.name,
+        sql_v = ','.join(['%s=%s' % (field._rname or field.name,
                                      self.expand(value, field.type)) \
                               for (field, value) in fields])
         tablename = "%s" % (self.db[tablename]._rname or tablename)
@@ -1728,7 +1738,7 @@ class BaseAdapter(ConnectionPool):
             sql_o += ' ORDER BY %s' % ', '.join(
                 ['%s.%s'%(t,x) for t in tablenames for x in (
                     hasattr(self.db[t],'_primarykey') and self.db[t]._primarykey
-                    or [self.db[t]._id.name]
+                    or [self.db[t]._id._rname or self.db[t]._id.name]
                     )
                  ]
                 )
@@ -2301,7 +2311,7 @@ class SQLiteAdapter(BaseAdapter):
         else:
             self.dbpath = uri.split('://',1)[1]
             if self.dbpath[0] != '/':
-                if PYTHON_VERSION == 2:
+                if PYTHON_VERSION[0] == 2:
                     self.dbpath = pjoin(
                         self.folder.decode(path_encoding).encode('utf8'), self.dbpath)
                 else:
@@ -2311,7 +2321,7 @@ class SQLiteAdapter(BaseAdapter):
         if not 'detect_types' in driver_args and do_connect:
             driver_args['detect_types'] = self.driver.PARSE_DECLTYPES
         def connector(dbpath=self.dbpath, driver_args=driver_args):
-            return self.driver.Connection(dbpath, **driver_args)        
+            return self.driver.Connection(dbpath, **driver_args)
         self.connector = connector
         if do_connect: self.reconnect()
 
@@ -2320,7 +2330,7 @@ class SQLiteAdapter(BaseAdapter):
                                         SQLiteAdapter.web2py_extract)
         self.connection.create_function("REGEXP", 2,
                                         SQLiteAdapter.web2py_regexp)
-        
+
         if self.adapter_args.get('foreign_keys',True):
             self.execute('PRAGMA foreign_keys=ON;')
 
@@ -4001,8 +4011,8 @@ class TeradataAdapter(BaseAdapter):
     types = {
         'boolean': 'CHAR(1)',
         'string': 'VARCHAR(%(length)s)',
-        'text': 'CLOB',
-        'json': 'CLOB',
+        'text': 'VARCHAR(2000)',
+        'json': 'VARCHAR(4000)',
         'password': 'VARCHAR(%(length)s)',
         'blob': 'BLOB',
         'upload': 'VARCHAR(%(length)s)',
@@ -4018,9 +4028,9 @@ class TeradataAdapter(BaseAdapter):
         # Teradata does not support ON DELETE.
         'id': 'INT GENERATED ALWAYS AS IDENTITY',  # Teradata Specific
         'reference': 'INT',
-        'list:integer': 'CLOB',
-        'list:string': 'CLOB',
-        'list:reference': 'CLOB',
+        'list:integer': 'VARCHAR(4000)',
+        'list:string': 'VARCHAR(4000)',
+        'list:reference': 'VARCHAR(4000)',
         'big-id': 'BIGINT GENERATED ALWAYS AS IDENTITY',  # Teradata Specific
         'big-reference': 'BIGINT',
         'reference FK': ' REFERENCES %(foreign_key)s',
@@ -4044,6 +4054,12 @@ class TeradataAdapter(BaseAdapter):
             return self.driver.connect(cnxn,**driver_args)
         self.connector = connector
         if do_connect: self.reconnect()
+
+    def close(self,action='commit',really=True):
+        # Teradata does not implicitly close off the cursor
+        # leading to SQL_ACTIVE_STATEMENTS limit errors
+        self.cursor.close()
+        ConnectionPool.close(self, action, really)
 
     def LEFT_JOIN(self):
         return 'LEFT OUTER JOIN'
@@ -4842,7 +4858,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         return '%s, %s' % (self.expand(first),self.expand(second))
 
     def BELONGS(self,first,second=None):
-        if not isinstance(second,(list, tuple)):
+        if not isinstance(second,(list, tuple, set)):
             raise SyntaxError("Not supported")
         if first.type != 'id':
             return [GAEF(first.name,'in',self.represent(second,first.type),lambda a,b:a in b)]
@@ -5449,6 +5465,8 @@ class MongoDBAdapter(NoSQLAdapter):
         elif fieldtype == "blob":
             from bson import Binary
             if not isinstance(value, Binary):
+                if not isinstance(value, basestring):
+                    return Binary(str(value))
                 return Binary(value)
             return value
         elif (isinstance(fieldtype, basestring) and
@@ -8133,7 +8151,7 @@ def index():
                 del THREAD_LOCAL.db_instances[self._db_uid]
 
     def executesql(self, query, placeholders=None, as_dict=False,
-                   fields=None, colnames=None):
+                   fields=None, colnames=None, as_ordered_dict=False):
         """
         placeholders is optional and will always be None.
         If using raw SQL with placeholders, placeholders may be
@@ -8142,13 +8160,17 @@ def index():
         matching named placeholders in your SQL.
 
         Added 2009-12-05 "as_dict" optional argument. Will always be
-        None when using DAL. If using raw SQL can be set to True
-        and the results cursor returned by the DB driver will be
-        converted to a sequence of dictionaries keyed with the db
-        field names. Tested with SQLite but should work with any database
-        since the cursor.description used to get field names is part of the
-        Python dbi 2.0 specs. Results returned with as_dict=True are
-        the same as those returned when applying .to_list() to a DAL query.
+        None when using DAL. If using raw SQL can be set to True and
+        the results cursor returned by the DB driver will be converted
+        to a sequence of dictionaries keyed with the db field
+        names. Tested with SQLite but should work with any database
+        since the cursor.description used to get field names is part
+        of the Python dbi 2.0 specs. Results returned with
+        as_dict=True are the same as those returned when applying
+        .to_list() to a DAL query.  If "as_ordered_dict"=True the
+        behaviour is the same as when "as_dict"=True with the keys
+        (field names) guaranteed to be in the same order as returned
+        by the select name executed on the database.
 
         [{field1: value1, field2: value2}, {field1: value1b, field2: value2b}]
 
@@ -8180,13 +8202,14 @@ def index():
         be dummy tables and do not have to represent any real tables in the
         database. Also, note that the "fields" and "colnames" must be in the
         same order as the fields in the results cursor returned from the DB.
+
         """
         adapter = self._adapter
         if placeholders:
             adapter.execute(query, placeholders)
         else:
             adapter.execute(query)
-        if as_dict:
+        if as_dict or as_ordered_dict:
             if not hasattr(adapter.cursor,'description'):
                 raise RuntimeError("database does not support executesql(...,as_dict=True)")
             # Non-DAL legacy db query, converts cursor results to dict.
@@ -8199,7 +8222,11 @@ def index():
             data = adapter._fetchall()
             # convert the list for each row into a dictionary so it's
             # easier to work with. row['field_name'] rather than row[0]
-            return [dict(zip(fields,row)) for row in data]
+            if as_ordered_dict:
+                _dict = OrderedDict
+            else:
+                _dict = dict
+            return [_dict(zip(fields,row)) for row in data]
         try:
             data = adapter._fetchall()
         except:
@@ -8618,7 +8645,7 @@ class Table(object):
             referees = pr.pop(self._tablename)
             for referee in referees:
                 self._referenced_by.append(referee)
-        
+
 
     def _filter_fields(self, record, id=False):
         return dict([(k, v) for (k, v) in record.iteritems() if k
@@ -9558,6 +9585,7 @@ class Field(Expression):
         filter_out = None,
         custom_qualifier = None,
         map_none = None,
+        rname = None
         ):
         self._db = self.db = None # both for backward compatibility
         self.op = None
@@ -9604,6 +9632,7 @@ class Field(Expression):
         self.label = label if label!=None else fieldname.replace('_',' ').title()
         self.requires = requires if requires!=None else []
         self.map_none = map_none
+        self._rname = rname
 
     def set_attributes(self,*args,**attributes):
         self.__dict__.update(*args,**attributes)
@@ -9770,7 +9799,7 @@ class Field(Expression):
         return Expression(self.db, self.db._adapter.COUNT, self, distinct, 'integer')
 
     def as_dict(self, flat=False, sanitize=True):
-        attrs = ("name", 'authorize', 'represent', 'ondelete',
+        attrs = ('name', 'authorize', 'represent', 'ondelete',
         'custom_store', 'autodelete', 'custom_retrieve',
         'filter_out', 'uploadseparate', 'widget', 'uploadfs',
         'update', 'custom_delete', 'uploadfield', 'uploadfolder',

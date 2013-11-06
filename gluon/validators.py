@@ -2375,7 +2375,8 @@ class IS_DATE_IN_RANGE(IS_DATE):
                          format=format,
                          error_message=error_message,
                          timezone=timezone)
-        self.extremes = dict(min=minimum, max=maximum)
+        self.extremes = dict(min=self.formatter(minimum),
+                             max=self.formatter(maximum))
 
     def __call__(self, value):
         ovalue = value
@@ -2428,7 +2429,8 @@ class IS_DATETIME_IN_RANGE(IS_DATETIME):
                              format=format,
                              error_message=error_message,
                              timezone=timezone)
-        self.extremes = dict(min=minimum, max=maximum)
+        self.extremes = dict(min=self.formatter(minimum),
+                             max=self.formatter(maximum))
 
     def __call__(self, value):
         ovalue = value

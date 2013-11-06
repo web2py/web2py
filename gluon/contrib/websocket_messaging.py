@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 """
 This file is part of the web2py Web Framework
-Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
+Copyrighted by Massimo Di Pierro <mdip...@cs.depaul.edu>
 License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 
 Attention: Requires Chrome or Safari. For IE of Firefox you need https://github.com/gimite/web-socket-js
 
-1) install tornado (requires Tornado 2.1)
+1) install tornado (requires Tornado 3.0 or later)
 
    easy_install tornado
 
@@ -23,7 +23,8 @@ Attention: Requires Chrome or Safari. For IE of Firefox you need https://github.
 
    <script>
    $(document).ready(function(){
-      if(!web2py_websocket('ws://127.0.0.1:8888/realtime/mygroup',function(e){alert(e.data)}))
+      if(!$.web2py.web2py_websocket('ws://127.0.0.1:8888/realtime/mygroup',function(e){alert(e.data)}))
+
          alert("html5 websocket not supported by your browser, try Google Chrome");
    });
    </script>
@@ -34,7 +35,7 @@ Or if you want to send json messages and store evaluated json in a var called da
    <script>
    $(document).ready(function(){
       var data;
-      web2py_websocket('ws://127.0.0.1:8888/realtime/mygroup',function(e){data=eval('('+e.data+')')});
+      $.web2py.web2py_websocket('ws://127.0.0.1:8888/realtime/mygroup',function(e){data=eval('('+e.data+')')});
    });
    </script>
 
@@ -44,6 +45,7 @@ Or if you want to send json messages and store evaluated json in a var called da
 - "ws://127.0.0.1:8888/realtime/" must be contain the IP of the websocket_messaging server.
 - Via group='mygroup' name you can support multiple groups of clients (think of many chat-rooms)
 
+
 Here is a complete sample web2py action:
 
     def index():
@@ -51,7 +53,8 @@ Here is a complete sample web2py action:
         script=SCRIPT('''
             jQuery(document).ready(function(){
               var callback=function(e){alert(e.data)};
-              if(!web2py_websocket('ws://127.0.0.1:8888/realtime/mygroup',callback))
+              if(!$.web2py.web2py_websocket('ws://127.0.0.1:8888/realtime/mygroup',callback))
+
                 alert("html5 websocket not supported by your browser, try Google Chrome");
             });
         ''')
@@ -101,7 +104,7 @@ class PostHandler(tornado.web.RequestHandler):
     """
     def post(self):
         if hmac_key and not 'signature' in self.request.arguments:
-            return 'false'
+            return None
         if 'message' in self.request.arguments:
             message = self.request.arguments['message'][0]
             group = self.request.arguments.get('group', ['default'])[0]
@@ -109,11 +112,10 @@ class PostHandler(tornado.web.RequestHandler):
             if hmac_key:
                 signature = self.request.arguments['signature'][0]
                 if not hmac.new(hmac_key, message).hexdigest() == signature:
-                    return 'false'
+                    return None
             for client in listeners.get(group, []):
                 client.write_message(message)
-            return 'true'
-        return 'false'
+        return None
 
 
 class TokenHandler(tornado.web.RequestHandler):
@@ -124,16 +126,15 @@ class TokenHandler(tornado.web.RequestHandler):
     """
     def post(self):
         if hmac_key and not 'message' in self.request.arguments:
-            return 'false'
+            return None
         if 'message' in self.request.arguments:
             message = self.request.arguments['message'][0]
             if hmac_key:
                 signature = self.request.arguments['signature'][0]
                 if not hmac.new(hmac_key, message).hexdigest() == signature:
-                    return 'false'
+                    return None
             tokens[message] = None
-            return 'true'
-        return 'false'
+        return None
 
 
 class DistributeHandler(tornado.websocket.WebSocketHandler):
