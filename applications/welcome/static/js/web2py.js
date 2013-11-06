@@ -252,17 +252,28 @@
       /* traps any LOADed form */
       $('#' + target + ' form').each(function (i) {
         var form = $(this);
-        form.attr('data-w2p_target', target);
-        if(!form.hasClass('no_trap')) {
-          /* should be there by default */
-          form.submit(function (e) {
-            web2py.disableElement(form.find(web2py.formInputClickSelector));
-            web2py.hide_flash();
-            web2py.ajax_page('post', action, form.serialize(), target, form);
-            e.preventDefault();
-          });
+        if(form.hasClass('no_trap')) {
+          return;
         }
-      });
+
+        form.attr('data-w2p_target', target);
+        var url;
+
+        if(form.hasClass('trap_use_form_action')) {
+          /* submit using form own action, instead of component url */
+          url = form.attr('action');
+        } else {
+          /* should be there by default */
+          url = action;
+        }
+
+        form.submit(function (e) {
+          web2py.disableElement(form.find(web2py.formInputClickSelector));
+          web2py.hide_flash();
+          web2py.ajax_page('post', url, form.serialize(), target, form);
+          e.preventDefault();
+        });
+    });
     },
     ajax_page: function (method, action, data, target, element) {
       /* element is a new parameter, but should be put be put in front */
