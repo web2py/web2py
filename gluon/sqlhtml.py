@@ -21,7 +21,7 @@ from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT, COL, COLGROUP
 from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
 from gluon.html import URL, truncate_string, FIELDSET
 from gluon.dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
-    bar_encode, Reference, REGEX_TABLE_DOT_FIELD, Expression
+    bar_encode, Reference, REGEX_TABLE_DOT_FIELD, Expression, SQLCustomType
 from gluon.storage import Storage
 from gluon.utils import md5_hash
 from gluon.validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE, \
@@ -1685,7 +1685,10 @@ class SQLFORM(FORM):
             name = str(field).replace('.', '-')
             # treat ftype 'decimal' as 'double'
             # (this fixes problems but needs refactoring!
-            ftype = field.type.split(' ')[0]
+            if isinstance(field.type, SQLCustomType):
+                            ftype = field.type.type.split(' ')[0]
+            else:
+                ftype = field.type.split(' ')[0]
             if ftype.startswith('decimal'): ftype = 'double'
             elif ftype=='bigint': ftype = 'integer'
             elif ftype.startswith('big-'): ftype = ftype[4:]
