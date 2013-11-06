@@ -4858,7 +4858,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         return '%s, %s' % (self.expand(first),self.expand(second))
 
     def BELONGS(self,first,second=None):
-        if not isinstance(second,(list, tuple)):
+        if not isinstance(second,(list, tuple, set)):
             raise SyntaxError("Not supported")
         if first.type != 'id':
             return [GAEF(first.name,'in',self.represent(second,first.type),lambda a,b:a in b)]
