@@ -2420,11 +2420,14 @@ class SQLFORM(FORM):
             limitby = None
 
         if rows:
-            cols = [COL(_id=str(c).replace('.','-'),data={'position':i+1}) 
+            cols = [COL(_id=str(c).replace('.', '-'),
+                        data={'column': left_cols + i + 1}) 
                     for i,c in enumerate(columns)]
             n = len(head.components)
-            cols = [COL() for i in range(left_cols)] + cols + [
-                COL() for i in range(right_cols)]
+            cols = [COL(data={'column': i + 1}) for i in range(left_cols)] + \
+                   cols + \
+                   [COL(data={'column': left_cols + len(cols) + i + 1})
+                    for i in range(right_cols)]
             htmltable = TABLE(COLGROUP(*cols),THEAD(head))
             tbody = TBODY()
             numrec = 0
@@ -2902,11 +2905,11 @@ class SQLTABLE(TABLE):
                 field = sqlrows.db[t][f]
                 headers[c] = field.label
         if colgroup:
-            cols = [COL(_id=c.replace('.','-'),data={'position':i+1}) 
-                    for i,c in enumerate(columns)]
+            cols = [COL(_id=c.replace('.', '-'), data={'column': i + 1}) 
+                    for i, c in enumerate(columns)]
             if extracolumns:
-                cols += [COL(data={'position':len(cols)+i+1})
-                         for i,c in enumerate(extracolumns)]
+                cols += [COL(data={'column': len(cols) + i + 1})
+                         for i, c in enumerate(extracolumns)]
             components.append(COLGROUP(*cols))
             
         if headers is None:
