@@ -115,8 +115,8 @@ class SessionSetFiles(SessionSet):
 
     def get(self):
         """Return list of SessionFile instances for existing sessions."""
-        path = os.path.join(current.request.folder, 'sessions')
-        return [SessionFile(os.path.join(path, x)) for x in os.listdir(path)]
+        root_path = os.path.join(current.request.folder, 'sessions')
+        return [SessionFile(os.path.join(path, x)) for path,dirs,files in os.walk(root_path) for x in files]
 
 
 class SessionDb(object):
