@@ -927,7 +927,7 @@ def render(text,
         text = text.encode('utf8')
     text = str(text or '')
     text = regex_backslash.sub(lambda m: m.group(1).translate(ttab_in), text)
-    text = text.replace('\x05','') # concatenate strings separeted by \\n
+    text = text.replace('\x05','').replace('\r\n', '\n') # concatenate strings separeted by \\n
 
     if URL is not None:
         text = replace_at_urls(text,URL)
