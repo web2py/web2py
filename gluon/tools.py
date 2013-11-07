@@ -2558,14 +2558,12 @@ class Auth(object):
             if self.settings.registration_requires_verification:
                 link = self.url(
                     self.settings.function, args=('verify_email', key), scheme=True)
-
-                if not self.settings.mailer or \
-                   not self.settings.mailer.send(
-                    to=form.vars.email,
-                    subject=self.messages.verify_email_subject,
-                    message=self.messages.verify_email
-                        % dict(key=key, link=link,
-                               username=form.vars[username])):
+                d = dict(request.vars)
+                d.update(dict(key=key, link=link,username=form.vars[username]))
+                if not (self.settings.mailer and self.settings.mailer.send(
+                        to=form.vars.email,
+                        subject=self.messages.verify_email_subject,                    
+                        message=self.messages.verify_email % d)):
                     self.db.rollback()
                     response.flash = self.messages.unable_send_email
                     return form
@@ -2945,11 +2943,12 @@ class Auth(object):
         link = self.url(self.settings.function,
                         args=('reset_password', reset_password_key),
                         scheme=True)
-        if self.settings.mailer.send(
+        d = dict(user)
+        d.update(dict(key=reset_password_key, link=link))
+        if self.settings.mailer and self.settings.mailer.send(
             to=user.email,
             subject=self.messages.reset_password_subject,
-            message=self.messages.reset_password %
-                dict(key=reset_password_key, link=link)):
+            message=self.messages.reset_password % d):
             user.update_record(reset_password_key=reset_password_key)
             return True
         return False
