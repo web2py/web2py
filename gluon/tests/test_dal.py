@@ -79,6 +79,9 @@ def tearDownModule():
 class TestFields(unittest.TestCase):
 
     def testFieldName(self):
+        return
+
+        # Any table name is supported as long as underlying db does. The following code is ignored.
 
         # Check that Fields cannot start with underscores
         self.assertRaises(SyntaxError, Field, '_abc', 'string')
@@ -1393,7 +1396,115 @@ class TestRNameFields(unittest.TestCase):
         self.assertEqual(len(db.person._referenced_by),0)
         db.person.drop()
 
+class TestQuoting(unittest.TestCase):
+    # tests for complex table names
+    def testRun(self):
+        db = DAL(DEFAULT_URI, check_reserved=['all'])
 
+        t0 = db.define_table('A.table.with.dots and spaces',
+                        Field('f', 'string'))
+        t1 = db.define_table('A.table',
+                        Field('f.other', t0),
+                             Field('words', 'text'))
+
+        blather = 'blah blah and so'
+        t0[0] = {'f': 'content'}
+        t1[0] = {'f.other': int(t0[1]['id']),
+                 'words': blather}
+
+
+        r = db(t1['f.other']==t0.id).select()
+        self.assertEqual(r[0][db['A.table']].words, blather)
+
+        db.define_table('t0', Field('f0'))
+        db.define_table('t1', Field('f1'), Field('t0', db['t0']))
+        db.t0[0]=dict(f0=3)
+        db.t1[0]=dict(f1=3, t0=1)
+
+        rows=db(db.t0.id==db.t1.t0).select()
+        self.assertEqual(rows[0].t1.t0, rows[0].t0.id)
+
+        t0.drop('cascade')
+        t1.drop()
+
+        db.t1.drop()
+        db.t0.drop()
+
+    # tests for case sensitivity
+    def testCase(self):
+        db = DAL(DEFAULT_URI, check_reserved=['all'], ignore_field_case=False)
+
+        
+        # test table case
+        t0 = db.define_table('B',
+                        Field('f', 'string'))
+        try:
+            t1 = db.define_table('b',
+                                 Field('B', t0),
+                                 Field('words', 'text'))
+        except Exception, e:
+            # An error is expected when database does not support case
+            # sensitive entity names.
+            if DEFAULT_URI.startswith('sqlite:'):
+                self.assertTrue(isinstance(e, db._adapter.driver.OperationalError))
+                return
+            raise e
+
+        blather = 'blah blah and so'
+        t0[0] = {'f': 'content'}
+        t1[0] = {'B': int(t0[1]['id']),
+                 'words': blather}
+
+        r = db(db.B.id==db.b.B).select()
+
+        self.assertEqual(r[0].b.words, blather)
+
+        t1.drop()
+        t0.drop()
+
+        # test field case
+        try:
+            t0 = db.define_table('table is a test',
+                                 Field('a_a'),
+                                 Field('a_A'))
+        except Exception, e:
+            # some db does not support case sensitive field names mysql is one of them.
+            if DEFAULT_URI.startswith('mysql:'):
+                db.rollback()
+                return
+            raise e
+
+        t0[0] = dict(a_a = 'a_a', a_A='a_A')
+
+        self.assertEqual(t0[1].a_a, 'a_a')
+        self.assertEqual(t0[1].a_A, 'a_A')
+
+        t0.drop()
+
+    def testPKFK(self):
+        # test primary keys
+
+        db = DAL(DEFAULT_URI, check_reserved=['all'], ignore_field_case=False)
+        
+        # test table without surrogate key. Length must is limited to
+        # 100 because of MySQL limitations: it cannot handle more than
+        # 767 bytes in unique keys.
+
+        t0 = db.define_table('t0', Field('Code', length=100), primarykey=['Code'])
+        t22 = db.define_table('t22', Field('f'), Field('t0_Code', 'reference t0'))
+        t3 = db.define_table('t3', Field('f', length=100), Field('t0_Code', t0.Code), primarykey=['f'])
+        t4 = db.define_table('t4', Field('f', length=100), Field('t0', t0), primarykey=['f'])
+
+        try:
+            t5 = db.define_table('t5', Field('f', length=100), Field('t0', 'reference no_table_wrong_reference'), primarykey=['f'])
+        except Exception, e:
+            self.assertTrue(isinstance(e, KeyError))
+
+
+        t0.drop('cascade')
+        t22.drop()
+        t3.drop()
+        t4.drop()
 if __name__ == '__main__':
     unittest.main()
     tearDownModule()
