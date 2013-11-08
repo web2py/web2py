@@ -252,7 +252,8 @@ THREAD_LOCAL = threading.local()
 REGEX_TYPE = re.compile('^([\w\_\:]+)')
 REGEX_DBNAME = re.compile('^(\w+)(\:\w+)*')
 REGEX_W = re.compile('^\w+$')
-REGEX_TABLE_DOT_FIELD = re.compile('^(\w+)\.(\w+)$')
+REGEX_TABLE_DOT_FIELD = re.compile('^(\w+?)\.(\w+?)$')
+REGEX_NO_GREEDY_ENTITY_NAME = r'(\w+?)'
 REGEX_UPLOAD_PATTERN = re.compile('(?P<table>[\w\-]+)\.(?P<field>[\w\-]+)\.(?P<uuidkey>[\w\-]+)(\.(?P<name>\w+))?\.\w+$')
 REGEX_CLEANUP_FN = re.compile('[\'"\s;]+')
 REGEX_UNPACK = re.compile('(?<!\|)\|(?!\|)')
@@ -670,12 +671,28 @@ class ConnectionPool(object):
                     break
         self.after_connection_hook()
 
+###################################################################################
+# metaclass to prepare adapter classes static values
+###################################################################################
+class AdapterMeta(type):
+    def __new__(cls, clsname, bases, dct):
+        sup = super(AdapterMeta, cls).__new__(cls, clsname, bases, dct)
+        sup.REGEX_TABLE_DOT_FIELD = re.compile(r'^' + \
+                                               sup.QUOTE_TEMPLATE % REGEX_NO_GREEDY_ENTITY_NAME + \
+                                               r'\.' + \
+                                               sup.QUOTE_TEMPLATE % REGEX_NO_GREEDY_ENTITY_NAME + \
+                                               r'$')
+        
+        return sup
 
 ###################################################################################
 # this is a generic adapter that does nothing; all others are derived from this one
 ###################################################################################
 
 class BaseAdapter(ConnectionPool):
+
+    __metaclass__ = AdapterMeta
+
     native_json = False
     driver = None
     driver_name = None
@@ -692,6 +709,7 @@ class BaseAdapter(ConnectionPool):
     FALSE = 'F'
     T_SEP = ' '
     QUOTE_TEMPLATE = '"%s"'
+
 
     types = {
         'boolean': 'CHAR(1)',
@@ -834,6 +852,7 @@ class BaseAdapter(ConnectionPool):
         self.connection = Dummy()
         self.cursor = Dummy()
 
+
     def sequence_name(self,tablename):
         return '%s_sequence' % tablename
 
@@ -891,20 +910,19 @@ class BaseAdapter(ConnectionPool):
                             else:
                                 ftype = ftype + \
                                     types['reference FK'] % dict(
-                                    constraint_name = constraint_name, # should be quoted
-                                    foreign_key = '%s (%s)' % (rtablename,
-                                                               rfieldname),
-                                    table_name = tablename,
-                                    field_name = field._rname or field.name,
+                                        constraint_name = constraint_name, # should be quoted
+                                        foreign_key = rtable.sqlsafe + ' (' + rfield.sqlsafe_name + ')',
+                                        table_name = table.sqlsafe,
+                                    field_name = field.sqlsafe_name,
                                     on_delete_action=field.ondelete)
                     else:
                         # make a guess here for circular references
                         if referenced in db:
-                            id_fieldname = db[referenced]._id.name
+                            id_fieldname = db[referenced]._id.sqlsafe_name
                         elif referenced == tablename:
-                            id_fieldname = table._id.name
+                            id_fieldname = table._id.sqlsafe_name
                         else: #make a guess
-                            id_fieldname = 'id'
+                            id_fieldname = self.QUOTE_TEMPLATE % 'id'
                         #gotcha: the referenced table must be defined before
                         #the referencing one to be able to create the table
                         #Also if it's not recommended, we can still support
@@ -912,19 +930,16 @@ class BaseAdapter(ConnectionPool):
                         #migrations and model relationship work also if tables
                         #are not defined in order
                         if referenced == tablename:
-                            real_referenced = db[referenced]._rname or db[referenced]
+                            real_referenced = db[referenced].sqlsafe
                         else:
-                            real_referenced = (
-                                referenced in db and
-                                (db[referenced]._rname or db[referenced])
-                                or referenced
-                            )
+                            real_referenced = (referenced in db
+                                               and db[referenced].sqlsafe
+                                               or referenced)
                         ftype = types[field_type[:9]] % dict(
-                            index_name = field_name+'__idx',
-                            field_name = field._rname or field.name,
-                            constraint_name = constraint_name,
-                            foreign_key = '%s (%s)' % (real_referenced,
-                                                       id_fieldname),
+                            index_name = self.QUOTE_TEMPLATE % (field_name+'__idx'),
+                            field_name = field.sqlsafe_name,
+                            constraint_name = self.QUOTE_TEMPLATE % constraint_name,
+                            foreign_key = '%s (%s)' % (real_referenced, table._id.sqlsafe_name),
                             on_delete_action=field.ondelete)
             elif field_type.startswith('list:reference'):
                 ftype = types[field_type[:14]]
@@ -998,39 +1013,37 @@ class BaseAdapter(ConnectionPool):
             # geometry fields are added after the table has been created, not now
             if not (self.dbengine == 'postgres' and \
                         field_type.startswith('geom')):
-                #fetch the rname if it's there
-                field_rname = "%s" % (field._rname or field_name)
-                fields.append('%s %s' % (field_rname, ftype))
+                fields.append('%s %s' % (field.sqlsafe_name, ftype))
         other = ';'
 
         # backend-specific extensions to fields
         if self.dbengine == 'mysql':
             if not hasattr(table, "_primarykey"):
-                fields.append('PRIMARY KEY(%s)' % (table._id.name or table._id._rname))
+                fields.append('PRIMARY KEY (%s)' % (self.QUOTE_TEMPLATE % table._id.name))
             other = ' ENGINE=InnoDB CHARACTER SET utf8;'
 
         fields = ',\n    '.join(fields)
         for rtablename in TFK:
             rfields = TFK[rtablename]
-            pkeys = db[rtablename]._primarykey
-            fkeys = [ rfields[k] for k in pkeys ]
+            pkeys = [self.QUOTE_TEMPLATE % pk.name for pk in db[rtablename]._primarykey]
+            fkeys = [self.QUOTE_TEMPLATE % rfields[k].name for k in pkeys ]
             fields = fields + ',\n    ' + \
                 types['reference TFK'] % dict(
-                table_name = tablename,
+                table_name = table.sqlsafe,
                 field_name=', '.join(fkeys),
-                foreign_table = rtablename,
+                foreign_table = table.sqlsafe,
                 foreign_key = ', '.join(pkeys),
                 on_delete_action = field.ondelete)
-        #if there's a _rname, let's use that instead
-        table_rname = table._rname or tablename
+
+        table_rname = table.sqlsafe
 
         if getattr(table,'_primarykey',None):
             query = "CREATE TABLE %s(\n    %s,\n    %s) %s" % \
-                (table_rname, fields,
-                 self.PRIMARY_KEY(', '.join(table._primarykey)),other)
+                (table.sqlsafe, fields,
+                 self.PRIMARY_KEY(', '.join([self.QUOTE_TEMPLATE % pk.name for pk in table._primarykey])),other)
         else:
             query = "CREATE TABLE %s(\n    %s\n)%s" % \
-                (table_rname, fields, other)
+                (table.sqlsafe, fields, other)
 
         if self.uri.startswith('sqlite:///') \
                 or self.uri.startswith('spatialite:///'):
@@ -1135,7 +1148,7 @@ class BaseAdapter(ConnectionPool):
                     query = [ sql_fields[key]['sql'] ]
                 else:
                     query = ['ALTER TABLE %s ADD %s %s;' % \
-                         (tablename, key,
+                         (table.sqlsafe, key,
                           sql_fields_aux[key]['sql'].replace(', ', new_add))]
                 metadata_change = True
             elif self.dbengine in ('sqlite', 'spatialite'):
@@ -1153,10 +1166,11 @@ class BaseAdapter(ConnectionPool):
                               "'%(table)s', '%(field)s');" %
                               dict(schema=schema, table=tablename, field=key,) ]
                 elif self.dbengine in ('firebird',):
-                    query = ['ALTER TABLE %s DROP %s;' % (tablename, key)]
+                    query = ['ALTER TABLE %s DROP %s;' % 
+                             (self.QUOTE_TEMPLATE % tablename, self.QUOTE_TEMPLATE % key)]
                 else:
                     query = ['ALTER TABLE %s DROP COLUMN %s;' %
-                             (tablename, key)]
+                             (self.QUOTE_TEMPLATE % tablename, self.QUOTE_TEMPLATE % key)]
                 metadata_change = True
             elif sql_fields[key]['sql'] != sql_fields_old[key]['sql'] \
                   and not (key in table.fields and
@@ -1172,12 +1186,15 @@ class BaseAdapter(ConnectionPool):
                 else:
                     drop_expr = 'ALTER TABLE %s DROP COLUMN %s;'
                 key_tmp = key + '__tmp'
-                query = ['ALTER TABLE %s ADD %s %s;' % (t, key_tmp, tt),
-                         'UPDATE %s SET %s=%s;' % (t, key_tmp, key),
-                         drop_expr % (t, key),
-                         'ALTER TABLE %s ADD %s %s;' % (t, key, tt),
-                         'UPDATE %s SET %s=%s;' % (t, key, key_tmp),
-                         drop_expr % (t, key_tmp)]
+                query = ['ALTER TABLE %s ADD %s %s;' % (self.QUOTE_TEMPLATE % t, self.QUOTE_TEMPLATE % key_tmp, tt),
+                         'UPDATE %s SET %s=%s;' %
+                         (self.QUOTE_TEMPLATE % t, self.QUOTE_TEMPLATE % key_tmp, self.QUOTE_TEMPLATE % key),
+                         drop_expr % (self.QUOTE_TEMPLATE % t, self.QUOTE_TEMPLATE % key),
+                         'ALTER TABLE %s ADD %s %s;' %
+                         (self.QUOTE_TEMPLATE % t, self.QUOTE_TEMPLATE % key, tt),
+                         'UPDATE %s SET %s=%s;' %
+                         (self.QUOTE_TEMPLATE % t, self.QUOTE_TEMPLATE % key, self.QUOTE_TEMPLATE % key_tmp),
+                         drop_expr % (self.QUOTE_TEMPLATE % t, self.QUOTE_TEMPLATE % key_tmp)]
                 metadata_change = True
             elif sql_fields[key]['type'] != sql_fields_old[key]['type']:
                 sql_fields_current[key] = sql_fields[key]
@@ -1272,8 +1289,7 @@ class BaseAdapter(ConnectionPool):
         return 'PRIMARY KEY(%s)' % key
 
     def _drop(self, table, mode):
-        table_rname = table._rname or table
-        return ['DROP TABLE %s;' % table_rname]
+        return ['DROP TABLE %s;' % table.sqlsafe]
 
     def drop(self, table, mode=''):
         db = table._db
@@ -1291,17 +1307,16 @@ class BaseAdapter(ConnectionPool):
             self.log('success!\n', table)
 
     def _insert(self, table, fields):
-        table_rname = table._rname or table
+        table_rname = table.sqlsafe
         if fields:
-            keys = ','.join(f._rname or f.name for f, v in fields)
+            keys = ','.join(f.sqlsafe_name for f, v in fields)
             values = ','.join(self.expand(v, f.type) for f, v in fields)
             return 'INSERT INTO %s(%s) VALUES (%s);' % (table_rname, keys, values)
         else:
             return self._insert_empty(table)
 
     def _insert_empty(self, table):
-        table_rname = table._rname or table
-        return 'INSERT INTO %s DEFAULT VALUES;' % table_rname
+        return 'INSERT INTO %s DEFAULT VALUES;' % (table.sqlsafe)
 
     def insert(self, table, fields):
         query = self._insert(table,fields)
@@ -1454,13 +1469,13 @@ class BaseAdapter(ConnectionPool):
                                self.expand(second, first.type))
 
     def AS(self, first, second):
-        return '%s AS %s' % (self.expand(first), second)
+        return '%s AS %s'  % (self.expand(first), second)
 
     def ON(self, first, second):
-        table_rname = first._ot and first or first._rname or first._tablename
+        table_rname = self.table_alias(first)
         if use_common_filters(second):
             second = self.common_filter(second,[first._tablename])
-        return '%s ON %s' % (self.expand(table_rname), self.expand(second))
+        return ('%s ON %s') % (self.expand(table_rname), self.expand(second))
 
     def INVERT(self, first):
         return '%s DESC' % self.expand(first)
@@ -1476,12 +1491,10 @@ class BaseAdapter(ConnectionPool):
             et = expression.table
             if not colnames:
                 table_rname = et._ot and et._tablename or et._rname or et._tablename
+                out = '%s.%s' % (self.QUOTE_TEMPLATE % table_rname, self.QUOTE_TEMPLATE % (expression._rname or expression.name))
             else:
                 table_rname = et._tablename
-            if not colnames:
-                out = '%s.%s' % (table_rname, expression._rname or expression.name)
-            else:
-                out = '%s.%s' % (table_rname, expression.name)
+                out = '%s.%s' % (self.QUOTE_TEMPLATE % table_rname, self.QUOTE_TEMPLATE % expression.name)
             if field_type == 'string' and not expression.type in (
                 'string','text','json','password'):
                 out = self.CAST(out, self.types['text'])
@@ -1512,10 +1525,11 @@ class BaseAdapter(ConnectionPool):
         else:
             return str(expression)
 
-    def table_alias(self,name):
-        if not isinstance(name, Table):
-            name = self.db[name]._rname or self.db[name]
-        return str(name)
+    def table_alias(self, tbl):
+        if not isinstance(tbl, Table):
+            tbl = self.db[tbl]
+        return tbl.sqlsafe_alias
+
 
     def alias(self, table, alias):
         """
@@ -1535,8 +1549,7 @@ class BaseAdapter(ConnectionPool):
         return other
 
     def _truncate(self, table, mode=''):
-        tablename = table._rname or table._tablename
-        return ['TRUNCATE TABLE %s %s;' % (tablename, mode or '')]
+        return ['TRUNCATE TABLE %s %s;' % (table.sqlsafe, mode or '')]
 
     def truncate(self, table, mode= ' '):
         # Prepare functions "write_to_logfile" and "close_logfile"
@@ -1545,7 +1558,6 @@ class BaseAdapter(ConnectionPool):
             for query in queries:
                 self.log(query + '\n', table)
                 self.execute(query)
-            table._db.commit()
             self.log('success!\n', table)
         finally:
             pass
@@ -1557,10 +1569,10 @@ class BaseAdapter(ConnectionPool):
             sql_w = ' WHERE ' + self.expand(query)
         else:
             sql_w = ''
-        sql_v = ','.join(['%s=%s' % (field._rname or field.name,
+        sql_v = ','.join(['%s=%s' % (field.sqlsafe_name,
                                      self.expand(value, field.type)) \
                               for (field, value) in fields])
-        tablename = "%s" % (self.db[tablename]._rname or tablename)
+        tablename = self.db[tablename].sqlsafe
         return 'UPDATE %s SET %s%s;' % (tablename, sql_v, sql_w)
 
     def update(self, tablename, query, fields):
@@ -1585,7 +1597,7 @@ class BaseAdapter(ConnectionPool):
             sql_w = ' WHERE ' + self.expand(query)
         else:
             sql_w = ''
-        tablename = '%s' % (self.db[tablename]._rname or tablename)
+        tablename = self.db[tablename].sqlsafe
         return 'DELETE FROM %s%s;' % (tablename, sql_w)
 
     def delete(self, tablename, query):
@@ -1627,8 +1639,9 @@ class BaseAdapter(ConnectionPool):
             if isinstance(item,SQLALL):
                 new_fields += item._table
             elif isinstance(item,str):
-                if REGEX_TABLE_DOT_FIELD.match(item):
-                    tablename,fieldname = item.split('.')
+                m = self.REGEX_TABLE_DOT_FIELD.match(item)
+                if m:
+                    tablename,fieldname = m.groups()
                     append(db[tablename][fieldname])
                 else:
                     append(Expression(db,lambda item=item:item))
@@ -1649,10 +1662,11 @@ class BaseAdapter(ConnectionPool):
         tablenames = tables(query)
         tablenames_for_common_filters = tablenames
         for field in fields:
-            if isinstance(field, basestring) \
-                    and REGEX_TABLE_DOT_FIELD.match(field):
-                tn,fn = field.split('.')
-                field = self.db[tn][fn]
+            if isinstance(field, basestring):
+                m = self.REGEX_TABLE_DOT_FIELD.match(field)
+                if m:
+                    tn,fn = m.groups()
+                    field = self.db[tn][fn]
             for tablename in tables(field):
                 if not tablename in tablenames:
                     tablenames.append(tablename)
@@ -1736,7 +1750,7 @@ class BaseAdapter(ConnectionPool):
                                    tables_to_merge.keys()])
             if joint:
                 sql_t += ' %s %s' % (command,
-                                     ','.join([self.table_alias(t) for t in joint]))
+                                     ','.join([t for t in joint]))
             for t in joinon:
                 sql_t += ' %s %s' % (command, t)
         elif inner_join and left:
@@ -1751,7 +1765,7 @@ class BaseAdapter(ConnectionPool):
                 sql_t += ' %s %s' % (icommand, t)
             if joint:
                 sql_t += ' %s %s' % (command,
-                                     ','.join([self.table_alias(t) for t in joint]))
+                                     ','.join([t for t in joint]))
             for t in joinon:
                 sql_t += ' %s %s' % (command, t)
         else:
@@ -1771,7 +1785,7 @@ class BaseAdapter(ConnectionPool):
                 sql_o += ' ORDER BY %s' % self.expand(orderby)
         if (limitby and not groupby and tablenames and orderby_on_limitby and not orderby):
             sql_o += ' ORDER BY %s' % ', '.join(
-                ['%s.%s'%(t,x) for t in tablenames for x in (
+                ['%s.%s'%(self.QUOTE_TEMPLATE % t,x) for t in tablenames for x in (
                     hasattr(self.db[t],'_primarykey') and self.db[t]._primarykey
                     or [self.db[t]._id._rname or self.db[t]._id.name]
                     )
@@ -1903,6 +1917,7 @@ class BaseAdapter(ConnectionPool):
         self.execute(query)
 
     def log_execute(self, *a, **b):
+        if not self.connection: raise ValueError(a[0])
         if not self.connection: return None
         command = a[0]
         if hasattr(self,'filter_sql_command'):
@@ -2166,10 +2181,11 @@ class BaseAdapter(ConnectionPool):
         new_rows = []
         tmps = []
         for colname in colnames:
-            if not REGEX_TABLE_DOT_FIELD.match(colname):
+            col_m = self.REGEX_TABLE_DOT_FIELD.match(colname)
+            if not col_m:
                 tmps.append(None)
             else:
-                (tablename, _the_sep_, fieldname) = colname.partition('.')
+                tablename, fieldname = col_m.groups()
                 table = db[tablename]
                 field = table[fieldname]
                 ft = field.type
@@ -2290,6 +2306,19 @@ class BaseAdapter(ConnectionPool):
             else: return self.represent(x,types.get(type(x),'string'))
         return Expression(self.db,'CASE WHEN %s THEN %s ELSE %s END' % \
                               (self.expand(query),represent(t),represent(f)))
+
+    def sqlsafe_table(self, tablename, ot=None):
+        if ot is not None:
+            return (self.QUOTE_TEMPLATE + ' AS ' \
+                    + self.QUOTE_TEMPLATE) % (ot, tablename)
+        
+        return self.QUOTE_TEMPLATE % tablename
+
+    #def sqlsafe_table(self, tablename):
+    #    return self.sqlsafe_table_alias(tablename)
+
+    def sqlsafe_field(self, fieldname):
+        return self.QUOTE_TEMPLATE % fieldname
 
 ###################################################################################
 # List of all the available adapters; they all extend BaseAdapter.
@@ -2599,7 +2628,7 @@ class MySQLAdapter(BaseAdapter):
                 'SET FOREIGN_KEY_CHECKS=1;']
 
     def _insert_empty(self, table):
-        return 'INSERT INTO %s VALUES (DEFAULT);' % table
+        return 'INSERT INTO %s VALUES (DEFAULT);' % (self.QUOTE_TEMPLATE % table)
 
     def distributed_transaction_begin(self,key):
         self.execute('XA START;')
@@ -2808,7 +2837,12 @@ class PostgreSQLAdapter(BaseAdapter):
 
     def lastrowid(self,table):
         self.execute("""select currval('"%s"')""" % table._sequence_name)
-        return int(self.cursor.fetchone()[0])
+        try:
+            return int(self.cursor.fetchone()[0])
+        except Exception, e:
+            print e
+            print """select currval('"%s"')""" % table._sequence_name
+            self.cursor.execute("""select currval('"%s"')""" % table._sequence_name)
 
     def try_json(self):
         # check JSON data type support
@@ -3221,6 +3255,13 @@ class OracleAdapter(BaseAdapter):
                                for c in r]) for r in self.cursor]
         else:
             return self.cursor.fetchall()
+
+    def sqlsafe_table(self, tablename, ot=None):
+        if ot is not None:
+            return (self.QUOTE_TEMPLATE + ' ' \
+                    + self.QUOTE_TEMPLATE) % (ot, tablename)
+        return self.QUOTE_TEMPLATE % tablename
+
 
 class MSSQLAdapter(BaseAdapter):
     drivers = ('pyodbc',)
@@ -7236,7 +7277,7 @@ class Row(object):
 
     def __getitem__(self, k):
         key=str(k)
-        _extra = self.__dict__.get('_extra', None)
+        _extra = ogetattr(self, '__dict__').get('_extra', None)
         if _extra is not None:
             v = _extra.get(key, DEFAULT)
             if v != DEFAULT:
@@ -8900,7 +8941,17 @@ class Table(object):
             if 'Oracle' in str(type(self._db._adapter)):
                 return '%s %s' % (ot, self._tablename)
             return '%s AS %s' % (ot, self._tablename)
+        
         return self._tablename
+
+    @property
+    def sqlsafe(self):
+        return self._db._adapter.sqlsafe_table(self._rname or self._tablename)
+
+    @property
+    def sqlsafe_alias(self):
+        return self._db._adapter.sqlsafe_table((self._rname or self._tablename)if not self._ot else self._tablename, self._ot)
+
 
     def _drop(self, mode = ''):
         return self._db._adapter._drop(self, mode)
@@ -9994,6 +10045,16 @@ class Field(Expression):
         except:
             return '<no table>.%s' % self.name
 
+    @property
+    def sqlsafe(self):
+        if self._table:
+            return self._table.sqlsafe + '.' + self._db._adapter.sqlsafe_field(self._rname or self.name)
+        return '<no table>.%s' % self.name
+
+    @property
+    def sqlsafe_name(self):
+        return self._db._adapter.sqlsafe_field(self._rname or self.name)
+    
 
 class Query(object):
 
@@ -10346,7 +10407,7 @@ class Set(object):
         fields = table._listify(update_fields,update=True)
         if not fields:
             raise SyntaxError("No fields to update")
-        ret = db._adapter.update("%s" % table,self.query,fields)
+        ret = db._adapter.update("%s" % table._tablename,self.query,fields)
         ret and [f(self,update_fields) for f in table._after_update]
         return ret
 
@@ -10859,11 +10920,21 @@ class Rows(object):
         represent = kwargs.get('represent', False)
         writer = csv.writer(ofile, delimiter=delimiter,
                             quotechar=quotechar, quoting=quoting)
+        def unquote_colnames(colnames):
+            unq_colnames = []
+            for col in colnames:
+                m = self.db._adapter.REGEX_TABLE_DOT_FIELD.match(col)
+                if not m:
+                    unq_colnames.append(col)
+                else:
+                    unq_colnames.append('.'.join(m.groups()))
+            return unq_colnames
+
         colnames = kwargs.get('colnames', self.colnames)
         write_colnames = kwargs.get('write_colnames',True)
         # a proper csv starting with the column names
         if write_colnames:
-            writer.writerow(colnames)
+            writer.writerow(unquote_colnames(colnames))
 
         def none_exception(value):
             """
@@ -10886,10 +10957,11 @@ class Rows(object):
         for record in self:
             row = []
             for col in colnames:
-                if not REGEX_TABLE_DOT_FIELD.match(col):
+                m = self.db._adapter.REGEX_TABLE_DOT_FIELD.match(col)
+                if not m:
                     row.append(record._extra[col])
                 else:
-                    (t, f) = col.split('.')
+                    (t, f) = m.groups()
                     field = self.db[t][f]
                     if isinstance(record.get(t, None), (Row,dict)):
                         value = record[t][f]

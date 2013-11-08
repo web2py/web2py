@@ -863,7 +863,7 @@ class TestRNameTable(unittest.TestCase):
 
     def testSelect(self):
         db = DAL(DEFAULT_URI, check_reserved=['all'])
-        rname = db._adapter.QUOTE_TEMPLATE % 'a very complicated tablename'
+        rname = 'a very complicated tablename'
         db.define_table(
             'easy_name',
             Field('a_field'),
@@ -892,14 +892,14 @@ class TestRNameTable(unittest.TestCase):
         avg = db.easy_name.id.avg()
         rtn = db(db.easy_name.id > 0).select(avg)
         self.assertEqual(rtn[0][avg], 3)
-        rname = db._adapter.QUOTE_TEMPLATE % 'this is the person table'
+        rname = 'this is the person table'
         db.define_table(
             'person',
             Field('name', default="Michael"),
             Field('uuid'),
             rname=rname
             )
-        rname = db._adapter.QUOTE_TEMPLATE % 'this is the pet table'
+        rname = 'this is the pet table'
         db.define_table(
             'pet',
             Field('friend','reference person'),
@@ -972,7 +972,7 @@ class TestRNameTable(unittest.TestCase):
             for key in ['reference','reference FK']:
                 db._adapter.types[key]=db._adapter.types[key].replace(
                 '%(on_delete_action)s','NO ACTION')
-        rname = db._adapter.QUOTE_TEMPLATE % 'the cubs'
+        rname = 'the cubs'
         db.define_table('pet_farm',
             Field('name'),
             Field('father','reference pet_farm'),
@@ -1015,8 +1015,8 @@ class TestRNameTable(unittest.TestCase):
 
     def testJoin(self):
         db = DAL(DEFAULT_URI, check_reserved=['all'])
-        rname = db._adapter.QUOTE_TEMPLATE % 'this is table t1'
-        rname2 = db._adapter.QUOTE_TEMPLATE % 'this is table t2'
+        rname = 'this is table t1'
+        rname2 = 'this is table t2'
         db.define_table('t1', Field('aa'), rname=rname)
         db.define_table('t2', Field('aa'), Field('b', db.t1), rname=rname2)
         i1 = db.t1.insert(aa='1')
@@ -1086,8 +1086,8 @@ class TestRNameFields(unittest.TestCase):
     # tests for highly experimental rname attribute
     def testSelect(self):
         db = DAL(DEFAULT_URI, check_reserved=['all'])
-        rname = db._adapter.QUOTE_TEMPLATE % 'a very complicated fieldname'
-        rname2 = db._adapter.QUOTE_TEMPLATE % 'rrating from 1 to 10'
+        rname = 'a very complicated fieldname'
+        rname2 = 'rrating from 1 to 10'
         db.define_table(
             'easy_name',
             Field('a_field', rname=rname),
@@ -1121,13 +1121,13 @@ class TestRNameFields(unittest.TestCase):
         rtn = db(db.easy_name.id > 0).select(avg)
         self.assertEqual(rtn[0][avg], 2)
 
-        rname = db._adapter.QUOTE_TEMPLATE % 'this is the person name'
+        rname = 'this is the person name'
         db.define_table(
             'person',
             Field('name', default="Michael", rname=rname),
             Field('uuid')
             )
-        rname = db._adapter.QUOTE_TEMPLATE % 'this is the pet name'
+        rname = 'this is the pet name'
         db.define_table(
             'pet',
             Field('friend','reference person'),
@@ -1194,7 +1194,7 @@ class TestRNameFields(unittest.TestCase):
         self.assertEqual(rtn[2].pet.name, 'Gertie')
 
         #aliases
-        rname = db._adapter.QUOTE_TEMPLATE % 'the cub name'
+        rname = 'the cub name'
         if DEFAULT_URI.startswith('mssql'):
             #multiple cascade gotcha
             for key in ['reference','reference FK']:
@@ -1241,7 +1241,7 @@ class TestRNameFields(unittest.TestCase):
 
     def testRun(self):
         db = DAL(DEFAULT_URI, check_reserved=['all'])
-        rname = db._adapter.QUOTE_TEMPLATE % 'a very complicated fieldname'
+        rname = 'a very complicated fieldname'
         for ft in ['string', 'text', 'password', 'upload', 'blob']:
             db.define_table('tt', Field('aa', ft, default='', rname=rname))
             self.assertEqual(db.tt.insert(aa='x'), 1)
@@ -1311,7 +1311,7 @@ class TestRNameFields(unittest.TestCase):
 
     def testInsert(self):
         db = DAL(DEFAULT_URI, check_reserved=['all'])
-        rname = db._adapter.QUOTE_TEMPLATE % 'a very complicated fieldname'
+        rname = 'a very complicated fieldname'
         db.define_table('tt', Field('aa', rname=rname))
         self.assertEqual(db.tt.insert(aa='1'), 1)
         self.assertEqual(db.tt.insert(aa='1'), 2)
@@ -1327,8 +1327,8 @@ class TestRNameFields(unittest.TestCase):
 
     def testJoin(self):
         db = DAL(DEFAULT_URI, check_reserved=['all'])
-        rname = db._adapter.QUOTE_TEMPLATE % 'this is field aa'
-        rname2 = db._adapter.QUOTE_TEMPLATE % 'this is field b'
+        rname = 'this is field aa'
+        rname2 = 'this is field b'
         db.define_table('t1', Field('aa', rname=rname))
         db.define_table('t2', Field('aa', rname=rname), Field('b', db.t1, rname=rname2))
         i1 = db.t1.insert(aa='1')
