@@ -7588,13 +7588,12 @@ class DAL(object):
             for db in db_group:
                 if not db._uri:
                     continue
-                k = hide_password(db._uri)
-                infos[k] = dict(dbstats = [(row[0], row[1]) for row in db._timings],
-                                dbtables = {'defined':
-                                    sorted(list(set(db.tables) -
-                                                set(db._LAZY_TABLES.keys()))),
-                               'lazy': sorted(db._LAZY_TABLES.keys())}
-                                 )
+                k = hide_password(db._adapter.uri)
+                infos[k] = dict(
+                    dbstats = [(row[0], row[1]) for row in db._timings],
+                    dbtables = {'defined': sorted(
+                            list(set(db.tables)-set(db._LAZY_TABLES.keys()))),
+                                'lazy': sorted(db._LAZY_TABLES.keys())})
         return infos
 
     @staticmethod
@@ -8248,7 +8247,7 @@ def index():
 
     def __repr__(self):
         if hasattr(self,'_uri'):
-            return '<DAL uri="%s">' % hide_password(str(self._uri))
+            return '<DAL uri="%s">' % hide_password(self._adapter.uri)
         else:
             return '<DAL db_uid="%s">' % self._db_uid
 
