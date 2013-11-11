@@ -15,11 +15,11 @@ pass}}
         <p class="controls row-fluid">
             <div class="controls controls-row">
                 {{if 'db' in method:}}
-                <span class="uneditable-input">source : db</span>
+                <span class="uneditable-input">{{=T('source : db')}}</span>
                 <a class="button btn" href="{{=URL(args=[app, 'new'])}}"><span>{{=T('switch to : filesystem')}}</span></a>
                 <a class="button btn" href="{{=URL(args=[app, 'dbold'])}}"><span>{{=T('lists by ticket')}}</span></a>
                 {{else:}}
-                <span class="uneditable-input">source : filesystem</span>
+                <span class="uneditable-input">{{=T('source : filesystem')}}</span>
                 {{=switchbutton}}
                 <a class="button btn" href="{{=URL(args=[app, 'old'])}}"><span>{{=T('lists by ticket')}}</span></a>
                 {{pass}}
@@ -66,11 +66,11 @@ pass}}
         <p class="controls row-fluid">
             <div class="controls controls-row">
                 {{if 'db' in method:}}
-                <span class="uneditable-input">source : db</span>
+                <span class="uneditable-input">{{=T('source : db')}}</span>
                 <a class="button btn" href="{{=URL(args=[app, 'old'])}}"><span>{{=T('switch to : filesystem')}}</span></a>
                 <a class="button btn" href="{{=URL(args=[app, 'dbnew'])}}"><span>{{=T('lists by exception')}}</span></a>
                 {{else:}}
-                <span class="uneditable-input">source : filesystem</span>
+                <span class="uneditable-input">{{=T('source : filesystem')}}</span>
                 {{=switchbutton}}
                 <a class="button btn" href="{{=URL(args=[app, 'new'])}}"><span>{{=T('lists by exception')}}</span></a>
                 {{pass}}
