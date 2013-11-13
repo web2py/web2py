@@ -20,6 +20,7 @@ import cStringIO
 import csv
 import copy
 import gluon.validators as validators
+from gluon.utils import web2py_uuid
 from gluon.storage import Storage
 from gluon import SQLTABLE
 import random
@@ -279,29 +280,17 @@ class Table(DALStorage):
     def delete(self, id):
         return self._tableobj.delete(self._id_to_key(id))
 
-    def _shard_key(self, shard):
-        return self._id_to_key('s/%s' % shard)
-
     def _id_to_key(self, id):
         return '__memdb__/t/%s/k/%s' % (self._tablename, str(id))
 
     def _create_id(self):
-        shard = random.randint(10, 99)
-        shard_id = self._shard_key(shard)
-        id = self._tableobj.incr(shard_id)
-        if not id:
-            if self._tableobj.set(shard_id, '0'):
-                id = 0
-            else:
-                raise Exception('cannot set memcache')
-        return long(str(shard) + str(id))
+        return long(web2py_uuid().replace('-',''),16)
 
     def __str__(self):
         return self._tablename
 
     def __call__(self, id):
         return self.get(id)
-
 
 class Expression(object):
 
