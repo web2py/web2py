@@ -52,6 +52,7 @@ defined_status = {
     503: 'SERVICE UNAVAILABLE',
     504: 'GATEWAY TIMEOUT',
     505: 'HTTP VERSION NOT SUPPORTED',
+    509: 'BANDWIDTH LIMIT EXCEEDED',
 }
 
 regex_status = re.compile('^\d{3} [0-9A-Z ]+$')

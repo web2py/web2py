@@ -296,7 +296,7 @@ def write_plural_dict(filename, contents):
         return
     try:
         fp = LockedFile(filename, 'w')
-        fp.write('#!/usr/bin/env python\n{\n# "singular form (0)": ["first plural form (1)", "second plural form (2)", ...],\n')
+        fp.write('# coding: utf-8\n{\n# "singular form (0)": ["first plural form (1)", "second plural form (2)", ...],\n')
         # coding: utf8\n{\n')
         for key in sorted(contents, lambda x, y: cmp(unicode(x, 'utf-8').lower(), unicode(y, 'utf-8').lower())):
             forms = '[' + ','.join([repr(Utf8(form))
@@ -320,7 +320,7 @@ def write_dict(filename, contents):
         if not settings.global_settings.web2py_runtime_gae:
             logging.warning('Unable to write to file %s' % filename)
         return
-    fp.write('# coding: utf8\n{\n')
+    fp.write('# coding: utf-8\n{\n')
     for key in sorted(contents, lambda x, y: cmp(unicode(x, 'utf-8').lower(), unicode(y, 'utf-8').lower())):
         fp.write('%s: %s,\n' % (repr(Utf8(key)), repr(Utf8(contents[key]))))
     fp.write('}\n')

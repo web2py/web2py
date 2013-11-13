@@ -167,10 +167,12 @@
         else t.fadeOut();
       });
       doc.on('keyup', 'input.integer', function () {
-        this.value = this.value.reverse().replace(/[^0-9\-]|\-(?=.)/g, '').reverse();
+	var nvalue = this.value.reverse().replace(/[^0-9\-]|\-(?=.)/g, '').reverse();
+        if(this.value!=nvalue) this.value = nvalue;
       });
       doc.on('keyup', 'input.double, input.decimal', function () {
-        this.value = this.value.reverse().replace(/[^0-9\-\.,]|[\-](?=.)|[\.,](?=[0-9]*[\.,])/g, '').reverse();
+        var nvalue = this.value.reverse().replace(/[^0-9\-\.,]|[\-](?=.)|[\.,](?=[0-9]*[\.,])/g, '').reverse();
+        if(this.value!=nvalue) this.value = nvalue;
       });
       var confirm_message = (typeof w2p_ajax_confirm_message != 'undefined') ? w2p_ajax_confirm_message : "Are you sure you want to delete this object?";
       doc.on('click', "input[type='checkbox'].delete", function () {
@@ -248,22 +250,33 @@
       });
 
     },
+
     trap_form: function (action, target) {
       /* traps any LOADed form */
       $('#' + target + ' form').each(function (i) {
         var form = $(this);
-        form.attr('data-w2p_target', target);
-        if(!form.hasClass('no_trap')) {
-          /* should be there by default */
-          form.submit(function (e) {
-            web2py.disableElement(form.find(web2py.formInputClickSelector));
-            web2py.hide_flash();
-            web2py.ajax_page('post', action, form.serialize(), target, form);
-            e.preventDefault();
-          });
+        if (form.hasClass('no_trap')) {
+          return;
         }
+
+        form.attr('data-w2p_target', target);
+        var url = form.attr('action');
+
+        if ((url === "") || (url === "#")) {
+          /* form has no action. Use component url. */
+          url = action;
+        }
+
+        form.submit(function (e) {
+          web2py.disableElement(form.find(web2py.formInputClickSelector));
+          web2py.hide_flash();
+          web2py.ajax_page('post', url, form.serialize(), target, form);
+          e.preventDefault();
+        });
       });
     },
+
+
     ajax_page: function (method, action, data, target, element) {
       /* element is a new parameter, but should be put be put in front */
       if(element == undefined) element = $(document);
