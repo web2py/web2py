@@ -854,7 +854,7 @@ class BaseAdapter(ConnectionPool):
 
 
     def sequence_name(self,tablename):
-        return (self.QUOTE_TEMPLATE + '_sequence') % tablename
+        return self.QUOTE_TEMPLATE % ('%s_sequence' % tablename)
 
     def trigger_name(self,tablename):
         return '%s_sequence' % tablename
@@ -2746,7 +2746,7 @@ class PostgreSQLAdapter(BaseAdapter):
             return "'%s'" % str(obj).replace("'","''")
 
     def sequence_name(self,table):
-        return (self.QUOTE_TEMPLATE + '_id_seq') % table.sqlsafe
+        return self.QUOTE_TEMPLATE % (table + '_id_seq')
 
     def RANDOM(self):
         return 'RANDOM()'
@@ -2836,13 +2836,8 @@ class PostgreSQLAdapter(BaseAdapter):
         self.try_json()
 
     def lastrowid(self,table):
-        self.execute("""select currval('"%s"')""" % table._sequence_name)
-        try:
-            return int(self.cursor.fetchone()[0])
-        except Exception, e:
-            print e
-            print """select currval('"%s"')""" % table._sequence_name
-            self.cursor.execute("""select currval('"%s"')""" % table._sequence_name)
+        self.execute("""select currval('%s')""" % table._sequence_name)
+        return int(self.cursor.fetchone()[0])
 
     def try_json(self):
         # check JSON data type support
