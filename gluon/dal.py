@@ -854,7 +854,7 @@ class BaseAdapter(ConnectionPool):
 
 
     def sequence_name(self,tablename):
-        return '%s_sequence' % tablename
+        return (self.QUOTE_TEMPLATE + '_sequence') % tablename
 
     def trigger_name(self,tablename):
         return '%s_sequence' % tablename
@@ -2746,7 +2746,7 @@ class PostgreSQLAdapter(BaseAdapter):
             return "'%s'" % str(obj).replace("'","''")
 
     def sequence_name(self,table):
-        return '%s_id_seq' % table
+        return (self.QUOTE_TEMPLATE + '_id_seq') % table.sqlsafe
 
     def RANDOM(self):
         return 'RANDOM()'
@@ -3112,8 +3112,6 @@ class OracleAdapter(BaseAdapter):
         'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
         }
 
-    def sequence_name(self,tablename):
-        return '%s_sequence' % tablename
 
     def trigger_name(self,tablename):
         return '%s_trigger' % tablename
@@ -3724,7 +3722,7 @@ class FireBirdAdapter(BaseAdapter):
         }
 
     def sequence_name(self,tablename):
-        return 'genid_%s' % tablename
+        return ('genid_' + self.QUOTE_TEMPLATE) % tablename
 
     def trigger_name(self,tablename):
         return 'trg_id_%s' % tablename
@@ -4322,7 +4320,7 @@ class SAPDBAdapter(BaseAdapter):
         }
 
     def sequence_name(self,table):
-        return '%s_id_Seq' % table
+        return (self.QUOTE_TEMPLATE + '_id_Seq') % table
 
     def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
         if limitby:
@@ -8596,13 +8594,8 @@ class Table(object):
         self._tablename = tablename
         self._ot = None # args.get('rname')
         self._rname = args.get('rname')
-        if not self._rname:
-            self._sequence_name = args.get('sequence_name') or \
-                db and db._adapter.sequence_name(tablename)
-        else:
-            tb = self._rname[1:-1]
-            self._sequence_name = args.get('sequence_name') or \
-                db and db._adapter.sequence_name(tb)
+        self._sequence_name = args.get('sequence_name') or \
+                db and db._adapter.sequence_name(self._rname or tablename)
         self._trigger_name = args.get('trigger_name') or \
             db and db._adapter.trigger_name(tablename)
         self._common_filter = args.get('common_filter')
