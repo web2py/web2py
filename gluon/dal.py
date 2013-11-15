@@ -253,7 +253,7 @@ REGEX_TYPE = re.compile('^([\w\_\:]+)')
 REGEX_DBNAME = re.compile('^(\w+)(\:\w+)*')
 REGEX_W = re.compile('^\w+$')
 REGEX_TABLE_DOT_FIELD = re.compile('^(\w+?)\.(\w+?)$')
-REGEX_NO_GREEDY_ENTITY_NAME = r'(\w+?)'
+REGEX_NO_GREEDY_ENTITY_NAME = r'(.+?)'
 REGEX_UPLOAD_PATTERN = re.compile('(?P<table>[\w\-]+)\.(?P<field>[\w\-]+)\.(?P<uuidkey>[\w\-]+)(\.(?P<name>\w+))?\.\w+$')
 REGEX_CLEANUP_FN = re.compile('[\'"\s;]+')
 REGEX_UNPACK = re.compile('(?<!\|)\|(?!\|)')
@@ -1121,6 +1121,7 @@ class BaseAdapter(ConnectionPool):
             k,v=item
             if not isinstance(v,dict):
                 v=dict(type='unknown',sql=v)
+            if not self.ignore_field_case: return k, v
             return k.lower(),v
         # make sure all field names are lower case to avoid
         # migrations because of case cahnge
@@ -1490,11 +1491,10 @@ class BaseAdapter(ConnectionPool):
         if isinstance(expression, Field):
             et = expression.table
             if not colnames:
-                table_rname = et._ot and et._tablename or et._rname or et._tablename
-                out = '%s.%s' % (self.QUOTE_TEMPLATE % table_rname, self.QUOTE_TEMPLATE % (expression._rname or expression.name))
+                table_rname = et._ot and self.QUOTE_TEMPLATE % et._tablename or et._rname or self.QUOTE_TEMPLATE % et._tablename
+                out = '%s.%s' % (table_rname, expression._rname or (self.QUOTE_TEMPLATE % (expression.name)))
             else:
-                table_rname = et._tablename
-                out = '%s.%s' % (self.QUOTE_TEMPLATE % table_rname, self.QUOTE_TEMPLATE % expression.name)
+                out = '%s.%s' % (self.QUOTE_TEMPLATE % et._tablename, self.QUOTE_TEMPLATE % expression.name)
             if field_type == 'string' and not expression.type in (
                 'string','text','json','password'):
                 out = self.CAST(out, self.types['text'])
@@ -1537,7 +1537,7 @@ class BaseAdapter(ConnectionPool):
         with alias name.
         """
         other = copy.copy(table)
-        other['_ot'] = other._ot or other._rname or other._tablename
+        other['_ot'] = other._ot or other.sqlsafe
         other['ALL'] = SQLALL(other)
         other['_tablename'] = alias
         for fieldname in other.fields:
@@ -1915,6 +1915,7 @@ class BaseAdapter(ConnectionPool):
 
     def create_sequence_and_triggers(self, query, table, **args):
         self.execute(query)
+        
 
     def log_execute(self, *a, **b):
         if not self.connection: raise ValueError(a[0])
@@ -2309,13 +2310,8 @@ class BaseAdapter(ConnectionPool):
 
     def sqlsafe_table(self, tablename, ot=None):
         if ot is not None:
-            return (self.QUOTE_TEMPLATE + ' AS ' \
-                    + self.QUOTE_TEMPLATE) % (ot, tablename)
-        
+            return ('%s AS ' + self.QUOTE_TEMPLATE) % (ot, tablename)
         return self.QUOTE_TEMPLATE % tablename
-
-    #def sqlsafe_table(self, tablename):
-    #    return self.sqlsafe_table_alias(tablename)
 
     def sqlsafe_field(self, fieldname):
         return self.QUOTE_TEMPLATE % fieldname
@@ -2835,8 +2831,8 @@ class PostgreSQLAdapter(BaseAdapter):
         self.execute("SET standard_conforming_strings=on;")
         self.try_json()
 
-    def lastrowid(self,table):
-        self.execute("""select currval('%s')""" % table._sequence_name)
+    def lastrowid(self,table = None):
+        self.execute("select lastval()")
         return int(self.cursor.fetchone()[0])
 
     def try_json(self):
@@ -5467,8 +5463,8 @@ def cleanup(text):
     """
     validates that the given text is clean: only contains [0-9a-zA-Z_]
     """
-    if not REGEX_ALPHANUMERIC.match(text):
-        raise SyntaxError('invalid table or field name: %s' % text)
+    #if not REGEX_ALPHANUMERIC.match(text):
+    #    raise SyntaxError('invalid table or field name: %s' % text)
     return text
 
 class MongoDBAdapter(NoSQLAdapter):
@@ -7676,7 +7672,7 @@ class DAL(object):
                  adapter_args=None, attempts=5, auto_import=False,
                  bigint_id=False, debug=False, lazy_tables=False,
                  db_uid=None, do_connect=True,
-                 after_connection=None, tables=None):
+                 after_connection=None, tables=None, ignore_field_case=True):
         """
         Creates a new Database Abstraction Layer instance.
 
@@ -7761,6 +7757,7 @@ class DAL(object):
         self._decode_credentials = decode_credentials
         self._attempts = attempts
         self._do_connect = do_connect
+        self._ignore_field_case = ignore_field_case
 
         if not str(attempts).isdigit() or attempts < 0:
             attempts = 5
@@ -7792,6 +7789,7 @@ class DAL(object):
                         # copy so multiple DAL() possible
                         self._adapter.types = copy.copy(types)
                         self._adapter.build_parsemap()
+                        self._adapter.ignore_field_case = ignore_field_case
                         if bigint_id:
                             if 'big-id' in types and 'reference' in types:
                                 self._adapter.types['id'] = types['big-id']
@@ -8934,11 +8932,16 @@ class Table(object):
 
     @property
     def sqlsafe(self):
-        return self._db._adapter.sqlsafe_table(self._rname or self._tablename)
+        rname = self._rname
+        if rname: return rname
+        return self._db._adapter.sqlsafe_table(self._tablename)
 
     @property
     def sqlsafe_alias(self):
-        return self._db._adapter.sqlsafe_table((self._rname or self._tablename)if not self._ot else self._tablename, self._ot)
+        rname = self._rname
+        ot = self._ot
+        if rname and not ot: return rname
+        return self._db._adapter.sqlsafe_table(self._tablename, self._ot)
 
 
     def _drop(self, mode = ''):
@@ -10036,12 +10039,12 @@ class Field(Expression):
     @property
     def sqlsafe(self):
         if self._table:
-            return self._table.sqlsafe + '.' + self._db._adapter.sqlsafe_field(self._rname or self.name)
+            return self._table.sqlsafe + '.' + (self._rname or self._db._adapter.sqlsafe_field(self.name))
         return '<no table>.%s' % self.name
 
     @property
     def sqlsafe_name(self):
-        return self._db._adapter.sqlsafe_field(self._rname or self.name)
+        return self._rname or self._db._adapter.sqlsafe_field(self.name)
     
 
 class Query(object):
