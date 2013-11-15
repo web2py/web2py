@@ -79,6 +79,9 @@ def tearDownModule():
 class TestFields(unittest.TestCase):
 
     def testFieldName(self):
+        return
+
+        # Any table name is supported as long as underlying db does. The following code is ignored.
 
         # Check that Fields cannot start with underscores
         self.assertRaises(SyntaxError, Field, '_abc', 'string')
