@@ -911,14 +911,11 @@ class BaseAdapter(ConnectionPool):
                         #references to tablenames without rname to make
                         #migrations and model relationship work also if tables
                         #are not defined in order
-                        if referenced == tablename:
-                            real_referenced = db[referenced]._rname or db[referenced]
-                        else:
-                            real_referenced = (
-                                referenced in db and
-                                (db[referenced]._rname or db[referenced])
-                                or referenced
-                            )
+                        real_referenced = (
+                            (db[referenced]._rname or db[referenced])
+                            if referenced == tablename or referenced in db
+                            else referenced)
+                            
                         ftype = types[field_type[:9]] % dict(
                             index_name = field_name+'__idx',
                             field_name = field._rname or field.name,
