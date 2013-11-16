@@ -5875,23 +5875,15 @@ class MongoDBAdapter(NoSQLAdapter):
 
     # TODO This will probably not work:(
     def NOT(self, first):
-        result = {}
-        result["$not"] = self.expand(first)
-        return result
+        return {'$not': self.expand(first)}
 
     def AND(self,first,second):
-        f = self.expand(first)
-        s = self.expand(second)
-        f.update(s)
-        return f
+        # pymongo expects: .find({'$or': [{'name':'1'}, {'name':'2'}]})
+        return {'$and': [self.expand(first),self.expend(second)]}
 
     def OR(self,first,second):
         # pymongo expects: .find({'$or': [{'name':'1'}, {'name':'2'}]})
-        result = {}
-        f = self.expand(first)
-        s = self.expand(second)
-        result['$or'] = [f,s]
-        return result
+        return {'$or': [self.expand(first),self.expend(second)]}
 
     def BELONGS(self, first, second):
         if isinstance(second, str):
