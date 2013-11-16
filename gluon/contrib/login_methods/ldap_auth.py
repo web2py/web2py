@@ -267,6 +267,8 @@ def ldap_auth(server='ldap', port=None,
 
             if ldap_mode == 'cn':
                 # OpenLDAP (CN)
+                if ldap_binddn and ldap_bindpw:
+                    con.simple_bind_s(ldap_binddn, ldap_bindpw)
                 dn = "cn=" + username + "," + ldap_basedn
                 con.simple_bind_s(dn, password)
                 if manage_user:
@@ -278,7 +280,12 @@ def ldap_auth(server='ldap', port=None,
 
             if ldap_mode == 'uid':
                 # OpenLDAP (UID)
-                dn = "uid=" + username + "," + ldap_basedn
+                if ldap_binddn and ldap_bindpw:
+                    con.simple_bind_s(ldap_binddn, ldap_bindpw)
+                    dn = "uid=" + username + "," + ldap_basedn
+                    dn = con.search_s(ldap_basedn, ldap.SCOPE_SUBTREE, "(uid=%s)"%username, [''])[0][0]
+                else:
+                    dn = "uid=" + username + "," + ldap_basedn
                 con.simple_bind_s(dn, password)
                 if manage_user:
                     result = con.search_s(dn, ldap.SCOPE_BASE,
