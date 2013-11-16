@@ -5985,6 +5985,11 @@ class MongoDBAdapter(NoSQLAdapter):
         return {self.expand(first): ('%s' % \
                 self.expand(second, 'string').replace('%','/'))}
 
+    def ILIKE(self, first, second):
+        val = second if isinstance(second,self.ObjectId) else {
+            '$regex': second.replace('%', ''), '$options': 'i'}
+        return {self.expand(first): val}
+
     def STARTSWITH(self, first, second):
         #escaping regex operators?
         return {self.expand(first): ('/^%s/' % \
