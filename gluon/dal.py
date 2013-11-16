@@ -2199,7 +2199,7 @@ class BaseAdapter(ConnectionPool):
                         # GoogleDatastoreAdapter
                         # references
                         if isinstance(self, GoogleDatastoreAdapter):
-                            id = value.key().id_or_name()
+                            id = value.key.id() if self.use_ndb else value.key().id_or_name()
                             colset[fieldname] = id
                             colset.gae_item = value
                         else:
@@ -5067,7 +5067,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                     # key qeuries return a class instance,
                     # can't use projection
                     # extra values will be ignored in post-processing later
-                    item = (self.use_ndb and filter.value.get()) or tableobj.get(filter.value)
+                    item = filter.value.get() if self.use_ndb else tableobj.get(filter.value)
                     items = (item and [item]) or []
                 else:
                     # key qeuries return a class instance,
@@ -5084,7 +5084,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                         items.order(tableobj._key)
                     else:
                         items.order('__key__')
-                items = (self.use_ndb and self.filter(items, tableobj, filter.name, filter.op, filter.value)) or\
+                items = self.filter(items, tableobj, filter.name, filter.op, filter.value) if self.use_ndb else\
                         items.filter('%s %s' % (filter.name,filter.op), filter.value)
 
         if not isinstance(items,list):
@@ -5125,7 +5125,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                 #cursor is only useful if there was a limit and we didn't return
                 # all results
                 if args_get('reusecursor'):
-                    db['_lastcursor'] = (self.use_ndb and cursor) or items.cursor()
+                    db['_lastcursor'] = cursor if self.use_ndb else items.cursor()
                 items = rows
         return (items, tablename, projection or db[tablename].fields)
 
@@ -5218,7 +5218,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         # table._db['_lastsql'] = self._insert(table,fields)
         tmp = table._tableobj(**dfields)
         tmp.put()
-        key = (self.use_ndb and tmp.key) or tmp.key()
+        key = tmp.key if self.use_ndb else tmp.key()
         rid = Reference(key.id())
         (rid._table, rid._record, rid._gaekey) = (table, None, key)
         return rid
