@@ -7770,7 +7770,7 @@ class DAL(object):
                         raise
                     except Exception:
                         tb = traceback.format_exc()
-                        sys.stderr.write('DEBUG: connect attempt %i, connection error:\n%s' % (k, tb))
+                        LOGGER.debug('DEBUG: connect attempt %i, connection error:\n%s' % (k, tb))
                 if connected:
                     break
                 else:
