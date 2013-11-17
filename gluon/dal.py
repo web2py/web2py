@@ -5555,7 +5555,8 @@ class MongoDBAdapter(NoSQLAdapter):
         if arg == 0:
             hexvalue = "".zfill(24)
         else:
-            hexvalue = hex(arg)[2:].replace("L", "")
+            hexvalue = hex(arg
+                ).split("x")[-1].replace("L", "").zfill(24)
         return self.ObjectId(hexvalue)
 
     def parse_reference(self, value, field_type):
