@@ -4979,16 +4979,18 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
     def truncate(self,table,mode):
         self.db(self.db._adapter.id_query(table)).delete()
 
+    GAE_FILTER_OPTIONS = {
+        '=': lambda q, t, p, v: q.filter(getattr(t,p) == v),
+        '>': lambda q, t, p, v: q.filter(getattr(t,p) > v),
+        '<': lambda q, t, p, v: q.filter(getattr(t,p) < v),
+        '<=': lambda q, t, p, v: q.filter(getattr(t,p) <= v),
+        '>=': lambda q, t, p, v: q.filter(getattr(t,p) >= v),
+        '!=': lambda q, t, p, v: q.filter(getattr(t,p) != v),
+        'in': lambda q, t, p, v: q.filter(getattr(t,p).IN(v)),
+        }
+
     def filter(self, query, tableobj, prop, op, value):
-        return {
-            '=': query.filter(getattr(tableobj, prop) == value),
-            '>': query.filter(getattr(tableobj, prop) > value),
-            '<': query.filter(getattr(tableobj, prop) < value),
-            '<=': query.filter(getattr(tableobj, prop) <= value),
-            '>=': query.filter(getattr(tableobj, prop) >= value),
-            '!=': query.filter(getattr(tableobj, prop) != value),
-            'in': query.filter(getattr(tableobj, prop).IN(value)),
-        }[op]
+        return self.GAE_FILTER_OPTIONS[op](query, tableobj, prop, value)
 
     def select_raw(self,query,fields=None,attributes=None):
         db = self.db
