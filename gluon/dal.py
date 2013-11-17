@@ -252,7 +252,7 @@ THREAD_LOCAL = threading.local()
 REGEX_TYPE = re.compile('^([\w\_\:]+)')
 REGEX_DBNAME = re.compile('^(\w+)(\:\w+)*')
 REGEX_W = re.compile('^\w+$')
-REGEX_TABLE_DOT_FIELD = re.compile('^(\w+?)\.(\w+?)$')
+REGEX_TABLE_DOT_FIELD = re.compile('^(\w+)\.([^.]+)$')
 REGEX_NO_GREEDY_ENTITY_NAME = r'(.+?)'
 REGEX_UPLOAD_PATTERN = re.compile('(?P<table>[\w\-]+)\.(?P<field>[\w\-]+)\.(?P<uuidkey>[\w\-]+)(\.(?P<name>\w+))?\.\w+$')
 REGEX_CLEANUP_FN = re.compile('[\'"\s;]+')
@@ -1121,7 +1121,7 @@ class BaseAdapter(ConnectionPool):
             k,v=item
             if not isinstance(v,dict):
                 v=dict(type='unknown',sql=v)
-            if not self.ignore_field_case: return k, v
+            if self.ignore_field_case is not True: return k, v
             return k.lower(),v
         # make sure all field names are lower case to avoid
         # migrations because of case cahnge
@@ -2190,7 +2190,7 @@ class BaseAdapter(ConnectionPool):
                 table = db[tablename]
                 field = table[fieldname]
                 ft = field.type
-                tmps.append((tablename,fieldname,table,field,ft))
+                tmps.append((tablename, fieldname, table, field, ft))
         for (i,row) in enumerate(rows):
             new_row = Row()
             for (j,colname) in enumerate(colnames):
@@ -2198,9 +2198,8 @@ class BaseAdapter(ConnectionPool):
                 tmp = tmps[j]
                 if tmp:
                     (tablename,fieldname,table,field,ft) = tmp
-                    if tablename in new_row:
-                        colset = new_row[tablename]
-                    else:
+                    colset = new_row.get(tablename, None)
+                    if colset is None:
                         colset = new_row[tablename] = Row()
                         if tablename not in virtualtables:
                             virtualtables.append(tablename)
@@ -2619,12 +2618,12 @@ class MySQLAdapter(BaseAdapter):
 
     def _drop(self,table,mode):
         # breaks db integrity but without this mysql does not drop table
-        table_rname = table._rname or table
+        table_rname = table.sqlsafe
         return ['SET FOREIGN_KEY_CHECKS=0;','DROP TABLE %s;' % table_rname,
                 'SET FOREIGN_KEY_CHECKS=1;']
 
     def _insert_empty(self, table):
-        return 'INSERT INTO %s VALUES (DEFAULT);' % (self.QUOTE_TEMPLATE % table)
+        return 'INSERT INTO %s VALUES (DEFAULT);' % (table.sqlsafe)
 
     def distributed_transaction_begin(self,key):
         self.execute('XA START;')
@@ -2971,6 +2970,11 @@ class PostgreSQLAdapter(BaseAdapter):
             return value
         return BaseAdapter.represent(self, obj, fieldtype)
 
+    def _drop(self, table, mode='restrict'):
+        if mode not in ['restrict', 'cascade', '']:
+            raise ValueError('Invalid mode: %s' % mode)
+        return ['DROP TABLE ' + table.sqlsafe + ' ' + str(mode) + ';']
+
 class NewPostgreSQLAdapter(PostgreSQLAdapter):
     drivers = ('psycopg2','pg8000')
 
@@ -3118,7 +3122,7 @@ class OracleAdapter(BaseAdapter):
 
     def _drop(self,table,mode):
         sequence_name = table._sequence_name
-        return ['DROP TABLE %s %s;' % (table, mode), 'DROP SEQUENCE %s;' % sequence_name]
+        return ['DROP TABLE %s %s;' % (table.sqlsafe, mode), 'DROP SEQUENCE %s;' % sequence_name]
 
     def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
         if limitby:
@@ -3742,7 +3746,7 @@ class FireBirdAdapter(BaseAdapter):
 
     def _drop(self,table,mode):
         sequence_name = table._sequence_name
-        return ['DROP TABLE %s %s;' % (table, mode), 'DROP GENERATOR %s;' % sequence_name]
+        return ['DROP TABLE %s %s;' % (table.sqlsafe, mode), 'DROP GENERATOR %s;' % sequence_name]
 
     def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
         if limitby:
@@ -7265,12 +7269,32 @@ class Row(object):
     __init__ = lambda self,*args,**kwargs: self.__dict__.update(*args,**kwargs)
 
     def __getitem__(self, k):
+        if isinstance(k, Table):
+            try:
+                return ogetattr(self, k._tablename)
+            except (KeyError,AttributeError,TypeError):
+                pass
+        elif isinstance(k, Field):
+            try:
+                return ogetattr(self, k.name)
+            except (KeyError,AttributeError,TypeError):
+                pass
+            try:
+                return ogetattr(ogetattr(self, k.tablename), k.name)
+            except (KeyError,AttributeError,TypeError):
+                pass
+
         key=str(k)
         _extra = ogetattr(self, '__dict__').get('_extra', None)
         if _extra is not None:
             v = _extra.get(key, DEFAULT)
             if v != DEFAULT:
                 return v
+        try:
+            return ogetattr(self, key)
+        except (KeyError,AttributeError,TypeError):
+            pass
+
         m = REGEX_TABLE_DOT_FIELD.match(key)
         if m:
             try:
@@ -8669,7 +8693,7 @@ class Table(object):
                     fields.append(Field(fn,'blob',default='',
                                         writable=False,readable=False))
 
-        lower_fieldnames = set()
+        fieldnames_set = set()
         reserved = dir(Table) + ['fields']
         if (db and db.check_reserved):
             check_reserved = db.check_reserved_keyword
@@ -8680,12 +8704,15 @@ class Table(object):
         for field in fields:
             field_name = field.name
             check_reserved(field_name)
-            fn_lower = field_name.lower()
-            if fn_lower in lower_fieldnames:
+            if db and db._ignore_field_case:
+                fname_item = field_name.lower()
+            else:
+                fname_item = field_name
+            if fname_item in fieldnames_set:
                 raise SyntaxError("duplicate field %s in table %s" \
                     % (field_name, tablename))
             else:
-                lower_fieldnames.add(fn_lower)
+                fieldnames_set.add(fname_item)
 
             self.fields.append(field_name)
             self[field_name] = field
