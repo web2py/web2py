@@ -5448,7 +5448,7 @@ class MongoDBAdapter(NoSQLAdapter):
     native_json = True
     drivers = ('pymongo',)
 
-    uploads_in_blob = True
+    uploads_in_blob = False
 
     types = {
                 'boolean': bool,
