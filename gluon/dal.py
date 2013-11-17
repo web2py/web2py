@@ -4987,6 +4987,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
             '<=': query.filter(getattr(tableobj, prop) <= value),
             '>=': query.filter(getattr(tableobj, prop) >= value),
             '!=': query.filter(getattr(tableobj, prop) != value),
+            'in': query.filter(getattr(tableobj, prop).IN(value)),
         }[op]
 
     def select_raw(self,query,fields=None,attributes=None):
@@ -5084,8 +5085,11 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                         items.order(tableobj._key)
                     else:
                         items.order('__key__')
-                items = self.filter(items, tableobj, filter.name, filter.op, filter.value) if self.use_ndb else\
-                        items.filter('%s %s' % (filter.name,filter.op), filter.value)
+                items = self.filter(items, tableobj, filter.name, 
+                                    filter.op, filter.value) \
+                                    if self.use_ndb else \
+                        items.filter('%s %s' % (filter.name,filter.op), 
+                                     filter.value)
 
         if not isinstance(items,list):
             if args_get('left', None):
