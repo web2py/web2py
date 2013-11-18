@@ -710,7 +710,6 @@ class BaseAdapter(ConnectionPool):
     T_SEP = ' '
     QUOTE_TEMPLATE = '"%s"'
 
-
     types = {
         'boolean': 'CHAR(1)',
         'string': 'CHAR(%(length)s)',
@@ -851,7 +850,6 @@ class BaseAdapter(ConnectionPool):
                 return lambda *a, **b: []
         self.connection = Dummy()
         self.cursor = Dummy()
-
 
     def sequence_name(self,tablename):
         return self.QUOTE_TEMPLATE % ('%s_sequence' % tablename)
@@ -1915,7 +1913,6 @@ class BaseAdapter(ConnectionPool):
 
     def create_sequence_and_triggers(self, query, table, **args):
         self.execute(query)
-        
 
     def log_execute(self, *a, **b):
         if not self.connection: raise ValueError(a[0])
@@ -2218,7 +2215,7 @@ class BaseAdapter(ConnectionPool):
                         # GoogleDatastoreAdapter
                         # references
                         if isinstance(self, GoogleDatastoreAdapter):
-                            id = value.key().id_or_name()
+                            id = value.key.id() if self.use_ndb else value.key().id_or_name()
                             colset[fieldname] = id
                             colset.gae_item = value
                         else:
@@ -3492,15 +3489,21 @@ class MSSQL4Adapter(MSSQLAdapter):
     """ support for true pagination in MSSQL >= 2012"""
 
     def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
-        if not sql_o:
-            #if there is no orderby, we can't use the brand new statements
-            #that being said, developer chose its own poison, so be it random
-            sql_o += ' ORDER BY %s' % self.RANDOM()
         if limitby:
             (lmin, lmax) = limitby
-            sql_o += ' OFFSET %i ROWS FETCH NEXT %i ROWS ONLY' % (lmin, lmax - lmin)
+            if lmin == 0:
+                #top is still slightly faster, especially because
+                #web2py's default to fetch references is to not specify
+                #an orderby clause
+                sql_s += ' TOP %i' % lmax
+            else:
+                if not sql_o:
+                    #if there is no orderby, we can't use the brand new statements
+                    #that being said, developer chose its own poison, so be it random
+                    sql_o += ' ORDER BY %s' % self.RANDOM()
+                sql_o += ' OFFSET %i ROWS FETCH NEXT %i ROWS ONLY' % (lmin, lmax - lmin)
         return 'SELECT %s %s FROM %s%s%s;' % \
-            (sql_s, sql_f, sql_t, sql_w, sql_o)
+                (sql_s, sql_f, sql_t, sql_w, sql_o)
 
     def rowslice(self,rows,minimum=0,maximum=None):
         return rows
@@ -5018,6 +5021,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
             '<=': query.filter(getattr(tableobj, prop) <= value),
             '>=': query.filter(getattr(tableobj, prop) >= value),
             '!=': query.filter(getattr(tableobj, prop) != value),
+            'in': query.filter(getattr(tableobj, prop).IN(value)),
         }[op]
 
     def select_raw(self,query,fields=None,attributes=None):
@@ -5098,7 +5102,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                     # key qeuries return a class instance,
                     # can't use projection
                     # extra values will be ignored in post-processing later
-                    item = (self.use_ndb and filter.value.get()) or tableobj.get(filter.value)
+                    item = filter.value.get() if self.use_ndb else tableobj.get(filter.value)
                     items = (item and [item]) or []
                 else:
                     # key qeuries return a class instance,
@@ -5115,8 +5119,11 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                         items.order(tableobj._key)
                     else:
                         items.order('__key__')
-                items = (self.use_ndb and self.filter(items, tableobj, filter.name, filter.op, filter.value)) or\
-                        items.filter('%s %s' % (filter.name,filter.op), filter.value)
+                items = self.filter(items, tableobj, filter.name, 
+                                    filter.op, filter.value) \
+                                    if self.use_ndb else \
+                        items.filter('%s %s' % (filter.name,filter.op), 
+                                     filter.value)
 
         if not isinstance(items,list):
             if args_get('left', None):
@@ -5156,7 +5163,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                 #cursor is only useful if there was a limit and we didn't return
                 # all results
                 if args_get('reusecursor'):
-                    db['_lastcursor'] = (self.use_ndb and cursor) or items.cursor()
+                    db['_lastcursor'] = cursor if self.use_ndb else items.cursor()
                 items = rows
         return (items, tablename, projection or db[tablename].fields)
 
@@ -5249,7 +5256,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         # table._db['_lastsql'] = self._insert(table,fields)
         tmp = table._tableobj(**dfields)
         tmp.put()
-        key = (self.use_ndb and tmp.key) or tmp.key()
+        key = tmp.key if self.use_ndb else tmp.key()
         rid = Reference(key.id())
         (rid._table, rid._record, rid._gaekey) = (table, None, key)
         return rid
@@ -5475,7 +5482,7 @@ class MongoDBAdapter(NoSQLAdapter):
     native_json = True
     drivers = ('pymongo',)
 
-    uploads_in_blob = True
+    uploads_in_blob = False
 
     types = {
                 'boolean': bool,
@@ -5583,10 +5590,7 @@ class MongoDBAdapter(NoSQLAdapter):
         if not isinstance(arg, (int, long)):
             raise TypeError("object_id argument must be of type " +
                             "ObjectId or an objectid representable integer")
-        if arg == 0:
-            hexvalue = "".zfill(24)
-        else:
-            hexvalue = hex(arg)[2:].replace("L", "")
+        hexvalue = hex(arg)[2:].rstrip('L').zfill(24)
         return self.ObjectId(hexvalue)
 
     def parse_reference(self, value, field_type):
@@ -5608,6 +5612,9 @@ class MongoDBAdapter(NoSQLAdapter):
             value = obj
         else:
             value = NoSQLAdapter.represent(self, obj, fieldtype)
+        if isinstance(obj, (list, tuple)) and \
+                (not fieldtype == "json" or fieldtype.startswith('list:')):
+            return value
         # reference types must be convert to ObjectID
         if fieldtype  =='date':
             if value == None:
@@ -5626,6 +5633,8 @@ class MongoDBAdapter(NoSQLAdapter):
             # string or integer
             return datetime.datetime.combine(d, value)
         elif fieldtype == "blob":
+            if value== None:
+                return value
             from bson import Binary
             if not isinstance(value, Binary):
                 if not isinstance(value, basestring):
@@ -5901,23 +5910,15 @@ class MongoDBAdapter(NoSQLAdapter):
 
     # TODO This will probably not work:(
     def NOT(self, first):
-        result = {}
-        result["$not"] = self.expand(first)
-        return result
+        return {'$not': self.expand(first)}
 
     def AND(self,first,second):
-        f = self.expand(first)
-        s = self.expand(second)
-        f.update(s)
-        return f
+        # pymongo expects: .find({'$and': [{'x':'1'}, {'y':'2'}]})
+        return {'$and': [self.expand(first),self.expand(second)]}
 
     def OR(self,first,second):
         # pymongo expects: .find({'$or': [{'name':'1'}, {'name':'2'}]})
-        result = {}
-        f = self.expand(first)
-        s = self.expand(second)
-        result['$or'] = [f,s]
-        return result
+        return {'$or': [self.expand(first),self.expand(second)]}
 
     def BELONGS(self, first, second):
         if isinstance(second, str):
@@ -6010,6 +6011,11 @@ class MongoDBAdapter(NoSQLAdapter):
         #escaping regex operators?
         return {self.expand(first): ('%s' % \
                 self.expand(second, 'string').replace('%','/'))}
+
+    def ILIKE(self, first, second):
+        val = second if isinstance(second,self.ObjectId) else {
+            '$regex': second.replace('%', ''), '$options': 'i'}
+        return {self.expand(first): val}
 
     def STARTSWITH(self, first, second):
         #escaping regex operators?
@@ -7824,7 +7830,7 @@ class DAL(object):
                         raise
                     except Exception:
                         tb = traceback.format_exc()
-                        sys.stderr.write('DEBUG: connect attempt %i, connection error:\n%s' % (k, tb))
+                        LOGGER.debug('DEBUG: connect attempt %i, connection error:\n%s' % (k, tb))
                 if connected:
                     break
                 else:

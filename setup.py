@@ -25,7 +25,8 @@ def tar(file, filelist, expression='^.+$'):
 
 def start():
     if 'sdist' in sys.argv:
-        tar('gluon/env.tar', ['applications', 'VERSION', 'splashlogo.gif'])
+        tar('gluon/env.tar', ['applications', 'VERSION',
+                              'extras/icons/splashlogo.gif'])
 
     setup(name='web2py',
           version=read_file("VERSION").split()[1],
@@ -63,6 +64,8 @@ def start():
                     'gluon/contrib/pyrtf',
                     'gluon/contrib/pysimplesoap',
                     'gluon/contrib/simplejson',
+                    'gluon/contrib/pg8000',
+                    'gluon/contrib/plural_rules',
                     'gluon/tests',
                     ],
           package_data={'gluon': ['env.tar']},
