@@ -10037,7 +10037,7 @@ class Query(object):
         return '<Query %s>' % BaseAdapter.expand(self.db._adapter,self)
 
     def __str__(self):
-        return self.db._adapter.expand(self)
+        return str(self.db._adapter.expand(self))
 
     def __and__(self, other):
         return Query(self.db,self.db._adapter.AND,self,other)
