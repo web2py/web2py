@@ -294,10 +294,9 @@ def URL(
             from globals import current
             if hasattr(current, 'response'):
                 response = current.response
-                if response:
-                    if response.static_version and response.static_version_urls:
-                        args = [function] + args
-                        function = '_'+str(response.static_version)
+                if response.static_version and response.static_version_urls:
+                    args = [function] + args
+                    function = '_'+str(response.static_version)
 
         if '.' in function:
             function, extension = function.rsplit('.', 1)
