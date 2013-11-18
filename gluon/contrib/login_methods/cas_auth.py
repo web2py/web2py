@@ -56,8 +56,10 @@ class CasAuth(object):
         self.maps = maps
         self.casversion = casversion
         self.casusername = casusername
+        # vars commented because of
+        # https://code.google.com/p/web2py/issues/detail?id=1774
         self.cas_my_url = URL(args=current.request.args,
-                              vars=current.request.vars,
+                              #vars=current.request.vars, 
                               scheme=True)
 
     def login_url(self, next="/"):
