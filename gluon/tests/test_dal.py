@@ -1433,9 +1433,9 @@ class TestQuoting(unittest.TestCase):
     # tests for case sensitivity
     def testCase(self):
         db = DAL(DEFAULT_URI, check_reserved=['all'], ignore_field_case=False)
-    
-        # test table case
 
+        
+        # test table case
         t0 = db.define_table('B',
                         Field('f', 'string'))
         try:
@@ -1470,7 +1470,6 @@ class TestQuoting(unittest.TestCase):
         except Exception, e:
             # some db does not support case sensitive field names mysql is one of them.
             if DEFAULT_URI.startswith('mysql:'):
-                self.assertTrue(isinstance(e, db._adapter.driver.OperationalError))
                 db.rollback()
                 return
             raise e
