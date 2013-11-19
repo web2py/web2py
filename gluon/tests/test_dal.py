@@ -1495,6 +1495,12 @@ class TestQuoting(unittest.TestCase):
         t3 = db.define_table('t3', Field('f', length=100), Field('t0_Code', t0.Code), primarykey=['f'])
         t4 = db.define_table('t4', Field('f', length=100), Field('t0', t0), primarykey=['f'])
 
+        try:
+            t5 = db.define_table('t5', Field('f', length=100), Field('t0', 'reference no_table_wrong_reference'), primarykey=['f'])
+        except Exception, e:
+            self.assertTrue(isinstance(e, KeyError))
+
+
         t0.drop('cascade')
         t22.drop()
         t3.drop()

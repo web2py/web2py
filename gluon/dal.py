@@ -1794,9 +1794,9 @@ class BaseAdapter(ConnectionPool):
                 sql_o += ' ORDER BY %s' % self.expand(orderby)
         if (limitby and not groupby and tablenames and orderby_on_limitby and not orderby):
             sql_o += ' ORDER BY %s' % ', '.join(
-                ['%s.%s'%(self.QUOTE_TEMPLATE % t,x) for t in tablenames for x in (
+                [self.db[t][x].sqlsafe for t in tablenames for x in (
                     hasattr(self.db[t],'_primarykey') and self.db[t]._primarykey
-                    or [self.db[t]._id._rname or self.db[t]._id.name]
+                    or ['_id']
                     )
                  ]
                 )

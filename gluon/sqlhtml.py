@@ -2893,7 +2893,7 @@ class SQLTABLE(TABLE):
         if not sqlrows:
             return
         if not columns:
-            columns = sqlrows.colnames
+            columns = ['.'.join(sqlrows.db._adapter.REGEX_TABLE_DOT_FIELD.match(c).groups()) for c in sqlrows.colnames]
         if headers == 'fieldname:capitalize':
             headers = {}
             for c in columns:
