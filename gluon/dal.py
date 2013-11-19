@@ -676,14 +676,13 @@ class ConnectionPool(object):
 ###################################################################################
 class AdapterMeta(type):
     def __new__(cls, clsname, bases, dct):
-        sup = super(AdapterMeta, cls).__new__(cls, clsname, bases, dct)
-        sup.REGEX_TABLE_DOT_FIELD = re.compile(r'^' + \
-                                               sup.QUOTE_TEMPLATE % REGEX_NO_GREEDY_ENTITY_NAME + \
+        classobj = super(AdapterMeta, cls).__new__(cls, clsname, bases, dct)
+        classobj.REGEX_TABLE_DOT_FIELD = re.compile(r'^' + \
+                                               classobj.QUOTE_TEMPLATE % REGEX_NO_GREEDY_ENTITY_NAME + \
                                                r'\.' + \
-                                               sup.QUOTE_TEMPLATE % REGEX_NO_GREEDY_ENTITY_NAME + \
+                                               classobj.QUOTE_TEMPLATE % REGEX_NO_GREEDY_ENTITY_NAME + \
                                                r'$')
-        
-        return sup
+        return classobj
 
 ###################################################################################
 # this is a generic adapter that does nothing; all others are derived from this one
@@ -734,6 +733,7 @@ class BaseAdapter(ConnectionPool):
         # the two below are only used when DAL(...bigint_id=True) and replace 'id','reference'
         'big-id': 'BIGINT PRIMARY KEY AUTOINCREMENT',
         'big-reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference FK': ', CONSTRAINT  "FK_%(constraint_name)s" FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         }
 
     def isOperationalError(self,exception):
@@ -885,60 +885,71 @@ class BaseAdapter(ConnectionPool):
                 if referenced == '.':
                     referenced = tablename
                 constraint_name = self.constraint_name(tablename, field_name)
-                if not '.' in referenced \
-                        and referenced != tablename \
-                        and hasattr(table,'_primarykey'):
-                    ftype = types['integer']
-                else:
-                    if hasattr(table,'_primarykey'):
+                # if not '.' in referenced \
+                #         and referenced != tablename \
+                #         and hasattr(table,'_primarykey'):
+                #     ftype = types['integer']
+                #else:
+                try:
+                    rtable = self.db[referenced]
+                    rfield = rtable._id
+                    rfieldname = rfield.name
+                    rtablename = referenced
+                except (KeyError, ValueError, AttributeError):
+                    try:
                         rtablename,rfieldname = referenced.split('.')
                         rtable = db[rtablename]
                         rfield = rtable[rfieldname]
-                        # must be PK reference or unique
-                        if rfieldname in rtable._primarykey or \
-                                rfield.unique:
-                            ftype = types[rfield.type[:9]] % \
-                                dict(length=rfield.length)
-                            # multicolumn primary key reference?
-                            if not rfield.unique and len(rtable._primarykey)>1:
-                                # then it has to be a table level FK
-                                if rtablename not in TFK:
-                                    TFK[rtablename] = {}
-                                TFK[rtablename][rfieldname] = field_name
-                            else:
-                                ftype = ftype + \
-                                    types['reference FK'] % dict(
-                                        constraint_name = constraint_name, # should be quoted
-                                        foreign_key = rtable.sqlsafe + ' (' + rfield.sqlsafe_name + ')',
-                                        table_name = table.sqlsafe,
-                                    field_name = field.sqlsafe_name,
-                                    on_delete_action=field.ondelete)
+                    except Exception, e:
+                        LOGGER.debug('Error: %s' %e)
+                        raise KeyError('Cannot resolve reference %s in %s definition' % (referenced, table._tablename))
+
+                # must be PK reference or unique
+                if getattr(rtable, '_primarykey', None) and rfieldname in rtable._primarykey or \
+                        rfield.unique:
+                    ftype = types[rfield.type[:9]] % \
+                        dict(length=rfield.length)
+                    # multicolumn primary key reference?
+                    if not rfield.unique and len(rtable._primarykey)>1:
+                        # then it has to be a table level FK
+                        if rtablename not in TFK:
+                            TFK[rtablename] = {}
+                        TFK[rtablename][rfieldname] = field_name
                     else:
-                        # make a guess here for circular references
-                        if referenced in db:
-                            id_fieldname = db[referenced]._id.sqlsafe_name
-                        elif referenced == tablename:
-                            id_fieldname = table._id.sqlsafe_name
-                        else: #make a guess
-                            id_fieldname = self.QUOTE_TEMPLATE % 'id'
-                        #gotcha: the referenced table must be defined before
-                        #the referencing one to be able to create the table
-                        #Also if it's not recommended, we can still support
-                        #references to tablenames without rname to make
-                        #migrations and model relationship work also if tables
-                        #are not defined in order
-                        if referenced == tablename:
-                            real_referenced = db[referenced].sqlsafe
-                        else:
-                            real_referenced = (referenced in db
-                                               and db[referenced].sqlsafe
-                                               or referenced)
-                        ftype = types[field_type[:9]] % dict(
-                            index_name = self.QUOTE_TEMPLATE % (field_name+'__idx'),
-                            field_name = field.sqlsafe_name,
-                            constraint_name = self.QUOTE_TEMPLATE % constraint_name,
-                            foreign_key = '%s (%s)' % (real_referenced, table._id.sqlsafe_name),
-                            on_delete_action=field.ondelete)
+                        ftype = ftype + \
+                            types['reference FK'] % dict(
+                                constraint_name = constraint_name, # should be quoted
+                                foreign_key = rtable.sqlsafe + ' (' + rfield.sqlsafe_name + ')',
+                                table_name = table.sqlsafe,
+                                field_name = field.sqlsafe_name,
+                                on_delete_action=field.ondelete)
+                else:
+                    # make a guess here for circular references
+                    if referenced in db:
+                        id_fieldname = db[referenced]._id.sqlsafe_name
+                    elif referenced == tablename:
+                        id_fieldname = table._id.sqlsafe_name
+                    else: #make a guess
+                        id_fieldname = self.QUOTE_TEMPLATE % 'id'
+                    #gotcha: the referenced table must be defined before
+                    #the referencing one to be able to create the table
+                    #Also if it's not recommended, we can still support
+                    #references to tablenames without rname to make
+                    #migrations and model relationship work also if tables
+                    #are not defined in order
+                    if referenced == tablename:
+                        real_referenced = db[referenced].sqlsafe
+                    else:
+                        real_referenced = (referenced in db
+                                           and db[referenced].sqlsafe
+                                           or referenced)
+                    rfield = db[referenced]._id
+                    ftype = types[field_type[:9]] % dict(
+                        index_name = self.QUOTE_TEMPLATE % (field_name+'__idx'),
+                        field_name = field.sqlsafe_name,
+                        constraint_name = self.QUOTE_TEMPLATE % constraint_name,
+                        foreign_key = '%s (%s)' % (real_referenced, rfield.sqlsafe_name),
+                        on_delete_action=field.ondelete)
             elif field_type.startswith('list:reference'):
                 ftype = types[field_type[:14]]
             elif field_type.startswith('decimal'):
@@ -1023,7 +1034,7 @@ class BaseAdapter(ConnectionPool):
         fields = ',\n    '.join(fields)
         for rtablename in TFK:
             rfields = TFK[rtablename]
-            pkeys = [self.QUOTE_TEMPLATE % pk.name for pk in db[rtablename]._primarykey]
+            pkeys = [self.QUOTE_TEMPLATE % pk for pk in db[rtablename]._primarykey]
             fkeys = [self.QUOTE_TEMPLATE % rfields[k].name for k in pkeys ]
             fields = fields + ',\n    ' + \
                 types['reference TFK'] % dict(
@@ -1038,7 +1049,7 @@ class BaseAdapter(ConnectionPool):
         if getattr(table,'_primarykey',None):
             query = "CREATE TABLE %s(\n    %s,\n    %s) %s" % \
                 (table.sqlsafe, fields,
-                 self.PRIMARY_KEY(', '.join([self.QUOTE_TEMPLATE % pk.name for pk in table._primarykey])),other)
+                 self.PRIMARY_KEY(', '.join([self.QUOTE_TEMPLATE % pk for pk in table._primarykey])),other)
         else:
             query = "CREATE TABLE %s(\n    %s\n)%s" % \
                 (table.sqlsafe, fields, other)
@@ -2589,6 +2600,7 @@ class MySQLAdapter(BaseAdapter):
         'list:reference': 'LONGTEXT',
         'big-id': 'BIGINT AUTO_INCREMENT NOT NULL',
         'big-reference': 'BIGINT, INDEX %(index_name)s (%(field_name)s), FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference FK': ', CONSTRAINT  `FK_%(constraint_name)s` FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         }
 
     QUOTE_TEMPLATE = "`%s`"
@@ -2693,6 +2705,8 @@ class MySQLAdapter(BaseAdapter):
 class PostgreSQLAdapter(BaseAdapter):
     drivers = ('psycopg2','pg8000')
 
+    QUOTE_TEMPLATE = '"%s"'
+
     support_distributed_transaction = True
     types = {
         'boolean': 'CHAR(1)',
@@ -2719,12 +2733,11 @@ class PostgreSQLAdapter(BaseAdapter):
         'geography': 'GEOGRAPHY',
         'big-id': 'BIGSERIAL PRIMARY KEY',
         'big-reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
-        'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
-        'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
+        'reference FK': ', CONSTRAINT  "FK_%(constraint_name)s" FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'reference TFK': ' CONSTRAINT  "FK_%(foreign_table)s_PK" FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
 
         }
 
-    QUOTE_TEMPLATE = '"%s"'
 
     def varquote(self,name):
         return varquote_aux(name,'"%s"')
@@ -9803,7 +9816,12 @@ class Field(Expression):
         if not isinstance(fieldname, str) or hasattr(Table, fieldname) or \
                 fieldname[0] == '_' or REGEX_PYTHON_KEYWORDS.match(fieldname):
             raise SyntaxError('Field: invalid field name: %s' % fieldname)
-        self.type = type if not isinstance(type, (Table,Field)) else 'reference %s' % type
+
+        if not isinstance(type, (Table,Field)):
+            self.type = type
+        else:
+            self.type = 'reference %s' % type
+
         self.length = length if not length is None else DEFAULTLENGTH.get(self.type,512)
         self.default = default if default!=DEFAULT else (update or None)
         self.required = required  # is this field required

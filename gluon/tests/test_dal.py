@@ -1480,7 +1480,25 @@ class TestQuoting(unittest.TestCase):
         self.assertEqual(t0[1].a_A, 'a_A')
 
         t0.drop()
+
+    def testPKFK(self):
+        # test primary keys
+
+        db = DAL(DEFAULT_URI, check_reserved=['all'], ignore_field_case=False)
         
+        # test table without surrogate key. Length must is limited to
+        # 100 because of MySQL limitations: it cannot handle more than
+        # 767 bytes in unique keys.
+
+        t0 = db.define_table('t0', Field('Code', length=100), primarykey=['Code'])
+        t22 = db.define_table('t22', Field('f'), Field('t0_Code', 'reference t0'))
+        t3 = db.define_table('t3', Field('f', length=100), Field('t0_Code', t0.Code), primarykey=['f'])
+        t4 = db.define_table('t4', Field('f', length=100), Field('t0', t0), primarykey=['f'])
+
+        t0.drop('cascade')
+        t22.drop()
+        t3.drop()
+        t4.drop()
 if __name__ == '__main__':
     unittest.main()
     tearDownModule()
