@@ -1,42 +1,41 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-"""Create web2py model (python code) to represent PostgreSQL tables.
+"""Create web2py model (python code) to represent Oracle 11g tables.
 
 Features:
 
-* Uses ANSI Standard INFORMATION_SCHEMA (might work with other RDBMS)
+* Uses Oracle's metadata tables
 * Detects legacy "keyed" tables (not having an "id" PK)
 * Connects directly to running databases, no need to do a SQL dump
 * Handles notnull, unique and referential constraints
 * Detects most common datatypes and default values
-* Support PostgreSQL columns comments (ie. for documentation)
+* Documents alternative datatypes as comments
 
 Requeriments:
 
-* Needs PostgreSQL pyscopg2 python connector (same as web2py)
-* If used against other RDBMS, import and use proper connector (remove pg_ code)
+* Needs Oracle cx_Oracle python connector (same as web2py)
 
 
-Created by Mariano Reingart, based on a script to "generate schemas from dbs"
-(mysql) by Alexandre Andrade
+Created by Oscar Fonts, based on extract_pgsql_models by Mariano Reingart,
+based in turn on a script to "generate schemas from dbs" (mysql)
+by Alexandre Andrade
 
 """
 
-_author__ = "Mariano Reingart <reingart@gmail.com>"
+_author__ = "Oscar Fonts <oscar.fonts@geomati.co>"
 
 HELP = """
-USAGE: extract_pgsql_models db host port user passwd
+USAGE: extract_oracle_models db host port user passwd
 
-Call with PostgreSQL database connection parameters,
+Call with Oracle database connection parameters,
 web2py model will be printed on standard output.
 
-EXAMPLE: python extract_pgsql_models.py mydb localhost 5432 reingart saraza
+EXAMPLE: python extract_oracle_models.py ORCL localhost 1521 user password
 """
 
 # Config options
 DEBUG = False       # print debug messages to STDERR
-SCHEMA = 'public'   # change if not using default PostgreSQL schema
 
 # Constant for Field keyword parameter order (and filter):
 KWARGS = ('type', 'length', 'default', 'required', 'ondelete',
@@ -52,7 +51,7 @@ def query(conn, sql, *args):
     ret = []
     try:
         if DEBUG:
-            print >> sys.stderr, "QUERY: ", sql % args
+            print >> sys.stderr, "QUERY: ", sql , args
         cur.execute(sql, args)
         for row in cur:
             dic = {}
@@ -63,16 +62,18 @@ def query(conn, sql, *args):
                 print >> sys.stderr, "RET: ", dic
             ret.append(dic)
         return ret
+    except cx_Oracle.DatabaseError, exc:
+        error, = exc.args
+        print >> sys.stderr, "Oracle-Error-Message:", error.message
     finally:
         cur.close()
 
 
-def get_tables(conn, schema=SCHEMA):
+def get_tables(conn):
     "List table names in a given schema"
-    rows = query(conn, """SELECT table_name FROM information_schema.tables
-        WHERE table_schema = %s
-        ORDER BY table_name""", schema)
-    return [row['table_name'] for row in rows]
+    rows = query(conn, """SELECT TABLE_NAME FROM USER_TABLES
+        ORDER BY TABLE_NAME""")
+    return [row['TABLE_NAME'] for row in rows]
 
 
 def get_fields(conn, table):
@@ -80,154 +81,180 @@ def get_fields(conn, table):
     if DEBUG:
         print >> sys.stderr, "Processing TABLE", table
     rows = query(conn, """
-        SELECT column_name, data_type,
-            is_nullable,
-            character_maximum_length,
-            numeric_precision, numeric_precision_radix, numeric_scale,
-            column_default
-        FROM information_schema.columns
-        WHERE table_name=%s
-        ORDER BY ordinal_position""", table)
+        SELECT COLUMN_NAME, DATA_TYPE,
+            NULLABLE AS IS_NULLABLE,
+            CHAR_LENGTH AS CHARACTER_MAXIMUM_LENGTH,
+            DATA_PRECISION AS NUMERIC_PRECISION,
+            DATA_SCALE AS NUMERIC_SCALE,
+            DATA_DEFAULT AS COLUMN_DEFAULT
+        FROM USER_TAB_COLUMNS
+        WHERE TABLE_NAME=:t
+        """, table)
+
     return rows
 
 
 def define_field(conn, table, field, pks):
     "Determine field type, default value, references, etc."
     f = {}
-    ref = references(conn, table, field['column_name'])
+    ref = references(conn, table, field['COLUMN_NAME'])
+    # Foreign Keys
     if ref:
         f.update(ref)
-    elif field['column_default'] and \
-        field['column_default'].startswith("nextval") and \
-            field['column_name'] in pks:
-        # postgresql sequence (SERIAL) and primary key!
+    # PK & Numeric & autoincrement => id
+    elif field['COLUMN_NAME'] in pks and \
+            field['DATA_TYPE'] in ('INT', 'NUMBER') and \
+            is_autoincrement(conn, table, field):
         f['type'] = "'id'"
-    elif field['data_type'].startswith('character'):
-        f['type'] = "'string'"
-        if field['character_maximum_length']:
-            f['length'] = field['character_maximum_length']
-    elif field['data_type'] in ('text', ):
-        f['type'] = "'text'"
-    elif field['data_type'] in ('boolean', 'bit'):
-        f['type'] = "'boolean'"
-    elif field['data_type'] in ('integer', 'smallint', 'bigint'):
-        f['type'] = "'integer'"
-    elif field['data_type'] in ('double precision', 'real'):
+    # Other data types
+    elif field['DATA_TYPE'] in ('BINARY_DOUBLE'):
         f['type'] = "'double'"
-    elif field['data_type'] in ('timestamp', 'timestamp without time zone'):
-        f['type'] = "'datetime'"
-    elif field['data_type'] in ('date', ):
-        f['type'] = "'date'"
-    elif field['data_type'] in ('time', 'time without time zone'):
-        f['type'] = "'time'"
-    elif field['data_type'] in ('numeric', 'currency'):
-        f['type'] = "'decimal'"
-        f['precision'] = field['numeric_precision']
-        f['scale'] = field['numeric_scale'] or 0
-    elif field['data_type'] in ('bytea', ):
+    elif field['DATA_TYPE'] in ('CHAR','NCHAR'):
+        f['type'] = "'string'"
+        f['comment'] = "'Alternative types: boolean, time'"
+    elif field['DATA_TYPE'] in ('BLOB', 'CLOB'):
         f['type'] = "'blob'"
-    elif field['data_type'] in ('point', 'lseg', 'polygon', 'unknown', 'USER-DEFINED'):
-        f['type'] = ""  # unsupported?
+        f['comment'] = "'Alternative types: text, json, list:*'"
+    elif field['DATA_TYPE'] in ('DATE'):
+        f['type'] = "'datetime'"
+        f['comment'] = "'Alternative types: date'"
+    elif field['DATA_TYPE'] in ('FLOAT'):
+        f['type'] = "'float'"
+    elif field['DATA_TYPE'] in ('INT'):
+        f['type'] = "'integer'"
+    elif field['DATA_TYPE'] in ('NUMBER'):
+        f['type'] = "'bigint'"
+    elif field['DATA_TYPE'] in ('NUMERIC'):
+        f['type'] = "'decimal'"
+        f['precision'] = field['NUMERIC_PRECISION']
+        f['scale'] = field['NUMERIC_SCALE'] or 0
+    elif field['DATA_TYPE'] in ('VARCHAR2','NVARCHAR2'):
+        f['type'] = "'string'"
+        if field['CHARACTER_MAXIMUM_LENGTH']:
+            f['length'] = field['CHARACTER_MAXIMUM_LENGTH']
+        f['comment'] = "'Other possible types: password, upload'"
     else:
-        raise RuntimeError("Data Type not supported: %s " % str(field))
+        f['type'] = "'blob'"
+        f['comment'] = "'WARNING: Oracle Data Type %s was not mapped." % \
+                str(field['DATA_TYPE']) + " Using 'blob' as fallback.'" 
 
     try:
-        if field['column_default']:
-            if field['column_default'] == "now()":
+        if field['COLUMN_DEFAULT']:
+            if field['COLUMN_DEFAULT'] == "sysdate":
                 d = "request.now"
-            elif field['column_default'] == "true":
+            elif field['COLUMN_DEFAULT'].upper() == "T":
                 d = "True"
-            elif field['column_default'] == "false":
+            elif field['COLUMN_DEFAULT'].upper() == "F":
                 d = "False"
             else:
-                d = repr(eval(field['column_default']))
+                d = repr(eval(field['COLUMN_DEFAULT']))
             f['default'] = str(d)
     except (ValueError, SyntaxError):
         pass
     except Exception, e:
         raise RuntimeError(
-            "Default unsupported '%s'" % field['column_default'])
+            "Default unsupported '%s'" % field['COLUMN_DEFAULT'])
 
-    if not field['is_nullable']:
+    if not field['IS_NULLABLE']:
         f['notnull'] = "True"
 
-    comment = get_comment(conn, table, field)
-    if comment is not None:
-        f['comment'] = repr(comment)
     return f
 
 
 def is_unique(conn, table, field):
-    "Find unique columns (incomplete support)"
+    "Find unique columns"
     rows = query(conn, """
-        SELECT information_schema.constraint_column_usage.column_name
-        FROM information_schema.table_constraints
-        NATURAL JOIN information_schema.constraint_column_usage
-        WHERE information_schema.table_constraints.table_name=%s
-          AND information_schema.constraint_column_usage.column_name=%s
-          AND information_schema.table_constraints.constraint_type='UNIQUE'
-        ;""", table, field['column_name'])
+        SELECT COLS.COLUMN_NAME
+        FROM USER_CONSTRAINTS CONS, ALL_CONS_COLUMNS COLS
+        WHERE CONS.OWNER = COLS.OWNER
+          AND CONS.CONSTRAINT_NAME = COLS.CONSTRAINT_NAME
+          AND CONS.CONSTRAINT_TYPE = 'U'
+          AND COLS.TABLE_NAME = :t
+          AND COLS.COLUMN_NAME = :c
+        """, table, field['COLUMN_NAME'])
     return rows and True or False
 
 
-def get_comment(conn, table, field):
-    "Find the column comment (postgres specific)"
+# Returns True when a "BEFORE EACH ROW INSERT" trigger is found and:
+#  a) it mentions the "NEXTVAL" keyword (used by sequences)
+#  b) it operates on the given table and column
+#
+# On some (inelegant) database designs, SEQUENCE.NEXTVAL is called directly
+# from each "insert" statement, instead of using triggers. Such cases cannot
+# be detected by inspecting Oracle's metadata tables, as sequences are not
+# logically bound to any specific table or field.
+def is_autoincrement(conn, table, field):
+    "Find auto increment fields (best effort)"
     rows = query(conn, """
-        SELECT d.description AS comment
-        FROM pg_class c
-        JOIN pg_description d ON c.oid=d.objoid
-        JOIN pg_attribute a ON c.oid = a.attrelid
-        WHERE c.relname=%s AND a.attname=%s
-        AND a.attnum = d.objsubid
-        ;""", table, field['column_name'])
-    return rows and rows[0]['comment'] or None
+        SELECT TRIGGER_NAME
+        FROM USER_TRIGGERS,
+          (SELECT NAME, LISTAGG(TEXT, ' ') WITHIN GROUP (ORDER BY LINE) TEXT
+           FROM USER_SOURCE
+           WHERE TYPE = 'TRIGGER'
+           GROUP BY NAME
+          ) TRIGGER_DEFINITION
+        WHERE TRIGGER_NAME = NAME
+          AND TRIGGERING_EVENT = 'INSERT'
+          AND TRIGGER_TYPE = 'BEFORE EACH ROW'
+          AND TABLE_NAME = :t
+          AND UPPER(TEXT) LIKE UPPER('%.NEXTVAL%')
+          AND UPPER(TEXT) LIKE UPPER('%:NEW.' || :c || '%')
+        """, table, field['COLUMN_NAME'])
+    return rows and True or False
 
 
 def primarykeys(conn, table):
     "Find primary keys"
     rows = query(conn, """
-        SELECT information_schema.constraint_column_usage.column_name
-        FROM information_schema.table_constraints
-        NATURAL JOIN information_schema.constraint_column_usage
-        WHERE information_schema.table_constraints.table_name=%s
-          AND information_schema.table_constraints.constraint_type='PRIMARY KEY'
-        ;""", table)
-    return [row['column_name'] for row in rows]
+        SELECT COLS.COLUMN_NAME
+        FROM USER_CONSTRAINTS CONS, ALL_CONS_COLUMNS COLS
+        WHERE COLS.TABLE_NAME = :t
+            AND CONS.CONSTRAINT_TYPE = 'P'
+            AND CONS.OWNER = COLS.OWNER
+            AND CONS.CONSTRAINT_NAME = COLS.CONSTRAINT_NAME
+        """, table)
+
+    return [row['COLUMN_NAME'] for row in rows]
 
 
 def references(conn, table, field):
     "Find a FK (fails if multiple)"
     rows1 = query(conn, """
-        SELECT table_name, column_name, constraint_name,
-               update_rule, delete_rule, ordinal_position
-        FROM information_schema.key_column_usage
-        NATURAL JOIN information_schema.referential_constraints
-        NATURAL JOIN information_schema.table_constraints
-        WHERE information_schema.key_column_usage.table_name=%s
-          AND information_schema.key_column_usage.column_name=%s
-          AND information_schema.table_constraints.constraint_type='FOREIGN KEY'
-          ;""", table, field)
+        SELECT COLS.CONSTRAINT_NAME,
+            CONS.DELETE_RULE,
+            COLS.POSITION AS ORDINAL_POSITION
+        FROM USER_CONSTRAINTS CONS, ALL_CONS_COLUMNS COLS
+        WHERE COLS.TABLE_NAME = :t
+            AND COLS.COLUMN_NAME = :c
+            AND CONS.CONSTRAINT_TYPE = 'R'
+            AND CONS.OWNER = COLS.OWNER
+            AND CONS.CONSTRAINT_NAME = COLS.CONSTRAINT_NAME
+          """, table, field)
+
     if len(rows1) == 1:
         rows2 = query(conn, """
-            SELECT table_name, column_name, *
-            FROM information_schema.constraint_column_usage
-            WHERE constraint_name=%s
-            """, rows1[0]['constraint_name'])
+                SELECT COLS.TABLE_NAME, COLS.COLUMN_NAME
+                FROM USER_CONSTRAINTS CONS, ALL_CONS_COLUMNS COLS
+                WHERE CONS.CONSTRAINT_NAME = :k
+                   AND CONS.R_CONSTRAINT_NAME = COLS.CONSTRAINT_NAME
+                ORDER BY COLS.POSITION ASC
+            """, rows1[0]['CONSTRAINT_NAME'])
+
         row = None
         if len(rows2) > 1:
-            row = rows2[int(rows1[0]['ordinal_position']) - 1]
+            row = rows2[int(rows1[0]['ORDINAL_POSITION']) - 1]
             keyed = True
         if len(rows2) == 1:
             row = rows2[0]
             keyed = False
         if row:
             if keyed:  # THIS IS BAD, DON'T MIX "id" and primarykey!!!
-                ref = {'type': "'reference %s.%s'" % (row['table_name'],
-                                                      row['column_name'])}
+                ref = {'type': "'reference %s.%s'" % (row['TABLE_NAME'],
+                                                      row['COLUMN_NAME'])}
             else:
-                ref = {'type': "'reference %s'" % (row['table_name'],)}
-            if rows1[0]['delete_rule'] != "NO ACTION":
-                ref['ondelete'] = repr(rows1[0]['delete_rule'])
+                ref = {'type': "'reference %s'" % (row['TABLE_NAME'],)}
+            if rows1[0]['DELETE_RULE'] != "NO ACTION":
+                ref['ondelete'] = repr(rows1[0]['DELETE_RULE'])
             return ref
         elif rows2:
             raise RuntimeError("Unsupported foreign key reference: %s" %
@@ -244,15 +271,15 @@ def define_table(conn, table):
     pks = primarykeys(conn, table)
     print "db.define_table('%s'," % (table, )
     for field in fields:
-        fname = field['column_name']
+        fname = field['COLUMN_NAME']
         fdef = define_field(conn, table, field, pks)
         if fname not in pks and is_unique(conn, table, field):
             fdef['unique'] = "True"
         if fdef['type'] == "'id'" and fname in pks:
             pks.pop(pks.index(fname))
         print "    Field('%s', %s)," % (fname,
-                                        ', '.join(["%s=%s" % (k, fdef[k]) for k in KWARGS
-                                                   if k in fdef and fdef[k]]))
+                        ', '.join(["%s=%s" % (k, fdef[k]) for k in KWARGS
+                                   if k in fdef and fdef[k]]))
     if pks:
         print "    primarykey=[%s]," % ", ".join(["'%s'" % pk for pk in pks])
     print     "    migrate=migrate)"
@@ -261,7 +288,7 @@ def define_table(conn, table):
 
 def define_db(conn, db, host, port, user, passwd):
     "Output database definition (model)"
-    dal = 'db = DAL("postgres://%s:%s@%s:%s/%s", pool_size=10)'
+    dal = 'db = DAL("oracle://%s/%s@%s:%s/%s", pool_size=10)'
     print dal % (user, passwd, host, port, db)
     print
     print "migrate = False"
@@ -278,9 +305,8 @@ if __name__ == "__main__":
         db, host, port, user, passwd = sys.argv[1:6]
 
         # Make the database connection (change driver if required)
-        import psycopg2
-        cnn = psycopg2.connect(database=db, host=host, port=port,
-                               user=user, password=passwd,
-                               )
+        import cx_Oracle
+        dsn = cx_Oracle.makedsn(host, port, db)
+        cnn = cx_Oracle.connect(user, passwd, dsn)
         # Start model code generation:
         define_db(cnn, db, host, port, user, passwd)
