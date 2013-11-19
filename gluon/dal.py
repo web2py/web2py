@@ -1542,7 +1542,6 @@ class BaseAdapter(ConnectionPool):
             for query in queries:
                 self.log(query + '\n', table)
                 self.execute(query)
-            table._db.commit()
             self.log('success!\n', table)
         finally:
             pass
