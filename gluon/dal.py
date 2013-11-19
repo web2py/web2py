@@ -4949,11 +4949,12 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
     def BELONGS(self,first,second=None):
         if not isinstance(second,(list, tuple, set)):
             raise SyntaxError("Not supported")
-        if first.type != 'id':
-            return [GAEF(first.name,'in',self.represent(second,first.type),lambda a,b:a in b)]
-        else:
+        if not self.use_ndb:
+            if isinstance(second,set):
+                second = list(second)
+        if first.type == 'id':
             second = [Key.from_path(first._tablename, int(i)) for i in second]
-            return [GAEF(first.name,'in',second,lambda a,b:a in b)]
+        return [GAEF(first.name,'in',second,lambda a,b:a in b)]
 
     def CONTAINS(self,first,second,case_sensitive=False):
         # silently ignoring: GAE can only do case sensitive matches!
