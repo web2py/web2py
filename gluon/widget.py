@@ -233,9 +233,9 @@ class web2pyDialog(object):
         # IP
         Tkinter.Label(self.root,
                       text='Server IP:', bg=bg_color,
-                      justify=Tkinter.LEFT).grid(row=4,
-                                                 column=1,
-                                                 sticky=sticky)
+                      justify=Tkinter.RIGHT).grid(row=4,
+                                                  column=1,
+                                                  sticky=sticky)
         self.ips = {}
         self.selected_ip = Tkinter.StringVar()
         row = 4
@@ -246,8 +246,9 @@ class web2pyDialog(object):
         for ip, legend in ips:
             self.ips[ip] = Tkinter.Radiobutton(
                 self.root, bg=bg_color, highlightthickness=0, 
-                selectcolor='light grey', width=20,
+                selectcolor='light grey', width=30,
                 anchor=Tkinter.W, text='%s (%s)' % (legend, ip),
+                justify=Tkinter.LEFT,
                 variable=self.selected_ip, value=ip)
             self.ips[ip].grid(row=row, column=2, sticky=sticky)
             if row == 4:
@@ -258,7 +259,7 @@ class web2pyDialog(object):
         # Port
         Tkinter.Label(self.root,
                       text='Server Port:', bg=bg_color,
-                      justify=Tkinter.LEFT).grid(row=shift,
+                      justify=Tkinter.RIGHT).grid(row=shift,
                                                  column=1, pady=10,
                                                  sticky=sticky)
 
@@ -269,7 +270,7 @@ class web2pyDialog(object):
         # Password
         Tkinter.Label(self.root,
                       text='Choose Password:', bg=bg_color,
-                      justify=Tkinter.LEFT).grid(row=shift + 1,
+                      justify=Tkinter.RIGHT).grid(row=shift + 1,
                                                  column=1,
                                                  sticky=sticky)
 
@@ -280,29 +281,31 @@ class web2pyDialog(object):
 
         # Prepare the canvas
         self.canvas = Tkinter.Canvas(self.root,
-                                     width=300,
+                                     width=400,
                                      height=100,
                                      bg='black')
-        self.canvas.grid(row=shift + 2, column=0, columnspan=4, pady=5)
+        self.canvas.grid(row=shift + 2, column=1, columnspan=2, pady=5,
+                         sticky=sticky)
         self.canvas.after(1000, self.update_canvas)
 
         # Prepare the frame
         frame = Tkinter.Frame(self.root)
-        frame.grid(row=shift + 3, column=1, columnspan=2, pady=5)
+        frame.grid(row=shift + 3, column=1, columnspan=2, pady=5,
+                   sticky=sticky)
 
         # Start button
         self.button_start = Tkinter.Button(frame,
                                            text='start server',
                                            command=self.start)
 
-        self.button_start.grid(row=0, column=1)
+        self.button_start.grid(row=0, column=0, sticky=sticky)
 
         # Stop button
         self.button_stop = Tkinter.Button(frame,
                                           text='stop server',
                                           command=self.stop)
 
-        self.button_stop.grid(row=0, column=2)
+        self.button_stop.grid(row=0, column=1,  sticky=sticky)
         self.button_stop.configure(state='disabled')
 
         if options.taskbar:
@@ -573,7 +576,7 @@ class web2pyDialog(object):
         except BaseException:
             self.t0 = time.time()
             self.t0 = t1
-            self.p0 = [100] * 300
+            self.p0 = [100] * 400
             self.q0 = [self.canvas.create_line(i, 100, i + 1, 100,
                        fill='green') for i in xrange(len(self.p0) - 1)]
 
