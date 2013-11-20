@@ -5510,6 +5510,8 @@ class MongoDBAdapter(NoSQLAdapter):
         # synchronous, except when overruled by either this default or
         # function parameter
         self.safe = adapter_args.get('safe',True)
+        # load user setting for uploads in blob storage
+        self.uploads_in_blob = adapter_args.get('uploads_in_blob', False)
 
         if isinstance(m,tuple):
             m = {"database" : m[1]}
