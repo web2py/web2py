@@ -2081,6 +2081,8 @@ class SQLFORM(FORM):
         elif editable and request.args(-3) == 'edit':
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(URL('error'))
+            deletable_ = deletable(record) \
+                if callable(deletable) else deletable
             sqlformargs = dict(upload=upload, ignore_rw=ignore_rw,
                                formstyle=formstyle, deletable=deletable_,
                                _class='web2py_form',
@@ -2088,7 +2090,6 @@ class SQLFORM(FORM):
                                delete_label=T('Check to delete'))
             sqlformargs.update(formargs)
             sqlformargs.update(editargs)
-            deletable_ = deletable(record) if callable(deletable) else deletable
             update_form = SQLFORM(table, record, **sqlformargs)
             update_form.process(
                 formname=formname,
