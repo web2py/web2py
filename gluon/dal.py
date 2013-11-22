@@ -8355,7 +8355,7 @@ def index():
             # first item is always the field name according to Python Database API specs
             columns = adapter.cursor.description
             # reduce the column info down to just the field names
-            fields = [f[0] for f in columns]
+            fields = colnames or [f[0] for f in columns]
             # will hold our finished resultset in a list
             data = adapter._fetchall()
             # convert the list for each row into a dictionary so it's
