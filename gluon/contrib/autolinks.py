@@ -116,6 +116,7 @@ EXTENSION_MAPS = {
     'mpeg': video,
     'mpeg4': video,
     'movie': video,
+    'wmv': video,
     'load': web2py_component,
     'pdf': googledoc_viewer,
     'doc': googledoc_viewer,
