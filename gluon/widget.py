@@ -1157,7 +1157,7 @@ def start(cron=True):
         try:
             import Tkinter
             havetk = True
-        except ImportError:
+        except (ImportError, OSError):
             logger.warn(
                 'GUI not available because Tk library is not installed')
             havetk = False
