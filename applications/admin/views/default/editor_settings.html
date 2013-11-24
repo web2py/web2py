@@ -8,7 +8,7 @@
 {{themes = [f[:-4] for f in listfiles('admin', "static/codemirror/theme", regexp='.*\.css$' )]}}
 {{editors = ['default', 'vim', 'emacs']}}
 
-<form id="editor_settings_form" class="form-horizontal">
+<form id="editor_settings_form" class="form-horizontal" action="">
 	<div class="control-group">
 		<label class="control-label" for="selectTheme">{{=T('Theme')}}</label>
 		<div class="controls">{{=SELECT(themes, value=editor_settings['theme'], _name="theme" )}}</div>
@@ -46,7 +46,7 @@
 	</div>
 </form>
 <script>
-web2py_trap_form("{{=URL('default', 'edit', args=request.args, vars={'settings':True})}}", "editor_settings");
+$.web2py.trap_form("{{=URL('default', 'edit', args=request.args, vars={'settings':True})}}", "editor_settings");
 $("#editor_settings_form").on('change', 'select, input', function (e) {
 	$("#editor_settings_form button[type=submit]").removeClass('disabled');
 });
