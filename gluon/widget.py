@@ -1153,21 +1153,19 @@ def start(cron=True):
 
     root = None
 
-    if not options.nogui:
+    if not options.nogui and options.password=='<ask>':
         try:
             import Tkinter
             havetk = True
+            try:
+                root = Tkinter.Tk()
+            except:
+                pass
         except (ImportError, OSError):
             logger.warn(
                 'GUI not available because Tk library is not installed')
             havetk = False
             options.nogui = True
-
-        if options.password == '<ask>' and havetk or options.taskbar and havetk:
-            try:
-                root = Tkinter.Tk()
-            except:
-                pass
 
     if root:
         root.focus_force()
