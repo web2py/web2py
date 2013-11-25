@@ -1659,7 +1659,7 @@ class BaseAdapter(ConnectionPool):
             return self.expand(field, colnames=True)
         self._colnames = map(colexpand, fields)
         def geoexpand(field):
-            if isinstance(field.type,str) and field.type.startswith('geometry'):
+            if isinstance(field.type,str) and field.type.startswith('geometry') and isinstance(field, Field):
                 field = field.st_astext()
             return self.expand(field)
         sql_f = ', '.join(map(geoexpand, fields))
