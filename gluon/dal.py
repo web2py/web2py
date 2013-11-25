@@ -1983,8 +1983,13 @@ class BaseAdapter(ConnectionPool):
         if field_is_type('decimal'):
             return str(obj)
         elif field_is_type('reference'): # reference
-            if fieldtype.find('.')>0:
-                return repr(obj)
+            p = fieldtype[9:].strip().partition('.')
+            if p[2] != '':
+                try:
+                    ftype = self.db[p[0]][p[2]].type
+                    return self.represent(obj, ftype)
+                except (ValueError, KeyError):
+                    return repr(obj)
             elif isinstance(obj, (Row, Reference)):
                 return str(obj['id'])
             return str(long(obj))
