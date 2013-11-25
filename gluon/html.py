@@ -2221,8 +2221,9 @@ class FORM(DIV):
         submit = self.element('input[type=submit]')
         submit.parent.append(
             INPUT(_type="button", _value=value, _class=_class,
-                  _onclick=self.REDIRECT_JS % url))
-
+                  _onclick=url if url.startswith('javascript:') else
+                      self.REDIRECT_JS % url))
+        
     @staticmethod
     def confirm(text='OK', buttons=None, hidden=None):
         if not buttons:
