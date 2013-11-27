@@ -233,7 +233,7 @@ $(document).ready(function() {
     var filesMenu = $('#files');
     var ow = filesMenu.outerWidth();
     filesMenu.width(ow);
-    setTimeout( function(){$('#files').css('left', '-'+ow+'px');}, 1000);
+    $('#files').css('left', '-'+ow+'px');
 });
 </script>
 <!-- Typeahead scripts here so the page load faster -->
