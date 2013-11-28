@@ -6,7 +6,7 @@
 - bootstrap 2.3.2
 - codemirror 3.19
 - improved  mongoDB support, thanks Alan
-- suport for wiki custom render function
+- support for wiki custom render function
 - Wiki(...groups=['x','y']) allows bypassing default permissions
 - fixed websocket_messaging.py to support newer Tornado
 - NDB support for GAE, thanks Quint
