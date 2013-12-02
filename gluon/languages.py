@@ -319,11 +319,7 @@ def write_dict(filename, contents):
         if not settings.global_settings.web2py_runtime_gae:
             logging.warning('Unable to write to file %s' % filename)
         return
-<<<<<<< HEAD
-    fp.write('# coding: utf-8\n{\n')
-=======
     fp.write('# -*- coding: utf-8 -*-\n{\n')
->>>>>>> ad87d196e58d2ea0e46485e5b1e7cb710558ae95
     for key in sorted(contents, lambda x, y: cmp(unicode(x, 'utf-8').lower(), unicode(y, 'utf-8').lower())):
         fp.write('%s: %s,\n' % (repr(Utf8(key)), repr(Utf8(contents[key]))))
     fp.write('}\n')
