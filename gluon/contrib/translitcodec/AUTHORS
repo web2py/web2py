@@ -1,0 +1,9 @@
+translitcodec was originally written by Jason Kirtland in 2008.
+
+Contributors are:
+
+- Jason Kirtland <jek@discorporate.us>
+- Craig Dennis <craig@idealist.org>
+
+The translitcodec source distribution includes the 'transtab' package
+by Markus Kuhn <mkuhn@acm.org>.
