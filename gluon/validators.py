@@ -17,9 +17,7 @@ import cgi
 import urllib
 import struct
 import decimal
-import unicodedata
 from cStringIO import StringIO
-from gluon.contrib import translitcodec
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from gluon.dal import FieldVirtual, FieldMethod
 
