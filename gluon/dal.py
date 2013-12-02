@@ -7808,11 +7808,11 @@ class DAL(object):
 
     def import_table_definitions(self, path, migrate=False,
                                  fake_migrate=False, tables=None):
-        pattern = pjoin(path,self._uri_hash+'_*.table')
         if tables:
             for table in tables:
                 self.define_table(**table)
         else:
+            pattern = pjoin(path,self._uri_hash+'_*.table')
             for filename in glob.glob(pattern):
                 tfile = self._adapter.file_open(filename, 'r')
                 try:
