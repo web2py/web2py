@@ -19,6 +19,7 @@ import struct
 import decimal
 import unicodedata
 from cStringIO import StringIO
+from gluon.contrib import translitcodec
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from gluon.dal import FieldVirtual, FieldMethod
 
@@ -2511,7 +2512,7 @@ def urlify(s, maxlen=80, keep_underscores=False):
     if isinstance(s, str):
         s = s.decode('utf-8')             # to unicode
     s = s.lower()                         # to lowercase
-    s = unicodedata.normalize('NFKD', s)  # normalize eg è => e, ñ => n
+    s = s.encode('translit/long')         # replace special characters
     s = s.encode('ascii', 'ignore')       # encode as ASCII
     s = re.sub('&\w+?;', '', s)           # strip html entities
     if keep_underscores:
