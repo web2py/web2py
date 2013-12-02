@@ -5166,6 +5166,12 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         processor = attributes.get('processor',self.parse)
         return processor(rows,fields,colnames,False)
 
+    def parse_list_integers(self, value, field_type):
+        return value[:] if self.use_ndb else value
+
+    def parse_list_strings(self, value, field_type):
+        return value[:] if self.use_ndb else value
+
     def count(self,query,distinct=None,limit=None):
         if distinct:
             raise RuntimeError("COUNT DISTINCT not supported")
