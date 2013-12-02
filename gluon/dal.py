@@ -4839,12 +4839,10 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
             elif field_type.startswith('reference'):
                 if field.notnull:
                     attr = dict(required=True)
-                referenced = field_type[10:].strip()
-                ftype = self.types[field_type[:9]](referenced, **attr)
+                ftype = self.types[field_type[:9]](**attr)
             elif field_type.startswith('list:reference'):
                 if field.notnull:
                     attr['required'] = True
-                referenced = field_type[15:].strip()
                 ftype = self.types[field_type[:14]](**attr)
             elif field_type.startswith('list:'):
                 ftype = self.types[field_type](**attr)
