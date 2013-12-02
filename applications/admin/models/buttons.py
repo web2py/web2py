@@ -24,7 +24,7 @@ def button_enable(href, app):
     return A(label, _class='button btn', _id=id, callback=href, target=id)
 
 def sp_button(href, label):
-    if request.user_agent().is_mobile:
+    if request.user_agent().get('is_mobile'):
         ret = A_button(SPAN(label), _href=href)
     else:
         ret = A(SPAN(label), _class='button special btn btn-inverse', _href=href)
