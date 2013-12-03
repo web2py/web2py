@@ -2915,7 +2915,7 @@ class Auth(object):
                         formname='reset_password', dbio=False,
                         onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
-            user = table_user(**{userfield:form.vars.email})
+            user = table_user(**{userfield:form.vars.get(userlfield)})
             if not user:
                 session.flash = self.messages['invalid_%s' % userfield]
                 redirect(self.url(args=request.args),
