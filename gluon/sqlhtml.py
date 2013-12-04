@@ -400,6 +400,8 @@ class CheckboxesWidget(OptionsWidget):
         attr = cls._attributes(field, {}, **attributes)
         attr['_class'] = attr.get('_class', 'web2py_checkboxeswidget')
 
+        label = attr.get('label',True)
+
         requires = field.requires
         if not isinstance(requires, (list, tuple)):
             requires = [requires]
@@ -439,7 +441,8 @@ class CheckboxesWidget(OptionsWidget):
                                        requires=attr.get('requires', None),
                                        hideerror=True, _value=k,
                                        value=r_value),
-                                 LABEL(v, _for='%s%s' % (field.name, k))))
+                                 LABEL(v, _for='%s%s' % (field.name, k)) 
+                                 if label else ''))
             opts.append(child(tds))
 
         if opts:
