@@ -1,0 +1,15 @@
+<div>
+<!--div class="page-header"-->
+    <h4>TODO</h4>
+<!--/div-->
+<ul class="nav nav-list small-font">
+    {{for pos_file, file in enumerate(todo):}}
+        <li onclick="collapse('{{=pos_file}}_matches');"><a ><i class='icon-chevron-right'></i>{{=file['filename']}} <span class='small'>({{=len(file['matches'])}} TODO)</span></a></li>
+        <li id="{{=pos_file}}_matches" style="display: none;"><ul class="nav nav-list small-font">
+            {{for m in file['matches']:}}
+                <li><a href="{{=URL('edit', args=[app,file['dir'], file['filename']], vars={'lineno':m['lineno']}, extension="")}}" class="editor_filelink" >{{=m['text']}}</a></li>
+            {{pass}}
+        </ul></li>
+    {{pass}}
+</ul>
+</div>
