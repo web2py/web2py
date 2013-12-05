@@ -227,7 +227,35 @@ $(document).on('click', 'a.font_button', function (e) {
         <div id="myTabContent" class="tab-content">
         </div>
     </div>
+    <section id="windows_divs" class="tab-content  ">
+    <div id="window_todo" class="tab-pane container-fluid">
+        {{=LOAD('default', 'todolist.load', vars={'app':app}, ajax=True, timeout=60000, times="infinity")}}
+    </div>
+    </section>
 </div>
+{{block footer}}
+<div id="" class="navbar navbar-inverse navbar-fixed-bottom">
+<div class="navbar-inner">
+<ul id="windows_hooks" class="nav">
+  <li class="">
+    <a href="#window_todo">TODO</a>
+  </li>
+</ul>
+</div>
+</div>
+
+<script>
+    $('#windows_hooks li a').click(function (e) {
+        e.preventDefault();
+        if ( $(this).parent('li').hasClass('active') ) {
+            $(this).parent('li').removeClass('active');
+            $($(this).attr('href')).removeClass('active');
+        } else {
+            $(this).tab('show');
+        }
+    });
+</script>
+{{end}}
 <script>
 $(document).ready(function() {
     var filesMenu = $('#files');
