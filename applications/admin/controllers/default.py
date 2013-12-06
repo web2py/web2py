@@ -750,6 +750,7 @@ def edit():
         return response.json({'file_hash': file_hash, 'saved_on': saved_on, 'functions': functions, 'controller': controller, 'application': request.args[0], 'highlight': highlight})
     else:
         file_details = dict(app=request.args[0],
+                    lineno=request.vars.lineno or 1,
                     editor_settings=preferences,
                     filename=filename,
                     realfilename=realfilename,
@@ -784,7 +785,7 @@ def todolist():
         files = [x.replace(os.path.sep, '/') for x in files if not x.endswith('.bak')]
         return files
 
-    pattern = '#(todo)+\s+(.*)'
+    pattern = '#\s*(todo)+\s+(.*)'
     regex = re.compile(pattern, re.IGNORECASE)
 
     output = []
@@ -792,7 +793,6 @@ def todolist():
         for f in listfiles(app, d):
             matches = []
             filename= apath(os.path.join(app, d, f), r=request)
-
             with open(filename, 'r') as f_s:
                 src = f_s.read()
                 for m in regex.finditer(src):
@@ -803,7 +803,6 @@ def todolist():
                 output.append({'filename':f,'matches':matches, 'dir':d})
 
     return {'todo':output, 'app': app}
-
 
 def resolve():
     """
