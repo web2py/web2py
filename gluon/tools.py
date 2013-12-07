@@ -5395,7 +5395,7 @@ class Wiki(object):
         if (auth.user and
             check_credentials(current.request, gae_login=False) and
             not 'wiki_editor' in auth.user_groups.values() and
-            self.settings.groups is None):
+            self.settings.groups == auth.user_groups.values()):
             group = db.auth_group(role='wiki_editor')
             gid = group.id if group else db.auth_group.insert(
                 role='wiki_editor')
