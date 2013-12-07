@@ -750,6 +750,7 @@ def edit():
         return response.json({'file_hash': file_hash, 'saved_on': saved_on, 'functions': functions, 'controller': controller, 'application': request.args[0], 'highlight': highlight})
     else:
         file_details = dict(app=request.args[0],
+                    lineno=request.vars.lineno or 1,
                     editor_settings=preferences,
                     filename=filename,
                     realfilename=realfilename,
@@ -773,6 +774,35 @@ def edit():
         else:
             return response.json(file_details)
 
+def todolist():
+    """ Returns all TODO of the requested app
+    """
+    app = request.vars.app or ''
+    app_path = apath('%(app)s' % {'app':app}, r=request)
+    dirs=['models', 'controllers', 'modules', 'private' ]
+    def listfiles(app, dir, regexp='.*\.py$'):
+        files = sorted( listdir(apath('%(app)s/%(dir)s/' % {'app':app, 'dir':dir}, r=request), regexp))
+        files = [x.replace(os.path.sep, '/') for x in files if not x.endswith('.bak')]
+        return files
+
+    pattern = '#\s*(todo)+\s+(.*)'
+    regex = re.compile(pattern, re.IGNORECASE)
+
+    output = []
+    for d in dirs:
+        for f in listfiles(app, d):
+            matches = []
+            filename= apath(os.path.join(app, d, f), r=request)
+            with open(filename, 'r') as f_s:
+                src = f_s.read()
+                for m in regex.finditer(src):
+                    start = m.start()
+                    lineno = src.count('\n', 0, start) + 1
+                    matches.append({'text':m.group(0), 'lineno':lineno})
+            if len(matches) != 0:
+                output.append({'filename':f,'matches':matches, 'dir':d})
+
+    return {'todo':output, 'app': app}
 
 def resolve():
     """

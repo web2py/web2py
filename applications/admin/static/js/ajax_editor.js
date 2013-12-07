@@ -248,7 +248,7 @@ function keepalive(url) {
   });
 }
 
-function load_file(url) {
+function load_file(url, lineno) {
   $.ajax({
     type: "GET",
     contentType: 'application/json',
@@ -263,13 +263,13 @@ function load_file(url) {
           var tab_header = '<li><a title="'+ json['filename'] +'" href="#' + json['id'] + '" data-toggle="tab"><button type="button" class="close">&times;</button>' + json['realfilename'] + '</a></li>';
           var tab_body = '<div id="' + json['id'] + '" class="tab-pane fade in " >' + json['plain_html'] + '</div>';
           if(json['force'] === false) {
-            $('#filesTab').append($(tab_header));
-            $('#myTabContent').append($(tab_body));
+            $('#myTabContent').append($(tab_body)); // First load the body
+            $('#filesTab').append($(tab_header));   // Then load the header which trigger the shown event
           } else {
             $('#' + json['id']).html($(tab_body));
           }
         }
-        $("a[href='#" + json['id'] + "']").click();
+        $("a[href='#" + json['id'] + "']").trigger('click', lineno);
       }
     },
     error: function (x) {

@@ -74,15 +74,15 @@
                              request.env['wsgi_url_scheme'], request.env['http_host'],
                              URL(c='debug', f='toggle_breakpoint')))}}, sel);
     });
-        function makeMarker() {
-            var marker = document.createElement("div");
-           marker.style.color = "#822";
-           marker.innerHTML = "●";
-            marker.className = "breakpoint";
-            return marker;
-       }
+    function makeMarker() {
+        var marker = document.createElement("div");
+        marker.style.color = "#822";
+        marker.innerHTML = "●";
+        marker.className = "breakpoint";
+        return marker;
+    }
 
-        {{if filetype in ('html', 'javascript', 'css'):}}
+    {{if filetype in ('html', 'javascript', 'css'):}}
         // must be here or break emmet/zencoding 
         CodeMirror.defaults.extraKeys["Ctrl-S"] =
             function(instance) {
@@ -94,26 +94,26 @@
         CodeMirror.defaults.extraKeys["Shift-Esc"] = function(cm) {
             if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
         }
-        {{pass}}
-        {{if filetype=='python':}}
-            // must be here or break emmet/zencoding for python
-            CodeMirror.defaults.extraKeys["Ctrl-S"] =
-                function(instance) {
-                    doClickSave();};
-            CodeMirror.defaults.extraKeys["Ctrl-Space"] = "autocomplete";
-            CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
-            CodeMirror.defaults.extraKeys["Shift-Tab"] = "indentLess";
-            CodeMirror.defaults.extraKeys["Ctrl-F11"] = function(cm) {
-		        cm.setOption("fullScreen", !cm.getOption("fullScreen"));
-		    },
-		    CodeMirror.defaults.extraKeys["Shift-Esc"] = function(cm) {
-		        if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
-		    }
-            //for autocomplete
-            CodeMirror.commands.autocomplete = function(cm) {
-                CodeMirror.showHint(cm, CodeMirror.pythonHint);
-            }
-        {{pass}}
+    {{pass}}
+    {{if filetype=='python':}}
+        // must be here or break emmet/zencoding for python
+        CodeMirror.defaults.extraKeys["Ctrl-S"] =
+            function(instance) {
+                doClickSave();};
+        CodeMirror.defaults.extraKeys["Ctrl-Space"] = "autocomplete";
+        CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
+        CodeMirror.defaults.extraKeys["Shift-Tab"] = "indentLess";
+        CodeMirror.defaults.extraKeys["Ctrl-F11"] = function(cm) {
+	        cm.setOption("fullScreen", !cm.getOption("fullScreen"));
+	    },
+	    CodeMirror.defaults.extraKeys["Shift-Esc"] = function(cm) {
+	        if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
+	    }
+        //for autocomplete
+        CodeMirror.commands.autocomplete = function(cm) {
+            CodeMirror.showHint(cm, CodeMirror.pythonHint);
+        }
+    {{pass}}
     store_changes_function = function(instance, changeObj) {
         jQuery(instance).data('saved', false);
         instance.off("change", store_changes_function);
@@ -128,6 +128,19 @@
                 request.env['wsgi_url_scheme'], request.env['http_host'],
                 URL(c='debug', f='list_breakpoints')))}}, editor);
 
+    // TODO move it in a separated file
+    CodeMirror.defineExtension("centerOnCursor", function(limit) {
+        var coords = this.cursorCoords(null, "local");
+        if (this.getScrollerElement().clientHeight === 0 && limit !== 10) {
+            if (limit === undefined) limit = 1;
+            else limit += 1;
+            editor = this;
+            setTimeout(function() {editor.centerOnCursor()}, 100);
+            return;
+        }
+        clientHeight = (this.getScrollerElement().clientHeight / 2)
+        this.scrollTo(null, (coords.top + coords.bottom)/2 - 10);
+    });
     </script>
 
     <div class="editor-bar-bottom" style="margin-top:9px;">
