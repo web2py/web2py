@@ -5647,9 +5647,6 @@ class MongoDBAdapter(NoSQLAdapter):
             value = obj
         else:
             value = NoSQLAdapter.represent(self, obj, fieldtype)
-        if isinstance(obj, (list, tuple)) and \
-                (not fieldtype == "json" or fieldtype.startswith('list:')):
-            return value
         # reference types must be convert to ObjectID
         if fieldtype  =='date':
             if value == None:
