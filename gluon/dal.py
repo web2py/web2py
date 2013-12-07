@@ -4609,6 +4609,7 @@ class GoogleSQLAdapter(UseDatabaseStoredFile,MySQLAdapter):
 
 class NoSQLAdapter(BaseAdapter):
     can_select_for_update = False
+    QUOTE_TEMPLATE = '%s'
 
     @staticmethod
     def to_unicode(obj):
