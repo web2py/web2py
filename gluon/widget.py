@@ -1224,7 +1224,10 @@ end tell
     if not options.nobanner:
         print 'please visit:'
         print '\t', url
-        print 'use "kill -SIGTERM %i" to shutdown the web2py server' % os.getpid()
+        if sys.platform.startswith('win'):
+            print 'use "taskkill /f /pid %i" to shutdown the web2py server' % os.getpid()
+        else:
+            print 'use "kill -SIGTERM %i" to shutdown the web2py server' % os.getpid()
 
     # enhance linecache.getline (used by debugger) to look at the source file
     # if the line was not found (under py2exe & when file was modified)
