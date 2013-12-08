@@ -2976,6 +2976,12 @@ class PostgreSQLAdapter(BaseAdapter):
         """
         return 'ST_Within(%s,%s)' %(self.expand(first), self.expand(second, first.type))
 
+    def ST_DWITHIN(self, first, second):
+        """
+        http://postgis.org/docs/ST_Within.html
+        """
+        return 'ST_DWithin(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+
     def represent(self, obj, fieldtype):
         field_is_type = fieldtype.startswith
         if field_is_type('geo'):
