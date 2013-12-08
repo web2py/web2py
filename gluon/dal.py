@@ -2714,6 +2714,10 @@ class MySQLAdapter(BaseAdapter):
         self.execute('select last_insert_id();')
         return int(self.cursor.fetchone()[0])
 
+    def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
+        return BaseAdapter.select_limitby(
+            self, sql_s, sql_f, '(%s)' % sql_t, sql_w, sql_o, limitby)
+
 
 class PostgreSQLAdapter(BaseAdapter):
     drivers = ('psycopg2','pg8000')
