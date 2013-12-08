@@ -251,6 +251,10 @@ $(document).on('click', 'a.font_button', function (e) {
 </div>
 
 <script>
+    $(document).on('click', '#window_todo li a', function (e) {
+        $(this).find('i').toggleClass('icon-chevron-right');
+        $(this).find('i').toggleClass('icon-chevron-down');
+    });
     $('#windows_hooks li a').click(function (e) {
         e.preventDefault();
         if ( $(this).parent('li').hasClass('active') ) {
