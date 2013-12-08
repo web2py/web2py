@@ -1834,24 +1834,7 @@ def plugins():
             "public/api.json/action/list/content/Package?package" +
             "_type=plugin&search_index=false").read()
         session.plugins = loads_json(rawlist)
-    plugins = TABLE(
-        *[TR(TD(H5(article["article"]["title"]),
-                A(T("Install"),
-                    _href=URL(c="default",
-                        f="install_plugin",
-                        args=[app,],
-                        vars={"source":
-                              article["package_data"]["download"],
-                              "plugin": article["article"]["title"]}
-                             ))),
-             TD(article["article"]["description"], BR(),
-                A(T("Plugin page"),
-                  _href="http://www.web2pyslices.com/slice/show/%s/" % \
-                  article["article"]["id"])),
-             TD(IMG(_src="http://www.web2pyslices.com/download/%s" % \
-                 article["article"]["thumbnail"])))
-          for article in session.plugins["results"]])
-    return dict(plugins=plugins, app=request.args(0))
+    return dict(plugins=session.plugins["results"], app=request.args(0))
 
 def install_plugin():
     app = request.args(0)
