@@ -2980,11 +2980,12 @@ class PostgreSQLAdapter(BaseAdapter):
         """
         return 'ST_Within(%s,%s)' %(self.expand(first), self.expand(second, first.type))
 
-    def ST_DWITHIN(self, first, second):
+    def ST_DWITHIN(self, first, (second, third)):
         """
         http://postgis.org/docs/ST_Within.html
         """
-        return 'ST_DWithin(%s,%s)' %(self.expand(first), self.expand(second, first.type))
+        return 'ST_DWithin(%s,%s)' %(self.expand(first), self.expand(second, first.type),
+                                     self.expand(third, 'double'))
 
     def represent(self, obj, fieldtype):
         field_is_type = fieldtype.startswith
@@ -9673,6 +9674,10 @@ class Expression(object):
     def st_within(self, value):
         db = self.db
         return Query(db, db._adapter.ST_WITHIN, self, value)
+
+    def st_dwithin(self, value, distance):
+        db = self.db
+        return Query(db, db._adapter.ST_DWITHIN, self, (value, distance))
 
     # for use in both Query and sortby
 
