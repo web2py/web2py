@@ -1032,7 +1032,8 @@ class BaseAdapter(ConnectionPool):
         if self.dbengine == 'mysql':
             if not hasattr(table, "_primarykey"):
                 fields.append('PRIMARY KEY (%s)' % (self.QUOTE_TEMPLATE % table._id.name))
-            other = ' ENGINE=InnoDB CHARACTER SET utf8;'
+            engine = self.adapter_args.get('engine','InnoDB')
+            other = ' ENGINE=%s CHARACTER SET utf8;' % engine
 
         fields = ',\n    '.join(fields)
         for rtablename in TFK:
