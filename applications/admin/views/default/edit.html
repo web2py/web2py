@@ -267,7 +267,7 @@ $(document).on('click', 'a.font_button', function (e) {
     		</div>
     		<br />            
             <div id="files_menu">
-            	{{=LOAD('default', 'files_menu', args=['welcome'])}}
+            	{{=LOAD('default', 'files_menu', vars={'app':app})}}
             </div>
             </ul>
         </div>
