@@ -679,7 +679,7 @@
 /* compatibility code - start */
 ajax = jQuery.web2py.ajax;
 web2py_component = jQuery.web2py.component;
-web2py_websocket = jQuery.web2py.websocket;
+web2py_websocket = jQuery.web2py.web2py_websocket;
 web2py_ajax_page = jQuery.web2py.ajax_page;
 /*needed for IS_STRONG(entropy)*/
 web2py_validate_entropy = jQuery.web2py.validate_entropy;
