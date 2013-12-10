@@ -1,4 +1,32 @@
 {{extend 'layout.html'}}
+{{
+dirs=[{'name':'models', 'reg':'.*\.py$'},
+      {'name':'controllers', 'reg':'.*\.py$'},
+      {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
+      {'name':'modules', 'reg':'.*\.py$'},
+      {'name':'static', 'reg': '[^\.#].*'}]
+   
+def file_create_form(location, anchor=None, helptext=""):
+    form=FORM(
+            LABEL(T("create file with filename:")),
+            SELECT(_name='dir', _style='width:100px;', 
+               *[OPTION(dir['name'], _value=dir['name']) for dir in dirs]),
+            XML('&nbsp;'),LABEL('/', _style='display:inline-block;'),XML('&nbsp;'),
+            INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY(),_class=''),
+            TAG['SMALL'](helptext,_class="help-block"),
+            INPUT(_type='submit', name=T('filename'), _value=T('Create'), _style='display:block', _id='btn_file_create'), 
+            INPUT(_type="hidden",_name="editor"),
+            INPUT(_type="hidden",_name="location",_value=location),
+            INPUT(_type="hidden",_name="sender",_value=URL('design',args=app)),
+            INPUT(_type="hidden",_name="token",_value=session.token),
+            #INPUT(_type="hidden",_name="id",_value=anchor),
+            _action=URL('create_file'),
+            _id='file_create_form',
+            _class="generatedbyw2p well well-small")
+    return form
+            
+}}
+
 <!-- begin "edit" block -->
 {{
   def shortcut(combo, description):
@@ -204,27 +232,43 @@ $(document).on('click', 'a.font_button', function (e) {
         <div class="files-menu">
             <ul class="nav nav-list" rel="pagebookmark" id="filelist">
             <li><input type="text" placeholder="{{=T('Rapid Search')}}" class="input-block-level typeahead-tw search-query"></li>
-            {{dirs=[{'name':'models', 'reg':'.*\.py$'},
-                    {'name':'controllers', 'reg':'.*\.py$'},
-                    {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
-                    {'name':'modules', 'reg':'.*\.py$'}, ]}}
             {{auto_complete_list=[]}}
-            {{for dir in dirs:}}
-            <li class="nav-header component" onclick="collapse('{{="%s_files" % dir['name']}}');">{{=dir['name']}}</li>
-            <li id="{{="%s_files" % dir['name']}}">
-                <ul class="nav nav-list small-font">
-                {{for f in listfiles(app, dir['name'], regexp=dir['reg'] ):}}
-                {{id="%s__" % dir['name'] + f.replace('.','__')}}
-                {{current_file = request.args(len(request.args) - 1)}}
-                <li class="{{#='active' if current_file==f else ''}}" style="overflow:hidden">
-                {{a_tag=editfile(dir['name'], f, dict(id=id))}}
-                {{=a_tag}}
-                {{auto_complete_list.append({'value':f, 'tokens':f.split('/'), 'a_tag':a_tag})}}
-                </li>
-                {{pass}}
-            </ul>
-            </li>
-            {{pass}}
+                        <br />
+            <div>
+      			<button onclick="jQuery('#form').slideToggle()" class="btn btn-mini">{{=T('Create')}}</button>
+      			<br />
+		      	<div id="form">
+        			<div>
+        				{{=file_create_form('%s/' % app, '')}}
+        				<script>
+							jQuery("#btn_file_create").click(function() {
+								jQuery.ajax({
+									type: "POST",
+									url: "{{=URL('create_file')}}",
+									data: jQuery("#file_create_form").serialize(),
+        							dataType: 'JSON',
+									success: function(data){											
+										jQuery(".flash").html(data["result"]);
+										jQuery(".flash").show();	
+										jQuery.ajax({
+											type: "POST",
+											url: "{{=URL('files_menu')}}",
+											success: function(data){												
+												jQuery("#files_menu").html(data);									
+											}
+										});
+								}});
+								return false;
+							});
+						</script>
+        			</div>          			  			
+      			</div>
+      			<script>jQuery('#form').slideToggle()</script>
+    		</div>
+    		<br />            
+            <div id="files_menu">
+            	{{=LOAD('default', 'files_menu', args=['welcome'])}}
+            </div>
             </ul>
         </div>
     </div>
