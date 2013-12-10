@@ -1239,7 +1239,6 @@ def plugin():
                 languages=languages,
                 crontab=crontab)
 
-
 def create_file():
     """ Create files handler """
     if request.vars and not request.vars.token == session.token:
@@ -1250,6 +1249,8 @@ def create_file():
             app = get_app(request.vars.app)
             path = abspath(request.vars.location)
         else:
+            if request.vars.dir:
+            	request.vars.location += request.vars.dir + '/'
             app = get_app(name=request.vars.location.split('/')[0])
             path = apath(request.vars.location, r=request)
         filename = re.sub('[^\w./-]+', '_', request.vars.filename)
@@ -1377,7 +1378,11 @@ def create_file():
 
         safe_write(full_filename, text)
         log_progress(app, 'CREATE', filename)
-        session.flash = T('file "%(filename)s" created',
+        if request.vars.dir:
+        	result = T('file "%(filename)s" created',
+                          dict(filename=full_filename[len(path):]))
+    	else:
+        	session.flash = T('file "%(filename)s" created',
                           dict(filename=full_filename[len(path):]))
         vars = {}
         if request.vars.id:
@@ -1390,9 +1395,40 @@ def create_file():
         if not isinstance(e, HTTP):
             session.flash = T('cannot create file')
 
-    redirect(request.vars.sender + anchor)
+    if request.vars.dir:
+    	id_filename = '#' + request.vars.dir + '__' + filename.replace('.','__') + ' a'
+       	return response.json({'result':result, 'id_filename':id_filename})
+    else:
+    	redirect(request.vars.sender + anchor)
 
 
+def listfiles(app, dir, regexp='.*\.py$'):
+	files = sorted(
+         listdir(apath('%(app)s/%(dir)s/' % {'app':app, 'dir':dir}, r=request), regexp))
+	files = [x.replace('\\', '/') for x in files if not x.endswith('.bak')]
+	return files
+      
+def editfile(path,file,vars={}, app = None):
+	args=(path,file) if 'app' in vars else (app,path,file)
+	url = URL('edit', args=args, vars=vars)
+	return A(file, _class='editor_filelink', _href=url, _style='word-wrap: nowrap;')
+      
+def files_menu():
+	app = 'welcome'#request.args[0]
+	dirs=[{'name':'models', 'reg':'.*\.py$'},
+      	  {'name':'controllers', 'reg':'.*\.py$'},
+      	  {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
+      	  {'name':'modules', 'reg':'.*\.py$'},
+      	  {'name':'static', 'reg': '[^\.#].*'}]
+	result_files = []
+	for dir in dirs:
+		result_files.append(TAG[''](LI(dir['name'], _class="nav-header component", _onclick="collapse('" + dir['name'] + "_files');"),
+            			  LI(UL(*[LI(editfile(dir['name'], f, dict(id=dir['name'] + f.replace('.','__')), app), _style="overflow:hidden", _id=dir['name']+"__"+f.replace('.','__')) 
+            			  		for f in listfiles(app, dir['name'], regexp=dir['reg'])], 
+            			  		_class="nav nav-list small-font"),
+            			  	 _id=dir['name'] + '_files', _style="display: none;"))) 
+	return dict(result_files = result_files)
+	
 def upload_file():
     """ File uploading handler """
     if request.vars and not request.vars.token == session.token:
