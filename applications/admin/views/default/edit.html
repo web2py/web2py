@@ -1,4 +1,5 @@
 {{extend 'layout.html'}}
+{{app = request.args(0)}}
 {{
 dirs=[{'name':'models', 'reg':'.*\.py$'},
       {'name':'controllers', 'reg':'.*\.py$'},
@@ -238,7 +239,7 @@ $(document).on('click', 'a.font_button', function (e) {
       			<button onclick="jQuery('#form').slideToggle()" class="btn btn-mini">{{=T('Create')}}</button>
       			<br />
 		      	<div id="form">
-        			<div>
+        			<div>        				
         				{{=file_create_form('%s/' % app, '')}}
         				<script>
 							jQuery("#btn_file_create").click(function() {
@@ -252,7 +253,7 @@ $(document).on('click', 'a.font_button', function (e) {
 										jQuery(".flash").show();	
 										jQuery.ajax({
 											type: "POST",
-											url: "{{=URL('files_menu')}}",
+											url: "{{=URL('files_menu', args=[app])}}",
 											success: function(data){												
 												jQuery("#files_menu").html(data);									
 											}
