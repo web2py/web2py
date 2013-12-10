@@ -881,7 +881,7 @@ class Session(Storage):
                 response.cookies[response.session_id_name]['expires'] = \
                     cookie_expires.strftime(FMT)
 
-        session_pickled = cPickle.dumps(self)
+        session_pickled = cPickle.dumps(dict(self))
         response.session_hash = hashlib.md5(session_pickled).hexdigest()
 
         if self.flash:
@@ -1041,7 +1041,7 @@ class Session(Storage):
         return True
 
     def _unchanged(self,response):
-        session_pickled = cPickle.dumps(self)
+        session_pickled = cPickle.dumps(dict(self))
         response.session_pickled = session_pickled
         session_hash = hashlib.md5(session_pickled).hexdigest()
         return response.session_hash == session_hash
@@ -1068,7 +1068,7 @@ class Session(Storage):
         else:
             unique_key = response.session_db_unique_key
 
-        session_pickled = response.session_pickled or cPickle.dumps(self)
+        session_pickled = response.session_pickled or cPickle.dumps(dict(self))
 
         dd = dict(locked=False,
                   client_ip=response.session_client,
@@ -1108,7 +1108,7 @@ class Session(Storage):
                 portalocker.lock(response.session_file, portalocker.LOCK_EX)
                 response.session_locked = True
             if response.session_file:
-                session_pickled = response.session_pickled or cPickle.dumps(self)
+                session_pickled = response.session_pickled or cPickle.dumps(dict(self))
                 response.session_file.write(session_pickled)
                 response.session_file.truncate()
         finally:
