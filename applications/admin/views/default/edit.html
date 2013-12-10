@@ -241,20 +241,21 @@ $(document).on('click', 'a.font_button', function (e) {
         			<div>
         				{{=file_create_form('%s/' % app, '')}}
         				<script>
-							jQuery("#btn_file_create").click(function() {
-								jQuery.ajax({
+							$("#btn_file_create").click(function() {
+								$.ajax({
 									type: "POST",
 									url: "{{=URL('create_file')}}",
 									data: jQuery("#file_create_form").serialize(),
         							dataType: 'JSON',
-									success: function(data){											
-										jQuery(".flash").html(data["result"]);
-										jQuery(".flash").show();	
-										jQuery.ajax({
+									success: function(data){
+										$(".flash").html(data["result"]);
+										$(".flash").show();
+										$.ajax({
 											type: "POST",
-											url: "{{=URL('files_menu')}}",
-											success: function(data){												
-												jQuery("#files_menu").html(data);									
+											url: "{{=URL('files_menu', vars={'app':app})}}",
+											success: function(html_data){
+												$("#files_menu").html(html_data);
+												$(data['id_filename']).click();
 											}
 										});
 								}});
@@ -267,7 +268,7 @@ $(document).on('click', 'a.font_button', function (e) {
     		</div>
     		<br />            
             <div id="files_menu">
-            	{{=LOAD('default', 'files_menu', args=['welcome'])}}
+            	{{=LOAD('default', 'files_menu', vars={'app':app})}}
             </div>
             </ul>
         </div>

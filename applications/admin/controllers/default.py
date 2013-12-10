@@ -1414,7 +1414,7 @@ def editfile(path,file,vars={}, app = None):
 	return A(file, _class='editor_filelink', _href=url, _style='word-wrap: nowrap;')
       
 def files_menu():
-	app = 'welcome'#request.args[0]
+	app = request.vars.app or 'welcome'
 	dirs=[{'name':'models', 'reg':'.*\.py$'},
       	  {'name':'controllers', 'reg':'.*\.py$'},
       	  {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
