@@ -659,7 +659,18 @@
       el.on('ajax:complete', 'form[data-w2p_target]', function (e) {
         web2py.enableFormElements($(this));
       });
-    }
+    },
+    /* Invalidate and force reload of a web2py component
+    */
+    invalidate: function(target) {
+      $('div[data-w2p_remote]', target).each(function () {
+        var el = $('#' + $(this).attr('id')).get(0);
+        if (el.timing !== undefined) {  // Block triggering regular routines
+            clearInterval(el.timing);
+        }
+      });
+      $.web2py.component_handler(target);
+    },
   }
 
   /*end of functions */
