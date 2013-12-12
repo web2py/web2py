@@ -2979,7 +2979,7 @@ class PostgreSQLAdapter(BaseAdapter):
 
     def ST_DWITHIN(self, first, (second, third)):
         """
-        http://postgis.org/docs/ST_Within.html
+        http://postgis.org/docs/ST_DWithin.html
         """
         return 'ST_DWithin(%s,%s,%s)' %(self.expand(first),
                                         self.expand(second, first.type),
