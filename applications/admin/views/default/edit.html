@@ -240,35 +240,13 @@ $(document).on('click', 'a.font_button', function (e) {
 		      	<div id="form">
         			<div>
         				{{=file_create_form('%s/' % app, '')}}
-        				<script>
-							$("#btn_file_create").click(function() {
-								$.ajax({
-									type: "POST",
-									url: "{{=URL('create_file')}}",
-									data: jQuery("#file_create_form").serialize(),
-        							dataType: 'JSON',
-									success: function(data){
-										$(".flash").html(data["result"]);
-										$(".flash").show();
-										$.ajax({
-											type: "POST",
-											url: "{{=URL('files_menu', vars={'app':app})}}",
-											success: function(html_data){
-												$("#files_menu").html(html_data);
-												$(data['id_filename']).click();
-											}
-										});
-								}});
-								return false;
-							});
-						</script>
         			</div>          			  			
       			</div>
       			<script>jQuery('#form').slideToggle()</script>
     		</div>
     		<br />            
             <div id="files_menu">
-            	{{=LOAD('default', 'files_menu', vars={'app':app})}}
+                {{=LOAD('default', 'files_menu', vars={'app':app}, ajax=True)}}
             </div>
             </ul>
         </div>
@@ -318,6 +296,8 @@ $(document).ready(function() {
     var ow = filesMenu.outerWidth();
     filesMenu.width(ow);
     $('#files').css('left', '-'+ow+'px');
+    $.web2py.trap_form('url', 'form');
+    $('#form form').addClass('no_trap'); // Let to reuse the same form
 });
 </script>
 <!-- Typeahead scripts here so the page load faster -->
