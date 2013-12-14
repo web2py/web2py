@@ -1379,10 +1379,10 @@ def create_file():
         safe_write(full_filename, text)
         log_progress(app, 'CREATE', filename)
         if request.vars.dir:
-        	result = T('file "%(filename)s" created',
+            result = T('file "%(filename)s" created',
                           dict(filename=full_filename[len(path):]))
-    	else:
-        	session.flash = T('file "%(filename)s" created',
+        else:
+            session.flash = T('file "%(filename)s" created',
                           dict(filename=full_filename[len(path):]))
         vars = {}
         if request.vars.id:
@@ -1391,13 +1391,20 @@ def create_file():
             vars['app'] = request.vars.app
         redirect(URL('edit',
                  args=[os.path.join(request.vars.location, filename)], vars=vars))
+
     except Exception, e:
         if not isinstance(e, HTTP):
             session.flash = T('cannot create file')
 
     if request.vars.dir:
-    	id_filename = '#' + request.vars.dir + '__' + filename.replace('.','__') + ' a'
-       	return response.json({'result':result, 'id_filename':id_filename})
+        response.flash = result
+        response.headers['web2py-component-content'] = 'append'
+        response.headers['web2py-component-command'] = """
+            $.web2py.invalidate('#files_menu');
+            load_file('%s');
+            $.web2py.enableElement($('#form form').find($.web2py.formInputClickSelector));
+        """ % URL('edit', args=[app,request.vars.dir,filename])
+        return ''
     else:
     	redirect(request.vars.sender + anchor)
 
