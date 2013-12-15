@@ -3291,8 +3291,8 @@ class OracleAdapter(BaseAdapter):
 class MSSQLAdapter(BaseAdapter):
     drivers = ('pyodbc',)
     T_SEP = 'T'
-
-    QUOTE_TEMPLATE = "[%s]"
+    
+    QUOTE_TEMPLATE = '"%s"'
 
     types = {
         'boolean': 'BIT',
