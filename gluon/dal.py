@@ -703,6 +703,7 @@ class BaseAdapter(ConnectionPool):
     can_select_for_update = True
     dbpath = None
     folder = None
+    connector = lambda dbpath, adapter_args: None # __init__ should override this
 
     TRUE = 'T'
     FALSE = 'F'
