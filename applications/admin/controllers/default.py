@@ -30,10 +30,18 @@ from gluon.languages import (read_possible_languages, read_dict, write_dict,
                              read_plural_dict, write_plural_dict)
 
 
-if DEMO_MODE and request.function in ['change_password', 'pack', 'pack_custom','pack_plugin', 'upgrade_web2py', 'uninstall', 'cleanup', 'compile_app', 'remove_compiled_app', 'delete', 'delete_plugin', 'create_file', 'upload_file', 'update_languages', 'reload_routes', 'git_push', 'git_pull']:
+if DEMO_MODE and request.function in ['change_password', 'pack',
+'pack_custom','pack_plugin', 'upgrade_web2py', 'uninstall',
+'cleanup', 'compile_app', 'remove_compiled_app', 'delete',
+'delete_plugin', 'create_file', 'upload_file', 'update_languages',
+'reload_routes', 'git_push', 'git_pull', 'install_plugin']:
     session.flash = T('disabled in demo mode')
     redirect(URL('site'))
 
+if is_gae and request.function in ('edit', 'edit_language',
+'edit_plurals', 'update_languages', 'create_file', 'install_plugin'):
+    session.flash = T('disabled in GAE mode')
+    redirect(URL('site'))
 
 if not is_manager() and request.function in ['change_password', 'upgrade_web2py']:
     session.flash = T('disabled in multi user mode')
@@ -63,9 +71,11 @@ def log_progress(app, mode='EDIT', filename=None, progress=0):
 
 
 def safe_open(a, b):
-    if DEMO_MODE and ('w' in b or 'a' in b):
+    if (DEMO_MODE or is_gae) and ('w' in b or 'a' in b):
         class tmp:
             def write(self, data):
+                pass
+            def close(self):
                 pass
         return tmp()
     return open(a, b)
@@ -1496,7 +1506,7 @@ def errors():
 
     app = get_app()
 
-    method = request.args(1) or 'new'
+    method = request.args(1) or 'new' if not is_gae else "dbnew"
     db_ready = {}
     db_ready['status'] = get_ticket_storage(app)
     db_ready['errmessage'] = T(
@@ -1588,7 +1598,7 @@ def errors():
 
         decorated.sort(key=operator.itemgetter(0), reverse=True)
 
-        return dict(errors=[x[1] for x in decorated], app=app, method=method)
+        return dict(errors=[x[1] for x in decorated], app=app, method=method, db_ready=db_ready)
 
     elif method == 'dbold':
         tk_db, tk_table = get_ticket_storage(app)
@@ -1601,7 +1611,7 @@ def errors():
         times = dict(
             [(row.ticket_id, row.created_datetime) for row in tickets_])
 
-        return dict(app=app, tickets=tickets, method=method, times=times)
+        return dict(app=app, tickets=tickets, method=method, times=times, db_ready=db_ready)
 
     else:
         for item in request.vars:
@@ -1625,6 +1635,9 @@ def get_ticket_storage(app):
     if os.path.exists(ticket_file):
         db_string = open(ticket_file).read()
         db_string = db_string.strip().replace('\r', '').replace('\n', '')
+    elif is_gae:
+        # use Datastore as fallback if there is no ticket_file
+        db_string = "google:datastore"
     else:
         return False
     tickets_table = 'web2py_ticket'
