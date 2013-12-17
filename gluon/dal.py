@@ -703,7 +703,7 @@ class BaseAdapter(ConnectionPool):
     can_select_for_update = True
     dbpath = None
     folder = None
-    connector = lambda dbpath, adapter_args: None # __init__ should override this
+    connector = lambda *args, **kwargs: None # __init__ should override this
 
     TRUE = 'T'
     FALSE = 'F'
@@ -4809,6 +4809,8 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
 
     uploads_in_blob = True
     types = {}
+    # reconnect is not required for Datastore dbs
+    reconnect = lambda *args, **kwargs: None
 
     def file_exists(self, filename): pass
     def file_open(self, filename, mode='rb', lock=True): pass
