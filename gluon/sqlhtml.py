@@ -45,6 +45,9 @@ except ImportError:
 table_field = re.compile('[\w_]+\.[\w_]+')
 widget_class = re.compile('^\w*')
 
+def add_class(a,b):
+    return a+' '+b if a else b
+
 def represent(field, value, record):
     f = field.represent
     if not callable(f):
@@ -334,7 +337,7 @@ class RadioWidget(OptionsWidget):
 
 
         attr = cls._attributes(field, {}, **attributes)
-        attr['_class'] = attr.get('_class', 'web2py_radiowidget')
+        attr['_class'] = add_class(attr.get('_class'), 'web2py_radiowidget')
 
         requires = field.requires
         if not isinstance(requires, (list, tuple)):
@@ -398,7 +401,7 @@ class CheckboxesWidget(OptionsWidget):
             values = [str(value)]
 
         attr = cls._attributes(field, {}, **attributes)
-        attr['_class'] = attr.get('_class', 'web2py_checkboxeswidget')
+        attr['_class'] = add_class(attr.get('_class'), 'web2py_checkboxeswidget')
 
         label = attr.get('label',True)
 
