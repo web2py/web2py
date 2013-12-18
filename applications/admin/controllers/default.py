@@ -1093,11 +1093,12 @@ def design():
 
     #Get crontab
     cronfolder = apath('%s/cron' % app, r=request)
-    if not os.path.exists(cronfolder):
-        os.mkdir(cronfolder)
     crontab = apath('%s/cron/crontab' % app, r=request)
-    if not os.path.exists(crontab):
-        safe_write(crontab, '#crontab')
+    if not is_gae:
+        if not os.path.exists(cronfolder):
+            os.mkdir(cronfolder)
+        if not os.path.exists(crontab):
+            safe_write(crontab, '#crontab')
 
     plugins = []
 
@@ -1505,8 +1506,11 @@ def errors():
     import hashlib
 
     app = get_app()
-
-    method = request.args(1) or 'new' if not is_gae else "dbnew"
+    if is_gae:
+        method = 'dbold' if ('old' in
+                     (request.args(1) or '')) else 'dbnew'
+    else:
+        method = request.args(1) or 'new'
     db_ready = {}
     db_ready['status'] = get_ticket_storage(app)
     db_ready['errmessage'] = T(
@@ -1573,32 +1577,30 @@ def errors():
         for fn in tk_db(tk_table.id > 0).select():
             try:
                 error = pickle.loads(fn.ticket_data)
-            except AttributeError:
+                hash = hashlib.md5(error['traceback']).hexdigest()
+
+                if hash in delete_hashes:
+                    tk_db(tk_table.id == fn.id).delete()
+                    tk_db.commit()
+                else:
+                    try:
+                        hash2error[hash]['count'] += 1
+                    except KeyError:
+                        error_lines = error['traceback'].split("\n")
+                        last_line = error_lines[-2]
+                        error_causer = os.path.split(error['layer'])[1]
+                        hash2error[hash] = dict(count=1,
+                            pickel=error, causer=error_causer,
+                            last_line=last_line, hash=hash,
+                            ticket=fn.ticket_id)
+            except AttributeError, e:
                 tk_db(tk_table.id == fn.id).delete()
                 tk_db.commit()
-
-            hash = hashlib.md5(error['traceback']).hexdigest()
-
-            if hash in delete_hashes:
-                tk_db(tk_table.id == fn.id).delete()
-                tk_db.commit()
-            else:
-                try:
-                    hash2error['hash']['count'] += 1
-                except KeyError:
-                    error_lines = error['traceback'].split("\n")
-                    last_line = error_lines[-2]
-                    error_causer = os.path.split(error['layer'])[1]
-                    hash2error[hash] = dict(count=1, pickel=error,
-                                            causer=error_causer,
-                                            last_line=last_line,
-                                            hash=hash, ticket=fn.ticket_id)
 
         decorated = [(x['count'], x) for x in hash2error.values()]
-
         decorated.sort(key=operator.itemgetter(0), reverse=True)
-
-        return dict(errors=[x[1] for x in decorated], app=app, method=method, db_ready=db_ready)
+        return dict(errors=[x[1] for x in decorated], app=app,
+                    method=method, db_ready=db_ready)
 
     elif method == 'dbold':
         tk_db, tk_table = get_ticket_storage(app)
@@ -1606,16 +1608,18 @@ def errors():
             if item[:7] == 'delete_':
                 tk_db(tk_table.ticket_id == item[7:]).delete()
                 tk_db.commit()
-        tickets_ = tk_db(tk_table.id > 0).select(tk_table.ticket_id, tk_table.created_datetime, orderby=~tk_table.created_datetime)
+        tickets_ = tk_db(tk_table.id > 0).select(tk_table.ticket_id,
+            tk_table.created_datetime,
+            orderby=~tk_table.created_datetime)
         tickets = [row.ticket_id for row in tickets_]
-        times = dict(
-            [(row.ticket_id, row.created_datetime) for row in tickets_])
-
-        return dict(app=app, tickets=tickets, method=method, times=times, db_ready=db_ready)
+        times = dict([(row.ticket_id, row.created_datetime) for
+            row in tickets_])
+        return dict(app=app, tickets=tickets, method=method,
+                    times=times, db_ready=db_ready)
 
     else:
         for item in request.vars:
-            # delete_all} rows doesn't contain any ticket
+            # delete_all rows doesn't contain any ticket
             # Remove anything else as requested
             if item[:7] == 'delete_' and (not item == "delete_all}"):
                 os.unlink(apath('%s/errors/%s' % (app, item[7:]), r=request))
