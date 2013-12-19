@@ -144,7 +144,7 @@ if session.is_mobile == 'true':
 elif session.is_mobile == 'false':
     is_mobile = False
 else:
-    is_mobile = request.user_agent().is_mobile
+    is_mobile = request.user_agent().get('is_mobile',False)
 
 if DEMO_MODE:
     session.authorized = True

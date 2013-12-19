@@ -30,10 +30,18 @@ from gluon.languages import (read_possible_languages, read_dict, write_dict,
                              read_plural_dict, write_plural_dict)
 
 
-if DEMO_MODE and request.function in ['change_password', 'pack', 'pack_custom','pack_plugin', 'upgrade_web2py', 'uninstall', 'cleanup', 'compile_app', 'remove_compiled_app', 'delete', 'delete_plugin', 'create_file', 'upload_file', 'update_languages', 'reload_routes', 'git_push', 'git_pull']:
+if DEMO_MODE and request.function in ['change_password', 'pack',
+'pack_custom','pack_plugin', 'upgrade_web2py', 'uninstall',
+'cleanup', 'compile_app', 'remove_compiled_app', 'delete',
+'delete_plugin', 'create_file', 'upload_file', 'update_languages',
+'reload_routes', 'git_push', 'git_pull', 'install_plugin']:
     session.flash = T('disabled in demo mode')
     redirect(URL('site'))
 
+if is_gae and request.function in ('edit', 'edit_language',
+'edit_plurals', 'update_languages', 'create_file', 'install_plugin'):
+    session.flash = T('disabled in GAE mode')
+    redirect(URL('site'))
 
 if not is_manager() and request.function in ['change_password', 'upgrade_web2py']:
     session.flash = T('disabled in multi user mode')
@@ -63,9 +71,11 @@ def log_progress(app, mode='EDIT', filename=None, progress=0):
 
 
 def safe_open(a, b):
-    if DEMO_MODE and ('w' in b or 'a' in b):
+    if (DEMO_MODE or is_gae) and ('w' in b or 'a' in b):
         class tmp:
             def write(self, data):
+                pass
+            def close(self):
                 pass
         return tmp()
     return open(a, b)
@@ -750,6 +760,7 @@ def edit():
         return response.json({'file_hash': file_hash, 'saved_on': saved_on, 'functions': functions, 'controller': controller, 'application': request.args[0], 'highlight': highlight})
     else:
         file_details = dict(app=request.args[0],
+                    lineno=request.vars.lineno or 1,
                     editor_settings=preferences,
                     filename=filename,
                     realfilename=realfilename,
@@ -773,6 +784,35 @@ def edit():
         else:
             return response.json(file_details)
 
+def todolist():
+    """ Returns all TODO of the requested app
+    """
+    app = request.vars.app or ''
+    app_path = apath('%(app)s' % {'app':app}, r=request)
+    dirs=['models', 'controllers', 'modules', 'private' ]
+    def listfiles(app, dir, regexp='.*\.py$'):
+        files = sorted( listdir(apath('%(app)s/%(dir)s/' % {'app':app, 'dir':dir}, r=request), regexp))
+        files = [x.replace(os.path.sep, '/') for x in files if not x.endswith('.bak')]
+        return files
+
+    pattern = '#\s*(todo)+\s+(.*)'
+    regex = re.compile(pattern, re.IGNORECASE)
+
+    output = []
+    for d in dirs:
+        for f in listfiles(app, d):
+            matches = []
+            filename= apath(os.path.join(app, d, f), r=request)
+            with open(filename, 'r') as f_s:
+                src = f_s.read()
+                for m in regex.finditer(src):
+                    start = m.start()
+                    lineno = src.count('\n', 0, start) + 1
+                    matches.append({'text':m.group(0), 'lineno':lineno})
+            if len(matches) != 0:
+                output.append({'filename':f,'matches':matches, 'dir':d})
+
+    return {'todo':output, 'app': app}
 
 def resolve():
     """
@@ -1053,11 +1093,12 @@ def design():
 
     #Get crontab
     cronfolder = apath('%s/cron' % app, r=request)
-    if not os.path.exists(cronfolder):
-        os.mkdir(cronfolder)
     crontab = apath('%s/cron/crontab' % app, r=request)
-    if not os.path.exists(crontab):
-        safe_write(crontab, '#crontab')
+    if not is_gae:
+        if not os.path.exists(cronfolder):
+            os.mkdir(cronfolder)
+        if not os.path.exists(crontab):
+            safe_write(crontab, '#crontab')
 
     plugins = []
 
@@ -1209,7 +1250,6 @@ def plugin():
                 languages=languages,
                 crontab=crontab)
 
-
 def create_file():
     """ Create files handler """
     if request.vars and not request.vars.token == session.token:
@@ -1220,6 +1260,8 @@ def create_file():
             app = get_app(request.vars.app)
             path = abspath(request.vars.location)
         else:
+            if request.vars.dir:
+            	request.vars.location += request.vars.dir + '/'
             app = get_app(name=request.vars.location.split('/')[0])
             path = apath(request.vars.location, r=request)
         filename = re.sub('[^\w./-]+', '_', request.vars.filename)
@@ -1347,7 +1389,11 @@ def create_file():
 
         safe_write(full_filename, text)
         log_progress(app, 'CREATE', filename)
-        session.flash = T('file "%(filename)s" created',
+        if request.vars.dir:
+            result = T('file "%(filename)s" created',
+                          dict(filename=full_filename[len(path):]))
+        else:
+            session.flash = T('file "%(filename)s" created',
                           dict(filename=full_filename[len(path):]))
         vars = {}
         if request.vars.id:
@@ -1356,13 +1402,51 @@ def create_file():
             vars['app'] = request.vars.app
         redirect(URL('edit',
                  args=[os.path.join(request.vars.location, filename)], vars=vars))
+
     except Exception, e:
         if not isinstance(e, HTTP):
             session.flash = T('cannot create file')
 
-    redirect(request.vars.sender + anchor)
+    if request.vars.dir:
+        response.flash = result
+        response.headers['web2py-component-content'] = 'append'
+        response.headers['web2py-component-command'] = """
+            $.web2py.invalidate('#files_menu');
+            load_file('%s');
+            $.web2py.enableElement($('#form form').find($.web2py.formInputClickSelector));
+        """ % URL('edit', args=[app,request.vars.dir,filename])
+        return ''
+    else:
+    	redirect(request.vars.sender + anchor)
 
 
+def listfiles(app, dir, regexp='.*\.py$'):
+	files = sorted(
+         listdir(apath('%(app)s/%(dir)s/' % {'app':app, 'dir':dir}, r=request), regexp))
+	files = [x.replace('\\', '/') for x in files if not x.endswith('.bak')]
+	return files
+      
+def editfile(path,file,vars={}, app = None):
+	args=(path,file) if 'app' in vars else (app,path,file)
+	url = URL('edit', args=args, vars=vars)
+	return A(file, _class='editor_filelink', _href=url, _style='word-wrap: nowrap;')
+      
+def files_menu():
+	app = request.vars.app or 'welcome'
+	dirs=[{'name':'models', 'reg':'.*\.py$'},
+      	  {'name':'controllers', 'reg':'.*\.py$'},
+      	  {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
+      	  {'name':'modules', 'reg':'.*\.py$'},
+      	  {'name':'static', 'reg': '[^\.#].*'}]
+	result_files = []
+	for dir in dirs:
+		result_files.append(TAG[''](LI(dir['name'], _class="nav-header component", _onclick="collapse('" + dir['name'] + "_files');"),
+            			  LI(UL(*[LI(editfile(dir['name'], f, dict(id=dir['name'] + f.replace('.','__')), app), _style="overflow:hidden", _id=dir['name']+"__"+f.replace('.','__')) 
+            			  		for f in listfiles(app, dir['name'], regexp=dir['reg'])], 
+            			  		_class="nav nav-list small-font"),
+            			  	 _id=dir['name'] + '_files', _style="display: none;"))) 
+	return dict(result_files = result_files)
+	
 def upload_file():
     """ File uploading handler """
     if request.vars and not request.vars.token == session.token:
@@ -1422,8 +1506,11 @@ def errors():
     import hashlib
 
     app = get_app()
-
-    method = request.args(1) or 'new'
+    if is_gae:
+        method = 'dbold' if ('old' in
+                     (request.args(1) or '')) else 'dbnew'
+    else:
+        method = request.args(1) or 'new'
     db_ready = {}
     db_ready['status'] = get_ticket_storage(app)
     db_ready['errmessage'] = T(
@@ -1490,32 +1577,30 @@ def errors():
         for fn in tk_db(tk_table.id > 0).select():
             try:
                 error = pickle.loads(fn.ticket_data)
-            except AttributeError:
+                hash = hashlib.md5(error['traceback']).hexdigest()
+
+                if hash in delete_hashes:
+                    tk_db(tk_table.id == fn.id).delete()
+                    tk_db.commit()
+                else:
+                    try:
+                        hash2error[hash]['count'] += 1
+                    except KeyError:
+                        error_lines = error['traceback'].split("\n")
+                        last_line = error_lines[-2]
+                        error_causer = os.path.split(error['layer'])[1]
+                        hash2error[hash] = dict(count=1,
+                            pickel=error, causer=error_causer,
+                            last_line=last_line, hash=hash,
+                            ticket=fn.ticket_id)
+            except AttributeError, e:
                 tk_db(tk_table.id == fn.id).delete()
                 tk_db.commit()
-
-            hash = hashlib.md5(error['traceback']).hexdigest()
-
-            if hash in delete_hashes:
-                tk_db(tk_table.id == fn.id).delete()
-                tk_db.commit()
-            else:
-                try:
-                    hash2error['hash']['count'] += 1
-                except KeyError:
-                    error_lines = error['traceback'].split("\n")
-                    last_line = error_lines[-2]
-                    error_causer = os.path.split(error['layer'])[1]
-                    hash2error[hash] = dict(count=1, pickel=error,
-                                            causer=error_causer,
-                                            last_line=last_line,
-                                            hash=hash, ticket=fn.ticket_id)
 
         decorated = [(x['count'], x) for x in hash2error.values()]
-
         decorated.sort(key=operator.itemgetter(0), reverse=True)
-
-        return dict(errors=[x[1] for x in decorated], app=app, method=method)
+        return dict(errors=[x[1] for x in decorated], app=app,
+                    method=method, db_ready=db_ready)
 
     elif method == 'dbold':
         tk_db, tk_table = get_ticket_storage(app)
@@ -1523,16 +1608,18 @@ def errors():
             if item[:7] == 'delete_':
                 tk_db(tk_table.ticket_id == item[7:]).delete()
                 tk_db.commit()
-        tickets_ = tk_db(tk_table.id > 0).select(tk_table.ticket_id, tk_table.created_datetime, orderby=~tk_table.created_datetime)
+        tickets_ = tk_db(tk_table.id > 0).select(tk_table.ticket_id,
+            tk_table.created_datetime,
+            orderby=~tk_table.created_datetime)
         tickets = [row.ticket_id for row in tickets_]
-        times = dict(
-            [(row.ticket_id, row.created_datetime) for row in tickets_])
-
-        return dict(app=app, tickets=tickets, method=method, times=times)
+        times = dict([(row.ticket_id, row.created_datetime) for
+            row in tickets_])
+        return dict(app=app, tickets=tickets, method=method,
+                    times=times, db_ready=db_ready)
 
     else:
         for item in request.vars:
-            # delete_all} rows doesn't contain any ticket
+            # delete_all rows doesn't contain any ticket
             # Remove anything else as requested
             if item[:7] == 'delete_' and (not item == "delete_all}"):
                 os.unlink(apath('%s/errors/%s' % (app, item[7:]), r=request))
@@ -1552,6 +1639,9 @@ def get_ticket_storage(app):
     if os.path.exists(ticket_file):
         db_string = open(ticket_file).read()
         db_string = db_string.strip().replace('\r', '').replace('\n', '')
+    elif is_gae:
+        # use Datastore as fallback if there is no ticket_file
+        db_string = "google:datastore"
     else:
         return False
     tickets_table = 'web2py_ticket'
@@ -1804,24 +1894,7 @@ def plugins():
             "public/api.json/action/list/content/Package?package" +
             "_type=plugin&search_index=false").read()
         session.plugins = loads_json(rawlist)
-    plugins = TABLE(
-        *[TR(TD(H5(article["article"]["title"]),
-                A(T("Install"),
-                    _href=URL(c="default",
-                        f="install_plugin",
-                        args=[app,],
-                        vars={"source":
-                              article["package_data"]["download"],
-                              "plugin": article["article"]["title"]}
-                             ))),
-             TD(article["article"]["description"], BR(),
-                A(T("Plugin page"),
-                  _href="http://www.web2pyslices.com/slice/show/%s/" % \
-                  article["article"]["id"])),
-             TD(IMG(_src="http://www.web2pyslices.com/download/%s" % \
-                 article["article"]["thumbnail"])))
-          for article in session.plugins["results"]])
-    return dict(plugins=plugins, app=request.args(0))
+    return dict(plugins=session.plugins["results"], app=request.args(0))
 
 def install_plugin():
     app = request.args(0)

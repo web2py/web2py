@@ -21,7 +21,7 @@ from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT, COL, COLGROUP
 from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
 from gluon.html import URL, truncate_string, FIELDSET
 from gluon.dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
-    bar_encode, Reference, REGEX_TABLE_DOT_FIELD, Expression, SQLCustomType
+    bar_encode, Reference, Expression, SQLCustomType
 from gluon.storage import Storage
 from gluon.utils import md5_hash
 from gluon.validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE, \
@@ -44,6 +44,9 @@ except ImportError:
 
 table_field = re.compile('[\w_]+\.[\w_]+')
 widget_class = re.compile('^\w*')
+
+def add_class(a,b):
+    return a+' '+b if a else b
 
 def represent(field, value, record):
     f = field.represent
@@ -334,7 +337,7 @@ class RadioWidget(OptionsWidget):
 
 
         attr = cls._attributes(field, {}, **attributes)
-        attr['_class'] = attr.get('_class', 'web2py_radiowidget')
+        attr['_class'] = add_class(attr.get('_class'), 'web2py_radiowidget')
 
         requires = field.requires
         if not isinstance(requires, (list, tuple)):
@@ -398,7 +401,9 @@ class CheckboxesWidget(OptionsWidget):
             values = [str(value)]
 
         attr = cls._attributes(field, {}, **attributes)
-        attr['_class'] = attr.get('_class', 'web2py_checkboxeswidget')
+        attr['_class'] = add_class(attr.get('_class'), 'web2py_checkboxeswidget')
+
+        label = attr.get('label',True)
 
         requires = field.requires
         if not isinstance(requires, (list, tuple)):
@@ -439,7 +444,8 @@ class CheckboxesWidget(OptionsWidget):
                                        requires=attr.get('requires', None),
                                        hideerror=True, _value=k,
                                        value=r_value),
-                                 LABEL(v, _for='%s%s' % (field.name, k))))
+                                 LABEL(v, _for='%s%s' % (field.name, k)) 
+                                 if label else ''))
             opts.append(child(tds))
 
         if opts:
@@ -2893,7 +2899,7 @@ class SQLTABLE(TABLE):
         if not sqlrows:
             return
         if not columns:
-            columns = sqlrows.colnames
+            columns = ['.'.join(sqlrows.db._adapter.REGEX_TABLE_DOT_FIELD.match(c).groups()) for c in sqlrows.colnames]
         if headers == 'fieldname:capitalize':
             headers = {}
             for c in columns:
@@ -3116,7 +3122,7 @@ class ExportClass(object):
         for record in self.rows:
             row = []
             for col in self.rows.colnames:
-                if not REGEX_TABLE_DOT_FIELD.match(col):
+                if not self.rows.db._adapter.REGEX_TABLE_DOT_FIELD.match(col):
                     row.append(record._extra[col])
                 else:
                     (t, f) = col.split('.')

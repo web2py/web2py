@@ -1,6 +1,12 @@
+/* TODO rename this file as web2py-editor.css */
 /* Fullscreen */
 .CodeMirror-fullscreen {
 	z-index: 1030;
+}
+.CodeMirror {
+    border-top: 1px solid #ddd;
+    /*border-left: 1px solid #ddd;*/
+    border-bottom: 1px solid #ddd;
 }
 
 /* BREAKPOINTS */
@@ -36,3 +42,15 @@
 /*.nav-tabs>li {
     min-width: 100px;
 }*/
+
+#windows_divs > div {
+    position: fixed;
+    height: 30%;
+    left: 0;
+    background: white;
+    right: 0;
+    bottom: 41px;
+    z-index: 1030;
+    overflow: inherit;
+    border-top: 1px solid #ddd;
+}

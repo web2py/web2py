@@ -816,7 +816,10 @@ class Session(Storage):
             # if on GAE tickets go also in DB
             if settings.global_settings.web2py_runtime_gae:
                 request.tickets_db = db
-            table_migrate = (masterapp == request.application)
+            if masterapp == request.application:
+                table_migrate = migrate
+            else:
+                table_migrate = False
             tname = tablename + '_' + masterapp
             table = db.get(tname, None)
             Field = db.Field

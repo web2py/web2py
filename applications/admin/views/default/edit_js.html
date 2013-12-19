@@ -74,15 +74,15 @@
                              request.env['wsgi_url_scheme'], request.env['http_host'],
                              URL(c='debug', f='toggle_breakpoint')))}}, sel);
     });
-        function makeMarker() {
-            var marker = document.createElement("div");
-           marker.style.color = "#822";
-           marker.innerHTML = "●";
-            marker.className = "breakpoint";
-            return marker;
-       }
+    function makeMarker() {
+        var marker = document.createElement("div");
+        marker.style.color = "#822";
+        marker.innerHTML = "●";
+        marker.className = "breakpoint";
+        return marker;
+    }
 
-        {{if filetype in ('html', 'javascript', 'css'):}}
+    {{if filetype in ('html', 'javascript', 'css'):}}
         // must be here or break emmet/zencoding 
         CodeMirror.defaults.extraKeys["Ctrl-S"] =
             function(instance) {
@@ -94,26 +94,27 @@
         CodeMirror.defaults.extraKeys["Shift-Esc"] = function(cm) {
             if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
         }
-        {{pass}}
-        {{if filetype=='python':}}
-            // must be here or break emmet/zencoding for python
-            CodeMirror.defaults.extraKeys["Ctrl-S"] =
-                function(instance) {
-                    doClickSave();};
-            CodeMirror.defaults.extraKeys["Ctrl-Space"] = "autocomplete";
-            CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
-            CodeMirror.defaults.extraKeys["Shift-Tab"] = "indentLess";
-            CodeMirror.defaults.extraKeys["Ctrl-F11"] = function(cm) {
-		        cm.setOption("fullScreen", !cm.getOption("fullScreen"));
-		    },
-		    CodeMirror.defaults.extraKeys["Shift-Esc"] = function(cm) {
-		        if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
-		    }
-            //for autocomplete
-            CodeMirror.commands.autocomplete = function(cm) {
-                CodeMirror.showHint(cm, CodeMirror.pythonHint);
-            }
-        {{pass}}
+    {{pass}}
+    {{if filetype=='python':}}
+        // must be here or break emmet/zencoding for python
+        CodeMirror.defaults.extraKeys["Ctrl-S"] =
+            function(instance) {
+                doClickSave();};
+        CodeMirror.defaults.extraKeys["Ctrl-Space"] = "autocomplete";
+        CodeMirror.defaults.extraKeys["Tab"] = "indentMore";
+        CodeMirror.defaults.extraKeys["Shift-Tab"] = "indentLess";
+        CodeMirror.defaults.extraKeys["Ctrl-F11"] = function(cm) {
+	        cm.setOption("fullScreen", !cm.getOption("fullScreen"));
+	    },
+	    CodeMirror.defaults.extraKeys["Shift-Esc"] = function(cm) {
+	        if (cm.getOption("fullScreen")) cm.setOption("fullScreen", false);
+	    }
+        //for autocomplete
+        CodeMirror.commands.autocomplete = function(cm) {
+            CodeMirror.showHint(cm, CodeMirror.pythonHint);
+        }
+    {{pass}}
+    CodeMirror.defaults.extraKeys["Ctrl-/"] = "toggleComment";
     store_changes_function = function(instance, changeObj) {
         jQuery(instance).data('saved', false);
         instance.off("change", store_changes_function);
@@ -128,6 +129,19 @@
                 request.env['wsgi_url_scheme'], request.env['http_host'],
                 URL(c='debug', f='list_breakpoints')))}}, editor);
 
+    // TODO move it in a separated file
+    CodeMirror.defineExtension("centerOnCursor", function(limit) {
+        var coords = this.cursorCoords(null, "local");
+        if (this.getScrollerElement().clientHeight === 0 && limit !== 10) {
+            if (limit === undefined) limit = 1;
+            else limit += 1;
+            editor = this;
+            setTimeout(function() {editor.centerOnCursor()}, 100);
+            return;
+        }
+        clientHeight = (this.getScrollerElement().clientHeight / 2)
+        this.scrollTo(null, (coords.top + coords.bottom)/2 - 10);
+    });
     </script>
 
     <div class="editor-bar-bottom" style="margin-top:9px;">
@@ -141,34 +155,26 @@
 
 <div class="row-fluid">
     <div class="help alert alert-block alert-info">
-        {{if filetype=='html':}}
+    {{if filetype=='html':}}
         <h3>{{=T('Key bindings for ZenCoding Plugin')}}</h3>
-        <ul class="keybindings unstyled">
-            {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
-            {{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
-			{{=shortcut('Shift+Esc', T('Exit Fullscreen'))}}
-            {{=shortcut('Ctrl-F / Cmd-F', T('Start searching'))}}
-            {{=shortcut('Ctrl-G / Cmd-G', T('Find Next'))}}
-            {{=shortcut('Shift-Ctrl-G / Shift-Cmd-G', T('Find Previous'))}}
-            {{=shortcut('Shift-Ctrl-F / Cmd-Option-F', T('Replace'))}}
-            {{=shortcut('Shift-Ctrl-R / Shift-Cmd-Option-F', T('Replace All'))}}
-            {{=shortcut('Tab', T('Expand Abbreviation'))}}
-        </ul>
-        {{else:}}
+    {{else:}}
         <h3>{{=T("Key bindings")}}</h3>
+    {{pass}}
         <ul class="keybindings unstyled">
             {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
             {{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
 			{{=shortcut('Shift+Esc', T('Exit Fullscreen'))}}
-            {{if filetype=='python':}}
-                {{=shortcut('Ctrl-Space', T('Autocomplete Python Code'))}}
-   			{{pass}}
             {{=shortcut('Ctrl-F / Cmd-F', T('Start searching'))}}
             {{=shortcut('Ctrl-G / Cmd-G', T('Find Next'))}}
             {{=shortcut('Shift-Ctrl-G / Shift-Cmd-G', T('Find Previous'))}}
             {{=shortcut('Shift-Ctrl-F / Cmd-Option-F', T('Replace'))}}
             {{=shortcut('Shift-Ctrl-R / Shift-Cmd-Option-F', T('Replace All'))}}
-        </ul>
+            {{=shortcut('Ctrl-/ ', T('Toggle comment'))}}
+        {{if filetype=='html':}}
+            {{=shortcut('Tab', T('Expand Abbreviation'))}}
+        {{elif filetype=='python':}}
+            {{=shortcut('Ctrl-Space', T('Autocomplete Python Code'))}}
         {{pass}}
+        </ul>
     </div>
 </div>

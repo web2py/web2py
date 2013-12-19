@@ -55,6 +55,7 @@
 
         <!-- FOOTER
         ============== -->
+        {{block footer}}
         <footer id="footer" class="fixed">
             <p><span>{{=T('Powered by')}} {{=A('web2py', _href='http://www.web2py.com')}}&trade; {{=T('created by')}} Massimo Di Pierro &copy;2007-{{=request.now.year}}
                 {{if hasattr(T,'get_possible_languages_info'):}}
@@ -68,6 +69,7 @@
                 </span>{{pass}}
             </p>
         </footer><!-- /#footer -->
+        {{end}}
 
         <!-- BS JAVASCRIPT
         ====================== -->
