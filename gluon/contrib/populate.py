@@ -266,5 +266,5 @@ def populate_generator(table, default=True, compute=False, contents={}):
 
 if __name__ == '__main__':
     ell = Learner()
-    ell.loadd(eval(IUP))
+    ell.loadd(IUP)
     print ell.generate(1000, prefix=None)
