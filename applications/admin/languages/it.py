@@ -1,4 +1,4 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
 {
 '!langcode!': 'it',
 '!langname!': 'Italiano',
@@ -303,6 +303,7 @@
 'to  previous version.': 'torna a versione precedente',
 'To create a plugin, name a file/folder plugin_[name]': 'Per creare un plugin, chiamare un file o cartella plugin_[nome]',
 'toggle breakpoint': 'toggle breakpoint',
+'Toggle comment': 'Toggle comment',
 'Toggle Fullscreen': 'Toggle Fullscreen',
 'Traceback': 'Traceback',
 'translation strings for the application': "stringhe di traduzioni per l'applicazione",

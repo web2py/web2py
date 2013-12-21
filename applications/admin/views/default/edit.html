@@ -208,6 +208,9 @@ $(document).on('click', 'a.font_button', function (e) {
 
 <div class='row-fluid'>
 <div class="right controls btn-toolbar pull-right">
+
+{{=LOAD('default', 'editor_sessions', ajax=True, _class='btn-group')}}
+
 <div class="btn-group">
   <a class="button btn" onclick="$('#files').toggle(); return false" href="#">Files toggle</a>
 </div>
@@ -314,5 +317,28 @@ $(document).ready(function() {
         load_file(datum.link);
         $(this).val('');
     });
+    /* handlers to manage editor sessions
+    */
+    $(document).on('click', '#save_session', function(e) {
+        e.preventDefault();
+        var session_name=prompt("Session name","{{=app}}");
+
+        if (session_name!==null) {
+            files = $("[data-path]").map(function(){return $(this).data("path");}).get();
+            data = JSON.stringify({ files: files, session_name:session_name});
+            $.ajaxSetup({contentType: "application/json"});
+            $.web2py.ajax_page("POST", "{{=URL('default', 'editor_sessions')}}", data, 'manage_sessions');
+        }
+    });
+    $(document).on('click', '#saved_sessions a[data-files]', function(e) {
+        e.preventDefault();
+        files = $(this).data('files');
+        array_files = files.split(',');
+        $.each(array_files, function(index, value) {
+            url = "{{=URL('default','edit')}}/" + value;
+            load_file(url);
+        });
+    });
+
 </script>
 <!-- end "edit" block -->
