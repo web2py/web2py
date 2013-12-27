@@ -3,9 +3,6 @@
   <ul class="dropdown-menu" id="saved_sessions">
     {{for name, files in editor_sessions.items():}}
        <li><a href="" data-files='{{=files}}'>{{=name}}</a></li>
-       {{for f in files:}}
-       {{print 'file', f}}
-       {{pass}}
     {{pass}}
     <li class="divider"></li>
     <li><a id="save_session" href="">Save current session</a></li>
