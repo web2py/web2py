@@ -16,6 +16,8 @@ try:
 except ImportError:
     pgv = None
 
+is_gae = request.env.web2py_runtime_gae or False
+
 # ## critical --- make a copy of the environment
 
 global_env = copy.copy(globals())
@@ -359,36 +361,43 @@ def state():
 
 
 def ccache():
-    cache.ram.initialize()
-    cache.disk.initialize()
+    if is_gae:
+        form = FORM(
+            P(TAG.BUTTON(T("Clear CACHE?"), _type="submit", _name="yes", _value="yes")))
+    else:
+        cache.ram.initialize()
+        cache.disk.initialize()
 
-    form = FORM(
-        P(TAG.BUTTON(
-            T("Clear CACHE?"), _type="submit", _name="yes", _value="yes")),
-        P(TAG.BUTTON(
-            T("Clear RAM"), _type="submit", _name="ram", _value="ram")),
-        P(TAG.BUTTON(
-            T("Clear DISK"), _type="submit", _name="disk", _value="disk")),
-    )
+        form = FORM(
+            P(TAG.BUTTON(
+                T("Clear CACHE?"), _type="submit", _name="yes", _value="yes")),
+            P(TAG.BUTTON(
+                T("Clear RAM"), _type="submit", _name="ram", _value="ram")),
+            P(TAG.BUTTON(
+                T("Clear DISK"), _type="submit", _name="disk", _value="disk")),
+        )
 
     if form.accepts(request.vars, session):
-        clear_ram = False
-        clear_disk = False
         session.flash = ""
-        if request.vars.yes:
-            clear_ram = clear_disk = True
-        if request.vars.ram:
-            clear_ram = True
-        if request.vars.disk:
-            clear_disk = True
-
-        if clear_ram:
-            cache.ram.clear()
-            session.flash += T("Ram Cleared")
-        if clear_disk:
-            cache.disk.clear()
-            session.flash += T("Disk Cleared")
-
+        if is_gae:
+            if request.vars.yes:
+                cache.ram.clear()
+                session.flash += T("Cache Cleared")
+        else:
+            clear_ram = False
+            clear_disk = False
+            if request.vars.yes:
+                clear_ram = clear_disk = True
+            if request.vars.ram:
+                clear_ram = True
+            if request.vars.disk:
+                clear_disk = True
+            if clear_ram:
+                cache.ram.clear()
+                session.flash += T("Ram Cleared")
+            if clear_disk:
+                cache.disk.clear()
+                session.flash += T("Disk Cleared")
         redirect(URL(r=request))
 
     try:
@@ -414,6 +423,7 @@ def ccache():
         'oldest': time.time(),
         'keys': []
     }
+
     disk = copy.copy(ram)
     total = copy.copy(ram)
     disk['keys'] = []
@@ -428,72 +438,81 @@ def ccache():
 
         return (hours, minutes, seconds)
 
-    for key, value in cache.ram.storage.iteritems():
-        if isinstance(value, dict):
-            ram['hits'] = value['hit_total'] - value['misses']
-            ram['misses'] = value['misses']
-            try:
-                ram['ratio'] = ram['hits'] * 100 / value['hit_total']
-            except (KeyError, ZeroDivisionError):
-                ram['ratio'] = 0
-        else:
-            if hp:
-                ram['bytes'] += hp.iso(value[1]).size
-                ram['objects'] += hp.iso(value[1]).count
-            ram['entries'] += 1
-            if value[0] < ram['oldest']:
-                ram['oldest'] = value[0]
-            ram['keys'].append((key, GetInHMS(time.time() - value[0])))
-    folder = os.path.join(request.folder,'cache')
-    if not os.path.exists(folder):
-        os.mkdir(folder)
-    locker = open(os.path.join(folder, 'cache.lock'), 'a')
-    portalocker.lock(locker, portalocker.LOCK_EX)
-    disk_storage = shelve.open(
-        os.path.join(folder, 'cache.shelve'))
-    try:
-        for key, value in disk_storage.items():
+    if is_gae:
+        gae_stats = cache.ram.client.get_stats()
+        try:
+            gae_stats['ratio'] = ((gae_stats['hits'] * 100) /
+                (gae_stats['hits'] + gae_stats['misses']))
+        except ZeroDivisionError:
+            gae_stats['ratio'] = T("?")
+        gae_stats['oldest'] = GetInHMS(time.time() - gae_stats['oldest_item_age'])
+        total.update(gae_stats)
+    else:
+        for key, value in cache.ram.storage.iteritems():
             if isinstance(value, dict):
-                disk['hits'] = value['hit_total'] - value['misses']
-                disk['misses'] = value['misses']
+                ram['hits'] = value['hit_total'] - value['misses']
+                ram['misses'] = value['misses']
                 try:
-                    disk['ratio'] = disk['hits'] * 100 / value['hit_total']
+                    ram['ratio'] = ram['hits'] * 100 / value['hit_total']
                 except (KeyError, ZeroDivisionError):
-                    disk['ratio'] = 0
+                    ram['ratio'] = 0
             else:
                 if hp:
-                    disk['bytes'] += hp.iso(value[1]).size
-                    disk['objects'] += hp.iso(value[1]).count
-                disk['entries'] += 1
-                if value[0] < disk['oldest']:
-                    disk['oldest'] = value[0]
-                disk['keys'].append((key, GetInHMS(time.time() - value[0])))
+                    ram['bytes'] += hp.iso(value[1]).size
+                    ram['objects'] += hp.iso(value[1]).count
+                ram['entries'] += 1
+                if value[0] < ram['oldest']:
+                    ram['oldest'] = value[0]
+                ram['keys'].append((key, GetInHMS(time.time() - value[0])))
+        folder = os.path.join(request.folder,'cache')
+        if not os.path.exists(folder):
+            os.mkdir(folder)
+        locker = open(os.path.join(folder, 'cache.lock'), 'a')
+        portalocker.lock(locker, portalocker.LOCK_EX)
+        disk_storage = shelve.open(
+            os.path.join(folder, 'cache.shelve'))
+        try:
+            for key, value in disk_storage.items():
+                if isinstance(value, dict):
+                    disk['hits'] = value['hit_total'] - value['misses']
+                    disk['misses'] = value['misses']
+                    try:
+                        disk['ratio'] = disk['hits'] * 100 / value['hit_total']
+                    except (KeyError, ZeroDivisionError):
+                        disk['ratio'] = 0
+                else:
+                    if hp:
+                        disk['bytes'] += hp.iso(value[1]).size
+                        disk['objects'] += hp.iso(value[1]).count
+                    disk['entries'] += 1
+                    if value[0] < disk['oldest']:
+                        disk['oldest'] = value[0]
+                    disk['keys'].append((key, GetInHMS(time.time() - value[0])))
+        finally:
+            portalocker.unlock(locker)
+            locker.close()
+            disk_storage.close()
 
-    finally:
-        portalocker.unlock(locker)
-        locker.close()
-        disk_storage.close()
-
-    total['entries'] = ram['entries'] + disk['entries']
-    total['bytes'] = ram['bytes'] + disk['bytes']
-    total['objects'] = ram['objects'] + disk['objects']
-    total['hits'] = ram['hits'] + disk['hits']
-    total['misses'] = ram['misses'] + disk['misses']
-    total['keys'] = ram['keys'] + disk['keys']
-    try:
-        total['ratio'] = total['hits'] * 100 / (total['hits'] +
+        total['entries'] = ram['entries'] + disk['entries']
+        total['bytes'] = ram['bytes'] + disk['bytes']
+        total['objects'] = ram['objects'] + disk['objects']
+        total['hits'] = ram['hits'] + disk['hits']
+        total['misses'] = ram['misses'] + disk['misses']
+        total['keys'] = ram['keys'] + disk['keys']
+        try:
+            total['ratio'] = total['hits'] * 100 / (total['hits'] +
                                                 total['misses'])
-    except (KeyError, ZeroDivisionError):
-        total['ratio'] = 0
+        except (KeyError, ZeroDivisionError):
+            total['ratio'] = 0
 
-    if disk['oldest'] < ram['oldest']:
-        total['oldest'] = disk['oldest']
-    else:
-        total['oldest'] = ram['oldest']
+        if disk['oldest'] < ram['oldest']:
+            total['oldest'] = disk['oldest']
+        else:
+            total['oldest'] = ram['oldest']
 
-    ram['oldest'] = GetInHMS(time.time() - ram['oldest'])
-    disk['oldest'] = GetInHMS(time.time() - disk['oldest'])
-    total['oldest'] = GetInHMS(time.time() - total['oldest'])
+        ram['oldest'] = GetInHMS(time.time() - ram['oldest'])
+        disk['oldest'] = GetInHMS(time.time() - disk['oldest'])
+        total['oldest'] = GetInHMS(time.time() - total['oldest'])
 
     def key_table(keys):
         return TABLE(
@@ -502,9 +521,10 @@ def ccache():
             **dict(_class='cache-keys',
                    _style="border-collapse: separate; border-spacing: .5em;"))
 
-    ram['keys'] = key_table(ram['keys'])
-    disk['keys'] = key_table(disk['keys'])
-    total['keys'] = key_table(total['keys'])
+    if not is_gae:
+        ram['keys'] = key_table(ram['keys'])
+        disk['keys'] = key_table(disk['keys'])
+        total['keys'] = key_table(total['keys'])
 
     return dict(form=form, total=total,
                 ram=ram, disk=disk, object_stats=hp != False)
