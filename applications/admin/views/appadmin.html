@@ -116,13 +116,15 @@
 
 
 {{elif request.function == 'ccache':}}
-<h2>{{T("Cache")}}</h2>
-<div class="list">
-
+<h2>{{=T("Cache")}}</h2>
   <div class="list-header">
-    <h3>{{T("Statistics")}}</h3>
+    <h3>{{=T("Statistics")}}</h3>
   </div>
 
+{{if request.env.web2py_runtime_gae:}}
+{{=BEAUTIFY(total)}}
+{{else:}}
+<div class="list">
   <div class="content">
     <h4>{{=T("Overview")}}</h4>
     <p>{{=T.M("Number of entries: **%s**", total['entries'])}}</p>
@@ -209,6 +211,8 @@
       <br />
     {{pass}}
   </div>
+
+{{pass}}
 
   <div class="list-header">
     <h3>{{=T("Manage Cache")}}</h3>
