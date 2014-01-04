@@ -8189,8 +8189,8 @@ def index():
                         limits = (offset,long(vars.get('limit',None) or 1000)+offset)
                     except ValueError:
                         return Row({'status':400,'error':'invalid limits','response':None})
-                    if count > limits[1]-limits[0]:
-                        return Row({'status':400,'error':'too many records','response':None})
+                    #if count > limits[1]-limits[0]:
+                    #    return Row({'status':400,'error':'too many records','response':None})
                     try:
                         response = dbset.select(limitby=limits,orderby=orderby,*fields)
                     except ValueError:
