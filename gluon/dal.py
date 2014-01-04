@@ -8453,6 +8453,9 @@ def index():
             columns = adapter.cursor.description
             # reduce the column info down to just the field names
             fields = colnames or [f[0] for f in columns]
+            if len(fields) != len(set(fields)):
+                raise RuntimeError(
+                    "as_dict=True not supported if ambiguous column names")
             # will hold our finished resultset in a list
             data = adapter._fetchall()
             # convert the list for each row into a dictionary so it's
