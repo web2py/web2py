@@ -458,7 +458,7 @@ class IS_IN_SET(Validator):
 
 
 regex1 = re.compile('\w+\.\w+')
-regex2 = re.compile('%\((?P<name>[^\)]+)\)s')
+regex2 = re.compile('%\((?P<name>[^\)]+)\)(\d*\.\d*)?[a-zA-Z]')
 
 
 class IS_IN_DB(Validator):
