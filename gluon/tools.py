@@ -2112,7 +2112,7 @@ class Auth(object):
         success = False
         if row:
             userfield = self.settings.login_userfield or 'username' \
-                if 'username' in table_user.fields else 'email'
+                if 'username' in table.fields else 'email'
             # If ticket is a service Ticket and RENEW flag respected
             if ticket[0:3] == 'ST-' and \
                     not ((row.renew and renew) ^ renew):
@@ -5893,7 +5893,7 @@ class Wiki(object):
 class Config(object):
     def __init__(
         self,
-                filename,
+        filename,
         section,
         default_values={}
     ):

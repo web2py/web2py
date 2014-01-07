@@ -8189,8 +8189,8 @@ def index():
                         limits = (offset,long(vars.get('limit',None) or 1000)+offset)
                     except ValueError:
                         return Row({'status':400,'error':'invalid limits','response':None})
-                    if count > limits[1]-limits[0]:
-                        return Row({'status':400,'error':'too many records','response':None})
+                    #if count > limits[1]-limits[0]:
+                    #    return Row({'status':400,'error':'too many records','response':None})
                     try:
                         response = dbset.select(limitby=limits,orderby=orderby,*fields)
                     except ValueError:
@@ -8453,6 +8453,9 @@ def index():
             columns = adapter.cursor.description
             # reduce the column info down to just the field names
             fields = colnames or [f[0] for f in columns]
+            if len(fields) != len(set(fields)):
+                raise RuntimeError("Result set includes duplicate column names. Specify unique column names using the 'colnames' argument")
+
             # will hold our finished resultset in a list
             data = adapter._fetchall()
             # convert the list for each row into a dictionary so it's

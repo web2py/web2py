@@ -1,4 +1,4 @@
-# coding: utf-8
+# -*- coding: utf-8 -*-
 {
 '!langcode!': 'es',
 '!langname!': 'Español',
@@ -10,6 +10,7 @@
 '%Y-%m-%d %H:%M:%S': '%d/%m/%Y %H:%M:%S',
 '(something like "it-it")': '(algo como "eso-eso")',
 '@markmin\x01An error occured, please [[reload %s]] the page': 'Ha ocurrido un error, por favor [[recargar %s]] la página',
+'@markmin\x01Number of entries: **%s**': 'Number of entries: **%s**',
 'A new version of web2py is available': 'Hay una nueva versión de web2py disponible',
 'A new version of web2py is available: %s': 'Hay una nueva versión de web2py disponible: %s',
 'About': 'Acerca de',
@@ -91,6 +92,7 @@
 'Database': 'Base de datos',
 'Database %s select': 'selección en base de datos %s',
 'database administration': 'administración base de datos',
+'Database Administration (appadmin)': 'Database Administration (appadmin)',
 'Date and Time': 'Fecha y Hora',
 'db': 'bdd',
 'DB Model': 'Modelo BDD',

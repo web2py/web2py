@@ -45,4 +45,4 @@ if 'adminLanguage' in request.cookies and not (request.cookies['adminLanguage'] 
     T.force(request.cookies['adminLanguage'].value)
 
 #set static_version
-response.static_version = '2.7.3'
+response.static_version = open('VERSION').read().split(' ',1)[1].split('-')[0]

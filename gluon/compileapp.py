@@ -528,7 +528,7 @@ def run_models_in(environment):
     models_to_run = None    
     for model in models:
         if response.models_to_run != models_to_run:
-            regex = models_to_run = response.models_to_run
+            regex = models_to_run = response.models_to_run[:]
             if isinstance(regex, list):
                 regex = re_compile('|'.join(regex))
         if models_to_run:

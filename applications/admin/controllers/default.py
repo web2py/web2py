@@ -574,10 +574,10 @@ def edit():
     # Load json only if it is ajax edited...
     app = get_app(request.vars.app)
     app_path = apath(app, r=request)
-    editor_defaults={'theme':'web2py', 'editor': 'default', 'closetag': 'true', 'codefolding': 'false', 'tabwidth':'4', 'indentwithtabs':'false', 'linenumbers':'true', 'highlightline':'true'}
+    preferences={'theme':'web2py', 'editor': 'default', 'closetag': 'true', 'codefolding': 'false', 'tabwidth':'4', 'indentwithtabs':'false', 'linenumbers':'true', 'highlightline':'true'}
     config = Config(os.path.join(request.folder, 'settings.cfg'),
-                    section='editor', default_values=editor_defaults)
-    preferences = config.read()
+                    section='editor', default_values={})
+    preferences.update(config.read())
 
     if not(request.ajax) and not(is_mobile):
         # return the scaffolding, the rest will be through ajax requests
@@ -589,7 +589,7 @@ def edit():
         if request.post_vars:        #save new preferences
             post_vars = request.post_vars.items()
             # Since unchecked checkbox are not serialized, we must set them as false by hand to store the correct preference in the settings 
-            post_vars+= [(opt, 'false') for opt in editor_defaults if opt not in request.post_vars ]
+            post_vars+= [(opt, 'false') for opt in preferences if opt not in request.post_vars ]
             if config.save(post_vars):
                 response.headers["web2py-component-flash"] = T('Preferences saved correctly')
             else:
@@ -813,6 +813,22 @@ def todolist():
                 output.append({'filename':f,'matches':matches, 'dir':d})
 
     return {'todo':output, 'app': app}
+
+def editor_sessions():
+    config = Config(os.path.join(request.folder, 'settings.cfg'),
+                    section='editor_sessions', default_values={})
+    preferences = config.read()
+
+    if request.vars.session_name and request.vars.files:
+        session_name = request.vars.session_name
+        files = request.vars.files
+        preferences.update({session_name:','.join(files)})
+        if config.save(preferences.items()):
+            response.headers["web2py-component-flash"] = T('Session saved correctly')
+        else:
+            response.headers["web2py-component-flash"] = T('Session saved on session only')
+
+    return response.render('default/editor_sessions.html', {'editor_sessions':preferences})
 
 def resolve():
     """
