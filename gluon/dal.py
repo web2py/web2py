@@ -1799,8 +1799,8 @@ class BaseAdapter(ConnectionPool):
                 sql_o += ' ORDER BY %s' % self.expand(orderby)
         if (limitby and not groupby and tablenames and orderby_on_limitby and not orderby):
             sql_o += ' ORDER BY %s' % ', '.join(
-                [self.db[t][x].sqlsafe for t in tablenames for x in (
-                    hasattr(self.db[t],'_primarykey') and self.db[t]._primarykey
+                [self.db[t].sqlsafe + '.' + self.db[t][x].sqlsafe_name for t in tablenames for x in (
+                    hasattr(self.db[t], '_primarykey') and self.db[t]._primarykey
                     or ['_id']
                     )
                  ]
@@ -10129,7 +10129,8 @@ class Field(Expression):
     @property
     def sqlsafe(self):
         if self._table:
-            return self._table.sqlsafe + '.' + (self._rname or self._db._adapter.sqlsafe_field(self.name))
+            return self._table.sqlsafe + '.' + \
+                (self._rname or self._db._adapter.sqlsafe_field(self.name))
         return '<no table>.%s' % self.name
 
     @property
