@@ -2786,6 +2786,8 @@ class LazyCrypt(object):
                 temp_pass = simple_hash(self.password, key, '', digest_alg)
         return temp_pass == stored_password
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 class CRYPT(object):
     """
