@@ -2015,7 +2015,7 @@ class Auth(object):
         if user and user.get(settings.passfield, False):
             password = settings.table_user[
                 settings.passfield].validate(password)[0]
-            if not user.registration_key and password == \
+            if not user.registration_key.strip() and password == \
                 user[settings.passfield]:
                 self.login_user(user)
                 return user
