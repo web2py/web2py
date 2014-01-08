@@ -361,7 +361,7 @@ class RadioWidget(OptionsWidget):
         wrappers = dict(
             table=(TABLE, TR, TD),
             ul=(DIV, UL, LI),
-            divs=(CAT, DIV, DIV)
+            divs=(DIV, DIV, DIV)
         )
         parent, child, inner = wrappers[attributes.get('style', 'table')]
 
@@ -427,7 +427,7 @@ class CheckboxesWidget(OptionsWidget):
         wrappers = dict(
             table=(TABLE, TR, TD),
             ul=(DIV, UL, LI),
-            divs=(CAT, DIV, DIV)
+            divs=(DIV, DIV, DIV)
         )
         parent, child, inner = wrappers[attributes.get('style', 'table')]
 
