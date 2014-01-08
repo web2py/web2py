@@ -13,6 +13,7 @@ from gluon.admin import *
 from gluon.fileutils import abspath, read_file, write_file
 from gluon.utils import web2py_uuid
 from gluon.tools import Config
+from gluon.compileapp import find_exposed_functions
 from glob import glob
 import shutil
 import platform
@@ -752,7 +753,7 @@ def edit():
 
     if len(request.args) > 2 and request.args[1] == 'controllers':
         controller = (request.args[2])[:-3]
-        functions = regex_expose.findall(data)
+        functions = find_exposed_functions(data)
     else:
         (controller, functions) = (None, None)
 
@@ -1065,7 +1066,7 @@ def design():
     functions = {}
     for c in controllers:
         data = safe_read(apath('%s/controllers/%s' % (app, c), r=request))
-        items = regex_expose.findall(data)
+        items = find_exposed_functions(data)
         functions[c] = items
 
     # Get all views
@@ -1203,7 +1204,7 @@ def plugin():
     functions = {}
     for c in controllers:
         data = safe_read(apath('%s/controllers/%s' % (app, c), r=request))
-        items = regex_expose.findall(data)
+        items = find_exposed_functions(data)
         functions[c] = items
 
     # Get all views
