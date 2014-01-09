@@ -5297,10 +5297,12 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         LOGGER.info(str(counter))
         return counter
 
+    def _insert(self, table, fields):
+        return dict((f.name,self.represent(v,f.type)) for f,v in fields)
+
     def insert(self,table,fields):
-        dfields=dict((f.name,self.represent(v,f.type)) for f,v in fields)
         # table._db['_lastsql'] = self._insert(table,fields)
-        tmp = table._tableobj(**dfields)
+        tmp = table._tableobj(**self._insert(table, fields))
         tmp.put()
         key = tmp.key if self.use_ndb else tmp.key()
         rid = Reference(key.id())
