@@ -500,7 +500,8 @@ class IS_IN_DB(Validator):
         if isinstance(label, str):
             if regex1.match(str(label)):
                 label = '%%(%s)s' % str(label).split('.')[-1]
-            ks = regex2.findall(label)
+            ks_re = regex2.match(label)
+            ks = [ks_re.groupdict().get('name')]
             if not kfield in ks:
                 ks += [kfield]
             fields = ks
