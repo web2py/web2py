@@ -2694,27 +2694,45 @@ def markmin_serializer(text, tag=None, attr=None):
     return text
 
 
-def MARKMIN(text, extra=None, allowed=None, sep='p',
-            url=None, environment=None, latex='google',
-            autolinks='default',
-            protolinks='default',
-            class_prefix='',
-            id_prefix='markmin_',
-            **kwargs):
+class MARKMIN(XmlComponent):
     """
     For documentation: http://web2py.com/examples/static/markmin.html
     """
-    from gluon.contrib.markmin.markmin2html import render
-    extra = extra or {}
-    allowed = allowed or {}
-    url = URL if url == True else url    
-    text = render(text, extra=extra,
-                  allowed=allowed, sep=sep, latex=latex,
-                  URL=url, environment=environment,
-                  autolinks=autolinks, protolinks=protolinks,
-                  class_prefix=class_prefix, id_prefix=id_prefix)
-    html = XML(text or '')
-    return XML(html) if not kwargs else DIV(html,**kwargs)
+    def __init__(self,
+                 text, extra=None, allowed=None, sep='p',
+                 url=None, environment=None, latex='google',
+                 autolinks='default',
+                 protolinks='default',
+                 class_prefix='',
+                 id_prefix='markmin_',
+                 **kwargs):
+        self.text = text
+        self.extra = extra or {}
+        self.allowed = allowed or {}
+        self.sep = sep
+        self.url = URL if url == True else url    
+        self.environment = environment
+        self.latex = latex
+        self.autolinks = autolinks
+        self.protolinks = protolinks
+        self.class_prefix = class_prefix
+        self.id_prefix = id_prefix
+        self.kwargs = kwargs
+
+    def flatten(self):
+        return self.text
+
+    def xml(self):
+        from gluon.contrib.markmin.markmin2html import render
+        html = render(self.text, extra=self.extra,
+                      allowed=self.allowed, sep=self.sep, latex=self.latex,
+                      URL=self.url, environment=self.environment,
+                      autolinks=self.autolinks, protolinks=self.protolinks,
+                      class_prefix=self.class_prefix, id_prefix=self.id_prefix)
+        return html if not self.kwargs else DIV(XML(html), **self.kwargs).xml()
+
+    def __str__(self):
+        return self.xml()
 
 if __name__ == '__main__':
     import doctest
