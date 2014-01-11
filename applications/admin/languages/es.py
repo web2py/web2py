@@ -100,6 +100,8 @@
 'continue': 'continuar',
 'Controllers': 'Controladores',
 'controllers': 'controladores',
+'Could not retrieve the plugins from the remote API': 'Could not retrieve the plugins from the remote API',
+'Could not retrieve the plugins list from web2pyslices<br/>The page says:<br/>%s': 'Could not retrieve the plugins list from web2pyslices<br/>The page says:<br/>%s',
 'Count': 'Count',
 'Create': 'Crear',
 'create file with filename:': 'cree archivo con nombre:',

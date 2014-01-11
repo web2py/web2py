@@ -1907,10 +1907,15 @@ def plugins():
     app = request.args(0)
     from serializers import loads_json
     if not session.plugins:
-        rawlist = urllib.urlopen("http://www.web2pyslices.com/" +
+        result = urllib.urlopen("http://www.web2pyslices.com/" +
             "public/api.json/action/list/content/Package?package" +
-            "_type=plugin&search_index=false").read()
-        session.plugins = loads_json(rawlist)
+            "_type=plugin&search_index=false")
+        if result.getcode() == 200:
+            data = result.read()
+            session.plugins = loads_json(data)
+        else:
+            session.plugins = {"results": None}
+            response.flash = T("Could not retrieve the plugins from the remote API")
     return dict(plugins=session.plugins["results"], app=request.args(0))
 
 def install_plugin():
