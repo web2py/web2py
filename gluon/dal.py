@@ -5771,38 +5771,35 @@ class MongoDBAdapter(NoSQLAdapter):
         ctable = self.connection[table._tablename]
         ctable.remove(None, safe=True)
 
-    def _select(self, query, fields, attributes):
+    def select(self, query, fields, attributes, count=False,
+               snapshot=False):
+        mongofields_dict = self.SON()
+        mongoqry_dict = {}
+        new_fields=[]
+        mongosort_list = []
+        # try an orderby attribute
+        orderby = attributes.get('orderby', False)
+        limitby = attributes.get('limitby', False)
+        # distinct = attributes.get('distinct', False)
         if 'for_update' in attributes:
             logging.warn('mongodb does not support for_update')
         for key in set(attributes.keys())-set(('limitby',
                                                'orderby','for_update')):
             if attributes[key]!=None:
                 logging.warn('select attribute not implemented: %s' % key)
-
-        new_fields=[]
-        mongosort_list = []
-
-        # try an orderby attribute
-        orderby = attributes.get('orderby', False)
-        limitby = attributes.get('limitby', False)
-        # distinct = attributes.get('distinct', False)
+        if limitby:
+            limitby_skip, limitby_limit = limitby[0], int(limitby[1])
+        else:
+            limitby_skip = limitby_limit = 0
         if orderby:
             if isinstance(orderby, (list, tuple)):
                 orderby = xorify(orderby)
-
             # !!!! need to add 'random'
             for f in self.expand(orderby).split(','):
                 if f.startswith('-'):
                     mongosort_list.append((f[1:], -1))
                 else:
                     mongosort_list.append((f, 1))
-        if limitby:
-            limitby_skip, limitby_limit = limitby[0], int(limitby[1])
-        else:
-            limitby_skip = limitby_limit = 0
-
-        mongofields_dict = self.SON()
-        mongoqry_dict = {}
         for item in fields:
             if isinstance(item, SQLALL):
                 new_fields += item._table
@@ -5820,17 +5817,7 @@ class MongoDBAdapter(NoSQLAdapter):
         fields = fields or self.db[tablename]
         for field in fields:
             mongofields_dict[field.name] = 1
-
-        return tablename, mongoqry_dict, mongofields_dict, mongosort_list, \
-            limitby_limit, limitby_skip
-
-    def select(self, query, fields, attributes, count=False,
-               snapshot=False):
-        # TODO: support joins
-        tablename, mongoqry_dict, mongofields_dict, mongosort_list, \
-        limitby_limit, limitby_skip = self._select(query, fields, attributes)
         ctable = self.connection[tablename]
-
         if count:
             return {'count' : ctable.find(
                     mongoqry_dict, mongofields_dict,
@@ -5869,42 +5856,27 @@ class MongoDBAdapter(NoSQLAdapter):
                     value = None
                 row.append(value)
             rows.append(row)
-
         processor = attributes.get('processor', self.parse)
         result = processor(rows, fields, newnames, False)
         return result
 
-    def _insert(self, table, fields):
+    def insert(self, table, fields, safe=None):
+        """Safe determines whether a asynchronious request is done or a
+        synchronious action is done
+        For safety, we use by default synchronous requests"""
+
         values = dict()
+        if safe==None:
+            safe = self.safe
+        ctable = self.connection[table._tablename]
         for k, v in fields:
             if not k.name in ["id", "safe"]:
                 fieldname = k.name
                 fieldtype = table[k.name].type
                 values[fieldname] = self.represent(v, fieldtype)
-        return values
 
-    # Safe determines whether a asynchronious request is done or a
-    # synchronious action is done
-    # For safety, we use by default synchronous requests
-    def insert(self, table, fields, safe=None):
-        if safe==None:
-            safe = self.safe
-        ctable = self.connection[table._tablename]
-        values = self._insert(table, fields)
         ctable.insert(values, safe=safe)
         return long(str(values['_id']), 16)
-
-    #this function returns a dict with the where clause and update fields
-    def _update(self, tablename, query, fields):
-        if not isinstance(query, Query):
-            raise SyntaxError("Not Supported")
-        filter = None
-        if query:
-            filter = self.expand(query)
-        # do not try to update id fields to avoid backend errors
-        modify = {'$set': dict((k.name, self.represent(v, k.type)) for
-                  k, v in fields if (not k.name in ("_id", "id")))}
-        return modify, filter
 
     def update(self, tablename, query, fields, safe=None):
         if safe == None:
@@ -5914,7 +5886,14 @@ class MongoDBAdapter(NoSQLAdapter):
         if not isinstance(query, Query):
             raise RuntimeError("Not implemented")
         amount = self.count(query, False)
-        modify, filter = self._update(tablename, query, fields)
+        if not isinstance(query, Query):
+            raise SyntaxError("Not Supported")
+        filter = None
+        if query:
+            filter = self.expand(query)
+        # do not try to update id fields to avoid backend errors
+        modify = {'$set': dict((k.name, self.represent(v, k.type)) for
+                  k, v in fields if (not k.name in ("_id", "id")))}
         try:
             result = self.connection[tablename].update(filter,
                        modify, multi=True, safe=safe)
@@ -5930,18 +5909,15 @@ class MongoDBAdapter(NoSQLAdapter):
             # TODO Reverse update query to verifiy that the query succeded
             raise RuntimeError("uncaught exception when updating rows: %s" % e)
 
-    def _delete(self, tablename, query):
-        if not isinstance(query, Query):
-            raise RuntimeError("query type %s is not supported" % \
-                               type(query))
-        return self.expand(query)
-
     def delete(self, tablename, query, safe=None):
         if safe is None:
             safe = self.safe
         amount = 0
         amount = self.count(query, False)
-        filter = self._delete(tablename, query)
+        if not isinstance(query, Query):
+            raise RuntimeError("query type %s is not supported" % \
+                               type(query))
+        filter = self.expand(query)
         self.connection[tablename].remove(filter, safe=safe)
         return amount
 
@@ -6597,11 +6573,6 @@ class IMAPAdapter(NoSQLAdapter):
         # but required by DAL
         pass
 
-    def _select(self, query, fields, attributes):
-        if use_common_filters(query):
-            query = self.common_filter(query, [self.get_query_mailbox(query),])
-        return str(query)
-
     def select(self, query, fields, attributes):
         """  Search and Fetch records and return web2py rows
         """
@@ -6815,7 +6786,7 @@ class IMAPAdapter(NoSQLAdapter):
         processor = attributes.get('processor',self.parse)
         return processor(imapqry_array, fields, colnames)
 
-    def _insert(self, table, fields):
+    def insert(self, table, fields):
         def add_payload(message, obj):
             payload = Message()
             encoding = obj.get("encoding", "utf-8")
@@ -6878,22 +6849,20 @@ class IMAPAdapter(NoSQLAdapter):
                     [add_payload(message, c) for c in content]
                     [add_payload(message, a) for a in attachments]
                 message = message.as_string()
-            return (mailbox, flags, struct_time, message)
+
+            result, data = self.connection.append(mailbox, flags, struct_time, message)
+            if result == "OK":
+                uid = int(re.findall("\d+", str(data))[-1])
+                return self.db(table.uid==uid).select(table.id).first().id
+            else:
+                raise Exception("IMAP message append failed: %s" % data)
         else:
             raise NotImplementedError("IMAP empty insert is not implemented")
 
-    def insert(self, table, fields):
-        values = self._insert(table, fields)
-        result, data = self.connection.append(*values)
-        if result == "OK":
-            uid = int(re.findall("\d+", str(data))[-1])
-            return self.db(table.uid==uid).select(table.id).first().id
-        else:
-            raise Exception("IMAP message append failed: %s" % data)
-
-    def _update(self, tablename, query, fields, commit=False):
+    def update(self, tablename, query, fields):
         # TODO: the adapter should implement an .expand method
         commands = list()
+        rowcount = 0
         if use_common_filters(query):
             query = self.common_filter(query, [tablename,])
         mark = []
@@ -6923,11 +6892,7 @@ class IMAPAdapter(NoSQLAdapter):
                     commands.append((number, "+FLAGS", "(%s)" % " ".join(mark)))
                 if len(unmark) > 0:
                     commands.append((number, "-FLAGS", "(%s)" % " ".join(unmark)))
-        return commands
 
-    def update(self, tablename, query, fields):
-        rowcount = 0
-        commands = self._update(tablename, query, fields)
         for command in commands:
             result, data = self.connection.store(*command)
             if result == "OK":
@@ -6935,9 +6900,6 @@ class IMAPAdapter(NoSQLAdapter):
             else:
                 raise Exception("IMAP storing error: %s" % data)
         return rowcount
-
-    def _count(self, query, distinct=None):
-        raise NotImplementedError()
 
     def count(self,query,distinct=None):
         counter = 0
