@@ -43,8 +43,6 @@ def fix_sys_path():
 
 fix_sys_path()
 
-from dal import DAL, Field, Table, SQLALL
-
 #for travis-ci
 DEFAULT_URI = os.environ.get('DB', 'sqlite:memory')
 
@@ -54,6 +52,8 @@ if "google" in DEFAULT_URI:
 
 print 'Testing against %s engine (%s)' % (DEFAULT_URI.partition(':')[0], DEFAULT_URI)
 
+
+from dal import DAL, Field, Table, SQLALL
 
 ALLOWED_DATATYPES = [
     'string',
