@@ -10,6 +10,7 @@ env:
   - DB=sqlite:memory
   - DB=mysql://root:@localhost/test_w2p
   - DB=postgres://postgres:@localhost/test_w2p
+  - DB=google:datastore
 before_script:
   - if [[ $TRAVIS_PYTHON_VERSION != '2.7' ]]; then pip install unittest2; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install coverage; fi;
@@ -18,6 +19,8 @@ before_script:
   - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then pip install pysqlite; fi
   - if [[ $DB == mysql* ]]; then mysql -e 'create database test_w2p;'; fi
   - if [[ $DB == postgres* ]]; then psql -c 'create database test_w2p;' -U postgres; fi
+  - if [[ $DB == google* ]]; then wget http://googleappengine.googlecode.com/files/google_appengine_1.8.8.zip -nv; fi
+  - if [[ $DB == google* ]]; then unzip -q google_appengine_1.8.8.zip; fi
   #Temporal solution to travis issue #155
   - sudo chmod 777 /dev/shm
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
