@@ -48,7 +48,7 @@ DEFAULT_URI = os.environ.get('DB', 'sqlite:memory')
 
 # add the sdk to the Python path
 if "google" in DEFAULT_URI:
-    sys.path.append(os.path.join(os.getcwd(), "google_appengine"))
+    sys.path.insert(1, os.path.join(os.getcwd(), "google_appengine"))
 
 print 'Testing against %s engine (%s)' % (DEFAULT_URI.partition(':')[0], DEFAULT_URI)
 
