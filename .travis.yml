@@ -23,6 +23,7 @@ before_script:
   - if [[ $DB == google* ]]; then wget http://googleappengine.googlecode.com/files/google_appengine_1.8.8.zip -nv; fi
   - if [[ $DB == google* ]]; then unzip -q google_appengine_1.8.8.zip; fi
   - if [[ $DB == google* ]]; then mv -f ./google_appengine/google ./google; fi
+  - if [[ $DB == mongodb* ]]; then pip install pymongo --use-mirrors; fi
   #Temporal solution to travis issue #155
   - sudo chmod 777 /dev/shm
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
