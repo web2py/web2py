@@ -31,6 +31,8 @@ matrix:
       env: DB=postgres://postgres:@localhost/test_w2p
     - python: 'pypy'
       env: DB=mysql://root:@localhost/test_w2p
+    - python: 'pypy'
+      env: DB=google:datastore
 
 script: export COVERAGE_PROCESS_START=gluon/tests/coverage.ini; ./web2py.py --run_system_tests --with_coverage
 after_success:
