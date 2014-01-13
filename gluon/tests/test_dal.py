@@ -79,9 +79,6 @@ def tearDownModule():
 class TestFields(unittest.TestCase):
 
     def testFieldName(self):
-        return
-
-        # Any table name is supported as long as underlying db does. The following code is ignored.
 
         # Check that Fields cannot start with underscores
         self.assertRaises(SyntaxError, Field, '_abc', 'string')
@@ -199,6 +196,25 @@ class TestFields(unittest.TestCase):
         self.assertEqual(db.tt.insert(aa=t0), 1)
         self.assertEqual(db().select(db.tt.aa)[0].aa, t0)
         db.tt.drop()
+
+
+class TestTables(unittest.TestCase):
+
+    def testTableNames(self):
+
+        # Check that Tables cannot start with underscores
+        self.assertRaises(SyntaxError, Table, None, '_abc')
+
+        # Check that Tables cannot contain punctuation other than underscores
+        self.assertRaises(SyntaxError, Table, None, 'a.bc')
+
+        # Check that Tables cannot be a name of a method or property of DAL
+        for x in ['define_table', 'tables', 'as_dict']:
+            self.assertRaises(SyntaxError, Table, None, x)
+
+        # Check that Table allows underscores in the body of a field name.
+        self.assert_(Table(None, 'a_bc'),
+            "Table isn't allowing underscores in tablename.  It should.")
 
 
 class TestAll(unittest.TestCase):
@@ -1396,45 +1412,7 @@ class TestRNameFields(unittest.TestCase):
         self.assertEqual(len(db.person._referenced_by),0)
         db.person.drop()
 
-
 class TestQuoting(unittest.TestCase):
-    # tests for complex table names
-    def testRun(self):
-        return
-        db = DAL(DEFAULT_URI, check_reserved=['all'])
-
-        t0 = db.define_table('A.table.with.dots and spaces',
-                        Field('f', 'string'))
-        t1 = db.define_table('A.table',
-                        Field('f_other', t0),
-                             Field('words', 'text'))
-
-        blather = 'blah blah and so'
-        t0[0] = {'f': 'content'}
-        t1[0] = {'f_other': int(t0[1]['id']),
-                 'words': blather}
-
-
-        r = db(t1['f_other']==t0.id).select()
-        self.assertEqual(r[0][db['A.table']].words, blather)
-
-        db.define_table('t0', Field('f0'))
-        db.define_table('t1', Field('f1'), Field('t0', db['t0']))
-        db.t0[0]=dict(f0=3)
-        db.t1[0]=dict(f1=3, t0=1)
-
-        rows=db(db.t0.id==db.t1.t0).select()
-        self.assertEqual(rows[0].t1.t0, rows[0].t0.id)
-        if DEFAULT_URI.startswith('mssql'):
-            #there's no drop cascade in mssql
-            t1.drop()
-            t0.drop()
-        else:
-            t0.drop('cascade')
-            t1.drop()
-
-        db.t1.drop()
-        db.t0.drop()
 
     # tests for case sensitivity
     def testCase(self):
@@ -1444,8 +1422,8 @@ class TestQuoting(unittest.TestCase):
             #multiple cascade gotcha
             for key in ['reference','reference FK']:
                 db._adapter.types[key]=db._adapter.types[key].replace(
-                '%(on_delete_action)s','NO ACTION') 
-        
+                '%(on_delete_action)s','NO ACTION')
+
         # test table case
         t0 = db.define_table('B',
                         Field('f', 'string'))
@@ -1493,7 +1471,7 @@ class TestQuoting(unittest.TestCase):
         t0.drop()
 
     def testPKFK(self):
-        
+
         # test primary keys
 
         db = DAL(DEFAULT_URI, check_reserved=['all'], ignore_field_case=False)
@@ -1527,6 +1505,24 @@ class TestQuoting(unittest.TestCase):
             t2.drop()
             t3.drop()
             t4.drop()
+
+
+class TestTableAndFieldCase(unittest.TestCase):
+    """
+    at the Python level we should not allow db.C and db.c because of .table conflicts on windows 
+    but it should be possible to map two different names into distinct tables "c" and "C" at the Python level
+    By default Python models names should be mapped into lower case table names and assume case insensitivity.
+    """
+    def testme(self):
+        return
+
+
+class TestQuotesByDefault(unittest.TestCase):
+    """
+    all default tables names should be quoted unless an explicit mapping has been given for a table.
+    """
+    def testme(self):
+        return
 
 if __name__ == '__main__':
     unittest.main()
