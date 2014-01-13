@@ -11,7 +11,7 @@ env:
   - DB=mysql://root:@localhost/test_w2p
   - DB=postgres://postgres:@localhost/test_w2p
   - DB=google:datastore
-  - DB=mongodb://localhost
+  - DB=mongodb://localhost/test_w2p
 before_script:
   - if [[ $TRAVIS_PYTHON_VERSION != '2.7' ]]; then pip install unittest2; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install coverage; fi;
@@ -36,11 +36,11 @@ matrix:
     - python: 'pypy'
       env: DB=google:datastore
     - python: 'pypy'
-      env: DB=mongodb://localhost
+      env: DB=mongodb://localhost/test_w2p
     - python: '2.6'
       env: DB=google:datastore
     - python: '2.6'
-      env: DB=mongodb://localhost
+      env: DB=mongodb://localhost/test_w2p
 
 script: export COVERAGE_PROCESS_START=gluon/tests/coverage.ini; ./web2py.py --run_system_tests --with_coverage
 after_success:
