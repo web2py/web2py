@@ -46,11 +46,14 @@ fix_sys_path()
 #for travis-ci
 DEFAULT_URI = os.environ.get('DB', 'sqlite:memory')
 
-# add the sdk to the Python path
-if "google" in DEFAULT_URI:
-    sys.path.insert(1, os.path.join(os.getcwd(), "google_appengine"))
-
 print 'Testing against %s engine (%s)' % (DEFAULT_URI.partition(':')[0], DEFAULT_URI)
+
+# setup gae unit testing environment
+if "google" in DEFAULT_URI:
+    from google.appengine.ext import testbed
+    gaetestbed = testbed.Testbed()
+    gaetestbed.activate()
+    gaetestbed.init_datastore_v3_stub()
 
 
 from dal import DAL, Field, Table, SQLALL
