@@ -27,15 +27,11 @@ class MemcacheClient(object):
         time_expire=300,
     ):
         key = '%s/%s' % (self.request.application, key)
-        dt = time_expire
         value = None
         obj = self.client.get(key)
-        if obj and (dt is None or obj[0] > time.time() - dt):
+        if obj:
             value = obj[1]
-        elif f is None:
-            if obj:
-                self.client.delete(key)
-        else:
+        elif f is not None:
             value = f()
             self.client.set(key, (time.time(), value), time=time_expire)
         return value
