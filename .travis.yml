@@ -11,6 +11,7 @@ env:
   - DB=mysql://root:@localhost/test_w2p
   - DB=postgres://postgres:@localhost/test_w2p
   - DB=google:datastore
+  - DB=mongodb://
 before_script:
   - if [[ $TRAVIS_PYTHON_VERSION != '2.7' ]]; then pip install unittest2; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install coverage; fi;
@@ -38,6 +39,10 @@ script: export COVERAGE_PROCESS_START=gluon/tests/coverage.ini; ./web2py.py --ru
 after_success:
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then coverage combine; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then coveralls --config_file=gluon/tests/coverage.ini; fi
-  
+
 notifications:
   email: true
+
+services:
+  - mongodb
+
