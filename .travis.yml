@@ -45,10 +45,14 @@ matrix:
       env: DB=google:datastore
     - python: 'pypy'
       env: DB=mongodb://localhost/test_w2p
+    - python: 'pypy'
+      env: DB=imap://w2pimaptests@gmail.com:<password>@imap.gmail.com:993
     - python: '2.6'
       env: DB=google:datastore
     - python: '2.6'
       env: DB=mongodb://localhost/test_w2p
+    - python: '2.6'
+      env: DB=imap://w2pimaptests@gmail.com:<password>@imap.gmail.com:993
 
 script: export COVERAGE_PROCESS_START=gluon/tests/coverage.ini; ./web2py.py --run_system_tests --with_coverage
 after_success:
