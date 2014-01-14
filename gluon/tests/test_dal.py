@@ -55,7 +55,7 @@ if "google" in DEFAULT_URI:
     gaetestbed.activate()
     gaetestbed.init_datastore_v3_stub()
 elif "imap" in DEFAULT_URI:
-    DEFAULT_URI = DEFAULT_URI.replace("<password>", os.environ.get("IMAPPASS"))
+    DEFAULT_URI = DEFAULT_URI.replace("password", os.environ.get("IMAPPASS"))
 
 from dal import DAL, Field, Table, SQLALL
 
