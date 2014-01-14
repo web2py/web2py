@@ -48,13 +48,14 @@ DEFAULT_URI = os.environ.get('DB', 'sqlite:memory')
 
 print 'Testing against %s engine (%s)' % (DEFAULT_URI.partition(':')[0], DEFAULT_URI)
 
-# setup gae unit testing environment
+# setup non-sql unit testing environment
 if "google" in DEFAULT_URI:
     from google.appengine.ext import testbed
     gaetestbed = testbed.Testbed()
     gaetestbed.activate()
     gaetestbed.init_datastore_v3_stub()
-
+elif "imap" in DEFAULT_URI:
+    DEFAULT_URI = DEFAULT_URI.replace("<password>", os.environ.get("IMAPPASS"))
 
 from dal import DAL, Field, Table, SQLALL
 

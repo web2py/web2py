@@ -7,11 +7,15 @@ python:
 install:
   - pip install -e .
 env:
+  global:
+    secure: j9TyW+LF+/I1Jh8PhOrEzPB+G7exynbqGwU0TUihENnIQO7wr+oizB8UrXLG+atKFh0F/OFhXrmmRFV4OtZ9bMA0XZzGUCUkkxJlEyuQzxF0R3gIXVFI/9pUkwX/NtcXTvl1aQaelpgheTgJQJa/CMY/Gp5p4Kahx9mDiW6FVdo=
+  matrix:
   - DB=sqlite:memory
   - DB=mysql://root:@localhost/test_w2p
   - DB=postgres://postgres:@localhost/test_w2p
   - DB=google:datastore
   - DB=mongodb://localhost/test_w2p
+  - DB=imap://w2pimaptests@gmail.com:<password>@imap.gmail.com:993
 before_script:
   - if [[ $TRAVIS_PYTHON_VERSION != '2.7' ]]; then pip install unittest2; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install coverage; fi;
