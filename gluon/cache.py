@@ -254,7 +254,10 @@ class CacheOnDisk(CacheAbstract):
         try:
             if self.storage:
                 self.storage.close()
+        except ValueError:
+            pass
         finally:
+            self.storage = None
             if self.locker and self.locked:
                 portalocker.unlock(self.locker)
                 self.locker.close()

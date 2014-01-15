@@ -2,40 +2,41 @@
 {{block sectionclass}}shell{{end}}
 <!-- begin "shell" block -->
 <div id="wrapper">
-	<div class="row-fluid">
-		<div class="output-wrapper span8">
-			<textarea id="output" readonly="readonly">web2py Shell {{=request.env.web2py_version}}</textarea>
-		</div>
+  <div class="row-fluid">
+    <div class="output-wrapper span8">
+      <textarea id="output" readonly="readonly">web2py Shell {{=request.env.web2py_version}}
+</textarea>
+    </div>
+  </div>
+  
+  <div class="row-fluid">
+    <form id="form" action="{{=URL(r=request,f='callback',args=app)}}" method="get" class="span8">
+      <div id="shellwrapper">
+	<div class="prompt-wrapper">
+	  <div class="prompt-container">
+	    <textarea class="prompt" name="statement" id="statement"></textarea>
+	  </div>
+	  <a href="#" rel="tooltip" data-placement="right" data-original-title="{{=T('Type some Python code in here and hit Return (Enter) to execute it.')}}">
+	    {{=helpicon()}}
+	    <span>Type some Python code in here and hit Return (Enter) to execute it.</span>
+	  </a>
 	</div>
-
-	<div class="row-fluid">
-		<form id="form" action="{{=URL(r=request,f='callback',args=app)}}" method="get" class="span8">
-			<div id="shellwrapper">
-				<div class="prompt-wrapper">
-					<div class="prompt-container">
-						<textarea class="prompt" name="statement" id="statement"></textarea>
-					</div>
-					<a href="#" rel="tooltip" data-placement="right" data-original-title="{{=T('Type some Python code in here and hit Return (Enter) to execute it.')}}">
-						{{=helpicon()}}
-						<span>Type some Python code in here and hit Return (Enter) to execute it.</span>
-					</a>
-				</div>
-				<div id="caret"><span>&gt;&gt;&gt;</span></div>
-				<div id="autoscroll">autoscroll</div>
-			</div>
-		</form>
-	</div>
-
-	<div class="row-fluid clearfix">
-		<div class="help alert alert-info span6">
-		  <ul>
-			<li>Using the shell may lock the database to other users of this app.</li>
-			<li>Each db statement is automatically committed.</li>
-			<li>Creating new tables dynamically is not allowed.</li>
-			<li>Models are automatically imported in the shell.</li>
-		  </ul>
-		</div>
-	</div>
+	<div id="caret"><span>&gt;&gt;&gt;</span></div>
+	<div id="autoscroll">autoscroll</div>
+      </div>
+    </form>
+  </div>
+  
+  <div class="row-fluid clearfix">
+    <div class="help alert alert-info span6">
+      <ul>
+	<li>Using the shell may lock the database to other users of this app.</li>
+	<li>Each db statement is automatically committed.</li>
+	<li>Creating new tables dynamically is not allowed.</li>
+	<li>Models are automatically imported in the shell.</li>
+      </ul>
+    </div>
+  </div>
 </div>
 <script type="text/javascript" src="{{=URL('static', 'js/autoscroll.js')}}"></script>
 

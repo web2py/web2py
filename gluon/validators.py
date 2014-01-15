@@ -458,7 +458,7 @@ class IS_IN_SET(Validator):
 
 
 regex1 = re.compile('\w+\.\w+')
-regex2 = re.compile('%\((?P<name>[^\)]+)\)s')
+regex2 = re.compile('%\(([^\)]+)\)\d*(?:\.\d+)?[a-zA-Z]')
 
 
 class IS_IN_DB(Validator):
@@ -2258,9 +2258,11 @@ class IS_DATE(Validator):
         format = format.replace('%Y', y)
         if year < 1900:
             year = 2000
-        d = datetime.date(year, value.month, value.day)
         if self.timezone is not None:
+            d = datetime.datetime(year, value.month, value.day)
             d = d.replace(tzinfo=utc).astimezone(self.timezone)
+        else:
+            d = datetime.date(year, value.month, value.day)
         return d.strftime(format)
 
 
@@ -2462,14 +2464,18 @@ class IS_LIST_OF(Validator):
         if not self.maximum is None and len(ivalue) > self.maximum:
             return (ivalue, translate(self.error_message) % dict(min=self.minimum, max=self.maximum))
         new_value = []
+        other = self.other
         if self.other:
+            if not isinstance(other, (list,tuple)):
+                other = [other]                              
             for item in ivalue:
                 if item.strip():
-                    (v, e) = self.other(item)
-                    if e:
-                        return (ivalue, e)
-                    else:
-                        new_value.append(v)
+                    v = item
+                    for validator in other:
+                        (v, e) = validator(v)
+                        if e:
+                            return (ivalue, e)
+                    new_value.append(v)
             ivalue = new_value
         return (ivalue, None)
 
@@ -2787,6 +2793,8 @@ class LazyCrypt(object):
                 temp_pass = simple_hash(self.password, key, '', digest_alg)
         return temp_pass == stored_password
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
 
 class CRYPT(object):
     """

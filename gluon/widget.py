@@ -129,60 +129,6 @@ def start_browser(url, startup=False):
         print 'warning: unable to detect your browser'
 
 
-def presentation(root):
-    """ Draw the splash screen """
-    import Tkinter
-
-    root.withdraw()
-
-    dx = root.winfo_screenwidth()
-    dy = root.winfo_screenheight()
-
-    dialog = Tkinter.Toplevel(root, bg='white')
-    dialog.geometry('%ix%i+%i+%i' % (500, 300, dx / 2 - 200, dy / 2 - 150))
-
-    dialog.overrideredirect(1)
-    dialog.focus_force()
-
-    canvas = Tkinter.Canvas(dialog,
-                            background='white',
-                            width=500,
-                            height=300)
-    canvas.pack()
-    root.update()
-
-    logo = os.path.join('extras','icons','splashlogo.gif')
-    if os.path.exists(logo):
-        img = Tkinter.PhotoImage(file=logo)
-        pnl = Tkinter.Label(canvas, image=img, background='white', bd=0)
-        pnl.pack(side='top', fill='both', expand='yes')
-        # Prevent garbage collection of img
-        pnl.image = img
-
-    def add_label(text='Change Me', font_size=12,
-                  foreground='#195866', height=1):
-        return Tkinter.Label(
-            master=canvas,
-            width=250,
-            height=height,
-            text=text,
-            font=('Helvetica', font_size),
-            anchor=Tkinter.CENTER,
-            foreground=foreground,
-            background='white'
-        )
-
-    add_label('Welcome to...').pack(side='top')
-    add_label(ProgramName, 18, '#FF5C1F', 2).pack()
-    add_label(ProgramAuthor).pack()
-    add_label(ProgramVersion).pack()
-
-    root.update()
-    time.sleep(5)
-    dialog.destroy()
-    return
-
-
 class web2pyDialog(object):
     """ Main window dialog """
 
@@ -192,8 +138,13 @@ class web2pyDialog(object):
         import Tkinter
         import tkMessageBox
 
-        root.title('web2py server')
-        self.root = Tkinter.Toplevel(root)
+        bg_color = 'white'
+        root.withdraw()
+        
+        self.root = Tkinter.Toplevel(root, bg=bg_color)
+        self.root.resizable(0,0)
+        self.root.title(ProgramName)
+
         self.options = options
         self.scheduler_processes = {}
         self.menu = Tkinter.Menu(self.root)
@@ -246,76 +197,115 @@ class web2pyDialog(object):
 
         sticky = Tkinter.NW
 
+        # Prepare the logo area
+        self.logoarea = Tkinter.Canvas(self.root,
+                                background=bg_color,
+                                width=300,
+                                height=300)
+        self.logoarea.grid(row=0, column=0, columnspan=4, sticky=sticky)
+        self.logoarea.after(1000, self.update_canvas)
+
+        logo = os.path.join('extras','icons','splashlogo.gif')
+        if os.path.exists(logo):
+            img = Tkinter.PhotoImage(file=logo)
+            pnl = Tkinter.Label(self.logoarea, image=img, background=bg_color, bd=0)
+            pnl.pack(side='top', fill='both', expand='yes')
+            # Prevent garbage collection of img
+            pnl.image = img
+
+        # Prepare the banner area
+        self.bannerarea = Tkinter.Canvas(self.root,
+                                bg=bg_color,
+                                width=300,
+                                height=300)
+        self.bannerarea.grid(row=1, column=1, columnspan=2, sticky=sticky)
+
+        Tkinter.Label(self.bannerarea, anchor=Tkinter.N,
+                      text=str(ProgramVersion + "\n" + ProgramAuthor),
+                      font=('Helvetica', 11), justify=Tkinter.CENTER,
+                      foreground='#195866', background=bg_color,
+                      height=3).pack( side='top', 
+                                      fill='both', 
+                                      expand='yes')
+
+        self.bannerarea.after(1000, self.update_canvas)
+
         # IP
         Tkinter.Label(self.root,
-                      text='Server IP:',
-                      justify=Tkinter.LEFT).grid(row=0,
-                                                 column=0,
-                                                 sticky=sticky)
+                      text='Server IP:', bg=bg_color,
+                      justify=Tkinter.RIGHT).grid(row=4,
+                                                  column=1,
+                                                  sticky=sticky)
         self.ips = {}
         self.selected_ip = Tkinter.StringVar()
-        row = 0
+        row = 4
         ips = [('127.0.0.1', 'Local (IPv4)')] + \
             ([('::1', 'Local (IPv6)')] if socket.has_ipv6 else []) + \
             [(ip, 'Public') for ip in options.ips] + \
             [('0.0.0.0', 'Public')]
         for ip, legend in ips:
             self.ips[ip] = Tkinter.Radiobutton(
-                self.root, text='%s (%s)' % (legend, ip),
+                self.root, bg=bg_color, highlightthickness=0, 
+                selectcolor='light grey', width=30,
+                anchor=Tkinter.W, text='%s (%s)' % (legend, ip),
+                justify=Tkinter.LEFT,
                 variable=self.selected_ip, value=ip)
-            self.ips[ip].grid(row=row, column=1, sticky=sticky)
-            if row == 0:
+            self.ips[ip].grid(row=row, column=2, sticky=sticky)
+            if row == 4:
                 self.ips[ip].select()
             row += 1
         shift = row
+
         # Port
         Tkinter.Label(self.root,
-                      text='Server Port:',
-                      justify=Tkinter.LEFT).grid(row=shift,
-                                                 column=0,
+                      text='Server Port:', bg=bg_color,
+                      justify=Tkinter.RIGHT).grid(row=shift,
+                                                 column=1, pady=10,
                                                  sticky=sticky)
 
         self.port_number = Tkinter.Entry(self.root)
         self.port_number.insert(Tkinter.END, self.options.port)
-        self.port_number.grid(row=shift, column=1, sticky=sticky)
+        self.port_number.grid(row=shift, column=2, sticky=sticky, pady=10)
 
         # Password
         Tkinter.Label(self.root,
-                      text='Choose Password:',
-                      justify=Tkinter.LEFT).grid(row=shift + 1,
-                                                 column=0,
+                      text='Choose Password:', bg=bg_color,
+                      justify=Tkinter.RIGHT).grid(row=shift + 1,
+                                                 column=1,
                                                  sticky=sticky)
 
         self.password = Tkinter.Entry(self.root, show='*')
         self.password.bind('<Return>', lambda e: self.start())
         self.password.focus_force()
-        self.password.grid(row=shift + 1, column=1, sticky=sticky)
+        self.password.grid(row=shift + 1, column=2, sticky=sticky)
 
         # Prepare the canvas
         self.canvas = Tkinter.Canvas(self.root,
-                                     width=300,
+                                     width=400,
                                      height=100,
                                      bg='black')
-        self.canvas.grid(row=shift + 2, column=0, columnspan=2)
+        self.canvas.grid(row=shift + 2, column=1, columnspan=2, pady=5,
+                         sticky=sticky)
         self.canvas.after(1000, self.update_canvas)
 
         # Prepare the frame
         frame = Tkinter.Frame(self.root)
-        frame.grid(row=shift + 3, column=0, columnspan=2)
+        frame.grid(row=shift + 3, column=1, columnspan=2, pady=5,
+                   sticky=sticky)
 
         # Start button
         self.button_start = Tkinter.Button(frame,
                                            text='start server',
                                            command=self.start)
 
-        self.button_start.grid(row=0, column=0)
+        self.button_start.grid(row=0, column=0, sticky=sticky)
 
         # Stop button
         self.button_stop = Tkinter.Button(frame,
                                           text='stop server',
                                           command=self.stop)
 
-        self.button_stop.grid(row=0, column=1)
+        self.button_stop.grid(row=0, column=1,  sticky=sticky)
         self.button_stop.configure(state='disabled')
 
         if options.taskbar:
@@ -586,7 +576,7 @@ class web2pyDialog(object):
         except BaseException:
             self.t0 = time.time()
             self.t0 = t1
-            self.p0 = [100] * 300
+            self.p0 = [100] * 400
             self.q0 = [self.canvas.create_line(i, 100, i + 1, 100,
                        fill='green') for i in xrange(len(self.p0) - 1)]
 
@@ -1163,21 +1153,19 @@ def start(cron=True):
 
     root = None
 
-    if not options.nogui:
+    if not options.nogui and options.password=='<ask>':
         try:
             import Tkinter
             havetk = True
-        except ImportError:
-            logger.warn(
-                'GUI not available because Tk library is not installed')
-            havetk = False
-            options.nogui = True
-
-        if options.password == '<ask>' and havetk or options.taskbar and havetk:
             try:
                 root = Tkinter.Tk()
             except:
                 pass
+        except (ImportError, OSError):
+            logger.warn(
+                'GUI not available because Tk library is not installed')
+            havetk = False
+            options.nogui = True
 
     if root:
         root.focus_force()
@@ -1192,8 +1180,6 @@ end tell
 """ % (os.getpid())
             os.system("/usr/bin/osascript -e '%s'" % applescript)
 
-        if not options.quiet:
-            presentation(root)
         master = web2pyDialog(root, options)
         signal.signal(signal.SIGTERM, lambda a, b: master.quit())
 
@@ -1238,7 +1224,10 @@ end tell
     if not options.nobanner:
         print 'please visit:'
         print '\t', url
-        print 'use "kill -SIGTERM %i" to shutdown the web2py server' % os.getpid()
+        if sys.platform.startswith('win'):
+            print 'use "taskkill /f /pid %i" to shutdown the web2py server' % os.getpid()
+        else:
+            print 'use "kill -SIGTERM %i" to shutdown the web2py server' % os.getpid()
 
     # enhance linecache.getline (used by debugger) to look at the source file
     # if the line was not found (under py2exe & when file was modified)

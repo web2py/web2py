@@ -160,7 +160,8 @@ def URL(
     host=None,
     port=None,
     encode_embedded_slash=False,
-    url_encode=True
+    url_encode=True,
+    language=None,
 ):
     """
     generate a URL
@@ -369,7 +370,7 @@ def URL(
         raise SyntaxError('CRLF Injection Detected')
 
     url = url_out(r, env, application, controller, function,
-                  args, other, scheme, host, port)
+                  args, other, scheme, host, port, language=language)
     return url
 
 
@@ -2221,8 +2222,9 @@ class FORM(DIV):
         submit = self.element('input[type=submit]')
         submit.parent.append(
             INPUT(_type="button", _value=value, _class=_class,
-                  _onclick=self.REDIRECT_JS % url))
-
+                  _onclick=url if url.startswith('javascript:') else
+                      self.REDIRECT_JS % url))
+        
     @staticmethod
     def confirm(text='OK', buttons=None, hidden=None):
         if not buttons:
@@ -2697,51 +2699,41 @@ class MARKMIN(XmlComponent):
     """
     For documentation: http://web2py.com/examples/static/markmin.html
     """
-    def __init__(self, text, extra=None, allowed=None, sep='p',
+    def __init__(self,
+                 text, extra=None, allowed=None, sep='p',
                  url=None, environment=None, latex='google',
                  autolinks='default',
                  protolinks='default',
                  class_prefix='',
-                 id_prefix='markmin_'):
+                 id_prefix='markmin_',
+                 **kwargs):
         self.text = text
         self.extra = extra or {}
         self.allowed = allowed or {}
         self.sep = sep
-        self.url = URL if url == True else url
+        self.url = URL if url == True else url    
         self.environment = environment
         self.latex = latex
         self.autolinks = autolinks
         self.protolinks = protolinks
         self.class_prefix = class_prefix
         self.id_prefix = id_prefix
+        self.kwargs = kwargs
+
+    def flatten(self):
+        return self.text
 
     def xml(self):
-        """
-        calls the gluon.contrib.markmin render function to convert the wiki syntax
-        """
         from gluon.contrib.markmin.markmin2html import render
-        return render(self.text, extra=self.extra,
+        html = render(self.text, extra=self.extra,
                       allowed=self.allowed, sep=self.sep, latex=self.latex,
                       URL=self.url, environment=self.environment,
                       autolinks=self.autolinks, protolinks=self.protolinks,
                       class_prefix=self.class_prefix, id_prefix=self.id_prefix)
+        return html if not self.kwargs else DIV(XML(html), **self.kwargs).xml()
 
     def __str__(self):
         return self.xml()
-
-    def flatten(self, render=None):
-        """
-        return the text stored by the MARKMIN object rendered by the render function
-        """
-        return self.text
-
-    def elements(self, *args, **kargs):
-        """
-        to be considered experimental since the behavior of this method is questionable
-        another options could be TAG(self.text).elements(*args,**kargs)
-        """
-        return [self.text]
-
 
 if __name__ == '__main__':
     import doctest

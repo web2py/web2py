@@ -131,8 +131,11 @@ def env(
     request.function = f or 'index'
     response.view = '%s/%s.html' % (request.controller,
                                     request.function)
-    ip = global_settings.cmd_options.ip
-    port = global_settings.cmd_options.port 
+    if global_settings.cmd_options:
+        ip = global_settings.cmd_options.ip
+        port = global_settings.cmd_options.port 
+    else:
+        ip, port = '127.0.0.1', '8000'
     request.env.http_host = '%s:%s' % (ip,port)
     request.env.remote_addr = '127.0.0.1'
     request.env.web2py_runtime_gae = global_settings.web2py_runtime_gae

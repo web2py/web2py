@@ -198,6 +198,25 @@ class TestFields(unittest.TestCase):
         db.tt.drop()
 
 
+class TestTables(unittest.TestCase):
+
+    def testTableNames(self):
+
+        # Check that Tables cannot start with underscores
+        self.assertRaises(SyntaxError, Table, None, '_abc')
+
+        # Check that Tables cannot contain punctuation other than underscores
+        self.assertRaises(SyntaxError, Table, None, 'a.bc')
+
+        # Check that Tables cannot be a name of a method or property of DAL
+        for x in ['define_table', 'tables', 'as_dict']:
+            self.assertRaises(SyntaxError, Table, None, x)
+
+        # Check that Table allows underscores in the body of a field name.
+        self.assert_(Table(None, 'a_bc'),
+            "Table isn't allowing underscores in tablename.  It should.")
+
+
 class TestAll(unittest.TestCase):
 
     def setUp(self):
@@ -1393,6 +1412,117 @@ class TestRNameFields(unittest.TestCase):
         self.assertEqual(len(db.person._referenced_by),0)
         db.person.drop()
 
+class TestQuoting(unittest.TestCase):
+
+    # tests for case sensitivity
+    def testCase(self):
+        return
+        db = DAL(DEFAULT_URI, check_reserved=['all'], ignore_field_case=False)
+        if DEFAULT_URI.startswith('mssql'):
+            #multiple cascade gotcha
+            for key in ['reference','reference FK']:
+                db._adapter.types[key]=db._adapter.types[key].replace(
+                '%(on_delete_action)s','NO ACTION')
+
+        # test table case
+        t0 = db.define_table('B',
+                        Field('f', 'string'))
+        try:
+            t1 = db.define_table('b',
+                                 Field('B', t0),
+                                 Field('words', 'text'))
+        except Exception, e:
+            # An error is expected when database does not support case
+            # sensitive entity names.
+            if DEFAULT_URI.startswith('sqlite:'):
+                self.assertTrue(isinstance(e, db._adapter.driver.OperationalError))
+                return
+            raise e
+
+        blather = 'blah blah and so'
+        t0[0] = {'f': 'content'}
+        t1[0] = {'B': int(t0[1]['id']),
+                 'words': blather}
+
+        r = db(db.B.id==db.b.B).select()
+
+        self.assertEqual(r[0].b.words, blather)
+
+        t1.drop()
+        t0.drop()
+
+        # test field case
+        try:
+            t0 = db.define_table('table is a test',
+                                 Field('a_a'),
+                                 Field('a_A'))
+        except Exception, e:
+            # some db does not support case sensitive field names mysql is one of them.
+            if DEFAULT_URI.startswith('mysql:'):
+                db.rollback()
+                return
+            raise e
+
+        t0[0] = dict(a_a = 'a_a', a_A='a_A')
+
+        self.assertEqual(t0[1].a_a, 'a_a')
+        self.assertEqual(t0[1].a_A, 'a_A')
+
+        t0.drop()
+
+    def testPKFK(self):
+
+        # test primary keys
+
+        db = DAL(DEFAULT_URI, check_reserved=['all'], ignore_field_case=False)
+        if DEFAULT_URI.startswith('mssql'):
+            #multiple cascade gotcha
+            for key in ['reference','reference FK']:
+                db._adapter.types[key]=db._adapter.types[key].replace(
+                '%(on_delete_action)s','NO ACTION')
+        # test table without surrogate key. Length must is limited to
+        # 100 because of MySQL limitations: it cannot handle more than
+        # 767 bytes in unique keys.
+
+        t0 = db.define_table('t0', Field('Code', length=100), primarykey=['Code'])
+        t2 = db.define_table('t2', Field('f'), Field('t0_Code', 'reference t0'))
+        t3 = db.define_table('t3', Field('f', length=100), Field('t0_Code', t0.Code), primarykey=['f'])
+        t4 = db.define_table('t4', Field('f', length=100), Field('t0', t0), primarykey=['f'])
+
+        try:
+            t5 = db.define_table('t5', Field('f', length=100), Field('t0', 'reference no_table_wrong_reference'), primarykey=['f'])
+        except Exception, e:
+            self.assertTrue(isinstance(e, KeyError))
+
+        if DEFAULT_URI.startswith('mssql'):
+            #there's no drop cascade in mssql
+            t3.drop()
+            t4.drop()
+            t2.drop()
+            t0.drop()
+        else:
+            t0.drop('cascade')
+            t2.drop()
+            t3.drop()
+            t4.drop()
+
+
+class TestTableAndFieldCase(unittest.TestCase):
+    """
+    at the Python level we should not allow db.C and db.c because of .table conflicts on windows 
+    but it should be possible to map two different names into distinct tables "c" and "C" at the Python level
+    By default Python models names should be mapped into lower case table names and assume case insensitivity.
+    """
+    def testme(self):
+        return
+
+
+class TestQuotesByDefault(unittest.TestCase):
+    """
+    all default tables names should be quoted unless an explicit mapping has been given for a table.
+    """
+    def testme(self):
+        return
 
 if __name__ == '__main__':
     unittest.main()

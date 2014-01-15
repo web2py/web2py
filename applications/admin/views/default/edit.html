@@ -1,4 +1,32 @@
 {{extend 'layout.html'}}
+{{
+dirs=[{'name':'models', 'reg':'.*\.py$'},
+      {'name':'controllers', 'reg':'.*\.py$'},
+      {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
+      {'name':'modules', 'reg':'.*\.py$'},
+      {'name':'static', 'reg': '[^\.#].*'}]
+   
+def file_create_form(location, anchor=None, helptext=""):
+    form=FORM(
+            LABEL(T("create file with filename:")),
+            SELECT(_name='dir', _style='width:100px;', 
+               *[OPTION(dir['name'], _value=dir['name']) for dir in dirs]),
+            XML('&nbsp;'),LABEL('/', _style='display:inline-block;'),XML('&nbsp;'),
+            INPUT(_type="text",_name="filename",requires=IS_NOT_EMPTY(),_class=''),
+            TAG['SMALL'](helptext,_class="help-block"),
+            INPUT(_type='submit', name=T('filename'), _value=T('Create'), _style='display:block', _id='btn_file_create'), 
+            INPUT(_type="hidden",_name="editor"),
+            INPUT(_type="hidden",_name="location",_value=location),
+            INPUT(_type="hidden",_name="sender",_value=URL('design',args=app)),
+            INPUT(_type="hidden",_name="token",_value=session.token),
+            #INPUT(_type="hidden",_name="id",_value=anchor),
+            _action=URL('create_file'),
+            _id='file_create_form',
+            _class="generatedbyw2p well well-small")
+    return form
+            
+}}
+
 <!-- begin "edit" block -->
 {{
   def shortcut(combo, description):
@@ -45,6 +73,7 @@
 <script src="{{=cm}}/addon/fold/xml-fold.js"></script>
 <script src="{{=cm}}/addon/fold/comment-fold.js"></script>
 <script src="{{=cm}}/addon/fold/indent-fold.js"></script>
+<script src="{{=cm}}/addon/comment/comment.js"></script>
 <link rel="stylesheet" href="{{=cm}}/addon/fold/foldgutter.css">
 <script src="{{=cm}}/emmet.min.js"></script>
 <script src="{{=js_url}}/ajax_editor.js"></script>
@@ -52,12 +81,17 @@
 <link rel="stylesheet" href="{{=css_url}}/web2py-codemirror.css">
 <script type="text/javascript">
 var current_font_incr = 0; // Default font-size, 0 means isn't set
-$(document).on('shown click', 'a[data-toggle="tab"]', function (e) {
+$(document).on('shown click', 'a[data-toggle="tab"]', function (e, lineno) {
     var tab_id = $(this).attr('href');
     var editor = $(tab_id + " textarea").data('editor');
     if (editor) {
-        editor.setSize('100%',  $(tab_id).height());
+        editor_height = $(window).height() - $(tab_id + " .well-small").offset().top - $(tab_id + " .well-small").outerHeight(true) - $('.navbar-fixed-bottom').outerHeight() - 1;
+        editor.setSize('100%', editor_height);
         editor.refresh();
+        if (lineno !== undefined) {
+            editor.setCursor(lineno);
+            editor.centerOnCursor();
+        }
     }
     var n_li = $('#filesTab li').length;
     $.each($('#filesTab li'), function(index, element) {
@@ -104,7 +138,8 @@ $(document).on('click', '#restore', function (e) {
 $(document).on('click', 'a.editor_filelink, a#editor_settingslink', function (e) {
     e.preventDefault();
     var url = $(this).attr("href");
-    load_file(url);
+    var lineno = $(this).data("lineno");
+    load_file(url, lineno);
 });
 
 /* This method updates all editors already instantiated with the selected preferences*/
@@ -164,7 +199,7 @@ $(document).on('click', 'a.font_button', function (e) {
 });
 
 {{if len(request.args) > 1:}}
-    load_file('{{=URL(f='edit', args=request.args, vars=request.get_vars)}}');
+    load_file('{{=URL(f='edit', args=request.args, vars=request.get_vars)}}', {{=request.vars.lineno or 1}});
 {{pass}}
 
 </script>
@@ -173,6 +208,9 @@ $(document).on('click', 'a.font_button', function (e) {
 
 <div class='row-fluid'>
 <div class="right controls btn-toolbar pull-right">
+
+{{=LOAD('default', 'editor_sessions', ajax=True, _class='btn-group')}}
+
 <div class="btn-group">
   <a class="button btn" onclick="$('#files').toggle(); return false" href="#">Files toggle</a>
 </div>
@@ -197,27 +235,22 @@ $(document).on('click', 'a.font_button', function (e) {
         <div class="files-menu">
             <ul class="nav nav-list" rel="pagebookmark" id="filelist">
             <li><input type="text" placeholder="{{=T('Rapid Search')}}" class="input-block-level typeahead-tw search-query"></li>
-            {{dirs=[{'name':'models', 'reg':'.*\.py$'},
-                    {'name':'controllers', 'reg':'.*\.py$'},
-                    {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
-                    {'name':'modules', 'reg':'.*\.py$'}, ]}}
             {{auto_complete_list=[]}}
-            {{for dir in dirs:}}
-            <li class="nav-header component" onclick="collapse('{{="%s_files" % dir['name']}}');">{{=dir['name']}}</li>
-            <li id="{{="%s_files" % dir['name']}}">
-                <ul class="nav nav-list small-font">
-                {{for f in listfiles(app, dir['name'], regexp=dir['reg'] ):}}
-                {{id="%s__" % dir['name'] + f.replace('.','__')}}
-                {{current_file = request.args(len(request.args) - 1)}}
-                <li class="{{#='active' if current_file==f else ''}}" style="overflow:hidden">
-                {{a_tag=editfile(dir['name'], f, dict(id=id))}}
-                {{=a_tag}}
-                {{auto_complete_list.append({'value':f, 'tokens':f.split('/'), 'a_tag':a_tag})}}
-                </li>
-                {{pass}}
-            </ul>
-            </li>
-            {{pass}}
+                        <br />
+            <div>
+      			<button onclick="jQuery('#form').slideToggle()" class="btn btn-mini">{{=T('Create')}}</button>
+      			<br />
+		      	<div id="form">
+        			<div>
+        				{{=file_create_form('%s/' % app, '')}}
+        			</div>          			  			
+      			</div>
+      			<script>jQuery('#form').slideToggle()</script>
+    		</div>
+    		<br />            
+            <div id="files_menu">
+                {{=LOAD('default', 'files_menu', vars={'app':app}, ajax=True)}}
+            </div>
             </ul>
         </div>
     </div>
@@ -227,13 +260,47 @@ $(document).on('click', 'a.font_button', function (e) {
         <div id="myTabContent" class="tab-content">
         </div>
     </div>
+    <section id="windows_divs" class="tab-content  ">
+    <div id="window_todo" class="tab-pane container-fluid">
+        {{=LOAD('default', 'todolist.load', vars={'app':app}, ajax=True, timeout=60000, times="infinity")}}
+    </div>
+    </section>
 </div>
+{{block footer}}
+<div id="" class="navbar navbar-inverse navbar-fixed-bottom">
+<div class="navbar-inner">
+<ul id="windows_hooks" class="nav">
+  <li class="">
+    <a href="#window_todo">TODO</a>
+  </li>
+</ul>
+</div>
+</div>
+
+<script>
+    $(document).on('click', '#window_todo li a', function (e) {
+        $(this).find('i').toggleClass('icon-chevron-right');
+        $(this).find('i').toggleClass('icon-chevron-down');
+    });
+    $('#windows_hooks li a').click(function (e) {
+        e.preventDefault();
+        if ( $(this).parent('li').hasClass('active') ) {
+            $(this).parent('li').removeClass('active');
+            $($(this).attr('href')).removeClass('active');
+        } else {
+            $(this).tab('show');
+        }
+    });
+</script>
+{{end}}
 <script>
 $(document).ready(function() {
     var filesMenu = $('#files');
     var ow = filesMenu.outerWidth();
     filesMenu.width(ow);
-    setTimeout( function(){$('#files').css('left', '-'+ow+'px');}, 1000);
+    $('#files').css('left', '-'+ow+'px');
+    $.web2py.trap_form('url', 'form');
+    $('#form form').addClass('no_trap'); // Let to reuse the same form
 });
 </script>
 <!-- Typeahead scripts here so the page load faster -->
@@ -250,5 +317,28 @@ $(document).ready(function() {
         load_file(datum.link);
         $(this).val('');
     });
+    /* handlers to manage editor sessions
+    */
+    $(document).on('click', '#save_session', function(e) {
+        e.preventDefault();
+        var session_name=prompt("Session name","{{=app}}");
+
+        if (session_name!==null) {
+            files = $("[data-path]").map(function(){return $(this).data("path");}).get();
+            data = JSON.stringify({ files: files, session_name:session_name});
+            $.ajaxSetup({contentType: "application/json"});
+            $.web2py.ajax_page("POST", "{{=URL('default', 'editor_sessions')}}", data, 'manage_sessions');
+        }
+    });
+    $(document).on('click', '#saved_sessions a[data-files]', function(e) {
+        e.preventDefault();
+        files = $(this).data('files');
+        array_files = files.split(',');
+        $.each(array_files, function(index, value) {
+            url = "{{=URL('default','edit')}}/" + value;
+            load_file(url);
+        });
+    });
+
 </script>
 <!-- end "edit" block -->

@@ -22,7 +22,7 @@ from gluon.storage import Storage, List
 from gluon.template import parse_template
 from gluon.restricted import restricted, compile2
 from gluon.fileutils import mktree, listdir, read_file, write_file
-from gluon.myregex import regex_expose
+from gluon.myregex import regex_expose, regex_longcomments
 from gluon.languages import translator
 from gluon.dal import BaseAdapter, SQLDB, SQLField, DAL, Field
 from gluon.sqlhtml import SQLFORM, SQLTABLE
@@ -481,6 +481,9 @@ def compile_models(folder):
         save_pyc(filename)
         os.unlink(filename)
 
+def find_exposed_functions(data):
+    data = regex_longcomments.sub('',data)
+    return regex_expose.findall(data)
 
 def compile_controllers(folder):
     """
@@ -491,7 +494,7 @@ def compile_controllers(folder):
     for fname in listdir(path, '.+\.py$'):
         ### why is this here? save_pyc(pjoin(path, file))
         data = read_file(pjoin(path, fname))
-        exposed = regex_expose.findall(data)
+        exposed = find_exposed_functions(data)
         for function in exposed:
             command = data + "\nresponse._vars=response._caller(%s)\n" % \
                 function
@@ -528,7 +531,7 @@ def run_models_in(environment):
     models_to_run = None    
     for model in models:
         if response.models_to_run != models_to_run:
-            regex = models_to_run = response.models_to_run
+            regex = models_to_run = response.models_to_run[:]
             if isinstance(regex, list):
                 regex = re_compile('|'.join(regex))
         if models_to_run:
@@ -602,7 +605,7 @@ def run_controller_in(controller, function, environment):
                        rewrite.THREAD_LOCAL.routes.error_message % badc,
                        web2py_error=badc)
         code = read_file(filename)
-        exposed = regex_expose.findall(code)
+        exposed = find_exposed_functions(code)
         if not function in exposed:
             raise HTTP(404,
                        rewrite.THREAD_LOCAL.routes.error_message % badf,

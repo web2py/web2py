@@ -1998,12 +1998,8 @@ class Auth(object):
 
     def _get_login_settings(self):
         table_user = self.table_user()
-        if self.settings.login_userfield:
-            userfield = self.settings.login_userfield
-        elif 'username' in table_user.fields:
-            userfield = 'username'
-        else:
-            userfield = 'email'
+        userfield = self.settings.login_userfield or 'username' \
+            if 'username' in table_user.fields else 'email'
         passfield = self.settings.password_field
         return Storage({"table_user": table_user,
                         "userfield": userfield,
@@ -2019,7 +2015,7 @@ class Auth(object):
         if user and user.get(settings.passfield, False):
             password = settings.table_user[
                 settings.passfield].validate(password)[0]
-            if not user.registration_key and password == \
+            if not user.registration_key.strip() and password == \
                 user[settings.passfield]:
                 self.login_user(user)
                 return user
@@ -2115,12 +2111,8 @@ class Auth(object):
         row = table(ticket=ticket)
         success = False
         if row:
-            if self.settings.login_userfield:
-                userfield = self.settings.login_userfield
-            elif 'username' in table.fields:
-                userfield = 'username'
-            else:
-                userfield = 'email'
+            userfield = self.settings.login_userfield or 'username' \
+                if 'username' in table.fields else 'email'
             # If ticket is a service Ticket and RENEW flag respected
             if ticket[0:3] == 'ST-' and \
                     not ((row.renew and renew) ^ renew):
@@ -2558,14 +2550,12 @@ class Auth(object):
             if self.settings.registration_requires_verification:
                 link = self.url(
                     self.settings.function, args=('verify_email', key), scheme=True)
-
-                if not self.settings.mailer or \
-                   not self.settings.mailer.send(
-                    to=form.vars.email,
-                    subject=self.messages.verify_email_subject,
-                    message=self.messages.verify_email
-                        % dict(key=key, link=link,
-                               username=form.vars[username])):
+                d = dict(request.vars)
+                d.update(dict(key=key, link=link,username=form.vars[username]))
+                if not (self.settings.mailer and self.settings.mailer.send(
+                        to=form.vars.email,
+                        subject=self.messages.verify_email_subject,                    
+                        message=self.messages.verify_email % d)):
                     self.db.rollback()
                     response.flash = self.messages.unable_send_email
                     return form
@@ -2693,18 +2683,19 @@ class Auth(object):
         if form.accepts(request, session if self.csrf_prevention else None,
                         formname='retrieve_username', dbio=False,
                         onvalidation=onvalidation, hideerror=self.settings.hideerror):
-            user = table_user(email=form.vars.email)
-            if not user:
+            users = table_user._db(table_user.email==form.vars.email).select()
+            if not users:
                 current.session.flash = \
                     self.messages.invalid_email
                 redirect(self.url(args=request.args))
-            username = user.username
+            username = ', '.join(u.username for u in users)
             self.settings.mailer.send(to=form.vars.email,
                     subject=self.messages.retrieve_username_subject,
                     message=self.messages.retrieve_username
                      % dict(username=username))
             session.flash = self.messages.email_sent
-            self.log_event(log, user)
+            for user in users:
+                self.log_event(log, user)
             callback(onaccept, form)
             if not next:
                 next = self.url(args=request.args)
@@ -2897,12 +2888,19 @@ class Auth(object):
             onaccept = self.settings.reset_password_onaccept
         if log is DEFAULT:
             log = self.messages['reset_password_log']
-        table_user.email.requires = [
-            IS_EMAIL(error_message=self.messages.invalid_email),
-            IS_IN_DB(self.db, table_user.email,
-                     error_message=self.messages.invalid_email)]
+        userfield = self.settings.login_userfield or 'username' \
+            if 'username' in table_user.fields else 'email'        
+        if userfield=='email':
+            table_user.email.requires = [
+                IS_EMAIL(error_message=self.messages.invalid_email),
+                IS_IN_DB(self.db, table_user.email,
+                         error_message=self.messages.invalid_email)]
+        else:
+            table_user.username.requires = [
+                IS_IN_DB(self.db, table_user.username,
+                         error_message=self.messages.invalid_username)]
         form = SQLFORM(table_user,
-                       fields=['email'],
+                       fields=[userfield],
                        hidden=dict(_next=next),
                        showid=self.settings.showid,
                        submit_button=self.messages.password_reset_button,
@@ -2917,9 +2915,9 @@ class Auth(object):
                         formname='reset_password', dbio=False,
                         onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
-            user = table_user(email=form.vars.email)
+            user = table_user(**{userfield:form.vars.get(userfield)})
             if not user:
-                session.flash = self.messages.invalid_email
+                session.flash = self.messages['invalid_%s' % userfield]
                 redirect(self.url(args=request.args),
                          client_side=self.settings.client_side)
             elif user.registration_key in ('pending', 'disabled', 'blocked'):
@@ -2945,11 +2943,12 @@ class Auth(object):
         link = self.url(self.settings.function,
                         args=('reset_password', reset_password_key),
                         scheme=True)
-        if self.settings.mailer.send(
+        d = dict(user)
+        d.update(dict(key=reset_password_key, link=link))
+        if self.settings.mailer and self.settings.mailer.send(
             to=user.email,
             subject=self.messages.reset_password_subject,
-            message=self.messages.reset_password %
-                dict(key=reset_password_key, link=link)):
+            message=self.messages.reset_password % d):
             user.update_record(reset_password_key=reset_password_key)
             return True
         return False
@@ -5396,7 +5395,7 @@ class Wiki(object):
         if (auth.user and
             check_credentials(current.request, gae_login=False) and
             not 'wiki_editor' in auth.user_groups.values() and
-            self.settings.groups is None):
+            self.settings.groups == auth.user_groups.values()):
             group = db.auth_group(role='wiki_editor')
             gid = group.id if group else db.auth_group.insert(
                 role='wiki_editor')
@@ -5524,7 +5523,7 @@ class Wiki(object):
                 url = URL(args=('_edit', slug))
                 return dict(content=A('Create page "%s"' % slug, _href=url, _class="btn"))
             else:
-                html = page.html if not force_render else self.get_renderer(page)
+                html = page.html if not force_render else self.get_renderer()(page)
                 content = XML(self.fix_hostname(html))
                 return dict(title=page.title,
                             slug=page.slug,
@@ -5894,7 +5893,7 @@ class Wiki(object):
 class Config(object):
     def __init__(
         self,
-                filename,
+        filename,
         section,
         default_values={}
     ):

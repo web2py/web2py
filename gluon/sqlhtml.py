@@ -21,7 +21,7 @@ from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT, COL, COLGROUP
 from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
 from gluon.html import URL, truncate_string, FIELDSET
 from gluon.dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
-    bar_encode, Reference, REGEX_TABLE_DOT_FIELD, Expression, SQLCustomType
+    bar_encode, Reference, Expression, SQLCustomType
 from gluon.storage import Storage
 from gluon.utils import md5_hash
 from gluon.validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE, \
@@ -44,6 +44,9 @@ except ImportError:
 
 table_field = re.compile('[\w_]+\.[\w_]+')
 widget_class = re.compile('^\w*')
+
+def add_class(a,b):
+    return a+' '+b if a else b
 
 def represent(field, value, record):
     f = field.represent
@@ -334,7 +337,7 @@ class RadioWidget(OptionsWidget):
 
 
         attr = cls._attributes(field, {}, **attributes)
-        attr['_class'] = attr.get('_class', 'web2py_radiowidget')
+        attr['_class'] = add_class(attr.get('_class'), 'web2py_radiowidget')
 
         requires = field.requires
         if not isinstance(requires, (list, tuple)):
@@ -358,7 +361,7 @@ class RadioWidget(OptionsWidget):
         wrappers = dict(
             table=(TABLE, TR, TD),
             ul=(DIV, UL, LI),
-            divs=(CAT, DIV, DIV)
+            divs=(DIV, DIV, DIV)
         )
         parent, child, inner = wrappers[attributes.get('style', 'table')]
 
@@ -398,7 +401,9 @@ class CheckboxesWidget(OptionsWidget):
             values = [str(value)]
 
         attr = cls._attributes(field, {}, **attributes)
-        attr['_class'] = attr.get('_class', 'web2py_checkboxeswidget')
+        attr['_class'] = add_class(attr.get('_class'), 'web2py_checkboxeswidget')
+
+        label = attr.get('label',True)
 
         requires = field.requires
         if not isinstance(requires, (list, tuple)):
@@ -422,7 +427,7 @@ class CheckboxesWidget(OptionsWidget):
         wrappers = dict(
             table=(TABLE, TR, TD),
             ul=(DIV, UL, LI),
-            divs=(CAT, DIV, DIV)
+            divs=(DIV, DIV, DIV)
         )
         parent, child, inner = wrappers[attributes.get('style', 'table')]
 
@@ -439,7 +444,8 @@ class CheckboxesWidget(OptionsWidget):
                                        requires=attr.get('requires', None),
                                        hideerror=True, _value=k,
                                        value=r_value),
-                                 LABEL(v, _for='%s%s' % (field.name, k))))
+                                 LABEL(v, _for='%s%s' % (field.name, k)) 
+                                 if label else ''))
             opts.append(child(tds))
 
         if opts:
@@ -2040,15 +2046,14 @@ class SQLFORM(FORM):
             _class='form_footer row_buttons %(header)s %(cornerbottom)s' % ui)
 
         create_form = update_form = view_form = search_form = None
-        sqlformargs = dict(formargs)
 
         if create and request.args(-2) == 'new':
             table = db[request.args[-1]]
+            sqlformargs = dict(ignore_rw=ignore_rw, formstyle=formstyle,
+                               _class='web2py_form')
+            sqlformargs.update(formargs)
             sqlformargs.update(createargs)
-            create_form = SQLFORM(
-                table, ignore_rw=ignore_rw, formstyle=formstyle,
-                _class='web2py_form',
-                **sqlformargs)
+            create_form = SQLFORM(table, **sqlformargs)
             create_form.process(formname=formname,
                                 next=referrer,
                                 onvalidation=onvalidation,
@@ -2065,11 +2070,12 @@ class SQLFORM(FORM):
         elif details and request.args(-3) == 'view':
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(referrer)
+            sqlformargs = dict(upload=upload, ignore_rw=ignore_rw,
+                               formstyle=formstyle, readonly=True,
+                               _class='web2py_form')
+            sqlformargs.update(formargs)
             sqlformargs.update(viewargs)
-            view_form = SQLFORM(
-                table, record, upload=upload, ignore_rw=ignore_rw,
-                formstyle=formstyle, readonly=True, _class='web2py_form',
-                **sqlformargs)
+            view_form = SQLFORM(table, record, **sqlformargs)
             res = DIV(buttons(edit=editable, record=record), view_form,
                       formfooter, _class=_class)
             res.create_form = create_form
@@ -2081,16 +2087,16 @@ class SQLFORM(FORM):
         elif editable and request.args(-3) == 'edit':
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(URL('error'))
+            deletable_ = deletable(record) \
+                if callable(deletable) else deletable
+            sqlformargs = dict(upload=upload, ignore_rw=ignore_rw,
+                               formstyle=formstyle, deletable=deletable_,
+                               _class='web2py_form',
+                               submit_button=T('Submit'),
+                               delete_label=T('Check to delete'))
+            sqlformargs.update(formargs)
             sqlformargs.update(editargs)
-            deletable_ = deletable(record) if callable(deletable) else deletable
-            update_form = SQLFORM(
-                table,
-                record, upload=upload, ignore_rw=ignore_rw,
-                formstyle=formstyle, deletable=deletable_,
-                _class='web2py_form',
-                submit_button=T('Submit'),
-                delete_label=T('Check to delete'),
-                **sqlformargs)
+            update_form = SQLFORM(table, record, **sqlformargs)
             update_form.process(
                 formname=formname,
                 onvalidation=onvalidation,
@@ -2420,11 +2426,14 @@ class SQLFORM(FORM):
             limitby = None
 
         if rows:
-            cols = [COL(_id=str(c).replace('.','-'),data={'position':i+1}) 
+            cols = [COL(_id=str(c).replace('.', '-'),
+                        data={'column': left_cols + i + 1}) 
                     for i,c in enumerate(columns)]
             n = len(head.components)
-            cols = [COL() for i in range(left_cols)] + cols + [
-                COL() for i in range(right_cols)]
+            cols = [COL(data={'column': i + 1}) for i in range(left_cols)] + \
+                   cols + \
+                   [COL(data={'column': left_cols + len(cols) + i + 1})
+                    for i in range(right_cols)]
             htmltable = TABLE(COLGROUP(*cols),THEAD(head))
             tbody = TBODY()
             numrec = 0
@@ -2890,7 +2899,7 @@ class SQLTABLE(TABLE):
         if not sqlrows:
             return
         if not columns:
-            columns = sqlrows.colnames
+            columns = ['.'.join(sqlrows.db._adapter.REGEX_TABLE_DOT_FIELD.match(c).groups()) for c in sqlrows.colnames]
         if headers == 'fieldname:capitalize':
             headers = {}
             for c in columns:
@@ -2902,11 +2911,11 @@ class SQLTABLE(TABLE):
                 field = sqlrows.db[t][f]
                 headers[c] = field.label
         if colgroup:
-            cols = [COL(_id=c.replace('.','-'),data={'position':i+1}) 
-                    for i,c in enumerate(columns)]
+            cols = [COL(_id=c.replace('.', '-'), data={'column': i + 1}) 
+                    for i, c in enumerate(columns)]
             if extracolumns:
-                cols += [COL(data={'position':len(cols)+i+1})
-                         for i,c in enumerate(extracolumns)]
+                cols += [COL(data={'column': len(cols) + i + 1})
+                         for i, c in enumerate(extracolumns)]
             components.append(COLGROUP(*cols))
             
         if headers is None:
@@ -3113,7 +3122,7 @@ class ExportClass(object):
         for record in self.rows:
             row = []
             for col in self.rows.colnames:
-                if not REGEX_TABLE_DOT_FIELD.match(col):
+                if not self.rows.db._adapter.REGEX_TABLE_DOT_FIELD.match(col):
                     row.append(record._extra[col])
                 else:
                     (t, f) = col.split('.')
@@ -3195,7 +3204,8 @@ class ExporterHTML(ExportClass):
         ExportClass.__init__(self, rows)
 
     def export(self):
-        return '<html>\n<head>\n<meta http-equiv="content-type" content="text/html; charset=UTF-8" />\n</head>\n<body>\n%s\n</body>\n</html>' % (self.rows.xml() or '')
+        xml = self.rows.xml() if self.rows else ''
+        return '<html>\n<head>\n<meta http-equiv="content-type" content="text/html; charset=UTF-8" />\n</head>\n<body>\n%s\n</body>\n</html>' % (xml or '')
 
 class ExporterXML(ExportClass):
     label = 'XML'
