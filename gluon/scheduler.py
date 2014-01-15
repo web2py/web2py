@@ -912,10 +912,10 @@ class Scheduler(MetaScheduler):
                     )
                     if not task.task_name:
                         d['task_name'] = task.function_name
-                    task.update_record(**d)
+                    db((st.id==task.id) & (st.status.belongs((QUEUED, ASSIGNED)))).update(**d)
+                    db.commit()
                     wkgroups[gname]['workers'][myw]['c'] += 1
 
-        db.commit()
         #I didn't report tasks but I'm working nonetheless!!!!
         if x > 0:
             self.empty_runs = 0
