@@ -16,7 +16,7 @@ apt-get autoremove
 apt-get autoclean
 apt-get -y install nginx-full
 apt-get -y install build-essential python-dev libxml2-dev python-pip unzip
-pip install --upgrade pip
+pip install setuptools --no-use-wheel --upgrade
 PIPPATH=`which pip`
 $PIPPATH install --upgrade uwsgi
 # Create common nginx sections

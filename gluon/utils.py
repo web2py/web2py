@@ -223,18 +223,19 @@ This is not specific to web2py; consider deploying on a different operating syst
 UNPACKED_CTOKENS, HAVE_URANDOM = initialize_urandom()
 
 
-def fast_urandom16(urandom=[], locker=threading.RLock()):
+def fast_urandom16(urandom=None, locker=threading.RLock()):
     """
     this is 4x faster than calling os.urandom(16) and prevents
     the "too many files open" issue with concurrent access to os.urandom()
     """
+    if not urandom: urandom = []
     try:
         return urandom.pop()
     except IndexError:
         try:
             locker.acquire()
             ur = os.urandom(16 * 1024)
-            urandom += [ur[i:i + 16] for i in xrange(16, 1024 * 16, 16)]
+            #urandom += [ur[i:i + 16] for i in xrange(16, 1024 * 16, 16)]
             return ur[0:16]
         finally:
             locker.release()
