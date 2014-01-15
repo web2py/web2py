@@ -2257,9 +2257,11 @@ class IS_DATE(Validator):
         format = format.replace('%Y', y)
         if year < 1900:
             year = 2000
-        d = datetime.date(year, value.month, value.day)
         if self.timezone is not None:
+            d = datetime.datetime(year, value.month, value.day)
             d = d.replace(tzinfo=utc).astimezone(self.timezone)
+        else:
+            d = datetime.date(year, value.month, value.day)
         return d.strftime(format)
 
 

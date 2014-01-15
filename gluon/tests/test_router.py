@@ -12,7 +12,7 @@ import logging
 if os.path.isdir('gluon'):
     sys.path.insert(0,os.path.realpath('gluon'))  # running from web2py base
 else:
-    sys.path.insert(0,os.path.realpath('../'))  # running from gluon/tests/
+    sys.path.insert(0,os.path.realpath('../../'))  # running from gluon/tests/
     os.environ['web2py_path'] = os.path.realpath('../../')  # for settings
 
 from gluon.rewrite import load, filter_url, filter_err, get_effective_router, map_url_out
@@ -71,7 +71,7 @@ def setUpModule():
         if not os.path.isdir('gluon'):
             os.chdir(os.path.realpath(
                 '../../'))    # run from web2py base directory
-        import main   # for initialization after chdir
+        import gluon.main     # for initialization after chdir
         global logger
         logger = logging.getLogger('web2py.rewrite')
         global_settings.applications_parent = tempfile.mkdtemp()
@@ -1104,6 +1104,40 @@ class TestRouter(unittest.TestCase):
                          lang='it', out=True), "/welcome/ctr/fcn")
         self.assertEqual(filter_url('https://domain.com/welcome/ctr/fcn',
                          lang='es', out=True), "/welcome/ctr/fcn")
+
+        self.assertEqual(filter_url('https://domain.com/admin/ctr/fcn',
+                         language='en', out=True), "/ctr/fcn")
+        self.assertEqual(filter_url('https://domain.com/admin/ctr/fcn',
+                         language='it', out=True), "/it/ctr/fcn")
+        self.assertEqual(filter_url('https://domain.com/admin/ctr/fcn',
+                         language='it-it', out=True), "/it-it/ctr/fcn")
+        self.assertEqual(filter_url('https://domain.com/admin/static/file',
+                         language='en', out=True), "/admin/en/static/file")
+        self.assertEqual(filter_url('https://domain.com/admin/static/file',
+                         language='it', out=True), "/admin/it/static/file")
+        self.assertEqual(filter_url('https://domain.com/admin/static/file',
+                         language='it-it', out=True), "/admin/it-it/static/file")
+        self.assertEqual(filter_url('https://domain.com/welcome/ctr/fcn',
+                         language='it', out=True), "/welcome/ctr/fcn")
+        self.assertEqual(filter_url('https://domain.com/welcome/ctr/fcn',
+                         language='es', out=True), "/welcome/ctr/fcn")
+
+        self.assertEqual(filter_url('https://domain.com/admin/ctr/fcn',
+                         lang='it', language='en', out=True), "/ctr/fcn")
+        self.assertEqual(filter_url('https://domain.com/admin/ctr/fcn',
+                         lang='en', language='it', out=True), "/it/ctr/fcn")
+        self.assertEqual(filter_url('https://domain.com/admin/ctr/fcn',
+                         lang='it', language='it-it', out=True), "/it-it/ctr/fcn")
+        self.assertEqual(filter_url('https://domain.com/admin/static/file',
+                         lang='it', language='en', out=True), "/admin/en/static/file")
+        self.assertEqual(filter_url('https://domain.com/admin/static/file',
+                         lang='it', language='it', out=True), "/admin/it/static/file")
+        self.assertEqual(filter_url('https://domain.com/admin/static/file',
+                         lang='it', language='it-it', out=True), "/admin/it-it/static/file")
+        self.assertEqual(filter_url('https://domain.com/welcome/ctr/fcn',
+                         lang='it', language='it', out=True), "/welcome/ctr/fcn")
+        self.assertEqual(filter_url('https://domain.com/welcome/ctr/fcn',
+                         lang='it', language='es', out=True), "/welcome/ctr/fcn")
 
         router_lang['admin']['map_static'] = True
         load(rdict=router_lang)

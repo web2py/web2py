@@ -160,7 +160,8 @@ def URL(
     host=None,
     port=None,
     encode_embedded_slash=False,
-    url_encode=True
+    url_encode=True,
+    language=None,
 ):
     """
     generate a URL
@@ -369,7 +370,7 @@ def URL(
         raise SyntaxError('CRLF Injection Detected')
 
     url = url_out(r, env, application, controller, function,
-                  args, other, scheme, host, port)
+                  args, other, scheme, host, port, language=language)
     return url
 
 
