@@ -188,11 +188,11 @@ def url_in(request, environ):
 
 
 def url_out(request, environ, application, controller, function,
-            args, other, scheme, host, port):
+            args, other, scheme, host, port, language=None):
     "assemble and rewrite outgoing URL"
     if routers:
         acf = map_url_out(request, environ, application, controller,
-                          function, args, other, scheme, host, port)
+                          function, args, other, scheme, host, port, language)
         url = '%s%s' % (acf, other)
     else:
         url = '/%s/%s/%s%s' % (application, controller, function, other)
@@ -698,7 +698,7 @@ def regex_filter_out(url, e=None):
 def filter_url(url, method='get', remote='0.0.0.0',
                out=False, app=False, lang=None,
                domain=(None, None), env=False, scheme=None,
-               host=None, port=None):
+               host=None, port=None, language=None):
     """
     doctest/unittest interface to regex_filter_in() and regex_filter_out()
     """
@@ -755,7 +755,7 @@ def filter_url(url, method='get', remote='0.0.0.0',
         if not routers:
             return regex_filter_out(uri, e)
         acf = map_url_out(
-            request, None, a, c, f, items, None, scheme, host, port)
+            request, None, a, c, f, items, None, scheme, host, port, language=language)
         if items:
             url = '%s/%s' % (acf, '/'.join(items))
             if items[-1] == '':
@@ -1125,7 +1125,7 @@ class MapUrlOut(object):
     "logic for mapping outgoing URLs"
 
     def __init__(self, request, env, application, controller,
-                 function, args, other, scheme, host, port):
+                 function, args, other, scheme, host, port, language):
         "initialize a map-out object"
         self.default_application = routers.BASE.default_application
         if application in routers:
@@ -1144,6 +1144,7 @@ class MapUrlOut(object):
         self.scheme = scheme
         self.host = host
         self.port = port
+        self.language = language
 
         self.applications = routers.BASE.applications
         self.controllers = self.router.controllers
@@ -1166,7 +1167,7 @@ class MapUrlOut(object):
         if (self.router.exclusive_domain and self.domain_application and self.domain_application != self.application and not self.host):
             raise SyntaxError('cross-domain conflict: must specify host')
 
-        lang = request and request.uri_language
+        lang = self.language if self.language else request and request.uri_language
         if lang and self.languages and lang in self.languages:
             self.language = lang
         else:
@@ -1331,7 +1332,7 @@ def map_url_in(request, env, app=False):
 
 
 def map_url_out(request, env, application, controller,
-                function, args, other, scheme, host, port):
+                function, args, other, scheme, host, port, language=None):
     '''
     supply /a/c/f (or /a/lang/c/f) portion of outgoing url
 
@@ -1358,7 +1359,7 @@ def map_url_out(request, env, application, controller,
     We assume that language names do not collide with a/c/f names.
     '''
     map = MapUrlOut(request, env, application, controller,
-                    function, args, other, scheme, host, port)
+                    function, args, other, scheme, host, port, language)
     return map.acf()
 
 
