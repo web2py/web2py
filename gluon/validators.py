@@ -121,7 +121,7 @@ class Validator(object):
     message which allows you to change the default error message.
     Here is an example of a validator on a database table::
 
-        db.person.name.requires=IS_NOT_EMPTY(error_message=T('fill this'))
+        db.person.name.requires=IS_NOT_EMPTY(error_message=T('Fill this'))
 
     where we have used the translation operator T to allow for
     internationalization.
@@ -174,7 +174,7 @@ class IS_MATCH(Validator):
         ('', 'invalid expression')
     """
 
-    def __init__(self, expression, error_message='invalid expression',
+    def __init__(self, expression, error_message='Invalid expression',
                  strict=False, search=False, extract=False,
                  is_unicode=False):
 
@@ -221,7 +221,7 @@ class IS_EQUAL_TO(Validator):
         ('aab', 'no match')
     """
 
-    def __init__(self, expression, error_message='no match'):
+    def __init__(self, expression, error_message='No match'):
         self.expression = expression
         self.error_message = error_message
 
@@ -247,7 +247,7 @@ class IS_EXPR(Validator):
         ('2', 'invalid expression')
     """
 
-    def __init__(self, expression, error_message='invalid expression', environment=None):
+    def __init__(self, expression, error_message='Invalid expression', environment=None):
         self.expression = expression
         self.error_message = error_message
         self.environment = environment or {}
@@ -295,7 +295,7 @@ class IS_LENGTH(Validator):
     """
 
     def __init__(self, maxsize=255, minsize=0,
-                 error_message='enter from %(min)g to %(max)g characters'):
+                 error_message='Enter from %(min)g to %(max)g characters'):
         self.maxsize = maxsize
         self.minsize = minsize
         self.error_message = error_message
@@ -349,7 +349,7 @@ class IS_JSON(Validator):
         ('spam1234', 'invalid json')
     """
 
-    def __init__(self, error_message='invalid json', native_json=False):
+    def __init__(self, error_message='Invalid json', native_json=False):
         self.native_json = native_json
         self.error_message = error_message
 
@@ -400,7 +400,7 @@ class IS_IN_SET(Validator):
         self,
         theset,
         labels=None,
-        error_message='value not allowed',
+        error_message='Value not allowed',
         multiple=False,
         zero='',
         sort=False,
@@ -475,7 +475,7 @@ class IS_IN_DB(Validator):
         dbset,
         field,
         label=None,
-        error_message='value not in database',
+        error_message='Value not in database',
         orderby=None,
         groupby=None,
         distinct=None,
@@ -621,7 +621,7 @@ class IS_NOT_IN_DB(Validator):
         self,
         dbset,
         field,
-        error_message='value already in database or empty',
+        error_message='Value already in database or empty',
         allowed_override=[],
         ignore_common_filters=False,
     ):
@@ -673,7 +673,7 @@ class IS_NOT_IN_DB(Validator):
 def range_error_message(error_message, what_to_enter, minimum, maximum):
     "build the error message for the number range validators"
     if error_message is None:
-        error_message = 'enter ' + what_to_enter
+        error_message = 'Enter ' + what_to_enter
         if minimum is not None and maximum is not None:
             error_message += ' between %(min)g and %(max)g'
         elif minimum is not None:
@@ -952,7 +952,7 @@ class IS_NOT_EMPTY(Validator):
         ('abc', None)
     """
 
-    def __init__(self, error_message='enter a value', empty_regex=None):
+    def __init__(self, error_message='Enter a value', empty_regex=None):
         self.error_message = error_message
         if empty_regex is not None:
             self.empty_regex = re.compile(empty_regex)
@@ -982,7 +982,7 @@ class IS_ALPHANUMERIC(IS_MATCH):
         ('!', 'enter only letters, numbers, and underscore')
     """
 
-    def __init__(self, error_message='enter only letters, numbers, and underscore'):
+    def __init__(self, error_message='Enter only letters, numbers, and underscore'):
         IS_MATCH.__init__(self, '^[\w]*$', error_message)
 
 
@@ -1104,7 +1104,7 @@ class IS_EMAIL(Validator):
     def __init__(self,
                  banned=None,
                  forced=None,
-                 error_message='enter a valid email address'):
+                 error_message='Enter a valid email address'):
         if isinstance(banned, str):
             banned = re.compile(banned)
         if isinstance(forced, str):
@@ -1470,7 +1470,7 @@ class IS_GENERIC_URL(Validator):
 
     def __init__(
         self,
-        error_message='enter a valid URL',
+        error_message='Enter a valid URL',
         allowed_schemes=None,
         prepend_scheme=None,
     ):
@@ -1888,7 +1888,7 @@ class IS_HTTP_URL(Validator):
 
     def __init__(
         self,
-        error_message='enter a valid URL',
+        error_message='Enter a valid URL',
         allowed_schemes=None,
         prepend_scheme='http',
     ):
@@ -2057,7 +2057,7 @@ class IS_URL(Validator):
 
     def __init__(
         self,
-        error_message='enter a valid URL',
+        error_message='Enter a valid URL',
         mode='http',
         allowed_schemes=None,
         prepend_scheme='http',
@@ -2173,7 +2173,7 @@ class IS_TIME(Validator):
         ('', 'enter time as hh:mm:ss (seconds, am, pm optional)')
     """
 
-    def __init__(self, error_message='enter time as hh:mm:ss (seconds, am, pm optional)'):
+    def __init__(self, error_message='Enter time as hh:mm:ss (seconds, am, pm optional)'):
         self.error_message = error_message
 
     def __call__(self, value):
@@ -2220,7 +2220,7 @@ class IS_DATE(Validator):
     """
 
     def __init__(self, format='%Y-%m-%d',
-                 error_message='enter date as %(format)s',
+                 error_message='Enter date as %(format)s',
                  timezone = None):
         """
         timezome must be None or a pytz.timezone("America/Chicago") object
@@ -2294,7 +2294,7 @@ class IS_DATETIME(Validator):
         return dict(format=format)
 
     def __init__(self, format='%Y-%m-%d %H:%M:%S',
-                 error_message='enter date and time as %(format)s',
+                 error_message='Enter date and time as %(format)s',
                  timezone=None):
         """
         timezome must be None or a pytz.timezone("America/Chicago") object
@@ -2342,7 +2342,7 @@ class IS_DATE_IN_RANGE(IS_DATE):
 
         >>> v = IS_DATE_IN_RANGE(minimum=datetime.date(2008,1,1), \
                                  maximum=datetime.date(2009,12,31), \
-                                 format="%m/%d/%Y",error_message="oops")
+                                 format="%m/%d/%Y",error_message="Oops")
 
         >>> v('03/03/2008')
         (datetime.date(2008, 3, 3), None)
@@ -2367,11 +2367,11 @@ class IS_DATE_IN_RANGE(IS_DATE):
         self.maximum = maximum
         if error_message is None:
             if minimum is None:
-                error_message = "enter date on or before %(max)s"
+                error_message = "Enter date on or before %(max)s"
             elif maximum is None:
-                error_message = "enter date on or after %(min)s"
+                error_message = "Enter date on or after %(min)s"
             else:
-                error_message = "enter date in range %(min)s %(max)s"
+                error_message = "Enter date in range %(min)s %(max)s"
         IS_DATE.__init__(self,
                          format=format,
                          error_message=error_message,
@@ -2398,7 +2398,7 @@ class IS_DATETIME_IN_RANGE(IS_DATETIME):
         >>> v = IS_DATETIME_IN_RANGE(\
                 minimum=datetime.datetime(2008,1,1,12,20), \
                 maximum=datetime.datetime(2009,12,31,12,20), \
-                format="%m/%d/%Y %H:%M",error_message="oops")
+                format="%m/%d/%Y %H:%M",error_message="Oops")
         >>> v('03/03/2008 12:40')
         (datetime.datetime(2008, 3, 3, 12, 40), None)
 
@@ -2421,11 +2421,11 @@ class IS_DATETIME_IN_RANGE(IS_DATETIME):
         self.maximum = maximum
         if error_message is None:
             if minimum is None:
-                error_message = "enter date and time on or before %(max)s"
+                error_message = "Enter date and time on or before %(max)s"
             elif maximum is None:
-                error_message = "enter date and time on or after %(min)s"
+                error_message = "Enter date and time on or after %(min)s"
             else:
-                error_message = "enter date and time in range %(min)s %(max)s"
+                error_message = "Enter date and time in range %(min)s %(max)s"
         IS_DATETIME.__init__(self,
                              format=format,
                              error_message=error_message,
@@ -2452,7 +2452,7 @@ class IS_LIST_OF(Validator):
         self.other = other
         self.minimum = minimum
         self.maximum = maximum
-        self.error_message = error_message or "enter between %(min)g and %(max)g values"
+        self.error_message = error_message or "Enter between %(min)g and %(max)g values"
 
     def __call__(self, value):
         ivalue = value
@@ -2579,7 +2579,7 @@ class IS_SLUG(Validator):
     def urlify(value, maxlen=80, keep_underscores=False):
         return urlify(value, maxlen, keep_underscores)
 
-    def __init__(self, maxlen=80, check=False, error_message='must be slug', keep_underscores=False):
+    def __init__(self, maxlen=80, check=False, error_message='Must be slug', keep_underscores=False):
         self.maxlen = maxlen
         self.check = check
         self.error_message = error_message
@@ -2877,7 +2877,7 @@ class CRYPT(object):
                  key=None,
                  digest_alg='pbkdf2(1000,20,sha512)',
                  min_length=0,
-                 error_message='too short', salt=True,
+                 error_message='Too short', salt=True,
                  max_length=1024):
         """
         important, digest_alg='md5' is not the default hashing algorithm for
@@ -3122,7 +3122,7 @@ class IS_IMAGE(Validator):
                  extensions=('bmp', 'gif', 'jpeg', 'png'),
                  maxsize=(10000, 10000),
                  minsize=(0, 0),
-                 error_message='invalid image'):
+                 error_message='Invalid image'):
 
         self.extensions = extensions
         self.maxsize = maxsize
@@ -3229,7 +3229,7 @@ class IS_UPLOAD_FILENAME(Validator):
     """
 
     def __init__(self, filename=None, extension=None, lastdot=True, case=1,
-                 error_message='enter valid filename'):
+                 error_message='Enter valid filename'):
         if isinstance(filename, str):
             filename = re.compile(filename)
         if isinstance(extension, str):
@@ -3341,7 +3341,7 @@ class IS_IPV4(Validator):
     ('300.2.3.4', 'enter valid IPv4 address')
     >>> IS_IPV4(minip='1.2.3.4', maxip='1.2.3.4')('1.2.3.4')
     ('1.2.3.4', None)
-    >>> IS_IPV4(minip='1.2.3.5', maxip='1.2.3.9', error_message='bad ip')('1.2.3.4')
+    >>> IS_IPV4(minip='1.2.3.5', maxip='1.2.3.9', error_message='Bad ip')('1.2.3.4')
     ('1.2.3.4', 'bad ip')
     >>> IS_IPV4(maxip='1.2.3.4', invert=True)('127.0.0.1')
     ('127.0.0.1', None)
@@ -3372,7 +3372,7 @@ class IS_IPV4(Validator):
         is_localhost=None,
         is_private=None,
         is_automatic=None,
-            error_message='enter valid IPv4 address'):
+            error_message='Enter valid IPv4 address'):
         for n, value in enumerate((minip, maxip)):
             temp = []
             if isinstance(value, str):
@@ -3461,7 +3461,7 @@ class IS_IPV6(Validator):
     ('fe80::126c:8ffa:fe22:b3af', None)
     >>> IS_IPV6()('192.168.1.1')
     ('192.168.1.1', 'enter valid IPv6 address')
-    >>> IS_IPV6(error_message='bad ip')('192.168.1.1')
+    >>> IS_IPV6(error_message='Bad ip')('192.168.1.1')
     ('192.168.1.1', 'bad ip')
     >>> IS_IPV6(is_link_local=True)('fe80::126c:8ffa:fe22:b3af')
     ('fe80::126c:8ffa:fe22:b3af', None)
@@ -3498,7 +3498,7 @@ class IS_IPV6(Validator):
             is_6to4=None,
             is_teredo=None,
             subnets=None,
-            error_message='enter valid IPv6 address'):
+            error_message='Enter valid IPv6 address'):
         self.is_private = is_private
         self.is_link_local = is_link_local
         self.is_reserved = is_reserved
@@ -3646,7 +3646,7 @@ class IS_IPADDRESS(Validator):
     ('300.2.3.4', 'enter valid IP address')
     >>> IS_IPADDRESS(minip='192.168.1.0', maxip='192.168.1.255')('192.168.1.100')
     ('192.168.1.100', None)
-    >>> IS_IPADDRESS(minip='1.2.3.5', maxip='1.2.3.9', error_message='bad ip')('1.2.3.4')
+    >>> IS_IPADDRESS(minip='1.2.3.5', maxip='1.2.3.9', error_message='Bad ip')('1.2.3.4')
     ('1.2.3.4', 'bad ip')
     >>> IS_IPADDRESS(maxip='1.2.3.4', invert=True)('127.0.0.1')
     ('127.0.0.1', None)
@@ -3671,7 +3671,7 @@ class IS_IPADDRESS(Validator):
     ('fe80::126c:8ffa:fe22:b3af', 'enter valid IP address')
     >>> IS_IPADDRESS(is_ipv6=True)('192.168.1.1')
     ('192.168.1.1', 'enter valid IP address')
-    >>> IS_IPADDRESS(is_ipv6=True, error_message='bad ip')('192.168.1.1')
+    >>> IS_IPADDRESS(is_ipv6=True, error_message='Bad ip')('192.168.1.1')
     ('192.168.1.1', 'bad ip')
     >>> IS_IPADDRESS(is_link_local=True)('fe80::126c:8ffa:fe22:b3af')
     ('fe80::126c:8ffa:fe22:b3af', None)
@@ -3713,7 +3713,7 @@ class IS_IPADDRESS(Validator):
             is_teredo=None,
             subnets=None,
             is_ipv6=None,
-            error_message='enter valid IP address'):
+            error_message='Enter valid IP address'):
         self.minip = minip,
         self.maxip = maxip,
         self.invert = invert
