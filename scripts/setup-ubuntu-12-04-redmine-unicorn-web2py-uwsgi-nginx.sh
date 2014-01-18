@@ -400,7 +400,7 @@ else
     rm ~/self_signed.*
 fi
 
-pip install --upgrade pip
+pip install setuptools --no-use-wheel --upgrade
 PIPPATH=`which pip`
 $PIPPATH install --upgrade uwsgi
 
