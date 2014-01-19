@@ -40,6 +40,7 @@ def fix_sys_path():
 fix_sys_path()
 
 from contrib.webclient import WebClient
+from urllib2 import HTTPError
 
 webserverprocess = None
 
@@ -139,6 +140,37 @@ class TestWeb(LiveTest):
         assert(text == s.text)
         assert('expires' in s.headers)
         assert(s.headers['cache-control'].startswith('max-age'))
+
+    def testSoap(self):
+        # test soap server implementation 
+        from gluon.contrib.pysimplesoap.client import SoapClient, SoapFault
+        url = 'http://127.0.0.1:8000/examples/soap_examples/call/soap?WSDL'
+        client = SoapClient(wsdl=url)
+        ret = client.SubIntegers(a=3, b=2)
+        # check that the value returned is ok
+        assert('SubResult' in ret)
+        assert(ret['SubResult'] == 1)
+
+        try:
+            ret = client.Division(a=3, b=0)
+        except SoapFault, sf:
+            # verify the exception value is ok
+            assert(sf.faultstring == "float division by zero")
+            assert(sf.faultcode == "Server.ZeroDivisionError")
+
+        # store sent and received xml for low level test
+        xml_request = client.xml_request
+        xml_response = client.xml_response
+
+        # do a low level raw soap request (using
+        s = WebClient('http://127.0.0.1:8000/')
+        try:
+            s.post('examples/soap_examples/call/soap', data=xml_request, method="POST")
+        except HTTPError, e:
+            assert(e.msg=='INTERNAL SERVER ERROR')
+        # check internal server error returned (issue 153)
+        assert(s.status == 500)
+        assert(s.text == xml_response)
 
 
 if __name__ == '__main__':
