@@ -1,3 +1,4 @@
+
 """
 Developed by Massimo Di Pierro
 Released under the web2py license (LGPL)
@@ -105,9 +106,9 @@ class WebClient(object):
         # assume everything is ok and make http request
         error = None
         try:
-            if isinstance(data,str):
+            if isinstance(data, str):
                 self.method = 'POST' if method=='auto' else method
-            if isinstance(data, dict):
+            elif isinstance(data, dict):
                 self.method = 'POST' if method=='auto' else method
                 # if there is only one form, set _formname automatically
                 if not '_formname' in data and len(self.forms) == 1:
