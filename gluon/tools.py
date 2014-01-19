@@ -4830,9 +4830,15 @@ class Service(object):
         for method, (function, returns, args, doc) in procedures.iteritems():
             dispatcher.register_function(method, function, returns, args, doc)
         if request.env.request_method == 'POST':
+            fault = {}
             # Process normal Soap Operation
             response.headers['Content-Type'] = 'text/xml'
-            return dispatcher.dispatch(request.body.read())
+            xml = dispatcher.dispatch(request.body.read(), fault=fault)
+            if fault:
+                # May want to consider populating a ticket here...
+                response.status = 500
+            # return the soap response
+            return xml
         elif 'WSDL' in request.vars:
             # Return Web Service Description
             response.headers['Content-Type'] = 'text/xml'
