@@ -15,6 +15,7 @@ try:
 except:
     from io import StringIO
 
+
 def fix_sys_path():
     """
     logic to have always the correct sys.path
@@ -48,6 +49,13 @@ from dal import DAL, Field, Table, SQLALL
 #for travis-ci
 DEFAULT_URI = os.environ.get('DB', 'sqlite:memory')
 print 'Testing against %s engine (%s)' % (DEFAULT_URI.partition(':')[0], DEFAULT_URI)
+
+# setup GAE dummy database
+if "datastore" in DEFAULT_URI:
+    from google.appengine.ext import testbed
+    gaetestbed = testbed.Testbed()
+    gaetestbed.activate()
+    gaetestbed.init_datastore_v3_stub()
 
 
 ALLOWED_DATATYPES = [
