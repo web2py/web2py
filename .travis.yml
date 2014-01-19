@@ -7,15 +7,10 @@ python:
 install:
   - pip install -e .
 env:
-  global:
-    secure: j9TyW+LF+/I1Jh8PhOrEzPB+G7exynbqGwU0TUihENnIQO7wr+oizB8UrXLG+atKFh0F/OFhXrmmRFV4OtZ9bMA0XZzGUCUkkxJlEyuQzxF0R3gIXVFI/9pUkwX/NtcXTvl1aQaelpgheTgJQJa/CMY/Gp5p4Kahx9mDiW6FVdo=
-  matrix:
   - DB=sqlite:memory
   - DB=mysql://root:@localhost/test_w2p
   - DB=postgres://postgres:@localhost/test_w2p
   - DB=google:datastore
-  - DB=mongodb://localhost/test_w2p
-  - DB=imap://w2pimaptests@gmail.com:password@imap.gmail.com:993
 before_script:
   - if [[ $TRAVIS_PYTHON_VERSION != '2.7' ]]; then pip install unittest2; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install coverage; fi;
@@ -24,6 +19,8 @@ before_script:
   - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then pip install pysqlite; fi
   - if [[ $DB == mysql* ]]; then mysql -e 'create database test_w2p;'; fi
   - if [[ $DB == postgres* ]]; then psql -c 'create database test_w2p;' -U postgres; fi
+
+  # Install last sdk for app engine
   - if [[ $DB == google* ]]; then wget http://googleappengine.googlecode.com/svn/trunk/python/VERSION -O ./GAEVERSION; fi
   - if [[ $DB == google* ]]; then GAERELEASE=$(cat ./GAEVERSION | grep -i release); fi
   - if [[ $DB == google* ]]; then GAERELEASE=${GAERELEASE#*\"}; fi
@@ -31,7 +28,7 @@ before_script:
   - if [[ $DB == google* ]]; then wget http://googleappengine.googlecode.com/files/google_appengine_$GAERELEASE.zip -nv; fi
   - if [[ $DB == google* ]]; then unzip -q google_appengine_$GAERELEASE.zip; fi
   - if [[ $DB == google* ]]; then mv -f ./google_appengine/google ./google; fi
-  - if [[ $DB == mongodb* ]]; then pip install pymongo --use-mirrors; fi
+
   #Temporal solution to travis issue #155
   - sudo chmod 777 /dev/shm
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
@@ -43,25 +40,13 @@ matrix:
       env: DB=mysql://root:@localhost/test_w2p
     - python: 'pypy'
       env: DB=google:datastore
-    - python: 'pypy'
-      env: DB=mongodb://localhost/test_w2p
-    - python: 'pypy'
-      env: DB=imap://w2pimaptests@gmail.com:password@imap.gmail.com:993
     - python: '2.6'
       env: DB=google:datastore
-    - python: '2.6'
-      env: DB=mongodb://localhost/test_w2p
-    - python: '2.6'
-      env: DB=imap://w2pimaptests@gmail.com:password@imap.gmail.com:993
 
 script: export COVERAGE_PROCESS_START=gluon/tests/coverage.ini; ./web2py.py --run_system_tests --with_coverage
 after_success:
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then coverage combine; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then coveralls --config_file=gluon/tests/coverage.ini; fi
-
+  
 notifications:
   email: true
-
-services:
-  - mongodb
-
