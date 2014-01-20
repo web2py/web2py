@@ -900,7 +900,7 @@ class TestSelectAsDict(unittest.TestCase):
             Field('a_field'),
             )
         db.a_table.insert(a_field="aa1", b_field="bb1")
-        rtn = db(db.a_table).select(db.a_table.id, db.a_table.b_field, db.a_table.a_field).select().as_dict()
+        rtn = db(db.a_table).select(db.a_table.id, db.a_table.b_field, db.a_table.a_field).as_dict()
         self.assertEqual(rtn[0]['b_field'], 'bb1')
         self.assertEqual(rtn[0].keys(), ['id', 'b_field', 'a_field'])
         drop(db.a_table)
