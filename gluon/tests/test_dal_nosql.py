@@ -673,11 +673,16 @@ class TestComputedFields(unittest.TestCase):
         db.commit()
 
         # test checking that a compute field can refer to earlier-defined computed fields
+        if "datastore" in DEFAULT_URI:
+            redefine = True
+        else:
+            redefine = False
         db.define_table('tt',
                         Field('aa'),
                         Field('bb',default='x'),
                         Field('cc',compute=lambda r: r.aa+r.bb),
-                        Field('dd',compute=lambda r: r.bb + r.cc))
+                        Field('dd',compute=lambda r: r.bb + r.cc),
+                        redefine=redefine)
         db.commit()
         id = db.tt.insert(aa="z")
         self.assertEqual(db.tt[id].dd,'xzx')
