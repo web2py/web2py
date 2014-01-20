@@ -5,7 +5,10 @@
 """
 import sys
 import os
-import unittest
+if sys.version_info < (2, 7):
+    import unittest2 as unittest
+else:
+    import unittest
 import subprocess
 import time
 import signal
@@ -93,50 +96,43 @@ class LiveTest(unittest.TestCase):
     def tearDownClass(cls):
         stopwebserver()
 
+
+@unittest.skipIf("datastore" in os.getenv("DB", ""), "TODO: setup web test for app engine")
 class TestWeb(LiveTest):
     def testRegisterAndLogin(self):
         client = WebClient('http://127.0.0.1:8000/welcome/default/')
 
-        try:
-            client.get('index')
-        
-            # register
-            data = dict(first_name='Homer',
+        client.get('index')
+
+        # register
+        data = dict(first_name='Homer',
                     last_name='Simpson',
                     email='homer@web2py.com',
                     password='test',
                     password_two='test',
                     _formname='register')
-            client.post('user/register', data=data)
+        client.post('user/register', data=data)
 
-            # logout
-            client.get('user/logout')
+        # logout
+        client.get('user/logout')
 
-            # login again
-            data = dict(email='homer@web2py.com',
+        # login again
+        data = dict(email='homer@web2py.com',
                     password='test',
                     _formname='login')
-            client.post('user/login', data=data)
-            self.assertTrue('Welcome Homer' in client.text)
+        client.post('user/login', data=data)
+        self.assertTrue('Welcome Homer' in client.text)
 
-            # check registration and login were successful
-            client.get('index')
+        # check registration and login were successful
+        client.get('index')
 
-            # COMMENTED BECAUSE FAILS BUT WHY?
-            self.assertTrue('Welcome Homer' in client.text)
+        # COMMENTED BECAUSE FAILS BUT WHY?
+        self.assertTrue('Welcome Homer' in client.text)
 
-            client = WebClient('http://127.0.0.1:8000/admin/default/')
-            client.post('index', data=dict(password='hello'))
-            client.get('site')
-            client.get('design/welcome')
-        except RuntimeError, e:
-            ticket = str(e).split("/")[1]
-            with open("applications/welcome/errors/%s" % ticket) as myfile:
-                print
-                print "############# Web client error ticket: ##############"
-                print myfile.read()
-                print "#####################################################"
-                print
+        client = WebClient('http://127.0.0.1:8000/admin/default/')
+        client.post('index', data=dict(password='hello'))
+        client.get('site')
+        client.get('design/welcome')
 
     def testStaticCache(self):
         s = WebClient('http://127.0.0.1:8000/welcome/')
