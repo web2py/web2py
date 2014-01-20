@@ -972,7 +972,7 @@ class TestRNameTable(unittest.TestCase):
         drop(db.person)
         drop(db.easy_name)
 
-    @unittest.skip()
+    @unittest.skip("JOIN queries are not supported")
     def testJoin(self):
         db = DAL(DEFAULT_URI, check_reserved=['all'])
         rname = db._adapter.QUOTE_TEMPLATE % 'this is table t1'
@@ -1245,7 +1245,7 @@ class TestRNameFields(unittest.TestCase):
         self.assertEqual(db(db.tt.aa == '2').isempty(), True)
         drop(db.tt)
 
-    @unittest.skip()
+    @unittest.skip("JOIN queries are not supported")
     def testJoin(self):
         db = DAL(DEFAULT_URI, check_reserved=['all'])
         rname = db._adapter.QUOTE_TEMPLATE % 'this is field aa'
