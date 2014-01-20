@@ -359,9 +359,10 @@ class TestBelongs(unittest.TestCase):
     def testRun(self):
         db = DAL(DEFAULT_URI, check_reserved=['all'])
         db.define_table('tt', Field('aa'))
-        self.assertEqual(db.tt.insert(aa='1'), 1)
-        self.assertEqual(db.tt.insert(aa='2'), 2)
-        self.assertEqual(db.tt.insert(aa='3'), 3)
+
+        self.assertEqual(isinstance(db.tt.insert(aa='1'), long), True)
+        self.assertEqual(isinstance(db.tt.insert(aa='2'), long), True)
+        self.assertEqual(isinstance(db.tt.insert(aa='3'), long), True)
         self.assertEqual(db(db.tt.aa.belongs(('1', '3'))).count(),
                          2)
         self.assertEqual(db(db.tt.aa.belongs(db(db.tt.id
@@ -379,9 +380,9 @@ class TestContains(unittest.TestCase):
     def testRun(self):
         db = DAL(DEFAULT_URI, check_reserved=['all'])
         db.define_table('tt', Field('aa', 'list:string'), Field('bb','string'))
-        self.assertEqual(db.tt.insert(aa=['aaa','bbb'],bb='aaa'), 1)
-        self.assertEqual(db.tt.insert(aa=['bbb','ddd'],bb='abb'), 2)
-        self.assertEqual(db.tt.insert(aa=['eee','aaa'],bb='acc'), 3)
+        self.assertEqual(isinstance(db.tt.insert(aa=['aaa','bbb'],bb='aaa'), long), True)
+        self.assertEqual(isinstance(db.tt.insert(aa=['bbb','ddd'],bb='abb'), long), True)
+        self.assertEqual(isinstance(db.tt.insert(aa=['eee','aaa'],bb='acc'), long), True)
         self.assertEqual(db(db.tt.aa.contains('aaa')).count(), 2)
         self.assertEqual(db(db.tt.aa.contains('bbb')).count(), 2)
         self.assertEqual(db(db.tt.aa.contains('aa')).count(), 0)
@@ -423,12 +424,12 @@ class TestDatetime(unittest.TestCase):
     def testRun(self):
         db = DAL(DEFAULT_URI, check_reserved=['all'])
         db.define_table('tt', Field('aa', 'datetime'))
-        self.assertEqual(db.tt.insert(aa=datetime.datetime(1971, 12, 21,
-                         11, 30)), 1)
-        self.assertEqual(db.tt.insert(aa=datetime.datetime(1971, 11, 21,
-                         10, 30)), 2)
-        self.assertEqual(db.tt.insert(aa=datetime.datetime(1970, 12, 21,
-                         9, 30)), 3)
+        self.assertEqual(isinstance(db.tt.insert(aa=datetime.datetime(1971, 12, 21,
+                         11, 30)), long), True)
+        self.assertEqual(isinstance(db.tt.insert(aa=datetime.datetime(1971, 11, 21,
+                         10, 30)), long), True)
+        self.assertEqual(isinstance(db.tt.insert(aa=datetime.datetime(1970, 12, 21,
+                         9, 30)), long), True)
         self.assertEqual(db(db.tt.aa == datetime.datetime(1971, 12,
                          21, 11, 30)).count(), 1)
         self.assertEqual(db(db.tt.aa.year() == 1971).count(), 2)
@@ -630,8 +631,8 @@ class TestClientLevelOps(unittest.TestCase):
         db.define_table('tt', Field('aa'))
         db.commit()
         db.tt.insert(aa="test")
-        rows1 = db(db.tt.id>0).select()
-        rows2 = db(db.tt.id>0).select()
+        rows1 = db(db.tt.aa=='test').select()
+        rows2 = db(db.tt.aa=='test').select()
         rows3 = rows1 & rows2
         assert len(rows3) == 2
         rows4 = rows1 | rows2
@@ -830,8 +831,8 @@ class TestDALDictImportExport(unittest.TestCase):
         assert "staff" in db4.tables
         assert "name" in db4.staff
         assert db4.tvshow.rating.type == "double"
-        assert (db4.tvshow.insert(), db4.tvshow.insert(name="Loriot"),
-                db4.tvshow.insert(name="Il Mattatore")) == (1, 2, 3)
+        assert (isinstance(db4.tvshow.insert(), long), isinstance(db4.tvshow.insert(name="Loriot"), long),
+                isinstance(db4.tvshow.insert(name="Il Mattatore"), long)) == (True, True, True)
         assert db4(db4.tvshow).select().first().id == 1
         assert db4(db4.tvshow).select().first().name == mpfc
 
@@ -900,7 +901,7 @@ class TestSelectAsDict(unittest.TestCase):
             Field('a_field'),
             )
         db.a_table.insert(a_field="aa1", b_field="bb1")
-        rtn = db(db.a_table).select(db.a_table.id, db.a_table.b_field, db.a_table.a_field).as_dict()
+        rtn = db(db.a_table).select(db.a_table.id, db.a_table.b_field, db.a_table.a_field).as_list()
         self.assertEqual(rtn[0]['b_field'], 'bb1')
         self.assertEqual(rtn[0].keys(), ['id', 'b_field', 'a_field'])
         drop(db.a_table)
