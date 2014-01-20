@@ -27,7 +27,7 @@ before_script:
   - if [[ $DB == google* ]]; then GAERELEASE=${GAERELEASE%\"}; fi
   - if [[ $DB == google* ]]; then wget http://googleappengine.googlecode.com/files/google_appengine_$GAERELEASE.zip -nv; fi
   - if [[ $DB == google* ]]; then unzip -q google_appengine_$GAERELEASE.zip; fi
-  - if [[ $DB == google* ]]; then mv -f ./google_appengine/google ./google; fi
+  # - if [[ $DB == google* ]]; then mv -f ./google_appengine/google ./google; fi
 
   #Temporal solution to travis issue #155
   - sudo chmod 777 /dev/shm
