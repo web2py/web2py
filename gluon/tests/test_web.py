@@ -142,7 +142,7 @@ class TestWeb(LiveTest):
         assert(s.headers['cache-control'].startswith('max-age'))
 
     def testSoap(self):
-        # test soap server implementation 
+        # test soap server implementation
         from gluon.contrib.pysimplesoap.client import SoapClient, SoapFault
         url = 'http://127.0.0.1:8000/examples/soap_examples/call/soap?WSDL'
         client = SoapClient(wsdl=url)
@@ -155,7 +155,7 @@ class TestWeb(LiveTest):
             ret = client.Division(a=3, b=0)
         except SoapFault, sf:
             # verify the exception value is ok
-            assert(sf.faultstring == "float division by zero")
+            # assert(sf.faultstring == "float division by zero") # true only in 2.7
             assert(sf.faultcode == "Server.ZeroDivisionError")
 
         # store sent and received xml for low level test
@@ -171,7 +171,7 @@ class TestWeb(LiveTest):
         # check internal server error returned (issue 153)
         assert(s.status == 500)
         assert(s.text == xml_response)
-
+        
 
 if __name__ == '__main__':
     unittest.main()

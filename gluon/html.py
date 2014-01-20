@@ -2224,7 +2224,7 @@ class FORM(DIV):
             INPUT(_type="button", _value=value, _class=_class,
                   _onclick=url if url.startswith('javascript:') else
                       self.REDIRECT_JS % url))
-        
+
     @staticmethod
     def confirm(text='OK', buttons=None, hidden=None):
         if not buttons:
@@ -2531,7 +2531,7 @@ def test():
     >>> print form.accepts({'myvar':'34'}, formname=None)
     False
     >>> print form.xml()
-    <form action="#" enctype="multipart/form-data" method="post"><input class="invalidinput" name="myvar" type="text" value="34" /><div class="error_wrapper"><div class="error" id="myvar__error">invalid expression</div></div></form>
+    <form action="#" enctype="multipart/form-data" method="post"><input class="invalidinput" name="myvar" type="text" value="34" /><div class="error_wrapper"><div class="error" id="myvar__error">Invalid expression</div></div></form>
     >>> print form.accepts({'myvar':'4'}, formname=None, keepvalues=True)
     True
     >>> print form.xml()
@@ -2711,7 +2711,7 @@ class MARKMIN(XmlComponent):
         self.extra = extra or {}
         self.allowed = allowed or {}
         self.sep = sep
-        self.url = URL if url == True else url    
+        self.url = URL if url == True else url
         self.environment = environment
         self.latex = latex
         self.autolinks = autolinks
