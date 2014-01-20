@@ -63,6 +63,9 @@ print 'Testing against %s engine (%s)' % (DEFAULT_URI.partition(':')[0], DEFAULT
 
 # setup GAE dummy database
 if "datastore" in DEFAULT_URI:
+    sdk = os.path.join(os.getcwd(), "google_appengine")
+    print "path to sdk is", sdk
+    sys.path.append(sdk)
     from google.appengine.ext import testbed
     gaetestbed = testbed.Testbed()
     gaetestbed.activate()
