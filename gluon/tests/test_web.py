@@ -131,7 +131,7 @@ class TestWeb(LiveTest):
             client.get('design/welcome')
         except RuntimeError, e:
             ticket = str(e).split("/")[1]
-            with open("applications/welcome/%s" % ticket) as myfile:
+            with open("applications/welcome/errors/%s" % ticket) as myfile:
                 print
                 print "############# Web client error ticket: ##############"
                 print myfile.read()
