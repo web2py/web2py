@@ -924,7 +924,7 @@ class TestRNameTable(unittest.TestCase):
             rname=rname
             )
         rtn = db.easy_name.insert(a_field='a')
-        self.assertEqual(rtn.id, 1)
+        self.assertEqual(isinstance(rtn.id, long), True)
         rtn = db(db.easy_name.a_field == 'a').select()
         self.assertEqual(len(rtn), 1)
         self.assertEqual(rtn[0].id, 1)
