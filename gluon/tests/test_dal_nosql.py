@@ -836,7 +836,7 @@ class TestDALDictImportExport(unittest.TestCase):
         assert db4.tvshow.rating.type == "double"
         assert (isinstance(db4.tvshow.insert(), long), isinstance(db4.tvshow.insert(name="Loriot"), long),
                 isinstance(db4.tvshow.insert(name="Il Mattatore"), long)) == (True, True, True)
-        assert db4(db4.tvshow).select().first().id == 1
+        assert isinstance(db4(db4.tvshow).select().first().id, long) == True
         assert db4(db4.tvshow).select().first().name == mpfc
 
         drop(db4.staff)
@@ -862,7 +862,7 @@ class TestDALDictImportExport(unittest.TestCase):
         assert "name" in db6["tvshow"].fields
 
         assert db6.staff.insert() is not None
-        assert db6(db6.staff).select().first().id == 1
+        assert isinstance(db6(db6.staff).select().first().id, long) == True
 
 
         drop(db6.staff)
@@ -926,7 +926,10 @@ class TestRNameTable(unittest.TestCase):
         rtn = db.easy_name.insert(a_field='a')
         self.assertEqual(isinstance(rtn.id, long), True)
         rtn = db(db.easy_name.a_field == 'a').select()
+        print "TestRNameTable rtn"
+        print repr(rtn)
         self.assertEqual(len(rtn), 1)
+
         self.assertEqual(rtn[0].id, 1)
         self.assertEqual(rtn[0].a_field, 'a')
         db.easy_name.insert(a_field='b')
@@ -1062,7 +1065,7 @@ class TestRNameFields(unittest.TestCase):
             Field('rating', 'integer', rname=rname2, default=2)
             )
         rtn = db.easy_name.insert(a_field='a')
-        self.assertEqual(rtn.id, 1)
+        self.assertEqual(isinstance(rtn.id, long), True)
         rtn = db(db.easy_name.a_field == 'a').select()
         self.assertEqual(len(rtn), 1)
         self.assertEqual(rtn[0].id, 1)
@@ -1172,7 +1175,7 @@ class TestRNameFields(unittest.TestCase):
         rname = db._adapter.QUOTE_TEMPLATE % 'a very complicated fieldname'
         for ft in ['string', 'text', 'password', 'upload', 'blob']:
             db.define_table('tt', Field('aa', ft, default='', rname=rname))
-            self.assertEqual(db.tt.insert(aa='x'), 1)
+            self.assertEqual(isinstance(db.tt.insert(aa='x'), long), True)
             self.assertEqual(db().select(db.tt.aa)[0].aa, 'x')
             drop(db.tt)
         db.define_table('tt', Field('aa', 'integer', default=1, rname=rname))
