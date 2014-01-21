@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-    Unit tests for gluon.dal
+    Unit tests for gluon.dal (NoSQL adapters)
 """
 
 import sys
@@ -679,16 +679,11 @@ class TestComputedFields(unittest.TestCase):
         db.commit()
 
         # test checking that a compute field can refer to earlier-defined computed fields
-        if "datastore" in DEFAULT_URI:
-            redefine = True
-        else:
-            redefine = False
         db.define_table('tt',
                         Field('aa'),
                         Field('bb',default='x'),
                         Field('cc',compute=lambda r: r.aa+r.bb),
-                        Field('dd',compute=lambda r: r.bb + r.cc),
-                        redefine=redefine)
+                        Field('dd',compute=lambda r: r.bb + r.cc))
         db.commit()
         id = db.tt.insert(aa="z")
         self.assertEqual(db.tt[id].dd,'xzx')
@@ -924,6 +919,7 @@ class TestRNameTable(unittest.TestCase):
             rname=rname
             )
         rtn = db.easy_name.insert(a_field='a')
+        print "adding", rtn
         self.assertEqual(isinstance(rtn.id, long), True)
         rtn = db(db.easy_name.a_field == 'a').select()
         print "TestRNameTable rtn"
@@ -932,14 +928,15 @@ class TestRNameTable(unittest.TestCase):
 
         self.assertEqual(isinstance(rtn[0].id, long), True)
         self.assertEqual(rtn[0].a_field, 'a')
-        db.easy_name.insert(a_field='b')
+        print "adding", db.easy_name.insert(a_field='b')
         rtn = db(db.easy_name.id > 0).delete()
         self.assertEqual(rtn, 2)
         rtn = db(db.easy_name.id > 0).count()
         self.assertEqual(rtn, 0)
-        db.easy_name.insert(a_field='a')
-        db.easy_name.insert(a_field='b')
+        print "adding", db.easy_name.insert(a_field='a')
+        print "adding", db.easy_name.insert(a_field='b')
         rtn = db(db.easy_name.id > 0).count()
+        print [row for row in db(db.easy_name.id > 0).select()]
         self.assertEqual(rtn, 2)
         rtn = db(db.easy_name.a_field == 'a').update(a_field='c')
         rtn = db(db.easy_name.a_field == 'c').count()
