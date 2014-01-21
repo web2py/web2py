@@ -927,7 +927,7 @@ class TestRNameTable(unittest.TestCase):
         self.assertEqual(isinstance(rtn.id, long), True)
         rtn = db(db.easy_name.a_field == 'a').select()
         print "TestRNameTable rtn"
-        print repr(rtn)
+        print [row for row in rtn]
         self.assertEqual(len(rtn), 1)
 
         self.assertEqual(rtn[0].id, 1)
@@ -1068,7 +1068,7 @@ class TestRNameFields(unittest.TestCase):
         self.assertEqual(isinstance(rtn.id, long), True)
         rtn = db(db.easy_name.a_field == 'a').select()
         self.assertEqual(len(rtn), 1)
-        self.assertEqual(rtn[0].id, 1)
+        self.assertEqual(isinstance(rtn[0].id, long), True)
         self.assertEqual(rtn[0].a_field, 'a')
         db.easy_name.insert(a_field='b')
         rtn = db(db.easy_name.id > 0).delete()
@@ -1179,7 +1179,7 @@ class TestRNameFields(unittest.TestCase):
             self.assertEqual(db().select(db.tt.aa)[0].aa, 'x')
             drop(db.tt)
         db.define_table('tt', Field('aa', 'integer', default=1, rname=rname))
-        self.assertEqual(db.tt.insert(aa=3), 1)
+        self.assertEqual(isinstance(db.tt.insert(aa=3), long), True)
         self.assertEqual(db().select(db.tt.aa)[0].aa, 3)
         drop(db.tt)
         db.define_table('tt', Field('aa', 'double', default=1, rname=rname))
