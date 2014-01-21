@@ -219,7 +219,7 @@ class TestFields(unittest.TestCase):
         drop(db.tt)
         db.define_table('tt', Field('aa', 'time', default='11:30'))
         t0 = datetime.time(10, 30, 55)
-        self.assertEqual(isinstance(db.tt.insert(aa=t0), True), True)
+        self.assertEqual(isinstance(db.tt.insert(aa=t0), long), True)
         self.assertEqual(db().select(db.tt.aa)[0].aa, t0)
         drop(db.tt)
 
@@ -930,7 +930,7 @@ class TestRNameTable(unittest.TestCase):
         print [row for row in rtn]
         self.assertEqual(len(rtn), 1)
 
-        self.assertEqual(rtn[0].id, 1)
+        self.assertEqual(isinstance(rtn[0].id, long), True)
         self.assertEqual(rtn[0].a_field, 'a')
         db.easy_name.insert(a_field='b')
         rtn = db(db.easy_name.id > 0).delete()
@@ -1183,21 +1183,21 @@ class TestRNameFields(unittest.TestCase):
         self.assertEqual(db().select(db.tt.aa)[0].aa, 3)
         drop(db.tt)
         db.define_table('tt', Field('aa', 'double', default=1, rname=rname))
-        self.assertEqual(db.tt.insert(aa=3.1), 1)
+        self.assertEqual(isinstance(db.tt.insert(aa=3.1), long), True)
         self.assertEqual(db().select(db.tt.aa)[0].aa, 3.1)
         drop(db.tt)
         db.define_table('tt', Field('aa', 'boolean', default=True, rname=rname))
-        self.assertEqual(db.tt.insert(aa=True), 1)
+        self.assertEqual(isinstance(db.tt.insert(aa=True), long), True)
         self.assertEqual(db().select(db.tt.aa)[0].aa, True)
         drop(db.tt)
         db.define_table('tt', Field('aa', 'json', default={}, rname=rname))
-        self.assertEqual(db.tt.insert(aa={}), 1)
+        self.assertEqual(isinstance(db.tt.insert(aa={}), long), True)
         self.assertEqual(db().select(db.tt.aa)[0].aa, {})
         drop(db.tt)
         db.define_table('tt', Field('aa', 'date',
                         default=datetime.date.today(), rname=rname))
         t0 = datetime.date.today()
-        self.assertEqual(db.tt.insert(aa=t0), 1)
+        self.assertEqual(isinstance(db.tt.insert(aa=t0), long), True)
         self.assertEqual(db().select(db.tt.aa)[0].aa, t0)
         drop(db.tt)
         db.define_table('tt', Field('aa', 'datetime',
@@ -1236,7 +1236,7 @@ class TestRNameFields(unittest.TestCase):
         drop(db.tt)
         db.define_table('tt', Field('aa', 'time', default='11:30', rname=rname))
         t0 = datetime.time(10, 30, 55)
-        self.assertEqual(db.tt.insert(aa=t0), 1)
+        self.assertEqual(isinstance(db.tt.insert(aa=t0), long), True)
         self.assertEqual(db().select(db.tt.aa)[0].aa, t0)
         drop(db.tt)
 
