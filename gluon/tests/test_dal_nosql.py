@@ -928,8 +928,6 @@ class TestRNameTable(unittest.TestCase):
         self.assertEqual(isinstance(rtn[0].id, long), True)
         self.assertEqual(rtn[0].a_field, 'a')
         db.easy_name.insert(a_field='b')
-        print "easy_name rows"
-        print [row for row in db(db.easy_name).select()]
         self.assertEqual(db(db.easy_name).count(), 2)
         rtn = db(db.easy_name.a_field == 'a').update(a_field='c')
         self.assertEqual(rtn, 1)

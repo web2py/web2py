@@ -7,9 +7,9 @@ python:
 install:
   - pip install -e .
 env:
-  # - DB=sqlite:memory
-  # - DB=mysql://root:@localhost/test_w2p
-  # - DB=postgres://postgres:@localhost/test_w2p
+  - DB=sqlite:memory
+  - DB=mysql://root:@localhost/test_w2p
+  - DB=postgres://postgres:@localhost/test_w2p
   - DB=google:datastore
 before_script:
   - if [[ $TRAVIS_PYTHON_VERSION != '2.7' ]]; then pip install unittest2; fi
