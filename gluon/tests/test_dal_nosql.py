@@ -919,60 +919,15 @@ class TestRNameTable(unittest.TestCase):
             rname=rname
             )
         rtn = db.easy_name.insert(a_field='a')
-        print "adding", rtn
         self.assertEqual(isinstance(rtn.id, long), True)
         rtn = db(db.easy_name.a_field == 'a').select()
-        print "TestRNameTable rtn"
-        print [row for row in rtn]
         self.assertEqual(len(rtn), 1)
-
         self.assertEqual(isinstance(rtn[0].id, long), True)
         self.assertEqual(rtn[0].a_field, 'a')
-        print "adding", db.easy_name.insert(a_field='b')
-        rtn = db(db.easy_name.id > 0).delete()
-        self.assertEqual(rtn, 2)
-        rtn = db(db.easy_name.id > 0).count()
-        self.assertEqual(rtn, 0)
-        print "adding", db.easy_name.insert(a_field='a')
-        print "adding", db.easy_name.insert(a_field='b')
-        rtn = db(db.easy_name.id > 0).count()
-        print [row for row in db(db.easy_name.id > 0).select()]
-        self.assertEqual(rtn, 2)
+        db.easy_name.insert(a_field='b')
+        self.assertEqual(db(db.easy_name).count(), 2)
         rtn = db(db.easy_name.a_field == 'a').update(a_field='c')
-        rtn = db(db.easy_name.a_field == 'c').count()
         self.assertEqual(rtn, 1)
-        rtn = db(db.easy_name.a_field != 'c').count()
-        self.assertEqual(rtn, 1)
-        avg = db.easy_name.id.avg()
-        rtn = db(db.easy_name.id > 0).select(avg)
-        self.assertEqual(rtn[0][avg], 3)
-        rname = db._adapter.QUOTE_TEMPLATE % 'this is the person table'
-        db.define_table(
-            'person',
-            Field('name', default="Michael"),
-            Field('uuid'),
-            rname=rname
-            )
-        rname = db._adapter.QUOTE_TEMPLATE % 'this is the pet table'
-        michael = db.person.insert() #default insert
-        john = db.person.insert(name='John')
-        luke = db.person.insert(name='Luke')
-
-        rtn = db(db.person).select()
-        self.assertEqual(len(rtn), 3)
-        self.assertEqual(rtn[0].id, michael)
-        self.assertEqual(rtn[0].name, 'Michael')
-        self.assertEqual(rtn[1].id, john)
-        self.assertEqual(rtn[1].name, 'John')
-        #as dict
-        rtn = db(db.person.id > 0).select().as_dict()
-        self.assertEqual(rtn[1]['name'], 'Michael')
-        #as list
-        rtn = db(db.person.id > 0).select().as_list()
-        self.assertEqual(rtn[0]['name'], 'Michael')
-        #isempty
-        rtn = db(db.person.id > 0).isempty()
-        self.assertEqual(rtn, False)
 
         #clean up
         drop(db.pet_farm)
