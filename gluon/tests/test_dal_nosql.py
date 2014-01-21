@@ -48,6 +48,12 @@ def fix_sys_path():
 
 fix_sys_path()
 
+from dal import DAL, Field, Table, SQLALL
+
+#for travis-ci
+DEFAULT_URI = os.environ.get('DB', 'sqlite:memory')
+print 'Testing against %s engine (%s)' % (DEFAULT_URI.partition(':')[0], DEFAULT_URI)
+
 IS_GAE = "datastore" in DEFAULT_URI
 
 def drop(table, cascade=None):
@@ -64,11 +70,6 @@ def drop(table, cascade=None):
         del db.tables[db.tables.index(table._tablename)]
         db._remove_references_to(table)
 
-from dal import DAL, Field, Table, SQLALL
-
-#for travis-ci
-DEFAULT_URI = os.environ.get('DB', 'sqlite:memory')
-print 'Testing against %s engine (%s)' % (DEFAULT_URI.partition(':')[0], DEFAULT_URI)
 
 # setup GAE dummy database
 if IS_GAE:
