@@ -54,6 +54,13 @@ def drop(table, cascade=None):
             table.drop(cascade)
         else:
             table.drop()
+    else:
+        # GAE drop/cleanup is not implemented
+        db = table._db
+        db(table).delete()
+        del db[table._tablename]
+        del db.tables[db.tables.index(table._tablename)]
+        db._remove_references_to(table)
 
 from dal import DAL, Field, Table, SQLALL
 
@@ -434,7 +441,7 @@ class TestDatetime(unittest.TestCase):
                          9, 30)), long), True)
         self.assertEqual(db(db.tt.aa == datetime.datetime(1971, 12,
                          21, 11, 30)).count(), 1)
-        self.assertEqual(db(db.tt.aa.year() >= datetime.datetime(1971, 1, 1)).count(), 2)
+        self.assertEqual(db(db.tt.aa >= datetime.datetime(1971, 1, 1)).count(), 2)
         drop(db.tt)
 
 @unittest.skipIf("datastore" in DEFAULT_URI, "Expressions not supported in GAE Datastore")
@@ -875,7 +882,7 @@ class TestValidateAndInsert(unittest.TestCase):
                               requires=IS_INT_IN_RANGE(1,5))
                        )
         rtn = db.val_and_insert.validate_and_insert(aa='test1', bb=2)
-        self.assertEqual(rtn.id, 1)
+        self.assertEqual(isinstance(rtn.id, long), True)
         #errors should be empty
         self.assertEqual(len(rtn.errors.keys()), 0)
         #this insert won't pass
@@ -899,7 +906,9 @@ class TestSelectAsDict(unittest.TestCase):
         db.a_table.insert(a_field="aa1", b_field="bb1")
         rtn = db(db.a_table).select(db.a_table.id, db.a_table.b_field, db.a_table.a_field).as_list()
         self.assertEqual(rtn[0]['b_field'], 'bb1')
-        self.assertEqual(rtn[0].keys(), ['id', 'b_field', 'a_field'])
+        keys = rtn[0].keys()
+        self.assertEqual(len(keys), 3)
+        self.assertEqual(("id" in keys, "b_field" in keys, "a_field" in keys), (True, True, True))
         drop(db.a_table)
 
 
