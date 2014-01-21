@@ -372,14 +372,17 @@ class TestBelongs(unittest.TestCase):
         self.assertEqual(isinstance(db.tt.insert(aa='3'), long), True)
         self.assertEqual(db(db.tt.aa.belongs(('1', '3'))).count(),
                          2)
-        self.assertEqual(db(db.tt.aa.belongs(db(db.tt.id
-                          > 2)._select(db.tt.aa))).count(), 1)
-        self.assertEqual(db(db.tt.aa.belongs(db(db.tt.aa.belongs(('1',
+        if not ("datastore" in DEFAULT_URI):
+            self.assertEqual(db(db.tt.aa.belongs(db(db.tt.id > 2)._select(db.tt.aa))).count(), 1)
+
+            self.assertEqual(db(db.tt.aa.belongs(db(db.tt.aa.belongs(('1',
                          '3')))._select(db.tt.aa))).count(), 2)
-        self.assertEqual(db(db.tt.aa.belongs(db(db.tt.aa.belongs(db
+            self.assertEqual(db(db.tt.aa.belongs(db(db.tt.aa.belongs(db
                          (db.tt.aa.belongs(('1', '3')))._select(db.tt.aa)))._select(
                          db.tt.aa))).count(),
                          2)
+        else:
+            print "Datastore belongs does not accept queries (skipping)"
         drop(db.tt)
 
 
@@ -925,6 +928,8 @@ class TestRNameTable(unittest.TestCase):
         self.assertEqual(isinstance(rtn[0].id, long), True)
         self.assertEqual(rtn[0].a_field, 'a')
         db.easy_name.insert(a_field='b')
+        print "easy_name rows"
+        print [row for row in db(db.easy_name).select()]
         self.assertEqual(db(db.easy_name).count(), 2)
         rtn = db(db.easy_name.a_field == 'a').update(a_field='c')
         self.assertEqual(rtn, 1)
