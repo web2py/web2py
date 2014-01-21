@@ -939,9 +939,6 @@ class TestRNameTable(unittest.TestCase):
         self.assertEqual(rtn, 1)
 
         #clean up
-        drop(db.pet_farm)
-        drop(db.pet)
-        drop(db.person)
         drop(db.easy_name)
 
     @unittest.skip("JOIN queries are not supported")
