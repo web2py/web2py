@@ -5,7 +5,10 @@
 """
 import sys
 import os
-import unittest
+if sys.version_info < (2, 7):
+    import unittest2 as unittest
+else:
+    import unittest
 import subprocess
 import time
 import signal
@@ -94,6 +97,8 @@ class LiveTest(unittest.TestCase):
     def tearDownClass(cls):
         stopwebserver()
 
+
+@unittest.skipIf("datastore" in os.getenv("DB", ""), "TODO: setup web test for app engine")
 class TestWeb(LiveTest):
     def testRegisterAndLogin(self):
         client = WebClient('http://127.0.0.1:8000/welcome/default/')
