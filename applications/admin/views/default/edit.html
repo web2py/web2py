@@ -1,3 +1,4 @@
+{{main_id='editor_main'}}
 {{extend 'layout.html'}}
 {{
 dirs=[{'name':'models', 'reg':'.*\.py$'},
@@ -30,7 +31,7 @@ def file_create_form(location, anchor=None, helptext=""):
 <!-- begin "edit" block -->
 {{
   def shortcut(combo, description):
-    return XML('<li><span class="teletype-text">%s</span><span>%s</span></li>' % (combo, description))
+    return XML('<li class="span5"><span class="teletype-text">%s</span><span>%s</span></li>' % (combo, description))
   def listfiles(app, dir, regexp='.*\.py$'):
       files = sorted(
          listdir(apath('%(app)s/%(dir)s/' % {'app':app, 'dir':dir}, r=request), regexp))
@@ -264,15 +265,17 @@ $(document).on('click', 'a.font_button', function (e) {
     <div id="window_todo" class="tab-pane container-fluid">
         {{=LOAD('default', 'todolist.load', vars={'app':app}, ajax=True, timeout=60000, times="infinity")}}
     </div>
+    <div id="window_shortcuts" class="tab-pane container-fluid">
+        {{include 'default/editor_shortcuts.html'}}
+    </div>
     </section>
 </div>
 {{block footer}}
 <div id="" class="navbar navbar-inverse navbar-fixed-bottom">
 <div class="navbar-inner">
 <ul id="windows_hooks" class="nav">
-  <li class="">
-    <a href="#window_todo">TODO</a>
-  </li>
+    <li class=""><a href="#window_todo">TODO</a></li>
+    <li class=""><a href="#window_shortcuts">Shortcuts</a></li>
 </ul>
 </div>
 </div>
