@@ -3,7 +3,7 @@ import os, sys
 from test_http import *
 from test_cache import *
 
-if "google" in os.getenv("DB"):
+if "google" in (os.getenv("DB") or []):
     from test_dal_nosql import *
 else:
     from test_dal import *
