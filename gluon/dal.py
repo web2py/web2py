@@ -10709,7 +10709,8 @@ class Rows(object):
         if self.colnames!=other.colnames:
             raise Exception('Cannot & incompatible Rows objects')
         records = self.records+other.records
-        return Rows(self.db,records,self.colnames)
+        return Rows(self.db,records,self.colnames,
+                    compact=self.compact or other.compact)
 
     def __or__(self,other):
         if self.colnames!=other.colnames:
@@ -10717,7 +10718,8 @@ class Rows(object):
         records = [record for record in other.records
                    if not record in self.records]
         records = self.records + records
-        return Rows(self.db,records,self.colnames)
+        return Rows(self.db,records,self.colnames,
+                    compact=self.compact or other.compact)
 
     def __nonzero__(self):
         if len(self.records):
@@ -10770,19 +10772,19 @@ class Rows(object):
         filtered by the function f
         """
         if not self:
-            return Rows(self.db, [], self.colnames)
+            return Rows(self.db, [], self.colnames, compact=self.compact)
         records = []
         if limitby:
             a,b = limitby
         else:
             a,b = 0,len(self)
         k = 0
-        for row in self:
+        for i, row in enumerate(self):
             if f(row):
-                if a<=k: records.append(row)
+                if a<=k: records.append(self.records[i])
                 k += 1
                 if k==b: break
-        return Rows(self.db, records, self.colnames)
+        return Rows(self.db, records, self.colnames, compact=self.compact)
 
     def exclude(self, f):
         """
@@ -10790,7 +10792,7 @@ class Rows(object):
         and returns a new Rows object containing the removed elements
         """
         if not self.records:
-            return Rows(self.db, [], self.colnames)
+            return Rows(self.db, [], self.colnames, compact=self.compact)
         removed = []
         i=0
         while i<len(self):
@@ -10800,14 +10802,19 @@ class Rows(object):
                 del self.records[i]
             else:
                 i += 1
-        return Rows(self.db, removed, self.colnames)
+        return Rows(self.db, removed, self.colnames, compact=self.compact)
 
     def sort(self, f, reverse=False):
         """
         returns a list of sorted elements (not sorted in place)
         """
-        rows = Rows(self.db,[],self.colnames,compact=False)
-        rows.records = sorted(self,key=f,reverse=reverse)
+        rows = Rows(self.db, [], self.colnames, compact=self.compact)
+        # When compact=True, iterating over self modifies each record,
+        # so when sorting self, it is necessary to return a sorted
+        # version of self.records rather than the sorted self directly.
+        rows.records = [r for (r, s) in sorted(zip(self.records, self),
+                                               key=lambda r: f(r[1]),
+                                               reverse=reverse)]
         return rows
 
     def group_by_value(self, *fields, **args):
