@@ -1687,7 +1687,7 @@ class TFOOT(DIV):
 
 class COL(DIV):
 
-    tag = 'col'
+    tag = 'col/'
 
 
 class COLGROUP(DIV):
