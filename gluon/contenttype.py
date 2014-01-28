@@ -2,22 +2,22 @@
 # -*- coding: utf-8 -*-
 
 """
-This file is part of the web2py Web Framework
-Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
-License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
+| This file is part of the web2py Web Framework
+| Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
+| License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 
-CONTENT_TYPE dictionary created against freedesktop.org' shared mime info
+CONTENT_TYPE dictionary created against freedesktop.org's shared mime info
 database version 1.1.
 
 Deviations from official standards:
-- '.md': 'application/x-genesis-rom' --> 'text/x-markdown'
-- '.png': 'image/x-apple-ios-png' --> 'image/png'
+ - .md: application/x-genesis-rom --> text/x-markdown
+ - .png: image/x-apple-ios-png --> image/png
 Additions:
-- '.load': 'text/html'
-- '.json': 'application/json'
-- '.jsonp': 'application/jsonp'
-- '.pickle': 'application/python-pickle'
-- '.w2p': 'application/w2p'
+ - .load: text/html
+ - .json: application/json
+ - .jsonp: application/jsonp
+ - .pickle: application/python-pickle
+ - .w2p': application/w2p
 """
 
 __all__ = ['contenttype']
