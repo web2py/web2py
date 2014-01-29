@@ -191,7 +191,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 <div id="views_inner" class="component_contents">
   {{if not views:}}<p><strong>{{=T("There are no views")}}</strong></p>{{else:}}
     <div class="controls comptools">
-        {{=button(LAYOUTS_APP, T("download layouts"))}}
+        {{=button(LAYOUTS_APP, T("Download layouts from repository"))}}
     </div>
     <ul class="unstyled act_edit">
         {{for c in views:}}
@@ -442,9 +442,6 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     </a><span id="plugins" class="hashstick">&nbsp;</span><a href="#" class="tophashlink btn btn-mini btn-warning"><span>top</span></a>
 </h3>
 <div id="plugins_inner" class="component_contents">
-    <div class="controls comptools">
-        {{=button(URL(c="default", f="plugins", args=[app,]), T('download plugins'))}}
-    </div>
     {{if plugins:}}
     <ul class="unstyled act_edit">
         {{for plugin in plugins:}}
@@ -457,6 +454,9 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
     {{else:}}
     <p><strong>{{=T('There are no plugins')}}</strong></p>
     {{pass}}
+    <div class="controls comptools">
+        {{=button(URL(c="default", f="plugins", args=[app,]), T('Download plugins from repository'))}}
+    </div>
     <div class="controls formfield">
       <button onclick="jQuery('#form8').slideToggle()" class="btn btn-mini">{{=T('Upload')}}</button>
       <div id="form8" class="row-fluid" style="display:none">
