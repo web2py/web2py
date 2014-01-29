@@ -7,7 +7,7 @@
 | License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 
 Functions required to execute app components
---------------------------------------------
+---------------------------------------------
 
 Note:
     FOR INTERNAL USE ONLY
