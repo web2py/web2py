@@ -2191,8 +2191,11 @@ class SQLFORM(FORM):
             if export_type in exportManager and exportManager[export_type]:
                 if request.vars.keywords:
                     try:
+                        #the query should be constructed using searchable fields
+                        sfields = reduce(lambda a, b: a + b,
+                            [[f for f in t if f.readable] for t in tables])
                         dbset = dbset(SQLFORM.build_query(
-                            fields, request.vars.get('keywords', '')))
+                            sfields, request.vars.get('keywords', '')))
                         rows = dbset.select(left=left, orderby=orderby,
                                             cacheable=True, *expcolumns)
                     except Exception, e:
