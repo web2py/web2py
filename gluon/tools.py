@@ -3659,9 +3659,8 @@ class Auth(object):
         # resolve=False allows initial setup without wiki redirection
         wiki = None
         if resolve:
-            action = str(current.request.args(0)).startswith("_")
-            if slug and not action:
-                wiki = self._wiki.read(slug,force_render)
+            if slug:
+                wiki = self._wiki.read(slug, force_render)
                 if isinstance(wiki, dict) and wiki.has_key('content'):
                     # We don't want to return a dict object, just the wiki
                     wiki = wiki['content']
@@ -5520,13 +5519,11 @@ class Wiki(object):
         elif slug in '_search':
             return self.search()
         page = self.auth.db.wiki_page(slug=slug)
-        if not page:
-            redirect(URL(args=('_create', slug)))
-        if not self.can_read(page):
+        if page and (not self.can_read(page)):
             return self.not_authorized(page)
         if current.request.extension == 'html':
             if not page:
-                url = URL(args=('_edit', slug))
+                url = URL(args=('_create', slug))
                 return dict(content=A('Create page "%s"' % slug, _href=url, _class="btn"))
             else:
                 html = page.html if not force_render else self.get_renderer()(page)
