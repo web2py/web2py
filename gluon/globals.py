@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-This file is part of the web2py Web Framework
-Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
-License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
+| This file is part of the web2py Web Framework
+| Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
+| License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 
 Contains the classes for the global used variables:
 
@@ -96,7 +96,7 @@ def sorting_dumps(obj, protocol=None):
 
 def copystream_progress(request, chunk_size=10 ** 5):
     """
-    copies request.env.wsgi_input into request.body
+    Copies request.env.wsgi_input into request.body
     and stores progress upload status in cache_ram
     X-Progress-ID:length and X-Progress-ID:uploaded
     """
@@ -143,7 +143,7 @@ def copystream_progress(request, chunk_size=10 ** 5):
 class Request(Storage):
 
     """
-    defines the request object and the default values of its members
+    Defines the request object and the default values of its members
 
     - env: environment variables, by gluon.main.wsgibase()
     - cookies
@@ -155,7 +155,10 @@ class Request(Storage):
     - function
     - args
     - extension
-    - now: datetime.datetime.today()
+    - now: datetime.datetime.now()
+    - utcnow : datetime.datetime.utcnow()
+    - is_local
+    - is_https
     - restful()
     """
 
@@ -183,6 +186,8 @@ class Request(Storage):
 
 
     def parse_get_vars(self):
+        """Takes the QUERY_STRING and unpacks it to get_vars
+        """
         query_string = self.env.get('QUERY_STRING','')
         dget = cgi.parse_qs(query_string, keep_blank_values=1)
         get_vars = self._get_vars = Storage(dget)
@@ -191,6 +196,9 @@ class Request(Storage):
                 get_vars[key] = value[0]
 
     def parse_post_vars(self):
+        """Takes the body of the request and unpacks it into
+        post_vars. application/json is also automatically parsed
+        """
         env = self.env
         post_vars = self._post_vars = Storage()
         body = self.body
@@ -233,10 +241,10 @@ class Request(Storage):
                 if key is None:
                     continue  # not sure why cgi.FieldStorage returns None key
                 dpk = dpost[key]
-                # if an element is not a file replace it with 
+                # if an element is not a file replace it with
                 # its value else leave it alone
-                
-                pvalue = listify([(_dpk if _dpk.filename else _dpk.value) 
+
+                pvalue = listify([(_dpk if _dpk.filename else _dpk.value)
                                   for _dpk in dpk] 
                                  if isinstance(dpk, list) else
                                  (dpk if dpk.filename else dpk.value))
@@ -253,6 +261,8 @@ class Request(Storage):
         return self._body
 
     def parse_all_vars(self):
+        """Merges get_vars and post_vars to vars
+        """
         self._vars = copy.copy(self.get_vars)
         for key,value in self.post_vars.iteritems():
             if not key in self._vars:
@@ -264,21 +274,24 @@ class Request(Storage):
 
     @property
     def get_vars(self):
-        "lazily parse the query string into get_vars"
+        """Lazily parses the query string into get_vars
+        """
         if self._get_vars is None:
             self.parse_get_vars()
         return self._get_vars
 
     @property
     def post_vars(self):
-        "lazily parse the body into post_vars"
+        """Lazily parse the body into post_vars
+        """
         if self._post_vars is None:
             self.parse_post_vars()
         return self._post_vars
 
     @property
     def vars(self):
-        "lazily parse all get_vars and post_vars to fill vars"
+        """Lazily parses all get_vars and post_vars to fill vars
+        """
         if self._vars is None:
             self.parse_all_vars()
         return self._vars
@@ -306,8 +319,8 @@ class Request(Storage):
 
     def requires_https(self):
         """
-        If request comes in over HTTP, redirect it to HTTPS
-        and secure the session.
+        If request comes in over HTTP, redirects it to HTTPS
+        and secures the session.
         """
         cmd_opts = global_settings.cmd_options
         #checking if this is called within the scheduler or within the shell
@@ -349,7 +362,7 @@ class Request(Storage):
 class Response(Storage):
 
     """
-    defines the response object and the default values of its members
+    Defines the response object and the default values of its members
     response.write(   ) can be used to write in the output html
     """
 
@@ -493,21 +506,25 @@ class Response(Storage):
         filename=None
         ):
         """
-        if a controller function::
+        If in a controller function::
 
             return response.stream(file, 100)
 
         the file content will be streamed at 100 bytes at the time
 
-        Optional kwargs:
-            (for custom stream calls)
-            attachment=True # Send as attachment. Usually creates a
-                            # pop-up download window on browsers
-            filename=None # The name for the attachment
+        Args:
+            stream: filename or read()able content
+            chunk_size(int): Buffer size
+            request: the request object
+            attachment(bool): prepares the correct headers to download the file
+                as an attachment. Usually creates a pop-up download window
+                on browsers
+            filename(str): the name for the attachment
 
-        Note: for using the stream name (filename) with attachments
-        the option must be explicitly set as function parameter(will
-        default to the last request argument otherwise)
+        Note:
+            for using the stream name (filename) with attachments
+            the option must be explicitly set as function parameter (will
+            default to the last request argument otherwise)
         """
 
         headers = self.headers
@@ -559,12 +576,12 @@ class Response(Storage):
 
     def download(self, request, db, chunk_size=DEFAULT_CHUNK_SIZE, attachment=True, download_filename=None):
         """
-        example of usage in controller::
+        Example of usage in controller::
 
             def download():
                 return response.download(request, db)
 
-        downloads from http://..../download/filename
+        Downloads from http://..../download/filename
         """
 
         current.session.forget(current.response)
@@ -572,8 +589,7 @@ class Response(Storage):
         if not request.args:
             raise HTTP(404)
         name = request.args[-1]
-        items = re.compile('(?P<table>.*?)\.(?P<field>.*?)\..*')\
-            .match(name)
+        items = re.compile('(?P<table>.*?)\.(?P<field>.*?)\..*').match(name)
         if not items:
             raise HTTP(404)
         (t, f) = (items.group('table'), items.group('field'))
@@ -671,34 +687,34 @@ class Response(Storage):
 
 class Session(Storage):
     """
-    defines the session object and the default values of its members (None)
+    Defines the session object and the default values of its members (None)
 
-        response.session_storage_type   : 'file', 'db', or 'cookie'
-        response.session_cookie_compression_level :
-        response.session_cookie_expires : cookie expiration
-        response.session_cookie_key     : for encrypted sessions in cookies
-        response.session_id             : a number or None if no session
-        response.session_id_name        :
-        response.session_locked         :
-        response.session_masterapp      :
-        response.session_new            : a new session obj is being created
-        response.session_hash           : hash of the pickled loaded session
-        response.session_pickled        : picked session
+    - session_storage_type   : 'file', 'db', or 'cookie'
+    - session_cookie_compression_level :
+    - session_cookie_expires : cookie expiration
+    - session_cookie_key     : for encrypted sessions in cookies
+    - session_id             : a number or None if no session
+    - session_id_name        :
+    - session_locked         :
+    - session_masterapp      :
+    - session_new            : a new session obj is being created
+    - session_hash           : hash of the pickled loaded session
+    - session_pickled        : picked session
 
     if session in cookie:
 
-        response.session_data_name      : name of the cookie for session data
+    - session_data_name      : name of the cookie for session data
 
     if session in db:
 
-        response.session_db_record_id   :
-        response.session_db_table       :
-        response.session_db_unique_key  :
+    - session_db_record_id
+    - session_db_table
+    - session_db_unique_key
 
     if session in file:
 
-        response.session_file           :
-        response.session_filename       :
+    - session_file
+    - session_filename
     """
 
     def connect(
@@ -716,9 +732,26 @@ class Session(Storage):
         compression_level=None
     ):
         """
-        separate can be separate=lambda(session_name): session_name[-2:]
-        and it is used to determine a session prefix.
-        separate can be True and it is set to session_name[-2:]
+        Used in models, allows to customize Session handling
+
+        Args:
+            request: the request object
+            response: the response object
+            db: to store/retrieve sessions in db (a table is created)
+            tablename(str): table name
+            masterapp(str): points to another's app sessions. This enables a
+                "SSO" environment among apps
+            migrate: passed to the underlying db
+            separate: with True, creates a folder with the 2 initials of the
+                session id. Can also be a function, e.g. ::
+
+                    separate=lambda(session_name): session_name[-2:]
+
+            check_client: if True, sessions can only come from the same ip
+            cookie_key(str): secret for cookie encryption
+            cookie_expires: sets the expiration of the cookie
+            compression_level(int): 0-9, sets zlib compression on the data
+                before the encryption
         """
         request = request or current.request
         response = response or current.response
@@ -736,7 +769,7 @@ class Session(Storage):
         response.session_cookie_compression_level = compression_level
 
         # check if there is a session_id in cookies
-        try:            
+        try:
             old_session_id = cookies[response.session_id_name].value
         except KeyError:
             old_session_id = None
