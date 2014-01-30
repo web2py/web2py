@@ -268,7 +268,7 @@ def plugin_pack(app, plugin_name, request):
 
     Args:
         app(str): application name
-        plugin_name(str): the name of the plugin without plugin_ prefix
+        plugin_name(str): the name of the plugin without `plugin_` prefix
         request: the current request app
 
     Returns:
