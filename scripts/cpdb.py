@@ -10,7 +10,10 @@ from collections import deque
 import math
 import re
 import cmd
-import readline
+try:
+  import pyreadline as readline
+except ImportError:
+  import readline
 try:
     from gluon import DAL
 except ImportError as err:
