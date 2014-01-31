@@ -2192,7 +2192,7 @@ class SQLFORM(FORM):
                                 expcolumns.append(str(field))
                             if not(isinstance(field,Field.Virtual)):
                                 selectable_columns.append(str(field))
-                    #look for virtual fields not displayed (and computed fields to be added here)
+                    #look for virtual fields not displayed (and virtual method fields to be added here?)
                     for (field_name,field) in table.iteritems():
                         if isinstance(field,Field.Virtual) and not str(field) in expcolumns:
                              expcolumns.append(str(field))
