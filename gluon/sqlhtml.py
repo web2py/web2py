@@ -2181,32 +2181,43 @@ class SQLFORM(FORM):
                         orderby = (order[:1] == '~' and ~sort_field) or sort_field
 
             expcolumns = [str(f) for f in columns]
+            selectable_columns = [str(f) for f in columns if not isinstance(f,Field.Virtual)]
             if export_type.endswith('with_hidden_cols'):
-                expcolumns = []
+                #expcolumns = [] start with the visible columns, which includes visible virtual fields
+                selectable_columns=[]  #like expcolumns but excluding virtual
                 for table in tables:
                     for field in table:
                         if field.readable and field.tablename in tablenames:
-                            expcolumns.append(field)
+                            if not str(field) in expcolumns:
+                                expcolumns.append(str(field))
+                            if not(isinstance(field,Field.Virtual)):
+                                selectable_columns.append(str(field))
+                    #look for virtual fields not displayed (and virtual method fields to be added here?)
+                    for (field_name,field) in table.iteritems():
+                        if isinstance(field,Field.Virtual) and not str(field) in expcolumns:
+                             expcolumns.append(str(field))
 
             if export_type in exportManager and exportManager[export_type]:
                 if request.vars.keywords:
                     try:
-                        #the query should be constructed using searchable fields
+                        #the query should be constructed using searchable fields but not virtual fields
                         sfields = reduce(lambda a, b: a + b,
-                            [[f for f in t if f.readable] for t in tables])
+                            [[f for f in t if f.readable and not isinstance(f,Field.Virtual)] for t in tables])
+                        #how to put virtual fields back?
                         dbset = dbset(SQLFORM.build_query(
                             sfields, request.vars.get('keywords', '')))
                         rows = dbset.select(left=left, orderby=orderby,
-                                            cacheable=True, *expcolumns)
+                                            cacheable=True, *selectable_columns)
                     except Exception, e:
                         response.flash = T('Internal Error')
                         rows = []
                 else:
                     rows = dbset.select(left=left, orderby=orderby,
-                                    cacheable=True, *expcolumns)
+                                    cacheable=True, *selectable_columns)
 
                 value = exportManager[export_type]
                 clazz = value[0] if hasattr(value, '__getitem__') else value
+                rows.colnames = expcolumns # rows.colnames is selectable fields, it misses virtual fields
                 oExp = clazz(rows)
                 filename = '.'.join(('rows', oExp.file_ext))
                 response.headers['Content-Type'] = oExp.content_type
