@@ -2187,11 +2187,15 @@ class SQLFORM(FORM):
                 selectable_columns=[]  #like expcolumns but excluding virtual
                 for table in tables:
                     for field in table:
-                        if field.readable and field.tablename in tablenames:  #this does not find virtual fields
+                        if field.readable and field.tablename in tablenames:
                             if not str(field) in expcolumns:
                                 expcolumns.append(str(field))
                             if not(isinstance(field,Field.Virtual)):
                                 selectable_columns.append(str(field))
+                    #look for virtual fields not displayed (and computed fields to be added here)
+                    for (field_name,field) in table.iteritems():
+                        if isinstance(field,Field.Virtual) and not str(field) in expcolumns:
+                             expcolumns.append(str(field))
 
             if export_type in exportManager and exportManager[export_type]:
                 if request.vars.keywords:
