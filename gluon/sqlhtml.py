@@ -1747,7 +1747,7 @@ class SQLFORM(FORM):
                         _type='text', _id=_id, _class=field.type)
 
                 new_button = INPUT(
-                    _type="button", _value=T('New'), _class="btn",
+                    _type="button", _value=T('Add'), _class="btn", _title = T('Add clause to search terms'),
                     _onclick="%s_build_query('new','%s')" % (prefix,field))
                 and_button = INPUT(
                     _type="button", _value=T('And'), _class="btn",
