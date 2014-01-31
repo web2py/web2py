@@ -2183,14 +2183,15 @@ class SQLFORM(FORM):
             expcolumns = [str(f) for f in columns]
             selectable_columns = [str(f) for f in columns if not isinstance(f,Field.Virtual)]
             if export_type.endswith('with_hidden_cols'):
-                expcolumns = []
+                #expcolumns = [] start with the visible columns, which includes visible virtual fields
                 selectable_columns=[]  #like expcolumns but excluding virtual
                 for table in tables:
                     for field in table:
-                        if field.readable and field.tablename in tablenames:
-                            expcolumns.append(field)
+                        if field.readable and field.tablename in tablenames:  #this does not find virtual fields
+                            if not str(field) in expcolumns:
+                                expcolumns.append(str(field))
                             if not(isinstance(field,Field.Virtual)):
-                                selectable_columns.append(field)
+                                selectable_columns.append(str(field))
 
             if export_type in exportManager and exportManager[export_type]:
                 if request.vars.keywords:
@@ -2212,6 +2213,7 @@ class SQLFORM(FORM):
 
                 value = exportManager[export_type]
                 clazz = value[0] if hasattr(value, '__getitem__') else value
+                rows.colnames = expcolumns # rows.colnames is selectable fields, it misses virtual fields
                 oExp = clazz(rows)
                 filename = '.'.join(('rows', oExp.file_ext))
                 response.headers['Content-Type'] = oExp.content_type
