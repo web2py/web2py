@@ -1747,13 +1747,13 @@ class SQLFORM(FORM):
                         _type='text', _id=_id, _class=field.type)
 
                 new_button = INPUT(
-                    _type="button", _value=T('Add'), _class="btn", _title = T('Add clause to search terms'),
+                    _type="button", _value=T('New Search'), _class="btn", _title = T('Start building a new search'),
                     _onclick="%s_build_query('new','%s')" % (prefix,field))
                 and_button = INPUT(
-                    _type="button", _value=T('And'), _class="btn",
+                    _type="button", _value=T('+ And'), _class="btn", _title = T('Add this to the search as an AND term'),
                     _onclick="%s_build_query('and','%s')" % (prefix, field))
                 or_button = INPUT(
-                    _type="button", _value=T('Or'), _class="btn",
+                    _type="button", _value=T('+ Or'), _class="btn",_title = T('Add this to the search as an OR term'),
                     _onclick="%s_build_query('or','%s')" % (prefix, field))
                 close_button = INPUT(
                     _type="button", _value=T('Close'), _class="btn",
@@ -1960,10 +1960,10 @@ class SQLFORM(FORM):
 
         def gridbutton(buttonclass='buttonadd', buttontext=T('Add'),
                        buttonurl=url(args=[]), callback=None,
-                       delete=None, trap=True, noconfirm=None):
+                       delete=None, trap=True, noconfirm=None, title=None):
             if showbuttontext:
                 return A(SPAN(_class=ui.get(buttonclass)),
-                         SPAN(T(buttontext), _title=T(buttontext),
+                         SPAN(T(buttontext), _title=title or T(buttontext),
                               _class=ui.get('buttontext')),
                          _href=buttonurl,
                          callback=callback,
@@ -1977,7 +1977,7 @@ class SQLFORM(FORM):
                          callback=callback,
                          delete=delete,
                          noconfirm=noconfirm,
-                         _title=T(buttontext),
+                         _title=title or T(buttontext),
                          _class=ui.get('buttontext'),
                          cid=request.cid)
 
@@ -2238,7 +2238,8 @@ class SQLFORM(FORM):
         if create:
             add = gridbutton(
                 buttonclass='buttonadd',
-                buttontext=T('Add'),
+                buttontext=T('Add Record'),
+                title=T("Add record to database"),
                 buttonurl=url(args=['new', tablename]))
             if not searchable:
                 console.append(add)
