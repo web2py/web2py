@@ -2914,6 +2914,8 @@ class SQLTABLE(TABLE):
         renderstyle=False,
         cid=None,
         colgroup=False,
+        even_row_cls='even',
+        odd_row_cls='odd',
         **attributes
         ):
 
@@ -2978,9 +2980,9 @@ class SQLTABLE(TABLE):
         for (rc, record) in enumerate(sqlrows):
             row = []
             if rc % 2 == 0:
-                _class = 'even'
+                _class = even_row_cls
             else:
-                _class = 'odd'
+                _class = odd_row_cls
 
             if not selectid is None:  # new implement
                 if record.get('id') == selectid:
