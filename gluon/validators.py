@@ -2188,6 +2188,8 @@ class IS_TIME(Validator):
                 s = int(value.group('s'))
             if value.group('d') == 'pm' and 0 < h < 12:
                 h = h + 12
+            if value.group('d') == 'am' and h == 12:
+                h = 0                
             if not (h in range(24) and m in range(60) and s
                     in range(60)):
                 raise ValueError('Hours or minutes or seconds are outside of allowed range')
