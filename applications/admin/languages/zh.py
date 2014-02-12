@@ -244,7 +244,7 @@
 'new plugin installed': 'new plugin installed',
 'new record inserted': '新记录被插入',
 'next 100 rows': '后100行',
-'no match': 'no match',
+'No match': 'No match',
 'or import from csv file': '或者，从csv文件导入',
 'or provide app url:': 'or provide app url:',
 'or provide application url:': '或者，提供应用所在地址链接:',

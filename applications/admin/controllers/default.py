@@ -189,7 +189,7 @@ def change_password():
         if not verify_password(request.vars.current_admin_password):
             form.errors.current_admin_password = T('invalid password')
         elif form.vars.new_admin_password != form.vars.new_admin_password_again:
-            form.errors.new_admin_password_again = T('no match')
+            form.errors.new_admin_password_again = T('No match')
         else:
             path = abspath('parameters_%s.py' % request.env.server_port)
             safe_write(path, 'password="%s"' % CRYPT()(

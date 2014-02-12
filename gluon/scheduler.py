@@ -418,7 +418,7 @@ class TYPE(object):
         try:
             obj = loads(value)
         except:
-            return (value, current.T('invalid json'))
+            return (value, current.T('Invalid json'))
         else:
             if isinstance(obj, self.myclass):
                 if self.parse:

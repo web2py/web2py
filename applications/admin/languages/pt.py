@@ -260,7 +260,7 @@
 'new plugin installed': 'novo plugin instalado',
 'new record inserted': 'novo registro inserido',
 'next 100 rows': 'próximos 100 registros',
-'no match': 'não encontrado',
+'No match': 'não encontrado',
 'or import from csv file': 'ou importar de um arquivo CSV',
 'or provide app url:': 'ou forneça a url de uma aplicação:',
 'or provide application url:': 'ou forneça a url de uma aplicação:',

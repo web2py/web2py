@@ -221,7 +221,7 @@
 'new plugin installed': 'nouveau plugin installé',
 'new record inserted': 'nouvelle entrée insérée',
 'next 100 rows': '100 lignes suivantes',
-'no match': 'aucune correspondance',
+'No match': 'aucune correspondance',
 'or import from csv file': 'ou importer depuis un fichier CSV ',
 'or provide app url:': "ou fournir l'URL de l'app:",
 'or provide application url:': "ou fournir l'URL de l'application:",

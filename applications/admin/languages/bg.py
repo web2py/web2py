@@ -230,7 +230,7 @@
 'new plugin installed': 'new plugin installed',
 'new record inserted': 'новият запис беше добавен',
 'next 100 rows': 'next 100 rows',
-'no match': 'no match',
+'No match': 'No match',
 'or import from csv file': 'or import from csv file',
 'or provide app url:': 'or provide app url:',
 'or provide application url:': 'or provide application url:',
