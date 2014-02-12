@@ -2153,14 +2153,14 @@ class SQLFORM(FORM):
                 redirect(referrer, client_side=client_side_delete)
 
         exportManager = dict(
-            csv_with_hidden_cols=(ExporterCSV, 'CSV (hidden cols)'),
-            csv=(ExporterCSV, 'CSV'),
-            xml=(ExporterXML, 'XML'),
-            html=(ExporterHTML, 'HTML'),
-            json=(ExporterJSON, 'JSON'),
+            csv_with_hidden_cols=(ExporterCSV_hidden, 'CSV (hidden cols)',T('Export all fields as comma-separated values; fields from other tables are exported as raw values for faster export')),
+            csv=(ExporterCSV, 'CSV','Export CSV as shown in the grid',T('comma-separated export as shown in the grid, may be slow if there are many rows')),
+            xml=(ExporterXML, 'XML','XML'),
+            html=(ExporterHTML, 'HTML','HTML'),
+            json=(ExporterJSON, 'JSON','JSON'),
             tsv_with_hidden_cols=
-                (ExporterTSV, 'TSV (Excel compatible, hidden cols)'),
-            tsv=(ExporterTSV, 'TSV (Excel compatible)'))
+                (ExporterTSV_hidden, 'TSV (Spreadsheets, hidden cols)',T('Export all fields as tab-separated content; fields from other tables are exported as raw values for faster export')),
+            tsv=(ExporterTSV, 'TSV (Spreadsheets)',T('Tab separated content as shown in the grid, recommended for spreadsheets. May be slow if there are many rows')))
         if not exportclasses is None:
             """
             remember: allow to set exportclasses=dict(csv=False) to disable the csv format
@@ -2203,7 +2203,7 @@ class SQLFORM(FORM):
                         #the query should be constructed using searchable fields but not virtual fields
                         sfields = reduce(lambda a, b: a + b,
                             [[f for f in t if f.readable and not isinstance(f,Field.Virtual)] for t in tables])
-                        #how to put virtual fields back?
+
                         dbset = dbset(SQLFORM.build_query(
                             sfields, request.vars.get('keywords', '')))
                         rows = dbset.select(left=left, orderby=orderby,
@@ -2217,7 +2217,7 @@ class SQLFORM(FORM):
 
                 value = exportManager[export_type]
                 clazz = value[0] if hasattr(value, '__getitem__') else value
-                rows.colnames = expcolumns # rows.colnames is selectable fields, it misses virtual fields
+                rows.colnames = expcolumns # expcolumns is all cols to be exported including virtual fields
                 oExp = clazz(rows)
                 filename = '.'.join(('rows', oExp.file_ext))
                 response.headers['Content-Type'] = oExp.content_type
@@ -2601,11 +2601,12 @@ class SQLFORM(FORM):
                 if not v:
                     continue
                 label = v[1] if hasattr(v, "__getitem__") else k
+                title = v[2] if hasattr(v, "__getitem__") else label
                 link = url2(vars=dict(
                     order=request.vars.order or '',
                     _export_type=k,
                     keywords=request.vars.keywords or ''))
-                export_links.append(A(T(label), _href=link))
+                export_links.append(A(T(label), _href=link,_title=title))
             export_menu = \
                 DIV(T('Export:'), _class="w2p_export_menu", *export_links)
         else:
@@ -3126,52 +3127,29 @@ class ExportClass(object):
     def __init__(self, rows):
         self.rows = rows
 
-    def represented(self):
-        def none_exception(value):
-            """
-            returns a cleaned up value that can be used for csv export:
-            - unicode text is encoded as such
-            - None values are replaced with the given representation (default <NULL>)
-            """
-            if value is None:
-                return '<NULL>'
-            elif isinstance(value, unicode):
-                return value.encode('utf8')
-            elif isinstance(value, Reference):
-                return int(value)
-            elif hasattr(value, 'isoformat'):
-                return value.isoformat()[:19].replace('T', ' ')
-            elif isinstance(value, (list, tuple)):  # for type='list:..'
-                return bar_encode(value)
-            return value
-
-        represented = []
-        for record in self.rows:
-            row = []
-            for col in self.rows.colnames:
-                if not self.rows.db._adapter.REGEX_TABLE_DOT_FIELD.match(col):
-                    row.append(record._extra[col])
-                else:
-                    (t, f) = col.split('.')
-                    field = self.rows.db[t][f]
-                    if isinstance(record.get(t, None), (Row, dict)):
-                        value = record[t][f]
-                    else:
-                        value = record[f]
-                    if field.type == 'blob' and not value is None:
-                        value = ''
-                    elif field.represent:
-                        value = field.represent(value, record)
-                    row.append(none_exception(value))
-
-            represented.append(row)
-        return represented
-
     def export(self):
         raise NotImplementedError
 
-
 class ExporterTSV(ExportClass):
+    #this is a 'represented' export, tab delimited
+
+    label = 'TSV'
+    file_ext = "csv"
+    content_type = "text/tab-separated-values"
+
+    def __init__(self, rows):
+        ExportClass.__init__(self,rows)
+
+    def export(self):
+        if self.rows:
+            s = cStringIO.StringIO()
+            self.rows.export_to_csv_file(s,represent=True,delimiter='\t')
+            return s.getvalue()
+        else:
+            return None
+
+class ExporterTSV_hidden(ExportClass):
+    #pure tsv, all fields, no represent.
 
     label = 'TSV'
     file_ext = "csv"
@@ -3181,34 +3159,15 @@ class ExporterTSV(ExportClass):
         ExportClass.__init__(self, rows)
 
     def export(self):
-
-        out = cStringIO.StringIO()
-        final = cStringIO.StringIO()
-        import csv
-        writer = csv.writer(out, delimiter='\t')
         if self.rows:
-            import codecs
-            final.write(codecs.BOM_UTF16)
-            writer.writerow(
-                [unicode(col).encode("utf8") for col in self.rows.colnames])
-            data = out.getvalue().decode("utf8")
-            data = data.encode("utf-16")
-            data = data[2:]
-            final.write(data)
-            out.truncate(0)
-        records = self.represented()
-        for row in records:
-            writer.writerow(
-                [str(col).decode('utf8').encode("utf-8") for col in row])
-            data = out.getvalue().decode("utf8")
-            data = data.encode("utf-16")
-            data = data[2:]
-            final.write(data)
-            out.truncate(0)
-        return str(final.getvalue())
-
+            s = cStringIO.StringIO()
+            self.rows.export_to_csv_file(s,delimiter='\t')
+            return s.getvalue()
+        else:
+            return None
 
 class ExporterCSV(ExportClass):
+    #CSV, represent == True
     label = 'CSV'
     file_ext = "csv"
     content_type = "text/csv"
@@ -3216,11 +3175,31 @@ class ExporterCSV(ExportClass):
     def __init__(self, rows):
         ExportClass.__init__(self, rows)
 
+    def export(self):  #export CSV with represent
+        if self.rows:
+            s = cStringIO.StringIO()
+            self.rows.export_to_csv_file(s,represent=True)
+            return s.getvalue()
+        else:
+            return None
+
+
+
+class ExporterCSV_hidden(ExportClass):
+    #pure csv, no represent.
+    label = 'CSV'
+    file_ext = "csv"
+    content_type = "text/csv"
+
+    def __init__(self, rows):
+        ExportClass.__init__(self,rows)
+
     def export(self):
         if self.rows:
             return self.rows.as_csv()
         else:
             return ''
+
 
 class ExporterHTML(ExportClass):
     label = 'HTML'
