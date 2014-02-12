@@ -2153,17 +2153,17 @@ class SQLFORM(FORM):
                 redirect(referrer, client_side=client_side_delete)
 
         exportManager = dict(
-            csv_with_hidden_cols=(ExporterCSV, 'CSV (hidden cols)'),
-            csv=(ExporterCSV, 'CSV'),
-            xml=(ExporterXML, 'XML'),
-            html=(ExporterHTML, 'HTML'),
-            json=(ExporterJSON, 'JSON'),
+            csv_with_hidden_cols=(ExporterCSV_hidden, 'CSV (hidden cols)',T('Comma-separated export including columns not shown; fields from other tables are exported as raw values for faster export')),
+            csv=(ExporterCSV, 'CSV',T('Comma-separated export of visible columns. Fields from other tables are exported as they appear on-screen but this may be slow for many rows')),
+            xml=(ExporterXML, 'XML',T('XML export of columns shown')),
+            html=(ExporterHTML, 'HTML',T('HTML export of visible columns')),
+            json=(ExporterJSON, 'JSON',T('JSON export of visible columns')),
             tsv_with_hidden_cols=
-                (ExporterTSV, 'TSV (Excel compatible, hidden cols)'),
-            tsv=(ExporterTSV, 'TSV (Excel compatible)'))
+                (ExporterTSV, 'TSV (Spreadsheets, hidden cols)',T('Spreadsheet-optimised export of tab-separated content including hidden columns. May be slow')),
+            tsv=(ExporterTSV, 'TSV (Spreadsheets)',T('Spreadsheet-optimised export of tab-separated content, visible columns only. May be slow.')))
         if not exportclasses is None:
             """
-            remember: allow to set exportclasses=dict(csv=False) to disable the csv format
+            remember: allow to set exportclasses=dict(csv=False, csv_with_hidden_cols=False) to disable the csv format
             """
             exportManager.update(exportclasses)
 
@@ -2203,7 +2203,6 @@ class SQLFORM(FORM):
                         #the query should be constructed using searchable fields but not virtual fields
                         sfields = reduce(lambda a, b: a + b,
                             [[f for f in t if f.readable and not isinstance(f,Field.Virtual)] for t in tables])
-                        #how to put virtual fields back?
                         dbset = dbset(SQLFORM.build_query(
                             sfields, request.vars.get('keywords', '')))
                         rows = dbset.select(left=left, orderby=orderby,
@@ -2217,7 +2216,7 @@ class SQLFORM(FORM):
 
                 value = exportManager[export_type]
                 clazz = value[0] if hasattr(value, '__getitem__') else value
-                rows.colnames = expcolumns # rows.colnames is selectable fields, it misses virtual fields
+                rows.colnames = expcolumns # expcolumns is all cols to be exported including virtual fields
                 oExp = clazz(rows)
                 filename = '.'.join(('rows', oExp.file_ext))
                 response.headers['Content-Type'] = oExp.content_type
@@ -2601,11 +2600,12 @@ class SQLFORM(FORM):
                 if not v:
                     continue
                 label = v[1] if hasattr(v, "__getitem__") else k
+                title = v[2] if hasattr(v, "__getitem__") else label
                 link = url2(vars=dict(
                     order=request.vars.order or '',
                     _export_type=k,
                     keywords=request.vars.keywords or ''))
-                export_links.append(A(T(label), _href=link))
+                export_links.append(A(T(label), _href=link,_title=title))
             export_menu = \
                 DIV(T('Export:'), _class="w2p_export_menu", *export_links)
         else:
@@ -3170,18 +3170,15 @@ class ExportClass(object):
     def export(self):
         raise NotImplementedError
 
-
 class ExporterTSV(ExportClass):
-
-    label = 'TSV'
+    # does not use rows.export_to_csv(represent=True, delimiter='\t')
     file_ext = "csv"
     content_type = "text/tab-separated-values"
 
     def __init__(self, rows):
-        ExportClass.__init__(self, rows)
+        ExportClass.__init__(self,rows)
 
     def export(self):
-
         out = cStringIO.StringIO()
         final = cStringIO.StringIO()
         import csv
@@ -3196,6 +3193,7 @@ class ExporterTSV(ExportClass):
             data = data[2:]
             final.write(data)
             out.truncate(0)
+
         records = self.represented()
         for row in records:
             writer.writerow(
@@ -3204,11 +3202,12 @@ class ExporterTSV(ExportClass):
             data = data.encode("utf-16")
             data = data[2:]
             final.write(data)
+
             out.truncate(0)
         return str(final.getvalue())
 
-
 class ExporterCSV(ExportClass):
+    #CSV, represent == True
     label = 'CSV'
     file_ext = "csv"
     content_type = "text/csv"
@@ -3216,11 +3215,29 @@ class ExporterCSV(ExportClass):
     def __init__(self, rows):
         ExportClass.__init__(self, rows)
 
+    def export(self):  #export CSV with rows.represent
+        if self.rows:
+            s = cStringIO.StringIO()
+            self.rows.export_to_csv_file(s,represent=True)
+            return s.getvalue()
+        else:
+            return None
+
+class ExporterCSV_hidden(ExportClass):
+    #pure csv, no represent.
+    label = 'CSV'
+    file_ext = "csv"
+    content_type = "text/csv"
+
+    def __init__(self, rows):
+        ExportClass.__init__(self,rows)
+
     def export(self):
         if self.rows:
             return self.rows.as_csv()
         else:
             return ''
+
 
 class ExporterHTML(ExportClass):
     label = 'HTML'
