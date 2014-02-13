@@ -280,7 +280,7 @@
 'NO': 'NO',
 'No databases in this application': 'No hay bases de datos en esta aplicación',
 'No Interaction yet': 'No Interaction yet',
-'no match': 'no encontrado',
+'No match': 'No encontrado',
 'no package selected': 'no package selected',
 'No ticket_storage.txt found under /private folder': 'No ticket_storage.txt found under /private folder',
 'online designer': 'online designer',

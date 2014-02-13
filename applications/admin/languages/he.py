@@ -213,7 +213,7 @@
 'new plugin installed': 'פלאגין חדש הותקן',
 'new record inserted': 'הרשומה נוספה',
 'next 100 rows': '100 הרשומות הבאות',
-'no match': 'לא נמצאה התאמה',
+'No match': 'לא נמצאה התאמה',
 'or import from csv file': 'או יבא מקובץ csv',
 'or provide app url:': 'או ספק כתובת url של אפליקציה',
 'pack plugin': 'ארוז תוסף',

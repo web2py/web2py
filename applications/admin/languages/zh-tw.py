@@ -243,7 +243,7 @@
 'new plugin installed': '已安裝新插件',
 'new record inserted': '已新增新紀錄',
 'next 100 rows': '往後 100 筆',
-'no match': '無法匹配',
+'No match': '無法匹配',
 'or import from csv file': '或是從逗號分隔檔(CSV)匯入',
 'or provide app url:': '或是提供應用程式的安裝網址:',
 'pack plugin': '打包插件',

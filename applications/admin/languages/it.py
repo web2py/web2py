@@ -206,7 +206,7 @@
 'next 100 rows': 'prossime 100 righe',
 'NO': 'NO',
 'No databases in this application': 'Nessun database presente in questa applicazione',
-'no match': 'nessuna corrispondenza',
+'No match': 'Nessuna corrispondenza',
 'no package selected': 'no package selected',
 'online designer': 'online designer',
 'or alternatively': 'or alternatively',
