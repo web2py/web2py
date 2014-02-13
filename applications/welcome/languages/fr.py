@@ -62,7 +62,7 @@
 'edit profile': 'modifier le profil',
 'Edit This App': 'Modifier cette application',
 'Email and SMS': 'Email et SMS',
-'Enter an integer between %(min)g and %(max)g': 'entrez un entier entre %(min)g et %(max)g',
+'Enter an integer between %(min)g and %(max)g': 'Entrez un entier entre %(min)g et %(max)g',
 'Errors': 'Erreurs',
 'export as csv file': 'exporter sous forme de fichier csv',
 'FAQ': 'FAQ',
