@@ -9746,7 +9746,7 @@ class FieldVirtual(object):
         (self.name, self.f) = (name, f) if f else ('unknown', name)
         self.type = ftype
         self.label = label or self.name.capitalize().replace('_',' ')
-        self.represent = lambda v,r:v
+        self.represent = lambda v,r=None:v
         self.formatter = IDENTITY
         self.comment = None
         self.readable = True
