@@ -3173,7 +3173,7 @@ class ExportClass(object):
         raise NotImplementedError
 
 class ExporterTSV(ExportClass):
-    # does not use rows.export_to_csv(represent=True, delimiter='\t')
+    label = 'TSV'
     file_ext = "csv"
     content_type = "text/tab-separated-values"
 
