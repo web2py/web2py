@@ -1358,11 +1358,13 @@ class BaseAdapter(ConnectionPool):
             if hasattr(table,'_on_insert_error'):
                 return table._on_insert_error(table,fields,e)
             raise e
-        if hasattr(table,'_primarykey'):
+        if hasattr(table, '_primarykey'):
             mydict = dict([(k[0].name, k[1]) for k in fields if k[0].name in table._primarykey])
             if mydict != {}:
                 return mydict
         id = self.lastrowid(table)
+        if hasattr(table, '_primarykey') and len(table._primarykey) == 1:
+            id = {table._primarykey[0]: id}
         if not isinstance(id, (int, long)):
             return id
         rid = Reference(id)
