@@ -9143,7 +9143,7 @@ class Table(object):
                 new_fields[key] = value
 
         if _key is DEFAULT:
-            record = self(**values)
+            record = self(**fields)
         elif isinstance(_key, dict):
             record = self(**_key)
         else:
