@@ -9734,6 +9734,12 @@ class SQLCustomType(object):
         except TypeError:
             return False
 
+    def endswith(self, text=None):
+        try:
+            return self.type.endswith(self, text)
+        except TypeError:
+            return False
+
     def __getslice__(self, a=0, b=100):
         return None
 
