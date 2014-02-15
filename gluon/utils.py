@@ -168,7 +168,7 @@ def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
         if compression_level:
             data = zlib.decompress(data)
         return pickle.loads(data)
-    except (TypeError, pickle.UnpicklingError):
+    except Exception, e:
         return None
 
 ### compute constant CTOKENS
