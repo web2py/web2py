@@ -2770,7 +2770,7 @@ class SQLFORM(FORM):
                 if isinstance(item,Table) and item._tablename in check:
                     tablename = item._tablename
                     linked_fieldnames = check[tablename]
-                    td = item
+                    tb = item
                 elif isinstance(item,str) and item in check:
                     tablename = item
                     linked_fieldnames = check[item]
