@@ -2605,7 +2605,7 @@ class SQLFORM(FORM):
                     order=request.vars.order or '',
                     _export_type=k,
                     keywords=request.vars.keywords or ''))
-                export_links.append(A(T(label), _href=link,_title=title))
+                export_links.append(A(T(label), _href=link,_title=title,_class='btn'))
             export_menu = \
                 DIV(T('Export:'), _class="w2p_export_menu", *export_links)
         else:
