@@ -8157,8 +8157,11 @@ def index():
                     break
                 otable = table
                 i += 1
-                if i==len(tags) and table:
-                    ofields = vars.get('order',db[table]._id.name).split('|')
+                if i == len(tags) and table:
+                    if hasattr(db[table], '_id'):
+                        ofields = vars.get('order', db[table]._id.name).split('|')
+                    else:
+                        ofields = vars.get('order', db[table]._primarykey[0]).split('|')
                     try:
                         orderby = [db[table][f] if not f.startswith('~') else ~db[table][f[1:]] for f in ofields]
                     except (KeyError, AttributeError):
