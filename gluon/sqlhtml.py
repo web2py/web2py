@@ -722,8 +722,8 @@ def formstyle_table2cols(form, fields):
         _help = TD(help, _class='w2p_fc', _width='50%')
         _controls = TD(controls, _class='w2p_fw', _colspan='2')
         _label = TD(label, _class='w2p_fl', _width='50%')
-        table.append(TR(_label, _help, _id=id + '1', _class='even'))
-        table.append(TR(_controls, _id=id + '2', _class='odd'))
+        table.append(TR(_label, _help, _id=id + '1', _class='w2p_even even'))
+        table.append(TR(_controls, _id=id + '2', _class='w2p_even odd'))
     return table
 
 
@@ -2539,9 +2539,9 @@ class SQLFORM(FORM):
                     if buttons_placement in ['left', 'both']:
                         trcols.insert(0, row_buttons)
                 if numrec % 2 == 0:
-                    classtr = 'even'
+                    classtr = 'w2p_even even'
                 else:
-                    classtr = 'odd'
+                    classtr = 'w2p_odd odd'
                 numrec += 1
                 if id:
                     rid = id
@@ -2914,8 +2914,6 @@ class SQLTABLE(TABLE):
         renderstyle=False,
         cid=None,
         colgroup=False,
-        even_row_cls='even',
-        odd_row_cls='odd',
         **attributes
         ):
 
@@ -2980,9 +2978,9 @@ class SQLTABLE(TABLE):
         for (rc, record) in enumerate(sqlrows):
             row = []
             if rc % 2 == 0:
-                _class = even_row_cls
+                _class = 'w2p_even even'
             else:
-                _class = odd_row_cls
+                _class = 'w2p_odd odd'
 
             if not selectid is None:  # new implement
                 if record.get('id') == selectid:
@@ -3098,10 +3096,10 @@ class SQLTABLE(TABLE):
     def style(self):
 
         css = '''
-        table tbody tr.odd {
+        table tbody tr.w2p_odd {
             background-color: #DFD;
         }
-        table tbody tr.even {
+        table tbody tr.w2p_even {
             background-color: #EFE;
         }
         table tbody tr.rowselected {
