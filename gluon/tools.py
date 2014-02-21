@@ -1398,24 +1398,28 @@ class Auth(object):
             for item in items:
                 self.bar[0][3].append((item['name'], False, item['href']))
 
-        def bootstrap():  # Default web2py scaffolding
-            self.bar = UL(LI(Anr(I(_class=items[0]['icon']),
+        def bootstrap3():  # Default web2py scaffolding
+            def rename(icon): return icon+' '+icon.replace('icon','glyphicon')
+            self.bar = UL(LI(Anr(I(_class=rename(items[0]['icon'])),
                                  ' ' + items[0]['name'],
-                                 _href=items[0]['href'])),
-                          _class='dropdown-menu')
+                                 _href=items[0]['href'])),_class='dropdown-menu',
+                          _id='w2p-auth-bar',_role="menu")
             del items[0]
             for item in items:
-                self.bar.insert(-1, LI(Anr(I(_class=item['icon']),
+                self.bar.insert(-1, LI(Anr(I(_class=rename(item['icon'])),
                                            ' ' + item['name'],
                                            _href=item['href'])))
             self.bar.insert(-1, LI('', _class='divider'))
             if self.user_id:
                 self.bar = LI(Anr(prefix, user_identifier, _href='#'),
-                              self.bar,
-                              _class='dropdown')
+                              self.bar,_class='dropdown')
             else:
-                self.bar = LI(Anr(T('Login'), _href='#'), self.bar,
+                self.bar = LI(Anr(T('Login'),B(_class="caret"), 
+                                  _href='#',_class="dropdown-toggle",
+                                  data={'toggle':'dropdown'}), self.bar,
                               _class='dropdown')
+                
+
 
         def bare():
             """ In order to do advanced customization we only need the
@@ -1498,7 +1502,7 @@ class Auth(object):
             self.bar = bare
 
         options = {'asmenu': menu,
-                   'dropdown': bootstrap,
+                   'dropdown': bootstrap3,
                    'bare': bare
                    }  # Define custom modes.
 
