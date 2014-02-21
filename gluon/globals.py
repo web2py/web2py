@@ -880,7 +880,7 @@ class Session(Storage):
 
                 # Select from database
                 if record_id:
-                    row = table(record_id) #,unique_key=unique_key)
+                    row = table(record_id, unique_key=unique_key)
                     # Make sure the session data exists in the database
                     if row:
                         # rows[0].update_record(locked=True)
@@ -972,7 +972,7 @@ class Session(Storage):
                 else:
                     record_id = None
             if record_id:
-                response.session_id = '%s:%s' % (record_id, unique_key)
+                response.session_id = '%s:%s' % (record_id, new_unique_key)
                 response.session_db_record_id = record_id
                 response.session_db_unique_key = new_unique_key
             else:
