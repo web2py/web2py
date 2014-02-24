@@ -1402,8 +1402,7 @@ class Auth(object):
             def rename(icon): return icon+' '+icon.replace('icon','glyphicon')
             self.bar = UL(LI(Anr(I(_class=rename('icon '+items[0]['icon'])),
                                  ' ' + items[0]['name'],
-                                 _href=items[0]['href'])),_class='dropdown-menu',
-                          _id='w2p-auth-bar',_role="menu")
+                                 _href=items[0]['href'])),_class='dropdown-menu')
             del items[0]
             for item in items:
                 self.bar.insert(-1, LI(Anr(I(_class=rename('icon '+item['icon'])),
@@ -1414,7 +1413,7 @@ class Auth(object):
                 self.bar = LI(Anr(prefix, user_identifier, _href='#'),
                               self.bar,_class='dropdown')
             else:
-                self.bar = LI(Anr(T('Login'),B(_class="caret"), 
+                self.bar = LI(Anr(T('Login'),
                                   _href='#',_class="dropdown-toggle",
                                   data={'toggle':'dropdown'}), self.bar,
                               _class='dropdown')
