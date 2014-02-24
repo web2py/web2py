@@ -1,0 +1,282 @@
+/*!
+ * part of the package to convert web2py elements to bootstrap3 theme
+ * Developed by Paolo Caruccio ( paolo.caruccio66@gmail.com )
+ * Released under MIT license
+ * version 1 rev.201312222030
+ * 
+ * Supported version of bootstrap framework: 3.0.2+
+
+ * The full package includes:
+ * - bootstrap3.py python module
+ * - this css file
+ * - web2py-bootstrap3.js
+ * - example of layout.html
+
+ */
+
+ 
+/*!
+    * rules overriding web2py.css 
+    * remove if web2py.css is not used
+
+*/
+
+div.flash.alert{
+    background-image: none;
+    border-radius: 4px;
+    -o-border-radius: 4px;
+    -moz-border-radius: 4px;
+    -webkit-border-radius: 4px;
+    border-width: 1px;
+    color: rgb(51, 51, 51);
+    font-weight: normal;
+    margin: 0 0 20px 0;
+    min-width: 28px;
+    opacity: 1;
+    padding: 15px 35px 15px 15px;
+    vertical-align: baseline;
+    right: auto; }
+div.flash.alert:hover {
+    opacity: 1; }
+.ie-lte8 div.flash {
+    filter: progid:DXImageTransform.Microsoft.gradient(enabled = false); }
+.ie-lte8 div.flash:hover {
+    filter:alpha(opacity=100); }
+ul.navbar-nav li {
+    margin-bottom: 0; }
+ul.list-group, .bs3-form ul , ul.nav-tabs, ul.nav-pills {
+    margin-left: 0; }
+p.lead {
+    text-align: inherit; }
+.bs3-form label {
+    white-space: normal; }
+.bs3-form.form-inline [type="text"], [type="password"], select  {
+    margin-right: 0; }
+.bs3-form div.error {
+    display: none;
+    width: auto;
+    background: transparent;
+    border: none;
+    color: #a94442;
+    padding: 0;
+    background-image: none; }
+
+
+/*!
+    * bootstrap3 adapters
+    * essential rules
+
+*/
+
+/* flash messages */
+div.flash.alert {
+    display: none;
+    position: fixed;
+    top: 70px;
+    cursor: pointer;
+    z-index: 1000000;
+    background-color: #f9edbe;
+    border-color: #f0c36d; }
+div.flash.alert #closeflash {
+    display: inline-block;
+    position: relative;
+    top: -2px;
+    right: -21px;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.5;
+    float: right;
+    font-size: 21px;
+    font-weight: bold;
+    line-height: 1;
+    text-shadow: 0 1px 0 #ffffff;
+    margin: 0;
+    padding: 0; }
+/* buttons */
+.bs3-form-btn {
+    margin-top: 3px;
+    margin-bottom: 3px; }
+/*image preview in update forms*/
+.w2p-uploaded-file .btn-group {
+    vertical-align: top;
+    margin-top: 0; }
+#file-reset-btn {
+    vertical-align: top; }
+.w2p-uploaded-file input[type="file"] {
+    display:inline-block;
+    padding-top: 7px; }
+.w2p-file-preview img {
+    max-width: 150px; }
+.w2p-file-preview:hover img {
+    background-color: #ebebeb;
+    border-color: #adadad; }
+.w2p-file-preview span {
+    min-width: 150px;
+    max-width: 150px;
+    display: inline-block;
+    line-height: 40px;
+    min-height: 40px; }
+#no-file {
+    display: inline-block;
+    background-color: #eee;
+    vertical-align: middle;
+    text-align: center;
+    border-radius: 4px;
+    min-width: 150px;
+    max-width: 150px;
+    line-height: 43px;
+    min-height: 43px; }
+/* form-inline */
+.form-inline .form-group {
+    margin-right: 4px; }
+/* list widget */
+.w2p_list li {
+    margin-bottom: 6px; }
+.w2p_list li  input {
+    display: inline-block;
+    width: 59%;
+    margin-right: 4px; }
+/* autocomplete widget */
+div[id^=_autocomplete_] {
+    margin-top: -10px;
+    z-index: 1; }
+select.autocomplete {
+    display: block;
+    padding: 6px 12px;
+    font-size: 14px;
+    line-height: 1.428571429;
+    color: #555;
+    vertical-align: middle;
+    background-color: #fff;
+    background-image: none;
+    border: 1px solid #ccc;
+    border-color: #428bca;
+    -webkit-box-shadow: inset 0 1px 1px rgba(0,0,0,0.075);
+    box-shadow: inset 0 1px 1px rgba(0,0,0,0.075);
+    -webkit-transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s;
+    transition: border-color ease-in-out .15s,box-shadow ease-in-out .15s; }
+/* nav-tabs */
+.nav-tabs {
+    margin-bottom: 15px; }
+/* dropdown multilevels in menu*/
+/* fix issue when screen height is shorter than bs3 default */
+.navbar-collapse.short-screen {
+    max-height: 200px !important; }
+.dropdown-submenu>a:after {
+    display: block;
+    content: " ";
+    float: right;
+    width: 0;
+    height: 0;
+    margin-top: 5px;
+    margin-right: -10px;
+    border-style: solid;
+    /* right-arrow */
+    border-color: transparent #cccccc;
+    border-width: 4px 0 4px 4px; }
+@media (min-width: 768px) {
+    /* animation */
+    .navbar-nav .dropdown-menu {
+        top: -9999px;
+        display: block;
+        opacity: 0;
+        -webkit-transition: opacity .4s ease-in-out; }
+    .dropdown-submenu {
+        position: relative; }
+    .dropdown-submenu>.dropdown-menu {
+        position: absolute;
+        top: 0;
+        left: 100%;
+        margin-top: -6px;
+        margin-left: -1px;
+        border-radius: 0 4px 4px 4px;
+        /* animation */
+        left: -9999px;
+        opacity: 0;
+        display: block;
+        -webkit-transition: opacity .4s ease-in-out; }
+    .navbar ul.nav li[data-w2pmenulevel="l0"]:hover >ul.dropdown-menu {
+        display: block;
+        /* animation */
+        top: 100%;
+        opacity: 1; }
+    .dropdown-submenu:hover>.dropdown-menu {
+        display: block;
+        /* animation */
+        left: 100%;
+        opacity: 1; }
+    .dropdown-submenu:hover>a,
+    .dropdown-submenu:focus>a {
+        color: #fff;
+        text-decoration: none;
+        background-color: #357ebd; }
+    .navbar-inverse .navbar-nav>li>a:hover,
+    .navbar-inverse .navbar-nav>li>a:focus,
+    .navbar-inverse .navbar-nav>li:hover>a {
+        color: #fff;
+        background-color: black; }
+    .dropdown-submenu>a:hover:after,
+    .dropdown-submenu:hover>a:after {
+        /* left-arrow */
+        border-color: transparent #fff;
+        border-width: 4px 4px 4px 0; }
+}
+@media (max-width: 767px){
+    .dropdown-menu {
+        width: 100%;
+        display: none; }
+    .dropdown-submenu>.dropdown-menu {
+        position: static;
+        float: none;
+        display: none;
+        border: none;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+        text-indent: 8px; }
+    .dropdown-submenu>.dropdown-menu.open {
+        display: block;
+        height: 100%; }
+    .dropdown-submenu>a:after {
+        /* down-arrow */
+        border-color: #cccccc transparent;
+        border-width: 4px 4px 0px 4px; }
+    .dropdown-submenu>a:hover:after {
+        border-color: #ffffff transparent; }
+    .dropdown-submenu>a.active {
+        font-weight: 700; }
+    .dropdown-submenu>a.active:after {
+        /* up-arrow */ 
+        border-color: #ffffff transparent;
+        border-width: 0px 4px 4px 4px; }
+}
+
+
+/*!
+    * application customization
+    * add custom rules
+
+*/
+
+
+body {
+    padding-top: 70px; }
+/* web2py logo */
+#web2py-logo {
+    color: #c6cecc; }
+#web2py-logo  b {
+    display: inline-block;
+    margin-top: -1px; }
+#web2py-logo b>span {
+    font-size: 22px;
+    color: white; }
+#web2py-logo:hover {
+    color: white; }
+/*footer*/
+#footer>div.row {
+    padding-top: 9px;
+    margin: 20px 0 40px 0;
+    border-top: 1px solid #eee; }
+#footer p {
+    margin-left: -15px;
+    margin-right: -15px; }
