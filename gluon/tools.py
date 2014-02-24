@@ -1400,13 +1400,13 @@ class Auth(object):
 
         def bootstrap3():  # Default web2py scaffolding
             def rename(icon): return icon+' '+icon.replace('icon','glyphicon')
-            self.bar = UL(LI(Anr(I(_class=rename(items[0]['icon'])),
+            self.bar = UL(LI(Anr(I(_class=rename('icon '+items[0]['icon'])),
                                  ' ' + items[0]['name'],
                                  _href=items[0]['href'])),_class='dropdown-menu',
                           _id='w2p-auth-bar',_role="menu")
             del items[0]
             for item in items:
-                self.bar.insert(-1, LI(Anr(I(_class=rename(item['icon'])),
+                self.bar.insert(-1, LI(Anr(I(_class=rename('icon '+item['icon'])),
                                            ' ' + item['name'],
                                            _href=item['href'])))
             self.bar.insert(-1, LI('', _class='divider'))
