@@ -1,3 +1,26 @@
+## 2.9.1
+
+- bootstrap 3, thanks Paolo Caruccio
+- jquery 1.11
+- codemirror 3.21, thanks Paolo Valleri
+- fixed a security issue with sessions in database
+- fixed security issue with redirect after expired login, thanks André Kablu
+- cleaner DAL and rname integration, thanks niphlod and Michele
+- added mongodb and imap tests for dal, thanks Alan
+- NoSQL dal tests, thanks Alan
+- better docstrings, thanks Niphlod
+- allow URL(...,language=...) with parametric router, thanks Jonathan
+- allow non-expiration of gae-memcache, thanks crimsoncantab
+- MARKMIN(...,_class='...'), thanks Luca
+- autolink emails
+- new Janrain API, thanks PeterQ2
+- enable admin app for GAE (experimental), thanks Alan
+- many bug fixes
+- invalidate function in web2py.js, thanks Paolo
+- DAL(...,adapter_args=dict(engine='MyISAM'))
+- todolist panel in admin editor, thanks Paolo Valleri
+- enable killing processed in windows, thanks Yair
+
 ## 2.8.1
 
 - no more winservice (use nssm instead)
