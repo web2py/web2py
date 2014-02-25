@@ -23,6 +23,7 @@ import urllib2
 import Cookie
 import cStringIO
 import ConfigParser
+import email.utils
 from email import MIMEBase, MIMEMultipart, MIMEText, Encoders, Header, message_from_string, Charset
 
 from gluon.contenttype import contenttype
@@ -666,8 +667,7 @@ class Mail(object):
         if bcc:
             to.extend(bcc)
         payload['Subject'] = encoded_or_raw(subject.decode(encoding))
-        payload['Date'] = time.strftime("%a, %d %b %Y %H:%M:%S +0000",
-                                        time.gmtime())
+        payload['Date'] = email.utils.formatdate()
         for k, v in headers.iteritems():
             payload[k] = encoded_or_raw(v.decode(encoding))
         result = {}
