@@ -27,19 +27,14 @@
         <meta name="google-site-verification" content="">
         <!-- include stylesheets -->
         {{
-          response.files.insert(0,URL('static','css/web2py.css'))
-          response.files.insert(1,URL('static','css/bootstrap.min.css'))
-          response.files.insert(2,URL('static','css/bootstrap-theme.min.css'))
-          response.files.insert(3,URL('static','css/web2py-bootstrap3.css'))
+        response.files.insert(0,URL('static','css/web2py.css'))
+        response.files.insert(1,URL('static','css/bootstrap.min.css'))
+        response.files.insert(2,URL('static','css/web2py-bootstrap3.css'))
         }}
-        <!-- All JavaScript at the bottom, except for Modernizr which enables HTML5 elements & feature detects -->
-        <!-- <script src="{{=URL('static','js/modernizr.custom.js')}}"></script> -->
-        <!-- Respond.js for the support of media queries in IE8
-             If you need to use a local copy of respond.js download it in static/js sub-folder, and replace the script link
-             in the following conditional comment with <script src="{{=URL('static','js/respond.min.js')}}"></script> -->
-        <!--[if lt IE 9]>
-        <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
-        <![endif]-->
+	<!--  <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.7.1/modernizr.min.js"></script> -->
+	<!--[if lt IE 9]>
+	    <script src="{{=URL('static','js/respond.min.js')}}"></script>
+	    <![endif]-->
         <!-- Favicons -->
         <link rel="shortcut icon" href="{{=URL('static','images/favicon.ico')}}" type="image/x-icon">
         <link rel="apple-touch-icon" href="{{=URL('static','images/favicon.png')}}">
