@@ -2,7 +2,7 @@
  * part of the package to convert web2py elements to bootstrap3 theme
  * Developed by Paolo Caruccio ( paolo.caruccio66@gmail.com )
  * Released under MIT license
- * version 1 rev.201312222030
+ * version 1 rev.201402261600
  * 
  * Supported version of bootstrap framework: 3.0.2+
 
@@ -73,10 +73,16 @@ div.flash.alert {
     display: none;
     position: fixed;
     top: 70px;
+    right: 75px;
     cursor: pointer;
     z-index: 1000000;
     background-color: #f9edbe;
     border-color: #f0c36d; }
+div.flash.alert.centered {
+    right: auto; }
+div.flash.alert.leftside {
+    right: auto; 
+    left: 75px; }
 div.flash.alert #closeflash {
     display: inline-block;
     position: relative;
@@ -280,3 +286,6 @@ body {
 #footer p {
     margin-left: -15px;
     margin-right: -15px; }
+.dropdown .highlighted {
+    color: #428bca;
+    }

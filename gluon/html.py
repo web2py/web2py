@@ -2222,11 +2222,12 @@ class FORM(DIV):
     REDIRECT_JS = "window.location='%s';return false"
 
     def add_button(self, value, url, _class=None):
-        submit = self.element('input[type=submit]')
+        submit = self.element(_type='submit')
+        _class = "%s w2p-form-button" % _class if _class else "w2p-form-button" 
         submit.parent.append(
-            INPUT(_type="button", _value=value, _class=_class,
-                  _onclick=url if url.startswith('javascript:') else
-                      self.REDIRECT_JS % url))
+            TAG['button'](value, _class=_class,
+                          _onclick=url if url.startswith('javascript:') else
+                          self.REDIRECT_JS % url))
 
     @staticmethod
     def confirm(text='OK', buttons=None, hidden=None):
