@@ -2,7 +2,7 @@
  * part of the package to convert web2py elements to bootstrap3 theme
  * Developed by Paolo Caruccio ( paolo.caruccio66@gmail.com )
  * Released under MIT license
- * version 1 rev.201312222030
+ * version 1 rev.201402261600
  * 
  * Supported version of bootstrap framework: 3.0.2+
 
@@ -69,7 +69,7 @@
     };
 
     // alert centering
-    $('.flash.alert').center({'mode': "horizontally"});
+    $('.flash.alert.centered').center({'mode': "horizontally"});
 
     // navs
     $(".nav ul.dropdown-menu").not("#w2p-auth-bar").each(function() {
@@ -139,7 +139,7 @@
             var mode;
             var hasError = false;
             if ($this.parent().hasClass('form-horizontal')) {
-                mode = 'horizontal'
+                mode = 'horizontal';
                 labelClass = fh_label_class+' control-label';
             };
             if ($this.parent().hasClass('form-inline')) {
