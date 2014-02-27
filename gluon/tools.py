@@ -3199,7 +3199,7 @@ class Auth(object):
         """
         if current.request.ajax:
             raise HTTP(403, 'ACCESS DENIED')
-        return 'ACCESS DENIED'
+        return self.messages.access_denied
 
     def requires(self, condition, requires_login=True, otherwise=None):
         """
