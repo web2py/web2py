@@ -1747,16 +1747,16 @@ class SQLFORM(FORM):
                         _type='text', _id=_id, _class=field.type)
 
                 new_button = INPUT(
-                    _type="button", _value=T('New Search'), _class="btn", _title = T('Start building a new search'),
+                    _type="button", _value=T('New Search'), _class="btn btn-default", _title = T('Start building a new search'),
                     _onclick="%s_build_query('new','%s')" % (prefix,field))
                 and_button = INPUT(
-                    _type="button", _value=T('+ And'), _class="btn", _title = T('Add this to the search as an AND term'),
+                    _type="button", _value=T('+ And'), _class="btn btn-default", _title = T('Add this to the search as an AND term'),
                     _onclick="%s_build_query('and','%s')" % (prefix, field))
                 or_button = INPUT(
-                    _type="button", _value=T('+ Or'), _class="btn",_title = T('Add this to the search as an OR term'),
+                    _type="button", _value=T('+ Or'), _class="btn btn-default",_title = T('Add this to the search as an OR term'),
                     _onclick="%s_build_query('or','%s')" % (prefix, field))
                 close_button = INPUT(
-                    _type="button", _value=T('Close'), _class="btn",
+                    _type="button", _value=T('Close'), _class="btn btn-default",
                     _onclick="jQuery('#%s').slideUp()" % panel_id)
 
                 criteria.append(DIV(
@@ -1872,7 +1872,7 @@ class SQLFORM(FORM):
                       cornerall='',
                       cornertop='',
                       cornerbottom='',
-                      button='button btn',
+                      button='button btn btn-default',
                       buttontext='buttontext button',
                       buttonadd='icon plus icon-plus',
                       buttonback='icon leftarrow icon-arrow-left',
@@ -2260,8 +2260,8 @@ class SQLFORM(FORM):
                     INPUT(_name='keywords', _value=request.vars.keywords,
                           _id=skeywords_id,
                           _onfocus="jQuery('#%s').change();jQuery('#%s').slideDown();" % (spanel_id, sfields_id)),
-                    INPUT(_type='submit', _value=T('Search'), _class="btn"),
-                    INPUT(_type='submit', _value=T('Clear'), _class="btn",
+                    INPUT(_type='submit', _value=T('Search'), _class="btn btn-default"),
+                    INPUT(_type='submit', _value=T('Clear'), _class="btn btn-default",
                           _onclick="jQuery('#%s').val('');" % skeywords_id),
                     _method="GET", _action=url), search_menu)
             form = search_widget and search_widget(sfields, url()) or ''
@@ -2605,7 +2605,7 @@ class SQLFORM(FORM):
                     order=request.vars.order or '',
                     _export_type=k,
                     keywords=request.vars.keywords or ''))
-                export_links.append(A(T(label), _href=link,_title=title,_class='btn'))
+                export_links.append(A(T(label), _href=link,_title=title,_class='btn btn-default'))
             export_menu = \
                 DIV(T('Export:'), _class="w2p_export_menu", *export_links)
         else:
