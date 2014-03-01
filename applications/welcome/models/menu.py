@@ -126,15 +126,7 @@ def _():
                         (T('Live Chat'), False,
                          'http://webchat.freenode.net/?channels=web2py'),
                         ]),
-                (T('Plugins'), False, None, [
-                        ('plugin_wiki', False,
-                         'http://web2py.com/examples/default/download'),
-                        (T('Other Plugins'), False,
-                         'http://web2py.com/plugins'),
-                        (T('Layout Plugins'),
-                         False, 'http://web2py.com/layouts'),
-                        ])
-                ]
+             (T('Plugins'), False, 'http://web2py.com/plugins')]        
          )]
 if DEVELOPMENT_MENU: _()
 
