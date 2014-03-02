@@ -11,6 +11,7 @@
 - allow URL(...,language=...) with parametric router, thanks Jonathan
 - allow non-expiration of gae-memcache, thanks crimsoncantab
 - MARKMIN(...,_class='...'), thanks Luca
+- better transliteration in building slugs
 - autolink emails
 - new Janrain API, thanks PeterQ2
 - enable admin app for GAE (experimental), thanks Alan
