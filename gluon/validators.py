@@ -20,7 +20,8 @@ import decimal
 from cStringIO import StringIO
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from gluon.dal import FieldVirtual, FieldMethod
-
+from gluon.contrib import translitcodec
+    
 regex_isint = re.compile('^[+-]?\d+$')
 
 JSONErrors = (NameError, TypeError, ValueError, AttributeError,

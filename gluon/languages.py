@@ -658,7 +658,12 @@ class translator(object):
                     set_plural(language)
                     self.accepted_language = language
                     return languages
-        self.accepted_language = language or self.current_languages[0]
+        self.accepted_language = language
+        if not language:
+            if self.current_languages:
+                self.accepted_language = self.current_languages[0]
+            else:
+                self.accepted_language = DEFAULT_LANGUAGE
         self.language_file = self.default_language_file
         self.cache = global_language_cache.setdefault(self.language_file,
                                                       ({}, RLock()))
