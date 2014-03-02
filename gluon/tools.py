@@ -1130,7 +1130,7 @@ class Auth(object):
     def __init__(self, environment=None, db=None, mailer=True,
                  hmac_key=None, controller='default', function='user',
                  cas_provider=None, signature=True, secure=False,
-                 csrf_prevention=True):
+                 csrf_prevention=True, propagate_extension=None):
         """
         auth=Auth(db)
 
@@ -1166,7 +1166,8 @@ class Auth(object):
         # ## what happens after login?
 
         url_index = URL(controller, 'index')
-        url_login = URL(controller, function, args='login')
+        url_login = URL(controller, function, args='login',
+                        extension = propagate_extension)
         # ## what happens after registration?
 
         settings = self.settings = Settings()
