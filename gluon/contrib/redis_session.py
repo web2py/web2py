@@ -21,7 +21,7 @@ def RedisSession(*args, **vars):
     """
     Usage example: put in models
     from gluon.contrib.redis_session import RedisSession
-    sessiondb = RedisSession('localhost:6379',db=0, session_expiry=False)
+    sessiondb = RedisSession('localhost:6379',db=0, session_expiry=False, password=None)
     session.connect(request, response, db = sessiondb)
 
     Simple slip-in storage for session
@@ -45,12 +45,13 @@ class RedisClient(object):
     _release_script = None
 
     def __init__(self, server='localhost:6379', db=None, debug=False,
-            session_expiry=False, with_lock=False):
+            session_expiry=False, with_lock=False, password=None):
         """session_expiry can be an integer, in seconds, to set the default expiration
            of sessions. The corresponding record will be deleted from the redis instance,
            and there's virtually no need to run sessions2trash.py
         """
         self.server = server
+        self.password = password
         self.db = db or 0
         host, port = (self.server.split(':') + ['6379'])[:2]
         port = int(port)
@@ -59,7 +60,7 @@ class RedisClient(object):
             self.app = current.request.application
         else:
             self.app = ''
-        self.r_server = redis.Redis(host=host, port=port, db=self.db)
+        self.r_server = redis.Redis(host=host, port=port, db=self.db, password=self.password)
         if with_lock:
             RedisClient._release_script = \
                     self.r_server.register_script(_LUA_RELEASE_LOCK)

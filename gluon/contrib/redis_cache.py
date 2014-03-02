@@ -24,7 +24,7 @@ def RedisCache(*args, **vars):
     Usage example: put in models
 
     from gluon.contrib.redis_cache import RedisCache
-    cache.redis = RedisCache('localhost:6379',db=None, debug=True, with_lock=True)
+    cache.redis = RedisCache('localhost:6379',db=None, debug=True, with_lock=True, password=None)
 
     :param db: redis db to use (0..16)
     :param debug: if True adds to stats() the total_hits and misses
@@ -77,8 +77,9 @@ class RedisClient(object):
     MAX_RETRIES = 5
     RETRIES = 0
 
-    def __init__(self, server='localhost:6379', db=None, debug=False, with_lock=False):
+    def __init__(self, server='localhost:6379', db=None, debug=False, with_lock=False, password=None):
         self.server = server
+        self.password = password
         self.db = db or 0
         host, port = (self.server.split(':') + ['6379'])[:2]
         port = int(port)
@@ -102,7 +103,7 @@ class RedisClient(object):
 
         self.cache_set_key = 'w2p:%s:___cache_set' % (self.request.application)
 
-        self.r_server = redis.Redis(host=host, port=port, db=self.db)
+        self.r_server = redis.Redis(host=host, port=port, db=self.db, password=self.password)
 
     def __call__(self, key, f, time_expire=300, with_lock=None):
         if with_lock is None:
