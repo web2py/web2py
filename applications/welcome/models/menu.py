@@ -6,8 +6,7 @@
 #########################################################################
 
 response.logo = A(B('web',SPAN(2),'py'),XML('&trade;&nbsp;'),
-                  _class="navbar-brand",_href="http://www.web2py.com/",
-                  _id="web2py-logo")
+                  _class="brand",_href="http://www.web2py.com/")
 response.title = request.application.replace('_',' ').title()
 response.subtitle = ''
 
@@ -126,7 +125,15 @@ def _():
                         (T('Live Chat'), False,
                          'http://webchat.freenode.net/?channels=web2py'),
                         ]),
-             (T('Plugins'), False, 'http://web2py.com/plugins')]        
+                (T('Plugins'), False, None, [
+                        ('plugin_wiki', False,
+                         'http://web2py.com/examples/default/download'),
+                        (T('Other Plugins'), False,
+                         'http://web2py.com/plugins'),
+                        (T('Layout Plugins'),
+                         False, 'http://web2py.com/layouts'),
+                        ])
+                ]
          )]
 if DEVELOPMENT_MENU: _()
 
