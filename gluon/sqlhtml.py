@@ -1874,13 +1874,13 @@ class SQLFORM(FORM):
                       cornerbottom='',
                       button='button btn btn-default',
                       buttontext='buttontext button',
-                      buttonadd='icon plus icon-plus',
-                      buttonback='icon leftarrow icon-arrow-left',
-                      buttonexport='icon downarrow icon-download',
-                      buttondelete='icon trash icon-trash',
-                      buttonedit='icon pen icon-pencil',
-                      buttontable='icon rightarrow icon-arrow-right',
-                      buttonview='icon magnifier icon-zoom-in',
+                      buttonadd='icon plus icon-plus glyphicon glyphicon-plus',
+                      buttonback='icon leftarrow icon-arrow-left glyphicon glyphicon-arrow-left',
+                      buttonexport='icon downarrow icon-download glyphicon glyphicon-download',
+                      buttondelete='icon trash icon-trash glyphicon glyphicon-trash',
+                      buttonedit='icon pen icon-pencil glyphicon glyphicon-arrow-pencil',
+                      buttontable='icon rightarrow icon-arrow-right glyphicon glyphicon-arrow-right',
+                      buttonview='icon magnifier icon-zoom-in glyphicon glyphicon-arrow-zoom-in',
                       )
         elif not isinstance(ui, dict):
             raise RuntimeError('SQLFORM.grid ui argument must be a dictionary')
