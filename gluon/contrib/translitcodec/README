@@ -1,0 +1,44 @@
+-*- coding: utf-8 -*-
+
+Unicode to 8-bit charset transliteration codec.
+
+This package contains codecs for transliterating ISO 10646 texts into
+best-effort representations using smaller coded character sets (ASCII,
+ISO 8859, etc.).  The translation tables used by the codecs are from
+the ``transtab`` collection by Markus Kuhn.
+
+Three types of transliterating codecs are provided:
+
+  "long", using as many characters as needed to make a natural
+   replacement.  For example, \u00e4 LATIN SMALL LETTER A WITH
+   DIAERESIS ``ä`` will be replaced with ``ae``.
+
+  "short", using the minimum number of characters to make a
+  replacement.  For example, \u00e4 LATIN SMALL LETTER A WITH
+  DIAERESIS ``ä`` will be replaced with ``a``.
+
+  "one", only performing single character replacements.  Characters
+  that can not be transliterated with a single character are passed
+  through unchanged. For example, \u2639 WHITE FROWNING FACE ``☹``
+  will be passed through unchanged.
+
+Using the codecs is simple::
+
+  >>> import translitcodec
+  >>> u'fácil € ☺'.encode('translit/long')
+  u'facil EUR :-)'
+  >>> u'fácil € ☺'.encode('translit/short')
+  u'facil E :-)'
+
+The codecs return Unicode by default.  To receive a bytestring back,
+either chain the output of encode() to another codec, or append the
+name of the desired byte encoding to the codec name::
+
+  >>> u'fácil € ☺'.encode('translit/one').encode('ascii', 'replace')
+  'facil E ?'
+  >>> u'fácil € ☺'.encode('translit/one/ascii', 'replace')
+  'facil E ?'
+
+The package also supplies a 'transliterate' codec, an alias for
+'translit/long'.
+

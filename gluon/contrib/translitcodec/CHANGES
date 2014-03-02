@@ -1,0 +1,31 @@
+=====================
+translitcodec Changes
+=====================
+
+0.3
+---
+
+Released on February 14, 2011
+
+- Fixes to the transtab table rebuilding tool.
+
+- Added translitcodec.__version__
+
+0.2
+---
+
+Released on January 27, 2011
+
+- Resolves issue of "TypeError: character mapping must return integer,
+  None or unicode" when a blank value (eg: \N{ZERO WIDTH SPACE} \u200B)
+  was encoded.  Unicode blanks are now returned.
+
+- Characters in the ASCII range are no longer included in the translation
+  tables.
+
+0.1
+---
+
+Released on December 28, 2008
+
+- Initial packaged release.
