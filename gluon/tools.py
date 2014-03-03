@@ -1153,16 +1153,27 @@ class Auth(object):
         self.user_groups = auth and auth.user_groups or {}
         if secure:
             request.requires_https()
-        if auth and auth.last_visit and auth.last_visit + \
-                datetime.timedelta(days=0, seconds=auth.expiration) > request.now:
-            self.user = auth.user
-            # this is a trick to speed up sessions
-            if (request.now - auth.last_visit).seconds > (auth.expiration / 10):
-                auth.last_visit = request.now
+        now = request.now        
+        # if we have auth info
+        #    if not expired it, used it
+        #    if expired, clear the session
+        # else, only clear auth info in the session
+        if auth:
+            delta = datetime.timedelta(days=0, seconds=auth.expiration)
+            if auth.last_visit and auth.last_visit + delta > now:
+                self.user = auth.user
+                # this is a trick to speed up sessions to avoid many writes
+                if (now - auth.last_visit).seconds > (auth.expiration / 10):
+                    auth.last_visit = request.now
+            else:
+                self.user = None
+                if session.auth:
+                    del session.auth
+                session.renew(clear_session=True)                
         else:
             self.user = None
             if session.auth:
-                del session.auth
+                del session.auth            
         # ## what happens after login?
 
         url_index = URL(controller, 'index')
