@@ -887,6 +887,7 @@ class Session(Storage):
                         # Unpickle the data
                         session_data = cPickle.loads(row.session_data)
                         self.update(session_data)
+                        response.session_new = False
                     else:
                         record_id = None
                 if record_id:
