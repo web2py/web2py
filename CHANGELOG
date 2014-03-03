@@ -1,8 +1,9 @@
-## 2.9.1
+## 2.9.1 - 2.9.3
 
 - jquery 1.11
 - codemirror 3.21, thanks Paolo Valleri
-- fixed a security issue with sessions in database
+- fixed security issue with sessions in database, thanks Nathan Humphreys
+- fixed security issue with persistant data in session, thanks Kiran
 - fixed security issue with redirect after expired login, thanks André Kablu
 - cleaner DAL and rname integration, thanks niphlod and Michele
 - added mongodb and imap tests for dal, thanks Alan
