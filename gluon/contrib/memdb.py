@@ -292,8 +292,11 @@ class Table(DALStorage):
     def __str__(self):
         return self._tablename
 
-    def __call__(self, id):
-        return self.get(id)
+    def __call__(self, id, **kwargs):
+        record = self.get(id)
+        if kwargs and any(record[key]!=kwargs[key] for key in kwargs):
+            return None
+        return record
 
 class Expression(object):
 
