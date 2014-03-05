@@ -278,7 +278,8 @@ class Mail(object):
         sender=None,
         encoding='utf-8',
         raw=False,
-        headers={}
+        headers={},
+        from_address=None
     ):
         """
         Sends an email using data specified in constructor
@@ -308,8 +309,9 @@ class Mail(object):
             encoding: encoding of all strings passed to this method (including
                       message bodies)
             headers: dictionary of headers to refine the headers just before
-                     sending mail, e.g. {'Return-Path' : 'bounces@example.org'}
-
+                     sending mail, e.g. {'X-Mailer' : 'web2py mailer'}
+            from_address: address to appear in the 'From:' header, this is not the
+                          envelope sender. If not specified the sender will be used
         Examples:
 
             #Send plain text message to single address:
@@ -655,7 +657,10 @@ class Mail(object):
             # no cryptography process as usual
             payload = payload_in
 
-        payload['From'] = encoded_or_raw(sender.decode(encoding))
+        if from_address:
+            payload['From'] = encoded_or_raw(from_address.decode(encoding))
+        else:
+            payload['From'] = encoded_or_raw(sender.decode(encoding))
         origTo = to[:]
         if to:
             payload['To'] = encoded_or_raw(', '.join(to).decode(encoding))
