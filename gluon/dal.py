@@ -9153,7 +9153,16 @@ class Table(object):
             record = self(_key)
 
         if not response.errors and record:
-            myset = self._db(self._id == record[self._id.name])
+            if '_id' in self:
+                myset = self._db(self._id == record[self._id.name])
+            else:
+                query = None
+                for key, value in _key.iteritems():
+                    if query is None:
+                        query = getattr(self, key) == value
+                    else:
+                        query = query & (getattr(self, key) == value)
+                myset = self._db(query)
             response.id = myset.update(**fields)
         else:
             response.id = None
