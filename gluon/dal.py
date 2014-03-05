@@ -9153,8 +9153,8 @@ class Table(object):
             record = self(_key)
 
         if not response.errors and record:
-            row = self._db(self._id ==_key)
-            response.id = row.update(**fields)
+            myset = self._db(self._id == record[self._id.name])
+            response.id = myset.update(**fields)
         else:
             response.id = None
         return response
@@ -9172,6 +9172,34 @@ class Table(object):
         else:
             newid = self.insert(**values)
         return newid
+
+    def validate_and_update_or_insert(self, _key=DEFAULT, **fields):
+        if _key is DEFAULT or _key == '':
+            primary_keys = {}
+            for key, value in fields.iteritems():
+                if key in self._primarykey:
+                    primary_keys[key] = value
+            if primary_keys != {}:
+                record = self(**primary_keys)
+                _key = primary_keys
+            else:
+                required_keys = {}
+                for key, value in fields.iteritems():
+                    if getattr(self, key).required:
+                        required_keys[key] = value
+                record = self(**required_keys)
+                _key = required_keys
+        elif isinstance(_key, dict):
+            record = self(**_key)
+        else:
+            record = self(_key)
+
+        if record:
+            response = self.validate_and_update(_key, **fields)
+            response.id = {'id': self(**fields).id}
+        else:
+            response = self.validate_and_insert(**fields)
+        return response
 
     def bulk_insert(self, items):
         """
