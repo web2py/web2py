@@ -174,7 +174,7 @@ server for requests.  It can be used for the optional"scope" parameters for Face
                     data = open_url.read()
                     resp_type = open_url.info().get('Content-Type')
                     # try json style first
-                    if not resp_type or resp_type == 'application/json':
+                    if not resp_type or resp_type[:16] == 'application/json':
                         try:
                             tokendata = json.loads(data)
                             current.session.token = tokendata
