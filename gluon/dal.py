@@ -9205,7 +9205,6 @@ class Table(object):
 
         if record:
             response = self.validate_and_update(_key, **fields)
-            # Now primary key must be returned
             primary_keys = {}
             for key in self._primarykey:
                 primary_keys[key] = getattr(record, key)
