@@ -20,7 +20,6 @@
 - invalidate function in web2py.js, thanks Paolo
 - DAL(...,adapter_args=dict(engine='MyISAM'))
 - todolist panel in admin editor, thanks Paolo Valleri
-- enable killing processed in windows, thanks Yair
 
 ## 2.8.1
 
