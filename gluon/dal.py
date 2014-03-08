@@ -1480,7 +1480,7 @@ class BaseAdapter(ConnectionPool):
         return '(%s)' % ' || '.join(self.expand(x,'string') for x in items)
 
     def ADD(self, first, second):
-        if self.is_numerical_type(first.type) or isinstance(first.type, gluon.dal.Field):
+        if self.is_numerical_type(first.type) or isinstance(first.type, Field):
             return '(%s + %s)' % (self.expand(first),
                                   self.expand(second, first.type))
         else:
