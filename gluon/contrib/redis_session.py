@@ -111,7 +111,7 @@ class MockTable(object):
         self.session_expiry = session_expiry
         self.with_lock = with_lock
 
-    def __call__(self, record_id):
+    def __call__(self, record_id, unique_key=None):
         # Support DAL shortcut query: table(record_id)
 
         q = self.id  # This will call the __getattr__ below
@@ -120,6 +120,7 @@ class MockTable(object):
         # Instructs MockQuery, to behave as db(table.id == record_id)
         q.op = 'eq'
         q.value = record_id
+        q.unique_key = unique_key
 
         row = q.select()
         return row[0] if row else Storage()
@@ -129,7 +130,7 @@ class MockTable(object):
             #return a fake query. We need to query it just by id for normal operations
             self.query = MockQuery(field='id', db=self.r_server,
                     prefix=self.keyprefix, session_expiry=self.session_expiry,
-                    with_lock=self.with_lock)
+                    with_lock=self.with_lock, unique_key=self.unique_key)
             return self.query
         elif key == '_db':
             #needed because of the calls in sessions2trash.py and globals.py
@@ -162,7 +163,7 @@ class MockQuery(object):
        and listing all keys. No other operation is supported
     """
     def __init__(self, field=None, db=None, prefix=None, session_expiry=False,
-            with_lock=False):
+            with_lock=False, unique_key=None):
         self.field = field
         self.value = None
         self.db = db
@@ -170,6 +171,7 @@ class MockQuery(object):
         self.op = None
         self.session_expiry = session_expiry
         self.with_lock = with_lock
+        self.unique_key = unique_key
 
     def __eq__(self, value, op='eq'):
         self.value = value
@@ -187,7 +189,12 @@ class MockQuery(object):
                 acquire_lock(self.db, key + ':lock', self.value)
             rtn = self.db.hgetall(key)
             if rtn:
-                rtn['update_record'] = self.update  # update record support
+                if self.unique_key:
+                    #make sure the id and unique_key are correct
+                    if rtn['unique_key'] == self.unique_key:
+                        rtn['update_record'] = self.update  # update record support
+                    else:
+                        rtn = None
             return [Storage(rtn)] if rtn else []
         elif self.op == 'ge' and self.field == 'id' and self.value == 0:
             #means that someone wants the complete list
