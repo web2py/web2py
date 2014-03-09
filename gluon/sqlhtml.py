@@ -2599,8 +2599,11 @@ class SQLFORM(FORM):
             for k, v in sorted(exportManager.items()):
                 if not v:
                     continue
-                label = v[1] if hasattr(v, "__getitem__") else k
-                title = v[2] if hasattr(v, "__getitem__") else label
+                if hasattr(v, "__getitem__"):
+                    label = v[1]
+                    title = v[2] if len(v)>2 else label
+                else:
+                    label = title = k
                 link = url2(vars=dict(
                     order=request.vars.order or '',
                     _export_type=k,
