@@ -11114,7 +11114,7 @@ class Rows(object):
                     if field.type=='blob' and not value is None:
                         value = base64.b64encode(value)
                     elif represent and field.represent:
-                        value = field.represent(value)
+                        value = field.represent(value,record)
                     row.append(none_exception(value))
             writer.writerow(row)
 
