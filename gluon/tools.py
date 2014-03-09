@@ -2062,8 +2062,9 @@ class Auth(object):
         if user and user.get(settings.passfield, False):
             password = settings.table_user[
                 settings.passfield].validate(password)[0]
-            if not user.registration_key.strip() and password == \
-                user[settings.passfield]:
+            if ((user.registration_key is None or 
+                 not user.registration_key.strip()) and 
+                password == user[settings.passfield]):
                 self.login_user(user)
                 return user
         else:
@@ -2349,8 +2350,8 @@ class Auth(object):
                     elif temp_user.registration_key in ('disabled', 'blocked'):
                         response.flash = self.messages.login_disabled
                         return form
-                    elif not temp_user.registration_key is None and \
-                            temp_user.registration_key.strip():
+                    elif (not temp_user.registration_key is None 
+                          and temp_user.registration_key.strip()):
                         response.flash = \
                             self.messages.registration_verifying
                         return form
