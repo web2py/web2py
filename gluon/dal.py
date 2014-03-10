@@ -201,7 +201,7 @@ CALLABLETYPES = (types.LambdaType, types.FunctionType,
 TABLE_ARGS = set(
     ('migrate','primarykey','fake_migrate','format','redefine',
      'singular','plural','trigger_name','sequence_name','fields',
-     'common_filter','polymodel','table_class','on_define','rname'))
+     'common_filter','polymodel','table_class','on_define','rname', 'unique'))
 
 SELECT_ARGS = set(
     ('orderby', 'groupby', 'limitby','required', 'cache', 'left',
@@ -8672,6 +8672,9 @@ class Table(object):
         if 'primarykey' in args and args['primarykey'] is not None:
             self._primarykey = args.get('primarykey')
 
+        if 'unique' in args and args['unique'] is not None:
+            self._unique = args.get('unique')
+
         self._before_insert = []
         self._before_update = [Set.delete_uploaded_files]
         self._before_delete = [Set.delete_uploaded_files]
@@ -9103,6 +9106,19 @@ class Table(object):
                     fields[field.name] = field.default
         return fields
 
+    def _getkeys(self, **fields):
+        keys = {}
+        for key, value in fields.iteritems():
+            if key in self._primarykey:
+                keys[key] = value
+        if keys != {}:
+            return keys
+        else:
+            for key, value in fields.iteritems():
+                if key in self._unique:
+                    keys[key] = value
+            return keys if keys != {} else None
+
     def _insert(self, **fields):
         fields = self._defaults(fields)
         return self._db._adapter._insert(self, self._listify(fields))
@@ -9121,8 +9137,8 @@ class Table(object):
         response = Row()
         response.errors = Row()
         new_fields = copy.copy(fields)
-        for key,value in fields.iteritems():
-            value,error = self[key].validate(value)
+        for key, value in fields.iteritems():
+            value, error = self[key].validate(value)
             if error:
                 response.errors[key] = "%s" % error
             else:
@@ -9145,8 +9161,9 @@ class Table(object):
             else:
                 new_fields[key] = value
 
-        if _key is DEFAULT:
-            record = self(**fields)
+        if _key is DEFAULT or _key == '':
+            _key = self._getkeys(**fields)
+            record = self(**_key)
         elif isinstance(_key, dict):
             record = self(**_key)
         else:
@@ -9168,36 +9185,25 @@ class Table(object):
             response.id = None
         return response
 
-    def update_or_insert(self, _key=DEFAULT, **values):
-        if _key is DEFAULT:
-            record = self(**values)
+    def update_or_insert(self, _key=DEFAULT, **fields):
+        if _key is DEFAULT or _key == '':
+            _key = self._getkeys(**fields)
+            record = self(**_key)
         elif isinstance(_key, dict):
             record = self(**_key)
         else:
             record = self(_key)
         if record:
-            record.update_record(**values)
+            record.update_record(**fields)
             newid = None
         else:
-            newid = self.insert(**values)
+            newid = self.insert(**fields)
         return newid
 
     def validate_and_update_or_insert(self, _key=DEFAULT, **fields):
         if _key is DEFAULT or _key == '':
-            primary_keys = {}
-            for key, value in fields.iteritems():
-                if key in self._primarykey:
-                    primary_keys[key] = value
-            if primary_keys != {}:
-                record = self(**primary_keys)
-                _key = primary_keys
-            else:
-                required_keys = {}
-                for key, value in fields.iteritems():
-                    if getattr(self, key).required:
-                        required_keys[key] = value
-                record = self(**required_keys)
-                _key = required_keys
+            _key = self._getkeys(**fields)
+            record = self(**_key)
         elif isinstance(_key, dict):
             record = self(**_key)
         else:
