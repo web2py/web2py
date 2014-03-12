@@ -2,14 +2,12 @@
 # -*- coding: utf-8 -*-
 
 """
-This file is part of the web2py Web Framework
-Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
-License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
+| This file is part of the web2py Web Framework
+| Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
+| License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 
-Contains:
-
-- wsgibase: the gluon wsgi application
-
+The gluon wsgi application
+---------------------------
 """
 
 if False: import import_all # DO NOT REMOVE PART OF FREEZE PROCESS
@@ -135,9 +133,9 @@ HTTPS_SCHEMES = set(('https', 'HTTPS'))
 
 def get_client(env):
     """
-    guess the client address from the environment variables
+    Guesses the client address from the environment variables
 
-    first tries 'http_x_forwarded_for', secondly 'remote_addr'
+    First tries 'http_x_forwarded_for', secondly 'remote_addr'
     if all fails, assume '127.0.0.1' or '::1' (running locally)
     """
     eget = env.get
@@ -160,7 +158,7 @@ def get_client(env):
 
 def serve_controller(request, response, session):
     """
-    this function is used to generate a dynamic page.
+    This function is used to generate a dynamic page.
     It first runs all models, then runs the function in the controller,
     and then tries to render the output using a view/template.
     this function must run from the [application] folder.
@@ -234,7 +232,7 @@ class LazyWSGI(object):
         return self._environ
     def start_response(self,status='200', headers=[], exec_info=None):
         """
-        in controller you can use::
+        in controller you can use:
 
         - request.wsgi.environ
         - request.wsgi.start_response
@@ -249,7 +247,7 @@ class LazyWSGI(object):
         """
         In you controller use::
 
-        @request.wsgi.middleware(middleware1, middleware2, ...)
+            @request.wsgi.middleware(middleware1, middleware2, ...)
 
         to decorate actions with WSGI middleware. actions must return strings.
         uses a simulated environment so it may have weird behavior in some cases
@@ -271,9 +269,9 @@ class LazyWSGI(object):
 
 def wsgibase(environ, responder):
     """
-    this is the gluon wsgi application. the first function called when a page
-    is requested (static or dynamic). it can be called by paste.httpserver
-    or by apache mod_wsgi.
+    The gluon wsgi application. The first function called when a page
+    is requested (static or dynamic). It can be called by paste.httpserver
+    or by apache mod_wsgi (or any WSGI-compatible server).
 
       - fills request with info
       - the environment variables, replacing '.' with '_'
@@ -290,13 +288,11 @@ def wsgibase(environ, responder):
     2. for dynamic pages:
 
       - /<application>[/<controller>[/<function>[/<sub>]]][.<extension>]
-      - (sub may go several levels deep, currently 3 levels are supported:
-         sub1/sub2/sub3)
 
     The naming conventions are:
 
       - application, controller, function and extension may only contain
-        [a-zA-Z0-9_]
+        `[a-zA-Z0-9_]`
       - file and sub may also contain '-', '=', '.' and '/'
     """
     eget = environ.get
@@ -567,7 +563,7 @@ def wsgibase(environ, responder):
 
 def save_password(password, port):
     """
-    used by main() to save the password in the parameters_port.py file.
+    Used by main() to save the password in the parameters_port.py file.
     """
 
     password_file = abspath('parameters_%i.py' % port)
@@ -607,10 +603,10 @@ def appfactory(wsgiapp=wsgibase,
     generates a wsgi application that does logging and profiling and calls
     wsgibase
 
-    .. function:: gluon.main.appfactory(
-            [wsgiapp=wsgibase
-            [, logfilename='httpserver.log'
-            [, profilerfilename='profiler.log']]])
+    Args:
+        wsgiapp: the base application
+        logfilename: where to store apache-compatible requests log
+        profiler_dir: where to store profile files
 
     """
     if profilerfilename is not None:
