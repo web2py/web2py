@@ -7729,7 +7729,7 @@ class DAL(object):
                  bigint_id=False, debug=False, lazy_tables=False,
                  db_uid=None, do_connect=True,
                  after_connection=None, tables=None, ignore_field_case=True,
-                 entity_quoting=False):
+                 entity_quoting=False, db_hash=None):
         """
         Creates a new Database Abstraction Layer instance.
 
@@ -7872,7 +7872,7 @@ class DAL(object):
                                         entity_quoting=entity_quoting)
             migrate = fake_migrate = False
         adapter = self._adapter
-        self._uri_hash = hashlib_md5(adapter.uri).hexdigest()
+        self._uri_hash = db_hash or orhashlib_md5(adapter.uri).hexdigest()
         self.check_reserved = check_reserved
         if self.check_reserved:
             from reserved_sql_keywords import ADAPTERS as RSK
