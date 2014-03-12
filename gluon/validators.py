@@ -17,10 +17,11 @@ import cgi
 import urllib
 import struct
 import decimal
+import unicodedata
 from cStringIO import StringIO
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from gluon.dal import FieldVirtual, FieldMethod
-from gluon.contrib import translitcodec
+# from gluon.contrib import translitcodec
     
 regex_isint = re.compile('^[+-]?\d+$')
 
@@ -2519,7 +2520,8 @@ def urlify(s, maxlen=80, keep_underscores=False):
     if isinstance(s, str):
         s = s.decode('utf-8')             # to unicode
     s = s.lower()                         # to lowercase
-    s = s.encode('translit/long')         # replace special characters
+    s = unicodedata.normalize('NFKD', s)  # replace special characters
+    # s = s.encode('translit/long')       # (proposed change to above line breaks Pypy)
     s = s.encode('ascii', 'ignore')       # encode as ASCII
     s = re.sub('&\w+?;', '', s)           # strip html entities
     if keep_underscores:
