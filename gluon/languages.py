@@ -28,7 +28,6 @@ from gluon.portalocker import read_locked, LockedFile
 from utf8 import Utf8
 
 from gluon.fileutils import listdir
-import gluon.settings as settings
 from gluon.cfs import getcfs
 from gluon.html import XML, xmlescape
 from gluon.contrib.markmin.markmin2html import render, markmin_escape
@@ -42,7 +41,6 @@ pjoin = os.path.join
 pexists = os.path.exists
 pdirname = os.path.dirname
 isdir = os.path.isdir
-is_gae = False # settings.global_settings.web2py_runtime_gae
 
 DEFAULT_LANGUAGE = 'en'
 DEFAULT_LANGUAGE_NAME = 'English'
@@ -77,6 +75,10 @@ regex_plural_tuple = re.compile(
     '^{(?P<w>[^[\]()]+)(?:\[(?P<i>\d+)\])?}$')  # %%{word[index]} or %%{word}
 regex_plural_file = re.compile('^plural-[a-zA-Z]{2}(-[a-zA-Z]{2})?\.py$')
 
+def is_writable():
+    """ returns True if and only if the filesystem is writable """
+    from gluon.settings import global_settings
+    return not global_settings.web2py_runtime_gae
 
 def safe_eval(text):
     if text.strip():
@@ -295,36 +297,44 @@ def read_plural_dict(filename):
 def write_plural_dict(filename, contents):
     if '__corrupted__' in contents:
         return
+    fp = None
     try:
         fp = LockedFile(filename, 'w')
         fp.write('#!/usr/bin/env python\n# -*- coding: utf-8 -*-\n{\n# "singular form (0)": ["first plural form (1)", "second plural form (2)", ...],\n')
-        for key in sorted(contents, lambda x, y: cmp(unicode(x, 'utf-8').lower(), unicode(y, 'utf-8').lower())):
+        for key in sorted(contents, sort_function):
             forms = '[' + ','.join([repr(Utf8(form))
-                                   for form in contents[key]]) + ']'
+                                    for form in contents[key]]) + ']'
             fp.write('%s: %s,\n' % (repr(Utf8(key)), forms))
         fp.write('}\n')
     except (IOError, OSError):
-        if not is_gae:
+        if is_writable():
             logging.warning('Unable to write to file %s' % filename)
         return
     finally:
-        fp.close()
+        if fp:
+            fp.close()
 
+def sort_function(x,y):
+    return cmp(unicode(x, 'utf-8').lower(), unicode(y, 'utf-8').lower())
 
 def write_dict(filename, contents):
     if '__corrupted__' in contents:
         return
+    fp = None
     try:
         fp = LockedFile(filename, 'w')
+        fp.write('# -*- coding: utf-8 -*-\n{\n')
+        for key in sorted(contents, sort_function):                          
+            fp.write('%s: %s,\n' % (repr(Utf8(key)), 
+                                    repr(Utf8(contents[key]))))
+        fp.write('}\n')
     except (IOError, OSError):
-        if not settings.global_settings.web2py_runtime_gae:
+        if is_writable():
             logging.warning('Unable to write to file %s' % filename)
         return
-    fp.write('# -*- coding: utf-8 -*-\n{\n')
-    for key in sorted(contents, lambda x, y: cmp(unicode(x, 'utf-8').lower(), unicode(y, 'utf-8').lower())):
-        fp.write('%s: %s,\n' % (repr(Utf8(key)), repr(Utf8(contents[key]))))
-    fp.write('}\n')
-    fp.close()
+    finally:
+        if fp:
+            fp.close()
 
 
 class lazyT(object):
@@ -450,7 +460,6 @@ class translator(object):
     def __init__(self, langpath, http_accept_language):
         self.langpath = langpath
         self.http_accept_language = http_accept_language
-        self.is_writable = not is_gae
         # filled in self.force():
         #------------------------
         # self.cache
@@ -581,7 +590,7 @@ class translator(object):
                     form = self.construct_plural_form(word, id)
                     forms[id - 1] = form
                     self.plural_dict[word] = forms
-                    if self.is_writable and self.plural_file:
+                    if is_writable() and self.plural_file:
                         write_plural_dict(self.plural_file,
                                           self.plural_dict)
                     return form
@@ -792,7 +801,8 @@ class translator(object):
         # guess translation same as original
         self.t[key] = mt = self.default_t.get(key, message)
         # update language file for latter translation
-        if self.is_writable and self.language_file != self.default_language_file:
+        if is_writable() and \
+                self.language_file != self.default_language_file:
             write_dict(self.language_file, self.t)
         return regex_backslash.sub(
             lambda m: m.group(1).translate(ttab_in), mt)
