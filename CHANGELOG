@@ -1,5 +1,6 @@
-## 2.9.1 - 2.9.3
+## 2.9.1 - 2.9.5
 
+- many small but important bug fixes
 - jquery 1.11
 - codemirror 3.21, thanks Paolo Valleri
 - fixed security issue with sessions in database, thanks Nathan Humphreys

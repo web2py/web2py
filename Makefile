@@ -30,7 +30,7 @@ update:
 	echo "remember that pymysql was tweaked"
 src:
 	### Use semantic versioning
-	echo 'Version 2.9.4-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
+	echo 'Version 2.9.5-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
 	### rm -f all junk files
 	make clean
 	### clean up baisc apps
