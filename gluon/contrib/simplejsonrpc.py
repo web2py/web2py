@@ -133,14 +133,13 @@ class ServerProxy(object):
         # {'version': '1.1', 'id': id, 'result': result, 'error': None}
         response = json.loads(response)
 
-        if response['id'] != request_id:
-            raise JSONRPCError(0, "JSON Request ID != Response ID")
-
         self.error = response.get('error', {})
         if self.error and self.exceptions:
             raise JSONRPCError(self.error.get('code', 0),
                                self.error.get('message', ''),
                                self.error.get('data', None))
+        if response['id'] != request_id:
+            raise JSONRPCError(0, "JSON Request ID != Response ID")
 
         return response.get('result')
 
