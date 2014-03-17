@@ -7872,7 +7872,7 @@ class DAL(object):
                                         entity_quoting=entity_quoting)
             migrate = fake_migrate = False
         adapter = self._adapter
-        self._uri_hash = db_hash or orhashlib_md5(adapter.uri).hexdigest()
+        self._uri_hash = db_hash or hashlib_md5(adapter.uri).hexdigest()
         self.check_reserved = check_reserved
         if self.check_reserved:
             from reserved_sql_keywords import ADAPTERS as RSK
