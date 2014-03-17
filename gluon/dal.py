@@ -1480,7 +1480,7 @@ class BaseAdapter(ConnectionPool):
         return '(%s)' % ' || '.join(self.expand(x,'string') for x in items)
 
     def ADD(self, first, second):
-        if self.is_numerical_type(first.type) or isinstance(first.type, gluon.dal.Field):
+        if self.is_numerical_type(first.type) or isinstance(first.type, Field):
             return '(%s + %s)' % (self.expand(first),
                                   self.expand(second, first.type))
         else:
@@ -9153,8 +9153,17 @@ class Table(object):
             record = self(_key)
 
         if not response.errors and record:
-            row = self._db(self._id ==_key)
-            response.id = row.update(**fields)
+            if '_id' in self:
+                myset = self._db(self._id == record[self._id.name])
+            else:
+                query = None
+                for key, value in _key.iteritems():
+                    if query is None:
+                        query = getattr(self, key) == value
+                    else:
+                        query = query & (getattr(self, key) == value)
+                myset = self._db(query)
+            response.id = myset.update(**fields)
         else:
             response.id = None
         return response
@@ -9172,6 +9181,37 @@ class Table(object):
         else:
             newid = self.insert(**values)
         return newid
+
+    def validate_and_update_or_insert(self, _key=DEFAULT, **fields):
+        if _key is DEFAULT or _key == '':
+            primary_keys = {}
+            for key, value in fields.iteritems():
+                if key in self._primarykey:
+                    primary_keys[key] = value
+            if primary_keys != {}:
+                record = self(**primary_keys)
+                _key = primary_keys
+            else:
+                required_keys = {}
+                for key, value in fields.iteritems():
+                    if getattr(self, key).required:
+                        required_keys[key] = value
+                record = self(**required_keys)
+                _key = required_keys
+        elif isinstance(_key, dict):
+            record = self(**_key)
+        else:
+            record = self(_key)
+
+        if record:
+            response = self.validate_and_update(_key, **fields)
+            primary_keys = {}
+            for key in self._primarykey:
+                primary_keys[key] = getattr(record, key)
+            response.id = primary_keys
+        else:
+            response = self.validate_and_insert(**fields)
+        return response
 
     def bulk_insert(self, items):
         """
@@ -11074,7 +11114,7 @@ class Rows(object):
                     if field.type=='blob' and not value is None:
                         value = base64.b64encode(value)
                     elif represent and field.represent:
-                        value = field.represent(value)
+                        value = field.represent(value,record)
                     row.append(none_exception(value))
             writer.writerow(row)
 

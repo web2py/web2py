@@ -2599,8 +2599,11 @@ class SQLFORM(FORM):
             for k, v in sorted(exportManager.items()):
                 if not v:
                     continue
-                label = v[1] if hasattr(v, "__getitem__") else k
-                title = v[2] if hasattr(v, "__getitem__") else label
+                if hasattr(v, "__getitem__"):
+                    label = v[1]
+                    title = v[2] if len(v)>2 else label
+                else:
+                    label = title = k
                 link = url2(vars=dict(
                     order=request.vars.order or '',
                     _export_type=k,
@@ -2926,7 +2929,8 @@ class SQLTABLE(TABLE):
         if not sqlrows:
             return
         if not columns:
-            columns = ['.'.join(sqlrows.db._adapter.REGEX_TABLE_DOT_FIELD.match(c).groups()) for c in sqlrows.colnames]
+            REGEX_TABLE_DOT_FIELD = sqlrows.db._adapter.REGEX_TABLE_DOT_FIELD
+            columns = [c for c in sqlrows.colnames if REGEX_TABLE_DOT_FIELD.match(c)]
         if headers == 'fieldname:capitalize':
             headers = {}
             for c in columns:

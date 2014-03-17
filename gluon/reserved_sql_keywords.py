@@ -22,6 +22,7 @@ __author__ = "Thadeus Burgess <thadeusb@thadeusb.com>"
 # These are keywords that are common to all SQL dialects, and should
 # never be used as a table or column. Even if you use one of these
 # the cursor will throw an OperationalError for the SQL syntax.
+
 COMMON = set((
     'SELECT',
     'INSERT',

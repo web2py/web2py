@@ -81,12 +81,13 @@ class JSONSafeTransport(JSONTransportMixin, SafeTransport):
 class ServerProxy(object):
     "JSON RPC Simple Client Service Proxy"
 
-    def __init__(self, uri, transport=None, encoding=None, verbose=0):
+    def __init__(self, uri, transport=None, encoding=None, verbose=0,version=None):
         self.location = uri             # server location (url)
         self.trace = verbose            # show debug messages
         self.exceptions = True          # raise errors? (JSONRPCError)
         self.timeout = None
         self.json_request = self.json_response = ''
+        self.version = version          # '2.0' for jsonrpc2
 
         type, uri = urllib.splittype(uri)
         if type not in ("http", "https"):
@@ -112,6 +113,8 @@ class ServerProxy(object):
         # build data sent to the service
         request_id = random.randint(0, sys.maxint)
         data = {'id': request_id, 'method': method, 'params': args, }
+        if self.version:
+            data['jsonrpc'] = self.version #mandatory key/value for jsonrpc2 validation else err -32600
         request = json.dumps(data)
 
         # make HTTP request (retry if connection is lost)
@@ -130,14 +133,13 @@ class ServerProxy(object):
         # {'version': '1.1', 'id': id, 'result': result, 'error': None}
         response = json.loads(response)
 
-        if response['id'] != request_id:
-            raise JSONRPCError(0, "JSON Request ID != Response ID")
-
         self.error = response.get('error', {})
         if self.error and self.exceptions:
             raise JSONRPCError(self.error.get('code', 0),
                                self.error.get('message', ''),
                                self.error.get('data', None))
+        if response['id'] != request_id:
+            raise JSONRPCError(0, "JSON Request ID != Response ID")
 
         return response.get('result')
 

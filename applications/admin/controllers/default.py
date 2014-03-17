@@ -1937,7 +1937,7 @@ def install_plugin():
             session.flash = T('New plugin installed: %s', filename)
         else:
             session.flash = \
-                T('unable to create application "%s"', filename)
+                T('unable to install plugin "%s"', filename)
         redirect(URL(f="plugins", args=[app,]))
     return dict(form=form, app=app, plugin=plugin, source=source)
 
