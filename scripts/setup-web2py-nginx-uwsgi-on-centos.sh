@@ -181,8 +181,9 @@ echo '
 server {
   listen 80;
   server_name $hostname;
-  location ~* /(\w+)/static/ {
-    root /opt/web-apps/web2py/applications/;
+  location ~* /(\w+)/static(?:/_[\d]+\.[\d]+\.[\d]+)?/(.*)$ {
+            alias /opt/web-apps/web2py/applications/$1/static/$2;
+            expires max;
   }
   location / {
     uwsgi_pass 127.0.0.1:9001;
@@ -200,6 +201,10 @@ server {
     uwsgi_pass 127.0.0.1:9001;
     include uwsgi_params;
     uwsgi_param UWSGI_SCHEME $scheme;
+  }
+  location ~* /(\w+)/static(?:/_[\d]+\.[\d]+\.[\d]+)?/(.*)$ {
+            alias /opt/web-apps/web2py/applications/$1/static/$2;
+            expires max;
   }
 }
 ' > /etc/nginx/conf.d/web2py.conf
