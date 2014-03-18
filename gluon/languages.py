@@ -484,6 +484,7 @@ class translator(object):
         self.filter = markmin
         self.ftag = 'markmin'
         self.ns = None
+        self.is_writable = True
 
     def get_possible_languages_info(self, lang=None):
         """
@@ -590,7 +591,7 @@ class translator(object):
                     form = self.construct_plural_form(word, id)
                     forms[id - 1] = form
                     self.plural_dict[word] = forms
-                    if is_writable() and self.plural_file:
+                    if self.is_writable and is_writable() and self.plural_file:
                         write_plural_dict(self.plural_file,
                                           self.plural_dict)
                     return form
@@ -801,7 +802,7 @@ class translator(object):
         # guess translation same as original
         self.t[key] = mt = self.default_t.get(key, message)
         # update language file for latter translation
-        if is_writable() and \
+        if self.is_writable and is_writable() and \
                 self.language_file != self.default_language_file:
             write_dict(self.language_file, self.t)
         return regex_backslash.sub(
