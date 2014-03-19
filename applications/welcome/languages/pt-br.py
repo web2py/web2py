@@ -1,4 +1,4 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
 {
 '!langcode!': 'pt-br',
 '!langname!': 'Português (do Brasil)',
@@ -11,6 +11,7 @@
 'About': 'Sobre',
 'Access Control': 'Controle de Acesso',
 'Administrative Interface': 'Interface Administrativa',
+'@markmin\x01An error occured, please [[reload %s]] the page': 'An error occured, please [[reload %s]] the page',
 'Administrative interface': 'Interface administrativa',
 'Ajax Recipes': 'Receitas de Ajax',
 'appadmin is disabled because insecure channel': 'Administração desativada devido ao canal inseguro',
@@ -59,6 +60,7 @@
 'Edit This App': 'Editar esta aplicação',
 'Email and SMS': 'Email e SMS',
 'Errors': 'Erros',
+'Enter an integer between %(min)g and %(max)g': 'Enter an integer between %(min)g and %(max)g',
 'export as csv file': 'exportar como um arquivo csv',
 'FAQ': 'FAQ',
 'First name': 'Nome',
@@ -100,6 +102,7 @@
 'new record inserted': 'novo registro inserido',
 'next 100 rows': 'próximas 100 linhas',
 'No databases in this application': 'Sem bancos de dados nesta aplicação',
+'Object or table name': 'Object or table name',
 'Online examples': 'Alguns exemplos',
 'or import from csv file': 'ou importar de um arquivo csv',
 'Origin': 'Origem',
@@ -128,6 +131,7 @@
 'Reset Password key': 'Resetar chave de senha',
 'Resources': 'Recursos',
 'Role': 'Papel',
+'Registration identifier': 'Registration identifier',
 'Rows in Table': 'Linhas na tabela',
 'Rows selected': 'Linhas selecionadas',
 'Semantic': 'Semântico',
@@ -146,6 +150,7 @@
 'The output of the file is a dictionary that was rendered by the view %s': 'The output of the file is a dictionary that was rendered by the view %s',
 'The Views': 'As views',
 'This App': 'Esta aplicação',
+'This email already has an account': 'This email already has an account',
 'This is a copy of the scaffolding application': 'This is a copy of the scaffolding application',
 'Time in Cache (h:m:s)': 'Tempo em Cache (h:m:s)',
 'Timestamp': 'Timestamp',
@@ -167,4 +172,5 @@
 'You are successfully running web2py.': 'Você está rodando o web2py com sucesso.',
 'You can modify this application and adapt it to your needs': 'Você pode modificar esta aplicação e adaptá-la para as suas necessidades',
 'You visited the url %s': 'Você acessou a url %s',
+'Working...': 'Working...',
 }
