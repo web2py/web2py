@@ -569,6 +569,13 @@ class IS_IN_DB(Validator):
                 raise NotImplementedError
             if isinstance(value, list):
                 values = value
+            elif isinstance(value, str):                                        
+                from ast import literal_eval
+                values = literal_eval(value)
+                if isinstance(values, tuple):
+                    values = [str(v) for v in values]
+                else:
+                    values = [str(values)]    
             elif value:
                 values = [value]
             else:
