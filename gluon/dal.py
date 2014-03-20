@@ -8735,9 +8735,9 @@ class Table(object):
             for field in fields:
                 fn = field.uploadfield
                 if isinstance(field, Field) and field.type == 'upload'\
-                        and fn is True:
+                        and fn is True and not field.uploadfs:
                     fn = field.uploadfield = '%s_blob' % field.name
-                if isinstance(fn, str) and not fn in uploadfields:
+                if isinstance(fn, str) and not fn in uploadfields and not field.uploadfs:
                     fields.append(Field(fn, 'blob', default='',
                                         writable=False, readable=False))
 
