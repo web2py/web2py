@@ -2538,7 +2538,7 @@ class SQLFORM(FORM):
                         trcols.append(row_buttons)
                     if buttons_placement in ['left', 'both']:
                         trcols.insert(0, row_buttons)
-                if numrec % 2 == 0:
+                if numrec % 2 == 1:
                     classtr = 'w2p_even even'
                 else:
                     classtr = 'w2p_odd odd'
@@ -2981,7 +2981,7 @@ class SQLTABLE(TABLE):
         tbody = []
         for (rc, record) in enumerate(sqlrows):
             row = []
-            if rc % 2 == 0:
+            if rc % 2 == 1:
                 _class = 'w2p_even even'
             else:
                 _class = 'w2p_odd odd'
