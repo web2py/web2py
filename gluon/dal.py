@@ -1710,7 +1710,7 @@ class BaseAdapter(ConnectionPool):
             return self.expand(field, colnames=True)
         self._colnames = map(colexpand, fields)
         def geoexpand(field):
-            if isinstance(field.type,str) and field.type.startswith('geometry') and isinstance(field, Field):
+            if isinstance(field.type,str) and field.type.startswith('geo') and isinstance(field, Field):
                 field = field.st_astext()
             return self.expand(field)
         sql_f = ', '.join(map(geoexpand, fields))
@@ -8735,9 +8735,9 @@ class Table(object):
             for field in fields:
                 fn = field.uploadfield
                 if isinstance(field, Field) and field.type == 'upload'\
-                        and fn is True:
+                        and fn is True and not field.uploadfs:
                     fn = field.uploadfield = '%s_blob' % field.name
-                if isinstance(fn, str) and not fn in uploadfields:
+                if isinstance(fn, str) and not fn in uploadfields and not field.uploadfs:
                     fields.append(Field(fn, 'blob', default='',
                                         writable=False, readable=False))
 

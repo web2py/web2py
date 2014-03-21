@@ -62,12 +62,11 @@ mdp:
 	make win
 app:
 	python2.7 -c 'import compileall; compileall.compile_dir("gluon/")'
-	rm ../web2py_osx/site-packages.zip | echo "warning: no site-packages.zip"
 	#python web2py.py -S welcome -R __exit__.py
 	#cd ../web2py_osx/site-packages/; unzip ../site-packages.zip
-	find gluon -path '*.pyc' -exec cp {} ../web2py_osx/site-packages/{} \;
-	cd ../web2py_osx/site-packages/; zip -r ../site-packages.zip *
-	mv ../web2py_osx/site-packages.zip ../web2py_osx/web2py/web2py.app/Contents/Resources/lib/python2.7
+	#find gluon -path '*.pyc' -exec cp {} ../web2py_osx/site-packages/{} \;
+	#cd ../web2py_osx/site-packages/; zip -r ../site-packages.zip *
+	#mv ../web2py_osx/site-packages.zip ../web2py_osx/web2py/web2py.app/Contents/Resources/lib/python2.7
 	find gluon -path '*.py' -exec cp -R {} ../web2py_osx/web2py/web2py.app/Contents/Resources/{} \;	
 	cp README.markdown ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp NEWINSTALL ../web2py_osx/web2py/web2py.app/Contents/Resources
@@ -86,7 +85,6 @@ app:
 	mv ../web2py_osx/web2py_osx.zip .
 win:
 	python2.7 -c 'import compileall; compileall.compile_dir("gluon/")'
-	rm ../web2py_win/library.zip | echo 'warning: no library.zip'
 	#cd ../web2py_win/library/; unzip ../library.zip
 	find gluon -path '*.pyc' -exec cp -R {} ../web2py_win/library/{} \;
 	cd ../web2py_win/library/; zip -r ../library.zip *
