@@ -4,7 +4,7 @@
 """
 This file is part of web2py Web Framework (Copyrighted, 2007-2009).
 Developed by Massimo Di Pierro <mdipierro@cs.depaul.edu>.
-License: GPL v2
+License: LGPL v3
 
 Tinkered by Szabolcs Gyuris < szimszo n @ o regpreshaz dot eu>
 """
