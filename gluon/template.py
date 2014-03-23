@@ -2,16 +2,16 @@
 # -*- coding: utf-8 -*-
 
 """
-This file is part of the web2py Web Framework (Copyrighted, 2007-2011).
-License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
+| This file is part of the web2py Web Framework
+| License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
+| Author: Thadeus Burgess
+| Contributors:
+| - Massimo Di Pierro for creating the original gluon/template.py
+| - Jonathan Lundell for extensively testing the regex on Jython.
+| - Limodou (creater of uliweb) who inspired the block-element support for web2py.
 
-Author: Thadeus Burgess
-
-Contributors:
-
-- Thank you to Massimo Di Pierro for creating the original gluon/template.py
-- Thank you to Jonathan Lundell for extensively testing the regex on Jython.
-- Thank you to Limodou (creater of uliweb) who inspired the block-element support for web2py.
+Templating syntax
+------------------
 """
 
 import os
@@ -90,6 +90,7 @@ class BlockNode(Node):
         {{ block test }}
             This is default block test
         {{ end }}
+
     """
     def __init__(self, name='', pre_extend=False, delimiters=('{{', '}}')):
         """
@@ -115,11 +116,10 @@ class BlockNode(Node):
 
     def append(self, node):
         """
-        Add an element to the nodes.
+        Adds an element to the nodes.
 
-        Keyword Arguments
-
-        - node -- Node object or string to append.
+        Args:
+            node: Node object or string to append.
         """
         if isinstance(node, str) or isinstance(node, Node):
             self.nodes.append(node)
@@ -128,11 +128,10 @@ class BlockNode(Node):
 
     def extend(self, other):
         """
-        Extend the list of nodes with another BlockNode class.
+        Extends the list of nodes with another BlockNode class.
 
-        Keyword Arguments
-
-        - other -- BlockNode or Content object to extend from.
+        Args:
+            other: BlockNode or Content object to extend from.
         """
         if isinstance(other, BlockNode):
             self.nodes.extend(other.nodes)
@@ -143,8 +142,9 @@ class BlockNode(Node):
     def output(self, blocks):
         """
         Merges all nodes into a single string.
-        blocks -- Dictionary of blocks that are extending
-        from this template.
+
+        Args:
+            blocks: Dictionary of blocks that are extending from this template.
         """
         return ''.join(output_aux(node, blocks) for node in self.nodes)
 
@@ -154,13 +154,11 @@ class Content(BlockNode):
     Parent Container -- Used as the root level BlockNode.
 
     Contains functions that operate as such.
+
+    Args:
+        name: Unique name for this BlockNode
     """
     def __init__(self, name="ContentBlock", pre_extend=False):
-        """
-        Keyword Arguments
-
-        name -- Unique name for this BlockNode
-        """
         self.name = name
         self.nodes = []
         self.blocks = {}
@@ -220,6 +218,21 @@ class Content(BlockNode):
 
 
 class TemplateParser(object):
+    """Parse all blocks
+
+    Args:
+        text: text to parse
+        context: context to parse in
+        path: folder path to templates
+        writer: string of writer class to use
+        lexers: dict of custom lexers to use.
+        delimiters: for example `('{{','}}')`
+        _super_nodes: a list of nodes to check for inclusion
+            this should only be set by "self.extend"
+            It contains a list of SuperNodes from a child
+            template that need to be handled.
+
+    """
 
     default_delimiters = ('{{', '}}')
     r_tag = compile(r'(\{\{.*?\}\})', DOTALL)
@@ -244,18 +257,6 @@ class TemplateParser(object):
                  delimiters=('{{', '}}'),
                  _super_nodes = [],
                  ):
-        """
-        text -- text to parse
-        context -- context to parse in
-        path -- folder path to templates
-        writer -- string of writer class to use
-        lexers -- dict of custom lexers to use.
-        delimiters -- for example ('{{','}}')
-        _super_nodes -- a list of nodes to check for inclusion
-                        this should only be set by "self.extend"
-                        It contains a list of SuperNodes from a child
-                        template that need to be handled.
-        """
 
         # Keep a root level name.
         self.name = name
@@ -317,18 +318,18 @@ class TemplateParser(object):
 
     def to_string(self):
         """
-        Return the parsed template with correct indentation.
+        Returns the parsed template with correct indentation.
 
         Used to make it easier to port to python3.
         """
         return self.reindent(str(self.content))
 
     def __str__(self):
-        "Make sure str works exactly the same as python 3"
+        "Makes sure str works exactly the same as python 3"
         return self.to_string()
 
     def __unicode__(self):
-        "Make sure str works exactly the same as python 3"
+        "Makes sure str works exactly the same as python 3"
         return self.to_string()
 
     def reindent(self, text):
@@ -411,13 +412,13 @@ class TemplateParser(object):
 
     def _raise_error(self, message='', text=None):
         """
-        Raise an error using itself as the filename and textual content.
+        Raises an error using itself as the filename and textual content.
         """
         raise RestrictedError(self.name, text or self.text, message)
 
     def _get_file_text(self, filename):
         """
-        Attempt to open ``filename`` and retrieve its text.
+        Attempts to open ``filename`` and retrieve its text.
 
         This will use self.path to search for the file.
         """
@@ -454,7 +455,7 @@ class TemplateParser(object):
 
     def include(self, content, filename):
         """
-        Include ``filename`` here.
+        Includes ``filename`` here.
         """
         text = self._get_file_text(filename)
 
@@ -469,8 +470,8 @@ class TemplateParser(object):
 
     def extend(self, filename):
         """
-        Extend ``filename``. Anything not declared in a block defined by the
-        parent will be placed in the parent templates ``{{include}}`` block.
+        Extends `filename`. Anything not declared in a block defined by the
+        parent will be placed in the parent templates `{{include}}` block.
         """
         # If no filename, create a dummy layout with only an {{include}}.
         text = self._get_file_text(filename) or '%sinclude%s' % tuple(self.delimiters)
@@ -770,9 +771,12 @@ def parse_template(filename,
                    delimiters=('{{', '}}')
                    ):
     """
-    filename can be a view filename in the views folder or an input stream
-    path is the path of a views folder
-    context is a dictionary of symbols used to render the template
+    Args:
+        filename: can be a view filename in the views folder or an input stream
+        path: is the path of a views folder
+        context: is a dictionary of symbols used to render the template
+        lexers: dict of custom lexers to use
+        delimiters: opening and closing tags
     """
 
     # First, if we have a str try to open the file
@@ -841,30 +845,44 @@ def render(content="hello world",
            writer='response.write'
            ):
     """
-    >>> render()
-    'hello world'
-    >>> render(content='abc')
-    'abc'
-    >>> render(content='abc\'')
-    "abc'"
-    >>> render(content='a"\'bc')
-    'a"\\'bc'
-    >>> render(content='a\\nbc')
-    'a\\nbc'
-    >>> render(content='a"bcd"e')
-    'a"bcd"e'
-    >>> render(content="'''a\\nc'''")
-    "'''a\\nc'''"
-    >>> render(content="'''a\\'c'''")
-    "'''a\'c'''"
-    >>> render(content='{{for i in range(a):}}{{=i}}<br />{{pass}}', context=dict(a=5))
-    '0<br />1<br />2<br />3<br />4<br />'
-    >>> render(content='{%for i in range(a):%}{%=i%}<br />{%pass%}', context=dict(a=5),delimiters=('{%','%}'))
-    '0<br />1<br />2<br />3<br />4<br />'
-    >>> render(content="{{='''hello\\nworld'''}}")
-    'hello\\nworld'
-    >>> render(content='{{for i in range(3):\\n=i\\npass}}')
-    '012'
+    Generic render function
+
+    Args:
+        content: default content
+        stream: file-like obj to read template from
+        filename: where to find template
+        path: base path for templates
+        context: env
+        lexers: custom lexers to use
+        delimiters: opening and closing tags
+        writer: where to inject the resulting stream
+
+    Example::
+        >>> render()
+        'hello world'
+        >>> render(content='abc')
+        'abc'
+        >>> render(content="abc'")
+        "abc'"
+        >>> render(content=''''a"'bc''')
+        'a"'bc'
+        >>> render(content='a\\nbc')
+        'a\\nbc'
+        >>> render(content='a"bcd"e')
+        'a"bcd"e'
+        >>> render(content="'''a\\nc'''")
+        "'''a\\nc'''"
+        >>> render(content="'''a\\'c'''")
+        "'''a\'c'''"
+        >>> render(content='{{for i in range(a):}}{{=i}}<br />{{pass}}', context=dict(a=5))
+        '0<br />1<br />2<br />3<br />4<br />'
+        >>> render(content='{%for i in range(a):%}{%=i%}<br />{%pass%}', context=dict(a=5),delimiters=('{%','%}'))
+        '0<br />1<br />2<br />3<br />4<br />'
+        >>> render(content="{{='''hello\\nworld'''}}")
+        'hello\\nworld'
+        >>> render(content='{{for i in range(3):\\n=i\\npass}}')
+        '012'
+
     """
     # here to avoid circular Imports
     try:
