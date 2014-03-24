@@ -2,11 +2,12 @@
 # -*- coding: utf-8 -*-
 
 """
-This file is part of the web2py Web Framework
-Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
-License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
+| This file is part of the web2py Web Framework
+| Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
+| License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 
-The widget is called from web2py.
+The widget is called from web2py
+----------------------------------
 """
 
 import datetime
@@ -140,7 +141,7 @@ class web2pyDialog(object):
 
         bg_color = 'white'
         root.withdraw()
-        
+
         self.root = Tkinter.Toplevel(root, bg=bg_color)
         self.root.resizable(0,0)
         self.root.title(ProgramName)
@@ -379,7 +380,7 @@ class web2pyDialog(object):
             t.start()
 
     def checkTaskBar(self):
-        """ Check taskbar status """
+        """ Checks taskbar status """
 
         if self.tb.status:
             if self.tb.status[0] == self.tb.EnumStatus.QUIT:
@@ -401,7 +402,7 @@ class web2pyDialog(object):
         self.root.after(1000, self.checkTaskBar)
 
     def update(self, text):
-        """ Update app text """
+        """ Updates app text """
 
         try:
             self.text.configure(state='normal')
@@ -411,7 +412,7 @@ class web2pyDialog(object):
             pass  # ## this should only happen in case app is destroyed
 
     def connect_pages(self):
-        """ Connect pages """
+        """ Connects pages """
         #reset the menu
         available_apps = [arq for arq in os.listdir('applications/')
                           if os.path.exists(
@@ -423,7 +424,7 @@ class web2pyDialog(object):
                 label=url, command=lambda u=url: start_browser(u))
 
     def quit(self, justHide=False):
-        """ Finish the program execution """
+        """ Finishes the program execution """
         if justHide:
             self.root.withdraw()
         else:
@@ -450,13 +451,13 @@ class web2pyDialog(object):
             sys.exit(0)
 
     def error(self, message):
-        """ Show error message """
+        """ Shows error message """
 
         import tkMessageBox
         tkMessageBox.showerror('web2py start server', message)
 
     def start(self):
-        """ Start web2py server """
+        """ Starts web2py server """
 
         password = self.password.get()
 
@@ -536,7 +537,7 @@ class web2pyDialog(object):
         return False
 
     def stop(self):
-        """ Stop web2py server """
+        """ Stops web2py server """
 
         self.button_start.configure(state='normal')
         self.button_stop.configure(state='disabled')
@@ -549,7 +550,7 @@ class web2pyDialog(object):
             self.tb.SetServerStopped()
 
     def update_canvas(self):
-        """ Update canvas """
+        """ Updates canvas """
 
         try:
             t1 = os.path.getsize('httpserver.log')
@@ -1054,7 +1055,7 @@ def start_schedulers(options):
 
 
 def start(cron=True):
-    """ Start server  """
+    """ Starts server  """
 
     # ## get command line arguments
 

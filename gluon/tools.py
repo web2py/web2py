@@ -2,8 +2,12 @@
 # -*- coding: utf-8 -*-
 
 """
-This file is part of the web2py Web Framework Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
-License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
+| This file is part of the web2py Web Framework
+| Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
+| License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
+
+Auth, Mail, PluginManager and various utilities
+------------------------------------------------
 """
 
 import base64
@@ -108,54 +112,108 @@ class Mail(object):
     body, multiple attachments and encryption support
 
     Works with SMTP and Google App Engine.
+
+    Args:
+        server: SMTP server address in address:port notation
+        sender: sender email address
+        login: sender login name and password in login:password notation
+            or None if no authentication is required
+        tls: enables/disables encryption (True by default)
+
+    In Google App Engine use ::
+
+        server='gae'
+
+    For sake of backward compatibility all fields are optional and default
+    to None, however, to be able to send emails at least server and sender
+    must be specified. They are available under following fields::
+
+        mail.settings.server
+        mail.settings.sender
+        mail.settings.login
+
+    When server is 'logging', email is logged but not sent (debug mode)
+
+    Optionally you can use PGP encryption or X509::
+
+        mail.settings.cipher_type = None
+        mail.settings.gpg_home = None
+        mail.settings.sign = True
+        mail.settings.sign_passphrase = None
+        mail.settings.encrypt = True
+        mail.settings.x509_sign_keyfile = None
+        mail.settings.x509_sign_certfile = None
+        mail.settings.x509_nocerts = False
+        mail.settings.x509_crypt_certfiles = None
+
+        cipher_type       : None
+                            gpg - need a python-pyme package and gpgme lib
+                            x509 - smime
+        gpg_home          : you can set a GNUPGHOME environment variable
+                            to specify home of gnupg
+        sign              : sign the message (True or False)
+        sign_passphrase   : passphrase for key signing
+        encrypt           : encrypt the message
+                         ... x509 only ...
+        x509_sign_keyfile : the signers private key filename (PEM format)
+        x509_sign_certfile: the signers certificate filename (PEM format)
+        x509_nocerts      : if True then no attached certificate in mail
+        x509_crypt_certfiles: the certificates file to encrypt the messages
+                              with can be a file name or a list of
+                              file names (PEM format)
+
+    Examples:
+        Create Mail object with authentication data for remote server::
+
+            mail = Mail('example.com:25', 'me@example.com', 'me:password')
     """
 
     class Attachment(MIMEBase.MIMEBase):
         """
         Email attachment
 
-        Arguments:
-
+        Args:
             payload: path to file or file-like object with read() method
             filename: name of the attachment stored in message; if set to
-                      None, it will be fetched from payload path; file-like
-                      object payload must have explicit filename specified
+                None, it will be fetched from payload path; file-like
+                object payload must have explicit filename specified
             content_id: id of the attachment; automatically contained within
-                        < and >
+                `<` and `>`
             content_type: content type of the attachment; if set to None,
-                          it will be fetched from filename using gluon.contenttype
-                          module
+                it will be fetched from filename using gluon.contenttype
+                module
             encoding: encoding of all strings passed to this function (except
-                      attachment body)
+                attachment body)
 
         Content ID is used to identify attachments within the html body;
         in example, attached image with content ID 'photo' may be used in
-        html message as a source of img tag <img src="cid:photo" />.
+        html message as a source of img tag `<img src="cid:photo" />`.
 
-        Examples:
+        Example::
+            Create attachment from text file::
 
-            #Create attachment from text file:
-            attachment = Mail.Attachment('/path/to/file.txt')
+                attachment = Mail.Attachment('/path/to/file.txt')
 
-            Content-Type: text/plain
-            MIME-Version: 1.0
-            Content-Disposition: attachment; filename="file.txt"
-            Content-Transfer-Encoding: base64
+                Content-Type: text/plain
+                MIME-Version: 1.0
+                Content-Disposition: attachment; filename="file.txt"
+                Content-Transfer-Encoding: base64
 
-            SOMEBASE64CONTENT=
+                SOMEBASE64CONTENT=
 
-            #Create attachment from image file with custom filename and cid:
-            attachment = Mail.Attachment('/path/to/file.png',
-                                             filename='photo.png',
-                                             content_id='photo')
+            Create attachment from image file with custom filename and cid::
 
-            Content-Type: image/png
-            MIME-Version: 1.0
-            Content-Disposition: attachment; filename="photo.png"
-            Content-Id: <photo>
-            Content-Transfer-Encoding: base64
+                attachment = Mail.Attachment('/path/to/file.png',
+                                                 filename='photo.png',
+                                                 content_id='photo')
 
-            SOMEOTHERBASE64CONTENT=
+                Content-Type: image/png
+                MIME-Version: 1.0
+                Content-Disposition: attachment; filename="photo.png"
+                Content-Id: <photo>
+                Content-Transfer-Encoding: base64
+
+                SOMEOTHERBASE64CONTENT=
         """
 
         def __init__(
@@ -186,64 +244,6 @@ class Mail(object):
             Encoders.encode_base64(self)
 
     def __init__(self, server=None, sender=None, login=None, tls=True):
-        """
-        Main Mail object
-
-        Arguments:
-
-            server: SMTP server address in address:port notation
-            sender: sender email address
-            login: sender login name and password in login:password notation
-                   or None if no authentication is required
-            tls: enables/disables encryption (True by default)
-
-        In Google App Engine use:
-
-            server='gae'
-
-        For sake of backward compatibility all fields are optional and default
-        to None, however, to be able to send emails at least server and sender
-        must be specified. They are available under following fields:
-
-            mail.settings.server
-            mail.settings.sender
-            mail.settings.login
-
-        When server is 'logging', email is logged but not sent (debug mode)
-
-        Optionally you can use PGP encryption or X509:
-
-            mail.settings.cipher_type = None
-            mail.settings.gpg_home = None
-            mail.settings.sign = True
-            mail.settings.sign_passphrase = None
-            mail.settings.encrypt = True
-            mail.settings.x509_sign_keyfile = None
-            mail.settings.x509_sign_certfile = None
-            mail.settings.x509_nocerts = False
-            mail.settings.x509_crypt_certfiles = None
-
-            cipher_type       : None
-                                gpg - need a python-pyme package and gpgme lib
-                                x509 - smime
-            gpg_home          : you can set a GNUPGHOME environment variable
-                                to specify home of gnupg
-            sign              : sign the message (True or False)
-            sign_passphrase   : passphrase for key signing
-            encrypt           : encrypt the message
-                             ... x509 only ...
-            x509_sign_keyfile : the signers private key filename (PEM format)
-            x509_sign_certfile: the signers certificate filename (PEM format)
-            x509_nocerts      : if True then no attached certificate in mail
-            x509_crypt_certfiles: the certificates file to encrypt the messages
-                                  with can be a file name or a list of
-                                  file names (PEM format)
-
-        Examples:
-
-            #Create Mail object with authentication data for remote server:
-            mail = Mail('example.com:25', 'me@example.com', 'me:password')
-        """
 
         settings = self.settings = Settings()
         settings.server = server
@@ -284,73 +284,82 @@ class Mail(object):
         """
         Sends an email using data specified in constructor
 
-        Arguments:
-
+        Args:
             to: list or tuple of receiver addresses; will also accept single
                 object
             subject: subject of the email
             message: email body text; depends on type of passed object:
-                     if 2-list or 2-tuple is passed: first element will be
-                     source of plain text while second of html text;
-                     otherwise: object will be the only source of plain text
-                     and html source will be set to None;
-                     If text or html source is:
-                     None: content part will be ignored,
-                     string: content part will be set to it,
-                     file-like object: content part will be fetched from
-                                       it using it's read() method
+
+                - if 2-list or 2-tuple is passed: first element will be
+                  source of plain text while second of html text;
+                - otherwise: object will be the only source of plain text
+                  and html source will be set to None
+
+                If text or html source is:
+
+                - None: content part will be ignored,
+                - string: content part will be set to it,
+                - file-like object: content part will be fetched from it using
+                  it's read() method
             attachments: list or tuple of Mail.Attachment objects; will also
-                         accept single object
+                accept single object
             cc: list or tuple of carbon copy receiver addresses; will also
                 accept single object
             bcc: list or tuple of blind carbon copy receiver addresses; will
                 also accept single object
             reply_to: address to which reply should be composed
             encoding: encoding of all strings passed to this method (including
-                      message bodies)
+                message bodies)
             headers: dictionary of headers to refine the headers just before
-                     sending mail, e.g. {'X-Mailer' : 'web2py mailer'}
-            from_address: address to appear in the 'From:' header, this is not the
-                          envelope sender. If not specified the sender will be used
+                sending mail, e.g. `{'X-Mailer' : 'web2py mailer'}`
+            from_address: address to appear in the 'From:' header, this is not
+                the envelope sender. If not specified the sender will be used
+
         Examples:
+            Send plain text message to single address::
 
-            #Send plain text message to single address:
-            mail.send('you@example.com',
-                      'Message subject',
-                      'Plain text body of the message')
+                mail.send('you@example.com',
+                          'Message subject',
+                          'Plain text body of the message')
 
-            #Send html message to single address:
-            mail.send('you@example.com',
-                      'Message subject',
-                      '<html>Plain text body of the message</html>')
+            Send html message to single address::
 
-            #Send text and html message to three addresses (two in cc):
-            mail.send('you@example.com',
-                      'Message subject',
-                      ('Plain text body', '<html>html body</html>'),
-                      cc=['other1@example.com', 'other2@example.com'])
+                mail.send('you@example.com',
+                          'Message subject',
+                          '<html>Plain text body of the message</html>')
 
-            #Send html only message with image attachment available from
-            the message by 'photo' content id:
-            mail.send('you@example.com',
-                      'Message subject',
-                      (None, '<html><img src="cid:photo" /></html>'),
-                      Mail.Attachment('/path/to/photo.jpg'
-                                      content_id='photo'))
+            Send text and html message to three addresses (two in cc)::
 
-            #Send email with two attachments and no body text
-            mail.send('you@example.com,
-                      'Message subject',
-                      None,
-                      [Mail.Attachment('/path/to/fist.file'),
-                       Mail.Attachment('/path/to/second.file')])
+                mail.send('you@example.com',
+                          'Message subject',
+                          ('Plain text body', '<html>html body</html>'),
+                          cc=['other1@example.com', 'other2@example.com'])
 
-        Returns True on success, False on failure.
+            Send html only message with image attachment available from the
+            message by 'photo' content id::
+
+                mail.send('you@example.com',
+                          'Message subject',
+                          (None, '<html><img src="cid:photo" /></html>'),
+                          Mail.Attachment('/path/to/photo.jpg'
+                                          content_id='photo'))
+
+            Send email with two attachments and no body text::
+
+                mail.send('you@example.com,
+                          'Message subject',
+                          None,
+                          [Mail.Attachment('/path/to/fist.file'),
+                           Mail.Attachment('/path/to/second.file')])
+
+        Returns:
+            True on success, False on failure.
 
         Before return, method updates two object's fields:
-        self.result: return value of smtplib.SMTP.sendmail() or GAE's
-                     mail.send_mail() method
-        self.error: Exception message or None if above was successful
+
+            - self.result: return value of smtplib.SMTP.sendmail() or GAE's
+              mail.send_mail() method
+            - self.error: Exception message or None if above was successful
         """
 
         # We don't want to use base64 encoding for unicode mail
@@ -733,14 +742,16 @@ class Mail(object):
 class Recaptcha(DIV):
 
     """
-    Usage:
+    Examples:
+        Use as::
 
-        form = FORM(Recaptcha(public_key='...',private_key='...'))
+            form = FORM(Recaptcha(public_key='...',private_key='...'))
 
-    or
+        or::
 
-        form = SQLFORM(...)
-        form.append(Recaptcha(public_key='...',private_key='...'))
+            form = SQLFORM(...)
+            form.append(Recaptcha(public_key='...',private_key='...'))
+
     """
 
     API_SSL_SERVER = 'https://www.google.com/recaptcha/api'
@@ -1064,7 +1075,16 @@ class Auth(object):
     - role creation and assignment
     - user defined group/role based permission
 
-    Authentication Example:
+    Args:
+
+        environment: is there for legacy but unused (awful)
+        db: has to be the database where to create tables for authentication
+        mailer: `Mail(...)` or None (no mailer) or True (make a mailer)
+        hmac_key: can be a hmac_key or hmac_key=Auth.get_or_create_key()
+        controller: (where is the user action?)
+        cas_provider: (delegate authentication to the URL, CAS2)
+
+    Authentication Example::
 
         from gluon.contrib.utils import *
         mail=Mail()
@@ -1078,54 +1098,54 @@ class Auth(object):
         def authentication():
             return dict(form=auth())
 
-    exposes:
+    Exposes:
 
-    - http://.../{application}/{controller}/authentication/login
-    - http://.../{application}/{controller}/authentication/logout
-    - http://.../{application}/{controller}/authentication/register
-    - http://.../{application}/{controller}/authentication/verify_email
-    - http://.../{application}/{controller}/authentication/retrieve_username
-    - http://.../{application}/{controller}/authentication/retrieve_password
-    - http://.../{application}/{controller}/authentication/reset_password
-    - http://.../{application}/{controller}/authentication/profile
-    - http://.../{application}/{controller}/authentication/change_password
+    - `http://.../{application}/{controller}/authentication/login`
+    - `http://.../{application}/{controller}/authentication/logout`
+    - `http://.../{application}/{controller}/authentication/register`
+    - `http://.../{application}/{controller}/authentication/verify_email`
+    - `http://.../{application}/{controller}/authentication/retrieve_username`
+    - `http://.../{application}/{controller}/authentication/retrieve_password`
+    - `http://.../{application}/{controller}/authentication/reset_password`
+    - `http://.../{application}/{controller}/authentication/profile`
+    - `http://.../{application}/{controller}/authentication/change_password`
 
     On registration a group with role=new_user.id is created
     and user is given membership of this group.
 
-    You can create a group with:
+    You can create a group with::
 
         group_id=auth.add_group('Manager', 'can access the manage action')
         auth.add_permission(group_id, 'access to manage')
 
-    Here \"access to manage\" is just a user defined string.
-    You can give access to a user:
+    Here "access to manage" is just a user defined string.
+    You can give access to a user::
 
         auth.add_membership(group_id, user_id)
 
     If user id is omitted, the logged in user is assumed
 
-    Then you can decorate any action:
+    Then you can decorate any action::
 
         @auth.requires_permission('access to manage')
         def manage():
             return dict()
 
-    You can restrict a permission to a specific table:
+    You can restrict a permission to a specific table::
 
         auth.add_permission(group_id, 'edit', db.sometable)
         @auth.requires_permission('edit', db.sometable)
 
-    Or to a specific record:
+    Or to a specific record::
 
         auth.add_permission(group_id, 'edit', db.sometable, 45)
         @auth.requires_permission('edit', db.sometable, 45)
 
-    If authorization is not granted calls:
+    If authorization is not granted calls::
 
         auth.settings.on_failed_authorization
 
-    Other options:
+    Other options::
 
         auth.settings.mailer=None
         auth.settings.expiration=3600 # seconds
@@ -1134,6 +1154,7 @@ class Auth(object):
 
         ### these are messages that can be customized
         ...
+
     """
 
     @staticmethod
@@ -1163,16 +1184,7 @@ class Auth(object):
                  hmac_key=None, controller='default', function='user',
                  cas_provider=None, signature=True, secure=False,
                  csrf_prevention=True, propagate_extension=None):
-        """
-        auth=Auth(db)
 
-        - environment is there for legacy but unused (awful)
-        - db has to be the database where to create tables for authentication
-        - mailer=Mail(...) or None (no mailed) or True (make a mailer)
-        - hmac_key can be a hmac_key or hmac_key=Auth.get_or_create_key()
-        - controller (where is the user action?)
-        - cas_provider (delegate authentication to the URL, CAS2)
-        """
         ## next two lines for backward compatibility
         if not db and environment and isinstance(environment, DAL):
             db = environment
@@ -1185,7 +1197,7 @@ class Auth(object):
         self.user_groups = auth and auth.user_groups or {}
         if secure:
             request.requires_https()
-        now = request.now        
+        now = request.now
         # if we have auth info
         #    if not expired it, used it
         #    if expired, clear the session
@@ -1201,11 +1213,11 @@ class Auth(object):
                 self.user = None
                 if session.auth:
                     del session.auth
-                session.renew(clear_session=True)                
+                session.renew(clear_session=True)
         else:
             self.user = None
             if session.auth:
-                del session.auth            
+                del session.auth
         # ## what happens after login?
 
         url_index = URL(controller, 'index')
@@ -1325,9 +1337,12 @@ class Auth(object):
 
     def __call__(self):
         """
-        usage:
+        Example:
+            Use as::
 
-        def authentication(): return dict(form=auth())
+                def authentication():
+                    return dict(form=auth())
+
         """
 
         request = current.request
@@ -1365,8 +1380,8 @@ class Auth(object):
         """ Navbar with support for more templates
         This uses some code from the old navbar.
 
-        Keyword arguments:
-        mode -- see options for list of
+        Args:
+            mode: see options for list of
 
         """
         items = []  # Hold all menu items in a list
@@ -1461,62 +1476,61 @@ class Auth(object):
                                   _href='#',_class="dropdown-toggle",
                                   data={'toggle':'dropdown'}), self.bar,
                               _class='dropdown')
-                
-
 
         def bare():
             """ In order to do advanced customization we only need the
             prefix, the user_identifier and the href attribute of items
 
-            Example:
+            Examples:
+                Use as::
 
-            # in module custom_layout.py
-            from gluon import *
-            def navbar(auth_navbar):
-                bar = auth_navbar
-                user = bar["user"]
+                # in module custom_layout.py
+                from gluon import *
+                def navbar(auth_navbar):
+                    bar = auth_navbar
+                    user = bar["user"]
 
-                if not user:
-                    btn_login = A(current.T("Login"),
-                                  _href=bar["login"],
-                                  _class="btn btn-success",
-                                  _rel="nofollow")
-                    btn_register = A(current.T("Sign up"),
-                                     _href=bar["register"],
-                                     _class="btn btn-primary",
-                                     _rel="nofollow")
-                    return DIV(btn_register, btn_login, _class="btn-group")
-                else:
-                    toggletext = "%s back %s" % (bar["prefix"], user)
-                    toggle = A(toggletext,
-                               _href="#",
-                               _class="dropdown-toggle",
-                               _rel="nofollow",
-                               **{"_data-toggle": "dropdown"})
-                    li_profile = LI(A(I(_class="icon-user"), ' ',
-                                      current.T("Account details"),
-                                      _href=bar["profile"], _rel="nofollow"))
-                    li_custom = LI(A(I(_class="icon-book"), ' ',
-                                     current.T("My Agenda"),
-                                     _href="#", rel="nofollow"))
-                    li_logout = LI(A(I(_class="icon-off"), ' ',
-                                     current.T("logout"),
-                                     _href=bar["logout"], _rel="nofollow"))
-                    dropdown = UL(li_profile,
-                                  li_custom,
-                                  LI('', _class="divider"),
-                                  li_logout,
-                                  _class="dropdown-menu", _role="menu")
+                    if not user:
+                        btn_login = A(current.T("Login"),
+                                      _href=bar["login"],
+                                      _class="btn btn-success",
+                                      _rel="nofollow")
+                        btn_register = A(current.T("Sign up"),
+                                         _href=bar["register"],
+                                         _class="btn btn-primary",
+                                         _rel="nofollow")
+                        return DIV(btn_register, btn_login, _class="btn-group")
+                    else:
+                        toggletext = "%s back %s" % (bar["prefix"], user)
+                        toggle = A(toggletext,
+                                   _href="#",
+                                   _class="dropdown-toggle",
+                                   _rel="nofollow",
+                                   **{"_data-toggle": "dropdown"})
+                        li_profile = LI(A(I(_class="icon-user"), ' ',
+                                          current.T("Account details"),
+                                          _href=bar["profile"], _rel="nofollow"))
+                        li_custom = LI(A(I(_class="icon-book"), ' ',
+                                         current.T("My Agenda"),
+                                         _href="#", rel="nofollow"))
+                        li_logout = LI(A(I(_class="icon-off"), ' ',
+                                         current.T("logout"),
+                                         _href=bar["logout"], _rel="nofollow"))
+                        dropdown = UL(li_profile,
+                                      li_custom,
+                                      LI('', _class="divider"),
+                                      li_logout,
+                                      _class="dropdown-menu", _role="menu")
 
-                    return LI(toggle, dropdown, _class="dropdown")
+                        return LI(toggle, dropdown, _class="dropdown")
 
-            # in models db.py
-            import custom_layout as custom
+                # in models db.py
+                import custom_layout as custom
 
-            # in layout.html
-            <ul id="navbar" class="nav pull-right">
-                {{='auth' in globals() and \
-                  custom.navbar(auth.navbar(mode='bare')) or ''}}</ul>
+                # in layout.html
+                <ul id="navbar" class="nav pull-right">
+                    {{='auth' in globals() and \
+                      custom.navbar(auth.navbar(mode='bare')) or ''}}</ul>
 
             """
             bare = {}
@@ -1584,13 +1598,13 @@ class Auth(object):
                                  current_record='current_record',
                                  current_record_label=None):
         """
-        to enable full record versioning (including auth tables):
+        Used to enable full record versioning (including auth tables)::
 
-        auth = Auth(db)
-        auth.define_tables(signature=True)
-        # define our own tables
-        db.define_table('mything',Field('name'),auth.signature)
-        auth.enable_record_versioning(tables=db)
+            auth = Auth(db)
+            auth.define_tables(signature=True)
+            # define our own tables
+            db.define_table('mything',Field('name'),auth.signature)
+            auth.enable_record_versioning(tables=db)
 
         tables can be the db (all table) or a list of tables.
         only tables with modified_by and modified_on fiels (as created
@@ -1603,10 +1617,11 @@ class Auth(object):
         enable_record_versioning enables a common_filter for
         every table that filters out records with is_active = False
 
-        Important: If you use auth.enable_record_versioning,
-        do not use auth.archive or you will end up with duplicates.
-        auth.archive does explicitly what enable_record_versioning
-        does automatically.
+        Note:
+            If you use auth.enable_record_versioning,
+            do not use auth.archive or you will end up with duplicates.
+            auth.archive does explicitly what enable_record_versioning
+            does automatically.
 
         """
         current_record_label = current_record_label or current.T(
@@ -1668,16 +1683,17 @@ class Auth(object):
     def define_tables(self, username=None, signature=None,
                       migrate=None, fake_migrate=None):
         """
-        to be called unless tables are defined manually
+        To be called unless tables are defined manually
 
-        usages:
+        Examples:
+            Use as::
 
-            # defines all needed tables and table files
-            # 'myprefix_auth_user.table', ...
-            auth.define_tables(migrate='myprefix_')
+                # defines all needed tables and table files
+                # 'myprefix_auth_user.table', ...
+                auth.define_tables(migrate='myprefix_')
 
-            # defines all needed tables without migration/table files
-            auth.define_tables(migrate=False)
+                # defines all needed tables without migration/table files
+                auth.define_tables(migrate=False)
 
         """
 
@@ -1907,9 +1923,11 @@ class Auth(object):
 
     def log_event(self, description, vars=None, origin='auth'):
         """
-        usage:
+        Examples:
+            Use as::
 
-            auth.log_event(description='this happened', origin='auth')
+                auth.log_event(description='this happened', origin='auth')
+
         """
         if not self.settings.logging_enabled or not description:
             return
@@ -1929,8 +1947,8 @@ class Auth(object):
                            login=True, get=True):
         """
         Used for alternate login methods:
-            If the user exists already then password is updated.
-            If the user doesn't yet exist, then they are created.
+        If the user exists already then password is updated.
+        If the user doesn't yet exist, then they are created.
         """
         table_user = self.table_user()
         user = None
@@ -1982,10 +2000,11 @@ class Auth(object):
 
     def basic(self, basic_auth_realm=False):
         """
-        perform basic login.
+        Performs basic login.
 
-        :param basic_auth_realm: optional basic http authentication realm.
-        :type basic_auth_realm: str or unicode or function or callable or boolean.
+        Args:
+            basic_auth_realm: optional basic http authentication realm. Can take
+                str or unicode or function or callable or boolean.
 
         reads current.request.env.http_authorization
         and returns basic_allowed,basic_accepted,user.
@@ -2022,7 +2041,7 @@ class Auth(object):
 
     def login_user(self, user):
         """
-        login the user = db.auth_user(id)
+        Logins the `user = db.auth_user(id)`
         """
         from gluon.settings import global_settings
         if global_settings.web2py_runtime_gae:
@@ -2054,7 +2073,7 @@ class Auth(object):
 
     def login_bare(self, username, password):
         """
-        logins user as specified by username (or email) and password
+        Logins user as specified by username (or email) and password
         """
         settings = self._get_login_settings()
         user = settings.table_user(**{settings.userfield: \
@@ -2062,8 +2081,8 @@ class Auth(object):
         if user and user.get(settings.passfield, False):
             password = settings.table_user[
                 settings.passfield].validate(password)[0]
-            if ((user.registration_key is None or 
-                 not user.registration_key.strip()) and 
+            if ((user.registration_key is None or
+                 not user.registration_key.strip()) and
                 password == user[settings.passfield]):
                 self.login_user(user)
                 return user
@@ -2078,7 +2097,7 @@ class Auth(object):
 
     def register_bare(self, **fields):
         """
-        registers a user as specified by username (or email)
+        Registers a user as specified by username (or email)
         and a raw password.
         """
         settings = self._get_login_settings()
@@ -2203,11 +2222,7 @@ class Auth(object):
         log=DEFAULT,
     ):
         """
-        returns a login form
-
-        method: Auth.login([next=DEFAULT [, onvalidation=DEFAULT
-            [, onaccept=DEFAULT [, log=DEFAULT]]]])
-
+        Returns a login form
         """
 
         table_user = self.table_user()
@@ -2451,11 +2466,7 @@ class Auth(object):
 
     def logout(self, next=DEFAULT, onlogout=DEFAULT, log=DEFAULT):
         """
-        logout and redirects to login
-
-        method: Auth.logout ([next=DEFAULT[, onlogout=DEFAULT[,
-            log=DEFAULT]]])
-
+        Logouts and redirects to login
         """
 
         if next is DEFAULT:
@@ -2489,11 +2500,7 @@ class Auth(object):
         log=DEFAULT,
     ):
         """
-        returns a registration form
-
-        method: Auth.register([next=DEFAULT [, onvalidation=DEFAULT
-            [, onaccept=DEFAULT [, log=DEFAULT]]]])
-
+        Returns a registration form
         """
 
         table_user = self.table_user()
@@ -2602,7 +2609,7 @@ class Auth(object):
                 d.update(dict(key=key, link=link,username=form.vars[username]))
                 if not (self.settings.mailer and self.settings.mailer.send(
                         to=form.vars.email,
-                        subject=self.messages.verify_email_subject,                    
+                        subject=self.messages.verify_email_subject,
                         message=self.messages.verify_email % d)):
                     self.db.rollback()
                     response.flash = self.messages.unable_send_email
@@ -2631,8 +2638,8 @@ class Auth(object):
 
     def is_logged_in(self):
         """
-        checks if the user is logged in and returns True/False.
-        if so user is in auth.user as well as in session.auth.user
+        Checks if the user is logged in and returns True/False.
+        If so user is in auth.user as well as in session.auth.user
         """
 
         if self.user:
@@ -2646,11 +2653,7 @@ class Auth(object):
         log=DEFAULT,
         ):
         """
-        action user to verify the registration email, XXXXXXXXXXXXXXXX
-
-        method: Auth.verify_email([next=DEFAULT [, onvalidation=DEFAULT
-            [, onaccept=DEFAULT [, log=DEFAULT]]]])
-
+        Action used to verify the registration email
         """
 
         key = getarg(-1)
@@ -2685,12 +2688,8 @@ class Auth(object):
         log=DEFAULT,
         ):
         """
-        returns a form to retrieve the user username
+        Returns a form to retrieve the user username
         (only if there is a username field)
-
-        method: Auth.retrieve_username([next=DEFAULT
-            [, onvalidation=DEFAULT [, onaccept=DEFAULT [, log=DEFAULT]]]])
-
         """
 
         table_user = self.table_user()
@@ -2773,11 +2772,7 @@ class Auth(object):
         log=DEFAULT,
         ):
         """
-        returns a form to reset the user password (deprecated)
-
-        method: Auth.reset_password_deprecated([next=DEFAULT
-            [, onvalidation=DEFAULT [, onaccept=DEFAULT [, log=DEFAULT]]]])
-
+        Returns a form to reset the user password (deprecated)
         """
 
         table_user = self.table_user()
@@ -2852,11 +2847,7 @@ class Auth(object):
         log=DEFAULT,
         ):
         """
-        returns a form to reset the user password
-
-        method: Auth.reset_password([next=DEFAULT
-            [, onvalidation=DEFAULT [, onaccept=DEFAULT [, log=DEFAULT]]]])
-
+        Returns a form to reset the user password
         """
 
         table_user = self.table_user()
@@ -2912,11 +2903,7 @@ class Auth(object):
         log=DEFAULT,
         ):
         """
-        returns a form to reset the user password
-
-        method: Auth.reset_password([next=DEFAULT
-            [, onvalidation=DEFAULT [, onaccept=DEFAULT [, log=DEFAULT]]]])
-
+        Returns a form to reset the user password
         """
         table_user = self.table_user()
         request = current.request
@@ -3021,10 +3008,7 @@ class Auth(object):
         log=DEFAULT,
         ):
         """
-        returns a form that lets the user change password
-
-        method: Auth.change_password([next=DEFAULT[, onvalidation=DEFAULT[,
-            onaccept=DEFAULT[, log=DEFAULT]]]])
+        Returns a form that lets the user change password
         """
 
         if not self.is_logged_in():
@@ -3090,11 +3074,7 @@ class Auth(object):
         log=DEFAULT,
         ):
         """
-        returns a form that lets the user change his/her profile
-
-        method: Auth.profile([next=DEFAULT [, onvalidation=DEFAULT
-            [, onaccept=DEFAULT [, log=DEFAULT]]]])
-
+        Returns a form that lets the user change his/her profile
         """
 
         table_user = self.table_user()
@@ -3157,11 +3137,15 @@ class Auth(object):
 
     def impersonate(self, user_id=DEFAULT):
         """
-        usage: POST TO http://..../impersonate request.post_vars.user_id=<id>
-        set request.post_vars.user_id to 0 to restore original user.
+        To use this make a POST to
+        `http://..../impersonate request.post_vars.user_id=<id>`
 
-        requires impersonator is logged in and
-        has_permission('impersonate', 'auth_user', user_id)
+        Set request.post_vars.user_id to 0 to restore original user.
+
+        requires impersonator is logged in and::
+
+            has_permission('impersonate', 'auth_user', user_id)
+
         """
         request = current.request
         session = current.session
@@ -3185,7 +3169,7 @@ class Auth(object):
             auth.user.update(
                 table_user._filter_fields(user, True))
             self.user = auth.user
-            self.update_groups()            
+            self.update_groups()
             log = self.messages['impersonate_log']
             self.log_event(log, dict(id=current_id, other_id=auth.user.id))
             self.run_login_onaccept()
@@ -3218,7 +3202,7 @@ class Auth(object):
 
     def groups(self):
         """
-        displays the groups and their roles for the logged in user
+        Displays the groups and their roles for the logged in user
         """
 
         if not self.is_logged_in():
@@ -3240,7 +3224,7 @@ class Auth(object):
 
     def not_authorized(self):
         """
-        you can change the view for this page to make it look as you like
+        You can change the view for this page to make it look as you like
         """
         if current.request.ajax:
             raise HTTP(403, 'ACCESS DENIED')
@@ -3248,7 +3232,7 @@ class Auth(object):
 
     def requires(self, condition, requires_login=True, otherwise=None):
         """
-        decorator that prevents access to action if not logged in
+        Decorator that prevents access to action if not logged in
         """
 
         def decorator(action):
@@ -3294,13 +3278,13 @@ class Auth(object):
 
     def requires_login(self, otherwise=None):
         """
-        decorator that prevents access to action if not logged in
+        Decorator that prevents access to action if not logged in
         """
         return self.requires(True, otherwise=otherwise)
 
     def requires_membership(self, role=None, group_id=None, otherwise=None):
         """
-        decorator that prevents access to action if not logged in or
+        Decorator that prevents access to action if not logged in or
         if user logged in is not a member of group_id.
         If role is provided instead of group_id then the
         group_id is calculated.
@@ -3312,7 +3296,7 @@ class Auth(object):
     def requires_permission(self, name, table_name='', record_id=0,
                             otherwise=None):
         """
-        decorator that prevents access to action if not logged in or
+        Decorator that prevents access to action if not logged in or
         if user logged in is not a member of any group (role) that
         has 'name' access to 'table_name', 'record_id'.
         """
@@ -3322,7 +3306,7 @@ class Auth(object):
 
     def requires_signature(self, otherwise=None, hash_vars=True):
         """
-        decorator that prevents access to action if not logged in or
+        Decorator that prevents access to action if not logged in or
         if user logged in is not a member of group_id.
         If role is provided instead of group_id then the
         group_id is calculated.
@@ -3333,7 +3317,7 @@ class Auth(object):
 
     def add_group(self, role, description=''):
         """
-        creates a group associated to a role
+        Creates a group associated to a role
         """
 
         group_id = self.table_group().insert(
@@ -3344,7 +3328,7 @@ class Auth(object):
 
     def del_group(self, group_id):
         """
-        deletes a group
+        Deletes a group
         """
         self.db(self.table_group().id == group_id).delete()
         self.db(self.table_membership().group_id == group_id).delete()
@@ -3354,7 +3338,7 @@ class Auth(object):
 
     def id_group(self, role):
         """
-        returns the group_id of the group specified by the role
+        Returns the group_id of the group specified by the role
         """
         rows = self.db(self.table_group().role == role).select()
         if not rows:
@@ -3363,8 +3347,8 @@ class Auth(object):
 
     def user_group(self, user_id=None):
         """
-        returns the group_id of the group uniquely associated to this user
-        i.e. role=user:[user_id]
+        Returns the group_id of the group uniquely associated to this user
+        i.e. `role=user:[user_id]`
         """
         return self.id_group(self.user_group_role(user_id))
 
@@ -3379,7 +3363,7 @@ class Auth(object):
 
     def has_membership(self, group_id=None, user_id=None, role=None):
         """
-        checks if user is member of group_id or role
+        Checks if user is member of group_id or role
         """
 
         group_id = group_id or self.id_group(role)
@@ -3401,7 +3385,7 @@ class Auth(object):
 
     def add_membership(self, group_id=None, user_id=None, role=None):
         """
-        gives user_id membership of group_id or role
+        Gives user_id membership of group_id or role
         if user is None than user_id is that of current logged in user
         """
 
@@ -3425,7 +3409,7 @@ class Auth(object):
 
     def del_membership(self, group_id=None, user_id=None, role=None):
         """
-        revokes membership from group_id to user_id
+        Revokes membership from group_id to user_id
         if user_id is None than user_id is that of current logged in user
         """
 
@@ -3450,7 +3434,7 @@ class Auth(object):
         group_id=None,
         ):
         """
-        checks if user_id or current logged in user is member of a group
+        Checks if user_id or current logged in user is member of a group
         that has 'name' permission on 'table_name' and 'record_id'
         if group_id is passed, it checks whether the group has the permission
         """
@@ -3502,7 +3486,7 @@ class Auth(object):
         record_id=0,
         ):
         """
-        gives group_id 'name' access to 'table_name' and 'record_id'
+        Gives group_id 'name' access to 'table_name' and 'record_id'
         """
 
         permission = self.table_permission()
@@ -3530,7 +3514,7 @@ class Auth(object):
         record_id=0,
         ):
         """
-        revokes group_id 'name' access to 'table_name' and 'record_id'
+        Revokes group_id 'name' access to 'table_name' and 'record_id'
         """
 
         permission = self.table_permission()
@@ -3544,13 +3528,14 @@ class Auth(object):
 
     def accessible_query(self, name, table, user_id=None):
         """
-        returns a query with all accessible records for user_id or
+        Returns a query with all accessible records for user_id or
         the current logged in user
         this method does not work on GAE because uses JOIN and IN
 
-        example:
+        Example:
+            Use as::
 
-           db(auth.accessible_query('read', db.mytable)).select(db.mytable.ALL)
+                db(auth.accessible_query('read', db.mytable)).select(db.mytable.ALL)
 
         """
         if not user_id:
@@ -3595,11 +3580,12 @@ class Auth(object):
                 archive_current=False,
                 fields=None):
         """
-        If you have a table (db.mytable) that needs full revision history you can just do:
+        If you have a table (db.mytable) that needs full revision history you 
+        can just do::
 
             form=crud.update(db.mytable,myrecord,onaccept=auth.archive)
 
-        or
+        or::
 
             form=SQLFORM(db.mytable,myrecord).process(onaccept=auth.archive)
 
@@ -3612,7 +3598,7 @@ class Auth(object):
         fields allows to specify extra fields that need to be archived.
 
         If you want to access such table you need to define it yourself
-        in a model:
+        in a model::
 
             db.define_table('mytable_archive',
                 Field('current_record',db.mytable),
@@ -3620,7 +3606,7 @@ class Auth(object):
 
         Notice such table includes all fields of db.mytable plus one: current_record.
         crud.archive does not timestamp the stored record unless your original table
-        has a fields like:
+        has a fields like::
 
             db.define_table(...,
                 Field('saved_on','datetime',
@@ -3632,13 +3618,13 @@ class Auth(object):
         the record is archived.
 
         If you want to change the archive table name and the name of the reference field
-        you can do, for example:
+        you can do, for example::
 
             db.define_table('myhistory',
                 Field('parent_record',db.mytable),
                 db.mytable)
 
-        and use it as:
+        and use it as::
 
             form=crud.update(db.mytable,myrecord,
                              onaccept=lambda form:crud.archive(form,
@@ -3719,7 +3705,7 @@ class Auth(object):
             return wiki
 
     def wikimenu(self):
-        """to be used in menu.py for app wide wiki menus"""
+        """To be used in menu.py for app wide wiki menus"""
         if (hasattr(self, "_wiki") and
             self._wiki.settings.controller and
             self._wiki.settings.function):
@@ -3730,7 +3716,7 @@ class Crud(object):
 
     def url(self, f=None, args=None, vars=None):
         """
-        this should point to the controller that exposes
+        This should point to the controller that exposes
         download and crud
         """
         if args is None:
@@ -3851,12 +3837,6 @@ class Crud(object):
         formname=DEFAULT,
         **attributes
         ):
-        """
-        method: Crud.update(table, record, [next=DEFAULT
-            [, onvalidation=DEFAULT [, onaccept=DEFAULT [, log=DEFAULT
-            [, message=DEFAULT[, deletable=DEFAULT]]]]]])
-
-        """
         if not (isinstance(table, self.db.Table) or table in self.db.tables) \
                 or (isinstance(record, str) and not str(record).isdigit()):
             raise HTTP(404)
@@ -3966,10 +3946,6 @@ class Crud(object):
         formname=DEFAULT,
         **attributes
         ):
-        """
-        method: Crud.create(table, [next=DEFAULT [, onvalidation=DEFAULT
-            [, onaccept=DEFAULT [, log=DEFAULT[, message=DEFAULT]]]]])
-        """
 
         if next is DEFAULT:
             next = self.settings.create_next
@@ -4023,10 +3999,6 @@ class Crud(object):
         next=DEFAULT,
         message=DEFAULT,
         ):
-        """
-        method: Crud.delete(table, record_id, [next=DEFAULT
-            [, message=DEFAULT]])
-        """
         if not (isinstance(table, self.db.Table) or table in self.db.tables):
             raise HTTP(404)
         if not isinstance(table, self.db.Table):
@@ -4151,16 +4123,19 @@ class Crud(object):
     def search(self, *tables, **args):
         """
         Creates a search form and its results for a table
-        Example usage:
-        form, results = crud.search(db.test,
-                               queries = ['equals', 'not equal', 'contains'],
-                               query_labels={'equals':'Equals',
-                                             'not equal':'Not equal'},
-                               fields = ['id','children'],
-                               field_labels = {
-                                   'id':'ID','children':'Children'},
-                               zero='Please choose',
-                               query = (db.test.id > 0)&(db.test.id != 3) )
+        Examples:
+            Use as::
+
+                form, results = crud.search(db.test,
+                   queries = ['equals', 'not equal', 'contains'],
+                   query_labels={'equals':'Equals',
+                                 'not equal':'Not equal'},
+                   fields = ['id','children'],
+                   field_labels = {
+                       'id':'ID','children':'Children'},
+                   zero='Please choose',
+                   query = (db.test.id > 0)&(db.test.id != 3) )
+
         """
         table = tables[0]
         fields = args.get('fields', table.fields)
@@ -4341,18 +4316,19 @@ class Service(object):
 
     def run(self, f):
         """
-        example:
+        Example:
+            Use as::
 
-            service = Service()
-            @service.run
-            def myfunction(a, b):
-                return a + b
-            def call():
-                return service()
+                service = Service()
+                @service.run
+                def myfunction(a, b):
+                    return a + b
+                def call():
+                    return service()
 
-        Then call it with:
+            Then call it with::
 
-            wget http://..../app/default/call/run/myfunction?a=3&b=4
+                wget http://..../app/default/call/run/myfunction?a=3&b=4
 
         """
         self.run_procedures[f.__name__] = f
@@ -4360,18 +4336,19 @@ class Service(object):
 
     def csv(self, f):
         """
-        example:
+        Example:
+            Use as::
 
-            service = Service()
-            @service.csv
-            def myfunction(a, b):
-                return a + b
-            def call():
-                return service()
+                service = Service()
+                @service.csv
+                def myfunction(a, b):
+                    return a + b
+                def call():
+                    return service()
 
-        Then call it with:
+            Then call it with::
 
-            wget http://..../app/default/call/csv/myfunction?a=3&b=4
+                wget http://..../app/default/call/csv/myfunction?a=3&b=4
 
         """
         self.run_procedures[f.__name__] = f
@@ -4379,18 +4356,19 @@ class Service(object):
 
     def xml(self, f):
         """
-        example:
+        Example:
+            Use as::
 
-            service = Service()
-            @service.xml
-            def myfunction(a, b):
-                return a + b
-            def call():
-                return service()
+                service = Service()
+                @service.xml
+                def myfunction(a, b):
+                    return a + b
+                def call():
+                    return service()
 
-        Then call it with:
+            Then call it with::
 
-            wget http://..../app/default/call/xml/myfunction?a=3&b=4
+                wget http://..../app/default/call/xml/myfunction?a=3&b=4
 
         """
         self.run_procedures[f.__name__] = f
@@ -4398,20 +4376,21 @@ class Service(object):
 
     def rss(self, f):
         """
-        example:
+        Example:
+            Use as::
 
-            service = Service()
-            @service.rss
-            def myfunction():
-                return dict(title=..., link=..., description=...,
-                    created_on=..., entries=[dict(title=..., link=...,
-                        description=..., created_on=...])
-            def call():
-                return service()
+                service = Service()
+                @service.rss
+                def myfunction():
+                    return dict(title=..., link=..., description=...,
+                        created_on=..., entries=[dict(title=..., link=...,
+                            description=..., created_on=...])
+                def call():
+                    return service()
 
-        Then call it with:
+            Then call it with:
 
-            wget http://..../app/default/call/rss/myfunction
+                wget http://..../app/default/call/rss/myfunction
 
         """
         self.rss_procedures[f.__name__] = f
@@ -4419,18 +4398,19 @@ class Service(object):
 
     def json(self, f):
         """
-        example:
+        Example:
+            Use as::
 
-            service = Service()
-            @service.json
-            def myfunction(a, b):
-                return [{a: b}]
-            def call():
-                return service()
+                service = Service()
+                @service.json
+                def myfunction(a, b):
+                    return [{a: b}]
+                def call():
+                    return service()
 
-        Then call it with:
+            Then call it with:;
 
-            wget http://..../app/default/call/json/myfunction?a=hello&b=world
+                wget http://..../app/default/call/json/myfunction?a=hello&b=world
 
         """
         self.json_procedures[f.__name__] = f
@@ -4438,18 +4418,19 @@ class Service(object):
 
     def jsonrpc(self, f):
         """
-        example:
+        Example:
+            Use as::
 
-            service = Service()
-            @service.jsonrpc
-            def myfunction(a, b):
-                return a + b
-            def call():
-                return service()
+                service = Service()
+                @service.jsonrpc
+                def myfunction(a, b):
+                    return a + b
+                def call():
+                    return service()
 
-        Then call it with:
+            Then call it with:
 
-            wget http://..../app/default/call/jsonrpc/myfunction?a=hello&b=world
+                wget http://..../app/default/call/jsonrpc/myfunction?a=hello&b=world
 
         """
         self.jsonrpc_procedures[f.__name__] = f
@@ -4457,18 +4438,19 @@ class Service(object):
 
     def jsonrpc2(self, f):
         """
-        example:
+        Example:
+            Use as::
 
-            service = Service()
-            @service.jsonrpc2
-            def myfunction(a, b):
-                return a + b
-            def call():
-                return service()
+                service = Service()
+                @service.jsonrpc2
+                def myfunction(a, b):
+                    return a + b
+                def call():
+                    return service()
 
-        Then call it with:
+            Then call it with:
 
-            wget --post-data '{"jsonrpc": "2.0", "id": 1, "method": "myfunction", "params": {"a": 1, "b": 2}}' http://..../app/default/call/jsonrpc2
+                wget --post-data '{"jsonrpc": "2.0", "id": 1, "method": "myfunction", "params": {"a": 1, "b": 2}}' http://..../app/default/call/jsonrpc2
 
         """
         self.jsonrpc2_procedures[f.__name__] = f
@@ -4476,18 +4458,19 @@ class Service(object):
 
     def xmlrpc(self, f):
         """
-        example:
+        Example:
+            Use as::
 
-            service = Service()
-            @service.xmlrpc
-            def myfunction(a, b):
-                return a + b
-            def call():
-                return service()
+                service = Service()
+                @service.xmlrpc
+                def myfunction(a, b):
+                    return a + b
+                def call():
+                    return service()
 
-        The call it with:
+            The call it with:
 
-            wget http://..../app/default/call/xmlrpc/myfunction?a=hello&b=world
+                wget http://..../app/default/call/xmlrpc/myfunction?a=hello&b=world
 
         """
         self.xmlrpc_procedures[f.__name__] = f
@@ -4495,18 +4478,20 @@ class Service(object):
 
     def amfrpc(self, f):
         """
-        example:
+        Example:
+            Use as::
 
-            service = Service()
-            @service.amfrpc
-            def myfunction(a, b):
-                return a + b
-            def call():
-                return service()
+                service = Service()
+                @service.amfrpc
+                def myfunction(a, b):
+                    return a + b
+                def call():
+                    return service()
 
-        The call it with:
 
-            wget http://..../app/default/call/amfrpc/myfunction?a=hello&b=world
+            Then call it with::
+
+                wget http://..../app/default/call/amfrpc/myfunction?a=hello&b=world
 
         """
         self.amfrpc_procedures[f.__name__] = f
@@ -4514,18 +4499,19 @@ class Service(object):
 
     def amfrpc3(self, domain='default'):
         """
-        example:
+        Example:
+            Use as::
 
-            service = Service()
-            @service.amfrpc3('domain')
-            def myfunction(a, b):
-                return a + b
-            def call():
-                return service()
+                service = Service()
+                @service.amfrpc3('domain')
+                def myfunction(a, b):
+                    return a + b
+                def call():
+                    return service()
 
-        The call it with:
+            Then call it with:
 
-            wget http://..../app/default/call/amfrpc3/myfunction?a=hello&b=world
+                wget http://..../app/default/call/amfrpc3/myfunction?a=hello&b=world
 
         """
         if not isinstance(domain, str):
@@ -4541,24 +4527,25 @@ class Service(object):
 
     def soap(self, name=None, returns=None, args=None, doc=None):
         """
-        example:
+        Example:
+            Use as::
 
-            service = Service()
-            @service.soap('MyFunction',returns={'result':int},args={'a':int,'b':int,})
-            def myfunction(a, b):
-                return a + b
-            def call():
-                return service()
+                service = Service()
+                @service.soap('MyFunction',returns={'result':int},args={'a':int,'b':int,})
+                def myfunction(a, b):
+                    return a + b
+                def call():
+                    return service()
 
-        The call it with:
+        Then call it with::
 
             from gluon.contrib.pysimplesoap.client import SoapClient
             client = SoapClient(wsdl="http://..../app/default/call/soap?WSDL")
             response = client.MyFunction(a=1,b=2)
             return response['result']
 
-        Exposes online generated documentation and xml example messages at:
-        - http://..../app/default/call/soap
+        It also exposes online generated documentation and xml example messages
+        at `http://..../app/default/call/soap`
         """
 
         def _soap(f):
@@ -4662,7 +4649,7 @@ class Service(object):
 
     # jsonrpc 2.0 error types.  records the following structure {code: (message,meaning)}
     jsonrpc_errors = {
-        -32700:        ("Parse error. Invalid JSON was received by the server.",  "An error occurred on the server while parsing the JSON text."),
+        -32700: ("Parse error. Invalid JSON was received by the server.",  "An error occurred on the server while parsing the JSON text."),
         -32600: ("Invalid Request", "The JSON sent is not a valid Request object."),
         -32601: ("Method not found", "The method does not exist / is not available."),
         -32602: ("Invalid params", "Invalid method parameter(s)."),
@@ -4740,14 +4727,15 @@ class Service(object):
             """
             Validate request as defined in: http://www.jsonrpc.org/specification#request_object.
 
-            :param data: The json object.
-            :type name: str.
+            Args:
+                data(str): The json object.
 
-            :returns:
+            Returns:
                 - True -- if successful
                 - False -- if no error should be reported (i.e. data is missing 'id' member)
 
-            :raises: JsonRPCException
+            Raises:
+                JsonRPCException
 
             """
 
@@ -4926,30 +4914,34 @@ class Service(object):
 
     def __call__(self):
         """
-        register services with:
-        service = Service()
-        @service.run
-        @service.rss
-        @service.json
-        @service.jsonrpc
-        @service.xmlrpc
-        @service.amfrpc
-        @service.amfrpc3('domain')
-        @service.soap('Method', returns={'Result':int}, args={'a':int,'b':int,})
+        Registers services with::
 
-        expose services with
+            service = Service()
+            @service.run
+            @service.rss
+            @service.json
+            @service.jsonrpc
+            @service.xmlrpc
+            @service.amfrpc
+            @service.amfrpc3('domain')
+            @service.soap('Method', returns={'Result':int}, args={'a':int,'b':int,})
 
-        def call(): return service()
+        Exposes services with::
 
-        call services with
-        http://..../app/default/call/run?[parameters]
-        http://..../app/default/call/rss?[parameters]
-        http://..../app/default/call/json?[parameters]
-        http://..../app/default/call/jsonrpc
-        http://..../app/default/call/xmlrpc
-        http://..../app/default/call/amfrpc
-        http://..../app/default/call/amfrpc3
-        http://..../app/default/call/soap
+            def call():
+                return service()
+
+        You can call services with::
+
+            http://..../app/default/call/run?[parameters]
+            http://..../app/default/call/rss?[parameters]
+            http://..../app/default/call/json?[parameters]
+            http://..../app/default/call/jsonrpc
+            http://..../app/default/call/xmlrpc
+            http://..../app/default/call/amfrpc
+            http://..../app/default/call/amfrpc3
+            http://..../app/default/call/soap
+
         """
 
         request = current.request
@@ -4987,12 +4979,15 @@ class Service(object):
 
 def completion(callback):
     """
-    Executes a task on completion of the called action. For example:
+    Executes a task on completion of the called action.
 
-        from gluon.tools import completion
-        @completion(lambda d: logging.info(repr(d)))
-        def index():
-            return dict(message='hello')
+    Example:
+        Use as::
+
+            from gluon.tools import completion
+            @completion(lambda d: logging.info(repr(d)))
+            def index():
+                return dict(message='hello')
 
     It logs the output of the function every time input is called.
     The argument of completion is executed in a new thread.
@@ -5077,55 +5072,60 @@ def test_thread_separation():
 class PluginManager(object):
     """
 
-    Plugin Manager is similar to a storage object but it is a single level singleton
-    this means that multiple instances within the same thread share the same attributes
-    Its constructor is also special. The first argument is the name of the plugin you are defining.
+    Plugin Manager is similar to a storage object but it is a single level
+    singleton. This means that multiple instances within the same thread share
+    the same attributes.
+    Its constructor is also special. The first argument is the name of the
+    plugin you are defining.
     The named arguments are parameters needed by the plugin with default values.
     If the parameters were previous defined, the old values are used.
 
-    For example:
+    Example:
+        in some general configuration file::
 
-    ### in some general configuration file:
-    >>> plugins = PluginManager()
-    >>> plugins.me.param1=3
+            plugins = PluginManager()
+            plugins.me.param1=3
 
-    ### within the plugin model
-    >>> _ = PluginManager('me',param1=5,param2=6,param3=7)
+        within the plugin model::
 
-    ### where the plugin is used
-    >>> print plugins.me.param1
-    3
-    >>> print plugins.me.param2
-    6
-    >>> plugins.me.param3 = 8
-    >>> print plugins.me.param3
-    8
+            _ = PluginManager('me',param1=5,param2=6,param3=7)
 
-    Here are some tests:
+        where the plugin is used::
 
-    >>> a=PluginManager()
-    >>> a.x=6
-    >>> b=PluginManager('check')
-    >>> print b.x
-    6
-    >>> b=PluginManager() # reset settings
-    >>> print b.x
-    <Storage {}>
-    >>> b.x=7
-    >>> print a.x
-    7
-    >>> a.y.z=8
-    >>> print b.y.z
-    8
-    >>> test_thread_separation()
-    5
-    >>> plugins=PluginManager('me',db='mydb')
-    >>> print plugins.me.db
-    mydb
-    >>> print 'me' in plugins
-    True
-    >>> print plugins.me.installed
-    True
+            >>> print plugins.me.param1
+            3
+            >>> print plugins.me.param2
+            6
+            >>> plugins.me.param3 = 8
+            >>> print plugins.me.param3
+            8
+
+        Here are some tests::
+
+            >>> a=PluginManager()
+            >>> a.x=6
+            >>> b=PluginManager('check')
+            >>> print b.x
+            6
+            >>> b=PluginManager() # reset settings
+            >>> print b.x
+            <Storage {}>
+            >>> b.x=7
+            >>> print a.x
+            7
+            >>> a.y.z=8
+            >>> print b.y.z
+            8
+            >>> test_thread_separation()
+            5
+            >>> plugins=PluginManager('me',db='mydb')
+            >>> print plugins.me.db
+            mydb
+            >>> print 'me' in plugins
+            True
+            >>> print plugins.me.installed
+            True
+
     """
     instances = {}
 
@@ -5166,21 +5166,23 @@ class PluginManager(object):
 class Expose(object):
     def __init__(self, base=None, basename=None, extensions=None, allow_download=True):
         """
-        Usage:
+        Examples:
+            Use as::
 
-        def static():
-            return dict(files=Expose())
+                def static():
+                    return dict(files=Expose())
 
-        or
+            or::
 
-        def static():
-            path = os.path.join(request.folder,'static','public')
-            return dict(files=Expose(path,basename='public'))
+                def static():
+                    path = os.path.join(request.folder,'static','public')
+                    return dict(files=Expose(path,basename='public'))
 
-        extensions:
-        an optional list of file extensions for filtering displayed files:
-        ['.py', '.jpg']
-        allow_download: whether to allow downloading selected files
+        Args:
+            extensions: an optional list of file extensions for filtering
+                displayed files: e.g. `['.py', '.jpg']`
+            allow_download: whether to allow downloading selected files
+
         """
         current.session.forget()
         base = base or os.path.join(current.request.folder, 'static')
@@ -5287,8 +5289,8 @@ class Wiki(object):
     @staticmethod
     def component(text):
         """
-        In wiki docs allows @{component:controller/function/args}
-        which renders as a LOAD(..., ajax=True)
+        In wiki docs allows `@{component:controller/function/args}`
+        which renders as a `LOAD(..., ajax=True)`
         """
         items = text.split('/')
         controller, function, args = items[0], items[1], items[2:]
@@ -5323,16 +5325,18 @@ class Wiki(object):
 
         settings = self.settings = auth.settings.wiki
 
-        """render argument options:
+        """
+        Args:
+            render:
+
                 - "markmin"
                 - "html"
-                - <function>
-                    Sets a custom render function
-                - dict(html=<function>, markmin=...):
-                    dict(...) allows multiple custom render functions
-                - "multiple"
-                    Is the same as {}. It enables per-record formats
-                    using builtins
+                - `<function>` : Sets a custom render function
+                - `dict(html=<function>, markmin=...)`: dict(...) allows
+                   multiple custom render functions
+                - "multiple" : Is the same as `{}`. It enables per-record
+                   formats using builtins
+
         """
         engines = set(['markmin', 'html'])
         show_engine = False
@@ -5353,7 +5357,7 @@ class Wiki(object):
         settings.function = function
         settings.groups = auth.user_groups.values() \
             if groups is None else groups
-        
+
         db = auth.db
         self.env = env or {}
         self.env['component'] = Wiki.component
