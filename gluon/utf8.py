@@ -1,15 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-This file is part of the web2py Web Framework
-Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
-License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
-
-Created by Vladyslav Kozlovskyy (Ukraine) <dbdevelop©gmail.com>
-       for Web2py project
+| This file is part of the web2py Web Framework
+| Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
+| License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
+| Created by Vladyslav Kozlovskyy (Ukraine) <dbdevelop©gmail.com>
+| for Web2py project
 
 Utilities and class for UTF8 strings managing
-===========================================
+----------------------------------------------
 """
 import __builtin__
 __all__ = ['Utf8']
@@ -30,18 +29,19 @@ repr_escape_tab2[ord('\'')] = u"\\'"
 
 
 def sort_key(s):
-    """ Unicode Collation Algorithm (UCA) (http://www.unicode.org/reports/tr10/)
-        is used for utf-8 and unicode strings sorting and for utf-8 strings
-        comparison
+    """Unicode Collation Algorithm (UCA) (http://www.unicode.org/reports/tr10/)
+    is used for utf-8 and unicode strings sorting and for utf-8 strings
+    comparison
 
-        NOTE: pyuca is a very memory cost module! It loads the whole
-              "allkey.txt" file (~2mb!) into the memory. But this
-              functionality is needed only when sort_key() is called as a
-              part of sort() function or when Utf8 strings are compared.
+    Note:
+        pyuca is a very memory cost module! It loads the whole
+        "allkey.txt" file (~2mb!) into the memory. But this
+        functionality is needed only when sort_key() is called as a
+        part of sort() function or when Utf8 strings are compared.
 
-        So, it is a lazy "sort_key" function which (ONLY ONCE, ON ITS
-        FIRST CALL) imports pyuca and replaces itself with a real
-        sort_key() function
+    So, it is a lazy "sort_key" function which (ONLY ONCE, ON ITS
+    FIRST CALL) imports pyuca and replaces itself with a real
+    sort_key() function
     """
     global sort_key
     try:
@@ -56,9 +56,8 @@ def sort_key(s):
 
 
 def ord(char):
-    """ returns unicode id for utf8 or unicode *char* character
-
-        SUPPOSE that *char* is an utf-8 or unicode character only
+    """Returns unicode id for utf8 or unicode *char* character
+    SUPPOSE that *char* is an utf-8 or unicode character only
     """
     if isinstance(char, unicode):
         return __builtin__.ord(char)
@@ -66,28 +65,29 @@ def ord(char):
 
 
 def chr(code):
-    """ return utf8-character with *code* unicode id """
+    """Returns utf8-character with *code* unicode id """
     return Utf8(unichr(code))
 
 
 def size(string):
-    """ return length of utf-8 string in bytes
-        NOTE! The length of correspondent utf-8
-              string is returned for unicode string
+    """Returns length of utf-8 string in bytes
+
+    Note:
+        The length of correspondent utf-8 string is returned for unicode string
     """
     return Utf8(string).__size__()
 
 
 def truncate(string, length, dots='...'):
-    """ returns string of length < *length* or truncate
-        string with adding *dots* suffix to the string's end
+    """Returns string of length < *length* or truncate string with adding
+    *dots* suffix to the string's end
 
-    args:
-         length (int): max length of string
-         dots (str or unicode): string suffix, when string is cutted
+    Args:
+        length (int): max length of string
+        dots (str or unicode): string suffix, when string is cutted
 
-     returns:
-         (utf8-str): original or cutted string
+    Returns:
+        (utf8-str): original or cutted string
     """
     text = unicode(string, 'utf-8')
     dots = unicode(dots, 'utf-8') if isinstance(dots, str) else dots
@@ -125,31 +125,32 @@ class Utf8(str):
 
     def __repr__(self):
         r''' # note that we use raw strings to avoid having to use double back slashes below
-        NOTE! This function is a clone of web2py:gluon.languages.utf_repl() function
+        NOTE! This function is a clone of web2py:gluon.languages.utf_repl() function::
 
-        utf8.__repr__() works same as str.repr() when processing ascii string
-        >>> repr(Utf8('abc')) == repr(Utf8("abc")) == repr('abc') == repr("abc") == "'abc'"
-        True
-        >>> repr(Utf8('a"b"c')) == repr('a"b"c') == '\'a"b"c\''
-        True
-        >>> repr(Utf8("a'b'c")) == repr("a'b'c") == '"a\'b\'c"'
-        True
-        >>> repr(Utf8('a\'b"c')) == repr('a\'b"c') == repr(Utf8("a'b\"c")) == repr("a'b\"c") == '\'a\\\'b"c\''
-        True
-        >>> repr(Utf8('a\r\nb')) == repr('a\r\nb') == "'a\\r\\nb'" # Test for \r, \n
-        True
+            utf8.__repr__() works same as str.repr() when processing ascii string
+            >>> repr(Utf8('abc')) == repr(Utf8("abc")) == repr('abc') == repr("abc") == "'abc'"
+            True
+            >>> repr(Utf8('a"b"c')) == repr('a"b"c') == '\'a"b"c\''
+            True
+            >>> repr(Utf8("a'b'c")) == repr("a'b'c") == '"a\'b\'c"'
+            True
+            >>> repr(Utf8('a\'b"c')) == repr('a\'b"c') == repr(Utf8("a'b\"c")) == repr("a'b\"c") == '\'a\\\'b"c\''
+            True
+            >>> repr(Utf8('a\r\nb')) == repr('a\r\nb') == "'a\\r\\nb'" # Test for \r, \n
+            True
 
-        Unlike str.repr(), Utf8.__repr__() remains utf8 content when processing utf8 string
-        >>> repr(Utf8('中文字')) == repr(Utf8("中文字")) == "'中文字'" != repr('中文字')
-        True
-        >>> repr(Utf8('中"文"字')) == "'中\"文\"字'" != repr('中"文"字')
-        True
-        >>> repr(Utf8("中'文'字")) == '"中\'文\'字"' != repr("中'文'字")
-        True
-        >>> repr(Utf8('中\'文"字')) == repr(Utf8("中'文\"字")) == '\'中\\\'文"字\'' != repr('中\'文"字') == repr("中'文\"字")
-        True
-        >>> repr(Utf8('中\r\n文')) == "'中\\r\\n文'" != repr('中\r\n文') # Test for \r, \n
-        True
+        Unlike str.repr(), Utf8.__repr__() remains utf8 content when processing utf8 string::
+
+            >>> repr(Utf8('中文字')) == repr(Utf8("中文字")) == "'中文字'" != repr('中文字')
+            True
+            >>> repr(Utf8('中"文"字')) == "'中\"文\"字'" != repr('中"文"字')
+            True
+            >>> repr(Utf8("中'文'字")) == '"中\'文\'字"' != repr("中'文'字")
+            True
+            >>> repr(Utf8('中\'文"字')) == repr(Utf8("中'文\"字")) == '\'中\\\'文"字\'' != repr('中\'文"字') == repr("中'文\"字")
+            True
+            >>> repr(Utf8('中\r\n文')) == "'中\\r\\n文'" != repr('中\r\n文') # Test for \r, \n
+            True
         '''
         if str.find(self, "'") >= 0 and str.find(self, '"') < 0:  # only single quote exists
             return '"' + unicode(self, 'utf-8').translate(repr_escape_tab).encode('utf-8') + '"'
@@ -578,11 +579,9 @@ if __name__ == '__main__':
         7
         >>> a=Utf8('а б ц д е а б ц д е а\\tб ц д е')
         >>> a.split()
-        ['а', 'б', 'ц', 'д', 'е', 'а', 'б', 'ц', 'д',
-            'е', 'а', 'б', 'ц', 'д', 'е']
+        ['а', 'б', 'ц', 'д', 'е', 'а', 'б', 'ц', 'д', 'е', 'а', 'б', 'ц', 'д', 'е']
         >>> a.rsplit()
-        ['а', 'б', 'ц', 'д', 'е', 'а', 'б', 'ц', 'д',
-            'е', 'а', 'б', 'ц', 'д', 'е']
+        ['а', 'б', 'ц', 'д', 'е', 'а', 'б', 'ц', 'д', 'е', 'а', 'б', 'ц', 'д', 'е']
         >>> a.expandtabs().split('б')
         ['а ', ' ц д е а ', ' ц д е а   ', ' ц д е']
         >>> a.expandtabs().rsplit('б')
@@ -630,8 +629,7 @@ if __name__ == '__main__':
         1
         >>> s.count('Є', 0, 5)
         0
-        >>> Utf8(
-            "Parameters: '%(проба)s', %(probe)04d, %(проба2)s") % { u"проба": s,
+        >>> Utf8("Parameters: '%(проба)s', %(probe)04d, %(проба2)s") % { u"проба": s,
         ...      "not used": "???", "probe":  2, "проба2": u"ПРоба Probe" }
         "Parameters: 'ПРоба Є PRobe', 0002, ПРоба Probe"
         >>> a=Utf8(u"Параметр: (%s)-(%s)-[%s]")
@@ -694,8 +692,7 @@ if __name__ == '__main__':
         аАбБвВгГґҐдДеЕєЄжЖзЗиИіІїЇйЙкКлЛмМнНоОпПрРсСтТуУфФхХцЦчЧшШщЩьЬюЮяЯ
         >>> Utf8().join(sorted(c.decode(), key=sort_key)) # convert to unicode for better performance
         'аАбБвВгГґҐдДеЕєЄжЖзЗиИіІїЇйЙкКлЛмМнНоОпПрРсСтТуУфФхХцЦчЧшШщЩьЬюЮяЯ'
-        >>> for result in sorted(
-            ["Іа", "Астро", u"гала", Utf8("Гоша"), "Єва", "шовк", "аякс", "Їжа",
+        >>> for result in sorted(["Іа", "Астро", u"гала", Utf8("Гоша"), "Єва", "шовк", "аякс", "Їжа",
         ...                       "ґанок", Utf8("Дар'я"), "білінг", "веб", u"Жужа", "проба", u"тест",
         ...                       "абетка", "яблуко", "Юляся", "Київ", "лимонад", "ложка", "Матриця",
         ...                      ], key=sort_key):
@@ -722,6 +719,7 @@ if __name__ == '__main__':
         шовк             <type 'str'>
         Юляся           <type 'str'>
         яблуко         <type 'str'>
+
         >>> a=Utf8("中文字")
         >>> L=list(a)
         >>> L
@@ -734,8 +732,7 @@ if __name__ == '__main__':
         >>> a="中文字"  # standard str type
         >>> L=list(a)
         >>> L
-        ['\\xe4', '\\xb8', '\\xad', '\\xe6', '\\x96', '\\x87',
-            '\\xe5', '\\xad', '\\x97']
+        ['\\xe4', '\\xb8', '\\xad', '\\xe6', '\\x96', '\\x87', '\\xe5', '\\xad', '\\x97']
         >>> from string import maketrans
         >>> str_tab=maketrans('PRobe','12345')
         >>> unicode_tab={ord(u'П'):ord(u'Ж'),
