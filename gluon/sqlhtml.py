@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 """
-This file is part of the web2py Web Framework
-Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
-License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
+| This file is part of the web2py Web Framework
+| Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
+| License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 
 Holds:
 
@@ -13,6 +13,7 @@ Holds:
 - form_factory: provides a SQLFORM for an non-db backed table
 
 """
+
 import os
 from gluon.http import HTTP
 from gluon.html import XmlComponent
@@ -100,8 +101,8 @@ def show_if(cond):
 
 class FormWidget(object):
     """
-    helper for SQLFORM to generate form input fields
-    (widget), related to the fieldtype
+    Helper for SQLFORM to generate form input fields (widget), related to the
+    fieldtype
     """
 
     _class = 'generic-widget'
@@ -110,12 +111,12 @@ class FormWidget(object):
     def _attributes(cls, field,
                     widget_attributes, **attributes):
         """
-        helper to build a common set of attributes
+        Helper to build a common set of attributes
 
-        :param field: the field involved,
-                      some attributes are derived from this
-        :param widget_attributes:  widget related attributes
-        :param attributes: any other supplied attributes
+        Args:
+            field: the field involved, some attributes are derived from this
+            widget_attributes: widget related attributes
+            attributes: any other supplied attributes
         """
         attr = dict(
             _id='%s_%s' % (field.tablename, field.name),
@@ -135,7 +136,7 @@ class FormWidget(object):
     @classmethod
     def widget(cls, field, value, **attributes):
         """
-        generates the widget for the field.
+        Generates the widget for the field.
 
         When serialized, will provide an INPUT tag:
 
@@ -143,9 +144,10 @@ class FormWidget(object):
         - class = field.type
         - name = fieldname
 
-        :param field: the field needing the widget
-        :param value: value
-        :param attributes: any other attributes to be applied
+        Args:
+            field: the field needing the widget
+            value: value
+            attributes: any other attributes to be applied
         """
 
         raise NotImplementedError
@@ -157,9 +159,9 @@ class StringWidget(FormWidget):
     @classmethod
     def widget(cls, field, value, **attributes):
         """
-        generates an INPUT text tag.
+        Generates an INPUT text tag.
 
-        see also: :meth:`FormWidget.widget`
+        see also: `FormWidget.widget`
         """
 
         default = dict(
@@ -199,9 +201,9 @@ class TextWidget(FormWidget):
     @classmethod
     def widget(cls, field, value, **attributes):
         """
-        generates a TEXTAREA tag.
+        Generates a TEXTAREA tag.
 
-        see also: :meth:`FormWidget.widget`
+        see also: `FormWidget.widget`
         """
 
         default = dict(value=value)
@@ -214,9 +216,9 @@ class JSONWidget(FormWidget):
     @classmethod
     def widget(cls, field, value, **attributes):
         """
-        generates a TEXTAREA for JSON notation.
+        Generates a TEXTAREA for JSON notation.
 
-        see also: :meth:`FormWidget.widget`
+        see also: `FormWidget.widget`
         """
         if not isinstance(value, basestring):
             if value is not None:
@@ -231,9 +233,9 @@ class BooleanWidget(FormWidget):
     @classmethod
     def widget(cls, field, value, **attributes):
         """
-        generates an INPUT checkbox tag.
+        Generates an INPUT checkbox tag.
 
-        see also: :meth:`FormWidget.widget`
+        see also: `FormWidget.widget`
         """
 
         default = dict(_type='checkbox', value=value)
@@ -247,10 +249,13 @@ class OptionsWidget(FormWidget):
     @staticmethod
     def has_options(field):
         """
-        checks if the field has selectable options
+        Checks if the field has selectable options
 
-        :param field: the field needing checking
-        :returns: True if the field has options
+        Args:
+            field: the field needing checking
+
+        Returns:
+            True if the field has options
         """
 
         return hasattr(field.requires, 'options')
@@ -258,9 +263,9 @@ class OptionsWidget(FormWidget):
     @classmethod
     def widget(cls, field, value, **attributes):
         """
-        generates a SELECT tag, including OPTIONs (only 1 option allowed)
+        Generates a SELECT tag, including OPTIONs (only 1 option allowed)
 
-        see also: :meth:`FormWidget.widget`
+        see also: `FormWidget.widget`
         """
         default = dict(value=value)
         attr = cls._attributes(field, default,
@@ -307,12 +312,13 @@ class MultipleOptionsWidget(OptionsWidget):
     @classmethod
     def widget(cls, field, value, size=5, **attributes):
         """
-        generates a SELECT tag, including OPTIONs (multiple options allowed)
+        Generates a SELECT tag, including OPTIONs (multiple options allowed)
 
-        see also: :meth:`FormWidget.widget`
+        see also: `FormWidget.widget`
 
-        :param size: optional param (default=5) to indicate how many rows must
-            be shown
+        Args:
+            size: optional param (default=5) to indicate how many rows must
+                be shown
         """
 
         attributes.update(_size=size, _multiple=True)
@@ -325,9 +331,9 @@ class RadioWidget(OptionsWidget):
     @classmethod
     def widget(cls, field, value, **attributes):
         """
-        generates a TABLE tag, including INPUT radios (only 1 option allowed)
+        Generates a TABLE tag, including INPUT radios (only 1 option allowed)
 
-        see also: :meth:`FormWidget.widget`
+        see also: `FormWidget.widget`
         """
 
         if isinstance(value, (list,tuple)):
@@ -389,9 +395,9 @@ class CheckboxesWidget(OptionsWidget):
     @classmethod
     def widget(cls, field, value, **attributes):
         """
-        generates a TABLE tag, including INPUT checkboxes (multiple allowed)
+        Generates a TABLE tag, including INPUT checkboxes (multiple allowed)
 
-        see also: :meth:`FormWidget.widget`
+        see also: `FormWidget.widget`
         """
 
         # was values = re.compile('[\w\-:]+').findall(str(value))
@@ -466,11 +472,11 @@ class PasswordWidget(FormWidget):
     @classmethod
     def widget(cls, field, value, **attributes):
         """
-        generates a INPUT password tag.
+        Generates a INPUT password tag.
         If a value is present it will be shown as a number of '*', not related
         to the length of the actual value.
 
-        see also: :meth:`FormWidget.widget`
+        see also: `FormWidget.widget`
         """
         # detect if attached a IS_STRONG with entropy
         default = dict(
@@ -506,11 +512,15 @@ class UploadWidget(FormWidget):
 
         Optionally provides an A link to the file, including a checkbox so
         the file can be deleted.
+
         All is wrapped in a DIV.
 
-        see also: :meth:`FormWidget.widget`
+        see also: `FormWidget.widget`
 
-        :param download_url: Optional URL to link to the file (default = None)
+        Args:
+            field: the field
+            value: the field value
+            download_url: url for the file download (default = None)
         """
 
         default = dict(_type='file',)
@@ -554,15 +564,16 @@ class UploadWidget(FormWidget):
     @classmethod
     def represent(cls, field, value, download_url=None):
         """
-        how to represent the file:
+        How to represent the file:
 
         - with download url and if it is an image: <A href=...><IMG ...></A>
         - otherwise with download url: <A href=...>file</A>
         - otherwise: file
 
-        :param field: the field
-        :param value: the field value
-        :param download_url: url for the file download (default = None)
+        Args:
+            field: the field
+            value: the field value
+            download_url: url for the file download (default = None)
         """
 
         inp = current.T(cls.GENERIC_DESCRIPTION)
@@ -586,7 +597,8 @@ class UploadWidget(FormWidget):
         Checking is based on filename extension. Currently recognized:
            gif, png, jp(e)g, bmp
 
-        :param value: filename
+        Args:
+            value: filename
         """
 
         extension = value.split('.')[-1].lower()
@@ -705,7 +717,7 @@ class AutocompleteWidget(object):
 
 
 def formstyle_table3cols(form, fields):
-    ''' 3 column table - default '''
+    """ 3 column table - default """
     table = TABLE()
     for id, label, controls, help in fields:
         _help = TD(help, _class='w2p_fc')
@@ -716,7 +728,7 @@ def formstyle_table3cols(form, fields):
 
 
 def formstyle_table2cols(form, fields):
-    ''' 2 column table '''
+    """ 2 column table """
     table = TABLE()
     for id, label, controls, help in fields:
         _help = TD(help, _class='w2p_fc', _width='50%')
@@ -728,7 +740,7 @@ def formstyle_table2cols(form, fields):
 
 
 def formstyle_divs(form, fields):
-    ''' divs only '''
+    """ divs only """
     table = FIELDSET()
     for id, label, controls, help in fields:
         _help = DIV(help, _class='w2p_fc')
@@ -739,7 +751,7 @@ def formstyle_divs(form, fields):
 
 
 def formstyle_inline(form, fields):
-    ''' divs only '''
+    """ divs only, but inline """
     if len(fields) != 2:
         raise RuntimeError("Not possible")
     id, label, controls, help = fields[0]
@@ -749,7 +761,7 @@ def formstyle_inline(form, fields):
 
 
 def formstyle_ul(form, fields):
-    ''' unordered list '''
+    """ unordered list """
     table = UL()
     for id, label, controls, help in fields:
         _help = DIV(help, _class='w2p_fc')
@@ -760,7 +772,7 @@ def formstyle_ul(form, fields):
 
 
 def formstyle_bootstrap(form, fields):
-    ''' bootstrap format form layout '''
+    """ bootstrap 2.3.x format form layout """
     form.add_class('form-horizontal')
     parent = FIELDSET()
     for id, label, controls, help in fields:
@@ -804,7 +816,11 @@ def formstyle_bootstrap(form, fields):
     return parent
 
 def formstyle_bootstrap3(form, fields):
-    ''' bootstrap 3 format form layout '''
+    """ bootstrap 3 format form layout
+
+    Note:
+        Experimental!
+    """
     form.add_class('form-horizontal')
     parent = FIELDSET()
     for id, label, controls, help in fields:
@@ -862,43 +878,51 @@ def formstyle_bootstrap3(form, fields):
 class SQLFORM(FORM):
 
     """
-    SQLFORM is used to map a table (and a current record) into an HTML form
+    SQLFORM is used to map a table (and a current record) into an HTML form.
 
-    given a SQLTable stored in db.table
+    Given a Table like db.table
 
-    generates an insert form::
+    Generates an insert form::
 
         SQLFORM(db.table)
 
-    generates an update form::
+    Generates an update form::
 
         record=db.table[some_id]
         SQLFORM(db.table, record)
 
-    generates an update with a delete button::
+    Generates an update with a delete button::
 
         SQLFORM(db.table, record, deletable=True)
 
-    if record is an int::
-
-        record=db.table[record]
-
-    optional arguments:
-
-    :param fields: a list of fields that should be placed in the form,
-        default is all.
-    :param labels: a dictionary with labels for each field, keys are the field
-        names.
-    :param col3: a dictionary with content for an optional third column
+    Args:
+        table: `Table` object
+        record: either an int if the `id` is an int, or the record fetched
+            from the table
+        deletable: adds the delete checkbox
+        linkto: the URL of a controller/function to access referencedby
+            records
+        upload: the URL of a controller/function to download an uploaded file
+        fields: a list of fields that should be placed in the form,
+            default is all.
+        labels: a dictionary with labels for each field, keys are the field
+            names.
+        col3: a dictionary with content for an optional third column
             (right of each field). keys are field names.
-    :param linkto: the URL of a controller/function to access referencedby
-        records
-            see controller appadmin.py for examples
-    :param upload: the URL of a controller/function to download an uploaded file
-            see controller appadmin.py for examples
+        submit_button: text to show in the submit button
+        delete_label: text to show next to the delete checkbox
+        showid: shows the id of the record
+        readonly: doesn't allow for any modification
+        comments: show comments (stored in `col3` or in Field definition)
+        ignore_rw: overrides readable/writable attributes
+        record_id: used to create session key against CSRF
+        formstyle: what to use to generate the form layout
+        buttons: override buttons as you please (will be also stored in
+            `form.custom.submit`)
+        separator: character as separator between labels and inputs
 
     any named optional attribute is passed to the <form> tag
-            for example _class, _id, _style, _action, _method, etc.
+    for example _class, _id, _style, _action, _method, etc.
 
     """
 
@@ -987,13 +1011,6 @@ class SQLFORM(FORM):
         separator=': ',
         **attributes
     ):
-        """
-        SQLFORM(db.table,
-               record=None,
-               fields=['name'],
-               labels={'name': 'Your name'},
-               linkto=URL(f='table/db/')
-        """
         T = current.T
 
         self.ignore_rw = ignore_rw
@@ -1298,12 +1315,15 @@ class SQLFORM(FORM):
     ):
 
         """
-        similar FORM.accepts but also does insert, update or delete in DAL.
-        but if detect_record_change == True than:
-          form.record_changed = False (record is properly validated/submitted)
-          form.record_changed = True (record cannot be submitted because changed)
-        elseif detect_record_change == False than:
-          form.record_changed = None
+        Similar to `FORM.accepts` but also does insert, update or delete in DAL.
+        If detect_record_change is `True` than:
+
+          - `form.record_changed = False` (record is properly validated/submitted)
+          - `form.record_changed = True` (record cannot be submitted because changed)
+
+        If detect_record_change == False than:
+
+          - `form.record_changed = None`
         """
 
         if keepvalues is None:
@@ -1391,10 +1411,10 @@ class SQLFORM(FORM):
         if self.record_changed and self.detect_record_change:
             message_onchange = \
                 kwargs.setdefault("message_onchange",
-                                  current.T("A record change was detected. " +
-                                            "Consecutive update self-submissions " +
-                                            "are not allowed. Try re-submitting or " +
-                                            "refreshing the form page."))
+                    current.T("A record change was detected. " +
+                            "Consecutive update self-submissions " +
+                            "are not allowed. Try re-submitting or " +
+                            "refreshing the form page."))
             if message_onchange is not None:
                 current.response.flash = message_onchange
             return ret
@@ -1633,7 +1653,7 @@ class SQLFORM(FORM):
     @staticmethod
     def factory(*fields, **attributes):
         """
-        generates a SQLFORM for the given fields.
+        Generates a SQLFORM for the given fields.
 
         Internally will build a non-database based data model
         to hold the fields.
@@ -2047,10 +2067,11 @@ class SQLFORM(FORM):
             return buttons
 
         def linsert(lst, i, x):
-            """
-            a = [1,2]
-            linsert(a, 1, [0,3])
-            a = [1, 0, 3, 2]
+            """Internal use only: inserts x list into lst at i pos::
+
+                a = [1,2]
+                linsert(a, 1, [0,3])
+                a = [1, 0, 3, 2]
             """
             lst[i:i] = x
 
@@ -2455,7 +2476,6 @@ class SQLFORM(FORM):
             cols = [COL(_id=str(c).replace('.', '-'),
                         data={'column': left_cols + i + 1}) 
                     for i,c in enumerate(columns)]
-            n = len(head.components)
             cols = [COL(data={'column': i + 1}) for i in range(left_cols)] + \
                    cols + \
                    [COL(data={'column': left_cols + len(cols) + i + 1})
@@ -2636,33 +2656,36 @@ class SQLFORM(FORM):
                   divider='>', breadcrumbs_class='',
                   **kwargs):
         """
-        @auth.requires_login()
-        def index():
-            db.define_table('person',Field('name'),format='%(name)s')
-            db.define_table('dog',
-                Field('name'),Field('owner',db.person),format='%(name)s')
-            db.define_table('comment',Field('body'),Field('dog',db.dog))
-            if db(db.person).isempty():
-                from gluon.contrib.populate import populate
-                populate(db.person,300)
-                populate(db.dog,300)
-                populate(db.comment,1000)
-                db.commit()
-        form=SQLFORM.smartgrid(db[request.args(0) or 'person']) #***
-        return dict(form=form)
+        Builds a system of SQLFORM.grid(s) between any referenced tables
 
-        *** builds a complete interface to navigate all tables links
-            to the request.args(0)
-            table: pagination, search, view, edit, delete,
-                   children, parent, etc.
+        Args:
+            table: main table
+            constraints(dict): `{'table':query}` that limits which records can
+                be accessible
+            links(dict): like `{'tablename':[lambda row: A(....), ...]}` that
+                will add buttons when table tablename is displayed
+            linked_tables(list): list of tables to be linked
 
-        constraints is a dict {'table':query} that limits which
-        records can be accessible
-        links is a dict like
-           {'tablename':[lambda row: A(....), ...]}
-        that will add buttons when table tablename is displayed
-        linked_tables is a optional list of tablenames of tables
-        to be linked
+        Example:
+            given you defined a model as::
+
+                db.define_table('person',Field('name'),format='%(name)s')
+                db.define_table('dog',
+                    Field('name'),Field('owner',db.person),format='%(name)s')
+                db.define_table('comment',Field('body'),Field('dog',db.dog))
+                if db(db.person).isempty():
+                    from gluon.contrib.populate import populate
+                    populate(db.person,300)
+                    populate(db.dog,300)
+                    populate(db.comment,1000)
+
+            in a controller, you can do::
+
+                @auth.requires_login()
+                def index():
+                    form=SQLFORM.smartgrid(db[request.args(0) or 'person'])
+                    return dict(form=form)
+
         """
         request, T = current.request, current.T
         if args is None:
@@ -2829,76 +2852,39 @@ class SQLFORM(FORM):
 class SQLTABLE(TABLE):
 
     """
-    given a Rows object, as returned by a db().select(), generates
+    Given with a Rows object, as returned by a `db().select()`, generates
     an html table with the rows.
 
-    optional arguments:
-
-    :param linkto: URL (or lambda to generate a URL) to edit individual records
-    :param upload: URL to download uploaded files
-    :param orderby: Add an orderby link to column headers.
-    :param headers: dictionary of headers to headers redefinions
-                    headers can also be a string to gerenare the headers from data
-                    for now only headers="fieldname:capitalize",
-                    headers="labels" and headers=None are supported
-    :param truncate: length at which to truncate text in table cells.
-        Defaults to 16 characters.
-    :param columns: a list or dict contaning the names of the columns to be shown
-        Defaults to all
-
-    Optional names attributes for passed to the <table> tag
-
-    The keys of headers and columns must be of the form "tablename.fieldname"
-
-    Simple linkto example::
-
-        rows = db.select(db.sometable.ALL)
-        table = SQLTABLE(rows, linkto='someurl')
-
-    This will link rows[id] to .../sometable/value_of_id
+    Args:
+        sqlrows : the `Rows` object
+        linkto: URL (or lambda to generate a URL) to edit individual records
+        upload: URL to download uploaded files
+        orderby: Add an orderby link to column headers.
+        headers: dictionary of headers to headers redefinions
+            headers can also be a string to gerenare the headers from data
+            for now only headers="fieldname:capitalize",
+            headers="labels" and headers=None are supported
+        truncate: length at which to truncate text in table cells.
+            Defaults to 16 characters.
+        columns: a list or dict contaning the names of the columns to be shown
+            Defaults to all
+        th_link: base link to support orderby headers
+        extracolumns: a list of dicts
+        selectid: The id you want to select
+        renderstyle: Boolean render the style with the table
+        cid: use this cid for all links
+        colgroup: #FIXME
 
 
-    More advanced linkto example::
+    Extracolumns example
+    ::
 
-        def mylink(field, type, ref):
-            return URL(args=[field])
+        [{'label':A('Extra',_href='#'),
+        'class': '', #class name of the header
+        'width':'', #width in pixels or %
+        'content':lambda row, rc: A('Edit',_href='edit/%s'%row.id),
+        'selected': False #agregate class selected to this column}]
 
-        rows = db.select(db.sometable.ALL)
-        table = SQLTABLE(rows, linkto=mylink)
-
-    This will link rows[id] to
-        current_app/current_controlle/current_function/value_of_id
-
-    New Implements: 24 June 2011:
-    -----------------------------
-
-    :param selectid: The id you want to select
-    :param renderstyle: Boolean render the style with the table
-
-    :param extracolumns = [{'label':A('Extra',_href='#'),
-                    'class': '', #class name of the header
-                    'width':'', #width in pixels or %
-                    'content':lambda row, rc: A('Edit',_href='edit/%s'%row.id),
-                    'selected': False #agregate class selected to this column
-                    }]
-
-
-    :param headers = {'table.id':{'label':'Id',
-                           'class':'', #class name of the header
-                           'width':'', #width in pixels or %
-                           'truncate': 16, #truncate the content to...
-                           'selected': False #agregate class selected to this column
-                           },
-               'table.myfield':{'label':'My field',
-                                'class':'', #class name of the header
-                                'width':'', #width in pixels or %
-                                'truncate': 16, #truncate the content to...
-                                'selected': False #agregate class selected to this column
-                                },
-               }
-
-    table = SQLTABLE(rows, headers=headers, extracolumns=extracolumns)
-`<
 
     """
 
@@ -2948,7 +2934,7 @@ class SQLTABLE(TABLE):
                 cols += [COL(data={'column': len(cols) + i + 1})
                          for i, c in enumerate(extracolumns)]
             components.append(COLGROUP(*cols))
-            
+
         if headers is None:
             headers = {}
         else:
@@ -3099,7 +3085,7 @@ class SQLTABLE(TABLE):
 
     def style(self):
 
-        css = '''
+        css = """
         table tbody tr.w2p_odd {
             background-color: #DFD;
         }
@@ -3115,7 +3101,7 @@ class SQLTABLE(TABLE):
         table tbody tr:hover {
             background: #DDF;
         }
-        '''
+        """
 
         return css
 
@@ -3133,7 +3119,8 @@ class ExportClass(object):
     def represented(self):
         def none_exception(value):
             """
-            returns a cleaned up value that can be used for csv export:
+            Returns a cleaned up value that can be used for csv export:
+
             - unicode text is encoded as such
             - None values are replaced with the given representation (default <NULL>)
             """
