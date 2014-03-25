@@ -7764,6 +7764,9 @@ class DAL(object):
                  automatically set within web2py
                  use an explicit path when using DAL outside web2py
         :db_codec: string encoding of the database (default: 'UTF-8')
+        :db_hash: database identifier with .tables. If your connection hash 
+                  change you can still using old .tables if they have db_hash 
+                  as prefix
         :check_reserved: list of adapters to check tablenames and column names
                          against sql/nosql reserved keywords. (Default None)
 
