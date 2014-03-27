@@ -44,5 +44,8 @@ PLUGINS_APP = 'http://web2py.com/plugins'
 if 'adminLanguage' in request.cookies and not (request.cookies['adminLanguage'] is None):
     T.force(request.cookies['adminLanguage'].value)
 
+#find dir of file VERSION
+VERSION_DIR = os.path.abspath(reduce(lambda val,func: func(val), (__file__,) + (os.path.dirname,) * 4))
+
 #set static_version
-response.static_version = open('VERSION').read().split(' ',1)[1].split('-')[0]
+response.static_version = open(os.path.join(VERSION_DIR, 'VERSION')).read().split(' ',1)[1].split('-')[0]
