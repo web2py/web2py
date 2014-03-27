@@ -2,131 +2,136 @@
 # -*- coding: utf-8 -*-
 
 """
-This file is part of the web2py Web Framework
-Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
-License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
+| This file is part of the web2py Web Framework
+| Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
+| License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
+|
 
 Thanks to
-    * Niall Sweeny <niall.sweeny@fonjax.com> for MS SQL support
-    * Marcel Leuthi <mluethi@mlsystems.ch> for Oracle support
-    * Denes
-    * Chris Clark
-    * clach05
-    * Denes Lengyel
-    * and many others who have contributed to current and previous versions
 
-This file contains the DAL support for many relational databases,
-including:
-- SQLite & SpatiaLite
-- MySQL
-- Postgres
-- Firebird
-- Oracle
-- MS SQL
-- DB2
-- Interbase
-- Ingres
-- Informix (9+ and SE)
-- SapDB (experimental)
-- Cubrid (experimental)
-- CouchDB (experimental)
-- MongoDB (in progress)
-- Google:nosql
-- Google:sql
-- Teradata
-- IMAP (experimental)
+  - Niall Sweeny <niall.sweeny@fonjax.com> for MS SQL support
+  - Marcel Leuthi <mluethi@mlsystems.ch> for Oracle support
+  - Denes
+  - Chris Clark
+  - clach05
+  - Denes Lengyel
 
-Example of usage:
+and many others who have contributed to current and previous versions
 
->>> # from dal import DAL, Field
+This file contains the DAL support for many relational databases, including:
 
-### create DAL connection (and create DB if it doesn't exist)
->>> db = DAL(('sqlite://storage.sqlite','mysql://a:b@localhost/x'),
-... folder=None)
+  - SQLite & SpatiaLite
+  - MySQL
+  - Postgres
+  - Firebird
+  - Oracle
+  - MS SQL
+  - DB2
+  - Interbase
+  - Ingres
+  - Informix (9+ and SE)
+  - SapDB (experimental)
+  - Cubrid (experimental)
+  - CouchDB (experimental)
+  - MongoDB (in progress)
+  - Google:nosql
+  - Google:sql
+  - Teradata
+  - IMAP (experimental)
 
-### define a table 'person' (create/alter as necessary)
->>> person = db.define_table('person',Field('name','string'))
+Example of usage::
 
-### insert a record
->>> id = person.insert(name='James')
+    >>> # from dal import DAL, Field
 
-### retrieve it by id
->>> james = person(id)
+    ### create DAL connection (and create DB if it doesn't exist)
+    >>> db = DAL(('sqlite://storage.sqlite','mysql://a:b@localhost/x'),
+    ... folder=None)
 
-### retrieve it by name
->>> james = person(name='James')
+    ### define a table 'person' (create/alter as necessary)
+    >>> person = db.define_table('person',Field('name','string'))
 
-### retrieve it by arbitrary query
->>> query = (person.name=='James') & (person.name.startswith('J'))
->>> james = db(query).select(person.ALL)[0]
+    ### insert a record
+    >>> id = person.insert(name='James')
 
-### update one record
->>> james.update_record(name='Jim')
-<Row {'id': 1, 'name': 'Jim'}>
+    ### retrieve it by id
+    >>> james = person(id)
 
-### update multiple records by query
->>> db(person.name.like('J%')).update(name='James')
-1
+    ### retrieve it by name
+    >>> james = person(name='James')
 
-### delete records by query
->>> db(person.name.lower() == 'jim').delete()
-0
+    ### retrieve it by arbitrary query
+    >>> query = (person.name=='James') & (person.name.startswith('J'))
+    >>> james = db(query).select(person.ALL)[0]
 
-### retrieve multiple records (rows)
->>> people = db(person).select(orderby=person.name,
-... groupby=person.name, limitby=(0,100))
+    ### update one record
+    >>> james.update_record(name='Jim')
+    <Row {'id': 1, 'name': 'Jim'}>
 
-### further filter them
->>> james = people.find(lambda row: row.name == 'James').first()
->>> print james.id, james.name
-1 James
+    ### update multiple records by query
+    >>> db(person.name.like('J%')).update(name='James')
+    1
 
-### check aggregates
->>> counter = person.id.count()
->>> print db(person).select(counter).first()(counter)
-1
+    ### delete records by query
+    >>> db(person.name.lower() == 'jim').delete()
+    0
 
-### delete one record
->>> james.delete_record()
-1
+    ### retrieve multiple records (rows)
+    >>> people = db(person).select(orderby=person.name,
+    ... groupby=person.name, limitby=(0,100))
 
-### delete (drop) entire database table
->>> person.drop()
+    ### further filter them
+    >>> james = people.find(lambda row: row.name == 'James').first()
+    >>> print james.id, james.name
+    1 James
 
-Supported field types:
-id string text boolean integer double decimal password upload
-blob time date datetime
+    ### check aggregates
+    >>> counter = person.id.count()
+    >>> print db(person).select(counter).first()(counter)
+    1
 
-Supported DAL URI strings:
-'sqlite://test.db'
-'spatialite://test.db'
-'sqlite:memory'
-'spatialite:memory'
-'jdbc:sqlite://test.db'
-'mysql://root:none@localhost/test'
-'postgres://mdipierro:password@localhost/test'
-'postgres:psycopg2://mdipierro:password@localhost/test'
-'postgres:pg8000://mdipierro:password@localhost/test'
-'jdbc:postgres://mdipierro:none@localhost/test'
-'mssql://web2py:none@A64X2/web2py_test'
-'mssql2://web2py:none@A64X2/web2py_test' # alternate mappings
-'oracle://username:password@database'
-'firebird://user:password@server:3050/database'
-'db2://DSN=dsn;UID=user;PWD=pass'
-'firebird://username:password@hostname/database'
-'firebird_embedded://username:password@c://path'
-'informix://user:password@server:3050/database'
-'informixu://user:password@server:3050/database' # unicode informix
-'ingres://database'  # or use an ODBC connection string, e.g. 'ingres://dsn=dsn_name'
-'google:datastore' # for google app engine datastore
-'google:sql' # for google app engine with sql (mysql compatible)
-'teradata://DSN=dsn;UID=user;PWD=pass; DATABASE=database' # experimental
-'imap://user:password@server:port' # experimental
-'mongodb://user:password@server:port/database' # experimental
+    ### delete one record
+    >>> james.delete_record()
+    1
 
-For more info:
-help(DAL)
-help(Field)
+    ### delete (drop) entire database table
+    >>> person.drop()
+
+
+Supported DAL URI strings::
+
+    'sqlite://test.db'
+    'spatialite://test.db'
+    'sqlite:memory'
+    'spatialite:memory'
+    'jdbc:sqlite://test.db'
+    'mysql://root:none@localhost/test'
+    'postgres://mdipierro:password@localhost/test'
+    'postgres:psycopg2://mdipierro:password@localhost/test'
+    'postgres:pg8000://mdipierro:password@localhost/test'
+    'jdbc:postgres://mdipierro:none@localhost/test'
+    'mssql://web2py:none@A64X2/web2py_test'
+    'mssql2://web2py:none@A64X2/web2py_test' # alternate mappings
+    'mssql3://web2py:none@A64X2/web2py_test' # better pagination (requires >= 2005)
+    'mssql4://web2py:none@A64X2/web2py_test' # best pagination (requires >= 2012)
+    'oracle://username:password@database'
+    'firebird://user:password@server:3050/database'
+    'db2://DSN=dsn;UID=user;PWD=pass'
+    'firebird://username:password@hostname/database'
+    'firebird_embedded://username:password@c://path'
+    'informix://user:password@server:3050/database'
+    'informixu://user:password@server:3050/database' # unicode informix
+    'ingres://database'  # or use an ODBC connection string, e.g. 'ingres://dsn=dsn_name'
+    'google:datastore' # for google app engine datastore
+    'google:sql' # for google app engine with sql (mysql compatible)
+    'teradata://DSN=dsn;UID=user;PWD=pass; DATABASE=database' # experimental
+    'imap://user:password@server:port' # experimental
+    'mongodb://user:password@server:port/database' # experimental
+
+For more info::
+
+    help(DAL)
+    help(Field)
+
 """
 
 ###################################################################################
@@ -381,7 +386,7 @@ if not 'google' in DRIVERS:
         DRIVERS.append('Firebird(fdb)')
     except ImportError:
         LOGGER.debug('no Firebird driver fdb')
-#####
+
     try:
         import firebirdsql
         DRIVERS.append('Firebird(firebirdsql)')
@@ -605,7 +610,7 @@ class ConnectionPool(object):
         return
 
     def find_or_make_work_folder(self):
-        """ this actually does not make the folder. it has to be there """
+        #this actually does not make the folder. it has to be there
         self.folder = getattr(THREAD_LOCAL,'folder','')
 
         if (os.path.isabs(self.folder) and
@@ -618,22 +623,22 @@ class ConnectionPool(object):
             os.mkdir(self.folder)
 
     def after_connection_hook(self):
-        """hook for the after_connection parameter"""
+        """Hook for the after_connection parameter"""
         if callable(self._after_connection):
             self._after_connection(self)
         self.after_connection()
 
     def after_connection(self):
-        """ this it is supposed to be overloaded by adapters"""
+        #this it is supposed to be overloaded by adapters
         pass
 
     def reconnect(self, f=None, cursor=True):
         """
-        this function defines: self.connection and self.cursor
-        (iff cursor is True)
-        if self.pool_size>0 it will try pull the connection from the pool
+        Defines: `self.connection` and `self.cursor`
+        (if cursor is True)
+        if `self.pool_size>0` it will try pull the connection from the pool
         if the connection is not active (closed by db server) it will loop
-        if not self.pool_size or no active connections in pool makes a new one
+        if not `self.pool_size` or no active connections in pool makes a new one
         """
         if getattr(self,'connection', None) != None:
             return
@@ -677,8 +682,8 @@ class ConnectionPool(object):
 class AdapterMeta(type):
     """Metaclass to support manipulation of adapter classes.
 
-    At the moment is used to intercept entity_quoting argument passed to DAL.
-"""
+    At the moment is used to intercept `entity_quoting` argument passed to DAL.
+    """
 
     def __call__(cls, *args, **kwargs):
         entity_quoting = kwargs.get('entity_quoting', False)
@@ -697,12 +702,12 @@ class AdapterMeta(type):
                                                     r'\.' + \
                                                     quot % regex_ent + \
                                                     r'$')
-        
+
         return obj
-       
-###################################################################################
-# this is a generic adapter that does nothing; all others are derived from this one
-###################################################################################
+
+###############################################################################
+# this is a generic adapter that does nothing; all others are derived from this
+###############################################################################
 
 class BaseAdapter(ConnectionPool):
 
@@ -780,15 +785,11 @@ class BaseAdapter(ConnectionPool):
         return self.adapt(str(obj))
 
     def file_exists(self, filename):
-        """
-        to be used ONLY for files that on GAE may not be on filesystem
-        """
+        #to be used ONLY for files that on GAE may not be on filesystem
         return exists(filename)
 
     def file_open(self, filename, mode='rb', lock=True):
-        """
-        to be used ONLY for files that on GAE may not be on filesystem
-        """
+        #to be used ONLY for files that on GAE may not be on filesystem
         if have_portalocker and lock:
             fileobj = portalocker.LockedFile(filename,mode)
         else:
@@ -796,9 +797,7 @@ class BaseAdapter(ConnectionPool):
         return fileobj
 
     def file_close(self, fileobj):
-        """
-        to be used ONLY for files that on GAE may not be on filesystem
-        """
+        #to be used ONLY for files that on GAE may not be on filesystem
         if fileobj:
             fileobj.close()
 
@@ -1392,15 +1391,15 @@ class BaseAdapter(ConnectionPool):
         return '(%s IN (%s))' % (self.expand(first), items)
 
     def REGEXP(self, first, second):
-        "regular expression operator"
+        "Regular expression operator"
         raise NotImplementedError
 
     def LIKE(self, first, second):
-        "case sensitive like operator"
+        "Case sensitive like operator"
         raise NotImplementedError
 
     def ILIKE(self, first, second):
-        "case in-sensitive like operator"
+        "Case insensitive like operator"
         return '(%s LIKE %s)' % (self.expand(first),
                                  self.expand(second, 'string'))
 
@@ -2449,7 +2448,7 @@ class SQLiteAdapter(BaseAdapter):
 
     def select(self, query, fields, attributes):
         """
-        Simulate SELECT ... FOR UPDATE with BEGIN IMMEDIATE TRANSACTION.
+        Simulate `SELECT ... FOR UPDATE` with `BEGIN IMMEDIATE TRANSACTION`.
         Note that the entire database, rather than one record, is locked
         (it will be locked eventually anyway by the following UPDATE).
         """
@@ -3520,7 +3519,10 @@ class MSSQLAdapter(BaseAdapter):
 
 
 class MSSQL3Adapter(MSSQLAdapter):
-    """ experimental support for pagination in MSSQL"""
+    """Experimental support for pagination in MSSQL
+
+    Requires MSSQL >= 2005, uses `ROW_NUMBER()`
+    """
     def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
         if limitby:
             (lmin, lmax) = limitby
@@ -3541,7 +3543,10 @@ class MSSQL3Adapter(MSSQLAdapter):
         return rows
 
 class MSSQL4Adapter(MSSQLAdapter):
-    """ support for true pagination in MSSQL >= 2012"""
+    """Support for "native" pagination
+
+    Requires MSSQL >= 2012, uses `OFFSET ... ROWS ... FETCH NEXT ... ROWS ONLY`
+    """
 
     def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
         if limitby:
@@ -4469,11 +4474,10 @@ class CubridAdapter(MySQLAdapter):
         if not db:
             raise SyntaxError('Database name required')
         port = int(m.group('port') or '30000')
-        charset = m.group('charset') or 'utf8'
         user = credential_decoder(user)
         passwd = credential_decoder(password)
         def connector(host=host,port=port,db=db,
-                    user=user,passwd=password,driver_args=driver_args):
+                    user=user,passwd=passwd,driver_args=driver_args):
             return self.driver.connect(host,port,db,user,passwd,**driver_args)
         self.connector = connector
         if do_connect: self.reconnect()
@@ -4816,13 +4820,15 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
     """
     NDB:
 
-    You can enable NDB by using adapter_args:
+    You can enable NDB by using adapter_args::
 
-    db = DAL('google:datastore', adapter_args={'ndb_settings':ndb_settings, 'use_ndb':True})
+        db = DAL('google:datastore', adapter_args={'ndb_settings':ndb_settings, 'use_ndb':True})
 
     ndb_settings is optional and can be used for per model caching settings.
-    It must be a dict in this form:
-    ndb_settings = {<table_name>:{<variable_name>:<variable_value>}}
+    It must be a dict in this form::
+
+        ndb_settings = {<table_name>:{<variable_name>:<variable_value>}}
+
     See: https://developers.google.com/appengine/docs/python/ndb/cache
     """
 
@@ -5228,26 +5234,26 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
 
     def select(self,query,fields,attributes):
         """
-        This is the GAE version of select.  some notes to consider:
-         - db['_lastsql'] is not set because there is not SQL statement string
-           for a GAE query
-         - 'nativeRef' is a magical fieldname used for self references on GAE
-         - optional attribute 'projection' when set to True will trigger
-           use of the GAE projection queries.  note that there are rules for
-           what is accepted imposed by GAE: each field must be indexed,
-           projection queries cannot contain blob or text fields, and you
-           cannot use == and also select that same field.  see https://developers.google.com/appengine/docs/python/datastore/queries#Query_Projection
-         - optional attribute 'filterfields' when set to True web2py will only
-           parse the explicitly listed fields into the Rows object, even though
-           all fields are returned in the query.  This can be used to reduce
-           memory usage in cases where true projection queries are not
-           usable.
-         - optional attribute 'reusecursor' allows use of cursor with queries
-           that have the limitby attribute.  Set the attribute to True for the
-           first query, set it to the value of db['_lastcursor'] to continue
-           a previous query.  The user must save the cursor value between
-           requests, and the filters must be identical.  It is up to the user
-           to follow google's limitations: https://developers.google.com/appengine/docs/python/datastore/queries#Query_Cursors
+        This is the GAE version of select. Some notes to consider:
+            - db['_lastsql'] is not set because there is not SQL statement string
+            for a GAE query
+            - 'nativeRef' is a magical fieldname used for self references on GAE
+            - optional attribute 'projection' when set to True will trigger
+            use of the GAE projection queries.  note that there are rules for
+            what is accepted imposed by GAE: each field must be indexed,
+            projection queries cannot contain blob or text fields, and you
+            cannot use == and also select that same field.  see https://developers.google.com/appengine/docs/python/datastore/queries#Query_Projection
+            - optional attribute 'filterfields' when set to True web2py will only
+            parse the explicitly listed fields into the Rows object, even though
+            all fields are returned in the query.  This can be used to reduce
+            memory usage in cases where true projection queries are not
+            usable.
+            - optional attribute 'reusecursor' allows use of cursor with queries
+            that have the limitby attribute.  Set the attribute to True for the
+            first query, set it to the value of db['_lastcursor'] to continue
+            a previous query.  The user must save the cursor value between
+            requests, and the filters must be identical.  It is up to the user
+            to follow google's limitations: https://developers.google.com/appengine/docs/python/datastore/queries#Query_Cursors
         """
 
         (items, tablename, fields) = self.select_raw(query,fields,attributes)
@@ -5348,25 +5354,25 @@ class CouchDBAdapter(NoSQLAdapter):
 
     uploads_in_blob = True
     types = {
-                'boolean': bool,
-                'string': str,
-                'text': str,
-                'json': str,
-                'password': str,
-                'blob': str,
-                'upload': str,
-                'integer': long,
-                'bigint': long,
-                'float': float,
-                'double': float,
-                'date': datetime.date,
-                'time': datetime.time,
-                'datetime': datetime.datetime,
-                'id': long,
-                'reference': long,
-                'list:string': list,
-                'list:integer': list,
-                'list:reference': list,
+            'boolean': bool,
+            'string': str,
+            'text': str,
+            'json': str,
+            'password': str,
+            'blob': str,
+            'upload': str,
+            'integer': long,
+            'bigint': long,
+            'float': float,
+            'double': float,
+            'date': datetime.date,
+            'time': datetime.time,
+            'datetime': datetime.datetime,
+            'id': long,
+            'reference': long,
+            'list:string': list,
+            'list:integer': list,
+            'list:reference': list,
         }
 
     def file_exists(self, filename): pass
@@ -5537,7 +5543,7 @@ class CouchDBAdapter(NoSQLAdapter):
 
 def cleanup(text):
     """
-    validates that the given text is clean: only contains [0-9a-zA-Z_]
+    Validates that the given text is clean: only contains [0-9a-zA-Z_]
     """
     #if not REGEX_ALPHANUMERIC.match(text):
     #    raise SyntaxError('invalid table or field name: %s' % text)
@@ -5550,25 +5556,25 @@ class MongoDBAdapter(NoSQLAdapter):
     uploads_in_blob = False
 
     types = {
-                'boolean': bool,
-                'string': str,
-                'text': str,
-                'json': str,
-                'password': str,
-                'blob': str,
-                'upload': str,
-                'integer': long,
-                'bigint': long,
-                'float': float,
-                'double': float,
-                'date': datetime.date,
-                'time': datetime.time,
-                'datetime': datetime.datetime,
-                'id': long,
-                'reference': long,
-                'list:string': list,
-                'list:integer': list,
-                'list:reference': list,
+        'boolean': bool,
+        'string': str,
+        'text': str,
+        'json': str,
+        'password': str,
+        'blob': str,
+        'upload': str,
+        'integer': long,
+        'bigint': long,
+        'float': float,
+        'double': float,
+        'date': datetime.date,
+        'time': datetime.time,
+        'datetime': datetime.datetime,
+        'id': long,
+        'reference': long,
+        'list:string': list,
+        'list:integer': list,
+        'list:reference': list,
         }
 
     error_messages = {"javascript_needed": "This must yet be replaced" +
@@ -5880,8 +5886,8 @@ class MongoDBAdapter(NoSQLAdapter):
         return result
 
     def insert(self, table, fields, safe=None):
-        """Safe determines whether a asynchronious request is done or a
-        synchronious action is done
+        """Safe determines whether a asynchronous request is done or a
+        synchronous action is done
         For safety, we use by default synchronous requests"""
 
         values = dict()
@@ -6114,7 +6120,7 @@ class IMAPAdapter(NoSQLAdapter):
 
     """ IMAP server adapter
 
-      This class is intended as an interface with
+    This class is intended as an interface with
     email IMAP servers to perform simple queries in the
     web2py DAL query syntax, so email read, search and
     other related IMAP mail services (as those implemented
@@ -6175,80 +6181,82 @@ class IMAPAdapter(NoSQLAdapter):
     To avoid this sequence numbers issues, it is recommended the use
     of uid fields in query references (although the update and delete
     in separate actions rule still applies).
+    ::
 
-    # This is the code recommended to start imap support
-    # at the app's model:
+        # This is the code recommended to start imap support
+        # at the app's model:
 
-    imapdb = DAL("imap://user:password@server:port", pool_size=1) # port 993 for ssl
-    imapdb.define_tables()
+        imapdb = DAL("imap://user:password@server:port", pool_size=1) # port 993 for ssl
+        imapdb.define_tables()
 
-    Here is an (incomplete) list of possible imap commands:
+    Here is an (incomplete) list of possible imap commands::
 
-    # Count today's unseen messages
-    # smaller than 6000 octets from the
-    # inbox mailbox
+        # Count today's unseen messages
+        # smaller than 6000 octets from the
+        # inbox mailbox
 
-    q = imapdb.INBOX.seen == False
-    q &= imapdb.INBOX.created == datetime.date.today()
-    q &= imapdb.INBOX.size < 6000
-    unread = imapdb(q).count()
+        q = imapdb.INBOX.seen == False
+        q &= imapdb.INBOX.created == datetime.date.today()
+        q &= imapdb.INBOX.size < 6000
+        unread = imapdb(q).count()
 
-    # Fetch last query messages
-    rows = imapdb(q).select()
+        # Fetch last query messages
+        rows = imapdb(q).select()
 
-    # it is also possible to filter query select results with limitby and
-    # sequences of mailbox fields
+        # it is also possible to filter query select results with limitby and
+        # sequences of mailbox fields
 
-    set.select(<fields sequence>, limitby=(<int>, <int>))
+        set.select(<fields sequence>, limitby=(<int>, <int>))
 
-    # Mark last query messages as seen
-    messages = [row.uid for row in rows]
-    seen = imapdb(imapdb.INBOX.uid.belongs(messages)).update(seen=True)
+        # Mark last query messages as seen
+        messages = [row.uid for row in rows]
+        seen = imapdb(imapdb.INBOX.uid.belongs(messages)).update(seen=True)
 
-    # Delete messages in the imap database that have mails from mr. Gumby
+        # Delete messages in the imap database that have mails from mr. Gumby
 
-    deleted = 0
-    for mailbox in imapdb.tables
-        deleted += imapdb(imapdb[mailbox].sender.contains("gumby")).delete()
+        deleted = 0
+        for mailbox in imapdb.tables
+            deleted += imapdb(imapdb[mailbox].sender.contains("gumby")).delete()
 
-    # It is possible also to mark messages for deletion instead of ereasing them
-    # directly with set.update(deleted=True)
+        # It is possible also to mark messages for deletion instead of ereasing them
+        # directly with set.update(deleted=True)
 
 
-    # This object give access
-    # to the adapter auto mailbox
-    # mapped names (which native
-    # mailbox has what table name)
+        # This object give access
+        # to the adapter auto mailbox
+        # mapped names (which native
+        # mailbox has what table name)
 
-    imapdb.mailboxes <dict> # tablename, server native name pairs
+        imapdb.mailboxes <dict> # tablename, server native name pairs
 
-    # To retrieve a table native mailbox name use:
-    imapdb.<table>.mailbox
+        # To retrieve a table native mailbox name use:
+        imapdb.<table>.mailbox
 
-    ### New features v2.4.1:
+        ### New features v2.4.1:
 
-    # Declare mailboxes statically with tablename, name pairs
-    # This avoids the extra server names retrieval
+        # Declare mailboxes statically with tablename, name pairs
+        # This avoids the extra server names retrieval
 
-    imapdb.define_tables({"inbox": "INBOX"})
+        imapdb.define_tables({"inbox": "INBOX"})
 
-    # Selects without content/attachments/email columns will only
-    # fetch header and flags
+        # Selects without content/attachments/email columns will only
+        # fetch header and flags
 
-    imapdb(q).select(imapdb.INBOX.sender, imapdb.INBOX.subject)
+        imapdb(q).select(imapdb.INBOX.sender, imapdb.INBOX.subject)
+
     """
 
     types = {
-                'string': str,
-                'text': str,
-                'date': datetime.date,
-                'datetime': datetime.datetime,
-                'id': long,
-                'boolean': bool,
-                'integer': int,
-                'bigint': long,
-                'blob': str,
-                'list:string': str,
+            'string': str,
+            'text': str,
+            'date': datetime.date,
+            'datetime': datetime.datetime,
+            'id': long,
+            'boolean': bool,
+            'integer': int,
+            'bigint': long,
+            'blob': str,
+            'list:string': str
         }
 
     dbengine = 'imap'
@@ -6552,26 +6560,26 @@ class IMAPAdapter(NoSQLAdapter):
 
         for name in names:
             self.db.define_table("%s" % name,
-                            Field("uid", writable=False),
-                            Field("created", "datetime", writable=False),
-                            Field("content", "text", writable=False),
-                            Field("to", writable=False),
-                            Field("cc", writable=False),
-                            Field("bcc", writable=False),
-                            Field("sender", writable=False),
-                            Field("size", "integer", writable=False),
-                            Field("subject", writable=False),
-                            Field("mime", writable=False),
-                            Field("email", "text", writable=False, readable=False),
-                            Field("attachments", "text", writable=False, readable=False),
-                            Field("encoding", writable=False),
-                            Field("answered", "boolean"),
-                            Field("deleted", "boolean"),
-                            Field("draft", "boolean"),
-                            Field("flagged", "boolean"),
-                            Field("recent", "boolean", writable=False),
-                            Field("seen", "boolean")
-                            )
+                Field("uid", writable=False),
+                Field("created", "datetime", writable=False),
+                Field("content", "text", writable=False),
+                Field("to", writable=False),
+                Field("cc", writable=False),
+                Field("bcc", writable=False),
+                Field("sender", writable=False),
+                Field("size", "integer", writable=False),
+                Field("subject", writable=False),
+                Field("mime", writable=False),
+                Field("email", "text", writable=False, readable=False),
+                Field("attachments", "text", writable=False, readable=False),
+                Field("encoding", writable=False),
+                Field("answered", "boolean"),
+                Field("deleted", "boolean"),
+                Field("draft", "boolean"),
+                Field("flagged", "boolean"),
+                Field("recent", "boolean", writable=False),
+                Field("seen", "boolean")
+                )
 
             # Set a special _mailbox attribute for storing
             # native mailbox names
@@ -6593,7 +6601,7 @@ class IMAPAdapter(NoSQLAdapter):
         pass
 
     def select(self, query, fields, attributes):
-        """  Search and Fetch records and return web2py rows
+        """  Searches and Fetches records and return web2py rows
         """
         # move this statement elsewhere (upper-level)
         if use_common_filters(query):
@@ -7294,8 +7302,8 @@ def bar_decode_string(value):
 class Row(object):
 
     """
-    a dictionary that lets you do d['a'] as well as d.a
-    this is only used to store a Row
+    A dictionary that lets you do d['a'] as well as d.a
+    this is only used to store a `Row`
     """
 
     __init__ = lambda self,*args,**kwargs: self.__dict__.update(*args,**kwargs)
@@ -7454,7 +7462,8 @@ class Row(object):
         kwargs are passed to .as_dict method
         only "object" mode supported
 
-        serialize = False used by Rows.as_json
+        `serialize = False` used by Rows.as_json
+
         TODO: return array mode with query column order
 
         mode and colnames are not implemented
@@ -7604,18 +7613,74 @@ def smart_query(fields,text):
 class DAL(object):
 
     """
-    an instance of this class represents a database connection
+    An instance of this class represents a database connection
 
-    Example::
+    Args:
+        uri(str): contains information for connecting to a database.
+            Defaults to `'sqlite://dummy.db'`
 
-       db = DAL('sqlite://test.db')
+            Note:
+                experimental: you can specify a dictionary as uri
+                parameter i.e. with::
 
-       or
+                    db = DAL({"uri": "sqlite://storage.sqlite",
+                              "tables": {...}, ...})
 
-       db = DAL(**{"uri": ..., "tables": [...]...}) # experimental
+                for an example of dict input you can check the output
+                of the scaffolding db model with
 
-       db.define_table('tablename', Field('fieldname1'),
-                                    Field('fieldname2'))
+                    db.as_dict()
+
+                Note that for compatibility with Python older than
+                version 2.6.5 you should cast your dict input keys
+                to str due to a syntax limitation on kwarg names.
+                for proper DAL dictionary input you can use one of::
+
+                    obj = serializers.cast_keys(dict, [encoding="utf-8"])
+                    #or else (for parsing json input)
+                    obj = serializers.loads_json(data, unicode_keys=False)
+
+        pool_size: How many open connections to make to the database object.
+        folder: where .table files will be created. Automatically set within
+            web2py. Use an explicit path when using DAL outside web2py
+        db_codec: string encoding of the database (default: 'UTF-8')
+        check_reserved: list of adapters to check tablenames and column names
+            against sql/nosql reserved keywords. Defaults to `None`
+
+            - 'common' List of sql keywords that are common to all database
+              types such as "SELECT, INSERT". (recommended)
+            - 'all' Checks against all known SQL keywords
+            - '<adaptername>'' Checks against the specific adapters list of
+              keywords
+            - '<adaptername>_nonreserved' Checks against the specific adapters
+              list of nonreserved keywords. (if available)
+
+        migrate: sets default migrate behavior for all tables
+        fake_migrate: sets default fake_migrate behavior for all tables
+        migrate_enabled: If set to False disables ALL migrations
+        fake_migrate_all: If set to True fake migrates ALL tables
+        attempts: Number of times to attempt connecting
+        auto_import: If set to True, tries import automatically table
+            definitions from the databases folder (works only for simple models)
+        bigint_id: If set, turn on bigint instead of int for id and reference
+            fields
+        lazy_tables: delaya table definition until table access
+        after_connection: can a callable that will be executed after the
+            connection
+
+    Example:
+        Use as::
+
+           db = DAL('sqlite://test.db')
+
+        or::
+
+           db = DAL(**{"uri": ..., "tables": [...]...}) # experimental
+
+           db.define_table('tablename', Field('fieldname1'),
+                                        Field('fieldname2'))
+
+
     """
 
     def __new__(cls, uri='sqlite://dummy.db', *args, **kwargs):
@@ -7648,25 +7713,25 @@ class DAL(object):
 
     @staticmethod
     def set_folder(folder):
-        """
         # ## this allows gluon to set a folder for this thread
         # ## <<<<<<<<< Should go away as new DAL replaces old sql.py
-        """
         BaseAdapter.set_folder(folder)
 
     @staticmethod
     def get_instances():
         """
-        Returns a dictionary with uri as key with timings and defined tables
-        {'sqlite://storage.sqlite': {
-            'dbstats': [(select auth_user.email from auth_user, 0.02009)],
-            'dbtables': {
-                'defined': ['auth_cas', 'auth_event', 'auth_group',
-                    'auth_membership', 'auth_permission', 'auth_user'],
-                'lazy': '[]'
+        Returns a dictionary with uri as key with timings and defined tables::
+
+            {'sqlite://storage.sqlite': {
+                'dbstats': [(select auth_user.email from auth_user, 0.02009)],
+                'dbtables': {
+                    'defined': ['auth_cas', 'auth_event', 'auth_group',
+                        'auth_membership', 'auth_permission', 'auth_user'],
+                    'lazy': '[]'
+                    }
                 }
             }
-        }
+
         """
         dbs = getattr(THREAD_LOCAL,'db_instances',{}).items()
         infos = {}
@@ -7730,61 +7795,7 @@ class DAL(object):
                  db_uid=None, do_connect=True,
                  after_connection=None, tables=None, ignore_field_case=True,
                  entity_quoting=False):
-        """
-        Creates a new Database Abstraction Layer instance.
 
-        Keyword arguments:
-
-        :uri: string that contains information for connecting to a database.
-               (default: 'sqlite://dummy.db')
-
-                experimental: you can specify a dictionary as uri
-                parameter i.e. with
-                db = DAL({"uri": "sqlite://storage.sqlite",
-                          "tables": {...}, ...})
-
-                for an example of dict input you can check the output
-                of the scaffolding db model with
-
-                db.as_dict()
-
-                Note that for compatibility with Python older than
-                version 2.6.5 you should cast your dict input keys
-                to str due to a syntax limitation on kwarg names.
-                for proper DAL dictionary input you can use one of:
-
-                obj = serializers.cast_keys(dict, [encoding="utf-8"])
-
-                or else (for parsing json input)
-
-                obj = serializers.loads_json(data, unicode_keys=False)
-
-        :pool_size: How many open connections to make to the database object.
-        :folder: where .table files will be created.
-                 automatically set within web2py
-                 use an explicit path when using DAL outside web2py
-        :db_codec: string encoding of the database (default: 'UTF-8')
-        :check_reserved: list of adapters to check tablenames and column names
-                         against sql/nosql reserved keywords. (Default None)
-
-        * 'common' List of sql keywords that are common to all database types
-                such as "SELECT, INSERT". (recommended)
-        * 'all' Checks against all known SQL keywords. (not recommended)
-                <adaptername> Checks against the specific adapters list of keywords
-                (recommended)
-        * '<adaptername>_nonreserved' Checks against the specific adapters
-                list of nonreserved keywords. (if available)
-        :migrate (defaults to True) sets default migrate behavior for all tables
-        :fake_migrate (defaults to False) sets default fake_migrate behavior for all tables
-        :migrate_enabled (defaults to True). If set to False disables ALL migrations
-        :fake_migrate_all (defaults to False). If sets to True fake migrates ALL tables
-        :attempts (defaults to 5). Number of times to attempt connecting
-        :auto_import (defaults to False). If set, import automatically table definitions from the
-                 databases folder
-        :bigint_id (defaults to False): If set, turn on bigint instead of int for id fields
-        :lazy_tables (defaults to False): delay table definition until table access
-        :after_connection (defaults to None): a callable that will be execute after the connection
-        """
         if uri == '<zombie>' and db_uid is not None: return
         if not decode_credentials:
             credential_decoder = lambda cred: cred
@@ -7917,13 +7928,8 @@ class DAL(object):
 
     def check_reserved_keyword(self, name):
         """
-        Validates ``name`` against SQL keywords
-        Uses self.check_reserve which is a list of
-        operators to use.
-        self.check_reserved
-        ['common', 'postgres', 'mysql']
-        self.check_reserved
-        ['all']
+        Validates `name` against SQL keywords
+        Uses self.check_reserve which is a list of operators to use.
         """
         for backend in self.check_reserved:
             if name.upper() in self.RSK[backend]:
@@ -7932,37 +7938,41 @@ class DAL(object):
 
     def parse_as_rest(self,patterns,args,vars,queries=None,nested_select=True):
         """
-        EXAMPLE:
+        Example:
+            Use as::
 
-db.define_table('person',Field('name'),Field('info'))
-db.define_table('pet',Field('ownedby',db.person),Field('name'),Field('info'))
+                db.define_table('person',Field('name'),Field('info'))
+                db.define_table('pet',
+                    Field('ownedby',db.person),
+                    Field('name'),Field('info')
+                )
 
-@request.restful()
-def index():
-    def GET(*args,**vars):
-        patterns = [
-            "/friends[person]",
-            "/{person.name}/:field",
-            "/{person.name}/pets[pet.ownedby]",
-            "/{person.name}/pets[pet.ownedby]/{pet.name}",
-            "/{person.name}/pets[pet.ownedby]/{pet.name}/:field",
-            ("/dogs[pet]", db.pet.info=='dog'),
-            ("/dogs[pet]/{pet.name.startswith}", db.pet.info=='dog'),
-            ]
-        parser = db.parse_as_rest(patterns,args,vars)
-        if parser.status == 200:
-            return dict(content=parser.response)
-        else:
-            raise HTTP(parser.status,parser.error)
+                @request.restful()
+                def index():
+                    def GET(*args,**vars):
+                        patterns = [
+                            "/friends[person]",
+                            "/{person.name}/:field",
+                            "/{person.name}/pets[pet.ownedby]",
+                            "/{person.name}/pets[pet.ownedby]/{pet.name}",
+                            "/{person.name}/pets[pet.ownedby]/{pet.name}/:field",
+                            ("/dogs[pet]", db.pet.info=='dog'),
+                            ("/dogs[pet]/{pet.name.startswith}", db.pet.info=='dog'),
+                            ]
+                        parser = db.parse_as_rest(patterns,args,vars)
+                        if parser.status == 200:
+                            return dict(content=parser.response)
+                        else:
+                            raise HTTP(parser.status,parser.error)
 
-    def POST(table_name,**vars):
-        if table_name == 'person':
-            return db.person.validate_and_insert(**vars)
-        elif table_name == 'pet':
-            return db.pet.validate_and_insert(**vars)
-        else:
-            raise HTTP(400)
-    return locals()
+                    def POST(table_name,**vars):
+                        if table_name == 'person':
+                            return db.person.validate_and_insert(**vars)
+                        elif table_name == 'pet':
+                            return db.pet.validate_and_insert(**vars)
+                        else:
+                            raise HTTP(400)
+                    return locals()
         """
 
         db = self
@@ -8375,54 +8385,49 @@ def index():
     def executesql(self, query, placeholders=None, as_dict=False,
                    fields=None, colnames=None, as_ordered_dict=False):
         """
-        placeholders is optional and will always be None.
-        If using raw SQL with placeholders, placeholders may be
-        a sequence of values to be substituted in
-        or, (if supported by the DB driver), a dictionary with keys
-        matching named placeholders in your SQL.
+        Executes an arbitrary query
 
-        Added 2009-12-05 "as_dict" optional argument. Will always be
-        None when using DAL. If using raw SQL can be set to True and
-        the results cursor returned by the DB driver will be converted
-        to a sequence of dictionaries keyed with the db field
-        names. Tested with SQLite but should work with any database
-        since the cursor.description used to get field names is part
-        of the Python dbi 2.0 specs. Results returned with
-        as_dict=True are the same as those returned when applying
-        .to_list() to a DAL query.  If "as_ordered_dict"=True the
-        behaviour is the same as when "as_dict"=True with the keys
-        (field names) guaranteed to be in the same order as returned
-        by the select name executed on the database.
+        Args:
+            query (str): the query to submit to the backend
+            placeholders: is optional and will always be None.
+                If using raw SQL with placeholders, placeholders may be
+                a sequence of values to be substituted in
+                or, (if supported by the DB driver), a dictionary with keys
+                matching named placeholders in your SQL.
+            as_dict: will always be None when using DAL.
+                If using raw SQL can be set to True and the results cursor
+                returned by the DB driver will be converted to a sequence of
+                dictionaries keyed with the db field names. Results returned
+                with as_dict=True are the same as those returned when applying
+                .to_list() to a DAL query.  If "as_ordered_dict"=True the
+                behaviour is the same as when "as_dict"=True with the keys
+                (field names) guaranteed to be in the same order as returned
+                by the select name executed on the database.
+            fields: list of DAL Fields that match the fields returned from the
+                DB. The Field objects should be part of one or more Table
+                objects defined on the DAL object. The "fields" list can include
+                one or more DAL Table objects in addition to or instead of
+                including Field objects, or it can be just a single table
+                (not in a list). In that case, the Field objects will be
+                extracted from the table(s).
 
-        [{field1: value1, field2: value2}, {field1: value1b, field2: value2b}]
+                Note:
+                    if either `fields` or `colnames` is provided, the results
+                    will be converted to a DAL `Rows` object using the
+                    `db._adapter.parse()` method
+            colnames: list of field names in tablename.fieldname format
 
-        Added 2012-08-24 "fields" and "colnames" optional arguments. If either
-        is provided, the results cursor returned by the DB driver will be
-        converted to a DAL Rows object using the db._adapter.parse() method.
+        Note:
+            It is also possible to specify both "fields" and the associated
+            "colnames". In that case, "fields" can also include DAL Expression
+            objects in addition to Field objects. For Field objects in "fields",
+            the associated "colnames" must still be in tablename.fieldname
+            format. For Expression objects in "fields", the associated
+            "colnames" can be any arbitrary labels.
 
-        The "fields" argument is a list of DAL Field objects that match the
-        fields returned from the DB. The Field objects should be part of one or
-        more Table objects defined on the DAL object. The "fields" list can
-        include one or more DAL Table objects in addition to or instead of
-        including Field objects, or it can be just a single table (not in a
-        list). In that case, the Field objects will be extracted from the
-        table(s).
-
-        Instead of specifying the "fields" argument, the "colnames" argument
-        can be specified as a list of field names in tablename.fieldname format.
-        Again, these should represent tables and fields defined on the DAL
-        object.
-
-        It is also possible to specify both "fields" and the associated
-        "colnames". In that case, "fields" can also include DAL Expression
-        objects in addition to Field objects. For Field objects in "fields",
-        the associated "colnames" must still be in tablename.fieldname format.
-        For Expression objects in "fields", the associated "colnames" can
-        be any arbitrary labels.
-
-        Note, the DAL Table objects referred to by "fields" or "colnames" can
-        be dummy tables and do not have to represent any real tables in the
-        database. Also, note that the "fields" and "colnames" must be in the
+        DAL Table objects referred to by "fields" or "colnames" can be dummy
+        tables and do not have to represent any real tables in the database.
+        Also, note that the "fields" and "colnames" must be in the
         same order as the fields in the results cursor returned from the DB.
 
         """
@@ -8539,7 +8544,7 @@ class SQLALL(object):
     Helper class providing a comma-separated string having all the field names
     (prefixed by table name and '.')
 
-    normally only called from within gluon.sql
+    normally only called from within gluon.dal
     """
 
     def __init__(self, table):
@@ -8621,14 +8626,18 @@ class MethodAdder(object):
 class Table(object):
 
     """
-    an instance of this class represents a database table
+    Represents a database table
 
     Example::
+        You can create a table as::
+            db = DAL(...)
+            db.define_table('users', Field('name'))
 
-        db = DAL(...)
-        db.define_table('users', Field('name'))
-        db.users.insert(name='me') # print db.users._insert(...) to see SQL
-        db.users.drop()
+        And then::
+
+            db.users.insert(name='me') # print db.users._insert(...) to see SQL
+            db.users.drop()
+
     """
 
     def __init__(
@@ -8645,7 +8654,8 @@ class Table(object):
         If a field is of type Table, the fields (excluding 'id') from that table
         will be used instead.
 
-        :raises SyntaxError: when a supplied field is of incorrect type.
+        Raises:
+            SyntaxError: when a supplied field is of incorrect type.
         """
         self._actual = False  # set to True by define_table()
         self._tablename = tablename
@@ -9243,14 +9253,16 @@ class Table(object):
         Column headers must have same names as table fields.
         Field 'id' is ignored.
         If column names read 'table.file' the 'table.' prefix is ignored.
-        'unique' argument is a field which must be unique
-            (typically a uuid field)
-        'restore' argument is default False;
-            if set True will remove old values in table first.
-        'id_map' if set to None will not map ids.
+
+        - 'unique' argument is a field which must be unique (typically a
+          uuid field)
+        - 'restore' argument is default False; if set True will remove old values
+          in table first.
+        - 'id_map' if set to None will not map ids
+
         The import will keep the id numbers in the restored table.
-        This assumes that there is an field of type id that
-        is integer and in incrementing order.
+        This assumes that there is an field of type id that is integer and in
+        incrementing order.
         Will keep the id numbers in restored table.
         """
 
@@ -9614,13 +9626,20 @@ class Expression(object):
 
     def belongs(self, *value, **kwattr):
         """
-        Accepts the following inputs:
+        Accepts the following inputs::
+
            field.belongs(1,2)
            field.belongs((1,2))
            field.belongs(query)
 
         Does NOT accept:
-           field.belongs(1)
+
+               field.belongs(1)
+
+        If the set you want back includes `None` values, you can do::
+
+            field.belongs((1,None), null=True)
+
         """
         db = self.db
         if len(value) == 1:
@@ -9649,7 +9668,7 @@ class Expression(object):
     def contains(self, value, all=False, case_sensitive=False):
         """
         The case_sensitive parameters is only useful for PostgreSQL
-        For other RDMBs it is ignored and contains is always case in-sensitive
+        For other RDMBs it is ignored and contains is always case insensitive
         For MongoDB and GAE contains is always case sensitive
         """
         db = self.db
@@ -9730,28 +9749,31 @@ class Expression(object):
 
 class SQLCustomType(object):
     """
-    allows defining of custom SQL types
+    Allows defining of custom SQL types
+
+    Args:
+        type: the web2py type (default = 'string')
+        native: the backend type
+        encoder: how to encode the value to store it in the backend
+        decoder: how to decode the value retrieved from the backend
+        validator: what validators to use ( default = None, will use the
+            default validator for type)
 
     Example::
+        Define as:
 
-        decimal = SQLCustomType(
-            type ='double',
-            native ='integer',
-            encoder =(lambda x: int(float(x) * 100)),
-            decoder = (lambda x: Decimal("0.00") + Decimal(str(float(x)/100)) )
-            )
+            decimal = SQLCustomType(
+                type ='double',
+                native ='integer',
+                encoder =(lambda x: int(float(x) * 100)),
+                decoder = (lambda x: Decimal("0.00") + Decimal(str(float(x)/100)) )
+                )
 
-        db.define_table(
-            'example',
-            Field('value', type=decimal)
-            )
+            db.define_table(
+                'example',
+                Field('value', type=decimal)
+                )
 
-    :param type: the web2py type (default = 'string')
-    :param native: the backend type
-    :param encoder: how to encode the value to store it in the backend
-    :param decoder: how to decode the value retrieved from the backend
-    :param validator: what validators to use ( default = None, will use the
-        default validator for type)
     """
 
     def __init__(
@@ -9829,32 +9851,30 @@ class Field(Expression):
     Lazy = FieldMethod  # for backward compatibility
 
     """
-    an instance of this class represents a database field
+    Represents a database field
 
-    example::
+    Example:
+        Usage::
 
-        a = Field(name, 'string', length=32, default=None, required=False,
-            requires=IS_NOT_EMPTY(), ondelete='CASCADE',
-            notnull=False, unique=False,
-            uploadfield=True, widget=None, label=None, comment=None,
-            uploadfield=True, # True means store on disk,
-                              # 'a_field_name' means store in this field in db
-                              # False means file content will be discarded.
-            writable=True, readable=True, update=None, authorize=None,
-            autodelete=False, represent=None, uploadfolder=None,
-            uploadseparate=False # upload to separate directories by uuid_keys
-                                 # first 2 character and tablename.fieldname
-                                 # False - old behavior
-                                 # True - put uploaded file in
-                                 #   <uploaddir>/<tablename>.<fieldname>/uuid_key[:2]
-                                 #        directory)
-            uploadfs=None     # a pyfilesystem where to store upload
+            a = Field(name, 'string', length=32, default=None, required=False,
+                requires=IS_NOT_EMPTY(), ondelete='CASCADE',
+                notnull=False, unique=False,
+                uploadfield=True, widget=None, label=None, comment=None,
+                uploadfield=True, # True means store on disk,
+                                  # 'a_field_name' means store in this field in db
+                                  # False means file content will be discarded.
+                writable=True, readable=True, update=None, authorize=None,
+                autodelete=False, represent=None, uploadfolder=None,
+                uploadseparate=False # upload to separate directories by uuid_keys
+                                     # first 2 character and tablename.fieldname
+                                     # False - old behavior
+                                     # True - put uploaded file in
+                                     #   <uploaddir>/<tablename>.<fieldname>/uuid_key[:2]
+                                     #        directory)
+                uploadfs=None        # a pyfilesystem where to store upload
+                )
 
-    to be used as argument of DAL.define_table
-
-    allowed field types:
-    string, boolean, integer, double, text, blob,
-    date, time, datetime, upload, password
+    to be used as argument of `DAL.define_table`
 
     """
 
@@ -10015,7 +10035,7 @@ class Field(Expression):
 
     def retrieve(self, name, path=None, nameonly=False):
         """
-        if nameonly==True return (filename, fullfilename) instead of
+        If `nameonly==True` return (filename, fullfilename) instead of
         (filename, stream)
         """
         self_uploadfield = self.uploadfield
@@ -10195,14 +10215,15 @@ class Field(Expression):
 class Query(object):
 
     """
-    a query object necessary to define a set.
-    it can be stored or can be passed to DAL.__call__() to obtain a Set
+    Necessary to define a set.
+    It can be stored or can be passed to `DAL.__call__()` to obtain a `Set`
 
-    Example::
+    Example:
+        Use as::
 
-        query = db.users.name=='Max'
-        set = db(query)
-        records = set.select()
+            query = db.users.name=='Max'
+            set = db(query)
+            records = set.select()
 
     """
 
@@ -10260,16 +10281,23 @@ class Query(object):
         for client-side db I/O
 
         Example:
-        >>> q = db.auth_user.id != 0
-        >>> q.as_dict(flat=True)
-        {"op": "NE", "first":{"tablename": "auth_user",
-                              "fieldname": "id"},
-                     "second":0}
+            Usage::
+
+                q = db.auth_user.id != 0
+                q.as_dict(flat=True)
+                {
+                "op": "NE",
+                "first":{
+                    "tablename": "auth_user",
+                    "fieldname": "id"
+                    },
+                "second":0
+                }
         """
 
         SERIALIZABLE_TYPES = (tuple, dict, set, list, int, long, float,
                               basestring, type(None), bool)
-        
+
         def loop(d):
             newd = dict()
             for k, v in d.items():
@@ -10337,18 +10365,24 @@ def use_common_filters(query):
 class Set(object):
 
     """
-    a Set represents a set of records in the database,
-    the records are identified by the query=Query(...) object.
-    normally the Set is generated by DAL.__call__(Query(...))
+    Represents a set of records in the database.
+    Records are identified by the `query=Query(...)` object.
+    Normally the Set is generated by `DAL.__call__(Query(...))`
 
-    given a set, for example
-       set = db(db.users.name=='Max')
-    you can:
-       set.update(db.users.name='Massimo')
-       set.delete() # all elements in the set
-       set.select(orderby=db.users.id, groupby=db.users.name, limitby=(0,10))
+    Given a set, for example::
+
+        myset = db(db.users.name=='Max')
+
+    you can::
+
+        myset.update(db.users.name='Massimo')
+        myset.delete() # all elements in the set
+        myset.select(orderby=db.users.id, groupby=db.users.name, limitby=(0,10))
+
     and take subsets:
-       subset = set(db.users.id<5)
+
+       subset = myset(db.users.id<5)
+
     """
 
     def __init__(self, db, query, ignore_common_filters = None):
@@ -10552,7 +10586,7 @@ class Set(object):
 
     def update_naive(self, **update_fields):
         """
-        same as update but does not call table._before_update and _after_update
+        Same as update but does not call table._before_update and _after_update
         """
         tablename = self.db._adapter.get_table(self.query)
         table = self.db[tablename]
@@ -10714,7 +10748,7 @@ class Rows(object):
 
     """
     A wrapper for the return value of a select. It basically represents a table.
-    It has an iterator and each row is represented as a dictionary.
+    It has an iterator and each row is represented as a `Row` dictionary.
     """
 
     # ## TODO: this class still needs some work to care for ID/OID
@@ -10738,21 +10772,24 @@ class Rows(object):
 
     def setvirtualfields(self,**keyed_virtualfields):
         """
-        db.define_table('x',Field('number','integer'))
-        if db(db.x).isempty(): [db.x.insert(number=i) for i in range(10)]
+        For reference::
 
-        from gluon.dal import lazy_virtualfield
+            db.define_table('x',Field('number','integer'))
+            if db(db.x).isempty(): [db.x.insert(number=i) for i in range(10)]
 
-        class MyVirtualFields(object):
-            # normal virtual field (backward compatible, discouraged)
-            def normal_shift(self): return self.x.number+1
-            # lazy virtual field (because of @staticmethod)
-            @lazy_virtualfield
-            def lazy_shift(instance,row,delta=4): return row.x.number+delta
-        db.x.virtualfields.append(MyVirtualFields())
+            from gluon.dal import lazy_virtualfield
 
-        for row in db(db.x).select():
-            print row.number, row.normal_shift, row.lazy_shift(delta=7)
+            class MyVirtualFields(object):
+                # normal virtual field (backward compatible, discouraged)
+                def normal_shift(self): return self.x.number+1
+                # lazy virtual field (because of @staticmethod)
+                @lazy_virtualfield
+                def lazy_shift(instance,row,delta=4): return row.x.number+delta
+            db.x.virtualfields.append(MyVirtualFields())
+
+            for row in db(db.x).select():
+                print row.number, row.normal_shift, row.lazy_shift(delta=7)
+
         """
         if not keyed_virtualfields:
             return self
@@ -10812,7 +10849,7 @@ class Rows(object):
 
     def __iter__(self):
         """
-        iterator over records
+        Iterator over records
         """
 
         for i in xrange(len(self)):
@@ -10820,7 +10857,7 @@ class Rows(object):
 
     def __str__(self):
         """
-        serializes the table into a csv file
+        Serializes the table into a csv file
         """
 
         s = StringIO.StringIO()
@@ -10839,8 +10876,8 @@ class Rows(object):
 
     def find(self,f,limitby=None):
         """
-        returns a new Rows object, a subset of the original object,
-        filtered by the function f
+        Returns a new Rows object, a subset of the original object,
+        filtered by the function `f`
         """
         if not self:
             return Rows(self.db, [], self.colnames, compact=self.compact)
@@ -10859,8 +10896,8 @@ class Rows(object):
 
     def exclude(self, f):
         """
-        removes elements from the calling Rows object, filtered by the function f,
-        and returns a new Rows object containing the removed elements
+        Removes elements from the calling Rows object, filtered by the function
+        `f`, and returns a new Rows object containing the removed elements
         """
         if not self.records:
             return Rows(self.db, [], self.colnames, compact=self.compact)
@@ -10877,7 +10914,7 @@ class Rows(object):
 
     def sort(self, f, reverse=False):
         """
-        returns a list of sorted elements (not sorted in place)
+        Returns a list of sorted elements (not sorted in place)
         """
         rows = Rows(self.db, [], self.colnames, compact=self.compact)
         # When compact=True, iterating over self modifies each record,
@@ -10890,7 +10927,7 @@ class Rows(object):
 
     def group_by_value(self, *fields, **args):
         """
-        regroups the rows, by one of the fields
+        Regroups the rows, by one of the fields
         """
         one_result = False
         if 'one_result' in args:
@@ -10945,11 +10982,11 @@ class Rows(object):
         Takes an index and returns a copy of the indexed row with values
         transformed via the "represent" attributes of the associated fields.
 
-        If no index is specified, a generator is returned for iteration
-        over all the rows.
-
-        fields -- a list of fields to transform (if None, all fields with
-                  "represent" attributes will be transformed).
+        Args:
+            i: index. If not specified, a generator is returned for iteration
+                over all the rows.
+            fields: a list of fields to transform (if None, all fields with
+                "represent" attributes will be transformed)
         """
 
         if i is None:
@@ -10978,9 +11015,11 @@ class Rows(object):
                 datetime_to_str=False,
                 custom_types=None):
         """
-        returns the data as a list or dictionary.
-        :param storage_to_dict: when True returns a dict, otherwise a list(default True)
-        :param datetime_to_str: convert datetime fields as strings (default False)
+        Returns the data as a list or dictionary.
+
+        Args:
+            storage_to_dict: when True returns a dict, otherwise a list
+            datetime_to_str: convert datetime fields as strings
         """
         (oc, self.compact) = (self.compact, compact)
         if storage_to_dict:
@@ -10997,12 +11036,14 @@ class Rows(object):
                 datetime_to_str=False,
                 custom_types=None):
         """
-        returns the data as a dictionary of dictionaries (storage_to_dict=True) or records (False)
+        Returns the data as a dictionary of dictionaries (storage_to_dict=True)
+        or records (False)
 
-        :param key: the name of the field to be used as dict key, normally the id
-        :param compact: ? (default True)
-        :param storage_to_dict: when True returns a dict, otherwise a list(default True)
-        :param datetime_to_str: convert datetime fields as strings (default False)
+        Args:
+            key: the name of the field to be used as dict key, normally the id
+            compact: ? (default True)
+            storage_to_dict: when True returns a dict, otherwise a list(default True)
+            datetime_to_str: convert datetime fields as strings (default False)
         """
 
         # test for multiple rows
@@ -11045,17 +11086,19 @@ class Rows(object):
 
     def export_to_csv_file(self, ofile, null='<NULL>', *args, **kwargs):
         """
-        export data to csv, the first line contains the column names
+        Exports data to csv, the first line contains the column names
 
-        :param ofile: where the csv must be exported to
-        :param null: how null values must be represented (default '<NULL>')
-        :param delimiter: delimiter to separate values (default ',')
-        :param quotechar: character to use to quote string values (default '"')
-        :param quoting: quote system, use csv.QUOTE_*** (default csv.QUOTE_MINIMAL)
-        :param represent: use the fields .represent value (default False)
-        :param colnames: list of column names to use (default self.colnames)
-                         This will only work when exporting rows objects!!!!
-                         DO NOT use this with db.export_to_csv()
+        Args:
+            ofile: where the csv must be exported to
+            null: how null values must be represented (default '<NULL>')
+            delimiter: delimiter to separate values (default ',')
+            quotechar: character to use to quote string values (default '"')
+            quoting: quote system, use csv.QUOTE_*** (default csv.QUOTE_MINIMAL)
+            represent: use the fields .represent value (default False)
+            colnames: list of column names to use (default self.colnames)
+
+        This will only work when exporting rows objects!!!!
+        DO NOT use this with db.export_to_csv()
         """
         delimiter = kwargs.get('delimiter', ',')
         quotechar = kwargs.get('quotechar', '"')
@@ -11082,7 +11125,8 @@ class Rows(object):
 
         def none_exception(value):
             """
-            returns a cleaned up value that can be used for csv export:
+            Returns a cleaned up value that can be used for csv export:
+
             - unicode text is encoded as such
             - None values are replaced with the given representation (default <NULL>)
             """
@@ -11120,11 +11164,10 @@ class Rows(object):
 
     def xml(self,strict=False,row_name='row',rows_name='rows'):
         """
-        serializes the table using sqlhtml.SQLTABLE (if present)
+        Serializes the table using sqlhtml.SQLTABLE (if present)
         """
 
         if strict:
-            ncols = len(self.colnames)
             return '<%s>\n%s\n</%s>' % (rows_name,
                 '\n'.join(row.as_xml(row_name=row_name,
                                      colnames=self.colnames) for
@@ -11138,7 +11181,7 @@ class Rows(object):
 
     def as_json(self, mode='object', default=None):
         """
-        serializes the rows to a JSON list or object with objects
+        Serializes the rows to a JSON list or object with objects
         mode='object' is not implemented (should return a nested
         object structure)
         """
