@@ -5212,13 +5212,17 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                     else:
                         order={'-id':'-__key__','id':'__key__'}.get(order,order)
                         items = items.order(order)
+
             if args_get('limitby', None):
+
                 (lmin, lmax) = attributes['limitby']
                 (limit, offset) = (lmax - lmin, lmin)
                 if self.use_ndb:
-                    rows, cursor, more = items.fetch_page(limit,offset=offset)
+                    rows, cursor, more = items.fetch_page(limit,offset=offset,keys_only=True)
                 else:
-                    rows =  items.fetch(limit,offset=offset)
+                    rows =  items.fetch(limit,offset=offset,keys_only=True)
+                
+                rows = ndb.get_multi(rows) if self.use_ndb else gae.get(rows)
                 #cursor is only useful if there was a limit and we didn't return
                 # all results
                 if args_get('reusecursor'):
