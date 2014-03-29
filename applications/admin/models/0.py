@@ -45,4 +45,7 @@ if 'adminLanguage' in request.cookies and not (request.cookies['adminLanguage'] 
     T.force(request.cookies['adminLanguage'].value)
 
 #set static_version
-response.static_version = open('VERSION').read().split(' ',1)[1].split('-')[0]
+from gluon.settings import global_settings
+response.static_version = global_settings.web2py_version.split('-')[0]
+
+
