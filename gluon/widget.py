@@ -618,6 +618,12 @@ def console():
                       type='int',
                       help='port of server (8000)')
 
+    parser.add_option('-G',
+                      '--GAE',
+                      default=None,
+                      dest='gae',
+                      help="'-G configure' will create app.yaml and gaehandler.py")
+
     msg = ('password to be used for administration '
            '(use -a "<recycle>" to reuse the last password))')
     parser.add_option('-a',
@@ -922,6 +928,20 @@ def console():
     options.args = [options.run] + other_args
     global_settings.cmd_options = options
     global_settings.cmd_args = args
+
+    if options.gae:
+        if not os.path.exists('app.yaml'):
+            name = raw_input("Your GAE app name: ")
+            content = open(os.path.join('examples','app.example.yaml'),'rb').read()
+            open('app.yaml','wb').write(content.replace("yourappname",name))
+        else:
+            print "app.yaml alreday exists in the web2py folder"
+        if not os.path.exists('gaehandler.py'):
+            content = open(os.path.join('handlers','gaehandler.py'),'rb').read()
+            open('gaehandler.py','wb').write(content)
+        else:
+            print "gaehandler.py alreday exists in the web2py folder"
+        sys.exit(0)
 
     try:
         options.ips = list(set( # no duplicates
