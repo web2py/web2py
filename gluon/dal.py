@@ -8939,7 +8939,8 @@ class Table(object):
                 record = self._db(key).select(
                     limitby=(0,1),for_update=for_update, orderby=orderby, orderby_on_limitby=False).first()
             elif not str(key).isdigit():
-                record = None
+                record = self._db(self._id == str(key)).select(
+                    limitby=(0,1),for_update=for_update, orderby=orderby, orderby_on_limitby=False).first()
             else:
                 record = self._db(self._id == key).select(
                     limitby=(0,1),for_update=for_update, orderby=orderby, orderby_on_limitby=False).first()
