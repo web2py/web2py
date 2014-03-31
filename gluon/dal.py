@@ -5223,20 +5223,21 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
             if args_get('limitby', None):
                 (lmin, lmax) = attributes['limitby']
                 limit, fetch_args = lmax-lmin, {'offset':lmin,'keys_only':True}
-            else:
-                limit, fetch_args = self.MAX_FETCH_LIMIT, {'offset':0,'keys_only':True}
 
-            if self.use_ndb:
-                keys, cursor, more = query.fetch_page(limit,**fetch_args)                
-                items = ndb.get_multi(keys)     
+                if self.use_ndb:
+                    keys, cursor, more = query.fetch_page(limit,**fetch_args)                
+                    items = ndb.get_multi(keys)     
+                else:
+                    keys =  query.fetch(limit, **fetch_args)
+                    items = gae.get(keys)
+                    cursor = query.cursor()           
+                #cursor is only useful if there was a limit and we didn't return
+                # all results
+                if args_get('reusecursor'):
+                    db['_lastcursor'] = cursor
             else:
-                keys =  query.fetch(limit, **fetch_args)
-                items = gae.get(keys)
-                cursor = query.cursor()           
-            #cursor is only useful if there was a limit and we didn't return
-            # all results
-            if args_get('reusecursor'):
-                db['_lastcursor'] = cursor
+                # if a limit is not specified, always return an iterator
+                rows = query 
 
         return (items, tablename, projection or db[tablename].fields)
 

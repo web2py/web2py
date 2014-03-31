@@ -11,7 +11,7 @@ env:
   - DB=mysql://root:@localhost/test_w2p
   - DB=postgres://postgres:@localhost/test_w2p
   - DB=google:datastore
-  - DB=google:datastore+ndb
+#  - DB=google:datastore+ndb
   - DB=mongodb://mongodb:mongodb@localhost/test_w2p
   - DB=imap://imap:imap@localhost:993
 before_script:
@@ -44,8 +44,8 @@ matrix:
       env: DB=google:datastore
     - python: '2.6'
       env: DB=google:datastore
-    - python: '2.6'
-      env: DB=google:datastore+ndb
+#    - python: '2.6'
+#      env: DB=google:datastore+ndb
 
 
 script: export COVERAGE_PROCESS_START=gluon/tests/coverage.ini; ./web2py.py --run_system_tests --with_coverage
