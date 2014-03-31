@@ -5091,7 +5091,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
     def filter(self, query, tableobj, prop, op, value):
         return self.GAE_FILTER_OPTIONS[op](query, tableobj, prop, value)
 
-    def select_raw(self,query,fields=None,attributes=None):
+    def select_raw(self,query,fields=None,attributes=None,count_only=False):
         db = self.db
         fields = fields or []
         attributes = attributes or {}
@@ -5187,8 +5187,10 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                     items = self.filter(items, tableobj, filter.name, filter.op, filter.value)
                 else:
                     items = items.filter('%s %s' % (filter.name,filter.op), filter.value)
-                                 
-        if not isinstance(items,list):
+               
+        if count_only:
+            items = [len(items) if isinstance(items,list) else items.count()]
+        elif not isinstance(items,list):
             query = items
             if args_get('left', None):
                 raise SyntaxError('Set: no left join in appengine')
@@ -5280,12 +5282,8 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
     def count(self,query,distinct=None,limit=None):
         if distinct:
             raise RuntimeError("COUNT DISTINCT not supported")
-        (items, tablename, fields) = self.select_raw(query)
-        # self.db['_lastsql'] = self._count(query)
-        try:
-            return len(items)
-        except TypeError:
-            return items.count(limit=limit)
+        (items, tablename, fields) = self.select_raw(query,count_only=True)
+        return items[0]
 
     def delete(self,tablename, query):
         """
