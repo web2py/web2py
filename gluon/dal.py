@@ -122,6 +122,7 @@ Supported DAL URI strings::
     'informixu://user:password@server:3050/database' # unicode informix
     'ingres://database'  # or use an ODBC connection string, e.g. 'ingres://dsn=dsn_name'
     'google:datastore' # for google app engine datastore
+    'google:datastore+ndb' # for google app engine datastore + ndb
     'google:sql' # for google app engine with sql (mysql compatible)
     'teradata://DSN=dsn;UID=user;PWD=pass; DATABASE=database' # experimental
     'imap://user:password@server:port' # experimental
@@ -4832,6 +4833,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
     See: https://developers.google.com/appengine/docs/python/ndb/cache
     """
 
+    MAX_FETCH_LIMIT = 1000000
     uploads_in_blob = True
     types = {}
     # reconnect is not required for Datastore dbs
@@ -4846,7 +4848,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
     def __init__(self,db,uri,pool_size=0,folder=None,db_codec ='UTF-8',
                  credential_decoder=IDENTITY, driver_args={},
                  adapter_args={}, do_connect=True, after_connection=None):
-        self.use_ndb = ('use_ndb' in adapter_args) and adapter_args['use_ndb']
+        self.use_ndb = adapter_args.get('use_ndb',uri.startswith('google:datastore+ndb'))
         if self.use_ndb is True:
             self.types.update({
                 'boolean': ndb.BooleanProperty,
@@ -5095,11 +5097,13 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         attributes = attributes or {}
         args_get = attributes.get
         new_fields = []
+
         for item in fields:
             if isinstance(item,SQLALL):
                 new_fields += item._table
             else:
                 new_fields.append(item)
+
         fields = new_fields
         if query:
             tablename = self.get_table(query)
@@ -5129,6 +5133,7 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                         "text and blob field types not allowed in projection queries")
                 else:
                     projection.append(f.name)
+
         elif args_get('filterfields') == True:
             projection = []
             for f in fields:
@@ -5142,22 +5147,19 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                 args_get('projection') == True\
                 else None
 
-        cursor = None
-        if isinstance(args_get('reusecursor'), str):
-            cursor = args_get('reusecursor')
+        cursor = args_get('reusecursor')
+        cursor = cursor if isinstance(cursor, str) else None
         if self.use_ndb:
             qo = ndb.QueryOptions(projection=query_projection, cursor=cursor)
             items = tableobj.query(default_options=qo)
         else:
-            items = gae.Query(tableobj, projection=query_projection,
-                          cursor=cursor)
+            items = gae.Query(tableobj, projection=query_projection, cursor=cursor)
 
         for filter in filters:
-            if args_get('projection') == True and \
-               filter.name in query_projection and \
-               filter.op in ['=', '<=', '>=']:
-                raise SyntaxError(
-                    "projection fields cannot have equality filters")
+            if (args_get('projection') == True and
+                filter.name in query_projection and
+                filter.op in ('=', '<=', '>=')):
+                raise SyntaxError("projection fields cannot have equality filters")
             if filter.name=='__key__' and filter.op=='>' and filter.value==0:
                 continue
             elif filter.name=='__key__' and filter.op=='=':
@@ -5168,29 +5170,26 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                     # can't use projection
                     # extra values will be ignored in post-processing later
                     item = filter.value.get() if self.use_ndb else tableobj.get(filter.value)
-                    items = (item and [item]) or []
+                    items = [item] if item else []
                 else:
                     # key qeuries return a class instance,
                     # can't use projection
                     # extra values will be ignored in post-processing later
                     item = tableobj.get_by_id(filter.value)
-                    items = (item and [item]) or []
+                    items = [item] if item else []
             elif isinstance(items,list): # i.e. there is a single record!
                 items = [i for i in items if filter.apply(
                         getattr(item,filter.name),filter.value)]
-            else:
+            else:                
                 if filter.name=='__key__' and filter.op != 'in':
-                    if self.use_ndb:
-                        items.order(tableobj._key)
-                    else:
-                        items.order('__key__')
-                items = self.filter(items, tableobj, filter.name,
-                                    filter.op, filter.value) \
-                                    if self.use_ndb else \
-                        items.filter('%s %s' % (filter.name,filter.op),
-                                     filter.value)
-
+                    items.order(tableobj._key) if self.use_ndb else items.order('__key__')
+                if self.use_ndb:
+                    items = self.filter(items, tableobj, filter.name, filter.op, filter.value)
+                else:
+                    items = items.filter('%s %s' % (filter.name,filter.op), filter.value)
+                                 
         if not isinstance(items,list):
+            query = items
             if args_get('left', None):
                 raise SyntaxError('Set: no left join in appengine')
             if args_get('groupby', None):
@@ -5214,26 +5213,29 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
                         _order = {'-id':-tableobj._key,'id':tableobj._key}.get(order)
                         if _order is None:
                             _order = make_order(order)
-                        items = items.order(_order)
+                        query = query.order(_order)
                     else:
                         order={'-id':'-__key__','id':'__key__'}.get(order,order)
-                        items = items.order(order)
+                        query = query.order(order)
 
             if args_get('limitby', None):
-
                 (lmin, lmax) = attributes['limitby']
-                (limit, offset) = (lmax - lmin, lmin)
-                if self.use_ndb:
-                    rows, cursor, more = items.fetch_page(limit,offset=offset,keys_only=True)
-                else:
-                    rows =  items.fetch(limit,offset=offset,keys_only=True)
-                
-                rows = ndb.get_multi(rows) if self.use_ndb else gae.get(rows)
-                #cursor is only useful if there was a limit and we didn't return
-                # all results
-                if args_get('reusecursor'):
-                    db['_lastcursor'] = cursor if self.use_ndb else items.cursor()
-                items = rows
+                limit, fetch_args = lmax-lmin, {'offset':lmin,'keys_only':True}
+            else:
+                limit, fetch_args = self.MAX_FETCH_LIMIT, {'offset':0,'keys_only':True}
+
+            if self.use_ndb:
+                keys, cursor, more = query.fetch_page(limit,**fetch_args)                
+                items = ndb.get_multi(keys)     
+            else:
+                keys =  query.fetch(limit, **fetch_args)
+                items = gae.get(keys)
+                cursor = query.cursor()           
+            #cursor is only useful if there was a limit and we didn't return
+            # all results
+            if args_get('reusecursor'):
+                db['_lastcursor'] = cursor
+
         return (items, tablename, projection or db[tablename].fields)
 
     def select(self,query,fields,attributes):
@@ -7177,6 +7179,7 @@ ADAPTERS = {
     'jdbc:postgres': JDBCPostgreSQLAdapter,
     'gae': GoogleDatastoreAdapter, # discouraged, for backward compatibility
     'google:datastore': GoogleDatastoreAdapter,
+    'google:datastore+ndb': GoogleDatastoreAdapter,
     'google:sql': GoogleSQLAdapter,
     'couchdb': CouchDBAdapter,
     'mongodb': MongoDBAdapter,
