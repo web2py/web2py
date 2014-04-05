@@ -5650,10 +5650,13 @@ class Wiki(object):
               var mediabutton = jQuery('<button class="btn nopreview">Media</button>');
               mediabutton.insertBefore(form);
               previewmedia.insertBefore(form);
-              mediabutton.toggle(function() {
-                  web2py_component('%(urlmedia)s', 'previewmedia');
-              }, function() {
-                  previewmedia.empty();
+              mediabutton.click(function() {
+                if (mediabutton.hasClass('nopreview')) {
+                    web2py_component('%(urlmedia)s', 'previewmedia');
+                } else {
+                    previewmedia.empty();
+                }
+                mediabutton.toggleClass('nopreview');
               });
             }
             prevbutton.click(function(e) {
