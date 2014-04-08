@@ -16,7 +16,6 @@ regex_code = re.compile('('+META+')|(``(?P<t>.*?)``(:(?P<c>\w+))?)',re.S)
 regex_title = re.compile('^#{1} (?P<t>[^\n]+)',re.M)
 regex_maps = [
     (re.compile('[ \t\r]+\n'),'\n'),
-    (re.compile('[ \t\r]+\n'),'\n'),
     (re.compile('\*\*(?P<t>[^\s\*]+( +[^\s\*]+)*)\*\*'),'{\\\\bf \g<t>}'),
     (re.compile("''(?P<t>[^\s']+( +[^\s']+)*)''"),'{\\it \g<t>}'),
     (re.compile('^#{6} (?P<t>[^\n]+)',re.M),'\n\n{\\\\bf \g<t>}\n'),
