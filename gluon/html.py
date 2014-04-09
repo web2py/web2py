@@ -57,6 +57,7 @@ __all__ = [
     'EM',
     'EMBED',
     'FIELDSET',
+    'FOOTER',
     'FORM',
     'H1',
     'H2',
@@ -65,6 +66,7 @@ __all__ = [
     'H5',
     'H6',
     'HEAD',
+    'HEADER',
     'HR',
     'HTML',
     'I',
@@ -87,6 +89,7 @@ __all__ = [
     'PRE',
     'SCRIPT',
     'OPTGROUP',
+    'SECTION',
     'SELECT',
     'SPAN',
     'STRONG',
@@ -2007,6 +2010,14 @@ class SELECT(INPUT):
                         c['_selected'] = 'selected'
                     else:
                         c['_selected'] = None
+class HEADER(DIV):
+
+    tag = 'header'
+
+
+class FOOTER(DIV):
+
+    tag = 'footer'
 
 
 class FIELDSET(DIV):
@@ -2014,6 +2025,11 @@ class FIELDSET(DIV):
     tag = 'fieldset'
 
 
+class SECTION(DIV):
+
+    tag = 'section'
+    
+    
 class LEGEND(DIV):
 
     tag = 'legend'
