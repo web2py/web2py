@@ -32,7 +32,7 @@ class MemcacheClient(object):
 
         key = '%s/%s' % (self.request.application, key)
         value = None
-        obj = self.client.get(key)
+        obj = self.client.get(key) if time_expire != 0 else None
         if obj:
             value = obj[1]
         elif f is not None:
