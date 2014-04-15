@@ -294,6 +294,8 @@ class Table(DALStorage):
 
     def __call__(self, id, **kwargs):
         record = self.get(id)
+        if record is None:
+          return None
         if kwargs and any(record[key]!=kwargs[key] for key in kwargs):
             return None
         return record
