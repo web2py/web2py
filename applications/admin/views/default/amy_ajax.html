@@ -1,0 +1,77 @@
+<style>
+.acw-chap pre, .acw-chap pre span,  span.acw-char-check, .acw-chap .selection-area div
+{
+    font:11px 'Courier', monospaced;
+    line-height:11px;
+    margin:0;
+    padding:0;
+    border:0;
+}
+
+.acw-chap .wrapped-row
+{
+	background-image:url('{{=URL(r=request,c='static',f='eamy')}}/chap-wrapped-row.gif');
+	background-repeat:no-repeat;
+	background-position:25px 4px;
+}
+.acw-chap .sidebar
+{
+	background-image:url('{{=URL(r=request,c='static',f='eamy')}}/chap-bg-sidebar.gif');
+	line-height:11px;
+}
+.acw-chap .sidebar .row-number
+{
+    text-align:right;
+    font-size:9px;
+    font-family:'Lucida Grande', Verdana, Arial, Helvetica, sans-serif;
+    color:#999;
+}
+
+.acw-chap .folding-expand-inner
+{
+	width:14px;
+	height:10px;
+	margin-left:2px;
+	display:inline;
+	background-image:url('{{=URL(r=request,c='static',f='eamy')}}/chap-folding-expand-inner.gif');
+}
+.acw-chap .folding-expand
+{
+	background-image:url('{{=URL(r=request,c='static',f='eamy')}}/chap-folding-expand.gif');
+}
+.acw-chap .folding-start
+{
+	background-image:url('{{=URL(r=request,c='static',f='eamy')}}/chap-folding-start.gif');
+}
+.acw-chap .folding-stop
+{
+	background-image:url('{{=URL(r=request,c='static',f='eamy')}}/chap-folding-stop.gif');
+}
+.acw-chap .bookmark-default
+{
+	background-image:url('{{=URL(r=request,c='static',f='eamy')}}/chap-bookmark-default.gif');
+}
+.acw-chap .void
+{
+	background-image:url('{{=URL(r=request,c='static',f='eamy')}}/void.gif');
+}
+</style>
+<script src="{{=URL(r=request,c='static',f='eamy/eamy.js')}}" type="text/javascript"></script>
+<script src="{{=URL(r=request,c='static',f='js/jquery.hotkeys.js')}}" type="text/javascript" charset="utf-8"></script>
+{{if request.args[1]=="views":}}
+<script src="{{=URL(r=request,c='static',f='eamy/bundle_markup.js')}}" type="text/javascript"></script>
+{{else:}}
+<script src="{{=URL(r=request,c='static',f='eamy/bundle_python.js')}}" type="text/javascript"></script>
+{{pass}}
+<script language="Javascript" type="text/javascript" src="/{{=request.application}}/static/js/ajax_editor.js"></script>
+
+<script language="Javascript" type="text/javascript">
+jQuery(document).ready(function(){
+   setTimeout("keepalive('{{=URL('keepalive')}}')",10000);
+
+});
+jQuery(document).bind('keydown', 'alt+f1',function (evt){
+        doClickSave();
+});
+</script>
+
