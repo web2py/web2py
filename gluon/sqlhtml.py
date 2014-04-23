@@ -43,7 +43,6 @@ try:
 except ImportError:
     is_gae = False # this is an assumption (if settings missing)
 
-table_field = re.compile('[\w_]+\.[\w_]+')
 widget_class = re.compile('^\w*')
 
 def add_class(a,b):
@@ -2977,7 +2976,9 @@ class SQLTABLE(TABLE):
                     _class += ' rowselected'
 
             for colname in columns:
-                if not table_field.match(colname):
+                matched_column_field = \
+                    sqlrows.db._adapter.REGEX_TABLE_DOT_FIELD.match(colname)
+                if not matched_column_field:
                     if "_extra" in record and colname in record._extra:
                         r = record._extra[colname]
                         row.append(TD(r))
@@ -2985,7 +2986,7 @@ class SQLTABLE(TABLE):
                     else:
                         raise KeyError(
                             "Column %s not found (SQLTABLE)" % colname)
-                (tablename, fieldname) = colname.split('.')
+                (tablename, fieldname) = matched_column_field.groups()
                 try:
                     field = sqlrows.db[tablename][fieldname]
                 except (KeyError, AttributeError):
