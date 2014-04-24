@@ -43,7 +43,6 @@ try:
 except ImportError:
     is_gae = False # this is an assumption (if settings missing)
 
-table_field = re.compile('[\w_]+\.[\w_]+')
 widget_class = re.compile('^\w*')
 
 def add_class(a,b):
@@ -2914,13 +2913,14 @@ class SQLTABLE(TABLE):
         (components, row) = (self.components, [])
         if not sqlrows:
             return
+        REGEX_TABLE_DOT_FIELD = sqlrows.db._adapter.REGEX_TABLE_DOT_FIELD
         if not columns:
-            REGEX_TABLE_DOT_FIELD = sqlrows.db._adapter.REGEX_TABLE_DOT_FIELD
             columns = [c for c in sqlrows.colnames if REGEX_TABLE_DOT_FIELD.match(c)]
         if headers == 'fieldname:capitalize':
             headers = {}
             for c in columns:
-                headers[c] = c.split('.')[-1].replace('_', ' ').title()
+                (t,f) = REGEX_TABLE_DOT_FIELD.match(c).groups()
+                headers[t + '.' + f] = f.replace('_', ' ').title()
         elif headers == 'labels':
             headers = {}
             for c in columns:
@@ -2939,6 +2939,7 @@ class SQLTABLE(TABLE):
             headers = {}
         else:
             for c in columns:  # new implement dict
+                c = '.'.join(REGEX_TABLE_DOT_FIELD.match(c).groups())
                 if isinstance(headers.get(c, c), dict):
                     coldict = headers.get(c, c)
                     attrcol = dict()
@@ -2977,7 +2978,9 @@ class SQLTABLE(TABLE):
                     _class += ' rowselected'
 
             for colname in columns:
-                if not table_field.match(colname):
+                matched_column_field = \
+                    sqlrows.db._adapter.REGEX_TABLE_DOT_FIELD.match(colname)
+                if not matched_column_field:
                     if "_extra" in record and colname in record._extra:
                         r = record._extra[colname]
                         row.append(TD(r))
@@ -2985,7 +2988,8 @@ class SQLTABLE(TABLE):
                     else:
                         raise KeyError(
                             "Column %s not found (SQLTABLE)" % colname)
-                (tablename, fieldname) = colname.split('.')
+                (tablename, fieldname) = matched_column_field.groups()
+                colname = tablename + '.' + fieldname
                 try:
                     field = sqlrows.db[tablename][fieldname]
                 except (KeyError, AttributeError):
