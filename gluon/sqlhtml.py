@@ -1848,6 +1848,7 @@ class SQLFORM(FORM):
              _class="web2py_grid",
              formname='web2py_grid',
              search_widget='default',
+             advanced_search=True,
              ignore_rw = False,
              formstyle = 'table3cols',
              exportclasses = None,
@@ -2279,7 +2280,8 @@ class SQLFORM(FORM):
                 search_widget = lambda sfield, url: CAT(FORM(
                     INPUT(_name='keywords', _value=request.vars.keywords,
                           _id=skeywords_id,
-                          _onfocus="jQuery('#%s').change();jQuery('#%s').slideDown();" % (spanel_id, sfields_id)),
+                          _onfocus="jQuery('#%s').change();jQuery('#%s').slideDown();" % (spanel_id, sfields_id) if advanced_search else ''
+                          ),
                     INPUT(_type='submit', _value=T('Search'), _class="btn btn-default"),
                     INPUT(_type='submit', _value=T('Clear'), _class="btn btn-default",
                           _onclick="jQuery('#%s').val('');" % skeywords_id),
