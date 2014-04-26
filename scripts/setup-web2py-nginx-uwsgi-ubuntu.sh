@@ -126,7 +126,7 @@ openssl x509 -noout -fingerprint -text < web2py.crt > web2py.info
 sudo mkdir /etc/uwsgi
 sudo mkdir /var/log/uwsgi
 
-# Create configuration file /etc/uwsgi/web2py.xml
+# Create configuration file /etc/uwsgi/web2py.ini
 echo '[uwsgi]
 
 socket = /tmp/web2py.socket
@@ -184,4 +184,4 @@ start uwsgi-emperor
 ## and stop it with
 # stop uwsgi-emperor
 ## to reload web2py only (without restarting uwsgi)
-# touch /etc/uwsgi/web2py.xml
+# touch /etc/uwsgi/web2py.ini
