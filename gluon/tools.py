@@ -2500,7 +2500,7 @@ class Auth(object):
                 # TODO: Add some error checking to handle cases where email cannot be sent
                 self.settings.mailer.send(
                     to=user.email, 
-                    subject="FDSI Login Authentication Code", 
+                    subject="Two-step Login Authentication Code", 
                     message="Your temporary login code is {0}".format(session.auth_2_factor))
             if form.accepts(request, session if self.csrf_prevention else None,
                             formname='login', dbio=False,
