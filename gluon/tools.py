@@ -2214,6 +2214,17 @@ class Auth(object):
                         _code='INVALID TICKET'))
         raise HTTP(200, message)
 
+    def _reset_2_factor_auth(self, session):
+        '''When two-step authentication is enabled, this function is used to
+        clear the session after successfully completing second challenge
+        or when the maximum number of tries allowed has expired.
+        '''
+        session.auth_2_factor_user = None
+        session.auth_2_factor = None
+        session.auth_2_factor_enabled = False
+        # Allow up to 4 attempts (the 1st one plus 3 more)
+        session.auth_2_factor_tries_left = 3
+
     def login(
         self,
         next=DEFAULT,
@@ -2293,107 +2304,108 @@ class Auth(object):
         old_requires = table_user[username].requires
         table_user[username].requires = tmpvalidator
 
-        # do we use our own login form, or from a central source?
-        if settings.login_form == self:
-            form = SQLFORM(
-                table_user,
-                fields=[username, passfield],
-                hidden=dict(_next=next),
-                showid=settings.showid,
-                submit_button=self.messages.login_button,
-                delete_label=self.messages.delete_label,
-                formstyle=settings.formstyle,
-                separator=settings.label_separator
-            )
-
-            if settings.remember_me_form:
-                ## adds a new input checkbox "remember me for longer"
-                if settings.formstyle != 'bootstrap':
-                    addrow(form, XML("&nbsp;"),
-                           DIV(XML("&nbsp;"),
-                               INPUT(_type='checkbox',
-                                     _class='checkbox',
-                                     _id="auth_user_remember",
-                                         _name="remember",
-                                     ),
-                               XML("&nbsp;&nbsp;"),
-                               LABEL(
-                               self.messages.label_remember_me,
-                               _for="auth_user_remember",
-                               )), "",
-                           settings.formstyle,
-                           'auth_user_remember__row')
-                elif settings.formstyle == 'bootstrap':
-                    addrow(form,
-                           "",
-                           LABEL(
-                               INPUT(_type='checkbox',
-                                     _id="auth_user_remember",
-                                     _name="remember"),
-                               self.messages.label_remember_me,
-                               _class="checkbox"),
-                           "",
-                           settings.formstyle,
-                           'auth_user_remember__row')
-
-            captcha = settings.login_captcha or \
-                (settings.login_captcha != False and settings.captcha)
-            if captcha:
-                addrow(form, captcha.label, captcha, captcha.comment,
-                       settings.formstyle, 'captcha__row')
+        # If two-factor authentication is enabled, and the maximum
+        # number of tries allowed is used up, reset the session to
+        # pre-login state with two-factor auth
+        if session.auth_2_factor_enabled and session.auth_2_factor_tries_left < 1:
+            # Exceeded maximum allowed tries for this code. Require user to enter
+            # username and password again.
+            user = None
             accepted_form = False
+            self._reset_2_factor_auth(session)
+            # Redirect to the default 'next' page without logging
+            # in. If that page requires login, user will be redirected
+            # back to the main login form
+            redirect(next, client_side=settings.client_side)
 
-            if form.accepts(request, session if self.csrf_prevention else None,
-                            formname='login', dbio=False,
-                            onvalidation=onvalidation,
-                            hideerror=settings.hideerror):
-
-                accepted_form = True
-                # check for username in db
-                entered_username = form.vars[username]
-                if multi_login and '@' in entered_username:
-                    # if '@' in username check for email, not username
-                    user = table_user(email = entered_username)
-                else:
-                    user = table_user(**{username: entered_username})
-                if user:
-                    # user in db, check if registration pending or disabled
-                    temp_user = user
-                    if temp_user.registration_key == 'pending':
-                        response.flash = self.messages.registration_pending
-                        return form
-                    elif temp_user.registration_key in ('disabled', 'blocked'):
-                        response.flash = self.messages.login_disabled
-                        return form
-                    elif (not temp_user.registration_key is None 
-                          and temp_user.registration_key.strip()):
-                        response.flash = \
-                            self.messages.registration_verifying
-                        return form
-                    # try alternate logins 1st as these have the
-                    # current version of the password
-                    user = None
-                    for login_method in settings.login_methods:
-                        if login_method != self and \
-                                login_method(request.vars[username],
-                                             request.vars[passfield]):
-                            if not self in settings.login_methods:
-                                # do not store password in db
-                                form.vars[passfield] = None
-                            user = self.get_or_create_user(
-                                form.vars, settings.update_fields)
-                            break
-                    if not user:
-                        # alternates have failed, maybe because service inaccessible
-                        if settings.login_methods[0] == self:
-                            # try logging in locally using cached credentials
-                            if form.vars.get(passfield, '') == temp_user[passfield]:
-                                # success
-                                user = temp_user
-                else:
-                    # user not in db
-                    if not settings.alternate_requires_registration:
-                        # we're allowed to auto-register users from external systems
+        # Before showing the default login form, check whether
+        # we are already on the second step of two-step authentication.
+        # If we are, then skip this login form and use the form for the
+        # second challenge instead.
+        # Note to devs: The code inside the if-block is unchanged from the
+        # previous version of this file, other than for indentation inside
+        # to put it inside the if-block
+        if session.auth_2_factor_user is None:
+            # do we use our own login form, or from a central source?
+            if settings.login_form == self:
+                form = SQLFORM(
+                    table_user,
+                    fields=[username, passfield],
+                    hidden=dict(_next=next),
+                    showid=settings.showid,
+                    submit_button=self.messages.login_button,
+                    delete_label=self.messages.delete_label,
+                    formstyle=settings.formstyle,
+                    separator=settings.label_separator
+                )
+    
+                if settings.remember_me_form:
+                    ## adds a new input checkbox "remember me for longer"
+                    if settings.formstyle != 'bootstrap':
+                        addrow(form, XML("&nbsp;"),
+                               DIV(XML("&nbsp;"),
+                                   INPUT(_type='checkbox',
+                                         _class='checkbox',
+                                         _id="auth_user_remember",
+                                             _name="remember",
+                                         ),
+                                   XML("&nbsp;&nbsp;"),
+                                   LABEL(
+                                   self.messages.label_remember_me,
+                                   _for="auth_user_remember",
+                                   )), "",
+                               settings.formstyle,
+                               'auth_user_remember__row')
+                    elif settings.formstyle == 'bootstrap':
+                        addrow(form,
+                               "",
+                               LABEL(
+                                   INPUT(_type='checkbox',
+                                         _id="auth_user_remember",
+                                         _name="remember"),
+                                   self.messages.label_remember_me,
+                                   _class="checkbox"),
+                               "",
+                               settings.formstyle,
+                               'auth_user_remember__row')
+    
+                captcha = settings.login_captcha or \
+                    (settings.login_captcha != False and settings.captcha)
+                if captcha:
+                    addrow(form, captcha.label, captcha, captcha.comment,
+                           settings.formstyle, 'captcha__row')
+                accepted_form = False
+    
+                if form.accepts(request, session if self.csrf_prevention else None,
+                                formname='login', dbio=False,
+                                onvalidation=onvalidation,
+                                hideerror=settings.hideerror):
+    
+                    accepted_form = True
+                    # check for username in db
+                    entered_username = form.vars[username]
+                    if multi_login and '@' in entered_username:
+                        # if '@' in username check for email, not username
+                        user = table_user(email = entered_username)
+                    else:
+                        user = table_user(**{username: entered_username})
+                    if user:
+                        # user in db, check if registration pending or disabled
+                        temp_user = user
+                        if temp_user.registration_key == 'pending':
+                            response.flash = self.messages.registration_pending
+                            return form
+                        elif temp_user.registration_key in ('disabled', 'blocked'):
+                            response.flash = self.messages.login_disabled
+                            return form
+                        elif (not temp_user.registration_key is None 
+                              and temp_user.registration_key.strip()):
+                            response.flash = \
+                                self.messages.registration_verifying
+                            return form
+                        # try alternate logins 1st as these have the
+                        # current version of the password
+                        user = None
                         for login_method in settings.login_methods:
                             if login_method != self and \
                                     login_method(request.vars[username],
@@ -2404,33 +2416,124 @@ class Auth(object):
                                 user = self.get_or_create_user(
                                     form.vars, settings.update_fields)
                                 break
-                if not user:
-                    self.log_event(self.messages['login_failed_log'],
-                                   request.post_vars)
-                    # invalid login
-                    session.flash = self.messages.invalid_login
-                    callback(onfail, None)
-                    redirect(
-                        self.url(args=request.args, vars=request.get_vars),
-                        client_side=settings.client_side)
+                        if not user:
+                            # alternates have failed, maybe because service inaccessible
+                            if settings.login_methods[0] == self:
+                                # try logging in locally using cached credentials
+                                if form.vars.get(passfield, '') == temp_user[passfield]:
+                                    # success
+                                    user = temp_user
+                    else:
+                        # user not in db
+                        if not settings.alternate_requires_registration:
+                            # we're allowed to auto-register users from external systems
+                            for login_method in settings.login_methods:
+                                if login_method != self and \
+                                        login_method(request.vars[username],
+                                                     request.vars[passfield]):
+                                    if not self in settings.login_methods:
+                                        # do not store password in db
+                                        form.vars[passfield] = None
+                                    user = self.get_or_create_user(
+                                        form.vars, settings.update_fields)
+                                    break
+                    if not user:
+                        self.log_event(self.messages['login_failed_log'],
+                                       request.post_vars)
+                        # invalid login
+                        session.flash = self.messages.invalid_login
+                        callback(onfail, None)
+                        redirect(
+                            self.url(args=request.args, vars=request.get_vars),
+                            client_side=settings.client_side)
+    
+            else: # use a central authentication server
+                cas = settings.login_form
+                cas_user = cas.get_user()
+    
+                if cas_user:
+                    cas_user[passfield] = None
+                    user = self.get_or_create_user(
+                        table_user._filter_fields(cas_user),
+                        settings.update_fields)
+                elif hasattr(cas, 'login_form'):
+                    return cas.login_form()
+                else:
+                    # we need to pass through login again before going on
+                    next = self.url(settings.function, args='login')
+                    redirect(cas.login_url(next),
+                             client_side=settings.client_side)
 
-        else:
-            # use a central authentication server
-            cas = settings.login_form
-            cas_user = cas.get_user()
-
-            if cas_user:
-                cas_user[passfield] = None
-                user = self.get_or_create_user(
-                    table_user._filter_fields(cas_user),
-                    settings.update_fields)
-            elif hasattr(cas, 'login_form'):
-                return cas.login_form()
+        # Extra login logic for two-factor authentication
+        #################################################
+        # If the 'user' variable has a value, this means that the first 
+        # authentication step was successful (i.e. user provided correct
+        # username and password at the first challenge).
+        # Check if this user is signed up for two-factor authentication
+        # Default rule is that the user must be part of a group that is called
+        # 'web2py Two-Step Authentication'
+        if user:
+            memberships = self.db(self.table_membership().user_id == user.id).select()            
+            session.auth_2_factor_enabled = 'web2py Two-Step Authentication' in [i.group_id for i in memberships.values()]
+        # If user is signed up for two-factor authentication, present the second
+        # challenge
+        if session.auth_2_factor_enabled:
+            form = SQLFORM.factory(
+                Field('authentication_code',
+                      required=True, 
+                      comment='This code was emailed to you and is required for login.'),
+                hidden=dict(_next=next),
+                formstyle=settings.formstyle,
+                separator=settings.label_separator
+            )
+            # accepted_form is used by some default web2py code later in the
+            # function that handles running specified functions before redirect
+            # Set it to False until the challenge form is accepted.
+            accepted_form = False
+            # Handle the case when a user has submitted the login/password
+            # form successfully, and the password has been validated, but
+            # the two-factor form has not been displayed or validated yet.
+            if session.auth_2_factor_user is None and user is not None:
+                session.auth_2_factor_user = user # store the validated user and associate with this session
+                session.auth_2_factor = random.randint(100000, 999999)
+                session.auth_2_factor_tries_left = 3 # Allow user to try up to 4 times
+                # TODO: Add some error checking to handle cases where email cannot be sent
+                self.settings.mailer.send(
+                    to=user.email, 
+                    subject="FDSI Login Authentication Code", 
+                    message="Your temporary login code is {0}".format(session.auth_2_factor))
+            if form.accepts(request, session if self.csrf_prevention else None,
+                            formname='login', dbio=False,
+                            onvalidation=onvalidation,
+                            hideerror=settings.hideerror):
+                accepted_form = True
+                if form.vars['authentication_code'] == str(session.auth_2_factor):
+                    # Handle the case when the two-factor form has been successfully validated
+                    # and the user was previously stored (the current user should be None because
+                    # in this case, the previous username/password login form should not be displayed.
+                    # This will allow the code after the 2-factor authentication block to proceed as
+                    # normal.
+                    if user is None or user == session.auth_2_factor_user:
+                        user = session.auth_2_factor_user
+                    # For security, because the username stored in the 
+                    # session somehow does not match the just validated
+                    # user. Should not be possible without session stealing
+                    # which is hard with SSL.
+                    elif user != session.auth_2_factor_user:
+                        user = None
+                    # Either way, the user and code associated with this session should
+                    # be removed. This handles cases where the session login may have 
+                    # expired but browser window is open, so the old session key and 
+                    # session usernamem will still exist
+                    self._reset_2_factor_auth(session)
+                else:
+                    # TODO: Limit the number of retries allowed.
+                    response.flash = 'Incorrect code. {0} more attempt(s) remaining.'.format(session.auth_2_factor_tries_left)
+                    session.auth_2_factor_tries_left -= 1
+                    return form
             else:
-                # we need to pass through login again before going on
-                next = self.url(settings.function, args='login')
-                redirect(cas.login_url(next),
-                         client_side=settings.client_side)
+                return form
+        # End login logic for two-factor authentication
 
         # process authenticated users
         if user:
@@ -2468,7 +2571,11 @@ class Auth(object):
         """
         Logouts and redirects to login
         """
-
+        
+        # Clear out 2-step authentication information if user logs
+        # out. This information is also cleared on successful login.
+        self._reset_2_factor_auth(current.session)
+        
         if next is DEFAULT:
             next = self.get_vars_next() or self.settings.logout_next
         if onlogout is DEFAULT:
