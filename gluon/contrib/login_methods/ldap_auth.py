@@ -252,7 +252,7 @@ def ldap_auth(server='ldap', port=None,
                     # We know the user exists & is in the correct OU
                     # so now we just check the password
                     con.simple_bind_s(username, password)
-                username = username_bare
+                #username = username_bare
 
             if ldap_mode == 'domino':
                 # Notes Domino
