@@ -9011,6 +9011,10 @@ class Table(object):
         response.errors = Row()
         new_fields = copy.copy(fields)
         for key,value in fields.iteritems():
+           if self[key].required:
+              if value == "":  # empty value
+                 response.errors[key] = "Enter a value"
+              continue
             value,error = self[key].validate(value)
             if error:
                 response.errors[key] = "%s" % error
