@@ -39,6 +39,7 @@ import sys
 import traceback
 import threading
 import cgi
+import urlparse
 import copy
 import tempfile
 from gluon.cache import CacheInRam
@@ -189,7 +190,7 @@ class Request(Storage):
         """Takes the QUERY_STRING and unpacks it to get_vars
         """
         query_string = self.env.get('QUERY_STRING','')
-        dget = cgi.parse_qs(query_string, keep_blank_values=1)
+        dget = urlparse.parse_qs(query_string, keep_blank_values=1)  # Ref: https://docs.python.org/2/library/cgi.html#cgi.parse_qs
         get_vars = self._get_vars = Storage(dget)
         for (key, value) in get_vars.iteritems():
             if isinstance(value,list) and len(value)==1:
