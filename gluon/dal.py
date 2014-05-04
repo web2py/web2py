@@ -8284,7 +8284,7 @@ class DAL(object):
                                     'error': 'invalid path', 'response': None})
                     return Row({'status': 200, 'response': response,
                                 'pattern': pattern, 'count': count})
-        return Row({'status':4 00, 'error': 'no matching pattern', 'response': None})
+        return Row({'status': 400, 'error': 'no matching pattern', 'response': None})
 
     def define_table(self,
                      tablename,
