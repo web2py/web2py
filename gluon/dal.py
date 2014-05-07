@@ -2675,7 +2675,7 @@ class MySQLAdapter(BaseAdapter):
         self.execute("XA END;")
         self.execute("XA PREPARE;")
 
-    def commit_prepared(self,ley):
+    def commit_prepared(self,key):
         self.execute("XA COMMIT;")
 
     def rollback_prepared(self,key):
