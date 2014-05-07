@@ -143,6 +143,7 @@ class Mail(object):
         mail.settings.encrypt = True
         mail.settings.x509_sign_keyfile = None
         mail.settings.x509_sign_certfile = None
+        mail.settings.x509_sign_chainfile = None
         mail.settings.x509_nocerts = False
         mail.settings.x509_crypt_certfiles = None
 
@@ -157,6 +158,10 @@ class Mail(object):
                          ... x509 only ...
         x509_sign_keyfile : the signers private key filename (PEM format)
         x509_sign_certfile: the signers certificate filename (PEM format)
+        x509_sign_chainfile: sets the optional all-in-one file where you
+                             can assemble the certificates of Certification
+                             Authorities (CA) which form the certificate
+                             chain of email certificate (PEM format)
         x509_nocerts      : if True then no attached certificate in mail
         x509_crypt_certfiles: the certificates file to encrypt the messages
                               with can be a file name or a list of
@@ -259,6 +264,7 @@ class Mail(object):
         settings.encrypt = True
         settings.x509_sign_keyfile = None
         settings.x509_sign_certfile = None
+        settings.x509_sign_chainfile = None
         settings.x509_nocerts = False
         settings.x509_crypt_certfiles = None
         settings.debug = False
@@ -583,6 +589,7 @@ class Mail(object):
                 self.error = "No sign and no encrypt is set but cipher type to x509"
                 return False
             x509_sign_keyfile = self.settings.x509_sign_keyfile
+            x509_sign_chainfile = self.settings.x509_sign_chainfile
             if self.settings.x509_sign_certfile:
                 x509_sign_certfile = self.settings.x509_sign_certfile
             else:
@@ -608,6 +615,11 @@ class Mail(object):
                 try:
                     s.load_key(x509_sign_keyfile, x509_sign_certfile,
                                callback=lambda x: sign_passphrase)
+                    if x509_sign_chainfile:
+                        sk = X509.X509_Stack()
+                        chain = X509.load_cert(x509_sign_chainfile)
+                        sk.push(chain)
+                        s.set_x509_stack(sk)
                 except Exception, e:
                     self.error = "Something went wrong on certificate / private key loading: <%s>" % str(e)
                     return False
