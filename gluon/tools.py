@@ -28,6 +28,7 @@ import Cookie
 import cStringIO
 import ConfigParser
 import email.utils
+import random
 from email import MIMEBase, MIMEMultipart, MIMEText, Encoders, Header, message_from_string, Charset
 
 from gluon.contenttype import contenttype
