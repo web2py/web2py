@@ -2473,8 +2473,10 @@ class Auth(object):
         # Default rule is that the user must be part of a group that is called
         # 'web2py Two-Step Authentication'
         if user:
-            memberships = self.db(self.table_membership().user_id == user.id).select()            
-            session.auth_2_factor_enabled = 'web2py Two-Step Authentication' in [i.group_id for i in memberships.values()]
+            memberships = self.db((self.table_membership().user_id == user.id)
+                                  &(self.table_group().id == self.table_membership().group_id)).select(
+                                                  self.table_group().role)
+            session.auth_2_factor_enabled = 'web2py Two-Step Authentication' in [i.role for i in memberships]
         # If user is signed up for two-factor authentication, present the second
         # challenge
         if session.auth_2_factor_enabled:
