@@ -356,7 +356,7 @@ class Request(Storage):
                     if len(traceback.extract_tb(exc_traceback)) == 1:
                         raise HTTP(400, "invalid arguments")
                     else:
-                        raise e
+                        raise
             f.__doc__ = action.__doc__
             f.__name__ = action.__name__
             return f
