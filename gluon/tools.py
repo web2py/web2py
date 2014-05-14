@@ -1668,7 +1668,7 @@ class Auth(object):
             except:
                 return id
         ondelete = self.settings.ondelete
-        signature_datetime_represent = lambda v, row: v.strftime(current.T(self.settings.signature_date_format, lazy=False))
+        signature_datetime_represent = lambda value, row: value.strftime(current.T(self.settings.signature_date_format, lazy=False)) if isinstance(value, datetime.datetime) else value
         self.signature = db.Table(
             self.db, 'auth_signature',
             Field('is_active', 'boolean',
