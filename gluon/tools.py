@@ -979,6 +979,7 @@ class Auth(object):
         username_case_sensitive=True,
         update_fields = ['email'],
         ondelete="CASCADE",
+        signature_date_format='%Y-%m-%d %H:%M:%S',
         client_side = True,
         renew_session_onlogin=True,
         renew_session_onlogout=True,
@@ -1667,6 +1668,7 @@ class Auth(object):
             except:
                 return id
         ondelete = self.settings.ondelete
+        signature_datetime_represent = lambda value, row: value.strftime(current.T(self.settings.signature_date_format, lazy=False)) if isinstance(value, datetime.datetime) else value
         self.signature = db.Table(
             self.db, 'auth_signature',
             Field('is_active', 'boolean',
@@ -1675,6 +1677,7 @@ class Auth(object):
                   label=T('Is Active')),
             Field('created_on', 'datetime',
                   default=request.now,
+                  represent=signature_datetime_represent,
                   writable=False, readable=False,
                   label=T('Created On')),
             Field('created_by',
@@ -1684,6 +1687,7 @@ class Auth(object):
                   label=T('Created By'), ondelete=ondelete),
             Field('modified_on', 'datetime',
                   update=request.now, default=request.now,
+                  represent=signature_datetime_represent,
                   writable=False, readable=False,
                   label=T('Modified On')),
             Field('modified_by',
