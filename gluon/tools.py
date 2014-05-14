@@ -154,18 +154,23 @@ class Mail(object):
                             to specify home of gnupg
         sign              : sign the message (True or False)
         sign_passphrase   : passphrase for key signing
-        encrypt           : encrypt the message
+        encrypt           : encrypt the message (True or False). It defaults
+                            to True
                          ... x509 only ...
-        x509_sign_keyfile : the signers private key filename (PEM format)
-        x509_sign_certfile: the signers certificate filename (PEM format)
+        x509_sign_keyfile : the signers private key filename or
+                            string containing the key. (PEM format)
+        x509_sign_certfile: the signers certificate filename or
+                            string containing the cert. (PEM format)
         x509_sign_chainfile: sets the optional all-in-one file where you
                              can assemble the certificates of Certification
                              Authorities (CA) which form the certificate
-                             chain of email certificate (PEM format)
+                             chain of email certificate. It can be a
+                             string containing the certs to. (PEM format)
         x509_nocerts      : if True then no attached certificate in mail
-        x509_crypt_certfiles: the certificates file to encrypt the messages
-                              with can be a file name or a list of
-                              file names (PEM format)
+        x509_crypt_certfiles: the certificates file or strings to encrypt 
+                              the messages with can be a file name /
+                              string or a list of file names /
+                              strings (PEM format)
 
     Examples:
         Create Mail object with authentication data for remote server::
@@ -277,15 +282,24 @@ class Mail(object):
         to,
         subject = '[no subject]',
         message = '[no message]',
-        attachments=None,
-        cc=None,
-        bcc=None,
-        reply_to=None,
-        sender=None,
-        encoding='utf-8',
-        raw=False,
-        headers={},
-        from_address=None
+        attachments = None,
+        cc = None,
+        bcc = None,
+        reply_to = None,
+        sender = None,
+        encoding = 'utf-8',
+        raw = False,
+        headers = {},
+        from_address = None,
+        cipher_type = None,
+        sign = None,
+        sign_passphrase = None,
+        encrypt = None,
+        x509_sign_keyfile = None,
+        x509_sign_chainfile = None,
+        x509_sign_certfile = None,
+        x509_crypt_certfiles = None,
+        x509_nocerts = None
     ):
         """
         Sends an email using data specified in constructor
@@ -321,6 +335,28 @@ class Mail(object):
             from_address: address to appear in the 'From:' header, this is not
                 the envelope sender. If not specified the sender will be used
 
+            cipher_type : 
+                gpg - need a python-pyme package and gpgme lib
+                x509 - smime
+            gpg_home : you can set a GNUPGHOME environment variable
+                to specify home of gnupg
+            sign : sign the message (True or False)
+            sign_passphrase  : passphrase for key signing
+            encrypt : encrypt the message (True or False). It defaults to True.
+                         ... x509 only ...
+            x509_sign_keyfile : the signers private key filename or
+                string containing the key. (PEM format)
+            x509_sign_certfile: the signers certificate filename or
+                string containing the cert. (PEM format)
+            x509_sign_chainfile: sets the optional all-in-one file where you
+                can assemble the certificates of Certification
+                Authorities (CA) which form the certificate
+                chain of email certificate. It can be a
+                string containing the certs to. (PEM format)
+            x509_nocerts : if True then no attached certificate in mail
+            x509_crypt_certfiles: the certificates file or strings to encrypt 
+                the messages with can be a file name / string or 
+                a list of file names / strings (PEM format)
         Examples:
             Send plain text message to single address::
 
@@ -479,10 +515,10 @@ class Mail(object):
         #######################################################
         #                      CIPHER                         #
         #######################################################
-        cipher_type = self.settings.cipher_type
-        sign = self.settings.sign
-        sign_passphrase = self.settings.sign_passphrase
-        encrypt = self.settings.encrypt
+        cipher_type = cipher_type or self.settings.cipher_type
+        sign = sign if sign != None else self.settings.sign
+        sign_passphrase = sign_passphrase or self.settings.sign_passphrase
+        encrypt = encrypt if encrypt != None else self.settings.encrypt
         #######################################################
         #                       GPGME                         #
         #######################################################
@@ -588,17 +624,24 @@ class Mail(object):
             if not sign and not encrypt:
                 self.error = "No sign and no encrypt is set but cipher type to x509"
                 return False
-            x509_sign_keyfile = self.settings.x509_sign_keyfile
-            x509_sign_chainfile = self.settings.x509_sign_chainfile
-            if self.settings.x509_sign_certfile:
-                x509_sign_certfile = self.settings.x509_sign_certfile
-            else:
-                # if there is no sign certfile we'll assume the
-                # cert is in keyfile
-                x509_sign_certfile = self.settings.x509_sign_keyfile
+            import os
+            x509_sign_keyfile = x509_sign_keyfile or\
+                                      self.settings.x509_sign_keyfile
+
+            x509_sign_chainfile = x509_sign_chainfile or\
+                                      self.settings.x509_sign_chainfile
+
+            x509_sign_certfile = x509_sign_certfile or\
+                                      self.settings.x509_sign_certfile or\
+                                      x509_sign_keyfile or\
+                                      self.settings.x509_sign_certfile
+
             # crypt certfiles could be a string or a list
-            x509_crypt_certfiles = self.settings.x509_crypt_certfiles
-            x509_nocerts = self.settings.x509_nocerts
+            x509_crypt_certfiles = x509_crypt_certfiles or\
+                                      self.settings.x509_crypt_certfiles
+
+            x509_nocerts = x509_nocerts or\
+                                      self.settings.x509_nocerts
 
             # need m2crypto
             try:
@@ -613,11 +656,19 @@ class Mail(object):
             if sign:
                 #key for signing
                 try:
-                    s.load_key(x509_sign_keyfile, x509_sign_certfile,
-                               callback=lambda x: sign_passphrase)
+                    keyfile_bio = BIO.openfile(x509_sign_keyfile)\
+                        if os.path.isfile(x509_sign_keyfile)\
+                        else BIO.MemoryBuffer(x509_sign_keyfile)
+                    sign_certfile_bio = BIO.openfile(x509_sign_certfile)\
+                        if os.path.isfile(x509_sign_certfile)\
+                        else BIO.MemoryBuffer(x509_sign_certfile)
+                    s.load_key_bio(keyfile_bio, sign_certfile_bio,
+                                   callback=lambda x: sign_passphrase)
                     if x509_sign_chainfile:
                         sk = X509.X509_Stack()
-                        chain = X509.load_cert(x509_sign_chainfile)
+                        chain = X509.load_cert(x509_sign_chainfile)\
+                            if os.path.isfile(x509_sign_chainfile)\
+                            else X509.load_cert_string(x509_sign_chainfile)
                         sk.push(chain)
                         s.set_x509_stack(sk)
                 except Exception, e:
@@ -646,8 +697,11 @@ class Mail(object):
                         x509_crypt_certfiles = [x509_crypt_certfiles]
 
                     # make an encryption cert's stack
-                    for x in x509_crypt_certfiles:
-                        sk.push(X509.load_cert(x))
+                    for crypt_certfile in x509_crypt_certfiles:
+                        certfile = X509.load_cert(crypt_certfile)\
+                             if os.path.isfile(crypt_certfile)\
+                             else X509.load_cert_string(crypt_certfile)
+                        sk.push(certfile)
                     s.set_x509_stack(sk)
 
                     s.set_cipher(SMIME.Cipher('des_ede3_cbc'))
@@ -5995,3 +6049,4 @@ class Config(object):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
+
