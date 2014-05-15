@@ -881,54 +881,6 @@ def formstyle_bootstrap3(form, fields):
     return parent
 
 
-def formstyle_bootstrap3_custom(form, fields):
-    ''' custom bootstrap 3 format form layout '''
-
-    parent = FIELDSET()
-    for id, label, controls, help in fields:
-        # wrappers
-        _help = SPAN(help, _class='help-block')
-        # embed _help into _controls
-        _controls = DIV(controls, _help)
-        # submit unflag by default
-        _submit = False
-        if isinstance(controls, INPUT):
-
-            if controls['_type'] == 'submit':
-                # flag submit button
-                _submit = True
-                controls['_class'] = 'btn btn-primary'
-            if controls['_type'] == 'button':
-                controls['_class'] = 'btn btn-default'
-            elif controls['_type'] == 'file':
-                controls['_class'] = 'input-file'
-            elif controls['_type'] == 'text':
-                controls['_class'] = 'form-control'
-            elif controls['_type'] == 'password':
-                controls['_class'] = 'form-control'
-            elif controls['_type'] == 'checkbox':
-                controls['_class'] = 'checkbox'
-
-        if isinstance(controls, SELECT):
-            controls.add_class('form-control')
-
-        if isinstance(controls, TEXTAREA):
-            controls.add_class('form-control')
-
-        if isinstance(label, LABEL):
-            label['_class'] = 'control-label'
-
-        if _submit:
-            # submit button has unwrapped label and controls, different class
-            parent.append(DIV(label, DIV(controls,), _class='form-group', _id=id))
-            # unflag submit (possible side effect)
-            _submit = False
-        else:
-            # unwrapped label
-            parent.append(DIV(label, _controls, _class='form-group', _id=id))
-    return parent
-
-
 class SQLFORM(FORM):
 
     """
@@ -1015,7 +967,6 @@ class SQLFORM(FORM):
         ul=formstyle_ul,
         bootstrap=formstyle_bootstrap,
         bootstrap3=formstyle_bootstrap3,
-        bootstrap3custom=formstyle_bootstrap3_custom,
         inline=formstyle_inline,
     ))
 
