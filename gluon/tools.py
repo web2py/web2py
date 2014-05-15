@@ -950,6 +950,7 @@ class Auth(object):
         allow_basic_login_only=False,
         on_failed_authentication=lambda x: redirect(x),
         formstyle="table3cols",
+        formstyle_options={},
         label_separator=": ",
         logging_enabled = True,
         allow_delete_accounts=False,
@@ -2315,6 +2316,7 @@ class Auth(object):
                 submit_button=self.messages.login_button,
                 delete_label=self.messages.delete_label,
                 formstyle=settings.formstyle,
+                formstyle_options=settings.formstyle_options,
                 separator=settings.label_separator
             )
 
@@ -2563,6 +2565,7 @@ class Auth(object):
                        submit_button=self.messages.register_button,
                        delete_label=self.messages.delete_label,
                        formstyle=formstyle,
+                       formstyle_options=self.settings.formstyle_options,
                        separator=self.settings.label_separator
                        )
         if self.settings.register_verify_password:
@@ -2733,6 +2736,7 @@ class Auth(object):
                        submit_button=self.messages.submit_button,
                        delete_label=self.messages.delete_label,
                        formstyle=self.settings.formstyle,
+                       formstyle_options=self.settings.formstyle_options,
                        separator=self.settings.label_separator
                        )
         if captcha:
@@ -2893,6 +2897,7 @@ class Auth(object):
             submit_button=self.messages.password_reset_button,
             hidden=dict(_next=next),
             formstyle=self.settings.formstyle,
+            formstyle_settings=self.settings.formstyle_settings,
             separator=self.settings.label_separator
         )
         if form.accepts(request, session,
@@ -2953,6 +2958,7 @@ class Auth(object):
                        submit_button=self.messages.password_reset_button,
                        delete_label=self.messages.delete_label,
                        formstyle=self.settings.formstyle,
+                       formstyle_options=self.settings.formstyle_options,
                        separator=self.settings.label_separator
                        )
         if captcha:
@@ -3056,6 +3062,7 @@ class Auth(object):
             submit_button=self.messages.password_change_button,
             hidden=dict(_next=next),
             formstyle=self.settings.formstyle,
+            formstyle_options=self.settings.formstyle_options,
             separator=self.settings.label_separator
         )
         if form.accepts(request, session,
@@ -3115,6 +3122,7 @@ class Auth(object):
             delete_label=self.messages.delete_label,
             upload=self.settings.download_url,
             formstyle=self.settings.formstyle,
+            formstyle_options=self.settings.formstyle_options,
             separator=self.settings.label_separator,
             deletable=self.settings.allow_delete_accounts,
             )
@@ -3767,6 +3775,7 @@ class Crud(object):
         settings.update_captcha = None
         settings.captcha = None
         settings.formstyle = 'table3cols'
+        settings.formstyle_options = {}
         settings.label_separator = ': '
         settings.hideerror = False
         settings.detect_record_change = True
@@ -3896,6 +3905,7 @@ class Crud(object):
             deletable=deletable,
             upload=self.settings.download_url,
             formstyle=self.settings.formstyle,
+            formstyle_options=self.settings.formstyle_options,
             separator=self.settings.label_separator,
             **attributes # contains hidden
             )
@@ -3998,6 +4008,7 @@ class Crud(object):
             upload=self.settings.download_url,
             showid=self.settings.showid,
             formstyle=self.settings.formstyle,
+            formstyle_options=self.settings.formstyle_options,
             separator=self.settings.label_separator
             )
         if not current.request.extension in ('html', 'load'):

@@ -721,7 +721,7 @@ class AutocompleteWidget(object):
             return TAG[''](INPUT(**attr), DIV(_id=div_id, _style='position:absolute;'))
 
 
-def formstyle_table3cols(form, fields):
+def formstyle_table3cols(form, fields, formstyle_options={}):
     """ 3 column table - default """
     table = TABLE()
     for id, label, controls, help in fields:
@@ -732,7 +732,7 @@ def formstyle_table3cols(form, fields):
     return table
 
 
-def formstyle_table2cols(form, fields):
+def formstyle_table2cols(form, fields, formstyle_options={}):
     """ 2 column table """
     table = TABLE()
     for id, label, controls, help in fields:
@@ -744,7 +744,7 @@ def formstyle_table2cols(form, fields):
     return table
 
 
-def formstyle_divs(form, fields):
+def formstyle_divs(form, fields, formstyle_options={}):
     """ divs only """
     table = FIELDSET()
     for id, label, controls, help in fields:
@@ -755,7 +755,7 @@ def formstyle_divs(form, fields):
     return table
 
 
-def formstyle_inline(form, fields):
+def formstyle_inline(form, fields, formstyle_options={}):
     """ divs only, but inline """
     if len(fields) != 2:
         raise RuntimeError("Not possible")
@@ -765,7 +765,7 @@ def formstyle_inline(form, fields):
                submit_button)
 
 
-def formstyle_ul(form, fields):
+def formstyle_ul(form, fields, formstyle_options={}):
     """ unordered list """
     table = UL()
     for id, label, controls, help in fields:
@@ -776,7 +776,7 @@ def formstyle_ul(form, fields):
     return table
 
 
-def formstyle_bootstrap(form, fields):
+def formstyle_bootstrap(form, fields, formstyle_options={}):
     """ bootstrap 2.3.x format form layout """
     form.add_class('form-horizontal')
     parent = FIELDSET()
@@ -821,30 +821,41 @@ def formstyle_bootstrap(form, fields):
     return parent
 
 
-def formstyle_bootstrap3(form, fields):
+def formstyle_bootstrap3(form, fields, formstyle_options={}):
     """ bootstrap 3 format form layout
 
     Note:
         Experimental!
     """
-    form.add_class('form-horizontal')
+    # Get form style options
+    button_cls = control_cls = formstyle_options.get('button_cls', 'btn btn-default')
+    control_cls = formstyle_options.get('control_cls', 'col-lg-4')
+    form_cls = formstyle_options.get('form_cls', 'form-horizontal')
+    help_cls = formstyle_options.get('help_cls', 'form-horizontal')
+    label_cls = formstyle_options.get('label_cls', 'col-lg-2 control-label')
+    password_label_cls = formstyle_options.get('password_label_cls', 'col-lg-2')
+    submit_btn_cls = formstyle_options.get('submit_btn_cls', 'btn btn-primary')
+    submit_div_cls = formstyle_options.get('submit_div_cls', 'col-lg-4 col-lg-offset-2')
+    
+    form.add_class(form_cls)
+
     parent = FIELDSET()
     for id, label, controls, help in fields:
         # wrappers
-        _help = SPAN(help, _class='help-block')
+        _help = SPAN(help, _class=help_cls)
         # embed _help into _controls
-        _controls = DIV(controls, _help, _class='col-lg-4')
+        _controls = DIV(controls, _help, _class=control_cls)
         # submit unflag by default
         _submit = False
         if isinstance(controls, INPUT):
-            controls.add_class('col-lg-4')
+            controls.add_class(control_cls)
 
             if controls['_type'] == 'submit':
                 # flag submit button
                 _submit = True
-                controls['_class'] = 'btn btn-primary'
+                controls['_class'] = submit_btn_cls
             if controls['_type'] == 'button':
-                controls['_class'] = 'btn btn-default'
+                controls['_class'] = button_cls
             elif controls['_type'] == 'file':
                 controls['_class'] = 'input-file'
             elif controls['_type'] == 'text':
@@ -855,10 +866,9 @@ def formstyle_bootstrap3(form, fields):
                 controls['_class'] = 'checkbox'
 
 
-
         # For password fields, which are wrapped in a CAT object.
         if isinstance(controls, CAT) and isinstance(controls[0], INPUT):
-            controls[0].add_class('col-lg-2')
+            controls[0].add_class(password_label_cls)
 
         if isinstance(controls, SELECT):
             controls.add_class('form-control')
@@ -869,15 +879,15 @@ def formstyle_bootstrap3(form, fields):
         if isinstance(label, LABEL):
             label['_class'] = 'col-lg-2 control-label'
 
-
         if _submit:
             # submit button has unwrapped label and controls, different class
-            parent.append(DIV(label, DIV(controls, _class="col-lg-4 col-lg-offset-2"), _class='form-group', _id=id))
+            parent.append(DIV(label, DIV(controls, _class=submit_div_cls), _class='form-group', _id=id))
             # unflag submit (possible side effect)
             _submit = False
         else:
             # unwrapped label
             parent.append(DIV(label, _controls, _class='form-group', _id=id))
+
     return parent
 
 
