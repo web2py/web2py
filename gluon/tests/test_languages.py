@@ -12,6 +12,9 @@ import tempfile
 import threading
 import logging
 
+def is_gae():
+   import httplib
+   return 'appengine' in str(httplib.HTTP)
 
 def fix_sys_path():
     """
@@ -73,6 +76,8 @@ try:
                 pass
 
         def test_reads_and_writes(self):
+            if is_gae():
+                return # do not check since on GAE not write of filesystem
             readwriters = 10
             pool = multiprocessing.Pool(processes=readwriters)
             results = pool.map(read_write, [[self.filename, 10]] * readwriters)

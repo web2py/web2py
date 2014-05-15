@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 """
-Developed by Massimo Di Pierro, optional component of web2py, GPL2 license.
+Developed by Massimo Di Pierro, optional component of web2py, BSDv3 license.
 """
 
 import re

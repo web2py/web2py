@@ -5,7 +5,7 @@
 This file is part of web2py Web Framework (Copyrighted, 2007-2009).
 Developed by Massimo Di Pierro <mdipierro@cs.depaul.edu> and
 Robin B <robi123@gmail.com>.
-License: GPL v2
+License: LGPLv3
 """
 
 __all__ = ['MEMDB', 'Field']
@@ -294,6 +294,8 @@ class Table(DALStorage):
 
     def __call__(self, id, **kwargs):
         record = self.get(id)
+        if record is None:
+          return None
         if kwargs and any(record[key]!=kwargs[key] for key in kwargs):
             return None
         return record

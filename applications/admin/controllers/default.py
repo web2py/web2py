@@ -1451,10 +1451,11 @@ def editfile(path,file,vars={}, app = None):
 def files_menu():
 	app = request.vars.app or 'welcome'
 	dirs=[{'name':'models', 'reg':'.*\.py$'},
-      	  {'name':'controllers', 'reg':'.*\.py$'},
-      	  {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
-      	  {'name':'modules', 'reg':'.*\.py$'},
-      	  {'name':'static', 'reg': '[^\.#].*'}]
+              {'name':'controllers', 'reg':'.*\.py$'},
+              {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
+              {'name':'modules', 'reg':'.*\.py$'},
+              {'name':'static', 'reg': '[^\.#].*'},
+              {'name':'private', 'reg':'.*\.py$'}]
 	result_files = []
 	for dir in dirs:
 		result_files.append(TAG[''](LI(dir['name'], _class="nav-header component", _onclick="collapse('" + dir['name'] + "_files');"),

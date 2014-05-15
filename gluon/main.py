@@ -97,7 +97,7 @@ from gluon.dal import BaseAdapter
 from gluon.validators import CRYPT
 from gluon.html import URL, xmlescape
 from gluon.utils import is_valid_ip_address, getipaddrinfo
-from gluon.rewrite import load, url_in, THREAD_LOCAL as rwthread, \
+from gluon.rewrite import load as load_routes, url_in, THREAD_LOCAL as rwthread, \
     try_rewrite_on_error, fixup_missing_path_info
 from gluon import newcron
 
@@ -126,7 +126,7 @@ except:
     if not global_settings.web2py_runtime_gae:
         logger.warn('unable to import Rocket')
 
-load()
+load_routes()
 
 HTTPS_SCHEMES = set(('https', 'HTTPS'))
 
@@ -570,7 +570,7 @@ def save_password(password, port):
     if password == '<random>':
         # make up a new password
         chars = string.letters + string.digits
-        password = ''.join([random.choice(chars) for i in range(8)])
+        password = ''.join([random.choice(chars) for _ in range(8)])
         cpassword = CRYPT()(password)[0]
         print '******************* IMPORTANT!!! ************************'
         print 'your admin password is "%s"' % password
@@ -725,7 +725,9 @@ class HttpServer(object):
             web2py_path = path
             global_settings.applications_parent = path
             os.chdir(path)
-            [add_path_first(p) for p in (path, abspath('site-packages'), "")]
+            load_routes()
+            for p in (path, abspath('site-packages'), ""):
+                add_path_first(p)
             if exists("logging.conf"):
                 logging.config.fileConfig("logging.conf")
 

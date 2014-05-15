@@ -3,7 +3,7 @@ DowCommerce class to process credit card payments with DowCommerce.com
 
 Modifications to support Dow Commerce API from code originally written by John Conde
 http://www.johnconde.net/blog/integrate-the-authorizenet-aim-api-with-python-3-2/
-Unknown license, assuming public domain
+BSDv3 License
 
 Modifed by Dave Stoll dave.stoll@gmail.com
 

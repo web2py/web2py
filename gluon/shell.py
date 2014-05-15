@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 
 """
-This file is part of the web2py Web Framework
-Developed by Massimo Di Pierro <mdipierro@cs.depaul.edu>,
-limodou <limodou@gmail.com> and srackham <srackham@gmail.com>.
-License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
+| This file is part of the web2py Web Framework
+| Developed by Massimo Di Pierro <mdipierro@cs.depaul.edu>,
+| limodou <limodou@gmail.com> and srackham <srackham@gmail.com>.
+| License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 
+Web2py environment in the shell
+--------------------------------
 """
 
 import os
@@ -56,17 +58,13 @@ def exec_environment(
     response=None,
     session=None,
 ):
-    """
-    .. function:: gluon.shell.exec_environment([pyfile=''[, request=Request()
-        [, response=Response[, session=Session()]]]])
+    """Environment builder and module loader.
 
-        Environment builder and module loader.
+    Builds a web2py environment and optionally executes a Python file into
+    the environment.
 
-
-        Builds a web2py environment and optionally executes a Python
-        file into the environment.
-        A Storage dictionary containing the resulting environment is returned.
-        The working directory must be web2py root -- this is the web2py default.
+    A Storage dictionary containing the resulting environment is returned.
+    The working directory must be web2py root -- this is the web2py default.
 
     """
 
@@ -103,17 +101,15 @@ def env(
     extra_request={},
 ):
     """
-    Return web2py execution environment for application (a), controller (c),
+    Returns web2py execution environment for application (a), controller (c),
     function (f).
     If import_models is True the exec all application models into the
     environment.
 
-    extra_request allows you to pass along any extra
-    variables to the request object before your models
-    get executed. This was mainly done to support
-    web2py_utils.test_runner, however you can use it
-    with any wrapper scripts that need access to the
-    web2py environment.
+    extra_request allows you to pass along any extra variables to the request
+    object before your models get executed. This was mainly done to support
+    web2py_utils.test_runner, however you can use it with any wrapper scripts
+    that need access to the web2py environment.
     """
 
     request = Request({})
@@ -197,8 +193,8 @@ def run(
     Start interactive shell or run Python script (startfile) in web2py
     controller environment. appname is formatted like:
 
-    a      web2py application name
-    a/c    exec the controller c into the application environment
+    - a : web2py application name
+    - a/c : exec the controller c into the application environment
     """
 
     (a, c, f, args, vars) = parse_path_info(appname, av=True)
@@ -323,8 +319,8 @@ def run(
 
 def parse_path_info(path_info, av=False):
     """
-    Parse path info formatted like a/c/f where c and f are optional
-    and a leading / accepted.
+    Parses path info formatted like a/c/f where c and f are optional
+    and a leading `/` is accepted.
     Return tuple (a, c, f). If invalid path_info a is set to None.
     If c or f are omitted they are set to None.
     If av=True, parse args and vars
@@ -358,9 +354,9 @@ def test(testpath, import_models=True, verbose=False):
     """
     Run doctests in web2py environment. testpath is formatted like:
 
-    a      tests all controllers in application a
-    a/c    tests controller c in application a
-    a/c/f  test function f in controller c, application a
+    - a: tests all controllers in application a
+    - a/c: tests controller c in application a
+    - a/c/f  test function f in controller c, application a
 
     Where a, c and f are application, controller and function names
     respectively. If the testpath is a file name the file is tested.

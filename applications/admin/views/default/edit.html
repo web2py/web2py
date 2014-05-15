@@ -5,7 +5,8 @@ dirs=[{'name':'models', 'reg':'.*\.py$'},
       {'name':'controllers', 'reg':'.*\.py$'},
       {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
       {'name':'modules', 'reg':'.*\.py$'},
-      {'name':'static', 'reg': '[^\.#].*'}]
+      {'name':'static', 'reg': '[^\.#].*'},
+      {'name':'private', 'reg':'.*\.py$'}]
    
 def file_create_form(location, anchor=None, helptext=""):
     form=FORM(

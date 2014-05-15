@@ -7,6 +7,13 @@ It is written and programmable in Python. LGPLv3 License
 Learn more at http://web2py.com
 
 
+## Google App Engine deployment
+
+    cp examples/app.yaml ./
+    cp handlers/gaehandler.py ./
+    
+Then edit ./app.yaml and replace "yourappname" with yourappname.
+
 ## Tests
 
 [![Build Status](https://travis-ci.org/web2py/web2py.png)](https://travis-ci.org/web2py/web2py)
