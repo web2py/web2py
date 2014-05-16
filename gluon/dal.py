@@ -10692,7 +10692,7 @@ class Set(object):
         for key, value in update_fields.iteritems():
             value, error = self.db[tablename][key].validate(value)
             if error:
-                response.errors[key] = error
+                response.errors[key] = '%s' % error
             else:
                 new_fields[key] = value
         table = self.db[tablename]
