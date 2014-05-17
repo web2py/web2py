@@ -348,7 +348,7 @@ class Request(Storage):
                 rest_action = _action().get(method, None)
                 if not (rest_action and method == method.upper()
                         and callable(rest_action)):
-                    raise HTTP(400, "method not supported")
+                    raise HTTP(405, "method not allowed")
                 try:
                     return rest_action(*_self.args, **getattr(_self, 'vars', {}))
                 except TypeError, e:
