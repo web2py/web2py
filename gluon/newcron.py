@@ -48,7 +48,13 @@ def stopcron():
     global _cron_stopping
     _cron_stopping = True
     while _cron_subprocs:
-        _cron_subprocs.pop().terminate()
+        proc = _cron_subprocs.pop()
+        if proc.poll() is None:
+            try:
+                proc.terminate()
+            except:
+                import traceback
+                traceback.print_exc()
 
 class extcron(threading.Thread):
 
