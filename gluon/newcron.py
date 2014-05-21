@@ -320,8 +320,8 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
             w2p_path = fileutils.abspath('web2py.py', gluon=True)
             if os.path.exists(w2p_path):
                 commands.append(w2p_path)
-            if global_settings.applications_parent != global_settings.gluon_parent:
-                commands.extend(('-f', global_settings.applications_parent))
+            if applications_parent != global_settings.gluon_parent:
+                commands.extend(('-f', applications_parent))
             citems = [(k in task and not v in task[k]) for k, v in checks]
             task_min = task.get('min', [])
             if not task:
