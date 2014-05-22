@@ -48,7 +48,13 @@ def stopcron():
     global _cron_stopping
     _cron_stopping = True
     while _cron_subprocs:
-        _cron_subprocs.pop().terminate()
+        proc = _cron_subprocs.pop()
+        if proc.poll() is None:
+            try:
+                proc.terminate()
+            except:
+                import traceback
+                traceback.print_exc()
 
 class extcron(threading.Thread):
 
@@ -254,7 +260,10 @@ class cronlauncher(threading.Thread):
                                 shell=self.shell)
         _cron_subprocs.append(proc)
         (stdoutdata, stderrdata) = proc.communicate()
-        _cron_subprocs.remove(proc)
+        try:
+            _cron_subprocs.remove(proc)
+        except ValueError:
+            pass
         if proc.returncode != 0:
             logger.warning(
                 'WEB2PY CRON Call returned code %s:\n%s' %
@@ -320,8 +329,8 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
             w2p_path = fileutils.abspath('web2py.py', gluon=True)
             if os.path.exists(w2p_path):
                 commands.append(w2p_path)
-            if global_settings.applications_parent != global_settings.gluon_parent:
-                commands.extend(('-f', global_settings.applications_parent))
+            if applications_parent != global_settings.gluon_parent:
+                commands.extend(('-f', applications_parent))
             citems = [(k in task and not v in task[k]) for k, v in checks]
             task_min = task.get('min', [])
             if not task:
