@@ -58,8 +58,16 @@ def pyfpdf_from_html(html):
         pass
     pdf = MyFPDF()
     pdf.add_page()
+    # pyfpdf needs some attributes to render the table correctly:
     html = sanitize(
-        html, escape=False)  # should have better list of allowed tags
+        html, allowed_attributes={
+            'a': ['href', 'title'],
+            'img': ['src', 'alt'],
+            'blockquote': ['type'],
+            'td': ['align', 'bgcolor', 'colspan', 'height', 'width'],
+            'tr': ['bgcolor', 'height', 'width'],
+            'table': ['border', 'bgcolor', 'height', 'width'],
+        }, escape=False)
     pdf.write_html(html, image_map=image_map)
     return XML(pdf.output(dest='S'))
 
