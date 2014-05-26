@@ -83,9 +83,7 @@ import optparse
 import urllib
 import time
 
-listeners = {}
-names = {}
-tokens = {}
+listeners, names, tokens = {}, {}, {}
 
 
 def websocket_send(url, message, hmac_key=None, group='default'):
