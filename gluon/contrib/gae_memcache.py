@@ -21,6 +21,9 @@ class MemcacheClient(object):
         self.request = request
         self.default_time_expire = default_time_expire
 
+    def initialize(self):
+        pass
+
     def __call__(
         self,
         key,
