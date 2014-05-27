@@ -5862,8 +5862,8 @@ class MongoDBAdapter(NoSQLAdapter):
         elif field_type:
             result = self.represent(expression, field_type)
         elif isinstance(expression, (list, tuple)):
-            result = ','.join(self.represent(item, field_type) for
-                              item in expression)
+            result = [self.represent(item, field_type) for
+                              item in expression]
         else:
             result = expression
         return result
