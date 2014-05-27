@@ -2004,7 +2004,7 @@ class SQLFORM(FORM):
                          delete=delete,
                          noconfirm=noconfirm,
                          _title=title or T(buttontext),
-                         _class=ui.get('buttontext'),
+                         _class=ui.get('button'),
                          cid=request.cid)
 
         dbset = db(query, ignore_common_filters=ignore_common_filters)
