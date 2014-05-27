@@ -125,6 +125,7 @@ class CacheAbstract(object):
         for (key, value) in storage.items():
             if r.match(str(key)):
                 del storage[key]
+                break
 
 
 class CacheInRam(CacheAbstract):
