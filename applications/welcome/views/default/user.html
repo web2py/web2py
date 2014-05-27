@@ -3,7 +3,7 @@
 <h2>{{=T( request.args(0).replace('_',' ').capitalize() )}}</h2>
 <div id="web2py_user_form">
 {{
-if request.args(0)=='login':
+if request.args(0)=='login' and not session.auth_2_factor_user:
     if not 'register' in auth.settings.actions_disabled:
         form.add_button(T('Register'),URL(args='register', vars={'_next': request.vars._next} if request.vars._next else None),_class='btn')
     pass
