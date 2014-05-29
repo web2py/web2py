@@ -197,8 +197,9 @@ class RestrictedError(Exception):
 
 def compile2(code, layer):
     """
-    The +'\n' is necessary else compile fails when code ends in a comment.
+    The ``+'\\n'`` is necessary else compile fails when code ends in a comment.
     """
+
     return compile(code.rstrip().replace('\r\n', '\n') + '\n', layer, 'exec')
 
 
