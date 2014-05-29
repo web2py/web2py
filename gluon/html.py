@@ -307,6 +307,13 @@ def URL(
         # if the url gets a static resource, don't force extention
         if controller == 'static':
             extension = None
+            # add static version to url
+            from globals import current
+            if hasattr(current, 'response'):
+                response = current.response
+                if response.static_version and response.static_version_urls:
+                    args = [function] + args
+                    function = '_'+str(response.static_version)
 
         if '.' in function:
             function, extension = function.rsplit('.', 1)
