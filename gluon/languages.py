@@ -324,8 +324,8 @@ def write_dict(filename, contents):
     try:
         fp = LockedFile(filename, 'w')
         fp.write('# -*- coding: utf-8 -*-\n{\n')
-        for key in sorted(contents, sort_function):                          
-            fp.write('%s: %s,\n' % (repr(Utf8(key)), 
+        for key in sorted(contents, sort_function):
+            fp.write('%s: %s,\n' % (repr(Utf8(key)),
                                     repr(Utf8(contents[key]))))
         fp.write('}\n')
     except (IOError, OSError):
@@ -558,18 +558,19 @@ class translator(object):
         self.force(self.http_accept_language)
 
     def plural(self, word, n):
-        """ Gets plural form of word for number *n*
-            invoked from T()/T.M() in `%%{}` tag
+        """
+        Gets plural form of word for number *n*
+        invoked from T()/T.M() in `%%{}` tag
 
-            Args:
-                word (str): word in singular
-                n (numeric): number plural form created for
+        Note:
+            "word" MUST be defined in current language (T.accepted_language)
 
-            Returns:
-                word (str): word in appropriate singular/plural form
+        Args:
+            word (str): word in singular
+            n (numeric): number plural form created for
 
-            Note:
-                "word" MUST be defined in current language (T.accepted_language)
+        Returns:
+            word (str): word in appropriate singular/plural form
 
         """
         if int(n) == 1:
