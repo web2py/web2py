@@ -63,6 +63,12 @@ def startwebserver():
     for a in range(1,11):
         time.sleep(1)
         print a, '...'
+        try:
+            c = WebClient('http://127.0.0.1:8000')
+            c.get('/')
+            break
+        except:
+            continue
     print ''
 
 def terminate_process(pid):
@@ -176,7 +182,7 @@ class TestWeb(LiveTest):
         # check internal server error returned (issue 153)
         assert(s.status == 500)
         assert(s.text == xml_response)
-        
+
 
 if __name__ == '__main__':
     unittest.main()
