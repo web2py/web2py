@@ -42,18 +42,21 @@ except ImportError:
 
 import hmac
 
-try:
+import hashlib
+
+if hasattr(hashlib, "pbkdf2_hmac"):
+    def pbkdf2_hex(data, salt, iterations=1000, keylen=24, hashfunc=None):
+        hashfunc = hashfunc or sha1
+        return hashlib.pbkdf2_hmac(hashfunc().name,
+                           data, salt, iterations,
+                           keylen).encode("hex")
+
+else:
     try:
         from gluon.contrib.pbkdf2_ctypes import pbkdf2_hex
     except (ImportError, AttributeError):
         from gluon.contrib.pbkdf2 import pbkdf2_hex
-    HAVE_PBKDF2 = True
-except ImportError:
-    try:
-        from .pbkdf2 import pbkdf2_hex
-        HAVE_PBKDF2 = True
-    except (ImportError, ValueError):
-        HAVE_PBKDF2 = False
+
 
 logger = logging.getLogger("web2py")
 
