@@ -998,6 +998,7 @@ class Auth(object):
         retrieve_username_captcha=None,
         retrieve_password_captcha=None,
         captcha=None,
+        prevent_open_redirects=True,
         expiration=3600,            # one hour
         long_expiration=3600 * 30 * 24,  # one month
         remember_me_form=True,
@@ -2327,6 +2328,10 @@ class Auth(object):
 
         ### use session for federated login
         snext = self.get_vars_next()
+        if snext and self.settings.prevent_open_redirects:
+            if not snext.split('/')[2] == request.env.http_host:
+                snext = None
+                
         if snext:
             session._auth_next = snext
         elif session._auth_next:
