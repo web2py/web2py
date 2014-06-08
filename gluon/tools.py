@@ -998,7 +998,8 @@ class Auth(object):
         retrieve_username_captcha=None,
         retrieve_password_captcha=None,
         captcha=None,
-        prevent_open_redirects=True,
+        prevent_open_redirect_attacks=True,
+        prevent_password_reset_attacks=True,
         expiration=3600,            # one hour
         long_expiration=3600 * 30 * 24,  # one month
         remember_me_form=True,
@@ -2328,7 +2329,7 @@ class Auth(object):
 
         ### use session for federated login
         snext = self.get_vars_next()
-        if snext and self.settings.prevent_open_redirects:
+        if snext and self.settings.prevent_open_redirect_attacks:
             if not snext.split('/')[2] == request.env.http_host:
                 snext = None
                 
@@ -3038,8 +3039,19 @@ class Auth(object):
 
         if next is DEFAULT:
             next = self.get_vars_next() or self.settings.reset_password_next
-        try:
+
+        if self.settings.prevent_password_reset_attacks:
+            key = request.vars.key
+            if not key and len(request.args)>1:
+                key = request.args[-1]
+            if key:
+                session._reset_password_key = key
+                redirect(self.url(args='reset_password'))
+            else:
+                key = session._reset_password_key
+        else:
             key = request.vars.key or getarg(-1)
+        try:
             t0 = int(key.split('-')[0])
             if time.time() - t0 > 60 * 60 * 24:
                 raise Exception
