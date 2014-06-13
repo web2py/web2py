@@ -2666,6 +2666,10 @@ class MySQLAdapter(BaseAdapter):
         return '(%s REGEXP %s)' % (self.expand(first),
                                    self.expand(second, 'string'))
 
+    def CAST(self, first, second):
+        if second=='LONGTEXT': second = 'CHAR'
+        return 'CAST(%s AS %s)' % (first, second)
+
     def _drop(self, table, mode):
         # breaks db integrity but without this mysql does not drop table
         table_rname = table.sqlsafe
