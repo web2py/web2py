@@ -1399,12 +1399,13 @@ class BaseAdapter(ConnectionPool):
 
     def LIKE(self, first, second):
         """Case sensitive like operator"""
-        raise NotImplementedError
+        return '(%s LIKE %s)' % (self.expand(first),
+                                 self.expand(second, 'string'))
 
     def ILIKE(self, first, second):
         """Case insensitive like operator"""
-        return '(%s LIKE %s)' % (self.expand(first),
-                                 self.expand(second, 'string'))
+        return '(LOWER(%s) LIKE %s)' % (self.expand(first),
+                                 self.expand(second, 'string').lower())
 
     def STARTSWITH(self, first, second):
         return '(%s LIKE %s)' % (self.expand(first),
@@ -1414,7 +1415,7 @@ class BaseAdapter(ConnectionPool):
         return '(%s LIKE %s)' % (self.expand(first),
                                  self.expand('%'+second, 'string'))
 
-    def CONTAINS(self, first, second, case_sensitive=False):
+    def CONTAINS(self, first, second, case_sensitive=True):
         if first.type in ('string', 'text', 'json'):
             if isinstance(second, Expression):
                 second = Expression(None, self.CONCAT('%', Expression(
@@ -2920,11 +2921,11 @@ class PostgreSQLAdapter(BaseAdapter):
                               self.expand(second, 'string'))
 
     def STARTSWITH(self, first, second):
-        return '(%s ILIKE %s)' % (self.expand(first),
+        return '(%s LIKE %s)' % (self.expand(first),
                                   self.expand(second+'%', 'string'))
 
     def ENDSWITH(self, first, second):
-        return '(%s ILIKE %s)' % (self.expand(first),
+        return '(%s LIKE %s)' % (self.expand(first),
                                   self.expand('%'+second, 'string'))
 
     # GIS functions
@@ -9735,7 +9736,7 @@ class Expression(object):
         db = self.db
         return Query(db, db._adapter.GE, self, value)
 
-    def like(self, value, case_sensitive=False):
+    def like(self, value, case_sensitive=True):
         db = self.db
         op = case_sensitive and db._adapter.LIKE or db._adapter.ILIKE
         return Query(db, op, self, value)
