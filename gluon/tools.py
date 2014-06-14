@@ -2330,7 +2330,8 @@ class Auth(object):
         ### use session for federated login
         snext = self.get_vars_next()
         if snext and self.settings.prevent_open_redirect_attacks:
-            if not snext.split('/')[2] == request.env.http_host:
+            items = snext.split('/')
+            if len(items)<2 or not items[2] == request.env.http_host:
                 snext = None
                 
         if snext:
