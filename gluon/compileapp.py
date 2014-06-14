@@ -532,7 +532,7 @@ def run_models_in(environment):
 
     folder = environment['request'].folder
     c = environment['request'].controller
-    f = environment['request'].function
+    #f = environment['request'].function
     response = environment['response']
 
     path = pjoin(folder, 'models')

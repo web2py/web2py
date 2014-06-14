@@ -1641,7 +1641,6 @@ class SQLFORM(FORM):
 
     @staticmethod
     def smartdictform(session, name, filename=None, query=None, **kwargs):
-        import os
         if query:
             session[name] = query.db(query).select().first().as_dict()
         elif os.path.exists(filename):

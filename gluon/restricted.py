@@ -236,8 +236,6 @@ def restricted(code, environment=None, layer='Unknown'):
 
 def snapshot(info=None, context=5, code=None, environment=None):
     """Return a dict describing a given traceback (based on cgitb.text)."""
-    import os
-    import types
     import time
     import linecache
     import inspect
