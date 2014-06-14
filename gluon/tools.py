@@ -2331,7 +2331,7 @@ class Auth(object):
         snext = self.get_vars_next()
         if snext and self.settings.prevent_open_redirect_attacks:
             items = snext.split('/')
-            if len(items)<2 or not items[2] == request.env.http_host:
+            if len(items)<3 or not items[2] == request.env.http_host:
                 snext = None
                 
         if snext:
