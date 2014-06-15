@@ -1120,7 +1120,7 @@ class Scheduler(MetaScheduler):
                    (ws.group_names.contains(group)) &
                    (~ws.status.belongs(exclusion))
                     )._select(ws.id, limitby=(0,limit))
-                print self.db(ws.id.belongs(workers)).update(status=action)
+                self.db(ws.id.belongs(workers)).update(status=action)
 
     def disable(self, group_names=None, limit=None):
         """Sets DISABLED on the workers processing `group_names` tasks.
