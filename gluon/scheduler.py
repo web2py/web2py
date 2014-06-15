@@ -64,6 +64,7 @@ respawn
 sudo start web2py-scheduler
 sudo stop web2py-scheduler
 sudo restart web2py-scheduler
+sudo restart web2py-scheduler
 sudo status web2py-scheduler
 """
 
@@ -657,7 +658,8 @@ class Scheduler(MetaScheduler):
                     self.w_stats.status = RUNNING
                     self.w_stats.total += 1
                     self.wrapped_report_task(task, self.async(task))
-                    self.w_stats.status = ACTIVE
+                    if not self.w_stats.status == DISABLED:
+                        self.w_stats.status = ACTIVE
                 else:
                     self.w_stats.empty_runs += 1
                     logger.debug('sleeping...')
