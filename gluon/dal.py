@@ -7315,13 +7315,13 @@ def sqlhtml_validators(field):
     def ff(r, id):
         row = r(id)
         if not row:
-            return id
+            return str(id)
         elif hasattr(r, '_format') and isinstance(r._format, str):
             return r._format % row
         elif hasattr(r, '_format') and callable(r._format):
             return r._format(row)
         else:
-            return id
+            return str(id)
     if field_type in (('string', 'text', 'password')):
         requires.append(validators.IS_LENGTH(field_length))
     elif field_type == 'json':
