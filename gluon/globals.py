@@ -428,9 +428,13 @@ class Response(Storage):
         return page
 
     def include_meta(self):
-        s = '\n'.join(
-            '<meta name="%s" content="%s" />\n' % (k, xmlescape(v))
-            for k, v in (self.meta or {}).iteritems())
+        s = "\n";
+        for meta in (self.meta or {}).iteritems():
+            k,v = meta
+            if isinstance(v,dict):
+                s = s+'<meta'+''.join(' %s="%s"' % (xmlescape(key), xmlescape(v[key])) for key in v) +' />\n'
+            else:
+                s = s+'<meta name="%s" content="%s" />\n' % (k, xmlescape(v))
         self.write(s, escape=False)
 
     def include_files(self, extensions=None):
