@@ -2,11 +2,12 @@
 # -*- coding: utf-8 -*-
 
 """
-This file is part of the web2py Web Framework
-Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
-License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
+| This file is part of the web2py Web Framework
+| Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
+| License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 
-The widget is called from web2py.
+The widget is called from web2py
+----------------------------------
 """
 
 import datetime
@@ -140,7 +141,7 @@ class web2pyDialog(object):
 
         bg_color = 'white'
         root.withdraw()
-        
+
         self.root = Tkinter.Toplevel(root, bg=bg_color)
         self.root.resizable(0,0)
         self.root.title(ProgramName)
@@ -224,8 +225,8 @@ class web2pyDialog(object):
                       text=str(ProgramVersion + "\n" + ProgramAuthor),
                       font=('Helvetica', 11), justify=Tkinter.CENTER,
                       foreground='#195866', background=bg_color,
-                      height=3).pack( side='top', 
-                                      fill='both', 
+                      height=3).pack( side='top',
+                                      fill='both',
                                       expand='yes')
 
         self.bannerarea.after(1000, self.update_canvas)
@@ -245,7 +246,7 @@ class web2pyDialog(object):
             [('0.0.0.0', 'Public')]
         for ip, legend in ips:
             self.ips[ip] = Tkinter.Radiobutton(
-                self.root, bg=bg_color, highlightthickness=0, 
+                self.root, bg=bg_color, highlightthickness=0,
                 selectcolor='light grey', width=30,
                 anchor=Tkinter.W, text='%s (%s)' % (legend, ip),
                 justify=Tkinter.LEFT,
@@ -379,7 +380,7 @@ class web2pyDialog(object):
             t.start()
 
     def checkTaskBar(self):
-        """ Check taskbar status """
+        """ Checks taskbar status """
 
         if self.tb.status:
             if self.tb.status[0] == self.tb.EnumStatus.QUIT:
@@ -401,7 +402,7 @@ class web2pyDialog(object):
         self.root.after(1000, self.checkTaskBar)
 
     def update(self, text):
-        """ Update app text """
+        """ Updates app text """
 
         try:
             self.text.configure(state='normal')
@@ -411,7 +412,7 @@ class web2pyDialog(object):
             pass  # ## this should only happen in case app is destroyed
 
     def connect_pages(self):
-        """ Connect pages """
+        """ Connects pages """
         #reset the menu
         available_apps = [arq for arq in os.listdir('applications/')
                           if os.path.exists(
@@ -423,7 +424,7 @@ class web2pyDialog(object):
                 label=url, command=lambda u=url: start_browser(u))
 
     def quit(self, justHide=False):
-        """ Finish the program execution """
+        """ Finishes the program execution """
         if justHide:
             self.root.withdraw()
         else:
@@ -450,13 +451,13 @@ class web2pyDialog(object):
             sys.exit(0)
 
     def error(self, message):
-        """ Show error message """
+        """ Shows error message """
 
         import tkMessageBox
         tkMessageBox.showerror('web2py start server', message)
 
     def start(self):
-        """ Start web2py server """
+        """ Starts web2py server """
 
         password = self.password.get()
 
@@ -536,7 +537,7 @@ class web2pyDialog(object):
         return False
 
     def stop(self):
-        """ Stop web2py server """
+        """ Stops web2py server """
 
         self.button_start.configure(state='normal')
         self.button_stop.configure(state='disabled')
@@ -549,7 +550,7 @@ class web2pyDialog(object):
             self.tb.SetServerStopped()
 
     def update_canvas(self):
-        """ Update canvas """
+        """ Updates canvas """
 
         try:
             t1 = os.path.getsize('httpserver.log')
@@ -616,6 +617,12 @@ def console():
                       dest='port',
                       type='int',
                       help='port of server (8000)')
+
+    parser.add_option('-G',
+                      '--GAE',
+                      default=None,
+                      dest='gae',
+                      help="'-G configure' will create app.yaml and gaehandler.py")
 
     msg = ('password to be used for administration '
            '(use -a "<recycle>" to reuse the last password))')
@@ -922,6 +929,20 @@ def console():
     global_settings.cmd_options = options
     global_settings.cmd_args = args
 
+    if options.gae:
+        if not os.path.exists('app.yaml'):
+            name = raw_input("Your GAE app name: ")
+            content = open(os.path.join('examples','app.example.yaml'),'rb').read()
+            open('app.yaml','wb').write(content.replace("yourappname",name))
+        else:
+            print "app.yaml alreday exists in the web2py folder"
+        if not os.path.exists('gaehandler.py'):
+            content = open(os.path.join('handlers','gaehandler.py'),'rb').read()
+            open('gaehandler.py','wb').write(content)
+        else:
+            print "gaehandler.py alreday exists in the web2py folder"
+        sys.exit(0)
+
     try:
         options.ips = list(set( # no duplicates
             [addrinfo[4][0] for addrinfo in getipaddrinfo(socket.getfqdn())
@@ -1054,7 +1075,7 @@ def start_schedulers(options):
 
 
 def start(cron=True):
-    """ Start server  """
+    """ Starts server  """
 
     # ## get command line arguments
 
@@ -1098,6 +1119,8 @@ def start(cron=True):
 
     # ## if -S start interactive shell (also no cron)
     if options.shell:
+        if options.folder:
+            os.chdir(options.folder)
         if not options.args is None:
             sys.argv[:] = options.args
         run(options.shell, plain=options.plain, bpython=options.bpython,

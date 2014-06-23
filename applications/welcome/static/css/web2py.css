@@ -302,6 +302,11 @@ li.w2p_grid_breadcrumb_elem {
 .web2py_console input, .web2py_console select,
 .web2py_console a { margin: 2px; }
 
+.web2py_htmltable {
+   width: 100%;
+   overflow-x: auto;
+   -ms-overflow-x:scroll;
+}
 
 #wiki_page_body {
    width: 600px;

@@ -197,8 +197,9 @@ class RestrictedError(Exception):
 
 def compile2(code, layer):
     """
-    The +'\n' is necessary else compile fails when code ends in a comment.
+    The ``+'\\n'`` is necessary else compile fails when code ends in a comment.
     """
+
     return compile(code.rstrip().replace('\r\n', '\n') + '\n', layer, 'exec')
 
 
@@ -235,8 +236,6 @@ def restricted(code, environment=None, layer='Unknown'):
 
 def snapshot(info=None, context=5, code=None, environment=None):
     """Return a dict describing a given traceback (based on cgitb.text)."""
-    import os
-    import types
     import time
     import linecache
     import inspect

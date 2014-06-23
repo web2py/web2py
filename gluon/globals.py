@@ -39,6 +39,7 @@ import sys
 import traceback
 import threading
 import cgi
+import urlparse
 import copy
 import tempfile
 from gluon.cache import CacheInRam
@@ -55,12 +56,12 @@ except ImportError:
     have_minify = False
 
 try:
-    import simplejson as sj #external installed library
+    import simplejson as sj  # external installed library
 except:
     try:
-        import json as sj #standard installed library
+        import json as sj  # standard installed library
     except:
-        import gluon.contrib.simplejson as sj #pure python library
+        import gluon.contrib.simplejson as sj  # pure python library
 
 regex_session_id = re.compile('^([\w\-]+/)?[\w\-\.]+$')
 
@@ -76,6 +77,7 @@ less_template = '<link href="%s" rel="stylesheet/less" type="text/css" />'
 css_inline = '<style type="text/css">\n%s\n</style>'
 js_inline = '<script type="text/javascript">\n%s\n</script>'
 
+
 # IMPORTANT:
 # this is required so that pickled dict(s) and class.__dict__
 # are sorted and web2py can detect without ambiguity when a session changes
@@ -83,16 +85,18 @@ class SortingPickler(Pickler):
     def save_dict(self, obj):
         self.write(EMPTY_DICT if self.bin else MARK+DICT)
         self.memoize(obj)
-        self._batch_setitems([(key,obj[key]) for key in sorted(obj)])
+        self._batch_setitems([(key, obj[key]) for key in sorted(obj)])
 
 SortingPickler.dispatch = copy.copy(Pickler.dispatch)
 SortingPickler.dispatch[DictionaryType] = SortingPickler.save_dict
+
 
 def sorting_dumps(obj, protocol=None):
     file = cStringIO.StringIO()
     SortingPickler(file, protocol).dump(obj)
     return file.getvalue()
 # END #####################################################################
+
 
 def copystream_progress(request, chunk_size=10 ** 5):
     """
@@ -108,9 +112,9 @@ def copystream_progress(request, chunk_size=10 ** 5):
         size = int(env['CONTENT_LENGTH'])
     except ValueError:
         raise HTTP(400, "Invalid Content-Length header")
-    try: # Android requires this
+    try:  # Android requires this
         dest = tempfile.NamedTemporaryFile()
-    except NotImplementedError: # and GAE this
+    except NotImplementedError:  # and GAE this
         dest = tempfile.TemporaryFile()
     if not 'X-Progress-ID' in request.get_vars:
         copystream(source, dest, size, chunk_size)
@@ -139,6 +143,7 @@ def copystream_progress(request, chunk_size=10 ** 5):
     cache_ram(cache_key + ':length', None)
     cache_ram(cache_key + ':uploaded', None)
     return dest
+
 
 class Request(Storage):
 
@@ -184,15 +189,14 @@ class Request(Storage):
         self.is_local = False
         self.global_settings = settings.global_settings
 
-
     def parse_get_vars(self):
         """Takes the QUERY_STRING and unpacks it to get_vars
         """
-        query_string = self.env.get('QUERY_STRING','')
-        dget = cgi.parse_qs(query_string, keep_blank_values=1)
+        query_string = self.env.get('QUERY_STRING', '')        
+        dget = urlparse.parse_qs(query_string, keep_blank_values=1)  # Ref: https://docs.python.org/2/library/cgi.html#cgi.parse_qs
         get_vars = self._get_vars = Storage(dget)
         for (key, value) in get_vars.iteritems():
-            if isinstance(value,list) and len(value)==1:
+            if isinstance(value, list) and len(value) == 1:
                 get_vars[key] = value[0]
 
     def parse_post_vars(self):
@@ -221,7 +225,7 @@ class Request(Storage):
         # parse POST variables on POST, PUT, BOTH only in post_vars
         if (body and not is_json
             and env.request_method in ('POST', 'PUT', 'DELETE', 'BOTH')):
-            query_string = env.pop('QUERY_STRING',None)
+            query_string = env.pop('QUERY_STRING', None)
             dpost = cgi.FieldStorage(fp=body, environ=env, keep_blank_values=1)
             try:
                 post_vars.update(dpost)
@@ -264,13 +268,13 @@ class Request(Storage):
         """Merges get_vars and post_vars to vars
         """
         self._vars = copy.copy(self.get_vars)
-        for key,value in self.post_vars.iteritems():
+        for key, value in self.post_vars.iteritems():
             if not key in self._vars:
                 self._vars[key] = value
             else:
-                if not isinstance(self._vars[key],list):
+                if not isinstance(self._vars[key], list):
                     self._vars[key] = [self._vars[key]]
-                self._vars[key] += value if isinstance(value,list) else [value]
+                self._vars[key] += value if isinstance(value, list) else [value]
 
     @property
     def get_vars(self):
@@ -326,7 +330,7 @@ class Request(Storage):
         #checking if this is called within the scheduler or within the shell
         #in addition to checking if it's not a cronjob
         if ((cmd_opts and (cmd_opts.shell or cmd_opts.scheduler))
-            or global_settings.cronjob or self.is_https):
+                or global_settings.cronjob or self.is_https):
             current.session.secure()
         else:
             current.session.forget()
@@ -342,17 +346,17 @@ class Request(Storage):
                     current.response.headers['Content-Type'] = \
                         contenttype('.' + _self.extension.lower())
                 rest_action = _action().get(method, None)
-                if not (rest_action and method==method.upper() 
+                if not (rest_action and method == method.upper()
                         and callable(rest_action)):
-                    raise HTTP(400, "method not supported")
+                    raise HTTP(405, "method not allowed")
                 try:
-                    return rest_action(*_self.args, **getattr(_self,'vars',{}))
+                    return rest_action(*_self.args, **getattr(_self, 'vars', {}))
                 except TypeError, e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
                     if len(traceback.extract_tb(exc_traceback)) == 1:
                         raise HTTP(400, "invalid arguments")
                     else:
-                        raise e
+                        raise
             f.__doc__ = action.__doc__
             f.__name__ = action.__name__
             return f
@@ -497,14 +501,13 @@ class Response(Storage):
                     s += js_inline % item[1]
         self.write(s, escape=False)
 
-    def stream(
-        self,
-        stream,
-        chunk_size=DEFAULT_CHUNK_SIZE,
-        request=None,
-        attachment=False,
-        filename=None
-        ):
+    def stream(self,
+               stream,
+               chunk_size=DEFAULT_CHUNK_SIZE,
+               request=None,
+               attachment=False,
+               filename=None
+               ):
         """
         If in a controller function::
 
@@ -598,16 +601,16 @@ class Response(Storage):
         except AttributeError:
             raise HTTP(404)
         try:
-            (filename, stream) = field.retrieve(name,nameonly=True)
+            (filename, stream) = field.retrieve(name, nameonly=True)
         except IOError:
             raise HTTP(404)
         headers = self.headers
         headers['Content-Type'] = contenttype(name)
-        if download_filename == None:
+        if download_filename is None:
             download_filename = filename
         if attachment:
             headers['Content-Disposition'] = \
-                'attachment; filename="%s"' % download_filename.replace('"','\"')
+                'attachment; filename="%s"' % download_filename.replace('"', '\"')
         return self.stream(stream, chunk_size=chunk_size, request=request)
 
     def json(self, data, default=None):
@@ -645,10 +648,9 @@ class Response(Storage):
         dbstats = []
         dbtables = {}
         infos = DAL.get_instances()
-        for k,v in infos.iteritems():
-            dbstats.append(TABLE(*[TR(PRE(row[0]),'%.2fms' %
-                                          (row[1]*1000))
-                                           for row in v['dbstats']]))
+        for k, v in infos.iteritems():
+            dbstats.append(TABLE(*[TR(PRE(row[0]), '%.2fms' % (row[1]*1000))
+                                   for row in v['dbstats']]))
             dbtables[k] = dict(defined=v['dbtables']['defined'] or '[no defined tables]',
                                lazy=v['dbtables']['lazy'] or '[no lazy tables]')
         u = web2py_uuid()
@@ -657,8 +659,8 @@ class Response(Storage):
         # will be displayed in the toolbar.
         request = copy.copy(current.request)
         request.update(vars=current.request.vars,
-            get_vars=current.request.get_vars,
-            post_vars=current.request.post_vars)
+                       get_vars=current.request.get_vars,
+                       post_vars=current.request.post_vars)
         return DIV(
             BUTTON('design', _onclick="document.location='%s'" % admin),
             BUTTON('request',
@@ -717,20 +719,19 @@ class Session(Storage):
     - session_filename
     """
 
-    def connect(
-        self,
-        request=None,
-        response=None,
-        db=None,
-        tablename='web2py_session',
-        masterapp=None,
-        migrate=True,
-        separate=None,
-        check_client=False,
-        cookie_key=None,
-        cookie_expires=None,
-        compression_level=None
-    ):
+    def connect(self,
+                request=None,
+                response=None,
+                db=None,
+                tablename='web2py_session',
+                masterapp=None,
+                migrate=True,
+                separate=None,
+                check_client=False,
+                cookie_key=None,
+                cookie_expires=None,
+                compression_level=None
+                ):
         """
         Used in models, allows to customize Session handling
 
@@ -785,8 +786,8 @@ class Session(Storage):
             # why do we do this?
             # because connect may be called twice, by web2py and in models.
             # the first time there is no db yet so it should do nothing
-            if (global_settings.db_sessions is True or
-                masterapp in global_settings.db_sessions):
+            if (global_settings.db_sessions is True
+                    or masterapp in global_settings.db_sessions):
                 return
 
         if response.session_storage_type == 'cookie':
@@ -875,7 +876,7 @@ class Session(Storage):
                 try:
                     (record_id, unique_key) = response.session_id.split(':')
                     record_id = long(record_id)
-                except (TypeError,ValueError):
+                except (TypeError, ValueError):
                     record_id = None
 
                 # Select from database
@@ -908,7 +909,7 @@ class Session(Storage):
         # yet cookie may be reset later
         #   Removed comparison between old and new session ids - should send
         #    the cookie all the time
-        if isinstance(response.session_id,str):
+        if isinstance(response.session_id, str):
             response.cookies[response.session_id_name] = response.session_id
             response.cookies[response.session_id_name]['path'] = '/'
             if cookie_expires:
@@ -920,7 +921,6 @@ class Session(Storage):
 
         if self.flash:
             (response.flash, self.flash) = (self.flash, None)
-
 
     def renew(self, clear_session=False):
 
@@ -941,7 +941,7 @@ class Session(Storage):
             self._close(response)
             uuid = web2py_uuid()
             response.session_id = '%s-%s' % (response.session_client, uuid)
-            separate = (lambda s: s[-2:]) if session and response.session_id[2:3]=="/" else None
+            separate = (lambda s: s[-2:]) if session and response.session_id[2:3] == "/" else None
             if separate:
                 prefix = separate(response.session_id)
                 response.session_id = '%s/%s' % \
@@ -965,11 +965,11 @@ class Session(Storage):
                 return
             (record_id, sep, unique_key) = response.session_id.partition(':')
 
-            if record_id.isdigit() and long(record_id)>0:
+            if record_id.isdigit() and long(record_id) > 0:
                 new_unique_key = web2py_uuid()
                 row = table(record_id)
-                if row and row.unique_key==unique_key:
-                    table._db(table.id==record_id).update(unique_key=new_unique_key)
+                if row and row.unique_key == unique_key:
+                    table._db(table.id == record_id).update(unique_key=new_unique_key)
                 else:
                     record_id = None
             if record_id:
@@ -1022,7 +1022,7 @@ class Session(Storage):
             rcookies[response.session_id_name] = response.session_id
             rcookies[response.session_id_name]['path'] = '/'
             expires = response.session_cookie_expires
-            if isinstance(expires,datetime.datetime):
+            if isinstance(expires, datetime.datetime):
                 expires = expires.strftime(FMT)
             if expires:
                 rcookies[response.session_id_name]['expires'] = expires
@@ -1068,13 +1068,13 @@ class Session(Storage):
         rcookies[name] = value
         rcookies[name]['path'] = '/'
         expires = response.session_cookie_expires
-        if isinstance(expires,datetime.datetime):
+        if isinstance(expires, datetime.datetime):
             expires = expires.strftime(FMT)
         if expires:
             rcookies[name]['expires'] = expires
         return True
 
-    def _unchanged(self,response):
+    def _unchanged(self, response):
         session_pickled = cPickle.dumps(self)
         response.session_pickled = session_pickled
         session_hash = hashlib.md5(session_pickled).hexdigest()
@@ -1084,12 +1084,12 @@ class Session(Storage):
         # don't save if file-based sessions,
         # no session id, or session being forgotten
         # or no changes to session (Unless the session is new)
-        if (not response.session_db_table or 
-            self._forget or 
-            (self._unchanged(response) and not response.session_new)):
-            if (not response.session_db_table and
-                global_settings.db_sessions is not True and
-                response.session_masterapp in global_settings.db_sessions):
+        if (not response.session_db_table
+                or self._forget
+                or (self._unchanged(response) and not response.session_new)):
+            if (not response.session_db_table
+                    and global_settings.db_sessions is not True
+                    and response.session_masterapp in global_settings.db_sessions):
                 global_settings.db_sessions.remove(response.session_masterapp)
             # self.clear_session_cookies()
             self.save_session_id_cookie()
@@ -1110,7 +1110,7 @@ class Session(Storage):
                   session_data=session_pickled,
                   unique_key=unique_key)
         if record_id:
-            if not table._db(table.id==record_id).update(**dd):
+            if not table._db(table.id == record_id).update(**dd):
                 record_id = None
         if not record_id:
             record_id = table.insert(**dd)
@@ -1129,15 +1129,16 @@ class Session(Storage):
 
     def _try_store_in_file(self, request, response):
         try:
-            if (not response.session_id or self._forget 
-                or self._unchanged(response)):
+            if (not response.session_id or self._forget
+                    or self._unchanged(response)):
                 # self.clear_session_cookies()
                 self.save_session_id_cookie()
                 return False
             if response.session_new or not response.session_file:
                 # Tests if the session sub-folder exists, if not, create it
                 session_folder = os.path.dirname(response.session_filename)
-                if not os.path.exists(session_folder): os.mkdir(session_folder)
+                if not os.path.exists(session_folder):
+                    os.mkdir(session_folder)
                 response.session_file = open(response.session_filename, 'wb')
                 portalocker.lock(response.session_file, portalocker.LOCK_EX)
                 response.session_locked = True

@@ -102,11 +102,11 @@ echo '
   </Directory>
 
   <Location /admin>
-	Require all denied
+    Require all denied
   </Location>
 
   <LocationMatch ^/([^/]+)/appadmin>
-	Require all denied
+    Require all denied
   </LocationMatch>
 
   CustomLog /var/log/apache2/access.log common

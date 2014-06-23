@@ -1,15 +1,13 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
-::
+| From http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/496942
+| Submitter: Josh Goldfoot (other recipes)
+| Last Updated: 2006/08/05
+| Version: 1.0
 
-    # from http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/496942
-    # Title: Cross-site scripting (XSS) defense
-    # Submitter: Josh Goldfoot (other recipes)
-    # Last Updated: 2006/08/05
-    # Version no: 1.0
-
+Cross-site scripting (XSS) defense
+-----------------------------------
 """
 
 

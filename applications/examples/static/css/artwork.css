@@ -1,0 +1,141 @@
+
+/*---------------------------------- ARTWORK E STICKERS -----------------------------------------*/
+/*logo*/
+.logosDow{
+	border-width: 1px;
+	border-style: solid;
+	border-color:#CCC;
+	border-radius:3px;
+	background-color:#FFF;
+	-webkit-border-radius: 3px;
+	-moz-border-radius:3px;
+	margin:20px auto;
+	background: -moz-linear-gradient(top, #fbfbfb, #f1f1f1) repeat-X;
+	background: -webkit-gradient(linear, left top, left bottom, from(#fbfbfb), to(#f1f1f1)) repeat-X;
+	-ms-filter: "progid:DXImageTransform.Microsoft.gradient(startColorstr=#666, endColorstr=#FFFFFFFF)";
+	filter: progid:DXImageTransform.Microsoft.gradient(startColorstr=#fbfbfb, endColorstr=#f1f1f1);
+	border-width: 1px;
+	border-style: solid;
+	border-color:#CCC;
+	border-radius:3px;
+	background-color:#FFF;
+	-webkit-border-radius: 3px;
+	-moz-border-radius:3px;
+	width:100%;
+	
+	padding:10px 10px 0 10px;
+	padding-bottom:0
+	}
+.WH1{
+	height:190px;
+	}	
+.WH2{
+	height:90px;
+	
+	}		
+.logosDow span{
+	margin:8px 15px;
+	float:left;
+	width:700px; height:20px;
+	color:#555555;
+	font:bold 18px/30px Arial,Helvetica,sans-serif;
+	letter-spacing:-1px;
+}
+.box-A{
+	margin:10px;	
+	float:left;
+	border-width: 1px;
+	border-style: solid;
+	border-color:#CCC;
+	border-radius:3px;
+	background-color:#FFF;
+	-webkit-border-radius: 3px;
+	-moz-border-radius:3px;
+	width:250px; height:130px;
+}
+a.box-A span{
+	display:none;
+	position:relative;
+        top:-55px;
+	left:-10px;
+	width:235px;
+	height:50px;
+	background-image:url(../img/tipDownloads2.png);
+	background-position:center;
+	background-repeat:no-repeat;
+}
+a.box-A:hover span{ 
+	display:block;
+}
+.logoDow1{
+	background-image:url(../img/logo3Tones.png);
+	background-repeat:no-repeat;
+	background-position:-10px -155px;
+}
+.logoDow2{
+	background-image:url(../img/logo3Tones.png);
+	background-repeat:no-repeat;
+	background-position:-10px 0px;
+}
+.logoDow3{
+	background-image:url(../img/logo3Tones.png);
+	background-repeat:no-repeat;
+	background-position:-10px -312px;
+}
+/*fim logo*/
+/*Stick*/
+.stikImage{
+	float:left;
+	width:100px;
+	height:50px;
+	margin-left:15px;
+	background-repeat:no-repeat;
+	background-position:center;
+	
+	}
+.stikimage1{
+	background-image:url(../img/Stickers1.png);
+	background-position:center;
+}
+.stikimage2{
+	background-image:url(../img/Stickers2.png);
+	background-position:center;
+}
+.stikimage3{
+	background-image:url(../img/Stickers3.png);
+	background-position:center;
+}
+.stikimage4{
+	background-image:url(../img/Stickers8.png);
+	background-position:center;
+}
+.stikimage5{
+	background-image:url(../img/Stickers5.png);
+	background-position:center;
+}
+.stikimage6{
+	background-image:url(../img/Stickers6.png);
+	background-position:center;
+}
+.stikimage7{
+	background-image:url(../img/Stickers7.png);
+	background-position:center;
+}
+a.stikImage span{
+     display:none;
+	position:relative;
+    top:-50px;
+	left:-50px;
+	width:180px;
+	height:50px;
+	background-image:url(../img/tipDownloads.png);
+	background-position:center;
+	background-repeat:no-repeat;
+}
+a.stikImage:hover span{ 
+	display:block;
+}
+/*fim do Stick*/
+
+/*------------------------------ FIM ARTWORK E STICKERS -----------------------------------------*/
+

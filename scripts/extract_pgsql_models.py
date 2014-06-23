@@ -121,9 +121,9 @@ def define_field(conn, table, field, pks):
     elif field['data_type'] in ('time', 'time without time zone'):
         f['type'] = "'time'"
     elif field['data_type'] in ('numeric', 'currency'):
-        f['type'] = "'decimal'"
         f['precision'] = field['numeric_precision']
         f['scale'] = field['numeric_scale'] or 0
+        f['type'] = "'decimal({},{})'".format(f['precision'],f['scale'])
     elif field['data_type'] in ('bytea', ):
         f['type'] = "'blob'"
     elif field['data_type'] in ('point', 'lseg', 'polygon', 'unknown', 'USER-DEFINED'):

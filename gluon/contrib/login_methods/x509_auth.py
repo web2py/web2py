@@ -3,7 +3,7 @@
 
 """
 Written by Michele Comitini <mcm@glisco.it>
-License: GPL v3
+License: LGPL v3
 
 Adds support for x509 authentication.
 

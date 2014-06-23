@@ -65,7 +65,7 @@
     {{if start>0:}}{{=A(T('previous %s rows') % step,_href=URL('select',args=request.args[0],vars=dict(start=start-step)),_class="btn")}}{{pass}}
     {{if stop<nrows:}}{{=A(T('next %s rows') % step,_href=URL('select',args=request.args[0],vars=dict(start=start+step)),_class="btn")}}{{pass}}
     {{if rows:}}
-       <div style="overflow: auto;" width="80%">
+       <div style="overflow:auto; width:80%;">
        {{linkto = lambda f, t, r: URL('update', args=[request.args[0], r, f]) if f else "#"}}
        {{upload=URL('download',args=request.args[0])}}
        {{=SQLTABLE(rows,linkto,upload,orderby=True,_class='sortable')}}

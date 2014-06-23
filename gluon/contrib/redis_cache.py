@@ -105,6 +105,9 @@ class RedisClient(object):
 
         self.r_server = redis.Redis(host=host, port=port, db=self.db, password=self.password)
 
+    def initialize(self):
+        pass
+
     def __call__(self, key, f, time_expire=300, with_lock=None):
         if with_lock is None:
             with_lock = self.with_lock

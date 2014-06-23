@@ -381,14 +381,35 @@ class TestLike(unittest.TestCase):
         self.assertEqual(db(db.tt.aa.like('%b%')).count(), 1)
         self.assertEqual(db(db.tt.aa.like('%c')).count(), 1)
         self.assertEqual(db(db.tt.aa.like('%d%')).count(), 0)
-        self.assertEqual(db(db.tt.aa.lower().like('A%')).count(), 1)
-        self.assertEqual(db(db.tt.aa.lower().like('%B%')).count(),
-                         1)
-        self.assertEqual(db(db.tt.aa.lower().like('%C')).count(), 1)
-        self.assertEqual(db(db.tt.aa.upper().like('A%')).count(), 1)
-        self.assertEqual(db(db.tt.aa.upper().like('%B%')).count(),
-                         1)
-        self.assertEqual(db(db.tt.aa.upper().like('%C')).count(), 1)
+        #DAL maps like() (and contains(), startswith(), endswith())
+        #to the LIKE operator, that in ANSI-SQL is case-sensitive
+        #There are backends supporting case-sensitivity by default
+        #and backends that needs additional care to turn
+        #case-sensitivity on. To discern among those, let's run
+        #this query comparing previously inserted 'abc' with 'ABC':
+        #if the result is 0, then the backend recognizes
+        #case-sensitivity, if 1 it isn't
+        is_case_insensitive = db(db.tt.aa.like('%ABC%')).count()
+        if is_case_insensitive:
+            self.assertEqual(db(db.tt.aa.like('A%')).count(), 1)
+            self.assertEqual(db(db.tt.aa.like('%B%')).count(), 1)
+            self.assertEqual(db(db.tt.aa.like('%C')).count(), 1)
+            self.assertEqual(db(db.tt.aa.like('A%', case_sensitive=False)).count(), 1)
+            self.assertEqual(db(db.tt.aa.like('%B%', case_sensitive=False)).count(), 1)
+            self.assertEqual(db(db.tt.aa.like('%C', case_sensitive=False)).count(), 1)
+            self.assertEqual(db(db.tt.aa.upper().like('A%')).count(), 1)
+            self.assertEqual(db(db.tt.aa.upper().like('%B%')).count(),1)
+            self.assertEqual(db(db.tt.aa.upper().like('%C')).count(), 1)
+        else:
+            self.assertEqual(db(db.tt.aa.like('A%')).count(), 0)
+            self.assertEqual(db(db.tt.aa.like('%B%')).count(), 0)
+            self.assertEqual(db(db.tt.aa.like('%C')).count(), 0)
+            self.assertEqual(db(db.tt.aa.like('A%', case_sensitive=False)).count(), 1)
+            self.assertEqual(db(db.tt.aa.like('%B%', case_sensitive=False)).count(), 1)
+            self.assertEqual(db(db.tt.aa.like('%C', case_sensitive=False)).count(), 1)
+            self.assertEqual(db(db.tt.aa.upper().like('A%')).count(), 1)
+            self.assertEqual(db(db.tt.aa.upper().like('%B%')).count(),1)
+            self.assertEqual(db(db.tt.aa.upper().like('%C')).count(), 1)
         db.tt.drop()
         db.define_table('tt', Field('aa', 'integer'))
         self.assertEqual(db.tt.insert(aa=1111111111), 1)
