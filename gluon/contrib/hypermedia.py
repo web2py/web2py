@@ -11,7 +11,7 @@ Example controller:
 
 def api():
     from gluon.contrib.hypermedia import Collection
-    rules = {
+    policies = {
         'thing': {
             'GET':{'query':None,'fields':['id', 'name']},
             'POST':{'query':None,'fields':['name']},
@@ -25,7 +25,7 @@ def api():
             'DELETE':{'query':None},
             },
         }
-    return Collection(db).process(request,response,rules)
+    return Collection(db).process(request,response,policies)
 
 """
 
@@ -45,13 +45,13 @@ class Collection(object):
         """ converts a DAL Row object into a collection.item """
         data = []
         if self.compact:
-            for fieldname in (self.table_rules.get('fields') or table.fields):
+            for fieldname in (self.table_policy.get('fields') or table.fields):
                 field = table[fieldname]
                 if not (field.type.startswith('reference ') or
                         field.type.startswith('list:reference ')) and field.name in row:
                     data.append(row[field.name])
         else:
-            for fieldname in (self.table_rules.get('fields') or table.fields):
+            for fieldname in (self.table_policy.get('fields') or table.fields):
                 field = table[fieldname]
                 if not (field.type.startswith('reference ') or
                         field.type.startswith('list:reference ')) and field.name in row:
@@ -62,14 +62,14 @@ class Collection(object):
         """ converts a DAL Row object into a set of links referencing the row """
         links = []
         for field in table._referenced_by:
-            if field._tablename in self.rules:
+            if field._tablename in self.policies:
                 if row:
                     href = URL(args=field._tablename,vars={field.name:row.id},scheme=True)
                 else:
                     href = URL(args=field._tablename,scheme=True)+'?%s={id}' % field.name
                 links.append({'rel':str(field),'href':href,'prompt':str(field)})
         # should this be supported?
-        for rel,build in (self.table_rules.get('links',{}).items()):
+        for rel,build in (self.table_policy.get('links',{}).items()):
             links.append({'rel':rel,'href':build(row),'prompt':rel})
         # not sure
         return links
@@ -77,17 +77,17 @@ class Collection(object):
     def table2template(self,table):
         """ confeverts a table into its form template """
         data = []
-        for fieldname in (self.table_rules['fields'] or table.fields):
+        for fieldname in (self.table_policy['fields'] or table.fields):
             field = table[fieldname]
             info = {'name': field.name, 'value': '', 'prompt': field.label}
-            rules = self.rules[table._tablename]
+            policies = self.policies[table._tablename]
             # https://github.com/collection-json/extensions/blob/master/template-validation.md
             info['type'] = str(field.type) # FIX THIS
             if hasattr(field,'regexp_validator'):
                 info['regexp'] = field.regexp_validator
             info['required'] = field.required
-            info['post_writable'] = field.name in rules['POST']['fields']
-            info['put_writable'] = field.name in rules['PUT']['fields']
+            info['post_writable'] = field.name in policies['POST']['fields']
+            info['put_writable'] = field.name in policies['PUT']['fields']
             info['options'] = {} # FIX THIS
             data.append(info)
         return {'data':data}
@@ -128,7 +128,7 @@ class Collection(object):
                 queries.append(table[key][:-3] != value)
             else:
                 raise ValueError("Invalid Query")
-        filter_query = self.table_rules.get('query')
+        filter_query = self.table_policy.get('query')
         if filter_query:
             queries.append(filter_query)
         query = reduce(lambda a,b:a&b,queries[1:]) if len(queries)>1 else queries[0]
@@ -138,7 +138,7 @@ class Collection(object):
     def table2queries(self,table, href):
         """ generates a set of collection.queries examples for the table """
         data = []
-        for fieldname in (self.table_rules.get('fields') or table.fields):
+        for fieldname in (self.table_policy.get('fields') or table.fields):
             data.append({'name':fieldname,'value':''}) 
             if self.extensions:
                 data.append({'name':fieldname+'.ne','value':''}) # NEW !!!
@@ -154,15 +154,15 @@ class Collection(object):
                 data.append({'name':'_orderby','value':''})
         return [{'rel' : 'search', 'href' : href, 'prompt' : 'Search', 'data' : data}]
 
-    def process(self,request,response,rules=None):
-        """ the main method, processes a request, filters by rules and produces a JSON response """
+    def process(self,request,response,policies=None):
+        """ the main method, processes a request, filters by policies and produces a JSON response """
         self.request = request
-        self.rules = rules
+        self.policies = policies
         db = self.db
         tablename = request.args(0)
         r = OrderedDict()
         r['version'] = self.VERSION
-        tablenames = rules.keys() if rules else db.tables
+        tablenames = policies.keys() if policies else db.tables
         # if there is no tables
         if not tablename:
             r['href'] = URL(scheme=True),
@@ -175,10 +175,10 @@ class Collection(object):
         if not tablename in tablenames:
             return self.error(400,'BAD REQUEST','Invalid table name')
         # of if the method is invalid
-        if not request.env.request_method in rules[tablename]:
+        if not request.env.request_method in policies[tablename]:
             return self.error(400,'BAD REQUEST','Method not recognized')
-        # get the rules
-        self.table_rules = rules[tablename][request.env.request_method]
+        # get the policies
+        self.table_policy = policies[tablename][request.env.request_method]
         # process GET
         if request.env.request_method=='GET':
             table = db[tablename]
@@ -186,7 +186,7 @@ class Collection(object):
             r['items'] = items = []
             try:
                 (query, limitby, orderby) = self.request2query(table,request.get_vars)
-                fields = [table[fn] for fn in (self.table_rules.get('fields') or table.fields)]
+                fields = [table[fn] for fn in (self.table_policy.get('fields') or table.fields)]
                 fields = filter(lambda field: field.readable, fields)
                 rows = db(query).select(*fields,**dict(limitby=limitby, orderby=orderby))
             except:
@@ -290,7 +290,7 @@ class Collection(object):
         response.status = '400'
         return response.json({'collection':r})
 
-example_rules = {
+example_policies = {
     'thing': {
         'GET':{'query':None,'fields':['id', 'name']},
         'POST':{'query':None,'fields':['name']},
