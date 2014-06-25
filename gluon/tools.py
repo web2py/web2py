@@ -2788,7 +2788,7 @@ class Auth(object):
             if self.settings.registration_requires_verification:
                 link = self.url(
                     self.settings.function, args=('verify_email', key), scheme=True)
-                d = dict(request.vars)
+                d = dict(form.vars)
                 d.update(dict(key=key, link=link,username=form.vars[username]))
                 if not (self.settings.mailer and self.settings.mailer.send(
                         to=form.vars.email,
