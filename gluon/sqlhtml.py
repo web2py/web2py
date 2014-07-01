@@ -1195,8 +1195,7 @@ class SQLFORM(FORM):
 
             xfields.append((row_id, label, inp, comment))
             self.custom.dspval[fieldname] = dspval if (dspval is not None) else nbsp
-            self.custom.inpval[
-                fieldname] = inpval if not inpval is None else ''
+            self.custom.inpval[fieldname] = inpval if not inpval is None else ''
             self.custom.widget[fieldname] = inp
 
         # if a record is provided and found, as is linkto
