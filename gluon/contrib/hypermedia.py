@@ -222,7 +222,7 @@ class Collection(object):
                              'href':URL(args=request.args,vars=vars,scheme=True)}
             if self.extensions and limitby[0]>0:
                 vars = dict(request.get_vars)
-                vars['_offset'] = max(0,limitby[0]-1-delta)
+                vars['_offset'] = max(0,limitby[0]-delta)
                 vars['_limit'] = limitby[0]
                 r['previous'] = {'rel':'previous',
                                  'href':URL(args=request.args,vars=vars,scheme=True)}

@@ -2101,7 +2101,7 @@ class FORM(DIV):
             status = False
         if status and session:
             # check if editing a record that has been modified by the server
-            if hasattr(self, 'record_hash') and self.record_hash != formkey:
+            if hasattr(self, 'record_hash') and self.record_hash != formkey.split(':')[0]:
                 status = False
                 self.record_changed = changed = True
         status = self._traverse(status, hideerror)
@@ -2129,7 +2129,7 @@ class FORM(DIV):
             status = False
         if not session is None:
             if hasattr(self, 'record_hash'):
-                formkey = self.record_hash
+                formkey = self.record_hash+':'+web2py_uuid()
             else:
                 formkey = web2py_uuid()
             self.formkey = formkey
