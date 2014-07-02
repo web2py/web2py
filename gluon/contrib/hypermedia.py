@@ -45,13 +45,13 @@ class Collection(object):
         """ converts a DAL Row object into a collection.item """
         data = []
         if self.compact:
-            for fieldname in (self.table_policy.get('fields') or table.fields):
+            for fieldname in (self.table_policy.get('fields',table.fields)):
                 field = table[fieldname]
                 if not (field.type.startswith('reference ') or
                         field.type.startswith('list:reference ')) and field.name in row:
                     data.append(row[field.name])
         else:
-            for fieldname in (self.table_policy.get('fields') or table.fields):
+            for fieldname in (self.table_policy.get('fields',table.fields)):
                 field = table[fieldname]
                 if not (field.type.startswith('reference ') or
                         field.type.startswith('list:reference ')) and field.name in row:
@@ -77,7 +77,8 @@ class Collection(object):
     def table2template(self,table):
         """ confeverts a table into its form template """
         data = []
-        for fieldname in (self.table_policy['fields'] or table.fields):
+        fields = self.table_policy.get('fields', table.fields)
+        for fieldname in fields:
             field = table[fieldname]
             info = {'name': field.name, 'value': '', 'prompt': field.label}
             policies = self.policies[table._tablename]
@@ -86,8 +87,8 @@ class Collection(object):
             if hasattr(field,'regexp_validator'):
                 info['regexp'] = field.regexp_validator
             info['required'] = field.required
-            info['post_writable'] = field.name in policies['POST']['fields']
-            info['put_writable'] = field.name in policies['PUT']['fields']
+            info['post_writable'] = field.name in policies['POST'].get('fields',fields)
+            info['put_writable'] = field.name in policies['PUT'].get('fields',fields)
             info['options'] = {} # FIX THIS
             data.append(info)
         return {'data':data}
@@ -138,7 +139,7 @@ class Collection(object):
     def table2queries(self,table, href):
         """ generates a set of collection.queries examples for the table """
         data = []
-        for fieldname in (self.table_policy.get('fields') or table.fields):
+        for fieldname in (self.table_policy.get('fields', table.fields)):
             data.append({'name':fieldname,'value':''}) 
             if self.extensions:
                 data.append({'name':fieldname+'.ne','value':''}) # NEW !!!
@@ -157,6 +158,7 @@ class Collection(object):
     def process(self,request,response,policies=None):
         """ the main method, processes a request, filters by policies and produces a JSON response """
         self.request = request
+        self.response = response
         self.policies = policies
         db = self.db
         tablename = request.args(0)
@@ -186,7 +188,7 @@ class Collection(object):
             r['items'] = items = []
             try:
                 (query, limitby, orderby) = self.request2query(table,request.get_vars)
-                fields = [table[fn] for fn in (self.table_policy.get('fields') or table.fields)]
+                fields = [table[fn] for fn in (self.table_policy.get('fields', table.fields))]
                 fields = filter(lambda field: field.readable, fields)
                 rows = db(query).select(*fields,**dict(limitby=limitby, orderby=orderby))
             except:
@@ -199,7 +201,8 @@ class Collection(object):
                 id = row.id
                 for name in ('slug','fullname','title','name'):
                     if name in row:
-                        href = URL(args=(tablename,id,IS_SLUG.urlify(row[name])),scheme=True)
+                        href = URL(args=(tablename,id,IS_SLUG.urlify(row[name] or '')),
+                                   scheme=True)
                         break
                 else:
                     href = URL(args=(tablename,id),scheme=True)
@@ -215,8 +218,14 @@ class Collection(object):
                 vars = dict(request.get_vars)
                 vars['_offset'] = limitby[1]-1
                 vars['_limit'] = limitby[1]-1+delta
-                r['links'].append({'rel':'next',
-                                   'href':URL(args=request.args,vars=vars,scheme=True)})
+                r['next'] = {'rel':'next',
+                             'href':URL(args=request.args,vars=vars,scheme=True)}
+            if self.extensions and limitby[0]>0:
+                vars = dict(request.get_vars)
+                vars['_offset'] = max(0,limitby[0]-1-delta)
+                vars['_limit'] = limitby[0]
+                r['previous'] = {'rel':'previous',
+                                 'href':URL(args=request.args,vars=vars,scheme=True)}
             data = []
             if not self.compact:
                 r['queries'] = self.table2queries(table, r['href'])
@@ -232,7 +241,7 @@ class Collection(object):
                 try:
                     (query, limitby, orderby) = self.request2query(table, request.vars)
                     n = db(query).delete() # MAY FAIL
-                    response.status = '204'
+                    response.status = 204
                     return ''
                 except:
                     db.rollback()
@@ -240,23 +249,16 @@ class Collection(object):
             return response.json(r)
         # process POST and PUT (on equal footing!)
         elif request.env.request_method in ('POST','PUT'): # we treat them the same!
-            table = db[tablename] 
-            if not request.post_vars:
-                body = request.body().read()
-                if body:
-                    try:
-                        body = json.loads(data) # MAY FAIL                         
-                        request.post_vars = dict((i['name'],i['value']) for i in body.data)
-                    except:
-                        return self.error(400,'BAD REQUEST','Invalid body')
-                    request.vars.update(request.post_vars)                    
+            table = db[tablename]
+            if 'json' in request.env.content_type:
+                data = request.post_vars.data
             if request.get_vars or len(request.args)>1: # update
                 # ADD validate fields and return error
                 try:
                     (query, limitby, orderby) = self.request2query(table, request.get_vars)
-                    fields = filter(lambda (fn,value):table[fn].writable,request.post_vars.items())
+                    fields = filter(lambda (fn,value):table[fn].writable,data.items())
                     n = db(query).update(**dict(fields)) # MAY FAIL
-                    response.status = '200'
+                    response.status = 200
                     return ''
                 except:
                     db.rollback()
@@ -264,17 +266,18 @@ class Collection(object):
             else: # create
                 # ADD validate fields and return error
                 try:
-                    fields = filter(lambda (fn,value):table[fn].writable,request.post_vars.items())
+                    fields = filter(lambda (fn,value):table[fn].writable,data.items())
                     id = table.insert(**dict(fields)) # MAY FAIL
-                    response.status = '201'
+                    response.status = 201
                     response.headers['location'] = URL(args=(tablename,id),scheme=True)
                     return ''
-                except:
+                except SyntaxError,e: #Exception,e:
                     db.rollback()
-                    return self.error(400,'BAD REQUEST','Invalid Query')
+                    return self.error(400,'BAD REQUEST','Invalid Query:'+e)
 
     def error(self,code="400", title="BAD REQUEST", message="UNKNOWN", form_errors={}):
-        r = DefaultDict({
+        request, response = self.request, self.response
+        r = OrderedDict({
                 "version" : self.VERSION,
                 "href" : URL(args=request.args,vars=request.vars),    
                 "error" : {
@@ -287,7 +290,7 @@ class Collection(object):
             for key, value in form_errors:
                 errors[key] = [{'title':'Validation Error','code':'','message':value}]
                 response.headers['Content-Type'] = 'application/vnd.collection+json'
-        response.status = '400'
+        response.status = 400
         return response.json({'collection':r})
 
 example_policies = {
