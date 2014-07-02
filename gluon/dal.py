@@ -9223,9 +9223,13 @@ class Table(object):
         for field in self:
             if field.type == 'upload' and field.name in fields:
                 value = fields[field.name]
-                if value is not None and not isinstance(value, str):
+                if not value in (None,{}) and not isinstance(value, str):
                     if hasattr(value, 'file') and hasattr(value, 'filename'):
                         new_name = field.store(value.file, filename=value.filename)
+                    elif (isinstance(value,dict) and 
+                          'data' in value and 'filename' in value):
+                        stream = StringIO.StringIO(value['data'])
+                        new_name = field.store(stream, filename=value['filename'])
                     elif hasattr(value, 'read') and hasattr(value, 'name'):
                         new_name = field.store(value, filename=value.name)
                     else:
