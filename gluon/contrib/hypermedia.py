@@ -67,10 +67,18 @@ class Collection(object):
                     href = URL(args=field._tablename,vars={field.name:row.id},scheme=True)
                 else:
                     href = URL(args=field._tablename,scheme=True)+'?%s={id}' % field.name
-                links.append({'rel':str(field),'href':href,'prompt':str(field)})
+                links.append({'rel':'current','href':href,'prompt':str(field),
+                              'type':'children'})
+        fields = self.table_policy.get('fields', table.fields)
+        for fieldname in fields:
+            field = table[fieldname]
+            if field.type=='upload' and row[fieldname]:
+                href = URL('download',args=row[fieldname],scheme=True)
+                links.append({'rel':'current','href':href,'prompt':str(field),
+                              'type':'attachment'})
         # should this be supported?
         for rel,build in (self.table_policy.get('links',{}).items()):
-            links.append({'rel':rel,'href':build(row),'prompt':rel})
+            links.append({'rel':'current','href':build(row),'prompt':rel})
         # not sure
         return links
 
@@ -257,9 +265,12 @@ class Collection(object):
                 try:
                     (query, limitby, orderby) = self.request2query(table, request.get_vars)
                     fields = filter(lambda (fn,value):table[fn].writable,data.items())
-                    n = db(query).update(**dict(fields)) # MAY FAIL
-                    response.status = 200
-                    return ''
+                    res = db(query).validate_and_update(**dict(fields)) # MAY FAIL
+                    if res.errors:
+                        return self.error(400,'BAD REQUEST','Validation Error',res.errors)
+                    else:
+                        response.status = 200
+                        return ''
                 except:
                     db.rollback()
                     return self.error(400,'BAD REQUEST','Invalid Query')
@@ -267,10 +278,14 @@ class Collection(object):
                 # ADD validate fields and return error
                 try:
                     fields = filter(lambda (fn,value):table[fn].writable,data.items())
-                    id = table.insert(**dict(fields)) # MAY FAIL
-                    response.status = 201
-                    response.headers['location'] = URL(args=(tablename,id),scheme=True)
-                    return ''
+                    res = table.validate_and_insert(**dict(fields)) # MAY FAIL
+                    if res.errors:
+                        return self.error(400,'BAD REQUEST','Validation Error',res.errors)
+                    else:
+                        response.status = 201
+                        response.headers['location'] = \
+                            URL(args=(tablename,res.id),scheme=True)
+                        return ''
                 except SyntaxError,e: #Exception,e:
                     db.rollback()
                     return self.error(400,'BAD REQUEST','Invalid Query:'+e)
@@ -287,8 +302,8 @@ class Collection(object):
         if self.extensions and form_errors:
             # https://github.com/collection-json/extensions/blob/master/errors.md
             r['errors'] = errors = {}
-            for key, value in form_errors:
-                errors[key] = [{'title':'Validation Error','code':'','message':value}]
+            for key, value in form_errors.items():
+                errors[key] = {'title':'Validation Error','code':'','message':value}
                 response.headers['Content-Type'] = 'application/vnd.collection+json'
         response.status = 400
         return response.json({'collection':r})
