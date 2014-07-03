@@ -41,21 +41,26 @@ class Collection(object):
         self.extensions = extensions
         self.compact = compact
 
-    def row2data(self,table,row):
+    def row2data(self,table,row,text=False):
         """ converts a DAL Row object into a collection.item """
         data = []
         if self.compact:
             for fieldname in (self.table_policy.get('fields',table.fields)):
                 field = table[fieldname]
-                if not (field.type.startswith('reference ') or
+                if not ((field.type=='text' and text==False) or 
+                        field.type=='blob' or
+                        field.type.startswith('reference ') or
                         field.type.startswith('list:reference ')) and field.name in row:
                     data.append(row[field.name])
         else:
             for fieldname in (self.table_policy.get('fields',table.fields)):
                 field = table[fieldname]
-                if not (field.type.startswith('reference ') or
+                if not ((field.type=='text' and text==False) or
+                        field.type=='blob' or 
+                        field.type.startswith('reference ') or
                         field.type.startswith('list:reference ')) and field.name in row:
-                    data.append({'name':field.name,'value':row[field.name],'prompt':field.label})
+                    data.append({'name':field.name,'value':row[field.name],
+                                 'prompt':field.label, 'type':field.type})
         return data
 
     def row2links(self,table,row):
@@ -205,6 +210,7 @@ class Collection(object):
             r['items_found'] = db(query).count()
             delta = limitby[1]-limitby[0]-1
             r['links'] = self.row2links(table,None) if self.compact else []
+            text = r['items_found']<2
             for row in rows[:delta]:
                 id = row.id
                 for name in ('slug','fullname','title','name'):
@@ -215,11 +221,11 @@ class Collection(object):
                 else:
                     href = URL(args=(tablename,id),scheme=True)
                 if self.compact:
-                    items.append(self.row2data(table,row))
+                    items.append(self.row2data(table,row,text))
                 else:
                     items.append({
                             'href':href,
-                            'data':self.row2data(table,row),
+                            'data':self.row2data(table,row,text),
                             'links':self.row2links(table,row)
                             });
             if self.extensions and len(rows)>delta:

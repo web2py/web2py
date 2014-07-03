@@ -9223,13 +9223,15 @@ class Table(object):
         for field in self:
             if field.type == 'upload' and field.name in fields:
                 value = fields[field.name]
-                if not value in (None,{}) and not isinstance(value, str):
+                if not (value is None or isinstance(value, str)):
                     if hasattr(value, 'file') and hasattr(value, 'filename'):
                         new_name = field.store(value.file, filename=value.filename)
-                    elif (isinstance(value,dict) and 
-                          'data' in value and 'filename' in value):
-                        stream = StringIO.StringIO(value['data'])
-                        new_name = field.store(stream, filename=value['filename'])
+                    elif isinstance(value,dict): 
+                        if 'data' in value and 'filename' in value:
+                            stream = StringIO.StringIO(value['data'])
+                            new_name = field.store(stream, filename=value['filename'])
+                        else:
+                            new_name = None
                     elif hasattr(value, 'read') and hasattr(value, 'name'):
                         new_name = field.store(value, filename=value.name)
                     else:
@@ -10738,6 +10740,7 @@ class Set(object):
             response.updated = None
         else:
             if not any(f(self, new_fields) for f in table._before_update):
+                table._attempt_upload(new_fields)
                 fields = table._listify(new_fields, update=True)
                 if not fields: raise SyntaxError("No fields to update")
                 ret = self.db._adapter.update(tablename, self.query, fields)
