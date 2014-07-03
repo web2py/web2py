@@ -74,16 +74,26 @@ class Collection(object):
                     href = URL(args=field._tablename,scheme=True)+'?%s={id}' % field.name
                 links.append({'rel':'current','href':href,'prompt':str(field),
                               'type':'children'})
-        fields = self.table_policy.get('fields', table.fields)
-        for fieldname in fields:
-            field = table[fieldname]
-            if field.type=='upload' and row[fieldname]:
-                href = URL('download',args=row[fieldname],scheme=True)
-                links.append({'rel':'current','href':href,'prompt':str(field),
-                              'type':'attachment'})
-        # should this be supported?
-        for rel,build in (self.table_policy.get('links',{}).items()):
-            links.append({'rel':'current','href':build(row),'prompt':rel})
+        if row:
+            fields = self.table_policy.get('fields', table.fields)
+            for fieldname in fields:
+                field = table[fieldname]
+                if field.type.startswith('reference '):
+                    href = URL(args=field.type[10:],vars={'id':row[fieldname]},
+                               scheme=True)
+                    links.append({'rel':'current','href':href,'prompt':str(field),
+                                  'type':'parent'})
+
+            for fieldname in fields:
+                field = table[fieldname]
+                if field.type=='upload' and row[fieldname]:
+                    href = URL('download',args=row[fieldname],scheme=True)
+                    links.append({'rel':'current','href':href,'prompt':str(field),
+                                  'type':'attachment'})
+
+            # should this be supported?
+            for rel,build in (self.table_policy.get('links',{}).items()):
+                links.append({'rel':'current','href':build(row),'prompt':rel})
         # not sure
         return links
 
