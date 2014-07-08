@@ -7390,7 +7390,10 @@ def sqlhtml_validators(field):
         def repr_list(values, row=None): return', '.join(str(v) for v in (values or []))
         field.represent = field.represent or repr_list
     if field.unique:
-        requires.insert(0, validators.IS_NOT_IN_DB(db, field))
+        if db._adapter.dbengine == 'sqlite' and field_type in ['date', 'time']:
+            requires.append(validators.IS_NOT_IN_DB(db, field))
+        else:
+            requires.insert(0, validators.IS_NOT_IN_DB(db, field))
     sff = ['in', 'do', 'da', 'ti', 'de', 'bo']
     if field.notnull and not field_type[:2] in sff:
         requires.insert(0, validators.IS_NOT_EMPTY())
