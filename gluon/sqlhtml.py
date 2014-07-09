@@ -39,9 +39,8 @@ import inspect
 
 try:
     import gluon.settings as settings
-    is_gae = settings.global_settings.web2py_runtime_gae
 except ImportError:
-    is_gae = False  # this is an assumption (if settings missing)
+    settings = {}
 
 widget_class = re.compile('^\w*')
 
@@ -649,7 +648,7 @@ class AutocompleteWidget(object):
     def callback(self):
         if self.keyword in self.request.vars:
             field = self.fields[0]
-            if is_gae:
+            if settings and settings.global_settings.web2py_runtime_gae:
                 rows = self.db(field.__ge__(self.request.vars[self.keyword]) & field.__lt__(self.request.vars[self.keyword] + u'\ufffd')).select(orderby=self.orderby, limitby=self.limitby, *(self.fields+self.help_fields))
             else:
                 rows = self.db(field.like(self.request.vars[self.keyword] + '%')).select(orderby=self.orderby, limitby=self.limitby, distinct=self.distinct, *(self.fields+self.help_fields))
@@ -1686,6 +1685,19 @@ class SQLFORM(FORM):
             SEARCHABLE_TYPES = ('string', 'text', 'list:string')
             parts = [field.contains(
                 key) for field in fields if field.type in SEARCHABLE_TYPES]
+
+            # from https://groups.google.com/forum/#!topic/web2py/hKe6lI25Bv4
+            # needs testing...
+            #words = key.split(' ') if key else []
+            #filters = []
+            #for field in fields:
+            #    if field.type in SEARCHABLE_TYPES:
+            #        all_words_filters = []
+            #        for word in words:
+            #        all_words_filters.append(field.contains(word))
+            #        filters.append(reduce(lambda a, b: (a & b), all_words_filters))
+            #parts = filters
+
         else:
             parts = None
         if parts:
