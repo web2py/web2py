@@ -7393,9 +7393,9 @@ def sqlhtml_validators(field):
         requires.insert(0, validators.IS_NOT_IN_DB(db, field))
     sff = ['in', 'do', 'da', 'ti', 'de', 'bo']
     if field.notnull and not field_type[:2] in sff:
-        requires.insert(0, validators.IS_NOT_EMPTY())
+        requires.append(validators.IS_NOT_EMPTY())
     elif not field.notnull and field_type[:2] in sff and requires:
-        requires[-1] = validators.IS_EMPTY_OR(requires[-1])
+        requires[0] = validators.IS_EMPTY_OR(requires[0])
     return requires
 
 
