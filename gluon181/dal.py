@@ -7390,12 +7390,12 @@ def sqlhtml_validators(field):
         def repr_list(values, row=None): return', '.join(str(v) for v in (values or []))
         field.represent = field.represent or repr_list
     if field.unique:
-        requires.insert(0, validators.IS_NOT_IN_DB(db, field))
+        requires.append(validators.IS_NOT_IN_DB(db, field))
     sff = ['in', 'do', 'da', 'ti', 'de', 'bo']
     if field.notnull and not field_type[:2] in sff:
         requires.insert(0, validators.IS_NOT_EMPTY())
     elif not field.notnull and field_type[:2] in sff and requires:
-        requires[-1] = validators.IS_EMPTY_OR(requires[-1])
+        requires[0] = validators.IS_EMPTY_OR(requires[0])
     return requires
 
 
