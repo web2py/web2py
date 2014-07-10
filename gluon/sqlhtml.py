@@ -94,8 +94,11 @@ def show_if(cond):
         return base, "[value!='%s']" % cond.second
     if cond.op.__name__ == 'CONTAINS':
         return base, "[value~='%s']" % cond.second
-    if cond.op.__name__ == 'BELONGS' and isinstance(cond.second, (list, tuple)):
-        return base, ','.join("[value='%s']" % (v) for v in cond.second)
+    if cond.op.__name__ == 'BELONGS':
+        if isinstance(cond.second, set):
+            cond.second = list(cond.second)
+        if isinstance(cond.second, (list, tuple)):
+            return base, ','.join("[value='%s']" % (v) for v in cond.second)
     raise RuntimeError("Not Implemented Error")
 
 
