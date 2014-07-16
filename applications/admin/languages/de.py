@@ -7,7 +7,7 @@
 '%s %%{row} updated': '%s %%{row} Zeilen aktualisiert',
 '%Y-%m-%d': '%d.%m.%Y',
 '%Y-%m-%d %H:%M:%S': '%d.%m.%Y %H:%M:%S',
-'(requires internet access)': '(Internetzugang wir benötigt)',
+'(requires internet access)': '(Benötigt Internetzugang)',
 '(requires internet access, experimental)': '(Benötigt Internetzugang)',
 '(something like "it-it")': '(so etwas wie "it-it")',
 '@markmin\x01(file **gluon/contrib/plural_rules/%s.py** is not found)': '(Datei **gluon/contrib/plural_rules/%s.py** wurde nicht gefunden)',
