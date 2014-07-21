@@ -467,5 +467,5 @@
 'You are going to install': 'You are going to install',
 'You need to set up and reach a': 'You need to set up and reach a',
 'Your application will be blocked until you click an action button (next, step, continue, etc.)': 'Your application will be blocked until you click an action button (next, step, continue, etc.)',
-'Your can inspect variables using the console below': 'Your can inspect variables using the console below',
+'You can inspect variables using the console below': 'Your can inspect variables using the console below',
 }
