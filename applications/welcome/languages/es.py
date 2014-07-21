@@ -366,7 +366,7 @@
 'Toggle comment': 'Alternar comentario',
 'Toggle Fullscreen': 'Alternar pantalla completa',
 'too short': 'demasiado corto',
-'translation strings for the application': 'cadenas de carácteres de traducción para la aplicación',
+'translation strings for the application': 'cadenas de caracteres de traducción para la aplicación',
 'try': 'intente',
 'try something like': 'intente algo como',
 'TSV (Excel compatible)': 'TSV (compatible Excel)',
