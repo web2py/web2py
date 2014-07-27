@@ -249,14 +249,7 @@ function keepalive(url) {
 }
 
 function load_file(url, lineno) {
-  $.ajax({
-    type: "GET",
-    contentType: 'application/json',
-    cache: false,
-    dataType: 'json',
-    url: url,
-    timeout: 1000,
-    success: function (json) {
+  $.getJSON(url, function (json) {
       if(typeof (json['plain_html']) !== undefined) {
         if($('#' + json['id']).length === 0 || json['force'] === true) {
           // Create a tab and put the code in it
@@ -271,11 +264,10 @@ function load_file(url, lineno) {
         }
         $("a[href='#" + json['id'] + "']").trigger('click', lineno);
       }
-    },
-    error: function (x) {
+  }).fail(function() {
       on_error();
-    }
   });
+  return false;
 }
 
 function set_font(editor, incr) {
