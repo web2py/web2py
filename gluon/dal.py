@@ -3192,6 +3192,10 @@ class OracleAdapter(BaseAdapter):
     def NOT_NULL(self, default, field_type):
         return 'DEFAULT %s NOT NULL' % self.represent(default, field_type)
 
+    def REGEXP(self, first, second):
+        return 'REGEXP_LIKE(%s, %s)' % (self.expand(first),
+                                        self.expand(second, 'string'))
+
     def _drop(self, table, mode):
         sequence_name = table._sequence_name
         return ['DROP TABLE %s %s;' % (table.sqlsafe, mode), 'DROP SEQUENCE %s;' % sequence_name]
