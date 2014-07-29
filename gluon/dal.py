@@ -10961,13 +10961,25 @@ class Rows(object):
             return dict([(key(r),r) for r in rows])
 
 
-    def as_trees(self, parent_name='parent_id', children_name='children'):
+    def as_trees(self, parent_name='parent_id', children_name='children', render=False):
+        """
+        returns the data as list of trees.
+
+        :param parent_name: the name of the field to holding the reference to
+                            the parent (default parent_id).
+        :param children_name: the name where the children of each row will be
+                              stored as a list (default children).
+        :param render: whether we will render the fields using their represent
+                       (default False) can be a list of fields to render or
+                       True to render all.
+        """        
         roots = []
         drows = {}
-        for row in self:
+        rows = list(self.render(fields=None if render is True else render)) if render else self
+        for row in rows:
             drows[row.id] = row
             row[children_name] = []
-        for row in self:
+        for row in rows:
             parent = row[parent_name]
             if parent is None:
                 roots.append(row)
