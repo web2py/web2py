@@ -992,6 +992,7 @@ class Auth(object):
         everybody_group_id=None,
         manager_actions={},
         auth_manager_role=None,
+        two_factor_authentication_group = None,
         login_captcha=None,
         register_captcha=None,
         pre_registration_div=None,
@@ -2283,16 +2284,16 @@ class Auth(object):
                         _code='INVALID TICKET'))
         raise HTTP(200, message)
 
-    def _reset_2_factor_auth(self, session):
+    def _reset_two_factor_auth(self, session):
         '''When two-step authentication is enabled, this function is used to
         clear the session after successfully completing second challenge
         or when the maximum number of tries allowed has expired.
         '''
-        session.auth_2_factor_user = None
-        session.auth_2_factor = None
-        session.auth_2_factor_enabled = False
+        session.auth_two_factor_user = None
+        session.auth_two_factor = None
+        session.auth_two_factor_enabled = False
         # Allow up to 4 attempts (the 1st one plus 3 more)
-        session.auth_2_factor_tries_left = 3
+        session.auth_two_factor_tries_left = 3
 
     def login(
         self,
@@ -2381,12 +2382,12 @@ class Auth(object):
         # If two-factor authentication is enabled, and the maximum
         # number of tries allowed is used up, reset the session to
         # pre-login state with two-factor auth
-        if session.auth_2_factor_enabled and session.auth_2_factor_tries_left < 1:
+        if session.auth_two_factor_enabled and session.auth_two_factor_tries_left < 1:
             # Exceeded maximum allowed tries for this code. Require user to enter
             # username and password again.
             user = None
             accepted_form = False
-            self._reset_2_factor_auth(session)
+            self._reset_two_factor_auth(session)
             # Redirect to the default 'next' page without logging
             # in. If that page requires login, user will be redirected
             # back to the main login form
@@ -2399,7 +2400,7 @@ class Auth(object):
         # Note to devs: The code inside the if-block is unchanged from the
         # previous version of this file, other than for indentation inside
         # to put it inside the if-block
-        if session.auth_2_factor_user is None:
+        if session.auth_two_factor_user is None:
             # do we use our own login form, or from a central source?
             if settings.login_form == self:
                 form = SQLFORM(
@@ -2545,15 +2546,12 @@ class Auth(object):
         # username and password at the first challenge).
         # Check if this user is signed up for two-factor authentication
         # Default rule is that the user must be part of a group that is called
-        # 'web2py Two-Step Authentication'
-        if user:
-            memberships = self.db((self.table_membership().user_id == user.id)
-                                  &(self.table_group().id == self.table_membership().group_id)).select(
-                                                  self.table_group().role)
-            session.auth_2_factor_enabled = 'web2py Two-Step Authentication' in [i.role for i in memberships]
-        # If user is signed up for two-factor authentication, present the second
+        # auth.settings.two_factor_authentication_group
+        if user and self.settings.two_factor_authentication_group:
+            role = self.settings.two_factor_authentication_group
+            session.auth_two_factor_enabled = self.has_membership(user_id=user.id,role=role)
         # challenge
-        if session.auth_2_factor_enabled:
+        if session.auth_two_factor_enabled:
             form = SQLFORM.factory(
                 Field('authentication_code',
                       required=True, 
@@ -2569,43 +2567,43 @@ class Auth(object):
             # Handle the case when a user has submitted the login/password
             # form successfully, and the password has been validated, but
             # the two-factor form has not been displayed or validated yet.
-            if session.auth_2_factor_user is None and user is not None:
-                session.auth_2_factor_user = user # store the validated user and associate with this session
-                session.auth_2_factor = random.randint(100000, 999999)
-                session.auth_2_factor_tries_left = 3 # Allow user to try up to 4 times
+            if session.auth_two_factor_user is None and user is not None:
+                session.auth_two_factor_user = user # store the validated user and associate with this session
+                session.auth_two_factor = random.randint(100000, 999999)
+                session.auth_two_factor_tries_left = 3 # Allow user to try up to 4 times
                 # TODO: Add some error checking to handle cases where email cannot be sent
                 self.settings.mailer.send(
                     to=user.email, 
                     subject="Two-step Login Authentication Code", 
-                    message="Your temporary login code is {0}".format(session.auth_2_factor))
+                    message="Your temporary login code is {0}".format(session.auth_two_factor))
             if form.accepts(request, session if self.csrf_prevention else None,
                             formname='login', dbio=False,
                             onvalidation=onvalidation,
                             hideerror=settings.hideerror):
                 accepted_form = True
-                if form.vars['authentication_code'] == str(session.auth_2_factor):
+                if form.vars['authentication_code'] == str(session.auth_two_factor):
                     # Handle the case when the two-factor form has been successfully validated
                     # and the user was previously stored (the current user should be None because
                     # in this case, the previous username/password login form should not be displayed.
                     # This will allow the code after the 2-factor authentication block to proceed as
                     # normal.
-                    if user is None or user == session.auth_2_factor_user:
-                        user = session.auth_2_factor_user
+                    if user is None or user == session.auth_two_factor_user:
+                        user = session.auth_two_factor_user
                     # For security, because the username stored in the 
                     # session somehow does not match the just validated
                     # user. Should not be possible without session stealing
                     # which is hard with SSL.
-                    elif user != session.auth_2_factor_user:
+                    elif user != session.auth_two_factor_user:
                         user = None
                     # Either way, the user and code associated with this session should
                     # be removed. This handles cases where the session login may have 
                     # expired but browser window is open, so the old session key and 
                     # session usernamem will still exist
-                    self._reset_2_factor_auth(session)
+                    self._reset_two_factor_auth(session)
                 else:
                     # TODO: Limit the number of retries allowed.
-                    response.flash = 'Incorrect code. {0} more attempt(s) remaining.'.format(session.auth_2_factor_tries_left)
-                    session.auth_2_factor_tries_left -= 1
+                    response.flash = 'Incorrect code. {0} more attempt(s) remaining.'.format(session.auth_two_factor_tries_left)
+                    session.auth_two_factor_tries_left -= 1
                     return form
             else:
                 return form
@@ -2650,7 +2648,7 @@ class Auth(object):
         
         # Clear out 2-step authentication information if user logs
         # out. This information is also cleared on successful login.
-        self._reset_2_factor_auth(current.session)
+        self._reset_two_factor_auth(current.session)
         
         if next is DEFAULT:
             next = self.get_vars_next() or self.settings.logout_next
