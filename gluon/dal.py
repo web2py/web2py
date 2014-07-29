@@ -7421,7 +7421,7 @@ class Row(object):
     def as_dict(self, datetime_to_str=False, custom_types=None):
         SERIALIZABLE_TYPES = [str, unicode, int, long, float, bool, list, dict]
         if isinstance(custom_types,(list,tuple,set)):
-            SERIALIZABLE_TYPES += custom_types
+            SERIALIZABLE_TYPES += list(custom_types)
         elif custom_types:
             SERIALIZABLE_TYPES.append(custom_types)
         d = dict(self)
