@@ -1,6 +1,6 @@
 import glob, os
 
-delimiters = ('{%','%}')
+delimiters = ('<%','%>')
 
 filenames = glob.glob('views/*')+glob.glob('views/*/*')
 for filename in filenames:
