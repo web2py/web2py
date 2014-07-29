@@ -10917,7 +10917,7 @@ class Rows(object):
             items = [item.as_dict(datetime_to_str, custom_types) for item in self]
         else:
             items = [item for item in self]
-        self.compact = compact
+        self.compact = oc
         return items
 
 
