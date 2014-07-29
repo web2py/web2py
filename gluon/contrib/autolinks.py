@@ -159,6 +159,8 @@ def extension(url):
 
 def expand_one(url, cdict):
     # try ombed but first check in cache
+    if '@' in url and not '://'in url:
+        return '<a href="mailto:%s">%s</a>' % (url, url)
     if cdict and url in cdict:
         r = cdict[url]
     else:

@@ -54,3 +54,13 @@
     overflow: inherit;
     border-top: 1px solid #ddd;
 }
+
+#editor_main {
+    margin-top:40px;
+    margin-bottom:40px;
+}
+
+#editform {
+    margin-bottom: 0px;
+}
+

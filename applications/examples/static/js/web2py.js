@@ -485,8 +485,10 @@
       el.addClass('disabled');
       var method = el.prop('type') == 'submit' ? 'val' : 'html';
       var disable_with_message = (typeof w2p_ajax_disable_with_message != 'undefined') ? w2p_ajax_disable_with_message : "Working...";
-      /*store enabled state*/
-      el.data('w2p:enable-with', el[method]());
+      /*store enabled state if not already disabled */
+      if (el.data('w2p:enable-with') === undefined) {
+          el.data('w2p:enable-with', el[method]());
+      }
       /*if you don't want to see "working..." on buttons, replace the following
       * two lines with this one
       * el.data('w2p_disable_with', el[method]());
@@ -633,7 +635,9 @@
         if(disable_with == undefined) {
           element.data('w2p_disable_with', element[method]())
         }
-        element.data('w2p:enable-with', element[method]());
+        if (element.data('w2p:enable-with') === undefined) {
+            element.data('w2p:enable-with', element[method]());
+        }
         element[method](element.data('w2p_disable_with'));
         element.prop('disabled', true);
       });
@@ -647,7 +651,10 @@
       form.find(web2py.enableSelector).each(function () {
         var element = $(this),
           method = element.is('button') ? 'html' : 'val';
-        if(element.data('w2p:enable-with')) element[method](element.data('w2p:enable-with'));
+        if(element.data('w2p:enable-with')) {
+            element[method](element.data('w2p:enable-with'));
+            element.removeData('w2p:enable-with');
+        }
         element.prop('disabled', false);
       });
     },
@@ -659,7 +666,18 @@
       el.on('ajax:complete', 'form[data-w2p_target]', function (e) {
         web2py.enableFormElements($(this));
       });
-    }
+    },
+    /* Invalidate and force reload of a web2py component
+    */
+    invalidate: function(target) {
+      $('div[data-w2p_remote]', target).each(function () {
+        var el = $('#' + $(this).attr('id')).get(0);
+        if (el.timing !== undefined) {  // Block triggering regular routines
+            clearInterval(el.timing);
+        }
+      });
+      $.web2py.component_handler(target);
+    },
   }
 
   /*end of functions */
@@ -679,7 +697,7 @@
 /* compatibility code - start */
 ajax = jQuery.web2py.ajax;
 web2py_component = jQuery.web2py.component;
-web2py_websocket = jQuery.web2py.websocket;
+web2py_websocket = jQuery.web2py.web2py_websocket;
 web2py_ajax_page = jQuery.web2py.ajax_page;
 /*needed for IS_STRONG(entropy)*/
 web2py_validate_entropy = jQuery.web2py.validate_entropy;

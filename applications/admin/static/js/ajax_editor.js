@@ -249,18 +249,11 @@ function keepalive(url) {
 }
 
 function load_file(url, lineno) {
-  $.ajax({
-    type: "GET",
-    contentType: 'application/json',
-    cache: false,
-    dataType: 'json',
-    url: url,
-    timeout: 1000,
-    success: function (json) {
+  $.getJSON(url, function (json) {
       if(typeof (json['plain_html']) !== undefined) {
         if($('#' + json['id']).length === 0 || json['force'] === true) {
           // Create a tab and put the code in it
-          var tab_header = '<li><a title="'+ json['filename'] +'" href="#' + json['id'] + '" data-toggle="tab"><button type="button" class="close">&times;</button>' + json['realfilename'] + '</a></li>';
+          var tab_header = '<li><a title="'+ json['filename'] +'" data-path="' + json['filename'] + '" href="#' + json['id'] + '" data-toggle="tab"><button type="button" class="close">&times;</button>' + json['realfilename'] + '</a></li>';
           var tab_body = '<div id="' + json['id'] + '" class="tab-pane fade in " >' + json['plain_html'] + '</div>';
           if(json['force'] === false) {
             $('#myTabContent').append($(tab_body)); // First load the body
@@ -271,11 +264,10 @@ function load_file(url, lineno) {
         }
         $("a[href='#" + json['id'] + "']").trigger('click', lineno);
       }
-    },
-    error: function (x) {
+  }).fail(function() {
       on_error();
-    }
   });
+  return false;
 }
 
 function set_font(editor, incr) {

@@ -36,7 +36,7 @@ audio {width:200px}
 .hidden {display:none;visibility:visible}
 .right {float:right; text-align:right}
 .left {float:left; text-align:left}
-.center {width:100; text-align:center; vertical-align:middle}
+.center {width:100%; text-align:center; vertical-align:middle}
 /** end **/
 
 /* Sticky footer begin */
@@ -302,6 +302,11 @@ li.w2p_grid_breadcrumb_elem {
 .web2py_console input, .web2py_console select,
 .web2py_console a { margin: 2px; }
 
+.web2py_htmltable {
+   width: 100%;
+   overflow-x: auto;
+   -ms-overflow-x:scroll;
+}
 
 #wiki_page_body {
    width: 600px;

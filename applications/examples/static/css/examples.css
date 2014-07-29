@@ -14,3 +14,7 @@ body {
 .btn-180 {
     width: 180px;
 }
+.page-header {
+    border-bottom: 0;
+}
+	     

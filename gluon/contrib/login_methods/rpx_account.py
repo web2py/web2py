@@ -106,7 +106,7 @@ class RPXAccount(object):
                     self.domain, self.token_url, self.language),
                 _scrolling="no",
                 _frameborder="no",
-                             _style="width:400px;height:240px;")
+                _style="width:400px;height:240px;")
         else:
             JANRAIN_URL = \
                 "https://%s.rpxnow.com/openid/v2/signin?token_url=%s"

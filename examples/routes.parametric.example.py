@@ -48,9 +48,11 @@
 #  default_language
 #       The language code (for example: en, it-it) optionally appears in the URL following
 #       the application (which may be omitted). For incoming URLs, the code is copied to
-#       request.language; for outgoing URLs it is taken from request.language.
+#       request.uri_language; for outgoing URLs it is taken from request.uri_language.
 #       If languages=None, language support is disabled.
 #       The default_language, if any, is omitted from the URL.
+#       To use the incoming language in your application, add this line to one of your models files:
+#           if request.uri_language: T.force(request.uri_language)
 #  root_static: list of static files accessed from root (by default, favicon.ico & robots.txt)
 #       (mapped to the default application's static/ directory)
 #       Each default (including domain-mapped) application has its own root-static files.

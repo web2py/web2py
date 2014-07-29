@@ -1,10 +1,12 @@
+{{main_id='editor_main'}}
 {{extend 'layout.html'}}
 {{
 dirs=[{'name':'models', 'reg':'.*\.py$'},
       {'name':'controllers', 'reg':'.*\.py$'},
       {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
       {'name':'modules', 'reg':'.*\.py$'},
-      {'name':'static', 'reg': '[^\.#].*'}]
+      {'name':'static', 'reg': '[^\.#].*'},
+      {'name':'private', 'reg':'.*\.py$'}]
    
 def file_create_form(location, anchor=None, helptext=""):
     form=FORM(
@@ -30,7 +32,7 @@ def file_create_form(location, anchor=None, helptext=""):
 <!-- begin "edit" block -->
 {{
   def shortcut(combo, description):
-    return XML('<li><span class="teletype-text">%s</span><span>%s</span></li>' % (combo, description))
+    return XML('<li class="span5"><span class="teletype-text">%s</span><span>%s</span></li>' % (combo, description))
   def listfiles(app, dir, regexp='.*\.py$'):
       files = sorted(
          listdir(apath('%(app)s/%(dir)s/' % {'app':app, 'dir':dir}, r=request), regexp))
@@ -197,17 +199,15 @@ $(document).on('click', 'a.font_button', function (e) {
     });
     current_font_incr = (new_incr !== 0) ? current_font_incr + new_incr : 0;
 });
-
-{{if len(request.args) > 1:}}
-    load_file('{{=URL(f='edit', args=request.args, vars=request.get_vars)}}', {{=request.vars.lineno or 1}});
-{{pass}}
-
 </script>
 
 {{block sectionclass}}edit{{end}}
 
 <div class='row-fluid'>
 <div class="right controls btn-toolbar pull-right">
+
+{{=LOAD('default', 'editor_sessions', ajax=True, _class='btn-group')}}
+
 <div class="btn-group">
   <a class="button btn" onclick="$('#files').toggle(); return false" href="#">Files toggle</a>
 </div>
@@ -240,35 +240,13 @@ $(document).on('click', 'a.font_button', function (e) {
 		      	<div id="form">
         			<div>
         				{{=file_create_form('%s/' % app, '')}}
-        				<script>
-							$("#btn_file_create").click(function() {
-								$.ajax({
-									type: "POST",
-									url: "{{=URL('create_file')}}",
-									data: jQuery("#file_create_form").serialize(),
-        							dataType: 'JSON',
-									success: function(data){
-										$(".flash").html(data["result"]);
-										$(".flash").show();
-										$.ajax({
-											type: "POST",
-											url: "{{=URL('files_menu', vars={'app':app})}}",
-											success: function(html_data){
-												$("#files_menu").html(html_data);
-												$(data['id_filename']).click();
-											}
-										});
-								}});
-								return false;
-							});
-						</script>
         			</div>          			  			
       			</div>
       			<script>jQuery('#form').slideToggle()</script>
     		</div>
     		<br />            
             <div id="files_menu">
-            	{{=LOAD('default', 'files_menu', vars={'app':app})}}
+                {{=LOAD('default', 'files_menu', vars={'app':app}, ajax=True)}}
             </div>
             </ul>
         </div>
@@ -283,15 +261,17 @@ $(document).on('click', 'a.font_button', function (e) {
     <div id="window_todo" class="tab-pane container-fluid">
         {{=LOAD('default', 'todolist.load', vars={'app':app}, ajax=True, timeout=60000, times="infinity")}}
     </div>
+    <div id="window_shortcuts" class="tab-pane container-fluid">
+        {{include 'default/editor_shortcuts.html'}}
+    </div>
     </section>
 </div>
 {{block footer}}
 <div id="" class="navbar navbar-inverse navbar-fixed-bottom">
 <div class="navbar-inner">
 <ul id="windows_hooks" class="nav">
-  <li class="">
-    <a href="#window_todo">TODO</a>
-  </li>
+    <li class=""><a href="#window_todo">TODO</a></li>
+    <li class=""><a href="#window_shortcuts">Shortcuts</a></li>
 </ul>
 </div>
 </div>
@@ -318,6 +298,11 @@ $(document).ready(function() {
     var ow = filesMenu.outerWidth();
     filesMenu.width(ow);
     $('#files').css('left', '-'+ow+'px');
+    $.web2py.trap_form('url', 'form');
+    $('#form form').addClass('no_trap'); // Let to reuse the same form
+    {{if len(request.args) > 1:}}
+    load_file('{{=URL(f='edit', args=request.args, vars=request.get_vars)}}', {{=request.vars.lineno or 1}});
+    {{pass}}
 });
 </script>
 <!-- Typeahead scripts here so the page load faster -->
@@ -334,5 +319,28 @@ $(document).ready(function() {
         load_file(datum.link);
         $(this).val('');
     });
+    /* handlers to manage editor sessions
+    */
+    $(document).on('click', '#save_session', function(e) {
+        e.preventDefault();
+        var session_name=prompt("Session name","{{=app}}");
+
+        if (session_name!==null) {
+            files = $("[data-path]").map(function(){return $(this).data("path");}).get();
+            data = JSON.stringify({ files: files, session_name:session_name});
+            $.ajaxSetup({contentType: "application/json"});
+            $.web2py.ajax_page("POST", "{{=URL('default', 'editor_sessions')}}", data, 'manage_sessions');
+        }
+    });
+    $(document).on('click', '#saved_sessions a[data-files]', function(e) {
+        e.preventDefault();
+        files = $(this).data('files');
+        array_files = files.split(',');
+        $.each(array_files, function(index, value) {
+            url = "{{=URL('default','edit')}}/" + value;
+            load_file(url);
+        });
+    });
+
 </script>
 <!-- end "edit" block -->

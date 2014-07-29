@@ -1,3 +1,14 @@
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
+    mod(require("../../lib/codemirror"));
+  else if (typeof define == "function" && define.amd) // AMD
+    define(["../../lib/codemirror"], mod);
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
+"use strict";
+
+
 CodeMirror.defineMode("python", function(conf, parserConf) {
     var ERRORCLASS = 'error';
 
@@ -11,6 +22,7 @@ CodeMirror.defineMode("python", function(conf, parserConf) {
     var doubleDelimiters = parserConf.doubleDelimiters || new RegExp("^((\\+=)|(\\-=)|(\\*=)|(%=)|(/=)|(&=)|(\\|=)|(\\^=))");
     var tripleDelimiters = parserConf.tripleDelimiters || new RegExp("^((//=)|(>>=)|(<<=)|(\\*\\*=))");
     var identifiers = parserConf.identifiers|| new RegExp("^[_A-Za-z][_A-Za-z0-9]*");
+    var hangingIndent = parserConf.hangingIndent || parserConf.indentUnit;
 
     var wordOperators = wordRegexp(['and', 'or', 'not', 'is', 'in']);
     var commonkeywords = ['as', 'assert', 'break', 'class', 'continue',
@@ -150,6 +162,10 @@ CodeMirror.defineMode("python", function(conf, parserConf) {
             return 'builtin';
         }
 
+        if (stream.match(/^(self|cls)\b/)) {
+            return "variable-2";
+        }
+
         if (stream.match(identifiers)) {
             if (state.lastToken == 'def' || state.lastToken == 'class') {
                 return 'def';
@@ -211,6 +227,11 @@ CodeMirror.defineMode("python", function(conf, parserConf) {
                     break;
                 }
             }
+        } else if (stream.match(/\s*($|#)/, false)) {
+            // An open paren/bracket/brace with only space or comments after it
+            // on the line will indent the next line a fixed amount, to make it
+            // easier to put arguments, list items, etc. on their own lines.
+            indentUnit = stream.indentation() + hangingIndent;
         } else {
             indentUnit = stream.column() + stream.current().length;
         }
@@ -355,14 +376,13 @@ CodeMirror.defineMode("python", function(conf, parserConf) {
 
 CodeMirror.defineMIME("text/x-python", "python");
 
-(function() {
-  "use strict";
-  var words = function(str){return str.split(' ');};
+var words = function(str){return str.split(' ');};
 
-  CodeMirror.defineMIME("text/x-cython", {
-    name: "python",
-    extra_keywords: words("by cdef cimport cpdef ctypedef enum except"+
-                          "extern gil include nogil property public"+
-                          "readonly struct union DEF IF ELIF ELSE")
-  });
-})();
+CodeMirror.defineMIME("text/x-cython", {
+  name: "python",
+  extra_keywords: words("by cdef cimport cpdef ctypedef enum except"+
+                        "extern gil include nogil property public"+
+                        "readonly struct union DEF IF ELIF ELSE")
+});
+
+});

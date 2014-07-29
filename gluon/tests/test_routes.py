@@ -27,6 +27,10 @@ oldcwd = None
 root = None
 
 
+def norm_root(root):
+    return root.replace('/', os.sep)
+
+
 def setUpModule():
     def make_apptree():
         "build a temporary applications tree"
@@ -104,7 +108,8 @@ class TestRoutes(unittest.TestCase):
             'http://domain.com/abc/def/ghi/jkl'), "/abc/def/ghi ['jkl']")
         self.assertEqual(filter_url(
             'http://domain.com/abc/def/ghi/j%20kl'), "/abc/def/ghi ['j_kl']")
-        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/static'), "%s/applications/welcome/static/path/to/static" % root)
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/static'), 
+            norm_root("%s/applications/welcome/static/path/to/static" % root))
         # no more necessary since explcit check for directory traversal attacks
         """
         self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/to/st~tic')
@@ -168,8 +173,9 @@ default_application = 'defapp'
             filter_url('http://domain.com/app'), '/app/default/index')
         self.assertEqual(filter_url('http://domain.com/welcome/default/index/abc'), "/welcome/default/index ['abc']")
         self.assertEqual(filter_url('http://domain.com/welcome/static/abc'),
-                         '%s/applications/welcome/static/abc' % root)
-        self.assertEqual(filter_url('http://domain.com/defapp/static/path/to/static'), "%s/applications/defapp/static/path/to/static" % root)
+                         norm_root('%s/applications/welcome/static/abc' % root))
+        self.assertEqual(filter_url('http://domain.com/defapp/static/path/to/static'), 
+            norm_root("%s/applications/defapp/static/path/to/static" % root))
 
     def test_routes_raise(self):
         '''

@@ -2,11 +2,13 @@
 # -*- coding: utf-8 -*-
 
 """
-This file is part of the web2py Web Framework
-Developed by Massimo Di Pierro <mdipierro@cs.depaul.edu>,
-limodou <limodou@gmail.com> and srackham <srackham@gmail.com>.
-License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
+| This file is part of the web2py Web Framework
+| Developed by Massimo Di Pierro <mdipierro@cs.depaul.edu>,
+| limodou <limodou@gmail.com> and srackham <srackham@gmail.com>.
+| License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 
+Debugger support classes
+------------------------
 """
 
 import logging
@@ -23,7 +25,7 @@ class Pipe(Queue.Queue):
         Queue.Queue.__init__(self, *args, **kwargs)
 
     def write(self, data):
-        logger.debug("debug %s writting %s" % (self.__name, data))
+        logger.debug("debug %s writing %s" % (self.__name, data))
         self.put(data)
 
     def flush(self):
@@ -183,9 +185,8 @@ parent_queue, child_queue = Queue.Queue(), Queue.Queue()
 front_conn = qdb.QueuePipe("parent", parent_queue, child_queue)
 child_conn = qdb.QueuePipe("child", child_queue, parent_queue)
 
-web_debugger = WebDebugger(front_conn)                          # frontend
-qdb_debugger = qdb.Qdb(
-    pipe=child_conn, redirect_stdio=False, skip=None)   # backend
+web_debugger = WebDebugger(front_conn)                                     # frontend
+qdb_debugger = qdb.Qdb(pipe=child_conn, redirect_stdio=False, skip=None)   # backend
 dbg = qdb_debugger
 
 # enable getting context (stack, globals/locals) at interaction

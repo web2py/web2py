@@ -21,21 +21,23 @@
 {{if view_link:}}
     {{=button(view_link, T('try view'))}}
 {{pass}}
-<p class="formfield">
-{{if functions:}}
-    <span style="text-align:left;" class="exposed">
-    {{=B(T('exposes:'))}} {{=XML(', '.join([A(f,_target="_blank", _href=URL(a=app,c=controller,f=f)).xml() for f in functions]))}}
-    </span>
-{{if editviewlinks:}}<br/>
-    {{=B(T('edit views:'))}}
-    {{=XML(', '.join([v.xml() for v in editviewlinks]))}}
+{{if functions or edit_controller:}}
+    <p class="formfield">
+    {{if functions:}}
+        <span style="text-align:left;" class="exposed">
+        {{=B(T('exposes:'))}} {{=XML(', '.join([A(f,_target="_blank", _href=URL(a=app,c=controller,f=f)).xml() for f in functions]))}}
+        </span>
+        {{if editviewlinks:}}<br/>
+            {{=B(T('edit views:'))}}
+            {{=XML(', '.join([v.xml() for v in editviewlinks]))}}
+        {{pass}}
+    {{pass}}
+    {{if edit_controller:}}
+        {{=B(T('edit controller:'))}}
+        {{=A(request.args[2]+'.py', _class="editor_filelink", _target="_blank", _href=edit_controller)}}
+    {{pass}}
+    </p>
 {{pass}}
-{{pass}}
-{{if edit_controller:}}
-    {{=B(T('edit controller:'))}}
-    {{=A(request.args[2]+'.py', _class="editor_filelink", _target="_blank", _href=edit_controller)}}
-{{pass}}
-</p>
 </div>
 
     <textarea style=" height:100%; direction:ltr;" id="textarea_{{=id}}" class="input-block-level" name="data" >{{=data}}</textarea>
@@ -63,7 +65,6 @@
         height: "350px",
         showTrailingSpace: true
     });
-    editor.foldCode(CodeMirror.Pos(8, 0));
 
     editor.on("gutterClick", function(cm, n, gutter) {
         if (gutter !== "breakpoints" ) return;
@@ -152,29 +153,3 @@
     </div>
     <br/>
   </form>
-
-<div class="row-fluid">
-    <div class="help alert alert-block alert-info">
-    {{if filetype=='html':}}
-        <h3>{{=T('Key bindings for ZenCoding Plugin')}}</h3>
-    {{else:}}
-        <h3>{{=T("Key bindings")}}</h3>
-    {{pass}}
-        <ul class="keybindings unstyled">
-            {{=shortcut('Ctrl+S', T('Save via Ajax'))}}
-            {{=shortcut('Ctrl+F11', T('Toggle Fullscreen'))}}
-			{{=shortcut('Shift+Esc', T('Exit Fullscreen'))}}
-            {{=shortcut('Ctrl-F / Cmd-F', T('Start searching'))}}
-            {{=shortcut('Ctrl-G / Cmd-G', T('Find Next'))}}
-            {{=shortcut('Shift-Ctrl-G / Shift-Cmd-G', T('Find Previous'))}}
-            {{=shortcut('Shift-Ctrl-F / Cmd-Option-F', T('Replace'))}}
-            {{=shortcut('Shift-Ctrl-R / Shift-Cmd-Option-F', T('Replace All'))}}
-            {{=shortcut('Ctrl-/ ', T('Toggle comment'))}}
-        {{if filetype=='html':}}
-            {{=shortcut('Tab', T('Expand Abbreviation'))}}
-        {{elif filetype=='python':}}
-            {{=shortcut('Ctrl-Space', T('Autocomplete Python Code'))}}
-        {{pass}}
-        </ul>
-    </div>
-</div>

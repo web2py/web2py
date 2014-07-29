@@ -3,7 +3,7 @@ AIM class to credit card payment with authorize.net
 
 Fork of authnet code written by John Conde
 http://www.johnconde.net/blog/integrate-the-authorizenet-aim-api-with-python-3-2/
-Unknown license, assuming public domain
+BSDv3 License
 
 Modifed by Massimo Di Pierro
 

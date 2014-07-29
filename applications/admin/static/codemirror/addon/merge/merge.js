@@ -1,4 +1,11 @@
-(function() {
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
+    mod(require("../../lib/codemirror"));
+  else if (typeof define == "function" && define.amd) // AMD
+    define(["../../lib/codemirror"], mod);
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
   "use strict";
   // declare global: diff_match_patch, DIFF_INSERT, DIFF_DELETE, DIFF_EQUAL
 
@@ -29,7 +36,7 @@
       this.edit = this.mv.edit;
       this.orig = CodeMirror(pane, copyObj({value: orig, readOnly: true}, copyObj(options)));
 
-      this.diff = getDiff(orig, options.value);
+      this.diff = getDiff(asString(orig), asString(options.value));
       this.diffOutOfDate = false;
 
       this.showDifferences = options.showDifferences !== false;
@@ -82,6 +89,10 @@
     }
     dv.edit.on("change", change);
     dv.orig.on("change", change);
+    dv.edit.on("markerAdded", set);
+    dv.edit.on("markerCleared", set);
+    dv.orig.on("markerAdded", set);
+    dv.orig.on("markerCleared", set);
     dv.edit.on("viewportChange", set);
     dv.orig.on("viewportChange", set);
     update();
@@ -349,8 +360,19 @@
     setShowDifferences: function(val) {
       if (this.right) this.right.setShowDifferences(val);
       if (this.left) this.left.setShowDifferences(val);
+    },
+    rightChunks: function() {
+      return this.right && getChunks(this.right.diff);
+    },
+    leftChunks: function() {
+      return this.left && getChunks(this.left.diff);
     }
   };
+
+  function asString(obj) {
+    if (typeof obj == "string") return obj;
+    else return obj.getValue();
+  }
 
   // Operations on diffs
 
@@ -392,6 +414,15 @@
     }
     if (startEdit <= edit.line || startOrig <= orig.line)
       f(startOrig, orig.line + 1, startEdit, edit.line + 1);
+  }
+
+  function getChunks(diff) {
+    var collect = [];
+    iterateChunks(diff, function(topOrig, botOrig, topEdit, botEdit) {
+      collect.push({origFrom: topOrig, origTo: botOrig,
+                    editFrom: topEdit, editTo: botEdit});
+    });
+    return collect;
   }
 
   function endOfLineClean(diff, i) {
@@ -471,4 +502,4 @@
   function posMin(a, b) { return (a.line - b.line || a.ch - b.ch) < 0 ? a : b; }
   function posMax(a, b) { return (a.line - b.line || a.ch - b.ch) > 0 ? a : b; }
   function posEq(a, b) { return a.line == b.line && a.ch == b.ch; }
-})();
+});

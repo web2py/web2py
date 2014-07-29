@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# portalocker.py
-# Cross-platform (posix/nt) API for flock-style file locking.
-#                  Requires python 1.5.2 or better.
 
 """
 Cross-platform (posix/nt) API for flock-style file locking.
 
-Synopsis:
+Synopsis::
 
    import portalocker
    file = open(\"somefile\", \"r+\")
@@ -16,18 +13,18 @@ Synopsis:
    file.write(\"foo\")
    file.close()
 
-If you know what you're doing, you may choose to
+If you know what you're doing, you may choose to::
 
    portalocker.unlock(file)
 
 before closing the file, but why?
 
-Methods:
+Methods::
 
    lock( file, flags )
    unlock( file )
 
-Constants:
+Constants::
 
    LOCK_EX
    LOCK_SH
@@ -163,6 +160,7 @@ def write_locked(filename, data):
     fp.close()
 
 if __name__ == '__main__':
+    import sys
     f = LockedFile('test.txt', mode='wb')
     f.write('test ok')
     f.close()

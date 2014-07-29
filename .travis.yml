@@ -10,6 +10,10 @@ env:
   - DB=sqlite:memory
   - DB=mysql://root:@localhost/test_w2p
   - DB=postgres://postgres:@localhost/test_w2p
+  - DB=google:datastore
+#  - DB=google:datastore+ndb
+  - DB=mongodb://mongodb:mongodb@localhost/test_w2p
+  - DB=imap://imap:imap@localhost:993
 before_script:
   - if [[ $TRAVIS_PYTHON_VERSION != '2.7' ]]; then pip install unittest2; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install coverage; fi;
@@ -18,6 +22,15 @@ before_script:
   - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then pip install pysqlite; fi
   - if [[ $DB == mysql* ]]; then mysql -e 'create database test_w2p;'; fi
   - if [[ $DB == postgres* ]]; then psql -c 'create database test_w2p;' -U postgres; fi
+
+  # Install last sdk for app engine (update only whenever a new release is available)
+  - if [[ $DB == google* ]]; then wget http://googleappengine.googlecode.com/files/google_appengine_1.8.9.zip -nv; fi
+  - if [[ $DB == google* ]]; then unzip -q google_appengine_1.8.9.zip; fi
+  - if [[ $DB == google* ]]; then mv -f ./google_appengine/google ./google; fi
+
+  - if [[ $DB == mongodb* ]]; then pip install pymongo; fi
+  - if [[ $DB == mongodb* ]]; then mongo test_w2p --eval 'db.addUser("mongodb", "mongodb");'; fi
+
   #Temporal solution to travis issue #155
   - sudo chmod 777 /dev/shm
   - sudo rm -rf /dev/shm && sudo ln -s /run/shm /dev/shm
@@ -27,6 +40,13 @@ matrix:
       env: DB=postgres://postgres:@localhost/test_w2p
     - python: 'pypy'
       env: DB=mysql://root:@localhost/test_w2p
+    - python: 'pypy'
+      env: DB=google:datastore
+    - python: '2.6'
+      env: DB=google:datastore
+#    - python: '2.6'
+#      env: DB=google:datastore+ndb
+
 
 script: export COVERAGE_PROCESS_START=gluon/tests/coverage.ini; ./web2py.py --run_system_tests --with_coverage
 after_success:
@@ -35,3 +55,6 @@ after_success:
   
 notifications:
   email: true
+
+services: mongodb
+

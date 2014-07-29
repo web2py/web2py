@@ -30,7 +30,7 @@ class LoginRadiusAccount(object):
     """
 
     def __init__(self, request, api_key="", api_secret="",
-                 url=None, on_login_failure=None):
+                 url="", on_login_failure=None):
 
         self.request = request
         self.api_key = api_key
@@ -78,8 +78,8 @@ class LoginRadiusAccount(object):
         LoginRadius_SocialLogin.util.ready(function () {
         $ui = LoginRadius_SocialLogin.lr_login_settings;
         $ui.interfacesize = "";$ui.apikey = "%s";
-        $ui.callback=""; $ui.lrinterfacecontainer ="interfacecontainerdiv";
-        LoginRadius_SocialLogin.init(options); });""" % self.api_key)
+        $ui.callback="%s"; $ui.lrinterfacecontainer ="interfacecontainerdiv";
+        LoginRadius_SocialLogin.init(options); });""" % (self.api_key, self.url))
         form = DIV(container, loginradius_lib, widget)
         return form
 

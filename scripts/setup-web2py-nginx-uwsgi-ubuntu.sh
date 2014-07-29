@@ -16,7 +16,7 @@ apt-get autoremove
 apt-get autoclean
 apt-get -y install nginx-full
 apt-get -y install build-essential python-dev libxml2-dev python-pip unzip
-pip install --upgrade pip
+pip install setuptools --no-use-wheel --upgrade
 PIPPATH=`which pip`
 $PIPPATH install --upgrade uwsgi
 # Create common nginx sections
@@ -43,10 +43,13 @@ echo 'server {
         listen          80;
         server_name     $hostname;
         ###to enable correct use of response.static_version
-        #location ~* ^/(\w+)/static(?:/_[\d]+\.[\d]+\.[\d]+)?/(.*)$ {
-        #    alias /home/www-data/web2py/applications/$1/static/$2;
-        #    expires max;
-        #}
+        location ~* ^/(\w+)/static(?:/_[\d]+\.[\d]+\.[\d]+)?/(.*)$ {
+            alias /home/www-data/web2py/applications/$1/static/$2;
+            expires max;
+            ### if you want to use pre-gzipped static files (recommended)
+            ### check scripts/zip_static_files.py and remove the comments
+            # include /etc/nginx/conf.d/web2py/gzip_static.conf;
+        }
         ###
 
         ###if you use something like myapp = dict(languages=['en', 'it', 'jp'], default_language='en') in your routes.py
@@ -55,15 +58,7 @@ echo 'server {
         #    try_files static/$2/$3 static/$3 =404;
         #}
         ###
-        location ~* ^/(\w+)/static/ {
-            root /home/www-data/web2py/applications/;
-            #remove next comment on production
-            #expires max;
-            ### if you want to use pre-gzipped static files (recommended)
-            ### check scripts/zip_static_files.py and remove the comments
-            # include /etc/nginx/conf.d/web2py/gzip_static.conf;
-            ###
-        }
+        
         location / {
             #uwsgi_pass      127.0.0.1:9001;
             uwsgi_pass      unix:///tmp/web2py.socket;
@@ -104,8 +99,15 @@ server {
             #client_max_body_size 10m;
             ###
         }
-        ## if you serve static files through https, copy here the section
-        ## from the previous server instance to manage static files
+        ###to enable correct use of response.static_version
+        location ~* ^/(\w+)/static(?:/_[\d]+\.[\d]+\.[\d]+)?/(.*)$ {
+            alias /home/www-data/web2py/applications/$1/static/$2;
+            expires max;
+            ### if you want to use pre-gzipped static files (recommended)
+            ### check scripts/zip_static_files.py and remove the comments
+            # include /etc/nginx/conf.d/web2py/gzip_static.conf;
+        }
+        ###
 
 }' >/etc/nginx/sites-available/web2py
 
@@ -124,7 +126,7 @@ openssl x509 -noout -fingerprint -text < web2py.crt > web2py.info
 sudo mkdir /etc/uwsgi
 sudo mkdir /var/log/uwsgi
 
-# Create configuration file /etc/uwsgi/web2py.xml
+# Create configuration file /etc/uwsgi/web2py.ini
 echo '[uwsgi]
 
 socket = /tmp/web2py.socket
@@ -182,4 +184,4 @@ start uwsgi-emperor
 ## and stop it with
 # stop uwsgi-emperor
 ## to reload web2py only (without restarting uwsgi)
-# touch /etc/uwsgi/web2py.xml
+# touch /etc/uwsgi/web2py.ini

@@ -20,10 +20,10 @@ jQuery(function(){
   function hoverMenu(){
     jQuery('ul.nav a.dropdown-toggle').parent().hover(function(){
         adjust_height_of_collapsed_nav();
-        mi = jQuery(this).addClass('open');
+        var mi = jQuery(this).addClass('open');
         mi.children('.dropdown-menu').stop(true, true).delay(200).fadeIn(400);
     }, function(){
-        mi = jQuery(this);
+        var mi = jQuery(this);
         mi.children('.dropdown-menu').stop(true, true).delay(200).fadeOut(function(){mi.removeClass('open')});
     });
   }

@@ -3,19 +3,15 @@
 #  See http://code.google.com/appengine/docs/python/config/appconfig.html
 #  and http://web2py.com/book/default/chapter/11?search=app.yaml
 
-application: web2py
+application: yourappname
 version: 1
 api_version: 1
-
-# use this line for Python 2.5
-#
-runtime: python
 
 # use these lines for Python 2.7
 # upload app with: appcfg.py update web2py (where 'web2py' is web2py's root directory)
 #
-# runtime: python27
-# threadsafe: true    # true for WSGI & concurrent requests (Python 2.7 only)
+runtime: python27
+threadsafe: true    # true for WSGI & concurrent requests (Python 2.7 only)
 
 default_expiration: "24h"   # for static files
 
@@ -45,8 +41,7 @@ handlers:
   upload: applications/welcome/static/robots.txt
 
 - url: .*
-  script: gaehandler.py         # CGI
-#  script: gaehandler.wsgiapp    # WSGI (Python 2.7 only)
+  script: gaehandler.wsgiapp    # WSGI (Python 2.7 only)
   secure: optional
 
 admin_console:
@@ -65,8 +60,8 @@ skip_files: |
  (.*\.py[co])|
  (.*/RCS/.*)|
  (\..*)|
- (applications/(admin|examples)/.*)|
- ((admin|examples|welcome)\.(w2p|tar))|
+ (applications/examples/.*)|
+ ((examples|welcome)\.(w2p|tar))|
  (applications/.*?/(cron|databases|errors|cache|sessions)/.*)|
  ((logs|scripts)/.*)|
  (anyserver\.py)|

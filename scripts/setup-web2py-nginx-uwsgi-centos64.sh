@@ -54,14 +54,9 @@ echo 'server {
         listen          YOUR_SERVER_IP:80;
         server_name     YOUR_SERVER_FQDN;
         #to enable correct use of response.static_version
-        #location ~* /(\w+)/static(?:/_[\d]+\.[\d]+\.[\d]+)?/(.*)$ {
-        #    alias /var/www/web2py/applications/$1/static/$2;
-        #    expires max;
-        #}
-        location ~* /(\w+)/static/ {
-            root /var/www/web2py/applications/;
-            #remove next comment on production
-            #expires max;
+        location ~* /(\w+)/static(?:/_[\d]+\.[\d]+\.[\d]+)?/(.*)$ {
+            alias /var/www/web2py/applications/$1/static/$2;
+            expires max;
         }
         location / {
             #uwsgi_pass      127.0.0.1:9001;
@@ -86,6 +81,10 @@ server {
         ssl_ciphers ECDHE-RSA-AES256-SHA:DHE-RSA-AES256-SHA:DHE-DSS-AES256-SHA:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA;
         ssl_protocols SSLv3 TLSv1;
         keepalive_timeout    70;
+        location ~* /(\w+)/static(?:/_[\d]+\.[\d]+\.[\d]+)?/(.*)$ {
+            alias /var/www/web2py/applications/$1/static/$2;
+            expires max;
+        }
         location / {
             #uwsgi_pass      127.0.0.1:9001;
             uwsgi_pass      unix:///var/www/web2py/logs/web2py.socket;

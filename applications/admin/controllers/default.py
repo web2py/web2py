@@ -13,6 +13,7 @@ from gluon.admin import *
 from gluon.fileutils import abspath, read_file, write_file
 from gluon.utils import web2py_uuid
 from gluon.tools import Config
+from gluon.compileapp import find_exposed_functions
 from glob import glob
 import shutil
 import platform
@@ -30,10 +31,18 @@ from gluon.languages import (read_possible_languages, read_dict, write_dict,
                              read_plural_dict, write_plural_dict)
 
 
-if DEMO_MODE and request.function in ['change_password', 'pack', 'pack_custom','pack_plugin', 'upgrade_web2py', 'uninstall', 'cleanup', 'compile_app', 'remove_compiled_app', 'delete', 'delete_plugin', 'create_file', 'upload_file', 'update_languages', 'reload_routes', 'git_push', 'git_pull']:
+if DEMO_MODE and request.function in ['change_password', 'pack',
+'pack_custom','pack_plugin', 'upgrade_web2py', 'uninstall',
+'cleanup', 'compile_app', 'remove_compiled_app', 'delete',
+'delete_plugin', 'create_file', 'upload_file', 'update_languages',
+'reload_routes', 'git_push', 'git_pull', 'install_plugin']:
     session.flash = T('disabled in demo mode')
     redirect(URL('site'))
 
+if is_gae and request.function in ('edit', 'edit_language',
+'edit_plurals', 'update_languages', 'create_file', 'install_plugin'):
+    session.flash = T('disabled in GAE mode')
+    redirect(URL('site'))
 
 if not is_manager() and request.function in ['change_password', 'upgrade_web2py']:
     session.flash = T('disabled in multi user mode')
@@ -63,9 +72,11 @@ def log_progress(app, mode='EDIT', filename=None, progress=0):
 
 
 def safe_open(a, b):
-    if DEMO_MODE and ('w' in b or 'a' in b):
+    if (DEMO_MODE or is_gae) and ('w' in b or 'a' in b):
         class tmp:
             def write(self, data):
+                pass
+            def close(self):
                 pass
         return tmp()
     return open(a, b)
@@ -564,10 +575,10 @@ def edit():
     # Load json only if it is ajax edited...
     app = get_app(request.vars.app)
     app_path = apath(app, r=request)
-    editor_defaults={'theme':'web2py', 'editor': 'default', 'closetag': 'true', 'codefolding': 'false', 'tabwidth':'4', 'indentwithtabs':'false', 'linenumbers':'true', 'highlightline':'true'}
+    preferences={'theme':'web2py', 'editor': 'default', 'closetag': 'true', 'codefolding': 'false', 'tabwidth':'4', 'indentwithtabs':'false', 'linenumbers':'true', 'highlightline':'true'}
     config = Config(os.path.join(request.folder, 'settings.cfg'),
-                    section='editor', default_values=editor_defaults)
-    preferences = config.read()
+                    section='editor', default_values={})
+    preferences.update(config.read())
 
     if not(request.ajax) and not(is_mobile):
         # return the scaffolding, the rest will be through ajax requests
@@ -579,7 +590,7 @@ def edit():
         if request.post_vars:        #save new preferences
             post_vars = request.post_vars.items()
             # Since unchecked checkbox are not serialized, we must set them as false by hand to store the correct preference in the settings 
-            post_vars+= [(opt, 'false') for opt in editor_defaults if opt not in request.post_vars ]
+            post_vars+= [(opt, 'false') for opt in preferences if opt not in request.post_vars ]
             if config.save(post_vars):
                 response.headers["web2py-component-flash"] = T('Preferences saved correctly')
             else:
@@ -742,7 +753,7 @@ def edit():
 
     if len(request.args) > 2 and request.args[1] == 'controllers':
         controller = (request.args[2])[:-3]
-        functions = regex_expose.findall(data)
+        functions = find_exposed_functions(data)
     else:
         (controller, functions) = (None, None)
 
@@ -803,6 +814,22 @@ def todolist():
                 output.append({'filename':f,'matches':matches, 'dir':d})
 
     return {'todo':output, 'app': app}
+
+def editor_sessions():
+    config = Config(os.path.join(request.folder, 'settings.cfg'),
+                    section='editor_sessions', default_values={})
+    preferences = config.read()
+
+    if request.vars.session_name and request.vars.files:
+        session_name = request.vars.session_name
+        files = request.vars.files
+        preferences.update({session_name:','.join(files)})
+        if config.save(preferences.items()):
+            response.headers["web2py-component-flash"] = T('Session saved correctly')
+        else:
+            response.headers["web2py-component-flash"] = T('Session saved on session only')
+
+    return response.render('default/editor_sessions.html', {'editor_sessions':preferences})
 
 def resolve():
     """
@@ -1039,7 +1066,7 @@ def design():
     functions = {}
     for c in controllers:
         data = safe_read(apath('%s/controllers/%s' % (app, c), r=request))
-        items = regex_expose.findall(data)
+        items = find_exposed_functions(data)
         functions[c] = items
 
     # Get all views
@@ -1083,11 +1110,12 @@ def design():
 
     #Get crontab
     cronfolder = apath('%s/cron' % app, r=request)
-    if not os.path.exists(cronfolder):
-        os.mkdir(cronfolder)
     crontab = apath('%s/cron/crontab' % app, r=request)
-    if not os.path.exists(crontab):
-        safe_write(crontab, '#crontab')
+    if not is_gae:
+        if not os.path.exists(cronfolder):
+            os.mkdir(cronfolder)
+        if not os.path.exists(crontab):
+            safe_write(crontab, '#crontab')
 
     plugins = []
 
@@ -1176,7 +1204,7 @@ def plugin():
     functions = {}
     for c in controllers:
         data = safe_read(apath('%s/controllers/%s' % (app, c), r=request))
-        items = regex_expose.findall(data)
+        items = find_exposed_functions(data)
         functions[c] = items
 
     # Get all views
@@ -1379,10 +1407,10 @@ def create_file():
         safe_write(full_filename, text)
         log_progress(app, 'CREATE', filename)
         if request.vars.dir:
-        	result = T('file "%(filename)s" created',
+            result = T('file "%(filename)s" created',
                           dict(filename=full_filename[len(path):]))
-    	else:
-        	session.flash = T('file "%(filename)s" created',
+        else:
+            session.flash = T('file "%(filename)s" created',
                           dict(filename=full_filename[len(path):]))
         vars = {}
         if request.vars.id:
@@ -1391,13 +1419,20 @@ def create_file():
             vars['app'] = request.vars.app
         redirect(URL('edit',
                  args=[os.path.join(request.vars.location, filename)], vars=vars))
+
     except Exception, e:
         if not isinstance(e, HTTP):
             session.flash = T('cannot create file')
 
     if request.vars.dir:
-    	id_filename = '#' + request.vars.dir + '__' + filename.replace('.','__') + ' a'
-       	return response.json({'result':result, 'id_filename':id_filename})
+        response.flash = result
+        response.headers['web2py-component-content'] = 'append'
+        response.headers['web2py-component-command'] = """
+            $.web2py.invalidate('#files_menu');
+            load_file('%s');
+            $.web2py.enableElement($('#form form').find($.web2py.formInputClickSelector));
+        """ % URL('edit', args=[app,request.vars.dir,filename])
+        return ''
     else:
     	redirect(request.vars.sender + anchor)
 
@@ -1416,10 +1451,11 @@ def editfile(path,file,vars={}, app = None):
 def files_menu():
 	app = request.vars.app or 'welcome'
 	dirs=[{'name':'models', 'reg':'.*\.py$'},
-      	  {'name':'controllers', 'reg':'.*\.py$'},
-      	  {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
-      	  {'name':'modules', 'reg':'.*\.py$'},
-      	  {'name':'static', 'reg': '[^\.#].*'}]
+              {'name':'controllers', 'reg':'.*\.py$'},
+              {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
+              {'name':'modules', 'reg':'.*\.py$'},
+              {'name':'static', 'reg': '[^\.#].*'},
+              {'name':'private', 'reg':'.*\.py$'}]
 	result_files = []
 	for dir in dirs:
 		result_files.append(TAG[''](LI(dir['name'], _class="nav-header component", _onclick="collapse('" + dir['name'] + "_files');"),
@@ -1488,8 +1524,11 @@ def errors():
     import hashlib
 
     app = get_app()
-
-    method = request.args(1) or 'new'
+    if is_gae:
+        method = 'dbold' if ('old' in
+                     (request.args(1) or '')) else 'dbnew'
+    else:
+        method = request.args(1) or 'new'
     db_ready = {}
     db_ready['status'] = get_ticket_storage(app)
     db_ready['errmessage'] = T(
@@ -1556,32 +1595,30 @@ def errors():
         for fn in tk_db(tk_table.id > 0).select():
             try:
                 error = pickle.loads(fn.ticket_data)
-            except AttributeError:
+                hash = hashlib.md5(error['traceback']).hexdigest()
+
+                if hash in delete_hashes:
+                    tk_db(tk_table.id == fn.id).delete()
+                    tk_db.commit()
+                else:
+                    try:
+                        hash2error[hash]['count'] += 1
+                    except KeyError:
+                        error_lines = error['traceback'].split("\n")
+                        last_line = error_lines[-2]
+                        error_causer = os.path.split(error['layer'])[1]
+                        hash2error[hash] = dict(count=1,
+                            pickel=error, causer=error_causer,
+                            last_line=last_line, hash=hash,
+                            ticket=fn.ticket_id)
+            except AttributeError, e:
                 tk_db(tk_table.id == fn.id).delete()
                 tk_db.commit()
-
-            hash = hashlib.md5(error['traceback']).hexdigest()
-
-            if hash in delete_hashes:
-                tk_db(tk_table.id == fn.id).delete()
-                tk_db.commit()
-            else:
-                try:
-                    hash2error['hash']['count'] += 1
-                except KeyError:
-                    error_lines = error['traceback'].split("\n")
-                    last_line = error_lines[-2]
-                    error_causer = os.path.split(error['layer'])[1]
-                    hash2error[hash] = dict(count=1, pickel=error,
-                                            causer=error_causer,
-                                            last_line=last_line,
-                                            hash=hash, ticket=fn.ticket_id)
 
         decorated = [(x['count'], x) for x in hash2error.values()]
-
         decorated.sort(key=operator.itemgetter(0), reverse=True)
-
-        return dict(errors=[x[1] for x in decorated], app=app, method=method)
+        return dict(errors=[x[1] for x in decorated], app=app,
+                    method=method, db_ready=db_ready)
 
     elif method == 'dbold':
         tk_db, tk_table = get_ticket_storage(app)
@@ -1589,16 +1626,18 @@ def errors():
             if item[:7] == 'delete_':
                 tk_db(tk_table.ticket_id == item[7:]).delete()
                 tk_db.commit()
-        tickets_ = tk_db(tk_table.id > 0).select(tk_table.ticket_id, tk_table.created_datetime, orderby=~tk_table.created_datetime)
+        tickets_ = tk_db(tk_table.id > 0).select(tk_table.ticket_id,
+            tk_table.created_datetime,
+            orderby=~tk_table.created_datetime)
         tickets = [row.ticket_id for row in tickets_]
-        times = dict(
-            [(row.ticket_id, row.created_datetime) for row in tickets_])
-
-        return dict(app=app, tickets=tickets, method=method, times=times)
+        times = dict([(row.ticket_id, row.created_datetime) for
+            row in tickets_])
+        return dict(app=app, tickets=tickets, method=method,
+                    times=times, db_ready=db_ready)
 
     else:
         for item in request.vars:
-            # delete_all} rows doesn't contain any ticket
+            # delete_all rows doesn't contain any ticket
             # Remove anything else as requested
             if item[:7] == 'delete_' and (not item == "delete_all}"):
                 os.unlink(apath('%s/errors/%s' % (app, item[7:]), r=request))
@@ -1618,6 +1657,9 @@ def get_ticket_storage(app):
     if os.path.exists(ticket_file):
         db_string = open(ticket_file).read()
         db_string = db_string.strip().replace('\r', '').replace('\n', '')
+    elif is_gae:
+        # use Datastore as fallback if there is no ticket_file
+        db_string = "google:datastore"
     else:
         return False
     tickets_table = 'web2py_ticket'
@@ -1866,10 +1908,14 @@ def plugins():
     app = request.args(0)
     from serializers import loads_json
     if not session.plugins:
-        rawlist = urllib.urlopen("http://www.web2pyslices.com/" +
-            "public/api.json/action/list/content/Package?package" +
-            "_type=plugin&search_index=false").read()
-        session.plugins = loads_json(rawlist)
+        try:
+            rawlist = urllib.urlopen("http://www.web2pyslices.com/" +
+                                     "public/api.json/action/list/content/Package?package" +
+                                     "_type=plugin&search_index=false").read()
+            session.plugins = loads_json(rawlist)
+        except:
+            response.flash = T('Unable to download the list of plugins')
+            session.plugins = []
     return dict(plugins=session.plugins["results"], app=request.args(0))
 
 def install_plugin():
@@ -1892,7 +1938,7 @@ def install_plugin():
             session.flash = T('New plugin installed: %s', filename)
         else:
             session.flash = \
-                T('unable to create application "%s"', filename)
+                T('unable to install plugin "%s"', filename)
         redirect(URL(f="plugins", args=[app,]))
     return dict(form=form, app=app, plugin=plugin, source=source)
 

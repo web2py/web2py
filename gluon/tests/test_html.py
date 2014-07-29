@@ -38,6 +38,7 @@ def fix_sys_path():
 fix_sys_path()
 
 from html import *
+from storage import Storage
 
 
 class TestBareHelpers(unittest.TestCase):
@@ -69,8 +70,50 @@ class TestBareHelpers(unittest.TestCase):
                          '<meta a="1" b="2" />')
 
     def testA(self):
-        self.assertEqual(A('<>', _a='1', _b='2').xml(),
-                         '<a a="1" b="2" data-w2p_disable_with="default">&lt;&gt;</a>')
+        self.assertEqual(
+            A('<>', _a='1', _b='2').xml(),
+            '<a a="1" b="2">&lt;&gt;</a>'
+            )
+        self.assertEqual(
+            A('a', cid='b').xml(),
+            '<a data-w2p_disable_with="default" data-w2p_method="GET" data-w2p_target="b">a</a>'
+            )
+        self.assertEqual(
+            A('a', callback='b', _id='c').xml(),
+            '<a data-w2p_disable_with="default" data-w2p_method="POST" href="b" id="c">a</a>'
+            )
+        self.assertEqual(
+            A('a', delete='tr').xml(),
+            '<a data-w2p_disable_with="default" data-w2p_remove="tr">a</a>'
+            )
+        self.assertEqual(
+            A('a', _id='b', target='<self>').xml(),
+            '<a data-w2p_disable_with="default" data-w2p_target="b" id="b">a</a>'
+            )
+        self.assertEqual(
+            A('a', component='b').xml(),
+            '<a data-w2p_disable_with="default" data-w2p_method="GET" href="b">a</a>'
+            )
+        self.assertEqual(
+            A('a', _id='b', callback='c', noconfirm=True).xml(),
+            '<a data-w2p_disable_with="default" data-w2p_method="POST" href="c" id="b">a</a>'
+            )
+        self.assertEqual(
+            A('a', cid='b').xml(),
+            '<a data-w2p_disable_with="default" data-w2p_method="GET" data-w2p_target="b">a</a>'
+            )
+        self.assertEqual(
+            A('a', cid='b', _disable_with='processing...').xml(),
+            '<a data-w2p_disable_with="processing..." data-w2p_method="GET" data-w2p_target="b">a</a>'
+            )
+        self.assertEqual(
+            A('a', callback='b', delete='tr', noconfirm=True, _id='c').xml(),
+            '<a data-w2p_disable_with="default" data-w2p_method="POST" data-w2p_remove="tr" href="b" id="c">a</a>'
+            )
+        self.assertEqual(
+            A('a', callback='b', delete='tr', confirm='Are you sure?', _id='c').xml(),
+            '<a data-w2p_confirm="Are you sure?" data-w2p_disable_with="default" data-w2p_method="POST" data-w2p_remove="tr" href="b" id="c">a</a>'
+            )
 
     def testB(self):
         self.assertEqual(B('<>', _a='1', _b='2').xml(),
@@ -234,10 +277,49 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(UL('<>', _a='1', _b='2').xml(),
                          '<ul a="1" b="2"><li>&lt;&gt;</li></ul>')
 
+    def testStaticURL(self):
+        # test response.static_version coupled with response.static_version_urls
+        self.assertEqual(URL('a', 'c', 'f'), '/a/c/f')
+        self.assertEqual(URL('a', 'static', 'design.css'), '/a/static/design.css')
+        response = Storage()
+        response.static_version = '1.2.3'
+        from globals import current
+        current.response = response
+        self.assertEqual(URL('a', 'static', 'design.css'), '/a/static/design.css')
+        response.static_version_urls = True
+        self.assertEqual(URL('a', 'static', 'design.css'), '/a/static/_1.2.3/design.css')
+
+    def testURL(self):
+        self.assertEqual(URL('a', 'c', 'f', args='1'), '/a/c/f/1')
+        self.assertEqual(URL('a', 'c', 'f', args=('1', '2')), '/a/c/f/1/2')
+        self.assertEqual(URL('a', 'c', 'f', args=['1', '2']), '/a/c/f/1/2')
+        self.assertEqual(URL('a', 'c', '/f'), '/a/c/f')
+        self.assertEqual(URL('a', 'c', 'f.json'), '/a/c/f.json')
+        self.assertRaises(SyntaxError, URL, *['a'])
+        request = Storage()
+        request.application = 'a'
+        request.controller = 'c'
+        request.function = 'f'
+        request.env = {}
+        from globals import current
+        current.request = request
+        must_return = '/a/c/f'
+        self.assertEqual(URL('f'), must_return)
+        self.assertEqual(URL('c', 'f'), must_return)
+        self.assertEqual(URL('a', 'c', 'f'), must_return)
+        self.assertEqual(URL('a', 'c', 'f', extension='json'), '/a/c/f.json')
+        def weird():
+            pass
+        self.assertEqual(URL('a', 'c', weird), '/a/c/weird')
+        self.assertRaises(SyntaxError, URL, *['a','c', 1])
+
+
+
+
 class TestData(unittest.TestCase):
 
     def testAdata(self):
-        self.assertEqual(A('<>', data=dict(abc='<def?asd>', cde='standard'), _a='1', _b='2').xml(),'<a a="1" b="2" data-abc="&lt;def?asd&gt;" data-cde="standard" data-w2p_disable_with="default">&lt;&gt;</a>')
+        self.assertEqual(A('<>', data=dict(abc='<def?asd>', cde='standard'), _a='1', _b='2').xml(),'<a a="1" b="2" data-abc="&lt;def?asd&gt;" data-cde="standard">&lt;&gt;</a>')
 
 
 if __name__ == '__main__':

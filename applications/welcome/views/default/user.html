@@ -3,7 +3,7 @@
 <h2>{{=T( request.args(0).replace('_',' ').capitalize() )}}</h2>
 <div id="web2py_user_form">
 {{
-if request.args(0)=='login':
+if request.args(0)=='login' and not session.auth_2_factor_user:
     if not 'register' in auth.settings.actions_disabled:
         form.add_button(T('Register'),URL(args='register', vars={'_next': request.vars._next} if request.vars._next else None),_class='btn')
     pass
@@ -18,7 +18,7 @@ pass
 jQuery("#web2py_user_form input:visible:enabled:first").focus();
 {{if request.args(0)=='register':}}
     web2py_validate_entropy(jQuery('#auth_user_password'),100);
-{{elif request.args(0)=='change_password':}}
+{{elif request.args(0) in ('change_password','reset_password'):}}
     web2py_validate_entropy(jQuery('#no_table_new_password'),100);
 {{pass}}
 //--></script>

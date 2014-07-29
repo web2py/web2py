@@ -2,14 +2,15 @@
 # -*- coding: utf-8 -*-
 
 """
-This file is part of the web2py Web Framework
-Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
-License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
+| This file is part of the web2py Web Framework
+| Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
+| License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 
 Functions required to execute app components
-============================================
+---------------------------------------------
 
-FOR INTERNAL USE ONLY
+Note:
+    FOR INTERNAL USE ONLY
 """
 
 import re
@@ -22,7 +23,7 @@ from gluon.storage import Storage, List
 from gluon.template import parse_template
 from gluon.restricted import restricted, compile2
 from gluon.fileutils import mktree, listdir, read_file, write_file
-from gluon.myregex import regex_expose
+from gluon.myregex import regex_expose, regex_longcomments
 from gluon.languages import translator
 from gluon.dal import BaseAdapter, SQLDB, SQLField, DAL, Field
 from gluon.sqlhtml import SQLFORM, SQLTABLE
@@ -125,16 +126,27 @@ def LOAD(c=None, f='index', args=None, vars=None,
          extension=None, target=None, ajax=False, ajax_trap=False,
          url=None, user_signature=False, timeout=None, times=1,
          content='loading...', **attr):
-    """  LOAD a component into the action's document
+    """  LOADs a component into the action's document
 
-    Timing options:
-    -times: An integer or string ("infinity"/"continuous")
-    specifies how many times the component is requested
-    -timeout (milliseconds): specifies the time to wait before
-    starting the request or the frequency if times is greater than
-    1 or "infinity".
-    Timing options default to the normal behavior. The component
-    is added on page loading without delay.
+    Args:
+        c(str): controller
+        f(str): function
+        args(tuple or list): arguments
+        vars(dict): vars
+        extension(str): extension
+        target(str): id of the target
+        ajax(bool): True to enable AJAX bahaviour
+        ajax_trap(bool): True if `ajax` is set to `True`, traps
+            both links and forms "inside" the target
+        url(str): overrides `c`,`f`,`args` and `vars`
+        user_signature(bool): adds hmac signature to all links
+            with a key that is different for every user
+        timeout(int): in milliseconds, specifies the time to wait before
+            starting the request or the frequency if times is greater than
+            1 or "infinity"
+        times(integer or str): how many times the component will be requested
+            "infinity" or "continuous" are accepted to reload indefinitely the
+            component
     """
     from html import TAG, DIV, URL, SCRIPT, XML
     if args is None:
@@ -199,6 +211,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
             request.env.path_info
         other_request.cid = target
         other_request.env.http_web2py_component_element = target
+        other_request.restful = request.restful  # Needed when you call LOAD() on a controller who has some actions decorates with @request.restful()
         other_response.view = '%s/%s.%s' % (c, f, other_request.extension)
 
         other_environment = copy.copy(current.globalenv)  # NASTY
@@ -440,7 +453,8 @@ def read_pyc(filename):
     Read the code inside a bytecode compiled file if the MAGIC number is
     compatible
 
-    :returns: a code object
+    Returns:
+        a code object
     """
     data = read_file(filename, 'rb')
     if not is_gae and data[:4] != imp.get_magic():
@@ -481,6 +495,9 @@ def compile_models(folder):
         save_pyc(filename)
         os.unlink(filename)
 
+def find_exposed_functions(data):
+    data = regex_longcomments.sub('',data)
+    return regex_expose.findall(data)
 
 def compile_controllers(folder):
     """
@@ -491,7 +508,7 @@ def compile_controllers(folder):
     for fname in listdir(path, '.+\.py$'):
         ### why is this here? save_pyc(pjoin(path, file))
         data = read_file(pjoin(path, fname))
-        exposed = regex_expose.findall(data)
+        exposed = find_exposed_functions(data)
         for function in exposed:
             command = data + "\nresponse._vars=response._caller(%s)\n" % \
                 function
@@ -515,7 +532,7 @@ def run_models_in(environment):
 
     folder = environment['request'].folder
     c = environment['request'].controller
-    f = environment['request'].function    
+    #f = environment['request'].function
     response = environment['response']
 
     path = pjoin(folder, 'models')
@@ -525,10 +542,10 @@ def run_models_in(environment):
         models = sorted(listdir(cpath, '^models[_.][\w.]+\.pyc$', 0), model_cmp)
     else:
         models = sorted(listdir(path, '^\w+\.py$', 0, sort=False), model_cmp_sep)
-    models_to_run = None    
+    models_to_run = None
     for model in models:
         if response.models_to_run != models_to_run:
-            regex = models_to_run = response.models_to_run
+            regex = models_to_run = response.models_to_run[:]
             if isinstance(regex, list):
                 regex = re_compile('|'.join(regex))
         if models_to_run:
@@ -537,7 +554,7 @@ def run_models_in(environment):
                 fname = model[n:-4].replace('.','/')+'.py'
             else:
                 n = len(path)+1
-                fname = model[n:].replace(os.path.sep,'/')        
+                fname = model[n:].replace(os.path.sep,'/')
             if not regex.search(fname) and c != 'appadmin':
                 continue
             elif compiled:
@@ -570,7 +587,7 @@ def run_controller_in(controller, function, environment):
             filename = pjoin(path, 'controllers_%s_%s.pyc'
                              % (controller, function))
             ### end for backward compatibility
-            if not os.path.exists(filename):                
+            if not os.path.exists(filename):
                 raise HTTP(404,
                            rewrite.THREAD_LOCAL.routes.error_message % badf,
                            web2py_error=badf)
@@ -602,7 +619,7 @@ def run_controller_in(controller, function, environment):
                        rewrite.THREAD_LOCAL.routes.error_message % badc,
                        web2py_error=badc)
         code = read_file(filename)
-        exposed = regex_expose.findall(code)
+        exposed = find_exposed_functions(code)
         if not function in exposed:
             raise HTTP(404,
                        rewrite.THREAD_LOCAL.routes.error_message % badf,

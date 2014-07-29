@@ -1,13 +1,16 @@
-import codecs
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
-
-"""Caller will hand this library a buffer and ask it to either convert
+"""
+Caller will hand this library a buffer and ask it to either convert
 it or auto-detect the type.
 
 Based on http://code.activestate.com/recipes/52257/
 
 Licensed under the PSF License
 """
+
+import codecs
 
 # None represents a potentially variable byte. "##" in the XML spec...
 autodetect_dict = {  # bytepattern     : ("name",
@@ -25,15 +28,15 @@ autodetect_dict = {  # bytepattern     : ("name",
 def autoDetectXMLEncoding(buffer):
     """ buffer -> encoding_name
     The buffer should be at least 4 bytes long.
-        Returns None if encoding cannot be detected.
-        Note that encoding_name might not have an installed
-        decoder (e.g. EBCDIC)
+    Returns None if encoding cannot be detected.
+    Note that encoding_name might not have an installed
+    decoder (e.g. EBCDIC)
     """
     # a more efficient implementation would not decode the whole
     # buffer at once but otherwise we'd have to decode a character at
     # a time looking for the quote character...that's a pain
 
-    encoding = "utf_8"  # according to the XML spec, this is the default
+    encoding = "utf_8"    # according to the XML spec, this is the default
                           # this code successively tries to refine the default
                           # whenever it fails to refine, it falls back to
                           # the last place encoding was set.
@@ -49,7 +52,7 @@ def autoDetectXMLEncoding(buffer):
 
     if enc_info:
         encoding = enc_info  # we've got a guess... these are
-                            #the new defaults
+                             #the new defaults
 
         # try to find a more precise encoding using xml declaration
         secret_decoder_ring = codecs.lookup(encoding)[1]

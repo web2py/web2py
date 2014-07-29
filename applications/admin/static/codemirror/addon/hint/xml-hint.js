@@ -1,4 +1,11 @@
-(function() {
+(function(mod) {
+  if (typeof exports == "object" && typeof module == "object") // CommonJS
+    mod(require("../../lib/codemirror"));
+  else if (typeof define == "function" && define.amd) // AMD
+    define(["../../lib/codemirror"], mod);
+  else // Plain browser env
+    mod(CodeMirror);
+})(function(CodeMirror) {
   "use strict";
 
   var Pos = CodeMirror.Pos;
@@ -20,13 +27,13 @@
       var cx = inner.state.context, curTag = cx && tags[cx.tagName];
       var childList = cx ? curTag && curTag.children : tags["!top"];
       if (childList) {
-        for (var i = 0; i < childList.length; ++i) if (!prefix || childList[i].indexOf(prefix) == 0)
+        for (var i = 0; i < childList.length; ++i) if (!prefix || childList[i].lastIndexOf(prefix, 0) == 0)
           result.push("<" + childList[i]);
       } else {
-        for (var name in tags) if (tags.hasOwnProperty(name) && name != "!top" && (!prefix || name.indexOf(prefix) == 0))
+        for (var name in tags) if (tags.hasOwnProperty(name) && name != "!top" && (!prefix || name.lastIndexOf(prefix, 0) == 0))
           result.push("<" + name);
       }
-      if (cx && (!prefix || ("/" + cx.tagName).indexOf(prefix) == 0))
+      if (cx && (!prefix || ("/" + cx.tagName).lastIndexOf(prefix, 0) == 0))
         result.push("</" + cx.tagName + ">");
     } else {
       // Attribute completion
@@ -46,14 +53,14 @@
           }
           replaceToken = true;
         }
-        for (var i = 0; i < atValues.length; ++i) if (!prefix || atValues[i].indexOf(prefix) == 0)
+        for (var i = 0; i < atValues.length; ++i) if (!prefix || atValues[i].lastIndexOf(prefix, 0) == 0)
           result.push(quote + atValues[i] + quote);
       } else { // An attribute name
         if (token.type == "attribute") {
           prefix = token.string;
           replaceToken = true;
         }
-        for (var attr in attrs) if (attrs.hasOwnProperty(attr) && (!prefix || attr.indexOf(prefix) == 0))
+        for (var attr in attrs) if (attrs.hasOwnProperty(attr) && (!prefix || attr.lastIndexOf(prefix, 0) == 0))
           result.push(attr);
       }
     }
@@ -64,6 +71,5 @@
     };
   }
 
-  CodeMirror.xmlHint = getHints; // deprecated
   CodeMirror.registerHelper("hint", "xml", getHints);
-})();
+});

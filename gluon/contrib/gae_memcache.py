@@ -17,25 +17,28 @@ class MemcacheClient(object):
 
     client = Client()
 
-    def __init__(self, request):
+    def __init__(self, request, default_time_expire = 300):
         self.request = request
+        self.default_time_expire = default_time_expire
+
+    def initialize(self):
+        pass
 
     def __call__(
         self,
         key,
         f,
-        time_expire=300,
+        time_expire=None,
     ):
+        if time_expire is None:
+            time_expire = self.default_time_expire
+
         key = '%s/%s' % (self.request.application, key)
-        dt = time_expire
         value = None
-        obj = self.client.get(key)
-        if obj and (dt is None or obj[0] > time.time() - dt):
+        obj = self.client.get(key) if time_expire != 0 else None
+        if obj:
             value = obj[1]
-        elif f is None:
-            if obj:
-                self.client.delete(key)
-        else:
+        elif f is not None:
             value = f()
             self.client.set(key, (time.time(), value), time=time_expire)
         return value
