@@ -35,7 +35,7 @@ import re
 import cStringIO
 from gluon.globals import current
 from gluon.http import redirect
-import inspect
+from gluon.utils import get_callable_argspec
 
 try:
     import gluon.settings as settings
@@ -1278,6 +1278,7 @@ class SQLFORM(FORM):
         table = self.createform(xfields)
         self.components = [table]
 
+
     def createform(self, xfields):
         formstyle = self.formstyle
         if isinstance(formstyle, basestring):
@@ -1288,7 +1289,7 @@ class SQLFORM(FORM):
 
         if callable(formstyle):
             # backward compatibility, 4 argument function is the old style
-            args, varargs, keywords, defaults = inspect.getargspec(formstyle)
+            args, varargs, keywords, defaults = get_callable_argspec(formstyle)
             if defaults and len(args) - len(defaults) == 4 or len(args) == 4:
                 table = TABLE()
                 for id, a, b, c in xfields:
@@ -1767,7 +1768,7 @@ class SQLFORM(FORM):
                     iso_format = {'_data-w2p_date_format' : '%Y-%m-%d'}
                     value_input = SQLFORM.widgets.date.widget(field, field.default, _id=_id, **iso_format)
                 elif field.type == 'datetime':
-                    iso_format = iso_format = {'_data-w2p_datetime_format' : '%Y-%m-%d %H:%M:%S'}
+                    iso_format = {'_data-w2p_datetime_format' : '%Y-%m-%d %H:%M:%S'}
                     value_input = SQLFORM.widgets.datetime.widget(field, field.default, _id=_id, **iso_format)
                 elif (field.type.startswith('reference ') or
                       field.type.startswith('list:reference ')) and \

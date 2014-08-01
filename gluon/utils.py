@@ -14,6 +14,7 @@ import threading
 import struct
 import uuid
 import random
+import inspect
 import time
 import os
 import re
@@ -132,6 +133,16 @@ DIGEST_ALG_BY_SIZE = {
     512 / 4: 'sha512',
 }
 
+def get_callable_argspec(fn):
+    if inspect.isfunction(fn) or inspect.ismethod(fn):
+        inspectable = fn
+    elif inspect.isclass(fn):
+        inspectable = fn.__init__
+    elif hasattr(fn, '__call__'):
+        inspectable = fn.__call__
+    else:
+        inspectable = fn
+    return inspect.getargspec(inspectable)
 
 def pad(s, n=32, padchar=' '):
     return s + (32 - len(s) % 32) * padchar
