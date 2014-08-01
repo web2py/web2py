@@ -11237,8 +11237,8 @@ class Rows(object):
         """
         returns the data as list of trees.
 
-        :param parent_name: the name of the field to holding the reference to
-                            the parent (default parent_id).
+        :param parent_name: the name of the field holding the reference to the
+                            parent (default parent_id).
         :param children_name: the name where the children of each row will be
                               stored as a list (default children).
         :param render: whether we will render the fields using their represent
