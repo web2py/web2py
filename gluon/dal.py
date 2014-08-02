@@ -1638,24 +1638,11 @@ class BaseAdapter(ConnectionPool):
 
     def delete(self, tablename, query):
         sql = self._delete(tablename, query)
-        ### special code to handle CASCADE in SQLite & SpatiaLite
-        db = self.db
-        table = db[tablename]
-        if self.dbengine in ('sqlite', 'spatialite') and table._referenced_by:
-            deleted = [x[table._id.name] for x in db(query).select(table._id)]
-        ### end special code to handle CASCADE in SQLite & SpatiaLite
         self.execute(sql)
         try:
             counter = self.cursor.rowcount
         except:
             counter = None
-        ### special code to handle CASCADE in SQLite & SpatiaLite
-        if self.dbengine in ('sqlite', 'spatialite') and counter:
-            for field in table._referenced_by:
-                if field.type == 'reference '+table._tablename \
-                        and field.ondelete == 'CASCADE':
-                    db(field.belongs(deleted)).delete()
-        ### end special code to handle CASCADE in SQLite & SpatiaLite
         return counter
 
     def get_table(self, query):
@@ -2450,6 +2437,27 @@ class SQLiteAdapter(BaseAdapter):
     def REGEXP(self, first, second):
         return '(%s REGEXP %s)' % (self.expand(first),
                                    self.expand(second, 'string'))
+
+    def delete(self, tablename, query):
+        sql = self._delete(tablename, query)
+        ### Special code to Handle CASCADE in SQLite & SpatiaLite
+        db = self.db
+        table = db[tablename]
+        deleted = [x[table._id.name] for x in db(query).select(table._id)]
+        ### end special code to handle CASCADE in SQLite & SpatiaLite
+        self.execute(sql)
+        try:
+            counter = self.cursor.rowcount
+        except:
+            counter = None
+        ### special code to handle CASCADE in SQLite & SpatiaLite
+        if counter:
+            for field in table._referenced_by:
+                if field.type == 'reference '+table._tablename \
+                        and field.ondelete == 'CASCADE':
+                    db(field.belongs(deleted)).delete()
+        ### end special code to handle CASCADE in SQLite & SpatiaLite
+        return counter
 
     def select(self, query, fields, attributes):
         """
