@@ -2453,7 +2453,7 @@ class SQLiteAdapter(BaseAdapter):
         ### special code to handle CASCADE in SQLite & SpatiaLite
         if counter:
             for field in table._referenced_by:
-                if field.type == 'reference '+table._tablename \
+                if field.type == 'reference '+ tablename \
                         and field.ondelete == 'CASCADE':
                     db(field.belongs(deleted)).delete()
         ### end special code to handle CASCADE in SQLite & SpatiaLite
