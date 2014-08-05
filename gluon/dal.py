@@ -2439,24 +2439,19 @@ class SQLiteAdapter(BaseAdapter):
                                    self.expand(second, 'string'))
 
     def delete(self, tablename, query):
-        sql = self._delete(tablename, query)
-        ### Special code to Handle CASCADE in SQLite & SpatiaLite
+        # SQLite requires its own delete to handle CASCADE
         db = self.db
         table = db[tablename]
         deleted = [x[table._id.name] for x in db(query).select(table._id)]
-        ### end special code to handle CASCADE in SQLite & SpatiaLite
-        self.execute(sql)
-        try:
-            counter = self.cursor.rowcount
-        except:
-            counter = None
-        ### special code to handle CASCADE in SQLite & SpatiaLite
+
+        counter = super(SQLiteAdapter, self).delete(tablename, query)
+
         if counter:
             for field in table._referenced_by:
                 if field.type == 'reference '+ tablename \
                         and field.ondelete == 'CASCADE':
                     db(field.belongs(deleted)).delete()
-        ### end special code to handle CASCADE in SQLite & SpatiaLite
+
         return counter
 
     def select(self, query, fields, attributes):
