@@ -939,7 +939,7 @@ class SQLFORM(FORM):
     # - add translatable label for record ID
     # - add third column to right of fields, populated from the col3 dict
 
-    widgets = Storage(dict(
+    widgets = Storage(
         string=StringWidget,
         text=TextWidget,
         json=JSONWidget,
@@ -959,9 +959,9 @@ class SQLFORM(FORM):
         checkboxes=CheckboxesWidget,
         autocomplete=AutocompleteWidget,
         list=ListWidget,
-    ))
+    )
 
-    formstyles = Storage(dict(
+    formstyles = Storage(
         table3cols=formstyle_table3cols,
         table2cols=formstyle_table2cols,
         divs=formstyle_divs,
@@ -969,7 +969,7 @@ class SQLFORM(FORM):
         bootstrap=formstyle_bootstrap,
         bootstrap3=formstyle_bootstrap3,
         inline=formstyle_inline,
-    ))
+    )
 
     FIELDNAME_REQUEST_DELETE = 'delete_this_record'
     FIELDKEY_DELETE_RECORD = 'delete_record'
