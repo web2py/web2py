@@ -35,7 +35,6 @@ import re
 import cStringIO
 from gluon.globals import current
 from gluon.http import redirect
-from gluon.utils import get_callable_argspec
 
 try:
     import gluon.settings as settings
@@ -1288,9 +1287,13 @@ class SQLFORM(FORM):
                 raise RuntimeError('formstyle not found')
 
         if callable(formstyle):
-            # backward compatibility, 4 argument function is the old style
-            args, varargs, keywords, defaults = get_callable_argspec(formstyle)
-            if defaults and len(args) - len(defaults) == 4 or len(args) == 4:
+            try:
+                table = formstyle(self, xfields)
+                for id, a, b, c in xfields:
+                    self.field_parent[id] = getattr(b, 'parent', None) \
+                        if isinstance(b, XmlComponent) else None
+            except TypeError:
+                # backward compatibility, 4 argument function is the old style
                 table = TABLE()
                 for id, a, b, c in xfields:
                     newrows = formstyle(id, a, b, c)
@@ -1300,11 +1303,6 @@ class SQLFORM(FORM):
                         newrows = [newrows]
                     for newrow in newrows:
                         table.append(newrow)
-            else:
-                table = formstyle(self, xfields)
-                for id, a, b, c in xfields:
-                    self.field_parent[id] = getattr(b, 'parent', None) \
-                        if isinstance(b, XmlComponent) else None
         else:
             raise RuntimeError('formstyle not supported')
         return table
