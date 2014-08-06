@@ -1,4 +1,4 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
 
 # SOAP webservices (server and client) example and basic test
 # (using pysimplesoap contrib included in web2py)
