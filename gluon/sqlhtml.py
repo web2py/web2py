@@ -2442,7 +2442,7 @@ class SQLFORM(FORM):
                 message = T('at least %(nrows)s records found') % dict(nrows=nrows)
             else:
                 message = T('%(nrows)s records found') % dict(nrows=nrows)
-        console.append(DIV(message or T('None'), _class='web2py_counter'))
+        console.append(DIV(message or '', _class='web2py_counter'))
 
         paginator = UL()
         if paginate and dbset._db._adapter.dbengine == 'google:datastore':
