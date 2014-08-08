@@ -3222,8 +3222,7 @@ class Auth(object):
         passfield = self.settings.password_field
         form = SQLFORM.factory(
             Field('old_password', 'password',
-                label=self.messages.old_password,
-                requires=table_user[passfield].requires),
+                label=self.messages.old_password),
             Field('new_password', 'password',
                 label=self.messages.new_password,
                 requires=table_user[passfield].requires),
@@ -3242,7 +3241,8 @@ class Auth(object):
                         onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
 
-            if not form.vars['old_password'] == s.select(limitby=(0,1), orderby_on_limitby=False).first()[passfield]:
+            current_user = s.select(limitby=(0,1), orderby_on_limitby=False).first()
+            if not form.vars['old_password'] == current_user[passfield]:
                 form.errors['old_password'] = self.messages.invalid_password
             else:
                 d = {passfield: str(form.vars.new_password)}
