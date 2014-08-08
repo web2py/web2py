@@ -2177,15 +2177,14 @@ class Auth(object):
         elif not fields.get(settings.userfield):
             raise ValueError("register_bare: " +
                              "userfield not provided or invalid")
-        fields[settings.passfield
-            ] = settings.table_user[settings.passfield].validate(
-                    fields[settings.passfield])[0]
-        user = self.get_or_create_user(fields, login=False,
-                   get=False,
-                   update_fields=self.settings.update_fields)
+        fields[settings.passfield] = \
+            settings.table_user[settings.passfield].validate(
+            fields[settings.passfield])[0]
+        user = self.get_or_create_user(
+            fields, login=False, get=False,
+            update_fields=self.settings.update_fields)
         if not user:
-            # get or create did not create a user (it ignores
-            # duplicate records)
+            # get or create did not create a user (it ignores duplicate records)
             return False
         return user
 

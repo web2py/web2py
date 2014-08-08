@@ -2840,6 +2840,8 @@ class PostgreSQLAdapter(BaseAdapter):
         self._after_connection = after_connection
         self.srid = srid
         self.find_or_make_work_folder()
+        self._last_insert = None # for INSERT ... RETURNING ID
+    
         ruri = uri.split('://', 1)[1]
         m = self.REGEX_URI.match(ruri)
         if not m:
@@ -2897,6 +2899,7 @@ class PostgreSQLAdapter(BaseAdapter):
                 self._last_insert = None
                 return 'INSERT INTO %s(%s) VALUES (%s);' % (table_rname, keys, values)
         else:
+            self._last_insert
             return self._insert_empty(table)
 
     def lastrowid(self, table=None):
