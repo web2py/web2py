@@ -1017,6 +1017,7 @@ class SQLFORM(FORM):
         formstyle='table3cols',
         buttons=['submit'],
         separator=': ',
+        extra_fields=None,
         **attributes
     ):
         T = current.T
@@ -1080,11 +1081,19 @@ class SQLFORM(FORM):
 
         sep = separator or ''
 
+        extra_fields = extra_fields or []
+        self.extra_fields = {}
+        for extra_field in extra_fields:
+            extra_field.tablename = '_extra'
+            self.fields.append(extra_field.name)
+            self.extra_fields[extra_field.name] = extra_field
+
         for fieldname in self.fields:
             if fieldname.find('.') >= 0:
                 continue
 
-            field = self.table[fieldname]
+            field = (self.table[fieldname] if fieldname in self.table.fields 
+                     else self.extra_fields[fieldname])
             comment = None
 
             if comments:
@@ -1385,7 +1394,8 @@ class SQLFORM(FORM):
         # ## THIS IS FOR UNIQUE RECORDS, read IS_NOT_IN_DB
 
         for fieldname in self.fields:
-            field = self.table[fieldname]
+            field = (self.table[fieldname] if fieldname in self.table.fields
+                     else self.extra_fields[fieldname])
             requires = field.requires or []
             if not isinstance(requires, (list, tuple)):
                 requires = [requires]
@@ -1430,7 +1440,10 @@ class SQLFORM(FORM):
             # auch is true when user tries to delete a record
             # that does not pass validation, yet it should be deleted
             for fieldname in self.fields:
-                field = self.table[fieldname]
+
+                field = (self.table[fieldname] 
+                         if fieldname in self.table.fields
+                         else self.extra_fields[fieldname])
                 ### this is a workaround! widgets should always have default not None!
                 if not field.widget and field.type.startswith('list:') and \
                         not OptionsWidget.has_options(field):
@@ -1441,7 +1454,7 @@ class SQLFORM(FORM):
                     elif self.record:
                         value = self.record[fieldname]
                     else:
-                        value = self.table[fieldname].default
+                        value = field.default
                     row_id = '%s_%s%s' % (
                         self.table, fieldname, SQLFORM.ID_ROW_SUFFIX)
                     widget = field.widget(field, value)
@@ -1588,6 +1601,10 @@ class SQLFORM(FORM):
                 fields[fieldname] = self.vars[fieldname]
 
         if dbio:
+            print fields
+            for fieldname in fields:
+                if fieldname in self.extra_fields:
+                    del fields[fieldname]
             if 'delete_this_record' in fields:
                 # this should never happen but seems to happen to some
                 del fields['delete_this_record']
@@ -1756,35 +1773,37 @@ class SQLFORM(FORM):
                 label = isinstance(
                     field.label, str) and T(field.label) or field.label
                 selectfields.append(OPTION(label, _value=str(field)))
-                operators = SELECT(*[OPTION(T(option), _value=option) for option in options])
+                operators = SELECT(*[OPTION(T(option), _value=option) for option in options],_class='form-control')
                 _id = "%s_%s" % (value_id, name)
                 if field.type == 'boolean':
-                    value_input = SQLFORM.widgets.boolean.widget(field, field.default, _id=_id)
+                    value_input = SQLFORM.widgets.boolean.widget(field, field.default, _id=_id,_class='form-control')
                 elif field.type == 'double':
-                    value_input = SQLFORM.widgets.double.widget(field, field.default, _id=_id)
+                    value_input = SQLFORM.widgets.double.widget(field, field.default, _id=_id,_class='form-control')
                 elif field.type == 'time':
-                    value_input = SQLFORM.widgets.time.widget(field, field.default, _id=_id)
+                    value_input = SQLFORM.widgets.time.widget(field, field.default, _id=_id,_class='form-control')
                 elif field.type == 'date':
                     iso_format = {'_data-w2p_date_format' : '%Y-%m-%d'}
-                    value_input = SQLFORM.widgets.date.widget(field, field.default, _id=_id, **iso_format)
+                    value_input = SQLFORM.widgets.date.widget(field, field.default, _id=_id,_class='form-control', **iso_format)
                 elif field.type == 'datetime':
                     iso_format = {'_data-w2p_datetime_format' : '%Y-%m-%d %H:%M:%S'}
-                    value_input = SQLFORM.widgets.datetime.widget(field, field.default, _id=_id, **iso_format)
+                    value_input = SQLFORM.widgets.datetime.widget(field, field.default, _id=_id,_class='form-control', **iso_format)
                 elif (field.type.startswith('reference ') or
                       field.type.startswith('list:reference ')) and \
                       hasattr(field.requires, 'options'):
                     value_input = SELECT(
                         *[OPTION(v, _value=k)
                           for k, v in field.requires.options()],
+                         _class='form-control',
                          **dict(_id=_id))
                 elif field.type == 'integer' or \
                         field.type.startswith('reference ') or \
                         field.type.startswith('list:integer') or \
                         field.type.startswith('list:reference '):
-                    value_input = SQLFORM.widgets.integer.widget(field, field.default, _id=_id)
+                    value_input = SQLFORM.widgets.integer.widget(field, field.default, _id=_id,_class='form-control')
                 else:
                     value_input = INPUT(
-                        _type='text', _id=_id, _class=field.type)
+                        _type='text', _id=_id, 
+                        _class=(field.type or '')+' form-control')
 
                 new_button = INPUT(
                     _type="button", _value=T('New Search'), _class="btn btn-default", _title=T('Start building a new search'),
@@ -1803,13 +1822,13 @@ class SQLFORM(FORM):
                     operators, value_input, new_button,
                     and_button, or_button, close_button,
                     _id='%s_%s' % (field_id, name),
-                        _class='w2p_query_row hidden',
+                        _class='w2p_query_row',
                         _style='display:inline'))
 
         criteria.insert(0, SELECT(
                 _id=fields_id,
                 _onchange="jQuery('.w2p_query_row').hide();jQuery('#%s_'+jQuery('#%s').val().replace('.','-')).show();" % (field_id, fields_id),
-                _style='float:left',
+                _style='float:left',_class='form-control',
                 *selectfields))
 
         fadd = SCRIPT("""
@@ -2299,7 +2318,7 @@ class SQLFORM(FORM):
                 skeywords_id = '%s_keywords' % prefix
                 search_widget = lambda sfield, url: CAT(FORM(
                     INPUT(_name='keywords', _value=request.vars.keywords,
-                          _id=skeywords_id,
+                          _id=skeywords_id,_class='form-control',
                           _onfocus="jQuery('#%s').change();jQuery('#%s').slideDown();" % (spanel_id, sfields_id) if advanced_search else ''
                           ),
                     INPUT(_type='submit', _value=T('Search'), _class="btn btn-default"),
