@@ -40,16 +40,19 @@ response.generic_patterns = ['*'] if request.is_local else []
 ## (more options discussed in gluon/tools.py)
 #########################################################################
 
-from gluon.tools import Auth, Crud, Service, PluginManager, prettydate
+from gluon.tools import Auth, Service, PluginManager
+
 auth = Auth(db)
-crud, service, plugins = Crud(db), Service(), PluginManager()
+service = Service()
+plugins = PluginManager()
 
 ## create all tables needed by auth if not custom tables
 auth.define_tables(username=False, signature=False)
+auth.settings.formstyle = SQLFORM.formstyles.bootstrap3
 
 ## configure email
 mail = auth.settings.mailer
-mail.settings.server = 'logging' or 'smtp.gmail.com:587'
+mail.settings.server = 'logging' if request.is_local else 'smtp.gmail.com:587'
 mail.settings.sender = 'you@gmail.com'
 mail.settings.login = 'username:password'
 

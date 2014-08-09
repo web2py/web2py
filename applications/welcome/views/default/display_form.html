@@ -1,0 +1,18 @@
+{{extend 'layout.html'}}
+
+<h2>{{=T(request.function.replace('_',' ').capitalize())}}</h2>
+<p class="lead">&nbsp;</p>
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+            {{=form}}
+        </div>
+    </div>
+</div>
+
+{{block page_js}}
+<script>
+    jQuery("#web2py_user_form input:visible:enabled:first").focus();
+</script>
+{{end page_js}}
