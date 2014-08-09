@@ -2177,15 +2177,14 @@ class Auth(object):
         elif not fields.get(settings.userfield):
             raise ValueError("register_bare: " +
                              "userfield not provided or invalid")
-        fields[settings.passfield
-            ] = settings.table_user[settings.passfield].validate(
-                    fields[settings.passfield])[0]
-        user = self.get_or_create_user(fields, login=False,
-                   get=False,
-                   update_fields=self.settings.update_fields)
+        fields[settings.passfield] = \
+            settings.table_user[settings.passfield].validate(
+            fields[settings.passfield])[0]
+        user = self.get_or_create_user(
+            fields, login=False, get=False,
+            update_fields=self.settings.update_fields)
         if not user:
-            # get or create did not create a user (it ignores
-            # duplicate records)
+            # get or create did not create a user (it ignores duplicate records)
             return False
         return user
 
@@ -3223,8 +3222,7 @@ class Auth(object):
         passfield = self.settings.password_field
         form = SQLFORM.factory(
             Field('old_password', 'password',
-                label=self.messages.old_password,
-                requires=table_user[passfield].requires),
+                label=self.messages.old_password),
             Field('new_password', 'password',
                 label=self.messages.new_password,
                 requires=table_user[passfield].requires),
@@ -3243,7 +3241,8 @@ class Auth(object):
                         onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
 
-            if not form.vars['old_password'] == s.select(limitby=(0,1), orderby_on_limitby=False).first()[passfield]:
+            current_user = s.select(limitby=(0,1), orderby_on_limitby=False).first()
+            if not form.vars['old_password'] == current_user[passfield]:
                 form.errors['old_password'] = self.messages.invalid_password
             else:
                 d = {passfield: str(form.vars.new_password)}
@@ -5380,8 +5379,11 @@ class Expose(object):
         base = base or os.path.join(current.request.folder, 'static')
         basename = basename or current.request.function
         self.basename = basename
-        self.args = current.request.raw_args and \
-            [arg for arg in current.request.raw_args.split('/') if arg] or []
+        
+        if current.request.raw_args:            
+            self.args = [arg for arg in current.request.raw_args.split('/') if arg]
+        else:
+            self.args = [arg for arg in current.request.args if args]
         filename = os.path.join(base, *self.args)
         if not os.path.exists(filename):
             raise HTTP(404, "FILE NOT FOUND")

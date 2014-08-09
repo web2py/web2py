@@ -2442,7 +2442,7 @@ class SQLFORM(FORM):
                 message = T('at least %(nrows)s records found') % dict(nrows=nrows)
             else:
                 message = T('%(nrows)s records found') % dict(nrows=nrows)
-        console.append(DIV(message or T('None'), _class='web2py_counter'))
+        console.append(DIV(message or '', _class='web2py_counter'))
 
         paginator = UL()
         if paginate and dbset._db._adapter.dbengine == 'google:datastore':
@@ -2672,7 +2672,7 @@ class SQLFORM(FORM):
 
     @staticmethod
     def smartgrid(table, constraints=None, linked_tables=None,
-                  links=None, links_in_grid=True,
+                  links=None, links_in_grid=True, max_linked_inline=0,
                   args=None, user_signature=True,
                   divider='>', breadcrumbs_class='',
                   **kwargs):
@@ -2814,6 +2814,8 @@ class SQLFORM(FORM):
             linked_tables = linked_tables.get(table._tablename, [])
         if linked_tables:
             for item in linked_tables:
+                opts = [OPTION(T('References')+':', _value='')]
+                linked = []
                 tb = None
                 if isinstance(item, Table) and item._tablename in check:
                     tablename = item._tablename
@@ -2835,10 +2837,21 @@ class SQLFORM(FORM):
                         t = T(tb._plural) if not multiple_links else \
                             T(tb._plural + '(' + fieldname + ')')
                         args0 = tablename + '.' + fieldname
-                        links.append(
+                        opts.append(OPTION(t,_value=args0))
+                        linked.append(
                             lambda row, t=t, nargs=nargs, args0=args0:
                             A(SPAN(t), cid=request.cid, _href=url(
                               args=[args0, row[id_field_name]])))
+
+        if 0 < max_linked_inline < len(opts)-1:
+            links.append(
+                    lambda row:
+                    SELECT(opts, cid=request.cid,  _rowid=row[id_field_name],
+                        _onchange="javascript:document.location='"+url()+
+                                  "/'+this.value+'/'+this.attributes['rowid'].value"
+                    )
+            )
+        else: links += linked
 
         grid = SQLFORM.grid(query, args=request.args[:nargs], links=links,
                             links_in_grid=links_in_grid,

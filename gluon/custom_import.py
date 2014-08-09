@@ -97,7 +97,7 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
             except ImportError, e3:
                 raise ImportError, e1, import_tb  # there an import error in the module
         except Exception, e2:
-            raise e2  # there is an error in the module
+            raise  # there is an error in the module
         finally:
             if import_tb:
                 import_tb = None

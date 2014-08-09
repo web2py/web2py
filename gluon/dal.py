@@ -2840,6 +2840,8 @@ class PostgreSQLAdapter(BaseAdapter):
         self._after_connection = after_connection
         self.srid = srid
         self.find_or_make_work_folder()
+        self._last_insert = None # for INSERT ... RETURNING ID
+    
         ruri = uri.split('://', 1)[1]
         m = self.REGEX_URI.match(ruri)
         if not m:
@@ -2884,10 +2886,29 @@ class PostgreSQLAdapter(BaseAdapter):
         self.execute("SET standard_conforming_strings=on;")
         self.try_json()
 
-    def lastrowid(self, table=None):
-        self.execute("select lastval()")
-        return int(self.cursor.fetchone()[0])
+    def _insert(self, table, fields):
+        table_rname = table.sqlsafe
+        if fields:
+            keys = ','.join(f.sqlsafe_name for f, v in fields)
+            values = ','.join(self.expand(v, f.type) for f, v in fields)
+            if table._id:
+                self._last_insert = (table._id, 1)
+                return 'INSERT INTO %s(%s) VALUES (%s) RETURNING %s;' % (
+                    table_rname, keys, values, table._id.name)
+            else:
+                self._last_insert = None
+                return 'INSERT INTO %s(%s) VALUES (%s);' % (table_rname, keys, values)
+        else:
+            self._last_insert
+            return self._insert_empty(table)
 
+    def lastrowid(self, table=None):
+        if self._last_insert:
+            return int(self.cursor.fetchone()[0])
+        else:
+            self.execute("select lastval()")
+            return int(self.cursor.fetchone()[0])
+        
     def try_json(self):
         # check JSON data type support
         # (to be added to after_connection)
