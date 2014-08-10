@@ -1638,24 +1638,11 @@ class BaseAdapter(ConnectionPool):
 
     def delete(self, tablename, query):
         sql = self._delete(tablename, query)
-        ### special code to handle CASCADE in SQLite & SpatiaLite
-        db = self.db
-        table = db[tablename]
-        if self.dbengine in ('sqlite', 'spatialite') and table._referenced_by:
-            deleted = [x[table._id.name] for x in db(query).select(table._id)]
-        ### end special code to handle CASCADE in SQLite & SpatiaLite
         self.execute(sql)
         try:
             counter = self.cursor.rowcount
         except:
             counter = None
-        ### special code to handle CASCADE in SQLite & SpatiaLite
-        if self.dbengine in ('sqlite', 'spatialite') and counter:
-            for field in table._referenced_by:
-                if field.type == 'reference '+table._tablename \
-                        and field.ondelete == 'CASCADE':
-                    db(field.belongs(deleted)).delete()
-        ### end special code to handle CASCADE in SQLite & SpatiaLite
         return counter
 
     def get_table(self, query):
@@ -2450,6 +2437,22 @@ class SQLiteAdapter(BaseAdapter):
     def REGEXP(self, first, second):
         return '(%s REGEXP %s)' % (self.expand(first),
                                    self.expand(second, 'string'))
+
+    def delete(self, tablename, query):
+        # SQLite requires its own delete to handle CASCADE
+        db = self.db
+        table = db[tablename]
+        deleted = [x[table._id.name] for x in db(query).select(table._id)]
+
+        counter = super(SQLiteAdapter, self).delete(tablename, query)
+
+        if counter:
+            for field in table._referenced_by:
+                if field.type == 'reference '+ tablename \
+                        and field.ondelete == 'CASCADE':
+                    db(field.belongs(deleted)).delete()
+
+        return counter
 
     def select(self, query, fields, attributes):
         """
@@ -11258,8 +11261,8 @@ class Rows(object):
         """
         returns the data as list of trees.
 
-        :param parent_name: the name of the field to holding the reference to
-                            the parent (default parent_id).
+        :param parent_name: the name of the field holding the reference to the
+                            parent (default parent_id).
         :param children_name: the name where the children of each row will be
                               stored as a list (default children).
         :param render: whether we will render the fields using their represent

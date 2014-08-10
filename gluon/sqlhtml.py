@@ -35,7 +35,6 @@ import re
 import cStringIO
 from gluon.globals import current
 from gluon.http import redirect
-from gluon.utils import get_callable_argspec
 
 try:
     import gluon.settings as settings
@@ -940,7 +939,7 @@ class SQLFORM(FORM):
     # - add translatable label for record ID
     # - add third column to right of fields, populated from the col3 dict
 
-    widgets = Storage(dict(
+    widgets = Storage(
         string=StringWidget,
         text=TextWidget,
         json=JSONWidget,
@@ -960,9 +959,9 @@ class SQLFORM(FORM):
         checkboxes=CheckboxesWidget,
         autocomplete=AutocompleteWidget,
         list=ListWidget,
-    ))
+    )
 
-    formstyles = Storage(dict(
+    formstyles = Storage(
         table3cols=formstyle_table3cols,
         table2cols=formstyle_table2cols,
         divs=formstyle_divs,
@@ -970,7 +969,7 @@ class SQLFORM(FORM):
         bootstrap=formstyle_bootstrap,
         bootstrap3=formstyle_bootstrap3,
         inline=formstyle_inline,
-    ))
+    )
 
     FIELDNAME_REQUEST_DELETE = 'delete_this_record'
     FIELDKEY_DELETE_RECORD = 'delete_record'
@@ -1297,9 +1296,13 @@ class SQLFORM(FORM):
                 raise RuntimeError('formstyle not found')
 
         if callable(formstyle):
-            # backward compatibility, 4 argument function is the old style
-            args, varargs, keywords, defaults = get_callable_argspec(formstyle)
-            if defaults and len(args) - len(defaults) == 4 or len(args) == 4:
+            try:
+                table = formstyle(self, xfields)
+                for id, a, b, c in xfields:
+                    self.field_parent[id] = getattr(b, 'parent', None) \
+                        if isinstance(b, XmlComponent) else None
+            except TypeError:
+                # backward compatibility, 4 argument function is the old style
                 table = TABLE()
                 for id, a, b, c in xfields:
                     newrows = formstyle(id, a, b, c)
@@ -1309,11 +1312,6 @@ class SQLFORM(FORM):
                         newrows = [newrows]
                     for newrow in newrows:
                         table.append(newrow)
-            else:
-                table = formstyle(self, xfields)
-                for id, a, b, c in xfields:
-                    self.field_parent[id] = getattr(b, 'parent', None) \
-                        if isinstance(b, XmlComponent) else None
         else:
             raise RuntimeError('formstyle not supported')
         return table

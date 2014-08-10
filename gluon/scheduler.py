@@ -1382,8 +1382,8 @@ class Scheduler(MetaScheduler):
     def get_workers(self, only_ticker=False):
         """ Returns a dict holding worker_name : {**columns}
         representing all "registered" workers
-        only_ticker returns only the worker running as a TICKER,
-        if there is any
+        only_ticker returns only the workers running as a TICKER,
+        if there are any
         """
         db = self.db
         if only_ticker:
@@ -1392,14 +1392,13 @@ class Scheduler(MetaScheduler):
             workers = db(db.scheduler_worker.id > 0).select()
         all_workers = {}
         for row in workers:
-            all_workers[row.worker_name] = Storage(dict(
+            all_workers[row.worker_name] = Storage(
                 status=row.status,
                 first_heartbeat=row.first_heartbeat,
                 last_heartbeat=row.last_heartbeat,
                 group_names=row.group_names,
                 is_ticker=row.is_ticker,
                 worker_stats=row.worker_stats
-                )
             )
         return all_workers
 
