@@ -1863,6 +1863,7 @@ class INPUT(DIV):
             t = self['_type'] = 'text'
         t = t.lower()
         value = self['value']
+
         if self['_value'] is None or isinstance(self['_value'],cgi.FieldStorage):
             _value = None
         else:

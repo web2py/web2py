@@ -1140,12 +1140,12 @@ class SQLFORM(FORM):
                 default = field.default
                 if isinstance(default, CALLABLETYPES):
                     default = default()
-
             cond = readonly or \
                 (not ignore_rw and not field.writable and field.readable)
 
-            if default is not None and not cond:
+            if default is not None and not cond:                
                 default = field.formatter(default)
+
             dspval = default
             inpval = default
 
@@ -1599,7 +1599,6 @@ class SQLFORM(FORM):
                 fields[fieldname] = self.vars[fieldname]
 
         if dbio:
-            print fields
             for fieldname in fields:
                 if fieldname in self.extra_fields:
                     del fields[fieldname]

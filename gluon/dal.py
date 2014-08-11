@@ -10261,8 +10261,10 @@ class Field(Expression):
 
     def formatter(self, value):
         requires = self.requires
-        if value is None or not requires:
-            return value or self.map_none
+        if value is None:
+            return self.map_none
+        if not requires:
+            return value
         if not isinstance(requires, (list, tuple)):
             requires = [requires]
         elif isinstance(requires, tuple):
