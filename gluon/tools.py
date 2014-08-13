@@ -4457,6 +4457,14 @@ def geocode(address):
         return (0.0, 0.0)
 
 
+def reverse_geocode(lat, lng, lang=current.T.accepted_language):
+    """ Try to get an approximate address for a given latitude, longitude. """
+    try:
+        return json_parser.loads(fetch("http://maps.googleapis.com/maps/api/geocode/json?latlng=%(lat)s,%(lng)s&sensor=true/false&language=%(lang)s" % locals()))['results'][0]['formatted_address']
+    except:
+        return ''
+
+
 def universal_caller(f, *a, **b):
     c = f.func_code.co_argcount
     n = f.func_code.co_varnames[:c]
