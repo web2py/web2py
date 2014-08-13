@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="{{=T.accepted_language or 'en'}}">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <!-- Favicons -->
+    <link rel="shortcut icon" href="{{=URL('static','images/favicon.ico')}}" type="image/x-icon">
+    <link rel="apple-touch-icon" href="{{=URL('static','images/favicon.png')}}">
+
+    <title>{{=response.title or request.application}}</title>
+
+    
+    {{
+       response.files.insert(0,URL('static','css/web2py.css'))
+       response.files.insert(1,URL('static','css/bootstrap.min.css'))
+       response.files.insert(2,URL('static','css/web2py-bootstrap3-c.css'))
+    }}
+
+    <!-- HTML5 shim and Respond.js IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/libs/html5shiv/3.7.0/html5shiv.js"></script>
+      <script src="https://oss.maxcdn.com/libs/respond.js/1.3.0/respond.min.js"></script>
+    <![endif]-->
+    
+    {{include 'web2py_ajax.html'}}
+    <style>
+    .jumbotron h1 {font-size: 58px;}
+    </style>
+    {{block head}}{{end}}
+    {{response.subtitle="Cras justo odio, dapibus ac facilisis in, egestas \
+                         eget quam. Fusce dapibus, tellus ac cursus commodo, \
+                         tortor mauris condimentum nibh, ut fermentum massa \
+                         justo sit amet risus."}}
+  </head>
+
+  <body>
+
+    <div class="container">
+      <div class="header">
+        {{if response.menu:}}
+            {{=bs3.menu('pills','pull-right')}}
+        {{pass}}
+        {{='auth' in globals() and bs3.navbar() or ''}}
+        <h3><a data-w2p_disable_with="default" href="http://www.web2py.com/" id="web2py-logo"><b>web<span>2</span>py</b>™&nbsp;</a></h3>
+      </div>
+
+      <div class="jumbotron">
+        {{if response.title:}}
+        <h1>{{=response.title}}</h1>
+        <p class="lead">{{=response.subtitle or ''}}</p>
+        {{pass}}
+
+        <p><button id="w2padmin-btn" class="btn btn-lg btn-success ">
+            <i class="glyphicon glyphicon-cog"></i> {{=T("Administrative Interface")}}
+        </button></p>
+      </div>
+
+      <div class="row marketing">
+        <div class="col-lg-6">
+          <h4>{{=T('You are successfully running web2py')}}</h4>
+          <p>{{=T('You can modify this application and adapt it to your needs')}}</p>
+
+          <h4>Subheading</h4>
+          <p>Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Cras mattis consectetur purus sit amet fermentum.</p>
+
+          <h4>Subheading</h4>
+          <p>Maecenas sed diam eget risus varius blandit sit amet non magna.</p>
+        </div>
+
+        <div class="col-lg-6">
+          <h4>{{=T("Don't know what to do?")}}</h4>
+          <p>{{=A(T("Online examples"), _href=URL('examples','default','index'))}}<br>
+          <a href="http://web2py.com">web2py.com</a><br>
+          <a href="http://web2py.com/book">{{=T('Documentation')}}</a></p>
+
+          <h4>Subheading</h4>
+          <p>Morbi leo risus, porta ac consectetur ac, vestibulum at eros. Cras mattis consectetur purus sit amet fermentum.</p>
+
+          <h4>Subheading</h4>
+          <p>Maecenas sed diam eget risus varius blandit sit amet non magna.</p>
+        </div>
+      </div>
+
+      <div class="a_footer">
+        <p class="pull-right">{{=T('Powered by')}} <a href="http://www.web2py.com/">web2py</a></p>
+        <p>{{=T('Copyright')}} &#169; {{=request.now.year}}</p>
+      </div>
+
+    </div> <!-- /container -->
+
+
+<!-- The javascript =========================================================== -->
+        <script src="{{=URL('static','js/bootstrap.min.js')}}"></script>
+        <script src="{{=URL('static','js/web2py-bootstrap3.js')}}"></script>
+        <script>
+            $(document).ready(function() {
+                $(".web2py-menu-first").addClass('active');
+                $("#w2p-auth-bar").parent().appendTo('.nav-pills');
+                $('#w2padmin-btn').click(function() {
+                    window.location = "{{=URL('admin','default','index')}}";
+                });
+            });
+        </script>
+        {{block page_js}}{{end page_js}}
+        {{if response.google_analytics_id:}}
+<!-- Analytics ================================================================ -->
+        <script src="{{=URL('static','js/analytics.min.js')}}"></script>
+        <script type="text/javascript">
+            analytics.initialize({
+            'Google Analytics':{trackingId:'{{=response.google_analytics_id}}'}
+            });
+        </script>
+        {{pass}}
+<!-- Share ==================================================================== -->
+        <script src="{{=URL('static','js/share.js',vars=dict(static=URL('static','images')))}}"></script>
+  </body>
+</html>

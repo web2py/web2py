@@ -15,6 +15,7 @@ import cPickle
 import datetime
 import thread
 import logging
+import copy
 import sys
 import glob
 import os
@@ -948,7 +949,7 @@ class Recaptcha(DIV):
             captcha.append(DIV(self.errors['captcha'], _class='error'))
             return XML(captcha).xml()
 
-
+# this should only be used for catcha and perhaps not even for that
 def addrow(form, a, b, c, style, _id, position=-1):
     if style == "divs":
         form[0].insert(position, DIV(DIV(LABEL(a), _class='w2p_fl'),
@@ -1360,7 +1361,7 @@ class Auth(object):
 
         # for "remember me" option
         response = current.response
-        if auth and auth.remember:
+        if auth and auth.remember_me:
             # when user wants to be logged in for longer
             response.session_cookie_expires = auth.expiration
         if signature:
@@ -2177,15 +2178,14 @@ class Auth(object):
         elif not fields.get(settings.userfield):
             raise ValueError("register_bare: " +
                              "userfield not provided or invalid")
-        fields[settings.passfield
-            ] = settings.table_user[settings.passfield].validate(
-                    fields[settings.passfield])[0]
-        user = self.get_or_create_user(fields, login=False,
-                   get=False,
-                   update_fields=self.settings.update_fields)
+        fields[settings.passfield] = \
+            settings.table_user[settings.passfield].validate(
+            fields[settings.passfield])[0]
+        user = self.get_or_create_user(
+            fields, login=False, get=False,
+            update_fields=self.settings.update_fields)
         if not user:
-            # get or create did not create a user (it ignores
-            # duplicate records)
+            # get or create did not create a user (it ignores duplicate records)
             return False
         return user
 
@@ -2401,6 +2401,14 @@ class Auth(object):
         # previous version of this file, other than for indentation inside
         # to put it inside the if-block
         if session.auth_two_factor_user is None:
+
+            if settings.remember_me_form:
+                extra_fields = [
+                    Field('remember_me','boolean',default=False,
+                          label = self.messages.label_remember_me)]
+            else:
+                extra_fields = []
+
             # do we use our own login form, or from a central source?
             if settings.login_form == self:
                 form = SQLFORM(
@@ -2411,38 +2419,10 @@ class Auth(object):
                     submit_button=self.messages.login_button,
                     delete_label=self.messages.delete_label,
                     formstyle=settings.formstyle,
-                    separator=settings.label_separator
+                    separator=settings.label_separator,
+                    extra_fields = extra_fields,
                 )
     
-                if settings.remember_me_form:
-                    ## adds a new input checkbox "remember me for longer"
-                    if settings.formstyle != 'bootstrap':
-                        addrow(form, XML("&nbsp;"),
-                               DIV(XML("&nbsp;"),
-                                   INPUT(_type='checkbox',
-                                         _class='checkbox',
-                                         _id="auth_user_remember",
-                                             _name="remember",
-                                         ),
-                                   XML("&nbsp;&nbsp;"),
-                                   LABEL(
-                                   self.messages.label_remember_me,
-                                   _for="auth_user_remember",
-                                   )), "",
-                               settings.formstyle,
-                               'auth_user_remember__row')
-                    elif settings.formstyle == 'bootstrap':
-                        addrow(form,
-                               "",
-                               LABEL(
-                                   INPUT(_type='checkbox',
-                                         _id="auth_user_remember",
-                                         _name="remember"),
-                                   self.messages.label_remember_me,
-                                   _class="checkbox"),
-                               "",
-                               settings.formstyle,
-                               'auth_user_remember__row')
     
                 captcha = settings.login_captcha or \
                     (settings.login_captcha != False and settings.captcha)
@@ -2616,10 +2596,10 @@ class Auth(object):
             # user wants to be logged in for longer
             self.login_user(user)
             session.auth.expiration = \
-                request.vars.get('remember', False) and \
+                request.post_vars.remember_me and \
                 settings.long_expiration or \
                 settings.expiration
-            session.auth.remember = 'remember' in request.vars
+            session.auth.remember_me = 'remember_me' in request.post_vars
             self.log_event(log, user)
             session.flash = self.messages.logged_in
 
@@ -2725,6 +2705,13 @@ class Auth(object):
 
         passfield = self.settings.password_field
         formstyle = self.settings.formstyle
+        if self.settings.register_verify_password:
+            extra_fields = [
+                Field("password_two", "password", requires=IS_EQUAL_TO(
+                        request.post_vars.get(passfield,None),
+                        error_message=self.messages.mismatched_password))]
+        else:
+            extra_fields = []
         form = SQLFORM(table_user,
                        fields=self.settings.register_fields,
                        hidden=dict(_next=next),
@@ -2732,33 +2719,10 @@ class Auth(object):
                        submit_button=self.messages.register_button,
                        delete_label=self.messages.delete_label,
                        formstyle=formstyle,
-                       separator=self.settings.label_separator
+                       separator=self.settings.label_separator,
+                       extra_fields = extra_fields
                        )
-        if self.settings.register_verify_password:
-            for i, row in enumerate(form[0].components):
-                item = row.element('input', _name=passfield)
-                if item:
-                    form.custom.widget.password_two = \
-                        INPUT(_name="password_two", _type="password",
-                              _class="password",
-                              requires=IS_EXPR(
-                              'value==%s' %
-                              repr(request.vars.get(passfield, None)),
-                              error_message=self.messages.mismatched_password))
 
-                    if formstyle == 'bootstrap':
-                        form.custom.widget.password_two[
-                            '_class'] = 'span4'
-
-                    addrow(
-                        form, self.messages.verify_password +
-                        self.settings.label_separator,
-                        form.custom.widget.password_two,
-                        self.messages.verify_password_comment,
-                           formstyle,
-                           '%s_%s__row' % (table_user, 'password_two'),
-                           position=i + 1)
-                    break
         captcha = self.settings.register_captcha or self.settings.captcha
         if captcha:
             addrow(form, captcha.label, captcha,
@@ -3221,10 +3185,12 @@ class Auth(object):
         if log is DEFAULT:
             log = self.messages['change_password_log']
         passfield = self.settings.password_field
+        is_crypt =  copy.copy([t for t in table_user[passfield].requires 
+                            if isinstance(t,CRYPT)][0])
+        is_crypt.min_length = 0        
         form = SQLFORM.factory(
-            Field('old_password', 'password',
-                label=self.messages.old_password,
-                requires=table_user[passfield].requires),
+            Field('old_password', 'password', requires=[is_crypt],
+                label=self.messages.old_password),
             Field('new_password', 'password',
                 label=self.messages.new_password,
                 requires=table_user[passfield].requires),
@@ -3243,7 +3209,8 @@ class Auth(object):
                         onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
 
-            if not form.vars['old_password'] == s.select(limitby=(0,1), orderby_on_limitby=False).first()[passfield]:
+            current_user = s.select(limitby=(0,1), orderby_on_limitby=False).first()
+            if not form.vars['old_password'] == current_user[passfield]:
                 form.errors['old_password'] = self.messages.invalid_password
             else:
                 d = {passfield: str(form.vars.new_password)}
@@ -5388,8 +5355,11 @@ class Expose(object):
         base = base or os.path.join(current.request.folder, 'static')
         basename = basename or current.request.function
         self.basename = basename
-        self.args = current.request.raw_args and \
-            [arg for arg in current.request.raw_args.split('/') if arg] or []
+        
+        if current.request.raw_args:            
+            self.args = [arg for arg in current.request.raw_args.split('/') if arg]
+        else:
+            self.args = [arg for arg in current.request.args if args]
         filename = os.path.join(base, *self.args)
         if not os.path.exists(filename):
             raise HTTP(404, "FILE NOT FOUND")

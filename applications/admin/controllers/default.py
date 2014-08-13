@@ -1,4 +1,4 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
 
 EXPERIMENTAL_STUFF = True
 MAXNFILES = 1000
@@ -1292,7 +1292,7 @@ def create_file():
             langinfo = read_possible_languages(apath(app, r=request))[lang]
             text = dedent("""
                    #!/usr/bin/env python
-                   # -*- coding: utf8 -*-
+                   # -*- coding: utf-8 -*-
                    # Plural-Forms for %(lang)s (%(langname)s)
 
                    nplurals=2  # for example, English language has 2 forms:
@@ -1333,7 +1333,7 @@ def create_file():
             if len(filename) == 3:
                 raise SyntaxError
 
-            text = '# coding: utf8\n'
+            text = '# -*- coding: utf-8 -*-\n'
 
         elif path[-13:] == '/controllers/':
             # Handle python controllers
@@ -1343,7 +1343,7 @@ def create_file():
             if len(filename) == 3:
                 raise SyntaxError
 
-            text = '# coding: utf8\n# %s\ndef index(): return dict(message="hello from %s")'
+            text = '# -*- coding: utf-8 -*-\n# %s\ndef index(): return dict(message="hello from %s")'
             text = text % (T('try something like'), filename)
 
         elif path[-7:] == '/views/':
@@ -1383,7 +1383,7 @@ def create_file():
 
             text = dedent("""
                    #!/usr/bin/env python
-                   # coding: utf8
+                   # -*- coding: utf-8 -*-
                    from gluon import *\n""")[1:]
 
         elif (path[-8:] == '/static/') or (path[-9:] == '/private/'):

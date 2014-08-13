@@ -359,6 +359,7 @@ def wsgibase(environ, responder):
                     local_hosts = global_settings.local_hosts
                 client = get_client(env)
                 x_req_with = str(env.http_x_requested_with).lower()
+                cmd_opts = request.global_settings.cmd_options
 
                 request.update(
                     client = client,
@@ -366,6 +367,8 @@ def wsgibase(environ, responder):
                     ajax = x_req_with == 'xmlhttprequest',
                     cid = env.http_web2py_component_element,
                     is_local = env.remote_addr in local_hosts,
+                    is_shell = cmd_opts and cmd_opts.shell,
+                    is_sheduler = cmd_opts and cmd_opts.scheduler,
                     is_https = env.wsgi_url_scheme in HTTPS_SCHEMES or \
                         request.env.http_x_forwarded_proto in HTTPS_SCHEMES \
                         or env.https == 'on'

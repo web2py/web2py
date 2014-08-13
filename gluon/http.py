@@ -150,7 +150,7 @@ class HTTP(Exception):
         return self.message
 
 
-def redirect(location='', how=303, client_side=False):
+def redirect(location='', how=303, client_side=False, headers=None):
     """Raises a redirect (303)
 
     Args:
@@ -159,16 +159,20 @@ def redirect(location='', how=303, client_side=False):
         client_side: if set to True, it triggers a reload of the entire page
           when the fragment has been loaded as a component
     """
+    headers = headers or {}
     if location:
         from gluon import current
         loc = location.replace('\r', '%0D').replace('\n', '%0A')
         if client_side and current.request.ajax:
-            raise HTTP(200, **{'web2py-redirect-location': loc})
+            headers['web2py-redirect-location'] = loc
+            raise HTTP(200, **headers)
         else:
+            headers['Location'] = loc
             raise HTTP(how,
                        'You are being redirected <a href="%s">here</a>' % loc,
-                       Location=loc)
+                       **headers)
     else:
         from gluon import current
         if client_side and current.request.ajax:
-            raise HTTP(200, **{'web2py-component-command': 'window.location.reload(true)'})
+            headers['web2py-component-command'] = 'window.location.reload(true)'
+            raise HTTP(200, **headers)

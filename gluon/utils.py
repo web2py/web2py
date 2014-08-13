@@ -34,6 +34,7 @@ if python_version == 2:
 else:
     import pickle
 
+import hashlib
 from hashlib import md5, sha1, sha224, sha256, sha384, sha512
 
 try:
@@ -43,18 +44,26 @@ except ImportError:
 
 import hmac
 
-try:
-    try:
-        from gluon.contrib.pbkdf2_ctypes import pbkdf2_hex
-    except (ImportError, AttributeError):
-        from gluon.contrib.pbkdf2 import pbkdf2_hex
+if hasattr(hashlib, "pbkdf2_hmac"):
+    def pbkdf2_hex(data, salt, iterations=1000, keylen=24, hashfunc=None):
+        hashfunc = hashfunc or sha1
+        return hashlib.pbkdf2_hmac(hashfunc().name,
+                           data, salt, iterations,
+                           keylen).encode("hex")
     HAVE_PBKDF2 = True
-except ImportError:
+else:
     try:
-        from .pbkdf2 import pbkdf2_hex
+        try:
+            from gluon.contrib.pbkdf2_ctypes import pbkdf2_hex
+        except (ImportError, AttributeError):
+            from gluon.contrib.pbkdf2 import pbkdf2_hex
         HAVE_PBKDF2 = True
-    except (ImportError, ValueError):
-        HAVE_PBKDF2 = False
+    except ImportError:
+        try:
+            from .pbkdf2 import pbkdf2_hex
+            HAVE_PBKDF2 = True
+        except (ImportError, ValueError):
+            HAVE_PBKDF2 = False
 
 logger = logging.getLogger("web2py")
 
