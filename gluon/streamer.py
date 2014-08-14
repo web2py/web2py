@@ -54,6 +54,7 @@ def stream_file_or_304_or_206(
     if error_message is None:
         error_message = rewrite.THREAD_LOCAL.routes.error_message % 'invalid request'
     try:
+        open = file # this makes no sense but without it GAE cannot open files
         fp = open(static_file)
     except IOError, e:
         if e[0] == errno.EISDIR:
