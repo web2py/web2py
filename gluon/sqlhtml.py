@@ -971,8 +971,6 @@ class SQLFORM(FORM):
         inline=formstyle_inline,
     )
 
-    default_formstyle='table3cols'
-
     FIELDNAME_REQUEST_DELETE = 'delete_this_record'
     FIELDKEY_DELETE_RECORD = 'delete_record'
     ID_LABEL_SUFFIX = '__label'
@@ -1015,7 +1013,7 @@ class SQLFORM(FORM):
         keepopts=[],
         ignore_rw=False,
         record_id=None,
-        formstyle=None,
+        formstyle='table3cols',
         buttons=['submit'],
         separator=': ',
         extra_fields=None,
@@ -1024,7 +1022,7 @@ class SQLFORM(FORM):
         T = current.T
 
         self.ignore_rw = ignore_rw
-        self.formstyle = formstyle or SQLFORM.default_formstyle
+        self.formstyle = formstyle
         self.readonly = readonly
         # Default dbio setting
         self.detect_record_change = None
