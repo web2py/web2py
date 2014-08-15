@@ -56,7 +56,7 @@ except ImportError:
         import gluon.contrib.simplejson as json_parser
 
 __all__ = ['Mail', 'Auth', 'Recaptcha', 'Crud', 'Service', 'Wiki',
-           'PluginManager', 'fetch', 'geocode', 'prettydate']
+           'PluginManager', 'fetch', 'geocode', 'reverse_geocode', 'prettydate']
 
 ### mind there are two loggers here (logger and crud.settings.logger)!
 logger = logging.getLogger("web2py")
@@ -4423,6 +4423,14 @@ def geocode(address):
         return (la, lo)
     except:
         return (0.0, 0.0)
+
+
+def reverse_geocode(lat, lng, lang=current.T.accepted_language):
+    """ Try to get an approximate address for a given latitude, longitude. """
+    try:
+        return json_parser.loads(fetch('http://maps.googleapis.com/maps/api/geocode/json?latlng=%(lat)s,%(lng)s&language=%(lang)s' % locals()))['results'][0]['formatted_address']
+    except:
+        return ''
 
 
 def universal_caller(f, *a, **b):
