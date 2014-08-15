@@ -1008,7 +1008,7 @@ class Auth(object):
         allow_basic_login=False,
         allow_basic_login_only=False,
         on_failed_authentication=lambda x: redirect(x),
-        formstyle="table3cols",
+        formstyle=None,
         label_separator=": ",
         logging_enabled = True,
         allow_delete_accounts=False,
@@ -1343,6 +1343,7 @@ class Auth(object):
             reset_password_onvalidation = [],
             reset_password_onaccept = [],
             hmac_key = hmac_key,
+            formstyle = current.response.formstyle,            
         )
         settings.lock_keys = True
 

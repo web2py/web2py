@@ -653,8 +653,8 @@ def run_view_in(environment):
     folder = request.folder
     path = pjoin(folder, 'compiled')
     badv = 'invalid view (%s)' % view
-    if response.generic_patterns:
-        patterns = response.generic_patterns
+    patterns = response.get('generic_patterns')
+    if patterns:
         regex = re_compile('|'.join(map(fnmatch.translate, patterns)))
         short_action = '%(controller)s/%(function)s.%(extension)s' % request
         allow_generic = regex.search(short_action)

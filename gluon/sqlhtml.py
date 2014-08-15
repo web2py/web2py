@@ -1013,16 +1013,16 @@ class SQLFORM(FORM):
         keepopts=[],
         ignore_rw=False,
         record_id=None,
-        formstyle='table3cols',
+        formstyle=None,
         buttons=['submit'],
-        separator=': ',
+        separator=None,
         extra_fields=None,
         **attributes
     ):
         T = current.T
 
         self.ignore_rw = ignore_rw
-        self.formstyle = formstyle
+        self.formstyle = formstyle or current.response.formstyle
         self.readonly = readonly
         # Default dbio setting
         self.detect_record_change = None
@@ -1078,7 +1078,7 @@ class SQLFORM(FORM):
         else:
             self.id_field_name = table._primarykey[0]  # only works if one key
 
-        sep = separator or ''
+        sep = separator or current.response.label_separator
 
         extra_fields = extra_fields or []
         self.extra_fields = {}
@@ -1820,7 +1820,7 @@ class SQLFORM(FORM):
                     and_button, or_button, close_button,
                     _id='%s_%s' % (field_id, name),
                         _class='w2p_query_row',
-                        _style='display:inline'))
+                        _style='display:none'))
 
         criteria.insert(0, SELECT(
                 _id=fields_id,
@@ -1886,7 +1886,7 @@ class SQLFORM(FORM):
              search_widget='default',
              advanced_search=True,
              ignore_rw = False,
-             formstyle = 'table3cols',
+             formstyle = None,
              exportclasses = None,
              formargs={},
              createargs={},
@@ -1900,6 +1900,8 @@ class SQLFORM(FORM):
              client_side_delete=False,
              ignore_common_filters=None,
              ):
+
+        formstyle = formstyle or current.response.formstyle
 
         # jQuery UI ThemeRoller classes (empty if ui is disabled)
         if ui == 'jquery-ui':

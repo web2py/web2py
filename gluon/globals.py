@@ -165,6 +165,7 @@ class Request(Storage):
     - is_local
     - is_https
     - restful()
+    - settings
     """
 
     def __init__(self, env):
@@ -383,13 +384,15 @@ class Response(Storage):
         self.meta = Storage()      # used by web2py_ajax.html
         self.menu = []             # used by the default view layout
         self.files = []            # used by web2py_ajax.html
-        self.generic_patterns = []  # patterns to allow generic views
-        self.delimiters = ('{{', '}}')
         self._vars = None
         self._caller = lambda f: f()
         self._view_environment = None
         self._custom_commit = None
         self._custom_rollback = None
+        self.generic_patterns = ['*']                                          
+        self.delimiters = ('{{','}}')
+        self.formstyle = 'table2cols'
+        self.label_separator = ': '
 
     def write(self, data, escape=True):
         if not escape:
