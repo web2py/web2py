@@ -392,7 +392,7 @@ class Response(Storage):
         self.generic_patterns = ['*']                                          
         self.delimiters = ('{{','}}')
         self.formstyle = 'table2cols'
-        self.label_separator = ': '
+        self.form_label_separator = ': '
 
     def write(self, data, escape=True):
         if not escape:
