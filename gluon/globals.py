@@ -391,7 +391,7 @@ class Response(Storage):
         self._custom_rollback = None
         self.generic_patterns = ['*']                                          
         self.delimiters = ('{{','}}')
-        self.formstyle = 'table2cols'
+        self.formstyle = 'table3cols'
         self.form_label_separator = ': '
 
     def write(self, data, escape=True):

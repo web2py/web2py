@@ -1047,8 +1047,8 @@ class Auth(object):
     )
         # ## these are messages that can be customized
     default_messages = dict(
-        login_button='Login',
-        register_button='Register',
+        login_button='Log In',
+        register_button='Sign Up',
         password_reset_button='Request reset password',
         password_change_button='Change password',
         profile_save_button='Apply changes',
@@ -1484,7 +1484,7 @@ class Auth(object):
 
         if self.user_id:  # User is logged in
             logout_next = self.settings.logout_next
-            items.append({'name': T('Logout'),
+            items.append({'name': T('Log Out'),
                           'href': '%s/logout?_next=%s' % (action,
                                                           urllib.quote(
                                                           logout_next)),
@@ -1508,10 +1508,10 @@ class Auth(object):
             if not user_identifier:
                 user_identifier = ''
         else:  # User is not logged in
-            items.append({'name': T('Login'), 'href': href('login'),
+            items.append({'name': T('Log In'), 'href': href('login'),
                           'icon': 'icon-off'})
             if not 'register' in self.settings.actions_disabled:
-                items.append({'name': T('Register'), 'href': href('register'),
+                items.append({'name': T('Sign Up'), 'href': href('register'),
                               'icon': 'icon-user'})
             if not 'request_reset_password' in self.settings.actions_disabled:
                 items.append({'name': T('Lost password?'),
@@ -1544,7 +1544,7 @@ class Auth(object):
                 self.bar = LI(Anr(prefix, user_identifier, _href='#'),
                               self.bar,_class='dropdown')
             else:
-                self.bar = LI(Anr(T('Login'),
+                self.bar = LI(Anr(T('Log In'),
                                   _href='#',_class="dropdown-toggle",
                                   data={'toggle':'dropdown'}), self.bar,
                               _class='dropdown')
@@ -1611,15 +1611,15 @@ class Auth(object):
             bare['user'] = user_identifier if self.user_id else None
 
             for i in items:
-                if i['name'] == T('Login'):
+                if i['name'] == T('Log In'):
                     k = 'login'
-                elif i['name'] == T('Register'):
+                elif i['name'] == T('Sign Up'):
                     k = 'register'
                 elif i['name'] == T('Lost password?'):
                     k = 'request_reset_password'
                 elif i['name'] == T('Forgot username?'):
                     k = 'retrieve_username'
-                elif i['name'] == T('Logout'):
+                elif i['name'] == T('Log Out'):
                     k = 'logout'
                 elif i['name'] == T('Profile'):
                     k = 'profile'
