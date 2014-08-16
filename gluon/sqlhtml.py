@@ -17,7 +17,7 @@ Holds:
 import os
 from gluon.http import HTTP
 from gluon.html import XmlComponent
-from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT
+from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT, P
 from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT, COL, COLGROUP
 from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
 from gluon.html import URL, truncate_string, FIELDSET
@@ -828,58 +828,92 @@ def formstyle_bootstrap3(form, fields):
     Note:
         Experimental!
     """
-    form.add_class('form-horizontal')
-    parent = FIELDSET()
+    parent = CAT()
     for id, label, controls, help in fields:
         # wrappers
         _help = SPAN(help, _class='help-block')
         # embed _help into _controls
-        _controls = DIV(controls, _help, _class='col-lg-4')
-        # submit unflag by default
-        _submit = False
+        _controls = CAT(controls, _help)
         if isinstance(controls, INPUT):
-            controls.add_class('col-lg-4')
-
             if controls['_type'] == 'submit':
-                # flag submit button
-                _submit = True
-                controls['_class'] = 'btn btn-primary'
+                controls.add_class('btn btn-primary')
             if controls['_type'] == 'button':
-                controls['_class'] = 'btn btn-default'
+                controls.add_class('btn btn-default')
             elif controls['_type'] == 'file':
-                controls['_class'] = 'input-file'
+                controls.add_class('input-file')
             elif controls['_type'] == 'text':
-                controls['_class'] = 'form-control'
+                controls.add_class('form-control')
             elif controls['_type'] == 'password':
-                controls['_class'] = 'form-control'
+                controls.add_class('form-control')
             elif controls['_type'] == 'checkbox':
-                controls['_class'] = 'checkbox'
+                label['_for'] = None
+                label.insert(0, controls)
+                _controls = DIV(label, _help, _class="checkbox")
+                label = ''
+            elif isinstance(controls, SELECT):
+                controls.add_class('form-control')
+            elif isinstance(controls, TEXTAREA):
+                controls.add_class('form-control')
 
-
-
-        # For password fields, which are wrapped in a CAT object.
-        if isinstance(controls, CAT) and isinstance(controls[0], INPUT):
-            controls[0].add_class('col-lg-2')
-
-        if isinstance(controls, SELECT):
-            controls.add_class('form-control')
-
-        if isinstance(controls, TEXTAREA):
-            controls.add_class('form-control')
+        elif isinstance(controls, SPAN):
+             _controls = P(controls.components)
 
         if isinstance(label, LABEL):
-            label['_class'] = 'col-lg-2 control-label'
+            label['_class'] = 'control-label'
 
-
-        if _submit:
-            # submit button has unwrapped label and controls, different class
-            parent.append(DIV(label, DIV(controls, _class="col-lg-4 col-lg-offset-2"), _class='form-group', _id=id))
-            # unflag submit (possible side effect)
-            _submit = False
-        else:
-            # unwrapped label
-            parent.append(DIV(label, _controls, _class='form-group', _id=id))
+        parent.append(DIV(label, _controls, _class='form-group', _id=id))
     return parent
+
+
+def formstyle_bootstrap3_horizontal(col_label_size=3):
+    """ bootstrap 3 horizontal form layout
+
+    Note:
+        Experimental!
+    """
+    def _inner(form, fields):
+        form.add_class('form-horizontal')
+        label_col_class = "col-sm-%d" % col_label_size
+        col_class = "col-sm-%d" % (12 - col_label_size)
+        offset_class = "col-sm-offset-%d" % col_label_size
+        parent = CAT()
+        for id, label, controls, help in fields:
+            # wrappers
+            _help = SPAN(help, _class='help-block')
+            # embed _help into _controls
+            _controls = DIV(controls, _help, _class=col_class)
+            if isinstance(controls, INPUT):
+                if controls['_type'] == 'submit':
+                    controls.add_class('btn btn-primary')
+                    _controls = DIV(controls, _class="%s %s" % (col_class, offset_class))
+                if controls['_type'] == 'button':
+                    controls.add_class('btn btn-default')
+                elif controls['_type'] == 'file':
+                    controls.add_class('input-file')
+                elif controls['_type'] == 'text':
+                    controls.add_class('form-control')
+                elif controls['_type'] == 'password':
+                    controls.add_class('form-control')
+                elif controls['_type'] == 'checkbox':
+                    label['_for'] = None
+                    label.insert(0, controls)
+                    _controls = DIV(DIV(label, _help, _class="checkbox"),
+                                _class="%s %s" % (offset_class, col_class))
+                    label = ''
+                elif isinstance(controls, SELECT):
+                    controls.add_class('form-control')
+                elif isinstance(controls, TEXTAREA):
+                    controls.add_class('form-control')
+
+            elif isinstance(controls, SPAN):
+                _controls = P(controls.components, _class="form-control-static %s" % col_class)
+
+            if isinstance(label, LABEL):
+                label['_class'] = 'control-label %s' % label_col_class
+
+            parent.append(DIV(label, _controls, _class='form-group', _id=id))
+        return parent
+    return _inner
 
 
 class SQLFORM(FORM):
