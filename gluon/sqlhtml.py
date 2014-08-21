@@ -822,7 +822,7 @@ def formstyle_bootstrap(form, fields):
     return parent
 
 
-def formstyle_bootstrap3(form, fields):
+def formstyle_bootstrap3_stacked(form, fields):
     """ bootstrap 3 format form layout
 
     Note:
@@ -865,7 +865,7 @@ def formstyle_bootstrap3(form, fields):
     return parent
 
 
-def formstyle_bootstrap3_horizontal(col_label_size=3):
+def formstyle_bootstrap3_inline_factory(col_label_size=3):
     """ bootstrap 3 horizontal form layout
 
     Note:
@@ -1001,9 +1001,10 @@ class SQLFORM(FORM):
         divs=formstyle_divs,
         ul=formstyle_ul,
         bootstrap=formstyle_bootstrap,
-        bootstrap3=formstyle_bootstrap3,
+        bootstrap3_stacked=formstyle_bootstrap3_stacked,
+        bootstrap3_inline=formstyle_bootstrap3_inline_factory(3),
         inline=formstyle_inline,
-    )
+        )
 
     FIELDNAME_REQUEST_DELETE = 'delete_this_record'
     FIELDKEY_DELETE_RECORD = 'delete_record'
