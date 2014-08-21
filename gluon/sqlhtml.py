@@ -1938,8 +1938,7 @@ class SQLFORM(FORM):
              noconfirm=False,
              cache_count=None,
              client_side_delete=False,
-             ignore_common_filters=None,
-             ):
+             ignore_common_filters=None):
 
         formstyle = formstyle or current.response.formstyle
 
@@ -2446,9 +2445,10 @@ class SQLFORM(FORM):
                 left_cols += len(toadd)
 
         # Include extra column for buttons if needed.
-        include_buttons_column = (details or editable or deletable or
-                                  (links and links_in_grid and
-                                   not all([isinstance(link, dict) for link in links])))
+        include_buttons_column = (
+            details or editable or deletable or
+            (links and links_in_grid and
+             not all([isinstance(link, dict) for link in links])))
         if include_buttons_column:
             if buttons_placement in ['right', 'both']:
                 headcols.append(TH(_class=ui.get('default', '')))
@@ -2730,7 +2730,7 @@ class SQLFORM(FORM):
 
     @staticmethod
     def smartgrid(table, constraints=None, linked_tables=None,
-                  links=None, links_in_grid=True, max_linked_inline=0,
+                  links=None, links_in_grid=True,
                   args=None, user_signature=True,
                   divider='>', breadcrumbs_class='',
                   **kwargs):
@@ -2870,10 +2870,11 @@ class SQLFORM(FORM):
             linked_tables = db.tables()
         if isinstance(linked_tables, dict):
             linked_tables = linked_tables.get(table._tablename, [])
+
+        opts = [OPTION(T('References')+':', _value='')]
+        linked = []
         if linked_tables:
-            for item in linked_tables:
-                opts = [OPTION(T('References')+':', _value='')]
-                linked = []
+            for item in linked_tables:                
                 tb = None
                 if isinstance(item, Table) and item._tablename in check:
                     tablename = item._tablename
@@ -2895,22 +2896,11 @@ class SQLFORM(FORM):
                         t = T(tb._plural) if not multiple_links else \
                             T(tb._plural + '(' + fieldname + ')')
                         args0 = tablename + '.' + fieldname
-                        opts.append(OPTION(t,_value=args0))
                         linked.append(
                             lambda row, t=t, nargs=nargs, args0=args0:
-                            A(SPAN(t), cid=request.cid, _href=url(
-                              args=[args0, row[id_field_name]])))
-
-        if 0 < max_linked_inline < len(opts)-1:
-            links.append(
-                    lambda row:
-                    SELECT(opts, cid=request.cid,  _rowid=row[id_field_name],
-                        _onchange="javascript:document.location='"+url()+
-                                  "/'+this.value+'/'+this.attributes['rowid'].value"
-                    )
-            )
-        else: links += linked
-
+                                A(SPAN(t), cid=request.cid, _href=url(
+                                    args=[args0, row[id_field_name]])))
+        links += linked
         grid = SQLFORM.grid(query, args=request.args[:nargs], links=links,
                             links_in_grid=links_in_grid,
                             user_signature=user_signature, **kwargs)
