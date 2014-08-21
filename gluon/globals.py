@@ -681,16 +681,17 @@ class Response(Storage):
             BUTTON('db stats',
                    _onclick="jQuery('#db-stats-%s').slideToggle()" % u),
             DIV(BEAUTIFY(request), backtotop,
-                _class="hidden", _id="request-%s" % u),
+                _class="w2p-toolbar-hidden", _id="request-%s" % u),
             DIV(BEAUTIFY(current.session), backtotop,
-                _class="hidden", _id="session-%s" % u),
+                _class="w2p-toolbar-hidden", _id="session-%s" % u),
             DIV(BEAUTIFY(current.response), backtotop,
-                _class="hidden", _id="response-%s" % u),
-            DIV(BEAUTIFY(dbtables), backtotop, _class="hidden",
-                _id="db-tables-%s" % u),
-            DIV(BEAUTIFY(
-                dbstats), backtotop, _class="hidden", _id="db-stats-%s" % u),
-            SCRIPT("jQuery('.hidden').hide()"), _id="totop-%s" % u
+                _class="w2p-toolbar-hidden", _id="response-%s" % u),
+            DIV(BEAUTIFY(dbtables), backtotop,
+                _class="w2p-toolbar-hidden",_id="db-tables-%s" % u),                
+            DIV(BEAUTIFY(dbstats), backtotop,
+                _class="w2p-toolbar-hidden", _id="db-stats-%s" % u),
+            SCRIPT("jQuery('.w2p-toolbar-hidden').hide()"), 
+            _id="totop-%s" % u
         )
 
 
