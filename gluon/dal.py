@@ -246,7 +246,7 @@ except ImportError:
             simplejson = None
 
 LOGGER = logging.getLogger("web2py.dal")
-DEFAULT = lambda: 0
+DEFAULT = lambda: None
 
 GLOBAL_LOCKER = threading.RLock()
 THREAD_LOCAL = threading.local()
@@ -10122,7 +10122,7 @@ class Field(Expression):
         self.custom_qualifier = custom_qualifier
         self.label = (label if label is not None else
                       fieldname.replace('_', ' ').title())
-        self.requires = requires if not requires in (None, DEFAULT) else []
+        self.requires = requires if requires is not None else []
         self.map_none = map_none
         self._rname = rname
 

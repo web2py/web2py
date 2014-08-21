@@ -354,7 +354,7 @@ def getipaddrinfo(host):
 
 def obj2dict(obj, processed=None):
     """
-    converts any objet into a dict, recursively
+    converts any object into a dict, recursively
     """
     processed = processed if not processed is None else set()
     if obj is None:

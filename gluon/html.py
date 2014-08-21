@@ -1846,8 +1846,12 @@ class INPUT(DIV):
         if requires:
             if not isinstance(requires, (list, tuple)):
                 requires = [requires]
-            for validator in requires:
-                (value, errors) = validator(value)
+            for k,validator in enumerate(requires):
+                try:
+                    (value, errors) = validator(value)
+                except:
+                    msg = "Validation error, field:%s %s" % (name,validator)
+                    raise Exception(msg)
                 if not errors is None:
                     self.vars[name] = value
                     self.errors[name] = errors

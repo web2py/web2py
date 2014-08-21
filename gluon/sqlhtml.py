@@ -22,7 +22,8 @@ from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT, COL, COLGROUP
 from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
 from gluon.html import URL, truncate_string, FIELDSET
 from gluon.dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
-    bar_encode, Reference, Expression, SQLCustomType
+    bar_encode, Reference, Expression, SQLCustomType, sqlhtml_validators, \
+    DEFAULT
 from gluon.storage import Storage
 from gluon.utils import md5_hash
 from gluon.validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE, \
@@ -1118,9 +1119,13 @@ class SQLFORM(FORM):
         extra_fields = extra_fields or []
         self.extra_fields = {}
         for extra_field in extra_fields:
-            extra_field.tablename = '_extra'
             self.fields.append(extra_field.name)
             self.extra_fields[extra_field.name] = extra_field
+            extra_field.db = table._db
+            extra_field.table = table
+            extra_field.tablename = table._tablename
+            if extra_field.requires == DEFAULT:
+                extra_field.requires = sqlhtml_validators(extra_field)
 
         for fieldname in self.fields:
             if fieldname.find('.') >= 0:
@@ -1186,7 +1191,7 @@ class SQLFORM(FORM):
 
             if cond:
 
-                # ## if field.represent is available else
+                # ## if field.re                field.requires = sqlhtml_validators(field)                field.requires = sqlhtml_validators(field)present is available else
                 # ## ignore blob and preview uploaded images
                 # ## format everything else
 
