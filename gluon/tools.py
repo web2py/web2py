@@ -4425,8 +4425,10 @@ def geocode(address):
         return (0.0, 0.0)
 
 
-def reverse_geocode(lat, lng, lang=current.T.accepted_language):
+def reverse_geocode(lat, lng, lang=None):
     """ Try to get an approximate address for a given latitude, longitude. """
+    if not lang:
+        lang = current.T.accepted_language
     try:
         return json_parser.loads(fetch('http://maps.googleapis.com/maps/api/geocode/json?latlng=%(lat)s,%(lng)s&language=%(lang)s' % locals()))['results'][0]['formatted_address']
     except:
