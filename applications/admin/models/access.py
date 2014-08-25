@@ -19,7 +19,7 @@ if request.env.web2py_runtime_gae:
 else:
     is_gae = False
 
-if request.env.http_x_forwarded_for or request.is_https:
+if request.is_https:
     session.secure()
 elif not request.is_local and not DEMO_MODE:
     raise HTTP(200, T('Admin is disabled because insecure channel'))
