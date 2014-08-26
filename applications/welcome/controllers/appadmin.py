@@ -32,7 +32,7 @@ try:
 except:
     hosts = (http_host, )
 
-if request.is_https:
+if request.env.http_x_forwarded_for or request.is_https:
     session.secure()
 elif (remote_addr not in hosts) and (remote_addr != "127.0.0.1") and \
     (request.function != 'manage'):
