@@ -366,7 +366,8 @@ def wsgibase(environ, responder):
                     folder = abspath('applications', app) + os.sep,
                     ajax = x_req_with == 'xmlhttprequest',
                     cid = env.http_web2py_component_element,
-                    is_local = env.remote_addr in local_hosts,
+                    is_local = (env.remote_addr in local_hosts and 
+                                request.client == env.remote_addr)
                     is_shell = cmd_opts and cmd_opts.shell,
                     is_sheduler = cmd_opts and cmd_opts.scheduler,
                     is_https = env.wsgi_url_scheme in HTTPS_SCHEMES or \
