@@ -169,9 +169,14 @@ class JobGraph(object):
         self.db = db
 
     def add_deps(self, task_parent, task_child):
+        """Creates a dependency between task_parent and task_child"""
         self.db.scheduler_task_deps.insert(task_parent=task_parent, task_child=task_child, job_name=self.job_name)
 
     def validate(self, job_name):
+        """Validates if all tasks job_name can be completed, i.e. there
+        are no mutual dependencies among tasks.
+        Commits at the end if successfull, or it rollbacks the entire
+        transaction. Handle with care!"""
         db = self.db
         sd = db.scheduler_task_deps
         if job_name:
@@ -1380,7 +1385,7 @@ class Scheduler(MetaScheduler):
         return rtn
 
     def get_workers(self, only_ticker=False):
-        """ Returns a dict holding worker_name : {**columns}
+        """ Returns a dict holding `worker_name : {**columns}`
         representing all "registered" workers
         only_ticker returns only the workers running as a TICKER,
         if there are any
