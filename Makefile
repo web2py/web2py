@@ -44,8 +44,8 @@ src:
 	rm -f applications/admin/uploads/*                 
 	rm -f applications/welcome/uploads/*               
 	rm -f applications/examples/uploads/* 
-	### make epydoc
-	make epydoc
+	### NO MORE make epydoc
+	# make epydoc
 	### make welcome layout and appadmin the default
 	cp applications/welcome/views/appadmin.html applications/admin/views
 	cp applications/welcome/views/appadmin.html applications/examples/views
