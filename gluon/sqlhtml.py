@@ -19,7 +19,7 @@ from gluon.http import HTTP
 from gluon.html import XmlComponent
 from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, SCRIPT, P
 from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT, COL, COLGROUP
-from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE
+from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE, DEFAULT_PASSWORD_DISPLAY
 from gluon.html import URL, truncate_string, FIELDSET
 from gluon.dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
     bar_encode, Reference, Expression, SQLCustomType, sqlhtml_validators, \
@@ -474,8 +474,6 @@ class CheckboxesWidget(OptionsWidget):
 class PasswordWidget(FormWidget):
     _class = 'password'
 
-    DEFAULT_PASSWORD_DISPLAY = 8 * ('*')
-
     @classmethod
     def widget(cls, field, value, **attributes):
         """
@@ -488,7 +486,7 @@ class PasswordWidget(FormWidget):
         # detect if attached a IS_STRONG with entropy
         default = dict(
             _type='password',
-            _value=(value and cls.DEFAULT_PASSWORD_DISPLAY) or '',
+            _value=(value and DEFAULT_PASSWORD_DISPLAY) or '',
         )
         attr = cls._attributes(field, default, **attributes)
 
@@ -1233,7 +1231,7 @@ class SQLFORM(FORM):
             elif field.type == 'password':
                 inp = self.widgets.password.widget(field, default)
                 if self.record:
-                    dspval = PasswordWidget.DEFAULT_PASSWORD_DISPLAY
+                    dspval = DEFAULT_PASSWORD_DISPLAY
                 else:
                     dspval = ''
             elif field.type == 'blob':
@@ -1548,8 +1546,7 @@ class SQLFORM(FORM):
                 else:
                     self.vars[fieldname] = fields[fieldname] = False
             elif field.type == 'password' and self.record\
-                and request_vars.get(fieldname, None) == \
-                    PasswordWidget.DEFAULT_PASSWORD_DISPLAY:
+                and request_vars.get(fieldname, None) == DEFAULT_PASSWORD_DISPLAY:
                 continue  # do not update if password was not changed
             elif field.type == 'upload':
                 f = self.vars[fieldname]

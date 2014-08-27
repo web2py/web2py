@@ -109,6 +109,7 @@ __all__ = [
     'embed64',
 ]
 
+DEFAULT_PASSWORD_DISPLAY = '*' * 8
 
 def xmlescape(data, quote=True):
     """
@@ -1858,7 +1859,7 @@ class INPUT(DIV):
                     break
         if not name in self.errors:
             self.vars[name] = value
-            return True
+            return True        
         return False
 
     def _postprocessing(self):
@@ -1889,11 +1890,14 @@ class INPUT(DIV):
                 self['_checked'] = 'checked'
             else:
                 self['_checked'] = None
+        elif t == 'password' and value != DEFAULT_PASSWORD_DISPLAY:
+            self['value'] = ''
         elif not t == 'submit':
             if value is None:
                 self['value'] = _value
             elif not isinstance(value, list):
                 self['_value'] = value
+
 
     def xml(self):
         name = self.attributes.get('_name', None)

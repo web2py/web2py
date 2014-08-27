@@ -2780,6 +2780,7 @@ class Auth(object):
             else:
                 next = replace_id(next, form)
             redirect(next, client_side=self.settings.client_side)
+        
         return form
 
     def is_logged_in(self):
