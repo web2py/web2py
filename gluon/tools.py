@@ -2780,6 +2780,8 @@ class Auth(object):
             else:
                 next = replace_id(next, form)
             redirect(next, client_side=self.settings.client_side)
+        else:
+        	[input.update(_value='') for input in form.elements('[type=password]')]
         return form
 
     def is_logged_in(self):
