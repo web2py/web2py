@@ -173,7 +173,6 @@ def ldap_auth(server='ldap', port=None,
                       cert_path=cert_path,
                       cert_file=cert_file,
                       cacert_file=cacert_file,
-                      cert_file=cert_file,
                       key_file=key_file,
                       filterstr=filterstr,
                       username_attrib=username_attrib,
@@ -575,7 +574,6 @@ def ldap_auth(server='ldap', port=None,
                   cert_path=cert_path,
                   cert_file=cert_file,
                   cacert_file=cacert_file,
-                  cert_file=cert_file,
                   key_file=key_file):
         """
         Inicialize ldap connection
