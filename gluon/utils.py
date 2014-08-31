@@ -352,27 +352,3 @@ def getipaddrinfo(host):
     except socket.error:
         return []
 
-def obj2dict(obj, processed=None):
-    """
-    converts any object into a dict, recursively
-    """
-    processed = processed if not processed is None else set()
-    if obj is None:
-        return None
-    if isinstance(obj,(int,long,str,unicode,float,bool)):
-        return obj
-    if id(obj) in processed:
-        return '<reference>'
-    processed.add(id(obj))
-    if isinstance(obj,(list,tuple)):
-        return [obj2dict(item,processed) for item in obj]
-    if not isinstance(obj, dict) and hasattr(obj,'__dict__'):
-        obj = obj.__dict__
-    else:
-        return repr(obj)
-    return dict((key,obj2dict(value,processed)) for key,value in obj.items()
-                if not key.startswith('_') and
-                not type(value) in (types.FunctionType,
-                                    types.LambdaType,
-                                    types.BuiltinFunctionType,
-                                    types.BuiltinMethodType))

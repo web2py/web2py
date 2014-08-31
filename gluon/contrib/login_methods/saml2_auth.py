@@ -25,9 +25,34 @@ you must have private/sp_conf.py, the pysaml2 sp configuration file
 
 from saml2 import BINDING_HTTP_REDIRECT
 from saml2.client import Saml2Client
-from gluon.utils import web2py_uuid, obj2dict
+from gluon.utils import web2py_uuid
 from gluon import current, redirect, URL
-import os
+import os, types
+
+def obj2dict(obj, processed=None):
+    """                                                                        
+    converts any object into a dict, recursively                               
+    """
+    processed = processed if not processed is None else set()
+    if obj is None:
+        return None
+    if isinstance(obj,(int,long,str,unicode,float,bool)):
+        return obj
+    if id(obj) in processed:
+        return '<reference>'
+    processed.add(id(obj))
+    if isinstance(obj,(list,tuple)):
+        return [obj2dict(item,processed) for item in obj]
+    if not isinstance(obj, dict) and hasattr(obj,'__dict__'):
+        obj = obj.__dict__
+    else:
+        return repr(obj)
+    return dict((key,obj2dict(value,processed)) for key,value in obj.items()
+                if not key.startswith('_') and
+                not type(value) in (types.FunctionType,
+                                    types.LambdaType,
+                                    types.BuiltinFunctionType,
+                                    types.BuiltinMethodType))
 
 def saml2_handler(session, request, config_filename = None):
     config_filename = config_filename or os.path.join(request.folder,'private','sp_conf')
@@ -44,7 +69,7 @@ def saml2_handler(session, request, config_filename = None):
         session.saml_outstanding_queries = {req_id: request.url}
         session.saml_req_id = req_id
         http_args = client.apply_binding(binding, str(req), destination,
-                                          relay_state=relay_state)
+                                         relay_state=relay_state)
         return {'url':dict(http_args["headers"])['Location']}
     else:
         relay_state = request.vars.RelayState
@@ -56,7 +81,8 @@ def saml2_handler(session, request, config_filename = None):
                 unquoted_response, binding, session.saml_outstanding_queries)
             res['response'] = data if data else {}
         except Exception, e:
-            res['error'] = str(e)
+            import traceback
+            res['error'] = traceback.format_exc()
         return res
     
 
@@ -71,16 +97,20 @@ class Saml2Auth(object):
         self.maps = maps
 
     def login_url(self, next="/"):
-        d = saml2_handler(current.session,current.request)
+        d = saml2_handler(current.session, current.request)
         if 'url' in d:
             redirect(d['url'])
         elif 'error' in d:
-            current.response.flash = d['error']
-        elif 'response' in d:
+            current.session.flash = d['error']
+            redirect(URL('default','index'))
+        elif 'response' in d:            
             # a['assertions'][0]['attribute_statement'][0]['attribute']
             # is list of
             # {'name': 'http://schemas.microsoft.com/ws/2008/06/identity/claims/windowsaccountname', 'name_format': None, 'text': None, 'friendly_name': None, 'attribute_value': [{'text': 'CAA\\dev-mdp', 'extension_attributes': "{'{http://www.w3.org/2001/XMLSchema-instance}type': 'xs:string'}", 'extension_elements': []}], 'extension_elements': [], 'extension_attributes': '{}'}
-            attributes = d['response'].assertions[0].attribute_statement[0].attribute
+            try:
+                attributes = d['response'].assertions[0].attribute_statement[0].attribute
+            except:
+                attributes = d['response'].assertion.attribute_statement[0].attribute
             current.session.saml2_info = dict(
                 (a.name, [i.text for i in a.attribute_value]) for a in attributes)
         return next
