@@ -5137,35 +5137,35 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
             return [GAEF(first.name, '!=', self.represent(second, first.type), lambda a, b:a!=b)]
         else:
             if not second is None:
-                second = Key.from_path(first._tablename, long(second))
+                second = self.keyfunc(first._tablename, long(second))
             return [GAEF(first.name, '!=', second, lambda a, b:a!=b)]
 
     def LT(self, first, second=None):
         if first.type != 'id':
             return [GAEF(first.name, '<', self.represent(second, first.type), lambda a, b:a<b)]
         else:
-            second = Key.from_path(first._tablename, long(second))
+            second = self.keyfunc(first._tablename, long(second))
             return [GAEF(first.name, '<', second, lambda a, b:a<b)]
 
     def LE(self, first, second=None):
         if first.type != 'id':
             return [GAEF(first.name, '<=', self.represent(second, first.type), lambda a, b:a<=b)]
         else:
-            second = Key.from_path(first._tablename, long(second))
+            second = self.keyfunc(first._tablename, long(second))
             return [GAEF(first.name, '<=', second, lambda a, b:a<=b)]
 
     def GT(self, first, second=None):
         if first.type != 'id' or second==0 or second == '0':
             return [GAEF(first.name, '>', self.represent(second, first.type), lambda a, b:a>b)]
         else:
-            second = Key.from_path(first._tablename, long(second))
+            second = self.keyfunc(first._tablename, long(second))
             return [GAEF(first.name, '>', second, lambda a, b:a>b)]
 
     def GE(self, first, second=None):
         if first.type != 'id':
             return [GAEF(first.name, '>=', self.represent(second, first.type), lambda a, b:a>=b)]
         else:
-            second = Key.from_path(first._tablename, long(second))
+            second = self.keyfunc(first._tablename, long(second))
             return [GAEF(first.name, '>=', second, lambda a, b:a>=b)]
 
     def INVERT(self, first):
