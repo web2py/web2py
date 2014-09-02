@@ -5181,14 +5181,15 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
             if isinstance(second, set):
                 second = list(second)
         if first.type == 'id':
-            second = [Key.from_path(first._tablename, int(i)) for i in second]
+            second = [self.keyfunc(first._tablename, int(i)) for i in second]
         return [GAEF(first.name, 'in', second, lambda a, b:a in b)]
 
     def CONTAINS(self, first, second, case_sensitive=False):
         # silently ignoring: GAE can only do case sensitive matches!
         if not first.type.startswith('list:'):
             raise SyntaxError("Not supported")
-        return [GAEF(first.name, '=', self.expand(second, first.type[5:]), lambda a, b:b in a)]
+        return [GAEF(first.name, '=', self.expand(second, first.type[5:]),
+                     lambda a, b:b in a)]
 
     def NOT(self, first):
         nops = {self.EQ: self.NE,
