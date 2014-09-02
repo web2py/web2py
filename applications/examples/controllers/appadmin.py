@@ -89,9 +89,7 @@ def get_databases(request):
             dbs[key] = value
     return dbs
 
-
 databases = get_databases(None)
-
 
 def eval_in_global_env(text):
     exec ('_ret=%s' % text, {}, global_env)
@@ -104,7 +102,6 @@ def get_database(request):
     else:
         session.flash = T('invalid request')
         redirect(URL('index'))
-
 
 def get_table(request):
     db = get_database(request)
