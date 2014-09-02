@@ -3007,7 +3007,7 @@ class Auth(object):
 
         if self.settings.prevent_password_reset_attacks:
             key = request.vars.key
-            if not key and len(request.args)>1:
+            if not key and len(request.args)>0:
                 key = request.args[-1]
             if key:
                 session._reset_password_key = key
