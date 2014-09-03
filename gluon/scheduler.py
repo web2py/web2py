@@ -1314,7 +1314,7 @@ class Scheduler(MetaScheduler):
         """
         from gluon.dal import Query
         sr, st = self.db.scheduler_run, self.db.scheduler_task
-        if isinstance(ref, int):
+        if isinstance(ref, (int, long)):
             q = st.id == ref
         elif isinstance(ref, str):
             q = st.uuid == ref
@@ -1365,7 +1365,7 @@ class Scheduler(MetaScheduler):
             Experimental
         """
         st, sw = self.db.scheduler_task, self.db.scheduler_worker
-        if isinstance(ref, int):
+        if isinstance(ref, (int, long)):
             q = st.id == ref
         elif isinstance(ref, str):
             q = st.uuid == ref
