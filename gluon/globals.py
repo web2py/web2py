@@ -25,6 +25,7 @@ from gluon.serializers import json, custom_json
 import gluon.settings as settings
 from gluon.utils import web2py_uuid, secure_dumps, secure_loads
 from gluon.settings import global_settings
+from gluon.dal import Field
 import hashlib
 import portalocker
 import cPickle
@@ -864,7 +865,7 @@ class Session(Storage):
                 table_migrate = False
             tname = tablename + '_' + masterapp
             table = db.get(tname, None)
-            Field = db.Field
+            #Field = db.Field
             if table is None:
                 db.define_table(
                     tname,

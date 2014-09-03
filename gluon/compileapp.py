@@ -25,7 +25,8 @@ from gluon.restricted import restricted, compile2
 from gluon.fileutils import mktree, listdir, read_file, write_file
 from gluon.myregex import regex_expose, regex_longcomments
 from gluon.languages import translator
-from gluon.dal import BaseAdapter, SQLDB, SQLField, DAL, Field
+from gluon.dal import DAL, Field
+from gluon.dal.base import BaseAdapter
 from gluon.sqlhtml import SQLFORM, SQLTABLE
 from gluon.cache import Cache
 from gluon.globals import current, Response
@@ -387,8 +388,8 @@ _base_environment_['HTTP'] = HTTP
 _base_environment_['redirect'] = redirect
 _base_environment_['DAL'] = DAL
 _base_environment_['Field'] = Field
-_base_environment_['SQLDB'] = SQLDB        # for backward compatibility
-_base_environment_['SQLField'] = SQLField  # for backward compatibility
+_base_environment_['SQLDB'] = DAL        # for backward compatibility
+_base_environment_['SQLField'] = Field  # for backward compatibility
 _base_environment_['SQLFORM'] = SQLFORM
 _base_environment_['SQLTABLE'] = SQLTABLE
 _base_environment_['LOAD'] = LOAD

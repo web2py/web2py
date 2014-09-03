@@ -48,7 +48,9 @@ DEFAULT_URI = os.environ.get('DB', 'sqlite:memory')
 
 print 'Testing against %s engine (%s)' % (DEFAULT_URI.partition(':')[0], DEFAULT_URI)
 
-from dal import DAL, Field, Table, SQLALL
+from dal import DAL, Field
+from dal.objects import Table
+from dal.helpers.classes import SQLALL
 
 ALLOWED_DATATYPES = [
     'string',

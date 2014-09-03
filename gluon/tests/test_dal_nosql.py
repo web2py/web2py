@@ -57,7 +57,7 @@ IS_MONGODB = "mongodb" in DEFAULT_URI
 IS_IMAP = "imap" in DEFAULT_URI
 
 if IS_IMAP:
-    from dal import IMAPAdapter
+    from dal.adapters import IMAPAdapter
     from contrib import mockimaplib
     IMAPAdapter.driver = mockimaplib
 
