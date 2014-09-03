@@ -165,7 +165,6 @@ class Request(Storage):
     - is_local
     - is_https
     - restful()
-    - settings
     """
 
     def __init__(self, env):
