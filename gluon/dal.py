@@ -4587,20 +4587,20 @@ class CubridAdapter(MySQLAdapter):
 ######## GAE MySQL ##########
 class DatabaseStoredFile:
 
-    web2py_filesystem = False
+    web2py_filesystems = set()
 
     def escape(self, obj):
         return self.db._adapter.escape(obj)
 
     @classmethod
     def try_create_web2py_filesystem(db):
-        if not DatabaseStoredFile.web2py_filesystem:
+        if not db._uri in DatabaseStoredFile.web2py_filesystems:
             if db._adapter.dbengine == 'mysql':
                 sql = "CREATE TABLE IF NOT EXISTS web2py_filesystem (path VARCHAR(255), content LONGTEXT, PRIMARY KEY(path) ) ENGINE=InnoDB;"
             elif db._adapter.dbengine in ('postgres', 'sqlite'):
                 sql = "CREATE TABLE IF NOT EXISTS web2py_filesystem (path VARCHAR(255), content TEXT, PRIMARY KEY(path));"
             db.executesql(sql)
-            DatabaseStoredFile.web2py_filesystem = True
+            DatabaseStoredFile.web2py_filesystems.add(db._uri)
  
     def __init__(self, db, filename, mode):
         if not db._adapter.dbengine in ('mysql', 'postgres', 'sqlite'):
