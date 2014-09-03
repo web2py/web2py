@@ -4592,7 +4592,7 @@ class DatabaseStoredFile:
     def escape(self, obj):
         return self.db._adapter.escape(obj)
 
-    @classmethod
+    @staticmethod
     def try_create_web2py_filesystem(db):
         if not db._uri in DatabaseStoredFile.web2py_filesystems:
             if db._adapter.dbengine == 'mysql':
