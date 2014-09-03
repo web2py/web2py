@@ -142,7 +142,7 @@ import copy
 import traceback
 import glob
 
-from ._compat import pickle, hashlib_md5, pjoin, ogetattr, osetattr
+from ._compat import pickle, hashlib_md5, pjoin, ogetattr, osetattr, copyreg
 from ._globals import GLOBAL_LOCKER, THREAD_LOCAL, LOGGER, DEFAULT
 from ._load import have_serializers, serializers, is_jdbc, OrderedDict
 from .helpers.classes import SQLCallableList
@@ -1081,3 +1081,13 @@ class DAL(object):
                             break
                 else:
                     raise RuntimeError("Unable to import table that does not exist.\nTry db.import_from_csv_file(..., map_tablenames={'table':'othertable'},ignore_missing_tables=True)")
+
+
+def DAL_unpickler(db_uid):
+    return DAL('<zombie>', db_uid=db_uid)
+
+
+def DAL_pickler(db):
+    return DAL_unpickler, (db._db_uid,)
+
+copyreg.pickle(DAL, DAL_pickler, DAL_unpickler)

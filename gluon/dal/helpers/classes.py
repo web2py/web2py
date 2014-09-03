@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 import copy
+import marshal
+import struct
 import traceback
 
-from .._compat import exists
+from .._compat import exists, copyreg
 from .._globals import LOGGER
 
 
@@ -44,6 +46,18 @@ class Reference(long):
     def __setitem__(self,key,value):
         self.__allocate()
         self._record[key] = value
+
+def Reference_unpickler(data):
+    return marshal.loads(data)
+
+def Reference_pickler(data):
+    try:
+        marshal_dump = marshal.dumps(long(data))
+    except AttributeError:
+        marshal_dump = 'i%s' % struct.pack('<i', long(data))
+    return (Reference_unpickler, (marshal_dump,))
+
+copyreg.pickle(Reference, Reference_pickler, Reference_unpickler)
 
 
 class SQLCallableList(list):
