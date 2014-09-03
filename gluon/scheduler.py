@@ -96,7 +96,7 @@ IDENTIFIER = "%s#%s" % (socket.gethostname(),os.getpid())
 logger = logging.getLogger('web2py.scheduler.%s' % IDENTIFIER)
 
 from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB
-from gluon import IS_INT_IN_RANGE, IS_DATETIME
+from gluon import IS_INT_IN_RANGE, IS_DATETIME, IS_IN_DB
 from gluon.utils import web2py_uuid
 from gluon.storage import Storage
 
@@ -671,7 +671,10 @@ class Scheduler(MetaScheduler):
         db.define_table(
             'scheduler_task_deps',
             Field('job_name', default='job_0'),
-            Field('task_parent', 'reference scheduler_task'),
+            Field('task_parent', 'integer',
+                requires=IS_IN_DB(db, 'scheduler_task.id',
+                                      '%(task_name)s')
+            ),
             Field('task_child', 'reference scheduler_task'),
             Field('can_visit', 'boolean', default=False),
             migrate=self.__get_migrate('scheduler_task_deps', migrate)
