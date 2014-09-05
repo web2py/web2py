@@ -1289,7 +1289,7 @@ class SQLFORM(FORM):
             xfields.append(
                 (self.FIELDKEY_DELETE_RECORD + SQLFORM.ID_ROW_SUFFIX,
                  LABEL(
-                        T(delete_label), separator,
+                        T(delete_label), sep,
                         _for=self.FIELDKEY_DELETE_RECORD,
                         _id=self.FIELDKEY_DELETE_RECORD + \
                             SQLFORM.ID_LABEL_SUFFIX),
