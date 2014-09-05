@@ -198,7 +198,6 @@ if PYTHON_VERSION[:2] < (2, 7):
 else:
     from collections import OrderedDict
 
-
 CALLABLETYPES = (types.LambdaType, types.FunctionType,
                  types.BuiltinFunctionType,
                  types.MethodType, types.BuiltinMethodType)
