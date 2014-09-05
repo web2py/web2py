@@ -6,13 +6,16 @@ It is written and programmable in Python. LGPLv3 License
 
 Learn more at http://web2py.com
 
-
 ## Google App Engine deployment
 
     cp examples/app.yaml ./
     cp handlers/gaehandler.py ./
     
 Then edit ./app.yaml and replace "yourappname" with yourappname.
+
+## Documentation (readthedocs.org)
+
+[![Docs Status](https://readthedocs.org/projects/web2py/badge/?version=latest)](http://web2py.rtfd.org/)
 
 ## Tests
 
