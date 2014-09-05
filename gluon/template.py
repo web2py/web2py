@@ -280,14 +280,18 @@ class TemplateParser(object):
 
         # allow optional alternative delimiters
         
-        if delimiters is None:
-            delimiters = context.get('response', {}).get('delimiters')
         if delimiters != self.default_delimiters:
             escaped_delimiters = (escape(delimiters[0]),
                                   escape(delimiters[1]))
             self.r_tag = compile(r'(%s.*?%s)' % escaped_delimiters, DOTALL)
-        else:
-            delimiters = self.default_delimiters
+        elif hasattr(context.get('response', None), 'delimiters'):
+            if context['response'].delimiters != self.default_delimiters:
+                delimiters = context['response'].delimiters
+                escaped_delimiters = (
+                    escape(delimiters[0]),
+                    escape(delimiters[1]))
+                self.r_tag = compile(r'(%s.*?%s)' % escaped_delimiters,
+                                     DOTALL)
         self.delimiters = delimiters
 
         # Create a root level Content that everything will go into.
