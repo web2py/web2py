@@ -25,6 +25,7 @@ from gluon.serializers import json, custom_json
 import gluon.settings as settings
 from gluon.utils import web2py_uuid, secure_dumps, secure_loads
 from gluon.settings import global_settings
+from gluon import recfile
 import hashlib
 import portalocker
 import cPickle
@@ -824,7 +825,7 @@ class Session(Storage):
                                      'sessions', response.session_id)
                     try:
                         response.session_file = \
-                            open(response.session_filename, 'rb+')
+                            recfile.open(response.session_filename, 'rb+')
                         portalocker.lock(response.session_file,
                                          portalocker.LOCK_EX)
                         response.session_locked = True
@@ -1146,7 +1147,7 @@ class Session(Storage):
                 session_folder = os.path.dirname(response.session_filename)
                 if not os.path.exists(session_folder):
                     os.mkdir(session_folder)
-                response.session_file = open(response.session_filename, 'wb')
+                response.session_file = recfile.open(response.session_filename, 'wb')
                 portalocker.lock(response.session_file, portalocker.LOCK_EX)
                 response.session_locked = True
             if response.session_file:
