@@ -35,15 +35,15 @@ src:
 	make clean
 	### clean up baisc apps
 	rm -f routes.py 
-	rm -f applications/*/sessions/*
-	rm -f applications/*/errors/* | echo 'too many files'
-	rm -f applications/*/cache/*
-	rm -f applications/admin/databases/*                 
-	rm -f applications/welcome/databases/*               
-	rm -f applications/examples/databases/*             
-	rm -f applications/admin/uploads/*                 
-	rm -f applications/welcome/uploads/*               
-	rm -f applications/examples/uploads/* 
+	rm -rf applications/*/sessions/*
+	rm -rf applications/*/errors/* | echo 'too many files'
+	rm -rf applications/*/cache/*
+	rm -rf applications/admin/databases/*                 
+	rm -rf applications/welcome/databases/*               
+	rm -rf applications/examples/databases/*             
+	rm -rf applications/admin/uploads/*                 
+	rm -rf applications/welcome/uploads/*               
+	rm -rf applications/examples/uploads/* 
 	### NO MORE make epydoc
 	# make epydoc
 	### make welcome layout and appadmin the default

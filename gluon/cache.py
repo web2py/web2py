@@ -20,19 +20,26 @@ caching will be provided by the GAE memcache
 (see gluon.contrib.gae_memcache)
 """
 import time
-import portalocker
-import shelve
+import shutil
 import thread
 import os
+import sys
 import logging
 import re
 import hashlib
 import datetime
+import tempfile
+from gluon import recfile
 try:
     from gluon import settings
     have_settings = True
 except ImportError:
     have_settings = False
+
+try:
+   import cPickle as pickle
+except:
+   import pickle
 
 logger = logging.getLogger("web2py.cache")
 
@@ -122,7 +129,7 @@ class CacheAbstract(object):
         Auxiliary function called by `clear` to search and clear cache entries
         """
         r = re.compile(regex)
-        for (key, value) in storage.items():
+        for key in storage:
             if r.match(str(key)):
                 del storage[key]
                 break
@@ -242,7 +249,6 @@ class CacheOnDisk(CacheAbstract):
 
     This is implemented as a shelve object and it is shared by multiple web2py
     processes (and threads) as long as they share the same filesystem.
-    The file is locked when accessed.
 
     Disk cache provides persistance when web2py is started/stopped but it slower
     than `CacheInRam`
@@ -250,136 +256,157 @@ class CacheOnDisk(CacheAbstract):
     Values stored in disk cache must be pickable.
     """
 
-    def _close_shelve_and_unlock(self):
-        try:
-            if self.storage:
-                self.storage.close()
-        except ValueError:
-            pass
-        finally:
-            self.storage = None
-            if self.locker and self.locked:
-                portalocker.unlock(self.locker)
-                self.locker.close()
-                self.locked = False
+    class PersistentStorage(object):
+        """
+        Implements a key based storage in disk.
+        """
+        def __init__(self, folder):
+            self.folder = folder
+            # Check the best way to do atomic file replacement.
+            if sys.version_info >= (3, 3):
+                self.replace = os.replace
+            elif sys.platform == "win32":
+                import ctypes
+                from ctypes import wintypes
+                ReplaceFile = ctypes.windll.kernel32.ReplaceFileW
+                ReplaceFile.restype = wintypes.BOOL
+                ReplaceFile.argtypes = [
+                    wintypes.LPWSTR,
+                    wintypes.LPWSTR,
+                    wintypes.LPWSTR,
+                    wintypes.DWORD,
+                    wintypes.LPVOID,
+                    wintypes.LPVOID,
+                    ]
 
-    def _open_shelve_and_lock(self):
-        """Open and return a shelf object, obtaining an exclusive lock
-        on self.locker first. Replaces the close method of the
-        returned shelf instance with one that releases the lock upon
-        closing."""
+                def replace_windows(src, dst):
+                    if not ReplaceFile(dst, src, None, 0, 0, 0):
+                        os.rename(src, dst)
 
-        storage = None
-        locker = None
-        locked = False
-        try:
-            locker = locker = open(self.locker_name, 'a')
-            portalocker.lock(locker, portalocker.LOCK_EX)
-            locked = True
+                self.replace = replace_windows
+            else:
+                # POSIX rename() is always atomic
+                self.replace = os.rename
+
+
+        def __setitem__(self, key, value):
+            tmp_name, tmp_path = tempfile.mkstemp(dir=self.folder)
+            tmp = os.fdopen(tmp_name, 'wb')
             try:
-                storage = shelve.open(self.shelve_name)
-            except:
-                logger.error('corrupted cache file %s, will try rebuild it'
-                             % self.shelve_name)
-                storage = None
-            if storage is None:
-                if os.path.exists(self.shelve_name):
-                    os.unlink(self.shelve_name)
-                storage = shelve.open(self.shelve_name)
-            if not CacheAbstract.cache_stats_name in storage.keys():
-                storage[CacheAbstract.cache_stats_name] = {
-                    'hit_total': 0, 'misses': 0}
-            storage.sync()
-        except Exception, e:
-            if storage:
-                storage.close()
-                storage = None
-            if locked:
-                portalocker.unlock(locker)
-                locker.close()
-            locked = False
-            raise RuntimeError(
-                'unable to create/re-create cache file %s' % self.shelve_name)
-        self.locker = locker
-        self.locked = locked
-        self.storage = storage
-        return storage
+                pickle.dump((time.time(), value), tmp, pickle.HIGHEST_PROTOCOL)
+            finally:
+                tmp.close()
+            fullfilename = os.path.join(self.folder, recfile.generate(key))
+            if not os.path.exists(os.path.dirname(fullfilename)):
+                os.makedirs(os.path.dirname(fullfilename))
+            self.replace(tmp_path, fullfilename)
+
+
+        def __getitem__(self, key):
+            if recfile.exists(key, path=self.folder):
+                timestamp, value = pickle.load(recfile.open(key, 'rb', path=self.folder))
+                return value
+            else:
+                raise KeyError
+
+        def __contains__(self, key):
+            return recfile.exists(key, path=self.folder)
+
+
+        def __delitem__(self, key):
+            recfile.remove(key, path=self.folder)
+
+
+        def __iter__(self):
+            for dirpath, dirnames, filenames in os.walk(self.folder):
+                for filename in filenames:
+                    yield filename
+
+
+        def get(self, key, default=None):
+            try:
+                return self[key]
+            except KeyError:
+                return default
+
+
+        def clear(self):
+            for key in self:
+                del self[key]
 
     def __init__(self, request=None, folder=None):
         self.initialized = False
         self.request = request
         self.folder = folder
-        self.storage = {}
+        self.storage = None
+
 
     def initialize(self):
         if self.initialized:
             return
         else:
             self.initialized = True
+
         folder = self.folder
         request = self.request
 
         # Lets test if the cache folder exists, if not
         # we are going to create it
-        folder = folder or os.path.join(request.folder, 'cache')
+        folder = os.path.join(folder or request.folder, 'cache')
 
         if not os.path.exists(folder):
             os.mkdir(folder)
 
-        ### we need this because of a possible bug in shelve that may
-        ### or may not lock
-        self.locker_name = os.path.join(folder, 'cache.lock')
-        self.shelve_name = os.path.join(folder, 'cache.shelve')
+        self.storage = CacheOnDisk.PersistentStorage(folder)
+        
+        if not CacheAbstract.cache_stats_name in self.storage:
+            self.storage[CacheAbstract.cache_stats_name] = {'hit_total': 0, 'misses': 0}
 
-    def clear(self, regex=None):
-        self.initialize()
-        storage = self._open_shelve_and_lock()
-        try:
-            if regex is None:
-                storage.clear()
-            else:
-                self._clear(storage, regex)
-            storage.sync()
-        finally:
-            self._close_shelve_and_unlock()
 
     def __call__(self, key, f,
                  time_expire=DEFAULT_TIME_EXPIRE):
         self.initialize()
+
         dt = time_expire
-        storage = self._open_shelve_and_lock()
-        try:
-            item = storage.get(key, None)
-            storage[CacheAbstract.cache_stats_name]['hit_total'] += 1
-            if item and f is None:
-                del storage[key]
-                storage.sync()
-            now = time.time()
-            if f is None:
-                value = None
-            elif item and (dt is None or item[0] > now - dt):
-                value = item[1]
-            else:
-                value = f()
-                storage[key] = (now, value)
-                storage[CacheAbstract.cache_stats_name]['misses'] += 1
-                storage.sync()
-        finally:
-            self._close_shelve_and_unlock()
+        item = self.storage.get(key)
+        self.storage[CacheAbstract.cache_stats_name]['hit_total'] += 1
+
+        if item and f is None:
+            del self.storage[key]
+
+        if f is None:
+            return None
+
+        now = time.time()
+
+        if item and ((dt is None) or (item[0] > now - dt)):
+            value = item[1]
+        else:
+            value = f()
+            self.storage[key] = (now, value)
+            self.storage[CacheAbstract.cache_stats_name]['misses'] += 1
 
         return value
+
+    def clear(self, regex=None):
+        self.initialize()
+        storage = self.storage
+        if regex is None:
+            storage.clear()
+        else:
+            self._clear(storage, regex)
+
+        if not CacheAbstract.cache_stats_name in storage:
+            storage[CacheAbstract.cache_stats_name] = {
+                'hit_total': 0, 'misses': 0}
+
 
     def increment(self, key, value=1):
         self.initialize()
-        storage = self._open_shelve_and_lock()
-        try:
-            if key in storage:
-                value = storage[key][1] + value
-            storage[key] = (time.time(), value)
-            storage.sync()
-        finally:
-            self._close_shelve_and_unlock()
+        self.storage[key] += value
         return value
+
+
 
 class CacheAction(object):
     def __init__(self, func, key, time_expire, cache, cache_model):
