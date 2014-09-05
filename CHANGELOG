@@ -1,10 +1,13 @@
-## 2.9.6
+## 2.9.6-2.9.7
 
+- fixed support of GAE + SQL
 - fixed a typo in the license of some login_methods code. It is now LGPL consistently with the rest of the web2py code. This change applied to all previous web2py versions.
 - support for SAML2 (with pysaml2)
 - Sphinx documentation (thanks Niphlod)
 - improved scheduler (thanks Niphlod)
 - increased security
+- better cache.dick (thanks Leonel)
+- sessions are stored in subfolders for speed
 - postgres support for "INSERT ... RETURING ..."
 - ldap support for Certificate Authority (thanks Maggs and Shane)
 - improved support for S/Mime X.509 (thanks Gyuris)
