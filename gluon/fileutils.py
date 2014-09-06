@@ -20,7 +20,7 @@ import datetime
 import logging
 from http import HTTP
 from gzip import open as gzopen
-
+from recfile import generate
 
 __all__ = [
     'parse_version',
@@ -400,6 +400,8 @@ def get_session(request, other_application='admin'):
         session_id = request.cookies['session_id_' + other_application].value
         session_filename = os.path.join(
             up(request.folder), other_application, 'sessions', session_id)
+        if not os.path.exists(session_filename):
+            session_filename = generate(session_filename)        
         osession = storage.load_storage(session_filename)
     except Exception, e:
         osession = storage.Storage()
