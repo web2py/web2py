@@ -29,6 +29,12 @@ Typical usage:
 """
 
 from __future__ import with_statement
+
+import sys
+import os
+print os.path.join(*__file__.split(os.sep)[:-2] or ['.'])
+sys.path.append(os.path.join(*__file__.split(os.sep)[:-2] or ['.']))
+
 from gluon import current
 from gluon.storage import Storage
 from optparse import OptionParser
@@ -37,6 +43,7 @@ import datetime
 import os
 import stat
 import time
+import glob
 
 EXPIRATION_MINUTES = 60
 SLEEP_MINUTES = 5
@@ -157,6 +164,9 @@ class SessionFile(object):
     def delete(self):
         try:
             os.unlink(self.filename)
+            path = os.path.dirname(filename)
+            if not path.endswith('sessions') and len(os.listdir(path))==0:
+                os.rmdir(path)
         except:
             pass
 
@@ -191,10 +201,11 @@ def single_loop(expiration=None, force=False, verbose=False):
         except:
             expiration = EXPIRATION_MINUTES * 60
 
-    set_db = SessionSetDb(expiration, force, verbose)
     set_files = SessionSetFiles(expiration, force, verbose)
-    set_db.trash()
     set_files.trash()
+    set_db = SessionSetDb(expiration, force, verbose)
+    set_db.trash()
+
 
 def main():
     """Main processing."""
