@@ -1,12 +1,18 @@
 import os, uuid
 
 def generate(filename, depth=2, base=512):
+    if os.path.sep in filename:
+        path, filename = os.path.split(filename)
+    else:
+        path = None
     dummyhash = sum(ord(c)*256**(i % 4) for i,c in enumerate(filename)) % base**depth
     folders = []
     for level in range(depth-1,-1,-1):
         code, dummyhash = divmod(dummyhash, base**level)
         folders.append("%03x" % code)
     folders.append(filename)
+    if path:
+        folders.insert(0,path)
     return os.path.join(*folders)
 
 def exists(filename, path=None):
