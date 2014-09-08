@@ -13,6 +13,7 @@ Provides:
 """
 
 import cPickle
+import copy_reg
 import gluon.portalocker as portalocker
 
 __all__ = ['List', 'Storage', 'Settings', 'Messages',
@@ -128,6 +129,12 @@ class Storage(dict):
         """
         values = self.getlist(key)
         return values[-1] if values else default
+
+
+def pickle_storage(s):
+    return Storage, (dict(s),)
+
+copy_reg.pickle(Storage, pickle_storage)
 
 PICKABLE = (str, int, long, float, bool, list, dict, tuple, set)
 

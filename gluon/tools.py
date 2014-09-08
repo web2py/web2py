@@ -2710,7 +2710,8 @@ class Auth(object):
             extra_fields = [
                 Field("password_two", "password", requires=IS_EQUAL_TO(
                         request.post_vars.get(passfield,None),
-                        error_message=self.messages.mismatched_password))]
+                        error_message=self.messages.mismatched_password),
+                        label=current.T("Confirm Password"))]
         else:
             extra_fields = []
         form = SQLFORM(table_user,
