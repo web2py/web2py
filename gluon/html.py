@@ -31,6 +31,7 @@ from gluon.storage import Storage
 from gluon.utils import web2py_uuid, simple_hash, compare
 from gluon.highlight import highlight
 
+
 regex_crlf = re.compile('\r|\n')
 
 join = ''.join
@@ -43,6 +44,7 @@ entitydefs.setdefault('apos', u"'".encode('utf-8'))
 
 __all__ = [
     'A',
+    'ASSIGNJS',
     'B',
     'BEAUTIFY',
     'BODY',
@@ -2824,6 +2826,14 @@ class MARKMIN(XmlComponent):
 
     def __str__(self):
         return self.xml()
+
+def ASSIGNJS(**kargs):
+    from serializers import json
+    s = ""
+    for key, value in kargs.items():
+        s+='var %s = %s;\n' % (key, json(value))
+    return XML(s)
+        
 
 if __name__ == '__main__':
     import doctest
