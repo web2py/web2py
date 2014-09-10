@@ -37,6 +37,7 @@ def fix_sys_path():
 fix_sys_path()
 
 from storage import Storage
+import pickle
 
 
 class TestStorage(unittest.TestCase):
@@ -96,6 +97,13 @@ class TestStorage(unittest.TestCase):
         self.assertEquals(s.a, None)
         self.assertEquals(s['a'], None)
         self.assertTrue('a' in s)
+    
+    def test_pickling(self):
+        """ Test storage pickling """
+        s = Storage(a=1)
+        sd = pickle.dumps(s, pickle.HIGHEST_PROTOCOL)
+        news = pickle.loads(sd)
+        self.assertEqual(news.a, 1)
 
 if __name__ == '__main__':
     unittest.main()
