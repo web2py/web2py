@@ -23,7 +23,6 @@ import logging
 import socket
 import base64
 import zlib
-import types
 
 _struct_2_long_long = struct.Struct('=QQ')
 
@@ -160,7 +159,7 @@ def pad(s, n=32, padchar=' '):
 def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
     if not hash_key:
         hash_key = sha1(encryption_key).hexdigest()
-    dump = pickle.dumps(data)
+    dump = pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
     if compression_level:
         dump = zlib.compress(dump, compression_level)
     key = pad(encryption_key[:32])

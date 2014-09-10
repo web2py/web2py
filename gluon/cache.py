@@ -20,7 +20,6 @@ caching will be provided by the GAE memcache
 (see gluon.contrib.gae_memcache)
 """
 import time
-import shutil
 import thread
 import os
 import sys

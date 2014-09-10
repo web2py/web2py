@@ -3,12 +3,9 @@ Developed by niphlod@gmail.com
 """
 
 import redis
-from redis.exceptions import ConnectionError
 from gluon import current
 from gluon.storage import Storage
-import cPickle as pickle
 import time
-import re
 import logging
 import thread
 

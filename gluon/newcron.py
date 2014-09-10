@@ -21,7 +21,10 @@ import datetime
 import platform
 import portalocker
 import fileutils
-import cPickle
+try:
+    import cPickle as pickle
+except:
+    import pickle
 from gluon.settings import global_settings
 
 logger = logging.getLogger("web2py.cron")
@@ -139,7 +142,7 @@ class Token(object):
             ret = None
             portalocker.lock(self.master, portalocker.LOCK_EX)
             try:
-                (start, stop) = cPickle.load(self.master)
+                (start, stop) = pickle.load(self.master)
             except:
                 (start, stop) = (0, 1)
             if startup or self.now - start > locktime:
@@ -149,7 +152,7 @@ class Token(object):
                     logger.warning('WEB2PY CRON: Stale cron.master detected')
                 logger.debug('WEB2PY CRON: Acquiring lock')
                 self.master.seek(0)
-                cPickle.dump((self.now, 0), self.master)
+                pickle.dump((self.now, 0), self.master)
                 self.master.flush()
         finally:
             portalocker.unlock(self.master)
@@ -166,10 +169,10 @@ class Token(object):
             portalocker.lock(self.master, portalocker.LOCK_EX)
             logger.debug('WEB2PY CRON: Releasing cron lock')
             self.master.seek(0)
-            (start, stop) = cPickle.load(self.master)
+            (start, stop) = pickle.load(self.master)
             if start == self.now:  # if this is my lock
                 self.master.seek(0)
-                cPickle.dump((self.now, time.time()), self.master)
+                pickle.dump((self.now, time.time()), self.master)
             portalocker.unlock(self.master)
             self.master.close()
 

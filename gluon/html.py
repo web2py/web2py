@@ -21,7 +21,10 @@ import sanitizer
 import itertools
 import decoder
 import copy_reg
-import cPickle
+try:
+    import cPickle as pickle
+except:
+    import pickle
 import marshal
 
 from HTMLParser import HTMLParser
@@ -1242,13 +1245,13 @@ class CAT(DIV):
 
 
 def TAG_unpickler(data):
-    return cPickle.loads(data)
+    return pickle.loads(data)
 
 
 def TAG_pickler(data):
     d = DIV()
     d.__dict__ = data.__dict__
-    marshal_dump = cPickle.dumps(d)
+    marshal_dump = pickle.dumps(d, pickle.HIGHEST_PROTOCOL)
     return (TAG_unpickler, (marshal_dump,))
 
 
@@ -2828,12 +2831,12 @@ class MARKMIN(XmlComponent):
         return self.xml()
 
 def ASSIGNJS(**kargs):
-    from serializers import json
+    from gluon.serializers import json
     s = ""
     for key, value in kargs.items():
         s+='var %s = %s;\n' % (key, json(value))
     return XML(s)
-        
+
 
 if __name__ == '__main__':
     import doctest
