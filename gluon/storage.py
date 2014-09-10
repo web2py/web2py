@@ -12,7 +12,10 @@ Provides:
 - Storage; like dictionary allowing also for `obj.foo` for `obj['foo']`
 """
 
-import cPickle
+try:
+    import cPickle as pickle
+except:
+    import pickle
 import copy_reg
 import gluon.portalocker as portalocker
 
@@ -159,7 +162,7 @@ def load_storage(filename):
     fp = None
     try:
         fp = portalocker.LockedFile(filename, 'rb')
-        storage = cPickle.load(fp)
+        storage = pickle.load(fp)
     finally:
         if fp:
             fp.close()
@@ -170,7 +173,7 @@ def save_storage(storage, filename):
     fp = None
     try:
         fp = portalocker.LockedFile(filename, 'wb')
-        cPickle.dump(dict(storage), fp)
+        pickle.dump(dict(storage), fp)
     finally:
         if fp:
             fp.close()

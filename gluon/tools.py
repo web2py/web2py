@@ -11,7 +11,10 @@ Auth, Mail, PluginManager and various utilities
 """
 
 import base64
-import cPickle
+try:
+    import cPickle as pickle
+except:
+    import pickle
 import datetime
 import thread
 import logging
@@ -3327,7 +3330,7 @@ class Auth(object):
             user = table_user(user_id)
             if not user:
                 raise HTTP(401, "Not Authorized")
-            auth.impersonator = cPickle.dumps(session)
+            auth.impersonator = pickle.dumps(session, pickle.HIGHEST_PROTOCOL)
             auth.user.update(
                 table_user._filter_fields(user, True))
             self.user = auth.user
@@ -3338,7 +3341,7 @@ class Auth(object):
         elif user_id in (0, '0'):
             if self.is_impersonating():
                 session.clear()
-                session.update(cPickle.loads(auth.impersonator))
+                session.update(pickle.loads(auth.impersonator))
                 self.user = session.auth.user
                 self.update_groups()
                 self.run_login_onaccept()
