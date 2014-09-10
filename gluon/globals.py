@@ -34,6 +34,7 @@ from types import DictionaryType
 import cStringIO
 import datetime
 import re
+import copy_reg
 import Cookie
 import os
 import sys
@@ -1176,3 +1177,8 @@ class Session(Storage):
                 del response.session_file
             except:
                 pass
+
+def pickle_session(s):
+    return Session, (dict(s),)
+
+copy_reg.pickle(Session, pickle_session)
