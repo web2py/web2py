@@ -3191,11 +3191,14 @@ class Auth(object):
         if log is DEFAULT:
             log = self.messages['change_password_log']
         passfield = self.settings.password_field
-        is_crypt =  copy.copy([t for t in table_user[passfield].requires 
-                            if isinstance(t,CRYPT)][0])
-        is_crypt.min_length = 0        
+        requires = table_user[passfield].requires
+        if not isinstance(requires,(list, tuple)): 
+            requires = [requires]
+        requires = filter(lambda t:isinstance(t,CRYPT), requires)
+        if requires:
+            requires[0].min_length = 0        
         form = SQLFORM.factory(
-            Field('old_password', 'password', requires=[is_crypt],
+            Field('old_password', 'password', requires=requires,
                 label=self.messages.old_password),
             Field('new_password', 'password',
                 label=self.messages.new_password,
