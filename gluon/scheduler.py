@@ -960,7 +960,7 @@ class Scheduler(MetaScheduler):
                 sw.insert(status=ACTIVE, worker_name=self.worker_name,
                           first_heartbeat=now, last_heartbeat=now,
                           group_names=self.group_names,
-                          worker_stats=self.w_stats)
+                          worker_stats=dumps(self.w_stats))
                 self.w_stats.status = ACTIVE
                 self.w_stats.sleep = self.heartbeat
                 mybackedstatus = ACTIVE
@@ -973,7 +973,7 @@ class Scheduler(MetaScheduler):
                         self.w_stats.status)
                     db(sw.worker_name == self.worker_name).update(
                         last_heartbeat=now,
-                        worker_stats=self.w_stats)
+                        worker_stats=dumps(self.w_stats))
                 elif mybackedstatus == TERMINATE:
                     self.w_stats.status = TERMINATE
                     logger.debug("Waiting to terminate the current task")
@@ -990,7 +990,7 @@ class Scheduler(MetaScheduler):
                         self.w_stats.status)
                     db(sw.worker_name == self.worker_name).update(
                         last_heartbeat=now, status=ACTIVE,
-                        worker_stats=self.w_stats)
+                        worker_stats=dumps(self.w_stats))
                     self.w_stats.sleep = self.heartbeat  # re-activating the process
                     if self.w_stats.status != RUNNING:
                         self.w_stats.status = ACTIVE
@@ -1406,7 +1406,7 @@ class Scheduler(MetaScheduler):
                 last_heartbeat=row.last_heartbeat,
                 group_names=row.group_names,
                 is_ticker=row.is_ticker,
-                worker_stats=row.worker_stats
+                worker_stats=Storage(loads(row.worker_stats))
             )
         return all_workers
 
