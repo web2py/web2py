@@ -31,12 +31,13 @@ An interactive, stateful AJAX shell that runs Python code on the server.
 
 import logging
 import new
-import os
-import cPickle
+try:
+   import cPickle as pickle
+except:
+   import pickle
 import sys
 import traceback
 import types
-import wsgiref.handlers
 import StringIO
 import threading
 locker = threading.RLock()
@@ -100,7 +101,7 @@ class History:
             name: the name of the global to remove
             value: any picklable value
         """
-        blob = cPickle.dumps(value)
+        blob = pickle.dumps(value, pickle.HIGHEST_PROTOCOL)
 
         if name in self.global_names:
             index = self.global_names.index(name)
@@ -159,7 +160,7 @@ def represent(obj):
     code below to determine whether the object changes over time.
     """
     try:
-        return cPickle.dumps(obj)
+        return pickle.dumps(obj, pickle.HIGHEST_PROTOCOL)
     except:
         return repr(obj)
 
@@ -258,7 +259,7 @@ def run(history, statement, env={}):
                 if not name.startswith('__'):
                     try:
                         history.set_global(name, val)
-                    except (TypeError, cPickle.PicklingError), ex:
+                    except (TypeError, pickle.PicklingError), ex:
                         UNPICKLABLE_TYPES.append(type(val))
                         history.add_unpicklable(statement, new_globals.keys())
 
