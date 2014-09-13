@@ -5704,7 +5704,7 @@ def cleanup(text):
 
 class MongoDBAdapter(NoSQLAdapter):
     drivers = ('pymongo', )
-    driver_auto_json_loads = ['loads','dumps']
+    driver_auto_json = ['loads','dumps']
 
     uploads_in_blob = False
 
