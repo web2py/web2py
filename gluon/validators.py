@@ -372,14 +372,18 @@ class IS_JSON(Validator):
             if self.native_json:
                 simplejson.loads(value) # raises error in case of malformed json
                 return (value, None) #  the serialized value is not passed
-            return (simplejson.loads(value), None)
+            else:
+                return (simplejson.loads(value), None)
         except JSONErrors:
             return (value, translate(self.error_message))
 
     def formatter(self,value):
         if value is None:
             return None
-        return simplejson.dumps(value)
+        if self.native_json:
+            return value
+        else:
+            return simplejson.dumps(value)
 
 
 class IS_IN_SET(Validator):

@@ -720,7 +720,7 @@ class BaseAdapter(ConnectionPool):
 
     __metaclass__ = AdapterMeta
 
-    native_json = False
+    driver_auto_json_loads = False
     driver = None
     driver_name = None
     drivers = ()  # list of drivers from which to pick
@@ -2174,8 +2174,8 @@ class BaseAdapter(ConnectionPool):
     def parse_double(self, value, field_type):
         return float(value)
 
-    def parse_json(self, value, field_type):
-        if not self.native_json:
+    def parse_json(self, value, field_type):        
+        if not self.driver_auto_json_loads:
             if not isinstance(value, basestring):
                 raise RuntimeError('json data not a string')
             if isinstance(value, unicode):
@@ -2924,7 +2924,7 @@ class PostgreSQLAdapter(BaseAdapter):
         else: supports_json = None
         if supports_json:
             self.types["json"] = "JSON"
-            self.native_json = True
+            self.driver_auto_json_loads = True
         else: LOGGER.debug("Your database version does not support the JSON data type (using TEXT instead)")
 
     def LIKE(self, first, second):
@@ -5702,7 +5702,6 @@ def cleanup(text):
 
 
 class MongoDBAdapter(NoSQLAdapter):
-    native_json = True
     drivers = ('pymongo', )
 
     uploads_in_blob = False
@@ -5725,7 +5724,7 @@ class MongoDBAdapter(NoSQLAdapter):
              'reference': long,
              'list:string': list,
              'list:integer': list,
-            'list:reference': list,
+             'list:reference': list,
              }
 
     error_messages = {"javascript_needed": "This must yet be replaced" +
@@ -7360,7 +7359,7 @@ def sqlhtml_validators(field):
     if field_type in (('string', 'text', 'password')):
         requires.append(validators.IS_LENGTH(field_length))
     elif field_type == 'json':
-        requires.append(validators.IS_EMPTY_OR(validators.IS_JSON(native_json=field.db._adapter.native_json)))
+        requires.append(validators.IS_EMPTY_OR(validators.IS_JSON()))
     elif field_type == 'double' or field_type == 'float':
         requires.append(validators.IS_FLOAT_IN_RANGE(-1e100, 1e100))
     elif field_type == 'integer':
