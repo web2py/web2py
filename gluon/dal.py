@@ -2037,13 +2037,13 @@ class BaseAdapter(ConnectionPool):
             else:
                 obj = str(obj)
         elif fieldtype == 'json':
-            if not self.native_json:
-                if have_serializers:
-                    obj = serializers.json(obj)
-                elif simplejson:
-                    obj = simplejson.dumps(obj)
-                else:
-                    raise RuntimeError("missing simplejson")
+            # always pass a string JSON string
+            if have_serializers:
+                obj = serializers.json(obj)
+            elif simplejson:
+                obj = simplejson.dumps(obj)
+            else:
+                raise RuntimeError("missing simplejson")
         if not isinstance(obj, bytes):
             obj = bytes(obj)
         try:
