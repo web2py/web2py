@@ -720,7 +720,7 @@ class BaseAdapter(ConnectionPool):
 
     __metaclass__ = AdapterMeta
 
-    driver_auto_json_loads = False
+    driver_auto_json = []
     driver = None
     driver_name = None
     drivers = ()  # list of drivers from which to pick
@@ -2037,13 +2037,14 @@ class BaseAdapter(ConnectionPool):
             else:
                 obj = str(obj)
         elif fieldtype == 'json':
-            # always pass a string JSON string
-            if have_serializers:
-                obj = serializers.json(obj)
-            elif simplejson:
-                obj = simplejson.dumps(obj)
-            else:
-                raise RuntimeError("missing simplejson")
+            if not 'dumps' in self.driver_auto_json:
+                # always pass a string JSON string
+                if have_serializers:
+                    obj = serializers.json(obj)
+                elif simplejson:
+                    obj = simplejson.dumps(obj)
+                else:
+                    raise RuntimeError("missing simplejson")
         if not isinstance(obj, bytes):
             obj = bytes(obj)
         try:
@@ -2175,7 +2176,7 @@ class BaseAdapter(ConnectionPool):
         return float(value)
 
     def parse_json(self, value, field_type):        
-        if not self.driver_auto_json_loads:
+        if not 'loads' in self.driver_auto_json:
             if not isinstance(value, basestring):
                 raise RuntimeError('json data not a string')
             if isinstance(value, unicode):
@@ -2924,7 +2925,7 @@ class PostgreSQLAdapter(BaseAdapter):
         else: supports_json = None
         if supports_json:
             self.types["json"] = "JSON"
-            self.driver_auto_json_loads = True
+            self.driver_auto_json = ['loads']
         else: LOGGER.debug("Your database version does not support the JSON data type (using TEXT instead)")
 
     def LIKE(self, first, second):
@@ -5703,6 +5704,7 @@ def cleanup(text):
 
 class MongoDBAdapter(NoSQLAdapter):
     drivers = ('pymongo', )
+    driver_auto_json_loads = ['loads','dumps']
 
     uploads_in_blob = False
 
