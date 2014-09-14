@@ -9864,8 +9864,8 @@ class Expression(object):
         """
         db = self.db
         if isinstance(value, (list, tuple)):
-            subqueries = [self.contains(v, case_sensitive=case_sensitive)
-                          for v in value if v]
+            subqueries = [self.contains(str(v), case_sensitive=case_sensitive)
+                          for v in value if str(v)]
             if not subqueries:
                 return self.contains('')
             else:
