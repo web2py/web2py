@@ -129,6 +129,7 @@ class TestFields(unittest.TestCase):
                 isinstance(f.formatter(datetime.datetime.now()), str)
 
     def testRun(self):
+        """Test all field types and their return values"""
         db = DAL(DEFAULT_URI, check_reserved=['all'])
         for ft in ['string', 'text', 'password', 'upload', 'blob']:
             db.define_table('tt', Field('aa', ft, default=''))
@@ -148,8 +149,22 @@ class TestFields(unittest.TestCase):
         self.assertEqual(db().select(db.tt.aa)[0].aa, True)
         db.tt.drop()
         db.define_table('tt', Field('aa', 'json', default={}))
-        self.assertEqual(db.tt.insert(aa={}), 1)
-        self.assertEqual(db().select(db.tt.aa)[0].aa, {})
+        # test different python objects for correct serialization in json
+        objs = [
+            {'a' : 1, 'b' : 2},
+            [1, 2, 3],
+            'abc',
+            True,
+            False,
+            None,
+            11,
+            14.3,
+            long(11)
+        ]
+        for obj in objs:
+            rtn_id = db.tt.insert(aa=obj)
+            rtn = db(db.tt.id == rtn_id).select().first().aa
+            self.assertEqual(obj, rtn)
         db.tt.drop()
         db.define_table('tt', Field('aa', 'date',
                         default=datetime.date.today()))
