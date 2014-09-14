@@ -1766,18 +1766,20 @@ class BaseAdapter(ConnectionPool):
             query = self.common_filter(query, tablenames_for_common_filters)
         sql_w = ' WHERE ' + self.expand(query) if query else ''
 
+        JOIN = ' CROSS JOIN '
+
         if inner_join and not left:
             # Wrap table references with parenthesis (approach 1)
             # sql_t = ', '.join([self.table_alias(t)
             #                    for t in iexcluded + itables_to_merge.keys()])
             # sql_t = '(%s)' % sql_t
             # or approach 2: Use 'JOIN' instead comma:
-            sql_t = ' JOIN '.join([self.table_alias(t)
+            sql_t = JOIN.join([self.table_alias(t)
                                for t in iexcluded + itables_to_merge.keys()])
             for t in ijoinon:
                 sql_t += ' %s %s' % (icommand, t)
         elif not inner_join and left:
-            sql_t = ' JOIN '.join([self.table_alias(t)
+            sql_t = JOIN.join([self.table_alias(t)
                                for t in excluded + tables_to_merge.keys()])
             if joint:
                 sql_t += ' %s %s' % (command,
@@ -1790,7 +1792,7 @@ class BaseAdapter(ConnectionPool):
             tables_in_joinon = set(joinont + ijoinont)
             tables_not_in_joinon = \
                 all_tables_in_query.difference(tables_in_joinon)
-            sql_t = ' JOIN '.join([self.table_alias(t) for t in tables_not_in_joinon])
+            sql_t = JOIN.join([self.table_alias(t) for t in tables_not_in_joinon])
             for t in ijoinon:
                 sql_t += ' %s %s' % (icommand, t)
             if joint:
