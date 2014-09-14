@@ -2182,7 +2182,7 @@ class BaseAdapter(ConnectionPool):
     def parse_double(self, value, field_type):
         return float(value)
 
-    def parse_json(self, value, field_type):        
+    def parse_json(self, value, field_type):
         if not 'loads' in self.driver_auto_json:
             if not isinstance(value, basestring):
                 raise RuntimeError('json data not a string')
@@ -2851,7 +2851,7 @@ class PostgreSQLAdapter(BaseAdapter):
         self.srid = srid
         self.find_or_make_work_folder()
         self._last_insert = None # for INSERT ... RETURNING ID
-    
+
         ruri = uri.split('://', 1)[1]
         m = self.REGEX_URI.match(ruri)
         if not m:
@@ -2918,7 +2918,7 @@ class PostgreSQLAdapter(BaseAdapter):
         else:
             self.execute("select lastval()")
             return int(self.cursor.fetchone()[0])
-        
+
     def try_json(self):
         # check JSON data type support
         # (to be added to after_connection)
@@ -3620,7 +3620,7 @@ class MSSQL4Adapter(MSSQLAdapter):
 
     Requires MSSQL >= 2012, uses `OFFSET ... ROWS ... FETCH NEXT ... ROWS ONLY`
     """
-    
+
     types = {
     'boolean': 'BIT',
     'string': 'VARCHAR(%(length)s)',
@@ -4613,7 +4613,7 @@ class DatabaseStoredFile:
                 sql = "CREATE TABLE IF NOT EXISTS web2py_filesystem (path VARCHAR(255), content TEXT, PRIMARY KEY(path));"
             db.executesql(sql)
             DatabaseStoredFile.web2py_filesystems.add(db._uri)
- 
+
     def __init__(self, db, filename, mode):
         if not db._adapter.dbengine in ('mysql', 'postgres', 'sqlite'):
             raise RuntimeError("only MySQL/Postgres/SQLite can store metadata .table files in database for now")
@@ -7770,7 +7770,7 @@ def smart_query(fields, text):
             elif op == 'notbelongs': new_query = ~field.belongs(value.split(','))
             elif field.type in ('text', 'string', 'json'):
                 if op == 'contains': new_query = field.contains(value)
-                elif op == 'like': new_query = field.like(value)
+                elif op == 'like': new_query = field.ilike(value)
                 elif op == 'startswith': new_query = field.startswith(value)
                 elif op == 'endswith': new_query = field.endswith(value)
                 else: raise RuntimeError("Invalid operation")
@@ -9860,14 +9860,12 @@ class Expression(object):
 
     def contains(self, value, all=False, case_sensitive=False):
         """
-        The case_sensitive parameters is only useful for PostgreSQL
-        For other RDMBs it is ignored and contains is always case insensitive
         For MongoDB and GAE contains is always case sensitive
         """
         db = self.db
         if isinstance(value, (list, tuple)):
-            subqueries = [self.contains(str(v).strip(), case_sensitive=case_sensitive)
-                          for v in value if str(v).strip()]
+            subqueries = [self.contains(v, case_sensitive=case_sensitive)
+                          for v in value if v]
             if not subqueries:
                 return self.contains('')
             else:
