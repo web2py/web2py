@@ -5053,6 +5053,17 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
     def parse_id(self, value, field_type):
         return value
 
+    def represent(self, obj, fieldtype):
+        if fieldtype == "json":
+            if have_serializers:
+                return serializers.json(obj)
+            elif simplejson:
+                return simplejson.dumps(obj)
+            else:
+                raise Exception("Could not dump json object (missing json library)")
+        else:
+            return NoSQLAdapter.represent(self, obj, fieldtype)
+
     def create_table(self, table, migrate=True, fake_migrate=False, polymodel=None):
         myfields = {}
         for field in table:
