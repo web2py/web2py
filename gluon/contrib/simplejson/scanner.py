@@ -3,7 +3,6 @@
 import re
 def _import_c_make_scanner():
     try:
-        raise ImportError # because assumes simplejson in path
         from simplejson._speedups import make_scanner
         return make_scanner
     except ImportError:
@@ -76,4 +75,3 @@ def py_make_scanner(context):
     return scan_once
 
 make_scanner = c_make_scanner or py_make_scanner
-

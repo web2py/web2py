@@ -7,7 +7,6 @@ import struct
 from scanner import make_scanner
 def _import_c_scanstring():
     try:
-        raise ImportError # because assumes simplejson in path
         from simplejson._speedups import scanstring
         return scanstring
     except ImportError:
@@ -420,4 +419,3 @@ class JSONDecoder(object):
         except StopIteration:
             raise JSONDecodeError("No JSON object could be decoded", s, idx)
         return obj, end
-
