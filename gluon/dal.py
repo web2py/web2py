@@ -9810,6 +9810,9 @@ class Expression(object):
         op = case_sensitive and db._adapter.LIKE or db._adapter.ILIKE
         return Query(db, op, self, value)
 
+    def ilike(self, value):
+        return self.like(case_sensitive=False)
+
     def regexp(self, value):
         db = self.db
         return Query(db, db._adapter.REGEXP, self, value)
