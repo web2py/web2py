@@ -15,6 +15,8 @@
 - support for Collection+JSON Hypermedia API (RESTful self documenting API)
 - jQuery 1.11
 - codemirror 4.0.3
+- markdown2 2.2.3
+- memcache 1.53
 - support for the new janrain API
 - new "web2py.py -G config" to make GAE configuration easier
 - many small bug fixes
