@@ -5,6 +5,7 @@ from decimal import Decimal
 
 def _import_speedups():
     try:
+        raise ImportError # because assumes simplejson in path
         from simplejson import _speedups
         return _speedups.encode_basestring_ascii, _speedups.make_encoder
     except ImportError:
@@ -499,3 +500,4 @@ def _make_iterencode(markers, _default, _encoder, _indent, _floatstr,
                 del markers[markerid]
 
     return _iterencode
+
