@@ -40,7 +40,7 @@ fix_sys_path()
 
 
 from storage import Storage
-from cache import CacheInRam, CacheOnDisk
+from cache import CacheInRam, CacheOnDisk, Cache
 
 oldcwd = None
 
@@ -76,6 +76,20 @@ class TestCache(unittest.TestCase):
         cache.clear()
         self.assertEqual(cache('a', lambda: 3, 100), 3)
         self.assertEqual(cache('a', lambda: 4, 0), 4)
+        #test singleton behaviour
+        cache = CacheInRam()
+        cache.clear()
+        self.assertEqual(cache('a', lambda: 3, 100), 3)
+        self.assertEqual(cache('a', lambda: 4, 0), 4)
+        #test key deletion
+        cache('a', None)
+        self.assertEqual(cache('a', lambda: 5, 100), 5)
+        #test increment
+        self.assertEqual(cache.increment('a'), 6)
+        self.assertEqual(cache('a', lambda: 1, 100), 6)
+        cache.increment('b')
+        self.assertEqual(cache('b', lambda: 'x', 100), 1)
+
 
     def testCacheOnDisk(self):
 
@@ -93,6 +107,30 @@ class TestCache(unittest.TestCase):
         cache.clear()
         self.assertEqual(cache('a', lambda: 3, 100), 3)
         self.assertEqual(cache('a', lambda: 4, 0), 4)
+        #test singleton behaviour
+        cache = CacheOnDisk(s)
+        cache.clear()
+        self.assertEqual(cache('a', lambda: 3, 100), 3)
+        self.assertEqual(cache('a', lambda: 4, 0), 4)
+        #test key deletion
+        cache('a', None)
+        self.assertEqual(cache('a', lambda: 5, 100), 5)
+        #test increment
+        self.assertEqual(cache.increment('a'), 6)
+        self.assertEqual(cache('a', lambda: 1, 100), 6)
+        cache.increment('b')
+        self.assertEqual(cache('b', lambda: 'x', 100), 1)
+
+    def testCacheWithPrefix(self):
+        s = Storage({'application': 'admin',
+                     'folder': 'applications/admin'})
+        cache = Cache(s)
+        prefix = cache.with_prefix(cache.ram,'prefix')
+        self.assertEqual(prefix('a', lambda: 1, 0), 1)
+        self.assertEqual(prefix('a', lambda: 2, 100), 1)
+        self.assertEqual(cache.ram('prefixa', lambda: 2, 100), 1)
+
+
 
 
 if __name__ == '__main__':

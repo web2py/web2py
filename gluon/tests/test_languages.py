@@ -63,6 +63,10 @@ try:
     #due to http://bugs.python.org/issue10845, testing multiprocessing in python is impossible
     if sys.platform.startswith('win'):
         MP_WORKING = 0
+    #multiprocessing is also not available on GAE. Since tests randomly
+    #fail, let's not make them on it too
+    if 'datastore' in os.getenv('DB', ''):
+        MP_WORKING = 0
 except ImportError:
     pass
 

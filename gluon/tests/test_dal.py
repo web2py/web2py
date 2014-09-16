@@ -564,7 +564,7 @@ class TestMinMaxSumAvg(unittest.TestCase):
         db.tt.drop()
 
 
-class TestCache(unittest.TestCase):
+class TestSelectCache(unittest.TestCase):
     def testRun(self):
         from cache import CacheInRam
         cache = CacheInRam()
