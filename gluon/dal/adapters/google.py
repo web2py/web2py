@@ -5,7 +5,8 @@ import re
 from .._compat import pjoin
 from .._globals import IDENTITY, LOGGER, THREAD_LOCAL
 from .._load import classobj, gae, ndb, NDBDecimalProperty, GAEDecimalProperty, \
-    namespace_manager, Key, NDBPolyModel, PolyModel, rdbms
+    namespace_manager, Key, NDBPolyModel, PolyModel, rdbms, have_serializers, \
+    serializers, simplejson
 from ..objects import Table, Field, Expression, Query
 from ..helpers.classes import SQLCustomType, SQLALL, Reference, UseDatabaseStoredFile
 from ..helpers.methods import use_common_filters, xorify
@@ -172,6 +173,17 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
 
     def parse_id(self, value, field_type):
         return value
+
+    def represent(self, obj, fieldtype):
+        if fieldtype == "json":
+            if have_serializers:
+                return serializers.json(obj)
+            elif simplejson:
+                return simplejson.dumps(obj)
+            else:
+                raise Exception("Could not dump json object (missing json library)")
+        else:
+            return NoSQLAdapter.represent(self, obj, fieldtype)
 
     def create_table(self,table,migrate=True,fake_migrate=False, polymodel=None):
         myfields = {}

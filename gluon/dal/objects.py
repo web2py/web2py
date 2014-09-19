@@ -1207,6 +1207,9 @@ class Expression(object):
         op = case_sensitive and db._adapter.LIKE or db._adapter.ILIKE
         return Query(db, op, self, value)
 
+    def ilike(self, value):
+        return self.like(case_sensitive=False)
+
     def regexp(self, value):
         db = self.db
         return Query(db, db._adapter.REGEXP, self, value)
@@ -1254,14 +1257,12 @@ class Expression(object):
 
     def contains(self, value, all=False, case_sensitive=False):
         """
-        The case_sensitive parameters is only useful for PostgreSQL
-        For other RDMBs it is ignored and contains is always case insensitive
         For MongoDB and GAE contains is always case sensitive
         """
         db = self.db
         if isinstance(value,(list, tuple)):
-            subqueries = [self.contains(str(v).strip(),case_sensitive=case_sensitive)
-                          for v in value if str(v).strip()]
+            subqueries = [self.contains(str(v),case_sensitive=case_sensitive)
+                          for v in value if str(v)]
             if not subqueries:
                 return self.contains('')
             else:

@@ -192,7 +192,7 @@ def smart_query(fields,text):
             elif op == 'notbelongs': new_query = ~field.belongs(value.split(','))
             elif field.type in ('text', 'string', 'json'):
                 if op == 'contains': new_query = field.contains(value)
-                elif op == 'like': new_query = field.like(value)
+                elif op == 'like': new_query = field.ilike(value)
                 elif op == 'startswith': new_query = field.startswith(value)
                 elif op == 'endswith': new_query = field.endswith(value)
                 else: raise RuntimeError("Invalid operation")
@@ -246,7 +246,7 @@ def sqlhtml_validators(field):
     if field_type in (('string', 'text', 'password')):
         requires.append(validators.IS_LENGTH(field_length))
     elif field_type == 'json':
-        requires.append(validators.IS_EMPTY_OR(validators.IS_JSON(native_json=field.db._adapter.native_json)))
+        requires.append(validators.IS_EMPTY_OR(validators.IS_JSON()))
     elif field_type == 'double' or field_type == 'float':
         requires.append(validators.IS_FLOAT_IN_RANGE(-1e100, 1e100))
     elif field_type == 'integer':

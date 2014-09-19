@@ -10,8 +10,8 @@ from ..helpers.methods import xorify
 from .base import NoSQLAdapter
 
 class MongoDBAdapter(NoSQLAdapter):
-    native_json = True
     drivers = ('pymongo',)
+    driver_auto_json = ['loads','dumps']
 
     uploads_in_blob = False
 
