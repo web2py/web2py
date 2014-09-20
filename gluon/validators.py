@@ -1168,11 +1168,8 @@ class IS_LIST_OF_EMAILS(object):
 
     def __call__(self, value):
         bad_emails = []
-        emails = []
         f = IS_EMAIL()
         for email in self.split_emails.findall(value):
-            if not email in emails:
-                emails.append(email)
             error = f(email)[1]
             if error and not email in bad_emails:
                 bad_emails.append(email)
@@ -2520,7 +2517,7 @@ class IS_LIST_OF(Validator):
             if not isinstance(other, (list,tuple)):
                 other = [other]
             for item in ivalue:
-                if item.strip():
+                if str(item).strip():
                     v = item
                     for validator in other:
                         (v, e) = validator(v)
