@@ -151,10 +151,10 @@ class StorageList(Storage):
 
     def __getattr__(self, key):
         if key in self:
-            return getattr(self, key)
+            return self.get(key)
         else:
             r = []
-            setattr(self, key, r)
+            self[key] = r
             return r
 
 
