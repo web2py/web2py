@@ -64,7 +64,7 @@ class BaseAdapter(ConnectionPool):
 
     __metaclass__ = AdapterMeta
 
-    driver_auto_json = False
+    driver_auto_json = []
     driver = None
     driver_name = None
     drivers = () # list of drivers from which to pick
