@@ -372,14 +372,18 @@ class IS_JSON(Validator):
             if self.native_json:
                 simplejson.loads(value) # raises error in case of malformed json
                 return (value, None) #  the serialized value is not passed
-            return (simplejson.loads(value), None)
+            else:
+                return (simplejson.loads(value), None)
         except JSONErrors:
             return (value, translate(self.error_message))
 
     def formatter(self,value):
         if value is None:
             return None
-        return simplejson.dumps(value)
+        if self.native_json:
+            return value
+        else:
+            return simplejson.dumps(value)
 
 
 class IS_IN_SET(Validator):
@@ -1164,11 +1168,8 @@ class IS_LIST_OF_EMAILS(object):
 
     def __call__(self, value):
         bad_emails = []
-        emails = []
         f = IS_EMAIL()
         for email in self.split_emails.findall(value):
-            if not email in emails:
-                emails.append(email)
             error = f(email)[1]
             if error and not email in bad_emails:
                 bad_emails.append(email)
@@ -2516,7 +2517,7 @@ class IS_LIST_OF(Validator):
             if not isinstance(other, (list,tuple)):
                 other = [other]
             for item in ivalue:
-                if item.strip():
+                if str(item).strip():
                     v = item
                     for validator in other:
                         (v, e) = validator(v)

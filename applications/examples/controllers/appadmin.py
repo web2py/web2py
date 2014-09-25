@@ -582,7 +582,7 @@ def bg_graph_model():
         if hasattr(db[tablename],'_meta_graphmodel'):
             meta_graphmodel = db[tablename]._meta_graphmodel
         else:
-            meta_graphmodel = dict(group='Undefined', color='#ECECEC')
+            meta_graphmodel = dict(group=request.application, color='#ECECEC')
 
         group = meta_graphmodel['group'].replace(' ', '')
         if not subgraphs.has_key(group):

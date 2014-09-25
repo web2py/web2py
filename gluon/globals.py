@@ -25,15 +25,19 @@ from gluon.serializers import json, custom_json
 import gluon.settings as settings
 from gluon.utils import web2py_uuid, secure_dumps, secure_loads
 from gluon.settings import global_settings
-from gluon.dal import Field
+from gluon import recfile
 import hashlib
 import portalocker
-import cPickle
+try:
+   import cPickle as pickle
+except:
+   import pickle
 from pickle import Pickler, MARK, DICT, EMPTY_DICT
 from types import DictionaryType
 import cStringIO
 import datetime
 import re
+import copy_reg
 import Cookie
 import os
 import sys
@@ -166,7 +170,6 @@ class Request(Storage):
     - is_local
     - is_https
     - restful()
-    - settings
     """
 
     def __init__(self, env):
@@ -826,11 +829,11 @@ class Session(Storage):
                                      'sessions', response.session_id)
                     try:
                         response.session_file = \
-                            open(response.session_filename, 'rb+')
+                            recfile.open(response.session_filename, 'rb+')
                         portalocker.lock(response.session_file,
                                          portalocker.LOCK_EX)
                         response.session_locked = True
-                        self.update(cPickle.load(response.session_file))
+                        self.update(pickle.load(response.session_file))
                         response.session_file.seek(0)
                         oc = response.session_filename.split('/')[-1].split('-')[0]
                         if check_client and response.session_client != oc:
@@ -895,7 +898,7 @@ class Session(Storage):
                     if row:
                         # rows[0].update_record(locked=True)
                         # Unpickle the data
-                        session_data = cPickle.loads(row.session_data)
+                        session_data = pickle.loads(row.session_data)
                         self.update(session_data)
                         response.session_new = False
                     else:
@@ -907,7 +910,7 @@ class Session(Storage):
                 else:
                     response.session_id = None
                     response.session_new = True
-            # if there is no session id yet, we'll need to create a 
+            # if there is no session id yet, we'll need to create a
             # new session
             else:
                 response.session_new = True
@@ -925,7 +928,7 @@ class Session(Storage):
                 response.cookies[response.session_id_name]['expires'] = \
                     cookie_expires.strftime(FMT)
 
-        session_pickled = cPickle.dumps(self)
+        session_pickled = pickle.dumps(self, pickle.HIGHEST_PROTOCOL)
         response.session_hash = hashlib.md5(session_pickled).hexdigest()
 
         if self.flash:
@@ -1084,7 +1087,7 @@ class Session(Storage):
         return True
 
     def _unchanged(self, response):
-        session_pickled = cPickle.dumps(self)
+        session_pickled = pickle.dumps(self, pickle.HIGHEST_PROTOCOL)
         response.session_pickled = session_pickled
         session_hash = hashlib.md5(session_pickled).hexdigest()
         return response.session_hash == session_hash
@@ -1111,7 +1114,7 @@ class Session(Storage):
         else:
             unique_key = response.session_db_unique_key
 
-        session_pickled = response.session_pickled or cPickle.dumps(self)
+        session_pickled = response.session_pickled or pickle.dumps(self, pickle.HIGHEST_PROTOCOL)
 
         dd = dict(locked=False,
                   client_ip=response.session_client,
@@ -1148,11 +1151,11 @@ class Session(Storage):
                 session_folder = os.path.dirname(response.session_filename)
                 if not os.path.exists(session_folder):
                     os.mkdir(session_folder)
-                response.session_file = open(response.session_filename, 'wb')
+                response.session_file = recfile.open(response.session_filename, 'wb')
                 portalocker.lock(response.session_file, portalocker.LOCK_EX)
                 response.session_locked = True
             if response.session_file:
-                session_pickled = response.session_pickled or cPickle.dumps(self)
+                session_pickled = response.session_pickled or pickle.dumps(self, pickle.HIGHEST_PROTOCOL)
                 response.session_file.write(session_pickled)
                 response.session_file.truncate()
         finally:
@@ -1177,3 +1180,8 @@ class Session(Storage):
                 del response.session_file
             except:
                 pass
+
+def pickle_session(s):
+    return Session, (dict(s),)
+
+copy_reg.pickle(Session, pickle_session)

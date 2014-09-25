@@ -545,8 +545,11 @@
       };
       $('[data-show-trigger]', target).each(function () {
         var name = $(this).attr('data-show-trigger');
-        if(!triggers[name]) triggers[name] = [];
-        triggers[name].push($(this).attr('id'));
+        // The field exists only when creating/editing a row
+        if ($('#' + name).length) {
+            if(!triggers[name]) triggers[name] = [];
+            triggers[name].push($(this).attr('id'));
+        }
       });
       for(var name in triggers) {
         $('#' + name, target).change(show_if).keyup(show_if);

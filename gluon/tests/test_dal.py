@@ -15,42 +15,20 @@ try:
 except:
     from io import StringIO
 
-def fix_sys_path():
-    """
-    logic to have always the correct sys.path
-     '', web2py/gluon, web2py/site-packages, web2py/ ...
-    """
+from fix_path import fix_sys_path
 
-    def add_path_first(path):
-        sys.path = [path] + [p for p in sys.path if (
-            not p == path and not p == (path + '/'))]
-
-    path = os.path.dirname(os.path.abspath(__file__))
-
-    if not os.path.isfile(os.path.join(path,'web2py.py')):
-        i = 0
-        while i<10:
-            i += 1
-            if os.path.exists(os.path.join(path,'web2py.py')):
-                break
-            path = os.path.abspath(os.path.join(path, '..'))
-
-    paths = [path,
-             os.path.abspath(os.path.join(path, 'site-packages')),
-             os.path.abspath(os.path.join(path, 'gluon')),
-             '']
-    [add_path_first(path) for path in paths]
-
-fix_sys_path()
+fix_sys_path(__file__)
 
 #for travis-ci
-DEFAULT_URI = os.environ.get('DB', 'sqlite:memory')
+DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 
 print 'Testing against %s engine (%s)' % (DEFAULT_URI.partition(':')[0], DEFAULT_URI)
 
 from dal import DAL, Field
 from dal.objects import Table
 from dal.helpers.classes import SQLALL
+from dal import DAL, Field, Table, SQLALL
+from gluon.cache import CacheInRam
 
 ALLOWED_DATATYPES = [
     'string',
@@ -131,6 +109,7 @@ class TestFields(unittest.TestCase):
                 isinstance(f.formatter(datetime.datetime.now()), str)
 
     def testRun(self):
+        """Test all field types and their return values"""
         db = DAL(DEFAULT_URI, check_reserved=['all'])
         for ft in ['string', 'text', 'password', 'upload', 'blob']:
             db.define_table('tt', Field('aa', ft, default=''))
@@ -150,8 +129,22 @@ class TestFields(unittest.TestCase):
         self.assertEqual(db().select(db.tt.aa)[0].aa, True)
         db.tt.drop()
         db.define_table('tt', Field('aa', 'json', default={}))
-        self.assertEqual(db.tt.insert(aa={}), 1)
-        self.assertEqual(db().select(db.tt.aa)[0].aa, {})
+        # test different python objects for correct serialization in json
+        objs = [
+            {'a' : 1, 'b' : 2},
+            [1, 2, 3],
+            'abc',
+            True,
+            False,
+            None,
+            11,
+            14.3,
+            long(11)
+        ]
+        for obj in objs:
+            rtn_id = db.tt.insert(aa=obj)
+            rtn = db(db.tt.id == rtn_id).select().first().aa
+            self.assertEqual(obj, rtn)
         db.tt.drop()
         db.define_table('tt', Field('aa', 'date',
                         default=datetime.date.today()))
@@ -551,9 +544,8 @@ class TestMinMaxSumAvg(unittest.TestCase):
         db.tt.drop()
 
 
-class TestCache(unittest.TestCase):
+class TestCacheSelect(unittest.TestCase):
     def testRun(self):
-        from cache import CacheInRam
         cache = CacheInRam()
         db = DAL(DEFAULT_URI, check_reserved=['all'])
         db.define_table('tt', Field('aa'))
@@ -1446,7 +1438,6 @@ class TestQuoting(unittest.TestCase):
                 db._adapter.types[key]=db._adapter.types[key].replace(
                 '%(on_delete_action)s','NO ACTION')
 
-                
         t0 = db.define_table('t0',
                         Field('f', 'string'))
         t1 = db.define_table('b',

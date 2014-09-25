@@ -655,7 +655,7 @@ class AutocompleteWidget(object):
             if settings and settings.global_settings.web2py_runtime_gae:
                 rows = self.db(field.__ge__(self.request.vars[self.keyword]) & field.__lt__(self.request.vars[self.keyword] + u'\ufffd')).select(orderby=self.orderby, limitby=self.limitby, *(self.fields+self.help_fields))
             else:
-                rows = self.db(field.like(self.request.vars[self.keyword] + '%')).select(orderby=self.orderby, limitby=self.limitby, distinct=self.distinct, *(self.fields+self.help_fields))
+                rows = self.db(field.like(self.request.vars[self.keyword] + '%', case_sensitive=False)).select(orderby=self.orderby, limitby=self.limitby, distinct=self.distinct, *(self.fields+self.help_fields))
             if rows:
                 if self.is_reference:
                     id_field = self.fields[1]
@@ -1292,7 +1292,7 @@ class SQLFORM(FORM):
             xfields.append(
                 (self.FIELDKEY_DELETE_RECORD + SQLFORM.ID_ROW_SUFFIX,
                  LABEL(
-                        T(delete_label), separator,
+                        T(delete_label), sep,
                         _for=self.FIELDKEY_DELETE_RECORD,
                         _id=self.FIELDKEY_DELETE_RECORD + \
                             SQLFORM.ID_LABEL_SUFFIX),
@@ -2114,6 +2114,8 @@ class SQLFORM(FORM):
                 field_id = groupby #take the field passed as groupby
             elif groupby and isinstance(groupby, Expression):
                 field_id = groupby.first #take the first groupby field
+                while not(isinstance(field_id, Field)): # Navigate to the first Field of the expression
+                    field_id = field_id.first
         table = field_id.table
         tablename = table._tablename
         if not any(str(f) == str(field_id) for f in fields):

@@ -163,15 +163,18 @@ def ics(events, title=None, link=None, timeshift=0, calname=True,
 def rss(feed):
     if not 'entries' in feed and 'items' in feed:
         feed['entries'] = feed['items']
+    def safestr(obj, key, default=''):
+        return str(obj[key]).encode('utf-8', 'replace') if key in obj else default
+
     now = datetime.datetime.now()
-    rss = rss2.RSS2(title=str(feed.get('title', '(notitle)').encode('utf-8', 'replace')),
-                    link=str(feed.get('link', None).encode('utf-8', 'replace')),
-                    description=str(feed.get('description', '').encode('utf-8', 'replace')),
+    rss = rss2.RSS2(title=safestr(feed,'title'),
+                    link=safestr(feed,'link'),
+                    description=safestr(feed,'description'),
                     lastBuildDate=feed.get('created_on', now),
                     items=[rss2.RSSItem(
-                           title=str(entry.get('title', '(notitle)').encode('utf-8', 'replace')),
-                           link=str(entry.get('link', None).encode('utf-8', 'replace')),
-                           description=str(entry.get('description', '').encode('utf-8', 'replace')),
+                           title=safestr(entry,'title','(notitle)'),
+                           link=safestr(entry,'link'),
+                           description=safestr(entry,'description'),
                            pubDate=entry.get('created_on', now)
                            ) for entry in feed.get('entries', [])])
     return rss.to_xml(encoding='utf-8')
