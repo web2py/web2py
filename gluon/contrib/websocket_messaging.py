@@ -65,6 +65,11 @@ Here is a complete sample web2py action:
                 'http://127.0.0.1:8888',form.vars.message,'mykey','mygroup')
         return form
 
+https is possible too using 'https://127.0.0.1:8888' instead of 'http://127.0.0.1:8888', but need to
+be started with
+
+    python gluon/contrib/websocket_messaging.py -k mykey -p 8888 -s keyfile.pem -c certfile.pem
+
 Acknowledgements:
 Tornado code inspired by http://thomas.pelletier.im/2010/08/websocket-tornado-redis/
 
@@ -194,6 +199,16 @@ if __name__ == "__main__":
                       default=False,
                       dest='tokens',
                       help='require tockens to join')
+    parser.add_option('-s',
+                      '--sslkey',
+                      default=False,
+                      dest='keyfile',
+                      help='require ssl keyfile full path')
+    parser.add_option('-c',
+                      '--sslcert',
+                      default=False,
+                      dest='certfile',
+                      help='require ssl certfile full path')
     (options, args) = parser.parse_args()
     hmac_key = options.hmac_key
     DistributeHandler.tokens = options.tokens
@@ -202,6 +217,10 @@ if __name__ == "__main__":
         (r'/token', TokenHandler),
         (r'/realtime/(.*)', DistributeHandler)]
     application = tornado.web.Application(urls, auto_reload=True)
-    http_server = tornado.httpserver.HTTPServer(application)
+    if options.keyfile and options.certfile:
+        ssl_options = dict(certfile=options.certfile, keyfile=options.keyfile)
+    else:
+        ssl_options = None
+    http_server = tornado.httpserver.HTTPServer(application, ssl_options=ssl_options)
     http_server.listen(int(options.port), address=options.address)
     tornado.ioloop.IOLoop.instance().start()
