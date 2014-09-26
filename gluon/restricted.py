@@ -11,7 +11,10 @@ Restricted environment to execute application's code
 """
 
 import sys
-import cPickle
+try:
+    import cPickle as pickle
+except:
+    import pickle
 import traceback
 import types
 import os
@@ -55,7 +58,7 @@ class TicketStorage(Storage):
         try:
             table = self._get_table(self.db, self.tablename, request.application)
             table.insert(ticket_id=ticket_id,
-                         ticket_data=cPickle.dumps(ticket_data),
+                         ticket_data=pickle.dumps(ticket_data, pickle.HIGHEST_PROTOCOL),
                          created_datetime=request.now)
             self.db.commit()
             message = 'In FILE: %(layer)s\n\n%(traceback)s\n'
@@ -68,7 +71,7 @@ class TicketStorage(Storage):
     def _store_on_disk(self, request, ticket_id, ticket_data):
         ef = self._error_file(request, ticket_id, 'wb')
         try:
-            cPickle.dump(ticket_data, ef)
+            pickle.dump(ticket_data, ef)
         finally:
             ef.close()
 
@@ -103,13 +106,13 @@ class TicketStorage(Storage):
             except IOError:
                 return {}
             try:
-                return cPickle.load(ef)
+                return pickle.load(ef)
             finally:
                 ef.close()
         else:
             table = self._get_table(self.db, self.tablename, app)
             rows = self.db(table.ticket_id == ticket_id).select()
-            return cPickle.loads(rows[0].ticket_data) if rows else {}
+            return pickle.loads(rows[0].ticket_data) if rows else {}
 
 
 class RestrictedError(Exception):

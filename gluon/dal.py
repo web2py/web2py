@@ -720,7 +720,7 @@ class BaseAdapter(ConnectionPool):
 
     __metaclass__ = AdapterMeta
 
-    native_json = False
+    driver_auto_json = []
     driver = None
     driver_name = None
     drivers = ()  # list of drivers from which to pick
@@ -1766,13 +1766,20 @@ class BaseAdapter(ConnectionPool):
             query = self.common_filter(query, tablenames_for_common_filters)
         sql_w = ' WHERE ' + self.expand(query) if query else ''
 
+        JOIN = ' CROSS JOIN '
+
         if inner_join and not left:
-            sql_t = ', '.join([self.table_alias(t)
+            # Wrap table references with parenthesis (approach 1)
+            # sql_t = ', '.join([self.table_alias(t)
+            #                    for t in iexcluded + itables_to_merge.keys()])
+            # sql_t = '(%s)' % sql_t
+            # or approach 2: Use 'JOIN' instead comma:
+            sql_t = JOIN.join([self.table_alias(t)
                                for t in iexcluded + itables_to_merge.keys()])
             for t in ijoinon:
                 sql_t += ' %s %s' % (icommand, t)
         elif not inner_join and left:
-            sql_t = ', '.join([self.table_alias(t)
+            sql_t = JOIN.join([self.table_alias(t)
                                for t in excluded + tables_to_merge.keys()])
             if joint:
                 sql_t += ' %s %s' % (command,
@@ -1785,7 +1792,7 @@ class BaseAdapter(ConnectionPool):
             tables_in_joinon = set(joinont + ijoinont)
             tables_not_in_joinon = \
                 all_tables_in_query.difference(tables_in_joinon)
-            sql_t = ','.join([self.table_alias(t) for t in tables_not_in_joinon])
+            sql_t = JOIN.join([self.table_alias(t) for t in tables_not_in_joinon])
             for t in ijoinon:
                 sql_t += ' %s %s' % (icommand, t)
             if joint:
@@ -2037,7 +2044,8 @@ class BaseAdapter(ConnectionPool):
             else:
                 obj = str(obj)
         elif fieldtype == 'json':
-            if not self.native_json:
+            if not 'dumps' in self.driver_auto_json:
+                # always pass a string JSON string
                 if have_serializers:
                     obj = serializers.json(obj)
                 elif simplejson:
@@ -2175,7 +2183,7 @@ class BaseAdapter(ConnectionPool):
         return float(value)
 
     def parse_json(self, value, field_type):
-        if not self.native_json:
+        if not 'loads' in self.driver_auto_json:
             if not isinstance(value, basestring):
                 raise RuntimeError('json data not a string')
             if isinstance(value, unicode):
@@ -2843,7 +2851,7 @@ class PostgreSQLAdapter(BaseAdapter):
         self.srid = srid
         self.find_or_make_work_folder()
         self._last_insert = None # for INSERT ... RETURNING ID
-    
+
         ruri = uri.split('://', 1)[1]
         m = self.REGEX_URI.match(ruri)
         if not m:
@@ -2910,22 +2918,27 @@ class PostgreSQLAdapter(BaseAdapter):
         else:
             self.execute("select lastval()")
             return int(self.cursor.fetchone()[0])
-        
+
     def try_json(self):
         # check JSON data type support
         # (to be added to after_connection)
         if self.driver_name == "pg8000":
             supports_json = self.connection.server_version >= "9.2.0"
-        elif (self.driver_name == "psycopg2") and \
-             (self.driver.__version__ >= "2.0.12"):
+        elif (self.driver_name == "psycopg2" and
+            self.driver.__version__ >= "2.0.12"):
             supports_json = self.connection.server_version >= 90200
         elif self.driver_name == "zxJDBC":
             supports_json = self.connection.dbversion >= "9.2.0"
-        else: supports_json = None
+        else:
+            supports_json = None
         if supports_json:
             self.types["json"] = "JSON"
-            self.native_json = True
-        else: LOGGER.debug("Your database version does not support the JSON data type (using TEXT instead)")
+            if (self.driver_name == "psycopg2" and
+                self.driver.__version__ >= '2.5.0'):
+                self.driver_auto_json = ['loads']
+        else:
+            LOGGER.debug("Your database version does not support the JSON"
+                " data type (using TEXT instead)")
 
     def LIKE(self, first, second):
         args = (self.expand(first), self.expand(second, 'string'))
@@ -3581,6 +3594,36 @@ class MSSQL3Adapter(MSSQLAdapter):
 
     Requires MSSQL >= 2005, uses `ROW_NUMBER()`
     """
+    
+    types = {
+    'boolean': 'BIT',
+    'string': 'VARCHAR(%(length)s)',
+    'text': 'VARCHAR(MAX)',
+    'json': 'VARCHAR(MAX)',
+    'password': 'VARCHAR(%(length)s)',
+    'blob': 'IMAGE',
+    'upload': 'VARCHAR(%(length)s)',
+    'integer': 'INT',
+    'bigint': 'BIGINT',
+    'float': 'FLOAT',
+    'double': 'FLOAT',
+    'decimal': 'NUMERIC(%(precision)s,%(scale)s)',
+    'date': 'DATETIME',
+    'time': 'TIME(7)',
+    'datetime': 'DATETIME',
+    'id': 'INT IDENTITY PRIMARY KEY',
+    'reference': 'INT NULL, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+    'list:integer': 'VARCHAR(MAX)',
+    'list:string': 'VARCHAR(MAX)',
+    'list:reference': 'VARCHAR(MAX)',
+    'geometry': 'geometry',
+    'geography': 'geography',
+    'big-id': 'BIGINT IDENTITY PRIMARY KEY',
+    'big-reference': 'BIGINT NULL, CONSTRAINT %(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+    'reference FK': ', CONSTRAINT FK_%(constraint_name)s FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+    'reference TFK': ' CONSTRAINT FK_%(foreign_table)s_PK FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_table)s (%(foreign_key)s) ON DELETE %(on_delete_action)s',
+     }
+    
     def select_limitby(self, sql_s, sql_f, sql_t, sql_w, sql_o, limitby):
         if limitby:
             (lmin, lmax) = limitby
@@ -3607,7 +3650,7 @@ class MSSQL4Adapter(MSSQLAdapter):
 
     Requires MSSQL >= 2012, uses `OFFSET ... ROWS ... FETCH NEXT ... ROWS ONLY`
     """
-    
+
     types = {
     'boolean': 'BIT',
     'string': 'VARCHAR(%(length)s)',
@@ -4600,7 +4643,7 @@ class DatabaseStoredFile:
                 sql = "CREATE TABLE IF NOT EXISTS web2py_filesystem (path VARCHAR(255), content TEXT, PRIMARY KEY(path));"
             db.executesql(sql)
             DatabaseStoredFile.web2py_filesystems.add(db._uri)
- 
+
     def __init__(self, db, filename, mode):
         if not db._adapter.dbengine in ('mysql', 'postgres', 'sqlite'):
             raise RuntimeError("only MySQL/Postgres/SQLite can store metadata .table files in database for now")
@@ -5051,6 +5094,17 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
 
     def parse_id(self, value, field_type):
         return value
+
+    def represent(self, obj, fieldtype):
+        if fieldtype == "json":
+            if have_serializers:
+                return serializers.json(obj)
+            elif simplejson:
+                return simplejson.dumps(obj)
+            else:
+                raise Exception("Could not dump json object (missing json library)")
+        else:
+            return NoSQLAdapter.represent(self, obj, fieldtype)
 
     def create_table(self, table, migrate=True, fake_migrate=False, polymodel=None):
         myfields = {}
@@ -5702,8 +5756,8 @@ def cleanup(text):
 
 
 class MongoDBAdapter(NoSQLAdapter):
-    native_json = True
     drivers = ('pymongo', )
+    driver_auto_json = ['loads','dumps']
 
     uploads_in_blob = False
 
@@ -5725,7 +5779,7 @@ class MongoDBAdapter(NoSQLAdapter):
              'reference': long,
              'list:string': list,
              'list:integer': list,
-            'list:reference': list,
+             'list:reference': list,
              }
 
     error_messages = {"javascript_needed": "This must yet be replaced" +
@@ -7360,7 +7414,7 @@ def sqlhtml_validators(field):
     if field_type in (('string', 'text', 'password')):
         requires.append(validators.IS_LENGTH(field_length))
     elif field_type == 'json':
-        requires.append(validators.IS_EMPTY_OR(validators.IS_JSON(native_json=field.db._adapter.native_json)))
+        requires.append(validators.IS_EMPTY_OR(validators.IS_JSON()))
     elif field_type == 'double' or field_type == 'float':
         requires.append(validators.IS_FLOAT_IN_RANGE(-1e100, 1e100))
     elif field_type == 'integer':
@@ -7746,7 +7800,7 @@ def smart_query(fields, text):
             elif op == 'notbelongs': new_query = ~field.belongs(value.split(','))
             elif field.type in ('text', 'string', 'json'):
                 if op == 'contains': new_query = field.contains(value)
-                elif op == 'like': new_query = field.like(value)
+                elif op == 'like': new_query = field.ilike(value)
                 elif op == 'startswith': new_query = field.startswith(value)
                 elif op == 'endswith': new_query = field.endswith(value)
                 else: raise RuntimeError("Invalid operation")
@@ -9786,6 +9840,9 @@ class Expression(object):
         op = case_sensitive and db._adapter.LIKE or db._adapter.ILIKE
         return Query(db, op, self, value)
 
+    def ilike(self, value):
+        return self.like(case_sensitive=False)
+
     def regexp(self, value):
         db = self.db
         return Query(db, db._adapter.REGEXP, self, value)
@@ -9833,14 +9890,12 @@ class Expression(object):
 
     def contains(self, value, all=False, case_sensitive=False):
         """
-        The case_sensitive parameters is only useful for PostgreSQL
-        For other RDMBs it is ignored and contains is always case insensitive
         For MongoDB and GAE contains is always case sensitive
         """
         db = self.db
         if isinstance(value, (list, tuple)):
-            subqueries = [self.contains(str(v).strip(), case_sensitive=case_sensitive)
-                          for v in value if str(v).strip()]
+            subqueries = [self.contains(str(v), case_sensitive=case_sensitive)
+                          for v in value if str(v)]
             if not subqueries:
                 return self.contains('')
             else:

@@ -1,12 +1,8 @@
 # fix response
 
-import re
 import os
-import cPickle
-import gluon.serializers
 from gluon import current, HTTP
 from gluon.html import markmin_serializer, TAG, HTML, BODY, UL, XML, H1
-from gluon.contenttype import contenttype
 from gluon.contrib.fpdf import FPDF, HTMLMixin
 from gluon.sanitizer import sanitize
 from gluon.contrib.markmin.markmin2latex import markmin2latex

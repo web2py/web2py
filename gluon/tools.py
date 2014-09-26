@@ -11,7 +11,10 @@ Auth, Mail, PluginManager and various utilities
 """
 
 import base64
-import cPickle
+try:
+    import cPickle as pickle
+except:
+    import pickle
 import datetime
 import thread
 import logging
@@ -3008,7 +3011,7 @@ class Auth(object):
 
         if self.settings.prevent_password_reset_attacks:
             key = request.vars.key
-            if not key and len(request.args)>0:
+            if not key and len(request.args)>1:
                 key = request.args[-1]
             if key:
                 session._reset_password_key = key
@@ -3188,11 +3191,14 @@ class Auth(object):
         if log is DEFAULT:
             log = self.messages['change_password_log']
         passfield = self.settings.password_field
-        is_crypt =  copy.copy([t for t in table_user[passfield].requires 
-                            if isinstance(t,CRYPT)][0])
-        is_crypt.min_length = 0        
+        requires = table_user[passfield].requires
+        if not isinstance(requires,(list, tuple)): 
+            requires = [requires]
+        requires = filter(lambda t:isinstance(t,CRYPT), requires)
+        if requires:
+            requires[0].min_length = 0        
         form = SQLFORM.factory(
-            Field('old_password', 'password', requires=[is_crypt],
+            Field('old_password', 'password', requires=requires,
                 label=self.messages.old_password),
             Field('new_password', 'password',
                 label=self.messages.new_password,
@@ -3327,7 +3333,7 @@ class Auth(object):
             user = table_user(user_id)
             if not user:
                 raise HTTP(401, "Not Authorized")
-            auth.impersonator = cPickle.dumps(session)
+            auth.impersonator = pickle.dumps(session, pickle.HIGHEST_PROTOCOL)
             auth.user.update(
                 table_user._filter_fields(user, True))
             self.user = auth.user
@@ -3338,7 +3344,7 @@ class Auth(object):
         elif user_id in (0, '0'):
             if self.is_impersonating():
                 session.clear()
-                session.update(cPickle.loads(auth.impersonator))
+                session.update(pickle.loads(auth.impersonator))
                 self.user = session.auth.user
                 self.update_groups()
                 self.run_login_onaccept()

@@ -3,40 +3,14 @@
 
 """ Unit tests for storage.py """
 
-import sys
-import os
 import unittest
+from fix_path import fix_sys_path
 
+fix_sys_path(__file__)
 
-def fix_sys_path():
-    """
-    logic to have always the correct sys.path
-     '', web2py/gluon, web2py/site-packages, web2py/ ...
-    """
-
-    def add_path_first(path):
-        sys.path = [path] + [p for p in sys.path if (
-            not p == path and not p == (path + '/'))]
-
-    path = os.path.dirname(os.path.abspath(__file__))
-
-    if not os.path.isfile(os.path.join(path,'web2py.py')):
-        i = 0
-        while i<10:
-            i += 1
-            if os.path.exists(os.path.join(path,'web2py.py')):
-                break
-            path = os.path.abspath(os.path.join(path, '..'))
-
-    paths = [path,
-             os.path.abspath(os.path.join(path, 'site-packages')),
-             os.path.abspath(os.path.join(path, 'gluon')),
-             '']
-    [add_path_first(path) for path in paths]
-
-fix_sys_path()
-
-from storage import Storage
+from storage import Storage, StorageList, List
+from http import HTTP
+import pickle
 
 
 class TestStorage(unittest.TestCase):
@@ -96,6 +70,71 @@ class TestStorage(unittest.TestCase):
         self.assertEquals(s.a, None)
         self.assertEquals(s['a'], None)
         self.assertTrue('a' in s)
+
+    def test_pickling(self):
+        """ Test storage pickling """
+        s = Storage(a=1)
+        sd = pickle.dumps(s, pickle.HIGHEST_PROTOCOL)
+        news = pickle.loads(sd)
+        self.assertEqual(news.a, 1)
+
+    def test_getlist(self):
+        # usually used with request.vars
+        a = Storage()
+        a.x = 'abc'
+        a.y = ['abc', 'def']
+        self.assertEqual(a.getlist('x'), ['abc'])
+        self.assertEqual(a.getlist('y'), ['abc', 'def'])
+        self.assertEqual(a.getlist('z'), [])
+
+    def test_getfirst(self):
+        # usually with request.vars
+        a = Storage()
+        a.x = 'abc'
+        a.y = ['abc', 'def']
+        self.assertEqual(a.getfirst('x'), 'abc')
+        self.assertEqual(a.getfirst('y'), 'abc')
+        self.assertEqual(a.getfirst('z'), None)
+
+    def test_getlast(self):
+        # usually with request.vars
+        a = Storage()
+        a.x = 'abc'
+        a.y = ['abc', 'def']
+        self.assertEqual(a.getlast('x'), 'abc')
+        self.assertEqual(a.getlast('y'), 'def')
+        self.assertEqual(a.getlast('z'), None)
+
+
+class TestStorageList(unittest.TestCase):
+    """ Tests storage.StorageList """
+
+    def test_attribute(self):
+        s = StorageList(a=1)
+
+        self.assertEqual(s.a, 1)
+        self.assertEqual(s['a'], 1)
+        self.assertEqual(s.b, [])
+        s.b.append(1)
+        self.assertEqual(s.b, [1])
+
+
+class TestList(unittest.TestCase):
+    """ Tests Storage.List (fast-check for request.args()) """
+
+    def test_listcall(self):
+        a = List((1, 2, 3))
+        self.assertEqual(a(1), 2)
+        self.assertEqual(a(-1), 3)
+        self.assertEqual(a(-5), None)
+        self.assertEqual(a(-5, default='x'), 'x')
+        self.assertEqual(a(-3, cast=str), '1')
+        a.append('1234')
+        self.assertEqual(a(3), '1234')
+        self.assertEqual(a(3, cast=int), 1234)
+        a.append('x')
+        self.assertRaises(HTTP, a, 4, cast=int)
+
 
 if __name__ == '__main__':
     unittest.main()

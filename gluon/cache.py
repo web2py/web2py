@@ -20,7 +20,6 @@ caching will be provided by the GAE memcache
 (see gluon.contrib.gae_memcache)
 """
 import time
-import shutil
 import thread
 import os
 import sys
@@ -358,7 +357,7 @@ class CacheOnDisk(CacheAbstract):
             os.mkdir(folder)
 
         self.storage = CacheOnDisk.PersistentStorage(folder)
-        
+
         if not CacheAbstract.cache_stats_name in self.storage:
             self.storage[CacheAbstract.cache_stats_name] = {'hit_total': 0, 'misses': 0}
 
@@ -403,7 +402,13 @@ class CacheOnDisk(CacheAbstract):
 
     def increment(self, key, value=1):
         self.initialize()
-        self.storage[key] += value
+        storage = self.storage
+        try:
+            if key in storage:
+                value = storage[key][1] + value
+            storage[key] = (time.time(), value)
+        except:
+            pass
         return value
 
 
@@ -446,7 +451,7 @@ class Cache(object):
 
     def __init__(self, request):
         """
-        Args: 
+        Args:
             request: the global request object
         """
         # GAE will have a special caching

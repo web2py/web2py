@@ -3,43 +3,17 @@
 
 """Unit tests for http.py """
 
-import sys
-import os
 import unittest
-
-
-def fix_sys_path():
-    """
-    logic to have always the correct sys.path
-     '', web2py/gluon, web2py/site-packages, web2py/ ...
-    """
-
-    def add_path_first(path):
-        sys.path = [path] + [p for p in sys.path if (
-            not p == path and not p == (path + '/'))]
-
-    path = os.path.dirname(os.path.abspath(__file__))
-
-    if not os.path.isfile(os.path.join(path,'web2py.py')):
-        i = 0
-        while i<10:
-            i += 1
-            if os.path.exists(os.path.join(path,'web2py.py')):
-                break
-            path = os.path.abspath(os.path.join(path, '..'))
-
-    paths = [path,
-             os.path.abspath(os.path.join(path, 'site-packages')),
-             os.path.abspath(os.path.join(path, 'gluon')),
-             '']
-    [add_path_first(path) for path in paths]
-
-fix_sys_path()
-
 import datetime
 import decimal
-from gluon.validators import *
 import re
+from fix_path import fix_sys_path
+
+fix_sys_path(__file__)
+
+
+from gluon.validators import *
+
 
 class TestValidators(unittest.TestCase):
 
@@ -114,6 +88,19 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, (datetime.date(2008, 3, 3), None))
         rtn =  v(datetime.date(2010,3,3))
         self.assertEqual(rtn, (datetime.date(2010, 3, 3), 'oops'))
+        v = IS_DATE_IN_RANGE(maximum=datetime.date(2009,12,31),
+            format="%m/%d/%Y")
+        rtn = v('03/03/2010')
+        self.assertEqual(rtn, ('03/03/2010', 'Enter date on or before 12/31/2009'))
+        v = IS_DATE_IN_RANGE(minimum=datetime.date(2008,1,1),
+            format="%m/%d/%Y")
+        rtn = v('03/03/2007')
+        self.assertEqual(rtn, ('03/03/2007', 'Enter date on or after 01/01/2008'))
+        v = IS_DATE_IN_RANGE(minimum=datetime.date(2008,1,1),
+            maximum=datetime.date(2009,12,31),
+            format="%m/%d/%Y")
+        rtn = v('03/03/2007')
+        self.assertEqual(rtn, ('03/03/2007', 'Enter date in range 01/01/2008 12/31/2009'))
 
     def test_IS_DATE(self):
         v = IS_DATE(format="%m/%d/%Y",error_message="oops")
@@ -135,6 +122,19 @@ class TestValidators(unittest.TestCase):
         self.assertEquals(rtn, (datetime.datetime(2008, 3, 3, 0, 0), None))
         rtn =  v(datetime.datetime(2010,3,3,0,0))
         self.assertEquals(rtn, (datetime.datetime(2010, 3, 3, 0, 0), 'oops'))
+        v = IS_DATETIME_IN_RANGE(maximum=datetime.datetime(2009,12,31,12,20),
+            format='%m/%d/%Y %H:%M:%S')
+        rtn = v('03/03/2010 12:20:00')
+        self.assertEqual(rtn, ('03/03/2010 12:20:00', 'Enter date and time on or before 12/31/2009 12:20:00'))
+        v = IS_DATETIME_IN_RANGE(minimum=datetime.datetime(2008,1,1,12,20),
+            format='%m/%d/%Y %H:%M:%S')
+        rtn = v('03/03/2007 12:20:00')
+        self.assertEqual(rtn, ('03/03/2007 12:20:00', 'Enter date and time on or after 01/01/2008 12:20:00'))
+        v = IS_DATETIME_IN_RANGE(minimum=datetime.datetime(2008,1,1,12,20),
+            maximum=datetime.datetime(2009,12,31,12,20),
+            format='%m/%d/%Y %H:%M:%S')
+        rtn = v('03/03/2007 12:20:00')
+        self.assertEqual(rtn, ('03/03/2007 12:20:00', 'Enter date and time in range 01/01/2008 12:20:00 12/31/2009 12:20:00'))
 
     def test_IS_DATETIME(self):
         v = IS_DATETIME(format="%m/%d/%Y %H:%M",error_message="oops")
@@ -186,6 +186,8 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ('6,5', 'Enter a number'))
         rtn = IS_DECIMAL_IN_RANGE(dot=',')('6.5')
         self.assertEqual(rtn, (decimal.Decimal('6.5'), None))
+        rtn =  IS_DECIMAL_IN_RANGE(1,5)(decimal.Decimal('4'))
+        self.assertEqual(rtn, (decimal.Decimal('4'), None))
 
     def test_IS_EMAIL(self):
         rtn =  IS_EMAIL()('a@b.com')
@@ -242,6 +244,16 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ('Ima Fool@example.com', 'Enter a valid email address'))
         rtn =  IS_EMAIL()('localguy@localhost')       # localhost as domain
         self.assertEqual(rtn, ('localguy@localhost', None))
+        # test for banned
+        rtn =  IS_EMAIL(banned='^.*\.com(|\..*)$')('localguy@localhost')       # localhost as domain
+        self.assertEqual(rtn, ('localguy@localhost', None))
+        rtn = IS_EMAIL(banned='^.*\.com(|\..*)$')('abc@example.com')
+        self.assertEqual(rtn, ('abc@example.com', 'Enter a valid email address'))
+        # test for forced
+        rtn = IS_EMAIL(forced='^.*\.edu(|\..*)$')('localguy@localhost')
+        self.assertEqual(rtn, ('localguy@localhost', 'Enter a valid email address'))
+        rtn = IS_EMAIL(forced='^.*\.edu(|\..*)$')('localguy@example.edu')
+        self.assertEqual(rtn, ('localguy@example.edu', None))
 
     def test_IS_LIST_OF_EMAILS(self):
         emails = ['localguy@localhost', '_Yosemite.Sam@example.com']
@@ -255,6 +267,19 @@ class TestValidators(unittest.TestCase):
         rtn = IS_LIST_OF_EMAILS()(';'.join(emails))
         self.assertEqual(rtn, ('localguy@localhost;_Yosemite.Sam@example.com;a', 'Invalid emails: a'))
 
+    def test_IS_LIST_OF(self):
+        values = [0,1,2,3,4]
+        rtn = IS_LIST_OF(IS_INT_IN_RANGE(0, 10))(values)
+        self.assertEqual(rtn, (values, None))
+        values.append(11)
+        rtn = IS_LIST_OF(IS_INT_IN_RANGE(0, 10))(values)
+        self.assertEqual(rtn, (values, 'Enter an integer between 0 and 9'))
+        rtn = IS_LIST_OF(IS_INT_IN_RANGE(0, 10))(1)
+        self.assertEqual(rtn, ([1], None))
+        rtn = IS_LIST_OF(IS_INT_IN_RANGE(0, 10), minimum=10)([1,2])
+        self.assertEqual(rtn, ([1, 2], 'Enter between 10 and 100 values'))
+        rtn =  IS_LIST_OF(IS_INT_IN_RANGE(0, 10), maximum=2)([1,2,3])
+        self.assertEqual(rtn, ([1, 2, 3], 'Enter between 0 and 2 values'))
 
     def test_IS_EMPTY_OR(self):
         rtn = IS_EMPTY_OR(IS_EMAIL())('abc@def.com')
@@ -515,8 +540,46 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, (None, 'Enter from 1 to 255 characters'))
         rtn = IS_LENGTH(minsize=1)([])
         self.assertEqual(rtn, ([], 'Enter from 1 to 255 characters'))
+        rtn = IS_LENGTH(minsize=1)([1, 2])
+        self.assertEqual(rtn, ([1, 2], None))
         rtn = IS_LENGTH(minsize=1)([1])
         self.assertEqual(rtn, ([1], None))
+        # test unicode
+        rtn = IS_LENGTH(2)(u'°2')
+        self.assertEqual(rtn, ('\xc2\xb02', None))
+        rtn = IS_LENGTH(2)(u'°12')
+        self.assertEqual(rtn, (u'\xb012', 'Enter from 0 to 2 characters'))
+        # test automatic str()
+        rtn = IS_LENGTH(minsize=1)(1)
+        self.assertEqual(rtn, ('1', None))
+        rtn = IS_LENGTH(minsize=2)(1)
+        self.assertEqual(rtn, (1, 'Enter from 2 to 255 characters'))
+        # test FieldStorage
+        import cgi
+        from StringIO import StringIO
+        a = cgi.FieldStorage()
+        a.file = StringIO('abc')
+        rtn = IS_LENGTH(minsize=4)(a)
+        self.assertEqual(rtn, (a, 'Enter from 4 to 255 characters'))
+        urlencode_data = "key2=value2x&key3=value3&key4=value4"
+        urlencode_environ = {
+            'CONTENT_LENGTH':   str(len(urlencode_data)),
+            'CONTENT_TYPE':     'application/x-www-form-urlencoded',
+            'QUERY_STRING':     'key1=value1&key2=value2y',
+            'REQUEST_METHOD':   'POST',
+        }
+        fake_stdin = StringIO(urlencode_data)
+        fake_stdin.seek(0)
+        a = cgi.FieldStorage(fp=fake_stdin, environ=urlencode_environ)
+        rtn = IS_LENGTH(minsize=6)(a)
+        self.assertEqual(rtn, (a, 'Enter from 6 to 255 characters'))
+        a = cgi.FieldStorage()
+        rtn = IS_LENGTH(minsize=6)(a)
+        self.assertEqual(rtn, (a, 'Enter from 6 to 255 characters'))
+        rtn = IS_LENGTH(6)(a)
+        self.assertEqual(rtn, (a, None))
+
+
 
     def test_IS_LOWER(self):
         rtn = IS_LOWER()('ABC')
@@ -545,9 +608,13 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ('hellas', 'Invalid expression'))
         rtn = IS_MATCH('hell$', strict=True)('hellas')
         self.assertEqual(rtn, ('hellas', 'Invalid expression'))
+        rtn = IS_MATCH('^.hell$', strict=True)('shell')
+        self.assertEqual(rtn, ('shell', None))
         rtn = IS_MATCH(u'hell', is_unicode=True)('àòè')
         self.assertEqual(rtn, ('\xc3\xa0\xc3\xb2\xc3\xa8', 'Invalid expression'))
         rtn = IS_MATCH(u'hell', is_unicode=True)(u'hell')
+        self.assertEqual(rtn, (u'hell', None))
+        rtn = IS_MATCH('hell', is_unicode=True)(u'hell')
         self.assertEqual(rtn, (u'hell', None))
 
 
@@ -717,6 +784,57 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ({u'a': 100}, None))
         rtn = IS_JSON()('spam1234')
         self.assertEqual(rtn, ('spam1234', 'Invalid json'))
+
+    def test_IS_UPLOAD_FILENAME(self):
+        import cgi
+        from StringIO import StringIO
+        def gen_fake(filename):
+            formdata_file_data = """
+---123
+Content-Disposition: form-data; name="key2"
+
+value2y
+---123
+Content-Disposition: form-data; name="file_attach"; filename="%s"
+Content-Type: text/plain
+
+this is the content of the fake file
+
+---123--
+""" % filename
+            formdata_file_environ = {
+                'CONTENT_LENGTH':   str(len(formdata_file_data)),
+                'CONTENT_TYPE':     'multipart/form-data; boundary=-123',
+                'QUERY_STRING':     'key1=value1&key2=value2x',
+                'REQUEST_METHOD':   'POST',
+            }
+            return cgi.FieldStorage(fp=StringIO(formdata_file_data), environ=formdata_file_environ)['file_attach']
+
+        fake = gen_fake('example.pdf')
+        rtn = IS_UPLOAD_FILENAME(extension='pdf')(fake)
+        self.assertEqual(rtn, (fake, None))
+        fake = gen_fake('example.gif')
+        rtn = IS_UPLOAD_FILENAME(extension='pdf')(fake)
+        self.assertEqual(rtn, (fake, 'Enter valid filename'))
+        fake = gen_fake('backup2014.tar.gz')
+        rtn = IS_UPLOAD_FILENAME(filename='backup.*', extension='tar.gz', lastdot=False)(fake)
+        self.assertEqual(rtn, (fake, None))
+        fake = gen_fake('README')
+        rtn = IS_UPLOAD_FILENAME(filename='^README$', extension='^$', case=0)(fake)
+        self.assertEqual(rtn, (fake, None))
+        fake = gen_fake('readme')
+        rtn = IS_UPLOAD_FILENAME(filename='^README$', extension='^$', case=0)(fake)
+        self.assertEqual(rtn, (fake, 'Enter valid filename'))
+        fake = gen_fake('readme')
+        rtn = IS_UPLOAD_FILENAME(filename='README', case=2)(fake)
+        self.assertEqual(rtn, (fake, None))
+        fake = gen_fake('README')
+        rtn = IS_UPLOAD_FILENAME(filename='README', case=2)(fake)
+        self.assertEqual(rtn, (fake, None))
+        rtn = IS_UPLOAD_FILENAME(extension='pdf')('example.pdf')
+        self.assertEqual(rtn, ('example.pdf', 'Enter valid filename'))
+
+
 
 
 if __name__ == '__main__':
