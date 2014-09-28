@@ -117,7 +117,7 @@ class PostHandler(tornado.web.RequestHandler):
                     return 'false'
             for client in listeners.get(group, []):
                 client.write_message(message)
-            return 'true'
+            return None
         return 'false'
 
 
@@ -137,7 +137,7 @@ class TokenHandler(tornado.web.RequestHandler):
                 if not hmac.new(hmac_key, message).hexdigest() == signature:
                     return 'false'
             tokens[message] = None
-            return 'true'
+            return None
         return 'false'
 
 
