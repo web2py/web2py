@@ -667,3 +667,42 @@ def manage():
     kwargs.update(**smartgrid_args.get(table._tablename, {}))
     grid = SQLFORM.smartgrid(table, args=request.args[:2], formname=formname, **kwargs)
     return grid
+
+def hooks():
+    import functools
+    import inspect
+    list_op=['_%s_%s' %(h,m) for h in ['before', 'after'] for m in ['insert','update','delete']]
+    tables=[]
+    with_build_it=False
+    for db_str in sorted(databases):
+        db = databases[db_str]
+        for t in db.tables:
+            method_hooks=[]
+            for op in list_op:
+                functions = []
+                for f in getattr(db[t], op):
+                    if hasattr(f, '__call__'):
+                        if isinstance(f, (functools.partial)):
+                            f = f.func
+                        filename = inspect.getsourcefile(f)
+                        details = {'funcname':f.__name__,
+                                   'filename':filename[len(request.folder):] if request.folder in filename else None,
+                                   'lineno': inspect.getsourcelines(f)[1]}
+                        if details['filename']: # Built in functions as delete_uploaded_files are not editable
+                            details['url'] = URL(a='admin',c='default',f='edit', args=[request['application'], details['filename']],vars={'lineno':details['lineno']})
+                        if details['filename'] or with_build_it:
+                            functions.append(details)
+                if len(functions):
+                    method_hooks.append({'name':op, 'functions':functions})
+            if len(method_hooks):
+                tables.append({'name':"%s.%s" % (db_str,t), 'slug': IS_SLUG()("%s.%s" % (db_str,t))[0], 'method_hooks':method_hooks})
+    # Render
+    ul_main = UL(_class='nav nav-list')
+    for t in tables:
+        ul_main.append(A(t['name'], _onclick="collapse('a_%s')" % t['slug']))
+        ul_t = UL(_class='nav nav-list', _id="a_%s" % t['slug'], _style='display:none')
+        for op in t['method_hooks']:
+            ul_t.append(LI (op['name']))
+            ul_t.append(UL([LI(A(f['funcname'], _href=f['url']if 'url' in f else None)) for f in op['functions']]))
+        ul_main.append(ul_t)
+    return ul_main
