@@ -12,7 +12,6 @@ from .base import NoSQLAdapter
 
 
 class IMAPAdapter(NoSQLAdapter):
-    drivers = ('imaplib',)
 
     """ IMAP server adapter
 
@@ -44,29 +43,31 @@ class IMAPAdapter(NoSQLAdapter):
 
     Here is a list of supported fields:
 
-    Field       Type            Description
-    ################################################################
-    uid         string
-    answered    boolean        Flag
-    created     date
-    content     list:string    A list of dict text or html parts
-    to          string
-    cc          string
-    bcc         string
-    size        integer        the amount of octets of the message*
-    deleted     boolean        Flag
-    draft       boolean        Flag
-    flagged     boolean        Flag
-    sender      string
-    recent      boolean        Flag
-    seen        boolean        Flag
-    subject     string
-    mime        string         The mime header declaration
-    email       string         The complete RFC822 message**
-    attachments <type list>    Each non text part as dict
-    encoding    string         The main detected encoding
-
-    *At the application side it is measured as the length of the RFC822
+    ===========   ============== ===========
+    Field         Type           Description
+    ===========   ============== ===========
+    uid           string
+    answered      boolean        Flag
+    created       date
+    content       list:string    A list of dict text or html parts
+    to            string
+    cc            string
+    bcc           string
+    size          integer        the amount of octets of the message*
+    deleted       boolean        Flag
+    draft         boolean        Flag
+    flagged       boolean        Flag
+    sender        string
+    recent        boolean        Flag
+    seen          boolean        Flag
+    subject       string
+    mime          string         The mime header declaration
+    email         string         The complete RFC822 message (*)
+    attachments   list           Each non text part as dict
+    encoding      string         The main detected encoding
+    ===========   ============== ===========
+    
+    (*) At the application side it is measured as the length of the RFC822
     message string
 
     WARNING: As row id's are mapped to email sequence numbers,
@@ -141,7 +142,7 @@ class IMAPAdapter(NoSQLAdapter):
         imapdb(q).select(imapdb.INBOX.sender, imapdb.INBOX.subject)
 
     """
-
+    drivers = ('imaplib',)
     types = {
             'string': str,
             'text': str,
