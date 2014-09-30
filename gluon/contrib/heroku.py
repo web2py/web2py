@@ -7,7 +7,8 @@ db = get_db()
 """
 import os
 from gluon import *
-from gluon.dal import ADAPTERS, UseDatabaseStoredFile,PostgreSQLAdapter
+from gluon.dal.adapters import ADAPTERS, PostgreSQLAdapter
+from gluon.dal.helpers.classes import UseDatabaseStoredFile
 
 class HerokuPostgresAdapter(UseDatabaseStoredFile,PostgreSQLAdapter):
     drivers = ('psycopg2',)

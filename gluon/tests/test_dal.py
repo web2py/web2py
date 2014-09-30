@@ -24,7 +24,9 @@ DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 
 print 'Testing against %s engine (%s)' % (DEFAULT_URI.partition(':')[0], DEFAULT_URI)
 
-from dal import DAL, Field, Table, SQLALL
+from dal import DAL, Field
+from dal.objects import Table
+from dal.helpers.classes import SQLALL
 from gluon.cache import CacheInRam
 
 ALLOWED_DATATYPES = [
@@ -1511,7 +1513,7 @@ class TestQuoting(unittest.TestCase):
 
 class TestTableAndFieldCase(unittest.TestCase):
     """
-    at the Python level we should not allow db.C and db.c because of .table conflicts on windows 
+    at the Python level we should not allow db.C and db.c because of .table conflicts on windows
     but it should be possible to map two different names into distinct tables "c" and "C" at the Python level
     By default Python models names should be mapped into lower case table names and assume case insensitivity.
     """

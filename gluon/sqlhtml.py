@@ -21,9 +21,12 @@ from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG, S
 from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT, COL, COLGROUP
 from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE, DEFAULT_PASSWORD_DISPLAY
 from gluon.html import URL, truncate_string, FIELDSET
-from gluon.dal import DAL, Field, Table, Row, CALLABLETYPES, smart_query, \
-    bar_encode, Reference, Expression, SQLCustomType, sqlhtml_validators, \
-    DEFAULT
+from gluon.dal import DAL, Field
+from gluon.dal.base import DEFAULT
+from gluon.dal.objects import Table, Row, Expression
+from gluon.dal.adapters.base import CALLABLETYPES
+from gluon.dal.helpers.methods import smart_query, bar_encode, sqlhtml_validators
+from gluon.dal.helpers.classes import Reference, SQLCustomType
 from gluon.storage import Storage
 from gluon.utils import md5_hash
 from gluon.validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE, \

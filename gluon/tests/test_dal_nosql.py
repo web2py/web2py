@@ -32,11 +32,13 @@ IS_MONGODB = "mongodb" in DEFAULT_URI
 IS_IMAP = "imap" in DEFAULT_URI
 
 if IS_IMAP:
-    from dal import IMAPAdapter
+    from dal.adapters import IMAPAdapter
     from contrib import mockimaplib
     IMAPAdapter.driver = mockimaplib
 
-from dal import DAL, Field, Table, SQLALL
+from dal import DAL, Field
+from dal.objects import Table
+from dal.helpers.classes import SQLALL
 
 def drop(table, cascade=None):
     # mongodb implements drop()
