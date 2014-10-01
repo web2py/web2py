@@ -24,6 +24,13 @@ epydoc:
 	cp applications/examples/static/title.png applications/examples/static/epydoc
 tests:
 	python web2py.py --run_system_tests
+coverage:
+	coverage erase --rcfile=gluon/tests/coverage.ini
+	export COVERAGE_PROCESS_START=gluon/tests/coverage.ini
+	python web2py.py --run_system_tests --with_coverage
+	coverage combine --rcfile=gluon/tests/coverage.ini
+	sleep 1
+	coverage html --rcfile=gluon/tests/coverage.ini
 update:
 	wget -O gluon/contrib/feedparser.py http://feedparser.googlecode.com/svn/trunk/feedparser/feedparser.py
 	wget -O gluon/contrib/simplejsonrpc.py http://rad2py.googlecode.com/hg/ide2py/simplejsonrpc.py
