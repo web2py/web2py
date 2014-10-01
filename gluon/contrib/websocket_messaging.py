@@ -110,7 +110,7 @@ class PostHandler(tornado.web.RequestHandler):
     """
     def post(self):
         if hmac_key and not 'signature' in self.request.arguments:
-            return 'false'
+            self.send_error(401)
         if 'message' in self.request.arguments:
             message = self.request.arguments['message'][0]
             group = self.request.arguments.get('group', ['default'])[0]
@@ -118,11 +118,9 @@ class PostHandler(tornado.web.RequestHandler):
             if hmac_key:
                 signature = self.request.arguments['signature'][0]
                 if not hmac.new(hmac_key, message).hexdigest() == signature:
-                    return 'false'
+                    self.send_error(401)
             for client in listeners.get(group, []):
                 client.write_message(message)
-            return None
-        return 'false'
 
 
 class TokenHandler(tornado.web.RequestHandler):
@@ -133,16 +131,14 @@ class TokenHandler(tornado.web.RequestHandler):
     """
     def post(self):
         if hmac_key and not 'message' in self.request.arguments:
-            return 'false'
+            self.send_error(401)
         if 'message' in self.request.arguments:
             message = self.request.arguments['message'][0]
             if hmac_key:
                 signature = self.request.arguments['signature'][0]
                 if not hmac.new(hmac_key, message).hexdigest() == signature:
-                    return 'false'
+                    self.send_error(401)
             tokens[message] = None
-            return None
-        return 'false'
 
 
 class DistributeHandler(tornado.websocket.WebSocketHandler):
@@ -177,6 +173,13 @@ class DistributeHandler(tornado.websocket.WebSocketHandler):
         for client in listeners.get(self.group, []):
             client.write_message('-' + self.name)
         print '%s:DISCONNECT from %s' % (time.time(), self.group)
+
+    #if your webserver is different from tornado server uncomment this
+    #or override using something more restrictive:
+    #http://tornado.readthedocs.org/en/latest/websocket.html#tornado.websocket.WebSocketHandler.check_origin
+    #def check_origin(self, origin):
+    #    return True
+
 
 if __name__ == "__main__":
     usage = __doc__
