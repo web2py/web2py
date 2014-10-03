@@ -11,12 +11,19 @@ from gluon.languages import lazyT
 import gluon.contrib.rss2 as rss2
 
 try:
-    import simplejson as json_parser                # try external module
+    # try external module
+    import simplejson as json_parser
 except ImportError:
     try:
-        import json as json_parser                  # try stdlib (Python >= 2.6)
+        # try stdlib (Python >= 2.6)
+        import json as json_parser
     except:
-        import gluon.contrib.simplejson as json_parser    # fallback to pure-Python module
+        # fallback to pure-Python module
+        import gluon.contrib.simplejson as json_parser
+
+# simplejson >= 2.1.3 needs use_decimal = False
+# to stringify decimals
+decimal_false_option = json_parser.__version__.split('.') >= ['2', '1', '3']
 
 have_yaml = True
 try:
@@ -24,21 +31,23 @@ try:
 except ImportError:
     have_yaml = False
 
+
 def cast_keys(o, cast=str, encoding="utf-8"):
-    """ Builds a new object with <cast> type keys
-
-    Arguments:
-        o is the object input
-        cast (defaults to str) is an object type or function
-              which supports conversion such as:
-
-              >>> converted = cast(o)
-
-        encoding (defaults to utf-8) is the encoding for unicode
-                 keys. This is not used for custom cast functions
-
-    Use this funcion if you are in Python < 2.6.5
+    """
+    Builds a new object with <cast> type keys.
+    Use this function if you are in Python < 2.6.5
     This avoids syntax errors when unpacking dictionary arguments.
+
+    Args:
+        o: is the object input
+        cast:  (defaults to str) is an object type or function
+            which supports conversion such as:
+
+                converted = cast(o)
+
+        encoding: (defaults to utf-8) is the encoding for unicode
+            keys. This is not used for custom cast functions
+
     """
 
     if isinstance(o, (dict, Storage)):
@@ -65,6 +74,7 @@ def cast_keys(o, cast=str, encoding="utf-8"):
         newobj = o
     return newobj
 
+
 def loads_json(o, unicode_keys=True, **kwargs):
     # deserialize a json string
     result = json_parser.loads(o, **kwargs)
@@ -73,6 +83,7 @@ def loads_json(o, unicode_keys=True, **kwargs):
         result = cast_keys(result,
                            encoding=kwargs.get("encoding", "utf-8"))
     return result
+
 
 def custom_json(o):
     if hasattr(o, 'custom_json') and callable(o.custom_json):
@@ -118,12 +129,15 @@ def xml(value, encoding='UTF-8', key='document', quote=True):
 
 
 def json(value, default=custom_json):
+    if decimal_false_option:
+        value = json_parser.dumps(value, default=default, use_decimal=False)
+    else:
+        value = json_parser.dumps(value, default=default)
+
     # replace JavaScript incompatible spacing
     # http://timelessrepo.com/json-isnt-a-javascript-subset
-    return json_parser.dumps(value,
-        default=default).replace(ur'\u2028',
-                                 '\\u2028').replace(ur'\2029',
-                                                    '\\u2029')
+    return value.replace(ur'\u2028', '\\u2028').replace(ur'\2029', '\\u2029')
+
 
 def csv(value):
     return ''
@@ -131,7 +145,6 @@ def csv(value):
 
 def ics(events, title=None, link=None, timeshift=0, calname=True,
         **ignored):
-    import datetime
     title = title or '(unknown)'
     if link and not callable(link):
         link = lambda item, prefix=link: prefix.replace(
@@ -183,9 +196,12 @@ def rss(feed):
 def yaml(data):
     if have_yaml:
         return yamlib.dump(data)
-    else: raise ImportError("No YAML serializer available")
+    else:
+        raise ImportError("No YAML serializer available")
+
 
 def loads_yaml(data):
     if have_yaml:
         return yamlib.load(data)
-    else: raise ImportError("No YAML serializer available")
+    else:
+        raise ImportError("No YAML serializer available")

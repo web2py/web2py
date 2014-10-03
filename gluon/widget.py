@@ -1086,7 +1086,7 @@ def start(cron=True):
         print ProgramAuthor
         print ProgramVersion
 
-    from dal import DRIVERS
+    from dal.adapters.base import DRIVERS
     if not options.nobanner:
         print 'Database drivers available: %s' % ', '.join(DRIVERS)
 

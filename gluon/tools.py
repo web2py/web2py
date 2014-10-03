@@ -43,7 +43,7 @@ from gluon import *
 from gluon.contrib.autolinks import expand_one
 from gluon.contrib.markmin.markmin2html import \
     replace_at_urls, replace_autolinks, replace_components
-from gluon.dal import Row, Set, Query
+from gluon.dal.objects import Table, Row, Set, Query
 
 import gluon.serializers as serializers
 
@@ -1730,7 +1730,7 @@ class Auth(object):
             except:
                 return id
         ondelete = self.settings.ondelete
-        self.signature = db.Table(
+        self.signature = Table(
             self.db, 'auth_signature',
             Field('is_active', 'boolean',
                   default=True,
@@ -1786,7 +1786,7 @@ class Auth(object):
             signature_list = [self.signature]
         elif not signature:
             signature_list = []
-        elif isinstance(signature, self.db.Table):
+        elif isinstance(signature, Table):
             signature_list = [signature]
         else:
             signature_list = signature
@@ -4005,10 +4005,10 @@ class Crud(object):
         formname=DEFAULT,
         **attributes
         ):
-        if not (isinstance(table, self.db.Table) or table in self.db.tables) \
+        if not (isinstance(table, Table) or table in self.db.tables) \
                 or (isinstance(record, str) and not str(record).isdigit()):
             raise HTTP(404)
-        if not isinstance(table, self.db.Table):
+        if not isinstance(table, Table):
             table = self.db[table]
         try:
             record_id = record.id
@@ -4139,10 +4139,10 @@ class Crud(object):
             )
 
     def read(self, table, record):
-        if not (isinstance(table, self.db.Table) or table in self.db.tables) \
+        if not (isinstance(table, Table) or table in self.db.tables) \
                 or (isinstance(record, str) and not str(record).isdigit()):
             raise HTTP(404)
-        if not isinstance(table, self.db.Table):
+        if not isinstance(table, Table):
             table = self.db[table]
         if not self.has_permission('read', table, record):
             redirect(self.settings.auth.settings.on_failed_authorization)
@@ -4167,9 +4167,9 @@ class Crud(object):
         next=DEFAULT,
         message=DEFAULT,
         ):
-        if not (isinstance(table, self.db.Table) or table in self.db.tables):
+        if not (isinstance(table, Table) or table in self.db.tables):
             raise HTTP(404)
-        if not isinstance(table, self.db.Table):
+        if not isinstance(table, Table):
             table = self.db[table]
         if not self.has_permission('delete', table, record_id):
             redirect(self.settings.auth.settings.on_failed_authorization)
@@ -4197,13 +4197,13 @@ class Crud(object):
         orderby=None,
         limitby=None,
         ):
-        if not (isinstance(table, self.db.Table) or table in self.db.tables):
+        if not (isinstance(table, Table) or table in self.db.tables):
             raise HTTP(404)
         if not self.has_permission('select', table):
             redirect(self.settings.auth.settings.on_failed_authorization)
         #if record_id and not self.has_permission('select', table):
         #    redirect(self.settings.auth.settings.on_failed_authorization)
-        if not isinstance(table, self.db.Table):
+        if not isinstance(table, Table):
             table = self.db[table]
         if not query:
             query = table.id > 0
@@ -4310,7 +4310,7 @@ class Crud(object):
         validate = args.get('validate',True)
         request = current.request
         db = self.db
-        if not (isinstance(table, db.Table) or table in db.tables):
+        if not (isinstance(table, Table) or table in db.tables):
             raise HTTP(404)
         attributes = {}
         for key in ('orderby', 'groupby', 'left', 'distinct', 'limitby', 'cache'):

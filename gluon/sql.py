@@ -12,4 +12,17 @@ Just for backward compatibility
 """
 __all__ = ['DAL', 'Field', 'DRIVERS']
 
-from dal import DAL, Field, Table, Query, Set, Expression, Row, Rows, DRIVERS, BaseAdapter, SQLField, SQLTable, SQLXorable, SQLQuery, SQLSet, SQLRows, SQLStorage, SQLDB, GQLDB, SQLALL, SQLCustomType
+from dal import DAL, Field, SQLCustomType
+from dal.adapters.base import BaseAdapter, DRIVERS
+from dal.objects import Table, Query, Set, Expression, Row, Rows
+from dal.helpers.classes import SQLALL
+
+SQLDB = DAL
+GQLDB = DAL
+SQLField = Field
+SQLTable = Table
+SQLXorable = Expression
+SQLQuery = Query
+SQLSet = Set
+SQLRows = Rows
+SQLStorage = Row

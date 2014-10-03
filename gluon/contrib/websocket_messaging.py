@@ -70,6 +70,15 @@ Here is a complete sample web2py action:
                 'http://127.0.0.1:8888', form.vars.message, 'mykey', 'mygroup')
         return form
 
+https is possible too using 'https://127.0.0.1:8888' instead of 'http://127.0.0.1:8888',
+but needs to be started with
+
+   python gluon/contrib/websocket_messaging.py -k mykey -p 8888 -s keyfile.pem -c certfile.pem
+    
+for secure websocket do:
+   
+   web2py_websocket('wss://127.0.0.1:8888/realtime/mygroup',callback)
+
 Acknowledgements:
 Tornado code inspired by http://thomas.pelletier.im/2010/08/websocket-tornado-redis/
 
@@ -116,6 +125,7 @@ class PostHandler(tornado.web.RequestHandler):
             for client in listeners.get(group, []):
                 client.write_message(message)
         return None
+    return 'false'
 
 
 class TokenHandler(tornado.web.RequestHandler):
