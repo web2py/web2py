@@ -10,6 +10,7 @@ from test_languages import *
 from test_router import *
 from test_routes import *
 from test_storage import *
+from test_serializers import *
 from test_template import *
 from test_validators import *
 from test_utils import *
@@ -22,7 +23,7 @@ if sys.version[:3] == '2.7':
 
 
 NOSQL = any([name in (os.getenv("DB") or "")
-        	for name in ("datastore", "mongodb", "imap")])
+            for name in ("datastore", "mongodb", "imap")])
 
 if NOSQL:
     from test_dal_nosql import *
