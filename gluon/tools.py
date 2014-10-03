@@ -3011,15 +3011,13 @@ class Auth(object):
 
         if self.settings.prevent_password_reset_attacks:
             key = request.vars.key
-            if not key and len(request.args)>1:
-                key = request.args[-1]
             if key:
                 session._reset_password_key = key
                 redirect(self.url(args='reset_password'))
             else:
                 key = session._reset_password_key
         else:
-            key = request.vars.key or getarg(-1)
+            key = request.vars.key
         try:
             t0 = int(key.split('-')[0])
             if time.time() - t0 > 60 * 60 * 24:
@@ -3138,7 +3136,7 @@ class Auth(object):
     def email_reset_password(self, user):
         reset_password_key = str(int(time.time())) + '-' + web2py_uuid()
         link = self.url(self.settings.function,
-                        args=('reset_password', reset_password_key),
+                        args=('reset_password',), vars={'key': reset_password_key},
                         scheme=True)
         d = dict(user)
         d.update(dict(key=reset_password_key, link=link))
