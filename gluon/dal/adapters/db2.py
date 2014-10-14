@@ -78,7 +78,7 @@ class DB2Adapter(BaseAdapter):
         self.connector = connector
         if do_connect: self.reconnect()
 
-    def execute(self,commandi,placeholders=None):
+    def execute(self,command,placeholders=None):
         if command[-1:]==';':
             command = command[:-1]
         if placeholders:
