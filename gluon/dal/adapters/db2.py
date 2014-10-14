@@ -78,9 +78,11 @@ class DB2Adapter(BaseAdapter):
         self.connector = connector
         if do_connect: self.reconnect()
 
-    def execute(self,command):
+    def execute(self,commandi,placeholders=None):
         if command[-1:]==';':
             command = command[:-1]
+        if placeholders:
+            return self.log_execute(command, placeholders)
         return self.log_execute(command)
 
     def lastrowid(self,table):
