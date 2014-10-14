@@ -684,19 +684,21 @@
         }
       });
       $.web2py.component_handler(target);
+    },
+    main_hook : function() {
+      var flash = $('.flash');
+      flash.hide();
+      if(flash.html()) web2py.flash(flash.html());
+      web2py.ajax_init(document);
+      web2py.event_handlers();
+      web2py.a_handlers();
+      web2py.form_handlers();
     }
   }
-
   /*end of functions */
   /*main hook*/
-  $(function() {
-    var flash = $('.flash');
-    flash.hide();
-    if(flash.html()) web2py.flash(flash.html());
-    web2py.ajax_init(document);
-    web2py.event_handlers();
-    web2py.a_handlers();
-    web2py.form_handlers();
+  $(function () {
+    web2py.main_hook();
   });
 
 })(jQuery);
