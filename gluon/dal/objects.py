@@ -1208,7 +1208,7 @@ class Expression(object):
         return Query(db, op, self, value)
 
     def ilike(self, value):
-        return self.like(case_sensitive=False)
+        return self.like(value, case_sensitive=False)
 
     def regexp(self, value):
         db = self.db
