@@ -70,8 +70,8 @@ Here is a complete sample web2py action:
                 'http://127.0.0.1:8888', form.vars.message, 'mykey', 'mygroup')
         return form
 
-https is possible too using 'https://127.0.0.1:8888' instead of 'http://127.0.0.1:8888',
-but needs to be started with
+https is possible too using 'https://127.0.0.1:8888' instead of 'http://127.0.0.1:8888', but need to
+be started with
 
    python gluon/contrib/websocket_messaging.py -k mykey -p 8888 -s keyfile.pem -c certfile.pem
     
@@ -113,7 +113,7 @@ class PostHandler(tornado.web.RequestHandler):
     """
     def post(self):
         if hmac_key and not 'signature' in self.request.arguments:
-            return None
+            self.send_error(401)
         if 'message' in self.request.arguments:
             message = self.request.arguments['message'][0]
             group = self.request.arguments.get('group', ['default'])[0]
@@ -121,11 +121,9 @@ class PostHandler(tornado.web.RequestHandler):
             if hmac_key:
                 signature = self.request.arguments['signature'][0]
                 if not hmac.new(hmac_key, message).hexdigest() == signature:
-                    return None
+                    self.send_error(401)
             for client in listeners.get(group, []):
                 client.write_message(message)
-        return None
-    return 'false'
 
 
 class TokenHandler(tornado.web.RequestHandler):
@@ -136,16 +134,14 @@ class TokenHandler(tornado.web.RequestHandler):
     """
     def post(self):
         if hmac_key and not 'message' in self.request.arguments:
-            return None
+            self.send_error(401)
         if 'message' in self.request.arguments:
             message = self.request.arguments['message'][0]
             if hmac_key:
                 signature = self.request.arguments['signature'][0]
                 if not hmac.new(hmac_key, message).hexdigest() == signature:
-                    return None
+                    self.send_error(401)
             tokens[message] = None
-        return None
-
 
 class DistributeHandler(tornado.websocket.WebSocketHandler):
     def open(self, params):
@@ -180,6 +176,13 @@ class DistributeHandler(tornado.websocket.WebSocketHandler):
             client.write_message('-' + self.name)
         print '%s:DISCONNECT from %s' % (time.time(), self.group)
 
+    #if your webserver is different from tornado server uncomment this
+    #or override using something more restrictive:
+    #http://tornado.readthedocs.org/en/latest/websocket.html#tornado.websocket.WebSocketHandler.check_origin
+    #def check_origin(self, origin):
+    #    return True
+
+
 if __name__ == "__main__":
     usage = __doc__
     version = ""
@@ -205,6 +208,16 @@ if __name__ == "__main__":
                       default=False,
                       dest='tokens',
                       help='require tockens to join')
+    parser.add_option('-s',
+                      '--sslkey',
+                      default=False,
+                      dest='keyfile',
+                      help='require ssl keyfile full path')
+    parser.add_option('-c',
+                      '--sslcert',
+                      default=False,
+                      dest='certfile',
+                      help='require ssl certfile full path')
     (options, args) = parser.parse_args()
     hmac_key = options.hmac_key
     DistributeHandler.tokens = options.tokens
@@ -213,6 +226,10 @@ if __name__ == "__main__":
         (r'/token', TokenHandler),
         (r'/realtime/(.*)', DistributeHandler)]
     application = tornado.web.Application(urls, auto_reload=True)
-    http_server = tornado.httpserver.HTTPServer(application)
+    if options.keyfile and options.certfile:
+        ssl_options = dict(certfile=options.certfile, keyfile=options.keyfile)
+    else:
+        ssl_options = None
+    http_server = tornado.httpserver.HTTPServer(application, ssl_options=ssl_options)
     http_server.listen(int(options.port), address=options.address)
     tornado.ioloop.IOLoop.instance().start()
