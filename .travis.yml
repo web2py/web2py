@@ -22,6 +22,8 @@ before_script:
   - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then pip install pysqlite; fi
   - if [[ $DB == mysql* ]]; then mysql -e 'create database test_w2p;'; fi
   - if [[ $DB == postgres* ]]; then psql -c 'create database test_w2p;' -U postgres; fi
+  - if [[ $DB == postgres* ]]; then psql -c 'create extension postgis;' -U postgres -d test_w2p; fi
+
 
   # Install last sdk for app engine (update only whenever a new release is available)
   - if [[ $DB == google* ]]; then wget http://googleappengine.googlecode.com/files/google_appengine_1.8.9.zip -nv; fi
