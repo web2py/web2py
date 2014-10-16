@@ -3033,12 +3033,16 @@ class SQLTABLE(TABLE):
             return
         REGEX_TABLE_DOT_FIELD = sqlrows.db._adapter.REGEX_TABLE_DOT_FIELD
         if not columns:
-            columns = [c for c in sqlrows.colnames if REGEX_TABLE_DOT_FIELD.match(c)]
+            columns = list(sqlrows.colnames)
         if headers == 'fieldname:capitalize':
             headers = {}
             for c in columns:
-                (t, f) = REGEX_TABLE_DOT_FIELD.match(c).groups()
-                headers[t + '.' + f] = f.replace('_', ' ').title()
+                tfmatch=REGEX_TABLE_DOT_FIELD.match(c)
+                if tfmatch:
+                    (t, f) = REGEX_TABLE_DOT_FIELD.match(c).groups()
+                    headers[t + '.' + f] = f.replace('_', ' ').title()
+                else:
+                    headers[c]=c
         elif headers == 'labels':
             headers = {}
             for c in columns:
@@ -3057,7 +3061,7 @@ class SQLTABLE(TABLE):
             headers = {}
         else:
             for c in columns:  # new implement dict
-                c = '.'.join(REGEX_TABLE_DOT_FIELD.match(c).groups())
+                c = str(c)
                 if isinstance(headers.get(c, c), dict):
                     coldict = headers.get(c, c)
                     attrcol = dict()
