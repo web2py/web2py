@@ -141,7 +141,7 @@
     },
     /* manage errors in forms */
     manage_errors: function(target) {
-      $('.error', target).hide().slideDown('slow');
+      $('div.error', target).hide().slideDown('slow');
     },
     after_ajax: function(xhr) {
       /* called whenever an ajax request completes */
