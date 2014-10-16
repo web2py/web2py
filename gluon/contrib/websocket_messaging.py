@@ -143,6 +143,7 @@ class TokenHandler(tornado.web.RequestHandler):
                     self.send_error(401)
             tokens[message] = None
 
+
 class DistributeHandler(tornado.websocket.WebSocketHandler):
     def open(self, params):
         group, token, name = params.split('/') + [None, None]
@@ -176,12 +177,11 @@ class DistributeHandler(tornado.websocket.WebSocketHandler):
             client.write_message('-' + self.name)
         print '%s:DISCONNECT from %s' % (time.time(), self.group)
 
-    #if your webserver is different from tornado server uncomment this
-    #or override using something more restrictive:
-    #http://tornado.readthedocs.org/en/latest/websocket.html#tornado.websocket.WebSocketHandler.check_origin
-    #def check_origin(self, origin):
-    #    return True
-
+# if your webserver is different from tornado server uncomment this
+# or override using something more restrictive:
+# http://tornado.readthedocs.org/en/latest/websocket.html#tornado.websocket.WebSocketHandler.check_origin
+# def check_origin(self, origin):
+#    return True
 
 if __name__ == "__main__":
     usage = __doc__
