@@ -515,24 +515,26 @@ class GoogleDatastoreAdapter(NoSQLAdapter):
         """
         This is the GAE version of select. Some notes to consider:
             - db['_lastsql'] is not set because there is not SQL statement string
-            for a GAE query
+                for a GAE query
             - 'nativeRef' is a magical fieldname used for self references on GAE
             - optional attribute 'projection' when set to True will trigger
-            use of the GAE projection queries.  note that there are rules for
-            what is accepted imposed by GAE: each field must be indexed,
-            projection queries cannot contain blob or text fields, and you
-            cannot use == and also select that same field.  see https://developers.google.com/appengine/docs/python/datastore/queries#Query_Projection
+                use of the GAE projection queries.  note that there are rules for
+                what is accepted imposed by GAE: each field must be indexed,
+                projection queries cannot contain blob or text fields, and you
+                cannot use == and also select that same field.
+                see https://developers.google.com/appengine/docs/python/datastore/queries#Query_Projection
             - optional attribute 'filterfields' when set to True web2py will only
-            parse the explicitly listed fields into the Rows object, even though
-            all fields are returned in the query.  This can be used to reduce
-            memory usage in cases where true projection queries are not
-            usable.
+                parse the explicitly listed fields into the Rows object, even though
+                all fields are returned in the query.  This can be used to reduce
+                memory usage in cases where true projection queries are not
+                usable.
             - optional attribute 'reusecursor' allows use of cursor with queries
-            that have the limitby attribute.  Set the attribute to True for the
-            first query, set it to the value of db['_lastcursor'] to continue
-            a previous query.  The user must save the cursor value between
-            requests, and the filters must be identical.  It is up to the user
-            to follow google's limitations: https://developers.google.com/appengine/docs/python/datastore/queries#Query_Cursors
+                that have the limitby attribute.  Set the attribute to True for the
+                first query, set it to the value of db['_lastcursor'] to continue
+                a previous query.  The user must save the cursor value between
+                requests, and the filters must be identical.  It is up to the user
+                to follow google's limitations:
+                https://developers.google.com/appengine/docs/python/datastore/queries#Query_Cursors
         """
 
         (items, tablename, fields) = self.select_raw(query,fields,attributes)
