@@ -461,34 +461,24 @@ def ccache():
                 if value[0] < ram['oldest']:
                     ram['oldest'] = value[0]
                 ram['keys'].append((key, GetInHMS(time.time() - value[0])))
-        folder = os.path.join(request.folder,'cache')
-        if not os.path.exists(folder):
-            os.mkdir(folder)
-        locker = open(os.path.join(folder, 'cache.lock'), 'a')
-        portalocker.lock(locker, portalocker.LOCK_EX)
-        disk_storage = shelve.open(
-            os.path.join(folder, 'cache.shelve'))
-        try:
-            for key, value in disk_storage.items():
-                if isinstance(value, dict):
-                    disk['hits'] = value['hit_total'] - value['misses']
-                    disk['misses'] = value['misses']
-                    try:
-                        disk['ratio'] = disk['hits'] * 100 / value['hit_total']
-                    except (KeyError, ZeroDivisionError):
-                        disk['ratio'] = 0
-                else:
-                    if hp:
-                        disk['bytes'] += hp.iso(value[1]).size
-                        disk['objects'] += hp.iso(value[1]).count
-                    disk['entries'] += 1
-                    if value[0] < disk['oldest']:
-                        disk['oldest'] = value[0]
-                    disk['keys'].append((key, GetInHMS(time.time() - value[0])))
-        finally:
-            portalocker.unlock(locker)
-            locker.close()
-            disk_storage.close()
+
+        for key in cache.disk.storage:
+            value = cache.disk.storage[key]
+            if isinstance(value, dict):
+                disk['hits'] = value['hit_total'] - value['misses']
+                disk['misses'] = value['misses']
+                try:
+                    disk['ratio'] = disk['hits'] * 100 / value['hit_total']
+                except (KeyError, ZeroDivisionError):
+                    disk['ratio'] = 0
+            else:
+                if hp:
+                    disk['bytes'] += hp.iso(value[1]).size
+                    disk['objects'] += hp.iso(value[1]).count
+                disk['entries'] += 1
+                if value[0] < disk['oldest']:
+                    disk['oldest'] = value[0]
+                disk['keys'].append((key, GetInHMS(time.time() - value[0])))
 
         total['entries'] = ram['entries'] + disk['entries']
         total['bytes'] = ram['bytes'] + disk['bytes']
