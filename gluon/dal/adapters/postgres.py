@@ -211,14 +211,6 @@ class PostgreSQLAdapter(BaseAdapter):
         return '(%s ~ %s)' % (self.expand(first),
                               self.expand(second,'string'))
 
-    def STARTSWITH(self,first,second):
-        return '(%s LIKE %s)' % (self.expand(first),
-                                  self.expand(second+'%','string'))
-
-    def ENDSWITH(self,first,second):
-        return '(%s LIKE %s)' % (self.expand(first),
-                                  self.expand('%'+second,'string'))
-
     # GIS functions
 
     def ST_ASGEOJSON(self, first, second):

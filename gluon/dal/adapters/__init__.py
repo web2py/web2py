@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from .sqlite import SQLiteAdapter, SpatiaLiteAdapter, JDBCSQLiteAdapter
 from .mysql import MySQLAdapter
-from .postgre import PostgreSQLAdapter, NewPostgreSQLAdapter, JDBCPostgreSQLAdapter
+from .postgres import PostgreSQLAdapter, NewPostgreSQLAdapter, JDBCPostgreSQLAdapter
 from .oracle import OracleAdapter
 from .mssql import MSSQLAdapter, MSSQL2Adapter, MSSQL3Adapter, MSSQL4Adapter, \
     VerticaAdapter, SybaseAdapter
