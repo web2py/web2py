@@ -97,8 +97,7 @@ class XssCleaner(HTMLParser):
     def handle_starttag(
         self,
         tag,
-        method,
-        attrs,
+        attrs
     ):
         if tag not in self.permitted_tags:
             if self.strip_disallowed:
@@ -128,7 +127,7 @@ class XssCleaner(HTMLParser):
             self.result += bt
             self.open_tags.insert(0, tag)
 
-    def handle_endtag(self, tag, attrs):
+    def handle_endtag(self, tag):
         bracketed = '</%s>' % tag
         if tag not in self.permitted_tags:
             if self.strip_disallowed:
@@ -138,12 +137,6 @@ class XssCleaner(HTMLParser):
         elif tag in self.open_tags:
             self.result += bracketed
             self.open_tags.remove(tag)
-
-    def unknown_starttag(self, tag, attributes):
-        self.handle_starttag(tag, None, attributes)
-
-    def unknown_endtag(self, tag):
-        self.handle_endtag(tag, None)
 
     def url_is_acceptable(self, url):
         """
