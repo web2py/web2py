@@ -462,6 +462,7 @@ def ccache():
                     ram['oldest'] = value[0]
                 ram['keys'].append((key, GetInHMS(time.time() - value[0])))
         folder = os.path.join(request.folder,'cache')
+
         if not os.path.exists(folder):
             os.mkdir(folder)
         locker = open(os.path.join(folder, 'cache.lock'), 'a')
