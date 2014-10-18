@@ -10,8 +10,7 @@ Cross-site scripting (XSS) defense
 -----------------------------------
 """
 
-
-from htmllib import HTMLParser
+from HTMLParser import HTMLParser
 from cgi import escape
 from urlparse import urlparse
 from formatter import AbstractFormatter
@@ -48,11 +47,10 @@ class XssCleaner(HTMLParser):
         ],
         allowed_attributes={'a': ['href', 'title'], 'img': ['src', 'alt'
                                                             ], 'blockquote': ['type']},
-        fmt=AbstractFormatter,
         strip_disallowed=False
     ):
 
-        HTMLParser.__init__(self, fmt)
+        HTMLParser.__init__(self)
         self.result = ''
         self.open_tags = []
         self.permitted_tags = [i for i in permitted_tags if i[-1] != '/']
@@ -77,7 +75,7 @@ class XssCleaner(HTMLParser):
     def handle_charref(self, ref):
         if self.in_disallowed:
             return
-        elif len(ref) < 7 and ref.isdigit():
+        elif len(ref) < 7 and (ref.isdigit() or ref == 'x27'): # x27 is a special case for apostrophe
             self.result += '&#%s;' % ref
         else:
             self.result += xssescape('&#%s' % ref)
