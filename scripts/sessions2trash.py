@@ -32,7 +32,6 @@ from __future__ import with_statement
 
 import sys
 import os
-print os.path.join(*__file__.split(os.sep)[:-2] or ['.'])
 sys.path.append(os.path.join(*__file__.split(os.sep)[:-2] or ['.']))
 
 from gluon import current
