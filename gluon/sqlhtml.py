@@ -2001,8 +2001,6 @@ class SQLFORM(FORM):
         elif 'keywords' in request.get_vars:
             keywords = request.get_vars.keywords
 
-        print 'keyworkds are', keywords
-
         def fetch_count(dbset):
             ##FIXME for google:datastore cache_count is ignored
             ## if it's not an integer
