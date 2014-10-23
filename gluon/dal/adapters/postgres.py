@@ -173,9 +173,12 @@ class PostgreSQLAdapter(BaseAdapter):
     def try_json(self):
         # check JSON data type support
         # (to be added to after_connection)
-        if self.driver_name == "pg8000":
-            supports_json = self.connection.server_version >= "9.2.0"
-        elif (self.driver_name == "psycopg2" and
+
+        # until pg8000 supports json, leave this commented
+        #if self.driver_name == "pg8000":
+        #    supports_json = self.connection.server_version >= "9.2.0"
+
+        if (self.driver_name == "psycopg2" and
             self.driver.__version__ >= "2.0.12"):
             supports_json = self.connection.server_version >= 90200
         elif self.driver_name == "zxJDBC":
