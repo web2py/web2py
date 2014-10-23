@@ -10,6 +10,7 @@ env:
   - DB=sqlite:memory
   - DB=mysql://root:@localhost/test_w2p
   - DB=postgres://postgres:@localhost/test_w2p
+  - DB=postgres:pg8000://postgres@localhost/test_w2p
   - DB=google:datastore
 #  - DB=google:datastore+ndb
   - DB=mongodb://mongodb:mongodb@localhost/test_w2p
@@ -18,7 +19,7 @@ before_script:
   - if [[ $TRAVIS_PYTHON_VERSION != '2.7' ]]; then pip install unittest2; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install coverage; fi;
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install python-coveralls; fi
-  - if [[ $DB == postgres* ]]; then pip install psycopg2; fi;
+  - if [[ $DB == postgres* ]] && [[ $DB != *pg8000* ]]; then pip install psycopg2; fi;
   - if [[ $TRAVIS_PYTHON_VERSION == '2.5' ]]; then pip install pysqlite; fi
   - if [[ $DB == mysql* ]]; then mysql -e 'create database test_w2p;'; fi
   - if [[ $DB == postgres* ]]; then psql -c 'create database test_w2p;' -U postgres; fi
