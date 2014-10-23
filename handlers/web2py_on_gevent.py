@@ -5,10 +5,10 @@ import sys
 import os
 import optparse
 
-if '__file__' in globals():
-    path = os.path.dirname(os.path.abspath(__file__))
-elif hasattr(sys, 'frozen'):
+if hasattr(sys, 'frozen'):
     path = os.path.dirname(os.path.abspath(sys.executable))
+elif '__file__' in globals():
+    path = os.path.dirname(os.path.abspath(__file__))
 else:
     path = os.getcwd()
 os.chdir(path)
