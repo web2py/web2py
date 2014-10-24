@@ -145,6 +145,12 @@ if not 'google' in DRIVERS:
         LOGGER.debug('no MSSQL/DB2/Teradata/Ingres driver pyodbc')
 
     try:
+        import ibm_db_dbi
+        DRIVERS.append('ibm_db_dbi')
+    except ImportError:
+        LOGGER.debug('no DB2 driver ibm_db_dbi')
+
+    try:
         import Sybase
         DRIVERS.append('Sybase')
     except ImportError:
