@@ -1312,7 +1312,7 @@ class Scheduler(MetaScheduler):
             have all fields == None
 
         """
-        from gluon.dal import Query
+        from gluon.dal.objects import Query
         sr, st = self.db.scheduler_run, self.db.scheduler_task
         if isinstance(ref, (int, long)):
             q = st.id == ref
