@@ -234,6 +234,7 @@ class DAL(object):
 
 
     """
+    Table = Table
 
     def __new__(cls, uri='sqlite://dummy.db', *args, **kwargs):
         if not hasattr(THREAD_LOCAL,'db_instances'):

@@ -44,6 +44,9 @@ ALLOWED_DATATYPES = [
     'json',
     ]
 
+IS_POSTGRESQL = 'postgres' in DEFAULT_URI
+
+
 
 def setUpModule():
     pass
@@ -404,6 +407,13 @@ class TestLike(unittest.TestCase):
             self.assertEqual(db(db.tt.aa.upper().like('A%')).count(), 1)
             self.assertEqual(db(db.tt.aa.upper().like('%B%')).count(),1)
             self.assertEqual(db(db.tt.aa.upper().like('%C')).count(), 1)
+
+        # startswith endswith tests
+        self.assertEqual(db(db.tt.aa.startswith('a')).count(), 1)
+        self.assertEqual(db(db.tt.aa.endswith('c')).count(), 1)
+        self.assertEqual(db(db.tt.aa.startswith('c')).count(), 0)
+        self.assertEqual(db(db.tt.aa.endswith('a')).count(), 0)
+
         db.tt.drop()
         db.define_table('tt', Field('aa', 'integer'))
         self.assertEqual(db.tt.insert(aa=1111111111), 1)
@@ -1527,6 +1537,42 @@ class TestQuotesByDefault(unittest.TestCase):
     """
     def testme(self):
         return
+
+
+class TestGis(unittest.TestCase):
+
+    def testGeometry(self):
+        from gluon.dal import geoPoint, geoLine, geoPolygon
+        if not IS_POSTGRESQL: return
+        db = DAL(DEFAULT_URI, check_reserved=['all'], ignore_field_case=False)
+        t0 = db.define_table('t0', Field('point', 'geometry()'))
+        t1 = db.define_table('t1', Field('line', 'geometry(public, 4326, 2)'))
+        t2 = db.define_table('t2', Field('polygon', 'geometry(public, 4326, 2)'))
+        t0.insert(point=geoPoint(1,1))
+        text = db(db.t0.id).select(db.t0.point.st_astext()).first()[db.t0.point.st_astext()]
+        self.assertEqual(text, "POINT(1 1)")
+        t1.insert(line=geoLine((1,1),(2,2)))
+        text = db(db.t1.id).select(db.t1.line.st_astext()).first()[db.t1.line.st_astext()]
+        self.assertEqual(text, "LINESTRING(1 1,2 2)")
+        t2.insert(polygon=geoPolygon((0,0),(2,0),(2,2),(0,2),(0,0)))
+        text = db(db.t2.id).select(db.t2.polygon.st_astext()).first()[db.t2.polygon.st_astext()]
+        self.assertEqual(text, "POLYGON((0 0,2 0,2 2,0 2,0 0))")
+        query = t0.point.st_intersects(geoLine((0,0),(2,2)))
+        output = db(query).select(db.t0.point).first()[db.t0.point]
+        self.assertEqual(output, "POINT(1 1)")
+        query = t2.polygon.st_contains(geoPoint(1,1))
+        n = db(query).count()
+        self.assertEqual(n, 1)
+        x=t0.point.st_x()
+        y=t0.point.st_y()
+        point = db(t0.id).select(x, y).first()
+        self.assertEqual(point[x], 1)
+        self.assertEqual(point[y], 1)
+        t0.drop()
+        t1.drop()
+        t2.drop()
+        return
+
 
 if __name__ == '__main__':
     unittest.main()

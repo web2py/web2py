@@ -49,6 +49,8 @@ applications/*/errors/*
 applications/*/cache/*
 applications/*/uploads/*
 applications/*/*.py[oc]
+applications/*/static/temp
+applications/*/progress.log
 applications/examples/static/epydoc
 applications/examples/static/sphinx
 applications/admin/cron/cron.master

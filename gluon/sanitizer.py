@@ -10,8 +10,7 @@ Cross-site scripting (XSS) defense
 -----------------------------------
 """
 
-
-from htmllib import HTMLParser
+from HTMLParser import HTMLParser
 from cgi import escape
 from urlparse import urlparse
 from formatter import AbstractFormatter
@@ -48,11 +47,10 @@ class XssCleaner(HTMLParser):
         ],
         allowed_attributes={'a': ['href', 'title'], 'img': ['src', 'alt'
                                                             ], 'blockquote': ['type']},
-        fmt=AbstractFormatter,
         strip_disallowed=False
     ):
 
-        HTMLParser.__init__(self, fmt)
+        HTMLParser.__init__(self)
         self.result = ''
         self.open_tags = []
         self.permitted_tags = [i for i in permitted_tags if i[-1] != '/']
@@ -77,7 +75,7 @@ class XssCleaner(HTMLParser):
     def handle_charref(self, ref):
         if self.in_disallowed:
             return
-        elif len(ref) < 7 and ref.isdigit():
+        elif len(ref) < 7 and (ref.isdigit() or ref == 'x27'): # x27 is a special case for apostrophe
             self.result += '&#%s;' % ref
         else:
             self.result += xssescape('&#%s' % ref)
@@ -99,8 +97,7 @@ class XssCleaner(HTMLParser):
     def handle_starttag(
         self,
         tag,
-        method,
-        attrs,
+        attrs
     ):
         if tag not in self.permitted_tags:
             if self.strip_disallowed:
@@ -130,7 +127,7 @@ class XssCleaner(HTMLParser):
             self.result += bt
             self.open_tags.insert(0, tag)
 
-    def handle_endtag(self, tag, attrs):
+    def handle_endtag(self, tag):
         bracketed = '</%s>' % tag
         if tag not in self.permitted_tags:
             if self.strip_disallowed:
@@ -140,12 +137,6 @@ class XssCleaner(HTMLParser):
         elif tag in self.open_tags:
             self.result += bracketed
             self.open_tags.remove(tag)
-
-    def unknown_starttag(self, tag, attributes):
-        self.handle_starttag(tag, None, attributes)
-
-    def unknown_endtag(self, tag):
-        self.handle_endtag(tag, None)
 
     def url_is_acceptable(self, url):
         """
