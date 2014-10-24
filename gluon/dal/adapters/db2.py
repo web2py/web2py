@@ -80,8 +80,8 @@ class DB2Adapter(BaseAdapter):
                 cnxn = {}
                 for var in vars:
                     v = var.split('=')
-                    cnxn[v[0]] = v[1]
-                return self.driver.connect(cnxn['DSN'], cnxn['UID'], cnxn['PWD'], **driver_args)
+                    cnxn[v[0].lower()] = v[1]
+                return self.driver.connect(cnxn['dsn'], cnxn['uid'], cnxn['pwd'], **driver_args)
             else:
                 return self.driver.connect(cnxn, **driver_args)
                 
