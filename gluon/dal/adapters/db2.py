@@ -7,7 +7,7 @@ from .base import BaseAdapter
 
 
 class DB2Adapter(BaseAdapter):
-    drivers = ('pyodbc',)
+    drivers = ('ibm_db_dbi', 'pyodbc')
 
     types = {
         'boolean': 'CHAR(1)',
@@ -73,8 +73,18 @@ class DB2Adapter(BaseAdapter):
         self._after_connection = after_connection
         self.find_or_make_work_folder()
         ruri = uri.split('://', 1)[1]
+        
         def connector(cnxn=ruri,driver_args=driver_args):
-            return self.driver.connect(cnxn,**driver_args)
+            if self.driver_name == 'ibm_db_dbi':
+                vars = cnxn.split(";")
+                cnxn = {}
+                for var in vars:
+                    v = var.split('=')
+                    cnxn[v[0].lower()] = v[1]
+                return self.driver.connect(cnxn['dsn'], cnxn['uid'], cnxn['pwd'], **driver_args)
+            else:
+                return self.driver.connect(cnxn, **driver_args)
+                
         self.connector = connector
         if do_connect: self.reconnect()
 

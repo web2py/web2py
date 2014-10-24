@@ -114,7 +114,8 @@ Supported DAL URI strings::
     'mssql4://web2py:none@A64X2/web2py_test' # best pagination (requires >= 2012)
     'oracle://username:password@database'
     'firebird://user:password@server:3050/database'
-    'db2://DSN=dsn;UID=user;PWD=pass'
+    'db2:ibm_db_dbi://DSN=dsn;UID=user;PWD=pass'
+    'db2:pyodbc://driver=DB2;hostname=host;database=database;uid=user;pwd=password;port=port'
     'firebird://username:password@hostname/database'
     'firebird_embedded://username:password@c://path'
     'informix://user:password@server:3050/database'
