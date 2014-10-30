@@ -258,12 +258,16 @@ $(document).on('click', 'a.font_button', function (e) {
         </div>
     </div>
     <section id="windows_divs" class="tab-content  ">
-    <div id="window_todo" class="tab-pane container-fluid">
-        {{=LOAD('default', 'todolist.load', vars={'app':app}, ajax=True, timeout=60000, times="infinity")}}
-    </div>
-    <div id="window_shortcuts" class="tab-pane container-fluid">
-        {{include 'default/editor_shortcuts.html'}}
-    </div>
+        <div id="window_todo" class="tab-pane container-fluid">
+            {{=LOAD('default', 'todolist.load', vars={'app':app}, ajax=True, timeout=60000, times="infinity")}}
+        </div>
+        <div id="window_shortcuts" class="tab-pane container-fluid">
+            {{include 'default/editor_shortcuts.html'}}
+        </div>
+        <div id="window_dbhooks" class="tab-pane container-fluid">
+            <h4>Tables hooks</h4>
+            <div>{{=LOAD(url="/%s/appadmin/hooks" % app, ajax=True, timeout=60000, times="infinity")}}</div>
+        </div>
     </section>
 </div>
 {{block footer}}
@@ -272,6 +276,7 @@ $(document).on('click', 'a.font_button', function (e) {
 <ul id="windows_hooks" class="nav">
     <li class=""><a href="#window_todo">TODO</a></li>
     <li class=""><a href="#window_shortcuts">Shortcuts</a></li>
+    <li class=""><a href="#window_dbhooks">Hooks</a></li>
 </ul>
 </div>
 </div>
