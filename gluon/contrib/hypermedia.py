@@ -276,6 +276,8 @@ class Collection(object):
             table = db[tablename]
             if 'json' in request.env.content_type:
                 data = request.post_vars.data
+            else:
+                data = request.post_vars
             if request.get_vars or len(request.args)>1: # update
                 # ADD validate fields and return error
                 try:
