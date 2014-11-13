@@ -1463,6 +1463,8 @@ class BaseAdapter(ConnectionPool):
         return value
 
     def parse_time(self, value, field_type):
+        if isinstance(value, decimal.Decimal):  # sum result
+            value = (datetime.datetime.min + datetime.timedelta(seconds=int(value))).time()
         if not isinstance(value, datetime.time):
             time_items = map(int,str(value)[:8].strip().split(':')[:3])
             if len(time_items) == 3:
