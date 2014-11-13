@@ -1544,7 +1544,9 @@ class Auth(object):
                                            _href=item['href'])))
             self.bar.insert(-1, LI('', _class='divider'))
             if self.user_id:
-                self.bar = LI(Anr(prefix, user_identifier, _href='#'),
+                self.bar = LI(Anr(prefix, user_identifier,
+                                  _href='#',_class="dropdown-toggle",
+                                  data={'toggle':'dropdown'}),
                               self.bar,_class='dropdown')
             else:
                 self.bar = LI(Anr(T('Log In'),
