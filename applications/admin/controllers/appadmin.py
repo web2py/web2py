@@ -693,6 +693,6 @@ def hooks():
         ul_t = UL(_class='nav nav-list', _id="a_%s" % t['slug'], _style='display:none')
         for op in t['method_hooks']:
             ul_t.append(LI (op['name']))
-            ul_t.append(UL([LI(A(f['funcname'], _href=f['url']if 'url' in f else None)) for f in op['functions']]))
+            ul_t.append(UL([LI(A(f['funcname'], _class="editor_filelink", _href=f['url']if 'url' in f else None, **{'_data-lineno':f['lineno']-1})) for f in op['functions']]))
         ul_main.append(ul_t)
     return ul_main
