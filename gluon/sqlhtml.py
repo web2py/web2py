@@ -1204,6 +1204,13 @@ class SQLFORM(FORM):
                         field, default, _disabled=True)
                 else:
                     inp = field.formatter(default)
+                if getattr(field, 'show_if', None):
+                    if not isinstance(inp, DIV):
+                        # Create a container for string represents
+                        inp = DIV(inp, _id='%s_%s' % (field.tablename, field.name))
+                    trigger, cond = show_if(field.show_if)
+                    inp['_data-show-trigger'] = trigger
+                    inp['_data-show-if'] = cond
             elif field.type == 'upload':
                 if field.widget:
                     inp = field.widget(field, default, upload)

@@ -136,7 +136,7 @@ class OracleAdapter(BaseAdapter):
         return self.log_execute(command, args)
 
     def create_sequence_and_triggers(self, query, table, **args):
-        tablename = table._tablename
+        tablename = table._rname or table._tablename
         id_name = table._id.name
         sequence_name = table._sequence_name
         trigger_name = table._trigger_name
