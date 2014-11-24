@@ -1878,7 +1878,15 @@ class SQLFORM(FORM):
         function %(prefix)s_build_query(aggregator,a) {
           var b=a.replace('.','-');
           var option = jQuery('#%(field_id)s_'+b+' select').val();
-          var value = jQuery('#%(value_id)s_'+b).val().replace('"','\\\\"');
+          var value;
+          var $value_item = jQuery('#%(value_id)s_'+b);
+          if ($value_item.is(':checkbox')){
+            if  ($value_item.is(':checked'))
+                    value = "on";
+            else  value = 'off';
+          }
+          else
+          { value = $value_item.val().replace('"','\\\\"')}
           var s=a+' '+option+' "'+value+'"';
           var k=jQuery('#%(keywords_id)s');
           var v=k.val();
