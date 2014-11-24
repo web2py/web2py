@@ -1882,7 +1882,7 @@ class SQLFORM(FORM):
           var $value_item = jQuery('#%(value_id)s_'+b);
           if ($value_item.is(':checkbox')){
             if  ($value_item.is(':checked'))
-                    value = "on";
+                    value = 'on';
             else  value = 'off';
           }
           else
