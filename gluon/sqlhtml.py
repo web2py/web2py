@@ -1842,7 +1842,7 @@ class SQLFORM(FORM):
                     value_input = SQLFORM.widgets.integer.widget(field, field.default, _id=_id,_class='form-control')
                 else:
                     value_input = INPUT(
-                        _type='text', _id=_id, 
+                        _type='text', _id=_id,
                         _class=(field.type or '')+' form-control')
 
                 new_button = INPUT(
@@ -1882,8 +1882,8 @@ class SQLFORM(FORM):
           var $value_item = jQuery('#%(value_id)s_'+b);
           if ($value_item.is(':checkbox')){
             if  ($value_item.is(':checked'))
-                    value = 'on';
-            else  value = 'off';
+                    value = 'True';
+            else  value = 'False';
           }
           else
           { value = $value_item.val().replace('"','\\\\"')}
