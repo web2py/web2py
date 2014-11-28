@@ -631,7 +631,7 @@ class Scheduler(MetaScheduler):
             Field('prevent_drift', 'boolean', default=False,
                   comment='Cron-like start_times between runs'),
             Field('timeout', 'integer', default=60, comment='seconds',
-                  requires=IS_INT_IN_RANGE(0, None)),
+                  requires=IS_INT_IN_RANGE(1, None)),
             Field('sync_output', 'integer', default=0,
                   comment="update output every n sec: 0=never",
                   requires=IS_INT_IN_RANGE(0, None)),
