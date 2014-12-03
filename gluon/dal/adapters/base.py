@@ -1321,7 +1321,7 @@ class BaseAdapter(ConnectionPool):
             obj = obj()
         if isinstance(fieldtype, SQLCustomType):
             value = fieldtype.encoder(obj)
-            if fieldtype.type in ('string','text', 'json'):
+            if value and fieldtype.type in ('string','text', 'json'):
                 return self.adapt(value)
             return value or 'NULL'
         if isinstance(obj, (Expression, Field)):
