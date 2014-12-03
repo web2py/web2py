@@ -1578,8 +1578,13 @@ class TestSQLCustomType(unittest.TestCase):
     def testRun(self):
         db = DAL(DEFAULT_URI, check_reserved=['all'])
         from dal.helpers.classes import SQLCustomType
-        basic_t = SQLCustomType(type = "double", native = "double")
-        basic_t_str = SQLCustomType(type = "string", native = "string")
+        native_double = "double"
+        native_string = "string"
+        if hasattr(db._adapter, 'types'):
+            native_double = db._adapter.types['double']
+            native_string = db._adapter.types['string'] % {'length': 256}
+        basic_t = SQLCustomType(type = "double", native = native_double)
+        basic_t_str = SQLCustomType(type = "string", native = native_string)
         t0=db.define_table('t0', Field("price", basic_t), Field("product", basic_t_str))
         r_id = t0.insert(price=None, product=None)
         row = db(t0.id == r_id).select(t0.ALL).first()
