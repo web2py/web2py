@@ -1544,7 +1544,7 @@ class TestGis(unittest.TestCase):
     def testGeometry(self):
         from gluon.dal import geoPoint, geoLine, geoPolygon
         if not IS_POSTGRESQL: return
-        db = DAL(DEFAULT_URI, check_reserved=['all'], ignore_field_case=False)
+        db = DAL(DEFAULT_URI, check_reserved=['all'])
         t0 = db.define_table('t0', Field('point', 'geometry()'))
         t1 = db.define_table('t1', Field('line', 'geometry(public, 4326, 2)'))
         t2 = db.define_table('t2', Field('polygon', 'geometry(public, 4326, 2)'))
@@ -1571,6 +1571,29 @@ class TestGis(unittest.TestCase):
         t0.drop()
         t1.drop()
         t2.drop()
+        return
+
+    def testGeometryCase(self):
+        from gluon.dal import geoPoint, geoLine, geoPolygon
+        if not IS_POSTGRESQL: return
+        db = DAL(DEFAULT_URI, check_reserved=['all'], ignore_field_case=False)
+        t0 = db.define_table('t0', Field('point', 'geometry()'), Field('Point', 'geometry()'))
+        t0.insert(point=geoPoint(1,1))
+        t0.insert(Point=geoPoint(2,2))
+        t0.drop()
+
+    def testGisMigration(self):
+        if not IS_POSTGRESQL: return
+        for b in [True, False]:
+            db = DAL(DEFAULT_URI, check_reserved=['all'], ignore_field_case=b)
+            t0 = db.define_table('t0', Field('Point', 'geometry()'))
+            db.commit()
+            db.close()
+            db = DAL(DEFAULT_URI, check_reserved=['all'], ignore_field_case=b)
+            t0 = db.define_table('t0', Field('New_point', 'geometry()'))
+            t0.drop()
+            db.commit()
+            db.close()
         return
 
 
