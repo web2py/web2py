@@ -461,6 +461,25 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(db(db.tt.aa == -2).select(sum).first()[sum], None)
         db.tt.drop()
 
+    def testSubstring(self):
+        db = DAL(DEFAULT_URI, check_reserved=['all'])
+        t0 = db.define_table('t0', Field('name'))
+        input_name = "web2py"
+        t0.insert(name=input_name)
+        exp_slice = t0.name.lower()[4:6]
+        exp_slice_no_max = t0.name.lower()[4:]
+        exp_slice_neg_max = t0.name.lower()[2:-2]
+        exp_slice_neg_start = t0.name.lower()[-2:]
+        exp_item = t0.name.lower()[3]
+        out = db(t0).select(exp_slice, exp_item, exp_slice_no_max, exp_slice_neg_max, exp_slice_neg_start).first()
+        self.assertEqual(out[exp_slice], input_name[4:6])
+        self.assertEqual(out[exp_item], input_name[3])
+        self.assertEqual(out[exp_slice_no_max], input_name[4:])
+        self.assertEqual(out[exp_slice_neg_max], input_name[2:-2])
+        self.assertEqual(out[exp_slice_neg_start], input_name[-2:])
+        t0.drop()
+        return
+
 
 class TestJoin(unittest.TestCase):
 
@@ -1596,6 +1615,16 @@ class TestGis(unittest.TestCase):
             db.close()
         return
 
+class TestLazy(unittest.TestCase):
+
+    def testRun(self):
+        db = DAL(DEFAULT_URI, check_reserved=['all'], lazy_tables=True)
+        t0 = db.define_table('t0', Field('name'))
+        self.assertTrue(('t0' in db._LAZY_TABLES.keys()))
+        db.t0.insert(name='1')
+        self.assertFalse(('t0' in db._LAZY_TABLES.keys()))
+        db.t0.drop()
+        return
 
 if __name__ == '__main__':
     unittest.main()
