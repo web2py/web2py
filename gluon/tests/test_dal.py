@@ -1573,6 +1573,41 @@ class TestGis(unittest.TestCase):
         t2.drop()
         return
 
+class TestSQLCustomType(unittest.TestCase):
+
+    def testRun(self):
+        db = DAL(DEFAULT_URI, check_reserved=['all'])
+        from dal.helpers.classes import SQLCustomType
+        native_double = "double"
+        native_string = "string"
+        if hasattr(db._adapter, 'types'):
+            native_double = db._adapter.types['double']
+            native_string = db._adapter.types['string'] % {'length': 256}
+        basic_t = SQLCustomType(type = "double", native = native_double)
+        basic_t_str = SQLCustomType(type = "string", native = native_string)
+        t0=db.define_table('t0', Field("price", basic_t), Field("product", basic_t_str))
+        r_id = t0.insert(price=None, product=None)
+        row = db(t0.id == r_id).select(t0.ALL).first()
+        self.assertEqual(row['price'], None)
+        self.assertEqual(row['product'], None)
+        r_id = t0.insert(price=1.2, product="car")
+        row=db(t0.id == r_id).select(t0.ALL).first()
+        self.assertEqual(row['price'], 1.2)
+        self.assertEqual(row['product'], 'car')
+        t0.drop()
+        import zlib
+        compressed = SQLCustomType(
+             type ='text',
+             native='text',
+             encoder =(lambda x: zlib.compress(x or '', 1)),
+             decoder = (lambda x: zlib.decompress(x))
+        )
+        t1=db.define_table('t0',Field('cdata', compressed))
+        #r_id=t1.insert(cdata="car")
+        #row=db(t1.id == r_id).select(t1.ALL).first()
+        #self.assertEqual(row['cdata'], "'car'")
+        t1.drop()
+        return
 
 if __name__ == '__main__':
     unittest.main()
