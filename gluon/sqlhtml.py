@@ -1801,7 +1801,7 @@ class SQLFORM(FORM):
             # treat ftype 'decimal' as 'double'
             # (this fixes problems but needs refactoring!
             if isinstance(field.type, SQLCustomType):
-                            ftype = field.type.type.split(' ')[0]
+                ftype = field.type.type.split(' ')[0]
             else:
                 ftype = field.type.split(' ')[0]
             if ftype.startswith('decimal'): ftype = 'double'
@@ -1813,37 +1813,38 @@ class SQLFORM(FORM):
                 label = isinstance(
                     field.label, str) and T(field.label) or field.label
                 selectfields.append(OPTION(label, _value=str(field)))
+                # At web2py level SQLCustomType field values are treated as normal web2py types
+                if isinstance(field.type, SQLCustomType):
+                    field_type = field.type.type
+                else:
+                    field_type = field.type
+
                 operators = SELECT(*[OPTION(T(option), _value=option) for option in options],_class='form-control')
                 _id = "%s_%s" % (value_id, name)
-                if field.type == 'boolean':
-                    value_input = SQLFORM.widgets.boolean.widget(field, field.default, _id=_id,_class='form-control')
-                elif field.type == 'double':
-                    value_input = SQLFORM.widgets.double.widget(field, field.default, _id=_id,_class='form-control')
-                elif field.type == 'time':
-                    value_input = SQLFORM.widgets.time.widget(field, field.default, _id=_id,_class='form-control')
-                elif field.type == 'date':
+                if field_type in ['boolean', 'double', 'time', 'integer']:
+                    value_input = SQLFORM.widgets[field_type].widget(field, field.default, _id=_id,_class='form-control')
+                elif field_type == 'date':
                     iso_format = {'_data-w2p_date_format' : '%Y-%m-%d'}
                     value_input = SQLFORM.widgets.date.widget(field, field.default, _id=_id,_class='form-control', **iso_format)
-                elif field.type == 'datetime':
+                elif field_type == 'datetime':
                     iso_format = {'_data-w2p_datetime_format' : '%Y-%m-%d %H:%M:%S'}
                     value_input = SQLFORM.widgets.datetime.widget(field, field.default, _id=_id,_class='form-control', **iso_format)
-                elif (field.type.startswith('reference ') or
-                      field.type.startswith('list:reference ')) and \
+                elif (field_type.startswith('reference ') or
+                      field_type.startswith('list:reference ')) and \
                       hasattr(field.requires, 'options'):
                     value_input = SELECT(
                         *[OPTION(v, _value=k)
                           for k, v in field.requires.options()],
                          _class='form-control',
                          **dict(_id=_id))
-                elif field.type == 'integer' or \
-                        field.type.startswith('reference ') or \
-                        field.type.startswith('list:integer') or \
-                        field.type.startswith('list:reference '):
+                elif field_type.startswith('reference ') or \
+                     field_type.startswith('list:integer') or \
+                     field_type.startswith('list:reference '):
                     value_input = SQLFORM.widgets.integer.widget(field, field.default, _id=_id,_class='form-control')
                 else:
                     value_input = INPUT(
                         _type='text', _id=_id,
-                        _class=(field.type or '')+' form-control')
+                        _class="%s %s" % ((field_type or ''), 'form-control'))
 
                 new_button = INPUT(
                     _type="button", _value=T('New Search'), _class="btn btn-default", _title=T('Start building a new search'),
