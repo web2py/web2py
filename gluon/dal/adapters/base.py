@@ -339,6 +339,8 @@ class BaseAdapter(ConnectionPool):
                         % (field_type, field_name))
                 ftype = types[geotype]
                 if self.dbengine == 'postgres' and geotype == 'geometry':
+                    if self.ignore_field_case is True:
+                        field_name = field_name.lower()
                     # parameters: schema, srid, dimension
                     dimension = 2 # GIS.dimension ???
                     parms = parms.split(',')

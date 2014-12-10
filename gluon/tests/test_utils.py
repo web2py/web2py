@@ -20,5 +20,17 @@ class TestUtils(unittest.TestCase):
         data = md5_hash("web2py rocks")
         self.assertEqual(data, '79509f3246a2824dee64635303e99204')
 
+class TestPack(unittest.TestCase):
+    """ Tests the compileapp.py module """
+
+    def test_compile(self):
+        from compileapp import compile_application, remove_compiled_application
+        import os
+        for appname in ['welcome', 'admin', 'examples']:
+            appname_path = os.path.join(os.getcwd(), 'applications', appname)
+            compile_application(appname_path)
+            remove_compiled_application(appname_path)
+        return
+
 if __name__ == '__main__':
     unittest.main()
