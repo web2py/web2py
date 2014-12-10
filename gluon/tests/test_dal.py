@@ -461,6 +461,25 @@ class TestExpressions(unittest.TestCase):
         self.assertEqual(db(db.tt.aa == -2).select(sum).first()[sum], None)
         db.tt.drop()
 
+    def testSubstring(self):
+        db = DAL(DEFAULT_URI, check_reserved=['all'])
+        t0 = db.define_table('t0', Field('name'))
+        input_name = "web2py"
+        t0.insert(name=input_name)
+        exp_slice = t0.name.lower()[4:6]
+        exp_slice_no_max = t0.name.lower()[4:]
+        exp_slice_neg_max = t0.name.lower()[2:-2]
+        exp_slice_neg_start = t0.name.lower()[-2:]
+        exp_item = t0.name.lower()[3]
+        out = db(t0).select(exp_slice, exp_item, exp_slice_no_max, exp_slice_neg_max, exp_slice_neg_start).first()
+        self.assertEqual(out[exp_slice], input_name[4:6])
+        self.assertEqual(out[exp_item], input_name[3])
+        self.assertEqual(out[exp_slice_no_max], input_name[4:])
+        self.assertEqual(out[exp_slice_neg_max], input_name[2:-2])
+        self.assertEqual(out[exp_slice_neg_start], input_name[-2:])
+        t0.drop()
+        return
+
 
 class TestJoin(unittest.TestCase):
 
@@ -1544,7 +1563,7 @@ class TestGis(unittest.TestCase):
     def testGeometry(self):
         from gluon.dal import geoPoint, geoLine, geoPolygon
         if not IS_POSTGRESQL: return
-        db = DAL(DEFAULT_URI, check_reserved=['all'], ignore_field_case=False)
+        db = DAL(DEFAULT_URI, check_reserved=['all'])
         t0 = db.define_table('t0', Field('point', 'geometry()'))
         t1 = db.define_table('t1', Field('line', 'geometry(public, 4326, 2)'))
         t2 = db.define_table('t2', Field('polygon', 'geometry(public, 4326, 2)'))
@@ -1571,6 +1590,29 @@ class TestGis(unittest.TestCase):
         t0.drop()
         t1.drop()
         t2.drop()
+        return
+
+    def testGeometryCase(self):
+        from gluon.dal import geoPoint, geoLine, geoPolygon
+        if not IS_POSTGRESQL: return
+        db = DAL(DEFAULT_URI, check_reserved=['all'], ignore_field_case=False)
+        t0 = db.define_table('t0', Field('point', 'geometry()'), Field('Point', 'geometry()'))
+        t0.insert(point=geoPoint(1,1))
+        t0.insert(Point=geoPoint(2,2))
+        t0.drop()
+
+    def testGisMigration(self):
+        if not IS_POSTGRESQL: return
+        for b in [True, False]:
+            db = DAL(DEFAULT_URI, check_reserved=['all'], ignore_field_case=b)
+            t0 = db.define_table('t0', Field('Point', 'geometry()'))
+            db.commit()
+            db.close()
+            db = DAL(DEFAULT_URI, check_reserved=['all'], ignore_field_case=b)
+            t0 = db.define_table('t0', Field('New_point', 'geometry()'))
+            t0.drop()
+            db.commit()
+            db.close()
         return
 
 class TestSQLCustomType(unittest.TestCase):
@@ -1607,6 +1649,16 @@ class TestSQLCustomType(unittest.TestCase):
         #row=db(t1.id == r_id).select(t1.ALL).first()
         #self.assertEqual(row['cdata'], "'car'")
         t1.drop()
+
+class TestLazy(unittest.TestCase):
+
+    def testRun(self):
+        db = DAL(DEFAULT_URI, check_reserved=['all'], lazy_tables=True)
+        t0 = db.define_table('t0', Field('name'))
+        self.assertTrue(('t0' in db._LAZY_TABLES.keys()))
+        db.t0.insert(name='1')
+        self.assertFalse(('t0' in db._LAZY_TABLES.keys()))
+        db.t0.drop()
         return
 
 if __name__ == '__main__':
