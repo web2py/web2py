@@ -42,6 +42,7 @@ ALLOWED_DATATYPES = [
     'upload',
     'password',
     'json',
+    'bigint'
     ]
 
 IS_POSTGRESQL = 'postgres' in DEFAULT_URI
@@ -622,27 +623,28 @@ class TestMigrations(unittest.TestCase):
 class TestReference(unittest.TestCase):
 
     def testRun(self):
-        db = DAL(DEFAULT_URI, check_reserved=['all'])
-        if DEFAULT_URI.startswith('mssql'):
-            #multiple cascade gotcha
-            for key in ['reference','reference FK']:
-                db._adapter.types[key]=db._adapter.types[key].replace(
-                '%(on_delete_action)s','NO ACTION')
-        db.define_table('tt', Field('name'), Field('aa','reference tt'))
-        db.commit()
-        x = db.tt.insert(name='max')
-        assert x.id == 1
-        assert x['id'] == 1
-        x.aa = x
-        assert x.aa == 1
-        x.update_record()
-        y = db.tt[1]
-        assert y.aa == 1
-        assert y.aa.aa.aa.aa.aa.aa.name == 'max'
-        z=db.tt.insert(name='xxx', aa = y)
-        assert z.aa == y.id
-        db.tt.drop()
-        db.commit()
+        for b in [True, False]:
+            db = DAL(DEFAULT_URI, check_reserved=['all'], bigint_id=b)
+            if DEFAULT_URI.startswith('mssql'):
+                #multiple cascade gotcha
+                for key in ['reference','reference FK']:
+                    db._adapter.types[key]=db._adapter.types[key].replace(
+                    '%(on_delete_action)s','NO ACTION')
+            db.define_table('tt', Field('name'), Field('aa','reference tt'))
+            db.commit()
+            x = db.tt.insert(name='max')
+            assert x.id == 1
+            assert x['id'] == 1
+            x.aa = x
+            assert x.aa == 1
+            x.update_record()
+            y = db.tt[1]
+            assert y.aa == 1
+            assert y.aa.aa.aa.aa.aa.aa.name == 'max'
+            z=db.tt.insert(name='xxx', aa = y)
+            assert z.aa == y.id
+            db.tt.drop()
+            db.commit()
 
 class TestClientLevelOps(unittest.TestCase):
 
