@@ -81,7 +81,7 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
                         new_mod = base_importer(
                             modules_prefix, globals, locals, [itemname], level)
                         try:
-                            result = result or new_mod.__dict__[itemname]
+                            result = result or sys.modules[modules_prefix+'.'+itemname]
                         except KeyError, e:
                             raise ImportError, 'Cannot import module %s' % str(e)
                         modules_prefix += "." + itemname
