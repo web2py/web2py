@@ -105,8 +105,8 @@ class BaseAdapter(ConnectionPool):
         'list:string': 'TEXT',
         'list:reference': 'TEXT',
         # the two below are only used when DAL(...bigint_id=True) and replace 'id','reference'
-        'big-id': 'BIGINT PRIMARY KEY AUTOINCREMENT',
-        'big-reference': 'BIGINT REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
+        'big-id': 'INTEGER PRIMARY KEY AUTOINCREMENT',
+        'big-reference': 'INTEGER REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         'reference FK': ', CONSTRAINT  "FK_%(constraint_name)s" FOREIGN KEY (%(field_name)s) REFERENCES %(foreign_key)s ON DELETE %(on_delete_action)s',
         }
 
