@@ -481,6 +481,28 @@ class TestExpressions(unittest.TestCase):
         t0.drop()
         return
 
+    def testOps(self):
+        db = DAL(DEFAULT_URI, check_reserved=['all'])
+        t0 = db.define_table('t0', Field('vv', 'integer'))
+        self.assertEqual(db.t0.insert(vv=1), 1)
+        self.assertEqual(db.t0.insert(vv=2), 2)
+        self.assertEqual(db.t0.insert(vv=3), 3)
+        sum = db.t0.vv.sum()
+        count=db.t0.vv.count()
+        avg=db.t0.vv.avg()
+        op = sum/count
+        op1 = (sum/count).with_alias('tot')
+        self.assertEqual(db(t0).select(op).first()[op], 2)
+        self.assertEqual(db(t0).select(op1).first()[op1], 2)
+        op2 = avg*count
+        self.assertEqual(db(t0).select(op2).first()[op2], 6)
+        # the following is not possible at least on sqlite
+        sum = db.t0.vv.sum().with_alias('s')
+        count=db.t0.vv.count().with_alias('c')
+        op = sum/count
+        #self.assertEqual(db(t0).select(op).first()[op], 2)
+        t0.drop()
+        return
 
 class TestJoin(unittest.TestCase):
 
