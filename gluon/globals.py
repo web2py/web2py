@@ -597,6 +597,7 @@ class Response(Storage):
 
         Downloads from http://..../download/filename
         """
+        from pydal.exceptions import NotAuthorizedException, NotFoundException
 
         current.session.forget(current.response)
 
@@ -613,6 +614,10 @@ class Response(Storage):
             raise HTTP(404)
         try:
             (filename, stream) = field.retrieve(name, nameonly=True)
+        except NotAuthorizedException:
+            raise HTTP(403)
+        except NotFoundException:
+            raise HTTP(404)
         except IOError:
             raise HTTP(404)
         headers = self.headers
