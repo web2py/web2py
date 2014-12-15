@@ -25,7 +25,6 @@ from gluon.serializers import json, custom_json
 import gluon.settings as settings
 from gluon.utils import web2py_uuid, secure_dumps, secure_loads
 from gluon.settings import global_settings
-from gluon.dal import Field
 from gluon import recfile
 import hashlib
 import portalocker
@@ -767,6 +766,7 @@ class Session(Storage):
             compression_level(int): 0-9, sets zlib compression on the data
                 before the encryption
         """
+        from gluon.dal import Field
         request = request or current.request
         response = response or current.response
         masterapp = masterapp or request.application
