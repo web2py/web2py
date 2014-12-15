@@ -1987,9 +1987,9 @@ class SQLFORM(FORM):
                       buttonback='icon leftarrow icon-arrow-left glyphicon glyphicon-arrow-left',
                       buttonexport='icon downarrow icon-download glyphicon glyphicon-download',
                       buttondelete='icon trash icon-trash glyphicon glyphicon-trash',
-                      buttonedit='icon pen icon-pencil glyphicon glyphicon-arrow-pencil',
+                      buttonedit='icon pen icon-pencil glyphicon glyphicon-pencil',
                       buttontable='icon rightarrow icon-arrow-right glyphicon glyphicon-arrow-right',
-                      buttonview='icon magnifier icon-zoom-in glyphicon glyphicon-arrow-zoom-in',
+                      buttonview='icon magnifier icon-zoom-in glyphicon glyphicon-oom-in',
                       )
         elif not isinstance(ui, dict):
             raise RuntimeError('SQLFORM.grid ui argument must be a dictionary')
