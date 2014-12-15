@@ -1086,7 +1086,7 @@ def start(cron=True):
         print ProgramAuthor
         print ProgramVersion
 
-    from dal.adapters.base import DRIVERS
+    from gluon.pydal.drivers import DRIVERS
     if not options.nobanner:
         print 'Database drivers available: %s' % ', '.join(DRIVERS)
 
