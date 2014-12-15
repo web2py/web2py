@@ -13,10 +13,10 @@ Just for backward compatibility
 __all__ = ['DAL', 'Field', 'DRIVERS']
 
 from dal import DAL, Field, SQLCustomType
-from gluon.pydal.base import BaseAdapter
-from gluon.pydal.drivers import DRIVERS
-from gluon.pydal.objects import Table, Query, Set, Expression, Row, Rows
-from gluon.pydal.helpers.classes import SQLALL
+from pydal.base import BaseAdapter
+from pydal.drivers import DRIVERS
+from pydal.objects import Table, Query, Set, Expression, Row, Rows
+from pydal.helpers.classes import SQLALL
 
 SQLDB = DAL
 GQLDB = DAL

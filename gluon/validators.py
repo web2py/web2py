@@ -22,7 +22,7 @@ import decimal
 import unicodedata
 from cStringIO import StringIO
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
-from gluon.pydal.objects import FieldVirtual, FieldMethod
+from pydal.objects import FieldVirtual, FieldMethod
 
 regex_isint = re.compile('^[+-]?\d+$')
 
@@ -603,7 +603,7 @@ class IS_IN_DB(Validator):
                 if not [v for v in values if not v in self.theset]:
                     return (values, None)
             else:
-                from gluon.pydal.adapters import GoogleDatastoreAdapter
+                from pydal.adapters import GoogleDatastoreAdapter
 
                 def count(values, s=self.dbset, f=field):
                     return s(f.belongs(map(int, values))).count()

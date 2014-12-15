@@ -43,7 +43,7 @@ from gluon import *
 from gluon.contrib.autolinks import expand_one
 from gluon.contrib.markmin.markmin2html import \
     replace_at_urls, replace_autolinks, replace_components
-from gluon.pydal.objects import Table, Row, Set, Query
+from pydal.objects import Table, Row, Set, Query
 
 import gluon.serializers as serializers
 

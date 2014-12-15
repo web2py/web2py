@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
-from gluon.pydal import DAL as pyDAL
-from gluon.pydal import Field, SQLCustomType, geoPoint, geoLine, geoPolygon
+from pydal import DAL as pyDAL
+from pydal import Field, SQLCustomType, geoPoint, geoLine, geoPolygon
 
 
 from gluon import serializers as w2p_serializers

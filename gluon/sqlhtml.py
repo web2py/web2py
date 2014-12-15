@@ -26,11 +26,11 @@ from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG
 from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT, COL, COLGROUP
 from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE, SCRIPT
 from gluon.html import URL, FIELDSET, P, DEFAULT_PASSWORD_DISPLAY
-from gluon.pydal.base import DEFAULT
-from gluon.pydal.objects import Table, Row, Expression
-from gluon.pydal.adapters.base import CALLABLETYPES
-from gluon.pydal.helpers.methods import smart_query, bar_encode, sqlhtml_validators
-from gluon.pydal.helpers.classes import Reference, SQLCustomType
+from pydal.base import DEFAULT
+from pydal.objects import Table, Row, Expression
+from pydal.adapters.base import CALLABLETYPES
+from pydal.helpers.methods import smart_query, bar_encode, sqlhtml_validators
+from pydal.helpers.classes import Reference, SQLCustomType
 from gluon.storage import Storage
 from gluon.utils import md5_hash
 from gluon.validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE
