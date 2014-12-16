@@ -878,7 +878,10 @@ class MapUrlIn(object):
         self.domain_application = None
         self.domain_controller = None
         self.domain_function = None
-        arg0 = self.harg0
+        if base.map_hyphen:
+            arg0 = self.harg0.replace('-', '_')
+        else:
+            arg0 = self.harg0
         if not base.exclusive_domain and base.applications and arg0 in base.applications:
             self.application = arg0
         elif not base.exclusive_domain and arg0 and not base.applications:
@@ -1256,9 +1259,9 @@ class MapUrlOut(object):
         "Builds a/c/f from components"
         acf = ''
         if self.map_hyphen:
-            self.application = self.application.replace('_', '-')
             self.controller = self.controller.replace('_', '-')
             if self.controller != 'static' and not self.controller.startswith('static/'):
+                self.application = self.application.replace('_', '-')
                 self.function = self.function.replace('_', '-')
         if not self.omit_application:
             acf += '/' + self.application
