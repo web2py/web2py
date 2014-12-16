@@ -878,10 +878,8 @@ class MapUrlIn(object):
         self.domain_application = None
         self.domain_controller = None
         self.domain_function = None
-        if base.map_hyphen:
-            arg0 = self.harg0.replace('-', '_')
-        else:
-            arg0 = self.harg0
+        self.map_hyphen = base.map_hyphen
+        arg0 = self.harg0
         if not base.exclusive_domain and base.applications and arg0 in base.applications:
             self.application = arg0
         elif not base.exclusive_domain and arg0 and not base.applications:
