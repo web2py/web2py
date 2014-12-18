@@ -627,7 +627,7 @@ class Response(Storage):
 
     def json(self, data, default=None):
         if 'Content-Type' not in self.headers:
-            self.headers['Content-Type'] = contenttype('.json')
+            self.headers['Content-Type'] = 'application/json'
         return json(data, default=default or custom_json)
 
     def xmlrpc(self, request, methods):
