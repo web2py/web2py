@@ -106,7 +106,7 @@ class InformixAdapter(BaseAdapter):
         user = credential_decoder(user)
         password = credential_decoder(password)
         dsn = '%s@%s' % (db,host)
-        driver_args.update(user=user,password=password,autocommit=True)
+        driver_args.update(user=user,password=password)
         def connector(dsn=dsn,driver_args=driver_args):
             return self.driver.connect(dsn,**driver_args)
         self.connector = connector
