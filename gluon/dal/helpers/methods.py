@@ -87,8 +87,11 @@ def archive_record(qset, fs, archive_table, current_record):
         raise RuntimeError("cannot update join")
     for row in qset.select():
         fields = archive_table._filter_fields(row)
-        fields[current_record] = row.id
-        archive_table.insert(**fields)
+        for k, v in fs.iteritems():
+            if fields[k] != v:
+                fields[current_record] = row.id
+                archive_table.insert(**fields)
+                break
     return False
 
 
