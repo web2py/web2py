@@ -2385,6 +2385,8 @@ class SQLFORM(FORM):
                 spanel_id = '%s_query_fields' % prefix
                 sfields_id = '%s_query_panel' % prefix
                 skeywords_id = '%s_keywords' % prefix
+                ## hidden fields to presever keywords in url after the submit
+                hidden_fields = [INPUT(_type='hidden', _value=value, _name=key) for key, value in request.get_vars.items() if key not in ['keywords', 'page']]
                 search_widget = lambda sfield, url: CAT(FORM(
                     INPUT(_name='keywords', _value=keywords,
                           _id=skeywords_id,_class='form-control',
@@ -2393,7 +2395,9 @@ class SQLFORM(FORM):
                     INPUT(_type='submit', _value=T('Search'), _class="btn btn-default"),
                     INPUT(_type='submit', _value=T('Clear'), _class="btn btn-default",
                           _onclick="jQuery('#%s').val('');" % skeywords_id),
+                    *hidden_fields,
                     _method="GET", _action=url), search_menu)
+            # TODO vars from the url should be removed, they are not used by the submit
             form = search_widget and search_widget(sfields, url()) or ''
             console.append(add)
             console.append(form)
