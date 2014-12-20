@@ -551,7 +551,7 @@ class Response(Storage):
             else:
                 attname = filename
             headers["Content-Disposition"] = \
-                "attachment;filename=%s" % attname
+                'attachment;filename="%s"' % attname
 
         if not request:
             request = current.request
