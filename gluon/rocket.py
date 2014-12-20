@@ -1854,7 +1854,7 @@ class WSGIWorker(Worker):
                 # Send headers if the body was empty
                 self.send_headers('', sections)
 
-            if self.chunked:
+            if self.chunked and self.request_method != 'HEAD':
                 # If chunked, send our final chunk length
                 self.conn.sendall(b('0\r\n\r\n'))
 
