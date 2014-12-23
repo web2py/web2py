@@ -72,8 +72,7 @@ def interact():
         f_globals = {}
         for name, value in env['globals'].items():
             if name not in gluon.html.__all__ and \
-                name not in gluon.validators.__all__ and \
-                    name not in gluon.dal.__all__:
+                name not in gluon.validators.__all__:
                 f_globals[name] = pydoc.text.repr(value)
     else:
         f_locals = {}
