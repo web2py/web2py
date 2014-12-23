@@ -128,10 +128,10 @@ class CacheAbstract(object):
         Auxiliary function called by `clear` to search and clear cache entries
         """
         r = re.compile(regex)
-        for key in storage:
+        for key in storage.keys():
             if r.match(str(key)):
                 del storage[key]
-                break
+        return
 
 
 class CacheInRam(CacheAbstract):
@@ -321,6 +321,8 @@ class CacheOnDisk(CacheAbstract):
                 for filename in filenames:
                     yield filename
 
+        def keys(self):
+            return [filename for dirpath, dirnames, filenames in os.walk(self.folder) for filename in filenames]
 
         def get(self, key, default=None):
             try:

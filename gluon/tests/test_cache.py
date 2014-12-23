@@ -37,7 +37,6 @@ class TestCache(unittest.TestCase):
     def testCacheInRam(self):
 
         # defaults to mode='http'
-
         cache = CacheInRam()
         self.assertEqual(cache('a', lambda: 1, 0), 1)
         self.assertEqual(cache('a', lambda: 2, 100), 1)
@@ -66,7 +65,6 @@ class TestCache(unittest.TestCase):
     def testCacheOnDisk(self):
 
         # defaults to mode='http'
-
         s = Storage({'application': 'admin',
                      'folder': 'applications/admin'})
         cache = CacheOnDisk(s)
@@ -102,8 +100,14 @@ class TestCache(unittest.TestCase):
         self.assertEqual(prefix('a', lambda: 2, 100), 1)
         self.assertEqual(cache.ram('prefixa', lambda: 2, 100), 1)
 
-
-
+    def testRegex(self):
+        cache = CacheInRam()
+        self.assertEqual(cache('a1', lambda: 1, 0), 1)
+        self.assertEqual(cache('a2', lambda: 2, 100), 2)
+        cache.clear(regex=r'a*')
+        self.assertEqual(cache('a1', lambda: 2, 0), 2)
+        self.assertEqual(cache('a2', lambda: 3, 100), 3)
+        return
 
 if __name__ == '__main__':
     setUpModule()       # pre-python-2.7
