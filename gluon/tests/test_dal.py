@@ -16,11 +16,11 @@ from gluon.dal import DAL
 class TestDALSubclass(unittest.TestCase):
     def testRun(self):
         import gluon.serializers as mserializers
-        import gluon.validators as mvalidators
         from gluon import sqlhtml
+        from gluon.dal import _default_validators
         db = DAL(check_reserved=['all'])
         self.assertEqual(db.serializers, mserializers)
-        self.assertEqual(db.validators, mvalidators)
+        self.assertEqual(db.validators_method, _default_validators)
         self.assertEqual(db.representers['rows_render'], sqlhtml.represent)
         self.assertEqual(db.representers['rows_xml'], sqlhtml.SQLTABLE)
 
