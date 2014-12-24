@@ -1127,7 +1127,8 @@ class SQLFORM(FORM):
             extra_field.table = table
             extra_field.tablename = table._tablename
             if extra_field.requires == DEFAULT:
-                extra_field.requires = _default_validators(extra_field)
+                extra_field.requires = _default_validators(table._db,
+                                                           extra_field)
 
         for fieldname in self.fields:
             if fieldname.find('.') >= 0:

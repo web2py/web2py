@@ -4,7 +4,7 @@ from pydal import DAL as pyDAL
 from pydal import Field, SQLCustomType, geoPoint, geoLine, geoPolygon
 
 
-def _default_validators(field):
+def _default_validators(db, field):
     """
     Field type validation, using web2py's validators mechanism.
 
@@ -12,7 +12,6 @@ def _default_validators(field):
     fieldtype
     """
     from gluon import validators
-    db = field.db
     field_type, field_length = field.type, field.length
     requires = []
 
