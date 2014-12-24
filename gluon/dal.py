@@ -4,11 +4,6 @@ from pydal import DAL as pyDAL
 from pydal import Field, SQLCustomType, geoPoint, geoLine, geoPolygon
 
 
-from gluon import serializers as w2p_serializers
-from gluon.utils import web2py_uuid
-from gluon import sqlhtml
-
-
 def _default_validators(field):
     """
     Field type validation, using web2py's validators mechanism.
@@ -114,6 +109,10 @@ def _default_validators(field):
     elif not field.notnull and field_type[:2] in sff and requires:
         requires[0] = validators.IS_EMPTY_OR(requires[0])
     return requires
+
+from gluon import serializers as w2p_serializers
+from gluon.utils import web2py_uuid
+from gluon import sqlhtml
 
 
 class DAL(pyDAL):
