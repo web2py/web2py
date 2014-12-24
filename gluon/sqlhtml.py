@@ -29,8 +29,9 @@ from gluon.html import URL, FIELDSET, P, DEFAULT_PASSWORD_DISPLAY
 from pydal.base import DEFAULT
 from pydal.objects import Table, Row, Expression
 from pydal.adapters.base import CALLABLETYPES
-from pydal.helpers.methods import smart_query, bar_encode, sqlhtml_validators
+from pydal.helpers.methods import smart_query, bar_encode
 from pydal.helpers.classes import Reference, SQLCustomType
+from gluon.dal import _default_validators
 from gluon.storage import Storage
 from gluon.utils import md5_hash
 from gluon.validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE
@@ -1126,7 +1127,7 @@ class SQLFORM(FORM):
             extra_field.table = table
             extra_field.tablename = table._tablename
             if extra_field.requires == DEFAULT:
-                extra_field.requires = sqlhtml_validators(extra_field)
+                extra_field.requires = _default_validators(extra_field)
 
         for fieldname in self.fields:
             if fieldname.find('.') >= 0:
