@@ -3418,3 +3418,80 @@ class ExporterJSON(ExportClass):
             return self.rows.as_json()
         else:
             return 'null'
+
+
+class ExporterPyheaderfile(ExportClass):
+    """ Default class to handle xlsx and xls files using pyheaderfile. This
+    class don't work alone, need to be called by ExporterXls or ExporterXlsx.
+    """
+    def __init__(self, rows):
+        ExportClass.__init__(self, rows)
+        try:
+            from pyheaderfile import Xls, Xlsx
+            self.Xls = Xls
+            self.Xlsx = Xlsx
+        except ImportError:
+            raise ImportError('Need to install pyheaderfile: pip install pyheaderfile')
+
+    def export(self):  #export Xls and Xlsx with rows.label
+        if self.rows:
+            s = cStringIO.StringIO()
+
+            db = self.rows.db
+            labels = dict()
+
+            for name in self.rows.colnames:
+                table, column = name.split('.')
+                index = '%s.%s' % (table, column)
+                labels[index] = db[table][column].label.decode('utf8')
+
+            phf = self.phf_class(s, labels.values())
+
+            for row in self.rows:
+                add_dict = dict()
+                for table in row:
+                    for column in row[table]:
+                        value = row[table][column]
+                        if isinstance(value, unicode) or isinstance(value, str):
+                            value = row[table][column].decode('utf8')
+                        else:
+                            value = str(row[table][column])
+                        add_dict[labels['%s.%s' % (table, column)]] = value
+
+                phf.write(**add_dict)
+            return phf.save()
+        else:
+            return None
+
+class ExporterXls(ExporterPyheaderfile):
+    """ Exporter class to be used in grids. Add to exportclasses something like
+    this:
+
+    xls=(ExporterXls, 'Excel (XLS)', T('Export file to Xls (Excel)'))
+
+    This class export xls file.
+    """
+    label = 'Excel (XLS)'
+    file_ext = "xls"
+    content_type = "application/vnd.ms-excel"
+
+    def __init__(self, rows):
+        ExporterPyheaderfile.__init__(self, rows)
+        self.phf_class = self.Xls
+
+class ExporterXlsx(ExporterPyheaderfile):
+    """ Exporter class to be used in grids. Add to exportclasses something like
+    this:
+
+    xlsx=(ExporterXls, 'New Excel (XLSX)', T('Export file to Xlsx (Excel)'))
+
+    This class export xlsx file.
+    """
+    label = 'Excel (XLSX)'
+    file_ext = "xlsx"
+    content_type = "application/vnd.openxmlformats-" \
+                   "officedocument.spreadsheetml.sheet"
+
+    def __init__(self, rows):
+        ExporterPyheaderfile.__init__(self, rows)
+        self.phf_class = self.Xlsx
