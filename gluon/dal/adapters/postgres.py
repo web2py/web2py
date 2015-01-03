@@ -104,7 +104,8 @@ class PostgreSQLAdapter(BaseAdapter):
         self.srid = srid
         self.find_or_make_work_folder()
         self._last_insert = None # for INSERT ... RETURNING ID
-        
+        self.TRUE_exp = 'TRUE'
+        self.FALSE_exp = 'FALSE'
         ruri = uri.split('://',1)[1]
         m = self.REGEX_URI.match(ruri)
         if not m:
