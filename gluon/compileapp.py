@@ -127,7 +127,7 @@ class mybuiltin(object):
 def LOAD(c=None, f='index', args=None, vars=None,
          extension=None, target=None, ajax=False, ajax_trap=False,
          url=None, user_signature=False, timeout=None, times=1,
-         content='loading...', **attr):
+         content='loading...', post_vars=Storage(), **attr):
     """  LOADs a component into the action's document
 
     Args:
@@ -202,7 +202,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
         other_request.args = List(args)
         other_request.vars = vars
         other_request.get_vars = vars
-        other_request.post_vars = Storage()
+        other_request.post_vars = post_vars
         other_response = Response()
         other_request.env.path_info = '/' + \
             '/'.join([request.application, c, f] +
