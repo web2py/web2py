@@ -842,6 +842,7 @@ class Recaptcha(DIV):
         comment = '',
         ajax=False
     ):
+        request = request or current.request
         self.request_vars = request and request.vars or current.request.vars
         self.remote_addr = request.env.remote_addr
         self.public_key = public_key
