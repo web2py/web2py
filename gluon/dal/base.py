@@ -440,7 +440,7 @@ class DAL(object):
         self._uri_hash = table_hash or hashlib_md5(adapter.uri).hexdigest()
         self.check_reserved = check_reserved
         if self.check_reserved:
-            from reserved_sql_keywords import ADAPTERS as RSK
+            from gluon.reserved_sql_keywords import ADAPTERS as RSK
             self.RSK = RSK
         self._migrate = migrate
         self._fake_migrate = fake_migrate
