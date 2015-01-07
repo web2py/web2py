@@ -246,11 +246,11 @@ class CacheOnDisk(CacheAbstract):
     """
     Disk based cache
 
-    This is implemented as a shelve object and it is shared by multiple web2py
-    processes (and threads) as long as they share the same filesystem.
+    This is implemented as a key value store where each key corresponds to a 
+    single file in disk which is replaced when the value changes.
 
-    Disk cache provides persistance when web2py is started/stopped but it slower
-    than `CacheInRam`
+    Disk cache provides persistance when web2py is started/stopped but it is
+    slower than `CacheInRam`
 
     Values stored in disk cache must be pickable.
     """
@@ -259,8 +259,11 @@ class CacheOnDisk(CacheAbstract):
         """
         Implements a key based storage in disk.
         """
+        
         def __init__(self, folder):
             self.folder = folder
+            self.key_filter_in = lambda key: key
+            self.key_filter_out = lambda key: key
             # Check the best way to do atomic file replacement.
             if sys.version_info >= (3, 3):
                 self.replace = os.replace
@@ -287,6 +290,25 @@ class CacheOnDisk(CacheAbstract):
                 # POSIX rename() is always atomic
                 self.replace = os.rename
 
+            # Make sure we use valid filenames.
+            if sys.platform == "win32":
+                import base64
+                def key_filter_in_windows(key):
+                    """
+                    Windows doesn't allow \ / : * ? "< > | in filenames.
+                    To go around this encode the keys with base32.
+                    """
+                    return base64.b32encode(key)
+
+                def key_filter_out_windows(key):
+                    """
+                    We need to decode the keys so regex based removal works.
+                    """
+                    return base64.b32decode(key)
+
+                self.key_filter_in = key_filter_in_windows
+                self.key_filter_out = key_filter_out_windows
+
 
         def __setitem__(self, key, value):
             tmp_name, tmp_path = tempfile.mkstemp(dir=self.folder)
@@ -295,6 +317,7 @@ class CacheOnDisk(CacheAbstract):
                 pickle.dump((time.time(), value), tmp, pickle.HIGHEST_PROTOCOL)
             finally:
                 tmp.close()
+            key = self.key_filter_in(key)
             fullfilename = os.path.join(self.folder, recfile.generate(key))
             if not os.path.exists(os.path.dirname(fullfilename)):
                 os.makedirs(os.path.dirname(fullfilename))
@@ -302,27 +325,33 @@ class CacheOnDisk(CacheAbstract):
 
 
         def __getitem__(self, key):
+            key = self.key_filter_in(key)
             if recfile.exists(key, path=self.folder):
                 timestamp, value = pickle.load(recfile.open(key, 'rb', path=self.folder))
                 return value
             else:
                 raise KeyError
 
+
         def __contains__(self, key):
+            key = self.key_filter_in(key)
             return recfile.exists(key, path=self.folder)
 
 
         def __delitem__(self, key):
+            key = self.key_filter_in(key)
             recfile.remove(key, path=self.folder)
 
 
         def __iter__(self):
             for dirpath, dirnames, filenames in os.walk(self.folder):
                 for filename in filenames:
-                    yield filename
+                    yield self.key_filter_out(filename)
+
 
         def keys(self):
-            return [filename for dirpath, dirnames, filenames in os.walk(self.folder) for filename in filenames]
+            return list(self.__iter__())
+
 
         def get(self, key, default=None):
             try:
@@ -334,6 +363,7 @@ class CacheOnDisk(CacheAbstract):
         def clear(self):
             for key in self:
                 del self[key]
+
 
     def __init__(self, request=None, folder=None):
         self.initialized = False
@@ -388,6 +418,7 @@ class CacheOnDisk(CacheAbstract):
             self.storage[CacheAbstract.cache_stats_name]['misses'] += 1
 
         return value
+
 
     def clear(self, regex=None):
         self.initialize()
