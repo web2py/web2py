@@ -428,8 +428,9 @@ class Table(object):
                             if tn == name or getattr(db[tn],'_ot',None)==name])
             query = self._common_filter
             if query:
-                newquery = query & newquery
-            self._common_filter = newquery
+                self._common_filter = lambda q: reduce(AND, [query(q), newquery(q)])
+            else:
+                self._common_filter = newquery
 
     def _validate(self, **vars):
         errors = Row()
