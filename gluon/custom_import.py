@@ -41,7 +41,7 @@ class CustomImportException(ImportError):
 
 def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
     """
-    web2py's custom importer. It behaves like the standard Python importer but 
+    web2py's custom importer. It behaves like the standard Python importer but
     it tries to transform import statements as something like
     "import applications.app_name.modules.x".
     If the import fails, it falls back on naive_importer
@@ -67,6 +67,13 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
         import_tb = None
         try:
             try:
+                if ('gluon' not in name and not name.startswith('.') and
+                   'direct_import' not in locals):
+                    try:  # Try to load a gluon class
+                        oname = 'gluon.%s' % name
+                        return NATIVE_IMPORTER(oname, globals, locals, fromlist, level)
+                    except:
+                        pass
                 oname = name if not name.startswith('.') else '.'+name
                 return NATIVE_IMPORTER(oname, globals, locals, fromlist, level)
             except ImportError:
@@ -102,6 +109,7 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
             if import_tb:
                 import_tb = None
 
+    locals['direct_import']=True
     return NATIVE_IMPORTER(name, globals, locals, fromlist, level)
 
 
