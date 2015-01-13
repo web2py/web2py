@@ -2348,7 +2348,9 @@ class SQLFORM(FORM):
                 # expcolumns is all cols to be exported including virtual fields
                 rows.colnames = expcolumns
                 oExp = clazz(rows)
-                filename = '.'.join(('rows', oExp.file_ext))
+                export_filename = \
+                    request.vars.get('_export_filename') or 'rows'
+                filename = '.'.join((export_filename, oExp.file_ext))
                 response.headers['Content-Type'] = oExp.content_type
                 response.headers['Content-Disposition'] = \
                     'attachment;filename=' + filename + ';'
