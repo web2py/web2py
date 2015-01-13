@@ -427,9 +427,12 @@ class Table(object):
                             for tn in db._adapter.tables(query)
                             if tn == name or getattr(db[tn],'_ot',None)==name])
             query = self._common_filter
-            if query:
+            if query:            
+                self._common_filter = \
+                    lambda q: reduce(AND, [query(q), newquery(q)])
                 newquery = query & newquery
-            self._common_filter = newquery
+            else:
+                self._common_filter = newquery
 
     def _validate(self, **vars):
         errors = Row()
