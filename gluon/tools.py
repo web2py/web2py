@@ -1258,7 +1258,8 @@ class Auth(object):
     def __init__(self, environment=None, db=None, mailer=True,
                  hmac_key=None, controller='default', function='user',
                  cas_provider=None, signature=True, secure=False,
-                 csrf_prevention=True, propagate_extension=None):
+                 csrf_prevention=True, propagate_extension=None,
+                 url_index=None):
 
         ## next two lines for backward compatibility
         if not db and environment and isinstance(environment, DAL):
@@ -1295,7 +1296,7 @@ class Auth(object):
                 del session.auth
         # ## what happens after login?
 
-        url_index = URL(controller, 'index')
+        url_index = url_index or URL(controller, 'index')
         url_login = URL(controller, function, args='login',
                         extension = propagate_extension)
         # ## what happens after registration?
