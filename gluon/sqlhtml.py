@@ -2326,7 +2326,7 @@ class SQLFORM(FORM):
                              expcolumns.append(str(field))
 
             if export_type in exportManager and exportManager[export_type]:
-                if keywords:
+                if keywords and not callable(searchable):
                     try:
                         #the query should be constructed using searchable
                         #fields but not virtual fields
@@ -2334,6 +2334,19 @@ class SQLFORM(FORM):
                             [[f for f in t if f.readable and not isinstance(f, Field.Virtual)] for t in tables])
                         dbset = dbset(SQLFORM.build_query(
                             sfields, keywords))
+                        rows = dbset.select(left=left, orderby=orderby,
+                                            cacheable=True, *selectable_columns)
+                    except Exception, e:
+                        response.flash = T('Internal Error')
+                        rows = []
+                elif callable(searchable):
+                    #use custom_query using searchable
+                    try:
+                        #the query should be constructed using searchable
+                        #fields but not virtual fields
+                        sfields = reduce(lambda a, b: a + b,
+                            [[f for f in t if f.readable and not isinstance(f, Field.Virtual)] for t in tables])
+                        dbset = dbset(searchable(sfields, keywords))
                         rows = dbset.select(left=left, orderby=orderby,
                                             cacheable=True, *selectable_columns)
                     except Exception, e:
