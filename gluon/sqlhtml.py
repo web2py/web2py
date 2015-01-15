@@ -2332,8 +2332,12 @@ class SQLFORM(FORM):
                         #fields but not virtual fields
                         sfields = reduce(lambda a, b: a + b,
                             [[f for f in t if f.readable and not isinstance(f, Field.Virtual)] for t in tables])
-                        dbset = dbset(SQLFORM.build_query(
-                            sfields, keywords))
+                        #use custom_query using searchable
+                        if callable(searchable):
+                            dbset = dbset(searchable(sfields, keywords))
+                        else:
+                            dbset = dbset(SQLFORM.build_query(
+                                sfields, keywords))
                         rows = dbset.select(left=left, orderby=orderby,
                                             cacheable=True, *selectable_columns)
                     except Exception, e:
