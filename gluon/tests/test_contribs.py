@@ -65,7 +65,7 @@ class TestContribs(unittest.TestCase):
         self.assertEqual(myappconfig.take('config3.key1', cast=int), '1')
 
         self.assertEqual(myappconfig.take('config3.key2'), 2)
-        
+
         current.request = {}
 
 if __name__ == '__main__':

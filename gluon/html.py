@@ -1864,7 +1864,7 @@ class INPUT(DIV):
                     break
         if not name in self.errors:
             self.vars[name] = value
-            return True        
+            return True
         return False
 
     def _postprocessing(self):

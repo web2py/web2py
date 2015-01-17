@@ -57,7 +57,7 @@ class CacheAbstract(object):
     Use CacheInRam or CacheOnDisk instead which are derived from this class.
 
     Note:
-        Michele says: there are signatures inside gdbm files that are used 
+        Michele says: there are signatures inside gdbm files that are used
         directly by the python gdbm adapter that often are lagging behind in the
         detection code in python part.
         On every occasion that a gdbm store is probed by the python adapter,
@@ -188,8 +188,8 @@ class CacheInRam(CacheAbstract):
                  time_expire=DEFAULT_TIME_EXPIRE,
                  destroyer=None):
         """
-        Attention! cache.ram does not copy the cached object. 
-        It just stores a reference to it. Turns out the deepcopying the object 
+        Attention! cache.ram does not copy the cached object.
+        It just stores a reference to it. Turns out the deepcopying the object
         has some problems:
 
         - would break backward compatibility
@@ -246,7 +246,7 @@ class CacheOnDisk(CacheAbstract):
     """
     Disk based cache
 
-    This is implemented as a key value store where each key corresponds to a 
+    This is implemented as a key value store where each key corresponds to a
     single file in disk which is replaced when the value changes.
 
     Disk cache provides persistance when web2py is started/stopped but it is
@@ -259,7 +259,7 @@ class CacheOnDisk(CacheAbstract):
         """
         Implements a key based storage in disk.
         """
-        
+
         def __init__(self, folder):
             self.folder = folder
             self.key_filter_in = lambda key: key
@@ -509,7 +509,7 @@ class Cache(object):
              quick=None):
         """Better fit for caching an action
 
-        Warning: 
+        Warning:
             Experimental!
 
         Currently only HTTP 1.1 compliant
@@ -523,8 +523,8 @@ class Cache(object):
             vars(bool): adds request.env.query_string
             lang(bool): adds T.accepted_language
             user_agent(bool or dict): if True, adds is_mobile and is_tablet to the key.
-                Pass a dict to use all the needed values (uses str(.items())) 
-                (e.g. user_agent=request.user_agent()). Used only if session is 
+                Pass a dict to use all the needed values (uses str(.items()))
+                (e.g. user_agent=request.user_agent()). Used only if session is
                 not True
             public(bool): if False forces the Cache-Control to be 'private'
             valid_statuses: by default only status codes starting with 1,2,3 will be cached.
@@ -633,8 +633,8 @@ class Cache(object):
         Args:
             key(str) : the key of the object to be store or retrieved
             time_expire(int) : expiration of the cache in seconds
-                `time_expire` is used to compare the current time with the time 
-                when the requested object was last saved in cache. 
+                `time_expire` is used to compare the current time with the time
+                when the requested object was last saved in cache.
                 It does not affect future requests.
                 Setting `time_expire` to 0 or negative value forces the cache to
                 refresh.

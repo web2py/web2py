@@ -1388,7 +1388,7 @@ class TestQuoting(unittest.TestCase):
 
 class TestTableAndFieldCase(unittest.TestCase):
     """
-    at the Python level we should not allow db.C and db.c because of .table conflicts on windows 
+    at the Python level we should not allow db.C and db.c because of .table conflicts on windows
     but it should be possible to map two different names into distinct tables "c" and "C" at the Python level
     By default Python models names should be mapped into lower case table names and assume case insensitivity.
     """
@@ -1406,4 +1406,3 @@ class TestQuotesByDefault(unittest.TestCase):
 if __name__ == '__main__':
     unittest.main()
     tearDownModule()
-

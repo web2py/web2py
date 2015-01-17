@@ -11,7 +11,7 @@
     Note: This module is intended as a plugin replacement of pbkdf2.py
     by Armin Ronacher.
 
-    Git repository: 
+    Git repository:
     $ git clone https://github.com/michele-comitini/pbkdf2_ctypes.git
 
     :copyright: Copyright (c) 2013: Michele Comitini <mcm@glisco.it>
@@ -86,7 +86,7 @@ def _openssl_hashlib_to_crypto_map_get(hashfunc):
     crypto_hashfunc.restype = ctypes.c_void_p
     return crypto_hashfunc()
 
-    
+
 def _openssl_pbkdf2(data, salt, iterations, digest, keylen):
     """OpenSSL compatibile wrapper
     """
@@ -99,7 +99,7 @@ def _openssl_pbkdf2(data, salt, iterations, digest, keylen):
     c_iter = ctypes.c_int(iterations)
     c_keylen = ctypes.c_int(keylen)
     c_buff = ctypes.create_string_buffer(keylen)
-    
+
     # PKCS5_PBKDF2_HMAC(const char *pass, int passlen,
     #                            const unsigned char *salt, int saltlen, int iter,
     #                            const EVP_MD *digest,
@@ -109,7 +109,7 @@ def _openssl_pbkdf2(data, salt, iterations, digest, keylen):
                                          ctypes.c_char_p, ctypes.c_int,
                                          ctypes.c_int, ctypes.c_void_p,
                                          ctypes.c_int, ctypes.c_char_p]
-                                         
+
     crypto.PKCS5_PBKDF2_HMAC.restype = ctypes.c_int
     err = crypto.PKCS5_PBKDF2_HMAC(c_pass, c_passlen,
                             c_salt, c_saltlen,

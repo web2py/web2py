@@ -47,7 +47,7 @@ class Collection(object):
         if self.compact:
             for fieldname in (self.table_policy.get('fields',table.fields)):
                 field = table[fieldname]
-                if not ((field.type=='text' and text==False) or 
+                if not ((field.type=='text' and text==False) or
                         field.type=='blob' or
                         field.type.startswith('reference ') or
                         field.type.startswith('list:reference ')) and field.name in row:
@@ -56,7 +56,7 @@ class Collection(object):
             for fieldname in (self.table_policy.get('fields',table.fields)):
                 field = table[fieldname]
                 if not ((field.type=='text' and text==False) or
-                        field.type=='blob' or 
+                        field.type=='blob' or
                         field.type.startswith('reference ') or
                         field.type.startswith('list:reference ')) and field.name in row:
                     data.append({'name':field.name,'value':row[field.name],
@@ -128,10 +128,10 @@ class Collection(object):
         for key,value in vars.items():
             if key=='_offset':
                 limitby[0] = int(value) # MAY FAIL
-            elif key == '_limit': 
+            elif key == '_limit':
                 limitby[1] = int(value)+1 # MAY FAIL
             elif key=='_orderby':
-                orderby = value                
+                orderby = value
             elif key in fieldnames:
                 queries.append(table[key] == value)
             elif key.endswith('.eq') and key[:-3] in fieldnames: # for completeness (useless)
@@ -156,14 +156,14 @@ class Collection(object):
         if filter_query:
             queries.append(filter_query)
         query = reduce(lambda a,b:a&b,queries[1:]) if len(queries)>1 else queries[0]
-        orderby = [table[f] if f[0]!='~' else ~table[f[1:]] for f in orderby.split(',')]        
+        orderby = [table[f] if f[0]!='~' else ~table[f[1:]] for f in orderby.split(',')]
         return (query, limitby, orderby)
 
     def table2queries(self,table, href):
         """ generates a set of collection.queries examples for the table """
         data = []
         for fieldname in (self.table_policy.get('fields', table.fields)):
-            data.append({'name':fieldname,'value':''}) 
+            data.append({'name':fieldname,'value':''})
             if self.extensions:
                 data.append({'name':fieldname+'.ne','value':''}) # NEW !!!
                 data.append({'name':fieldname+'.lt','value':''})
@@ -192,7 +192,7 @@ class Collection(object):
         if not tablename:
             r['href'] = URL(scheme=True),
             # https://github.com/collection-json/extensions/blob/master/model.md
-            r['links'] = [{'rel' : t, 'href' : URL(args=t,scheme=True), 'model':t} 
+            r['links'] = [{'rel' : t, 'href' : URL(args=t,scheme=True), 'model':t}
                           for t in tablenames]
             response.headers['Content-Type'] = 'application/vnd.collection+json'
             return response.json({'collection':r})
@@ -207,7 +207,7 @@ class Collection(object):
         # process GET
         if request.env.request_method=='GET':
             table = db[tablename]
-            r['href'] = URL(args=tablename)        
+            r['href'] = URL(args=tablename)
             r['items'] = items = []
             try:
                 (query, limitby, orderby) = self.request2query(table,request.get_vars)
@@ -258,7 +258,7 @@ class Collection(object):
             return response.json({'collection':r})
         # process DELETE
         elif request.env.request_method=='DELETE':
-            table = db[tablename] 
+            table = db[tablename]
             if not request.get_vars:
                 return self.error(400, "BAD REQUEST", "Nothing to delete")
             else:
@@ -312,7 +312,7 @@ class Collection(object):
         request, response = self.request, self.response
         r = OrderedDict({
                 "version" : self.VERSION,
-                "href" : URL(args=request.args,vars=request.vars),    
+                "href" : URL(args=request.args,vars=request.vars),
                 "error" : {
                     "title" : title,
                     "code" : code,
@@ -340,4 +340,3 @@ example_policies = {
         'DELETE':{'query':None},
         },
     }
-

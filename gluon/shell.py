@@ -129,7 +129,7 @@ def env(
                                     request.function)
     if global_settings.cmd_options:
         ip = global_settings.cmd_options.ip
-        port = global_settings.cmd_options.port 
+        port = global_settings.cmd_options.port
     else:
         ip, port = '127.0.0.1', '8000'
     request.env.http_host = '%s:%s' % (ip,port)
