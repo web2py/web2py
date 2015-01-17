@@ -235,7 +235,7 @@ class SoapDispatcher(object):
             body.marshall("%s:Fault" % soap_ns, fault, ns=False)
         else:
             # return normal value
-            res = body.add_child("%sResponse" % name, ns=prefix)
+            res = body.add_child("%sResponse" % name, ns=self.namespace)
             if not prefix:
                 res['xmlns'] = self.namespace  # add target namespace
 

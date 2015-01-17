@@ -73,7 +73,7 @@ class BrowserID(object):
             auth_info_json = fetch(self.verify_url, data=verify_data)
             j = json.loads(auth_info_json)
             epoch_time = int(time.time() * 1000)  # we need 13 digit epoch time
-            if j["status"] == "okay" and j["audience"] == audience and j['issuer'] == issuer and j['expires'] >= epoch_time:
+            if j["status"] == "okay" and j["audience"] == audience and j['issuer'].endswith(issuer) and j['expires'] >= epoch_time:
                 return dict(email=j['email'])
             elif self.on_login_failure:
                 #print "status:  ", j["status"]=="okay", j["status"]

@@ -254,12 +254,12 @@ class Table(DALStorage):
         self._db(self.id > 0).delete()
 
 
-    def insert(self, **fields): 
-        # Checks 3 times that the id is new. 3 times is enough! 
-        for i in range(3): 
-            id = self._create_id() 
-            if self.get(id) is None and self.update(id, **fields): 
-                return long(id) 
+    def insert(self, **fields):
+        # Checks 3 times that the id is new. 3 times is enough!
+        for i in range(3):
+            id = self._create_id()
+            if self.get(id) is None and self.update(id, **fields):
+                return long(id)
         else:
             raise RuntimeError("Too many ID conflicts")
 

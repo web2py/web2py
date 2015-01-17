@@ -131,7 +131,7 @@ class TestRouter(unittest.TestCase):
             'http://domain.com/abc/def'), "/init/default/abc ['def']")
         self.assertEqual(filter_url(
             'http://domain.com/index/a%20bc'), "/init/default/index ['a bc']")
-        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/static').replace('/', os.sep), 
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/static').replace('/', os.sep),
             norm_root("%s/applications/welcome/static/path/to/static" % root))
         self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/to/st~tic')
         try:
@@ -195,7 +195,7 @@ class TestRouter(unittest.TestCase):
                          norm_root('%s/applications/welcome/static/favicon.ico' % root))
         self.assertEqual(filter_url('http://domain.com/static/abc'),
                          norm_root('%s/applications/welcome/static/abc' % root))
-        self.assertEqual(filter_url('http://domain.com/static/path/to/static').replace('/', os.sep), 
+        self.assertEqual(filter_url('http://domain.com/static/path/to/static').replace('/', os.sep),
             norm_root("%s/applications/welcome/static/path/to/static" % root))
         # outgoing
         self.assertEqual(filter_url(
@@ -1086,13 +1086,13 @@ class TestRouter(unittest.TestCase):
                         norm_root("%s/applications/admin/static/file" % root))
         self.assertEqual(filter_url('http://domain.com/en/static/file'),
                         norm_root("%s/applications/admin/static/file" % root))
-        self.assertEqual(filter_url('http://domain.com/examples/en/static/file'), 
+        self.assertEqual(filter_url('http://domain.com/examples/en/static/file'),
                         norm_root("%s/applications/examples/static/en/file" % root))
         self.assertEqual(filter_url('http://domain.com/examples/static/file'),
                          norm_root("%s/applications/examples/static/en/file" % root))
-        self.assertEqual(filter_url('http://domain.com/examples/it/static/file'), 
+        self.assertEqual(filter_url('http://domain.com/examples/it/static/file'),
                         norm_root("%s/applications/examples/static/it/file" % root))
-        self.assertEqual(filter_url('http://domain.com/examples/it-it/static/file'), 
+        self.assertEqual(filter_url('http://domain.com/examples/it-it/static/file'),
                         norm_root("%s/applications/examples/static/file" % root))
 
         self.assertEqual(filter_url('https://domain.com/admin/ctr/fcn',
@@ -1188,19 +1188,19 @@ class TestRouter(unittest.TestCase):
                          norm_root("%s/applications/admin/static/file" % root))
         self.assertEqual(filter_url('http://domain.com/en/static/file'),
                          norm_root("%s/applications/admin/static/file" % root))
-        self.assertEqual(filter_url('http://domain.com/examples/en/static/file'), 
+        self.assertEqual(filter_url('http://domain.com/examples/en/static/file'),
                         norm_root("%s/applications/examples/static/en/file" % root))
         self.assertEqual(filter_url('http://domain.com/examples/static/file'),
                         norm_root("%s/applications/examples/static/en/file" % root))
-        self.assertEqual(filter_url('http://domain.com/examples/it/static/file'), 
+        self.assertEqual(filter_url('http://domain.com/examples/it/static/file'),
                         norm_root("%s/applications/examples/static/it/file" % root))
-        self.assertEqual(filter_url('http://domain.com/examples/it-it/static/file'), 
+        self.assertEqual(filter_url('http://domain.com/examples/it-it/static/file'),
                         norm_root("%s/applications/examples/static/file" % root))
-        self.assertEqual(filter_url('http://domain.com/examples/static/en/file').replace('/', os.sep), 
+        self.assertEqual(filter_url('http://domain.com/examples/static/en/file').replace('/', os.sep),
                         norm_root("%s/applications/examples/static/en/file" % root))
         self.assertEqual(filter_url('http://domain.com/examples/static/it/file').replace('/', os.sep),
                         norm_root("%s/applications/examples/static/it/file" % root))
-        self.assertEqual(filter_url('http://domain.com/examples/static/it-it/file').replace('/', os.sep),  
+        self.assertEqual(filter_url('http://domain.com/examples/static/it-it/file').replace('/', os.sep),
                         norm_root("%s/applications/examples/static/it-it/file" % root))
 
     def test_router_get_effective(self):
@@ -1267,14 +1267,14 @@ class TestRouter(unittest.TestCase):
 
         '''
         load(rdict=dict())
-        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/static').replace('/', os.sep), 
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/static').replace('/', os.sep),
             norm_root("%s/applications/welcome/static/path/to/static" % root))
         self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/to/st~tic')
-        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to--/static').replace('/', os.sep), 
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to--/static').replace('/', os.sep),
             norm_root("%s/applications/welcome/static/path/to--/static" % root))
-        self.assertEqual(filter_url('http://domain.com/welcome/static/path/==to--/static').replace('/', os.sep), 
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/==to--/static').replace('/', os.sep),
             norm_root("%s/applications/welcome/static/path/==to--/static" % root))
-        self.assertEqual(filter_url('http://domain.com/welcome/static/path/-+=@$%/static').replace('/', os.sep), 
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/-+=@$%/static').replace('/', os.sep),
             norm_root("%s/applications/welcome/static/path/-+=@$%%/static" % root))
         self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/to/.static')
         self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/to/s..tatic')
@@ -1287,7 +1287,7 @@ class TestRouter(unittest.TestCase):
             ),
         )
         load(rdict=router_static)
-        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/#static').replace('/', os.sep), 
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/#static').replace('/', os.sep),
             norm_root("%s/applications/welcome/static/path/to/#static" % root))
 
         router_static = dict(
@@ -1296,23 +1296,23 @@ class TestRouter(unittest.TestCase):
             ),
         )
         load(rdict=router_static)
-        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/static').replace('/', os.sep), 
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/static').replace('/', os.sep),
             norm_root("%s/applications/welcome/static/path/to/static" % root))
         self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/to/st~tic')
-        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to--/static').replace('/', os.sep), 
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to--/static').replace('/', os.sep),
             norm_root("%s/applications/welcome/static/path/to--/static" % root))
-        self.assertEqual(filter_url('http://domain.com/welcome/static/path/==to--/static').replace('/', os.sep),  
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/==to--/static').replace('/', os.sep),
             norm_root("%s/applications/welcome/static/path/==to--/static" % root))
-        self.assertEqual(filter_url('http://domain.com/welcome/static/path/-+=@$%/static').replace('/', os.sep), 
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/-+=@$%/static').replace('/', os.sep),
             norm_root("%s/applications/welcome/static/path/-+=@$%%/static" % root))
         self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/to//static')
-        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/#static').replace('/', os.sep), 
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/#static').replace('/', os.sep),
             norm_root("%s/applications/welcome/static/path/to/#static" % root))
         self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/./static')
         self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/../static')
-        self.assertEqual(filter_url('http://domain.com/welcome/static/path/.../static').replace('/', os.sep),  
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/.../static').replace('/', os.sep),
             norm_root("%s/applications/welcome/static/path/.../static" % root))
-        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/.static').replace('/', os.sep), 
+        self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/.static').replace('/', os.sep),
             norm_root("%s/applications/welcome/static/path/to/.static" % root))
 
     def test_router_args(self):

@@ -141,7 +141,7 @@ class Connection(object):
             parts = "complete"
 
         return ("OK", (("%s " % message_id, message[parts]), message["flags"]))
- 
+
     def _get_messages(self, query):
         if query.strip().isdigit():
             return [self.spam[self._mailbox][int(query.strip()) - 1],]
@@ -151,7 +151,7 @@ class Connection(object):
             for item in self.spam[self._mailbox]:
                 if item["uid"] == query[1:-1].replace("UID", "").strip():
                     return [item,]
-        messages = []        
+        messages = []
         try:
             for m in self.results[self._mailbox][query]:
                 try:
@@ -169,7 +169,7 @@ class Connection(object):
             return messages
         except KeyError:
             raise ValueError("The client issued an unexpected query: %s" % query)
-        
+
     def setup(self, spam={}, results={}):
         """adds custom message and query databases or sets
         the values to the module defaults.
@@ -252,4 +252,3 @@ class IMAP4(object):
         return Connection()
 
 IMAP4_SSL = IMAP4
-

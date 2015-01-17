@@ -136,6 +136,7 @@ class Mail(object):
         mail.settings.server
         mail.settings.sender
         mail.settings.login
+        mail.settings.timeout = 60 # seconds (default)
 
     When server is 'logging', email is logged but not sent (debug mode)
 
@@ -265,6 +266,7 @@ class Mail(object):
         settings.sender = sender
         settings.login = login
         settings.tls = tls
+        settings.timeout = 60 # seconds
         settings.hostname = None
         settings.ssl = False
         settings.cipher_type = None
@@ -787,10 +789,11 @@ class Mail(object):
                         subject=subject, body=text, **xcc)
             else:
                 smtp_args = self.settings.server.split(':')
+                kwargs = dict(timeout = self.settings.timeout)
                 if self.settings.ssl:
-                    server = smtplib.SMTP_SSL(*smtp_args)
+                    server = smtplib.SMTP_SSL(*smtp_args, **kwargs)
                 else:
-                    server = smtplib.SMTP(*smtp_args)
+                    server = smtplib.SMTP(*smtp_args, **kwargs)
                 if self.settings.tls and not self.settings.ssl:
                     server.ehlo(self.settings.hostname)
                     server.starttls()
@@ -842,6 +845,7 @@ class Recaptcha(DIV):
         comment = '',
         ajax=False
     ):
+        request = request or current.request
         self.request_vars = request and request.vars or current.request.vars
         self.remote_addr = request.env.remote_addr
         self.public_key = public_key
@@ -1257,7 +1261,8 @@ class Auth(object):
     def __init__(self, environment=None, db=None, mailer=True,
                  hmac_key=None, controller='default', function='user',
                  cas_provider=None, signature=True, secure=False,
-                 csrf_prevention=True, propagate_extension=None):
+                 csrf_prevention=True, propagate_extension=None,
+                 url_index=None):
 
         ## next two lines for backward compatibility
         if not db and environment and isinstance(environment, DAL):
@@ -1294,7 +1299,7 @@ class Auth(object):
                 del session.auth
         # ## what happens after login?
 
-        url_index = URL(controller, 'index')
+        url_index = url_index or URL(controller, 'index')
         url_login = URL(controller, function, args='login',
                         extension = propagate_extension)
         # ## what happens after registration?
@@ -6164,4 +6169,3 @@ class Config(object):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-

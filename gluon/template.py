@@ -279,7 +279,7 @@ class TemplateParser(object):
         self.context = context
 
         # allow optional alternative delimiters
-        
+
         if delimiters != self.default_delimiters:
             escaped_delimiters = (escape(delimiters[0]),
                                   escape(delimiters[1]))

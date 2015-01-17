@@ -1988,9 +1988,9 @@ class SQLFORM(FORM):
                       buttonback='icon leftarrow icon-arrow-left glyphicon glyphicon-arrow-left',
                       buttonexport='icon downarrow icon-download glyphicon glyphicon-download',
                       buttondelete='icon trash icon-trash glyphicon glyphicon-trash',
-                      buttonedit='icon pen icon-pencil glyphicon glyphicon-arrow-pencil',
+                      buttonedit='icon pen icon-pencil glyphicon glyphicon-pencil',
                       buttontable='icon rightarrow icon-arrow-right glyphicon glyphicon-arrow-right',
-                      buttonview='icon magnifier icon-zoom-in glyphicon glyphicon-arrow-zoom-in',
+                      buttonview='icon magnifier icon-zoom-in glyphicon glyphicon-zoom-in',
                       )
         elif not isinstance(ui, dict):
             raise RuntimeError('SQLFORM.grid ui argument must be a dictionary')
@@ -2333,8 +2333,12 @@ class SQLFORM(FORM):
                         #fields but not virtual fields
                         sfields = reduce(lambda a, b: a + b,
                             [[f for f in t if f.readable and not isinstance(f, Field.Virtual)] for t in tables])
-                        dbset = dbset(SQLFORM.build_query(
-                            sfields, keywords))
+                        #use custom_query using searchable
+                        if callable(searchable):
+                            dbset = dbset(searchable(sfields, keywords))
+                        else:
+                            dbset = dbset(SQLFORM.build_query(
+                                sfields, keywords))
                         rows = dbset.select(left=left, orderby=orderby,
                                             cacheable=True, *selectable_columns)
                     except Exception, e:
@@ -2349,7 +2353,9 @@ class SQLFORM(FORM):
                 # expcolumns is all cols to be exported including virtual fields
                 rows.colnames = expcolumns
                 oExp = clazz(rows)
-                filename = '.'.join(('rows', oExp.file_ext))
+                export_filename = \
+                    request.vars.get('_export_filename') or 'rows'
+                filename = '.'.join((export_filename, oExp.file_ext))
                 response.headers['Content-Type'] = oExp.content_type
                 response.headers['Content-Disposition'] = \
                     'attachment;filename=' + filename + ';'
@@ -2386,6 +2392,8 @@ class SQLFORM(FORM):
                 spanel_id = '%s_query_fields' % prefix
                 sfields_id = '%s_query_panel' % prefix
                 skeywords_id = '%s_keywords' % prefix
+                ## hidden fields to presever keywords in url after the submit
+                hidden_fields = [INPUT(_type='hidden', _value=value, _name=key) for key, value in request.get_vars.items() if key not in ['keywords', 'page']]
                 search_widget = lambda sfield, url: CAT(FORM(
                     INPUT(_name='keywords', _value=keywords,
                           _id=skeywords_id,_class='form-control',
@@ -2394,7 +2402,9 @@ class SQLFORM(FORM):
                     INPUT(_type='submit', _value=T('Search'), _class="btn btn-default"),
                     INPUT(_type='submit', _value=T('Clear'), _class="btn btn-default",
                           _onclick="jQuery('#%s').val('');" % skeywords_id),
+                    *hidden_fields,
                     _method="GET", _action=url), search_menu)
+            # TODO vars from the url should be removed, they are not used by the submit
             form = search_widget and search_widget(sfields, url()) or ''
             console.append(add)
             console.append(form)

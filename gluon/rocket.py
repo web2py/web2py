@@ -1850,12 +1850,13 @@ class WSGIWorker(Worker):
                 if data:
                     self.write(data, sections)
 
-            if self.chunked:
-                # If chunked, send our final chunk length
-                self.conn.sendall(b('0\r\n\r\n'))
-            elif not self.headers_sent:
+            if not self.headers_sent:
                 # Send headers if the body was empty
                 self.send_headers('', sections)
+
+            if self.chunked and self.request_method != 'HEAD':
+                # If chunked, send our final chunk length
+                self.conn.sendall(b('0\r\n\r\n'))
 
         # Don't capture exceptions here.  The Worker class handles
         # them appropriately.

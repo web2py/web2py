@@ -30,7 +30,7 @@ def fix_links(html,prefix):
                 link = "{{=URL('static','%s/%s')}}" % (prefix,link)
         return '%s="%s"' % (href,link)
     return regex_link.sub(fix,html)
-        
+
 def make_views(html_files,prefix):
     views = {}
     layout_name = os.path.join(prefix,'layout.html')
@@ -76,13 +76,13 @@ def recursive_overwrite(src, dest, ignore=None):
             ignored = set()
         for f in files:
             if f not in ignored:
-                recursive_overwrite(os.path.join(src, f), 
-                                    os.path.join(dest, f), 
+                recursive_overwrite(os.path.join(src, f),
+                                    os.path.join(dest, f),
                                     ignore)
     else:
         shutil.copyfile(src, dest)
 
-def convert(source, destination,prefix='imported'):    
+def convert(source, destination,prefix='imported'):
     html_files = glob.glob(os.path.join(source,'*.html'))
     static_folder = os.path.join(destination,'static',prefix)
     recursive_overwrite(source,static_folder)
@@ -96,7 +96,7 @@ def convert(source, destination,prefix='imported'):
         if not os.path.exists(os.path.split(fullname)[0]):
             os.makedirs(os.path.split(fullname)[0])
         open(fullname,'w').write(views[name])
-    
+
 
 
 convert(sys.argv[1],sys.argv[2])
