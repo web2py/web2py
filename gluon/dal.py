@@ -69,7 +69,7 @@ def _default_validators(db, field):
         def list_ref_repr(ids, row=None, r=referenced, f=ff):
             if not ids:
                 return None
-            from ..adapters.google import GoogleDatastoreAdapter
+            from pydal.adapters import GoogleDatastoreAdapter
             refs = None
             db, id = r._db, r._id
             if isinstance(db._adapter, GoogleDatastoreAdapter):
