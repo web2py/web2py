@@ -1,5 +1,5 @@
-import os, sys
-
+import os
+import sys
 from test_http import *
 from test_cache import *
 from test_contenttype import *
@@ -16,6 +16,7 @@ from test_validators import *
 from test_utils import *
 from test_contribs import *
 from test_web import *
+from test_tools import *
 
 
 if sys.version[:3] == '2.7':

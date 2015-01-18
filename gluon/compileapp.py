@@ -407,7 +407,7 @@ def build_environment(request, response, session, store_current=True):
     # Enable standard conditional models (i.e., /*.py, /[controller]/*.py, and
     # /[controller]/[function]/*.py)
     response.models_to_run = [
-        r'^\w+\.py$', 
+        r'^\w+\.py$',
         r'^%s/\w+\.py$' % request.controller,
         r'^%s/%s/\w+\.py$' % (request.controller, request.function)
         ]
@@ -514,7 +514,7 @@ def compile_controllers(folder):
         for function in exposed:
             command = data + "\nresponse._vars=response._caller(%s)\n" % \
                 function
-            filename = pjoin(folder, 'compiled', 
+            filename = pjoin(folder, 'compiled',
                              'controllers.%s.%s.py' % (fname[:-3],function))
             write_file(filename, command)
             save_pyc(filename)

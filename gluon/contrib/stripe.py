@@ -37,7 +37,7 @@ def pay():
     elif form.errors:
         redirect(URL('pay_error'))
     return dict(form=form)
-    
+
     """
 
     URL_CHARGE = 'https://%s:@api.stripe.com/v1/charges'
@@ -114,7 +114,7 @@ class StripeForm(object):
 
     def process(self):
         from gluon import current
-        request = current.request        
+        request = current.request
         if request.post_vars:
             if self.signature == request.post_vars.signature:
                 self.response = Stripe(self.sk).charge(
@@ -127,7 +127,7 @@ class StripeForm(object):
                     return self
             self.errors = True
         return self
-        
+
     def xml(self):
         from gluon.template import render
         if self.accepted:
@@ -135,8 +135,8 @@ class StripeForm(object):
         elif self.errors:
             return "There was an processing error"
         else:
-            context = dict(amount=self.amount, 
-                           signature=self.signature, pk=self.pk, 
+            context = dict(amount=self.amount,
+                           signature=self.signature, pk=self.pk,
                            currency_symbol=self.currency_symbol,
                            security_notice=self.security_notice,
                            disclosure_notice=self.disclosure_notice)
@@ -145,14 +145,14 @@ class StripeForm(object):
 
 TEMPLATE = """
 <script type="text/javascript" src="https://js.stripe.com/v2/"></script>
-<script> 
+<script>
 jQuery(function(){
     // This identifies your website in the createToken call below
     Stripe.setPublishableKey('{{=pk}}');
- 
+
     var stripeResponseHandler = function(status, response) {
       var jQueryform = jQuery('#payment-form');
- 
+
       if (response.error) {
         // Show the errors on the form
         jQuery('.payment-errors').text(response.error.message).show();
@@ -167,17 +167,17 @@ jQuery(function(){
         jQueryform.get(0).submit();
       }
     };
- 
+
     jQuery(function(jQuery) {
       jQuery('#payment-form').submit(function(e) {
 
         var jQueryform = jQuery(this);
- 
+
         // Disable the submit button to prevent repeated clicks
         jQueryform.find('button').prop('disabled', true);
- 
+
         Stripe.createToken(jQueryform, stripeResponseHandler);
- 
+
         // Prevent the form from submitting with the default action
         return false;
       });
@@ -189,33 +189,33 @@ jQuery(function(){
 <form action="" method="POST" id="payment-form" class="form-horizontal">
 
   <div class="form-row control-group">
-    <label class="control-label">Card Number</label>	
+    <label class="control-label">Card Number</label>
     <div class="controls">
       <input type="text" size="20" data-stripe="number"
-	     placeholder="4242424242424242"/>
+             placeholder="4242424242424242"/>
     </div>
   </div>
-  
+
   <div class="form-row control-group">
-    <label class="control-label">CVC</label>	
+    <label class="control-label">CVC</label>
     <div class="controls">
       <input type="text" size="4" style="width:80px" data-stripe="cvc"
-	     placeholder="XXX"/>
+             placeholder="XXX"/>
       <a href="http://en.wikipedia.org/wiki/Card_Verification_Code" target="_blank">What is this?</a>
     </div>
   </div>
-  
+
   <div class="form-row control-group">
-    <label class="control-label">Expiration</label>	
+    <label class="control-label">Expiration</label>
     <div class="controls">
       <input type="text" size="2" style="width:40px" data-stripe="exp-month"
-	     placeholder="MM"/>
+             placeholder="MM"/>
       /
       <input type="text" size="4" style="width:80px" data-stripe="exp-year"
-	     placeholder="YYYY"/>
+             placeholder="YYYY"/>
     </div>
   </div>
-  
+
 
   <div class="control-group">
     <div class="controls">

@@ -94,7 +94,7 @@ def parse_version(version):
     return version_tuple
 
 def read_file(filename, mode='r'):
-    """Returns content from filename, making sure to close the file explicitly 
+    """Returns content from filename, making sure to close the file explicitly
     on exit.
     """
     f = open(filename, mode)
@@ -105,7 +105,7 @@ def read_file(filename, mode='r'):
 
 
 def write_file(filename, value, mode='w'):
-    """Writes <value> to filename, making sure to close the file 
+    """Writes <value> to filename, making sure to close the file
     explicitly on exit.
     """
     f = open(filename, mode)
@@ -346,7 +346,7 @@ def get_session(request, other_application='admin'):
         session_filename = os.path.join(
             up(request.folder), other_application, 'sessions', session_id)
         if not os.path.exists(session_filename):
-            session_filename = generate(session_filename)        
+            session_filename = generate(session_filename)
         osession = storage.load_storage(session_filename)
     except Exception, e:
         osession = storage.Storage()
@@ -438,7 +438,7 @@ from settings import global_settings  # we need to import settings here because
 
 
 def abspath(*relpath, **base):
-    """Converts relative path to absolute path based (by default) on 
+    """Converts relative path to absolute path based (by default) on
     applications_parent
     """
     path = os.path.join(*relpath)

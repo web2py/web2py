@@ -228,7 +228,7 @@ if not 'google' in DRIVERS:
         DRIVERS.append('imaplib')
     except:
         LOGGER.debug('no IMAP driver imaplib')
-        
+
     GAEDecimalProperty = None
     NDBDecimalProperty = None
 else:
@@ -302,7 +302,7 @@ else:
                 return decimal.Decimal(value)
             raise TypeError("Property %s must be a Decimal or string."\
                                         % self._name)
-            
+
     psycopg2_adapt = None
     cx_Oracle = None
     pyodbc = None

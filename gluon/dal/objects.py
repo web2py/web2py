@@ -427,7 +427,7 @@ class Table(object):
                             for tn in db._adapter.tables(query)
                             if tn == name or getattr(db[tn],'_ot',None)==name])
             query = self._common_filter
-            if query:            
+            if query:
                 self._common_filter = \
                     lambda q: reduce(AND, [query(q), newquery(q)])
             else:
@@ -692,7 +692,7 @@ class Table(object):
                 if not (value is None or isinstance(value, str)):
                     if hasattr(value, 'file') and hasattr(value, 'filename'):
                         new_name = field.store(value.file, filename=value.filename)
-                    elif isinstance(value,dict): 
+                    elif isinstance(value,dict):
                         if 'data' in value and 'filename' in value:
                             stream = StringIO.StringIO(value['data'])
                             new_name = field.store(stream, filename=value['filename'])
@@ -2569,7 +2569,7 @@ class Rows(object):
         :param render: whether we will render the fields using their represent
                        (default False) can be a list of fields to render or
                        True to render all.
-        """        
+        """
         roots = []
         drows = {}
         rows = list(self.render(fields=None if render is True else render)) if render else self
@@ -2703,4 +2703,3 @@ class Rows(object):
     # for consistent naming yet backwards compatible
     as_csv = __str__
     json = as_json
-

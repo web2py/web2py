@@ -1,4 +1,3 @@
-
 """
 Developed by Massimo Di Pierro
 Released under the web2py license (LGPL)
