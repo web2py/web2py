@@ -19,7 +19,7 @@ except (ImportError, SystemError):
     def web2py_uuid(): return str(uuid.uuid4())
 
 try:
-    import portalocker
+    from gluon import portalocker
     have_portalocker = True
 except ImportError:
     portalocker = None
