@@ -117,7 +117,7 @@ from gluon import sqlhtml
 class DAL(pyDAL):
     serializers = w2p_serializers
     validators_method = _default_validators
-    uuid = web2py_uuid
+    uuid = lambda x: web2py_uuid()
     representers = {
         'rows_render': sqlhtml.represent,
         'rows_xml': sqlhtml.SQLTABLE
