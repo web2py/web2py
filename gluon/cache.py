@@ -282,6 +282,17 @@ class CacheOnDisk(CacheAbstract):
                     ]
 
                 def replace_windows(src, dst):
+                    """
+                    The Windows filesystem has a 256 character limit for the filename.
+                    To use filenames longer than that, the '\\?\' prefix needs to be used.
+                    By default, this prefix is added to all windows filenames, 
+                    when accessing it. 
+                    View this for details: http://stackoverflow.com/a/23230380/348142
+                    """
+                    windows_prefix = "\\\\?\\"
+                    dst = windows_prefix + dst
+                    src = windows_prefix + src
+
                     if not ReplaceFile(dst, src, None, 0, 0, 0):
                         os.rename(src, dst)
 
