@@ -278,6 +278,12 @@ class PostgreSQLAdapter(BaseAdapter):
         """
         return 'ST_Simplify(%s,%s)' %(self.expand(first), self.expand(second, 'double'))
 
+    def ST_SIMPLIFYPRESERVETOPOLOGY(self, first, second):
+        """
+        http://postgis.org/docs/ST_SimplifyPreserveTopology.html
+        """
+        return 'ST_SimplifyPreserveTopology(%s,%s)' %(self.expand(first), self.expand(second, 'double'))
+
     def ST_TOUCHES(self, first, second):
         """
         http://postgis.org/docs/ST_Touches.html

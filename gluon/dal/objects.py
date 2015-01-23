@@ -1304,6 +1304,10 @@ class Expression(object):
         db = self.db
         return Expression(db, db._adapter.ST_SIMPLIFY, self, value, self.type)
 
+    def st_simplifypreservetopology(self, value):
+        db = self.db
+        return Expression(db, db._adapter.ST_SIMPLIFYPRESERVETOPOLOGY, self, value, self.type)
+
     # GIS queries
 
     def st_contains(self, value):
