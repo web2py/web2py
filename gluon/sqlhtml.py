@@ -26,12 +26,12 @@ from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG
 from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT, COL, COLGROUP
 from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE, SCRIPT
 from gluon.html import URL, FIELDSET, P, DEFAULT_PASSWORD_DISPLAY
-from gluon.dal import DAL, Field
-from gluon.dal.base import DEFAULT
-from gluon.dal.objects import Table, Row, Expression
-from gluon.dal.adapters.base import CALLABLETYPES
-from gluon.dal.helpers.methods import smart_query, bar_encode, sqlhtml_validators
-from gluon.dal.helpers.classes import Reference, SQLCustomType
+from pydal.base import DEFAULT
+from pydal.objects import Table, Row, Expression
+from pydal.adapters.base import CALLABLETYPES
+from pydal.helpers.methods import smart_query, bar_encode
+from pydal.helpers.classes import Reference, SQLCustomType
+from gluon.dal import _default_validators
 from gluon.storage import Storage
 from gluon.utils import md5_hash
 from gluon.validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE
@@ -1127,7 +1127,8 @@ class SQLFORM(FORM):
             extra_field.table = table
             extra_field.tablename = table._tablename
             if extra_field.requires == DEFAULT:
-                extra_field.requires = sqlhtml_validators(extra_field)
+                extra_field.requires = _default_validators(table._db,
+                                                           extra_field)
 
         for fieldname in self.fields:
             if fieldname.find('.') >= 0:
@@ -1801,7 +1802,7 @@ class SQLFORM(FORM):
             # treat ftype 'decimal' as 'double'
             # (this fixes problems but needs refactoring!
             if isinstance(field.type, SQLCustomType):
-                            ftype = field.type.type.split(' ')[0]
+                ftype = field.type.type.split(' ')[0]
             else:
                 ftype = field.type.split(' ')[0]
             if ftype.startswith('decimal'): ftype = 'double'
@@ -1813,37 +1814,38 @@ class SQLFORM(FORM):
                 label = isinstance(
                     field.label, str) and T(field.label) or field.label
                 selectfields.append(OPTION(label, _value=str(field)))
+                # At web2py level SQLCustomType field values are treated as normal web2py types
+                if isinstance(field.type, SQLCustomType):
+                    field_type = field.type.type
+                else:
+                    field_type = field.type
+
                 operators = SELECT(*[OPTION(T(option), _value=option) for option in options],_class='form-control')
                 _id = "%s_%s" % (value_id, name)
-                if field.type == 'boolean':
-                    value_input = SQLFORM.widgets.boolean.widget(field, field.default, _id=_id,_class='form-control')
-                elif field.type == 'double':
-                    value_input = SQLFORM.widgets.double.widget(field, field.default, _id=_id,_class='form-control')
-                elif field.type == 'time':
-                    value_input = SQLFORM.widgets.time.widget(field, field.default, _id=_id,_class='form-control')
-                elif field.type == 'date':
+                if field_type in ['boolean', 'double', 'time', 'integer']:
+                    value_input = SQLFORM.widgets[field_type].widget(field, field.default, _id=_id,_class='form-control')
+                elif field_type == 'date':
                     iso_format = {'_data-w2p_date_format' : '%Y-%m-%d'}
                     value_input = SQLFORM.widgets.date.widget(field, field.default, _id=_id,_class='form-control', **iso_format)
-                elif field.type == 'datetime':
+                elif field_type == 'datetime':
                     iso_format = {'_data-w2p_datetime_format' : '%Y-%m-%d %H:%M:%S'}
                     value_input = SQLFORM.widgets.datetime.widget(field, field.default, _id=_id,_class='form-control', **iso_format)
-                elif (field.type.startswith('reference ') or
-                      field.type.startswith('list:reference ')) and \
+                elif (field_type.startswith('reference ') or
+                      field_type.startswith('list:reference ')) and \
                       hasattr(field.requires, 'options'):
                     value_input = SELECT(
                         *[OPTION(v, _value=k)
                           for k, v in field.requires.options()],
                          _class='form-control',
                          **dict(_id=_id))
-                elif field.type == 'integer' or \
-                        field.type.startswith('reference ') or \
-                        field.type.startswith('list:integer') or \
-                        field.type.startswith('list:reference '):
+                elif field_type.startswith('reference ') or \
+                     field_type.startswith('list:integer') or \
+                     field_type.startswith('list:reference '):
                     value_input = SQLFORM.widgets.integer.widget(field, field.default, _id=_id,_class='form-control')
                 else:
                     value_input = INPUT(
-                        _type='text', _id=_id, 
-                        _class=(field.type or '')+' form-control')
+                        _type='text', _id=_id,
+                        _class="%s %s" % ((field_type or ''), 'form-control'))
 
                 new_button = INPUT(
                     _type="button", _value=T('New Search'), _class="btn btn-default", _title=T('Start building a new search'),
@@ -1878,7 +1880,15 @@ class SQLFORM(FORM):
         function %(prefix)s_build_query(aggregator,a) {
           var b=a.replace('.','-');
           var option = jQuery('#%(field_id)s_'+b+' select').val();
-          var value = jQuery('#%(value_id)s_'+b).val().replace('"','\\\\"');
+          var value;
+          var $value_item = jQuery('#%(value_id)s_'+b);
+          if ($value_item.is(':checkbox')){
+            if  ($value_item.is(':checked'))
+                    value = 'True';
+            else  value = 'False';
+          }
+          else
+          { value = $value_item.val().replace('"','\\\\"')}
           var s=a+' '+option+' "'+value+'"';
           var k=jQuery('#%(keywords_id)s');
           var v=k.val();
@@ -1978,9 +1988,9 @@ class SQLFORM(FORM):
                       buttonback='icon leftarrow icon-arrow-left glyphicon glyphicon-arrow-left',
                       buttonexport='icon downarrow icon-download glyphicon glyphicon-download',
                       buttondelete='icon trash icon-trash glyphicon glyphicon-trash',
-                      buttonedit='icon pen icon-pencil glyphicon glyphicon-arrow-pencil',
+                      buttonedit='icon pen icon-pencil glyphicon glyphicon-pencil',
                       buttontable='icon rightarrow icon-arrow-right glyphicon glyphicon-arrow-right',
-                      buttonview='icon magnifier icon-zoom-in glyphicon glyphicon-arrow-zoom-in',
+                      buttonview='icon magnifier icon-zoom-in glyphicon glyphicon-zoom-in',
                       )
         elif not isinstance(ui, dict):
             raise RuntimeError('SQLFORM.grid ui argument must be a dictionary')
@@ -2323,8 +2333,12 @@ class SQLFORM(FORM):
                         #fields but not virtual fields
                         sfields = reduce(lambda a, b: a + b,
                             [[f for f in t if f.readable and not isinstance(f, Field.Virtual)] for t in tables])
-                        dbset = dbset(SQLFORM.build_query(
-                            sfields, keywords))
+                        #use custom_query using searchable
+                        if callable(searchable):
+                            dbset = dbset(searchable(sfields, keywords))
+                        else:
+                            dbset = dbset(SQLFORM.build_query(
+                                sfields, keywords))
                         rows = dbset.select(left=left, orderby=orderby,
                                             cacheable=True, *selectable_columns)
                     except Exception, e:
@@ -2339,7 +2353,9 @@ class SQLFORM(FORM):
                 # expcolumns is all cols to be exported including virtual fields
                 rows.colnames = expcolumns
                 oExp = clazz(rows)
-                filename = '.'.join(('rows', oExp.file_ext))
+                export_filename = \
+                    request.vars.get('_export_filename') or 'rows'
+                filename = '.'.join((export_filename, oExp.file_ext))
                 response.headers['Content-Type'] = oExp.content_type
                 response.headers['Content-Disposition'] = \
                     'attachment;filename=' + filename + ';'
@@ -2376,6 +2392,8 @@ class SQLFORM(FORM):
                 spanel_id = '%s_query_fields' % prefix
                 sfields_id = '%s_query_panel' % prefix
                 skeywords_id = '%s_keywords' % prefix
+                ## hidden fields to presever keywords in url after the submit
+                hidden_fields = [INPUT(_type='hidden', _value=value, _name=key) for key, value in request.get_vars.items() if key not in ['keywords', 'page']]
                 search_widget = lambda sfield, url: CAT(FORM(
                     INPUT(_name='keywords', _value=keywords,
                           _id=skeywords_id,_class='form-control',
@@ -2384,7 +2402,9 @@ class SQLFORM(FORM):
                     INPUT(_type='submit', _value=T('Search'), _class="btn btn-default"),
                     INPUT(_type='submit', _value=T('Clear'), _class="btn btn-default",
                           _onclick="jQuery('#%s').val('');" % skeywords_id),
+                    *hidden_fields,
                     _method="GET", _action=url), search_menu)
+            # TODO vars from the url should be removed, they are not used by the submit
             form = search_widget and search_widget(sfields, url()) or ''
             console.append(add)
             console.append(form)
@@ -3177,13 +3197,13 @@ class SQLTABLE(TABLE):
                         r = ''
                 elif field.type in ['string', 'text']:
                     r = str(field.formatter(r))
+                    truncate_by = truncate
                     if headers != {}:  # new implement dict
                         if isinstance(headers[colname], dict):
                             if isinstance(headers[colname]['truncate'], int):
-                                r = truncate_string(
-                                    r, headers[colname]['truncate'])
-                    elif not truncate is None:
-                        r = truncate_string(r, truncate)
+                                truncate_by = headers[colname]['truncate']
+                    if not truncate_by is None:
+                        r = truncate_string(r, truncate_by)
                 attrcol = dict()  # new implement dict
                 if headers != {}:
                     if isinstance(headers[colname], dict):

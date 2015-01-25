@@ -100,6 +100,8 @@ def custom_json(o):
         return str(o)
     elif isinstance(o, XmlComponent):
         return str(o)
+    elif isinstance(o, set):
+        return list(o)
     elif hasattr(o, 'as_list') and callable(o.as_list):
         return o.as_list()
     elif hasattr(o, 'as_dict') and callable(o.as_dict):

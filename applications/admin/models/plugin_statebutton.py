@@ -7,11 +7,10 @@ def stateWidget(field, value, data={'on-label':'Enabled', 'off-label':'Disabled'
     except:
         fieldName = field
 
-    div = DIV(INPUT( _type='checkbox', _name='%s' % fieldName, _checked= 'checked' if value == 'true' else None, _value='true'), 
-              _class='make-bootstrap-switch', 
+    div = DIV(INPUT( _type='checkbox', _name='%s' % fieldName, _checked= 'checked' if value == 'true' else None, _value='true'),
+              _class='make-bootstrap-switch',
               data=data)
     script = SCRIPT("""
         jQuery(".make-bootstrap-switch input[name='%s']").parent().bootstrapSwitch();
     """ % fieldName)
     return DIV(div, script)
-

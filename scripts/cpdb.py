@@ -62,7 +62,7 @@ class refTable(object):
         rowSeparator = headerChar * (len(prefix) +len(postfix) + sum(maxWidths) +
                                      len(delim) * (len(maxWidths) - 1))
 
-        justify = {'center': str.center,                   
+        justify = {'center': str.center,
                    'right': str.rjust,
                    'left': str.ljust
                    }[justify.lower()]
@@ -85,12 +85,12 @@ class refTable(object):
                 hasHeader = False
         return output.getvalue()
 
-    def wrap_onspace(self, text, width):      
-        return reduce(lambda line, word, width=width: '%s%s%s' % (                        
-            line, 
-            ' ' if len(line.rsplit('\n')[-1]+word.split('\n')[0])>=width else '\n', 
+    def wrap_onspace(self, text, width):
+        return reduce(lambda line, word, width=width: '%s%s%s' % (
+            line,
+            ' ' if len(line.rsplit('\n')[-1]+word.split('\n')[0])>=width else '\n',
             word), text.split(' '))
-                      
+
 
     def wrap_onspace_strict(self, text, width):
         wordRegex = re.compile(r'\S{' + str(width) + r',}')
@@ -232,7 +232,7 @@ class console:
                                     fields.append(field.strip())
 
                 if len(invalidParams) > 0:
-                    print('the following parameter(s) is not valid\n%s' % 
+                    print('the following parameter(s) is not valid\n%s' %
                           ','.join(invalidParams))
                 else:
                     try:
@@ -341,10 +341,10 @@ style choices:
                     print('%s has been created and populated with all available data from table %2\n' % (file, table))
                 except Exception, err:
                     print("EXCEPTION: could not create table %s\n%s" % (table, err))
-                          
+
         else:
             print('the following fields are not valid [%s]' % (','.join(filedNotFound)))
-                
+
 
     def cmd_help(self, *args):
         '''-3|help|Show's help'''
@@ -477,7 +477,7 @@ class setCopyDB():
 
     def delete_DB_tables(self, storageFolder, storageType):
         print 'delete_DB_tablesn\n\t%s\n\t%s' % (storageFolder, storageType)
-        
+
         dataFiles = [storageType, "sql.log"]
         try:
             for f in os.listdir(storageFolder):

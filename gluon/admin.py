@@ -121,7 +121,7 @@ def app_cleanup(app, request):
     if os.path.exists(path):
         for f in os.listdir(path):
             try:
-                if f[:1] != '.': os.unlink(os.path.join(path, f))
+                if f[:1] != '.': recursive_unlink(os.path.join(path, f))
             except IOError:
                 r = False
     return r

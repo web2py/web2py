@@ -20,12 +20,12 @@ Typical usage:
 
     # Delete all sessions regardless of expiry and exit.
     python web2py.py -S app -M -R scripts/sessions2trash.py -A -o -x 0
-    
+
     # Delete session in a module (move to the modules folder)
     from sessions2trash import single_loop
     def delete_sessions():
         single_loop()
-    
+
 """
 
 from __future__ import with_statement

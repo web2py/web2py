@@ -1,3 +1,21 @@
+## 2.9.12
+
+- Tornado HTTPS support, thanks Diego
+- Modular DAL, thanks Giovanni
+- Added coverage support, thanks Niphlod
+- More tests, thanks Niphlod and Paolo Valleri
+- Added support for show_if in readonly sqlform, thanks Paolo
+- Improved scheduler, thanks Niphlod
+- Email timeout support
+- Made web2py's custom_import work with circular imports, thanks Jack Kuan
+- Added Portuguese, Catalan, and Burmese translations
+- Allow map_hyphen to work for application names, thanks Tim Nyborg
+- New module appconfig.py, thanks Niphlod
+- Added geospatial support to Teradata adaptor, thanks Andrew Willimott 
+- Many bug fixes
+
+
+
 ## 2.9.6 - 2.9.10
 
 - fixed support of GAE + SQL

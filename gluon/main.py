@@ -93,7 +93,7 @@ from gluon.globals import Request, Response, Session
 from gluon.compileapp import build_environment, run_models_in, \
     run_controller_in, run_view_in
 from gluon.contenttype import contenttype
-from gluon.dal.base import BaseAdapter
+from pydal.base import BaseAdapter
 from gluon.validators import CRYPT
 from gluon.html import URL, xmlescape
 from gluon.utils import is_valid_ip_address, getipaddrinfo
@@ -365,8 +365,8 @@ def wsgibase(environ, responder):
                     client = client,
                     folder = abspath('applications', app) + os.sep,
                     ajax = x_req_with == 'xmlhttprequest',
-                    cid = env.http_web2py_component_element,                    
-                    is_local = (env.remote_addr in local_hosts and 
+                    cid = env.http_web2py_component_element,
+                    is_local = (env.remote_addr in local_hosts and
                                 client == env.remote_addr),
                     is_shell = cmd_opts and cmd_opts.shell,
                     is_sheduler = cmd_opts and cmd_opts.scheduler,
