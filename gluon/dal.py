@@ -122,3 +122,15 @@ class DAL(pyDAL):
         'rows_render': sqlhtml.represent,
         'rows_xml': sqlhtml.SQLTABLE
     }
+
+#: add web2py contrib drivers to pyDAL
+from pydal.drivers import DRIVERS
+if not DRIVERS.get('pymysql'):
+    from .contrib import pymysql
+    DRIVERS['pymysql'] = pymysql
+#if not DRIVERS.get('pg8000'):
+#    from .contrib import pg8000
+#    DRIVERS['pg8000'] = pg8000
+if not DRIVERS.get('pyodbc'):
+    from .contrib import pypyodbc as pyodbc
+    DRIVERS['pyodbc'] = pyodbc
