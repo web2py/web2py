@@ -56,7 +56,7 @@ echo
 yum update
 
 # Install required packages
-yum install httpd mod_ssl mod_wsgi wget python
+yum install httpd mod_ssl mod_wsgi wget python unzip
 
 ###
 ### Phase 2 - Install web2py
