@@ -609,7 +609,7 @@ class Scheduler(MetaScheduler):
 
     def define_tables(self, db, migrate):
         """Defines Scheduler tables structure"""
-        from gluon.dal.base import DEFAULT
+        from pydal.base import DEFAULT
         logger.debug('defining tables (migrate=%s)', migrate)
         now = self.now
         db.define_table(
@@ -1330,7 +1330,7 @@ class Scheduler(MetaScheduler):
             have all fields == None
 
         """
-        from gluon.dal.objects import Query
+        from pydal.objects import Query
         sr, st = self.db.scheduler_run, self.db.scheduler_task
         if isinstance(ref, (int, long)):
             q = st.id == ref

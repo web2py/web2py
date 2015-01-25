@@ -28,7 +28,7 @@ from gluon.restricted import RestrictedError
 from gluon.globals import Request, Response, Session
 from gluon.storage import Storage, List
 from gluon.admin import w2p_unpack
-from gluon.dal.base import BaseAdapter
+from pydal.base import BaseAdapter
 
 logger = logging.getLogger("web2py")
 

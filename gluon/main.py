@@ -93,7 +93,7 @@ from gluon.globals import Request, Response, Session
 from gluon.compileapp import build_environment, run_models_in, \
     run_controller_in, run_view_in
 from gluon.contenttype import contenttype
-from gluon.dal.base import BaseAdapter
+from pydal.base import BaseAdapter
 from gluon.validators import CRYPT
 from gluon.html import URL, xmlescape
 from gluon.utils import is_valid_ip_address, getipaddrinfo

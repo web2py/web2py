@@ -26,7 +26,7 @@ from gluon.fileutils import mktree, listdir, read_file, write_file
 from gluon.myregex import regex_expose, regex_longcomments
 from gluon.languages import translator
 from gluon.dal import DAL, Field
-from gluon.dal.base import BaseAdapter
+from pydal.base import BaseAdapter
 from gluon.sqlhtml import SQLFORM, SQLTABLE
 from gluon.cache import Cache
 from gluon.globals import current, Response

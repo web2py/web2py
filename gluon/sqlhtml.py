@@ -26,12 +26,12 @@ from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG
 from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT, COL, COLGROUP
 from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE, SCRIPT
 from gluon.html import URL, FIELDSET, P, DEFAULT_PASSWORD_DISPLAY
-from gluon.dal import DAL, Field
-from gluon.dal.base import DEFAULT
-from gluon.dal.objects import Table, Row, Expression
-from gluon.dal.adapters.base import CALLABLETYPES
-from gluon.dal.helpers.methods import smart_query, bar_encode, sqlhtml_validators
-from gluon.dal.helpers.classes import Reference, SQLCustomType
+from pydal.base import DEFAULT
+from pydal.objects import Table, Row, Expression
+from pydal.adapters.base import CALLABLETYPES
+from pydal.helpers.methods import smart_query, bar_encode
+from pydal.helpers.classes import Reference, SQLCustomType
+from gluon.dal import _default_validators
 from gluon.storage import Storage
 from gluon.utils import md5_hash
 from gluon.validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE
@@ -1127,7 +1127,8 @@ class SQLFORM(FORM):
             extra_field.table = table
             extra_field.tablename = table._tablename
             if extra_field.requires == DEFAULT:
-                extra_field.requires = sqlhtml_validators(extra_field)
+                extra_field.requires = _default_validators(table._db,
+                                                           extra_field)
 
         for fieldname in self.fields:
             if fieldname.find('.') >= 0:
