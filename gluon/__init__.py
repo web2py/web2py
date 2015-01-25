@@ -22,13 +22,12 @@ try:
     sys.modules['pydal'] = pydal
 except:
     raise RuntimeError(
-       "Seems that you haven't pydal inside your web2py's copy. We are sorry" +
-       " for the inconvenience.\nIf you cloned the repository without " +
-       "'--recursive' option, please run 'git submodule update' inside your " +
-       "web2py copy.\nIf you downloaded the package from github with the " +
-       "download button, please download a released copy from " +
-       "http://www.web2py.com or one attached to the releases on github."
-    )
+        "web2py depends on pydal, which apparently you have not installed.\n" +
+        "Probably you cloned the repository using git without '--recursive'.\n" +
+        "To fix this, please run (from inside your web2py folder):\n\n" +
+        "    git submodule update\n\n" +
+        "You can also download a complete copy from from http://www.web2py.com."
+        )
 
 from globals import current
 from html import *
