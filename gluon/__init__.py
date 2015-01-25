@@ -15,10 +15,20 @@ __all__ = ['A', 'B', 'BEAUTIFY', 'BODY', 'BR', 'CAT', 'CENTER', 'CLEANUP', 'CODE
 #: add pydal to sys.modules
 import os
 import sys
-sys.path.append(os.path.join(
-    os.path.dirname(os.path.abspath(__file__)), "packages", "dal"))
-import pydal
-sys.modules['pydal'] = pydal
+try:
+    sys.path.append(os.path.join(
+        os.path.dirname(os.path.abspath(__file__)), "packages", "dal"))
+    import pydal
+    sys.modules['pydal'] = pydal
+except:
+    raise RuntimeError(
+       "Seems that you haven't pydal inside your web2py's copy. We are sorry" +
+       " for the inconvenience.\nIf you cloned the repository without " +
+       "'--recursive' option, please run 'git submodule update' inside your " +
+       "web2py copy.\nIf you downloaded the package from github with the " +
+       "download button, please download a released copy from " +
+       "http://www.web2py.com or one attached to the releases on github."
+    )
 
 from globals import current
 from html import *
