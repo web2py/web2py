@@ -1733,6 +1733,7 @@ class SQLFORM(FORM):
         if 'table_name' in attributes:
             del attributes['table_name']
 
+        from gluon import DAL
         return SQLFORM(DAL(None).define_table(table_name, *fields),
                        **attributes)
 
