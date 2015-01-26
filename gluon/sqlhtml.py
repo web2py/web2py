@@ -1723,6 +1723,8 @@ class SQLFORM(FORM):
         Internally will build a non-database based data model
         to hold the fields.
         """
+        # this is here to avoid circular references
+        from gluon.dal import DAL
         # Define a table name, this way it can be logical to our CSS.
         # And if you switch from using SQLFORM to SQLFORM.factory
         # your same css definitions will still apply.
