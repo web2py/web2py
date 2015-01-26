@@ -3199,13 +3199,13 @@ class SQLTABLE(TABLE):
                         r = ''
                 elif field.type in ['string', 'text']:
                     r = str(field.formatter(r))
+                    truncate_by = truncate
                     if headers != {}:  # new implement dict
                         if isinstance(headers[colname], dict):
                             if isinstance(headers[colname]['truncate'], int):
-                                r = truncate_string(
-                                    r, headers[colname]['truncate'])
-                    elif not truncate is None:
-                        r = truncate_string(r, truncate)
+                                truncate_by = headers[colname]['truncate']
+                    if not truncate_by is None:
+                        r = truncate_string(r, truncate_by)
                 attrcol = dict()  # new implement dict
                 if headers != {}:
                     if isinstance(headers[colname], dict):
