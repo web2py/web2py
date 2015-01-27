@@ -27,7 +27,7 @@ from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT, COL, COLGROUP
 from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE, SCRIPT
 from gluon.html import URL, FIELDSET, P, DEFAULT_PASSWORD_DISPLAY
 from pydal.base import DEFAULT
-from pydal.objects import Table, Row, Expression
+from pydal.objects import Table, Row, Expression, Field
 from pydal.adapters.base import CALLABLETYPES
 from pydal.helpers.methods import smart_query, bar_encode
 from pydal.helpers.classes import Reference, SQLCustomType
@@ -1723,6 +1723,8 @@ class SQLFORM(FORM):
         Internally will build a non-database based data model
         to hold the fields.
         """
+        # this is here to avoid circular references
+        from gluon.dal import DAL
         # Define a table name, this way it can be logical to our CSS.
         # And if you switch from using SQLFORM to SQLFORM.factory
         # your same css definitions will still apply.
