@@ -589,7 +589,7 @@ def edit():
     if 'settings' in request.vars:
         if request.post_vars:        #save new preferences
             post_vars = request.post_vars.items()
-            # Since unchecked checkbox are not serialized, we must set them as false by hand to store the correct preference in the settings 
+            # Since unchecked checkbox are not serialized, we must set them as false by hand to store the correct preference in the settings
             post_vars+= [(opt, 'false') for opt in preferences if opt not in request.post_vars ]
             if config.save(post_vars):
                 response.headers["web2py-component-flash"] = T('Preferences saved correctly')
@@ -775,12 +775,12 @@ def edit():
                     view_link=view_link,
                     editviewlinks=editviewlinks,
                     id=IS_SLUG()(filename)[0],
-                    force= True if (request.vars.restore or 
+                    force= True if (request.vars.restore or
                                     request.vars.revert) else False)
         plain_html = response.render('default/edit_js.html', file_details)
         file_details['plain_html'] = plain_html
         if is_mobile:
-            return response.render('default.mobile/edit.html', 
+            return response.render('default.mobile/edit.html',
                                    file_details, editor_settings=preferences)
         else:
             return response.json(file_details)
@@ -1278,7 +1278,7 @@ def create_file():
             path = abspath(request.vars.location)
         else:
             if request.vars.dir:
-            	request.vars.location += request.vars.dir + '/'
+                    request.vars.location += request.vars.dir + '/'
             app = get_app(name=request.vars.location.split('/')[0])
             path = apath(request.vars.location, r=request)
         filename = re.sub('[^\w./-]+', '_', request.vars.filename)
@@ -1387,7 +1387,7 @@ def create_file():
                    from gluon import *\n""")[1:]
 
         elif (path[-8:] == '/static/') or (path[-9:] == '/private/'):
-            if (request.vars.plugin and 
+            if (request.vars.plugin and
                 not filename.startswith('plugin_%s/' % request.vars.plugin)):
                 filename = 'plugin_%s/%s' % (request.vars.plugin, filename)
             text = ''
@@ -1434,37 +1434,37 @@ def create_file():
         """ % URL('edit', args=[app,request.vars.dir,filename])
         return ''
     else:
-    	redirect(request.vars.sender + anchor)
+            redirect(request.vars.sender + anchor)
 
 
 def listfiles(app, dir, regexp='.*\.py$'):
-	files = sorted(
+        files = sorted(
          listdir(apath('%(app)s/%(dir)s/' % {'app':app, 'dir':dir}, r=request), regexp))
-	files = [x.replace('\\', '/') for x in files if not x.endswith('.bak')]
-	return files
-      
+        files = [x.replace('\\', '/') for x in files if not x.endswith('.bak')]
+        return files
+
 def editfile(path,file,vars={}, app = None):
-	args=(path,file) if 'app' in vars else (app,path,file)
-	url = URL('edit', args=args, vars=vars)
-	return A(file, _class='editor_filelink', _href=url, _style='word-wrap: nowrap;')
-      
+        args=(path,file) if 'app' in vars else (app,path,file)
+        url = URL('edit', args=args, vars=vars)
+        return A(file, _class='editor_filelink', _href=url, _style='word-wrap: nowrap;')
+
 def files_menu():
-	app = request.vars.app or 'welcome'
-	dirs=[{'name':'models', 'reg':'.*\.py$'},
+        app = request.vars.app or 'welcome'
+        dirs=[{'name':'models', 'reg':'.*\.py$'},
               {'name':'controllers', 'reg':'.*\.py$'},
               {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
               {'name':'modules', 'reg':'.*\.py$'},
               {'name':'static', 'reg': '[^\.#].*'},
               {'name':'private', 'reg':'.*\.py$'}]
-	result_files = []
-	for dir in dirs:
-		result_files.append(TAG[''](LI(dir['name'], _class="nav-header component", _onclick="collapse('" + dir['name'] + "_files');"),
-            			  LI(UL(*[LI(editfile(dir['name'], f, dict(id=dir['name'] + f.replace('.','__')), app), _style="overflow:hidden", _id=dir['name']+"__"+f.replace('.','__')) 
-            			  		for f in listfiles(app, dir['name'], regexp=dir['reg'])], 
-            			  		_class="nav nav-list small-font"),
-            			  	 _id=dir['name'] + '_files', _style="display: none;"))) 
-	return dict(result_files = result_files)
-	
+        result_files = []
+        for dir in dirs:
+                result_files.append(TAG[''](LI(dir['name'], _class="nav-header component", _onclick="collapse('" + dir['name'] + "_files');"),
+                                      LI(UL(*[LI(editfile(dir['name'], f, dict(id=dir['name'] + f.replace('.','__')), app), _style="overflow:hidden", _id=dir['name']+"__"+f.replace('.','__'))
+                                                      for f in listfiles(app, dir['name'], regexp=dir['reg'])],
+                                                      _class="nav nav-list small-font"),
+                                               _id=dir['name'] + '_files', _style="display: none;")))
+        return dict(result_files = result_files)
+
 def upload_file():
     """ File uploading handler """
     if request.vars and not request.vars.token == session.token:
@@ -1941,4 +1941,3 @@ def install_plugin():
                 T('unable to install plugin "%s"', filename)
         redirect(URL(f="plugins", args=[app,]))
     return dict(form=form, app=app, plugin=plugin, source=source)
-

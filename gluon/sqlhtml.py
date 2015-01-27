@@ -26,12 +26,12 @@ from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG
 from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT, COL, COLGROUP
 from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE, SCRIPT
 from gluon.html import URL, FIELDSET, P, DEFAULT_PASSWORD_DISPLAY
-from gluon.dal import DAL, Field
-from gluon.dal.base import DEFAULT
-from gluon.dal.objects import Table, Row, Expression
-from gluon.dal.adapters.base import CALLABLETYPES
-from gluon.dal.helpers.methods import smart_query, bar_encode, sqlhtml_validators
-from gluon.dal.helpers.classes import Reference, SQLCustomType
+from pydal.base import DEFAULT
+from pydal.objects import Table, Row, Expression, Field
+from pydal.adapters.base import CALLABLETYPES
+from pydal.helpers.methods import smart_query, bar_encode
+from pydal.helpers.classes import Reference, SQLCustomType
+from gluon.dal import _default_validators
 from gluon.storage import Storage
 from gluon.utils import md5_hash
 from gluon.validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE
@@ -1127,7 +1127,8 @@ class SQLFORM(FORM):
             extra_field.table = table
             extra_field.tablename = table._tablename
             if extra_field.requires == DEFAULT:
-                extra_field.requires = sqlhtml_validators(extra_field)
+                extra_field.requires = _default_validators(table._db,
+                                                           extra_field)
 
         for fieldname in self.fields:
             if fieldname.find('.') >= 0:
@@ -1722,6 +1723,8 @@ class SQLFORM(FORM):
         Internally will build a non-database based data model
         to hold the fields.
         """
+        # this is here to avoid circular references
+        from gluon.dal import DAL
         # Define a table name, this way it can be logical to our CSS.
         # And if you switch from using SQLFORM to SQLFORM.factory
         # your same css definitions will still apply.
@@ -2332,8 +2335,12 @@ class SQLFORM(FORM):
                         #fields but not virtual fields
                         sfields = reduce(lambda a, b: a + b,
                             [[f for f in t if f.readable and not isinstance(f, Field.Virtual)] for t in tables])
-                        dbset = dbset(SQLFORM.build_query(
-                            sfields, keywords))
+                        #use custom_query using searchable
+                        if callable(searchable):
+                            dbset = dbset(searchable(sfields, keywords))
+                        else:
+                            dbset = dbset(SQLFORM.build_query(
+                                sfields, keywords))
                         rows = dbset.select(left=left, orderby=orderby,
                                             cacheable=True, *selectable_columns)
                     except Exception, e:
@@ -2348,7 +2355,9 @@ class SQLFORM(FORM):
                 # expcolumns is all cols to be exported including virtual fields
                 rows.colnames = expcolumns
                 oExp = clazz(rows)
-                filename = '.'.join(('rows', oExp.file_ext))
+                export_filename = \
+                    request.vars.get('_export_filename') or 'rows'
+                filename = '.'.join((export_filename, oExp.file_ext))
                 response.headers['Content-Type'] = oExp.content_type
                 response.headers['Content-Disposition'] = \
                     'attachment;filename=' + filename + ';'
@@ -3190,13 +3199,13 @@ class SQLTABLE(TABLE):
                         r = ''
                 elif field.type in ['string', 'text']:
                     r = str(field.formatter(r))
+                    truncate_by = truncate
                     if headers != {}:  # new implement dict
                         if isinstance(headers[colname], dict):
                             if isinstance(headers[colname]['truncate'], int):
-                                r = truncate_string(
-                                    r, headers[colname]['truncate'])
-                    elif not truncate is None:
-                        r = truncate_string(r, truncate)
+                                truncate_by = headers[colname]['truncate']
+                    if not truncate_by is None:
+                        r = truncate_string(r, truncate_by)
                 attrcol = dict()  # new implement dict
                 if headers != {}:
                     if isinstance(headers[colname], dict):

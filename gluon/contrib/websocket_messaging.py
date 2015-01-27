@@ -74,9 +74,9 @@ https is possible too using 'https://127.0.0.1:8888' instead of 'http://127.0.0.
 be started with
 
    python gluon/contrib/websocket_messaging.py -k mykey -p 8888 -s keyfile.pem -c certfile.pem
-    
+
 for secure websocket do:
-   
+
    web2py_websocket('wss://127.0.0.1:8888/realtime/mygroup',callback)
 
 Acknowledgements:

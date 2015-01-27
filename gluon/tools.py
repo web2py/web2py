@@ -43,7 +43,7 @@ from gluon import *
 from gluon.contrib.autolinks import expand_one
 from gluon.contrib.markmin.markmin2html import \
     replace_at_urls, replace_autolinks, replace_components
-from gluon.dal.objects import Table, Row, Set, Query
+from pydal.objects import Table, Row, Set, Query
 
 import gluon.serializers as serializers
 
@@ -136,6 +136,7 @@ class Mail(object):
         mail.settings.server
         mail.settings.sender
         mail.settings.login
+        mail.settings.timeout = 60 # seconds (default)
 
     When server is 'logging', email is logged but not sent (debug mode)
 
@@ -172,7 +173,7 @@ class Mail(object):
                              chain of email certificate. It can be a
                              string containing the certs to. (PEM format)
         x509_nocerts      : if True then no attached certificate in mail
-        x509_crypt_certfiles: the certificates file or strings to encrypt 
+        x509_crypt_certfiles: the certificates file or strings to encrypt
                               the messages with can be a file name /
                               string or a list of file names /
                               strings (PEM format)
@@ -265,6 +266,7 @@ class Mail(object):
         settings.sender = sender
         settings.login = login
         settings.tls = tls
+        settings.timeout = 60 # seconds
         settings.hostname = None
         settings.ssl = False
         settings.cipher_type = None
@@ -340,7 +342,7 @@ class Mail(object):
             from_address: address to appear in the 'From:' header, this is not
                 the envelope sender. If not specified the sender will be used
 
-            cipher_type : 
+            cipher_type :
                 gpg - need a python-pyme package and gpgme lib
                 x509 - smime
             gpg_home : you can set a GNUPGHOME environment variable
@@ -359,8 +361,8 @@ class Mail(object):
                 chain of email certificate. It can be a
                 string containing the certs to. (PEM format)
             x509_nocerts : if True then no attached certificate in mail
-            x509_crypt_certfiles: the certificates file or strings to encrypt 
-                the messages with can be a file name / string or 
+            x509_crypt_certfiles: the certificates file or strings to encrypt
+                the messages with can be a file name / string or
                 a list of file names / strings (PEM format)
         Examples:
             Send plain text message to single address::
@@ -787,10 +789,11 @@ class Mail(object):
                         subject=subject, body=text, **xcc)
             else:
                 smtp_args = self.settings.server.split(':')
+                kwargs = dict(timeout = self.settings.timeout)
                 if self.settings.ssl:
-                    server = smtplib.SMTP_SSL(*smtp_args)
+                    server = smtplib.SMTP_SSL(*smtp_args, **kwargs)
                 else:
-                    server = smtplib.SMTP(*smtp_args)
+                    server = smtplib.SMTP(*smtp_args, **kwargs)
                 if self.settings.tls and not self.settings.ssl:
                     server.ehlo(self.settings.hostname)
                     server.starttls()
@@ -842,6 +845,7 @@ class Recaptcha(DIV):
         comment = '',
         ajax=False
     ):
+        request = request or current.request
         self.request_vars = request and request.vars or current.request.vars
         self.remote_addr = request.env.remote_addr
         self.public_key = public_key
@@ -1257,7 +1261,8 @@ class Auth(object):
     def __init__(self, environment=None, db=None, mailer=True,
                  hmac_key=None, controller='default', function='user',
                  cas_provider=None, signature=True, secure=False,
-                 csrf_prevention=True, propagate_extension=None):
+                 csrf_prevention=True, propagate_extension=None,
+                 url_index=None):
 
         ## next two lines for backward compatibility
         if not db and environment and isinstance(environment, DAL):
@@ -1294,7 +1299,7 @@ class Auth(object):
                 del session.auth
         # ## what happens after login?
 
-        url_index = URL(controller, 'index')
+        url_index = url_index or URL(controller, 'index')
         url_login = URL(controller, function, args='login',
                         extension = propagate_extension)
         # ## what happens after registration?
@@ -1346,7 +1351,7 @@ class Auth(object):
             reset_password_onvalidation = [],
             reset_password_onaccept = [],
             hmac_key = hmac_key,
-            formstyle = current.response.formstyle,            
+            formstyle = current.response.formstyle,
         )
         settings.lock_keys = True
 
@@ -2340,7 +2345,7 @@ class Auth(object):
             items = snext.split('/')
             if '//' in snext and items[2] != request.env.http_host:
                 snext = None
-                
+
         if snext:
             session._auth_next = snext
         elif session._auth_next:
@@ -2428,20 +2433,20 @@ class Auth(object):
                     separator=settings.label_separator,
                     extra_fields = extra_fields,
                 )
-    
-    
+
+
                 captcha = settings.login_captcha or \
                     (settings.login_captcha != False and settings.captcha)
                 if captcha:
                     addrow(form, captcha.label, captcha, captcha.comment,
                            settings.formstyle, 'captcha__row')
                 accepted_form = False
-    
+
                 if form.accepts(request, session if self.csrf_prevention else None,
                                 formname='login', dbio=False,
                                 onvalidation=onvalidation,
                                 hideerror=settings.hideerror):
-    
+
                     accepted_form = True
                     # check for username in db
                     entered_username = form.vars[username]
@@ -2459,7 +2464,7 @@ class Auth(object):
                         elif temp_user.registration_key in ('disabled', 'blocked'):
                             response.flash = self.messages.login_disabled
                             return form
-                        elif (not temp_user.registration_key is None 
+                        elif (not temp_user.registration_key is None
                               and temp_user.registration_key.strip()):
                             response.flash = \
                                 self.messages.registration_verifying
@@ -2507,11 +2512,11 @@ class Auth(object):
                         redirect(
                             self.url(args=request.args, vars=request.get_vars),
                             client_side=settings.client_side)
-    
+
             else: # use a central authentication server
                 cas = settings.login_form
                 cas_user = cas.get_user()
-    
+
                 if cas_user:
                     cas_user[passfield] = None
                     user = self.get_or_create_user(
@@ -2527,7 +2532,7 @@ class Auth(object):
 
         # Extra login logic for two-factor authentication
         #################################################
-        # If the 'user' variable has a value, this means that the first 
+        # If the 'user' variable has a value, this means that the first
         # authentication step was successful (i.e. user provided correct
         # username and password at the first challenge).
         # Check if this user is signed up for two-factor authentication
@@ -2540,7 +2545,7 @@ class Auth(object):
         if session.auth_two_factor_enabled:
             form = SQLFORM.factory(
                 Field('authentication_code',
-                      required=True, 
+                      required=True,
                       comment='This code was emailed to you and is required for login.'),
                 hidden=dict(_next=next),
                 formstyle=settings.formstyle,
@@ -2559,8 +2564,8 @@ class Auth(object):
                 session.auth_two_factor_tries_left = 3 # Allow user to try up to 4 times
                 # TODO: Add some error checking to handle cases where email cannot be sent
                 self.settings.mailer.send(
-                    to=user.email, 
-                    subject="Two-step Login Authentication Code", 
+                    to=user.email,
+                    subject="Two-step Login Authentication Code",
                     message="Your temporary login code is {0}".format(session.auth_two_factor))
             if form.accepts(request, session if self.csrf_prevention else None,
                             formname='login', dbio=False,
@@ -2575,15 +2580,15 @@ class Auth(object):
                     # normal.
                     if user is None or user == session.auth_two_factor_user:
                         user = session.auth_two_factor_user
-                    # For security, because the username stored in the 
+                    # For security, because the username stored in the
                     # session somehow does not match the just validated
                     # user. Should not be possible without session stealing
                     # which is hard with SSL.
                     elif user != session.auth_two_factor_user:
                         user = None
                     # Either way, the user and code associated with this session should
-                    # be removed. This handles cases where the session login may have 
-                    # expired but browser window is open, so the old session key and 
+                    # be removed. This handles cases where the session login may have
+                    # expired but browser window is open, so the old session key and
                     # session usernamem will still exist
                     self._reset_two_factor_auth(session)
                 else:
@@ -2631,11 +2636,11 @@ class Auth(object):
         """
         Logouts and redirects to login
         """
-        
+
         # Clear out 2-step authentication information if user logs
         # out. This information is also cleared on successful login.
         self._reset_two_factor_auth(current.session)
-        
+
         if next is DEFAULT:
             next = self.get_vars_next() or self.settings.logout_next
         if onlogout is DEFAULT:
@@ -2786,7 +2791,7 @@ class Auth(object):
             else:
                 next = replace_id(next, form)
             redirect(next, client_side=self.settings.client_side)
-        
+
         return form
 
     def is_logged_in(self):
@@ -3086,16 +3091,21 @@ class Auth(object):
         if log is DEFAULT:
             log = self.messages['reset_password_log']
         userfield = self.settings.login_userfield or 'username' \
-            if 'username' in table_user.fields else 'email'        
+            if 'username' in table_user.fields else 'email'
         if userfield=='email':
             table_user.email.requires = [
                 IS_EMAIL(error_message=self.messages.invalid_email),
                 IS_IN_DB(self.db, table_user.email,
                          error_message=self.messages.invalid_email)]
+            if not self.settings.email_case_sensitive:
+                table_user.email.requires.insert(0, IS_LOWER())
         else:
             table_user.username.requires = [
                 IS_IN_DB(self.db, table_user.username,
                          error_message=self.messages.invalid_username)]
+            if not self.settings.username_case_sensitive:
+                table_user.username.requires.insert(0, IS_LOWER())
+
         form = SQLFORM(table_user,
                        fields=[userfield],
                        hidden=dict(_next=next),
@@ -3192,11 +3202,11 @@ class Auth(object):
             log = self.messages['change_password_log']
         passfield = self.settings.password_field
         requires = table_user[passfield].requires
-        if not isinstance(requires,(list, tuple)): 
+        if not isinstance(requires,(list, tuple)):
             requires = [requires]
         requires = filter(lambda t:isinstance(t,CRYPT), requires)
         if requires:
-            requires[0].min_length = 0        
+            requires[0].min_length = 0
         form = SQLFORM.factory(
             Field('old_password', 'password', requires=requires,
                 label=self.messages.old_password),
@@ -3748,7 +3758,7 @@ class Auth(object):
                 archive_current=False,
                 fields=None):
         """
-        If you have a table (db.mytable) that needs full revision history you 
+        If you have a table (db.mytable) that needs full revision history you
         can just do::
 
             form=crud.update(db.mytable,myrecord,onaccept=auth.archive)
@@ -5366,8 +5376,8 @@ class Expose(object):
         base = base or os.path.join(current.request.folder, 'static')
         basename = basename or current.request.function
         self.basename = basename
-        
-        if current.request.raw_args:            
+
+        if current.request.raw_args:
             self.args = [arg for arg in current.request.raw_args.split('/') if arg]
         else:
             self.args = [arg for arg in current.request.args if args]
@@ -5691,8 +5701,8 @@ class Wiki(object):
 
     def automenu(self):
         """adds the menu if not present"""
-        if (not self.wiki_menu_items and 
-            self.settings.controller and 
+        if (not self.wiki_menu_items and
+            self.settings.controller and
             self.settings.function):
             self.wiki_menu_items = self.menu(self.settings.controller,
                                              self.settings.function)
@@ -6164,4 +6174,3 @@ class Config(object):
 if __name__ == '__main__':
     import doctest
     doctest.testmod()
-

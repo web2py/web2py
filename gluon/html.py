@@ -850,7 +850,7 @@ class DIV(XmlComponent):
         """
         components = []
         for c in self.components:
-            if isinstance(c, allowed_parents):
+            if isinstance(c, (allowed_parents,CAT)):
                 pass
             elif wrap_lambda:
                 c = wrap_lambda(c)
@@ -1864,7 +1864,7 @@ class INPUT(DIV):
                     break
         if not name in self.errors:
             self.vars[name] = value
-            return True        
+            return True
         return False
 
     def _postprocessing(self):

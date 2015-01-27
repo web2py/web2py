@@ -28,7 +28,7 @@ from gluon.restricted import RestrictedError
 from gluon.globals import Request, Response, Session
 from gluon.storage import Storage, List
 from gluon.admin import w2p_unpack
-from gluon.dal.base import BaseAdapter
+from pydal.base import BaseAdapter
 
 logger = logging.getLogger("web2py")
 
@@ -129,7 +129,7 @@ def env(
                                     request.function)
     if global_settings.cmd_options:
         ip = global_settings.cmd_options.ip
-        port = global_settings.cmd_options.port 
+        port = global_settings.cmd_options.port
     else:
         ip, port = '127.0.0.1', '8000'
     request.env.http_host = '%s:%s' % (ip,port)
