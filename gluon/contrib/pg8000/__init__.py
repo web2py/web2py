@@ -38,7 +38,7 @@ for fmt in (
 
 import datetime
 import time
-from pg8000.six import binary_type, integer_types, PY2
+from .six import binary_type, integer_types, PY2
 
 min_int2, max_int2 = -2 ** 15, 2 ** 15
 min_int4, max_int4 = -2 ** 31, 2 ** 31
@@ -274,7 +274,7 @@ class Interval(object):
     def __neq__(self, other):
         return not self.__eq__(other)
 
-import pg8000.core
+from .core import Connection
 
 
 def connect(
@@ -290,6 +290,10 @@ def connect(
         The username to connect to the PostgreSQL server with. If this is not
         provided, pg8000 looks first for the PGUSER then the USER environment
         variables.
+
+        If your server character encoding is not ``ascii`` or ``utf8``, then
+        you need to provide ``user`` as bytes, eg.
+        ``"my_name".encode('EUC-JP')``.
 
     :keyword host:
         The hostname of the PostgreSQL server to connect with.  Providing this
@@ -311,6 +315,10 @@ def connect(
         optional; if omitted, the PostgreSQL server will assume the database
         name is the same as the username.
 
+        If your server character encoding is not ``ascii`` or ``utf8``, then
+        you need to provide ``database`` as bytes, eg.
+        ``"my_db".encode('EUC-JP')``.
+
     :keyword password:
         The user password to connect to the server with.  This parameter is
         optional; if omitted and the database server requests password-based
@@ -324,7 +332,7 @@ def connect(
     :rtype:
         A :class:`Connection` object.
     """
-    return pg8000.core.Connection(
+    return Connection(
         user, host, unix_sock, port, database, password, ssl)
 
 apilevel = "2.0"
@@ -472,7 +480,7 @@ def Binary(value):
         return value
 
 
-from pg8000.core import utc, Connection, Cursor
+from .core import utc, Cursor
 
 __all__ = [
     Warning, Bytea, DataError, DatabaseError, connect, InterfaceError,
@@ -481,10 +489,11 @@ __all__ = [
     ArrayDimensionsNotConsistentError, ArrayContentNotSupportedError, utc,
     Connection, Cursor]
 
-from ._version import get_versions
-__version__ = get_versions()['version']
 """Version string for pg8000.
 
     .. versionadded:: 1.9.11
 """
+
+from ._version import get_versions
+__version__ = get_versions()['version']
 del get_versions

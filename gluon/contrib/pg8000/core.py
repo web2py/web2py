@@ -29,7 +29,7 @@ __author__ = "Mathieu Fenniak"
 
 import datetime
 from datetime import timedelta
-from pg8000 import (
+from . import (
     Interval, min_int2, max_int2, min_int4, max_int4, min_int8, max_int8,
     Bytea, NotSupportedError, ProgrammingError, InternalError, IntegrityError,
     OperationalError, DatabaseError, InterfaceError, Error,
@@ -45,17 +45,22 @@ import threading
 from struct import pack
 from hashlib import md5
 from decimal import Decimal
-import pg8000
 from collections import deque, defaultdict
 from itertools import count, islice
-from pg8000.six.moves import map
-from pg8000.six import b, PY2, integer_types, next, PRE_26, text_type, u
+from .six.moves import map
+from .six import b, PY2, integer_types, next, PRE_26, text_type, u
 from sys import exc_info
 from uuid import UUID
 from copy import deepcopy
 from calendar import timegm
 import os
 from distutils.version import LooseVersion
+
+try:
+    from json import loads
+except ImportError:
+    pass  # Can only use JSON with Python 2.6 and above
+
 
 ZERO = timedelta(0)
 
@@ -891,7 +896,7 @@ class Connection(object):
         return error
 
     def __init__(self, user, host, unix_sock, port, database, password, ssl):
-        self._client_encoding = "ascii"
+        self._client_encoding = "utf8"
         self._commands_with_count = (
             b("INSERT"), b("DELETE"), b("UPDATE"), b("MOVE"),
             b("FETCH"), b("COPY"), b("SELECT"))
@@ -910,6 +915,9 @@ class Connection(object):
                         "were set.")
         else:
             self.user = user
+
+        if isinstance(self.user, text_type):
+            self.user = self.user.encode('utf8')
 
         self.password = password
         self.autocommit = False
@@ -1085,6 +1093,10 @@ class Connection(object):
             def bool_recv(d, o, l):
                 return d[o] == "\x01"
 
+            def json_in(data, offset, length):
+                return loads(unicode(  # noqa
+                    data[offset: offset + length], self._client_encoding))
+
         else:
             def text_recv(data, offset, length):
                 return str(
@@ -1092,6 +1104,10 @@ class Connection(object):
 
             def bool_recv(data, offset, length):
                 return data[offset] == 1
+
+            def json_in(data, offset, length):
+                return loads(
+                    str(data[offset: offset + length], self._client_encoding))
 
         def time_in(data, offset, length):
             hour = int(data[offset:offset + 2])
@@ -1131,6 +1147,7 @@ class Connection(object):
                 25: (FC_BINARY, text_recv),  # TEXT type
                 26: (FC_TEXT, int_in),  # oid
                 28: (FC_TEXT, int_in),  # xid
+                114: (FC_TEXT, json_in),  # json
                 700: (FC_BINARY, float4_recv),  # float4
                 701: (FC_BINARY, float8_recv),  # float8
                 705: (FC_BINARY, text_recv),  # unknown
@@ -1157,6 +1174,7 @@ class Connection(object):
                 1700: (FC_TEXT, numeric_in),  # NUMERIC
                 2275: (FC_BINARY, text_recv),  # cstring
                 2950: (FC_BINARY, uuid_recv),  # uuid
+                3802: (FC_TEXT, json_in),  # jsonb
             })
 
         self.py_types = {
@@ -1183,7 +1201,7 @@ class Connection(object):
         }
 
         if PY2:
-            self.py_types[pg8000.Bytea] = (17, FC_BINARY, bytea_send)  # bytea
+            self.py_types[Bytea] = (17, FC_BINARY, bytea_send)  # bytea
             self.py_types[text_type] = (705, FC_TEXT, text_out)  # unknown
 
             self.py_types[long] = (705, FC_TEXT, unknown_out)  # noqa
@@ -1242,11 +1260,12 @@ class Connection(object):
         #   String - A parameter name (user, database, or options)
         #   String - Parameter value
         protocol = 196608
-        val = bytearray(i_pack(protocol) + b("user\x00"))
-        val.extend(user.encode("ascii") + NULL_BYTE)
+        val = bytearray(
+            i_pack(protocol) + b("user\x00") + self.user + NULL_BYTE)
         if database is not None:
-            val.extend(
-                b("database\x00") + database.encode("ascii") + NULL_BYTE)
+            if isinstance(database, text_type):
+                database = database.encode('utf8')
+            val.extend(b("database\x00") + database + NULL_BYTE)
         val.append(0)
         self._write(i_pack(len(val) + 4))
         self._write(val)
@@ -1421,9 +1440,9 @@ class Connection(object):
             self._usock.close()
             self._sock = None
         except AttributeError:
-            raise pg8000.InterfaceError("connection is closed")
+            raise InterfaceError("connection is closed")
         except ValueError:
-            raise pg8000.InterfaceError("connection is closed")
+            raise InterfaceError("connection is closed")
 
     def close(self):
         """Closes the database connection.
@@ -1478,10 +1497,8 @@ class Connection(object):
                     "server requesting MD5 password authentication, but no "
                     "password was provided")
             pwd = b("md5") + md5(
-                md5(
-                    self.password.encode("ascii") +
-                    self.user.encode("ascii")).hexdigest().encode("ascii") +
-                salt).hexdigest().encode("ascii")
+                md5(self.password.encode("ascii") + self.user).
+                hexdigest().encode("ascii") + salt).hexdigest().encode("ascii")
             # Byte1('p') - Identifies the message as a password message.
             # Int32 - Message length including self.
             # String - The password.  Password may be encrypted.
@@ -1529,26 +1546,22 @@ class Connection(object):
         count = h_unpack(data)[0]
         idx = 2
         for i in range(count):
-            field = {'name': data[idx:data.find(NULL_BYTE, idx)]}
-            idx += len(field['name']) + 1
-            field.update(
-                dict(zip((
-                    "table_oid", "column_attrnum", "type_oid",
-                    "type_size", "type_modifier", "format"),
-                    ihihih_unpack(data, idx))))
+            name = data[idx:data.find(NULL_BYTE, idx)]
+            idx += len(name) + 1
+            field = dict(
+                zip((
+                    "table_oid", "column_attrnum", "type_oid", "type_size",
+                    "type_modifier", "format"), ihihih_unpack(data, idx)))
+            field['name'] = name
             idx += 18
             cursor.ps['row_desc'].append(field)
-            try:
-                field['pg8000_fc'], field['func'] = self.pg_types[
-                    field['type_oid']]
-            except KeyError:
-                raise NotSupportedError(
-                    "type oid " + exc_info()[1] + " not supported")
+            field['pg8000_fc'], field['func'] = \
+                self.pg_types[field['type_oid']]
 
     def execute(self, cursor, operation, vals):
         if vals is None:
             vals = ()
-        paramstyle = pg8000.paramstyle
+        from . import paramstyle
         cache = self._caches[paramstyle]
 
         try:
@@ -1700,11 +1713,11 @@ class Connection(object):
             self._write(FLUSH_MSG)
         except ValueError:
             if str(exc_info()[1]) == "write to closed file":
-                raise pg8000.InterfaceError("connection is closed")
+                raise InterfaceError("connection is closed")
             else:
                 raise exc_info()[1]
         except AttributeError:
-            raise pg8000.InterfaceError("connection is closed")
+            raise InterfaceError("connection is closed")
 
     def send_EXECUTE(self, cursor):
         # Byte1('E') - Identifies the message as an execute message.
