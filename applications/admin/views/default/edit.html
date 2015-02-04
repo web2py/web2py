@@ -44,9 +44,9 @@ def file_create_form(location, anchor=None, helptext=""):
       url = URL('edit', args=args, vars=vars)
       return A(file, _class='editor_filelink', _href=url, _style='word-wrap: nowrap;')
 }}
-{{cm=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''),'codemirror')}}
-{{js_url=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''),'js')}}
-{{css_url=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''),'css')}}
+{{cm=URL('static', 'codemirror')}}
+{{js_url=URL('static', 'js')}}
+{{css_url=URL('static', 'css')}}
 <link rel="stylesheet" href="{{=cm}}/lib/codemirror.css">
 <link rel="stylesheet" href="{{='%s/theme/%s.css' % (cm, editor_settings['theme'])}}">
 <script src="{{=cm}}/lib/codemirror.js"></script>
@@ -311,8 +311,8 @@ $(document).ready(function() {
 });
 </script>
 <!-- Typeahead scripts here so the page load faster -->
-<script src="{{=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''), 'js/typeahead.min.js')}}"></script>
-<script src="{{=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''), 'js/hogan-2.0.0.js')}}"></script>
+<script src="{{=URL('static', 'js/typeahead.min.js')}}"></script>
+<script src="{{=URL('static', 'js/hogan-2.0.0.js')}}"></script>
 <script>
     $('.typeahead-tw').typeahead({
         name: 'files',
