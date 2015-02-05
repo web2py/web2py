@@ -231,6 +231,10 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(STYLE('<>', _a='1', _b='2').xml(),
                          '<style a="1" b="2"><!--/*--><![CDATA[/*><!--*/\n<>\n/*]]>*/--></style>')
 
+    def testCAPTION(self):
+            self.assertEqual(CAPTION('<>', _a='1', _b='2').xml(),
+                             '<caption a="1" b="2">&lt;&gt;</caption>')
+
     def testTABLE(self):
         self.assertEqual(TABLE('<>', _a='1', _b='2').xml(),
                          '<table a="1" b="2"><tr><td>&lt;&gt;</td></tr>' +
