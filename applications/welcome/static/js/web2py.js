@@ -515,7 +515,7 @@
 
       /* restore element to its original state which was disabled by 'disableElement' above*/
       enableElement: function(el) {
-        var method = el.is('button') ?  'html' : 'val';
+        var method = el.is('button') ? 'html' : 'val';
         if(el.data('w2p_enable_with') !== undefined) {
           /* set to old enabled state */
           el[method](el.data('w2p_enable_with'));
