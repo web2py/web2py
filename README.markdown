@@ -75,4 +75,4 @@ That's it!!!
 
 ## Issues?
 
-Report issues at http://code.google.com/p/web2py/issues/
+Report issues at https://github.com/web2py/web2py/issues
