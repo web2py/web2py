@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 from pydal import DAL as pyDAL
 from pydal import Field, SQLCustomType, geoPoint, geoLine, geoPolygon
 
@@ -131,9 +130,6 @@ if not DRIVERS.get('pymysql'):
         DRIVERS['pymysql'] = pymysql
     except:
         pass
-#if not DRIVERS.get('pg8000'):
-#    from .contrib import pg8000
-#    DRIVERS['pg8000'] = pg8000
 if not DRIVERS.get('pyodbc'):
     try:
         from .contrib import pypyodbc as pyodbc
