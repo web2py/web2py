@@ -87,7 +87,7 @@ $(document).on('shown click', 'a[data-toggle="tab"]', function (e, lineno) {
     var tab_id = $(this).attr('href');
     var editor = $(tab_id + " textarea").data('editor');
     if (editor) {
-        editor_height = $(window).height() - $(tab_id + " .well-small").offset().top - $(tab_id + " .well-small").outerHeight(true) - $('.navbar-fixed-bottom').outerHeight() - 1;
+        editor_height = $(window).height() - $(tab_id + " .well-small").offset().top - $(tab_id + " .well-small").outerHeight(true) - $('.navbar-fixed-bottom').outerHeight() - 60;
         editor.setSize('100%', editor_height);
         editor.refresh();
         if (lineno !== undefined) {
