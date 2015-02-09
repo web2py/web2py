@@ -136,3 +136,9 @@ if not DRIVERS.get('pyodbc'):
         DRIVERS['pyodbc'] = pyodbc
     except:
         pass
+if not DRIVERS.get('pg8000'):
+    try:
+        from .contrib import pg8000
+        DRIVERS['pg8000'] = pg8000
+    except:
+        pass
