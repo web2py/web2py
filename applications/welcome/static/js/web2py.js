@@ -494,8 +494,8 @@
         //method = el.attr('name') ? 'html' : 'val';
         var disable_with_message = (typeof w2p_ajax_disable_with_message != 'undefined') ? w2p_ajax_disable_with_message : "Working...";
         /*store enabled state if not already disabled */
-        if(el.data('w2p:enable-with') === undefined) {
-          el.data('w2p:enable-with', el[method]());
+        if(el.data('w2p_enable_with') === undefined) {
+          el.data('w2p_enable_with', el[method]());
         }
         /*if you don't want to see "working..." on buttons, replace the following
          * two lines with this one
@@ -515,11 +515,11 @@
 
       /* restore element to its original state which was disabled by 'disableElement' above*/
       enableElement: function(el) {
-        var method = el.is('button') ? 'val' : 'html';
-        if(el.data('w2p:enable-with') !== undefined) {
+        var method = el.is('button') ? 'html' : 'val';
+        if(el.data('w2p_enable_with') !== undefined) {
           /* set to old enabled state */
-          el[method](el.data('w2p:enable-with'));
-          el.removeData('w2p:enable-with');
+          el[method](el.data('w2p_enable_with'));
+          el.removeData('w2p_enable_with');
         }
         el.removeClass('disabled');
         el.unbind('click.w2pDisable');
@@ -634,7 +634,7 @@
         });
       },
       /* Disables form elements:
-  - Caches element value in 'w2p:enable-with' data store
+  - Caches element value in 'w2p_enable_with' data store
   - Replaces element text with value of 'data-disable-with' attribute
   - Sets disabled property to true
     */
@@ -646,8 +646,8 @@
           if(disable_with == undefined) {
             element.data('w2p_disable_with', element[method]())
           }
-          if(element.data('w2p:enable-with') === undefined) {
-            element.data('w2p:enable-with', element[method]());
+          if(element.data('w2p_enable_with') === undefined) {
+            element.data('w2p_enable_with', element[method]());
           }
           element[method](element.data('w2p_disable_with'));
           element.prop('disabled', true);
@@ -655,16 +655,16 @@
       },
 
       /* Re-enables disabled form elements:
-  -     Replaces element text with cached value from 'w2p:enable-with' data store (created in `disableFormElements`)
+  -     Replaces element text with cached value from 'w2p_enable_with' data store (created in `disableFormElements`)
   -     Sets disabled property to false
     */
       enableFormElements: function(form) {
         form.find(web2py.enableSelector).each(function() {
           var element = $(this),
             method = element.is('button') ? 'html' : 'val';
-          if(element.data('w2p:enable-with')) {
-            element[method](element.data('w2p:enable-with'));
-            element.removeData('w2p:enable-with');
+          if(element.data('w2p_enable_with')) {
+            element[method](element.data('w2p_enable_with'));
+            element.removeData('w2p_enable_with');
           }
           element.prop('disabled', false);
         });

@@ -672,16 +672,20 @@ def hooks():
                 functions = []
                 for f in getattr(db[t], op):
                     if hasattr(f, '__call__'):
-                        if isinstance(f, (functools.partial)):
-                            f = f.func
-                        filename = inspect.getsourcefile(f)
-                        details = {'funcname':f.__name__,
-                                   'filename':filename[len(request.folder):] if request.folder in filename else None,
-                                   'lineno': inspect.getsourcelines(f)[1]}
-                        if details['filename']: # Built in functions as delete_uploaded_files are not editable
-                            details['url'] = URL(a='admin',c='default',f='edit', args=[request['application'], details['filename']],vars={'lineno':details['lineno']})
-                        if details['filename'] or with_build_it:
-                            functions.append(details)
+                        try:
+                            if isinstance(f, (functools.partial)):
+                                f = f.func
+                            filename = inspect.getsourcefile(f)
+                            details = {'funcname':f.__name__,
+                                       'filename':filename[len(request.folder):] if request.folder in filename else None,
+                                       'lineno': inspect.getsourcelines(f)[1]}
+                            if details['filename']: # Built in functions as delete_uploaded_files are not editable
+                                details['url'] = URL(a='admin',c='default',f='edit', args=[request['application'], details['filename']],vars={'lineno':details['lineno']})
+                            if details['filename'] or with_build_it:
+                                functions.append(details)
+                        # compiled app and windows build don't support code inspection
+                        except:
+                            pass
                 if len(functions):
                     method_hooks.append({'name':op, 'functions':functions})
             if len(method_hooks):

@@ -23,11 +23,11 @@ try:
 except:
     raise RuntimeError(
         "web2py depends on pydal, which apparently you have not installed.\n" +
-        "Probably you cloned the repository using git without '--recursive'.\n" +
-        "To fix this, please run (from inside your web2py folder):\n\n" +
-        "    git submodule update\n\n" +
-        "You can also download a complete copy from from http://www.web2py.com."
-        )
+        "Probably you cloned the repository using git without '--recursive'" +
+        "\nTo fix this, please run (from inside your web2py folder):\n\n" +
+        "    git submodule init && git submodule update\n\n" +
+        "You can also download a complete copy from http://www.web2py.com."
+    )
 
 from globals import current
 from html import *
