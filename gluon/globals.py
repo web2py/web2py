@@ -1053,6 +1053,20 @@ class Session(Storage):
                 rcookies[response.session_id_name]['expires'] = expires
 
     def clear(self):
+        # see https://github.com/web2py/web2py/issues/735
+        response = current.response
+        if response.session_storage_type == 'file':
+            target = recfile.generate(response.session_filename)
+            try:
+                os.unlink(target)
+            except:
+                pass
+        elif response.session_storage_type == 'db':
+            table = response.session_db_table
+            if response.session_id:
+                (record_id, sep, unique_key) = response.session_id.partition(':')
+                if record_id.isdigit() and long(record_id) > 0:
+                    table._db(table.id == record_id).delete()
         Storage.clear(self)
 
     def is_new(self):
