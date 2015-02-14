@@ -17,11 +17,6 @@ clean:
 	find ./applications/examples/ -name '.*' -exec rm -f {} \; 
 	find ./applications/welcome/ -name '.*' -exec rm -f {} \; 
 	find ./ -name '*.pyc' -exec rm -f {} \;
-epydoc:
-	### build epydoc
-	rm -f -r applications/examples/static/epydoc/ 
-	epydoc --config extras/epydoc/epydoc.conf
-	cp applications/examples/static/title.png applications/examples/static/epydoc
 tests:
 	python web2py.py --run_system_tests
 coverage:
@@ -51,8 +46,6 @@ src:
 	rm -rf applications/admin/uploads/*                 
 	rm -rf applications/welcome/uploads/*               
 	rm -rf applications/examples/uploads/* 
-	### NO MORE make epydoc
-	# make epydoc
 	### make welcome layout and appadmin the default
 	cp applications/welcome/views/appadmin.html applications/admin/views
 	cp applications/welcome/views/appadmin.html applications/examples/views
