@@ -74,26 +74,26 @@ app:
 	#find gluon -path '*.pyc' -exec cp {} ../web2py_osx/site-packages/{} \;
 	#cd ../web2py_osx/site-packages/; zip -r ../site-packages.zip *
 	#mv ../web2py_osx/site-packages.zip ../web2py_osx/web2py/web2py.app/Contents/Resources/lib/python2.7
-	find gluon -path '*.py' -exec cp -r --parents {} ../web2py_osx/web2py/web2py.app/Contents/Resources/{} \;	
+	find gluon -path '*.py' -exec cp -r --parents {} ../web2py_osx/web2py/web2py.app/Contents/Resources/ \;	
+	find gluon -path '*.pyc' -exec cp -r --parents {} ../web2py_osx/web2py/web2py.app/Contents/Resources/ \;	
 	cp README.markdown ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp NEWINSTALL ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp LICENSE ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp VERSION ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp CHANGELOG ../web2py_osx/web2py/web2py.app/Contents/Resources
-	cp -r --parents extras ../web2py_osx/web2py/web2py.app/Contents/Resources
-	cp -r --parents examples ../web2py_osx/web2py/web2py.app/Contents/Resources
-	cp -r --parents handlers ../web2py_osx/web2py/web2py.app/Contents/Resources
-	cp -r --parents applications/admin ../web2py_osx/web2py/web2py.app/Contents/Resources/applications
-	cp -r --parents applications/welcome ../web2py_osx/web2py/web2py.app/Contents/Resources/applications
-	cp -r --parents applications/examples ../web2py_osx/web2py/web2py.app/Contents/Resources/applications
+	cp -r extras ../web2py_osx/web2py/web2py.app/Contents/Resources
+	cp -r examples ../web2py_osx/web2py/web2py.app/Contents/Resources
+	cp -r handlers ../web2py_osx/web2py/web2py.app/Contents/Resources
+	cp -r applications/admin ../web2py_osx/web2py/web2py.app/Contents/Resources/applications
+	cp -r applications/welcome ../web2py_osx/web2py/web2py.app/Contents/Resources/applications
+	cp -r applications/examples ../web2py_osx/web2py/web2py.app/Contents/Resources/applications
 	cp applications/__init__.py ../web2py_osx/web2py/web2py.app/Contents/Resources/applications
 	cd ../web2py_osx; zip -r web2py_osx.zip web2py
 		
 	mv ../web2py_osx/web2py_osx.zip .
 win:
-	python2.7 -c 'import compileall; compileall.compile_dir("gluon/")'
-	#cd ../web2py_win/library/; unzip ../library.zip
-	find gluon -path '*.pyc' -exec cp -r --parents {} ../web2py_win/library/{} \;
+	find gluon -path '*.py' -exec cp -r --parents {} ../web2py_osx/web2py/web2py.app/Contents/Resources/ \;
+	find gluon -path '*.pyc' -exec cp -r --parents {} ../web2py_osx/web2py/web2py.app/Contents/Resources/ \;
 	cd ../web2py_win/library/; zip -r ../library.zip *
 	mv ../web2py_win/library.zip ../web2py_win/web2py
 	cp README.markdown ../web2py_win/web2py/
@@ -101,12 +101,12 @@ win:
 	cp LICENSE ../web2py_win/web2py/
 	cp VERSION ../web2py_win/web2py/
 	cp CHANGELOG ../web2py_win/web2py/
-	cp -r --parents extras ../web2py_win/web2py/
-	cp -r --parents examples ../web2py_win/web2py/
-	cp -r --parents handlers ../web2py_win/web2py/
-	cp -r --parents applications/admin ../web2py_win/web2py/applications
-	cp -r --parents applications/welcome ../web2py_win/web2py/applications
-	cp -r --parents applications/examples ../web2py_win/web2py/applications
+	cp -r extras ../web2py_win/web2py/
+	cp -r examples ../web2py_win/web2py/
+	cp -r handlers ../web2py_win/web2py/
+	cp -r applications/admin ../web2py_win/web2py/applications
+	cp -r applications/welcome ../web2py_win/web2py/applications
+	cp -r applications/examples ../web2py_win/web2py/applications
 	cp applications/__init__.py ../web2py_win/web2py/applications
 	cd ../web2py_win; zip -r web2py_win.zip web2py
 	mv ../web2py_win/web2py_win.zip .
