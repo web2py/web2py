@@ -67,7 +67,7 @@ app:
 	#find gluon -path '*.pyc' -exec cp {} ../web2py_osx/site-packages/{} \;
 	#cd ../web2py_osx/site-packages/; zip -r ../site-packages.zip *
 	cp ../web2py_osx/site-packages.zip ../web2py_osx/web2py/web2py.app/Contents/Resources/lib/python2.7
-	find gluon -path '*.py' -exec cp -r --parents {} ../web2py_osx/web2py/web2py.app/Contents/Resouces/ \;
+	find gluon -path '*.py' -exec cp -r --parents {} ../web2py_osx/web2py/web2py.app/Contents/Resources/ \;
 	cp README.markdown ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp NEWINSTALL ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp LICENSE ../web2py_osx/web2py/web2py.app/Contents/Resources
