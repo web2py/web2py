@@ -27,7 +27,7 @@ Contents:
    myregex
    newcron
    portalocker
-   reserved_sql_keywords
+   recfile
    restricted
    rewrite
    sanitizer

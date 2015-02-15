@@ -1,44 +1,8 @@
-gluon.dal package
-=================
 
-Subpackages
------------
+:mod:`dal` Module
+-------------------
 
-.. toctree::
-
-    dal.adapters
-    dal.helpers
-
-Submodules
-----------
-
-gluon.dal.base module
----------------------
-
-.. automodule:: gluon.dal.base
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-gluon.dal.connection module
----------------------------
-
-.. automodule:: gluon.dal.connection
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-gluon.dal.objects module
-------------------------
-
-.. automodule:: gluon.dal.objects
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-
-Module contents
----------------
+Go to http://pydal.readthedocs.org/en/latest/ for docs on pyDAL
 
 .. automodule:: gluon.dal
     :members:
