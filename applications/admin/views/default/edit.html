@@ -218,10 +218,7 @@ $(document).on('click', 'a.font_button', function (e) {
 </div>
 <div class="btn-group">
   {{=button(URL('design',args=request.vars.app if request.vars.app else request.args[0], anchor=request.vars.id), T('back'))}}
-  {{#if request.args[1]=='models':}}
-  <a class="button btn" href="http://www.web2py.com/sqldesigner" target="_blank"><span>{{=T('online designer')}}</span></a>
-  {{#pass}}
-  <a class="button btn" href="http://www.web2py.com/examples/static/epydoc/index.html" target="_blank"><span>{{=T('docs')}}</span></a>
+  <a class="button btn" href="http://web2py.readthedocs.org/en/latest/" target="_blank"><span>{{=T('docs')}}</span></a>
   <a class="button btn" title="{{=T('change editor settings')}}" id="editor_settingslink" href="{{=URL('default', 'edit', args=request.args, vars={'settings':True})}}"><i class="icon-cog"></i></a>
 </div>
 </div>
