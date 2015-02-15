@@ -75,7 +75,6 @@ app:
 	cp CHANGELOG ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp -r extras ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp -r examples ../web2py_osx/web2py/web2py.app/Contents/Resources
-	cp -r handlers ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp -r applications/admin ../web2py_osx/web2py/web2py.app/Contents/Resources/applications
 	cp -r applications/welcome ../web2py_osx/web2py/web2py.app/Contents/Resources/applications
 	cp -r applications/examples ../web2py_osx/web2py/web2py.app/Contents/Resources/applications
@@ -94,7 +93,6 @@ win:
 	cp CHANGELOG ../web2py_win/web2py/
 	cp -r extras ../web2py_win/web2py/
 	cp -r examples ../web2py_win/web2py/
-	cp -r handlers ../web2py_win/web2py/
 	cp -r applications/admin ../web2py_win/web2py/applications
 	cp -r applications/welcome ../web2py_win/web2py/applications
 	cp -r applications/examples ../web2py_win/web2py/applications
