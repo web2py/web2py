@@ -125,7 +125,7 @@ class XssCleaner(HTMLParser):
                 bt += ' /'
             bt += '>'
             self.result += bt
-            self.open_tags.insert(0, tag)
+            if tag not in self.requires_no_close: self.open_tags.insert(0, tag)
 
     def handle_endtag(self, tag):
         bracketed = '</%s>' % tag
