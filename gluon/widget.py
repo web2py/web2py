@@ -737,6 +737,13 @@ def console():
                       default=False,
                       help='disable all output')
 
+    parser.add_option('-e',
+                      '--errors_to_console',
+                      action='store_true',
+                      dest='print_errors',
+                      default=False,
+                      help='log all errors to console')
+
     msg = ('set debug output level (0-100, 0 means all, 100 means none; '
            'default is 30)')
     parser.add_option('-D',
