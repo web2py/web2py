@@ -94,7 +94,7 @@ def sqlite(database_name):
                         else:
                             field_type = 'reference %s.%s' % (fks[name][0], fks[name][1])
                     else:
-                        field_type = data_type_map[d_type]
+                        field_type = data_type_map[d_type.lower()]
                     web2py_table_code += "\n    Field('%s','%s')," % (
                         name, field_type)
             web2py_table_code = "legacy_db.define_table('%s',%s\n    migrate=False)" % (table_name, web2py_table_code)
