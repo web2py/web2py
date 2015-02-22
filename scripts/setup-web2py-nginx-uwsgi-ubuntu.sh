@@ -144,6 +144,7 @@ reload-on-as = 256
 reload-on-rss = 192
 uid = www-data
 gid = www-data
+touch-reload = /home/www-data/web2py/routes.py
 cron = 0 0 -1 -1 -1 python /home/www-data/web2py/web2py.py -Q -S welcome -M -R scripts/sessions2trash.py -A -o
 no-orphans = true
 ' >/etc/uwsgi/web2py.ini
