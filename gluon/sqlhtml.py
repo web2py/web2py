@@ -1206,7 +1206,7 @@ class SQLFORM(FORM):
                 else:
                     inp = field.formatter(default)
                 if getattr(field, 'show_if', None):
-                    if not isinstance(inp, DIV):
+                    if not isinstance(inp, XmlComponent):
                         # Create a container for string represents
                         inp = DIV(inp, _id='%s_%s' % (field.tablename, field.name))
                     trigger, cond = show_if(field.show_if)
@@ -2662,7 +2662,7 @@ class SQLFORM(FORM):
                             value = ''
                     if isinstance(value, str):
                         value = truncate_string(value, maxlength)
-                    elif not isinstance(value, DIV):
+                    elif not isinstance(value, XmlComponent):
                         value = field.formatter(value)
                     trcols.append(TD(value))
                 row_buttons = TD(_class='row_buttons', _nowrap=True)
