@@ -280,6 +280,10 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ([1, 2], 'Enter between 10 and 100 values'))
         rtn =  IS_LIST_OF(IS_INT_IN_RANGE(0, 10), maximum=2)([1,2,3])
         self.assertEqual(rtn, ([1, 2, 3], 'Enter between 0 and 2 values'))
+        # regression test for issue 742
+        rtn = IS_LIST_OF(minimum=1)('')
+        self.assertEqual(rtn, ([], 'Enter between 1 and 100 values'))
+
 
     def test_IS_EMPTY_OR(self):
         rtn = IS_EMPTY_OR(IS_EMAIL())('abc@def.com')
