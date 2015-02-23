@@ -2507,9 +2507,10 @@ class IS_LIST_OF(Validator):
         ivalue = value
         if not isinstance(value, list):
             ivalue = [ivalue]
-        if not self.minimum is None and len(ivalue) < self.minimum:
+        ivalue = [i for i in ivalue if str(i).strip()]
+        if self.minimum is not None and len(ivalue) < self.minimum:
             return (ivalue, translate(self.error_message) % dict(min=self.minimum, max=self.maximum))
-        if not self.maximum is None and len(ivalue) > self.maximum:
+        if self.maximum is not None and len(ivalue) > self.maximum:
             return (ivalue, translate(self.error_message) % dict(min=self.minimum, max=self.maximum))
         new_value = []
         other = self.other
@@ -2517,13 +2518,12 @@ class IS_LIST_OF(Validator):
             if not isinstance(other, (list,tuple)):
                 other = [other]
             for item in ivalue:
-                if str(item).strip():
-                    v = item
-                    for validator in other:
-                        (v, e) = validator(v)
-                        if e:
-                            return (ivalue, e)
-                    new_value.append(v)
+                v = item
+                for validator in other:
+                    (v, e) = validator(v)
+                    if e:
+                        return (ivalue, e)
+                new_value.append(v)
             ivalue = new_value
         return (ivalue, None)
 
@@ -3808,7 +3808,7 @@ class IS_IPADDRESS(Validator):
             from gluon.contrib import ipaddr as ipaddress
 
         try:
-            ip = ipaddress.ip_address(value)
+            ip = ipaddress.IPAddress(value)
         except ValueError, e:
             return (value, translate(self.error_message))
 
