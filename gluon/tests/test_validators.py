@@ -583,8 +583,6 @@ class TestValidators(unittest.TestCase):
         rtn = IS_LENGTH(6)(a)
         self.assertEqual(rtn, (a, None))
 
-
-
     def test_IS_LOWER(self):
         rtn = IS_LOWER()('ABC')
         self.assertEqual(rtn, ('abc', None))
@@ -769,19 +767,6 @@ class TestValidators(unittest.TestCase):
         rtn = IS_UPPER()('ñ')
         self.assertEqual(rtn, ('\xc3\x91', None))
 
-    def test_IS_URL(self):
-        rtn = IS_URL()('abc.com')
-        self.assertEqual(rtn, ('http://abc.com', None))
-        rtn = IS_URL(mode='generic')('abc.com')
-        self.assertEqual(rtn, ('abc.com', None))
-        rtn = IS_URL(allowed_schemes=['https'], prepend_scheme='https')('https://abc.com')
-        self.assertEqual(rtn, ('https://abc.com', None))
-        rtn = IS_URL(prepend_scheme='https')('abc.com')
-        self.assertEqual(rtn, ('https://abc.com', None))
-        rtn = IS_URL(mode='generic', allowed_schemes=['ftps', 'https'], prepend_scheme='https')('https://abc.com')
-        self.assertEqual(rtn, ('https://abc.com', None))
-        rtn = IS_URL(mode='generic', allowed_schemes=['ftps', 'https', None], prepend_scheme='https')('abc.com')
-        self.assertEqual(rtn, ('abc.com', None))
 
     def test_IS_JSON(self):
         rtn = IS_JSON()('{"a": 100}')
