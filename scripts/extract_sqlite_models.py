@@ -83,7 +83,7 @@ def sqlite(database_name):
             for line in sql_lines[1:-1]:
                 if re.search('KEY', line) or re.search('PRIMARY', line) or re.search('"ID"', line) or line.startswith(')'):
                     continue
-                hit = re.search(r'"(\S+)"\s+(\w+(\(\S+\))?),?( .*)?', line)
+                hit = re.search(r'\[(\S+)\]\s+(\w+(\(\S+\))?),?( .*)?', line)
                 if hit is not None:
                     name, d_type = hit.group(1), hit.group(2)
                     d_type = re.sub(r'(\w+)\(.*', r'\1', d_type)
@@ -94,7 +94,7 @@ def sqlite(database_name):
                         else:
                             field_type = 'reference %s.%s' % (fks[name][0], fks[name][1])
                     else:
-                        field_type = data_type_map[d_type]
+                        field_type = data_type_map[d_type.lower()]
                     web2py_table_code += "\n    Field('%s','%s')," % (
                         name, field_type)
             web2py_table_code = "legacy_db.define_table('%s',%s\n    migrate=False)" % (table_name, web2py_table_code)
