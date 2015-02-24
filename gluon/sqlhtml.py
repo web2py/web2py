@@ -48,6 +48,8 @@ except ImportError:
 
 widget_class = re.compile('^\w*')
 
+REGEX_ALIAS_MATCH = re.compile('^(.*) AS (.*)$')
+
 
 def add_class(a, b):
     return a + ' ' + b if a else b
@@ -3006,7 +3008,7 @@ class SQLTABLE(TABLE):
         upload: URL to download uploaded files
         orderby: Add an orderby link to column headers.
         headers: dictionary of headers to headers redefinions
-            headers can also be a string to gerenare the headers from data
+            headers can also be a string to generate the headers from data
             for now only headers="fieldname:capitalize",
             headers="labels" and headers=None are supported
         truncate: length at which to truncate text in table cells.
@@ -3070,7 +3072,7 @@ class SQLTABLE(TABLE):
                     (t, f) = REGEX_TABLE_DOT_FIELD.match(c).groups()
                     headers[t + '.' + f] = f.replace('_', ' ').title()
                 else:
-                    headers[c] = c
+                    headers[c] = REGEX_ALIAS_MATCH.sub(r'\2', c)
         elif headers == 'labels':
             headers = {}
             for c in columns:
@@ -3102,7 +3104,7 @@ class SQLTABLE(TABLE):
                     row.append(TH(A(headers.get(c, c),
                                     _href=th_link + '?orderby=' + c, cid=cid)))
                 else:
-                    row.append(TH(headers.get(c, c)))
+                    row.append(TH(headers.get(c, REGEX_ALIAS_MATCH.sub(r'\2', c))))
 
             if extracolumns:  # new implement dict
                 for c in extracolumns:
