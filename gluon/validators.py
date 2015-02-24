@@ -3808,7 +3808,7 @@ class IS_IPADDRESS(Validator):
             from gluon.contrib import ipaddr as ipaddress
 
         try:
-            ip = ipaddress.ip_address(value)
+            ip = ipaddress.IPAddress(value)
         except ValueError, e:
             return (value, translate(self.error_message))
 
