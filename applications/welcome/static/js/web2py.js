@@ -490,7 +490,7 @@
        * and prevent clicking on it */
       disableElement: function(el) {
         el.addClass('disabled');
-        var method = el.is('button') ? 'html' : 'val';
+        var method = el.is('input') ? 'val' : 'html';
         //method = el.attr('name') ? 'html' : 'val';
         var disable_with_message = (typeof w2p_ajax_disable_with_message != 'undefined') ? w2p_ajax_disable_with_message : "Working...";
         /*store enabled state if not already disabled */
@@ -515,7 +515,7 @@
 
       /* restore element to its original state which was disabled by 'disableElement' above*/
       enableElement: function(el) {
-        var method = el.is('button') ? 'html' : 'val';
+        var method = el.is('input') ? 'val' : 'html';
         if(el.data('w2p_enable_with') !== undefined) {
           /* set to old enabled state */
           el[method](el.data('w2p_enable_with'));
