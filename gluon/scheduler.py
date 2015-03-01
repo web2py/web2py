@@ -310,7 +310,7 @@ def executor(queue, task, out):
             from gluon import current
             current.W2P_TASK = W2P_TASK
             globals().update(_env)
-            args = loads(task.args)
+            args = _decode_list(loads(task.args))
             vars = loads(task.vars, object_hook=_decode_dict)
             result = dumps(_function(*args, **vars))
         else:
