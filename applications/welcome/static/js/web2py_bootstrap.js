@@ -29,5 +29,12 @@ jQuery(function(){
   }
   hoverMenu(); // first page load
   jQuery(window).resize(hoverMenu); // on resize event
-  jQuery('ul.nav li.dropdown a').click(function(){window.location=jQuery(this).attr('href');});
+    jQuery('ul.nav li.dropdown a').click(function(event){
+      event.stopProgpagation();
+      if(event.originalEvent.ctrlKey){
+          window.open(jQuery(this).attr('href'), "_blank");
+      } else {
+          window.location.href=jQuery(this).attr('href');
+          }
+      });
 });
