@@ -24,7 +24,7 @@ Typical usage:
     # Delete session in a module (move to the modules folder)
     from sessions2trash import single_loop
     def delete_sessions():
-        single_loop()
+        single_loop(auth.settings.expiration)
 
 """
 
