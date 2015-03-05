@@ -505,6 +505,7 @@ class IS_IN_DB(Validator):
         zero='',
         sort=False,
         _and=None,
+        left=None
     ):
         from pydal.objects import Table
         if isinstance(field, Table):
@@ -521,7 +522,7 @@ class IS_IN_DB(Validator):
             if regex1.match(str(label)):
                 label = '%%(%s)s' % str(label).split('.')[-1]
             ks = regex2.findall(label)
-            if not kfield in ks:
+            if kfield not in ks:
                 ks += [kfield]
             fields = ks
         else:
@@ -542,6 +543,7 @@ class IS_IN_DB(Validator):
         self.zero = zero
         self.sort = sort
         self._and = _and
+        self.left = left
 
     def set_self_id(self, id):
         if self._and:
@@ -553,15 +555,16 @@ class IS_IN_DB(Validator):
             fields = [f for f in table]
         else:
             fields = [table[k] for k in self.fields]
-        ignore = (FieldVirtual,FieldMethod)
-        fields = filter(lambda f:not isinstance(f,ignore), fields)
+        ignore = (FieldVirtual, FieldMethod)
+        fields = filter(lambda f: not isinstance(f, ignore), fields)
         if self.dbset.db._dbname != 'gae':
             orderby = self.orderby or reduce(lambda a, b: a | b, fields)
             groupby = self.groupby
             distinct = self.distinct
+            left = self.left
             dd = dict(orderby=orderby, groupby=groupby,
                       distinct=distinct, cache=self.cache,
-                      cacheable=True)
+                      cacheable=True, left=left)
             records = self.dbset(table).select(*fields, **dd)
         else:
             orderby = self.orderby or \
@@ -580,7 +583,7 @@ class IS_IN_DB(Validator):
         items = [(k, self.labels[i]) for (i, k) in enumerate(self.theset)]
         if self.sort:
             items.sort(options_sorter)
-        if zero and not self.zero is None and not self.multiple:
+        if zero and self.zero is not None and not self.multiple:
             items.insert(0, ('', self.zero))
         return items
 
@@ -600,7 +603,7 @@ class IS_IN_DB(Validator):
                     not self.multiple[0] <= len(values) < self.multiple[1]:
                 return (values, translate(self.error_message))
             if self.theset:
-                if not [v for v in values if not v in self.theset]:
+                if not [v for v in values if v not in self.theset]:
                     return (values, None)
             else:
                 from pydal.adapters import GoogleDatastoreAdapter
