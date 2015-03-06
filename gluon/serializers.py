@@ -24,6 +24,7 @@ try:
 except ImportError:
     have_yaml = False
 
+
 def cast_keys(o, cast=str, encoding="utf-8"):
     """ Builds a new object with <cast> type keys
 
@@ -65,6 +66,7 @@ def cast_keys(o, cast=str, encoding="utf-8"):
         newobj = o
     return newobj
 
+
 def loads_json(o, unicode_keys=True, **kwargs):
     # deserialize a json string
     result = json_parser.loads(o, **kwargs)
@@ -73,6 +75,7 @@ def loads_json(o, unicode_keys=True, **kwargs):
         result = cast_keys(result,
                            encoding=kwargs.get("encoding", "utf-8"))
     return result
+
 
 def custom_json(o):
     if hasattr(o, 'custom_json') and callable(o.custom_json):
@@ -124,6 +127,7 @@ def json(value, default=custom_json):
         default=default).replace(ur'\u2028',
                                  '\\u2028').replace(ur'\2029',
                                                     '\\u2029')
+
 
 def csv(value):
     return ''
@@ -181,6 +185,7 @@ def yaml(data):
     if have_yaml:
         return yamlib.dump(data)
     else: raise ImportError("No YAML serializer available")
+
 
 def loads_yaml(data):
     if have_yaml:
