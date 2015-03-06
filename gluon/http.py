@@ -48,7 +48,7 @@ defined_status = {
     417: 'EXPECTATION FAILED',
     422: 'UNPROCESSABLE ENTITY',
     429: 'TOO MANY REQUESTS',
-    451: 'UNAVAILABLE FOR LEGAL REASONS', # http://www.451unavailable.org/
+    451: 'UNAVAILABLE FOR LEGAL REASONS',  # http://www.451unavailable.org/
     500: 'INTERNAL SERVER ERROR',
     501: 'NOT IMPLEMENTED',
     502: 'BAD GATEWAY',
@@ -59,6 +59,7 @@ defined_status = {
 }
 
 regex_status = re.compile('^\d{3} [0-9A-Z ]+$')
+
 
 class HTTP(Exception):
     """Raises an HTTP response
