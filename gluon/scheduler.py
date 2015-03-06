@@ -231,9 +231,9 @@ def demo_function(*argv, **kwargs):
         time.sleep(1)
     return 'done'
 
-# the two functions below deal with simplejson decoding as unicode, esp for the dict decode
-# and subsequent usage as function Keyword arguments unicode variable names won't work!
-# borrowed from http://stackoverflow.com/questions/956867/how-to-get-string-objects-instead-unicode-ones-from-json-in-python
+#the two functions below deal with simplejson decoding as unicode, esp for the dict decode
+#and subsequent usage as function Keyword arguments unicode variable names won't work!
+#borrowed from http://stackoverflow.com/questions/956867/how-to-get-string-objects-instead-unicode-ones-from-json-in-python
 
 
 def _decode_list(lst):
@@ -297,22 +297,16 @@ def executor(queue, task, out):
             f = task.function
             functions = current._scheduler.tasks
             if not functions:
-                # look into env
+                #look into env
                 _function = _env.get(f)
             else:
                 _function = functions.get(f)
             if not isinstance(_function, CALLABLETYPES):
                 raise NameError(
                     "name '%s' not found in scheduler's environment" % f)
-<<<<<<< HEAD
-            # Inject W2P_TASK into environment
-            _env.update({'W2P_TASK' : W2P_TASK})
-            # Inject W2P_TASK into current
-=======
             #Inject W2P_TASK into environment
             _env.update({'W2P_TASK': W2P_TASK})
             #Inject W2P_TASK into current
->>>>>>> upstream/master
             from gluon import current
             current.W2P_TASK = W2P_TASK
             globals().update(_env)
@@ -569,12 +563,6 @@ class Scheduler(MetaScheduler):
         self.group_names = group_names or ['main']
         self.heartbeat = heartbeat
         self.worker_name = worker_name or IDENTIFIER
-<<<<<<< HEAD
-        # list containing status as recorded in the table plus a boost parameter
-        # for hibernation (i.e. when someone stop the worker acting on the worker table)
-        self.worker_status = [RUNNING, 1]
-=======
->>>>>>> upstream/master
         self.max_empty_runs = max_empty_runs
         self.discard_results = discard_results
         self.is_a_ticker = False
@@ -784,11 +772,7 @@ class Scheduler(MetaScheduler):
         contention and retries `pop_task` after 0.5 seconds
         """
         db = self.db
-<<<<<<< HEAD
-        db.commit() # another nifty db.commit() only for Mysql
-=======
         db.commit()  # another nifty db.commit() only for Mysql
->>>>>>> upstream/master
         x = 0
         while x < 10:
             try:
@@ -807,15 +791,6 @@ class Scheduler(MetaScheduler):
         now = self.now()
         st = self.db.scheduler_task
         if self.is_a_ticker and self.do_assign_tasks:
-<<<<<<< HEAD
-            # I'm a ticker, and 5 loops passed without reassigning tasks, let's do
-            # that and loop again
-            self.wrapped_assign_tasks(db)
-            return None
-        # ready to process something
-        grabbed = db(st.assigned_worker_name == self.worker_name)(
-            st.status == ASSIGNED)
-=======
             #I'm a ticker, and 5 loops passed without reassigning tasks,
             #let's do that and loop again
             self.wrapped_assign_tasks(db)
@@ -825,22 +800,16 @@ class Scheduler(MetaScheduler):
             (st.assigned_worker_name == self.worker_name) &
             (st.status == ASSIGNED)
             )
->>>>>>> upstream/master
 
         task = grabbed.select(limitby=(0, 1), orderby=st.next_run_time).first()
         if task:
             task.update_record(status=RUNNING, last_run_time=now)
-            # noone will touch my task!
+            #noone will touch my task!
             db.commit()
             logger.debug('   work to do %s', task.id)
         else:
-<<<<<<< HEAD
-            if self.greedy and self.is_a_ticker:
-                # there are other tasks ready to be assigned
-=======
             if self.is_a_ticker and self.greedy:
                 #there are other tasks ready to be assigned
->>>>>>> upstream/master
                 logger.info('TICKER: greedy loop')
                 self.wrapped_assign_tasks(db)
             else:
@@ -856,10 +825,10 @@ class Scheduler(MetaScheduler):
                 seconds=task.period * times_run
             )
         if times_run < task.repeats or task.repeats == 0:
-            # need to run (repeating task)
+            #need to run (repeating task)
             run_again = True
         else:
-            # no need to run again
+            #no need to run again
             run_again = False
         run_id = 0
         while True and not self.discard_results:
@@ -902,57 +871,7 @@ class Scheduler(MetaScheduler):
         db = self.db
         while True:
             try:
-<<<<<<< HEAD
-                if not self.discard_results:
-                    if task_report.result != 'null' or task_report.tb:
-                        # result is 'null' as a string if task completed
-                        # if it's stopped it's None as NoneType, so we record
-                        # the STOPPED "run" anyway
-                        logger.debug(' recording task report in db (%s)',
-                                     task_report.status)
-                        db(db.scheduler_run.id == task.run_id).update(
-                            status=task_report.status,
-                            stop_time=now,
-                            run_result=task_report.result,
-                            run_output=task_report.output,
-                            traceback=task_report.tb)
-                    else:
-                        logger.debug(' deleting task report in db because of no result')
-                        db(db.scheduler_run.id == task.run_id).delete()
-                # if there is a stop_time and the following run would exceed it
-                is_expired = (task.stop_time
-                              and task.next_run_time > task.stop_time
-                              and True or False)
-                status = (task.run_again and is_expired and EXPIRED
-                          or task.run_again and not is_expired
-                          and QUEUED or COMPLETED)
-                if task_report.status == COMPLETED:
-                    d = dict(status=status,
-                             next_run_time=task.next_run_time,
-                             times_run=task.times_run,
-                             times_failed=0
-                             )
-                    db(db.scheduler_task.id == task.task_id)(
-                        db.scheduler_task.status == RUNNING).update(**d)
-                else:
-                    st_mapping = {'FAILED': 'FAILED',
-                                  'TIMEOUT': 'TIMEOUT',
-                                  'STOPPED': 'QUEUED'}[task_report.status]
-                    status = (task.retry_failed
-                              and task.times_failed < task.retry_failed
-                              and QUEUED or task.retry_failed == -1
-                              and QUEUED or st_mapping)
-                    db(
-                        (db.scheduler_task.id == task.task_id) &
-                        (db.scheduler_task.status == RUNNING)
-                    ).update(
-                        times_failed=db.scheduler_task.times_failed + 1,
-                        next_run_time=task.next_run_time,
-                        status=status
-                    )
-=======
                 self.report_task(task, task_report)
->>>>>>> upstream/master
                 db.commit()
                 break
             except:
@@ -1137,28 +1056,17 @@ class Scheduler(MetaScheduler):
         ticker = all_active.find(lambda row: row.is_ticker is True).first()
         not_busy = self.w_stats.status == ACTIVE
         if not ticker:
-            # if no other tickers are around
+            #if no other tickers are around
             if not_busy:
-<<<<<<< HEAD
-                # only if I'm not busy
-                db(sw.worker_name == self.worker_name).update(is_ticker=True)
-                db(sw.worker_name != self.worker_name).update(is_ticker=False)
-=======
                 #only if I'm not busy
                 db(sw.worker_name == my_name).update(is_ticker=True)
                 db(sw.worker_name != my_name).update(is_ticker=False)
->>>>>>> upstream/master
                 logger.info("TICKER: I'm a ticker")
             else:
-                # I'm busy
+                #I'm busy
                 if len(all_active) >= 1:
-<<<<<<< HEAD
-                    # so I'll "downgrade" myself to a "poor worker"
-                    db(sw.worker_name == self.worker_name).update(is_ticker=False)
-=======
                     #so I'll "downgrade" myself to a "poor worker"
                     db(sw.worker_name == my_name).update(is_ticker=False)
->>>>>>> upstream/master
                 else:
                     not_busy = True
             db.commit()
@@ -1177,7 +1085,7 @@ class Scheduler(MetaScheduler):
         sw, st, sd = db.scheduler_worker, db.scheduler_task, db.scheduler_task_deps
         now = self.now()
         all_workers = db(sw.status == ACTIVE).select()
-        # build workers as dict of groups
+        #build workers as dict of groups
         wkgroups = {}
         for w in all_workers:
             if w.worker_stats['status'] == 'RUNNING':
@@ -1190,12 +1098,6 @@ class Scheduler(MetaScheduler):
                 else:
                     wkgroups[gname]['workers'].append(
                         {'name': w.worker_name, 'c': 0})
-<<<<<<< HEAD
-        # set queued tasks that expired between "runs" (i.e., you turned off
-        # the scheduler): then it wasn't expired, but now it is
-        db(st.status.belongs(
-            (QUEUED, ASSIGNED)))(st.stop_time < now).update(status=EXPIRED)
-=======
         #set queued tasks that expired between "runs" (i.e., you turned off
         #the scheduler): then it wasn't expired, but now it is
         db(
@@ -1222,7 +1124,6 @@ class Scheduler(MetaScheduler):
                     (sd.can_visit == False)
                     )
             )
->>>>>>> upstream/master
 
         all_available = db(
             (st.status.belongs((QUEUED, ASSIGNED))) &
@@ -1233,21 +1134,6 @@ class Scheduler(MetaScheduler):
             (st.enabled == True) &
             (st.id.belongs(no_deps))
         )
-<<<<<<< HEAD
-        limit = len(all_workers) * (50 / (len(wkgroups) or 1))
-        # if there are a moltitude of tasks, let's figure out a maximum of tasks per worker.
-        # this can be adjusted with some added intelligence (like esteeming how many tasks will
-        # a worker complete before the ticker reassign them around, but the gain is quite small
-        # 50 is quite a sweet spot also for fast tasks, with sane heartbeat values
-        # NB: ticker reassign tasks every 5 cycles, so if a worker completes his 50 tasks in less
-        # than heartbeat*5 seconds, it won't pick new tasks until heartbeat*5 seconds pass.
-
-        # If a worker is currently elaborating a long task, all other tasks assigned
-        # to him needs to be reassigned "freely" to other workers, that may be free.
-        # this shuffles up things a bit, in order to maintain the idea of a semi-linear scalability
-
-        # let's freeze it up
-=======
 
 
         limit = len(all_workers) * (50 / (len(wkgroups) or 1))
@@ -1266,13 +1152,12 @@ class Scheduler(MetaScheduler):
         #to be executed
 
         #let's freeze it up
->>>>>>> upstream/master
         db.commit()
         x = 0
         for group in wkgroups.keys():
             tasks = all_available(st.group_name == group).select(
                 limitby=(0, limit), orderby = st.next_run_time)
-            # let's break up the queue evenly among workers
+            #let's break up the queue evenly among workers
             for task in tasks:
                 x += 1
                 gname = task.group_name
@@ -1291,16 +1176,6 @@ class Scheduler(MetaScheduler):
                     )
                     if not task.task_name:
                         d['task_name'] = task.function_name
-<<<<<<< HEAD
-                    db((st.id == task.id) & (st.status.belongs((QUEUED, ASSIGNED)))).update(**d)
-                    db.commit()
-                    wkgroups[gname]['workers'][myw]['c'] += 1
-
-        # I didn't report tasks but I'm working nonetheless!!!!
-        if x > 0:
-            self.empty_runs = 0
-        # I'll be greedy only if tasks assigned are equal to the limit
-=======
                     db(
                         (st.id == task.id) &
                         (st.status.belongs((QUEUED, ASSIGNED)))
@@ -1314,7 +1189,6 @@ class Scheduler(MetaScheduler):
         self.w_stats.distribution = wkgroups
         self.w_stats.workers = len(all_workers)
         #I'll be greedy only if tasks assigned are equal to the limit
->>>>>>> upstream/master
         # (meaning there could be others ready to be assigned)
         self.greedy = x >= limit
         logger.info('TICKER: workers are %s', len(all_workers))
@@ -1357,53 +1231,37 @@ class Scheduler(MetaScheduler):
         A DISABLED worker will be kept alive but it won't be able to process
         any waiting tasks, essentially putting it to sleep.
         By default, all group_names of Scheduler's instantation are selected"""
-<<<<<<< HEAD
-        self.set_worker_status(group_names=group_names, action=DISABLED)
-=======
         self.set_worker_status(
             group_names=group_names,
             action=DISABLED,
             exclude=[DISABLED, KILL, TERMINATE],
             limit=limit)
->>>>>>> upstream/master
 
     def resume(self, group_names=None, limit=None, worker_name=None):
         """Wakes a worker up (it will be able to process queued tasks)"""
-<<<<<<< HEAD
-        self.set_worker_status(group_names=group_names, action=ACTIVE)
-=======
         self.set_worker_status(
             group_names=group_names,
             action=ACTIVE,
             exclude=[KILL, TERMINATE],
             limit=limit)
->>>>>>> upstream/master
 
     def terminate(self, group_names=None, limit=None, worker_name=None):
         """Sets TERMINATE as worker status. The worker will wait for any
         currently running tasks to be executed and then it will exit gracefully
         """
-<<<<<<< HEAD
-        self.set_worker_status(group_names=group_names, action=TERMINATE)
-=======
         self.set_worker_status(
             group_names=group_names,
             action=TERMINATE,
             exclude=[KILL],
             limit=limit)
->>>>>>> upstream/master
 
     def kill(self, group_names=None, limit=None, worker_name=None):
         """Sets KILL as worker status. The worker will be killed even if it's
         processing a task."""
-<<<<<<< HEAD
-        self.set_worker_status(group_names=group_names, action=KILL)
-=======
         self.set_worker_status(
             group_names=group_names,
             action=KILL,
             limit=limit)
->>>>>>> upstream/master
 
     def queue_task(self, function, pargs=[], pvars={}, **kwargs):
         """
