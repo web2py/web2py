@@ -4,42 +4,14 @@
 Unit tests for IS_URL()
 """
 
-import sys
-import os
 import unittest
+from fix_path import fix_sys_path
+
+fix_sys_path(__file__)
 
 
-def fix_sys_path():
-    """
-    logic to have always the correct sys.path
-     '', web2py/gluon, web2py/site-packages, web2py/ ...
-    """
-
-    def add_path_first(path):
-        sys.path = [path] + [p for p in sys.path if (
-            not p == path and not p == (path + '/'))]
-
-    path = os.path.dirname(os.path.abspath(__file__))
-
-    if not os.path.isfile(os.path.join(path,'web2py.py')):
-        i = 0
-        while i<10:
-            i += 1
-            if os.path.exists(os.path.join(path,'web2py.py')):
-                break
-            path = os.path.abspath(os.path.join(path, '..'))
-
-    paths = [path,
-             os.path.abspath(os.path.join(path, 'site-packages')),
-             os.path.abspath(os.path.join(path, 'gluon')),
-             '']
-    [add_path_first(path) for path in paths]
-
-fix_sys_path()
-
-
-from validators import IS_URL, IS_HTTP_URL, IS_GENERIC_URL, \
-    unicode_to_ascii_authority
+from validators import IS_URL, IS_HTTP_URL, IS_GENERIC_URL
+from validators import unicode_to_ascii_authority
 
 
 class TestIsUrl(unittest.TestCase):
@@ -526,7 +498,7 @@ class TestIsHttpUrl(unittest.TestCase):
             'http://1234567890.com.',
             'http://1234567890.com./path',
             'http://google.com./path',
-            'http://domain.xn--0zwm56d',
+            'http://domain.xn--d1acj3b',
             'http://127.123.0.256',
             'http://127.123.0.256/document/drawer',
             '127.123.0.256/document/',
@@ -696,6 +668,32 @@ class TestUnicode(unittest.TestCase):
             u'invalid.\u4e2d\u4fd4.blargg', 'Enter a valid URL'))
 
 # ##############################################################################
+
+
+class TestSimple(unittest.TestCase):
+
+    def test_IS_URL(self):
+        rtn = IS_URL()('abc.com')
+        self.assertEqual(rtn, ('http://abc.com', None))
+        rtn = IS_URL(mode='generic')('abc.com')
+        self.assertEqual(rtn, ('abc.com', None))
+        rtn = IS_URL(allowed_schemes=['https'], prepend_scheme='https')('https://abc.com')
+        self.assertEqual(rtn, ('https://abc.com', None))
+        rtn = IS_URL(prepend_scheme='https')('abc.com')
+        self.assertEqual(rtn, ('https://abc.com', None))
+        rtn = IS_URL(mode='generic', allowed_schemes=['ftps', 'https'], prepend_scheme='https')('https://abc.com')
+        self.assertEqual(rtn, ('https://abc.com', None))
+        rtn = IS_URL(mode='generic', allowed_schemes=['ftps', 'https', None], prepend_scheme='https')('abc.com')
+        self.assertEqual(rtn, ('abc.com', None))
+        # regression test for issue 773
+        rtn = IS_URL()('domain.ninja')
+        self.assertEqual(rtn, ('http://domain.ninja', None))
+        # addition of allowed_tlds
+        rtn = IS_URL(allowed_tlds=['com', 'net', 'org'])('domain.ninja')
+        self.assertEqual(rtn, ('domain.ninja', 'Enter a valid URL'))
+        # mode = 'generic' doesn't consider allowed_tlds
+        rtn = IS_URL(mode='generic', allowed_tlds=['com', 'net', 'org'])('domain.ninja')
+        self.assertEqual(rtn, ('domain.ninja', None))
 
 if __name__ == '__main__':
     unittest.main()

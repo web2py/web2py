@@ -6,7 +6,10 @@ import redis
 from redis.exceptions import ConnectionError
 from gluon import current
 from gluon.cache import CacheAbstract
-import cPickle as pickle
+try:
+   import cPickle as pickle
+except:
+   import pickle
 import time
 import re
 import logging
@@ -105,6 +108,9 @@ class RedisClient(object):
 
         self.r_server = redis.Redis(host=host, port=port, db=self.db, password=self.password)
 
+    def initialize(self):
+        pass
+
     def __call__(self, key, f, time_expire=300, with_lock=None):
         if with_lock is None:
             with_lock = self.with_lock
@@ -162,7 +168,7 @@ class RedisClient(object):
         expireat = int(time.time() + time_expire) + 120
         bucket_key = "%s:%s" % (cache_set_key, expireat / 60)
         value = f()
-        value_ = pickle.dumps(value)
+        value_ = pickle.dumps(value, pickle.HIGHEST_PROTOCOL)
         if time_expire == 0:
             time_expire = 1
         self.r_server.setex(key, value_, time_expire)

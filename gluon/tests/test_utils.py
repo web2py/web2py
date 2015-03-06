@@ -3,38 +3,10 @@
 
 """ Unit tests for utils.py """
 
-import sys
-import os
 import unittest
+from fix_path import fix_sys_path
 
-
-def fix_sys_path():
-    """
-    logic to have always the correct sys.path
-     '', web2py/gluon, web2py/site-packages, web2py/ ...
-    """
-
-    def add_path_first(path):
-        sys.path = [path] + [p for p in sys.path if (
-            not p == path and not p == (path + '/'))]
-
-    path = os.path.dirname(os.path.abspath(__file__))
-
-    if not os.path.isfile(os.path.join(path,'web2py.py')):
-        i = 0
-        while i<10:
-            i += 1
-            if os.path.exists(os.path.join(path,'web2py.py')):
-                break
-            path = os.path.abspath(os.path.join(path, '..'))
-
-    paths = [path,
-             os.path.abspath(os.path.join(path, 'site-packages')),
-             os.path.abspath(os.path.join(path, 'gluon')),
-             '']
-    [add_path_first(path) for path in paths]
-
-fix_sys_path()
+fix_sys_path(__file__)
 
 from utils import md5_hash
 
@@ -47,6 +19,26 @@ class TestUtils(unittest.TestCase):
 
         data = md5_hash("web2py rocks")
         self.assertEqual(data, '79509f3246a2824dee64635303e99204')
+
+class TestPack(unittest.TestCase):
+    """ Tests the compileapp.py module """
+
+    def test_compile(self):
+        from compileapp import compile_application, remove_compiled_application
+        from gluon.fileutils import w2p_pack, w2p_unpack
+        import os
+        #apps = ['welcome', 'admin', 'examples']
+        apps = ['welcome']
+        for appname in apps:
+            appname_path = os.path.join(os.getcwd(), 'applications', appname)
+            compile_application(appname_path)
+            remove_compiled_application(appname_path)
+            test_path = os.path.join(os.getcwd(), "%s.w2p" % appname)
+            unpack_path = os.path.join(os.getcwd(), 'unpack', appname)
+            w2p_pack(test_path, appname_path, compiled=True, filenames=None)
+            w2p_pack(test_path, appname_path, compiled=False, filenames=None)
+            w2p_unpack(test_path, unpack_path)
+        return
 
 if __name__ == '__main__':
     unittest.main()

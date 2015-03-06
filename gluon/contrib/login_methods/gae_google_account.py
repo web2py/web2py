@@ -34,5 +34,8 @@ class GaeGoogleAccount(object):
     def get_user(self):
         user = users.get_current_user()
         if user:
-            return dict(nickname=user.nickname(), email=user.email(),
-                        user_id=user.user_id(), source="google account")
+            return dict(nickname = user.nickname(),
+                        email = user.email(),
+                        registration_id = user.user_id(),
+                        user_id = user.user_id(),
+                        source = "google account")
