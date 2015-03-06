@@ -190,9 +190,9 @@ class IS_MATCH(Validator):
             if not expression.endswith('$'):
                 expression = '(%s)$' % expression
         if is_unicode:
-            if not isinstance(expression,unicode):
+            if not isinstance(expression, unicode):
                 expression = expression.decode('utf8')
-            self.regex = re.compile(expression,re.UNICODE)
+            self.regex = re.compile(expression, re.UNICODE)
         else:
             self.regex = re.compile(expression)
         self.error_message = error_message
@@ -200,7 +200,7 @@ class IS_MATCH(Validator):
         self.is_unicode = is_unicode
 
     def __call__(self, value):
-        if self.is_unicode and not isinstance(value,unicode):
+        if self.is_unicode and not isinstance(value, unicode):
             match = self.regex.search(str(value).decode('utf8'))
         else:
             match = self.regex.search(str(value))
@@ -348,6 +348,7 @@ class IS_LENGTH(Validator):
         return (value, translate(self.error_message)
                 % dict(min=self.minsize, max=self.maxsize))
 
+
 class IS_JSON(Validator):
     """
     Example:
@@ -376,7 +377,7 @@ class IS_JSON(Validator):
         except JSONErrors:
             return (value, translate(self.error_message))
 
-    def formatter(self,value):
+    def formatter(self, value):
         if value is None:
             return None
         return simplejson.dumps(value)
@@ -549,8 +550,8 @@ class IS_IN_DB(Validator):
             fields = [f for f in table]
         else:
             fields = [table[k] for k in self.fields]
-        ignore = (FieldVirtual,FieldMethod)
-        fields = filter(lambda f:not isinstance(f,ignore), fields)
+        ignore = (FieldVirtual, FieldMethod)
+        fields = filter(lambda f: not isinstance(f, ignore), fields)
         if self.dbset.db._dbname != 'gae':
             orderby = self.orderby or reduce(lambda a, b: a | b, fields)
             groupby = self.groupby
@@ -662,7 +663,7 @@ class IS_NOT_IN_DB(Validator):
         self.record_id = id
 
     def __call__(self, value):
-        if isinstance(value,unicode):
+        if isinstance(value, unicode):
             value = value.encode('utf8')
         else:
             value = str(value)
@@ -689,7 +690,7 @@ class IS_NOT_IN_DB(Validator):
 
 
 def range_error_message(error_message, what_to_enter, minimum, maximum):
-    "build the error message for the number range validators"
+    """build the error message for the number range validators"""
     if error_message is None:
         error_message = 'Enter ' + what_to_enter
         if minimum is not None and maximum is not None:
@@ -931,7 +932,7 @@ class IS_DECIMAL_IN_RANGE(Validator):
 
 
 def is_empty(value, empty_regex=None):
-    "test empty field"
+    """test empty field"""
     if isinstance(value, (str, unicode)):
         value = value.strip()
         if empty_regex is not None and empty_regex.match(value):
@@ -1146,6 +1147,7 @@ class IS_EMAIL(Validator):
                 return (value, None)
         return (value, translate(self.error_message))
 
+
 class IS_LIST_OF_EMAILS(object):
     """
     Example:
@@ -1159,7 +1161,8 @@ class IS_LIST_OF_EMAILS(object):
                   )
     """
     split_emails = re.compile('[^,;\s]+')
-    def __init__(self, error_message = 'Invalid emails: %s'):
+
+    def __init__(self, error_message='Invalid emails: %s'):
         self.error_message = error_message
 
     def __call__(self, value):
@@ -1178,7 +1181,7 @@ class IS_LIST_OF_EMAILS(object):
             return (value,
                     translate(self.error_message) % ', '.join(bad_emails))
 
-    def formatter(self,value,row=None):
+    def formatter(self, value, row=None):
         return ', '.join(value or [])
 
 
@@ -1330,7 +1333,7 @@ label_split_regex = re.compile(u'[\u002e\u3002\uff0e\uff61]')
 
 
 def escape_unicode(string):
-    '''
+    """
     Converts a unicode string into US-ASCII, using a simple conversion scheme.
     Each unicode character that does not have a US-ASCII equivalent is
     converted into a URL escaped form based on its hexadecimal value.
@@ -1344,7 +1347,7 @@ def escape_unicode(string):
         string: the US-ASCII escaped form of the inputted string
 
     @author: Jonathan Benn
-    '''
+    """
     returnValue = StringIO()
 
     for character in string:
@@ -1359,7 +1362,7 @@ def escape_unicode(string):
 
 
 def unicode_to_ascii_authority(authority):
-    '''
+    """
     Follows the steps in RFC 3490, Section 4 to convert a unicode authority
     string into its ASCII equivalent.
     For example, u'www.Alliancefran\xe7aise.nu' will be converted into
@@ -1378,19 +1381,19 @@ def unicode_to_ascii_authority(authority):
             authority
 
     @author: Jonathan Benn
-    '''
-    #RFC 3490, Section 4, Step 1
-    #The encodings.idna Python module assumes that AllowUnassigned == True
+    """
+    # RFC 3490, Section 4, Step 1
+    # The encodings.idna Python module assumes that AllowUnassigned == True
 
-    #RFC 3490, Section 4, Step 2
+    # RFC 3490, Section 4, Step 2
     labels = label_split_regex.split(authority)
 
-    #RFC 3490, Section 4, Step 3
-    #The encodings.idna Python module assumes that UseSTD3ASCIIRules == False
+    # RFC 3490, Section 4, Step 3
+    # The encodings.idna Python module assumes that UseSTD3ASCIIRules == False
 
-    #RFC 3490, Section 4, Step 4
-    #We use the ToASCII operation because we are about to put the authority
-    #into an IDN-unaware slot
+    # RFC 3490, Section 4, Step 4
+    # We use the ToASCII operation because we are about to put the authority
+    # into an IDN-unaware slot
     asciiLabels = []
     try:
         import encodings.idna
@@ -1398,18 +1401,18 @@ def unicode_to_ascii_authority(authority):
             if label:
                 asciiLabels.append(encodings.idna.ToASCII(label))
             else:
-                 #encodings.idna.ToASCII does not accept an empty string, but
-                 #it is necessary for us to allow for empty labels so that we
-                 #don't modify the URL
+                 # encodings.idna.ToASCII does not accept an empty string, but
+                 # it is necessary for us to allow for empty labels so that we
+                 # don't modify the URL
                 asciiLabels.append('')
     except:
         asciiLabels = [str(label) for label in labels]
-    #RFC 3490, Section 4, Step 5
+    # RFC 3490, Section 4, Step 5
     return str(reduce(lambda x, y: x + unichr(0x002E) + y, asciiLabels))
 
 
 def unicode_to_ascii_url(url, prepend_scheme):
-    '''
+    """
     Converts the inputed unicode url into a US-ASCII equivalent. This function
     goes a little beyond RFC 3490, which is limited in scope to the domain name
     (authority) only. Here, the functionality is expanded to what was observed
@@ -1439,23 +1442,23 @@ def unicode_to_ascii_url(url, prepend_scheme):
         string: a US-ASCII equivalent of the inputed url
 
     @author: Jonathan Benn
-    '''
-    #convert the authority component of the URL into an ASCII punycode string,
-    #but encode the rest using the regular URI character encoding
+    """
+    # convert the authority component of the URL into an ASCII punycode string,
+    # but encode the rest using the regular URI character encoding
 
     groups = url_split_regex.match(url).groups()
-    #If no authority was found
+    # If no authority was found
     if not groups[3]:
-        #Try appending a scheme to see if that fixes the problem
+        # Try appending a scheme to see if that fixes the problem
         scheme_to_prepend = prepend_scheme or 'http'
         groups = url_split_regex.match(
             unicode(scheme_to_prepend) + u'://' + url).groups()
-    #if we still can't find the authority
+    # if we still can't find the authority
     if not groups[3]:
         raise Exception('No authority component found, ' +
                         'could not decode unicode to US-ASCII')
 
-    #We're here if we found an authority, let's rebuild the URL
+    # We're here if we found an authority, let's rebuild the URL
     scheme = groups[1]
     authority = groups[3]
     path = groups[4] or ''
@@ -2159,12 +2162,12 @@ class IS_URL(Validator):
             try:
                 asciiValue = unicode_to_ascii_url(value, self.prepend_scheme)
             except Exception:
-                #If we are not able to convert the unicode url into a
+                # If we are not able to convert the unicode url into a
                 # US-ASCII URL, then the URL is not valid
                 return (value, translate(self.error_message))
 
             methodResult = subMethod(asciiValue)
-            #if the validation of the US-ASCII version of the value failed
+            # if the validation of the US-ASCII version of the value failed
             if not methodResult[1] is None:
                 # then return the original input value, not the US-ASCII version
                 return (value, methodResult[1])
@@ -2232,7 +2235,7 @@ class IS_TIME(Validator):
             if not value.group('s') is None:
                 s = int(value.group('s'))
             if value.group('d') == 'pm' and 0 < h < 12:
-                h = h + 12
+                h += 12
             if value.group('d') == 'am' and h == 12:
                 h = 0
             if not (h in range(24) and m in range(60) and s
@@ -2246,17 +2249,22 @@ class IS_TIME(Validator):
             pass
         return (ivalue, translate(self.error_message))
 
+
 # A UTC class.
 class UTC(datetime.tzinfo):
     """UTC"""
     ZERO = datetime.timedelta(0)
+
     def utcoffset(self, dt):
         return UTC.ZERO
+
     def tzname(self, dt):
         return "UTC"
+
     def dst(self, dt):
         return UTC.ZERO
 utc = UTC()
+
 
 class IS_DATE(Validator):
     """
@@ -2271,7 +2279,7 @@ class IS_DATE(Validator):
 
     def __init__(self, format='%Y-%m-%d',
                  error_message='Enter date as %(format)s',
-                 timezone = None):
+                 timezone=None):
         self.format = translate(format)
         self.error_message = str(error_message)
         self.timezone = timezone
@@ -2513,7 +2521,7 @@ class IS_LIST_OF(Validator):
         new_value = []
         other = self.other
         if self.other:
-            if not isinstance(other, (list,tuple)):
+            if not isinstance(other, (list, tuple)):
                 other = [other]
             for item in ivalue:
                 if item.strip():
@@ -2737,7 +2745,7 @@ class IS_EMPTY_OR(Validator):
             return self.other.formatter(value)
         return value
 
-IS_NULL_OR = IS_EMPTY_OR    # for backward compatibility
+IS_NULL_OR = IS_EMPTY_OR  # for backward compatibility
 
 
 class CLEANUP(Validator):
@@ -2846,6 +2854,7 @@ class LazyCrypt(object):
 
     def __ne__(self, other):
         return not self.__eq__(other)
+
 
 class CRYPT(object):
     """
@@ -2964,7 +2973,7 @@ otherset = frozenset(
 
 
 def calc_entropy(string):
-    " calculates a simple entropy for a given string "
+    """ calculates a simple entropy for a given string """
     import math
     alphabet = 0    # alphabet size
     other = set()
@@ -3485,6 +3494,7 @@ class IS_IPV4(Validator):
             if ok:
                 return (value, None)
         return (value, translate(self.error_message))
+
 
 class IS_IPV6(Validator):
     """
