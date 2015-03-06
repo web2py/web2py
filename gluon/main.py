@@ -154,8 +154,6 @@ def get_client(env):
     return client
 
 
-
-
 def serve_controller(request, response, session):
     """
     This function is used to generate a dynamic page.
@@ -222,15 +220,17 @@ class LazyWSGI(object):
         self.wsgi_environ = environ
         self.request = request
         self.response = response
+
     @property
     def environ(self):
-        if not hasattr(self,'_environ'):
+        if not hasattr(self, '_environ'):
             new_environ = self.wsgi_environ
             new_environ['wsgi.input'] = self.request.body
             new_environ['wsgi.version'] = 1
             self._environ = new_environ
         return self._environ
-    def start_response(self,status='200', headers=[], exec_info=None):
+
+    def start_response(self, status='200', headers=[], exec_info=None):
         """
         in controller you can use:
 
@@ -243,7 +243,8 @@ class LazyWSGI(object):
         self.response.headers = dict(headers)
         return lambda *args, **kargs: \
             self.response.write(escape=False, *args, **kargs)
-    def middleware(self,*middleware_apps):
+
+    def middleware(self, *middleware_apps):
         """
         In you controller use::
 
@@ -266,6 +267,7 @@ class LazyWSGI(object):
                 return app(self.environ, self.start_response)
             return lambda caller=caller, app=app: caller(app)
         return middleware
+
 
 def wsgibase(environ, responder):
     """
@@ -453,7 +455,7 @@ def wsgibase(environ, responder):
                 if request.body:
                     request.body.close()
 
-                if hasattr(current,'request'):
+                if hasattr(current, 'request'):
 
                     # ##################################################
                     # on success, try store session in database
@@ -486,11 +488,10 @@ def wsgibase(environ, responder):
                     if request.ajax:
                         if response.flash:
                             http_response.headers['web2py-component-flash'] = \
-                                urllib2.quote(xmlescape(response.flash)\
-                                                  .replace('\n',''))
+                                urllib2.quote(xmlescape(response.flash).replace('\n', ''))
                         if response.js:
                             http_response.headers['web2py-component-command'] = \
-                                urllib2.quote(response.js.replace('\n',''))
+                                urllib2.quote(response.js.replace('\n', ''))
 
                     # ##################################################
                     # store cookies in headers
@@ -679,6 +680,7 @@ def appfactory(wsgiapp=wsgibase,
         return ret[0]
 
     return app_with_logging
+
 
 class HttpServer(object):
     """

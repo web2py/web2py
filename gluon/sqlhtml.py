@@ -48,11 +48,18 @@ except ImportError:
 
 widget_class = re.compile('^\w*')
 
+<<<<<<< HEAD
+
+def add_class(a, b):
+    return a+' '+b if a else b
+=======
 REGEX_ALIAS_MATCH = re.compile('^(.*) AS (.*)$')
 
 
 def add_class(a, b):
     return a + ' ' + b if a else b
+
+>>>>>>> upstream/master
 
 
 def represent(field, value, record):
@@ -88,11 +95,19 @@ def show_if(cond):
     if not cond:
         return None
     base = "%s_%s" % (cond.first.tablename, cond.first.name)
+<<<<<<< HEAD
+    if ((cond.op.__name__ == 'EQ' and cond.second == True) or
+        (cond.op.__name__ == 'NE' and cond.second == False)):
+        return base, ":checked"
+    if ((cond.op.__name__ == 'EQ' and cond.second == False) or
+        (cond.op.__name__ == 'NE' and cond.second == True)):
+=======
     if ((cond.op.__name__ == 'EQ' and cond.second is True) or
             (cond.op.__name__ == 'NE' and cond.second is False)):
         return base, ":checked"
     if ((cond.op.__name__ == 'EQ' and cond.second is False) or
             (cond.op.__name__ == 'NE' and cond.second is True)):
+>>>>>>> upstream/master
         return base, ":not(:checked)"
     if cond.op.__name__ == 'EQ':
         return base, "[value='%s']" % cond.second
@@ -100,11 +115,16 @@ def show_if(cond):
         return base, "[value!='%s']" % cond.second
     if cond.op.__name__ == 'CONTAINS':
         return base, "[value~='%s']" % cond.second
+<<<<<<< HEAD
+    if cond.op.__name__ == 'BELONGS' and isinstance(cond.second, (list, tuple)):
+        return base, ','.join("[value='%s']" % (v) for v in cond.second)
+=======
     if cond.op.__name__ == 'BELONGS':
         if isinstance(cond.second, set):
             cond.second = list(cond.second)
         if isinstance(cond.second, (list, tuple)):
             return base, ','.join("[value='%s']" % (v) for v in cond.second)
+>>>>>>> upstream/master
     raise RuntimeError("Not Implemented Error")
 
 
@@ -308,8 +328,12 @@ class ListWidget(StringWidget):
             _class = 'string'
         requires = field.requires if isinstance(
             field.requires, (IS_NOT_EMPTY, IS_LIST_OF)) else None
+<<<<<<< HEAD
+        if isinstance(value, str): value = [value]
+=======
         if isinstance(value, str):
             value = [value]
+>>>>>>> upstream/master
         nvalue = value or ['']
         items = [LI(INPUT(_id=_id, _class=_class, _name=_name,
                           value=v, hideerror=k < len(nvalue) - 1,
@@ -827,7 +851,11 @@ def formstyle_bootstrap(form, fields):
     return parent
 
 
+<<<<<<< HEAD
+def formstyle_bootstrap3(form, fields):
+=======
 def formstyle_bootstrap3_stacked(form, fields):
+>>>>>>> upstream/master
     """ bootstrap 3 format form layout
 
     Note:
@@ -851,6 +879,13 @@ def formstyle_bootstrap3_stacked(form, fields):
             elif controls['_type'] == 'password':
                 controls.add_class('form-control')
             elif controls['_type'] == 'checkbox':
+<<<<<<< HEAD
+                controls['_class'] = 'checkbox'
+
+        # For password fields, which are wrapped in a CAT object.
+        if isinstance(controls, CAT) and isinstance(controls[0], INPUT):
+            controls[0].add_class('col-lg-2')
+=======
                 label['_for'] = None
                 label.insert(0, controls)
                 _controls = DIV(label, _help, _class="checkbox")
@@ -868,11 +903,21 @@ def formstyle_bootstrap3_stacked(form, fields):
 
         parent.append(DIV(label, _controls, _class='form-group', _id=id))
     return parent
+>>>>>>> upstream/master
 
 
 def formstyle_bootstrap3_inline_factory(col_label_size=3):
     """ bootstrap 3 horizontal form layout
 
+<<<<<<< HEAD
+        if _submit:
+            # submit button has unwrapped label and controls, different class
+            parent.append(DIV(label, DIV(controls, _class="col-lg-4 col-lg-offset-2"), _class='form-group', _id=id))
+            # unflag submit (possible side effect)
+            _submit = False
+        else:
+            # unwrapped label
+=======
     Note:
         Experimental!
     """
@@ -916,6 +961,7 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
             if isinstance(label, LABEL):
                 label['_class'] = 'control-label %s' % label_col_class
 
+>>>>>>> upstream/master
             parent.append(DIV(label, _controls, _class='form-group', _id=id))
         return parent
     return _inner
@@ -1358,6 +1404,14 @@ class SQLFORM(FORM):
                         newrows = [newrows]
                     for newrow in newrows:
                         table.append(newrow)
+<<<<<<< HEAD
+            else:
+                table = formstyle(self, xfields)
+                for id, a, b, c in xfields:
+                    self.field_parent[id] = getattr(b, 'parent', None) \
+                        if isinstance(b, XmlComponent) else None
+=======
+>>>>>>> upstream/master
         else:
             raise RuntimeError('formstyle not supported')
         return table
@@ -1589,7 +1643,11 @@ class SQLFORM(FORM):
                         (cStringIO.StringIO(f), 'file.txt')
                 else:
                     # this should never happen, why does it happen?
+<<<<<<< HEAD
+                    # print 'f=', repr(f)
+=======
                     # print 'f=',repr(f)
+>>>>>>> upstream/master
                     continue
                 newfilename = field.store(source_file, original_filename,
                                           field.uploadfolder)
@@ -1808,18 +1866,42 @@ class SQLFORM(FORM):
                 ftype = field.type.type.split(' ')[0]
             else:
                 ftype = field.type.split(' ')[0]
+<<<<<<< HEAD
+            if ftype.startswith('decimal'): ftype = 'double'
+            elif ftype == 'bigint': ftype = 'integer'
+            elif ftype.startswith('big-'): ftype = ftype[4:]
+=======
             if ftype.startswith('decimal'):
                 ftype = 'double'
             elif ftype == 'bigint':
                 ftype = 'integer'
             elif ftype.startswith('big-'):
                 ftype = ftype[4:]
+>>>>>>> upstream/master
             # end
             options = search_options.get(ftype, None)
             if options:
                 label = isinstance(
                     field.label, str) and T(field.label) or field.label
                 selectfields.append(OPTION(label, _value=str(field)))
+<<<<<<< HEAD
+                operators = SELECT(*[OPTION(T(option), _value=option) for option in options])
+                _id = "%s_%s" % (value_id, name)
+                if field.type == 'boolean':
+                    value_input = SQLFORM.widgets.boolean.widget(field, field.default, _id=_id)
+                elif field.type == 'double':
+                    value_input = SQLFORM.widgets.double.widget(field, field.default, _id=_id)
+                elif field.type == 'time':
+                    value_input = SQLFORM.widgets.time.widget(field, field.default, _id=_id)
+                elif field.type == 'date':
+                    iso_format = {'_data-w2p_date_format' : '%Y-%m-%d'}
+                    value_input = SQLFORM.widgets.date.widget(field, field.default, _id=_id, **iso_format)
+                elif field.type == 'datetime':
+                    iso_format = iso_format = {'_data-w2p_datetime_format' : '%Y-%m-%d %H:%M:%S'}
+                    value_input = SQLFORM.widgets.datetime.widget(field, field.default, _id=_id, **iso_format)
+                elif (field.type.startswith('reference ') or
+                      field.type.startswith('list:reference ')) and \
+=======
                 # At web2py level SQLCustomType field values are treated as normal web2py types
                 if isinstance(field.type, SQLCustomType):
                     field_type = field.type.type
@@ -1838,16 +1920,26 @@ class SQLFORM(FORM):
                     value_input = SQLFORM.widgets.datetime.widget(field, field.default, _id=_id,_class='form-control', **iso_format)
                 elif (field_type.startswith('reference ') or
                       field_type.startswith('list:reference ')) and \
+>>>>>>> upstream/master
                       hasattr(field.requires, 'options'):
                     value_input = SELECT(
                         *[OPTION(v, _value=k)
                           for k, v in field.requires.options()],
+<<<<<<< HEAD
+                         **dict(_id=_id))
+                elif field.type == 'integer' or \
+                        field.type.startswith('reference ') or \
+                        field.type.startswith('list:integer') or \
+                        field.type.startswith('list:reference '):
+                    value_input = SQLFORM.widgets.integer.widget(field, field.default, _id=_id)
+=======
                          _class='form-control',
                          **dict(_id=_id))
                 elif field_type.startswith('reference ') or \
                      field_type.startswith('list:integer') or \
                      field_type.startswith('list:reference '):
                     value_input = SQLFORM.widgets.integer.widget(field, field.default, _id=_id,_class='form-control')
+>>>>>>> upstream/master
                 else:
                     value_input = INPUT(
                         _type='text', _id=_id,
@@ -1874,9 +1966,15 @@ class SQLFORM(FORM):
                         _style='display:none'))
 
         criteria.insert(0, SELECT(
+<<<<<<< HEAD
+            _id=fields_id,
+                _onchange="jQuery('.w2p_query_row').hide();jQuery('#%s_'+jQuery('#%s').val().replace('.','-')).show();" % (field_id, fields_id),
+                _style='float:left',
+=======
                 _id=fields_id,
                 _onchange="jQuery('.w2p_query_row').hide();jQuery('#%s_'+jQuery('#%s').val().replace('.','-')).show();" % (field_id, fields_id),
                 _style='float:left', _class='form-control',
+>>>>>>> upstream/master
                 *selectfields))
 
         fadd = SCRIPT("""
@@ -1901,9 +1999,15 @@ class SQLFORM(FORM):
           if(aggregator=='new') k.val(s); else k.val((v?(v+' '+ aggregator +' '):'')+s);
         }
         """ % dict(
+<<<<<<< HEAD
+                prefix=prefix, fields_id=fields_id, keywords_id=keywords_id,
+                field_id=field_id, value_id=value_id
+                )
+=======
                    prefix=prefix, fields_id=fields_id, keywords_id=keywords_id,
                    field_id=field_id, value_id=value_id
                    )
+>>>>>>> upstream/master
         )
         return CAT(
             DIV(_id=panel_id, _style="display:none;", *criteria), fadd)
@@ -2025,8 +2129,8 @@ class SQLFORM(FORM):
             keywords = request.get_vars.keywords
 
         def fetch_count(dbset):
-            ##FIXME for google:datastore cache_count is ignored
-            ## if it's not an integer
+            # #FIXME for google:datastore cache_count is ignored
+            # # if it's not an integer
             if cache_count is None or isinstance(cache_count, tuple):
                 if groupby:
                     c = 'count(*)'
@@ -2039,7 +2143,11 @@ class SQLFORM(FORM):
                     c = 'count(*)'
                     nrows = dbset.select(c, left=left, cacheable=True, cache=cache_count).first()[c]
                 elif dbset._db._adapter.dbengine == 'google:datastore':
+<<<<<<< HEAD
+                    # if we don't set a limit, this can timeout for a large table
+=======
                     #if we don't set a limit, this can timeout for a large table
+>>>>>>> upstream/master
                     nrows = dbset.db._adapter.count(dbset.query, limit=1000)
                 else:
                     nrows = dbset.count(cache=cache_count)
@@ -2140,6 +2248,15 @@ class SQLFORM(FORM):
             if groupby is None:
                 field_id = tables[0]._id
             elif groupby and isinstance(groupby, Field):
+<<<<<<< HEAD
+                field_id = groupby # take the field passed as groupby
+            elif groupby and isinstance(groupby, Expression):
+                field_id = groupby.first # take the first groupby field
+        table = field_id.table
+        tablename = table._tablename
+        if not any(str(f) == str(field_id) for f in fields):
+            fields = [f for f in fields]+[field_id]
+=======
                 # take the field passed as groupby
                 field_id = groupby
             elif groupby and isinstance(groupby, Expression):
@@ -2152,6 +2269,7 @@ class SQLFORM(FORM):
         tablename = table._tablename
         if not any(str(f) == str(field_id) for f in fields):
             fields = [f for f in fields] + [field_id]
+>>>>>>> upstream/master
         if upload == '<default>':
             upload = lambda filename: url(args=['download', filename])
             if request.args(-2) == 'download':
@@ -2268,16 +2386,16 @@ class SQLFORM(FORM):
                         ondelete(table, request.args[-1])
                     record.delete_record()
             if request.ajax:
-                #this means javascript is enabled, so we don't need to do
-                #a redirect
+                # this means javascript is enabled, so we don't need to do
+                # a redirect
                 if not client_side_delete:
-                    #if it's an ajax request and we don't need to reload the
-                    #entire page, let's just inform that there have been no
-                    #exceptions and don't regenerate the grid
+                    # if it's an ajax request and we don't need to reload the
+                    # entire page, let's just inform that there have been no
+                    # exceptions and don't regenerate the grid
                     raise HTTP(200)
                 else:
-                    #if it's requested that the grid gets reloaded on delete
-                    #on ajax, the redirect should be on the original location
+                    # if it's requested that the grid gets reloaded on delete
+                    # on ajax, the redirect should be on the original location
                     newloc = request.env.http_web2py_component_location
                     redirect(newloc, client_side=client_side_delete)
             else:
@@ -2285,7 +2403,11 @@ class SQLFORM(FORM):
                 redirect(referrer, client_side=client_side_delete)
 
         exportManager = dict(
+<<<<<<< HEAD
+            csv_with_hidden_cols=(ExporterCSV_hidden, 'CSV (hidden cols)',T('Comma-separated export including columns not shown; fields from other tables are exported as raw values for faster export')),
+=======
             csv_with_hidden_cols=(ExporterCSV_hidden, 'CSV (hidden cols)', T('Comma-separated export including columns not shown; fields from other tables are exported as raw values for faster export')),
+>>>>>>> upstream/master
             csv=(ExporterCSV, 'CSV', T('Comma-separated export of visible columns. Fields from other tables are exported as they appear on-screen but this may be slow for many rows')),
             xml=(ExporterXML, 'XML', T('XML export of columns shown')),
             html=(ExporterHTML, 'HTML', T('HTML export of visible columns')),
@@ -2293,7 +2415,11 @@ class SQLFORM(FORM):
             tsv_with_hidden_cols=
                 (ExporterTSV, 'TSV (Spreadsheets, hidden cols)', T('Spreadsheet-optimised export of tab-separated content including hidden columns. May be slow')),
             tsv=(ExporterTSV, 'TSV (Spreadsheets)', T('Spreadsheet-optimised export of tab-separated content, visible columns only. May be slow.')))
+<<<<<<< HEAD
+        if not exportclasses is None:
+=======
         if exportclasses is not None:
+>>>>>>> upstream/master
             """
             remember: allow to set exportclasses=dict(csv=False, csv_with_hidden_cols=False) to disable the csv format
             """
@@ -2315,10 +2441,15 @@ class SQLFORM(FORM):
             expcolumns = [str(f) for f in columns]
             selectable_columns = [str(f) for f in columns if not isinstance(f, Field.Virtual)]
             if export_type.endswith('with_hidden_cols'):
+<<<<<<< HEAD
+                # expcolumns = [] start with the visible columns, which includes visible virtual fields
+                selectable_columns = []  # like expcolumns but excluding virtual
+=======
                 # expcolumns = [] start with the visible columns, which
                 # includes visible virtual fields
                 selectable_columns = []
                 # like expcolumns but excluding virtual
+>>>>>>> upstream/master
                 for table in tables:
                     for field in table:
                         if field.readable and field.tablename in tablenames:
@@ -2326,15 +2457,29 @@ class SQLFORM(FORM):
                                 expcolumns.append(str(field))
                             if not(isinstance(field, Field.Virtual)):
                                 selectable_columns.append(str(field))
+<<<<<<< HEAD
+                    # look for virtual fields not displayed (and virtual method fields to be added here?)
+                    for (field_name, field) in table.iteritems():
+                        if isinstance(field, Field.Virtual) and not str(field) in expcolumns:
+                             expcolumns.append(str(field))
+=======
                     # look for virtual fields not displayed (and virtual method
                     # fields to be added here?)
                     for (field_name, field) in table.iteritems():
                         if isinstance(field, Field.Virtual) and not str(field) in expcolumns:
                             expcolumns.append(str(field))
+>>>>>>> upstream/master
 
             if export_type in exportManager and exportManager[export_type]:
                 if keywords:
                     try:
+<<<<<<< HEAD
+                        # the query should be constructed using searchable fields but not virtual fields
+                        sfields = reduce(lambda a, b: a + b,
+                            [[f for f in t if f.readable and not isinstance(f, Field.Virtual)] for t in tables])
+                        dbset = dbset(SQLFORM.build_query(
+                            sfields, request.vars.get('keywords', '')))
+=======
                         # the query should be constructed using searchable
                         # fields but not virtual fields
                         sfields = reduce(lambda a, b: a + b,
@@ -2345,6 +2490,7 @@ class SQLFORM(FORM):
                         else:
                             dbset = dbset(SQLFORM.build_query(
                                 sfields, keywords))
+>>>>>>> upstream/master
                         rows = dbset.select(left=left, orderby=orderby,
                                             cacheable=True, *selectable_columns)
                     except Exception, e:
@@ -2356,8 +2502,12 @@ class SQLFORM(FORM):
 
                 value = exportManager[export_type]
                 clazz = value[0] if hasattr(value, '__getitem__') else value
+<<<<<<< HEAD
+                rows.colnames = expcolumns  # expcolumns is all cols to be exported including virtual fields
+=======
                 # expcolumns is all cols to be exported including virtual fields
                 rows.colnames = expcolumns
+>>>>>>> upstream/master
                 oExp = clazz(rows)
                 export_filename = \
                     request.vars.get('_export_filename') or 'rows'
@@ -2508,6 +2658,17 @@ class SQLFORM(FORM):
 
         cursor = True
         # figure out what page we are one to setup the limitby
+<<<<<<< HEAD
+        if paginate and dbset._db._adapter.dbengine=='google:datastore':
+            cursor = request.vars.cursor or True
+            limitby = (0, paginate)
+            try: page = int(request.vars.page or 1)-1
+            except ValueError: page = 0
+        elif paginate and paginate < nrows:
+            try: page = int(request.vars.page or 1)-1
+            except ValueError: page = 0
+            limitby = (paginate*page, paginate*(page+1))
+=======
         if paginate and dbset._db._adapter.dbengine == 'google:datastore':
             cursor = request.vars.cursor or True
             limitby = (0, paginate)
@@ -2521,12 +2682,17 @@ class SQLFORM(FORM):
             except ValueError:
                 page = 0
             limitby = (paginate * page, paginate * (page + 1))
+>>>>>>> upstream/master
         else:
             limitby = None
         try:
             table_fields = [field for field in fields
+<<<<<<< HEAD
+                            if (field.tablename in tablenames and not(isinstance(field, Field.Virtual)))]
+=======
                             if (field.tablename in tablenames and
                                 not(isinstance(field, Field.Virtual)))]
+>>>>>>> upstream/master
             if dbset._db._adapter.dbengine == 'google:datastore':
                 rows = dbset.select(left=left, orderby=orderby,
                                     groupby=groupby, limitby=limitby,
@@ -2552,7 +2718,11 @@ class SQLFORM(FORM):
                 message = T('at least %(nrows)s records found') % dict(nrows=nrows)
             else:
                 message = T('%(nrows)s records found') % dict(nrows=nrows)
+<<<<<<< HEAD
+        console.append(DIV(message or T('None'), _class='web2py_counter'))
+=======
         console.append(DIV(message or '', _class='web2py_counter'))
+>>>>>>> upstream/master
 
         paginator = UL()
         if paginate and dbset._db._adapter.dbengine == 'google:datastore':
@@ -2561,6 +2731,13 @@ class SQLFORM(FORM):
                 page = int(request.vars.page or 1) - 1
             except ValueError:
                 page = 0
+<<<<<<< HEAD
+            paginator.append(LI('page %s' % (page+1)))
+            if next_cursor:
+                d = dict(page=page+2, cursor=next_cursor)
+                if order: d['order'] = order
+                if request.vars.keywords: d['keywords'] = request.vars.keywords
+=======
             paginator.append(LI('page %s' % (page + 1)))
             if next_cursor:
                 d = dict(page=page + 2, cursor=next_cursor)
@@ -2573,6 +2750,7 @@ class SQLFORM(FORM):
                     d['keywords'] = ''
                 elif keywords:
                     d['keywords'] = keywords
+>>>>>>> upstream/master
                 paginator.append(LI(
                     A('next', _href=url(vars=d), cid=request.cid)))
         elif paginate and paginate < nrows:
@@ -2617,7 +2795,11 @@ class SQLFORM(FORM):
 
         if rows:
             cols = [COL(_id=str(c).replace('.', '-'),
+<<<<<<< HEAD
+                        data={'column': left_cols + i + 1}) 
+=======
                         data={'column': left_cols + i + 1})
+>>>>>>> upstream/master
                     for i, c in enumerate(columns)]
             cols = [COL(data={'column': i + 1}) for i in range(left_cols)] + \
                    cols + \
@@ -2722,8 +2904,12 @@ class SQLFORM(FORM):
                 _style='width:100%;overflow-x:auto;-ms-overflow-x:scroll')
             if selectable:
                 if not callable(selectable):
+<<<<<<< HEAD
+                    # now expect that selectable and related parameters are iterator (list, tuple, etc)
+=======
                     # now expect that selectable and related parameters are
                     # iterator (list, tuple, etc)
+>>>>>>> upstream/master
                     inputs = []
                     for i, submit_info in enumerate(selectable):
                         submit_text = submit_info[0]
@@ -2771,7 +2957,11 @@ class SQLFORM(FORM):
                 link = url2(vars=dict(
                     order=request.vars.order or '',
                     _export_type=k,
+<<<<<<< HEAD
+                    keywords=request.vars.keywords or ''))
+=======
                     keywords=keywords or ''))
+>>>>>>> upstream/master
                 export_links.append(A(T(label), _href=link, _title=title, _class='btn btn-default'))
             export_menu = \
                 DIV(T('Export:'), _class="w2p_export_menu", *export_links)
@@ -2935,8 +3125,11 @@ class SQLFORM(FORM):
             linked_tables = db.tables()
         if isinstance(linked_tables, dict):
             linked_tables = linked_tables.get(table._tablename, [])
+<<<<<<< HEAD
+=======
 
         linked = []
+>>>>>>> upstream/master
         if linked_tables:
             for item in linked_tables:
                 tb = None
