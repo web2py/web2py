@@ -75,10 +75,12 @@ regex_plural_tuple = re.compile(
     '^{(?P<w>[^[\]()]+)(?:\[(?P<i>\d+)\])?}$')  # %%{word[index]} or %%{word}
 regex_plural_file = re.compile('^plural-[a-zA-Z]{2}(-[a-zA-Z]{2})?\.py$')
 
+
 def is_writable():
     """ returns True if and only if the filesystem is writable """
     from gluon.settings import global_settings
     return not global_settings.web2py_runtime_gae
+
 
 def safe_eval(text):
     if text.strip():
@@ -314,8 +316,10 @@ def write_plural_dict(filename, contents):
         if fp:
             fp.close()
 
-def sort_function(x,y):
+
+def sort_function(x, y):
     return cmp(unicode(x, 'utf-8').lower(), unicode(y, 'utf-8').lower())
+
 
 def write_dict(filename, contents):
     if '__corrupted__' in contents:
@@ -432,10 +436,12 @@ class lazyT(object):
             return lazyT(self)
         return lazyT(self.m, symbols, self.T, self.f, self.t, self.M)
 
+
 def pickle_lazyT(c):
     return str, (c.xml(),)
 
 copy_reg.pickle(lazyT, pickle_lazyT)
+
 
 class translator(object):
     """
@@ -461,7 +467,7 @@ class translator(object):
         self.langpath = langpath
         self.http_accept_language = http_accept_language
         # filled in self.force():
-        #------------------------
+        # ------------------------
         # self.cache
         # self.accepted_language
         # self.language_file
@@ -472,9 +478,9 @@ class translator(object):
         # self.plural_file
         # self.plural_dict
         # self.requested_languages
-        #----------------------------------------
+        # ----------------------------------------
         # filled in self.set_current_languages():
-        #----------------------------------------
+        # ----------------------------------------
         # self.default_language_file
         # self.default_t
         # self.current_languages
@@ -723,7 +729,7 @@ class translator(object):
         try:
             otherT = self.otherTs[index]
         except KeyError:
-            otherT = self.otherTs[index] = translator(self.langpath, \
+            otherT = self.otherTs[index] = translator(self.langpath,
                                                       self.http_accept_language)
             if language:
                 otherT.force(language)
@@ -976,6 +982,7 @@ def findT(path, language=DEFAULT_LANGUAGE):
             DEFAULT_LANGUAGE_NAME if language in ('default', DEFAULT_LANGUAGE)
             else sentences['!langcode!'])
     write_dict(lang_file, sentences)
+
 
 def update_all_languages(application_path):
     """

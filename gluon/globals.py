@@ -82,7 +82,6 @@ less_template = '<link href="%s" rel="stylesheet/less" type="text/css" />'
 css_inline = '<style type="text/css">\n%s\n</style>'
 js_inline = '<script type="text/javascript">\n%s\n</script>'
 
-
 # IMPORTANT:
 # this is required so that pickled dict(s) and class.__dict__
 # are sorted and web2py can detect without ambiguity when a session changes
@@ -95,13 +94,11 @@ class SortingPickler(Pickler):
 SortingPickler.dispatch = copy.copy(Pickler.dispatch)
 SortingPickler.dispatch[DictionaryType] = SortingPickler.save_dict
 
-
 def sorting_dumps(obj, protocol=None):
     file = cStringIO.StringIO()
     SortingPickler(file, protocol).dump(obj)
     return file.getvalue()
 # END #####################################################################
-
 
 def copystream_progress(request, chunk_size=10 ** 5):
     """
@@ -149,7 +146,6 @@ def copystream_progress(request, chunk_size=10 ** 5):
     cache_ram(cache_key + ':uploaded', None)
     return dest
 
-
 class Request(Storage):
 
     """
@@ -194,6 +190,7 @@ class Request(Storage):
         self.is_local = False
         self.global_settings = settings.global_settings
 
+
     def parse_get_vars(self):
         """Takes the QUERY_STRING and unpacks it to get_vars
         """
@@ -211,7 +208,7 @@ class Request(Storage):
         env = self.env
         post_vars = self._post_vars = Storage()
         body = self.body
-        #if content-type is application/json, we must read the body
+        # if content-type is application/json, we must read the body
         is_json = env.get('content_type', '')[:16] == 'application/json'
 
         if is_json:
@@ -278,9 +275,9 @@ class Request(Storage):
             if not key in self._vars:
                 self._vars[key] = value
             else:
-                if not isinstance(self._vars[key], list):
+                if not isinstance(self._vars[key],list):
                     self._vars[key] = [self._vars[key]]
-                self._vars[key] += value if isinstance(value, list) else [value]
+                self._vars[key] += value if isinstance(value,list) else [value]
 
     @property
     def get_vars(self):
@@ -438,7 +435,7 @@ class Response(Storage):
     def include_meta(self):
         s = "\n";
         for meta in (self.meta or {}).iteritems():
-            k,v = meta
+            k, v = meta
             if isinstance(v,dict):
                 s = s+'<meta'+''.join(' %s="%s"' % (xmlescape(key), xmlescape(v[key])) for key in v) +' />\n'
             else:
@@ -491,10 +488,10 @@ class Response(Storage):
         for item in files:
             if isinstance(item, str):
                 f = item.lower().split('?')[0]
-                #  if static_version we need also to check for
-                #  static_version_urls. In that case, the _.x.x.x
-                #  bit would have already been added by the URL()
-                #  function
+                # if static_version we need also to check for
+                # static_version_urls. In that case, the _.x.x.x
+                # bit would have already been added by the URL()
+                # function
                 if self.static_version and not self.static_version_urls:
                     item = item.replace(
                         '/static/', '/static/_%s/' % self.static_version, 1)
@@ -881,7 +878,7 @@ class Session(Storage):
                 table_migrate = False
             tname = tablename + '_' + masterapp
             table = db.get(tname, None)
-            #Field = db.Field
+            # Field = db.Field
             if table is None:
                 db.define_table(
                     tname,
@@ -946,6 +943,7 @@ class Session(Storage):
 
         if self.flash:
             (response.flash, self.flash) = (self.flash, None)
+
 
     def renew(self, clear_session=False):
 
@@ -1207,9 +1205,3 @@ class Session(Storage):
                 del response.session_file
             except:
                 pass
-
-
-def pickle_session(s):
-    return Session, (dict(s),)
-
-copy_reg.pickle(Session, pickle_session)
