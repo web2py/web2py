@@ -545,6 +545,7 @@ class Cache(object):
         """
         from gluon import current
         from gluon.http import HTTP
+
         def wrap(func):
             def wrapped_f():
                 if current.request.env.request_method != 'GET':
