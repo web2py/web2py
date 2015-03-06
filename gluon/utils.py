@@ -57,6 +57,7 @@ except ImportError:
 
 logger = logging.getLogger("web2py")
 
+
 def AES_new(key, IV=None):
     """ Returns an AES cipher object and random IV if None specified """
     if IV is None:
@@ -78,6 +79,7 @@ def compare(a, b):
 def md5_hash(text):
     """ Generates a md5 hash with the given text """
     return md5(text).hexdigest()
+
 
 def simple_hash(text, key='', salt='', digest_alg='md5'):
     """
