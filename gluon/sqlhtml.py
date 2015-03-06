@@ -194,8 +194,10 @@ class TimeWidget(StringWidget):
 class DateWidget(StringWidget):
     _class = 'date'
 
+
 class DatetimeWidget(StringWidget):
     _class = 'datetime'
+
 
 class TextWidget(FormWidget):
     _class = 'text'
@@ -211,6 +213,7 @@ class TextWidget(FormWidget):
         default = dict(value=value)
         attr = cls._attributes(field, default, **attributes)
         return TEXTAREA(**attr)
+
 
 class JSONWidget(FormWidget):
     _class = 'json'
@@ -228,6 +231,7 @@ class JSONWidget(FormWidget):
         default = dict(value=value)
         attr = cls._attributes(field, default, **attributes)
         return TEXTAREA(**attr)
+
 
 class BooleanWidget(FormWidget):
     _class = 'boolean'
@@ -431,7 +435,7 @@ class CheckboxesWidget(OptionsWidget):
         if mods:
             rows += 1
 
-        #widget style
+        # widget style
         wrappers = dict(
             table=(TABLE, TR, TD),
             ul=(DIV, UL, LI),
@@ -817,6 +821,7 @@ def formstyle_bootstrap(form, fields):
             parent.append(DIV(label, _controls, _class='control-group', _id=id))
     return parent
 
+
 def formstyle_bootstrap3(form, fields):
     """ bootstrap 3 format form layout
 
@@ -850,8 +855,6 @@ def formstyle_bootstrap3(form, fields):
             elif controls['_type'] == 'checkbox':
                 controls['_class'] = 'checkbox'
 
-
-
         # For password fields, which are wrapped in a CAT object.
         if isinstance(controls, CAT) and isinstance(controls[0], INPUT):
             controls[0].add_class('col-lg-2')
@@ -864,7 +867,6 @@ def formstyle_bootstrap3(form, fields):
 
         if isinstance(label, LABEL):
             label['_class'] = 'col-lg-2 control-label'
-
 
         if _submit:
             # submit button has unwrapped label and controls, different class
@@ -1697,11 +1699,11 @@ class SQLFORM(FORM):
                     prefix='w2p'
                     ):
         T = current.T
-        panel_id='%s_query_panel' % prefix
-        fields_id='%s_query_fields' % prefix
-        keywords_id='%s_keywords' % prefix
-        field_id='%s_field' % prefix
-        value_id='%s_value' % prefix
+        panel_id = '%s_query_panel' % prefix
+        fields_id = '%s_query_fields' % prefix
+        keywords_id = '%s_keywords' % prefix
+        field_id = '%s_field' % prefix
+        value_id = '%s_value' % prefix
         search_options = search_options or {
             'string': ['=', '!=', '<', '>', '<=', '>=', 'starts with', 'contains', 'in', 'not in'],
             'text': ['=', '!=', '<', '>', '<=', '>=', 'starts with', 'contains', 'in', 'not in'],
@@ -1730,7 +1732,7 @@ class SQLFORM(FORM):
             else:
                 ftype = field.type.split(' ')[0]
             if ftype.startswith('decimal'): ftype = 'double'
-            elif ftype=='bigint': ftype = 'integer'
+            elif ftype == 'bigint': ftype = 'integer'
             elif ftype.startswith('big-'): ftype = ftype[4:]
             # end
             options = search_options.get(ftype, None)
@@ -1920,8 +1922,8 @@ class SQLFORM(FORM):
         rows = None
 
         def fetch_count(dbset):
-            ##FIXME for google:datastore cache_count is ignored
-            ## if it's not an integer
+            # #FIXME for google:datastore cache_count is ignored
+            # # if it's not an integer
             if cache_count is None or isinstance(cache_count, tuple):
                 if groupby:
                     c = 'count(*)'
@@ -1933,8 +1935,8 @@ class SQLFORM(FORM):
                 elif left:
                     c = 'count(*)'
                     nrows = dbset.select(c, left=left, cacheable=True, cache=cache_count).first()[c]
-                elif dbset._db._adapter.dbengine=='google:datastore':
-                    #if we don't set a limit, this can timeout for a large table
+                elif dbset._db._adapter.dbengine == 'google:datastore':
+                    # if we don't set a limit, this can timeout for a large table
                     nrows = dbset.db._adapter.count(dbset.query, limit=1000)
                 else:
                     nrows = dbset.count(cache=cache_count)
@@ -2011,7 +2013,7 @@ class SQLFORM(FORM):
                 tablenames += db._adapter.tables(join)
         tables = [db[tablename] for tablename in tablenames]
         if fields:
-            #add missing tablename to virtual fields
+            # add missing tablename to virtual fields
             for table in tables:
                 for k, f in table.iteritems():
                     if isinstance(f, Field.Virtual):
@@ -2020,8 +2022,8 @@ class SQLFORM(FORM):
         else:
             fields = []
             columns = []
-            filter1 = lambda f:isinstance(f, Field)
-            filter2 = lambda f:isinstance(f, Field) and f.readable
+            filter1 = lambda f: isinstance(f, Field)
+            filter2 = lambda f: isinstance(f, Field) and f.readable
             for table in tables:
                 fields += filter(filter1, table)
                 columns += filter(filter2, table)
@@ -2035,9 +2037,9 @@ class SQLFORM(FORM):
             if groupby is None:
                 field_id = tables[0]._id
             elif groupby and isinstance(groupby, Field):
-                field_id = groupby #take the field passed as groupby
+                field_id = groupby # take the field passed as groupby
             elif groupby and isinstance(groupby, Expression):
-                field_id = groupby.first #take the first groupby field
+                field_id = groupby.first # take the first groupby field
         table = field_id.table
         tablename = table._tablename
         if not any(str(f) == str(field_id) for f in fields):
@@ -2158,16 +2160,16 @@ class SQLFORM(FORM):
                         ondelete(table, request.args[-1])
                     record.delete_record()
             if request.ajax:
-                #this means javascript is enabled, so we don't need to do
-                #a redirect
+                # this means javascript is enabled, so we don't need to do
+                # a redirect
                 if not client_side_delete:
-                    #if it's an ajax request and we don't need to reload the
-                    #entire page, let's just inform that there have been no
-                    #exceptions and don't regenerate the grid
+                    # if it's an ajax request and we don't need to reload the
+                    # entire page, let's just inform that there have been no
+                    # exceptions and don't regenerate the grid
                     raise HTTP(200)
                 else:
-                    #if it's requested that the grid gets reloaded on delete
-                    #on ajax, the redirect should be on the original location
+                    # if it's requested that the grid gets reloaded on delete
+                    # on ajax, the redirect should be on the original location
                     newloc = request.env.http_web2py_component_location
                     redirect(newloc, client_side=client_side_delete)
             else:
@@ -2206,7 +2208,7 @@ class SQLFORM(FORM):
             selectable_columns = [str(f) for f in columns if not isinstance(f, Field.Virtual)]
             if export_type.endswith('with_hidden_cols'):
                 # expcolumns = [] start with the visible columns, which includes visible virtual fields
-                selectable_columns=[]  # like expcolumns but excluding virtual
+                selectable_columns = []  # like expcolumns but excluding virtual
                 for table in tables:
                     for field in table:
                         if field.readable and field.tablename in tablenames:
@@ -2214,7 +2216,7 @@ class SQLFORM(FORM):
                                 expcolumns.append(str(field))
                             if not(isinstance(field, Field.Virtual)):
                                 selectable_columns.append(str(field))
-                    #look for virtual fields not displayed (and virtual method fields to be added here?)
+                    # look for virtual fields not displayed (and virtual method fields to be added here?)
                     for (field_name, field) in table.iteritems():
                         if isinstance(field, Field.Virtual) and not str(field) in expcolumns:
                              expcolumns.append(str(field))
@@ -2382,13 +2384,13 @@ class SQLFORM(FORM):
         head = TR(*headcols, **dict(_class=ui.get('header')))
 
         cursor = True
-        #figure out what page we are one to setup the limitby
+        # figure out what page we are one to setup the limitby
         if paginate and dbset._db._adapter.dbengine=='google:datastore':
             cursor = request.vars.cursor or True
             limitby = (0, paginate)
             try: page = int(request.vars.page or 1)-1
             except ValueError: page = 0
-        elif paginate and paginate<nrows:
+        elif paginate and paginate < nrows:
             try: page = int(request.vars.page or 1)-1
             except ValueError: page = 0
             limitby = (paginate*page, paginate*(page+1))
@@ -2431,11 +2433,11 @@ class SQLFORM(FORM):
                 page = int(request.vars.page or 1)-1
             except ValueError:
                 page = 0
-            paginator.append(LI('page %s'%(page+1)))
+            paginator.append(LI('page %s' % (page+1)))
             if next_cursor:
                 d = dict(page=page+2, cursor=next_cursor)
-                if order: d['order']=order
-                if request.vars.keywords: d['keywords']=request.vars.keywords
+                if order: d['order'] = order
+                if request.vars.keywords: d['keywords'] = request.vars.keywords
                 paginator.append(LI(
                     A('next', _href=url(vars=d), cid=request.cid)))
         elif paginate and paginate < nrows:
@@ -3163,6 +3165,7 @@ class ExportClass(object):
     def export(self):
         raise NotImplementedError
 
+
 class ExporterTSV(ExportClass):
     label = 'TSV'
     file_ext = "csv"
@@ -3201,7 +3204,7 @@ class ExporterTSV(ExportClass):
 
 
 class ExporterCSV(ExportClass):
-    #CSV, represent == True
+    # CSV, represent == True
     label = 'CSV'
     file_ext = "csv"
     content_type = "text/csv"
@@ -3209,7 +3212,7 @@ class ExporterCSV(ExportClass):
     def __init__(self, rows):
         ExportClass.__init__(self, rows)
 
-    def export(self):  #export CSV with rows.represent
+    def export(self):  # export CSV with rows.represent
         if self.rows:
             s = cStringIO.StringIO()
             self.rows.export_to_csv_file(s, represent=True)
@@ -3219,7 +3222,7 @@ class ExporterCSV(ExportClass):
 
 
 class ExporterCSV_hidden(ExportClass):
-    #pure csv, no represent.
+    # pure csv, no represent.
     label = 'CSV'
     file_ext = "csv"
     content_type = "text/csv"
@@ -3246,6 +3249,7 @@ class ExporterHTML(ExportClass):
         xml = self.rows.xml() if self.rows else ''
         return '<html>\n<head>\n<meta http-equiv="content-type" content="text/html; charset=UTF-8" />\n</head>\n<body>\n%s\n</body>\n</html>' % (xml or '')
 
+
 class ExporterXML(ExportClass):
     label = 'XML'
     file_ext = "xml"
@@ -3259,6 +3263,7 @@ class ExporterXML(ExportClass):
             return self.rows.as_xml()
         else:
             return '<rows></rows>'
+
 
 class ExporterJSON(ExportClass):
     label = 'JSON'
