@@ -136,7 +136,7 @@ def define_field(conn, table, field, pks):
     else:
         f['type'] = "'blob'"
         f['comment'] = "'WARNING: Oracle Data Type %s was not mapped." % \
-                str(field['DATA_TYPE']) + " Using 'blob' as fallback.'" 
+                str(field['DATA_TYPE']) + " Using 'blob' as fallback.'"
 
     try:
         if field['COLUMN_DEFAULT']:

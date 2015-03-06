@@ -1,6 +1,43 @@
-## 2.9.6
+## 2.9.12
 
+- Tornado HTTPS support, thanks Diego
+- Modular DAL, thanks Giovanni
+- Added coverage support, thanks Niphlod
+- More tests, thanks Niphlod and Paolo Valleri
+- Added support for show_if in readonly sqlform, thanks Paolo
+- Improved scheduler, thanks Niphlod
+- Email timeout support
+- Made web2py's custom_import work with circular imports, thanks Jack Kuan
+- Added Portuguese, Catalan, and Burmese translations
+- Allow map_hyphen to work for application names, thanks Tim Nyborg
+- New module appconfig.py, thanks Niphlod
+- Added geospatial support to Teradata adaptor, thanks Andrew Willimott 
+- Many bug fixes
+
+
+
+## 2.9.6 - 2.9.10
+
+- fixed support of GAE + SQL
 - fixed a typo in the license of some login_methods code. It is now LGPL consistently with the rest of the web2py code. This change applied to all previous web2py versions.
+- support for SAML2 (with pysaml2)
+- Sphinx documentation (thanks Niphlod)
+- improved scheduler (thanks Niphlod)
+- increased security
+- better cache.disk (thanks Leonel)
+- sessions are stored in subfolders for speed
+- postgres support for "INSERT ... RETURING ..."
+- ldap support for Certificate Authority (thanks Maggs and Shane)
+- improved support for S/Mime X.509 (thanks Gyuris)
+- better welcome app
+- support for Collection+JSON Hypermedia API (RESTful self documenting API)
+- jQuery 1.11
+- codemirror 4.0.3
+- markdown2 2.2.3
+- memcache 1.53
+- support for the new janrain API
+- new "web2py.py -G config" to make GAE configuration easier
+- many small bug fixes
 
 ## 2.9.1 - 2.9.5
 

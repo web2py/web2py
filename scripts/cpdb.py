@@ -1,7 +1,6 @@
 import os
 import sys
 from collections import deque
-import string
 import argparse
 import cStringIO
 import operator
@@ -26,8 +25,7 @@ class refTable(object):
         self.rows = None
 
     def getcolHeader(self, colHeader):
-        return "{0}".format(' | '.join([string.join(string.strip('**{0}**'.format(item)),
-                                                    '') for item in colHeader]))
+        return ' | '.join('**%s**' % item for item in colHeader)
 
     def wrapTable(
         self, rows, hasHeader=False, headerChar='-', delim=' | ', justify='left',
@@ -61,18 +59,13 @@ class refTable(object):
                      ) for column
                      in columns]
 
-        rowSeparator = headerChar * (len(prefix) + len(postfix) + sum(maxWidths) +
+        rowSeparator = headerChar * (len(prefix) +len(postfix) + sum(maxWidths) +
                                      len(delim) * (len(maxWidths) - 1))
 
-        justify = {'center': str
-                   .center,
-                   'right': str
-                   .rjust,
-                   'left': str.
-                   ljust
-                   }[justify
-                     .lower(
-                     )]
+        justify = {'center': str.center,
+                   'right': str.rjust,
+                   'left': str.ljust
+                   }[justify.lower()]
 
         output = cStringIO.StringIO()
 
@@ -93,12 +86,11 @@ class refTable(object):
         return output.getvalue()
 
     def wrap_onspace(self, text, width):
-        return reduce(lambda line, word, width=width: '{0}{1}{2}'
-                      .format(line, ' \n'[(len(
-                                           line[line.rfind('\n'
-                                                           ) + 1:]) + len(
-                                           word.split('\n', 1)[0]) >=
-                                           width)], word), text.split(' '))
+        return reduce(lambda line, word, width=width: '%s%s%s' % (
+            line,
+            ' ' if len(line.rsplit('\n')[-1]+word.split('\n')[0])>=width else '\n',
+            word), text.split(' '))
+
 
     def wrap_onspace_strict(self, text, width):
         wordRegex = re.compile(r'\S{' + str(width) + r',}')
@@ -208,49 +200,47 @@ class console:
         sys.exit(0)
 
     def printError(self, err):
-        sys.stderr.write("Error: {0}\r\n".format(str(err),))
+        sys.stderr.write("Error: %s\r\n" % err)
         if self.var_DEBUG:
             pass
 
     def execute(self, cmd):
         try:
             if not '-table ' in cmd:
-                exec '{0}'.format(cmd)
+                exec cmd
             else:
                 file = None
                 table = None
 
                 fields = []
-                items = string.split(cmd, ' ')
+                items = cmd.split()
                 invalidParams = []
                 table = self.getTable(items[1])
                 allowedParams = ['fields', 'file']
                 for i in items:
-                    if '=' in i and not string.split(i, '=')[0] in allowedParams:
+                    if '=' in i and not i.split('=')[0] in allowedParams:
                         try:
                             invalidParams.append(i)
                         except Exception, err:
-                            raise Exception('invalid parameter\n{0}'.format(i))
+                            raise Exception('invalid parameter\n%s' % i)
                     else:
                         if 'file=' in i:
-                            file = os.path.abspath(string.strip(string.split(
-                                i, '=')[1]))
+                            file = os.path.abspath(i.split('=')[0].strip())
                         if 'fields=' in i:
-                            for field in string.split(string.split(i, '=')[1], ','):
+                            for field in  i.split('=')[1].split():
                                 if field in self.db[table].fields:
-                                    fields.append(string.strip(field))
+                                    fields.append(field.strip())
 
                 if len(invalidParams) > 0:
-                    print('the following parameter(s) is not valid\n{0}'.format(
-                        string.join(invalidParams, ',')))
+                    print('the following parameter(s) is not valid\n%s' %
+                          ','.join(invalidParams))
                 else:
                     try:
                         self.cmd_table(table, file, fields)
                     except Exception, err:
-                        print('could not generate table for table {0}\n{1}'
-                              .format(table, err))
+                        print('could not generate table for table %s\n%s' % (table, err))
         except Exception, err:
-            print('sorry, can not do that!\n{0}'.format(err))
+            print('sorry, can not do that!\n%s'  % err)
 
     def getTable(self, tbl):
         for mTbl in db.tables:
@@ -267,7 +257,7 @@ class console:
 
         if not cmd in self.commands:
             raise Exception(
-                "Command {0} not found. Try 'help'\r\n".format(cmd))
+                "Command %s not found. Try 'help'\r\n" % cmd)
 
         self.commands[cmd](*parameters)
 
@@ -333,11 +323,11 @@ style choices:
             for row in rows:
                 rowdata = []
                 for f in table_fields:
-                    rowdata.append('{0}'.format(row[f]))
-                rows_data.append(string.join(rowdata, ','))
-            data = string.join(rows_data, '\n')
+                    rowdata.append(str(row[f]))
+                rows_data.append(','.join(rowdata))
+            data = '\n'.join(rows_data)
             dataTable = oTable.getTable_Wrap(data, tableStyle, table_fields)
-            print('TABLE {0}\n{1}'.format(table, dataTable))
+            print('TABLE %s\n%s' % (table, dataTable))
             if file is not None:
                 try:
                     tail, head = os.path.split(file)
@@ -346,15 +336,15 @@ style choices:
                     except:
                         'do nothing, folders exist'
                     oFile = open(file, 'w')
-                    oFile.write('TABLE: {0}\n{1}'.format(table, dataTable))
+                    oFile.write('TABLE: %s\n%s' % (table, dataTable))
                     oFile.close()
-                    print('{0} has been created and populated with all available data from table {1}\n'.format(file, table))
+                    print('%s has been created and populated with all available data from table %2\n' % (file, table))
                 except Exception, err:
-                    print("EXCEPTION: could not create table {0}\n{1}".format(
-                        table, err))
+                    print("EXCEPTION: could not create table %s\n%s" % (table, err))
+
         else:
-            print('the following fields are not valid [{0}]'.format(
-                string.join(filedNotFound, ',')))
+            print('the following fields are not valid [%s]' % (','.join(filedNotFound)))
+
 
     def cmd_help(self, *args):
         '''-3|help|Show's help'''
@@ -412,8 +402,8 @@ style choices:
         '''-1|set [variable_name] [value]|Set configuration variable value|Values are an expressions (100 | string.lower('ABC') | etc.'''
         value = " ".join(args[1:])
         if args[0] not in self.configvars:
-            setattr(self, "var_{0}".format(args[0]), eval(value))
-        setattr(self, "var_{0}".format(args[0]), eval(value))
+            setattr(self, "var_{0}" % (args[0]), eval(value))
+        setattr(self, "var_{0}" % (args[0]), eval(value))
 
     def cmd_clearscreen(self, numlines=50):
         '''---Clear the console.
@@ -486,41 +476,41 @@ class setCopyDB():
         return self.db
 
     def delete_DB_tables(self, storageFolder, storageType):
-        print 'delete_DB_tablesn\n\t{0}\n\t{1}'.format(
-            storageFolder, storageType)
+        print 'delete_DB_tablesn\n\t%s\n\t%s' % (storageFolder, storageType)
+
         dataFiles = [storageType, "sql.log"]
         try:
             for f in os.listdir(storageFolder):
                 if ".table" in f:
-                    fTable = "{0}/{1}".format(storageFolder, f)
+                    fTable = "%s/%s" % (storageFolder, f)
                     os.remove(fTable)
-                    print('deleted {0}'.format(fTable))
+                    print('deleted %s' % (fTable))
             for dFile in dataFiles:
-                os.remove("{0}/{1}".format(storageFolder, dFile))
-                print('deleted {0}'.format(
-                    "{0}/{1}".format(storageFolder, dFile)))
+                os.remove("%s/%s" % (storageFolder, dFile))
+                print('deleted %s' % (
+                    "%s/%s" % (storageFolder, dFile)))
         except Exception, errObj:
             print(str(errObj))
 
     def truncatetables(self, tables=[]):
         if len(tables) != 0:
             try:
-                print 'table value: {0}'.format(tables)
+                print 'table value: %s' % (tables)
                 for tbl in self.db.tables:
                     for mTbl in tables:
                         if mTbl.startswith(tbl):
                             self.db[mTbl].truncate()
             except Exception, err:
-                print('EXCEPTION: {0}'.format(err))
+                print('EXCEPTION: %s' % (err))
         else:
             try:
                 for tbl in self.db.tables:
                     self.db[tbl].truncate()
             except Exception, err:
-                print('EXCEPTION: {0}'.format(err))
+                print('EXCEPTION: %s' % (err))
 
     def copyDB(self):
-        other_db = DAL("{0}://{1}".format(
+        other_db = DAL("%s://%s" % (
             self.targetdbType, self.targetdbName), folder=self.targetFolder)
 
         print 'creating tables...'
@@ -618,14 +608,14 @@ informix://username:password@test\n\
     try:
         oCopy.sourceFolder = args.sourceFolder
         oCopy.targetFolder = args.sourceFolder
-        sourceItems = string.split(args.sourceConnectionString, '://')
+        sourceItems = args.sourceConnectionString.split('://',1)
         oCopy.sourcedbType = sourceItems[0]
         oCopy.sourcedbName = sourceItems[1]
-        targetItems = string.split(args.targetConnectionString, '://')
+        targetItems = args.targetConnectionString.split('://',1)
         oCopy.targetdbType = targetItems[0]
         oCopy.targetdbName = targetItems[1]
     except Exception, err:
-        print('EXCEPTION: {0}'.format(err))
+        print('EXCEPTION: %s' % (err))
 
     if args.dal:
         try:
@@ -639,21 +629,21 @@ informix://username:password@test\n\
             db = oCopy.instDB(args.sourceFolder, args.sourceConnectionString,
                               autoImport)
         except Exception, err:
-            print('EXCEPTION: could not set DAL\n{0}'.format(err))
+            print('EXCEPTION: could not set DAL\n%s' % (err))
     if args.truncate:
         try:
             if args.truncate:
                 if args.tables:
-                    tables = string.split(string.strip(args.tables), ',')
+                    tables = args.tables.strip().split(',')
                 else:
                     oCopy.truncatetables([])
         except Exception, err:
-            print('EXCEPTION: could not truncate tables\n{0}'.format(err))
+            print('EXCEPTION: could not truncate tables\n%s' % (err))
     try:
         if args.clean:
             oCopy.delete_DB_tables(oCopy.targetFolder, oCopy.targetType)
     except Exception, err:
-        print('EXCEPTION: could not clean db\n{0}'.format(err))
+        print('EXCEPTION: could not clean db\n%s' % (err))
 
     """
     *** goes with -m/-M options... removed for now
@@ -665,9 +655,9 @@ informix://username:password@test\n\
             oCopy.createModel()
         except Exception, err:
             print('EXCEPTION: could not create model\n\
-source model: {0}\n\
-target model: {1}\n\
-{2}'.format(args.sourcemodel,args.targetmodel,err))
+source model: %s\n\
+target model: %s\n\
+{2}' % (args.sourcemodel,args.targetmodel,err))
     """
 
     if args.sourceFolder:
@@ -675,7 +665,7 @@ target model: {1}\n\
             oCopy.sourceFolder = os.path.abspath(args.sourceFolder)
             oCopy.createfolderPath(oCopy.sourceFolder)
         except Exception, err:
-            print('EXCEPTION: could not create folder path\n{0}'.format(err))
+            print('EXCEPTION: could not create folder path\n%s' % (err))
     else:
         oCopy.dbStorageFolder = os.path.abspath(os.getcwd())
     if args.targetFolder:
@@ -683,12 +673,12 @@ target model: {1}\n\
             oCopy.targetFolder = os.path.abspath(args.targetFolder)
             oCopy.createfolderPath(oCopy.targetFolder)
         except Exception, err:
-            print('EXCEPTION: could not create folder path\n{0}'.format(err))
+            print('EXCEPTION: could not create folder path\n%s' % (err))
     if not args.interactive:
         try:
             oCopy.copyDB()
         except Exception, err:
-            print('EXCEPTION: could not make a copy of the database\n{0}'.format(err))
+            print('EXCEPTION: could not make a copy of the database\n%s' % (err))
     else:
         s = dalShell()
         s.shell(db)

@@ -126,7 +126,7 @@ openssl x509 -noout -fingerprint -text < web2py.crt > web2py.info
 sudo mkdir /etc/uwsgi
 sudo mkdir /var/log/uwsgi
 
-# Create configuration file /etc/uwsgi/web2py.xml
+# Create configuration file /etc/uwsgi/web2py.ini
 echo '[uwsgi]
 
 socket = /tmp/web2py.socket
@@ -144,6 +144,7 @@ reload-on-as = 256
 reload-on-rss = 192
 uid = www-data
 gid = www-data
+touch-reload = /home/www-data/web2py/routes.py
 cron = 0 0 -1 -1 -1 python /home/www-data/web2py/web2py.py -Q -S welcome -M -R scripts/sessions2trash.py -A -o
 no-orphans = true
 ' >/etc/uwsgi/web2py.ini
@@ -184,4 +185,4 @@ start uwsgi-emperor
 ## and stop it with
 # stop uwsgi-emperor
 ## to reload web2py only (without restarting uwsgi)
-# touch /etc/uwsgi/web2py.xml
+# touch /etc/uwsgi/web2py.ini

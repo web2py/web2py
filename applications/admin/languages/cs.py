@@ -1,4 +1,4 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
 {
 '!langcode!': 'cs-cz',
 '!langname!': 'čeština',
@@ -476,5 +476,5 @@
 'You need to set up and reach a': 'Je třeba nejprve nastavit a dojít až na',
 'You visited the url %s': 'Navštívili jste stránku %s,',
 'Your application will be blocked until you click an action button (next, step, continue, etc.)': 'Aplikace bude blokována než se klikne na jedno z tlačítek (další, krok, pokračovat, atd.)',
-'Your can inspect variables using the console bellow': 'Níže pomocí příkazové řádky si můžete prohlédnout proměnné',
+'You can inspect variables using the console bellow': 'Níže pomocí příkazové řádky si můžete prohlédnout proměnné',
 }

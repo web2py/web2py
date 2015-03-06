@@ -9,7 +9,7 @@ var current_editor = "{{=editor_settings['editor']}}";  //Default editor
 {{pass}}
 var current_font_incr = 0; // Default font-size, 0 means don't set
 </script>
-{{cm=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''),'codemirror')}}
+{{cm=URL('static', 'codemirror')}}
 <link rel="stylesheet" href="{{=cm}}/lib/codemirror.css">
 <link rel="stylesheet" href="{{='%s/theme/%s.css' % (cm, editor_settings['theme'])}}">
 <script src="{{=cm}}/lib/codemirror.js"></script>

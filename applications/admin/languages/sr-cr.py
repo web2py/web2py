@@ -1,4 +1,4 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
 {
 '!langcode!': 'sr-cr',
 '!langname!': 'Српски (Ћирилица)',

@@ -1,3 +1,6 @@
+// CodeMirror, copyright (c) by Marijn Haverbeke and others
+// Distributed under an MIT license: http://codemirror.net/LICENSE
+
 /**
  * Tag-closer extension for CodeMirror.
  *
@@ -55,6 +58,7 @@
       var pos = ranges[i].head, tok = cm.getTokenAt(pos);
       var inner = CodeMirror.innerMode(cm.getMode(), tok.state), state = inner.state;
       if (inner.mode.name != "xml" || !state.tagName) return CodeMirror.Pass;
+
       var opt = cm.getOption("autoCloseTags"), html = inner.mode.configuration == "html";
       var dontCloseTags = (typeof opt == "object" && opt.dontCloseTags) || (html && htmlDontClose);
       var indentTags = (typeof opt == "object" && opt.indentTags) || (html && htmlIndent);
@@ -68,8 +72,7 @@
           tok.type == "tag" && state.type == "closeTag" ||
           tok.string.indexOf("/") == (tok.string.length - 1) || // match something like <someTagName />
           dontCloseTags && indexOf(dontCloseTags, lowerTagName) > -1 ||
-          CodeMirror.scanForClosingTag && CodeMirror.scanForClosingTag(cm, pos, tagName,
-                                                                       Math.min(cm.lastLine() + 1, pos.line + 50)))
+          closingTagExists(cm, tagName, pos, state, true))
         return CodeMirror.Pass;
 
       var indent = indentTags && indexOf(indentTags, lowerTagName) > -1;
@@ -91,26 +94,73 @@
     }
   }
 
-  function autoCloseSlash(cm) {
-    if (cm.getOption("disableInput")) return CodeMirror.Pass;
+  function autoCloseCurrent(cm, typingSlash) {
     var ranges = cm.listSelections(), replacements = [];
+    var head = typingSlash ? "/" : "</";
     for (var i = 0; i < ranges.length; i++) {
       if (!ranges[i].empty()) return CodeMirror.Pass;
       var pos = ranges[i].head, tok = cm.getTokenAt(pos);
       var inner = CodeMirror.innerMode(cm.getMode(), tok.state), state = inner.state;
-      if (tok.type == "string" || tok.string.charAt(0) != "<" ||
-          tok.start != pos.ch - 1 || inner.mode.name != "xml" ||
-          !state.context || !state.context.tagName)
+      if (typingSlash && (tok.type == "string" || tok.string.charAt(0) != "<" ||
+                          tok.start != pos.ch - 1))
         return CodeMirror.Pass;
-      replacements[i] = "/" + state.context.tagName + ">";
+      // Kludge to get around the fact that we are not in XML mode
+      // when completing in JS/CSS snippet in htmlmixed mode. Does not
+      // work for other XML embedded languages (there is no general
+      // way to go from a mixed mode to its current XML state).
+      if (inner.mode.name != "xml") {
+        if (cm.getMode().name == "htmlmixed" && inner.mode.name == "javascript")
+          replacements[i] = head + "script>";
+        else if (cm.getMode().name == "htmlmixed" && inner.mode.name == "css")
+          replacements[i] = head + "style>";
+        else
+          return CodeMirror.Pass;
+      } else {
+        if (!state.context || !state.context.tagName ||
+            closingTagExists(cm, state.context.tagName, pos, state))
+          return CodeMirror.Pass;
+        replacements[i] = head + state.context.tagName + ">";
+      }
     }
     cm.replaceSelections(replacements);
+    ranges = cm.listSelections();
+    for (var i = 0; i < ranges.length; i++)
+      if (i == ranges.length - 1 || ranges[i].head.line < ranges[i + 1].head.line)
+        cm.indentLine(ranges[i].head.line);
   }
+
+  function autoCloseSlash(cm) {
+    if (cm.getOption("disableInput")) return CodeMirror.Pass;
+    return autoCloseCurrent(cm, true);
+  }
+
+  CodeMirror.commands.closeTag = function(cm) { return autoCloseCurrent(cm); };
 
   function indexOf(collection, elt) {
     if (collection.indexOf) return collection.indexOf(elt);
     for (var i = 0, e = collection.length; i < e; ++i)
       if (collection[i] == elt) return i;
     return -1;
+  }
+
+  // If xml-fold is loaded, we use its functionality to try and verify
+  // whether a given tag is actually unclosed.
+  function closingTagExists(cm, tagName, pos, state, newTag) {
+    if (!CodeMirror.scanForClosingTag) return false;
+    var end = Math.min(cm.lastLine() + 1, pos.line + 500);
+    var nextClose = CodeMirror.scanForClosingTag(cm, pos, null, end);
+    if (!nextClose || nextClose.tag != tagName) return false;
+    var cx = state.context;
+    // If the immediate wrapping context contains onCx instances of
+    // the same tag, a closing tag only exists if there are at least
+    // that many closing tags of that type following.
+    for (var onCx = newTag ? 1 : 0; cx && cx.tagName == tagName; cx = cx.prev) ++onCx;
+    pos = nextClose.to;
+    for (var i = 1; i < onCx; i++) {
+      var next = CodeMirror.scanForClosingTag(cm, pos, null, end);
+      if (!next || next.tag != tagName) return false;
+      pos = next.to;
+    }
+    return true;
   }
 });

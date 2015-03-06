@@ -20,15 +20,20 @@ Typical usage:
 
     # Delete all sessions regardless of expiry and exit.
     python web2py.py -S app -M -R scripts/sessions2trash.py -A -o -x 0
-    
+
     # Delete session in a module (move to the modules folder)
     from sessions2trash import single_loop
     def delete_sessions():
-        single_loop()
-    
+        single_loop(auth.settings.expiration)
+
 """
 
 from __future__ import with_statement
+
+import sys
+import os
+sys.path.append(os.path.join(*__file__.split(os.sep)[:-2] or ['.']))
+
 from gluon import current
 from gluon.storage import Storage
 from optparse import OptionParser
@@ -113,10 +118,20 @@ class SessionSetFiles(SessionSet):
     def __init__(self, expiration, force, verbose):
         SessionSet.__init__(self, expiration, force, verbose)
 
+    def cleanup_empty_folders(self, root_path):
+        for path, dirs, files in os.walk(root_path, topdown=False):
+            for d in dirs:
+                dd = os.path.join(path, d)
+                if not os.listdir(dd):
+                    os.rmdir(dd)
+
     def get(self):
         """Return list of SessionFile instances for existing sessions."""
         root_path = os.path.join(current.request.folder, 'sessions')
-        return [SessionFile(os.path.join(path, x)) for path,dirs,files in os.walk(root_path) for x in files]
+        for path, dirs, files in os.walk(root_path, topdown=False):
+            for x in files:
+                yield SessionFile(os.path.join(path, x))
+        self.cleanup_empty_folders(root_path)
 
 
 class SessionDb(object):
@@ -191,10 +206,11 @@ def single_loop(expiration=None, force=False, verbose=False):
         except:
             expiration = EXPIRATION_MINUTES * 60
 
-    set_db = SessionSetDb(expiration, force, verbose)
     set_files = SessionSetFiles(expiration, force, verbose)
-    set_db.trash()
     set_files.trash()
+    set_db = SessionSetDb(expiration, force, verbose)
+    set_db.trash()
+
 
 def main():
     """Main processing."""

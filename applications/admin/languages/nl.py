@@ -1,4 +1,4 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
 {
 '!langcode!': 'nl',
 '!langname!': 'Nederlands',
@@ -477,5 +477,5 @@
 'you must specify a name for the uploaded application': 'je moet een naam specificeren voor de geuploade applicatie',
 'You need to set up and reach a': 'Je moet het volgende opzetten en bereiken:',
 'Your application will be blocked until you click an action button (next, step, continue, etc.)': 'Je applicatie zal geblokkeerd zijn tot je een actie button aanklikt (volgende, step, ga door, etc.)',
-'Your can inspect variables using the console bellow': 'Je kan je variabelen inspecteren in de console hieronder',
+'You can inspect variables using the console bellow': 'Je kan je variabelen inspecteren in de console hieronder',
 }

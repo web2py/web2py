@@ -1,8 +1,8 @@
 read -p "Choose your admin password?" passwd
 sudo pip install virtualenv
-sudo pip install psycopg2
 virtualenv venv --distribute
 source venv/bin/activate
+sudo pip install psycopg2
 pip freeze > requirements.txt
 echo "web: python web2py.py -a '$passwd' -i 0.0.0.0 -p \$PORT" > Procfile
 git init

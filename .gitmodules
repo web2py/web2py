@@ -1,0 +1,3 @@
+[submodule "gluon/packages/dal"]
+	path = gluon/packages/dal
+	url = https://github.com/web2py/pydal.git

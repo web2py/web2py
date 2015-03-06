@@ -17,35 +17,35 @@ clean:
 	find ./applications/examples/ -name '.*' -exec rm -f {} \; 
 	find ./applications/welcome/ -name '.*' -exec rm -f {} \; 
 	find ./ -name '*.pyc' -exec rm -f {} \;
-epydoc:
-	### build epydoc
-	rm -f -r applications/examples/static/epydoc/ 
-	epydoc --config extras/epydoc/epydoc.conf
-	cp applications/examples/static/title.png applications/examples/static/epydoc
 tests:
 	python web2py.py --run_system_tests
+coverage:
+	coverage erase --rcfile=gluon/tests/coverage.ini
+	export COVERAGE_PROCESS_START=gluon/tests/coverage.ini
+	python web2py.py --run_system_tests --with_coverage
+	coverage combine --rcfile=gluon/tests/coverage.ini
+	sleep 1
+	coverage html --rcfile=gluon/tests/coverage.ini
 update:
 	wget -O gluon/contrib/feedparser.py http://feedparser.googlecode.com/svn/trunk/feedparser/feedparser.py
 	wget -O gluon/contrib/simplejsonrpc.py http://rad2py.googlecode.com/hg/ide2py/simplejsonrpc.py
 	echo "remember that pymysql was tweaked"
 src:
 	### Use semantic versioning
-	echo 'Version 2.9.5-trunk+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
+	echo 'Version 2.9.12-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
 	### rm -f all junk files
 	make clean
 	### clean up baisc apps
 	rm -f routes.py 
-	rm -f applications/*/sessions/*
-	rm -f applications/*/errors/* | echo 'too many files'
-	rm -f applications/*/cache/*
-	rm -f applications/admin/databases/*                 
-	rm -f applications/welcome/databases/*               
-	rm -f applications/examples/databases/*             
-	rm -f applications/admin/uploads/*                 
-	rm -f applications/welcome/uploads/*               
-	rm -f applications/examples/uploads/* 
-	### make epydoc
-	make epydoc
+	rm -rf applications/*/sessions/*
+	rm -rf applications/*/errors/* | echo 'too many files'
+	rm -rf applications/*/cache/*
+	rm -rf applications/admin/databases/*                 
+	rm -rf applications/welcome/databases/*               
+	rm -rf applications/examples/databases/*             
+	rm -rf applications/admin/uploads/*                 
+	rm -rf applications/welcome/uploads/*               
+	rm -rf applications/examples/uploads/* 
 	### make welcome layout and appadmin the default
 	cp applications/welcome/views/appadmin.html applications/admin/views
 	cp applications/welcome/views/appadmin.html applications/examples/views
@@ -54,7 +54,7 @@ src:
 	### build web2py_src.zip
 	echo '' > NEWINSTALL
 	mv web2py_src.zip web2py_src_old.zip | echo 'no old'
-	cd ..; zip -r web2py/web2py_src.zip web2py/web2py.py web2py/anyserver.py web2py/gluon/*.py web2py/gluon/contrib/* web2py/extras/* web2py/handlers/* web2py/examples/* web2py/README.markdown  web2py/LICENSE web2py/CHANGELOG web2py/NEWINSTALL web2py/VERSION web2py/MANIFEST.in web2py/scripts/*.sh web2py/scripts/*.py web2py/applications/admin web2py/applications/examples/ web2py/applications/welcome web2py/applications/__init__.py web2py/site-packages/__init__.py web2py/gluon/tests/*.sh web2py/gluon/tests/*.py
+	cd ..; zip -r web2py/web2py_src.zip web2py/web2py.py web2py/anyserver.py web2py/gluon/*.py web2py/gluon/dal/* web2py/gluon/contrib/* web2py/extras/* web2py/handlers/* web2py/examples/* web2py/README.markdown  web2py/LICENSE web2py/CHANGELOG web2py/NEWINSTALL web2py/VERSION web2py/MANIFEST.in web2py/scripts/*.sh web2py/scripts/*.py web2py/applications/admin web2py/applications/examples/ web2py/applications/welcome web2py/applications/__init__.py web2py/site-packages/__init__.py web2py/gluon/tests/*.sh web2py/gluon/tests/*.py
 
 mdp:
 	make src
@@ -66,8 +66,8 @@ app:
 	#cd ../web2py_osx/site-packages/; unzip ../site-packages.zip
 	#find gluon -path '*.pyc' -exec cp {} ../web2py_osx/site-packages/{} \;
 	#cd ../web2py_osx/site-packages/; zip -r ../site-packages.zip *
-	#mv ../web2py_osx/site-packages.zip ../web2py_osx/web2py/web2py.app/Contents/Resources/lib/python2.7
-	find gluon -path '*.py' -exec cp -R {} ../web2py_osx/web2py/web2py.app/Contents/Resources/{} \;	
+	cp ../web2py_osx/site-packages.zip ../web2py_osx/web2py/web2py.app/Contents/Resources/lib/python2.7
+	find gluon -path '*.py' -exec cp -r --parents {} ../web2py_osx/web2py/web2py.app/Contents/Resources/ \;
 	cp README.markdown ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp NEWINSTALL ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp LICENSE ../web2py_osx/web2py/web2py.app/Contents/Resources
@@ -75,7 +75,6 @@ app:
 	cp CHANGELOG ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp -r extras ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp -r examples ../web2py_osx/web2py/web2py.app/Contents/Resources
-	cp -r handlers ../web2py_osx/web2py/web2py.app/Contents/Resources
 	cp -r applications/admin ../web2py_osx/web2py/web2py.app/Contents/Resources/applications
 	cp -r applications/welcome ../web2py_osx/web2py/web2py.app/Contents/Resources/applications
 	cp -r applications/examples ../web2py_osx/web2py/web2py.app/Contents/Resources/applications
@@ -84,22 +83,19 @@ app:
 		
 	mv ../web2py_osx/web2py_osx.zip .
 win:
-	python2.7 -c 'import compileall; compileall.compile_dir("gluon/")'
-	#cd ../web2py_win/library/; unzip ../library.zip
-	find gluon -path '*.pyc' -exec cp -R {} ../web2py_win/library/{} \;
-	cd ../web2py_win/library/; zip -r ../library.zip *
-	mv ../web2py_win/library.zip ../web2py_win/web2py
+	#cd ../web2py_win/library/; zip -r ../library.zip *
+	cp ../web2py_win/library.zip ../web2py_win/web2py
+	find gluon -path '*.py' -exec cp -r --parents {} ../web2py_win/web2py/ \;
 	cp README.markdown ../web2py_win/web2py/
 	cp NEWINSTALL ../web2py_win/web2py/
 	cp LICENSE ../web2py_win/web2py/
 	cp VERSION ../web2py_win/web2py/
 	cp CHANGELOG ../web2py_win/web2py/
-	cp -R extras ../web2py_win/web2py/
-	cp -R examples ../web2py_win/web2py/
-	cp -R handlers ../web2py_win/web2py/
-	cp -R applications/admin ../web2py_win/web2py/applications
-	cp -R applications/welcome ../web2py_win/web2py/applications
-	cp -R applications/examples ../web2py_win/web2py/applications
+	cp -r extras ../web2py_win/web2py/
+	cp -r examples ../web2py_win/web2py/
+	cp -r applications/admin ../web2py_win/web2py/applications
+	cp -r applications/welcome ../web2py_win/web2py/applications
+	cp -r applications/examples ../web2py_win/web2py/applications
 	cp applications/__init__.py ../web2py_win/web2py/applications
 	cd ../web2py_win; zip -r web2py_win.zip web2py
 	mv ../web2py_win/web2py_win.zip .

@@ -5,10 +5,10 @@ import sys
 import os
 import optparse
 
-if '__file__' in globals():
-    path = os.path.dirname(os.path.abspath(__file__))
-elif hasattr(sys, 'frozen'):
+if hasattr(sys, 'frozen'):
     path = os.path.dirname(os.path.abspath(sys.executable))
+elif '__file__' in globals():
+    path = os.path.dirname(os.path.abspath(__file__))
 else:
     path = os.getcwd()
 os.chdir(path)
@@ -39,7 +39,7 @@ def run(options):
     if options.ssl_certificate:
         ssl_args['certfile'] = options.ssl_certificate
     server = pywsgi.WSGIServer(
-                    address, application, 
+                    address, application,
                     spawn=spawn, log=None,
                     **ssl_args
                     )
@@ -59,7 +59,7 @@ def main():
                       default='<recycle>',
                       dest='password',
                       help=msg)
-    
+
     parser.add_option('-c',
                       '--ssl_certificate',
                       default='',
@@ -71,32 +71,32 @@ def main():
                       default='',
                       dest='ssl_private_key',
                       help='file that contains ssl private key')
-    
+
     parser.add_option('-l',
                       '--logging',
                       action='store_true',
                       default=False,
                       dest='logging',
                       help='log into httpserver.log')
-    
+
     parser.add_option('-F',
                       '--profiler',
                       dest='profiler_dir',
                       default=None,
                       help='profiler dir')
-                      
+
     parser.add_option('-i',
                       '--ip',
                       default='127.0.0.1',
                       dest='ip',
                       help='ip address')
-                      
+
     parser.add_option('-p',
                       '--port',
                       default='8000',
                       dest='port',
                       help='port number')
-                      
+
     parser.add_option('-w',
                       '--workers',
                       default=None,
@@ -105,9 +105,8 @@ def main():
 
     (options, args) = parser.parse_args()
     print 'starting on %s:%s...' % (
-        options.ip, options.port)    
+        options.ip, options.port)
     run(options)
 
 if __name__ == '__main__':
     main()
-

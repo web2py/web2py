@@ -1,4 +1,4 @@
-# coding: utf8
+# -*- coding: utf-8 -*-
 {
 '!langcode!': 'uk',
 '!langname!': 'Українська',
@@ -517,5 +517,5 @@
 'you must specify a name for the uploaded application': "ви повинні вказати ім'я додатка, перед ти, як завантажити його",
 'You need to set up and reach a': 'Треба встановити та досягнути',
 'Your application will be blocked until you click an action button (next, step, continue, etc.)': 'Ваш додаток буде заблоковано, поки ви не клацнете по одній з кнопок керування ("наступний", "крок", "продовжити", та ін.)',
-'Your can inspect variables using the console bellow': 'Ви можете досліджувати змінні, використовуючи інтерактивну консоль',
+'You can inspect variables using the console bellow': 'Ви можете досліджувати змінні, використовуючи інтерактивну консоль',
 }

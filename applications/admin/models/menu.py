@@ -34,4 +34,3 @@ else:
                           URL(_a, 'default', f='logout')))
     response.menu.append((T('Debug'), False,
                           URL(_a, 'debug', 'interact')))
-
