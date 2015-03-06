@@ -65,8 +65,9 @@ def parse_semantic(version="Version 1.99.0-rc.1+timestamp.2011.09.19.08.23.26"):
     pre_release = m.group('pre') or ''
     build = m.group('build') or ''
     if build.startswith('timestamp'):
-        build = datetime.datetime.strptime(build.split('.',1)[1], '%Y.%m.%d.%H.%M.%S')
+        build = datetime.datetime.strptime(build.split('.', 1)[1], '%Y.%m.%d.%H.%M.%S')
     return (a, b, c, pre_release, build)
+
 
 def parse_legacy(version="Version 1.99.0 (2011-09-19 08:23:26)"):
     """Parses "legacy" version string
@@ -85,6 +86,7 @@ def parse_legacy(version="Version 1.99.0 (2011-09-19 08:23:26)"):
     build = datetime.datetime.strptime(m.group('datetime'), '%Y-%m-%d %H:%M:%S')
     return (a, b, c, pre_release, build)
 
+
 def parse_version(version):
     """Attempts to parse SemVer, fallbacks on legacy
     """
@@ -92,6 +94,7 @@ def parse_version(version):
     if not version_tuple:
         version_tuple = parse_legacy(version)
     return version_tuple
+
 
 def read_file(filename, mode='r'):
     """Returns content from filename, making sure to close the file explicitly 
@@ -136,7 +139,7 @@ def listdir(
     drop=True,
     add_dirs=False,
     sort=True,
-    maxnum = None,
+    maxnum=None,
 ):
     """
     Like `os.listdir()` but you can specify a regex pattern to filter files.
@@ -267,6 +270,7 @@ def tar(file, dir, expression='^.+$', filenames=None):
     finally:
         tar.close()
 
+
 def untar(file, dir):
     """Untar file into dir
     """
@@ -297,6 +301,7 @@ def w2p_pack(filename, path, compiled=False, filenames=None):
     tarfp.close()
     os.unlink(tarname)
 
+
 def create_welcome_w2p():
     if not os.path.exists('welcome.w2p') or os.path.exists('NEWINSTALL'):
         try:
@@ -309,7 +314,7 @@ def create_welcome_w2p():
 
 def w2p_unpack(filename, path, delete_tar=True):
 
-    if filename=='welcome.w2p':
+    if filename == 'welcome.w2p':
         create_welcome_w2p()
     filename = abspath(filename)
     path = abspath(path)
@@ -405,6 +410,7 @@ def get_session(request, other_application='admin'):
         osession = storage.Storage()
     return osession
 
+
 def set_session(request, session, other_application='admin'):
     """Checks that user is authorized to access other_application"""
     if request.application == other_application:
@@ -412,7 +418,8 @@ def set_session(request, session, other_application='admin'):
     session_id = request.cookies['session_id_' + other_application].value
     session_filename = os.path.join(
         up(request.folder), other_application, 'sessions', session_id)
-    storage.save_storage(session,session_filename)
+    storage.save_storage(session, session_filename)
+
 
 def check_credentials(request, other_application='admin',
                       expiration=60 * 60, gae_login=True):
@@ -434,7 +441,7 @@ def check_credentials(request, other_application='admin',
         r = (s.authorized and s.last_time and s.last_time > dt)
         if r:
             s.last_time = t0
-            set_session(request,s,other_application)
+            set_session(request, s, other_application)
         return r
 
 
@@ -487,7 +494,7 @@ def make_fake_file_like_object():
 
 
 from settings import global_settings  # we need to import settings here because
-                                     # settings imports fileutils too
+                                      # settings imports fileutils too
 
 
 def abspath(*relpath, **base):
