@@ -392,11 +392,12 @@ _base_environment_['SQLFORM'] = SQLFORM
 _base_environment_['SQLTABLE'] = SQLTABLE
 _base_environment_['LOAD'] = LOAD
 
+
 def build_environment(request, response, session, store_current=True):
     """
     Build the environment dictionary into which web2py files are executed.
     """
-    #h,v = html,validators
+    # h, v = html, validators
     environment = dict(_base_environment_)
 
     if not request.env:
@@ -409,7 +410,7 @@ def build_environment(request, response, session, store_current=True):
         r'^%s/%s/\w+\.py$' % (request.controller, request.function)
         ]
 
-    t = environment['T'] = translator(os.path.join(request.folder,'languages'),
+    t = environment['T'] = translator(os.path.join(request.folder, 'languages'),
                                       request.env.http_accept_language)
     c = environment['cache'] = Cache(request)
 
@@ -487,16 +488,18 @@ def compile_models(folder):
     path = pjoin(folder, 'models')
     for fname in listdir(path, '.+\.py$'):
         data = read_file(pjoin(path, fname))
-        modelfile = 'models.'+fname.replace(os.path.sep,'.')
+        modelfile = 'models.'+fname.replace(os.path.sep, '.')
         filename = pjoin(folder, 'compiled', modelfile)
         mktree(filename)
         write_file(filename, data)
         save_pyc(filename)
         os.unlink(filename)
 
+
 def find_exposed_functions(data):
-    data = regex_longcomments.sub('',data)
+    data = regex_longcomments.sub('', data)
     return regex_expose.findall(data)
+
 
 def compile_controllers(folder):
     """
@@ -512,16 +515,19 @@ def compile_controllers(folder):
             command = data + "\nresponse._vars=response._caller(%s)\n" % \
                 function
             filename = pjoin(folder, 'compiled', 
-                             'controllers.%s.%s.py' % (fname[:-3],function))
+                             'controllers.%s.%s.py' % (fname[:-3], function))
             write_file(filename, command)
             save_pyc(filename)
             os.unlink(filename)
 
+
 def model_cmp(a, b, sep='.'):
     return cmp(a.count(sep), b.count(sep)) or cmp(a, b)
 
+
 def model_cmp_sep(a, b, sep=os.path.sep):
-    return model_cmp(a,b,sep)
+    return model_cmp(a, b, sep)
+
 
 def run_models_in(environment):
     """
@@ -550,10 +556,10 @@ def run_models_in(environment):
         if models_to_run:
             if compiled:
                 n = len(cpath)+8
-                fname = model[n:-4].replace('.','/')+'.py'
+                fname = model[n:-4].replace('.', '/')+'.py'
             else:
                 n = len(path)+1
-                fname = model[n:].replace(os.path.sep,'/')
+                fname = model[n:].replace(os.path.sep, '/')
             if not regex.search(fname) and c != 'appadmin':
                 continue
             elif compiled:
