@@ -11,12 +11,19 @@ from gluon.languages import lazyT
 import gluon.contrib.rss2 as rss2
 
 try:
-    import simplejson as json_parser                # try external module
+    # try external module
+    import simplejson as json_parser
 except ImportError:
     try:
-        import json as json_parser                  # try stdlib (Python >= 2.6)
+        # try stdlib (Python >= 2.6)
+        import json as json_parser
     except:
-        import gluon.contrib.simplejson as json_parser    # fallback to pure-Python module
+        # fallback to pure-Python module
+        import gluon.contrib.simplejson as json_parser
+
+# simplejson >= 2.1.3 needs use_decimal = False
+# to stringify decimals
+decimal_false_option = json_parser.__version__.split('.') >= ['2', '1', '3']
 
 have_yaml = True
 try:
@@ -26,20 +33,21 @@ except ImportError:
 
 
 def cast_keys(o, cast=str, encoding="utf-8"):
-    """ Builds a new object with <cast> type keys
-
-    Arguments:
-        o is the object input
-        cast (defaults to str) is an object type or function
-              which supports conversion such as:
-
-              >>> converted = cast(o)
-
-        encoding (defaults to utf-8) is the encoding for unicode
-                 keys. This is not used for custom cast functions
-
-    Use this funcion if you are in Python < 2.6.5
+    """
+    Builds a new object with <cast> type keys.
+    Use this function if you are in Python < 2.6.5
     This avoids syntax errors when unpacking dictionary arguments.
+
+    Args:
+        o: is the object input
+        cast:  (defaults to str) is an object type or function
+            which supports conversion such as:
+
+                converted = cast(o)
+
+        encoding: (defaults to utf-8) is the encoding for unicode
+            keys. This is not used for custom cast functions
+
     """
 
     if isinstance(o, (dict, Storage)):
@@ -92,6 +100,8 @@ def custom_json(o):
         return str(o)
     elif isinstance(o, XmlComponent):
         return str(o)
+    elif isinstance(o, set):
+        return list(o)
     elif hasattr(o, 'as_list') and callable(o.as_list):
         return o.as_list()
     elif hasattr(o, 'as_dict') and callable(o.as_dict):
@@ -121,12 +131,15 @@ def xml(value, encoding='UTF-8', key='document', quote=True):
 
 
 def json(value, default=custom_json):
+    if decimal_false_option:
+        value = json_parser.dumps(value, default=default, use_decimal=False)
+    else:
+        value = json_parser.dumps(value, default=default)
+
     # replace JavaScript incompatible spacing
     # http://timelessrepo.com/json-isnt-a-javascript-subset
-    return json_parser.dumps(value,
-        default=default).replace(ur'\u2028',
-                                 '\\u2028').replace(ur'\2029',
-                                                    '\\u2029')
+    return value.replace(ur'\u2028', '\\u2028').replace(ur'\2029', '\\u2029')
+
 
 
 def csv(value):
@@ -135,7 +148,6 @@ def csv(value):
 
 def ics(events, title=None, link=None, timeshift=0, calname=True,
         **ignored):
-    import datetime
     title = title or '(unknown)'
     if link and not callable(link):
         link = lambda item, prefix=link: prefix.replace(
@@ -167,15 +179,18 @@ def ics(events, title=None, link=None, timeshift=0, calname=True,
 def rss(feed):
     if not 'entries' in feed and 'items' in feed:
         feed['entries'] = feed['items']
+    def safestr(obj, key, default=''):
+        return str(obj[key]).encode('utf-8', 'replace') if key in obj else default
+
     now = datetime.datetime.now()
-    rss = rss2.RSS2(title=str(feed.get('title', '(notitle)').encode('utf-8', 'replace')),
-                    link=str(feed.get('link', None).encode('utf-8', 'replace')),
-                    description=str(feed.get('description', '').encode('utf-8', 'replace')),
+    rss = rss2.RSS2(title=safestr(feed,'title'),
+                    link=safestr(feed,'link'),
+                    description=safestr(feed,'description'),
                     lastBuildDate=feed.get('created_on', now),
                     items=[rss2.RSSItem(
-                           title=str(entry.get('title', '(notitle)').encode('utf-8', 'replace')),
-                           link=str(entry.get('link', None).encode('utf-8', 'replace')),
-                           description=str(entry.get('description', '').encode('utf-8', 'replace')),
+                           title=safestr(entry,'title','(notitle)'),
+                           link=safestr(entry,'link'),
+                           description=safestr(entry,'description'),
                            pubDate=entry.get('created_on', now)
                            ) for entry in feed.get('entries', [])])
     return rss.to_xml(encoding='utf-8')
@@ -184,10 +199,13 @@ def rss(feed):
 def yaml(data):
     if have_yaml:
         return yamlib.dump(data)
-    else: raise ImportError("No YAML serializer available")
+    else:
+        raise ImportError("No YAML serializer available")
+
 
 
 def loads_yaml(data):
     if have_yaml:
         return yamlib.load(data)
-    else: raise ImportError("No YAML serializer available")
+    else:
+        raise ImportError("No YAML serializer available")

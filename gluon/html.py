@@ -21,7 +21,10 @@ import sanitizer
 import itertools
 import decoder
 import copy_reg
-import cPickle
+try:
+    import cPickle as pickle
+except:
+    import pickle
 import marshal
 
 from HTMLParser import HTMLParser
@@ -43,6 +46,7 @@ entitydefs.setdefault('apos', u"'".encode('utf-8'))
 
 __all__ = [
     'A',
+    'ASSIGNJS',
     'B',
     'BEAUTIFY',
     'BODY',
@@ -109,6 +113,7 @@ __all__ = [
     'embed64',
 ]
 
+DEFAULT_PASSWORD_DISPLAY = '*' * 8
 
 def xmlescape(data, quote=True):
     """
@@ -133,13 +138,11 @@ def xmlescape(data, quote=True):
     data = cgi.escape(data, quote).replace("'", "&#x27;")
     return data
 
-
 def call_as_list(f, *a, **b):
     if not isinstance(f, (list, tuple)):
         f = [f]
     for item in f:
         item(*a, **b)
-
 
 def truncate_string(text, length, dots='...'):
     text = text.decode('utf-8')
@@ -309,6 +312,13 @@ def URL(
         # if the url gets a static resource, don't force extention
         if controller == 'static':
             extension = None
+            # add static version to url
+            from globals import current
+            if hasattr(current, 'response'):
+                response = current.response
+                if response.static_version and response.static_version_urls:
+                    args = [function] + args
+                    function = '_'+str(response.static_version)
 
         if '.' in function:
             function, extension = function.rsplit('.', 1)
@@ -540,7 +550,6 @@ class XmlComponent(object):
         classes = (set(c.split()) if c else set()) - set(name.split())
         self['_class'] = ' '.join(classes) if classes else None
         return self
-
 
 class XML(XmlComponent):
     """
@@ -840,7 +849,7 @@ class DIV(XmlComponent):
         """
         components = []
         for c in self.components:
-            if isinstance(c, allowed_parents):
+            if isinstance(c, (allowed_parents,CAT)):
                 pass
             elif wrap_lambda:
                 c = wrap_lambda(c)
@@ -1235,13 +1244,13 @@ class CAT(DIV):
 
 
 def TAG_unpickler(data):
-    return cPickle.loads(data)
+    return pickle.loads(data)
 
 
 def TAG_pickler(data):
     d = DIV()
     d.__dict__ = data.__dict__
-    marshal_dump = cPickle.dumps(d)
+    marshal_dump = pickle.dumps(d, pickle.HIGHEST_PROTOCOL)
     return (TAG_unpickler, (marshal_dump,))
 
 
@@ -1251,7 +1260,6 @@ class __tag_div__(DIV):
         self.tag = name
 
 copy_reg.pickle(__tag_div__, TAG_pickler, TAG_unpickler)
-
 
 class __TAG__(XmlComponent):
 
@@ -1843,8 +1851,12 @@ class INPUT(DIV):
         if requires:
             if not isinstance(requires, (list, tuple)):
                 requires = [requires]
-            for validator in requires:
-                (value, errors) = validator(value)
+            for k, validator in enumerate(requires):
+                try:
+                    (value, errors) = validator(value)
+                except:
+                    msg = "Validation error, field:%s %s" % (name,validator)
+                    raise Exception(msg)
                 if not errors is None:
                     self.vars[name] = value
                     self.errors[name] = errors
@@ -1881,6 +1893,8 @@ class INPUT(DIV):
                 self['_checked'] = 'checked'
             else:
                 self['_checked'] = None
+        elif t == 'password' and value != DEFAULT_PASSWORD_DISPLAY:
+            self['value'] = ''
         elif not t == 'submit':
             if value is None:
                 self['value'] = _value
@@ -2098,7 +2112,7 @@ class FORM(DIV):
             status = False
         if status and session:
             # check if editing a record that has been modified by the server
-            if hasattr(self, 'record_hash') and self.record_hash != formkey:
+            if hasattr(self, 'record_hash') and self.record_hash != formkey.split(':')[0]:
                 status = False
                 self.record_changed = changed = True
         status = self._traverse(status, hideerror)
@@ -2126,7 +2140,7 @@ class FORM(DIV):
             status = False
         if not session is None:
             if hasattr(self, 'record_hash'):
-                formkey = self.record_hash
+                formkey = self.record_hash + ':' + web2py_uuid()
             else:
                 formkey = web2py_uuid()
             self.formkey = formkey
@@ -2812,6 +2826,12 @@ class MARKMIN(XmlComponent):
 
     def __str__(self):
         return self.xml()
+def ASSIGNJS(**kargs):
+    from gluon.serializers import json
+    s = ""
+    for key, value in kargs.items():
+        s+='var %s = %s;\n' % (key, json(value))
+    return XML(s)
 
 if __name__ == '__main__':
     import doctest

@@ -14,6 +14,7 @@ import threading
 import struct
 import uuid
 import random
+import inspect
 import time
 import os
 import re
@@ -22,7 +23,6 @@ import logging
 import socket
 import base64
 import zlib
-
 
 _struct_2_long_long = struct.Struct('=QQ')
 
@@ -33,6 +33,7 @@ if python_version == 2:
 else:
     import pickle
 
+import hashlib
 from hashlib import md5, sha1, sha224, sha256, sha384, sha512
 
 try:
@@ -42,18 +43,26 @@ except ImportError:
 
 import hmac
 
-try:
-    try:
-        from gluon.contrib.pbkdf2_ctypes import pbkdf2_hex
-    except (ImportError, AttributeError):
-        from gluon.contrib.pbkdf2 import pbkdf2_hex
+if hasattr(hashlib, "pbkdf2_hmac"):
+    def pbkdf2_hex(data, salt, iterations=1000, keylen=24, hashfunc=None):
+        hashfunc = hashfunc or sha1
+        return hashlib.pbkdf2_hmac(hashfunc().name,
+                           data, salt, iterations,
+                           keylen).encode("hex")
     HAVE_PBKDF2 = True
-except ImportError:
+else:
     try:
-        from .pbkdf2 import pbkdf2_hex
+        try:
+            from gluon.contrib.pbkdf2_ctypes import pbkdf2_hex
+        except (ImportError, AttributeError):
+            from gluon.contrib.pbkdf2 import pbkdf2_hex
         HAVE_PBKDF2 = True
-    except (ImportError, ValueError):
-        HAVE_PBKDF2 = False
+    except ImportError:
+        try:
+            from .pbkdf2 import pbkdf2_hex
+            HAVE_PBKDF2 = True
+        except (ImportError, ValueError):
+            HAVE_PBKDF2 = False
 
 logger = logging.getLogger("web2py")
 
@@ -134,6 +143,16 @@ DIGEST_ALG_BY_SIZE = {
     512 / 4: 'sha512',
 }
 
+def get_callable_argspec(fn):
+    if inspect.isfunction(fn) or inspect.ismethod(fn):
+        inspectable = fn
+    elif inspect.isclass(fn):
+        inspectable = fn.__init__
+    elif hasattr(fn, '__call__'):
+        inspectable = fn.__call__
+    else:
+        inspectable = fn
+    return inspect.getargspec(inspectable)
 
 def pad(s, n=32, padchar=' '):
     return s + (32 - len(s) % 32) * padchar
@@ -142,7 +161,7 @@ def pad(s, n=32, padchar=' '):
 def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
     if not hash_key:
         hash_key = sha1(encryption_key).hexdigest()
-    dump = pickle.dumps(data)
+    dump = pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
     if compression_level:
         dump = zlib.compress(dump, compression_level)
     key = pad(encryption_key[:32])

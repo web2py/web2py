@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 | This file is part of the web2py Web Framework
 | Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
@@ -11,15 +10,19 @@ Restricted environment to execute application's code
 """
 
 import sys
-import cPickle
+try:
+    import cPickle as pickle
+except:
+    import pickle
 import traceback
 import types
 import os
 import logging
 
-from storage import Storage
-from http import HTTP
-from html import BEAUTIFY, XML
+from gluon.storage import Storage
+from gluon.http import HTTP
+from gluon.html import BEAUTIFY, XML
+from gluon.settings import global_settings
 
 logger = logging.getLogger("web2py")
 
@@ -55,7 +58,7 @@ class TicketStorage(Storage):
         try:
             table = self._get_table(self.db, self.tablename, request.application)
             table.insert(ticket_id=ticket_id,
-                         ticket_data=cPickle.dumps(ticket_data),
+                         ticket_data=pickle.dumps(ticket_data, pickle.HIGHEST_PROTOCOL),
                          created_datetime=request.now)
             self.db.commit()
             message = 'In FILE: %(layer)s\n\n%(traceback)s\n'
@@ -68,7 +71,7 @@ class TicketStorage(Storage):
     def _store_on_disk(self, request, ticket_id, ticket_data):
         ef = self._error_file(request, ticket_id, 'wb')
         try:
-            cPickle.dump(ticket_data, ef)
+            pickle.dump(ticket_data, ef)
         finally:
             ef.close()
 
@@ -103,13 +106,13 @@ class TicketStorage(Storage):
             except IOError:
                 return {}
             try:
-                return cPickle.load(ef)
+                return pickle.load(ef)
             finally:
                 ef.close()
         else:
             table = self._get_table(self.db, self.tablename, app)
             rows = self.db(table.ticket_id == ticket_id).select()
-            return cPickle.loads(rows[0].ticket_data) if rows else {}
+            return pickle.loads(rows[0].ticket_data) if rows else {}
 
 
 class RestrictedError(Exception):
@@ -153,7 +156,6 @@ class RestrictedError(Exception):
         """
         Logs the exception.
         """
-
         try:
             d = {
                 'layer': str(self.layer),
@@ -164,10 +166,13 @@ class RestrictedError(Exception):
             }
             ticket_storage = TicketStorage(db=request.tickets_db)
             ticket_storage.store(request, request.uuid.split('/', 1)[1], d)
+            if global_settings.cmd_options.print_errors:
+                logger.error(self.traceback)
             return request.uuid
         except:
             logger.error(self.traceback)
             return None
+
 
     def load(self, request, app, ticket_id):
         """
@@ -197,8 +202,9 @@ class RestrictedError(Exception):
 
 def compile2(code, layer):
     """
-    The +'\n' is necessary else compile fails when code ends in a comment.
+    The ``+'\\n'`` is necessary else compile fails when code ends in a comment.
     """
+
     return compile(code.rstrip().replace('\r\n', '\n') + '\n', layer, 'exec')
 
 
@@ -235,8 +241,6 @@ def restricted(code, environment=None, layer='Unknown'):
 
 def snapshot(info=None, context=5, code=None, environment=None):
     """Return a dict describing a given traceback (based on cgitb.text)."""
-    import os
-    import types
     import time
     import linecache
     import inspect

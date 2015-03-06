@@ -41,7 +41,7 @@ class CustomImportException(ImportError):
 
 def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
     """
-    web2py's custom importer. It behaves like the standard Python importer but 
+    web2py's custom importer. It behaves like the standard Python importer but
     it tries to transform import statements as something like
     "import applications.app_name.modules.x".
     If the import fails, it falls back on naive_importer
@@ -81,7 +81,7 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
                         new_mod = base_importer(
                             modules_prefix, globals, locals, [itemname], level)
                         try:
-                            result = result or new_mod.__dict__[itemname]
+                            result = result or sys.modules[modules_prefix+'.'+itemname]
                         except KeyError, e:
                             raise ImportError, 'Cannot import module %s' % str(e)
                         modules_prefix += "." + itemname
@@ -97,7 +97,7 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
             except ImportError, e3:
                 raise ImportError, e1, import_tb  # there an import error in the module
         except Exception, e2:
-            raise e2  # there is an error in the module
+            raise  # there is an error in the module
         finally:
             if import_tb:
                 import_tb = None

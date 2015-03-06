@@ -279,18 +279,20 @@ class TemplateParser(object):
         self.context = context
 
         # allow optional alternative delimiters
-        self.delimiters = delimiters
+
         if delimiters != self.default_delimiters:
             escaped_delimiters = (escape(delimiters[0]),
                                   escape(delimiters[1]))
             self.r_tag = compile(r'(%s.*?%s)' % escaped_delimiters, DOTALL)
         elif hasattr(context.get('response', None), 'delimiters'):
             if context['response'].delimiters != self.default_delimiters:
+                delimiters = context['response'].delimiters
                 escaped_delimiters = (
-                    escape(context['response'].delimiters[0]),
-                    escape(context['response'].delimiters[1]))
+                    escape(delimiters[0]),
+                    escape(delimiters[1]))
                 self.r_tag = compile(r'(%s.*?%s)' % escaped_delimiters,
                                      DOTALL)
+        self.delimiters = delimiters
 
         # Create a root level Content that everything will go into.
         self.content = Content(name=name)
@@ -569,7 +571,8 @@ class TemplateParser(object):
                     line = i
 
                     # Get rid of delimiters
-                    line = line[len(self.delimiters[0]):-len(self.delimiters[1])].strip()
+                    line = line[len(self.delimiters[0]): \
+                                    -len(self.delimiters[1])].strip()
 
                     # This is bad juju, but let's do it anyway
                     if not line:

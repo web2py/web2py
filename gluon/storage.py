@@ -12,7 +12,11 @@ Provides:
 - Storage; like dictionary allowing also for `obj.foo` for `obj['foo']`
 """
 
-import cPickle
+try:
+    import cPickle as pickle
+except:
+    import pickle
+import copy_reg
 import gluon.portalocker as portalocker
 
 __all__ = ['List', 'Storage', 'Settings', 'Messages',
@@ -49,6 +53,7 @@ class Storage(dict):
     __delattr__ = dict.__delitem__
     __getitem__ = dict.get
     __getattr__ = dict.get
+    __getnewargs__ = lambda self: getattr(dict,self).__getnewargs__(self)
     __repr__ = lambda self: '<Storage %s>' % dict.__repr__(self)
     # http://stackoverflow.com/questions/5247250/why-does-pickle-getstate-accept-as-a-return-value-the-very-instance-it-requi
     __getstate__ = lambda self: None
@@ -130,6 +135,12 @@ class Storage(dict):
         values = self.getlist(key)
         return values[-1] if values else default
 
+
+def pickle_storage(s):
+    return Storage, (dict(s),)
+
+copy_reg.pickle(Storage, pickle_storage)
+
 PICKABLE = (str, int, long, float, bool, list, dict, tuple, set)
 
 
@@ -142,10 +153,10 @@ class StorageList(Storage):
 
     def __getattr__(self, key):
         if key in self:
-            return getattr(self, key)
+            return self.get(key)
         else:
             r = []
-            setattr(self, key, r)
+            self[key] = r
             return r
 
 
@@ -153,7 +164,7 @@ def load_storage(filename):
     fp = None
     try:
         fp = portalocker.LockedFile(filename, 'rb')
-        storage = cPickle.load(fp)
+        storage = pickle.load(fp)
     finally:
         if fp:
             fp.close()
@@ -164,7 +175,7 @@ def save_storage(storage, filename):
     fp = None
     try:
         fp = portalocker.LockedFile(filename, 'wb')
-        cPickle.dump(dict(storage), fp)
+        pickle.dump(dict(storage), fp)
     finally:
         if fp:
             fp.close()
@@ -186,7 +197,7 @@ class Messages(Settings):
     def __getattr__(self, key):
         value = self[key]
         if isinstance(value, str):
-            return str(self.T(value))
+            return self.T(value)
         return value
 
 

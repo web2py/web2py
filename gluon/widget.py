@@ -225,8 +225,8 @@ class web2pyDialog(object):
                       text=str(ProgramVersion + "\n" + ProgramAuthor),
                       font=('Helvetica', 11), justify=Tkinter.CENTER,
                       foreground='#195866', background=bg_color,
-                      height=3).pack( side='top', 
-                                      fill='both', 
+                      height=3).pack( side='top',
+                                      fill='both',
                                       expand='yes')
 
         self.bannerarea.after(1000, self.update_canvas)
@@ -246,7 +246,7 @@ class web2pyDialog(object):
             [('0.0.0.0', 'Public')]
         for ip, legend in ips:
             self.ips[ip] = Tkinter.Radiobutton(
-                self.root, bg=bg_color, highlightthickness=0, 
+                self.root, bg=bg_color, highlightthickness=0,
                 selectcolor='light grey', width=30,
                 anchor=Tkinter.W, text='%s (%s)' % (legend, ip),
                 justify=Tkinter.LEFT,
@@ -737,6 +737,13 @@ def console():
                       default=False,
                       help='disable all output')
 
+    parser.add_option('-e',
+                      '--errors_to_console',
+                      action='store_true',
+                      dest='print_errors',
+                      default=False,
+                      help='log all errors to console')
+
     msg = ('set debug output level (0-100, 0 means all, 100 means none; '
            'default is 30)')
     parser.add_option('-D',
@@ -1086,7 +1093,7 @@ def start(cron=True):
         print ProgramAuthor
         print ProgramVersion
 
-    from dal import DRIVERS
+    from pydal.drivers import DRIVERS
     if not options.nobanner:
         print 'Database drivers available: %s' % ', '.join(DRIVERS)
 
@@ -1119,6 +1126,8 @@ def start(cron=True):
 
     # ## if -S start interactive shell (also no cron)
     if options.shell:
+        if options.folder:
+            os.chdir(options.folder)
         if not options.args is None:
             sys.argv[:] = options.args
         run(options.shell, plain=options.plain, bpython=options.bpython,
