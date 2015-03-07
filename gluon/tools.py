@@ -182,6 +182,10 @@ class Mail(object):
         Create Mail object with authentication data for remote server::
 
             mail = Mail('example.com:25', 'me@example.com', 'me:password')
+
+    Notice for GAE users:
+        attachments have an automatic content_id='attachment-i' where i is progressive number
+        in this way the can be referenced from the HTML as <img src="cid:attachment-0" /> etc.
     """
 
     class Attachment(MIMEBase.MIMEBase):
@@ -772,8 +776,11 @@ class Mail(object):
                     xcc['bcc'] = bcc
                 if reply_to:
                     xcc['reply_to'] = reply_to
-                from google.appengine.api import mail
-                attachments = attachments and [(a.my_filename, a.my_payload) for a in attachments if not raw]
+                from google.appengine.api import mail, Attachment
+                attachments = attachments and [Attachment(a.my_filename, 
+                                                          a.my_payload,
+                                                          contebt_id='<attachment-%s>' % k)
+                                               for k,a in enumerate(attachments) if not raw]
                 if attachments:
                     result = mail.send_mail(
                         sender=sender, to=origTo,

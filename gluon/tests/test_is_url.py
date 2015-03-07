@@ -498,7 +498,7 @@ class TestIsHttpUrl(unittest.TestCase):
             'http://1234567890.com.',
             'http://1234567890.com./path',
             'http://google.com./path',
-            'http://domain.xn--0zwm56d',
+            'http://domain.xn--d1acj3b',
             'http://127.123.0.256',
             'http://127.123.0.256/document/drawer',
             '127.123.0.256/document/',
@@ -668,6 +668,32 @@ class TestUnicode(unittest.TestCase):
             u'invalid.\u4e2d\u4fd4.blargg', 'Enter a valid URL'))
 
 # ##############################################################################
+
+
+class TestSimple(unittest.TestCase):
+
+    def test_IS_URL(self):
+        rtn = IS_URL()('abc.com')
+        self.assertEqual(rtn, ('http://abc.com', None))
+        rtn = IS_URL(mode='generic')('abc.com')
+        self.assertEqual(rtn, ('abc.com', None))
+        rtn = IS_URL(allowed_schemes=['https'], prepend_scheme='https')('https://abc.com')
+        self.assertEqual(rtn, ('https://abc.com', None))
+        rtn = IS_URL(prepend_scheme='https')('abc.com')
+        self.assertEqual(rtn, ('https://abc.com', None))
+        rtn = IS_URL(mode='generic', allowed_schemes=['ftps', 'https'], prepend_scheme='https')('https://abc.com')
+        self.assertEqual(rtn, ('https://abc.com', None))
+        rtn = IS_URL(mode='generic', allowed_schemes=['ftps', 'https', None], prepend_scheme='https')('abc.com')
+        self.assertEqual(rtn, ('abc.com', None))
+        # regression test for issue 773
+        rtn = IS_URL()('domain.ninja')
+        self.assertEqual(rtn, ('http://domain.ninja', None))
+        # addition of allowed_tlds
+        rtn = IS_URL(allowed_tlds=['com', 'net', 'org'])('domain.ninja')
+        self.assertEqual(rtn, ('domain.ninja', 'Enter a valid URL'))
+        # mode = 'generic' doesn't consider allowed_tlds
+        rtn = IS_URL(mode='generic', allowed_tlds=['com', 'net', 'org'])('domain.ninja')
+        self.assertEqual(rtn, ('domain.ninja', None))
 
 if __name__ == '__main__':
     unittest.main()

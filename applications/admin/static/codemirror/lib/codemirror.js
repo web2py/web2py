@@ -110,6 +110,7 @@
     for (var opt in optionHandlers) if (optionHandlers.hasOwnProperty(opt))
       optionHandlers[opt](this, options[opt], Init);
     maybeUpdateLineNumberWidth(this);
+    if (options.finishInit) options.finishInit(this);
     for (var i = 0; i < initHooks.length; ++i) initHooks[i](this);
     endOperation(this);
     // Suppress optimizelegibility in Webkit, since it breaks text
@@ -649,7 +650,17 @@
     this.oldDisplayWidth = displayWidth(cm);
     this.force = force;
     this.dims = getDimensions(cm);
+    this.events = [];
   }
+
+  DisplayUpdate.prototype.signal = function(emitter, type) {
+    if (hasHandler(emitter, type))
+      this.events.push(arguments);
+  };
+  DisplayUpdate.prototype.finish = function() {
+    for (var i = 0; i < this.events.length; i++)
+      signal.apply(null, this.events[i]);
+  };
 
   function maybeClipScrollbars(cm) {
     var display = cm.display;
@@ -761,9 +772,9 @@
       updateScrollbars(cm, barMeasure);
     }
 
-    signalLater(cm, "update", cm);
+    update.signal(cm, "update", cm);
     if (cm.display.viewFrom != cm.display.reportedViewFrom || cm.display.viewTo != cm.display.reportedViewTo) {
-      signalLater(cm, "viewportChange", cm, cm.display.viewFrom, cm.display.viewTo);
+      update.signal(cm, "viewportChange", cm, cm.display.viewFrom, cm.display.viewTo);
       cm.display.reportedViewFrom = cm.display.viewFrom; cm.display.reportedViewTo = cm.display.viewTo;
     }
   }
@@ -777,6 +788,7 @@
       updateSelection(cm);
       setDocumentHeight(cm, barMeasure);
       updateScrollbars(cm, barMeasure);
+      update.finish();
     }
   }
 
@@ -2237,6 +2249,8 @@
     // Fire change events, and delayed event handlers
     if (op.changeObjs)
       signal(cm, "changes", cm, op.changeObjs);
+    if (op.update)
+      op.update.finish();
   }
 
   // Run the given function in an operation
@@ -2611,8 +2625,10 @@
   }
 
   function focusInput(cm) {
-    if (cm.options.readOnly != "nocursor" && (!mobile || activeElt() != cm.display.input))
-      cm.display.input.focus();
+    if (cm.options.readOnly != "nocursor" && (!mobile || activeElt() != cm.display.input)) {
+      try { cm.display.input.focus(); }
+      catch (e) {} // IE8 will throw if the textarea is display: none or not in DOM
+    }
   }
 
   function ensureFocus(cm) {
@@ -5121,7 +5137,7 @@
   // FROMTEXTAREA
 
   CodeMirror.fromTextArea = function(textarea, options) {
-    if (!options) options = {};
+    options = options ? copyObj(options) : {};
     options.value = textarea.value;
     if (!options.tabindex && textarea.tabindex)
       options.tabindex = textarea.tabindex;
@@ -5152,23 +5168,26 @@
       }
     }
 
+    options.finishInit = function(cm) {
+      cm.save = save;
+      cm.getTextArea = function() { return textarea; };
+      cm.toTextArea = function() {
+        cm.toTextArea = isNaN; // Prevent this from being ran twice
+        save();
+        textarea.parentNode.removeChild(cm.getWrapperElement());
+        textarea.style.display = "";
+        if (textarea.form) {
+          off(textarea.form, "submit", save);
+          if (typeof textarea.form.submit == "function")
+            textarea.form.submit = realSubmit;
+        }
+      };
+    };
+
     textarea.style.display = "none";
     var cm = CodeMirror(function(node) {
       textarea.parentNode.insertBefore(node, textarea.nextSibling);
     }, options);
-    cm.save = save;
-    cm.getTextArea = function() { return textarea; };
-    cm.toTextArea = function() {
-      cm.toTextArea = isNaN; // Prevent this from being ran twice
-      save();
-      textarea.parentNode.removeChild(cm.getWrapperElement());
-      textarea.style.display = "";
-      if (textarea.form) {
-        off(textarea.form, "submit", save);
-        if (typeof textarea.form.submit == "function")
-          textarea.form.submit = realSubmit;
-      }
-    };
     return cm;
   };
 
@@ -6179,6 +6198,7 @@
   function defaultSpecialCharPlaceholder(ch) {
     var token = elt("span", "\u2022", "cm-invalidchar");
     token.title = "\\u" + ch.charCodeAt(0).toString(16);
+    token.setAttribute("aria-label", token.title);
     return token;
   }
 
@@ -6212,6 +6232,7 @@
         if (m[0] == "\t") {
           var tabSize = builder.cm.options.tabSize, tabWidth = tabSize - builder.col % tabSize;
           var txt = content.appendChild(elt("span", spaceStr(tabWidth), "cm-tab"));
+          txt.setAttribute("role", "presentation");
           builder.col += tabWidth;
         } else {
           var txt = builder.cm.options.specialCharPlaceholder(m[0]);
@@ -7576,12 +7597,14 @@
     return removeChildren(parent).appendChild(e);
   }
 
-  function contains(parent, child) {
+  var contains = CodeMirror.contains = function(parent, child) {
     if (parent.contains)
       return parent.contains(child);
-    while (child = child.parentNode)
+    while (child = child.parentNode) {
+      if (child.nodeType == 11) child = child.host;
       if (child == parent) return true;
-  }
+    }
+  };
 
   function activeElt() { return document.activeElement; }
   // Older versions of IE throws unspecified error when touching
@@ -8039,7 +8062,7 @@
 
   // THE END
 
-  CodeMirror.version = "4.12.0";
+  CodeMirror.version = "4.13.0";
 
   return CodeMirror;
 });
