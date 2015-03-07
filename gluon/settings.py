@@ -39,4 +39,4 @@ global_settings.is_jython = \
     str(sys.copyright).find('Jython') > 0
 
 global_settings.is_source = os.path.exists(os.path.join(
-        global_settings.gluon_parent,'web2py.py'))
+        global_settings.gluon_parent, 'web2py.py'))
