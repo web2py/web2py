@@ -56,13 +56,13 @@ debugger = pdb.Pdb(completekey=None, stdin=pipe_in, stdout=pipe_out,)
 
 
 def set_trace():
-    "breakpoint shortcut (like pdb)"
+    """breakpoint shortcut (like pdb)"""
     logger.info("DEBUG: set_trace!")
     debugger.set_trace(sys._getframe().f_back)
 
 
 def stop_trace():
-    "stop waiting for the debugger (called atexit)"
+    """stop waiting for the debugger (called atexit)"""
     # this should prevent communicate is wait forever a command result
     # and the main thread has finished
     logger.info("DEBUG: stop_trace!")
@@ -72,7 +72,7 @@ def stop_trace():
 
 
 def communicate(command=None):
-    "send command to debbuger, wait result"
+    """send command to debbuger, wait result"""
     if command is not None:
         logger.info("DEBUG: sending command %s" % command)
         pipe_in.write(command)
@@ -97,7 +97,7 @@ run_lock = RLock()
 
 
 def check_interaction(fn):
-    "Decorator to clean and prevent interaction when not available"
+    """Decorator to clean and prevent interaction when not available"""
     def check_fn(self, *args, **kwargs):
         interact_lock.acquire()
         try:
@@ -110,7 +110,7 @@ def check_interaction(fn):
 
 
 class WebDebugger(qdb.Frontend):
-    "Qdb web2py interface"
+    """Qdb web2py interface"""
 
     def __init__(self, pipe, completekey='tab', stdin=None, stdout=None):
         qdb.Frontend.__init__(self, pipe)
