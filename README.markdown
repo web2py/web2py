@@ -61,6 +61,8 @@ That's it!!!
         anyserver.py               > to run with third party servers
         ...                        > other handlers and example files
         gluon/                     > the core libraries
+            packages/              > web2py submodules
+              dal/
             contrib/               > third party libraries
             tests/                 > unittests  
         applications/              > are the apps
