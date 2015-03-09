@@ -13,6 +13,26 @@ Learn more at http://web2py.com
     
 Then edit ./app.yaml and replace "yourappname" with yourappname.
 
+## Import about this GIT repo
+
+An important part of web2py is the Database Abstraction Layer (DAL). In early 2015 this was decoupled into a separate code-base (PyDAL). In terms of git, it is a sub-module of the main repository.
+
+The use of a sub-module requires a one-time use of the --recursive flag for git clone if you are cloning web2py from scratch.
+
+    git clone --recursive
+
+If you have an existing repository, the commands below need to be executed once:
+
+    git submodule init
+    git submodule update
+
+if you have a folder gluon/dal also do
+
+    rm -r gluon/dal
+
+PyDAL uses a separate stable release cycle to the rest of web2py. PyDAL releases will use a date-naming scheme similar to Ubuntu. Issues related to PyDAL should be reported to its separate repository.
+
+
 ## Documentation (readthedocs.org)
 
 [![Docs Status](https://readthedocs.org/projects/web2py/badge/?version=latest&style=flat-square)](http://web2py.rtfd.org/)
