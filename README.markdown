@@ -21,12 +21,11 @@ The use of a sub-module requires a one-time use of the --recursive flag for git 
 
     git clone --recursive https://github.com/web2py/web2py.git
 
-If you have an existing repository, the commands below need to be executed once:
+If you have an existing repository, the commands below need to be executed at least once:
 
-    git submodule init
-    git submodule update
+    git submodule update --init --recursive
 
-if you have a folder gluon/dal also do
+If you have a folder gluon/dal you must remove it:
 
     rm -r gluon/dal
 
