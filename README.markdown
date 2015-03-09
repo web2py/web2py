@@ -19,7 +19,7 @@ An important part of web2py is the Database Abstraction Layer (DAL). In early 20
 
 The use of a sub-module requires a one-time use of the --recursive flag for git clone if you are cloning web2py from scratch.
 
-    git clone --recursive
+    git clone --recursive https://github.com/web2py/web2py.git
 
 If you have an existing repository, the commands below need to be executed once:
 
