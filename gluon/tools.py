@@ -43,7 +43,7 @@ from gluon import *
 from gluon.contrib.autolinks import expand_one
 from gluon.contrib.markmin.markmin2html import \
     replace_at_urls, replace_autolinks, replace_components
-from pydal.objects import Table, Row, Set, Query
+from gluon.dal.objects import Table, Row, Set, Query
 
 import gluon.serializers as serializers
 
@@ -182,10 +182,6 @@ class Mail(object):
         Create Mail object with authentication data for remote server::
 
             mail = Mail('example.com:25', 'me@example.com', 'me:password')
-
-    Notice for GAE users:
-        attachments have an automatic content_id='attachment-i' where i is progressive number
-        in this way the can be referenced from the HTML as <img src="cid:attachment-0" /> etc.
     """
 
     class Attachment(MIMEBase.MIMEBase):
@@ -776,11 +772,8 @@ class Mail(object):
                     xcc['bcc'] = bcc
                 if reply_to:
                     xcc['reply_to'] = reply_to
-                from google.appengine.api import mail, Attachment
-                attachments = attachments and [Attachment(a.my_filename, 
-                                                          a.my_payload,
-                                                          contebt_id='<attachment-%s>' % k)
-                                               for k,a in enumerate(attachments) if not raw]
+                from google.appengine.api import mail
+                attachments = attachments and [(a.my_filename, a.my_payload) for a in attachments if not raw]
                 if attachments:
                     result = mail.send_mail(
                         sender=sender, to=origTo,
@@ -2039,7 +2032,7 @@ class Auth(object):
         If the user exists already then password is updated.
         If the user doesn't yet exist, then they are created.
         """
-        table_user = self.table_user()
+	table_user = self.table_user()
         user = None
         checks = []
         # make a guess about who this user is
@@ -2073,7 +2066,9 @@ class Auth(object):
             user.update_record(**update_keys)
         elif checks:
             if not 'first_name' in keys and 'first_name' in table_user.fields:
-                guess = keys.get('email', 'anonymous').split('@')[0]
+                if (keys.get('email') != None):
+			guess = keys.get('email', 'anonymous').split('@')[0]
+		else: guess = keys.get('username')
                 keys['first_name'] = keys.get('username', guess)
             user_id = table_user.insert(**table_user._filter_fields(keys))
             user = table_user[user_id]
@@ -3104,15 +3099,10 @@ class Auth(object):
                 IS_EMAIL(error_message=self.messages.invalid_email),
                 IS_IN_DB(self.db, table_user.email,
                          error_message=self.messages.invalid_email)]
-            if not self.settings.email_case_sensitive:
-                table_user.email.requires.insert(0, IS_LOWER())
         else:
             table_user.username.requires = [
                 IS_IN_DB(self.db, table_user.username,
                          error_message=self.messages.invalid_username)]
-            if not self.settings.username_case_sensitive:
-                table_user.username.requires.insert(0, IS_LOWER())
-
         form = SQLFORM(table_user,
                        fields=[userfield],
                        hidden=dict(_next=next),
