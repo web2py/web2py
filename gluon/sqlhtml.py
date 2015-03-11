@@ -848,18 +848,14 @@ def formstyle_bootstrap3_stacked(form, fields):
                 controls.add_class('btn btn-default')
             elif controls['_type'] == 'file':
                 controls.add_class('input-file')
-            elif controls['_type'] == 'text':
-                controls.add_class('form-control')
-            elif controls['_type'] == 'password':
+            elif controls['_type'] in ('text', 'password'):
                 controls.add_class('form-control')
             elif controls['_type'] == 'checkbox':
                 label['_for'] = None
                 label.insert(0, controls)
                 _controls = DIV(label, _help, _class="checkbox")
                 label = ''
-            elif isinstance(controls, SELECT):
-                controls.add_class('form-control')
-            elif isinstance(controls, TEXTAREA):
+            elif isinstance(controls, (SELECT, TEXTAREA)):
                 controls.add_class('form-control')
                             
         elif isinstance(controls, SPAN):
@@ -901,9 +897,7 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
                     controls.add_class('btn btn-default')
                 elif controls['_type'] == 'file':
                     controls.add_class('input-file')
-                elif controls['_type'] == 'text':
-                    controls.add_class('form-control')
-                elif controls['_type'] == 'password':
+                elif controls['_type'] in ('text', 'password'):
                     controls.add_class('form-control')
                 elif controls['_type'] == 'checkbox':
                     label['_for'] = None
@@ -911,13 +905,12 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
                     _controls = DIV(DIV(label, _help, _class="checkbox"),
                         _class="%s %s" % (offset_class, col_class))
                     label = ''
-                elif isinstance(controls, SELECT):
-                    controls.add_class('form-control')
-                elif isinstance(controls, TEXTAREA):
+                elif isinstance(controls, (SELECT, TEXTAREA)):
                     controls.add_class('form-control')
                 
             elif isinstance(controls, SPAN):
-                _controls = P(controls.components, _class="form-control-static %s" % col_class)
+                _controls = P(controls.components, 
+                              _class="form-control-static %s" % col_class)
             elif isinstance(controls, UL):
                 for e in controls.elements("input"):
                     e.add_class('form-control')
