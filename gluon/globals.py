@@ -211,7 +211,7 @@ class Request(Storage):
         env = self.env
         post_vars = self._post_vars = Storage()
         body = self.body
-        #if content-type is application/json, we must read the body
+        # if content-type is application/json, we must read the body
         is_json = env.get('content_type', '')[:16] == 'application/json'
 
         if is_json:
@@ -438,7 +438,7 @@ class Response(Storage):
     def include_meta(self):
         s = "\n";
         for meta in (self.meta or {}).iteritems():
-            k,v = meta
+            k, v = meta
             if isinstance(v,dict):
                 s = s+'<meta'+''.join(' %s="%s"' % (xmlescape(key), xmlescape(v[key])) for key in v) +' />\n'
             else:
@@ -491,10 +491,10 @@ class Response(Storage):
         for item in files:
             if isinstance(item, str):
                 f = item.lower().split('?')[0]
-                #  if static_version we need also to check for
-                #  static_version_urls. In that case, the _.x.x.x
-                #  bit would have already been added by the URL()
-                #  function
+                # if static_version we need also to check for
+                # static_version_urls. In that case, the _.x.x.x
+                # bit would have already been added by the URL()
+                # function
                 if self.static_version and not self.static_version_urls:
                     item = item.replace(
                         '/static/', '/static/_%s/' % self.static_version, 1)
@@ -881,7 +881,7 @@ class Session(Storage):
                 table_migrate = False
             tname = tablename + '_' + masterapp
             table = db.get(tname, None)
-            #Field = db.Field
+            # Field = db.Field
             if table is None:
                 db.define_table(
                     tname,
