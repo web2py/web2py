@@ -53,3 +53,30 @@ CREATE TABLE auth_cas(
     renew CHAR(1)
 );
 success!
+timestamp: 2015-03-10T21:30:43.774215
+CREATE TABLE mytable(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    f_string CHAR(512),
+    f_text TEXT,
+    f_date DATE,
+    f_time TIME,
+    f_datetime TIMESTAMP,
+    f_integer INTEGER,
+    f_double DOUBLE,
+    f_list:string TEXT,
+    f_list:integer TEXT
+);
+timestamp: 2015-03-10T21:31:46.944243
+CREATE TABLE mytable(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    f_string CHAR(512),
+    f_text TEXT,
+    f_date DATE,
+    f_time TIME,
+    f_datetime TIMESTAMP,
+    f_integer INTEGER,
+    f_double DOUBLE,
+    f_list_string TEXT,
+    f_list_integer TEXT
+);
+success!
