@@ -292,5 +292,15 @@ body {
 
 ul.w2p_list { margin-left: 0px; }
 input.date,input.time,input.datetime,input.double,input.integer { width: 33.333%; }
+.container-full {margin: 0 auto; width: 100%;}
+.background { background: url(../images/background.jpg) no-repeat center center; }
+body {padding-top: 50px}
+header {
+    -webkit-box-shadow: 0px 0px 8px 2px #000000;
+       -moz-box-shadow: 0px 0px 8px 2px #000000;
+            box-shadow: 0px 0px 8px 2px #000000;
+}
 
-                                                                
+main {padding-bottom: 50px;}
+footer {padding:50px; background: #333; color: #aaa;}                                                                
+
