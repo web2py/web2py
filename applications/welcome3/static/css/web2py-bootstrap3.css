@@ -48,19 +48,19 @@ ul.list-group, .bs3-form ul , ul.nav-tabs, ul.nav-pills {
 p.lead {
   text-align: inherit;
 }
-.bs3-form label {
+form label {
   white-space: normal;
 }
-.bs3-form.form-inline [type="text"], [type="password"], select  {
+form.form-inline [type="text"], [type="password"], select  {
   margin-right: 0;
 }
-.bs3-form div.error {
+div.error {
   display: none;
   width: auto;
   background: transparent;
   border: none;
-  color: #a94442;
   padding: 0;
+  padding-left: 5px;
   background-image: none;
 }
 
@@ -355,6 +355,10 @@ header h1 {
 }
 .dropdown {
   z-index: 2000;
+}
+.help-block {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 #w2padmin-btn {
   margin:30px 0 30px 0;
