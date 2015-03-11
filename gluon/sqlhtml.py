@@ -2627,6 +2627,7 @@ class SQLFORM(FORM):
             htmltable = TABLE(COLGROUP(*cols), THEAD(head))
             tbody = TBODY()
             numrec = 0
+            repr_cache = {}
             for row in rows:
                 trcols = []
                 id = row[field_id]
@@ -2642,14 +2643,31 @@ class SQLFORM(FORM):
                     value = row[str(field)]
                     maxlength = maxtextlengths.get(str(field), maxtextlength)
                     if field.represent:
-                        try:
-                            value = field.represent(value, row)
-                        except KeyError:
+                        if field.type.startswith('reference'):
+                            if field not in repr_cache:
+                                repr_cache[field] = {}
                             try:
-                                value = field.represent(
-                                    value, row[field.tablename])
+                                nvalue = repr_cache[field][value]
                             except KeyError:
-                                pass
+                                try:
+                                    nvalue = field.represent(value, row)
+                                except KeyError:
+                                    try:
+                                        nvalue = field.represent(
+                                            value, row[field.tablename])
+                                    except KeyError:
+                                        nvalue = None
+                                repr_cache[field][value] = nvalue
+                        else:
+                            try:
+                                nvalue = field.represent(value, row)
+                            except KeyError:
+                                try:
+                                    nvalue = field.represent(
+                                        value, row[field.tablename])
+                                except KeyError:
+                                    nvalue = None
+                        value = nvalue
                     elif field.type == 'boolean':
                         value = INPUT(_type="checkbox", _checked=value,
                                       _disabled=True)
@@ -3119,6 +3137,7 @@ class SQLTABLE(TABLE):
             components.append(THEAD(TR(*row)))
 
         tbody = []
+        repr_cache = {}
         for (rc, record) in enumerate(sqlrows):
             row = []
             if rc % 2 == 1:
@@ -3177,7 +3196,11 @@ class SQLTABLE(TABLE):
                                     href = '%s/%s?%s' % (linkto, tref, urllib.urlencode({fref: r}))
                         r = A(represent(field, r, record), _href=str(href))
                     elif field.represent:
-                        r = represent(field, r, record)
+                        if field not in repr_cache:
+                            repr_cache[field] = {}
+                        if r not in repr_cache[field]:
+                            repr_cache[field][r] = represent(field, r, record)
+                        r = repr_cache[field][r]
                 elif linkto and hasattr(field._table, '_primarykey')\
                         and fieldname in field._table._primarykey:
                     # have to test this with multi-key tables
@@ -3294,6 +3317,7 @@ class ExportClass(object):
             return value
 
         represented = []
+        repr_cache = {}
         for record in self.rows:
             row = []
             for col in self.rows.colnames:
@@ -3309,7 +3333,14 @@ class ExportClass(object):
                     if field.type == 'blob' and value is not None:
                         value = ''
                     elif field.represent:
-                        value = field.represent(value, record)
+                        if field.type.startswith('reference'):
+                            if field not in repr_cache:
+                                repr_cache[field] = {}
+                            if value not in repr_cache[field]:
+                                repr_cache[field][value] = field.represent(value, record)
+                            value = repr_cache[field][value]
+                        else:
+                            value = field.represent(value, record)
                     row.append(none_exception(value))
 
             represented.append(row)
