@@ -75,7 +75,7 @@ div.flash.alert {
     top: 70px;
     right: 75px;
     cursor: pointer;
-    z-index: 1000000;
+    z-index: 1000;
     background-color: #f9edbe;
     border-color: #f0c36d; }
 div.flash.alert.centered {
@@ -305,3 +305,5 @@ main {padding-bottom: 50px;}
 .nav a, .btn, .btn-default {text-shadow: none; font-weight: bold;}
 footer {padding:50px; background: #333; color: #aaa;}
 #w2padmin-btn {margin:30px 0 30px 0;}
+.flash {opacity: 0.9 !important; right: 100px; }
+.dropdown { z-index: 2000; }
