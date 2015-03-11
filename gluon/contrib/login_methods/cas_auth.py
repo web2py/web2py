@@ -10,8 +10,8 @@ Tinkered by Szabolcs Gyuris < szimszo n @ o regpreshaz dot eu>
 """
 
 from gluon import current, redirect, URL
-
-
+import logging
+logging.basicConfig(filename='/home/www-data/web2py/logs/cas.log',level=logging.DEBUG)
 class CasAuth(object):
     """
     Login will be done via Web2py's CAS application, instead of web2py's
@@ -114,21 +114,28 @@ class CasAuth(object):
                 dxml = dom.parseString(data)
                 envelop = dxml.getElementsByTagName(
                     "cas:authenticationSuccess")
-                if len(envelop) > 0:
-                    res = dict()
-                    for x in envelop[0].childNodes:
+		attributes = dxml.getElementsByTagName(
+                    "cas:attributes")
+		res = dict()
+		res["user"] = dxml.getElementsByTagName(self.casusername)[0].childNodes[0].nodeValue.encode('utf8')                
+		if len(attributes) > 0:
+                    for x in attributes[0].childNodes:
                         if x.nodeName.startswith('cas:') and len(x.childNodes):
                             key = x.nodeName[4:].encode('utf8')
                             value = x.childNodes[0].nodeValue.encode('utf8')
                             if not key in res:
                                 res[key] = value
+                                logging.debug(key+": "+value)
                             else:
                                 if not isinstance(res[key], list):
                                     res[key] = [res[key]]
                                 res[key].append(value)
                     return res
             except expat.ExpatError:
-                pass
+		pass
+	    except:
+		logging.error("Error parsing CAS 2.0 Attributes")
+		pass
             return None  # fallback
 
     def _CAS_logout(self):
