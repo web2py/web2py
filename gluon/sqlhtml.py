@@ -318,7 +318,7 @@ class ListWidget(StringWidget):
         attributes['_id'] = _id + '_grow_input'
         attributes['_style'] = 'list-style:none'
         attributes['_class'] = 'w2p_list'
-        return TAG[''](UL(*items, **attributes))
+        return UL(*items, **attributes)
 
 
 class MultipleOptionsWidget(OptionsWidget):
@@ -712,9 +712,10 @@ class AutocompleteWidget(object):
                      name=name, div_id=div_id, u='F' + self.keyword)
             if self.min_length == 0:
                 attr['_onfocus'] = attr['_onkeyup']
-            return TAG[''](INPUT(**attr), INPUT(_type='hidden', _id=key3, _value=value,
-                                                _name=name, requires=field.requires),
-                           DIV(_id=div_id, _style='position:absolute;'))
+            return CAT(INPUT(**attr), 
+                       INPUT(_type='hidden', _id=key3, _value=value,
+                             _name=name, requires=field.requires),
+                       DIV(_id=div_id, _style='position:absolute;'))
         else:
             attr['_name'] = field.name
             attr['_onblur'] = "jQuery('#%(div_id)s').delay(1000).fadeOut('slow');" % \
@@ -724,7 +725,8 @@ class AutocompleteWidget(object):
                      key=self.keyword, id=attr['_id'], div_id=div_id, u='F' + self.keyword)
             if self.min_length == 0:
                 attr['_onfocus'] = attr['_onkeyup']
-            return TAG[''](INPUT(**attr), DIV(_id=div_id, _style='position:absolute;'))
+            return CAT(INPUT(**attr), 
+                       DIV(_id=div_id, _style='position:absolute;'))
 
 
 def formstyle_table3cols(form, fields):
@@ -859,10 +861,14 @@ def formstyle_bootstrap3_stacked(form, fields):
                 controls.add_class('form-control')
             elif isinstance(controls, TEXTAREA):
                 controls.add_class('form-control')
-
+                            
         elif isinstance(controls, SPAN):
             _controls = P(controls.components)
 
+        elif isinstance(controls, UL):
+            for e in controls.elements("input"):
+                e.add_class('form-control')
+                
         if isinstance(label, LABEL):
             label['_class'] = 'control-label'
 
@@ -909,10 +915,12 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
                     controls.add_class('form-control')
                 elif isinstance(controls, TEXTAREA):
                     controls.add_class('form-control')
-
+                
             elif isinstance(controls, SPAN):
                 _controls = P(controls.components, _class="form-control-static %s" % col_class)
-
+            elif isinstance(controls, UL):
+                for e in controls.elements("input"):
+                    e.add_class('form-control')
             if isinstance(label, LABEL):
                 label['_class'] = 'control-label %s' % label_col_class
 
@@ -1233,7 +1241,7 @@ class SQLFORM(FORM):
                 else:
                     inp = self.widgets.multiple.widget(field, default)
                 if fieldname in keepopts:
-                    inpval = TAG[''](*inp.components)
+                    inpval = CAT(*inp.components)
             elif field.type.startswith('list:'):
                 inp = self.widgets.list.widget(field, default)
             elif field.type == 'text':
@@ -1466,7 +1474,7 @@ class SQLFORM(FORM):
         self.deleted = \
             request_vars.get(self.FIELDNAME_REQUEST_DELETE, False)
 
-        self.custom.end = TAG[''](self.hidden_fields(), self.custom.end)
+        self.custom.end = CAT(self.hidden_fields(), self.custom.end)
 
         auch = record_id and self.errors and self.deleted
 

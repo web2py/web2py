@@ -80,3 +80,6 @@ CREATE TABLE mytable(
     f_list_integer TEXT
 );
 success!
+timestamp: 2015-03-10T23:02:09.466071
+ALTER TABLE mytable ADD f_upload CHAR(512);
+success!

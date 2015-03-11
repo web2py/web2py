@@ -289,3 +289,8 @@ body {
 .dropdown .highlighted {
     color: #428bca;
     }
+
+ul.w2p_list { margin-left: 0px; }
+input.date,input.time,input.datetime,input.double,input.integer { width: 33.333%; }
+
+                                                                
