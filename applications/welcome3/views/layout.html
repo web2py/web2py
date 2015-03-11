@@ -79,6 +79,7 @@
       </div>
     </nav>
     <!-- Masthead ===================================== -->
+    {{if URL()==URL('default','index'):}}
     <header class="container-full">
       <div class="jumbotron text-center background">
         {{if response.title:}}
@@ -87,6 +88,7 @@
         {{pass}}
       </div>
     </header>
+    {{pass}}
     <!-- Main ========================================= -->
     <main class="container" id="content" role="main">
       <div class="row">
