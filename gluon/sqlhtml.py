@@ -1119,7 +1119,7 @@ class SQLFORM(FORM):
         else:
             self.id_field_name = table._primarykey[0]  # only works if one key
 
-        sep = separator or current.response.form_label_separator
+        sep = current.response.form_label_separator if separator is None else separator
 
         extra_fields = extra_fields or []
         self.extra_fields = {}
