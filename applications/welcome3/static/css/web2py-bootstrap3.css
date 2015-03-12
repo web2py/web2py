@@ -317,8 +317,12 @@ body {
   color: #428bca;
 }
 
+form {
+  max-width: 600px;
+}
 ul.w2p_list {
-  margin-left: 0px;
+  margin-left: 0;
+  padding-left: 0;
 }
 .background {
   background: url(../images/background.jpg) no-repeat center center;
