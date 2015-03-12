@@ -903,7 +903,7 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
                     label['_for'] = None
                     label.insert(0, controls)
                     _controls = DIV(DIV(label, _help, _class="checkbox"),
-                        _class="%s %s" % (offset_class, col_class))
+                                    _class="%s %s" % (offset_class, col_class))
                     label = ''
                 elif isinstance(controls, (SELECT, TEXTAREA)):
                     controls.add_class('form-control')
@@ -1590,7 +1590,7 @@ class SQLFORM(FORM):
                         (cStringIO.StringIO(f), 'file.txt')
                 else:
                     # this should never happen, why does it happen?
-                    # print 'f=',repr(f)
+                    # print 'f=', repr(f)
                     continue
                 newfilename = field.store(source_file, original_filename,
                                           field.uploadfolder)
@@ -1827,16 +1827,16 @@ class SQLFORM(FORM):
                 else:
                     field_type = field.type
 
-                operators = SELECT(*[OPTION(T(option), _value=option) for option in options],_class='form-control')
+                operators = SELECT(*[OPTION(T(option), _value=option) for option in options], _class='form-control')
                 _id = "%s_%s" % (value_id, name)
                 if field_type in ['boolean', 'double', 'time', 'integer']:
-                    value_input = SQLFORM.widgets[field_type].widget(field, field.default, _id=_id,_class='form-control')
+                    value_input = SQLFORM.widgets[field_type].widget(field, field.default, _id=_id, _class='form-control')
                 elif field_type == 'date':
                     iso_format = {'_data-w2p_date_format' : '%Y-%m-%d'}
-                    value_input = SQLFORM.widgets.date.widget(field, field.default, _id=_id,_class='form-control', **iso_format)
+                    value_input = SQLFORM.widgets.date.widget(field, field.default, _id=_id, _class='form-control', **iso_format)
                 elif field_type == 'datetime':
                     iso_format = {'_data-w2p_datetime_format' : '%Y-%m-%d %H:%M:%S'}
-                    value_input = SQLFORM.widgets.datetime.widget(field, field.default, _id=_id,_class='form-control', **iso_format)
+                    value_input = SQLFORM.widgets.datetime.widget(field, field.default, _id=_id, _class='form-control', **iso_format)
                 elif (field_type.startswith('reference ') or
                       field_type.startswith('list:reference ')) and \
                       hasattr(field.requires, 'options'):
@@ -1848,7 +1848,7 @@ class SQLFORM(FORM):
                 elif field_type.startswith('reference ') or \
                      field_type.startswith('list:integer') or \
                      field_type.startswith('list:reference '):
-                    value_input = SQLFORM.widgets.integer.widget(field, field.default, _id=_id,_class='form-control')
+                    value_input = SQLFORM.widgets.integer.widget(field, field.default, _id=_id, _class='form-control')
                 else:
                     value_input = INPUT(
                         _type='text', _id=_id,
@@ -2040,7 +2040,7 @@ class SQLFORM(FORM):
                     c = 'count(*)'
                     nrows = dbset.select(c, left=left, cacheable=True, cache=cache_count).first()[c]
                 elif dbset._db._adapter.dbengine == 'google:datastore':
-                    #if we don't set a limit, this can timeout for a large table
+                    # if we don't set a limit, this can timeout for a large table
                     nrows = dbset.db._adapter.count(dbset.query, limit=1000)
                 else:
                     nrows = dbset.count(cache=cache_count)
@@ -2269,20 +2269,20 @@ class SQLFORM(FORM):
                         ondelete(table, request.args[-1])
                     record.delete_record()
             if request.ajax:
-                #this means javascript is enabled, so we don't need to do
-                #a redirect
+                # this means javascript is enabled, so we don't need to do
+                # a redirect
                 if not client_side_delete:
-                    #if it's an ajax request and we don't need to reload the
-                    #entire page, let's just inform that there have been no
-                    #exceptions and don't regenerate the grid
+                    # if it's an ajax request and we don't need to reload the
+                    # entire page, let's just inform that there have been no
+                    # exceptions and don't regenerate the grid
                     raise HTTP(200)
                 else:
-                    #if it's requested that the grid gets reloaded on delete
-                    #on ajax, the redirect should be on the original location
+                    # if it's requested that the grid gets reloaded on delete
+                    # on ajax, the redirect should be on the original location
                     newloc = request.env.http_web2py_component_location
                     redirect(newloc, client_side=client_side_delete)
             else:
-                #we need to do a redirect because javascript is not enabled
+                # we need to do a redirect because javascript is not enabled
                 redirect(referrer, client_side=client_side_delete)
 
         exportManager = dict(
@@ -3054,23 +3054,22 @@ class SQLTABLE(TABLE):
 
     """
 
-    def __init__(
-        self,
-        sqlrows,
-        linkto=None,
-        upload=None,
-        orderby=None,
-        headers={},
-        truncate=16,
-        columns=None,
-        th_link='',
-        extracolumns=None,
-        selectid=None,
-        renderstyle=False,
-        cid=None,
-        colgroup=False,
-        **attributes
-        ):
+    def __init__(self,
+                 sqlrows,
+                 linkto=None,
+                 upload=None,
+                 orderby=None,
+                 headers={},
+                 truncate=16,
+                 columns=None,
+                 th_link='',
+                 extracolumns=None,
+                 selectid=None,
+                 renderstyle=False,
+                 cid=None,
+                 colgroup=False,
+                 **attributes
+                 ):
 
         TABLE.__init__(self, **attributes)
 
