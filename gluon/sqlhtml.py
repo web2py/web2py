@@ -318,7 +318,7 @@ class ListWidget(StringWidget):
         attributes['_id'] = _id + '_grow_input'
         attributes['_style'] = 'list-style:none'
         attributes['_class'] = 'w2p_list'
-        return TAG[''](UL(*items, **attributes))
+        return UL(*items, **attributes)
 
 
 class MultipleOptionsWidget(OptionsWidget):
@@ -712,9 +712,10 @@ class AutocompleteWidget(object):
                      name=name, div_id=div_id, u='F' + self.keyword)
             if self.min_length == 0:
                 attr['_onfocus'] = attr['_onkeyup']
-            return TAG[''](INPUT(**attr), INPUT(_type='hidden', _id=key3, _value=value,
-                                                _name=name, requires=field.requires),
-                           DIV(_id=div_id, _style='position:absolute;'))
+            return CAT(INPUT(**attr), 
+                       INPUT(_type='hidden', _id=key3, _value=value,
+                             _name=name, requires=field.requires),
+                       DIV(_id=div_id, _style='position:absolute;'))
         else:
             attr['_name'] = field.name
             attr['_onblur'] = "jQuery('#%(div_id)s').delay(1000).fadeOut('slow');" % \
@@ -724,7 +725,8 @@ class AutocompleteWidget(object):
                      key=self.keyword, id=attr['_id'], div_id=div_id, u='F' + self.keyword)
             if self.min_length == 0:
                 attr['_onfocus'] = attr['_onkeyup']
-            return TAG[''](INPUT(**attr), DIV(_id=div_id, _style='position:absolute;'))
+            return CAT(INPUT(**attr), 
+                       DIV(_id=div_id, _style='position:absolute;'))
 
 
 def formstyle_table3cols(form, fields):
@@ -846,23 +848,23 @@ def formstyle_bootstrap3_stacked(form, fields):
                 controls.add_class('btn btn-default')
             elif controls['_type'] == 'file':
                 controls.add_class('input-file')
-            elif controls['_type'] == 'text':
-                controls.add_class('form-control')
-            elif controls['_type'] == 'password':
+            elif controls['_type'] in ('text', 'password'):
                 controls.add_class('form-control')
             elif controls['_type'] == 'checkbox':
                 label['_for'] = None
                 label.insert(0, controls)
                 _controls = DIV(label, _help, _class="checkbox")
                 label = ''
-            elif isinstance(controls, SELECT):
+            elif isinstance(controls, (SELECT, TEXTAREA)):
                 controls.add_class('form-control')
-            elif isinstance(controls, TEXTAREA):
-                controls.add_class('form-control')
-
+                            
         elif isinstance(controls, SPAN):
             _controls = P(controls.components)
 
+        elif isinstance(controls, UL):
+            for e in controls.elements("input"):
+                e.add_class('form-control')
+                
         if isinstance(label, LABEL):
             label['_class'] = 'control-label'
 
@@ -895,9 +897,7 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
                     controls.add_class('btn btn-default')
                 elif controls['_type'] == 'file':
                     controls.add_class('input-file')
-                elif controls['_type'] == 'text':
-                    controls.add_class('form-control')
-                elif controls['_type'] == 'password':
+                elif controls['_type'] in ('text', 'password'):
                     controls.add_class('form-control')
                 elif controls['_type'] == 'checkbox':
                     label['_for'] = None
@@ -905,14 +905,15 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
                     _controls = DIV(DIV(label, _help, _class="checkbox"),
                         _class="%s %s" % (offset_class, col_class))
                     label = ''
-                elif isinstance(controls, SELECT):
+                elif isinstance(controls, (SELECT, TEXTAREA)):
                     controls.add_class('form-control')
-                elif isinstance(controls, TEXTAREA):
-                    controls.add_class('form-control')
-
+                
             elif isinstance(controls, SPAN):
-                _controls = P(controls.components, _class="form-control-static %s" % col_class)
-
+                _controls = P(controls.components, 
+                              _class="form-control-static %s" % col_class)
+            elif isinstance(controls, UL):
+                for e in controls.elements("input"):
+                    e.add_class('form-control')
             if isinstance(label, LABEL):
                 label['_class'] = 'control-label %s' % label_col_class
 
@@ -1118,7 +1119,7 @@ class SQLFORM(FORM):
         else:
             self.id_field_name = table._primarykey[0]  # only works if one key
 
-        sep = separator or current.response.form_label_separator
+        sep = current.response.form_label_separator if separator is None else separator
 
         extra_fields = extra_fields or []
         self.extra_fields = {}
@@ -1233,7 +1234,7 @@ class SQLFORM(FORM):
                 else:
                     inp = self.widgets.multiple.widget(field, default)
                 if fieldname in keepopts:
-                    inpval = TAG[''](*inp.components)
+                    inpval = CAT(*inp.components)
             elif field.type.startswith('list:'):
                 inp = self.widgets.list.widget(field, default)
             elif field.type == 'text':
@@ -1466,7 +1467,7 @@ class SQLFORM(FORM):
         self.deleted = \
             request_vars.get(self.FIELDNAME_REQUEST_DELETE, False)
 
-        self.custom.end = TAG[''](self.hidden_fields(), self.custom.end)
+        self.custom.end = CAT(self.hidden_fields(), self.custom.end)
 
         auch = record_id and self.errors and self.deleted
 
@@ -2626,6 +2627,7 @@ class SQLFORM(FORM):
             htmltable = TABLE(COLGROUP(*cols), THEAD(head))
             tbody = TBODY()
             numrec = 0
+            repr_cache = {}
             for row in rows:
                 trcols = []
                 id = row[field_id]
@@ -2641,14 +2643,31 @@ class SQLFORM(FORM):
                     value = row[str(field)]
                     maxlength = maxtextlengths.get(str(field), maxtextlength)
                     if field.represent:
-                        try:
-                            value = field.represent(value, row)
-                        except KeyError:
+                        if field.type.startswith('reference'):
+                            if field not in repr_cache:
+                                repr_cache[field] = {}
                             try:
-                                value = field.represent(
-                                    value, row[field.tablename])
+                                nvalue = repr_cache[field][value]
                             except KeyError:
-                                pass
+                                try:
+                                    nvalue = field.represent(value, row)
+                                except KeyError:
+                                    try:
+                                        nvalue = field.represent(
+                                            value, row[field.tablename])
+                                    except KeyError:
+                                        nvalue = None
+                                repr_cache[field][value] = nvalue
+                        else:
+                            try:
+                                nvalue = field.represent(value, row)
+                            except KeyError:
+                                try:
+                                    nvalue = field.represent(
+                                        value, row[field.tablename])
+                                except KeyError:
+                                    nvalue = None
+                        value = nvalue
                     elif field.type == 'boolean':
                         value = INPUT(_type="checkbox", _checked=value,
                                       _disabled=True)
@@ -3118,6 +3137,7 @@ class SQLTABLE(TABLE):
             components.append(THEAD(TR(*row)))
 
         tbody = []
+        repr_cache = {}
         for (rc, record) in enumerate(sqlrows):
             row = []
             if rc % 2 == 1:
@@ -3176,7 +3196,11 @@ class SQLTABLE(TABLE):
                                     href = '%s/%s?%s' % (linkto, tref, urllib.urlencode({fref: r}))
                         r = A(represent(field, r, record), _href=str(href))
                     elif field.represent:
-                        r = represent(field, r, record)
+                        if field not in repr_cache:
+                            repr_cache[field] = {}
+                        if r not in repr_cache[field]:
+                            repr_cache[field][r] = represent(field, r, record)
+                        r = repr_cache[field][r]
                 elif linkto and hasattr(field._table, '_primarykey')\
                         and fieldname in field._table._primarykey:
                     # have to test this with multi-key tables
@@ -3293,6 +3317,7 @@ class ExportClass(object):
             return value
 
         represented = []
+        repr_cache = {}
         for record in self.rows:
             row = []
             for col in self.rows.colnames:
@@ -3308,7 +3333,14 @@ class ExportClass(object):
                     if field.type == 'blob' and value is not None:
                         value = ''
                     elif field.represent:
-                        value = field.represent(value, record)
+                        if field.type.startswith('reference'):
+                            if field not in repr_cache:
+                                repr_cache[field] = {}
+                            if value not in repr_cache[field]:
+                                repr_cache[field][value] = field.represent(value, record)
+                            value = repr_cache[field][value]
+                        else:
+                            value = field.represent(value, record)
                     row.append(none_exception(value))
 
             represented.append(row)
