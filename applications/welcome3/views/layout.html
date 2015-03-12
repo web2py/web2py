@@ -1,10 +1,4 @@
-<!--[if HTML5]><![endif]-->
 <!DOCTYPE html>
-<!-- paulirish.com/2008/conditional-stylesheets-vs-css-hacks-answer-neither/ -->
-<!--[if lt IE 7]><html class="ie ie6 ie-lte9 ie-lte8 ie-lte7 no-js" lang="{{=T.accepted_language or 'en'}}"> <![endif]-->
-<!--[if IE 7]><html class="ie ie7 ie-lte9 ie-lte8 ie-lte7 no-js" lang="{{=T.accepted_language or 'en'}}"> <![endif]-->
-<!--[if IE 8]><html class="ie ie8 ie-lte9 ie-lte8 no-js" lang="{{=T.accepted_language or 'en'}}"> <![endif]-->
-<!--[if IE 9]><html class="ie9 ie-lte9 no-js" lang="{{=T.accepted_language or 'en'}}"> <![endif]-->
 <!--[if (gt IE 9)|!(IE)]><!--> <html class="no-js" lang="{{=T.accepted_language or 'en'}}"> <!--<![endif]-->
   <head>
     <meta charset="utf-8">
@@ -26,23 +20,20 @@
          http://google.com/webmasters -->
     <meta name="google-site-verification" content="">
     <!-- include stylesheets -->
-    {{
-    response.files.insert(0,URL('static','css/web2py.css'))
-    response.files.insert(1,URL('static','css/bootstrap.min.css'))
-    response.files.insert(1,URL('static','css/bootstrap-theme.min.css'))
-    response.files.insert(4,URL('static','css/web2py-bootstrap3.css'))
-    }}
-    <!-- All JavaScript at the bottom, except for Modernizr which enables
-         HTML5 elements & feature detects -->
-    <script src="{{=URL('static','js/modernizr.custom.js')}}"></script>
-    <!-- Favicons -->
+    <link rel="stylesheet" href="{{=URL('static','css/bootstrap.min.css')}}"/>
+    <link rel="stylesheet" href="{{=URL('static','css/bootstrap-theme.min.css')}}"/>
+    <link rel="stylesheet" href="{{=URL('static','css/web2py-bootstrap3.css')}}"/>
     <link rel="shortcut icon" href="{{=URL('static','images/favicon.ico')}}" type="image/x-icon">
     <link rel="apple-touch-icon" href="{{=URL('static','images/favicon.png')}}">
-    {{include 'web2py_ajax.html'}}
-    {{block head}}{{end}}
+    <!-- All JavaScript at the bottom, except for Modernizr which enables
+         HTML5 elements & feature detects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js"><script>
     <!--[if lt IE 9]>
-        <script src="{{=URL('static','js/respond.min.js')}}"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
         <![endif]-->
+    <!-- Favicons -->
+    {{include 'web2py_ajax.html'}} <!-- this includes jquery.js, calendar.js/.css and web2py.js -->
+    {{block head}}{{end}}
     {{
     # using sidebars need to know what sidebar you want to use
     mc0 = 'col-md-12'
@@ -55,6 +46,7 @@
     }}
   </head>
   <body>
+    <!--[if lt IE 8]><p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p><![endif]-->
     <div class="flash alert alert-dismissable">{{=response.flash or ''}}</div>
     <!-- Navbar ======================================= -->
     <nav class="navbar navbar-inverse navbar-fixed-top" role="navigation">
@@ -78,56 +70,47 @@
         </div>
       </div>
     </nav>
-    <!-- Masthead ===================================== -->
-    {{if URL()==URL('default','index'):}}
-    <header class="container-full">
-      <div class="jumbotron text-center background">
-        {{if response.title:}}
-        <h1>{{=response.title}}
-          <small>{{=response.subtitle or ''}}</small></h1>
-        {{pass}}
-      </div>
-    </header>
-    {{pass}}
+    <!-- Masthead ===================================== -->    
+    {{block header}}
+    {{end}}
     <!-- Main ========================================= -->
     <main class="container" id="content" role="main">
       <div class="row">
         {{if left_sidebar_enabled:}}
-        <!--    left sidebar ---------------------------------------------------------- -->
-                                                                                          <div class="col-md-3">
-                                                                                            {{block left_sidebar}}
-                                                                                            {{end left_sidebar}}
-                                                                                          </div>
-                                                                                          {{pass}}
-                                                                                          <!--    central column -------------------------------------------------------- -->
-                                                                                          <div class="{{=middle_column}}">
-                                                                                            {{block center_page}}
-                                                                                            {{include}}
-                                                                                            {{end center_page}}
-                                                                                          </div>
-                                                                                          {{if right_sidebar_enabled:}}
-                                                                                          <!--    right sidebar --------------------------------------------------------- -->
-                                                                                          <div class="col-md-3">
-                                                                                            {{block right_sidebar}}
-                                                                                            {{end right_sidebar}}
-                                                                                          </div>
-                                                                                          {{pass}}
+        <!--    left sidebar =========== -->
+        <div class="col-md-3">
+          {{block left_sidebar}}
+          {{end left_sidebar}}
+        </div>
+        {{pass}}
+        <!--    central column ============ -->
+        <div class="{{=middle_column}}">
+          {{block center_page}}
+          {{include}}
+          {{end center_page}}
+        </div>
+        {{if right_sidebar_enabled:}}
+        <!--    right sidebar ============- -->
+        <div class="col-md-3">
+          {{block right_sidebar}}
+          {{end right_sidebar}}
+        </div>
+        {{pass}}
       </div>
     </main>
     <!-- Footer ======================================= -->
-
-    <footer class="container-full">
-      <div class="row">
-        {{block footer}}
+    {{block footer}}
+    <footer class="footer">
+      <div class="container">        
         <div class="col-xs-6">
           <p>{{=T('Copyright')}} &#169; {{=request.now.year}}</p>
         </div>
         <div class="col-xs-6">
           <p class="pull-right">{{=T('Powered by')}} <a href="http://www.web2py.com/">web2py</a></p>
-        </div>
-        {{end footer}}
+        </div>        
       </div>
     </footer>
+    {{end footer}}
     <!-- The javascript =============================== -->
     <script src="{{=URL('static','js/bootstrap.min.js')}}"></script>
     <script src="{{=URL('static','js/web2py-bootstrap3.js')}}"></script>

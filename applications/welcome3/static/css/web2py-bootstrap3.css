@@ -320,12 +320,6 @@ body {
 ul.w2p_list {
   margin-left: 0px;
 }
-input.date,input.time,input.datetime,input.double,input.integer {
-  width: 33.333%;
-}
-.container-full {
-  margin: 0 auto; width: 100%;
-}
 .background {
   background: url(../images/background.jpg) no-repeat center center;
 }
@@ -347,6 +341,9 @@ footer {
 header h1 {
   color: white !important; text-shadow: 0 0 7px black;
 }
+header .jumbotron {
+  background-color: transparent;
+}
 .nav a, .btn, .btn-default {
   text-shadow: none; font-weight: bold;
 }
@@ -363,3 +360,181 @@ header h1 {
 #w2padmin-btn {
   margin:30px 0 30px 0;
 }
+.hidden {display:none;visibility:visible}
+.right {float:right; text-align:right}
+.left {float:left; text-align:left}
+.center {width:100%; text-align:center; vertical-align:middle}
+
+/* fix ie problem with menu */
+
+td.w2p_fw {padding-bottom:1px}
+td.w2p_fl,td.w2p_fw,td.w2p_fc {vertical-align:top}
+td.w2p_fl {text-align:left}
+td.w2p_fl, td.w2p_fw {padding-right:7px}
+td.w2p_fl,td.w2p_fc {padding-top:4px}
+div.w2p_export_menu {margin:5px 0}
+div.w2p_export_menu a, div.w2p_wiki_tags a, div.w2p_cloud a {margin-left:5px; padding:2px 5px; background-color:#f1f1f1; border-radius:5px; -moz-border-radius:5px; -webkit-border-radius:5px;}
+
+/* tr#submit_record__row {border-top:1px solid #E5E5E5} */
+#submit_record__row td {padding-top:.5em}
+
+/* Fix */
+#auth_user_remember__row label {display:inline}
+#web2py_user_form td {vertical-align:top}
+
+div.error_wrapper {display:block}
+div.error {
+    color:red;
+    padding:5px;
+    display:inline-block;
+}
+
+.copyright {float:left}
+#poweredBy {float:right}
+
+/* #MEDIA QUERIES SECTION */
+
+/*
+*Grid
+*
+* The default style for SQLFORM.grid even using jquery-iu or another ui framework
+* will look better with the declarations below
+* if needed to remove base.css consider keeping these following lines in some css file.
+*/
+/* .web2py_table {border:1px solid #ccc} */
+.web2py_paginator {}
+.web2py_grid {width:100%}
+.web2py_grid table {width:100%}
+.web2py_grid tbody td {padding:2px 5px 2px 5px; vertical-align: middle;}
+.web2py_grid .web2py_form td {vertical-align: top;}
+
+.web2py_grid thead th,.web2py_grid tfoot td {
+    background-color:#EAEAEA;
+    padding:10px 5px 10px 5px;
+}
+
+.web2py_grid tr.odd {background-color:#F9F9F9}
+.web2py_grid tr:hover {background-color:#F5F5F5}
+
+/*
+.web2py_breadcrumbs a {
+    line-height:20px; margin-right:5px; display:inline-block;
+    padding:3px 5px 3px 5px;
+    font-family:'lucida grande',tahoma,verdana,arial,sans-serif;
+    color:#3C3C3D;
+    text-shadow:1px 1px 0 #FFFFFF;
+    white-space:nowrap; overflow:visible; cursor:pointer;
+    background:#ECECEC;
+    border:1px solid #CACACA;
+    -webkit-border-radius:2px; -moz-border-radius:2px;
+    -webkit-background-clip:padding-box; border-radius:2px;
+    outline:none; position:relative; zoom:1; *display:inline;
+}
+*/
+
+.web2py_console form {
+    width: 100%;
+    display: inline;
+    vertical-align: middle;
+    margin: 0 0 0 5px;
+}
+
+.web2py_console form select {
+    margin:0;
+}
+
+.web2py_search_actions {
+    float:left;
+    text-align:left;
+}
+
+.web2py_grid .row_buttons {
+    min-height:25px;
+    vertical-align:middle;
+}
+.web2py_grid .row_buttons a {
+    margin:3px;
+}
+
+.web2py_search_actions {
+    width:100%;
+}
+
+.web2py_grid .row_buttons a,
+.web2py_paginator ul li a,
+.web2py_search_actions a,
+.web2py_console input[type=submit],
+.web2py_console input[type=button],
+.web2py_console button {
+    line-height:20px;
+    margin-right:2px; display:inline-block;
+    padding:3px 5px 3px 5px;
+}
+
+.web2py_counter {
+    margin-top:5px;
+    margin-right:2px;
+    width:35%;
+    float:right;
+    text-align:right;
+}
+
+/*Fix firefox problem*/
+.web2py_table {clear:both; display:block}
+
+.web2py_paginator {
+    padding:5px;
+    text-align:right;
+    background-color:#f2f2f2;
+
+}
+.web2py_paginator ul {
+    list-style-type:none;
+    margin:0px;
+    padding:0px;
+}
+
+.web2py_paginator ul li {
+    display:inline;
+}
+
+.web2py_paginator .current {
+    font-weight:bold;
+}
+
+.web2py_breadcrumbs ul {
+    list-style:none;
+    margin-bottom:18px;
+}
+
+li.w2p_grid_breadcrumb_elem {
+    display:inline-block;
+}
+
+.web2py_console form { vertical-align: middle; }
+.web2py_console input, .web2py_console select,
+.web2py_console a { margin: 2px; }
+
+
+#wiki_page_body {
+   width: 600px;
+   height: auto;
+   min-height: 400px;
+}
+
+/* fix some IE problems */
+
+.ie-lte7 .topbar .container {z-index:2}
+.ie-lte8 div.flash{ filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#222222', endColorstr='#000000', GradientType=0 ); }
+.ie-lte8 div.flash:hover {filter:alpha(opacity=25);}
+.ie9 #w2p_query_panel {padding-bottom:2px}
+
+.web2py_console .form-control {width: 20%; display: inline;}
+.web2py_console #w2p_keywords {width: 50%;}
+.web2py_search_actions a, .web2py_console input[type=submit], .web2py_console input[type=button], .web2py_console button { padding: 6px 12px; }
+
+/*
+input.date,input.time,input.datetime,input.double,input.integer {
+  max-width: 300px;
+}
+*/
