@@ -27,9 +27,9 @@
     <link rel="apple-touch-icon" href="{{=URL('static','images/favicon.png')}}">
     <!-- All JavaScript at the bottom, except for Modernizr which enables
          HTML5 elements & feature detects -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/modernizr/2.8.3/modernizr.min.js"><script>
+    <script src="{{=URL('static','js/modernizr-2.8.3.min.js')}}"><script>
     <!--[if lt IE 9]>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/respond.js/1.4.2/respond.min.js"></script>
+        <script src="{{=URL('static','js/respond-1.4.2.min.js')}}"></script>
         <![endif]-->
     <!-- Favicons -->
     {{include 'web2py_ajax.html'}} <!-- this includes jquery.js, calendar.js/.css and web2py.js -->
