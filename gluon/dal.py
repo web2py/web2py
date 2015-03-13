@@ -134,6 +134,8 @@ class DAL(pyDAL):
         'rows_render': sqlhtml.represent,
         'rows_xml': sqlhtml.SQLTABLE
     }
+    Field = Field
+    Table = Table
 
 #: add web2py contrib drivers to pyDAL
 from pydal.drivers import DRIVERS
