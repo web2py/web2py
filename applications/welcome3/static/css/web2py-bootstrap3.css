@@ -284,10 +284,6 @@ select.autocomplete {
   * application customization
   * add custom rules
 */
-
-body {
-  padding-top: 70px;
-}
 /* web2py logo */
 #web2py-logo {
   color: #c6cecc;
@@ -326,6 +322,9 @@ ul.w2p_list {
 }
 .background {
   background: url(../images/background.jpg) no-repeat center center;
+}
+html {
+  background-color: #333;
 }
 body {
   padding-top: 50px

@@ -74,43 +74,45 @@
     {{block header}}
     {{end}}
     <!-- Main ========================================= -->
-    <main class="container" id="content" role="main">
-      <div class="row">
-        {{if left_sidebar_enabled:}}
-        <!--    left sidebar =========== -->
-        <div class="col-md-3">
-          {{block left_sidebar}}
-          {{end left_sidebar}}
+    <!-- Begin page content -->
+    <div class="container-fluid">
+      {{if left_sidebar_enabled:}}
+        <div class="col-md-3 left-sidebar">
+            {{block left_sidebar}}
+            <h3>Left Sidebar</h3>
+            <p></p>
+            {{end}}
         </div>
-        {{pass}}
-        <!--    central column ============ -->
-        <div class="{{=middle_column}}">
-          {{block center_page}}
-          {{include}}
-          {{end center_page}}
-        </div>
-        {{if right_sidebar_enabled:}}
-        <!--    right sidebar ============- -->
-        <div class="col-md-3">
-          {{block right_sidebar}}
-          {{end right_sidebar}}
-        </div>
-        {{pass}}
+      {{pass}}
+
+      <div class="{{=middle_column}}">
+        {{block center}}
+        {{include}}
+        {{end}}
       </div>
-    </main>
-    <!-- Footer ======================================= -->
-    {{block footer}}
-    <footer class="footer">
-      <div class="container">        
-        <div class="col-xs-6">
-          <p>{{=T('Copyright')}} &#169; {{=request.now.year}}</p>
+
+      {{if right_sidebar_enabled:}}
+        <div class="col-md-3">
+            {{block right_sidebar}}
+            <h3>Right Sidebar</h3>
+            <p></p>
+            {{end}}
         </div>
-        <div class="col-xs-6">
-          <p class="pull-right">{{=T('Powered by')}} <a href="http://www.web2py.com/">web2py</a></p>
-        </div>        
+      {{pass}}
+
+    </div>
+
+    {{block footer}} <!-- this is default footer -->      
+    <footer class="footer">
+      <div class="container-fluid">
+        <div class="copyright pull-left">{{=T('Copyright')}} &#169; {{=request.now.year}}</div>
+          <div id="poweredBy" class="pull-right">
+            {{=T('Powered by')}}
+            <a href="http://www.web2py.com/">web2py</a>
+          </div>
       </div>
     </footer>
-    {{end footer}}
+    {{end}}
     <!-- The javascript =============================== -->
     <script src="{{=URL('static','js/bootstrap.min.js')}}"></script>
     <script src="{{=URL('static','js/web2py-bootstrap3.js')}}"></script>
