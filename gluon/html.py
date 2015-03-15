@@ -275,9 +275,9 @@ def URL(
         args = [args]
 
     if r is None:
-        if a and not c and not f:
+        if a is not None and c is None and f is None:
             (f, a, c) = (a, c, f)
-        elif a and c and not f:
+        elif a is not None and c is not None and f is None:
             (c, f, a) = (a, c, f)
         from globals import current
         if hasattr(current, 'request'):
@@ -326,7 +326,7 @@ def URL(
 
     function2 = '%s.%s' % (function, extension or 'html')
 
-    if not (application and controller and function):
+    if not (application and controller and function is not None):
         raise SyntaxError('not enough information to build the url (%s %s %s)' % (application, controller, function))
 
     if args:
