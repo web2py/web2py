@@ -3518,7 +3518,7 @@ class Auth(object):
         self.db(self.table_group().id == group_id).delete()
         self.db(self.table_membership().group_id == group_id).delete()
         self.db(self.table_permission().group_id == group_id).delete()
-        self.update_groups()
+        if group_id in self.user_groups: del self.user_groups[group_id]
         self.log_event(self.messages.del_group_log, dict(group_id=group_id))
 
     def id_group(self, role):
@@ -3587,7 +3587,10 @@ class Auth(object):
             return record.id
         else:
             id = membership.insert(group_id=group_id, user_id=user_id)
-        self.update_groups()
+        if role: 
+            self.user_groups[group_id] = role
+        else:
+            self.update_groups()
         self.log_event(self.messages['add_membership_log'],
                        dict(user_id=user_id, group_id=group_id))
         return id
@@ -3607,7 +3610,7 @@ class Auth(object):
         ret = self.db(membership.user_id
                       == user_id)(membership.group_id
                                   == group_id).delete()
-        self.update_groups()
+        if group_id in self.user_groups: del self.user_groups[group_id]
         return ret
 
     def has_permission(
