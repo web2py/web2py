@@ -274,7 +274,7 @@ def URL(
     if not isinstance(args, (list, tuple)):
         args = [args]
 
-    if not r:
+    if r is None:
         if a and not c and not f:
             (f, a, c) = (a, c, f)
         elif a and c and not f:
@@ -283,18 +283,18 @@ def URL(
         if hasattr(current, 'request'):
             r = current.request
 
-    if r:
+    if r is not None:
         application = r.application
         controller = r.controller
         function = r.function
         env = r.env
         if extension is None and r.extension != 'html':
             extension = r.extension
-    if a:
+    if a is not None:
         application = a
-    if c:
+    if c is not None:
         controller = c
-    if f:
+    if f is not None:
         if not isinstance(f, str):
             if hasattr(f, '__name__'):
                 function = f.__name__
