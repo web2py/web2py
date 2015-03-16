@@ -274,27 +274,27 @@ def URL(
     if not isinstance(args, (list, tuple)):
         args = [args]
 
-    if r is None:
-        if a is not None and c is None and f is None:
+    if not r:
+        if a and not c and not f:
             (f, a, c) = (a, c, f)
-        elif a is not None and c is not None and f is None:
+        elif a and c and not f:
             (c, f, a) = (a, c, f)
         from globals import current
         if hasattr(current, 'request'):
             r = current.request
 
-    if r is not None:
+    if r:
         application = r.application
         controller = r.controller
         function = r.function
         env = r.env
         if extension is None and r.extension != 'html':
             extension = r.extension
-    if a is not None:
+    if a:
         application = a
-    if c is not None:
+    if c:
         controller = c
-    if f is not None:
+    if f:
         if not isinstance(f, str):
             if hasattr(f, '__name__'):
                 function = f.__name__
@@ -326,7 +326,7 @@ def URL(
 
     function2 = '%s.%s' % (function, extension or 'html')
 
-    if not (application and controller and function is not None):
+    if not (application and controller and function):
         raise SyntaxError('not enough information to build the url (%s %s %s)' % (application, controller, function))
 
     if args:
