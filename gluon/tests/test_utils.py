@@ -9,6 +9,7 @@ from fix_path import fix_sys_path
 fix_sys_path(__file__)
 
 from utils import md5_hash
+from utils import compare
 
 
 class TestUtils(unittest.TestCase):
