@@ -19,6 +19,18 @@ class TestUtils(unittest.TestCase):
 
         data = md5_hash("web2py rocks")
         self.assertEqual(data, '79509f3246a2824dee64635303e99204')
+        
+    def test_compare(self):
+        """ Tests the compare funciton """
+        
+        a, b = 'test123', 'test123'
+        compare_result_true = compare(a, b)
+        self.assertTrue(compare_result_true)
+        
+        a, b = 'test123', 'test456'
+        compare_result_false = compare(a, b)
+        self.assertFalse(compare_result_false)
+
 
 class TestPack(unittest.TestCase):
     """ Tests the compileapp.py module """
