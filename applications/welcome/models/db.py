@@ -25,6 +25,8 @@ else:
 ## by default give a view/generic.extension to all actions from localhost
 ## none otherwise. a pattern can be 'controller/function.extension'
 response.generic_patterns = ['*'] if request.is_local else []
+## choose a style for forms
+response.formstyle = 'bootstrap3_inline' # or 'bootstrap3_stacked' or 'bootstrap2' or other
 
 ## (optional) optimize handling of static files
 # response.optimize_css = 'concat,minify,inline'
@@ -84,5 +86,4 @@ use_janrain(auth, filename='private/janrain.key')
 #########################################################################
 
 ## after defining tables, uncomment below to enable auditing
-# auth.enable_record_versioning(db)
-
+auth.enable_record_versioning(db)
