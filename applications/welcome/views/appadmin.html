@@ -12,35 +12,45 @@
 {{if request.function=='index':}}
 <h2>{{=T("Available Databases and Tables")}}</h2>
   {{if not databases:}}{{=T("No databases in this application")}}{{pass}}
-<table>
-  {{for db in sorted(databases):}}
-    {{for table in databases[db].tables:}}
-      {{qry='%s.%s.id>0'%(db,table)}}
-      {{tbl=databases[db][table]}}
-      {{if hasattr(tbl,'_primarykey'):}}
-        {{if tbl._primarykey:}}
-            {{firstkey=tbl[tbl._primarykey[0]]}}
-            {{if firstkey.type in ['string','text']:}}
-              {{qry='%s.%s.%s!=""'%(db,table,firstkey.name)}}
-            {{else:}}
-              {{qry='%s.%s.%s>0'%(db,table,firstkey.name)}}
-            {{pass}}
-        {{else:}}
-             {{qry=''}}
-        {{pass}}
-      {{pass}}
-  <tr>
-    <th style="font-size: 1.75em;">
-      {{=A("%s.%s" % (db,table),_href=URL('select',args=[db],vars=dict(query=qry)))}}
-    </th>
-    <td>
-      {{=A(str(T('New Record')),_href=URL('insert',args=[db,table]),_class="btn")}}
-    </td>
-  </tr>
-  {{pass}}
-  {{pass}}
-</table>
-
+  <ul class="nav nav-tabs" id="myTab">
+  <li class="active" ><a href="#alltables" data-toggle="tab">Tables</a></li>
+  <li><a href="#hooks" data-toggle="tab">Hooks</a></li>
+  </ul>
+  <div class="tab-content">
+      <div class="tab-pane active" id="alltables">
+        <table>
+          {{for db in sorted(databases):}}
+            {{for table in databases[db].tables:}}
+              {{qry='%s.%s.id>0'%(db,table)}}
+              {{tbl=databases[db][table]}}
+              {{if hasattr(tbl,'_primarykey'):}}
+                {{if tbl._primarykey:}}
+                    {{firstkey=tbl[tbl._primarykey[0]]}}
+                    {{if firstkey.type in ['string','text']:}}
+                      {{qry='%s.%s.%s!=""'%(db,table,firstkey.name)}}
+                    {{else:}}
+                      {{qry='%s.%s.%s>0'%(db,table,firstkey.name)}}
+                    {{pass}}
+                {{else:}}
+                     {{qry=''}}
+                {{pass}}
+              {{pass}}
+          <tr>
+            <th style="font-size: 1.75em;">
+              {{=A("%s.%s" % (db,table),_href=URL('select',args=[db],vars=dict(query=qry)))}}
+            </th>
+            <td>
+              {{=A(str(T('New Record')),_href=URL('insert',args=[db,table]),_class="btn")}}
+            </td>
+          </tr>
+          {{pass}}
+          {{pass}}
+        </table>
+      </div>
+      <div class="tab-pane" id="hooks">
+      {{=LOAD('appadmin', 'hooks', ajax=True)}}
+      </div>
+  </div>
 {{elif request.function=='select':}}
   <h2>{{=XML(str(T("Database %s select"))%A(request.args[0],_href=URL('index'))) }}
   </h2>
@@ -65,7 +75,7 @@
     {{if start>0:}}{{=A(T('previous %s rows') % step,_href=URL('select',args=request.args[0],vars=dict(start=start-step)),_class="btn")}}{{pass}}
     {{if stop<nrows:}}{{=A(T('next %s rows') % step,_href=URL('select',args=request.args[0],vars=dict(start=start+step)),_class="btn")}}{{pass}}
     {{if rows:}}
-       <div style="overflow: auto;" width="80%">
+       <div style="overflow:auto; width:80%;">
        {{linkto = lambda f, t, r: URL('update', args=[request.args[0], r, f]) if f else "#"}}
        {{upload=URL('download',args=request.args[0])}}
        {{=SQLTABLE(rows,linkto,upload,orderby=True,_class='sortable')}}

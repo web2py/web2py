@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf8
 {
 '!langcode!': 'hi-in',
 '!langname!': 'हिन्दी',
