@@ -14,7 +14,7 @@
  * - rules overriding web2py.css
 */
 
-div.flash.alert{
+div.flash {
   background-image: none;
   border-radius: 4px;
   -o-border-radius: 4px;
@@ -25,10 +25,11 @@ div.flash.alert{
   font-weight: normal;
   margin: 0 0 20px 0;
   min-width: 28px;
+  max-width: 300px;
   opacity: 1;
   padding: 15px 35px 15px 15px;
   vertical-align: baseline;
-  right: auto;
+  right: auto;  
 }
 div.flash.alert:hover {
   opacity: 1;

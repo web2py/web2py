@@ -54,7 +54,7 @@ def _():
          'admin', 'default', 'edit/%s/views/layout.html' % app)),
         (T('Stylesheet'), False,
          URL(
-         'admin', 'default', 'edit/%s/static/css/web2py.css' % app)),
+         'admin', 'default', 'edit/%s/static/css/web2py-bootstrap3.css' % app)),
         (T('DB Model'), False,
          URL(
          'admin', 'default', 'edit/%s/models/db.py' % app)),
