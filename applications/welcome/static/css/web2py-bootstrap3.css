@@ -309,5 +309,8 @@ td.w2p_fc,
     width: 100%;
 }
 input[type=checkbox], input[type=radio] {
-    margin: 4px 5px 0 0;
+    margin: 4px 4px 0 0;
+}
+.btn {
+    margin-right: 4px;
 }
