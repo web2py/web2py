@@ -34,13 +34,15 @@
 {{pass}}
 
 {{block right_sidebar}}
-<a id="w2padmin-btn" class="btn btn-primary btn-lg btn-block"
-   href="{{=URL('admin','default','index')}}">
-  <i class="glyphicon glyphicon-cog"></i>
-  {{=T("admin")}}
-</a>
 <div class="panel panel-info">
-  <div class="panel-heading">{{=T("Don't know what to do?")}}</div>
+  <div class="panel-heading"><h3 class="panel-title"><a class="btn-block"
+      href="{{=URL('admin','default','index')}}">
+      <i class="glyphicon glyphicon-cog"></i>
+      {{=T("admin")}}
+    </a></h3></div>
+  <div class="panel-body">
+    {{=T("Don't know what to do?")}}
+  </div>
   <ul class="list-group">
     <li class="list-group-item">{{=A(T("Online examples"), _href=URL('examples','default','index'))}}</li>
     <li class="list-group-item"><a href="http://web2py.com">web2py.com</a></li>

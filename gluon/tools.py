@@ -18,7 +18,6 @@ except:
 import datetime
 import thread
 import logging
-import copy
 import sys
 import glob
 import os
@@ -1023,7 +1022,7 @@ class Auth(object):
         allow_basic_login_only=False,
         on_failed_authentication=lambda x: redirect(x),
         formstyle=None,
-        label_separator=": ",
+        label_separator=None,
         logging_enabled = True,
         allow_delete_accounts=False,
         password_field='password',
@@ -1328,7 +1327,7 @@ class Auth(object):
             login_url=url_login,
             logged_url=URL(controller, function, args='profile'),
             download_url=URL(controller, 'download'),
-            mailer=(mailer == True) and Mail() or mailer,
+            mailer=(mailer is True) and Mail() or mailer,
             on_failed_authorization =
             URL(controller, function, args='not_authorized'),
             login_next = url_index,
@@ -1359,9 +1358,9 @@ class Auth(object):
             reset_password_onaccept = [],
             hmac_key = hmac_key,
             formstyle = current.response.formstyle,
+            label_separator = current.response.form_label_separator
         )
         settings.lock_keys = True
-
         # ## these are messages that can be customized
         messages = self.messages = Messages(current.T)
         messages.update(Auth.default_messages)

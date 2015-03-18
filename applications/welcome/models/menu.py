@@ -40,34 +40,35 @@ def _():
     ctr = request.controller
     # useful links to internal and external resources
     response.menu += [
-        (SPAN('web2py', _class='highlighted'), False, 'http://web2py.com', [
         (T('My Sites'), False, URL('admin', 'default', 'site')),
-        (T('This App'), False, URL('admin', 'default', 'design/%s' % app), [
-        (T('Controller'), False,
-         URL(
-         'admin', 'default', 'edit/%s/controllers/%s.py' % (app, ctr))),
-        (T('View'), False,
-         URL(
-         'admin', 'default', 'edit/%s/views/%s' % (app, response.view))),
-        (T('Layout'), False,
-         URL(
-         'admin', 'default', 'edit/%s/views/layout.html' % app)),
-        (T('Stylesheet'), False,
-         URL(
-         'admin', 'default', 'edit/%s/static/css/web2py-bootstrap3.css' % app)),
-        (T('DB Model'), False,
-         URL(
-         'admin', 'default', 'edit/%s/models/db.py' % app)),
-        (T('Menu Model'), False,
-         URL(
-         'admin', 'default', 'edit/%s/models/menu.py' % app)),
-        (T('Database'), False, URL(app, 'appadmin', 'index')),
-        (T('Errors'), False, URL(
-         'admin', 'default', 'errors/' + app)),
-        (T('About'), False, URL(
-         'admin', 'default', 'about/' + app)),
-        ]),
-            ('web2py.com', False, 'http://www.web2py.com', [
+          (T('This App'), False, '#', [
+              (T('Design'), False, URL('admin', 'default', 'design/%s' % app)),
+              LI(_class="divider"),
+              (T('Controller'), False,
+               URL(
+               'admin', 'default', 'edit/%s/controllers/%s.py' % (app, ctr))),
+              (T('View'), False,
+               URL(
+               'admin', 'default', 'edit/%s/views/%s' % (app, response.view))),
+              (T('Layout'), False,
+               URL(
+               'admin', 'default', 'edit/%s/views/layout.html' % app)),
+              (T('Stylesheet'), False,
+               URL(
+               'admin', 'default', 'edit/%s/static/css/web2py-bootstrap3.css' % app)),
+              (T('DB Model'), False,
+               URL(
+               'admin', 'default', 'edit/%s/models/db.py' % app)),
+              (T('Menu Model'), False,
+               URL(
+               'admin', 'default', 'edit/%s/models/menu.py' % app)),
+              (T('Database'), False, URL(app, 'appadmin', 'index')),
+              (T('Errors'), False, URL(
+               'admin', 'default', 'errors/' + app)),
+              (T('About'), False, URL(
+               'admin', 'default', 'about/' + app)),
+              ]),
+          ('web2py.com', False, '#', [
              (T('Download'), False,
               'http://www.web2py.com/examples/default/download'),
              (T('Support'), False,
@@ -85,7 +86,9 @@ def _():
              (T('Recipes'), False, 'http://web2pyslices.com/'),
              (T('Semantic'), False, 'http://web2py.com/semantic'),
              ]),
-            (T('Documentation'), False, 'http://www.web2py.com/book', [
+          (T('Documentation'), False, '#', [
+             (T('Online book'), False, 'http://www.web2py.com/book'),
+             LI(_class="divider"),
              (T('Preface'), False,
               'http://www.web2py.com/book/default/chapter/00'),
              (T('Introduction'), False,
@@ -116,18 +119,25 @@ def _():
               'http://www.web2py.com/book/default/chapter/13'),
              (T('Other Recipes'), False,
               'http://www.web2py.com/book/default/chapter/14'),
-             (T('Buy this book'), False,
+             (T("Buy web2py's book"), False,
               'http://stores.lulu.com/web2py'),
              ]),
-            (T('Community'), False, None, [
+          (T('Community'), False, None, [
              (T('Groups'), False,
               'http://www.web2py.com/examples/default/usergroups'),
-                        (T('Twitter'), False, 'http://twitter.com/web2py'),
-                        (T('Live Chat'), False,
-                         'http://webchat.freenode.net/?channels=web2py'),
-                        ]),
-             (T('Plugins'), False, 'http://web2py.com/plugins')]        
-         )]
+              (T('Twitter'), False, 'http://twitter.com/web2py'),
+              (T('Live Chat'), False,
+               'http://webchat.freenode.net/?channels=web2py'),
+              ]),
+          (T('Plugins'), False, None, [
+                  ('plugin_wiki', False,
+                   'http://web2py.com/examples/default/download'),
+                  (T('Other Plugins'), False,
+                   'http://web2py.com/plugins'),
+                  (T('Layout Plugins'),
+                   False, 'http://web2py.com/layouts'),
+                  ])
+        ]
 if DEVELOPMENT_MENU: _()
 
 if "auth" in locals(): auth.wikimenu() 
