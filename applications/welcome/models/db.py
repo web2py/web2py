@@ -9,9 +9,15 @@
 ## be redirected to HTTPS, uncomment the line below:
 # request.requires_https()
 
+## app configuration made easy. Look inside private/appconfig.ini
+from gluon.contrib.appconfig import AppConfig
+## once in production, remove reload=True to gain full speed
+myconf = AppConfig(reload=True)
+
+
 if not request.env.web2py_runtime_gae:
     ## if NOT running on Google App Engine use SQLite or other DB
-    db = DAL('sqlite://storage.sqlite',pool_size=1,check_reserved=['all'])
+    db = DAL(myconf.take('db.uri'), pool_size=myconf.take('db.pool_size', cast=int), check_reserved=['all'])
 else:
     ## connect to Google BigTable (optional 'google:datastore://namespace')
     db = DAL('google:datastore+ndb')
@@ -26,7 +32,9 @@ else:
 ## none otherwise. a pattern can be 'controller/function.extension'
 response.generic_patterns = ['*'] if request.is_local else []
 ## choose a style for forms
-response.formstyle = 'bootstrap3_inline' # or 'bootstrap3_stacked' or 'bootstrap2' or other
+response.formstyle = myconf.take('forms.formstyle')  # or 'bootstrap3_stacked' or 'bootstrap2' or other
+response.form_label_separator = myconf.take('forms.separator')
+
 
 ## (optional) optimize handling of static files
 # response.optimize_css = 'concat,minify,inline'
@@ -54,19 +62,14 @@ auth.define_tables(username=False, signature=False)
 
 ## configure email
 mail = auth.settings.mailer
-mail.settings.server = 'logging' if request.is_local else 'smtp.gmail.com:587'
-mail.settings.sender = 'you@gmail.com'
-mail.settings.login = 'username:password'
+mail.settings.server = 'logging' if request.is_local else myconf.take('smtp.sender')
+mail.settings.sender = myconf.take('smtp.sender')
+mail.settings.login = myconf.take('smtp.login')
 
 ## configure auth policy
 auth.settings.registration_requires_verification = False
 auth.settings.registration_requires_approval = False
 auth.settings.reset_password_requires_verification = True
-
-## if you need to use OpenID, Facebook, MySpace, Twitter, Linkedin, etc.
-## register with janrain.com, write your domain:api_key in private/janrain.key
-from gluon.contrib.login_methods.janrain_account import use_janrain
-use_janrain(auth, filename='private/janrain.key')
 
 #########################################################################
 ## Define your tables below (or better in another model file) for example
