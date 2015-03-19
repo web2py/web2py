@@ -50,18 +50,21 @@ def _():
               (T('View'), False,
                URL(
                'admin', 'default', 'edit/%s/views/%s' % (app, response.view))),
-              (T('Layout'), False,
-               URL(
-               'admin', 'default', 'edit/%s/views/layout.html' % app)),
-              (T('Stylesheet'), False,
-               URL(
-               'admin', 'default', 'edit/%s/static/css/web2py-bootstrap3.css' % app)),
               (T('DB Model'), False,
                URL(
                'admin', 'default', 'edit/%s/models/db.py' % app)),
               (T('Menu Model'), False,
                URL(
                'admin', 'default', 'edit/%s/models/menu.py' % app)),
+              (T('Config.ini'), False,
+               URL(
+               'admin', 'default', 'edit/%s/private/appconfig.ini' % app)),
+              (T('Layout'), False,
+               URL(
+               'admin', 'default', 'edit/%s/views/layout.html' % app)),
+              (T('Stylesheet'), False,
+               URL(
+               'admin', 'default', 'edit/%s/static/css/web2py-bootstrap3.css' % app)),
               (T('Database'), False, URL(app, 'appadmin', 'index')),
               (T('Errors'), False, URL(
                'admin', 'default', 'errors/' + app)),
@@ -82,9 +85,7 @@ def _():
              (T('Free Applications'),
               False, 'http://web2py.com/appliances'),
              (T('Plugins'), False, 'http://web2py.com/plugins'),
-             (T('Layouts'), False, 'http://web2py.com/layouts'),
              (T('Recipes'), False, 'http://web2pyslices.com/'),
-             (T('Semantic'), False, 'http://web2py.com/semantic'),
              ]),
           (T('Documentation'), False, '#', [
              (T('Online book'), False, 'http://www.web2py.com/book'),
@@ -129,14 +130,6 @@ def _():
               (T('Live Chat'), False,
                'http://webchat.freenode.net/?channels=web2py'),
               ]),
-          (T('Plugins'), False, None, [
-                  ('plugin_wiki', False,
-                   'http://web2py.com/examples/default/download'),
-                  (T('Other Plugins'), False,
-                   'http://web2py.com/plugins'),
-                  (T('Layout Plugins'),
-                   False, 'http://web2py.com/layouts'),
-                  ])
         ]
 if DEVELOPMENT_MENU: _()
 
