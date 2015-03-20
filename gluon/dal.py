@@ -14,7 +14,7 @@ from pydal import DAL as pyDAL
 from pydal import Field
 from pydal.objects import Row, Rows, Table, Query, Expression
 from pydal import SQLCustomType, geoPoint, geoLine, geoPolygon
-
+import copy_reg as copyreg
 
 def _default_validators(db, field):
     """
@@ -86,7 +86,7 @@ from gluon.utils import web2py_uuid
 from gluon import sqlhtml
 
 
-class DAL(pyDAL):
+class DAL(pyDAL):    
     serializers = w2p_serializers
     validators_method = _default_validators
     uuid = lambda x: web2py_uuid()
@@ -96,6 +96,15 @@ class DAL(pyDAL):
     }
     Field = Field
     Table = Table
+
+def DAL_unpickler(db_uid):
+    return DAL('<zombie>', db_uid=db_uid)
+
+
+def DAL_pickler(db):
+    return DAL_unpickler, (db._db_uid,)
+
+copyreg.pickle(DAL, DAL_pickler, DAL_unpickler)
 
 #: add web2py contrib drivers to pyDAL
 from pydal.drivers import DRIVERS
