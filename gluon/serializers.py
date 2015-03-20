@@ -176,9 +176,17 @@ def ics(events, title=None, link=None, timeshift=0, calname=True,
 
 def safe_encode(text):
     if not isinstance(text, (str, unicode)):
-        text = str(text) # yes this should always return bytes not unicode but who knows...
-    if isinstance(text, unicode):
-        text = text.encode(encoding, 'xmlcharrefreplace')        
+        text = str(text)
+    try:
+        text = text.encode('utf8','replace')
+    except ValueError:
+        new_text = ''
+        for c in text:
+            try:
+                new_text += c.encode('utf8')
+            except:
+                new_text += '?'
+        text = new_text
     return text
 
 def rss(feed):
@@ -199,7 +207,7 @@ def rss(feed):
                            description=safestr(entry,'description'),
                            pubDate=entry.get('created_on', now)
                            ) for entry in feed.get('entries', [])])
-    return rss.to_xml(encoding='utf-8')
+    return rss.to_xml(encoding='utf8')
 
 
 def yaml(data):
