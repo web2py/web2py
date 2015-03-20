@@ -10,7 +10,7 @@ Takes care of adapting pyDAL to web2py's needs
 --------------------------------------------
 """
 
-from pydal import DAL as pyDAL
+from pydal import DAL as DAL
 from pydal import Field
 from pydal.objects import Row, Rows, Table, Query, Expression
 from pydal import SQLCustomType, geoPoint, geoLine, geoPolygon
@@ -86,25 +86,15 @@ from gluon.utils import web2py_uuid
 from gluon import sqlhtml
 
 
-class DAL(pyDAL):    
-    serializers = w2p_serializers
-    validators_method = _default_validators
-    uuid = lambda x: web2py_uuid()
-    representers = {
-        'rows_render': sqlhtml.represent,
-        'rows_xml': sqlhtml.SQLTABLE
+DAL.serializers = w2p_serializers
+DAL.validators_method = _default_validators
+DAL.uuid = lambda x: web2py_uuid()
+DAL.representers = {
+    'rows_render': sqlhtml.represent,
+    'rows_xml': sqlhtml.SQLTABLE
     }
-    Field = Field
-    Table = Table
-
-def DAL_unpickler(db_uid):
-    return DAL('<zombie>', db_uid=db_uid)
-
-
-def DAL_pickler(db):
-    return DAL_unpickler, (db._db_uid,)
-
-copyreg.pickle(DAL, DAL_pickler, DAL_unpickler)
+DAL.Field = Field
+DAL.Table = Table
 
 #: add web2py contrib drivers to pyDAL
 from pydal.drivers import DRIVERS
