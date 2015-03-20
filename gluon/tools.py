@@ -775,11 +775,12 @@ class Mail(object):
                     xcc['bcc'] = bcc
                 if reply_to:
                     xcc['reply_to'] = reply_to
-                from google.appengine.api import mail, Attachment
-                attachments = attachments and [Attachment(a.my_filename, 
-                                                          a.my_payload,
-                                                          contebt_id='<attachment-%s>' % k)
-                                               for k,a in enumerate(attachments) if not raw]
+                from google.appengine.api import mail
+                attachments = attachments and [mail.Attachment(
+                        a.my_filename, 
+                        a.my_payload,
+                        contebt_id='<attachment-%s>' % k
+                        ) for k,a in enumerate(attachments) if not raw]
                 if attachments:
                     result = mail.send_mail(
                         sender=sender, to=origTo,
