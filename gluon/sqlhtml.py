@@ -1958,7 +1958,8 @@ class SQLFORM(FORM):
              noconfirm=False,
              cache_count=None,
              client_side_delete=False,
-             ignore_common_filters=None):
+             ignore_common_filters=None,
+             auto_pagination=True):
 
         formstyle = formstyle or current.response.formstyle
 
@@ -2051,6 +2052,28 @@ class SQLFORM(FORM):
             else:
                 nrows = 0
             return nrows
+
+        def fix_orderby(orderby):
+            if not auto_pagination:
+                return orderby
+            # enforce always an ORDER clause to avoid
+            # pagination errors. field_id is needed anyhow,
+            # is unique and usually indexed. See issue #679
+            if not orderby:
+                orderby = field_id
+            else:
+                if isinstance(orderby, Expression):
+                    if orderby.first:
+                        # here we're with a DESC order on a field
+                        # stored as orderby.first
+                        if orderby.first is not field_id:
+                            orderby = orderby | field_id
+                    else:
+                        # here we're with an ASC order on a field
+                        # stored as orderby
+                        if orderby is not field_id:
+                            orderby = orderby | field_id
+            return orderby
 
         def url(**b):
             b['args'] = args + b.get('args', [])
@@ -2313,6 +2336,8 @@ class SQLFORM(FORM):
                     else:
                         orderby = (order[:1] == '~' and ~sort_field) or sort_field
 
+            orderby = fix_orderby(orderby)
+
             expcolumns = [str(f) for f in columns]
             selectable_columns = [str(f) for f in columns if not isinstance(f, Field.Virtual)]
             if export_type.endswith('with_hidden_cols'):
@@ -2524,6 +2549,9 @@ class SQLFORM(FORM):
             limitby = (paginate * page, paginate * (page + 1))
         else:
             limitby = None
+
+        orderby = fix_orderby(orderby)
+
         try:
             table_fields = [field for field in fields
                             if (field.tablename in tablenames and
