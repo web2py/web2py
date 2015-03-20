@@ -2361,6 +2361,8 @@ class Auth(object):
         if next is DEFAULT:
             # important for security
             next = settings.login_next
+            if callable(next):
+                next = next()
             user_next = snext
             if user_next:
                 external = user_next.split('://')
