@@ -174,12 +174,19 @@ def ics(events, title=None, link=None, timeshift=0, calname=True,
     s += '\nEND:VCALENDAR'
     return s
 
+def safe_encode(text):
+    if not isinstance(text, (str, unicode)):
+        text = str(text) # yes this should always return bytes not unicode but who knows...
+    if isinstance(text, unicode):
+        text = text.encode(encoding, 'xmlcharrefreplace')        
+    return text
 
 def rss(feed):
     if not 'entries' in feed and 'items' in feed:
         feed['entries'] = feed['items']
+
     def safestr(obj, key, default=''):
-        return str(obj[key]).encode('utf-8', 'replace') if key in obj else default
+        return safe_encode(obj.get(key,''))
 
     now = datetime.datetime.now()
     rss = rss2.RSS2(title=safestr(feed,'title'),
