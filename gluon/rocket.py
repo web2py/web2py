@@ -33,7 +33,7 @@ PY3K = sys.version_info[0] > 2
 
 
 class NullHandler(logging.Handler):
-    "A Logging handler to prevent library errors."
+    """A Logging handler to prevent library errors."""
     def emit(self, record):
         pass
 
@@ -93,7 +93,7 @@ except ImportError:
 # Import Package Modules
 # package imports removed in monolithic build
 # TODO - This part is still very experimental.
-#from .filelike import FileLikeSocket
+# from .filelike import FileLikeSocket
 
 
 class Connection(object):
@@ -403,7 +403,7 @@ class WSGIExecutor(ThreadPoolExecutor):
 
 
 class FuturesMiddleware(object):
-    "Futures middleware that adds a Futures Executor to the environment"
+    """Futures middleware that adds a Futures Executor to the environment"""
     def __init__(self, app, threads=5):
         self.app = app
         self.executor = WSGIExecutor(threads)
@@ -1087,10 +1087,10 @@ class ThreadPool:
             self.app_info['executor'].shutdown(wait=False)
 
         # Give them the gun
-        #active_threads = [t for t in self.threads if t.isAlive()]
-        #while active_threads:
-        #    t = active_threads.pop()
-        #    t.kill()
+        # active_threads = [t for t in self.threads if t.isAlive()]
+        # while active_threads:
+        #     t = active_threads.pop()
+        #     t.kill()
 
         # Wait until they pull the trigger
         for t in self.threads:
@@ -1515,17 +1515,17 @@ class Worker(Thread):
 
 
 class SocketTimeout(Exception):
-    "Exception for when a socket times out between requests."
+    """Exception for when a socket times out between requests."""
     pass
 
 
 class BadRequest(Exception):
-    "Exception for when a client sends an incomprehensible request."
+    """Exception for when a client sends an incomprehensible request."""
     pass
 
 
 class SocketClosed(Exception):
-    "Exception for when a socket is closed by the client."
+    """Exception for when a socket is closed by the client."""
     pass
 
 
