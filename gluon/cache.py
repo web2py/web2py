@@ -22,6 +22,7 @@ caching will be provided by the GAE memcache
 import time
 import thread
 import os
+import gc
 import sys
 import logging
 import re
@@ -40,14 +41,36 @@ try:
 except:
    import pickle
 
+try:
+    from collections import OrderedDict
+    import psutil
+    CAN_DO_CLEANUP = True
+except ImportError:
+    CAN_DO_CLEANUP = False
+
+def remove_oldest_entries(storage, percentage=90):
+    # compute current memory usage (%)
+    old_mem = psutil.virtual_memory().percent
+    # if we have data in storage and utilization exceeds 90%
+    while storage and old_mem > percentage:    
+        # removed oldest entry
+        storage.popitem(last=False)
+        # garbage collect
+        gc.collect(2)
+        # comute used memory again
+        new_mem = psutil.virtual_memory().percent
+        # if the used memory did not decrease stop
+        if new_mem >= old_mem: break
+        # net new measurement for memory usage and loop
+        old_mem = new_mem
+
+
 logger = logging.getLogger("web2py.cache")
 
 __all__ = ['Cache', 'lazy_cache']
 
 
 DEFAULT_TIME_EXPIRE = 300
-
-
 
 class CacheAbstract(object):
     """
@@ -145,28 +168,25 @@ class CacheInRam(CacheAbstract):
 
     locker = thread.allocate_lock()
     meta_storage = {}
+    stats = {}
 
     def __init__(self, request=None):
         self.initialized = False
         self.request = request
-        self.storage = {}
-
+        self.storage = OrderedDict() if CAN_DO_CLEANUP else {}
+        self.app = request.application if request else ''
     def initialize(self):
         if self.initialized:
             return
         else:
             self.initialized = True
         self.locker.acquire()
-        request = self.request
-        if request:
-            app = request.application
+        if not self.app in self.meta_storage:
+            self.storage = self.meta_storage[self.app] = \
+                OrderedDict() if CAN_DO_CLEANUP else {}
+            self.stats[self.app] = {'hit_total': 0, 'misses': 0}
         else:
-            app = ''
-        if not app in self.meta_storage:
-            self.storage = self.meta_storage[app] = {
-                CacheAbstract.cache_stats_name: {'hit_total': 0, 'misses': 0}}
-        else:
-            self.storage = self.meta_storage[app]
+            self.storage = self.meta_storage[self.app]
         self.locker.release()
 
     def clear(self, regex=None):
@@ -178,9 +198,8 @@ class CacheInRam(CacheAbstract):
         else:
             self._clear(storage, regex)
 
-        if not CacheAbstract.cache_stats_name in storage.keys():
-            storage[CacheAbstract.cache_stats_name] = {
-                'hit_total': 0, 'misses': 0}
+        if not self.app in self.stats:
+            self.stats[self.app] = {'hit_total': 0, 'misses': 0}
 
         self.locker.release()
 
@@ -211,7 +230,7 @@ class CacheInRam(CacheAbstract):
             del self.storage[key]
             if destroyer:
                 destroyer(item[1])
-        self.storage[CacheAbstract.cache_stats_name]['hit_total'] += 1
+        self.stats[self.app]['hit_total'] += 1
         self.locker.release()
 
         if f is None:
@@ -224,7 +243,9 @@ class CacheInRam(CacheAbstract):
 
         self.locker.acquire()
         self.storage[key] = (now, value)
-        self.storage[CacheAbstract.cache_stats_name]['misses'] += 1
+        self.stats[self.app]['misses'] += 1
+        if CAN_DO_CLEANUP:
+            remove_oldest_entries(self.storage)
         self.locker.release()
         return value
 
