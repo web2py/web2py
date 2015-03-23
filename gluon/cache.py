@@ -31,6 +31,10 @@ import datetime
 import tempfile
 from gluon import recfile
 try:
+    from collections import OrderdDict
+except ImportError:
+    from gluon.contrib.ordereddict import OrderedDict
+try:
     from gluon import settings
     have_settings = True
 except ImportError:
@@ -42,11 +46,10 @@ except:
    import pickle
 
 try:
-    from collections import OrderedDict
     import psutil
-    CAN_DO_CLEANUP = True
+    HAVE_PSUTIL = True
 except ImportError:
-    CAN_DO_CLEANUP = False
+    HAVE_PSUTIL = False
 
 def remove_oldest_entries(storage, percentage=90):
     # compute current memory usage (%)
@@ -173,7 +176,7 @@ class CacheInRam(CacheAbstract):
     def __init__(self, request=None):
         self.initialized = False
         self.request = request
-        self.storage = OrderedDict() if CAN_DO_CLEANUP else {}
+        self.storage = OrderedDict() if HAVE_PSUTIL else {}
         self.app = request.application if request else ''
     def initialize(self):
         if self.initialized:
@@ -183,7 +186,7 @@ class CacheInRam(CacheAbstract):
         self.locker.acquire()
         if not self.app in self.meta_storage:
             self.storage = self.meta_storage[self.app] = \
-                OrderedDict() if CAN_DO_CLEANUP else {}
+                OrderedDict() if HAVE_PSUTIL else {}
             self.stats[self.app] = {'hit_total': 0, 'misses': 0}
         else:
             self.storage = self.meta_storage[self.app]
@@ -244,7 +247,7 @@ class CacheInRam(CacheAbstract):
         self.locker.acquire()
         self.storage[key] = (now, value)
         self.stats[self.app]['misses'] += 1
-        if CAN_DO_CLEANUP:
+        if HAVE_PSUTIL:
             remove_oldest_entries(self.storage)
         self.locker.release()
         return value
