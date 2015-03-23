@@ -96,6 +96,7 @@ class CacheAbstract(object):
     """
 
     cache_stats_name = 'web2py_cache_statistics'
+    max_ram_utilization = 90 # percent
 
     def __init__(self, request=None):
         """Initializes the object
@@ -248,7 +249,7 @@ class CacheInRam(CacheAbstract):
         self.storage[key] = (now, value)
         self.stats[self.app]['misses'] += 1
         if HAVE_PSUTIL:
-            remove_oldest_entries(self.storage)
+            remove_oldest_entries(self.storage, percentage = self.max_ram_utilization)
         self.locker.release()
         return value
 
