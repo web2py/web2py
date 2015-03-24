@@ -26,6 +26,7 @@ import gc
 import sys
 import logging
 import re
+import random
 import hashlib
 import datetime
 import tempfile
@@ -59,7 +60,7 @@ def remove_oldest_entries(storage, percentage=90):
         # removed oldest entry
         storage.popitem(last=False)
         # garbage collect
-        gc.collect(2)
+        gc.collect(1)
         # comute used memory again
         new_mem = psutil.virtual_memory().percent
         # if the used memory did not decrease stop
@@ -248,7 +249,7 @@ class CacheInRam(CacheAbstract):
         self.locker.acquire()
         self.storage[key] = (now, value)
         self.stats[self.app]['misses'] += 1
-        if HAVE_PSUTIL:
+        if HAVE_PSUTIL and self.max_ram_utilization!=None and random.random()<0.10:
             remove_oldest_entries(self.storage, percentage = self.max_ram_utilization)
         self.locker.release()
         return value
