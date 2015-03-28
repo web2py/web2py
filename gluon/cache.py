@@ -328,31 +328,32 @@ class CacheOnDisk(CacheAbstract):
                     time.sleep(self.file_lock_time_wait)
 
 
+        def acquire(self, key):
+            self.file_locks[key].acquire()
+
+
+        def release(self, key):
+            self.file_locks[key].release()
+
+
         def __setitem__(self, key, value):
             key = self.key_filter_in(key)
-            self.file_locks[key].acquire()
             val_file = recfile.open(key, mode='wb', path=self.folder)
             self.wait_portalock(val_file)
             pickle.dump(value, val_file, pickle.HIGHEST_PROTOCOL)
             val_file.close()
-            portalocker.unlock(val_file)
-            self.file_locks[key].release()
 
 
         def __getitem__(self, key):
             key = self.key_filter_in(key)
-            self.file_locks[key].acquire()
             try:
                 val_file = recfile.open(key, mode='rb', path=self.folder)
             except IOError:
-                self.file_locks[key].release()
                 raise KeyError
 
             self.wait_portalock(val_file)
             value = pickle.load(recfile.open(key, 'rb', path=self.folder))
             val_file.close()
-            portalocker.unlock(val_file)
-            self.file_locks[key].release()
             return value
 
 
@@ -363,9 +364,10 @@ class CacheOnDisk(CacheAbstract):
 
         def __delitem__(self, key):
             key = self.key_filter_in(key)
-            self.file_locks[key].acquire()
-            recfile.remove(key, path=self.folder)
-            del self.file_locks[key]
+            try:
+                recfile.remove(key, path=self.folder)
+            except IOError:
+                raise KeyError
 
 
         def __iter__(self):
@@ -382,7 +384,6 @@ class CacheOnDisk(CacheAbstract):
             Return the result of applying the function.
             """
             key = self.key_filter_in(key)
-            self.file_locks[key].acquire()
             exists = True
             try:
                 val_file = recfile.open(key, mode='r+b', path=self.folder)
@@ -399,8 +400,6 @@ class CacheOnDisk(CacheAbstract):
             pickle.dump((time.time(), new_value), val_file, pickle.HIGHEST_PROTOCOL)
             val_file.truncate()
             val_file.close()
-            portalocker.unlock(val_file)
-            self.file_locks[key].release()
             return new_value
 
 
@@ -413,13 +412,6 @@ class CacheOnDisk(CacheAbstract):
                 return self[key]
             except KeyError:
                 return default
-
-        def clear(self):
-            for key in self:
-                try:
-                    del self[key]
-                except KeyError:
-                    pass
 
 
     def __init__(self, request=None, folder=None):
@@ -461,6 +453,8 @@ class CacheOnDisk(CacheAbstract):
             return v
 
         dt = time_expire
+        self.storage.acquire(key)
+        self.storage.acquire(CacheAbstract.cache_stats_name)
         item = self.storage.get(key)
         self.storage.safe_apply(CacheAbstract.cache_stats_name, inc_hit_total,
                                 default_value={'hit_total': 0, 'misses': 0})
@@ -469,6 +463,8 @@ class CacheOnDisk(CacheAbstract):
             del self.storage[key]
 
         if f is None:
+            self.storage.release(CacheAbstract.cache_stats_name)
+            self.storage.release(key)
             return None
 
         now = time.time()
@@ -481,6 +477,8 @@ class CacheOnDisk(CacheAbstract):
             self.storage.safe_apply(CacheAbstract.cache_stats_name, inc_misses, 
                                     default_value={'hit_total': 0, 'misses': 0})
 
+        self.storage.release(CacheAbstract.cache_stats_name)
+        self.storage.release(key)
         return value
 
 
@@ -488,14 +486,25 @@ class CacheOnDisk(CacheAbstract):
         self.initialize()
         storage = self.storage
         if regex is None:
-            storage.clear()
+            keys = storage
         else:
-            self._clear(storage, regex)
+            r = re.compile(regex)
+            keys = (key for key in storage if r.match(key))
+        for key in keys:
+            storage.acquire(key)
+            try:
+                del storage[key]
+            except KeyError:
+                pass
+            storage.release(key)
 
 
     def increment(self, key, value=1):
         self.initialize()
-        return self.storage.safe_apply(key, lambda x: x + value, default_value=0)
+        self.storage.acquire(key)
+        value = self.storage.safe_apply(key, lambda x: x + value, default_value=0)
+        self.storage.release(key)
+        return value
 
 
 
