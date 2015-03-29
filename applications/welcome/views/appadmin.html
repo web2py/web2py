@@ -18,7 +18,7 @@
   </ul>
   <div class="tab-content">
       <div class="tab-pane active" id="alltables">
-        <table>
+        <table class="table">
           {{for db in sorted(databases):}}
             {{for table in databases[db].tables:}}
               {{qry='%s.%s.id>0'%(db,table)}}
@@ -40,7 +40,7 @@
               {{=A("%s.%s" % (db,table),_href=URL('select',args=[db],vars=dict(query=qry)))}}
             </th>
             <td>
-              {{=A(str(T('New Record')),_href=URL('insert',args=[db,table]),_class="btn")}}
+              {{=A(str(T('New Record')),_href=URL('insert',args=[db,table]),_class="btn btn-default")}}
             </td>
           </tr>
           {{pass}}
@@ -61,7 +61,7 @@
   </pre>
   {{pass}}
   {{if table:}}
-  {{=A(str(T('New Record')),_href=URL('insert',args=[request.args[0],table]),_class="btn")}}<br/><br/>
+  {{=A(str(T('New Record')),_href=URL('insert',args=[request.args[0],table]),_class="btn btn-default")}}<br/><br/>
     <h3>{{=T("Rows in Table")}}</h3><br/>
    {{else:}}
     <h3>{{=T("Rows selected")}}</h3><br/>
@@ -72,8 +72,8 @@
       {{=T('"update" is an optional expression like "field1=\'newvalue\'". You cannot update or delete the results of a JOIN')}}</p>
     <br/><br/>
     <h4>{{=T("%s selected", nrows)}}</h4>
-    {{if start>0:}}{{=A(T('previous %s rows') % step,_href=URL('select',args=request.args[0],vars=dict(start=start-step)),_class="btn")}}{{pass}}
-    {{if stop<nrows:}}{{=A(T('next %s rows') % step,_href=URL('select',args=request.args[0],vars=dict(start=start+step)),_class="btn")}}{{pass}}
+    {{if start>0:}}{{=A(T('previous %s rows') % step,_href=URL('select',args=request.args[0],vars=dict(start=start-step)),_class="btn btn-default")}}{{pass}}
+    {{if stop<nrows:}}{{=A(T('next %s rows') % step,_href=URL('select',args=request.args[0],vars=dict(start=start+step)),_class="btn btn-default")}}{{pass}}
     {{if rows:}}
        <div style="overflow:auto; width:80%;">
        {{linkto = lambda f, t, r: URL('update', args=[request.args[0], r, f]) if f else "#"}}
@@ -82,7 +82,7 @@
        </div>
     {{pass}}
     <br/><br/><h3>{{=T("Import/Export")}}</h3><br/>
-    <a href="{{=URL('csv',args=request.args[0],vars=dict(query=query))}}" class="btn">{{=T("export as csv file")}}</a>
+    <a href="{{=URL('csv',args=request.args[0],vars=dict(query=query))}}" class="btn btn-default">{{=T("export as csv file")}}</a>
   {{=formcsv or ''}}
 
 {{elif request.function=='insert':}}
