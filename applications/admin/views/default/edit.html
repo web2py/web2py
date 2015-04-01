@@ -230,20 +230,20 @@ $(document).on('click', 'a.font_button', function (e) {
             <ul class="nav nav-list" rel="pagebookmark" id="filelist">
             <li><input type="text" placeholder="{{=T('Rapid Search')}}" class="input-block-level typeahead-tw search-query"></li>
             {{auto_complete_list=[]}}
-                        <br />
+            <br />
             <div>
-      			<button onclick="jQuery('#form').slideToggle()" class="btn btn-mini">{{=T('Create')}}</button>
-      			<br />
-		      	<div id="form">
-        			<div>
-        				{{=file_create_form('%s/' % app, '')}}
-        			</div>          			  			
-      			</div>
-      			<script>jQuery('#form').slideToggle()</script>
-    		</div>
-    		<br />            
+      	      <button onclick="jQuery('#form').slideToggle()" class="btn btn-mini">{{=T('Create')}}</button>
+      	      <br />
+	      <div id="form">
+        	<div>
+        	  {{=file_create_form('%s/' % app, '')}}
+        	</div>          			  			
+      	      </div>
+      	      <script>jQuery('#form').slideToggle()</script>
+    	    </div>
+    	    <br />            
             <div id="files_menu">
-                {{=LOAD('default', 'files_menu', vars={'app':app}, ajax=True)}}
+              {{=LOAD('default', 'files_menu', vars={'app':app}, ajax=True)}}
             </div>
             </ul>
         </div>

@@ -22,7 +22,8 @@ import gluon.portalocker as portalocker
 __all__ = ['List', 'Storage', 'Settings', 'Messages',
            'StorageList', 'load_storage', 'save_storage']
 
-DEFAULT = lambda:0
+DEFAULT = lambda: 0
+
 
 class Storage(dict):
     """
@@ -198,6 +199,7 @@ class Messages(Settings):
         if isinstance(value, str):
             return self.T(value)
         return value
+
 
 class FastStorage(dict):
     """

@@ -20,12 +20,12 @@ try:
         os.path.dirname(os.path.abspath(__file__)), "packages", "dal"))
     import pydal
     sys.modules['pydal'] = pydal
-except:
+except ImportError:
     raise RuntimeError(
         "web2py depends on pydal, which apparently you have not installed.\n" +
         "Probably you cloned the repository using git without '--recursive'" +
         "\nTo fix this, please run (from inside your web2py folder):\n\n" +
-        "    git submodule init && git submodule update\n\n" +
+        "     git submodule update --init --recursive\n\n" +
         "You can also download a complete copy from http://www.web2py.com."
     )
 
