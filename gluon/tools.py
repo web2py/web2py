@@ -42,9 +42,12 @@ from gluon import *
 from gluon.contrib.autolinks import expand_one
 from gluon.contrib.markmin.markmin2html import \
     replace_at_urls, replace_autolinks, replace_components
-from pydal.objects import Table, Row, Set, Query
+from pydal.objects import Row, Set, Query
 
 import gluon.serializers as serializers
+
+Table = DAL.Table
+Field = DAL.Field
 
 try:
     # try stdlib (Python 2.6)
