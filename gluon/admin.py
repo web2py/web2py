@@ -114,17 +114,18 @@ def app_cleanup(app, request):
         for f in os.listdir(path):
             try:
                 if f[:1] != '.': recursive_unlink(os.path.join(path, f))
-            except IOError:
+            except (OSError, IOError):
                 r = False
 
     # Remove cache files
-    CacheOnDisk(folder=apath('%s/cache/' % app, request)).clear()
     path = apath('%s/cache/' % app, request)
+    CacheOnDisk(folder=path).clear()
+    
     if os.path.exists(path):
         for f in os.listdir(path):
             try:
                 if f[:1] != '.': recursive_unlink(os.path.join(path, f))
-            except IOError:
+            except (OSError, IOError):
                 r = False
     return r
 
