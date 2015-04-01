@@ -21,6 +21,7 @@ from gluon.fileutils import up, fix_newlines, abspath, recursive_unlink
 from gluon.fileutils import read_file, write_file, parse_version
 from gluon.restricted import RestrictedError
 from gluon.settings import global_settings
+from gluon.cache import CacheOnDisk
 
 
 if not global_settings.web2py_runtime_gae:
@@ -117,6 +118,7 @@ def app_cleanup(app, request):
                 r = False
 
     # Remove cache files
+    CacheOnDisk(folder=apath('%s/cache/' % app, request)).clear()
     path = apath('%s/cache/' % app, request)
     if os.path.exists(path):
         for f in os.listdir(path):
