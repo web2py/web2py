@@ -1,4 +1,4 @@
-## 2.10.1
+## 2.10.1-2.10.2
 
 - welcome app defaults to Bootstrap 3
 - DAL -> pyDAL (thanks Giovanni, Niphlod, Paolo)
