@@ -2148,7 +2148,7 @@ class SQLFORM(FORM):
         else:
             fields = []
             columns = []
-            filter1 = lambda f: isinstance(f, Field)
+            filter1 = lambda f: isinstance(f, Field) and f.type != 'blob'
             filter2 = lambda f: isinstance(f, Field) and f.readable
             for table in tables:
                 fields += filter(filter1, table)
