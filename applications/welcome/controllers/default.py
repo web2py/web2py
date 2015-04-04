@@ -6,7 +6,6 @@
 ## - index is the default action of any application
 ## - user is required for authentication and authorization
 ## - download is for downloading files uploaded in the db (does streaming)
-## - api is an example of Hypermedia API support and access control
 #########################################################################
 
 def index():
@@ -17,8 +16,8 @@ def index():
     if you need a simple wiki simply replace the two lines below with:
     return auth.wiki()
     """
-    response.flash = T("Welcome to web2py!")
-    return dict(message=T('Hello World'))
+    response.flash = T("Hello World")
+    return dict(message=T('Welcome to web2py!'))
 
 
 def user():
@@ -58,14 +57,3 @@ def call():
     return service()
 
 
-@auth.requires_login() 
-def api():
-    """
-    this is example of API with access control
-    WEB2PY provides Hypermedia API (Collection+JSON) Experimental
-    """
-    from gluon.contrib.hypermedia import Collection
-    rules = {
-        '<tablename>': {'GET':{},'POST':{},'PUT':{},'DELETE':{}},
-        }
-    return Collection(db).process(request,response,rules)

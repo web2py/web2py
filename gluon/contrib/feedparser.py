@@ -9,7 +9,7 @@ Required: Python 2.4 or later
 Recommended: iconv_codec <http://cjkpython.i18n.org/>
 """
 
-__version__ = "5.1.2"
+__version__ = "5.1.3"
 __license__ = """
 Copyright (c) 2010-2012 Kurt McKee <contactme@kurtmckee.org>
 Copyright (c) 2002-2008 Mark Pilgrim
@@ -44,7 +44,8 @@ __contributors__ = ["Jason Diamond <http://injektilo.org/>",
                     "Sam Ruby <http://intertwingly.net/>",
                     "Ade Oshineye <http://blog.oshineye.com/>",
                     "Martin Pool <http://sourcefrog.net/>",
-                    "Kurt McKee <http://kurtmckee.org/>"]
+                    "Kurt McKee <http://kurtmckee.org/>",
+                    "Bernd Schlapsi <https://github.com/brot>",]
 
 # HTTP "User-Agent" header to send to servers when downloading feeds.
 # If you are embedding feedparser in a larger application, you should
@@ -1971,6 +1972,7 @@ class _BaseHTMLProcessor(sgmllib.SGMLParser):
     def handle_charref(self, ref):
         # called for each character reference, e.g. for '&#160;', ref will be '160'
         # Reconstruct the original character reference.
+        ref = ref.lower()
         if ref.startswith('x'):
             value = int(ref[1:], 16)
         else:
@@ -2455,7 +2457,10 @@ class _MicroformatsParser:
            linktype.startswith('video/') or \
            (linktype.startswith('application/') and not linktype.endswith('xml')):
             return 1
-        path = urlparse.urlparse(attrsD['href'])[2]
+        try:
+            path = urlparse.urlparse(attrsD['href'])[2]
+        except ValueError:
+            return 0
         if path.find('.') == -1:
             return 0
         fileext = path.split('.').pop().lower()
@@ -2541,7 +2546,8 @@ class _RelativeURIResolver(_BaseHTMLProcessor):
                      ('object', 'data'),
                      ('object', 'usemap'),
                      ('q', 'cite'),
-                     ('script', 'src')])
+                     ('script', 'src'),
+                     ('video', 'poster')])
 
     def __init__(self, baseuri, encoding, _type):
         _BaseHTMLProcessor.__init__(self, encoding, _type)
@@ -2618,13 +2624,13 @@ class _HTMLSanitizer(_BaseHTMLProcessor):
       'loop', 'loopcount', 'loopend', 'loopstart', 'low', 'lowsrc', 'max',
       'maxlength', 'media', 'method', 'min', 'multiple', 'name', 'nohref',
       'noshade', 'nowrap', 'open', 'optimum', 'pattern', 'ping', 'point-size',
-      'prompt', 'pqg', 'radiogroup', 'readonly', 'rel', 'repeat-max',
-      'repeat-min', 'replace', 'required', 'rev', 'rightspacing', 'rows',
-      'rowspan', 'rules', 'scope', 'selected', 'shape', 'size', 'span', 'src',
-      'start', 'step', 'summary', 'suppress', 'tabindex', 'target', 'template',
-      'title', 'toppadding', 'type', 'unselectable', 'usemap', 'urn', 'valign',
-      'value', 'variable', 'volume', 'vspace', 'vrml', 'width', 'wrap',
-      'xml:lang'])
+      'poster', 'pqg', 'preload', 'prompt', 'radiogroup', 'readonly', 'rel',
+      'repeat-max', 'repeat-min', 'replace', 'required', 'rev', 'rightspacing',
+      'rows', 'rowspan', 'rules', 'scope', 'selected', 'shape', 'size', 'span',
+      'src', 'start', 'step', 'summary', 'suppress', 'tabindex', 'target',
+      'template', 'title', 'toppadding', 'type', 'unselectable', 'usemap',
+      'urn', 'valign', 'value', 'variable', 'volume', 'vspace', 'vrml',
+      'width', 'wrap', 'xml:lang'])
 
     unacceptable_elements_with_end_tag = set(['script', 'applet', 'style'])
 
@@ -2976,9 +2982,9 @@ def _open_resource(url_file_stream_or_string, etag, modified, agent, referrer, h
             url_file_stream_or_string = 'http:' + url_file_stream_or_string[5:]
         if not agent:
             agent = USER_AGENT
-        # test for inline user:password for basic auth
+        # Test for inline user:password credentials for HTTP basic auth
         auth = None
-        if base64:
+        if base64 and not url_file_stream_or_string.startswith('ftp:'):
             urltype, rest = urllib.splittype(url_file_stream_or_string)
             realhost, rest = urllib.splithost(rest)
             if realhost:
@@ -3471,15 +3477,7 @@ _rfc822_match = re.compile(
     "(?:%s, )?%s(?: %s)?" % (_rfc822_dayname, _rfc822_date, _rfc822_time)
 ).match
 
-def _parse_date_rfc822(dt):
-    """Parse RFC 822 dates and times, with one minor
-    difference: years may be 4DIGIT or 2DIGIT.
-    http://tools.ietf.org/html/rfc822#section-5"""
-    try:
-        m = _rfc822_match(dt.lower()).groupdict(0)
-    except AttributeError:
-        return None
-
+def _parse_date_group_rfc822(m):
     # Calculate a date and timestamp
     for k in ('year', 'day', 'hour', 'minute', 'second'):
         m[k] = int(m[k])
@@ -3487,7 +3485,7 @@ def _parse_date_rfc822(dt):
     # If the year is 2 digits, assume everything in the 90's is the 1990's
     if m['year'] < 100:
         m['year'] += (1900, 2000)[m['year'] < 90]
-    stamp = datetime.datetime(*[m[i] for i in
+    stamp = datetime.datetime(*[m[i] for i in 
                 ('year', 'month', 'day', 'hour', 'minute', 'second')])
 
     # Use the timezone information to calculate the difference between
@@ -3512,7 +3510,35 @@ def _parse_date_rfc822(dt):
 
     # Return the date and timestamp in UTC
     return (stamp - delta).utctimetuple()
+
+def _parse_date_rfc822(dt):
+    """Parse RFC 822 dates and times, with one minor
+    difference: years may be 4DIGIT or 2DIGIT.
+    http://tools.ietf.org/html/rfc822#section-5"""
+    try:
+        m = _rfc822_match(dt.lower()).groupdict(0)
+    except AttributeError:
+        return None
+
+    return _parse_date_group_rfc822(m)
 registerDateHandler(_parse_date_rfc822)
+
+def _parse_date_rfc822_grubby(dt):
+    """Parse date format similar to RFC 822, but 
+    the comma after the dayname is optional and
+    month/day are inverted"""
+    _rfc822_date_grubby = "%s %s %s" % (_rfc822_month, _rfc822_day, _rfc822_year)
+    _rfc822_match_grubby = re.compile(
+        "(?:%s[,]? )?%s(?: %s)?" % (_rfc822_dayname, _rfc822_date_grubby, _rfc822_time)
+    ).match
+
+    try:
+        m = _rfc822_match_grubby(dt.lower()).groupdict(0)
+    except AttributeError:
+        return None
+
+    return _parse_date_group_rfc822(m)
+registerDateHandler(_parse_date_rfc822_grubby)
 
 def _parse_date_asctime(dt):
     """Parse asctime-style dates"""
@@ -3699,7 +3725,7 @@ def convert_to_utf8(http_headers, data):
                                  u'application/xml-external-parsed-entity')
     text_content_types = (u'text/xml', u'text/xml-external-parsed-entity')
     if (http_content_type in application_content_types) or \
-       (http_content_type.startswith(u'application/') and
+       (http_content_type.startswith(u'application/') and 
         http_content_type.endswith(u'+xml')):
         acceptable_content_type = 1
         rfc3023_encoding = http_encoding or xml_encoding or u'utf-8'

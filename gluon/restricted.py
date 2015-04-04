@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-
 """
 | This file is part of the web2py Web Framework
 | Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
@@ -20,9 +19,10 @@ import types
 import os
 import logging
 
-from storage import Storage
-from http import HTTP
-from html import BEAUTIFY, XML
+from gluon.storage import Storage
+from gluon.http import HTTP
+from gluon.html import BEAUTIFY, XML
+from gluon.settings import global_settings
 
 logger = logging.getLogger("web2py")
 
@@ -156,7 +156,6 @@ class RestrictedError(Exception):
         """
         Logs the exception.
         """
-
         try:
             d = {
                 'layer': str(self.layer),
@@ -167,10 +166,14 @@ class RestrictedError(Exception):
             }
             ticket_storage = TicketStorage(db=request.tickets_db)
             ticket_storage.store(request, request.uuid.split('/', 1)[1], d)
+            cmd_opts = global_settings.cmd_options
+            if cmd_opts and cmd_opts.print_errors:
+                logger.error(self.traceback)
             return request.uuid
         except:
             logger.error(self.traceback)
             return None
+
 
     def load(self, request, app, ticket_id):
         """

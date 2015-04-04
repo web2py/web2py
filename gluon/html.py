@@ -139,11 +139,11 @@ def xmlescape(data, quote=True):
     data = cgi.escape(data, quote).replace("'", "&#x27;")
     return data
 
-def call_as_list(f,*a,**b):
-    if not isinstance(f, (list,tuple)):
+def call_as_list(f, *a, **b):
+    if not isinstance(f, (list, tuple)):
         f = [f]
     for item in f:
-        item(*a,**b)
+        item(*a, **b)
 
 def truncate_string(text, length, dots='...'):
     text = text.decode('utf-8')
@@ -583,7 +583,7 @@ class XML(XmlComponent):
             'img/',
             'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
             'table', 'tr', 'td', 'div',
-            'strong','span',
+            'strong', 'span',
         ],
         allowed_attributes={
             'a': ['href', 'title', 'target'],
@@ -937,14 +937,14 @@ class DIV(XmlComponent):
             elif value is False or value is None:
                 continue
             attr.append((name, value))
-        data = self.attributes.get('data',{})
+        data = self.attributes.get('data', {})
         for key, value in data.iteritems():
             name = 'data-' + key
             value = data[key]
-            attr.append((name,value))
+            attr.append((name, value))
         attr.sort()
         fa = ''
-        for name,value in attr:
+        for name, value in attr:
             fa += ' %s="%s"' % (name, xmlescape(value, True))
         # get the xml for the inner components
         co = join([xmlescape(component) for component in
@@ -1256,8 +1256,8 @@ def TAG_pickler(data):
 
 
 class __tag_div__(DIV):
-    def __init__(self,name,*a,**b):
-        DIV.__init__(self,*a,**b)
+    def __init__(self, name, *a, **b):
+        DIV.__init__(self, *a, **b)
         self.tag = name
 
 copy_reg.pickle(__tag_div__, TAG_pickler, TAG_unpickler)
@@ -1282,7 +1282,7 @@ class __TAG__(XmlComponent):
             name = name[:-1] + '/'
         if isinstance(name, unicode):
             name = name.encode('utf-8')
-        return lambda *a,**b: __tag_div__(name,*a,**b)
+        return lambda *a, **b: __tag_div__(name, *a, **b)
 
     def __call__(self, html):
         return web2pyHTMLParser(decoder.decoder(html)).tree
@@ -1840,7 +1840,7 @@ class INPUT(DIV):
         if self['_type'] != 'checkbox':
             self['old_value'] = self['value'] or self['_value'] or ''
             value = request_vars_get(name, '')
-            self['value'] = value if not hasattr(value,'file') else None
+            self['value'] = value if not hasattr(value, 'file') else None
         else:
             self['old_value'] = self['value'] or False
             value = request_vars_get(name)
@@ -1852,7 +1852,7 @@ class INPUT(DIV):
         if requires:
             if not isinstance(requires, (list, tuple)):
                 requires = [requires]
-            for k,validator in enumerate(requires):
+            for k, validator in enumerate(requires):
                 try:
                     (value, errors) = validator(value)
                 except:
@@ -1873,8 +1873,7 @@ class INPUT(DIV):
             t = self['_type'] = 'text'
         t = t.lower()
         value = self['value']
-
-        if self['_value'] is None or isinstance(self['_value'],cgi.FieldStorage):
+        if self['_value'] is None or isinstance(self['_value'], cgi.FieldStorage):
             _value = None
         else:
             _value = str(self['_value'])
@@ -1902,7 +1901,6 @@ class INPUT(DIV):
                 self['value'] = _value
             elif not isinstance(value, list):
                 self['_value'] = value
-
 
     def xml(self):
         name = self.attributes.get('_name', None)
@@ -2126,29 +2124,29 @@ class FORM(DIV):
                 onfailure = onvalidation.get('onfailure', None)
                 onchange = onvalidation.get('onchange', None)
                 if [k for k in onvalidation if not k in (
-                        'onsuccess','onfailure','onchange')]:
+                        'onsuccess', 'onfailure', 'onchange')]:
                     raise RuntimeError('Invalid key in onvalidate dict')
                 if onsuccess and status:
-                    call_as_list(onsuccess,self)
+                    call_as_list(onsuccess, self)
                 if onfailure and request_vars and not status:
-                    call_as_list(onfailure,self)
+                    call_as_list(onfailure, self)
                     status = len(self.errors) == 0
                 if changed:
                     if onchange and self.record_changed and \
                             self.detect_record_change:
-                        call_as_list(onchange,self)
+                        call_as_list(onchange, self)
             elif status:
                 call_as_list(onvalidation, self)
         if self.errors:
             status = False
         if not session is None:
             if hasattr(self, 'record_hash'):
-                formkey = self.record_hash+':'+web2py_uuid()
+                formkey = self.record_hash + ':' + web2py_uuid()
             else:
                 formkey = web2py_uuid()
             self.formkey = formkey
             keyname = '_formkey[%s]' % formname
-            session[keyname] = list(session.get(keyname,[]))[-9:] + [formkey]
+            session[keyname] = list(session.get(keyname, []))[-9:] + [formkey]
         if status and not keepvalues:
             self._traverse(False, hideerror)
         self.accepted = status
@@ -2523,7 +2521,7 @@ class MENU(DIV):
         else:
             ul = UL(_class=self['ul_class'])
         for item in data:
-            if isinstance(item,LI):
+            if isinstance(item, LI):
                 ul.append(item)
             else:
                 (name, active, link) = item[:3]
@@ -2531,7 +2529,7 @@ class MENU(DIV):
                     li = LI(link)
                 elif 'no_link_url' in self.attributes and self['no_link_url'] == link:
                     li = LI(DIV(name))
-                elif isinstance(link,dict):
+                elif isinstance(link, dict):
                     li = LI(A(name, **link))
                 elif link:
                     li = LI(A(name, _href=link))
@@ -2563,8 +2561,8 @@ class MENU(DIV):
         for item in data:
             # Custom item aren't serialized as mobile
             if len(item) >= 3 and (not item[0]) or (isinstance(item[0], DIV) and not (item[2])):
-            # ex: ('', False,A('title',_href=URL(...),_title="title"))
-            # ex: (A('title',_href=URL(...),_title="title"), False, None)
+                # ex: ('', False, A('title', _href=URL(...), _title="title"))
+                # ex: (A('title', _href=URL(...), _title="title"), False, None)
                 custom_items.append(item)
             elif len(item) <= 4 or item[4] == True:
                 select.append(OPTION(CAT(prefix, item[0]),
@@ -2574,7 +2572,7 @@ class MENU(DIV):
                         item[3], select, prefix=CAT(prefix, item[0], '/'))
         select['_onchange'] = 'window.location=this.value'
         # avoid to wrap the select if no custom items are present
-        html = DIV(select,  self.serialize(custom_items)) if len( custom_items) else select
+        html = DIV(select,  self.serialize(custom_items)) if len(custom_items) else select
         return html
 
     def xml(self):

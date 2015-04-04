@@ -22,7 +22,8 @@ import gluon.portalocker as portalocker
 __all__ = ['List', 'Storage', 'Settings', 'Messages',
            'StorageList', 'load_storage', 'save_storage']
 
-DEFAULT = lambda:0
+DEFAULT = lambda: 0
+
 
 class Storage(dict):
     """
@@ -52,6 +53,7 @@ class Storage(dict):
     __delattr__ = dict.__delitem__
     __getitem__ = dict.get
     __getattr__ = dict.get
+    __getnewargs__ = lambda self: getattr(dict,self).__getnewargs__(self)
     __repr__ = lambda self: '<Storage %s>' % dict.__repr__(self)
     # http://stackoverflow.com/questions/5247250/why-does-pickle-getstate-accept-as-a-return-value-the-very-instance-it-requi
     __getstate__ = lambda self: None
@@ -197,6 +199,7 @@ class Messages(Settings):
         if isinstance(value, str):
             return self.T(value)
         return value
+
 
 class FastStorage(dict):
     """

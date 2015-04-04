@@ -29,9 +29,9 @@ from gluon import recfile
 import hashlib
 import portalocker
 try:
-   import cPickle as pickle
+    import cPickle as pickle
 except:
-   import pickle
+    import pickle
 from pickle import Pickler, MARK, DICT, EMPTY_DICT
 from types import DictionaryType
 import cStringIO
@@ -211,7 +211,7 @@ class Request(Storage):
         env = self.env
         post_vars = self._post_vars = Storage()
         body = self.body
-        #if content-type is application/json, we must read the body
+        # if content-type is application/json, we must read the body
         is_json = env.get('content_type', '')[:16] == 'application/json'
 
         if is_json:
@@ -234,7 +234,8 @@ class Request(Storage):
             dpost = cgi.FieldStorage(fp=body, environ=env, keep_blank_values=1)
             try:
                 post_vars.update(dpost)
-            except: pass
+            except:
+                pass
             if query_string is not None:
                 env['QUERY_STRING'] = query_string
             # The same detection used by FieldStorage to detect multipart POSTs
@@ -332,8 +333,8 @@ class Request(Storage):
         and secures the session.
         """
         cmd_opts = global_settings.cmd_options
-        #checking if this is called within the scheduler or within the shell
-        #in addition to checking if it's not a cronjob
+        # checking if this is called within the scheduler or within the shell
+        # in addition to checking if it's not a cronjob
         if ((cmd_opts and (cmd_opts.shell or cmd_opts.scheduler))
                 or global_settings.cronjob or self.is_https):
             current.session.secure()
@@ -394,7 +395,7 @@ class Response(Storage):
         self._custom_commit = None
         self._custom_rollback = None
         self.generic_patterns = ['*']
-        self.delimiters = ('{{','}}')
+        self.delimiters = ('{{', '}}')
         self.formstyle = 'table3cols'
         self.form_label_separator = ': '
 
@@ -437,7 +438,7 @@ class Response(Storage):
     def include_meta(self):
         s = "\n";
         for meta in (self.meta or {}).iteritems():
-            k,v = meta
+            k, v = meta
             if isinstance(v,dict):
                 s = s+'<meta'+''.join(' %s="%s"' % (xmlescape(key), xmlescape(v[key])) for key in v) +' />\n'
             else:
@@ -490,7 +491,11 @@ class Response(Storage):
         for item in files:
             if isinstance(item, str):
                 f = item.lower().split('?')[0]
-                if self.static_version:
+                # if static_version we need also to check for
+                # static_version_urls. In that case, the _.x.x.x
+                # bit would have already been added by the URL()
+                # function
+                if self.static_version and not self.static_version_urls:
                     item = item.replace(
                         '/static/', '/static/_%s/' % self.static_version, 1)
                 if f.endswith('.css'):
@@ -698,7 +703,7 @@ class Response(Storage):
             DIV(BEAUTIFY(current.response), backtotop,
                 _class="w2p-toolbar-hidden", _id="response-%s" % u),
             DIV(BEAUTIFY(dbtables), backtotop,
-                _class="w2p-toolbar-hidden",_id="db-tables-%s" % u),
+                _class="w2p-toolbar-hidden", _id="db-tables-%s" % u),
             DIV(BEAUTIFY(dbstats), backtotop,
                 _class="w2p-toolbar-hidden", _id="db-stats-%s" % u),
             SCRIPT("jQuery('.w2p-toolbar-hidden').hide()"),
@@ -876,7 +881,7 @@ class Session(Storage):
                 table_migrate = False
             tname = tablename + '_' + masterapp
             table = db.get(tname, None)
-            #Field = db.Field
+            # Field = db.Field
             if table is None:
                 db.define_table(
                     tname,
@@ -1007,7 +1012,7 @@ class Session(Storage):
         elif self._secure and response.session_id_name in rcookies:
             rcookies[response.session_id_name]['secure'] = True
 
-    def clear_session_cookies(sefl):
+    def clear_session_cookies(self):
         request = current.request
         response = current.response
         session = response.session
@@ -1048,6 +1053,20 @@ class Session(Storage):
                 rcookies[response.session_id_name]['expires'] = expires
 
     def clear(self):
+        # see https://github.com/web2py/web2py/issues/735
+        response = current.response
+        if response.session_storage_type == 'file':
+            target = recfile.generate(response.session_filename)
+            try:
+                os.unlink(target)
+            except:
+                pass
+        elif response.session_storage_type == 'db':
+            table = response.session_db_table
+            if response.session_id:
+                (record_id, sep, unique_key) = response.session_id.partition(':')
+                if record_id.isdigit() and long(record_id) > 0:
+                    table._db(table.id == record_id).delete()
         Storage.clear(self)
 
     def is_new(self):
@@ -1188,6 +1207,7 @@ class Session(Storage):
                 del response.session_file
             except:
                 pass
+
 
 def pickle_session(s):
     return Session, (dict(s),)

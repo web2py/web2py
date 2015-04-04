@@ -24,7 +24,7 @@ Typical usage:
     # Delete session in a module (move to the modules folder)
     from sessions2trash import single_loop
     def delete_sessions():
-        single_loop()
+        single_loop(auth.settings.expiration)
 
 """
 
@@ -42,7 +42,6 @@ import datetime
 import os
 import stat
 import time
-import glob
 
 EXPIRATION_MINUTES = 60
 SLEEP_MINUTES = 5
@@ -119,10 +118,20 @@ class SessionSetFiles(SessionSet):
     def __init__(self, expiration, force, verbose):
         SessionSet.__init__(self, expiration, force, verbose)
 
+    def cleanup_empty_folders(self, root_path):
+        for path, dirs, files in os.walk(root_path, topdown=False):
+            for d in dirs:
+                dd = os.path.join(path, d)
+                if not os.listdir(dd):
+                    os.rmdir(dd)
+
     def get(self):
         """Return list of SessionFile instances for existing sessions."""
         root_path = os.path.join(current.request.folder, 'sessions')
-        return [SessionFile(os.path.join(path, x)) for path,dirs,files in os.walk(root_path) for x in files]
+        for path, dirs, files in os.walk(root_path, topdown=False):
+            for x in files:
+                yield SessionFile(os.path.join(path, x))
+        self.cleanup_empty_folders(root_path)
 
 
 class SessionDb(object):
@@ -163,9 +172,6 @@ class SessionFile(object):
     def delete(self):
         try:
             os.unlink(self.filename)
-            path = os.path.dirname(filename)
-            if not path.endswith('sessions') and len(os.listdir(path))==0:
-                os.rmdir(path)
         except:
             pass
 

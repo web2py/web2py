@@ -1427,14 +1427,13 @@ def create_file():
     if request.vars.dir:
         response.flash = result
         response.headers['web2py-component-content'] = 'append'
-        response.headers['web2py-component-command'] = """
-            $.web2py.invalidate('#files_menu');
-            load_file('%s');
-            $.web2py.enableElement($('#form form').find($.web2py.formInputClickSelector));
-        """ % URL('edit', args=[app,request.vars.dir,filename])
+        response.headers['web2py-component-command'] = "%s %s %s" % (
+            "$.web2py.invalidate('#files_menu');",
+            "load_file('%s');" % URL('edit', args=[app,request.vars.dir,filename]),
+            "$.web2py.enableElement($('#form form').find($.web2py.formInputClickSelector));")
         return ''
     else:
-            redirect(request.vars.sender + anchor)
+        redirect(request.vars.sender + anchor)
 
 
 def listfiles(app, dir, regexp='.*\.py$'):

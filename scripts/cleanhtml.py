@@ -57,8 +57,11 @@ def read_file(filename):
     finally:
         f.close()
 
-file = sys.argv[1]
-if file[-4:] == '.css':
-    print cleancss(read_file(file))
-if file[-5:] == '.html':
-    print cleanhtml(read_file(file))
+for file in sys.argv[1:]:
+    data = read_file(file)
+    open(file+'.bak2', 'w').write(data)
+    if file[-4:] == '.css':
+        data = cleancss(data)
+    if file[-5:] == '.html':
+        data = cleanhtml(data)
+    open(file, 'w').write(data)

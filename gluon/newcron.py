@@ -47,7 +47,7 @@ def absolute_path_link(path):
 
 
 def stopcron():
-    "Graceful shutdown of cron"
+    """Graceful shutdown of cron"""
     global _cron_stopping
     _cron_stopping = True
     while _cron_subprocs:
@@ -58,6 +58,7 @@ def stopcron():
             except:
                 import traceback
                 traceback.print_exc()
+
 
 class extcron(threading.Thread):
 

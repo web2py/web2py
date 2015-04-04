@@ -44,9 +44,9 @@ def file_create_form(location, anchor=None, helptext=""):
       url = URL('edit', args=args, vars=vars)
       return A(file, _class='editor_filelink', _href=url, _style='word-wrap: nowrap;')
 }}
-{{cm=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''),'codemirror')}}
-{{js_url=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''),'js')}}
-{{css_url=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''),'css')}}
+{{cm=URL('static', 'codemirror')}}
+{{js_url=URL('static', 'js')}}
+{{css_url=URL('static', 'css')}}
 <link rel="stylesheet" href="{{=cm}}/lib/codemirror.css">
 <link rel="stylesheet" href="{{='%s/theme/%s.css' % (cm, editor_settings['theme'])}}">
 <script src="{{=cm}}/lib/codemirror.js"></script>
@@ -87,7 +87,7 @@ $(document).on('shown click', 'a[data-toggle="tab"]', function (e, lineno) {
     var tab_id = $(this).attr('href');
     var editor = $(tab_id + " textarea").data('editor');
     if (editor) {
-        editor_height = $(window).height() - $(tab_id + " .well-small").offset().top - $(tab_id + " .well-small").outerHeight(true) - $('.navbar-fixed-bottom').outerHeight() - 1;
+        editor_height = $(window).height() - $(tab_id + " .well-small").offset().top - $(tab_id + " .well-small").outerHeight(true) - $('.navbar-fixed-bottom').outerHeight() - 60;
         editor.setSize('100%', editor_height);
         editor.refresh();
         if (lineno !== undefined) {
@@ -218,10 +218,7 @@ $(document).on('click', 'a.font_button', function (e) {
 </div>
 <div class="btn-group">
   {{=button(URL('design',args=request.vars.app if request.vars.app else request.args[0], anchor=request.vars.id), T('back'))}}
-  {{#if request.args[1]=='models':}}
-  <a class="button btn" href="http://www.web2py.com/sqldesigner" target="_blank"><span>{{=T('online designer')}}</span></a>
-  {{#pass}}
-  <a class="button btn" href="http://www.web2py.com/examples/static/epydoc/index.html" target="_blank"><span>{{=T('docs')}}</span></a>
+  <a class="button btn" href="http://web2py.readthedocs.org/en/latest/" target="_blank"><span>{{=T('docs')}}</span></a>
   <a class="button btn" title="{{=T('change editor settings')}}" id="editor_settingslink" href="{{=URL('default', 'edit', args=request.args, vars={'settings':True})}}"><i class="icon-cog"></i></a>
 </div>
 </div>
@@ -233,20 +230,20 @@ $(document).on('click', 'a.font_button', function (e) {
             <ul class="nav nav-list" rel="pagebookmark" id="filelist">
             <li><input type="text" placeholder="{{=T('Rapid Search')}}" class="input-block-level typeahead-tw search-query"></li>
             {{auto_complete_list=[]}}
-                        <br />
+            <br />
             <div>
-      			<button onclick="jQuery('#form').slideToggle()" class="btn btn-mini">{{=T('Create')}}</button>
-      			<br />
-		      	<div id="form">
-        			<div>
-        				{{=file_create_form('%s/' % app, '')}}
-        			</div>          			  			
-      			</div>
-      			<script>jQuery('#form').slideToggle()</script>
-    		</div>
-    		<br />            
+      	      <button onclick="jQuery('#form').slideToggle()" class="btn btn-mini">{{=T('Create')}}</button>
+      	      <br />
+	      <div id="form">
+        	<div>
+        	  {{=file_create_form('%s/' % app, '')}}
+        	</div>          			  			
+      	      </div>
+      	      <script>jQuery('#form').slideToggle()</script>
+    	    </div>
+    	    <br />            
             <div id="files_menu">
-                {{=LOAD('default', 'files_menu', vars={'app':app}, ajax=True)}}
+              {{=LOAD('default', 'files_menu', vars={'app':app}, ajax=True)}}
             </div>
             </ul>
         </div>
@@ -311,8 +308,8 @@ $(document).ready(function() {
 });
 </script>
 <!-- Typeahead scripts here so the page load faster -->
-<script src="{{=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''), 'js/typeahead.min.js')}}"></script>
-<script src="{{=URL('static%s' % (response.static_version and '/_' + response.static_version  or ''), 'js/hogan-2.0.0.js')}}"></script>
+<script src="{{=URL('static', 'js/typeahead.min.js')}}"></script>
+<script src="{{=URL('static', 'js/hogan-2.0.0.js')}}"></script>
 <script>
     $('.typeahead-tw').typeahead({
         name: 'files',
