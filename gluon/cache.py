@@ -99,7 +99,7 @@ class CacheAbstract(object):
     """
 
     cache_stats_name = 'web2py_cache_statistics'
-    max_ram_utilization = 90 # percent
+    max_ram_utilization = None # percent
 
     def __init__(self, request=None):
         """Initializes the object
