@@ -353,7 +353,7 @@ class CacheOnDisk(CacheAbstract):
                 raise KeyError
 
             self.wait_portalock(val_file)
-            value = pickle.load(recfile.open(key, 'rb', path=self.folder))
+            value = pickle.load(val_file)
             val_file.close()
             return value
 
