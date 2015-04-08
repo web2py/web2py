@@ -1,13 +1,4 @@
 {{extend 'layout.html'}}
-<script><!--
-    jQuery(document).ready(function(){
-    jQuery("table.sortable tbody tr").mouseover( function() {
-    jQuery(this).addClass("highlight"); }).mouseout( function() {
-    jQuery(this).removeClass("highlight"); });
-    jQuery('table.sortable tbody tr:odd').addClass('odd');
-    jQuery('table.sortable tbody tr:even').addClass('even');
-});
-//--></script>
 
 {{if request.function=='index':}}
 <h2>{{=T("Available Databases and Tables")}}</h2>
@@ -30,6 +21,7 @@
                       {{qry='%s.%s.%s!=""'%(db,table,firstkey.name)}}
                     {{else:}}
                       {{qry='%s.%s.%s>0'%(db,table,firstkey.name)}}
+            <table class="table table-striped table-hover">
                     {{pass}}
                 {{else:}}
                      {{qry=''}}
@@ -80,6 +72,7 @@
        {{upload=URL('download',args=request.args[0])}}
        {{=SQLTABLE(rows,linkto,upload,orderby=True,_class='sortable')}}
        </div>
+        {{=SQLTABLE(rows,linkto,upload,orderby=True,_class='table table-striped table-hover sortable')}}
     {{pass}}
     <br/><br/><h3>{{=T("Import/Export")}}</h3><br/>
     <a href="{{=URL('csv',args=request.args[0],vars=dict(query=query))}}" class="btn btn-default">{{=T("export as csv file")}}</a>
