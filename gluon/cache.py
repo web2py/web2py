@@ -99,7 +99,7 @@ class CacheAbstract(object):
     """
 
     cache_stats_name = 'web2py_cache_statistics'
-    max_ram_utilization = 90 # percent
+    max_ram_utilization = None # percent
 
     def __init__(self, request=None):
         """Initializes the object
@@ -353,7 +353,7 @@ class CacheOnDisk(CacheAbstract):
                 raise KeyError
 
             self.wait_portalock(val_file)
-            value = pickle.load(recfile.open(key, 'rb', path=self.folder))
+            value = pickle.load(val_file)
             val_file.close()
             return value
 
