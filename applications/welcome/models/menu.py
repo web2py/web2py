@@ -120,6 +120,8 @@ def _():
               'http://www.web2py.com/book/default/chapter/13'),
              (T('Other Recipes'), False,
               'http://www.web2py.com/book/default/chapter/14'),
+             (T('Helping web2py'), False,
+              'http://www.web2py.com/book/default/chapter/15'),
              (T("Buy web2py's book"), False,
               'http://stores.lulu.com/web2py'),
              ]),

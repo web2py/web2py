@@ -3,12 +3,13 @@ def index():
 
 
 def data():
-    if not session.m or len(session.m) == 10:
+    if not session.m:
         session.m = []
     if request.vars.q:
+        if len(session.m) == 10:
+            del(session.m[0])
         session.m.append(request.vars.q)
-    session.m.sort()
-    return TABLE(*[TR(v) for v in session.m]).xml()
+    return TABLE(*[TR(v) for v in sorted(session.m)]).xml()
 
 
 def flash():

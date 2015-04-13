@@ -23,6 +23,7 @@ base_modules = ['aifc', 'anydbm', 'array', 'asynchat', 'asyncore', 'atexit',
                 'collections', 'colorsys', 'compileall', 'compiler',
                 'compiler.ast', 'compiler.visitor', 'ConfigParser',
                 'contextlib', 'Cookie', 'cookielib', 'copy', 'copy_reg',
+                'collections',
                 'cPickle', 'cProfile', 'cStringIO', 'csv', 'ctypes',
                 'datetime', 'decimal', 'difflib', 'dircache', 'dis',
                 'doctest', 'DocXMLRPCServer', 'dumbdbm', 'dummy_thread',
@@ -67,13 +68,6 @@ base_modules = ['aifc', 'anydbm', 'array', 'asynchat', 'asyncore', 'atexit',
                 'MimeWriter', 'mimify', 'multifile', 'sets']
 
 contributed_modules = []
-for root, dirs, files in os.walk('gluon'):
-    for candidate in ['.'.join(
-                      os.path.join(root, os.path.splitext(name)[0]).split(os.sep))
-                      for name in files if name.endswith('.py')
-                      and root.split(os.sep) != ['gluon', 'tests']
-                      ]:
-        contributed_modules.append(candidate)
 
 # Python base version
 python_version = sys.version[:3]

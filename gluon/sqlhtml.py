@@ -31,7 +31,6 @@ from pydal.objects import Table, Row, Expression, Field
 from pydal.adapters.base import CALLABLETYPES
 from pydal.helpers.methods import smart_query, bar_encode
 from pydal.helpers.classes import Reference, SQLCustomType
-from gluon.dal import _default_validators
 from gluon.storage import Storage
 from gluon.utils import md5_hash
 from gluon.validators import IS_EMPTY_OR, IS_NOT_EMPTY, IS_LIST_OF, IS_DATE
@@ -1130,8 +1129,8 @@ class SQLFORM(FORM):
             extra_field.table = table
             extra_field.tablename = table._tablename
             if extra_field.requires == DEFAULT:
-                extra_field.requires = _default_validators(table._db,
-                                                           extra_field)
+                from gluon.dal import _default_validators
+                extra_field.requires = _default_validators(table._db, extra_field)
 
         for fieldname in self.fields:
             if fieldname.find('.') >= 0:
@@ -2149,7 +2148,7 @@ class SQLFORM(FORM):
         else:
             fields = []
             columns = []
-            filter1 = lambda f: isinstance(f, Field)
+            filter1 = lambda f: isinstance(f, Field) and f.type != 'blob'
             filter2 = lambda f: isinstance(f, Field) and f.readable
             for table in tables:
                 fields += filter(filter1, table)
