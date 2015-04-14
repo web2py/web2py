@@ -63,7 +63,7 @@ audio {width:200px}
     border-top:1px #DEDEDE solid;
 }
 .header {
-	/* background:<fill here for header image>; */
+        /* background:<fill here for header image>; */
 }
 
 
@@ -125,17 +125,9 @@ div.flash:hover { opacity:0.25; }
 
 div.error_wrapper {display:block}
 div.error {
-    width: 298px;
-    background:red;
-    border: 2px solid #d00;
-    color:white;
+    color:red;
     padding:5px;
     display:inline-block;
-    background-image: -webkit-linear-gradient(left,#f00,#fdd);
-    background-image: -o-linear-gradient(left,#f00,#fdd);
-    background-image: -moz-linear-gradient(0deg, #f00, #fdd);
-    background-image: linear-gradient(left,#f00,#fdd);
-    background-repeat: repeat-y;
 }
 
 .topbar {
@@ -302,11 +294,6 @@ li.w2p_grid_breadcrumb_elem {
 .web2py_console input, .web2py_console select,
 .web2py_console a { margin: 2px; }
 
-.web2py_htmltable {
-   width: 100%;
-   overflow-x: auto;
-   -ms-overflow-x:scroll;
-}
 
 #wiki_page_body {
    width: 600px;
@@ -320,3 +307,7 @@ li.w2p_grid_breadcrumb_elem {
 .ie-lte8 div.flash{ filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#222222', endColorstr='#000000', GradientType=0 ); }
 .ie-lte8 div.flash:hover {filter:alpha(opacity=25);}
 .ie9 #w2p_query_panel {padding-bottom:2px}
+
+.web2py_console .form-control {width: 20%; display: inline;}
+.web2py_console #w2p_keywords {width: 50%;}
+.web2py_search_actions a, .web2py_console input[type=submit], .web2py_console input[type=button], .web2py_console button { padding: 6px 12px; }

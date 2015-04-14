@@ -24,7 +24,7 @@ regex_expose = re.compile(
     '^def\s+(?P<name>_?[a-zA-Z0-9]\w*)\( *\)\s*:',
     flags=re.M)
 
-regex_longcomments = re.compile('(""".*?"""|'+"'''.*?''')",re.DOTALL)
+regex_longcomments = re.compile('(""".*?"""|'+"'''.*?''')", re.DOTALL)
 
 regex_include = re.compile(
     '(?P<all>\{\{\s*include\s+[\'"](?P<name>[^\'"]*)[\'"]\s*\}\})')

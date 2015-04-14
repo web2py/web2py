@@ -174,12 +174,27 @@ def ics(events, title=None, link=None, timeshift=0, calname=True,
     s += '\nEND:VCALENDAR'
     return s
 
+def safe_encode(text):
+    if not isinstance(text, (str, unicode)):
+        text = str(text)
+    try:
+        text = text.encode('utf8','replace')
+    except ValueError:
+        new_text = ''
+        for c in text:
+            try:
+                new_text += c.encode('utf8')
+            except:
+                new_text += '?'
+        text = new_text
+    return text
 
 def rss(feed):
     if not 'entries' in feed and 'items' in feed:
         feed['entries'] = feed['items']
+
     def safestr(obj, key, default=''):
-        return str(obj[key]).encode('utf-8', 'replace') if key in obj else default
+        return safe_encode(obj.get(key,''))
 
     now = datetime.datetime.now()
     rss = rss2.RSS2(title=safestr(feed,'title'),
@@ -192,7 +207,7 @@ def rss(feed):
                            description=safestr(entry,'description'),
                            pubDate=entry.get('created_on', now)
                            ) for entry in feed.get('entries', [])])
-    return rss.to_xml(encoding='utf-8')
+    return rss.to_xml(encoding='utf8')
 
 
 def yaml(data):

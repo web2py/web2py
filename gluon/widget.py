@@ -143,7 +143,7 @@ class web2pyDialog(object):
         root.withdraw()
 
         self.root = Tkinter.Toplevel(root, bg=bg_color)
-        self.root.resizable(0,0)
+        self.root.resizable(0, 0)
         self.root.title(ProgramName)
 
         self.options = options
@@ -151,7 +151,7 @@ class web2pyDialog(object):
         self.menu = Tkinter.Menu(self.root)
         servermenu = Tkinter.Menu(self.menu, tearoff=0)
         httplog = os.path.join(self.options.folder, 'httpserver.log')
-        iconphoto = os.path.join('extras','icons','web2py.gif')
+        iconphoto = os.path.join('extras', 'icons', 'web2py.gif')
         if os.path.exists(iconphoto):
             img = Tkinter.PhotoImage(file=iconphoto)
             self.root.tk.call('wm', 'iconphoto', self.root._w, img)
@@ -206,7 +206,7 @@ class web2pyDialog(object):
         self.logoarea.grid(row=0, column=0, columnspan=4, sticky=sticky)
         self.logoarea.after(1000, self.update_canvas)
 
-        logo = os.path.join('extras','icons','splashlogo.gif')
+        logo = os.path.join('extras', 'icons', 'splashlogo.gif')
         if os.path.exists(logo):
             img = Tkinter.PhotoImage(file=logo)
             pnl = Tkinter.Label(self.logoarea, image=img, background=bg_color, bd=0)
@@ -261,8 +261,8 @@ class web2pyDialog(object):
         Tkinter.Label(self.root,
                       text='Server Port:', bg=bg_color,
                       justify=Tkinter.RIGHT).grid(row=shift,
-                                                 column=1, pady=10,
-                                                 sticky=sticky)
+                                                  column=1, pady=10,
+                                                  sticky=sticky)
 
         self.port_number = Tkinter.Entry(self.root)
         self.port_number.insert(Tkinter.END, self.options.port)
@@ -272,8 +272,8 @@ class web2pyDialog(object):
         Tkinter.Label(self.root,
                       text='Choose Password:', bg=bg_color,
                       justify=Tkinter.RIGHT).grid(row=shift + 1,
-                                                 column=1,
-                                                 sticky=sticky)
+                                                  column=1,
+                                                  sticky=sticky)
 
         self.password = Tkinter.Entry(self.root, show='*')
         self.password.bind('<Return>', lambda e: self.start())
@@ -328,7 +328,7 @@ class web2pyDialog(object):
                           if os.path.exists(
                 'applications/%s/models/scheduler.py' % arq)]
         if start:
-            #the widget takes care of starting the scheduler
+            # the widget takes care of starting the scheduler
             if self.options.scheduler and self.options.with_scheduler:
                 apps = [app.strip() for app
                         in self.options.scheduler.split(',')
@@ -336,7 +336,7 @@ class web2pyDialog(object):
         for app in apps:
             self.try_start_scheduler(app)
 
-        #reset the menu
+        # reset the menu
         self.schedmenu.delete(0, len(available_apps))
         for arq in available_apps:
             if arq not in self.scheduler_processes:
@@ -413,7 +413,7 @@ class web2pyDialog(object):
 
     def connect_pages(self):
         """ Connects pages """
-        #reset the menu
+        # reset the menu
         available_apps = [arq for arq in os.listdir('applications/')
                           if os.path.exists(
                 'applications/%s/__init__.py' % arq)]
@@ -939,19 +939,19 @@ def console():
     if options.gae:
         if not os.path.exists('app.yaml'):
             name = raw_input("Your GAE app name: ")
-            content = open(os.path.join('examples','app.example.yaml'),'rb').read()
-            open('app.yaml','wb').write(content.replace("yourappname",name))
+            content = open(os.path.join('examples', 'app.example.yaml'), 'rb').read()
+            open('app.yaml', 'wb').write(content.replace("yourappname", name))
         else:
             print "app.yaml alreday exists in the web2py folder"
         if not os.path.exists('gaehandler.py'):
-            content = open(os.path.join('handlers','gaehandler.py'),'rb').read()
-            open('gaehandler.py','wb').write(content)
+            content = open(os.path.join('handlers', 'gaehandler.py'), 'rb').read()
+            open('gaehandler.py', 'wb').write(content)
         else:
             print "gaehandler.py alreday exists in the web2py folder"
         sys.exit(0)
 
     try:
-        options.ips = list(set( # no duplicates
+        options.ips = list(set(  # no duplicates
             [addrinfo[4][0] for addrinfo in getipaddrinfo(socket.getfqdn())
              if not is_loopback_ip_address(addrinfo=addrinfo)]))
     except socket.gaierror:
@@ -1112,7 +1112,7 @@ def start(cron=True):
             if hasattr(options, key):
                 setattr(options, key, getattr(options2, key))
 
-    logfile0 = os.path.join('extras','examples','logging.example.conf')
+    logfile0 = os.path.join('extras', 'examples', 'logging.example.conf')
     if not os.path.exists('logging.conf') and os.path.exists(logfile0):
         import shutil
         sys.stdout.write("Copying logging.conf.example to logging.conf ... ")
@@ -1183,7 +1183,7 @@ def start(cron=True):
 
     root = None
 
-    if not options.nogui and options.password=='<ask>':
+    if not options.nogui and options.password == '<ask>':
         try:
             import Tkinter
             havetk = True
@@ -1263,6 +1263,7 @@ end tell
     # if the line was not found (under py2exe & when file was modified)
     import linecache
     py2exe_getline = linecache.getline
+
     def getline(filename, lineno, *args, **kwargs):
         line = py2exe_getline(filename, lineno, *args, **kwargs)
         if not line:
