@@ -180,6 +180,11 @@ class Servers:
         s = wsgi.WSGIServer(callable=app, bind="%s:%d" % address)
         s.start()
 
+    @staticmethod
+    def waitress(app, address, **options):
+        from waitress import serve
+        serve(app, host=address[0], port=address[1], _quiet=True)
+
 
 def mongrel2_handler(application, conn, debug=False):
     """
