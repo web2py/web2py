@@ -58,9 +58,12 @@ def represent(field, value, record):
     f = field.represent
     if not callable(f):
         return str(value)
-    n = f.func_code.co_argcount - len(f.func_defaults or [])
-    if getattr(f, 'im_self', None):
-        n -= 1
+    if hasattr(f,'func_code'):
+        n = f.func_code.co_argcount - len(f.func_defaults or [])
+        if getattr(f, 'im_self', None):
+            n -= 1
+    else:
+        n = 1
     if n == 1:
         return f(value)
     elif n == 2:
