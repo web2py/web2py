@@ -15,10 +15,11 @@ from gluon.dal import DAL, Field
 
 class TestDALSubclass(unittest.TestCase):
     def testRun(self):
-        import gluon.serializers as mserializers
+        from gluon.serializers import custom_json, xml
         from gluon import sqlhtml
         db = DAL(check_reserved=['all'])
-        self.assertEqual(db.serializers, mserializers)
+        self.assertEqual(db.serializers['json'], custom_json)
+        self.assertEqual(db.serializers['xml'], xml)
         self.assertEqual(db.representers['rows_render'], sqlhtml.represent)
         self.assertEqual(db.representers['rows_xml'], sqlhtml.SQLTABLE)
 
