@@ -58,9 +58,12 @@ def represent(field, value, record):
     f = field.represent
     if not callable(f):
         return str(value)
-    n = f.func_code.co_argcount - len(f.func_defaults or [])
-    if getattr(f, 'im_self', None):
-        n -= 1
+    if hasattr(f,'func_code'):
+        n = f.func_code.co_argcount - len(f.func_defaults or [])
+        if getattr(f, 'im_self', None):
+            n -= 1
+    else:
+        n = 1
     if n == 1:
         return f(value)
     elif n == 2:
@@ -1205,6 +1208,9 @@ class SQLFORM(FORM):
                 elif field.type == 'boolean':
                     inp = self.widgets.boolean.widget(
                         field, default, _disabled=True)
+                elif isinstance(field.type, SQLCustomType) and callable(field.type.represent):
+                    # SQLCustomType has a represent, use it
+                    inp = field.type.represent(default, record)
                 else:
                     inp = field.formatter(default)
                 if getattr(field, 'show_if', None):
@@ -1246,6 +1252,9 @@ class SQLFORM(FORM):
                     dspval = ''
             elif field.type == 'blob':
                 continue
+            elif isinstance(field.type, SQLCustomType) and callable(field.type.widget):
+                # SQLCustomType has a widget, use it
+                inp = field.type.widget(field, default)
             else:
                 field_type = widget_class.match(str(field.type)).group()
                 field_type = field_type in self.widgets and field_type or 'string'
@@ -2708,6 +2717,9 @@ class SQLFORM(FORM):
                                           _href='%s/%s' % (upload, value))
                         else:
                             value = ''
+                    elif isinstance(field.type, SQLCustomType) and callable(field.type.represent):
+                        # SQLCustomType has a represent, use it
+                        value = field.type.represent(value, row)
                     if isinstance(value, str):
                         value = truncate_string(value, maxlength)
                     elif not isinstance(value, XmlComponent):
