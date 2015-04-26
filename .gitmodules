@@ -1,3 +1,5 @@
 [submodule "gluon/packages/dal"]
 	path = gluon/packages/dal
 	url = https://github.com/web2py/pydal.git
+[submodule "gluon.packages.dal"]
+	branch = 15.03-maintenance
