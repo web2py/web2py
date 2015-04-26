@@ -1967,7 +1967,8 @@ class SQLFORM(FORM):
              cache_count=None,
              client_side_delete=False,
              ignore_common_filters=None,
-             auto_pagination=True):
+             auto_pagination=True,
+             use_cursor=False):
 
         formstyle = formstyle or current.response.formstyle
 
@@ -2542,7 +2543,7 @@ class SQLFORM(FORM):
 
         cursor = True
         # figure out what page we are one to setup the limitby
-        if paginate and dbset._db._adapter.dbengine == 'google:datastore':
+        if paginate and dbset._db._adapter.dbengine == 'google:datastore' and use_cursor:
             cursor = request.vars.cursor or True
             limitby = (0, paginate)
             try:
@@ -2564,7 +2565,7 @@ class SQLFORM(FORM):
             table_fields = [field for field in fields
                             if (field.tablename in tablenames and
                                 not(isinstance(field, Field.Virtual)))]
-            if dbset._db._adapter.dbengine == 'google:datastore':
+            if dbset._db._adapter.dbengine == 'google:datastore' and use_cursor:
                 rows = dbset.select(left=left, orderby=orderby,
                                     groupby=groupby, limitby=limitby,
                                     reusecursor=cursor,
@@ -2574,6 +2575,7 @@ class SQLFORM(FORM):
                 rows = dbset.select(left=left, orderby=orderby,
                                     groupby=groupby, limitby=limitby,
                                     cacheable=True, *table_fields)
+                next_cursor = None
         except SyntaxError:
             rows = None
             next_cursor = None
@@ -2592,7 +2594,7 @@ class SQLFORM(FORM):
         console.append(DIV(message or '', _class='web2py_counter'))
 
         paginator = UL()
-        if paginate and dbset._db._adapter.dbengine == 'google:datastore':
+        if paginate and dbset._db._adapter.dbengine == 'google:datastore' and use_cursor:
             # this means we may have a large table with an unknown number of rows.
             try:
                 page = int(request.vars.page or 1) - 1
