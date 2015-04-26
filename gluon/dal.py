@@ -7,7 +7,7 @@
 | License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 
 Takes care of adapting pyDAL to web2py's needs
---------------------------------------------
+-----------------------------------------------
 """
 
 from pydal import DAL as DAL
