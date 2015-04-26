@@ -521,9 +521,17 @@ def ldap_auth(server='ldap', port=None,
                 logging.error(
                     'There is no username or email for %s!' % username)
                 raise
-            db_group_search = db((db.auth_membership.user_id == db_user_id) &
-                            (db.auth_user.id == db.auth_membership.user_id) &
-                            (db.auth_group.id == db.auth_membership.group_id))
+            if not db.can_join():
+                # no joins on NoSQL databases, perform two queries
+                db_group_search = db(db.auth_membership.user_id == db_user_id)
+                group_ids = [x.group_id for x in db_group_search.select(
+                    db.auth_membership.group_id, distinct=True)]
+                db_group_search = db(db.auth_group.id == group_ids)
+            else:
+                db_group_search = db(
+                    (db.auth_membership.user_id == db_user_id) &
+                    (db.auth_user.id == db.auth_membership.user_id) &
+                    (db.auth_group.id == db.auth_membership.group_id))
             db_groups_of_the_user = list()
             db_group_id = dict()
 
