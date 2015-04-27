@@ -7,14 +7,14 @@
 | License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 
 Takes care of adapting pyDAL to web2py's needs
---------------------------------------------
+-----------------------------------------------
 """
 
 from pydal import DAL as DAL
 from pydal import Field
 from pydal.objects import Row, Rows, Table, Query, Expression
 from pydal import SQLCustomType, geoPoint, geoLine, geoPolygon
-import copy_reg as copyreg
+
 
 def _default_validators(db, field):
     """
@@ -81,12 +81,12 @@ def _default_validators(db, field):
         requires[0] = validators.IS_EMPTY_OR(requires[0])
     return requires
 
-from gluon import serializers as w2p_serializers
+from gluon.serializers import custom_json, xml
 from gluon.utils import web2py_uuid
 from gluon import sqlhtml
 
 
-DAL.serializers = w2p_serializers
+DAL.serializers = {'json': custom_json, 'xml': xml}
 DAL.validators_method = _default_validators
 DAL.uuid = lambda x: web2py_uuid()
 DAL.representers = {
