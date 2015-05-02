@@ -298,6 +298,7 @@ class List(list):
             if not value and otherwise:
                 raise ValueError('Otherwise will raised.')
         except (ValueError, TypeError):
+            from http import HTTP, redirect
             if otherwise is None:
                 raise HTTP(404)
             elif isinstance(otherwise, str):
