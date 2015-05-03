@@ -275,7 +275,7 @@ class List(list):
     instead of `IndexOutOfBounds`.
     """
 
-    def __call__(self, i, default=None, cast=None, otherwise=None):
+    def __call__(self, i, default=DEFAULT, cast=None, otherwise=None):
         """Allows to use a special syntax for fast-check of `request.args()`
         validity
         Args:
@@ -291,7 +291,9 @@ class List(list):
                 request.args(0,default=0,cast=int,otherwise='http://error_url')
                 request.args(0,default=0,cast=int,otherwise=lambda:...)
         """
-        value = self[i] or default
+        value = self[i]
+        if not value and default is not DEFAULT:
+            value, cast, otherwise = default, False, False
         try:
             if cast:
                 value = cast(value)
