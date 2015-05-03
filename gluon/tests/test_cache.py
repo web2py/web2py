@@ -13,6 +13,7 @@ fix_sys_path(__file__)
 
 from storage import Storage
 from cache import CacheInRam, CacheOnDisk, Cache
+from gluon.dal import DAL, Field
 
 oldcwd = None
 
@@ -30,6 +31,11 @@ def tearDownModule():
     if oldcwd:
         os.chdir(oldcwd)
         oldcwd = None
+    try:
+        os.unlink('dummy.db')
+    except:
+        pass
+
 
 
 class TestCache(unittest.TestCase):
@@ -107,7 +113,34 @@ class TestCache(unittest.TestCase):
         cache.clear(regex=r'a*')
         self.assertEqual(cache('a1', lambda: 2, 0), 2)
         self.assertEqual(cache('a2', lambda: 3, 100), 3)
-        return
+
+    def testDALcache(self):
+        s = Storage({'application': 'admin',
+                     'folder': 'applications/admin'})
+        cache = Cache(s)
+        db = DAL(check_reserved=['all'])
+        db.define_table('t_a', Field('f_a'))
+        db.t_a.insert(f_a='test')
+        db.commit()
+        a = db(db.t_a.id > 0).select(cache=(cache.ram, 60), cacheable=True)
+        b = db(db.t_a.id > 0).select(cache=(cache.ram, 60), cacheable=True)
+        self.assertEqual(a.as_csv(), b.as_csv())
+        c = db(db.t_a.id > 0).select(cache=(cache.disk, 60), cacheable=True)
+        d = db(db.t_a.id > 0).select(cache=(cache.disk, 60), cacheable=True)
+        self.assertEqual(c.as_csv(), d.as_csv())
+        self.assertEqual(a.as_csv(), c.as_csv())
+        self.assertEqual(b.as_csv(), d.as_csv())
+        e = db(db.t_a.id > 0).select(cache=(cache.disk, 60))
+        f = db(db.t_a.id > 0).select(cache=(cache.disk, 60))
+        self.assertEqual(e.as_csv(), f.as_csv())
+        self.assertEqual(a.as_csv(), f.as_csv())
+        g = db(db.t_a.id > 0).select(cache=(cache.ram, 60))
+        h = db(db.t_a.id > 0).select(cache=(cache.ram, 60))
+        self.assertEqual(g.as_csv(), h.as_csv())
+        self.assertEqual(a.as_csv(), h.as_csv())
+        db.t_a.drop()
+        db.close()
+
 
 if __name__ == '__main__':
     setUpModule()       # pre-python-2.7
