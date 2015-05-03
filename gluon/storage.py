@@ -293,7 +293,7 @@ class List(list):
         """
         value = self[i]
         if not value and default is not DEFAULT:
-            value, cast = default, False
+            value, cast, otherwise = default, False, False
         try:
             if cast:
                 value = cast(value)
