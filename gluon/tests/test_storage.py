@@ -140,6 +140,7 @@ class TestList(unittest.TestCase):
         self.assertRaises(HTTP, a, 4, cast=int)
         b = List()
         self.assertEqual(b(0, cast=int, default=None), None)
+        self.assertEqual(b(0, cast=int, default=None, otherwise='something'), None)
 
 
 if __name__ == '__main__':
