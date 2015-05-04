@@ -22,7 +22,8 @@ import gluon.portalocker as portalocker
 __all__ = ['List', 'Storage', 'Settings', 'Messages',
            'StorageList', 'load_storage', 'save_storage']
 
-DEFAULT = lambda: 0
+def DEFAULT():
+    return 0
 
 
 class Storage(dict):
@@ -271,28 +272,38 @@ class FastStorage(dict):
 class List(list):
 
     """
-    Like a regular python list but a[i] if i is out of bounds returns None
-    instead of `IndexOutOfBounds`.
+        Like a regular python list but callable.
+        When  a(i) is called if i is out of bounds returns None
+        instead of `IndexError`.
     """
 
     def __call__(self, i, default=DEFAULT, cast=None, otherwise=None):
-        """Allows to use a special syntax for fast-check of `request.args()`
-        validity
-        Args:
+        """Allows to use a special syntax for fast-check of
+        `request.args()` validity.
+        :params:
             i: index
             default: use this value if arg not found
             cast: type cast
-            otherwise: can be:
-             - None: results in a 404
-             - str: redirect to this address
-             - callable: calls the function (nothing is passed)
+            otherwise:
+                will be executed when:
+                    - casts fail
+                    - value not found, dont have default and otherwise is
+                    especified
+                can be:
+                    - None: results in a 404
+                    - str: redirect to this address
+                    - callable: calls the function (nothing is passed)
         Example:
             You can use::
                 request.args(0,default=0,cast=int,otherwise='http://error_url')
                 request.args(0,default=0,cast=int,otherwise=lambda:...)
         """
-        value = self[i]
-        if not value and default is not DEFAULT:
+        n = len(self)
+        if 0 <= i < n or -n <= i < 0:
+            value = self[i]
+        elif default is DEFAULT:
+            value = None
+        else:
             value, cast, otherwise = default, False, False
         try:
             if cast:
@@ -310,13 +321,6 @@ class List(list):
             else:
                 raise RuntimeError("invalid otherwise")
         return value
-
-    def __getitem__(self, i):
-        n = len(self)
-        if 0 <= i < n or -n <= i < 0:
-            return super(List, self).__getitem__(i)
-        return None
-
 
 if __name__ == '__main__':
     import doctest
