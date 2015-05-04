@@ -151,8 +151,6 @@ class TestList(unittest.TestCase):
         '''Mantains list behaviour.'''
         a = List((1, 2, 3))
         self.assertEqual(a[0], 1)
-        with self.assertRaises(IndexError):
-            a[3]
         self.assertEqual(a[::-1], [3, 2, 1])
 
 
