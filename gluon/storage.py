@@ -269,53 +269,53 @@ class FastStorage(dict):
 
 
 class List(list):
+
     """
     Like a regular python list but a[i] if i is out of bounds returns None
-    instead of `IndexOutOfBounds`
+    instead of `IndexOutOfBounds`.
     """
 
     def __call__(self, i, default=DEFAULT, cast=None, otherwise=None):
         """Allows to use a special syntax for fast-check of `request.args()`
         validity
-
         Args:
             i: index
             default: use this value if arg not found
             cast: type cast
             otherwise: can be:
-
              - None: results in a 404
              - str: redirect to this address
              - callable: calls the function (nothing is passed)
-
         Example:
             You can use::
-
                 request.args(0,default=0,cast=int,otherwise='http://error_url')
                 request.args(0,default=0,cast=int,otherwise=lambda:...)
-
         """
+        value = self[i]
+        if not value and default is not DEFAULT:
+            value, cast, otherwise = default, False, False
+        try:
+            if cast:
+                value = cast(value)
+            if not value and otherwise:
+                raise ValueError('Otherwise will raised.')
+        except (ValueError, TypeError):
+            from http import HTTP, redirect
+            if otherwise is None:
+                raise HTTP(404)
+            elif isinstance(otherwise, str):
+                redirect(otherwise)
+            elif callable(otherwise):
+                return otherwise()
+            else:
+                raise RuntimeError("invalid otherwise")
+        return value
+
+    def __getitem__(self, i):
         n = len(self)
         if 0 <= i < n or -n <= i < 0:
-            value = self[i]
-        elif default is DEFAULT:
-            value = None
-        else:
-            value, cast = default, False
-        if cast:
-            try:
-                value = cast(value)
-            except (ValueError, TypeError):
-                from http import HTTP, redirect
-                if otherwise is None:
-                    raise HTTP(404)
-                elif isinstance(otherwise, str):
-                    redirect(otherwise)
-                elif callable(otherwise):
-                    return otherwise()
-                else:
-                    raise RuntimeError("invalid otherwise")
-        return value
+            return super(List, self).__getitem__(i)
+        return None
 
 
 if __name__ == '__main__':

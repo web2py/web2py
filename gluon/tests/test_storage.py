@@ -125,8 +125,12 @@ class TestList(unittest.TestCase):
     def test_listcall(self):
         a = List((1, 2, 3))
         self.assertEqual(a(1), 2)
+        self.assertEqual(a[1], 2)
+        self.assertEqual(a(3), None)
+        self.assertEqual(a[3], None)
         self.assertEqual(a(-1), 3)
         self.assertEqual(a(-5), None)
+        self.assertEqual(a[-5], None)
         self.assertEqual(a(-5, default='x'), 'x')
         self.assertEqual(a(-3, cast=str), '1')
         a.append('1234')
@@ -134,6 +138,9 @@ class TestList(unittest.TestCase):
         self.assertEqual(a(3, cast=int), 1234)
         a.append('x')
         self.assertRaises(HTTP, a, 4, cast=int)
+        b = List()
+        self.assertEqual(b(0, cast=int, default=None), None)
+        self.assertEqual(b(0, cast=int, default=None, otherwise='something'), None)
 
 
 if __name__ == '__main__':
