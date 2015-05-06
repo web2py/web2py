@@ -38,9 +38,9 @@ PyDAL uses a separate stable release cycle to the rest of web2py. PyDAL releases
 
 ## Tests
 
-[![Build Status](https://img.shields.io/travis/web2py/web2py.svg?style=flat-square)](https://travis-ci.org/web2py/web2py)
+[![Build Status](https://img.shields.io/travis/web2py/web2py.svg?style=flat-square)](https://travis-ci.org/mbelletti/web2py)
 
-[![Coverage Status](https://img.shields.io/coveralls/web2py/web2py.svg?style=flat-square)](https://coveralls.io/r/web2py/web2py)
+[![Coverage Status](https://img.shields.io/coveralls/web2py/web2py.svg?style=flat-square)](https://coveralls.io/r/mbelletti/web2py)
 
 ## Installation Instructions
 
