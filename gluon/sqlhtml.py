@@ -2070,18 +2070,15 @@ class SQLFORM(FORM):
             # is unique and usually indexed. See issue #679
             if not orderby:
                 orderby = field_id
-            else:
-                if isinstance(orderby, Expression):
-                    if orderby.first:
-                        # here we're with a DESC order on a field
-                        # stored as orderby.first
-                        if orderby.first is not field_id:
-                            orderby = orderby | field_id
-                    else:
-                        # here we're with an ASC order on a field
-                        # stored as orderby
-                        if orderby is not field_id:
-                            orderby = orderby | field_id
+            elif isinstance(orderby, list):
+                orderby = map(lambda a,b: a|b, orderby)
+            elif isinstance(orderby, Field) and orderby is not field_id:
+                # here we're with an ASC order on a field stored as orderby
+                orderby = orderby | field_id
+            elif (isinstance(orderby, Expression) and 
+                  orderby.first and orderby.first is not field_id):
+                # here we're with a DESC order on a field stored as orderby.first
+                orderby = orderby | field_id
             return orderby
 
         def url(**b):
