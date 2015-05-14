@@ -22,8 +22,7 @@ import gluon.portalocker as portalocker
 __all__ = ['List', 'Storage', 'Settings', 'Messages',
            'StorageList', 'load_storage', 'save_storage']
 
-def DEFAULT():
-    return 0
+DEFAULT = lambda: 0
 
 
 class Storage(dict):
