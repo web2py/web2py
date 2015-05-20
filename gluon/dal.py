@@ -12,7 +12,7 @@ Takes care of adapting pyDAL to web2py's needs
 
 from pydal import DAL as DAL
 from pydal import Field
-from pydal.objects import Row, Rows, Table, Query, Expression
+from pydal.objects import Row, Rows, Table, Query, Set, Expression
 from pydal import SQLCustomType, geoPoint, geoLine, geoPolygon
 
 

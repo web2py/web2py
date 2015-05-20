@@ -767,8 +767,8 @@ class Mail(object):
             if self.settings.server == 'logging':
                 logger.warn('email not sent\n%s\nFrom: %s\nTo: %s\nSubject: %s\n\n%s\n%s\n' %
                             ('-' * 40, sender,
-                             ', '.join(to), subject,
-                             text or html, '-' * 40))
+                                ', '.join(to), subject,
+                                text or html, '-' * 40))
             elif self.settings.server == 'gae':
                 xcc = dict()
                 if cc:
@@ -779,23 +779,23 @@ class Mail(object):
                     xcc['reply_to'] = reply_to
                 from google.appengine.api import mail
                 attachments = attachments and [mail.Attachment(
-                        a.my_filename, 
+                        a.my_filename,
                         a.my_payload,
                         contebt_id='<attachment-%s>' % k
                         ) for k,a in enumerate(attachments) if not raw]
                 if attachments:
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=subject, body=text, html=html,
+                        subject=unicode(subject), body=unicode(text), html=html,
                         attachments=attachments, **xcc)
                 elif html and (not raw):
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=subject, body=text, html=html, **xcc)
+                        subject=unicode(subject), body=unicode(text), html=html, **xcc)
                 else:
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=subject, body=text, **xcc)
+                        subject=unicode(subject), body=unicode(text), **xcc)
             else:
                 smtp_args = self.settings.server.split(':')
                 kwargs = dict(timeout=self.settings.timeout)
@@ -3714,7 +3714,7 @@ class Auth(object):
             return record.id
         else:
             id = membership.insert(group_id=group_id, user_id=user_id)
-        if role: 
+        if role:
             self.user_groups[group_id] = role
         else:
             self.update_groups()
