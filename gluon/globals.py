@@ -193,6 +193,7 @@ class Request(Storage):
         self.is_https = False
         self.is_local = False
         self.global_settings = settings.global_settings
+        self._uuid = None
 
     def parse_get_vars(self):
         """Takes the QUERY_STRING and unpacks it to get_vars
@@ -306,13 +307,21 @@ class Request(Storage):
             self.parse_all_vars()
         return self._vars
 
+    @property
+    def uuid(self):
+        """Lazily uuid
+        """
+        if self._uuid is None:
+            self.compute_uuid()
+        return self._uuid
+
     def compute_uuid(self):
-        self.uuid = '%s/%s.%s.%s' % (
+        self._uuid = '%s/%s.%s.%s' % (
             self.application,
             self.client.replace(':', '_'),
             self.now.strftime('%Y-%m-%d.%H-%M-%S'),
             web2py_uuid())
-        return self.uuid
+        return self._uuid
 
     def user_agent(self):
         from gluon.contrib import user_agent_parser
@@ -453,8 +462,6 @@ class Response(Storage):
         response.cache_includes = (cache_method, time_expire).
         Example: (cache.disk, 60) # caches to disk for 1 minute.
         """
-        from gluon import URL
-
         files = []
         has_js = has_css = False
         for item in self.files:
@@ -663,7 +670,7 @@ class Response(Storage):
         return handler(request, self, methods)
 
     def toolbar(self):
-        from html import DIV, SCRIPT, BEAUTIFY, TAG, URL, A
+        from gluon.html import DIV, SCRIPT, BEAUTIFY, TAG, A
         BUTTON = TAG.button
         admin = URL("admin", "default", "design", extension='html',
                     args=current.request.application)
