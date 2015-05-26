@@ -26,6 +26,8 @@ import gluon.settings as settings
 from gluon.utils import web2py_uuid, secure_dumps, secure_loads
 from gluon.settings import global_settings
 from gluon import recfile
+from gluon.cache import CacheInRam
+from gluon.fileutils import copystream
 import hashlib
 import portalocker
 try:
@@ -47,8 +49,7 @@ import cgi
 import urlparse
 import copy
 import tempfile
-from gluon.cache import CacheInRam
-from gluon.fileutils import copystream
+
 
 FMT = '%a, %d-%b-%Y %H:%M:%S PST'
 PAST = 'Sat, 1-Jan-1971 00:00:00'
@@ -82,13 +83,22 @@ less_template = '<link href="%s" rel="stylesheet/less" type="text/css" />'
 css_inline = '<style type="text/css">\n%s\n</style>'
 js_inline = '<script type="text/javascript">\n%s\n</script>'
 
+template_mapping = {
+    'css': css_template,
+    'js': js_template,
+    'coffee': coffee_template,
+    'ts': typescript_template,
+    'less': less_template,
+    'css:inline': css_inline,
+    'js:inline': js_inline
+}
 
 # IMPORTANT:
 # this is required so that pickled dict(s) and class.__dict__
 # are sorted and web2py can detect without ambiguity when a session changes
 class SortingPickler(Pickler):
     def save_dict(self, obj):
-        self.write(EMPTY_DICT if self.bin else MARK+DICT)
+        self.write(EMPTY_DICT if self.bin else MARK + DICT)
         self.memoize(obj)
         self._batch_setitems([(key, obj[key]) for key in sorted(obj)])
 
@@ -275,7 +285,7 @@ class Request(Storage):
         """
         self._vars = copy.copy(self.get_vars)
         for key, value in self.post_vars.iteritems():
-            if not key in self._vars:
+            if key not in self._vars:
                 self._vars[key] = value
             else:
                 if not isinstance(self._vars[key], list):
@@ -436,19 +446,20 @@ class Response(Storage):
         return page
 
     def include_meta(self):
-        s = "\n";
+        s = "\n"
         for meta in (self.meta or {}).iteritems():
             k, v = meta
-            if isinstance(v,dict):
-                s = s+'<meta'+''.join(' %s="%s"' % (xmlescape(key), xmlescape(v[key])) for key in v) +' />\n'
+            if isinstance(v, dict):
+                s += '<meta' + ''.join(' %s="%s"' % (xmlescape(key), xmlescape(v[key])) for key in v) +' />\n'
             else:
-                s = s+'<meta name="%s" content="%s" />\n' % (k, xmlescape(v))
+                s += '<meta name="%s" content="%s" />\n' % (k, xmlescape(v))
         self.write(s, escape=False)
 
     def include_files(self, extensions=None):
 
         """
-        Caching method for writing out files.
+        Includes files (usually in the head).
+        Can minify and cache local files
         By default, caches in ram for 5 minutes. To change,
         response.cache_includes = (cache_method, time_expire).
         Example: (cache.disk, 60) # caches to disk for 1 minute.
@@ -456,9 +467,13 @@ class Response(Storage):
         from gluon import URL
 
         files = []
+        ext_files = []
         has_js = has_css = False
         for item in self.files:
-            if extensions and not item.split('.')[-1] in extensions:
+            if isinstance(item, (list, tuple)):
+                ext_files.append(item)
+                continue
+            if extensions and not item.rpartition('.')[2] in extensions:
                 continue
             if item in files:
                 continue
@@ -487,10 +502,13 @@ class Response(Storage):
                                     time_expire)
             else:
                 files = call_minify()
-        s = ''
+
+        files.extend(ext_files)
+        s = []
         for item in files:
             if isinstance(item, str):
                 f = item.lower().split('?')[0]
+                ext = f.rpartition('.')[2]
                 # if static_version we need also to check for
                 # static_version_urls. In that case, the _.x.x.x
                 # bit would have already been added by the URL()
@@ -498,24 +516,15 @@ class Response(Storage):
                 if self.static_version and not self.static_version_urls:
                     item = item.replace(
                         '/static/', '/static/_%s/' % self.static_version, 1)
-                if f.endswith('.css'):
-                    s += css_template % item
-                elif f.endswith('.js'):
-                    s += js_template % item
-                elif f.endswith('.coffee'):
-                    s += coffee_template % item
-                elif f.endswith('.ts'):
-                    # http://www.typescriptlang.org/
-                    s += typescript_template % item
-                elif f.endswith('.less'):
-                    s += less_template % item
+                tmpl = template_mapping.get(ext)
+                if tmpl:
+                    s.append(tmpl % item)
             elif isinstance(item, (list, tuple)):
                 f = item[0]
-                if f == 'css:inline':
-                    s += css_inline % item[1]
-                elif f == 'js:inline':
-                    s += js_inline % item[1]
-        self.write(s, escape=False)
+                tmpl = template_mapping.get(f)
+                if tmpl:
+                    s.append(tmpl % item[1])
+        self.write(''.join(s), escape=False)
 
     def stream(self,
                stream,

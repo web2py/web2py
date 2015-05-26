@@ -84,7 +84,7 @@ server {
         ssl_session_cache shared:SSL:10m;
         ssl_session_timeout 10m;
         ssl_ciphers ECDHE-RSA-AES256-SHA:DHE-RSA-AES256-SHA:DHE-DSS-AES256-SHA:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA;
-        ssl_protocols SSLv3 TLSv1;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
         keepalive_timeout    70;
         location / {
             #uwsgi_pass      127.0.0.1:9001;

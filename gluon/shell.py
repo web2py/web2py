@@ -41,9 +41,7 @@ def enable_autocomplete_and_history(adir, env):
     except ImportError:
         pass
     else:
-        readline.parse_and_bind("bind ^I rl_complete"
-                                if sys.platform == 'darwin'
-                                else "tab: complete")
+        readline.parse_and_bind("tab: complete")
         history_file = os.path.join(adir, '.pythonhistory')
         try:
             readline.read_history_file(history_file)

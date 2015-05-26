@@ -13,7 +13,7 @@ Learn more at http://web2py.com
     
 Then edit ./app.yaml and replace "yourappname" with yourappname.
 
-## Import about this GIT repo
+## Important reminder about this GIT repo
 
 An important part of web2py is the Database Abstraction Layer (DAL). In early 2015 this was decoupled into a separate code-base (PyDAL). In terms of git, it is a sub-module of the main repository.
 
