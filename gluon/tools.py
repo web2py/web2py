@@ -1283,7 +1283,7 @@ class Auth(object):
                        'retrieve_username', 'retrieve_password',
                        'reset_password', 'request_reset_password',
                        'change_password', 'profile', 'groups',
-                       'impersonate', 'not_authorized'):
+                       'impersonate', 'not_authorized', 'confirm_registration', 'invite'):
             if len(request.args) >= 2 and args[0] == 'impersonate':
                 return getattr(self, args[0])(request.args[1])
             else:
@@ -2623,6 +2623,144 @@ class Auth(object):
             redirect(next)
         table_user.email.requires = old_requires
         return form
+
+
+    def confirm_registration(
+        self,
+        next=DEFAULT,
+        onvalidation=DEFAULT,
+        onaccept=DEFAULT,
+        log=DEFAULT,
+        ):
+        """
+        Returns a form to confirm user registration
+        """
+
+        table_user = self.table_user()
+        request = current.request
+        # response = current.response
+        session = current.session
+
+        if next is DEFAULT:
+            next = self.get_vars_next() or self.settings.reset_password_next
+
+        if self.settings.prevent_password_reset_attacks:
+            key = request.vars.key
+            if not key and len(request.args)>1:
+                key = request.args[-1]
+            if key:
+                session._reset_password_key = key
+                redirect(self.url(args='confirm_registration'))
+            else:
+                key = session._reset_password_key
+        else:
+            key = request.vars.key or getarg(-1)
+        try:
+            t0 = int(key.split('-')[0])
+            if time.time() - t0 > 60 * 60 * 24:
+                raise Exception
+            user = table_user(reset_password_key=key)
+            if not user:
+                raise Exception
+        except Exception as e:
+            session.flash = self.messages.invalid_reset_password
+            redirect(self.url('login', vars=dict(test=e)))
+            redirect(next, client_side=self.settings.client_side)
+        passfield = self.settings.password_field
+        form = SQLFORM.factory(
+            Field('first_name',
+                  label='First Name',
+                   required=True),
+            Field('last_name',
+                  label='Last Name',
+                   required=True),
+            Field('new_password', 'password',
+                  label=self.messages.new_password,
+                  requires=self.table_user()[passfield].requires),
+            Field('new_password2', 'password',
+                  label=self.messages.verify_password,
+                  requires=[IS_EXPR(
+                      'value==%s' % repr(request.vars.new_password),
+                                    self.messages.mismatched_password)]),
+            submit_button='Confirm Registration',
+            hidden=dict(_next=next),
+            formstyle=self.settings.formstyle,
+            separator=self.settings.label_separator
+        )
+        if form.accepts(request, session,
+                        hideerror=self.settings.hideerror):
+            user.update_record(
+                **{passfield: str(form.vars.new_password),
+                   'first_name': str(form.vars.first_name),
+                   'last_name': str(form.vars.last_name),
+                   'registration_key': '',
+                   'reset_password_key': ''})
+            session.flash = self.messages.password_changed
+            if self.settings.login_after_password_change:
+                self.login_user(user)
+            redirect(next, client_side=self.settings.client_side)
+        return form
+
+    def email_registration(self, user):
+        """
+        Sends and email request to a user informing they have been invited to register with the application
+        """
+        import time
+        from gluon.utils import web2py_uuid
+
+        reset_password_key = str(int(time.time())) + '-' + web2py_uuid()
+        link = self.url('confirm_registration',
+                        vars={'key': reset_password_key},
+                        scheme=True)
+
+        d = dict(user)
+        d.update(dict(key=reset_password_key, link=link))
+        if self.settings.mailer and self.settings.mailer.send(
+            to=user.email,
+            subject='Invite to join %s' % current.response.title, # What if title is not a string??????
+            message='Click on the link %(link)s to finalise your registration.' % d):
+            user.update_record(reset_password_key=reset_password_key)
+            return True
+        return False
+
+
+    def invite(self):
+        """
+        Creates a form for ther user to send invites to other users to join
+        """
+        if not self.user:
+            redirect(self.settings.login_url)
+
+        #request = current.request
+        # response = current.response
+        #session = current.session
+
+        form=FORM('Enter a comma separated list of emails to send invites:',
+              BR(),
+              INPUT(_name='emails', _value=''),
+              BR(),
+              INPUT(_type='submit', _value='Send'))
+
+        if form.accepts(current.request,current.session):
+            # send the invitations
+            user = None
+            for email in form.vars.emails.split(','):
+                #auth.invite_user(email=email)
+                user = self.register_bare(email=email, password=self.random_password())
+            if user:
+                current.session.flash = 'Invitations sent'
+            else:
+                current.session.flash = 'An error occured trying to send invites.'
+
+        return form
+        """
+        user = self.register_bare(email=email, password=self.random_password())
+        if user:
+            self.email_registration(user)
+            return True
+        else:
+            return False
+        """
 
     def reset_password(
         self,
