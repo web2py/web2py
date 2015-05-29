@@ -376,7 +376,6 @@ def wsgibase(environ, responder):
                         request.env.http_x_forwarded_proto in HTTPS_SCHEMES \
                         or env.https == 'on'
                     )
-                request.compute_uuid()  # requires client
                 request.url = environ['PATH_INFO']
 
                 # ##################################################

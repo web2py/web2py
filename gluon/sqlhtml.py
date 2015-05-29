@@ -2071,7 +2071,7 @@ class SQLFORM(FORM):
             if not orderby:
                 orderby = field_id
             elif isinstance(orderby, list):
-                orderby = map(lambda a,b: a|b, orderby)
+                orderby = reduce(lambda a,b: a|b, orderby)
             elif isinstance(orderby, Field) and orderby is not field_id:
                 # here we're with an ASC order on a field stored as orderby
                 orderby = orderby | field_id
