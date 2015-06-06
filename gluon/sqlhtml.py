@@ -859,14 +859,14 @@ def formstyle_bootstrap3_stacked(form, fields):
                 label = ''
             elif isinstance(controls, (SELECT, TEXTAREA)):
                 controls.add_class('form-control')
-                            
+
         elif isinstance(controls, SPAN):
             _controls = P(controls.components)
 
         elif isinstance(controls, UL):
             for e in controls.elements("input"):
                 e.add_class('form-control')
-                
+
         if isinstance(label, LABEL):
             label['_class'] = 'control-label'
 
@@ -909,9 +909,9 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
                     label = ''
                 elif isinstance(controls, (SELECT, TEXTAREA)):
                     controls.add_class('form-control')
-                
+
             elif isinstance(controls, SPAN):
-                _controls = P(controls.components, 
+                _controls = P(controls.components,
                               _class="form-control-static %s" % col_class)
             elif isinstance(controls, UL):
                 for e in controls.elements("input"):
@@ -1841,15 +1841,16 @@ class SQLFORM(FORM):
                     widget_ = SQLFORM.widgets[field_type]
                     value_input = widget_.widget(field, field.default, _id=_id, _class=widget_._class + ' form-control')
                 elif field_type == 'date':
-                    iso_format = {'_data-w2p_date_format' : '%Y-%m-%d'}
+                    iso_format = {'_data-w2p_date_format': '%Y-%m-%d'}
                     widget_ = SQLFORM.widgets.date
                     value_input = widget_.widget(field, field.default, _id=_id, _class=widget_._class + ' form-control', **iso_format)
                 elif field_type == 'datetime':
-                    iso_format = {'_data-w2p_datetime_format' : '%Y-%m-%d %H:%M:%S'}
+                    iso_format = {'_data-w2p_datetime_format': '%Y-%m-%d %H:%M:%S'}
                     widget_ = SQLFORM.widgets.datetime
                     value_input = widget_.widget(field, field.default, _id=_id, _class=widget_._class + ' form-control', **iso_format)
                 elif (field_type.startswith('reference ') or
                       field_type.startswith('list:reference ')) and \
+                      hasattr(field.requires, 'options') or \
                       hasattr(field.requires, 'options'):
                     value_input = SELECT(
                         *[OPTION(v, _value=k)
