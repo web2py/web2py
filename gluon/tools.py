@@ -1499,6 +1499,8 @@ class Auth(object):
             change_password_onvalidation = [],
             change_password_onaccept = [],
             retrieve_password_onvalidation = [],
+            request_reset_password_onvalidation = [],
+            request_reset_password_onaccept = [],
             reset_password_onvalidation = [],
             reset_password_onaccept = [],
             hmac_key = hmac_key,
@@ -3173,6 +3175,12 @@ class Auth(object):
         except Exception:
             session.flash = self.messages.invalid_reset_password
             redirect(next, client_side=self.settings.client_side)
+
+        if onvalidation is DEFAULT:
+            onvalidation = self.settings.reset_password_onvalidation
+        if onaccept is DEFAULT:
+            onaccept = self.settings.reset_password_onaccept
+
         passfield = self.settings.password_field
         form = SQLFORM.factory(
             Field('new_password', 'password',
@@ -3188,7 +3196,7 @@ class Auth(object):
             formstyle=self.settings.formstyle,
             separator=self.settings.label_separator
         )
-        if form.accepts(request, session,
+        if form.accepts(request, session, onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
             user.update_record(
                 **{passfield: str(form.vars.new_password),
@@ -3197,6 +3205,7 @@ class Auth(object):
             session.flash = self.messages.password_changed
             if self.settings.login_after_password_change:
                 self.login_user(user)
+            callback(onaccept, form)
             redirect(next, client_side=self.settings.client_side)
         return form
 
@@ -3222,9 +3231,9 @@ class Auth(object):
             response.flash = self.messages.function_disabled
             return ''
         if onvalidation is DEFAULT:
-            onvalidation = self.settings.reset_password_onvalidation
+            onvalidation = self.settings.request_reset_password_onvalidation
         if onaccept is DEFAULT:
-            onaccept = self.settings.reset_password_onaccept
+            onaccept = self.settings.request_reset_password_onaccept
         if log is DEFAULT:
             log = self.messages['reset_password_log']
         userfield = self.settings.login_userfield or 'username' \
