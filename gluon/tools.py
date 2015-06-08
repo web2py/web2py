@@ -2325,8 +2325,8 @@ class Auth(object):
             # user not in database try other login methods
             for login_method in self.settings.login_methods:
                 if login_method != self and login_method(username, password):
-                    self.user = username
-                    return username
+                    self.user = user
+                    return user
         return False
 
     def register_bare(self, **fields):
