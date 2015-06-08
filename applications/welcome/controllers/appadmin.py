@@ -80,7 +80,6 @@ if False and request.tickets_db:
 def get_databases(request):
     dbs = {}
     for (key, value) in global_env.items():
-        cond = False
         try:
             cond = isinstance(value, GQLDB)
         except:
