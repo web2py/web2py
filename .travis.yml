@@ -17,14 +17,14 @@ install:
 before_script:
   - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install --download-cache $HOME/.pip-cache unittest2; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --download-cache $HOME/.pip-cache coverage; fi;
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --download-cache $HOME/.pip-cache python-coveralls; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --download-cache $HOME/.pip-cache codecov; fi
 
 
 script: export COVERAGE_PROCESS_START=gluon/tests/coverage.ini; ./web2py.py --run_system_tests --with_coverage
 
 after_success:
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then coverage combine; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then coveralls --config_file=gluon/tests/coverage.ini; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then codecov; fi
 
 notifications:
   email: true
