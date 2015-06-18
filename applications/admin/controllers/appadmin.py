@@ -480,18 +480,18 @@ def ccache():
                     disk['oldest'] = value[0]
                 disk['keys'].append((key, GetInHMS(time.time() - value[0])))
 
-        total['entries'] = ram['entries'] + disk['entries']
-        total['bytes'] = ram['bytes'] + disk['bytes']
-        total['objects'] = ram['objects'] + disk['objects']
-        total['hits'] = ram['hits'] + disk['hits']
-        total['misses'] = ram['misses'] + disk['misses']
-        total['keys'] = ram['keys'] + disk['keys']
+        ram_keys = ram.keys()
+        ram_keys.remove('ratio')
+        ram_keys.remove('oldest')
+        for key in ram_keys:
+            total[key] = ram[key] + disk[key]
+            
         try:
             total['ratio'] = total['hits'] * 100 / (total['hits'] +
                                                 total['misses'])
         except (KeyError, ZeroDivisionError):
             total['ratio'] = 0
-
+        
         if disk['oldest'] < ram['oldest']:
             total['oldest'] = disk['oldest']
         else:
@@ -577,9 +577,7 @@ def bg_graph_model():
         group = meta_graphmodel['group'].replace(' ', '')
         if not subgraphs.has_key(group):
             subgraphs[group] = dict(meta=meta_graphmodel, tables=[])
-            subgraphs[group]['tables'].append(tablename)
-        else:
-            subgraphs[group]['tables'].append(tablename)
+        subgraphs[group]['tables'].append(tablename)
 
         graph.add_node(tablename, name=tablename, shape='plaintext',
                        label=table_template(tablename))
