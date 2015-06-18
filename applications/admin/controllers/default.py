@@ -867,13 +867,9 @@ def resolve():
 
     def getclass(item):
         """ Determine item class """
-
-        if item[0] == ' ':
-            return 'normal'
-        if item[0] == '+':
-            return 'plus'
-        if item[0] == '-':
-            return 'minus'
+        operators = {' ':'normal', '+':'plus', '-':'minus'}
+        
+        return operators[item[0]]
 
     if request.vars:
         c = '\n'.join([item[2:].rstrip() for (i, item) in enumerate(d) if item[0]
