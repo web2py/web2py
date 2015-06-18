@@ -292,9 +292,6 @@ def site():
             log_progress(appname)
             session.flash = T(msg, dict(appname=appname,
                                         digest=md5_hash(installed)))
-        elif f and form_update.vars.overwrite:
-            msg = 'unable to install application "%(appname)s"'
-            session.flash = T(msg, dict(appname=form_update.vars.name))
         else:
             msg = 'unable to install application "%(appname)s"'
             session.flash = T(msg, dict(appname=form_update.vars.name))
