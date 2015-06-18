@@ -1503,7 +1503,7 @@ def upload_file():
         if filename:
             d = dict(filename=filename[len(path):])
         else:
-            d = dict(filename='unkown')
+            d = dict(filename='unknown')
         session.flash = T('cannot upload file "%(filename)s"', d)
 
     redirect(request.vars.sender)
