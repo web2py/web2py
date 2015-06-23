@@ -67,11 +67,12 @@ def RedisCache(*args, **vars):
 
     locker.acquire()
     try:
-        if not hasattr(RedisCache, 'redis_instance'):
-            RedisCache.redis_instance = RedisClient(*args, **vars)
+        instance_name = 'redis_instance_' + current.request.application
+        if not hasattr(RedisCache, instance_name):
+            setattr(RedisCache, instance_name, RedisClient(*args, **vars))
+        return getattr(RedisCache, instance_name)
     finally:
         locker.release()
-    return RedisCache.redis_instance
 
 
 class RedisClient(object):

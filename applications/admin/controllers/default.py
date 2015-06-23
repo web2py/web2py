@@ -292,9 +292,6 @@ def site():
             log_progress(appname)
             session.flash = T(msg, dict(appname=appname,
                                         digest=md5_hash(installed)))
-        elif f and form_update.vars.overwrite:
-            msg = 'unable to install application "%(appname)s"'
-            session.flash = T(msg, dict(appname=form_update.vars.name))
         else:
             msg = 'unable to install application "%(appname)s"'
             session.flash = T(msg, dict(appname=form_update.vars.name))
@@ -744,7 +741,7 @@ def edit():
             viewlist.append(aviewpath + '.html')
         if len(viewlist):
             editviewlinks = []
-            for v in viewlist:
+            for v in sorted(viewlist):
                 vf = os.path.split(v)[-1]
                 vargs = "/".join([viewpath.replace(os.sep, "/"), vf])
                 editviewlinks.append(A(vf.split(".")[0],
@@ -754,6 +751,7 @@ def edit():
     if len(request.args) > 2 and request.args[1] == 'controllers':
         controller = (request.args[2])[:-3]
         functions = find_exposed_functions(data)
+        functions = functions and sorted(functions) or []
     else:
         (controller, functions) = (None, None)
 
@@ -866,13 +864,9 @@ def resolve():
 
     def getclass(item):
         """ Determine item class """
-
-        if item[0] == ' ':
-            return 'normal'
-        if item[0] == '+':
-            return 'plus'
-        if item[0] == '-':
-            return 'minus'
+        operators = {' ':'normal', '+':'plus', '-':'minus'}
+        
+        return operators[item[0]]
 
     if request.vars:
         c = '\n'.join([item[2:].rstrip() for (i, item) in enumerate(d) if item[0]
@@ -1067,7 +1061,7 @@ def design():
     for c in controllers:
         data = safe_read(apath('%s/controllers/%s' % (app, c), r=request))
         items = find_exposed_functions(data)
-        functions[c] = items
+        functions[c] = items and sorted(items) or []
 
     # Get all views
     views = sorted(
@@ -1205,7 +1199,7 @@ def plugin():
     for c in controllers:
         data = safe_read(apath('%s/controllers/%s' % (app, c), r=request))
         items = find_exposed_functions(data)
-        functions[c] = items
+        functions[c] = items and sorted(items) or []
 
     # Get all views
     views = sorted(
@@ -1509,7 +1503,7 @@ def upload_file():
         if filename:
             d = dict(filename=filename[len(path):])
         else:
-            d = dict(filename='unkown')
+            d = dict(filename='unknown')
         session.flash = T('cannot upload file "%(filename)s"', d)
 
     redirect(request.vars.sender)

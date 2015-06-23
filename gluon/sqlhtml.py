@@ -859,14 +859,14 @@ def formstyle_bootstrap3_stacked(form, fields):
                 label = ''
             elif isinstance(controls, (SELECT, TEXTAREA)):
                 controls.add_class('form-control')
-                            
+
         elif isinstance(controls, SPAN):
             _controls = P(controls.components)
 
         elif isinstance(controls, UL):
             for e in controls.elements("input"):
                 e.add_class('form-control')
-                
+
         if isinstance(label, LABEL):
             label['_class'] = 'control-label'
 
@@ -909,9 +909,9 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
                     label = ''
                 elif isinstance(controls, (SELECT, TEXTAREA)):
                     controls.add_class('form-control')
-                
+
             elif isinstance(controls, SPAN):
-                _controls = P(controls.components, 
+                _controls = P(controls.components,
                               _class="form-control-static %s" % col_class)
             elif isinstance(controls, UL):
                 for e in controls.elements("input"):
@@ -1838,15 +1838,19 @@ class SQLFORM(FORM):
                 operators = SELECT(*[OPTION(T(option), _value=option) for option in options], _class='form-control')
                 _id = "%s_%s" % (value_id, name)
                 if field_type in ['boolean', 'double', 'time', 'integer']:
-                    value_input = SQLFORM.widgets[field_type].widget(field, field.default, _id=_id, _class='form-control')
+                    widget_ = SQLFORM.widgets[field_type]
+                    value_input = widget_.widget(field, field.default, _id=_id, _class=widget_._class + ' form-control')
                 elif field_type == 'date':
-                    iso_format = {'_data-w2p_date_format' : '%Y-%m-%d'}
-                    value_input = SQLFORM.widgets.date.widget(field, field.default, _id=_id, _class='form-control', **iso_format)
+                    iso_format = {'_data-w2p_date_format': '%Y-%m-%d'}
+                    widget_ = SQLFORM.widgets.date
+                    value_input = widget_.widget(field, field.default, _id=_id, _class=widget_._class + ' form-control', **iso_format)
                 elif field_type == 'datetime':
-                    iso_format = {'_data-w2p_datetime_format' : '%Y-%m-%d %H:%M:%S'}
-                    value_input = SQLFORM.widgets.datetime.widget(field, field.default, _id=_id, _class='form-control', **iso_format)
+                    iso_format = {'_data-w2p_datetime_format': '%Y-%m-%d %H:%M:%S'}
+                    widget_ = SQLFORM.widgets.datetime
+                    value_input = widget_.widget(field, field.default, _id=_id, _class=widget_._class + ' form-control', **iso_format)
                 elif (field_type.startswith('reference ') or
                       field_type.startswith('list:reference ')) and \
+                      hasattr(field.requires, 'options') or \
                       hasattr(field.requires, 'options'):
                     value_input = SELECT(
                         *[OPTION(v, _value=k)
@@ -1856,7 +1860,8 @@ class SQLFORM(FORM):
                 elif field_type.startswith('reference ') or \
                      field_type.startswith('list:integer') or \
                      field_type.startswith('list:reference '):
-                    value_input = SQLFORM.widgets.integer.widget(field, field.default, _id=_id, _class='form-control')
+                    widget_ = SQLFORM.widgets.integer
+                    value_input = widget_.widget(field, field.default, _id=_id, _class=widget_._class + ' form-control')
                 else:
                     value_input = INPUT(
                         _type='text', _id=_id,
@@ -1967,7 +1972,8 @@ class SQLFORM(FORM):
              cache_count=None,
              client_side_delete=False,
              ignore_common_filters=None,
-             auto_pagination=True):
+             auto_pagination=True,
+             use_cursor=False):
 
         formstyle = formstyle or current.response.formstyle
 
@@ -2069,18 +2075,15 @@ class SQLFORM(FORM):
             # is unique and usually indexed. See issue #679
             if not orderby:
                 orderby = field_id
-            else:
-                if isinstance(orderby, Expression):
-                    if orderby.first:
-                        # here we're with a DESC order on a field
-                        # stored as orderby.first
-                        if orderby.first is not field_id:
-                            orderby = orderby | field_id
-                    else:
-                        # here we're with an ASC order on a field
-                        # stored as orderby
-                        if orderby is not field_id:
-                            orderby = orderby | field_id
+            elif isinstance(orderby, list):
+                orderby = reduce(lambda a,b: a|b, orderby)
+            elif isinstance(orderby, Field) and orderby is not field_id:
+                # here we're with an ASC order on a field stored as orderby
+                orderby = orderby | field_id
+            elif (isinstance(orderby, Expression) and 
+                  orderby.first and orderby.first is not field_id):
+                # here we're with a DESC order on a field stored as orderby.first
+                orderby = orderby | field_id
             return orderby
 
         def url(**b):
@@ -2542,7 +2545,7 @@ class SQLFORM(FORM):
 
         cursor = True
         # figure out what page we are one to setup the limitby
-        if paginate and dbset._db._adapter.dbengine == 'google:datastore':
+        if paginate and dbset._db._adapter.dbengine == 'google:datastore' and use_cursor:
             cursor = request.vars.cursor or True
             limitby = (0, paginate)
             try:
@@ -2564,7 +2567,7 @@ class SQLFORM(FORM):
             table_fields = [field for field in fields
                             if (field.tablename in tablenames and
                                 not(isinstance(field, Field.Virtual)))]
-            if dbset._db._adapter.dbengine == 'google:datastore':
+            if dbset._db._adapter.dbengine == 'google:datastore' and use_cursor:
                 rows = dbset.select(left=left, orderby=orderby,
                                     groupby=groupby, limitby=limitby,
                                     reusecursor=cursor,
@@ -2574,6 +2577,7 @@ class SQLFORM(FORM):
                 rows = dbset.select(left=left, orderby=orderby,
                                     groupby=groupby, limitby=limitby,
                                     cacheable=True, *table_fields)
+                next_cursor = None
         except SyntaxError:
             rows = None
             next_cursor = None
@@ -2592,7 +2596,7 @@ class SQLFORM(FORM):
         console.append(DIV(message or '', _class='web2py_counter'))
 
         paginator = UL()
-        if paginate and dbset._db._adapter.dbengine == 'google:datastore':
+        if paginate and dbset._db._adapter.dbengine == 'google:datastore' and use_cursor:
             # this means we may have a large table with an unknown number of rows.
             try:
                 page = int(request.vars.page or 1) - 1

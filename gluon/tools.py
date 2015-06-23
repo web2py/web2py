@@ -60,7 +60,7 @@ except ImportError:
         # fallback to pure-Python module
         import gluon.contrib.simplejson as json_parser
 
-__all__ = ['Mail', 'Auth', 'Recaptcha', 'Crud', 'Service', 'Wiki',
+__all__ = ['Mail', 'Auth', 'Recaptcha', 'Recaptcha2', 'Crud', 'Service', 'Wiki',
            'PluginManager', 'fetch', 'geocode', 'reverse_geocode', 'prettydate']
 
 ### mind there are two loggers here (logger and crud.settings.logger)!
@@ -767,8 +767,8 @@ class Mail(object):
             if self.settings.server == 'logging':
                 logger.warn('email not sent\n%s\nFrom: %s\nTo: %s\nSubject: %s\n\n%s\n%s\n' %
                             ('-' * 40, sender,
-                             ', '.join(to), subject,
-                             text or html, '-' * 40))
+                                ', '.join(to), subject,
+                                text or html, '-' * 40))
             elif self.settings.server == 'gae':
                 xcc = dict()
                 if cc:
@@ -779,23 +779,23 @@ class Mail(object):
                     xcc['reply_to'] = reply_to
                 from google.appengine.api import mail
                 attachments = attachments and [mail.Attachment(
-                        a.my_filename, 
+                        a.my_filename,
                         a.my_payload,
                         contebt_id='<attachment-%s>' % k
                         ) for k,a in enumerate(attachments) if not raw]
                 if attachments:
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=subject, body=text, html=html,
+                        subject=unicode(subject), body=unicode(text), html=html,
                         attachments=attachments, **xcc)
                 elif html and (not raw):
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=subject, body=text, html=html, **xcc)
+                        subject=unicode(subject), body=unicode(text), html=html, **xcc)
                 else:
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=subject, body=text, **xcc)
+                        subject=unicode(subject), body=unicode(text), **xcc)
             else:
                 smtp_args = self.settings.server.split(':')
                 kwargs = dict(timeout=self.settings.timeout)
@@ -965,7 +965,142 @@ class Recaptcha(DIV):
             return XML(captcha).xml()
 
 
-# this should only be used for catcha and perhaps not even for that
+class Recaptcha2(DIV):
+    """
+    Experimental:
+    Creates a DIV holding the newer Recaptcha from Google (v2)
+
+    Args:
+        request : the request. If not passed, uses current request
+        public_key : the public key Google gave you
+        private_key : the private key Google gave you
+        error_message : the error message to show if verification fails
+        label : the label to use
+        options (dict) : takes these parameters
+
+            - hl
+            - theme
+            - type
+            - tabindex
+            - callback
+            - expired-callback
+
+            see https://developers.google.com/recaptcha/docs/display for docs about those
+
+        comment : the comment
+
+    Examples:
+        Use as::
+
+            form = FORM(Recaptcha2(public_key='...',private_key='...'))
+
+        or::
+
+            form = SQLFORM(...)
+            form.append(Recaptcha2(public_key='...',private_key='...'))
+
+        to protect the login page instead, use::
+
+            from gluon.tools import Recaptcha2
+            auth.settings.captcha = Recaptcha2(request, public_key='...',private_key='...')
+
+    """
+
+    API_URI = 'https://www.google.com/recaptcha/api.js'
+    VERIFY_SERVER = 'https://www.google.com/recaptcha/api/siteverify'
+
+    def __init__(self,
+                 request=None,
+                 public_key='',
+                 private_key='',
+                 error_message='invalid',
+                 label='Verify:',
+                 options=None,
+                 comment='',
+                 ):
+        request = request or current.request
+        self.request_vars = request and request.vars or current.request.vars
+        self.remote_addr = request.env.remote_addr
+        self.public_key = public_key
+        self.private_key = private_key
+        self.errors = Storage()
+        self.error_message = error_message
+        self.components = []
+        self.attributes = {}
+        self.label = label
+        self.options = options or {}
+        self.comment = comment
+
+    def _validate(self):
+        recaptcha_response_field = self.request_vars.pop('g-recaptcha-response', None)
+        remoteip = self.remote_addr
+        if not recaptcha_response_field:
+            self.errors['captcha'] = self.error_message
+            return False
+        params = urllib.urlencode({
+            'secret': self.private_key,
+            'remoteip': remoteip,
+            'response': recaptcha_response_field,
+        })
+        request = urllib2.Request(
+            url=self.VERIFY_SERVER,
+            data=params,
+            headers={'Content-type': 'application/x-www-form-urlencoded',
+                     'User-agent': 'reCAPTCHA Python'})
+        httpresp = urllib2.urlopen(request)
+        content = httpresp.read()
+        httpresp.close()
+        try:
+            response_dict = json_parser.loads(content)
+        except:
+            self.errors['captcha'] = self.error_message
+            return False
+        if response_dict.get('success', False):
+            self.request_vars.captcha = ''
+            return True
+        else:
+            self.errors['captcha'] = self.error_message
+            return False
+
+    def xml(self):
+        api_uri = self.API_URI
+        hl = self.options.pop('hl', None)
+        if hl:
+            api_uri = self.API_URI + '?hl=%s' % hl
+        public_key = self.public_key
+        self.options['sitekey'] = public_key
+        captcha = DIV(
+            SCRIPT(_src=api_uri, _async='', _defer=''),
+            DIV(_class="g-recaptcha", data=self.options),
+            TAG.noscript(XML("""
+<div style="width: 302px; height: 352px;">
+<div style="width: 302px; height: 352px; position: relative;">
+  <div style="width: 302px; height: 352px; position: absolute;">
+    <iframe src="https://www.google.com/recaptcha/api/fallback?k=%(public_key)s"
+            frameborder="0" scrolling="no"
+            style="width: 302px; height:352px; border-style: none;">
+    </iframe>
+  </div>
+  <div style="width: 250px; height: 80px; position: absolute; border-style: none;
+              bottom: 21px; left: 25px; margin: 0px; padding: 0px; right: 25px;">
+    <textarea id="g-recaptcha-response" name="g-recaptcha-response"
+              class="g-recaptcha-response"
+              style="width: 250px; height: 80px; border: 1px solid #c1c1c1;
+                     margin: 0px; padding: 0px; resize: none;" value="">
+    </textarea>
+  </div>
+</div>
+</div>""" % dict(public_key=public_key))
+            )
+        )
+        if not self.errors.captcha:
+            return XML(captcha).xml()
+        else:
+            captcha.append(DIV(self.errors['captcha'], _class='error'))
+            return XML(captcha).xml()
+
+
+# this should only be used for captcha and perhaps not even for that
 def addrow(form, a, b, c, style, _id, position=-1):
     if style == "divs":
         form[0].insert(position, DIV(DIV(LABEL(a), _class='w2p_fl'),
@@ -987,6 +1122,15 @@ def addrow(form, a, b, c, style, _id, position=-1):
                                      DIV(b, SPAN(c, _class='inline-help'),
                                          _class='controls'),
                                      _class='control-group', _id=_id))
+    elif style == "bootstrap3_inline":
+        form[0].insert(position, DIV(LABEL(a, _class='control-label col-sm-3'),
+                                     DIV(b, SPAN(c, _class='help-block'),
+                                         _class='col-sm-9'),
+                                     _class='form-group', _id=_id))
+    elif style == "bootstrap3_stacked":
+        form[0].insert(position, DIV(LABEL(a, _class='control-label'),
+                                     b, SPAN(c, _class='help-block'),
+                                     _class='form-group', _id=_id))
     else:
         form[0].insert(position, TR(TD(LABEL(a), _class='w2p_fl'),
                                     TD(b, _class='w2p_fw'),
@@ -1330,8 +1474,7 @@ class Auth(object):
             logged_url=URL(controller, function, args='profile'),
             download_url=URL(controller, 'download'),
             mailer=(mailer is True) and Mail() or mailer,
-            on_failed_authorization =
-            URL(controller, function, args='not_authorized'),
+            on_failed_authorization = URL(controller, function, args='not_authorized'),
             login_next = url_index,
             login_onvalidation = [],
             login_onaccept = [],
@@ -1356,6 +1499,8 @@ class Auth(object):
             change_password_onvalidation = [],
             change_password_onaccept = [],
             retrieve_password_onvalidation = [],
+            request_reset_password_onvalidation = [],
+            request_reset_password_onaccept = [],
             reset_password_onvalidation = [],
             reset_password_onaccept = [],
             hmac_key = hmac_key,
@@ -2180,8 +2325,8 @@ class Auth(object):
             # user not in database try other login methods
             for login_method in self.settings.login_methods:
                 if login_method != self and login_method(username, password):
-                    self.user = username
-                    return username
+                    self.user = user
+                    return user
         return False
 
     def register_bare(self, **fields):
@@ -3030,6 +3175,12 @@ class Auth(object):
         except Exception:
             session.flash = self.messages.invalid_reset_password
             redirect(next, client_side=self.settings.client_side)
+
+        if onvalidation is DEFAULT:
+            onvalidation = self.settings.reset_password_onvalidation
+        if onaccept is DEFAULT:
+            onaccept = self.settings.reset_password_onaccept
+
         passfield = self.settings.password_field
         form = SQLFORM.factory(
             Field('new_password', 'password',
@@ -3045,7 +3196,7 @@ class Auth(object):
             formstyle=self.settings.formstyle,
             separator=self.settings.label_separator
         )
-        if form.accepts(request, session,
+        if form.accepts(request, session, onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
             user.update_record(
                 **{passfield: str(form.vars.new_password),
@@ -3054,6 +3205,7 @@ class Auth(object):
             session.flash = self.messages.password_changed
             if self.settings.login_after_password_change:
                 self.login_user(user)
+            callback(onaccept, form)
             redirect(next, client_side=self.settings.client_side)
         return form
 
@@ -3079,9 +3231,9 @@ class Auth(object):
             response.flash = self.messages.function_disabled
             return ''
         if onvalidation is DEFAULT:
-            onvalidation = self.settings.reset_password_onvalidation
+            onvalidation = self.settings.request_reset_password_onvalidation
         if onaccept is DEFAULT:
-            onaccept = self.settings.reset_password_onaccept
+            onaccept = self.settings.request_reset_password_onaccept
         if log is DEFAULT:
             log = self.messages['reset_password_log']
         userfield = self.settings.login_userfield or 'username' \
@@ -3571,7 +3723,7 @@ class Auth(object):
             return record.id
         else:
             id = membership.insert(group_id=group_id, user_id=user_id)
-        if role: 
+        if role:
             self.user_groups[group_id] = role
         else:
             self.update_groups()
@@ -5362,7 +5514,7 @@ class Expose(object):
         if current.request.raw_args:
             self.args = [arg for arg in current.request.raw_args.split('/') if arg]
         else:
-            self.args = [arg for arg in current.request.args if args]
+            self.args = [arg for arg in current.request.args if arg]
         filename = os.path.join(base, *self.args)
         if not os.path.exists(filename):
             raise HTTP(404, "FILE NOT FOUND")

@@ -1,0 +1,25 @@
+build: false
+
+environment:
+  matrix:
+    - PYTHON: "C:/Python27"
+      COVERAGE_PROCESS_START: gluon/tests/coverage.ini
+
+clone_depth: 50
+
+init:
+  - "ECHO %PYTHON%"
+  - set PATH=%PYTHON%;%PYTHON%\Scripts;%PATH%
+
+install:
+  - ps: Start-FileDownload https://bootstrap.pypa.io/get-pip.py
+  - python get-pip.py
+  - pip install codecov
+  - git submodule update --init --recursive
+
+test_script:
+  - python web2py.py --run_system_tests --with_coverage
+
+after_test:
+  - coverage combine
+  - codecov

@@ -586,12 +586,14 @@
         if(pre_call != undefined) {
           eval(pre_call);
         }
-        if(confirm_message != undefined) {
-          if(confirm_message == 'default') confirm_message = w2p_ajax_confirm_message || 'Are you sure you want to delete this object?';
-          if(!web2py.confirm(confirm_message)) {
-            web2py.stopEverything(e);
-            return;
-          }
+        if(confirm_message) {
+            if(confirm_message == 'default') 
+                confirm_message = w2p_ajax_confirm_message || 
+                    'Are you sure you want to delete this object?';
+            if(!web2py.confirm(confirm_message)) {
+                web2py.stopEverything(e);
+                return;
+            }
         }
         if(target == undefined) {
           if(method == 'GET') {

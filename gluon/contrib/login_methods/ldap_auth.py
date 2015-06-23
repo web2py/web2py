@@ -521,9 +521,19 @@ def ldap_auth(server='ldap', port=None,
                 logging.error(
                     'There is no username or email for %s!' % username)
                 raise
-            db_group_search = db((db.auth_membership.user_id == db_user_id) &
-                            (db.auth_user.id == db.auth_membership.user_id) &
-                            (db.auth_group.id == db.auth_membership.group_id))
+            # if old pydal version, assume this is a relational database which can do joins
+            db_can_join = db.can_join() if hasattr(db, 'can_join') else True
+            if db_can_join:
+                db_group_search = db(
+                    (db.auth_membership.user_id == db_user_id) &
+                    (db.auth_user.id == db.auth_membership.user_id) &
+                    (db.auth_group.id == db.auth_membership.group_id))
+            else:
+                # no joins on NoSQL databases, perform two queries
+                db_group_search = db(db.auth_membership.user_id == db_user_id)
+                group_ids = [x.group_id for x in db_group_search.select(
+                        db.auth_membership.group_id, distinct=True)]
+                db_group_search = db(db.auth_group.id.belongs(group_ids))
             db_groups_of_the_user = list()
             db_group_id = dict()
 

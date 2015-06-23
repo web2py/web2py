@@ -473,9 +473,14 @@ class CacheOnDisk(CacheAbstract):
         if item and ((dt is None) or (item[0] > now - dt)):
             value = item[1]
         else:
-            value = f()
+            try:
+                value = f()
+            except:
+                self.storage.release(CacheAbstract.cache_stats_name)
+                self.storage.release(key)
+                raise
             self.storage[key] = (now, value)
-            self.storage.safe_apply(CacheAbstract.cache_stats_name, inc_misses, 
+            self.storage.safe_apply(CacheAbstract.cache_stats_name, inc_misses,
                                     default_value={'hit_total': 0, 'misses': 0})
 
         self.storage.release(CacheAbstract.cache_stats_name)
