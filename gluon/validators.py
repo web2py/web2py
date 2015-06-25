@@ -200,8 +200,11 @@ class IS_MATCH(Validator):
         self.is_unicode = is_unicode
 
     def __call__(self, value):
-        if self.is_unicode and not isinstance(value, unicode):
-            match = self.regex.search(str(value).decode('utf8'))
+        if self.is_unicode:
+            if isinstance(value,unicode):
+                match = self.regex.search(value)
+            else:
+                match = self.regex.search(str(value).decode('utf8'))
         else:
             match = self.regex.search(str(value))
         if match is not None:
