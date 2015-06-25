@@ -1691,6 +1691,7 @@ class SQLFORM(FORM):
 
     AUTOTYPES = {
         type(''): ('string', None),
+        type(u''): ('string',None),
         type(True): ('boolean', None),
         type(1): ('integer', IS_INT_IN_RANGE(-1e12, +1e12)),
         type(1.0): ('double', IS_FLOAT_IN_RANGE()),
@@ -2111,10 +2112,8 @@ class SQLFORM(FORM):
         # - url has valid signature (vars are not signed, only path_info)
         # = url does not contain 'create','delete','edit' (readonly)
         if user_signature:
-            if not (
-                '/'.join(str(a) for a in args) == '/'.join(request.args) or
-                URL.verify(request, user_signature=user_signature,
-                           hash_vars=False) or
+            if not ('/'.join(map(str,args)) == '/'.join(map(str,request.args)) or
+                    URL.verify(request, user_signature=user_signature, hash_vars=False) or
                     (request.args(len(args)) == 'view' and not logged)):
                 session.flash = T('not authorized')
                 redirect(referrer)

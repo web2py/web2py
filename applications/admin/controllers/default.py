@@ -292,9 +292,6 @@ def site():
             log_progress(appname)
             session.flash = T(msg, dict(appname=appname,
                                         digest=md5_hash(installed)))
-        elif f and form_update.vars.overwrite:
-            msg = 'unable to install application "%(appname)s"'
-            session.flash = T(msg, dict(appname=form_update.vars.name))
         else:
             msg = 'unable to install application "%(appname)s"'
             session.flash = T(msg, dict(appname=form_update.vars.name))
@@ -867,13 +864,9 @@ def resolve():
 
     def getclass(item):
         """ Determine item class """
-
-        if item[0] == ' ':
-            return 'normal'
-        if item[0] == '+':
-            return 'plus'
-        if item[0] == '-':
-            return 'minus'
+        operators = {' ':'normal', '+':'plus', '-':'minus'}
+        
+        return operators[item[0]]
 
     if request.vars:
         c = '\n'.join([item[2:].rstrip() for (i, item) in enumerate(d) if item[0]
@@ -1510,7 +1503,7 @@ def upload_file():
         if filename:
             d = dict(filename=filename[len(path):])
         else:
-            d = dict(filename='unkown')
+            d = dict(filename='unknown')
         session.flash = T('cannot upload file "%(filename)s"', d)
 
     redirect(request.vars.sender)

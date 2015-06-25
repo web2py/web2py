@@ -220,7 +220,7 @@ def list_breakpoints():
     "Return a list of linenumbers for current breakpoints"
 
     breakpoints = []
-    ok = None
+    ok = False
     try:
         filename = os.path.join(request.env['applications_parent'],
                                 'applications', request.vars.filename)
@@ -235,5 +235,4 @@ def list_breakpoints():
         ok = True
     except Exception, e:
         session.flash = str(e)
-        ok = False
     return response.json({'ok': ok, 'breakpoints': breakpoints})
