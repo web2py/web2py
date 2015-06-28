@@ -1179,6 +1179,7 @@ class Auth(object):
         table_permission_name='auth_permission',
         table_event_name='auth_event',
         table_cas_name='auth_cas',
+        table_token_name='auth_token',
         table_user=None,
         table_group=None,
         table_membership=None,
@@ -1462,6 +1463,7 @@ class Auth(object):
         settings.update(Auth.default_settings)
         settings.update(
             cas_domains=[request.env.http_host],
+            api_tokens=False,
             cas_provider=cas_provider,
             cas_actions=dict(login='login',
                              validate='validate',
@@ -1564,6 +1566,9 @@ class Auth(object):
     def table_cas(self):
         return self.db[self.settings.table_cas_name]
 
+    def table_token(self):
+        return self.db[self.settings.table_token_name]
+
     def _HTTP(self, *a, **b):
         """
         only used in lambda: self._HTTP(404)
@@ -1591,7 +1596,8 @@ class Auth(object):
                        'retrieve_username', 'retrieve_password',
                        'reset_password', 'request_reset_password',
                        'change_password', 'profile', 'groups',
-                       'impersonate', 'not_authorized', 'confirm_registration', 'bulk_register'):
+                       'impersonate', 'not_authorized', 'confirm_registration', 
+                       'bulk_register','manage_tokens'):
             if len(request.args) >= 2 and args[0] == 'impersonate':
                 return getattr(self, args[0])(request.args[1])
             else:
@@ -1918,7 +1924,7 @@ class Auth(object):
                   writable=False, readable=False,
                   label=T('Modified By'),  ondelete=ondelete))
 
-    def define_tables(self, username=None, signature=None,
+    def define_tables(self, username=None, signature=None, api_tokens=False,
                       migrate=None, fake_migrate=None):
         """
         To be called unless tables are defined manually
@@ -1945,6 +1951,7 @@ class Auth(object):
             username = settings.use_username
         else:
             settings.use_username = username
+        settings.api_tokens = api_tokens
         if not self.signature:
             self.define_signature()
         if signature == True:
@@ -2127,6 +2134,21 @@ class Auth(object):
                     **dict(
                         migrate=self.__get_migrate(
                             settings.table_cas_name, migrate),
+                        fake_migrate=fake_migrate))
+        if settings.api_tokens:
+            extra_fields = settings.extra_fields.get(
+                settings.table_token_name, []) + signature_list
+            if not settings.table_token_name in db.tables:
+                db.define_table(
+                    settings.table_token_name,
+                    Field('user_id', reference_table_user, default=None,
+                          label=self.messages.label_user_id),
+                    Field('expires_on', 'datetime', default=datetime.datetime(2999,12,31)),
+                    Field('token',writable=False,default=web2py_uuid()),
+                    *extra_fields,
+                    **dict(
+                        migrate=self.__get_migrate(
+                            settings.table_token_name, migrate),
                         fake_migrate=fake_migrate))
         if not db._lazy_tables:
             settings.table_user = db[settings.table_user_name]
@@ -3267,6 +3289,18 @@ class Auth(object):
                        H4('Emails existing'),UL(*[A(x,_href='mailto:'+x) for x in emails_exist]))
         return form
 
+    def manage_tokens(self):
+        if not self.user:
+            redirect(self.settings.login_url)        
+        table_token =self.table_token()
+        table_token.user_id.writable = False
+        table_token.user_id.default = self.user.id
+        table_token.token.writable = False
+        if current.request.args(1) == 'new':
+            table_token.token.readable = False
+        form = SQLFORM.grid(table_token, args=['manage_tokens'])
+        return form
+
     def reset_password(self,
                        next=DEFAULT,
                        onvalidation=DEFAULT,
@@ -3730,6 +3764,13 @@ class Auth(object):
         """
         Decorator that prevents access to action if not logged in
         """
+        return self.requires(True, otherwise=otherwise)
+
+    def requires_login_or_token(self, otherwise=None):
+        if self.settings.api_tokens == True:
+            row = self.table_token()(token=current.request.vars.token)
+            if row:
+                self.login_user(self.table_user()(row.user_id))
         return self.requires(True, otherwise=otherwise)
 
     def requires_membership(self, role=None, group_id=None, otherwise=None):
