@@ -2145,7 +2145,7 @@ class Auth(object):
                     Field('user_id', reference_table_user, default=None,
                           label=self.messages.label_user_id),
                     Field('expires_on', 'datetime', default=datetime.datetime(2999,12,31)),
-                    Field('token',writable=False,default=web2py_uuid()),
+                    Field('token',writable=False,default=web2py_uuid(),unique=True),
                     *extra_fields,
                     **dict(
                         migrate=self.__get_migrate(
@@ -3773,9 +3773,22 @@ class Auth(object):
 
     def requires_login_or_token(self, otherwise=None):
         if self.settings.api_tokens == True:
-            row = self.table_token()(token=current.request.vars._token)
-            if row:
-                self.login_user(self.table_user()(row.user_id))
+            user = None
+            request = current.request
+            token = request.env.http_web2py_api_token or request.vars._token
+            table_token = self.table_token()
+            table_user = self.table_user()
+            from gluon.settings import global_settings
+            if global_settings.web2py_runtime_gae:
+                row = table_token(token=token)
+                if row:
+                    user = table_user(row.user_id)
+            else:
+                row = self.db(table_token.token==token)(table_user.id==table_token.user_id).select().first()
+                if row:
+                    user = row[table_user._tablename]
+            if user:
+                self.login_user(user)
         return self.requires(True, otherwise=otherwise)
 
     def requires_membership(self, role=None, group_id=None, otherwise=None):
