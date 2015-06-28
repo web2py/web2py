@@ -1247,6 +1247,8 @@ class Auth(object):
         retrieve_password_subject='Password retrieve',
         reset_password='Click on the link %(link)s to reset your password',
         reset_password_subject='Password reset',
+        bulk_invite_subject='Invitation to join%(site)s',
+        bulk_invite_body='You have been invited to join %(site)s, click %(link)s to complete the process',
         invalid_reset_password='Invalid reset password',
         profile_updated='Profile updated',
         new_password='New password',
@@ -1589,7 +1591,7 @@ class Auth(object):
                        'retrieve_username', 'retrieve_password',
                        'reset_password', 'request_reset_password',
                        'change_password', 'profile', 'groups',
-                       'impersonate', 'not_authorized'):
+                       'impersonate', 'not_authorized', 'confirm_registration', 'bulk_register'):
             if len(request.args) >= 2 and args[0] == 'impersonate':
                 return getattr(self, args[0])(request.args[1])
             else:
@@ -2335,14 +2337,16 @@ class Auth(object):
         and a raw password.
         """
         settings = self._get_login_settings()
-        if not fields.get(settings.passfield):
-            raise ValueError("register_bare: " +
-                             "password not provided or invalid")
-        elif not fields.get(settings.userfield):
+        # users can register_bare even if no password is provided, 
+        # in this case they will have to reset their password to login
+        if fields.get(settings.passfield):
+            fields[settings.passfield] = \
+                settings.table_user[settings.passfield].validate(fields[settings.passfield])[0]
+        if not fields.get(settings.userfield):
             raise ValueError("register_bare: " +
                              "userfield not provided or invalid")
-        fields[settings.passfield] = settings.table_user[settings.passfield].validate(fields[settings.passfield])[0]
-        user = self.get_or_create_user(fields, login=False, get=False, update_fields=self.settings.update_fields)
+        user = self.get_or_create_user(fields, login=False, get=False, 
+                                       update_fields=self.settings.update_fields)
         if not user:
             # get or create did not create a user (it ignores duplicate records)
             return False
@@ -3136,6 +3140,131 @@ class Auth(object):
                 next = replace_id(next, form)
             redirect(next)
         table_user.email.requires = old_requires
+        return form
+
+    def confirm_registration(
+        self,
+        next=DEFAULT,
+        onvalidation=DEFAULT,
+        onaccept=DEFAULT,
+        log=DEFAULT,
+        ):
+        """
+        Returns a form to confirm user registration
+        """
+
+        table_user = self.table_user()
+        request = current.request
+        # response = current.response
+        session = current.session
+
+        if next is DEFAULT:
+            next = self.get_vars_next() or self.settings.reset_password_next
+
+        if self.settings.prevent_password_reset_attacks:
+            key = request.vars.key
+            if not key and len(request.args)>1:
+                key = request.args[-1]
+            if key:
+                session._reset_password_key = key
+                redirect(self.url(args='confirm_registration'))
+            else:
+                key = session._reset_password_key
+        else:
+            key = request.vars.key or getarg(-1)
+        try:
+            t0 = int(key.split('-')[0])
+            if time.time() - t0 > 60 * 60 * 24:
+                raise Exception
+            user = table_user(reset_password_key=key)
+            if not user:
+                raise Exception
+        except Exception as e:
+            session.flash = self.messages.invalid_reset_password
+            redirect(self.url('login', vars=dict(test=e)))
+            redirect(next, client_side=self.settings.client_side)
+        passfield = self.settings.password_field
+        form = SQLFORM.factory(
+            Field('first_name',
+                  label='First Name',
+                  required=True),
+            Field('last_name',
+                  label='Last Name',
+                  required=True),
+            Field('new_password', 'password',
+                  label=self.messages.new_password,
+                  requires=self.table_user()[passfield].requires),
+            Field('new_password2', 'password',
+                  label=self.messages.verify_password,
+                  requires=[IS_EXPR(
+                        'value==%s' % repr(request.vars.new_password),
+                        self.messages.mismatched_password)]),
+            submit_button='Confirm Registration',
+            hidden=dict(_next=next),
+            formstyle=self.settings.formstyle,
+            separator=self.settings.label_separator
+        )
+        if form.process().accepted:
+            user.update_record(
+                **{passfield: str(form.vars.new_password),
+                   'first_name': str(form.vars.first_name),
+                   'last_name': str(form.vars.last_name),
+                   'registration_key': '',
+                   'reset_password_key': ''})
+            session.flash = self.messages.password_changed
+            if self.settings.login_after_password_change:
+                self.login_user(user)
+            redirect(next, client_side=self.settings.client_side)
+        return form
+
+    def email_registration(self, subject, body, user):
+        """
+        Sends and email invitation to a user informing they have been registered with the application
+        """
+        reset_password_key = str(int(time.time())) + '-' + web2py_uuid()
+        link = self.url(self.settings.function,
+                        args=('confirm_registration',), vars={'key': reset_password_key},
+                        scheme=True)
+        d = dict(user)
+        d.update(dict(key=reset_password_key, link=link, site=current.request.env.http_host))
+        if self.settings.mailer and self.settings.mailer.send(
+            to=user.email,
+            subject=subject % d,
+            message=body % d):
+            user.update_record(reset_password_key=reset_password_key)
+            return True
+        return False
+
+    def bulk_register(self):
+        """
+        Creates a form for ther user to send invites to other users to join
+        """
+        if not self.user:
+            redirect(self.settings.login_url)
+
+        form = SQLFORM.factory(
+            Field('subject','string',default=self.messages.bulk_invite_subject,requires=IS_NOT_EMPTY()),
+            Field('emails','text',requires=IS_NOT_EMPTY()),
+            Field('message','text',default=self.messages.bulk_invite_body,requires=IS_NOT_EMPTY()))
+
+        if form.process().accepted:
+            emails = re.compile('[^\s\'"@<>,;:]+\@[^\s\'"@<>,;:]+').findall(form.vars.emails)
+            # send the invitations            
+            emails_sent = []
+            emails_fail = []
+            emails_exist = []
+            for email in emails:
+                if self.table_user()(email=email):
+                    emails_exist.append(email)
+                else:
+                    user = self.register_bare(email=email)
+                    if self.email_registration(form.vars.subject, form.vars.message, user):
+                        emails_sent.append(email)
+                    else:
+                        emails_fail.append(email)
+            form = DIV(H4('Emails sent'),UL(*[A(x,_href='mailto:'+x) for x in emails_sent]),
+                       H4('Emails failed'),UL(*[A(x,_href='mailto:'+x) for x in emails_fail]),
+                       H4('Emails existing'),UL(*[A(x,_href='mailto:'+x) for x in emails_exist]))
         return form
 
     def reset_password(self,
