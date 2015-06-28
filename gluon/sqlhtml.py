@@ -1756,7 +1756,7 @@ class SQLFORM(FORM):
             keywords = keywords[0]
             request.vars.keywords = keywords
         key = keywords.strip()
-        if not '"' in key:
+        if key and not '"' in key:
             SEARCHABLE_TYPES = ('string', 'text', 'list:string')
             sfields = [field for field in fields if field.type in SEARCHABLE_TYPES]
             if settings.global_settings.web2py_runtime_gae:
