@@ -211,7 +211,7 @@ def select():
 
     if is_imap:
         step = 3
- 
+
     stop = start + step
 
     table = None
@@ -226,17 +226,26 @@ def select():
                 orderby = '~' + orderby
     session.last_orderby = orderby
     session.last_query = request.vars.query
-    form = FORM(TABLE(TR(T('Query:'), '', INPUT(_style='width:400px',
-                _name='query', _value=request.vars.query or '',
-                requires=IS_NOT_EMPTY(
-                    error_message=T("Cannot be empty")))), TR(T('Update:'),
-                INPUT(_name='update_check', _type='checkbox',
-                value=False), INPUT(_style='width:400px',
-                _name='update_fields', _value=request.vars.update_fields
-                                    or '')), TR(T('Delete:'), INPUT(_name='delete_check',
-                _class='delete', _type='checkbox', value=False), ''),
-                TR('', '', INPUT(_type='submit', _value=T('submit')))),
-                _action=URL(r=request, args=request.args))
+    form = FORM(
+        DIV(
+            LABEL(T('Query'), _for='query'),
+            INPUT(_name='query', _id='query', _value=request.vars.query or '', _class='form-control',
+                  requires=IS_NOT_EMPTY(error_message=T("Cannot be empty"))),
+            _class='form-group'),
+        DIV(
+            DIV(
+                LABEL(
+                    INPUT(_name='update_check', _type='checkbox', value=False), T('Update')
+                ), _class="checkbox"),
+            INPUT(_name='update_fields', _value=request.vars.update_fields or '', _class='form-control'),
+            _class='form-group'),
+        DIV(
+            LABEL(
+                INPUT(_name='delete_check', _class='delete', _type='checkbox', value=False), T('Delete')
+            ),
+            _class='checkbox text-danger'),
+        INPUT(_type='submit', _value=T('submit')),
+        _action=URL(r=request, args=request.args))
 
     tb = None
     if form.accepts(request.vars, formname=None):
@@ -274,9 +283,9 @@ def select():
     # begin handle upload csv
     csv_table = table or request.vars.table
     if csv_table:
-        formcsv = FORM(str(T('or import from csv file')) + " ",
-                       INPUT(_type='file', _name='csvfile'),
-                       INPUT(_type='hidden', _value=csv_table, _name='table'),
+        formcsv = FORM(LABEL(T('import from csv file'), _for="csvfile") + " ",
+                       DIV(INPUT(_type='file', _name='csvfile', _id="csvfile"), _class="form-group"),
+                       DIV(INPUT(_type='hidden', _value=csv_table, _name='table'), _class="form-group"),
                        INPUT(_type='submit', _value=T('import')))
     else:
         formcsv = None
@@ -365,12 +374,12 @@ def ccache():
         cache.disk.initialize()
 
         form = FORM(
-            P(TAG.BUTTON(
-                T("Clear CACHE?"), _type="submit", _name="yes", _value="yes")),
-            P(TAG.BUTTON(
-                T("Clear RAM"), _type="submit", _name="ram", _value="ram")),
-            P(TAG.BUTTON(
-                T("Clear DISK"), _type="submit", _name="disk", _value="disk")),
+            TAG.BUTTON(
+                T("Clear CACHE?"), _type="submit", _name="yes", _value="yes"),
+            TAG.BUTTON(
+                T("Clear RAM"), _type="submit", _name="ram", _value="ram"),
+            TAG.BUTTON(
+                T("Clear DISK"), _type="submit", _name="disk", _value="disk"),
         )
 
     if form.accepts(request.vars, session):
