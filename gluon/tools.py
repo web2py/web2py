@@ -3768,7 +3768,7 @@ class Auth(object):
 
     def requires_login_or_token(self, otherwise=None):
         if self.settings.api_tokens == True:
-            row = self.table_token()(token=current.request.vars.token)
+            row = self.table_token()(token=current.request.vars._token)
             if row:
                 self.login_user(self.table_user()(row.user_id))
         return self.requires(True, otherwise=otherwise)
