@@ -1146,6 +1146,7 @@ class Auth(object):
         reset_password_requires_verification=False,
         registration_requires_verification=False,
         registration_requires_approval=False,
+        bulk_register_enabled=False,
         login_after_registration=False,
         login_after_password_change=True,
         alternate_requires_registration=False,
@@ -3257,17 +3258,22 @@ class Auth(object):
             return True
         return False
 
-    def bulk_register(self):
+    def bulk_register(self, max_emails=100):
         """
         Creates a form for ther user to send invites to other users to join
         """
         if not self.user:
             redirect(self.settings.login_url)
+        if (not self.setting.bulk_register_enabled and
+            (self.settings.registration_requires_approval or
+             'register' in self.settings.actions_disabled)):
+            return HTTP(404)
 
         form = SQLFORM.factory(
             Field('subject','string',default=self.messages.bulk_invite_subject,requires=IS_NOT_EMPTY()),
             Field('emails','text',requires=IS_NOT_EMPTY()),
-            Field('message','text',default=self.messages.bulk_invite_body,requires=IS_NOT_EMPTY()))
+            Field('message','text',default=self.messages.bulk_invite_body,requires=IS_NOT_EMPTY()),
+            formstyle=self.settings.formstyle)
 
         if form.process().accepted:
             emails = re.compile('[^\s\'"@<>,;:]+\@[^\s\'"@<>,;:]+').findall(form.vars.emails)
@@ -3275,7 +3281,7 @@ class Auth(object):
             emails_sent = []
             emails_fail = []
             emails_exist = []
-            for email in emails:
+            for email in emails[:max_emails]:
                 if self.table_user()(email=email):
                     emails_exist.append(email)
                 else:
@@ -3284,6 +3290,7 @@ class Auth(object):
                         emails_sent.append(email)
                     else:
                         emails_fail.append(email)
+            emails_fail += emails[max_emails:]
             form = DIV(H4('Emails sent'),UL(*[A(x,_href='mailto:'+x) for x in emails_sent]),
                        H4('Emails failed'),UL(*[A(x,_href='mailto:'+x) for x in emails_fail]),
                        H4('Emails existing'),UL(*[A(x,_href='mailto:'+x) for x in emails_exist]))
