@@ -1464,7 +1464,7 @@ class Auth(object):
         settings.update(Auth.default_settings)
         settings.update(
             cas_domains=[request.env.http_host],
-            api_tokens=False,
+            enable_tokens=False,
             cas_provider=cas_provider,
             cas_actions=dict(login='login',
                              validate='validate',
@@ -1925,7 +1925,7 @@ class Auth(object):
                   writable=False, readable=False,
                   label=T('Modified By'),  ondelete=ondelete))
 
-    def define_tables(self, username=None, signature=None, api_tokens=False,
+    def define_tables(self, username=None, signature=None, enable_tokens=False,
                       migrate=None, fake_migrate=None):
         """
         To be called unless tables are defined manually
@@ -1952,7 +1952,7 @@ class Auth(object):
             username = settings.use_username
         else:
             settings.use_username = username
-        settings.api_tokens = api_tokens
+        settings.enable_tokens = enable_tokens
         if not self.signature:
             self.define_signature()
         if signature == True:
@@ -2136,7 +2136,7 @@ class Auth(object):
                         migrate=self.__get_migrate(
                             settings.table_cas_name, migrate),
                         fake_migrate=fake_migrate))
-        if settings.api_tokens:
+        if settings.enable_tokens:
             extra_fields = settings.extra_fields.get(
                 settings.table_token_name, []) + signature_list
             if not settings.table_token_name in db.tables:
@@ -3772,10 +3772,10 @@ class Auth(object):
         return self.requires(True, otherwise=otherwise)
 
     def requires_login_or_token(self, otherwise=None):
-        if self.settings.api_tokens == True:
+        if self.settings.enable_tokens == True:
             user = None
             request = current.request
-            token = request.env.http_web2py_api_token or request.vars._token
+            token = request.env.http_web2py_user_token or request.vars._token
             table_token = self.table_token()
             table_user = self.table_user()
             from gluon.settings import global_settings
