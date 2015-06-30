@@ -395,6 +395,35 @@ def pack_custom():
     return locals()
 
 
+def pack_exe():
+    import urllib
+    import zipfile
+    from cStringIO import StringIO
+    app = get_app()
+    base = apath(app, r=request)
+    # Download latest web2py_win and open it with zipfile
+    download_url = 'http://www.web2py.com/examples/static/web2py_win.zip'
+    out = StringIO()
+    out.write(urllib.urlopen(download_url).read())
+    web2py_win = zipfile.ZipFile(out, mode='a')
+    # Write routes.py with the application as default
+    routes = u'# -*- coding: utf-8 -*-\nrouters = dict(BASE=dict(default_application="%s"))' % app
+    web2py_win.writestr('web2py/routes.py', routes.encode('utf-8'))
+    # Copy the application into the zipfile
+    common_root = os.path.dirname(base)
+    for root, dirs, files in os.walk(base, topdown=True):
+        dirs[:] = [d for d in dirs if d not in ['cache', 'sessions', 'errors']]
+        for filename in files:
+            fname = os.path.join(root, filename)
+            arcname = os.path.join('web2py/applications', os.path.relpath(root, common_root), filename)
+            web2py_win.write(fname, arcname)
+    web2py_win.close()
+    response.headers['Content-Type'] = 'application/zip'
+    response.headers['Content-Disposition'] = 'attachment; filename=web2py.app.%s.zip' % app
+    out.seek(0)
+    return response.stream(out)
+
+
 def upgrade_web2py():
     dialog = FORM.confirm(T('Upgrade'),
                           {T('Cancel'): URL('site')})
