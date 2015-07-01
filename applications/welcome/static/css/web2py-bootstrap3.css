@@ -24,7 +24,9 @@ div.flash.alert:hover {
 .ie-lte8 div.flash:hover {
     filter: alpha(opacity=25);
 }
-
+.main-container {
+    margin-top: 20px;
+}
 
 div.error {
     width: auto;
@@ -283,6 +285,7 @@ li.w2p_grid_breadcrumb_elem {
 .web2py_console .form-control {
     width: 20%;
     display: inline;
+    height: 100%;
 }
 .web2py_console #w2p_keywords {
     width: 50%;

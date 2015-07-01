@@ -62,7 +62,7 @@ do_start()
         start-stop-daemon --stop --test --quiet --pidfile $PIDFILE \
                 && return 1
 
-        start-stop-daemon --start --quiet --pidfile $PIDFILE \
+        start-stop-daemon --start --quiet -m --pidfile $PIDFILE \
                 ${DAEMON_USER:+--chuid $DAEMON_USER} --chdir $DAEMON_DIR \
                 --background --exec $DAEMON -- $DAEMON_ARGS \
                 || return 2

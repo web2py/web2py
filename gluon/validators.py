@@ -200,8 +200,11 @@ class IS_MATCH(Validator):
         self.is_unicode = is_unicode
 
     def __call__(self, value):
-        if self.is_unicode and not isinstance(value, unicode):
-            match = self.regex.search(str(value).decode('utf8'))
+        if self.is_unicode:
+            if isinstance(value,unicode):
+                match = self.regex.search(value)
+            else:
+                match = self.regex.search(str(value).decode('utf8'))
         else:
             match = self.regex.search(str(value))
         if match is not None:
@@ -611,7 +614,7 @@ class IS_IN_DB(Validator):
 
                 def count(values, s=self.dbset, f=field):
                     return s(f.belongs(map(int, values))).count()
-                if isinstance(self.dbset.db._adapter, GoogleDatastoreAdapter):
+                if GoogleDatastoreAdapter is not None and isinstance(self.dbset.db._adapter, GoogleDatastoreAdapter):
                     range_ids = range(0, len(values), 30)
                     total = sum(count(values[i:i + 30]) for i in range_ids)
                     if total == len(values):

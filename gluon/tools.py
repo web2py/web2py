@@ -60,7 +60,7 @@ except ImportError:
         # fallback to pure-Python module
         import gluon.contrib.simplejson as json_parser
 
-__all__ = ['Mail', 'Auth', 'Recaptcha', 'Crud', 'Service', 'Wiki',
+__all__ = ['Mail', 'Auth', 'Recaptcha', 'Recaptcha2', 'Crud', 'Service', 'Wiki',
            'PluginManager', 'fetch', 'geocode', 'reverse_geocode', 'prettydate']
 
 ### mind there are two loggers here (logger and crud.settings.logger)!
@@ -767,8 +767,8 @@ class Mail(object):
             if self.settings.server == 'logging':
                 logger.warn('email not sent\n%s\nFrom: %s\nTo: %s\nSubject: %s\n\n%s\n%s\n' %
                             ('-' * 40, sender,
-                             ', '.join(to), subject,
-                             text or html, '-' * 40))
+                                ', '.join(to), subject,
+                                text or html, '-' * 40))
             elif self.settings.server == 'gae':
                 xcc = dict()
                 if cc:
@@ -779,23 +779,23 @@ class Mail(object):
                     xcc['reply_to'] = reply_to
                 from google.appengine.api import mail
                 attachments = attachments and [mail.Attachment(
-                        a.my_filename, 
+                        a.my_filename,
                         a.my_payload,
                         contebt_id='<attachment-%s>' % k
                         ) for k,a in enumerate(attachments) if not raw]
                 if attachments:
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=subject, body=text, html=html,
+                        subject=unicode(subject), body=unicode(text), html=html,
                         attachments=attachments, **xcc)
                 elif html and (not raw):
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=subject, body=text, html=html, **xcc)
+                        subject=unicode(subject), body=unicode(text), html=html, **xcc)
                 else:
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=subject, body=text, **xcc)
+                        subject=unicode(subject), body=unicode(text), **xcc)
             else:
                 smtp_args = self.settings.server.split(':')
                 kwargs = dict(timeout=self.settings.timeout)
@@ -965,7 +965,142 @@ class Recaptcha(DIV):
             return XML(captcha).xml()
 
 
-# this should only be used for catcha and perhaps not even for that
+class Recaptcha2(DIV):
+    """
+    Experimental:
+    Creates a DIV holding the newer Recaptcha from Google (v2)
+
+    Args:
+        request : the request. If not passed, uses current request
+        public_key : the public key Google gave you
+        private_key : the private key Google gave you
+        error_message : the error message to show if verification fails
+        label : the label to use
+        options (dict) : takes these parameters
+
+            - hl
+            - theme
+            - type
+            - tabindex
+            - callback
+            - expired-callback
+
+            see https://developers.google.com/recaptcha/docs/display for docs about those
+
+        comment : the comment
+
+    Examples:
+        Use as::
+
+            form = FORM(Recaptcha2(public_key='...',private_key='...'))
+
+        or::
+
+            form = SQLFORM(...)
+            form.append(Recaptcha2(public_key='...',private_key='...'))
+
+        to protect the login page instead, use::
+
+            from gluon.tools import Recaptcha2
+            auth.settings.captcha = Recaptcha2(request, public_key='...',private_key='...')
+
+    """
+
+    API_URI = 'https://www.google.com/recaptcha/api.js'
+    VERIFY_SERVER = 'https://www.google.com/recaptcha/api/siteverify'
+
+    def __init__(self,
+                 request=None,
+                 public_key='',
+                 private_key='',
+                 error_message='invalid',
+                 label='Verify:',
+                 options=None,
+                 comment='',
+                 ):
+        request = request or current.request
+        self.request_vars = request and request.vars or current.request.vars
+        self.remote_addr = request.env.remote_addr
+        self.public_key = public_key
+        self.private_key = private_key
+        self.errors = Storage()
+        self.error_message = error_message
+        self.components = []
+        self.attributes = {}
+        self.label = label
+        self.options = options or {}
+        self.comment = comment
+
+    def _validate(self):
+        recaptcha_response_field = self.request_vars.pop('g-recaptcha-response', None)
+        remoteip = self.remote_addr
+        if not recaptcha_response_field:
+            self.errors['captcha'] = self.error_message
+            return False
+        params = urllib.urlencode({
+            'secret': self.private_key,
+            'remoteip': remoteip,
+            'response': recaptcha_response_field,
+        })
+        request = urllib2.Request(
+            url=self.VERIFY_SERVER,
+            data=params,
+            headers={'Content-type': 'application/x-www-form-urlencoded',
+                     'User-agent': 'reCAPTCHA Python'})
+        httpresp = urllib2.urlopen(request)
+        content = httpresp.read()
+        httpresp.close()
+        try:
+            response_dict = json_parser.loads(content)
+        except:
+            self.errors['captcha'] = self.error_message
+            return False
+        if response_dict.get('success', False):
+            self.request_vars.captcha = ''
+            return True
+        else:
+            self.errors['captcha'] = self.error_message
+            return False
+
+    def xml(self):
+        api_uri = self.API_URI
+        hl = self.options.pop('hl', None)
+        if hl:
+            api_uri = self.API_URI + '?hl=%s' % hl
+        public_key = self.public_key
+        self.options['sitekey'] = public_key
+        captcha = DIV(
+            SCRIPT(_src=api_uri, _async='', _defer=''),
+            DIV(_class="g-recaptcha", data=self.options),
+            TAG.noscript(XML("""
+<div style="width: 302px; height: 352px;">
+<div style="width: 302px; height: 352px; position: relative;">
+  <div style="width: 302px; height: 352px; position: absolute;">
+    <iframe src="https://www.google.com/recaptcha/api/fallback?k=%(public_key)s"
+            frameborder="0" scrolling="no"
+            style="width: 302px; height:352px; border-style: none;">
+    </iframe>
+  </div>
+  <div style="width: 250px; height: 80px; position: absolute; border-style: none;
+              bottom: 21px; left: 25px; margin: 0px; padding: 0px; right: 25px;">
+    <textarea id="g-recaptcha-response" name="g-recaptcha-response"
+              class="g-recaptcha-response"
+              style="width: 250px; height: 80px; border: 1px solid #c1c1c1;
+                     margin: 0px; padding: 0px; resize: none;" value="">
+    </textarea>
+  </div>
+</div>
+</div>""" % dict(public_key=public_key))
+            )
+        )
+        if not self.errors.captcha:
+            return XML(captcha).xml()
+        else:
+            captcha.append(DIV(self.errors['captcha'], _class='error'))
+            return XML(captcha).xml()
+
+
+# this should only be used for captcha and perhaps not even for that
 def addrow(form, a, b, c, style, _id, position=-1):
     if style == "divs":
         form[0].insert(position, DIV(DIV(LABEL(a), _class='w2p_fl'),
@@ -987,6 +1122,15 @@ def addrow(form, a, b, c, style, _id, position=-1):
                                      DIV(b, SPAN(c, _class='inline-help'),
                                          _class='controls'),
                                      _class='control-group', _id=_id))
+    elif style == "bootstrap3_inline":
+        form[0].insert(position, DIV(LABEL(a, _class='control-label col-sm-3'),
+                                     DIV(b, SPAN(c, _class='help-block'),
+                                         _class='col-sm-9'),
+                                     _class='form-group', _id=_id))
+    elif style == "bootstrap3_stacked":
+        form[0].insert(position, DIV(LABEL(a, _class='control-label'),
+                                     b, SPAN(c, _class='help-block'),
+                                     _class='form-group', _id=_id))
     else:
         form[0].insert(position, TR(TD(LABEL(a), _class='w2p_fl'),
                                     TD(b, _class='w2p_fw'),
@@ -1002,6 +1146,7 @@ class Auth(object):
         reset_password_requires_verification=False,
         registration_requires_verification=False,
         registration_requires_approval=False,
+        bulk_register_enabled=False,
         login_after_registration=False,
         login_after_password_change=True,
         alternate_requires_registration=False,
@@ -1035,6 +1180,7 @@ class Auth(object):
         table_permission_name='auth_permission',
         table_event_name='auth_event',
         table_cas_name='auth_cas',
+        table_token_name='auth_token',
         table_user=None,
         table_group=None,
         table_membership=None,
@@ -1103,6 +1249,8 @@ class Auth(object):
         retrieve_password_subject='Password retrieve',
         reset_password='Click on the link %(link)s to reset your password',
         reset_password_subject='Password reset',
+        bulk_invite_subject='Invitation to join%(site)s',
+        bulk_invite_body='You have been invited to join %(site)s, click %(link)s to complete the process',
         invalid_reset_password='Invalid reset password',
         profile_updated='Profile updated',
         new_password='New password',
@@ -1316,6 +1464,7 @@ class Auth(object):
         settings.update(Auth.default_settings)
         settings.update(
             cas_domains=[request.env.http_host],
+            enable_tokens=False,
             cas_provider=cas_provider,
             cas_actions=dict(login='login',
                              validate='validate',
@@ -1330,8 +1479,7 @@ class Auth(object):
             logged_url=URL(controller, function, args='profile'),
             download_url=URL(controller, 'download'),
             mailer=(mailer is True) and Mail() or mailer,
-            on_failed_authorization =
-            URL(controller, function, args='not_authorized'),
+            on_failed_authorization = URL(controller, function, args='not_authorized'),
             login_next = url_index,
             login_onvalidation = [],
             login_onaccept = [],
@@ -1356,6 +1504,8 @@ class Auth(object):
             change_password_onvalidation = [],
             change_password_onaccept = [],
             retrieve_password_onvalidation = [],
+            request_reset_password_onvalidation = [],
+            request_reset_password_onaccept = [],
             reset_password_onvalidation = [],
             reset_password_onaccept = [],
             hmac_key = hmac_key,
@@ -1417,6 +1567,9 @@ class Auth(object):
     def table_cas(self):
         return self.db[self.settings.table_cas_name]
 
+    def table_token(self):
+        return self.db[self.settings.table_token_name]
+
     def _HTTP(self, *a, **b):
         """
         only used in lambda: self._HTTP(404)
@@ -1444,7 +1597,8 @@ class Auth(object):
                        'retrieve_username', 'retrieve_password',
                        'reset_password', 'request_reset_password',
                        'change_password', 'profile', 'groups',
-                       'impersonate', 'not_authorized'):
+                       'impersonate', 'not_authorized', 'confirm_registration', 
+                       'bulk_register','manage_tokens'):
             if len(request.args) >= 2 and args[0] == 'impersonate':
                 return getattr(self, args[0])(request.args[1])
             else:
@@ -1771,7 +1925,7 @@ class Auth(object):
                   writable=False, readable=False,
                   label=T('Modified By'),  ondelete=ondelete))
 
-    def define_tables(self, username=None, signature=None,
+    def define_tables(self, username=None, signature=None, enable_tokens=False,
                       migrate=None, fake_migrate=None):
         """
         To be called unless tables are defined manually
@@ -1798,6 +1952,7 @@ class Auth(object):
             username = settings.use_username
         else:
             settings.use_username = username
+        settings.enable_tokens = enable_tokens
         if not self.signature:
             self.define_signature()
         if signature == True:
@@ -1980,6 +2135,21 @@ class Auth(object):
                     **dict(
                         migrate=self.__get_migrate(
                             settings.table_cas_name, migrate),
+                        fake_migrate=fake_migrate))
+        if settings.enable_tokens:
+            extra_fields = settings.extra_fields.get(
+                settings.table_token_name, []) + signature_list
+            if not settings.table_token_name in db.tables:
+                db.define_table(
+                    settings.table_token_name,
+                    Field('user_id', reference_table_user, default=None,
+                          label=self.messages.label_user_id),
+                    Field('expires_on', 'datetime', default=datetime.datetime(2999,12,31)),
+                    Field('token',writable=False,default=web2py_uuid(),unique=True),
+                    *extra_fields,
+                    **dict(
+                        migrate=self.__get_migrate(
+                            settings.table_token_name, migrate),
                         fake_migrate=fake_migrate))
         if not db._lazy_tables:
             settings.table_user = db[settings.table_user_name]
@@ -2180,8 +2350,8 @@ class Auth(object):
             # user not in database try other login methods
             for login_method in self.settings.login_methods:
                 if login_method != self and login_method(username, password):
-                    self.user = username
-                    return username
+                    self.user = user
+                    return user
         return False
 
     def register_bare(self, **fields):
@@ -2190,14 +2360,16 @@ class Auth(object):
         and a raw password.
         """
         settings = self._get_login_settings()
-        if not fields.get(settings.passfield):
-            raise ValueError("register_bare: " +
-                             "password not provided or invalid")
-        elif not fields.get(settings.userfield):
+        # users can register_bare even if no password is provided, 
+        # in this case they will have to reset their password to login
+        if fields.get(settings.passfield):
+            fields[settings.passfield] = \
+                settings.table_user[settings.passfield].validate(fields[settings.passfield])[0]
+        if not fields.get(settings.userfield):
             raise ValueError("register_bare: " +
                              "userfield not provided or invalid")
-        fields[settings.passfield] = settings.table_user[settings.passfield].validate(fields[settings.passfield])[0]
-        user = self.get_or_create_user(fields, login=False, get=False, update_fields=self.settings.update_fields)
+        user = self.get_or_create_user(fields, login=False, get=False, 
+                                       update_fields=self.settings.update_fields)
         if not user:
             # get or create did not create a user (it ignores duplicate records)
             return False
@@ -2993,6 +3165,147 @@ class Auth(object):
         table_user.email.requires = old_requires
         return form
 
+    def confirm_registration(
+        self,
+        next=DEFAULT,
+        onvalidation=DEFAULT,
+        onaccept=DEFAULT,
+        log=DEFAULT,
+        ):
+        """
+        Returns a form to confirm user registration
+        """
+
+        table_user = self.table_user()
+        request = current.request
+        # response = current.response
+        session = current.session
+
+        if next is DEFAULT:
+            next = self.get_vars_next() or self.settings.reset_password_next
+
+        if self.settings.prevent_password_reset_attacks:
+            key = request.vars.key
+            if not key and len(request.args)>1:
+                key = request.args[-1]
+            if key:
+                session._reset_password_key = key
+                redirect(self.url(args='confirm_registration'))
+            else:
+                key = session._reset_password_key
+        else:
+            key = request.vars.key or getarg(-1)
+        try:
+            t0 = int(key.split('-')[0])
+            if time.time() - t0 > 60 * 60 * 24:
+                raise Exception
+            user = table_user(reset_password_key=key)
+            if not user:
+                raise Exception
+        except Exception as e:
+            session.flash = self.messages.invalid_reset_password
+            redirect(self.url('login', vars=dict(test=e)))
+            redirect(next, client_side=self.settings.client_side)
+        passfield = self.settings.password_field
+        form = SQLFORM.factory(
+            Field('first_name',
+                  label='First Name',
+                  required=True),
+            Field('last_name',
+                  label='Last Name',
+                  required=True),
+            Field('new_password', 'password',
+                  label=self.messages.new_password,
+                  requires=self.table_user()[passfield].requires),
+            Field('new_password2', 'password',
+                  label=self.messages.verify_password,
+                  requires=[IS_EXPR(
+                        'value==%s' % repr(request.vars.new_password),
+                        self.messages.mismatched_password)]),
+            submit_button='Confirm Registration',
+            hidden=dict(_next=next),
+            formstyle=self.settings.formstyle,
+            separator=self.settings.label_separator
+        )
+        if form.process().accepted:
+            user.update_record(
+                **{passfield: str(form.vars.new_password),
+                   'first_name': str(form.vars.first_name),
+                   'last_name': str(form.vars.last_name),
+                   'registration_key': '',
+                   'reset_password_key': ''})
+            session.flash = self.messages.password_changed
+            if self.settings.login_after_password_change:
+                self.login_user(user)
+            redirect(next, client_side=self.settings.client_side)
+        return form
+
+    def email_registration(self, subject, body, user):
+        """
+        Sends and email invitation to a user informing they have been registered with the application
+        """
+        reset_password_key = str(int(time.time())) + '-' + web2py_uuid()
+        link = self.url(self.settings.function,
+                        args=('confirm_registration',), vars={'key': reset_password_key},
+                        scheme=True)
+        d = dict(user)
+        d.update(dict(key=reset_password_key, link=link, site=current.request.env.http_host))
+        if self.settings.mailer and self.settings.mailer.send(
+            to=user.email,
+            subject=subject % d,
+            message=body % d):
+            user.update_record(reset_password_key=reset_password_key)
+            return True
+        return False
+
+    def bulk_register(self, max_emails=100):
+        """
+        Creates a form for ther user to send invites to other users to join
+        """
+        if not self.user:
+            redirect(self.settings.login_url)
+        if not self.setting.bulk_register_enabled:
+            return HTTP(404)
+
+        form = SQLFORM.factory(
+            Field('subject','string',default=self.messages.bulk_invite_subject,requires=IS_NOT_EMPTY()),
+            Field('emails','text',requires=IS_NOT_EMPTY()),
+            Field('message','text',default=self.messages.bulk_invite_body,requires=IS_NOT_EMPTY()),
+            formstyle=self.settings.formstyle)
+
+        if form.process().accepted:
+            emails = re.compile('[^\s\'"@<>,;:]+\@[^\s\'"@<>,;:]+').findall(form.vars.emails)
+            # send the invitations            
+            emails_sent = []
+            emails_fail = []
+            emails_exist = []
+            for email in emails[:max_emails]:
+                if self.table_user()(email=email):
+                    emails_exist.append(email)
+                else:
+                    user = self.register_bare(email=email)
+                    if self.email_registration(form.vars.subject, form.vars.message, user):
+                        emails_sent.append(email)
+                    else:
+                        emails_fail.append(email)
+            emails_fail += emails[max_emails:]
+            form = DIV(H4('Emails sent'),UL(*[A(x,_href='mailto:'+x) for x in emails_sent]),
+                       H4('Emails failed'),UL(*[A(x,_href='mailto:'+x) for x in emails_fail]),
+                       H4('Emails existing'),UL(*[A(x,_href='mailto:'+x) for x in emails_exist]))
+        return form
+
+    def manage_tokens(self):
+        if not self.user:
+            redirect(self.settings.login_url)        
+        table_token =self.table_token()
+        table_token.user_id.writable = False
+        table_token.user_id.default = self.user.id
+        table_token.token.writable = False
+        if current.request.args(1) == 'new':
+            table_token.token.readable = False
+        form = SQLFORM.grid(table_token, args=['manage_tokens'])
+        return form
+
     def reset_password(self,
                        next=DEFAULT,
                        onvalidation=DEFAULT,
@@ -3030,6 +3343,12 @@ class Auth(object):
         except Exception:
             session.flash = self.messages.invalid_reset_password
             redirect(next, client_side=self.settings.client_side)
+
+        if onvalidation is DEFAULT:
+            onvalidation = self.settings.reset_password_onvalidation
+        if onaccept is DEFAULT:
+            onaccept = self.settings.reset_password_onaccept
+
         passfield = self.settings.password_field
         form = SQLFORM.factory(
             Field('new_password', 'password',
@@ -3045,7 +3364,7 @@ class Auth(object):
             formstyle=self.settings.formstyle,
             separator=self.settings.label_separator
         )
-        if form.accepts(request, session,
+        if form.accepts(request, session, onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
             user.update_record(
                 **{passfield: str(form.vars.new_password),
@@ -3054,6 +3373,7 @@ class Auth(object):
             session.flash = self.messages.password_changed
             if self.settings.login_after_password_change:
                 self.login_user(user)
+            callback(onaccept, form)
             redirect(next, client_side=self.settings.client_side)
         return form
 
@@ -3079,9 +3399,9 @@ class Auth(object):
             response.flash = self.messages.function_disabled
             return ''
         if onvalidation is DEFAULT:
-            onvalidation = self.settings.reset_password_onvalidation
+            onvalidation = self.settings.request_reset_password_onvalidation
         if onaccept is DEFAULT:
-            onaccept = self.settings.reset_password_onaccept
+            onaccept = self.settings.request_reset_password_onaccept
         if log is DEFAULT:
             log = self.messages['reset_password_log']
         userfield = self.settings.login_userfield or 'username' \
@@ -3451,6 +3771,26 @@ class Auth(object):
         """
         return self.requires(True, otherwise=otherwise)
 
+    def requires_login_or_token(self, otherwise=None):
+        if self.settings.enable_tokens == True:
+            user = None
+            request = current.request
+            token = request.env.http_web2py_user_token or request.vars._token
+            table_token = self.table_token()
+            table_user = self.table_user()
+            from gluon.settings import global_settings
+            if global_settings.web2py_runtime_gae:
+                row = table_token(token=token)
+                if row:
+                    user = table_user(row.user_id)
+            else:
+                row = self.db(table_token.token==token)(table_user.id==table_token.user_id).select().first()
+                if row:
+                    user = row[table_user._tablename]
+            if user:
+                self.login_user(user)
+        return self.requires(True, otherwise=otherwise)
+
     def requires_membership(self, role=None, group_id=None, otherwise=None):
         """
         Decorator that prevents access to action if not logged in or
@@ -3571,7 +3911,7 @@ class Auth(object):
             return record.id
         else:
             id = membership.insert(group_id=group_id, user_id=user_id)
-        if role: 
+        if role:
             self.user_groups[group_id] = role
         else:
             self.update_groups()
@@ -5362,7 +5702,7 @@ class Expose(object):
         if current.request.raw_args:
             self.args = [arg for arg in current.request.raw_args.split('/') if arg]
         else:
-            self.args = [arg for arg in current.request.args if args]
+            self.args = [arg for arg in current.request.args if arg]
         filename = os.path.join(base, *self.args)
         if not os.path.exists(filename):
             raise HTTP(404, "FILE NOT FOUND")
