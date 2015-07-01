@@ -25,6 +25,7 @@
 <form action="{{=URL(args=request.args)}}" method="POST">
 <h2>{{=T('Select Files to Package')}}</h2>
 <input type="submit" value="{{=T('Download .w2p')}}" class="btn"/>
+<input type="submit" name="doexe" value="{{=T('Download as .exe')}}" class="btn"/>
 <div style="margin-top:20px">
 {{tree(base)}}
 </div>
