@@ -1058,6 +1058,11 @@ def start_schedulers(options):
         print 'starting single-scheduler for "%s"...' % app_
         run(app_, True, True, None, False, code)
         return
+
+    # Work around OS X problem: http://bugs.python.org/issue9405
+    import urllib
+    urllib.getproxies()
+
     for app in apps:
         app_, code = get_code_for_scheduler(app, options)
         if not app_:
