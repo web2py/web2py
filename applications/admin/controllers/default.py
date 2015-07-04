@@ -292,9 +292,6 @@ def site():
             log_progress(appname)
             session.flash = T(msg, dict(appname=appname,
                                         digest=md5_hash(installed)))
-        elif f and form_update.vars.overwrite:
-            msg = 'unable to install application "%(appname)s"'
-            session.flash = T(msg, dict(appname=form_update.vars.name))
         else:
             msg = 'unable to install application "%(appname)s"'
             session.flash = T(msg, dict(appname=form_update.vars.name))
@@ -370,25 +367,56 @@ def pack_plugin():
         session.flash = T('internal error')
         redirect(URL('plugin', args=request.args))
 
+
+
+def pack_exe(app, base, filenames=None):
+    import urllib
+    import zipfile
+    from cStringIO import StringIO
+    # Download latest web2py_win and open it with zipfile
+    download_url = 'http://www.web2py.com/examples/static/web2py_win.zip'
+    out = StringIO()
+    out.write(urllib.urlopen(download_url).read())
+    web2py_win = zipfile.ZipFile(out, mode='a')
+    # Write routes.py with the application as default
+    routes = u'# -*- coding: utf-8 -*-\nrouters = dict(BASE=dict(default_application="%s"))' % app
+    web2py_win.writestr('web2py/routes.py', routes.encode('utf-8'))
+    # Copy the application into the zipfile
+    common_root = os.path.dirname(base)
+    for filename in filenames:
+        fname = os.path.join(base, filename)
+        arcname = os.path.join('web2py/applications', app, filename)
+        web2py_win.write(fname, arcname)
+    web2py_win.close()
+    response.headers['Content-Type'] = 'application/zip'
+    response.headers['Content-Disposition'] = 'attachment; filename=web2py.app.%s.zip' % app
+    out.seek(0)
+    return response.stream(out)
+
+
 def pack_custom():
     app = get_app()
     base = apath(app, r=request)
     if request.post_vars.file:
+        
         files = request.post_vars.file
         files = [files] if not isinstance(files,list) else files
-        fname = 'web2py.app.%s.w2p' % app
-        try:
-            filename = app_pack(app, request, raise_ex=True, filenames=files)
-        except Exception, e:
-            filename = None
-        if filename:
-            response.headers['Content-Type'] = 'application/w2p'
-            disposition = 'attachment; filename=%s' % fname
-            response.headers['Content-Disposition'] = disposition
-            return safe_read(filename, 'rb')
+        if request.post_vars.doexe is None:
+            fname = 'web2py.app.%s.w2p' % app
+            try:
+                filename = app_pack(app, request, raise_ex=True, filenames=files)
+            except Exception, e:
+                filename = None
+            if filename:
+                response.headers['Content-Type'] = 'application/w2p'
+                disposition = 'attachment; filename=%s' % fname
+                response.headers['Content-Disposition'] = disposition
+                return safe_read(filename, 'rb')
+            else:
+                session.flash = T('internal error: %s', e)
+                redirect(URL(args=request.args))
         else:
-            session.flash = T('internal error: %s', e)
-            redirect(URL(args=request.args))
+            return pack_exe(app, base, files)
     def ignore(fs):
         return [f for f in fs if not (
                 f[:1] in '#' or f.endswith('~') or f.endswith('.bak'))]
@@ -867,13 +895,9 @@ def resolve():
 
     def getclass(item):
         """ Determine item class """
-
-        if item[0] == ' ':
-            return 'normal'
-        if item[0] == '+':
-            return 'plus'
-        if item[0] == '-':
-            return 'minus'
+        operators = {' ':'normal', '+':'plus', '-':'minus'}
+        
+        return operators[item[0]]
 
     if request.vars:
         c = '\n'.join([item[2:].rstrip() for (i, item) in enumerate(d) if item[0]
@@ -1510,7 +1534,7 @@ def upload_file():
         if filename:
             d = dict(filename=filename[len(path):])
         else:
-            d = dict(filename='unkown')
+            d = dict(filename='unknown')
         session.flash = T('cannot upload file "%(filename)s"', d)
 
     redirect(request.vars.sender)

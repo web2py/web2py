@@ -1146,6 +1146,7 @@ class Auth(object):
         reset_password_requires_verification=False,
         registration_requires_verification=False,
         registration_requires_approval=False,
+        bulk_register_enabled=False,
         login_after_registration=False,
         login_after_password_change=True,
         alternate_requires_registration=False,
@@ -1179,6 +1180,7 @@ class Auth(object):
         table_permission_name='auth_permission',
         table_event_name='auth_event',
         table_cas_name='auth_cas',
+        table_token_name='auth_token',
         table_user=None,
         table_group=None,
         table_membership=None,
@@ -1247,6 +1249,8 @@ class Auth(object):
         retrieve_password_subject='Password retrieve',
         reset_password='Click on the link %(link)s to reset your password',
         reset_password_subject='Password reset',
+        bulk_invite_subject='Invitation to join%(site)s',
+        bulk_invite_body='You have been invited to join %(site)s, click %(link)s to complete the process',
         invalid_reset_password='Invalid reset password',
         profile_updated='Profile updated',
         new_password='New password',
@@ -1460,6 +1464,7 @@ class Auth(object):
         settings.update(Auth.default_settings)
         settings.update(
             cas_domains=[request.env.http_host],
+            enable_tokens=False,
             cas_provider=cas_provider,
             cas_actions=dict(login='login',
                              validate='validate',
@@ -1536,6 +1541,12 @@ class Auth(object):
         next = current.request.vars._next
         if isinstance(next, (list, tuple)):
             next = next[0]
+        if next and self.settings.prevent_open_redirect_attacks:
+            # Prevent an attacker from adding an arbitrary url after the
+            # _next variable in the request.
+            items = next.split('/')
+            if '//' in next and items[2] != current.request.env.http_host:
+                next = None            
         return next
 
     def _get_user_id(self):
@@ -1561,6 +1572,9 @@ class Auth(object):
 
     def table_cas(self):
         return self.db[self.settings.table_cas_name]
+
+    def table_token(self):
+        return self.db[self.settings.table_token_name]
 
     def _HTTP(self, *a, **b):
         """
@@ -1589,7 +1603,8 @@ class Auth(object):
                        'retrieve_username', 'retrieve_password',
                        'reset_password', 'request_reset_password',
                        'change_password', 'profile', 'groups',
-                       'impersonate', 'not_authorized'):
+                       'impersonate', 'not_authorized', 'confirm_registration', 
+                       'bulk_register','manage_tokens'):
             if len(request.args) >= 2 and args[0] == 'impersonate':
                 return getattr(self, args[0])(request.args[1])
             else:
@@ -1916,7 +1931,7 @@ class Auth(object):
                   writable=False, readable=False,
                   label=T('Modified By'),  ondelete=ondelete))
 
-    def define_tables(self, username=None, signature=None,
+    def define_tables(self, username=None, signature=None, enable_tokens=False,
                       migrate=None, fake_migrate=None):
         """
         To be called unless tables are defined manually
@@ -1943,6 +1958,7 @@ class Auth(object):
             username = settings.use_username
         else:
             settings.use_username = username
+        settings.enable_tokens = enable_tokens
         if not self.signature:
             self.define_signature()
         if signature == True:
@@ -2125,6 +2141,21 @@ class Auth(object):
                     **dict(
                         migrate=self.__get_migrate(
                             settings.table_cas_name, migrate),
+                        fake_migrate=fake_migrate))
+        if settings.enable_tokens:
+            extra_fields = settings.extra_fields.get(
+                settings.table_token_name, []) + signature_list
+            if not settings.table_token_name in db.tables:
+                db.define_table(
+                    settings.table_token_name,
+                    Field('user_id', reference_table_user, default=None,
+                          label=self.messages.label_user_id),
+                    Field('expires_on', 'datetime', default=datetime.datetime(2999,12,31)),
+                    Field('token',writable=False,default=web2py_uuid(),unique=True),
+                    *extra_fields,
+                    **dict(
+                        migrate=self.__get_migrate(
+                            settings.table_token_name, migrate),
                         fake_migrate=fake_migrate))
         if not db._lazy_tables:
             settings.table_user = db[settings.table_user_name]
@@ -2335,14 +2366,16 @@ class Auth(object):
         and a raw password.
         """
         settings = self._get_login_settings()
-        if not fields.get(settings.passfield):
-            raise ValueError("register_bare: " +
-                             "password not provided or invalid")
-        elif not fields.get(settings.userfield):
+        # users can register_bare even if no password is provided, 
+        # in this case they will have to reset their password to login
+        if fields.get(settings.passfield):
+            fields[settings.passfield] = \
+                settings.table_user[settings.passfield].validate(fields[settings.passfield])[0]
+        if not fields.get(settings.userfield):
             raise ValueError("register_bare: " +
                              "userfield not provided or invalid")
-        fields[settings.passfield] = settings.table_user[settings.passfield].validate(fields[settings.passfield])[0]
-        user = self.get_or_create_user(fields, login=False, get=False, update_fields=self.settings.update_fields)
+        user = self.get_or_create_user(fields, login=False, get=False, 
+                                       update_fields=self.settings.update_fields)
         if not user:
             # get or create did not create a user (it ignores duplicate records)
             return False
@@ -2486,10 +2519,6 @@ class Auth(object):
 
         ### use session for federated login
         snext = self.get_vars_next()
-        if snext and self.settings.prevent_open_redirect_attacks:
-            items = snext.split('/')
-            if '//' in snext and items[2] != request.env.http_host:
-                snext = None
 
         if snext:
             session._auth_next = snext
@@ -3138,6 +3167,147 @@ class Auth(object):
         table_user.email.requires = old_requires
         return form
 
+    def confirm_registration(
+        self,
+        next=DEFAULT,
+        onvalidation=DEFAULT,
+        onaccept=DEFAULT,
+        log=DEFAULT,
+        ):
+        """
+        Returns a form to confirm user registration
+        """
+
+        table_user = self.table_user()
+        request = current.request
+        # response = current.response
+        session = current.session
+
+        if next is DEFAULT:
+            next = self.get_vars_next() or self.settings.reset_password_next
+
+        if self.settings.prevent_password_reset_attacks:
+            key = request.vars.key
+            if not key and len(request.args)>1:
+                key = request.args[-1]
+            if key:
+                session._reset_password_key = key
+                redirect(self.url(args='confirm_registration'))
+            else:
+                key = session._reset_password_key
+        else:
+            key = request.vars.key or getarg(-1)
+        try:
+            t0 = int(key.split('-')[0])
+            if time.time() - t0 > 60 * 60 * 24:
+                raise Exception
+            user = table_user(reset_password_key=key)
+            if not user:
+                raise Exception
+        except Exception as e:
+            session.flash = self.messages.invalid_reset_password
+            redirect(self.url('login', vars=dict(test=e)))
+            redirect(next, client_side=self.settings.client_side)
+        passfield = self.settings.password_field
+        form = SQLFORM.factory(
+            Field('first_name',
+                  label='First Name',
+                  required=True),
+            Field('last_name',
+                  label='Last Name',
+                  required=True),
+            Field('new_password', 'password',
+                  label=self.messages.new_password,
+                  requires=self.table_user()[passfield].requires),
+            Field('new_password2', 'password',
+                  label=self.messages.verify_password,
+                  requires=[IS_EXPR(
+                        'value==%s' % repr(request.vars.new_password),
+                        self.messages.mismatched_password)]),
+            submit_button='Confirm Registration',
+            hidden=dict(_next=next),
+            formstyle=self.settings.formstyle,
+            separator=self.settings.label_separator
+        )
+        if form.process().accepted:
+            user.update_record(
+                **{passfield: str(form.vars.new_password),
+                   'first_name': str(form.vars.first_name),
+                   'last_name': str(form.vars.last_name),
+                   'registration_key': '',
+                   'reset_password_key': ''})
+            session.flash = self.messages.password_changed
+            if self.settings.login_after_password_change:
+                self.login_user(user)
+            redirect(next, client_side=self.settings.client_side)
+        return form
+
+    def email_registration(self, subject, body, user):
+        """
+        Sends and email invitation to a user informing they have been registered with the application
+        """
+        reset_password_key = str(int(time.time())) + '-' + web2py_uuid()
+        link = self.url(self.settings.function,
+                        args=('confirm_registration',), vars={'key': reset_password_key},
+                        scheme=True)
+        d = dict(user)
+        d.update(dict(key=reset_password_key, link=link, site=current.request.env.http_host))
+        if self.settings.mailer and self.settings.mailer.send(
+            to=user.email,
+            subject=subject % d,
+            message=body % d):
+            user.update_record(reset_password_key=reset_password_key)
+            return True
+        return False
+
+    def bulk_register(self, max_emails=100):
+        """
+        Creates a form for ther user to send invites to other users to join
+        """
+        if not self.user:
+            redirect(self.settings.login_url)
+        if not self.setting.bulk_register_enabled:
+            return HTTP(404)
+
+        form = SQLFORM.factory(
+            Field('subject','string',default=self.messages.bulk_invite_subject,requires=IS_NOT_EMPTY()),
+            Field('emails','text',requires=IS_NOT_EMPTY()),
+            Field('message','text',default=self.messages.bulk_invite_body,requires=IS_NOT_EMPTY()),
+            formstyle=self.settings.formstyle)
+
+        if form.process().accepted:
+            emails = re.compile('[^\s\'"@<>,;:]+\@[^\s\'"@<>,;:]+').findall(form.vars.emails)
+            # send the invitations            
+            emails_sent = []
+            emails_fail = []
+            emails_exist = []
+            for email in emails[:max_emails]:
+                if self.table_user()(email=email):
+                    emails_exist.append(email)
+                else:
+                    user = self.register_bare(email=email)
+                    if self.email_registration(form.vars.subject, form.vars.message, user):
+                        emails_sent.append(email)
+                    else:
+                        emails_fail.append(email)
+            emails_fail += emails[max_emails:]
+            form = DIV(H4('Emails sent'),UL(*[A(x,_href='mailto:'+x) for x in emails_sent]),
+                       H4('Emails failed'),UL(*[A(x,_href='mailto:'+x) for x in emails_fail]),
+                       H4('Emails existing'),UL(*[A(x,_href='mailto:'+x) for x in emails_exist]))
+        return form
+
+    def manage_tokens(self):
+        if not self.user:
+            redirect(self.settings.login_url)        
+        table_token =self.table_token()
+        table_token.user_id.writable = False
+        table_token.user_id.default = self.user.id
+        table_token.token.writable = False
+        if current.request.args(1) == 'new':
+            table_token.token.readable = False
+        form = SQLFORM.grid(table_token, args=['manage_tokens'])
+        return form
+
     def reset_password(self,
                        next=DEFAULT,
                        onvalidation=DEFAULT,
@@ -3601,6 +3771,26 @@ class Auth(object):
         """
         Decorator that prevents access to action if not logged in
         """
+        return self.requires(True, otherwise=otherwise)
+
+    def requires_login_or_token(self, otherwise=None):
+        if self.settings.enable_tokens == True:
+            user = None
+            request = current.request
+            token = request.env.http_web2py_user_token or request.vars._token
+            table_token = self.table_token()
+            table_user = self.table_user()
+            from gluon.settings import global_settings
+            if global_settings.web2py_runtime_gae:
+                row = table_token(token=token)
+                if row:
+                    user = table_user(row.user_id)
+            else:
+                row = self.db(table_token.token==token)(table_user.id==table_token.user_id).select().first()
+                if row:
+                    user = row[table_user._tablename]
+            if user:
+                self.login_user(user)
         return self.requires(True, otherwise=otherwise)
 
     def requires_membership(self, role=None, group_id=None, otherwise=None):
