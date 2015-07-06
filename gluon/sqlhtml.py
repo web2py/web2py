@@ -1678,7 +1678,7 @@ class SQLFORM(FORM):
                         self.vars.update(pk)
                     else:
                         ret = False
-            else:
+            elif self.table._db._uri:
                 if record_id:
                     self.vars.id = self.record[self.id_field_name]
                     if fields:
