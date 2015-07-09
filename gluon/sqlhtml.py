@@ -1678,7 +1678,7 @@ class SQLFORM(FORM):
                         self.vars.update(pk)
                     else:
                         ret = False
-            else:
+            elif self.table._db._uri:
                 if record_id:
                     self.vars.id = self.record[self.id_field_name]
                     if fields:
@@ -2681,7 +2681,10 @@ class SQLFORM(FORM):
                         continue
                     if field.type == 'blob':
                         continue
-                    value = row[str(field)]
+                    if isinstance(field, Field.Virtual) and field.tablename in row:
+                        value = dbset.db[field.tablename][row[field.tablename][field_id]][field.name]
+                    else:
+                        value = row[str(field)]
                     maxlength = maxtextlengths.get(str(field), maxtextlength)
                     if field.represent:
                         if field.type.startswith('reference'):
