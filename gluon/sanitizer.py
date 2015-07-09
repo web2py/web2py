@@ -67,7 +67,7 @@ class XssCleaner(HTMLParser):
         #to strip or escape disallowed tags?
         self.strip_disallowed = strip_disallowed
         # there might be data after final closing tag, that is to be ignored
-        self.in_disallowed = [True]
+        self.in_disallowed = [False]
 
     def handle_data(self, data):
         if data and not self.in_disallowed[-1]:

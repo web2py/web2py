@@ -49,7 +49,8 @@ if request.function == 'manage':
                                       auth.table_group(),
                                       auth.table_permission()])
     manager_role = manager_action.get('role', None) if manager_action else None
-    auth.requires_membership(manager_role)(lambda: None)()
+    if not (gluon.fileutils.check_credentials(request) or auth.has_membership(manager_role)):
+        raise HTTP(403, "Not authorized")
     menu = False
 elif (request.application == 'admin' and not session.authorized) or \
         (request.application != 'admin' and not gluon.fileutils.check_credentials(request)):

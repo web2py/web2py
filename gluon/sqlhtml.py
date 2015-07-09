@@ -1678,7 +1678,7 @@ class SQLFORM(FORM):
                         self.vars.update(pk)
                     else:
                         ret = False
-            else:
+            elif self.table._db._uri:
                 if record_id:
                     self.vars.id = self.record[self.id_field_name]
                     if fields:
@@ -1756,10 +1756,16 @@ class SQLFORM(FORM):
             keywords = keywords[0]
             request.vars.keywords = keywords
         key = keywords.strip()
-        if key and ' ' not in key and not '"' in key and not "'" in key:
+        if key and not '"' in key:
             SEARCHABLE_TYPES = ('string', 'text', 'list:string')
-            parts = [field.contains(
-                key) for field in fields if field.type in SEARCHABLE_TYPES]
+            sfields = [field for field in fields if field.type in SEARCHABLE_TYPES]
+            if settings.global_settings.web2py_runtime_gae:
+                return reduce(lambda a,b: a|b, [field.contains(key) for field in sfields])
+            else:
+                return reduce(lambda a,b:a&b,[
+                        reduce(lambda a,b: a|b, [
+                                field.contains(k) for field in sfields]
+                               ) for k in key.split()])
 
             # from https://groups.google.com/forum/#!topic/web2py/hKe6lI25Bv4
             # needs testing...
@@ -1773,10 +1779,6 @@ class SQLFORM(FORM):
             #        filters.append(reduce(lambda a, b: (a & b), all_words_filters))
             #parts = filters
 
-        else:
-            parts = None
-        if parts:
-            return reduce(lambda a, b: a | b, parts)
         else:
             return smart_query(fields, key)
 
@@ -2679,7 +2681,10 @@ class SQLFORM(FORM):
                         continue
                     if field.type == 'blob':
                         continue
-                    value = row[str(field)]
+                    if isinstance(field, Field.Virtual) and field.tablename in row:
+                        value = dbset.db[field.tablename][row[field.tablename][field_id]][field.name]
+                    else:
+                        value = row[str(field)]
                     maxlength = maxtextlengths.get(str(field), maxtextlength)
                     if field.represent:
                         if field.type.startswith('reference'):
