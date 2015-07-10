@@ -3482,7 +3482,7 @@ class IS_IPV6(Validator):
             from gluon.contrib import ipaddr as ipaddress
 
         try:
-            ip = ipaddress.IPv6Address(value)
+            ip = ipaddress.IPv6Address(value.decode('utf-8'))
             ok = True
         except ipaddress.AddressValueError:
             return (value, translate(self.error_message))
@@ -3494,7 +3494,7 @@ class IS_IPV6(Validator):
                 self.subnets = [self.subnets]
             for network in self.subnets:
                 try:
-                    ipnet = ipaddress.IPv6Network(network)
+                    ipnet = ipaddress.IPv6Network(network.decode('utf-8'))
                 except (ipaddress.NetmaskValueError, ipaddress.AddressValueError):
                     return (value, translate('invalid subnet provided'))
                 if ip in ipnet:
@@ -3703,20 +3703,22 @@ class IS_IPADDRESS(Validator):
 
     def __call__(self, value):
         try:
-            import ipaddress
+            from ipaddress import ip_address as IPAddress
+            from ipaddress import IPv6Address, IPv4Address
         except ImportError:
-            from gluon.contrib import ipaddr as ipaddress
+            from gluon.contrib.ipaddr import (IPAddress, IPv4Address,
+                                              IPv6Address)
 
         try:
-            ip = ipaddress.IPAddress(value)
-        except ValueError, e:
+            ip = IPAddress(value.decode('utf-8'))
+        except ValueError:
             return (value, translate(self.error_message))
 
-        if self.is_ipv4 and isinstance(ip, ipaddress.IPv6Address):
+        if self.is_ipv4 and isinstance(ip, IPv6Address):
             retval = (value, translate(self.error_message))
-        elif self.is_ipv6 and isinstance(ip, ipaddress.IPv4Address):
+        elif self.is_ipv6 and isinstance(ip, IPv4Address):
             retval = (value, translate(self.error_message))
-        elif self.is_ipv4 or isinstance(ip, ipaddress.IPv4Address):
+        elif self.is_ipv4 or isinstance(ip, IPv4Address):
             retval = IS_IPV4(
                 minip=self.minip,
                 maxip=self.maxip,
@@ -3726,7 +3728,7 @@ class IS_IPADDRESS(Validator):
                 is_automatic=self.is_automatic,
                 error_message=self.error_message
                 )(value)
-        elif self.is_ipv6 or isinstance(ip, ipaddress.IPv6Address):
+        elif self.is_ipv6 or isinstance(ip, IPv6Address):
             retval = IS_IPV6(
                 is_private=self.is_private,
                 is_link_local=self.is_link_local,
