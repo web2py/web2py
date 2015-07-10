@@ -26,7 +26,7 @@ from gluon.fileutils import mktree, listdir, read_file, write_file
 from gluon.myregex import regex_expose, regex_longcomments
 from gluon.languages import translator
 from gluon.dal import DAL, Field
-from gluon.dal.base import BaseAdapter
+from pydal.base import BaseAdapter
 from gluon.sqlhtml import SQLFORM, SQLTABLE
 from gluon.cache import Cache
 from gluon.globals import current, Response
@@ -261,7 +261,7 @@ class LoadFactory(object):
         import globals
         target = target or 'c' + str(random.random())[2:]
         attr['_id'] = target
-        request = self.environment['request']
+        request = current.request
         if '.' in f:
             f, extension = f.rsplit('.', 1)
         if url or ajax:
@@ -532,10 +532,11 @@ def run_models_in(environment):
     It tries pre-compiled models first before compiling them.
     """
 
-    folder = environment['request'].folder
-    c = environment['request'].controller
+    request = current.request
+    folder = request.folder
+    c = request.controller
     #f = environment['request'].function
-    response = environment['response']
+    response = current.response
 
     path = pjoin(folder, 'models')
     cpath = pjoin(folder, 'compiled')
@@ -577,7 +578,7 @@ def run_controller_in(controller, function, environment):
     """
 
     # if compiled should run compiled!
-    folder = environment['request'].folder
+    folder = current.request.folder
     path = pjoin(folder, 'compiled')
     badc = 'invalid controller (%s/%s)' % (controller, function)
     badf = 'invalid function (%s/%s)' % (controller, function)
@@ -631,7 +632,7 @@ def run_controller_in(controller, function, environment):
             layer = filename + ':' + function
             code = getcfs(layer, filename, lambda: compile2(code, layer))
         restricted(code, environment, filename)
-    response = environment['response']
+    response = current.response
     vars = response._vars
     if response.postprocessing:
         vars = reduce(lambda vars, p: p(vars), response.postprocessing, vars)
@@ -649,8 +650,8 @@ def run_view_in(environment):
     or `view/generic.extension`
     It tries the pre-compiled views_controller_function.pyc before compiling it.
     """
-    request = environment['request']
-    response = environment['response']
+    request = current.request
+    response = current.response
     view = response.view
     folder = request.folder
     path = pjoin(folder, 'compiled')

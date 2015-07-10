@@ -1,3 +1,24 @@
+## 2.11.1
+
+- Many small but significative improvements and bug fixes
+
+## 2.10.1-2.10.2
+
+- welcome app defaults to Bootstrap 3
+- DAL -> pyDAL (thanks Giovanni, Niphlod, Paolo)
+  - new modular dal
+  - fixed problems with GAE support
+  - moved to full NDB support
+  - improved connection pooling logic
+- optional cache.ram.max_ram_utilization = 90 (experimental)
+- improved cache.disk logic (thanks Niphlod and Leonel)
+- lots of pep8 improvements, thanks Richard
+- added support for email attchments when auth.settings.server='gae'
+- fixed app.yaml.example for GAE
+- fixed many small issues
+- many many more tests (thanks Giovanni, Niphlod, Paolo)
+- upgrading static libraries (bootstrap, codemirror, jquery, etc)
+
 ## 2.9.12
 
 - Tornado HTTPS support, thanks Diego

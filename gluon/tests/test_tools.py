@@ -18,7 +18,7 @@ fix_sys_path(__file__)
 DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 
 from gluon.dal import DAL, Field
-from dal.objects import Table
+from pydal.objects import Table
 from tools import Auth
 from gluon.globals import Request, Response, Session
 from storage import Storage

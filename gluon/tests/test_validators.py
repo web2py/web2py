@@ -280,6 +280,10 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ([1, 2], 'Enter between 10 and 100 values'))
         rtn =  IS_LIST_OF(IS_INT_IN_RANGE(0, 10), maximum=2)([1,2,3])
         self.assertEqual(rtn, ([1, 2, 3], 'Enter between 0 and 2 values'))
+        # regression test for issue 742
+        rtn = IS_LIST_OF(minimum=1)('')
+        self.assertEqual(rtn, ([], 'Enter between 1 and 100 values'))
+
 
     def test_IS_EMPTY_OR(self):
         rtn = IS_EMPTY_OR(IS_EMAIL())('abc@def.com')
@@ -579,8 +583,6 @@ class TestValidators(unittest.TestCase):
         rtn = IS_LENGTH(6)(a)
         self.assertEqual(rtn, (a, None))
 
-
-
     def test_IS_LOWER(self):
         rtn = IS_LOWER()('ABC')
         self.assertEqual(rtn, ('abc', None))
@@ -765,19 +767,6 @@ class TestValidators(unittest.TestCase):
         rtn = IS_UPPER()('ñ')
         self.assertEqual(rtn, ('\xc3\x91', None))
 
-    def test_IS_URL(self):
-        rtn = IS_URL()('abc.com')
-        self.assertEqual(rtn, ('http://abc.com', None))
-        rtn = IS_URL(mode='generic')('abc.com')
-        self.assertEqual(rtn, ('abc.com', None))
-        rtn = IS_URL(allowed_schemes=['https'], prepend_scheme='https')('https://abc.com')
-        self.assertEqual(rtn, ('https://abc.com', None))
-        rtn = IS_URL(prepend_scheme='https')('abc.com')
-        self.assertEqual(rtn, ('https://abc.com', None))
-        rtn = IS_URL(mode='generic', allowed_schemes=['ftps', 'https'], prepend_scheme='https')('https://abc.com')
-        self.assertEqual(rtn, ('https://abc.com', None))
-        rtn = IS_URL(mode='generic', allowed_schemes=['ftps', 'https', None], prepend_scheme='https')('abc.com')
-        self.assertEqual(rtn, ('abc.com', None))
 
     def test_IS_JSON(self):
         rtn = IS_JSON()('{"a": 100}')

@@ -143,6 +143,9 @@
         clientHeight = (this.getScrollerElement().clientHeight / 2)
         this.scrollTo(null, (coords.top + coords.bottom)/2 - 10);
     });
+    CodeMirror.commands.save = function () {
+        doClickSave();
+    }
     </script>
 
     <div class="editor-bar-bottom" style="margin-top:9px;">

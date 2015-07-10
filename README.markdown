@@ -13,15 +13,35 @@ Learn more at http://web2py.com
     
 Then edit ./app.yaml and replace "yourappname" with yourappname.
 
+## Important reminder about this GIT repo
+
+An important part of web2py is the Database Abstraction Layer (DAL). In early 2015 this was decoupled into a separate code-base (PyDAL). In terms of git, it is a sub-module of the main repository.
+
+The use of a sub-module requires a one-time use of the --recursive flag for git clone if you are cloning web2py from scratch.
+
+    git clone --recursive https://github.com/web2py/web2py.git
+
+If you have an existing repository, the commands below need to be executed at least once:
+
+    git submodule update --init --recursive
+
+If you have a folder gluon/dal you must remove it:
+
+    rm -r gluon/dal
+
+PyDAL uses a separate stable release cycle to the rest of web2py. PyDAL releases will use a date-naming scheme similar to Ubuntu. Issues related to PyDAL should be reported to its separate repository.
+
+
 ## Documentation (readthedocs.org)
 
 [![Docs Status](https://readthedocs.org/projects/web2py/badge/?version=latest&style=flat-square)](http://web2py.rtfd.org/)
 
 ## Tests
 
-[![Build Status](https://img.shields.io/travis/web2py/web2py.svg?style=flat-square)](https://travis-ci.org/web2py/web2py)
+[![Build Status](https://img.shields.io/travis/web2py/web2py/master.svg?style=flat-square&label=Travis-CI)](https://travis-ci.org/web2py/web2py)
+[![MS Build Status](https://img.shields.io/appveyor/ci/web2py/web2py/master.svg?style=flat-square&label=Appveyor-CI)](https://ci.appveyor.com/project/web2py/web2py)
+[![Coverage Status](https://img.shields.io/codecov/c/github/web2py/web2py.svg?style=flat-square)](https://codecov.io/github/web2py/web2py)
 
-[![Coverage Status](https://img.shields.io/coveralls/web2py/web2py.svg?style=flat-square)](https://coveralls.io/r/web2py/web2py)
 
 ## Installation Instructions
 
@@ -41,8 +61,10 @@ That's it!!!
         anyserver.py               > to run with third party servers
         ...                        > other handlers and example files
         gluon/                     > the core libraries
+            packages/              > web2py submodules
+              dal/
             contrib/               > third party libraries
-            tests/                 > unittests  
+            tests/                 > unittests
         applications/              > are the apps
             admin/                 > web based IDE
                 ...
@@ -75,4 +97,4 @@ That's it!!!
 
 ## Issues?
 
-Report issues at http://code.google.com/p/web2py/issues/
+Report issues at https://github.com/web2py/web2py/issues

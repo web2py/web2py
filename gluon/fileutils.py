@@ -65,8 +65,9 @@ def parse_semantic(version="Version 1.99.0-rc.1+timestamp.2011.09.19.08.23.26"):
     pre_release = m.group('pre') or ''
     build = m.group('build') or ''
     if build.startswith('timestamp'):
-        build = datetime.datetime.strptime(build.split('.',1)[1], '%Y.%m.%d.%H.%M.%S')
+        build = datetime.datetime.strptime(build.split('.', 1)[1], '%Y.%m.%d.%H.%M.%S')
     return (a, b, c, pre_release, build)
+
 
 def parse_legacy(version="Version 1.99.0 (2011-09-19 08:23:26)"):
     """Parses "legacy" version string
@@ -85,6 +86,7 @@ def parse_legacy(version="Version 1.99.0 (2011-09-19 08:23:26)"):
     build = datetime.datetime.strptime(m.group('datetime'), '%Y-%m-%d %H:%M:%S')
     return (a, b, c, pre_release, build)
 
+
 def parse_version(version):
     """Attempts to parse SemVer, fallbacks on legacy
     """
@@ -92,6 +94,7 @@ def parse_version(version):
     if not version_tuple:
         version_tuple = parse_legacy(version)
     return version_tuple
+
 
 def read_file(filename, mode='r'):
     """Returns content from filename, making sure to close the file explicitly
@@ -130,18 +133,20 @@ def mktree(path):
             os.mkdir(head)
 
 
-def listdir(
-    path,
-    expression='^.+$',
-    drop=True,
-    add_dirs=False,
-    sort=True,
-    maxnum = None,
-):
+def listdir(path,
+            expression='^.+$',
+            drop=True,
+            add_dirs=False,
+            sort=True,
+            maxnum=None,
+            exclude_content_from=None
+            ):
     """
     Like `os.listdir()` but you can specify a regex pattern to filter files.
     If `add_dirs` is True, the returned items will have the full path.
     """
+    if exclude_content_from is None:
+        exclude_content_from = []
     if path[-1:] != os.path.sep:
         path = path + os.path.sep
     if drop:
@@ -158,8 +163,9 @@ def listdir(
             items.append(root[n:])
         for file in sorted(files):
             if regex.match(file) and not file.startswith('.'):
-                items.append(os.path.join(root, file)[n:])
-            if maxnum and len(items)>=maxnum:
+                if root not in exclude_content_from:
+                    items.append(os.path.join(root, file)[n:])
+            if maxnum and len(items) >= maxnum:
                 break
     if sort:
         return sorted(items)
@@ -199,18 +205,21 @@ def _extractall(filename, path='.', members=None):
     return ret
 
 
-def tar(file, dir, expression='^.+$', filenames=None):
+def tar(file, dir, expression='^.+$',
+        filenames=None, exclude_content_from=None):
     """Tars dir into file, only tars file that match expression
     """
 
     tar = tarfile.TarFile(file, 'w')
     try:
         if filenames is None:
-            filenames = listdir(dir, expression, add_dirs=True)
+            filenames = listdir(dir, expression, add_dirs=True,
+                exclude_content_from=exclude_content_from)
         for file in filenames:
             tar.add(os.path.join(dir, file), file, False)
     finally:
         tar.close()
+
 
 def untar(file, dir):
     """Untar file into dir
@@ -232,15 +241,18 @@ def w2p_pack(filename, path, compiled=False, filenames=None):
     path = abspath(path)
     tarname = filename + '.tar'
     if compiled:
-        tar_compiled(tarname, path, '^[\w\.\-]+$')
+        tar_compiled(tarname, path, '^[\w\.\-]+$',
+                     exclude_content_from=['cache', 'sessions', 'errors'])
     else:
-        tar(tarname, path, '^[\w\.\-]+$', filenames=filenames)
+        tar(tarname, path, '^[\w\.\-]+$', filenames=filenames,
+            exclude_content_from=['cache', 'sessions', 'errors'])
     w2pfp = gzopen(filename, 'wb')
     tarfp = open(tarname, 'rb')
     w2pfp.write(tarfp.read())
     w2pfp.close()
     tarfp.close()
     os.unlink(tarname)
+
 
 def create_welcome_w2p():
     if not os.path.exists('welcome.w2p') or os.path.exists('NEWINSTALL'):
@@ -254,7 +266,7 @@ def create_welcome_w2p():
 
 def w2p_unpack(filename, path, delete_tar=True):
 
-    if filename=='welcome.w2p':
+    if filename == 'welcome.w2p':
         create_welcome_w2p()
     filename = abspath(filename)
     path = abspath(path)
@@ -310,13 +322,15 @@ def w2p_unpack_plugin(filename, path, delete_tar=True):
     w2p_unpack(filename, path, delete_tar)
 
 
-def tar_compiled(file, dir, expression='^.+$'):
+def tar_compiled(file, dir, expression='^.+$',
+                 exclude_content_from=None):
     """Used to tar a compiled application.
     The content of models, views, controllers is not stored in the tar file.
     """
 
     tar = tarfile.TarFile(file, 'w')
-    for file in listdir(dir, expression, add_dirs=True):
+    for file in listdir(dir, expression, add_dirs=True,
+                        exclude_content_from=exclude_content_from):
         filename = os.path.join(dir, file)
         if os.path.islink(filename):
             continue
@@ -352,6 +366,7 @@ def get_session(request, other_application='admin'):
         osession = storage.Storage()
     return osession
 
+
 def set_session(request, session, other_application='admin'):
     """Checks that user is authorized to access other_application"""
     if request.application == other_application:
@@ -359,7 +374,8 @@ def set_session(request, session, other_application='admin'):
     session_id = request.cookies['session_id_' + other_application].value
     session_filename = os.path.join(
         up(request.folder), other_application, 'sessions', session_id)
-    storage.save_storage(session,session_filename)
+    storage.save_storage(session, session_filename)
+
 
 def check_credentials(request, other_application='admin',
                       expiration=60 * 60, gae_login=True):
@@ -381,7 +397,7 @@ def check_credentials(request, other_application='admin',
         r = (s.authorized and s.last_time and s.last_time > dt)
         if r:
             s.last_time = t0
-            set_session(request,s,other_application)
+            set_session(request, s, other_application)
         return r
 
 
@@ -434,7 +450,7 @@ def make_fake_file_like_object():
 
 
 from settings import global_settings  # we need to import settings here because
-                                     # settings imports fileutils too
+                                      # settings imports fileutils too
 
 
 def abspath(*relpath, **base):

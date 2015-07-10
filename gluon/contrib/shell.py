@@ -126,7 +126,7 @@ class History:
     def globals_dict(self):
         """Returns a dictionary view of the globals.
         """
-        return dict((name, cPickle.loads(val))
+        return dict((name, pickle.loads(val))
                     for name, val in zip(self.global_names, self.globals))
 
     def add_unpicklable(self, statement, names):

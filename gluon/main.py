@@ -93,7 +93,7 @@ from gluon.globals import Request, Response, Session
 from gluon.compileapp import build_environment, run_models_in, \
     run_controller_in, run_view_in
 from gluon.contenttype import contenttype
-from gluon.dal.base import BaseAdapter
+from pydal.base import BaseAdapter
 from gluon.validators import CRYPT
 from gluon.html import URL, xmlescape
 from gluon.utils import is_valid_ip_address, getipaddrinfo
@@ -152,8 +152,6 @@ def get_client(env):
     if not is_valid_ip_address(client):
         raise HTTP(400, "Bad Request (request.client=%s)" % client)
     return client
-
-
 
 
 def serve_controller(request, response, session):
@@ -222,15 +220,17 @@ class LazyWSGI(object):
         self.wsgi_environ = environ
         self.request = request
         self.response = response
+
     @property
     def environ(self):
-        if not hasattr(self,'_environ'):
+        if not hasattr(self, '_environ'):
             new_environ = self.wsgi_environ
             new_environ['wsgi.input'] = self.request.body
             new_environ['wsgi.version'] = 1
             self._environ = new_environ
         return self._environ
-    def start_response(self,status='200', headers=[], exec_info=None):
+
+    def start_response(self, status='200', headers=[], exec_info=None):
         """
         in controller you can use:
 
@@ -243,7 +243,8 @@ class LazyWSGI(object):
         self.response.headers = dict(headers)
         return lambda *args, **kargs: \
             self.response.write(escape=False, *args, **kargs)
-    def middleware(self,*middleware_apps):
+
+    def middleware(self, *middleware_apps):
         """
         In you controller use::
 
@@ -266,6 +267,7 @@ class LazyWSGI(object):
                 return app(self.environ, self.start_response)
             return lambda caller=caller, app=app: caller(app)
         return middleware
+
 
 def wsgibase(environ, responder):
     """
@@ -374,7 +376,6 @@ def wsgibase(environ, responder):
                         request.env.http_x_forwarded_proto in HTTPS_SCHEMES \
                         or env.https == 'on'
                     )
-                request.compute_uuid()  # requires client
                 request.url = environ['PATH_INFO']
 
                 # ##################################################
@@ -453,7 +454,7 @@ def wsgibase(environ, responder):
                 if request.body:
                     request.body.close()
 
-                if hasattr(current,'request'):
+                if hasattr(current, 'request'):
 
                     # ##################################################
                     # on success, try store session in database
@@ -486,11 +487,10 @@ def wsgibase(environ, responder):
                     if request.ajax:
                         if response.flash:
                             http_response.headers['web2py-component-flash'] = \
-                                urllib2.quote(xmlescape(response.flash)\
-                                                  .replace('\n',''))
+                                urllib2.quote(xmlescape(response.flash).replace('\n', ''))
                         if response.js:
                             http_response.headers['web2py-component-command'] = \
-                                urllib2.quote(response.js.replace('\n',''))
+                                urllib2.quote(response.js.replace('\n', ''))
 
                     # ##################################################
                     # store cookies in headers
@@ -679,6 +679,7 @@ def appfactory(wsgiapp=wsgibase,
         return ret[0]
 
     return app_with_logging
+
 
 class HttpServer(object):
     """

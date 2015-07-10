@@ -28,11 +28,12 @@ from gluon.restricted import RestrictedError
 from gluon.globals import Request, Response, Session
 from gluon.storage import Storage, List
 from gluon.admin import w2p_unpack
-from gluon.dal.base import BaseAdapter
+from pydal.base import BaseAdapter
 
 logger = logging.getLogger("web2py")
 
-def enable_autocomplete_and_history(adir,env):
+
+def enable_autocomplete_and_history(adir, env):
     try:
         import rlcompleter
         import atexit
@@ -40,10 +41,8 @@ def enable_autocomplete_and_history(adir,env):
     except ImportError:
         pass
     else:
-        readline.parse_and_bind("bind ^I rl_complete"
-                                if sys.platform == 'darwin'
-                                else "tab: complete")
-        history_file = os.path.join(adir,'.pythonhistory')
+        readline.parse_and_bind("tab: complete")
+        history_file = os.path.join(adir, '.pythonhistory')
         try:
             readline.read_history_file(history_file)
         except IOError:
@@ -132,7 +131,7 @@ def env(
         port = global_settings.cmd_options.port
     else:
         ip, port = '127.0.0.1', '8000'
-    request.env.http_host = '%s:%s' % (ip,port)
+    request.env.http_host = '%s:%s' % (ip, port)
     request.env.remote_addr = '127.0.0.1'
     request.env.web2py_runtime_gae = global_settings.web2py_runtime_gae
 
@@ -143,8 +142,8 @@ def env(
     if request.args:
         path_info = '%s/%s' % (path_info, '/'.join(request.args))
     if request.vars:
-        vars = ['%s=%s' % (k,v) if v else '%s' % k
-                for (k,v) in request.vars.iteritems()]
+        vars = ['%s=%s' % (k, v) if v else '%s' % k
+                for (k, v) in request.vars.iteritems()]
         path_info = '%s?%s' % (path_info, '&'.join(vars))
     request.env.path_info = path_info
 
@@ -313,7 +312,7 @@ def run(
                 except:
                     logger.warning(
                         'import IPython error; use default python shell')
-        enable_autocomplete_and_history(adir,_env)
+        enable_autocomplete_and_history(adir, _env)
         code.interact(local=_env)
 
 

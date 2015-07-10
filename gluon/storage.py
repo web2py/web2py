@@ -22,7 +22,8 @@ import gluon.portalocker as portalocker
 __all__ = ['List', 'Storage', 'Settings', 'Messages',
            'StorageList', 'load_storage', 'save_storage']
 
-DEFAULT = lambda:0
+DEFAULT = lambda: 0
+
 
 class Storage(dict):
     """
@@ -52,6 +53,7 @@ class Storage(dict):
     __delattr__ = dict.__delitem__
     __getitem__ = dict.get
     __getattr__ = dict.get
+    __getnewargs__ = lambda self: getattr(dict,self).__getnewargs__(self)
     __repr__ = lambda self: '<Storage %s>' % dict.__repr__(self)
     # http://stackoverflow.com/questions/5247250/why-does-pickle-getstate-accept-as-a-return-value-the-very-instance-it-requi
     __getstate__ = lambda self: None
@@ -198,6 +200,7 @@ class Messages(Settings):
             return self.T(value)
         return value
 
+
 class FastStorage(dict):
     """
     Eventually this should replace class Storage but causes memory leak
@@ -266,31 +269,33 @@ class FastStorage(dict):
 
 
 class List(list):
+
     """
-    Like a regular python list but a[i] if i is out of bounds returns None
-    instead of `IndexOutOfBounds`
+        Like a regular python list but callable.
+        When  a(i) is called if i is out of bounds returns None
+        instead of `IndexError`.
     """
 
     def __call__(self, i, default=DEFAULT, cast=None, otherwise=None):
-        """Allows to use a special syntax for fast-check of `request.args()`
-        validity
-
-        Args:
+        """Allows to use a special syntax for fast-check of
+        `request.args()` validity.
+        :params:
             i: index
             default: use this value if arg not found
             cast: type cast
-            otherwise: can be:
-
-             - None: results in a 404
-             - str: redirect to this address
-             - callable: calls the function (nothing is passed)
-
+            otherwise:
+                will be executed when:
+                    - casts fail
+                    - value not found, dont have default and otherwise is
+                    especified
+                can be:
+                    - None: results in a 404
+                    - str: redirect to this address
+                    - callable: calls the function (nothing is passed)
         Example:
             You can use::
-
                 request.args(0,default=0,cast=int,otherwise='http://error_url')
                 request.args(0,default=0,cast=int,otherwise=lambda:...)
-
         """
         n = len(self)
         if 0 <= i < n or -n <= i < 0:
@@ -298,22 +303,23 @@ class List(list):
         elif default is DEFAULT:
             value = None
         else:
-            value, cast = default, False
-        if cast:
-            try:
+            value, cast, otherwise = default, False, False
+        try:
+            if cast:
                 value = cast(value)
-            except (ValueError, TypeError):
-                from http import HTTP, redirect
-                if otherwise is None:
-                    raise HTTP(404)
-                elif isinstance(otherwise, str):
-                    redirect(otherwise)
-                elif callable(otherwise):
-                    return otherwise()
-                else:
-                    raise RuntimeError("invalid otherwise")
+            if not value and otherwise:
+                raise ValueError('Otherwise will raised.')
+        except (ValueError, TypeError):
+            from http import HTTP, redirect
+            if otherwise is None:
+                raise HTTP(404)
+            elif isinstance(otherwise, str):
+                redirect(otherwise)
+            elif callable(otherwise):
+                return otherwise()
+            else:
+                raise RuntimeError("invalid otherwise")
         return value
-
 
 if __name__ == '__main__':
     import doctest

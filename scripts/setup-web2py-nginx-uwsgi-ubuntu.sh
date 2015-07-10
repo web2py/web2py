@@ -84,7 +84,7 @@ server {
         ssl_session_cache shared:SSL:10m;
         ssl_session_timeout 10m;
         ssl_ciphers ECDHE-RSA-AES256-SHA:DHE-RSA-AES256-SHA:DHE-DSS-AES256-SHA:DHE-RSA-AES128-SHA:DHE-DSS-AES128-SHA;
-        ssl_protocols SSLv3 TLSv1;
+        ssl_protocols TLSv1 TLSv1.1 TLSv1.2;
         keepalive_timeout    70;
         location / {
             #uwsgi_pass      127.0.0.1:9001;
@@ -144,6 +144,7 @@ reload-on-as = 256
 reload-on-rss = 192
 uid = www-data
 gid = www-data
+touch-reload = /home/www-data/web2py/routes.py
 cron = 0 0 -1 -1 -1 python /home/www-data/web2py/web2py.py -Q -S welcome -M -R scripts/sessions2trash.py -A -o
 no-orphans = true
 ' >/etc/uwsgi/web2py.ini
