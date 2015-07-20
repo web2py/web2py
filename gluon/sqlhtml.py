@@ -71,6 +71,26 @@ def represent(field, value, record):
     else:
         raise RuntimeError("field representation must take 1 or 2 args")
 
+class CacheRepresenter(object):
+    def __init__(self):
+        self.cache = {}
+    def __call__(self, field, value, row):
+        cache = self.cache
+        if field not in cache:
+            cache[field] = {}
+        try:
+            nvalue = cache[field][value]
+        except KeyError:
+            try:
+                nvalue = field.represent(value, row)
+            except KeyError:
+                try:
+                    nvalue = field.represent(value, row[field.tablename])
+                except KeyError:
+                    nvalue = None
+            if isinstance(field, _repr_ref):
+                cache[field][value] = nvalue
+        return nvalue
 
 def safe_int(x):
     try:
@@ -2668,7 +2688,7 @@ class SQLFORM(FORM):
             htmltable = TABLE(COLGROUP(*cols), THEAD(head))
             tbody = TBODY()
             numrec = 0
-            repr_cache = {}
+            repr_cache = CacheRepresenter()
             for row in rows:
                 trcols = []
                 id = row[field_id]
@@ -2688,21 +2708,7 @@ class SQLFORM(FORM):
                     maxlength = maxtextlengths.get(str(field), maxtextlength)
                     if field.represent:
                         if field.type.startswith('reference'):
-                            if field not in repr_cache:
-                                repr_cache[field] = {}
-                            try:
-                                nvalue = repr_cache[field][value]
-                            except KeyError:
-                                try:
-                                    nvalue = field.represent(value, row)
-                                except KeyError:
-                                    try:
-                                        nvalue = field.represent(
-                                            value, row[field.tablename])
-                                    except KeyError:
-                                        nvalue = None
-                                if isinstance(field, _repr_ref):
-                                    repr_cache[field][value] = nvalue
+                            nvalue = repr_cache(field, value, row)
                         else:
                             try:
                                 nvalue = field.represent(value, row)
