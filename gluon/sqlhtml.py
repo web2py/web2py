@@ -2714,8 +2714,7 @@ class SQLFORM(FORM):
                                 nvalue = field.represent(value, row)
                             except KeyError:
                                 try:
-                                    nvalue = field.represent(
-                                        value, row[field.tablename])
+                                    nvalue = field.represent(value, row[field.tablename])
                                 except KeyError:
                                     nvalue = None
                         value = nvalue
