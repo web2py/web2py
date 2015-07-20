@@ -29,7 +29,7 @@ from gluon.html import URL, FIELDSET, P, DEFAULT_PASSWORD_DISPLAY
 from pydal.base import DEFAULT
 from pydal.objects import Table, Row, Expression, Field
 from pydal.adapters.base import CALLABLETYPES
-from pydal.helpers.methods import smart_query, bar_encode
+from pydal.helpers.methods import smart_query, bar_encode,  _repr_ref
 from pydal.helpers.classes import Reference, SQLCustomType
 from gluon.storage import Storage
 from gluon.utils import md5_hash
@@ -2701,7 +2701,8 @@ class SQLFORM(FORM):
                                             value, row[field.tablename])
                                     except KeyError:
                                         nvalue = None
-                                repr_cache[field][value] = nvalue
+                                if isinstance(field, _repr_ref):
+                                    repr_cache[field][value] = nvalue
                         else:
                             try:
                                 nvalue = field.represent(value, row)
