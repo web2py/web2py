@@ -1146,7 +1146,8 @@ class SQLFORM(FORM):
         extra_fields = extra_fields or []
         self.extra_fields = {}
         for extra_field in extra_fields:
-            self.fields.append(extra_field.name)
+            if not extra_field.name in self.fields:
+                self.fields.append(extra_field.name)
             self.extra_fields[extra_field.name] = extra_field
             extra_field.db = table._db
             extra_field.table = table

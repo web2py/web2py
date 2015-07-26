@@ -2894,14 +2894,18 @@ class Auth(object):
 
         passfield = self.settings.password_field
         formstyle = self.settings.formstyle
-        if self.settings.register_verify_password:
+        if self.settings.register_verify_password:            
+            if self.settings.register_fields == None:
+                self.settings.register_fields = [f.name for f in table_user if f.writable]
+                k = self.settings.register_fields.index("password")
+                self.settings.register_fields.insert(k+1, "password_two")
             extra_fields = [
                 Field("password_two", "password", requires=IS_EQUAL_TO(
                         request.post_vars.get(passfield, None),
                         error_message=self.messages.mismatched_password),
                         label=current.T("Confirm Password"))]
         else:
-            extra_fields = []
+            extra_fields = []        
         form = SQLFORM(table_user,
                        fields=self.settings.register_fields,
                        hidden=dict(_next=next),
