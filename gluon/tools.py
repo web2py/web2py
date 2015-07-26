@@ -6398,7 +6398,7 @@ class Wiki(object):
             count = db.wiki_tag.wiki_page.count()
             fields = [db.wiki_page.id, db.wiki_page.slug,
                       db.wiki_page.title, db.wiki_page.tags,
-                      db.wiki_page.can_read]
+                      db.wiki_page.can_read, db.wiki+page.can_edit]
             if preview:
                 fields.append(db.wiki_page.body)
             if query is None:
