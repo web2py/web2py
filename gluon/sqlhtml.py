@@ -29,7 +29,7 @@ from gluon.html import URL, FIELDSET, P, DEFAULT_PASSWORD_DISPLAY
 from pydal.base import DEFAULT
 from pydal.objects import Table, Row, Expression, Field
 from pydal.adapters.base import CALLABLETYPES
-from pydal.helpers.methods import smart_query, bar_encode
+from pydal.helpers.methods import smart_query, bar_encode,  _repr_ref
 from pydal.helpers.classes import Reference, SQLCustomType
 from gluon.storage import Storage
 from gluon.utils import md5_hash
@@ -71,6 +71,26 @@ def represent(field, value, record):
     else:
         raise RuntimeError("field representation must take 1 or 2 args")
 
+class CacheRepresenter(object):
+    def __init__(self):
+        self.cache = {}
+    def __call__(self, field, value, row):
+        cache = self.cache
+        if field not in cache:
+            cache[field] = {}
+        try:
+            nvalue = cache[field][value]
+        except KeyError:
+            try:
+                nvalue = field.represent(value, row)
+            except KeyError:
+                try:
+                    nvalue = field.represent(value, row[field.tablename])
+                except KeyError:
+                    nvalue = None
+            if isinstance(field, _repr_ref):
+                cache[field][value] = nvalue
+        return nvalue
 
 def safe_int(x):
     try:
@@ -1126,7 +1146,8 @@ class SQLFORM(FORM):
         extra_fields = extra_fields or []
         self.extra_fields = {}
         for extra_field in extra_fields:
-            self.fields.append(extra_field.name)
+            if not extra_field.name in self.fields:
+                self.fields.append(extra_field.name)
             self.extra_fields[extra_field.name] = extra_field
             extra_field.db = table._db
             extra_field.table = table
@@ -2668,7 +2689,7 @@ class SQLFORM(FORM):
             htmltable = TABLE(COLGROUP(*cols), THEAD(head))
             tbody = TBODY()
             numrec = 0
-            repr_cache = {}
+            repr_cache = CacheRepresenter()
             for row in rows:
                 trcols = []
                 id = row[field_id]
@@ -2688,27 +2709,13 @@ class SQLFORM(FORM):
                     maxlength = maxtextlengths.get(str(field), maxtextlength)
                     if field.represent:
                         if field.type.startswith('reference'):
-                            if field not in repr_cache:
-                                repr_cache[field] = {}
-                            try:
-                                nvalue = repr_cache[field][value]
-                            except KeyError:
-                                try:
-                                    nvalue = field.represent(value, row)
-                                except KeyError:
-                                    try:
-                                        nvalue = field.represent(
-                                            value, row[field.tablename])
-                                    except KeyError:
-                                        nvalue = None
-                                repr_cache[field][value] = nvalue
+                            nvalue = repr_cache(field, value, row)
                         else:
                             try:
                                 nvalue = field.represent(value, row)
                             except KeyError:
                                 try:
-                                    nvalue = field.represent(
-                                        value, row[field.tablename])
+                                    nvalue = field.represent(value, row[field.tablename])
                                 except KeyError:
                                     nvalue = None
                         value = nvalue
