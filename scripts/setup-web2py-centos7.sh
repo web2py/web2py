@@ -195,7 +195,7 @@ NameVirtualHost *:80
 NameVirtualHost *:443
 
 <VirtualHost *:80>
-  WSGIDaemonProcess web2py user=apache group=apache processes=1 threads=1
+  WSGIDaemonProcess web2py user=apache group=apache
   WSGIProcessGroup web2py
   WSGIScriptAlias / /opt/web-apps/web2py/wsgihandler.py
   WSGIPassAuthorization On
