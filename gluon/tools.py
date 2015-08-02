@@ -3739,7 +3739,12 @@ class Auth(object):
 
                 basic_allowed, basic_accepted, user = self.basic()
                 user = user or self.user
-                if requires_login:
+
+                login_required = requires_login
+                if callable(login_required):
+                    login_required = login_required()
+
+                if login_required:
                     if not user:
                         if current.request.ajax:
                             raise HTTP(401, self.messages.ajax_failed_authentication)
