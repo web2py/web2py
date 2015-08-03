@@ -33,6 +33,7 @@ def ldap_auth(server='ldap', port=None,
               group_name_attrib='cn',
               group_member_attrib='memberUid',
               group_filterstr='objectClass=*',
+              tls=False,
               logging_level='error'):
 
     """
@@ -79,6 +80,13 @@ def ldap_auth(server='ldap', port=None,
     If using secure ldaps:// pass secure=True and cert_path="..."
     If ldap is using GnuTLS then you need cert_file="..." instead cert_path
     because cert_path isn't implemented in GnuTLS :(
+
+    To enable TLS, set tls=True:
+
+        auth.settings.login_methods.append(ldap_auth(
+            server='my.ldap.server',
+            base_dn='ou=Users,dc=domain,dc=com',
+            tls=True))
 
     If you need to bind to the directory with an admin account in order to
     search it then specify bind_dn & bind_pw to use for this.
@@ -610,6 +618,8 @@ def ldap_auth(server='ldap', port=None,
                 ldap_port = 389
             con = ldap.initialize(
                 "ldap://" + ldap_server + ":" + str(ldap_port))
+        if tls:
+            con.start_tls_s()
         return con
 
     def get_user_groups_from_ldap(username,
