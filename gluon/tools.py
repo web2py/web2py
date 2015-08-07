@@ -5523,11 +5523,12 @@ def completion(callback):
     return _completion
 
 
-def prettydate(d, T=lambda x: x):
+def prettydate(d, T=lambda x: x, utc=False):
+    now = datetime.datetime.utcnow() if utc else datetime.datetime.now()
     if isinstance(d, datetime.datetime):
-        dt = datetime.datetime.now() - d
+        dt = now - d
     elif isinstance(d, datetime.date):
-        dt = datetime.date.today() - d
+        dt = now.date() - d
     elif not d:
         return ''
     else:
