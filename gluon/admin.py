@@ -59,6 +59,8 @@ def app_pack(app, request, raise_ex=False, filenames=None):
         w2p_pack(filename, apath(app, request), filenames=filenames)
         return filename
     except Exception, e:
+        import traceback
+        print traceback.format_exc()
         if raise_ex:
             raise
         return False
@@ -118,10 +120,9 @@ def app_cleanup(app, request):
                 r = False
 
     # Remove cache files
-    path = apath('%s/cache/' % app, request)
-    CacheOnDisk(folder=path).clear()
-    
+    path = apath('%s/cache/' % app, request)    
     if os.path.exists(path):
+        CacheOnDisk(folder=path).clear()
         for f in os.listdir(path):
             try:
                 if f[:1] != '.': recursive_unlink(os.path.join(path, f))
