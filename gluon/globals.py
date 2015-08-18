@@ -1023,10 +1023,16 @@ class Session(Storage):
     def _fixup_before_save(self):
         response = current.response
         rcookies = response.cookies
-        if self._forget and response.session_id_name in rcookies:
+        scookies = rcookies.get(response.session_id_name)
+        if not scookies:
+            return
+        if self._forget:
             del rcookies[response.session_id_name]
-        elif self._secure and response.session_id_name in rcookies:
-            rcookies[response.session_id_name]['secure'] = True
+            return
+        if not self._js_cookies:
+            scookies['HttpOnly'] = True
+        if self._secure:
+            scookies['secure'] = True
 
     def clear_session_cookies(self):
         request = current.request
