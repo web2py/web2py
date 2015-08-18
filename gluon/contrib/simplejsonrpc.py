@@ -34,7 +34,7 @@ except ImportError:
 class JSONRPCError(RuntimeError):
     "Error object for remote procedure call fail"
     def __init__(self, code, message, data=None):
-        value = "%s: %s\n%s" % (code, message, '\n'.join(data))
+        value = "%s: %s\n%s" % (code, message, '\n'.join(data or ''))
         RuntimeError.__init__(self, value)
         self.code = code
         self.message = message
