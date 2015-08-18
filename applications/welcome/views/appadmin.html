@@ -137,9 +137,9 @@
     <h4>{{=T("Overview")}}</h4>
     <p>{{=T.M("Number of entries: **%s**", total['entries'])}}</p>
     {{if total['entries'] > 0:}}
-      <p>{{=T.M("Hit Ratio: **%(ratio)s%%** (**%(hits)s** %%{hit(hits)} and **%(misses)s** %%{miss(misses})",
-              dict(ratio=total['ratio'], hits=total['hits'], misses=total['misses']))}}
-     </p>
+    <p>{{=T.M("Hit Ratio: **%(ratio)s%%** (**%(hits)s** %%{hit(hits)} and **%(misses)s** %%{miss(misses)})",
+             dict( ratio=total['ratio'], hits=total['hits'], misses=total['misses']))}}
+    </p>
     <p>
       {{=T("Size of cache:")}}
       {{if object_stats:}}
@@ -155,7 +155,7 @@
       {{=T.M("Cache contains items up to **%(hours)02d** %%{hour(hours)} **%(min)02d** %%{minute(min)} **%(sec)02d** %%{second(sec)} old.",
               dict(hours=total['oldest'][0], min=total['oldest'][1], sec=total['oldest'][2]))}}
     </p>
-    {{=BUTTON(T('Cache Keys'), _onclick='jQuery("#all_keys").toggle();')}}
+    {{=BUTTON(T('Cache Keys'), _onclick='jQuery("#all_keys").toggle().toggleClass( "hidden" );')}}
     <div class="hidden" id="all_keys">
       {{=total['keys']}}
     </div>
@@ -183,7 +183,7 @@
       {{=T.M("RAM contains items up to **%(hours)02d** %%{hour(hours)} **%(min)02d** %%{minute(min)} **%(sec)02d** %%{second(sec)} old.",
               dict(hours=ram['oldest'][0], min=ram['oldest'][1], sec=ram['oldest'][2]))}}
     </p>
-    {{=BUTTON(T('RAM Cache Keys'), _onclick='jQuery("#ram_keys").toggle();')}}
+    {{=BUTTON(T('RAM Cache Keys'), _onclick='jQuery("#ram_keys").toggle().toggleClass( "hidden" );')}}
     <div class="hidden" id="ram_keys">
       {{=ram['keys']}}
     </div>
@@ -212,7 +212,7 @@
       {{=T.M("DISK contains items up to **%(hours)02d** %%{hour(hours)} **%(min)02d** %%{minute(min)} **%(sec)02d** %%{second(sec)} old.",
                 dict(hours=disk['oldest'][0], min=disk['oldest'][1], sec=disk['oldest'][2]))}}
       </p>
-      {{=BUTTON(T('Disk Cache Keys'), _onclick='jQuery("#disk_keys").toggle();')}}
+      {{=BUTTON(T('Disk Cache Keys'), _onclick='jQuery("#disk_keys").toggle().toggleClass( "hidden" );')}}
       <div class="hidden" id="disk_keys">
       {{=disk['keys']}}
       </div>
