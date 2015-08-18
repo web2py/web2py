@@ -1029,7 +1029,7 @@ class Session(Storage):
         if self._forget:
             del rcookies[response.session_id_name]
             return
-        if not self._js_cookies:
+        if self.get('httponly_cookies',True):
             scookies['HttpOnly'] = True
         if self._secure:
             scookies['secure'] = True
