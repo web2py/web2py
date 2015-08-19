@@ -31,6 +31,17 @@ def setup_clean_session():
 
 class testResponse(unittest.TestCase):
 
+    #port from python 2.7, needed for 2.5 and 2.6 tests
+    def assertRegexpMatches(self, text, expected_regexp, msg=None):
+        """Fail the test unless the text matches the regular expression."""
+        if isinstance(expected_regexp, basestring):
+            expected_regexp = re.compile(expected_regexp)
+        if not expected_regexp.search(text):
+            msg = msg or "Regexp didn't match"
+            msg = '%s: %r not found in %r' % (
+                msg, expected_regexp.pattern, text)
+            raise self.failureException(msg)
+
     def test_include_files(self):
 
         def return_includes(response, extensions=None):
