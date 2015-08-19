@@ -6,6 +6,7 @@
 """
 
 
+import re
 import unittest
 from fix_path import fix_sys_path
 
