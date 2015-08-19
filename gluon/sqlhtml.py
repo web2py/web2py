@@ -1515,31 +1515,6 @@ class SQLFORM(FORM):
         elif (not ret) and (not auch):
             # auch is true when user tries to delete a record
             # that does not pass validation, yet it should be deleted
-            for fieldname in self.fields:
-
-                field = (self.table[fieldname]
-                         if fieldname in self.table.fields
-                         else self.extra_fields[fieldname])
-                # this is a workaround! widgets should always have default not None!
-                if not field.widget and field.type.startswith('list:') and \
-                        not OptionsWidget.has_options(field):
-                    field.widget = self.widgets.list.widget
-                if field.widget and fieldname in request_vars:
-                    if fieldname in self.request_vars:
-                        value = self.request_vars[fieldname]
-                    elif self.record:
-                        value = self.record[fieldname]
-                    else:
-                        value = field.default
-                    row_id = '%s_%s%s' % (
-                        self.table, fieldname, SQLFORM.ID_ROW_SUFFIX)
-                    widget = field.widget(field, value)
-                    parent = self.field_parent[row_id]
-                    if parent:
-                        parent.components = [widget]
-                        if self.errors.get(fieldname):
-                            parent._traverse(False, hideerror)
-                    self.custom.widget[fieldname] = widget
             self.accepted = ret
             return ret
 
