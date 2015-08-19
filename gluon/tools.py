@@ -2497,6 +2497,10 @@ class Auth(object):
         """
         Returns a login form
         """
+        # Avoid asking for credentials when page reload and page URL contains 
+        # "user/login?_next=NEXT_COMPONENT" if user is already authenticated
+        if self.get_vars_next() is not None and self.get_vars_next() != '' and self.is_logged_in():
+            redirect(self.get_vars_next())
 
         table_user = self.table_user()
         settings = self.settings
