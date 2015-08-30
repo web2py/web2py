@@ -13,6 +13,7 @@ Include in your model (eg db.py)::
 
     auth.define_tables(username=True)
     from gluon.contrib.login_methods.saml2_auth import Saml2Auth
+    import os
     auth.settings.login_form=Saml2Auth(
     config_file = os.path.join(request.folder,'private','sp_conf'),
     maps=dict(
@@ -20,10 +21,59 @@ Include in your model (eg db.py)::
         email=lambda v: v['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn'][0],
         user_id=lambda v: v['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/upn'][0]))
         
-you must have private/sp_conf.py, the pysaml2 sp configuration file
+you must have private/sp_conf.py, the pysaml2 sp configuration file. For example:
+
+
+    #!/usr/bin/env python
+    # -*- coding: utf-8 -*-
+
+    from saml2 import BINDING_HTTP_POST, BINDING_HTTP_REDIRECT
+    import os.path
+    import requests
+    import tempfile
+
+    BASEDIR = os.path.abspath(os.path.dirname(__file__))
+
+    # Web2py SP url and application name
+    HOST = 'http://127.0.0.1:8000'
+    APP = 'sp'
+
+    # To load the IDP metadata...
+    IDP_METADATA = 'http://127.0.0.1:8088/metadata'
+
+    def full_path(local_file):
+        return os.path.join(BASEDIR, local_file)
+
+    CONFIG = {                
+        # your entity id, usually your subdomain plus the url to the metadata view.
+        'entityid': '%s/%s/default/metadata' % (HOST, APP),
+        'service': {
+            'sp' : {
+                'name': 'MYSP',  
+                'endpoints': {     
+                    'assertion_consumer_service': [
+                        ('%s/%s/default/user/login' % (HOST, APP), BINDING_HTTP_REDIRECT),
+                        ('%s/%s/default/user/login' % (HOST, APP), BINDING_HTTP_POST),       
+                        ],
+                    },
+                },
+            },
+        # Your private and public key.
+        'key_file': full_path('pki/mykey.pem'),
+        'cert_file': full_path('pki/mycert.pem'),
+        
+        # where the remote metadata is stored
+        'metadata': {
+            "remote": [{
+                "url": IDP_METADATA,
+                "cert":full_path('pki/mycert.pem')
+                }]
+            },
+    }
+
 """
 
-from saml2 import BINDING_HTTP_REDIRECT
+from saml2 import BINDING_HTTP_REDIRECT, BINDING_HTTP_POST
 from saml2.client import Saml2Client
 from gluon.utils import web2py_uuid
 from gluon import current, redirect, URL
@@ -59,10 +109,13 @@ def saml2_handler(session, request, config_filename = None):
     client = Saml2Client(config_file = config_filename)
     idps = client.metadata.with_descriptor("idpsso")
     entityid = idps.keys()[0]
-    bindings = [BINDING_HTTP_REDIRECT]
+    bindings = [BINDING_HTTP_REDIRECT, BINDING_HTTP_POST]
     binding, destination = client.pick_binding(
         "single_sign_on_service", bindings, "idpsso", entity_id=entityid)
-    binding = BINDING_HTTP_REDIRECT 
+    if request.env.request_method == 'GET':
+        binding = BINDING_HTTP_REDIRECT 
+    elif request.env.request_method == 'POST':
+        binding = BINDING_HTTP_POST
     if not request.vars.SAMLResponse:
         req_id, req = client.create_authn_request(destination, binding=binding)
         relay_state = web2py_uuid().replace('-','')
