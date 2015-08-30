@@ -2480,6 +2480,17 @@ class Auth(object):
         # Allow up to 4 attempts (the 1st one plus 3 more)
         session.auth_two_factor_tries_left = 3
 
+    def when_is_logged_in_bypass_next_in_url(self, next, session):
+        """
+        This function should be use when someone want to avoid asking for user
+        credentials when loaded page contains "user/login?_next=NEXT_COMPONENT"
+        in the URL is refresh but user is already authenticated.
+        """
+        if self.is_logged_in():
+            if next == session._auth_next:
+                del session._auth_next
+            redirect(next, client_side=self.settings.client_side)
+
     def login(self,
               next=DEFAULT,
               onvalidation=DEFAULT,
@@ -2489,28 +2500,10 @@ class Auth(object):
         """
         Returns a login form
         """
-
-        table_user = self.table_user()
         settings = self.settings
-        if 'username' in table_user.fields or \
-                not settings.login_email_validate:
-            tmpvalidator = IS_NOT_EMPTY(error_message=self.messages.is_empty)
-            if not settings.username_case_sensitive:
-                tmpvalidator = [IS_LOWER(), tmpvalidator]
-        else:
-            tmpvalidator = IS_EMAIL(error_message=self.messages.invalid_email)
-            if not settings.email_case_sensitive:
-                tmpvalidator = [IS_LOWER(), tmpvalidator]
-
         request = current.request
         response = current.response
         session = current.session
-
-        passfield = settings.password_field
-        try:
-            table_user[passfield].requires[-1].min_length = 0
-        except:
-            pass
 
         ### use session for federated login
         snext = self.get_vars_next()
@@ -2535,6 +2528,27 @@ class Auth(object):
                         next = user_next
                 else:
                     next = user_next
+                    # Avoid asking unnecessary user credentials when user is logged in
+                    self.when_is_logged_in_bypass_next_in_url(next=next, session=session)
+
+        # Moved here to avoid unnecessary execution in case of redirection to next in case of logged in user
+        table_user = self.table_user()
+        if 'username' in table_user.fields or \
+                not settings.login_email_validate:
+            tmpvalidator = IS_NOT_EMPTY(error_message=self.messages.is_empty)
+            if not settings.username_case_sensitive:
+                tmpvalidator = [IS_LOWER(), tmpvalidator]
+        else:
+            tmpvalidator = IS_EMAIL(error_message=self.messages.invalid_email)
+            if not settings.email_case_sensitive:
+                tmpvalidator = [IS_LOWER(), tmpvalidator]
+
+        passfield = settings.password_field
+        try:
+            table_user[passfield].requires[-1].min_length = 0
+        except:
+            pass
+
         if onvalidation is DEFAULT:
             onvalidation = settings.login_onvalidation
         if onaccept is DEFAULT:
@@ -2546,8 +2560,7 @@ class Auth(object):
 
         user = None  # default
 
-
-        #Setup the default field used for the form
+        # Setup the default field used for the form
         multi_login = False
         if self.settings.login_userfield:
             username = self.settings.login_userfield
