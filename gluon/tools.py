@@ -2415,7 +2415,7 @@ class Auth(object):
         if self.is_logged_in() and not 'renew' in request.vars:
             return allow_access()
         elif not self.is_logged_in() and 'gateway' in request.vars:
-            redirect(service)
+            redirect(session._cas_service)
 
         def cas_onaccept(form, onaccept=onaccept):
             if not onaccept is DEFAULT:
