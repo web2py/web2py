@@ -1,3 +1,21 @@
+## 2.12.1
+
+- security fix: Validate for open redirect everywhere, not just in login()
+- allow to pack invidual apps and selected files as packed exe files
+- allow bulk user registration with default bulk_register_enabled=False
+- allow unsorted multiword query in grid search
+- better MongoDB support with newer pyDAL
+- enable <app>/appadmin/manage/auth by default for user admin
+- allow mail.settings.server='logging:filename' to log emails to a file
+- better caching logic
+- fixed order of confirm-password field
+- TLS support in ldap
+- prettydate can do UTC
+- jquery 1.11.3
+- bootstrap 3.3.5
+- moved to codecov and enabled appveyor
+- many bug fixes
+
 ## 2.11.1
 
 - Many small but significative improvements and bug fixes

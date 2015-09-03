@@ -646,13 +646,12 @@ class AutocompleteWidget(object):
     def __init__(self, request, field, id_field=None, db=None,
                  orderby=None, limitby=(0, 10), distinct=False,
                  keyword='_autocomplete_%(tablename)s_%(fieldname)s',
-                 min_length=2, help_fields=None, help_string=None):
+                 min_length=2, help_fields=None, help_string=None, at_beginning = True):
 
         self.help_fields = help_fields or []
         self.help_string = help_string
         if self.help_fields and not self.help_string:
-            self.help_string = ' '.join('%%(%s)s' % f.name
-                                        for f in self.help_fields)
+            self.help_string = ' '.join('%%(%s)s' % f.name for f in self.help_fields)
 
         self.request = request
         self.keyword = keyword % dict(tablename=field.tablename,
@@ -662,6 +661,7 @@ class AutocompleteWidget(object):
         self.limitby = limitby
         self.distinct = distinct
         self.min_length = min_length
+        self.at_beginning = at_beginning
         self.fields = [field]
         if id_field:
             self.is_reference = True
@@ -679,8 +679,10 @@ class AutocompleteWidget(object):
             field = self.fields[0]
             if settings and settings.global_settings.web2py_runtime_gae:
                 rows = self.db(field.__ge__(self.request.vars[self.keyword]) & field.__lt__(self.request.vars[self.keyword] + u'\ufffd')).select(orderby=self.orderby, limitby=self.limitby, *(self.fields+self.help_fields))
-            else:
+            elif self.at_beginning:
                 rows = self.db(field.like(self.request.vars[self.keyword] + '%', case_sensitive=False)).select(orderby=self.orderby, limitby=self.limitby, distinct=self.distinct, *(self.fields+self.help_fields))
+            else:
+                rows = self.db(field.contains(self.request.vars[self.keyword], case_sensitive=False)).select(orderby=self.orderby, limitby=self.limitby, distinct=self.distinct, *(self.fields+self.help_fields))
             if rows:
                 if self.is_reference:
                     id_field = self.fields[1]
