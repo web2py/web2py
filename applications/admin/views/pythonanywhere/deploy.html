@@ -9,7 +9,7 @@
     <div class="control-group" id="username__row">
         <label class="control-label" for="username">{{=T('Username')}}</label>
         <div class="controls">
-            <input type="text" name="username" id="username">
+            <input type="text" name="username" id="username"><span class="help-inline">*</span>
             <span class="help-block"></span>
         </div>
     </div>
@@ -33,7 +33,7 @@
     <div class="control-group" id="web2py_admin_password__row">
         <label class="control-label" for="web2py_admin_password">{{=T('web2py Admin Password')}}</label>
         <div class="controls">
-            <input type="password" name="web2py_admin_password" id="web2py_admin_password">
+            <input type="password" name="web2py_admin_password" id="web2py_admin_password"><span class="help-inline">*</span>
             <span class="help-block"></span>
         </div>
     </div>
@@ -41,7 +41,7 @@
     <div class="control-group" id="accepts_terms__row">
         <div class="controls">
             <label class="checkbox">
-                <input type="checkbox" name="accepts_terms" id="accepts_terms"> {{=T('Accept Terms')}}
+                <input type="checkbox" name="accepts_terms" id="accepts_terms"><a target="_blank" href="https://www.pythonanywhere.com/terms/">{{=T('Accept Terms')}}</a>
             </label>
             <span class="help-block"></span>
         </div>
@@ -54,6 +54,7 @@
     </div>
 
     </form>
+    <p>* {{=T('You only need these if you have already registered')}}</p>
 </div>
 
 <div class="row-fluid" id="app_manager" style="display:none;">
@@ -65,6 +66,10 @@
         </select>
         <input type="submit" value="Deploy" id="deploy_button" class="btn btn-primary">
         </form>
+
+        <div class="alert alert-info">
+            <strong>{{=T('Warning!')}}</strong> {{=T('if your application uses a database other than sqlite you will then have to configure its DAL in pythonanywhere.')}}
+        </div>
     </div>
     <div class="span6">
         <h3>{{=T('PythonAnywhere Apps')}}</h3>
@@ -84,12 +89,11 @@ $(document).ready(function() {
         $.web2py.disableElement($('#submit_palogin'));
         $.web2py.disableFormElements($('#palogin'));
         $.ajax({
-                url: '{{=URL("pythonanywhere", "crossdomainproxy")}}',
+                url: '{{=URL("pythonanywhere", "create_account")}}',
                 type: 'POST',
                 data: data,
                 dataType: 'json',
         }).done(function(data, textStatus, jqXHR) {
-                console.log(data);
                 $('#palogin .error').removeClass('error');
                 $('#palogin .help-block').text('');
                 if(data.status == 'error') {
@@ -124,7 +128,6 @@ $(document).ready(function() {
                 data: {username: $('#username').val(), password: $('#web2py_admin_password').val(), apps: $('#local').val()},
                 dataType: 'json',
         }).done(function(data, textStatus, jqXHR) {
-                console.log(data);
                 refresh_apps();
                 $.web2py.enableElement($('#deploy_button'));
         }).fail(function(){

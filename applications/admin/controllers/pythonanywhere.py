@@ -17,18 +17,32 @@ def deploy():
     return {}
 
 
-def crossdomainproxy():
+def create_account():
+    """ Create a PythonAnywhere account """
     if not request.vars:
         raise HTTP(400)
+    
+    if request.vars.username and request.vars.web2py_admin_password:
+        # Check if web2py is already there otherwise we get an error 500 too.
+        client = ServerProxy('https://%(username)s:%(web2py_admin_password)s@%(username)s.pythonanywhere.com/admin/webservices/call/jsonrpc' % request.vars)
+        try:
+            if client.login() is True:
+                return response.json({'status': 'ok'})
+        except ProtocolError as error:
+            pass
+
     import urllib, urllib2
     url = 'https://www.pythonanywhere.com/api/web2py/create_account'
     data = urllib.urlencode(request.vars)
     req = urllib2.Request(url, data)
+    
     try:
         reply = urllib2.urlopen(req)
     except urllib2.HTTPError as error:
         if error.code == 400:
             reply = error
+        elif error.code == 500:
+            return response.json({'status':'error', 'errors':{'username': ['An App other than web2py is installed in the domain %(username)s.pythonanywhere.com' % request.vars]}})
         else:
             raise
     response.headers['Content-Type'] = 'application/json'
