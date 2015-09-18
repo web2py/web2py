@@ -1080,6 +1080,7 @@ class Session(Storage):
         if response.session_storage_type == 'file':
             target = recfile.generate(response.session_filename)
             try:
+                self._close(response)
                 os.unlink(target)
             except:
                 pass
