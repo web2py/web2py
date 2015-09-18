@@ -146,8 +146,8 @@ class TokenHandler(tornado.web.RequestHandler):
 
 class DistributeHandler(tornado.websocket.WebSocketHandler):
    
-   def check_origin(self, origin):
-      return True
+    def check_origin(self, origin):
+        return True
 
     def open(self, params):
         group, token, name = params.split('/') + [None, None]
