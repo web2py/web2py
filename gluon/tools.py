@@ -2146,7 +2146,7 @@ class Auth(object):
                     Field('user_id', reference_table_user, default=None,
                           label=self.messages.label_user_id),
                     Field('expires_on', 'datetime', default=datetime.datetime(2999,12,31)),
-                    Field('token',writable=False,default=web2py_uuid(),unique=True),
+                    Field('token',writable=False,default=web2py_uuid,unique=True),
                     *extra_fields,
                     **dict(
                         migrate=self.__get_migrate(
