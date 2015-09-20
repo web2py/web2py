@@ -2146,7 +2146,7 @@ class Auth(object):
                     Field('user_id', reference_table_user, default=None,
                           label=self.messages.label_user_id),
                     Field('expires_on', 'datetime', default=datetime.datetime(2999,12,31)),
-                    Field('token',writable=False,default=web2py_uuid(),unique=True),
+                    Field('token',writable=False,default=web2py_uuid,unique=True),
                     *extra_fields,
                     **dict(
                         migrate=self.__get_migrate(
@@ -6392,7 +6392,7 @@ class Wiki(object):
             count = db.wiki_tag.wiki_page.count()
             fields = [db.wiki_page.id, db.wiki_page.slug,
                       db.wiki_page.title, db.wiki_page.tags,
-                      db.wiki_page.can_read, db.wiki+page.can_edit]
+                      db.wiki_page.can_read, db.wiki_page.can_edit]
             if preview:
                 fields.append(db.wiki_page.body)
             if query is None:
