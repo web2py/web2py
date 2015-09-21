@@ -18,9 +18,9 @@
       function pe(ul, e) {
         var new_line = ml(ul);
         rel(ul);
-        if ($(e.target).parent().is(':visible')) {
+        if ($(e.target).closest('li').is(':visible')) {
           /* make sure we didn't delete the element before we insert after */
-          new_line.insertAfter($(e.target).parent());
+          new_line.insertAfter($(e.target).closest('li'));
         } else {
           /* the line we clicked on was deleted, just add to end of list */
           new_line.appendTo(ul);
@@ -30,9 +30,9 @@
       }
 
       function rl(ul, e) {
-        if ($(ul).children().length > 1) {
+        if ($(ul).find('li').length > 1) {
           /* only remove if we have more than 1 item so the list is never empty */
-          $(e.target).parent().remove();
+          $(e.target).closest('li').remove();
         }
       }
 
@@ -46,9 +46,9 @@
       function rel(ul) {
         /* keep only as many as needed*/
         $(ul).find("li").each(function() {
-          var trimmed = $.trim($(this.firstChild).val());
+          var trimmed = $.trim($(this).find(":text").val());
           if (trimmed == '') $(this).remove();
-          else $(this.firstChild).val(trimmed);
+          else $(this).find(":text").val(trimmed);
         });
       }
       var ul = this;
