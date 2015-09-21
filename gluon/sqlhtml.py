@@ -938,6 +938,8 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
             elif isinstance(controls, UL):
                 for e in controls.elements("input"):
                     e.add_class('form-control')
+            elif controls is None or isinstance(controls, basestring):
+                _controls = P(controls, _class="form-control-static %s" % col_class)
             if isinstance(label, LABEL):
                 label['_class'] = 'control-label %s' % label_col_class
 
