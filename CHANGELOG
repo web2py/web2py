@@ -1,3 +1,7 @@
+## master
+- Change .flash and .hidden to .w2p_flash and .w2p_hidden
+     - copy the static folder from the new welcome app when you update web2py
+
 ## 2.12.1
 
 - security fix: Validate for open redirect everywhere, not just in login()
