@@ -938,6 +938,8 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
             elif isinstance(controls, UL):
                 for e in controls.elements("input"):
                     e.add_class('form-control')
+            elif controls is None or isinstance(controls, basestring):
+                _controls = P(controls, _class="form-control-static %s" % col_class)
             if isinstance(label, LABEL):
                 label['_class'] = 'control-label %s' % label_col_class
 
@@ -1668,6 +1670,9 @@ class SQLFORM(FORM):
             elif field.type == 'double':
                 if value is not None:
                     fields[fieldname] = safe_float(value)
+            elif field.type in ('string', 'text'):
+                if fieldname in self.request_vars:
+                    fields[fieldname] = self.request_vars[fieldname]
 
         for fieldname in self.vars:
             if fieldname != 'id' and fieldname in self.table.fields\
