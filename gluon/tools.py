@@ -2898,6 +2898,11 @@ class Auth(object):
 
         passfield = self.settings.password_field
         formstyle = self.settings.formstyle
+        try: # Make sure we have our original minimum length as other auth forms change it
+            table_user[passfield].requires[-1].min_length = self.settings.password_min_length
+        except:
+            pass
+
         if self.settings.register_verify_password:            
             if self.settings.register_fields is None:
                 self.settings.register_fields = [f.name for f in table_user if f.writable]
@@ -4212,6 +4217,7 @@ class Auth(object):
                               function=function,
                               groups=groups)
         else:
+            self._wiki.settings.extra = extra or {}
             self._wiki.env.update(env or {})
 
         # if resolve is set to True, process request as wiki call
