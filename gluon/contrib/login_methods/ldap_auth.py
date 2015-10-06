@@ -419,32 +419,24 @@ def ldap_auth(server='ldap', port=None,
                     store_user_mail = result[user_mail_attrib][0]
                 except KeyError, e:
                     store_user_mail = None
-                try:
-                    #
+                update_or_insert_values = {'first_name': store_user_firstname,
+                                           'last_name': store_user_lastname,
+                                           'email': store_user_mail}
+                if '@' not in username:
                     # user as username
-                    # #################
+                    # ################
+                    fields = ['first_name', 'last_name', 'email']
                     user_in_db = db(db.auth_user.username == username)
-                    if user_in_db.count() > 0:
-                        user_in_db.update(first_name=store_user_firstname,
-                                          last_name=store_user_lastname,
-                                          email=store_user_mail)
-                    else:
-                        db.auth_user.insert(first_name=store_user_firstname,
-                                            last_name=store_user_lastname,
-                                            email=store_user_mail,
-                                            username=username)
-                except:
-                    #
+                elif '@' in username:
                     # user as email
-                    # ##############
+                    # #############
+                    fields = ['first_name', 'last_name']
                     user_in_db = db(db.auth_user.email == username)
-                    if user_in_db.count() > 0:
-                        user_in_db.update(first_name=store_user_firstname,
-                                          last_name=store_user_lastname)
-                    else:
-                        db.auth_user.insert(first_name=store_user_firstname,
-                                            last_name=store_user_lastname,
-                                            email=username)
+                update_or_insert_values = {f: update_or_insert_values[f] for f in fields}
+                if user_in_db.count() > 0:
+                    user_in_db.update(**update_or_insert_values)
+                else:
+                    db.auth_user.insert(**update_or_insert_values)
             con.unbind()
 
             if manage_groups:
