@@ -434,7 +434,9 @@ def ldap_auth(server='ldap', port=None,
                     user_in_db = db(db.auth_user.email == username)
                 update_or_insert_values = {f: update_or_insert_values[f] for f in fields}
                 if user_in_db.count() > 0:
-                    user_in_db.update(**update_or_insert_values)
+                    actual_values = user_in_db.select(*[db.auth_user[f] for f in fields]).first().as_dict()
+                    if update_or_insert_values != actual_values:  # We don't update record if values are the same
+                        user_in_db.update(**update_or_insert_values)
                 else:
                     db.auth_user.insert(**update_or_insert_values)
             con.unbind()
