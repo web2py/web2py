@@ -133,7 +133,7 @@
       },
       ajax_init: function(target) {
         /*called whenever a fragment gets loaded */
-        $('.hidden', target).hide();
+        $('.w2p_hidden', target).hide();
         web2py.manage_errors(target);
         web2py.ajax_fields(target);
         web2py.show_if_handler(target);
@@ -161,7 +161,7 @@
          * and require no dom manipulations
          */
         var doc = $(document);
-        doc.on('click', '.flash', function(e) {
+        doc.on('click', '.w2p_flash', function(e) {
           var t = $(this);
           if(t.css('top') == '0px') t.slideUp('slow');
           else t.fadeOut();
@@ -241,7 +241,7 @@
           /*personally I don't like it.
            *if there's an error it it flashed and can be removed
            *as any other message
-           *doc.off('click', '.flash')
+           *doc.off('click', '.w2p_flash')
            */
           switch(xhr.status) {
             case 500:
@@ -530,13 +530,13 @@
       },
       /*helper for flash messages*/
       flash: function(message, status) {
-        var flash = $('.flash');
+        var flash = $('.w2p_flash');
         web2py.hide_flash();
         flash.html(message).addClass(status);
         if(flash.html()) flash.append('<span id="closeflash"> &times; </span>').slideDown();
       },
       hide_flash: function() {
-        $('.flash').fadeOut(0).html('');
+        $('.w2p_flash').fadeOut(0).html('');
       },
       show_if_handler: function(target) {
         var triggers = {};
@@ -692,7 +692,7 @@
         $.web2py.component_handler(target);
       },
       main_hook: function() {
-        var flash = $('.flash');
+        var flash = $('.w2p_flash');
         flash.hide();
         if(flash.html()) web2py.flash(flash.html());
         web2py.ajax_init(document);

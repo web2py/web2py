@@ -16,7 +16,7 @@ def quote(text):
 
 class Node:
     def __init__(self, name, value, url='.', readonly=False, active=True,
-                 onchange=None, **kwarg):
+                 onchange=None, select=False, size=4, **kwarg):
         self.url = url
         self.name = name
         self.value = str(value)
@@ -26,11 +26,21 @@ class Node:
         self.readonly = readonly
         self.active = active
         self.onchange = onchange
-        self.size = 4
+        self.size = size
         self.locked = False
+        self.select = value if select and not isinstance(value, str) else False
 
     def xml(self):
-        return """<input name="%s" id="%s" value="%s" size="%s"
+        if self.select:
+            selectAttributes = dict(_name=self.name,_id=self.name,_size=self.size,
+                                    _onblur="ajax('%s/blur',['%s']);"%(self.url,self.name))
+            #                        _onkeyup="ajax('%s/keyup',['%s'], ':eval');"%(self.url,self.name),
+            #                        _onfocus="ajax('%s/focus',['%s'], ':eval');"%(self.url,self.name),
+            for k,v in selectAttributes.items():
+                self.select[k] = v
+            return self.select.xml()
+        else:
+            return """<input name="%s" id="%s" value="%s" size="%s"
         onkeyup="ajax('%s/keyup',['%s'], ':eval');"
         onfocus="ajax('%s/focus',['%s'], ':eval');"
         onblur="ajax('%s/blur',['%s'], ':eval');" %s/>
@@ -391,7 +401,8 @@ class Sheet:
 
     def __init__(self, rows, cols, url='.', readonly=False,
                  active=True, onchange=None, value=None, data=None,
-                 headers=None, update_button="", **kwarg):
+                 headers=None, update_button="", c_headers=None,
+                 r_headers=None, **kwarg):
 
         """
         Arguments:
@@ -424,6 +435,9 @@ class Sheet:
         self.attributes = self.get_attributes(kwarg)
         self.tr_attributes = {}
         self.td_attributes = {}
+
+        self.c_headers = c_headers
+        self.r_headers = r_headers
 
         self.data = data
         self.readonly = readonly
@@ -505,7 +519,7 @@ class Sheet:
         self.environment[name] = obj
 
     def cell(self, key, value, readonly=False, active=True,
-             onchange=None, **kwarg):
+             onchange=None, select=False, **kwarg):
         """
         key is the name of the cell
         value is the initial value of the cell. It can be a formula "=1+3"
@@ -528,7 +542,7 @@ class Sheet:
             value = value(r, c)
 
         node = Node(key, value, self.url, readonly, active,
-                    onchange, **kwarg)
+                    onchange, select=select, **kwarg)
         self.nodes[key] = node
         self[key] = value
 
@@ -781,11 +795,19 @@ class Sheet:
              gluon.html.TH, gluon.html.BR, gluon.html.SCRIPT)
         regex = re.compile('r\d+c\d+')
 
-        header = TR(TH(), *[TH('c%s' % c)
+        if not self.c_headers:
+            header = TR(TH(), *[TH('c%s' % c)
                             for c in range(self.cols)])
+        else:
+            header = TR(TH(), *[TH('%s' % c)
+                            for c in self.c_headers])
+
         rows = []
         for r in range(self.rows):
-            tds = [TH('r%s' % r), ]
+            if not self.r_headers:
+                tds = [TH('r%s' % r), ]
+            else:
+                tds = [TH('%s' % self.r_headers[r]), ]
             for c in range(self.cols):
                 key = 'r%sc%s' % (r, c)
                 attributes = {"_class": "w2p_spreadsheet_col_%s" %
