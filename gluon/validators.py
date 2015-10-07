@@ -2847,7 +2847,7 @@ class CRYPT(object):
         self.salt = salt
 
     def __call__(self, value):
-        v = v and str(v)[:self.max_length]
+        v = value and str(value)[:self.max_length]
         if not v or len(v) < self.min_length:
             return ('', translate(self.error_message))
         if isinstance(value, LazyCrypt):
