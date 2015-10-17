@@ -606,22 +606,26 @@ class Cache(object):
             def wrapped_f():
                 if current.request.env.request_method != 'GET':
                     return func()
+
+                if quick:
+                    session_ = True if 'S' in quick else False
+                    vars_ = True if 'V' in quick else False
+                    lang_ = True if 'L' in quick else False
+                    user_agent_ = True if 'U' in quick else False
+                    public_ = True if 'P' in quick else False
+                else:
+                    (session_, vars_, lang_, user_agent_, public_) = \
+                        (session, vars, lang, user_agent, public)
+
                 if time_expire:
                     cache_control = 'max-age=%(time_expire)s, s-maxage=%(time_expire)s' % dict(time_expire=time_expire)
-                    if quick:
-                        session_ = True if 'S' in quick else False
-                        vars_ = True if 'V' in quick else False
-                        lang_ = True if 'L' in quick else False
-                        user_agent_ = True if 'U' in quick else False
-                        public_ = True if 'P' in quick else False
-                    else:
-                        session_, vars_, lang_, user_agent_, public_ = session, vars, lang, user_agent, public
                     if not session_ and public_:
                         cache_control += ', public'
                         expires = (current.request.utcnow + datetime.timedelta(seconds=time_expire)).strftime('%a, %d %b %Y %H:%M:%S GMT')
                     else:
                         cache_control += ', private'
                         expires = 'Fri, 01 Jan 1990 00:00:00 GMT'
+
                 if cache_model:
                     #figure out the correct cache key
                     cache_key = [current.request.env.path_info, current.response.view]
