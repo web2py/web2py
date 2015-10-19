@@ -75,8 +75,8 @@
          * this over and over... all will be bound to the document
          */
         /*adds btn class to buttons*/
-        $('button', target).addClass('btn');
-        $('form input[type="submit"], form input[type="button"]', target).addClass('btn');
+        $('button:not([class^="btn"])', target).addClass('btn');
+        $('form input[type="submit"]:not([class^="btn"]), form input[type="button"]:not([class^="btn"])', target).addClass('btn');
         /* javascript for PasswordWidget*/
         $('input[type=password][data-w2p_entropy]', target).each(function() {
           web2py.validate_entropy($(this));
