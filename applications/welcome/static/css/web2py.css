@@ -33,7 +33,7 @@ audio {width:200px}
 [type="text"], [type="password"], select {
   margin-right: 5px; width: 300px;
 }
-.hidden {display:none;visibility:visible}
+.w2p_hidden {display:none;visibility:visible}
 .right {float:right; text-align:right}
 .left {float:left; text-align:left}
 .center {width:100%; text-align:center; vertical-align:middle}
@@ -88,7 +88,7 @@ div.w2p_export_menu a, div.w2p_wiki_tags a, div.w2p_cloud a {margin-left:5px; pa
 #web2py_user_form td {vertical-align:top}
 
 /*********** web2py specific ***********/
-div.flash {
+div.w2p_flash {
     font-weight:bold;
     display:none;
     position:fixed;
@@ -117,11 +117,11 @@ div.flash {
     z-index:2000;
 }
 
-div.flash #closeflash{color:inherit; float:right; margin-left:15px;}
+div.w2p_flash #closeflash{color:inherit; float:right; margin-left:15px;}
 .ie-lte7  div.flash #closeflash
 {color:expression(this.parentNode.currentStyle['color']);float:none;position:absolute;right:4px;}
 
-div.flash:hover { opacity:0.25; }
+div.w2p_flash:hover { opacity:0.25; }
 
 div.error_wrapper {display:block}
 div.error {
@@ -304,8 +304,8 @@ li.w2p_grid_breadcrumb_elem {
 /* fix some IE problems */
 
 .ie-lte7 .topbar .container {z-index:2}
-.ie-lte8 div.flash{ filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#222222', endColorstr='#000000', GradientType=0 ); }
-.ie-lte8 div.flash:hover {filter:alpha(opacity=25);}
+.ie-lte8 div.w2p_flash{ filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#222222', endColorstr='#000000', GradientType=0 ); }
+.ie-lte8 div.w2p_flash:hover {filter:alpha(opacity=25);}
 .ie9 #w2p_query_panel {padding-bottom:2px}
 
 .web2py_console .form-control {width: 20%; display: inline;}
