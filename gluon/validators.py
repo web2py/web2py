@@ -2165,29 +2165,22 @@ class IS_DATE(Validator):
             INPUT(_type='text', _name='name', requires=IS_DATE())
 
     date has to be in the ISO8960 format YYYY-MM-DD
-    timezome must be None or a pytz.timezone("America/Chicago") object
     """
 
     def __init__(self, format='%Y-%m-%d',
-                 error_message='Enter date as %(format)s',
-                 timezone=None):
+                 error_message='Enter date as %(format)s'):
         self.format = translate(format)
         self.error_message = str(error_message)
-        self.timezone = timezone
         self.extremes = {}
 
     def __call__(self, value):
         ovalue = value
         if isinstance(value, datetime.date):
-            if self.timezone is not None:
-                value = value - datetime.timedelta(seconds=self.timezone*3600)
             return (value, None)
         try:
             (y, m, d, hh, mm, ss, t0, t1, t2) = \
                 time.strptime(value, str(self.format))
             value = datetime.date(y, m, d)
-            if self.timezone is not None:
-                value = self.timezone.localize(value).astimezone(utc)
             return (value, None)
         except:
             self.extremes.update(IS_DATETIME.nice(self.format))
@@ -2203,11 +2196,7 @@ class IS_DATE(Validator):
         format = format.replace('%Y', y)
         if year < 1900:
             year = 2000
-        if self.timezone is not None:
-            d = datetime.datetime(year, value.month, value.day)
-            d = d.replace(tzinfo=utc).astimezone(self.timezone)
-        else:
-            d = datetime.date(year, value.month, value.day)
+        d = datetime.date(year, value.month, value.day)
         return d.strftime(format)
 
 
@@ -2307,8 +2296,7 @@ class IS_DATE_IN_RANGE(IS_DATE):
                  minimum=None,
                  maximum=None,
                  format='%Y-%m-%d',
-                 error_message=None,
-                 timezone=None):
+                 error_message=None):
         self.minimum = minimum
         self.maximum = maximum
         if error_message is None:
@@ -2320,8 +2308,7 @@ class IS_DATE_IN_RANGE(IS_DATE):
                 error_message = "Enter date in range %(min)s %(max)s"
         IS_DATE.__init__(self,
                          format=format,
-                         error_message=error_message,
-                         timezone=timezone)
+                         error_message=error_message)
         self.extremes = dict(min=self.formatter(minimum),
                              max=self.formatter(maximum))
 
