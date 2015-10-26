@@ -2847,9 +2847,11 @@ class CRYPT(object):
         self.salt = salt
 
     def __call__(self, value):
-        value = value and value[:self.max_length]
-        if len(value) < self.min_length:
+        v = value and str(value)[:self.max_length]
+        if not v or len(v) < self.min_length:
             return ('', translate(self.error_message))
+        if isinstance(value, LazyCrypt):
+            return (value, None)
         return (LazyCrypt(self, value), None)
 
 #  entropy calculator for IS_STRONG
