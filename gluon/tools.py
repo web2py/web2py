@@ -3280,7 +3280,7 @@ class Auth(object):
         """
         if not self.user:
             redirect(self.settings.login_url)
-        if not self.setting.bulk_register_enabled:
+        if not self.settings.bulk_register_enabled:
             return HTTP(404)
 
         form = SQLFORM.factory(
