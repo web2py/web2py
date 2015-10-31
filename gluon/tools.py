@@ -1247,7 +1247,7 @@ class Auth(object):
         retrieve_password_subject='Password retrieve',
         reset_password='Click on the link %(link)s to reset your password',
         reset_password_subject='Password reset',
-        bulk_invite_subject='Invitation to join%(site)s',
+        bulk_invite_subject='Invitation to join %(site)s',
         bulk_invite_body='You have been invited to join %(site)s, click %(link)s to complete the process',
         invalid_reset_password='Invalid reset password',
         profile_updated='Profile updated',
