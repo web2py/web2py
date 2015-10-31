@@ -6,9 +6,9 @@
      * this over and over... all will be bound to the document
      */
     /*adds btn class to buttons*/
-    $('button', target).addClass('btn btn-default');
+    $('button:not([class^="btn"])', target).addClass('btn btn-default');
     $("p.w2p-autocomplete-widget input").addClass('form-control');
-    $('form input[type="submit"], form input[type="button"]', target).addClass('btn btn-default');
+    $('form input[type="submit"]:not([class^="btn"]), form input[type="button"]:not([class^="btn"])', target).addClass('btn btn-default');
     /* javascript for PasswordWidget*/
     $('input[type=password][data-w2p_entropy]', target).each(function() {
       web2py.validate_entropy($(this));
