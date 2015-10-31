@@ -1153,6 +1153,8 @@ class Auth(object):
         manager_actions={},
         auth_manager_role=None,
         two_factor_authentication_group = None,
+        auth_two_factor_enabled = False,
+        auth_two_factor_tries_left = 3,
         login_captcha=None,
         register_captcha=None,
         pre_registration_div=None,
@@ -1234,6 +1236,7 @@ class Auth(object):
         invalid_login='Invalid login',
         invalid_user='Invalid user',
         invalid_password='Invalid password',
+        invalid_two_factor_code = 'Incorrect code. {0} more attempt(s) remaining.',
         is_empty="Cannot be empty",
         mismatched_password="Password fields don't match",
         verify_email='Welcome %(username)s! Click on the link %(link)s to verify your email',
@@ -1248,6 +1251,8 @@ class Auth(object):
         reset_password='Click on the link %(link)s to reset your password',
         reset_password_subject='Password reset',
         bulk_invite_subject='Invitation to join %(site)s',
+        retrieve_two_factor_code='Your temporary login code is {0}',
+        retrieve_two_factor_code_subject='Two-step Login Authentication Code',
         bulk_invite_body='You have been invited to join %(site)s, click %(link)s to complete the process',
         invalid_reset_password='Invalid reset password',
         profile_updated='Profile updated',
@@ -1292,6 +1297,8 @@ class Auth(object):
         label_client_ip='Client IP',
         label_origin='Origin',
         label_remember_me="Remember me (for 30 days)",
+        label_two_factor='Authentication code',
+        two_factor_comment = 'This code was emailed to you and is required for login.',
         verify_password_comment='please input your password again',
     )
 
@@ -1508,7 +1515,9 @@ class Auth(object):
             reset_password_onaccept=[],
             hmac_key=hmac_key,
             formstyle=current.response.formstyle,
-            label_separator=current.response.form_label_separator
+            label_separator=current.response.form_label_separator,
+            two_factor_methods = [],
+            two_factor_onvalidation = [],
         )
         settings.lock_keys = True
         # ## these are messages that can be customized
@@ -2477,8 +2486,8 @@ class Auth(object):
         session.auth_two_factor_user = None
         session.auth_two_factor = None
         session.auth_two_factor_enabled = False
-        # Allow up to 4 attempts (the 1st one plus 3 more)
-        session.auth_two_factor_tries_left = 3
+        # Set the number of attempts. It should be more than 1.
+        session.auth_two_factor_tries_left = self.settings.auth_two_factor_tries_left
 
     def when_is_logged_in_bypass_next_in_url(self, next, session):
         """
@@ -2718,17 +2727,21 @@ class Auth(object):
         # authentication step was successful (i.e. user provided correct
         # username and password at the first challenge).
         # Check if this user is signed up for two-factor authentication
-        # Default rule is that the user must be part of a group that is called
-        # auth.settings.two_factor_authentication_group
-        if user and self.settings.two_factor_authentication_group:
+        # If auth.settings.auth_two_factor_enabled it will enable two factor
+        # for all the app. Another way to anble two factor is that the user 
+        # must be part of a group that is called auth.settings.two_factor_authentication_group
+        if user and self.settings.auth_two_factor_enabled == True:
+            session.auth_two_factor_enabled = True
+        elif user and self.settings.two_factor_authentication_group:
             role = self.settings.two_factor_authentication_group
             session.auth_two_factor_enabled = self.has_membership(user_id=user.id, role=role)
         # challenge
         if session.auth_two_factor_enabled:
             form = SQLFORM.factory(
                 Field('authentication_code',
+                      label=self.messages.label_two_factor,
                       required=True,
-                      comment='This code was emailed to you and is required for login.'),
+                      comment=self.messages.two_factor_comment),
                 hidden=dict(_next=next),
                 formstyle=settings.formstyle,
                 separator=settings.label_separator
@@ -2743,17 +2756,81 @@ class Auth(object):
             if session.auth_two_factor_user is None and user is not None:
                 session.auth_two_factor_user = user  # store the validated user and associate with this session
                 session.auth_two_factor = random.randint(100000, 999999)
-                session.auth_two_factor_tries_left = 3  # Allow user to try up to 4 times
-                # TODO: Add some error checking to handle cases where email cannot be sent
-                self.settings.mailer.send(
-                    to=user.email,
-                    subject="Two-step Login Authentication Code",
-                    message="Your temporary login code is {0}".format(session.auth_two_factor))
+                session.auth_two_factor_tries_left = self.settings.auth_two_factor_tries_left
+                # Set the way we generate the code or we send the code. For example using SMS...
+                two_factor_methods = self.settings.two_factor_methods
+                
+                if two_factor_methods == []:
+                    # TODO: Add some error checking to handle cases where email cannot be sent
+                    self.settings.mailer.send(
+                        to=user.email,
+                        subject=self.messages.retrieve_two_factor_code_subject,
+                        message=self.messages.retrieve_two_factor_code.format(session.auth_two_factor))
+                else:
+                    #Check for all method. It is possible to have multiples
+                    for two_factor_method in two_factor_methods:
+                        try:
+                            # By default we use session.auth_two_factor generated before.
+                            session.auth_two_factor = two_factor_method(user, session.auth_two_factor)
+                        except:
+                            pass
+                        else:
+                            break
+                        
             if form.accepts(request, session if self.csrf_prevention else None,
                             formname='login', dbio=False,
                             onvalidation=onvalidation,
                             hideerror=settings.hideerror):
                 accepted_form = True
+                
+                accepted_form = True
+                
+                '''
+                The lists is executed after form validation for each of the corresponding action.
+                For example, in your model:
+                
+                In your models copy and paste:
+
+                #Before define tables, we add some extra field to auth_user
+                auth.settings.extra_fields['auth_user'] = [
+                    Field('motp_secret', 'password', length=512, default='', label='MOTP Secret'),
+                    Field('motp_pin', 'string', length=128, default='', label='MOTP PIN')]
+
+                OFFSET = 60 #Be sure is the same in your OTP Client
+
+                #Set session.auth_two_factor to None. Because the code is generated by external app. 
+                # This will avoid to use the default setting and send a code by email.
+                def _set_two_factor(user, auth_two_factor):
+                    return None
+
+                def verify_otp(user, otp):
+                import time
+                from hashlib import md5
+                epoch_time = int(time.time())
+                time_start = int(str(epoch_time - OFFSET)[:-1])
+                time_end = int(str(epoch_time + OFFSET)[:-1])
+                for t in range(time_start - 1, time_end + 1):
+                    to_hash = str(t) + user.motp_secret + user.motp_pin
+                    hash = md5(to_hash).hexdigest()[:6]
+                    if otp == hash:
+                    return hash
+
+                auth.settings.auth_two_factor_enabled = True
+                auth.messages.two_factor_comment = "Verify your OTP Client for the code."
+                auth.settings.two_factor_methods = [lambda user, auth_two_factor: _set_two_factor(user, auth_two_factor)]
+                auth.settings.two_factor_onvalidation = [lambda user, otp: verify_otp(user, otp)]
+                
+                '''
+                if self.settings.two_factor_onvalidation != []:
+                    
+                    for two_factor_onvalidation in self.settings.two_factor_onvalidation:
+                        try:
+                            session.auth_two_factor = two_factor_onvalidation(session.auth_two_factor_user, form.vars['authentication_code'])
+                        except:
+                            pass
+                        else:
+                            break
+                        
                 if form.vars['authentication_code'] == str(session.auth_two_factor):
                     # Handle the case when the two-factor form has been successfully validated
                     # and the user was previously stored (the current user should be None because
@@ -2774,10 +2851,20 @@ class Auth(object):
                     # session usernamem will still exist
                     self._reset_two_factor_auth(session)
                 else:
-                    # TODO: Limit the number of retries allowed.
-                    response.flash = \
-                        'Incorrect code. {0} more attempt(s) remaining.'.format(session.auth_two_factor_tries_left)
                     session.auth_two_factor_tries_left -= 1
+                    # If the number of retries are higher than auth_two_factor_tries_left
+                    # Require user to enter username and password again.
+                    if session.auth_two_factor_enabled and session.auth_two_factor_tries_left < 1:
+                        # Exceeded maximum allowed tries for this code. Require user to enter
+                        # username and password again.
+                        user = None
+                        accepted_form = False
+                        self._reset_two_factor_auth(session)
+                        # Redirect to the default 'next' page without logging
+                        # in. If that page requires login, user will be redirected
+                        # back to the main login form
+                        redirect(next, client_side=settings.client_side)
+                    response.flash = self.messages.invalid_two_factor_code.format(session.auth_two_factor_tries_left)
                     return form
             else:
                 return form
