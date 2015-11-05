@@ -1977,6 +1977,7 @@ class SQLFORM(FORM):
              user_signature=True,
              maxtextlengths={},
              maxtextlength=20,
+             columnclasses={},
              onvalidation=None,
              onfailure=None,
              oncreate=None,
@@ -2746,7 +2747,11 @@ class SQLFORM(FORM):
                         value = truncate_string(value, maxlength)
                     elif not isinstance(value, XmlComponent):
                         value = field.formatter(value)
-                    trcols.append(TD(value))
+                    columnclass = columnclasses.get(str(field))
+                    if columnclass:
+                        trcols.append(TD(value, _class=columnclass))
+                    else:
+                        trcols.append(TD(value))
                 row_buttons = TD(_class='row_buttons', _nowrap=True)
                 if links and links_in_grid:
                     toadd = []
