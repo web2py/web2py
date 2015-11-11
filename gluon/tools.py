@@ -1146,6 +1146,7 @@ class Auth(object):
         registration_requires_approval=False,
         bulk_register_enabled=False,
         login_after_registration=False,
+        login_once_after_registration=False,
         login_after_password_change=True,
         alternate_requires_registration=False,
         create_user_groups="user_%(id)s",
@@ -3055,8 +3056,9 @@ class Auth(object):
                 table_user[form.vars.id] = dict(registration_key='pending')
                 session.flash = self.messages.registration_pending
             elif (not self.settings.registration_requires_verification or
-                      self.settings.login_after_registration):
-                if not self.settings.registration_requires_verification:
+                  self.settings.login_after_registration or 
+                  self.settings.login_once_after_registration):
+                if self.settings.login_after_registration:
                     table_user[form.vars.id] = dict(registration_key='')
                 session.flash = self.messages.registration_successful
                 user = table_user(**{username: form.vars[username]})
