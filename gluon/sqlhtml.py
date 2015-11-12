@@ -1504,7 +1504,7 @@ class SQLFORM(FORM):
 
         self.custom.end = CAT(self.hidden_fields(), self.custom.end)
 
-        auch = record_id and self.errors and self.deleted
+        auch = self.record_id and self.errors and self.deleted
 
         if self.record_changed and self.detect_record_change:
             message_onchange = \
@@ -1551,8 +1551,6 @@ class SQLFORM(FORM):
             if str(record_id) != str(self.record_id):
                 raise SyntaxError('user is tampering with form\'s record_id: '
                                   '%s != %s' % (record_id, self.record_id))
-        else:
-            record_id = self.record_id
 
         if record_id and dbio and not keyed:
             self.vars.id = self.record[self.id_field_name]
