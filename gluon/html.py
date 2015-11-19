@@ -668,7 +668,7 @@ class XML(XmlComponent):
 
 
 def XML_unpickle(data):
-    return marshal.loads(data)
+    return XML(marshal.loads(data))
 
 
 def XML_pickle(data):
