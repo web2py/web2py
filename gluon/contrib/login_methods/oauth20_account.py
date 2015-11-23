@@ -154,10 +154,12 @@ server for requests.  It can be used for the optional"scope" parameters for Face
         code = current.request.vars.code
 
         if code or refresh_token:
-            data = dict(client_id=self.client_id)
+            data = dict(
+                client_id=self.client_id,
+                client_secret=self.client_secret,
+            )
             if code:
                 data.update(
-                    client_secret=self.client_secret,
                     redirect_uri=current.session.redirect_uri,
                     code=code,
                     grant_type='authorization_code'
