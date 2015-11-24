@@ -1124,10 +1124,12 @@ class SQLFORM(FORM):
                 raise HTTP(404, "Object not found")
         self.record = record
 
-        self.record_id = record_id
         if keyed:
             self.record_id = dict([(k, record and str(record[k]) or None)
                                    for k in table._primarykey])
+        else:
+            self.record_id = record_id
+
         self.field_parent = {}
         xfields = []
         self.fields = fields
@@ -1502,7 +1504,7 @@ class SQLFORM(FORM):
 
         self.custom.end = CAT(self.hidden_fields(), self.custom.end)
 
-        auch = record_id and self.errors and self.deleted
+        auch = self.record_id and self.errors and self.deleted
 
         if self.record_changed and self.detect_record_change:
             message_onchange = \
@@ -1545,9 +1547,10 @@ class SQLFORM(FORM):
             self.accepted = ret
             return ret
 
-        if record_id and str(record_id) != str(self.record_id):
-            raise SyntaxError('user is tampering with form\'s record_id: '
-                              '%s != %s' % (record_id, self.record_id))
+        if self.record_id:
+            if str(record_id) != str(self.record_id):
+                raise SyntaxError('user is tampering with form\'s record_id: '
+                                  '%s != %s' % (record_id, self.record_id))
 
         if record_id and dbio and not keyed:
             self.vars.id = self.record[self.id_field_name]
