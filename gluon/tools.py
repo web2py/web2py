@@ -2634,10 +2634,10 @@ class Auth(object):
                 accepted_form = False
 
                 if form.accepts(request, session if self.csrf_prevention else None,
-                                formname='login', dbio=False,
+                                formname='login', keepvalues=True, dbio=False,
                                 onvalidation=onvalidation,
                                 hideerror=settings.hideerror):
-
+                    
                     accepted_form = True
                     # check for username in db
                     entered_username = form.vars[username]
@@ -2698,12 +2698,10 @@ class Auth(object):
                         self.log_event(self.messages['login_failed_log'],
                                        request.post_vars)
                         # invalid login
-                        session.flash = self.messages.invalid_login
+                        response.flash = self.messages.invalid_login
                         callback(onfail, None)
-                        redirect(
-                            self.url(args=request.args, vars=request.get_vars),
-                            client_side=settings.client_side)
-
+                        return form
+                        
             else:  # use a central authentication server
                 cas = settings.login_form
                 cas_user = cas.get_user()
