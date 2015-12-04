@@ -4013,8 +4013,13 @@ class Auth(object):
         if not user_id and self.user:
             user_id = self.user.id
         membership = self.table_membership()
-        record = membership(user_id=user_id, group_id=group_id)
+        db = membership._db
+        record = db((membership.user_id==user_id)&
+                    (membership.group_id==group_id),
+                    ignore_common_filters=True).select().first()
         if record:
+            if hasattr(record, 'is_active') and not record.is_active:
+                record.update_record(is_active=True)
             return record.id
         else:
             id = membership.insert(group_id=group_id, user_id=user_id)
@@ -4109,9 +4114,15 @@ class Auth(object):
         permission = self.table_permission()
         if group_id == 0:
             group_id = self.user_group()
-        record = self.db(permission.group_id == group_id)(permission.name == name)(permission.table_name == str(table_name))(
-                permission.record_id == long(record_id)).select(limitby=(0, 1), orderby_on_limitby=False).first()
+        record = self.db((permission.group_id == group_id)&
+                         (permission.name == name)&
+                         (permission.table_name == str(table_name))&
+                         (permission.record_id == long(record_id)),
+                          ignore_common_filters=True).select(
+            limitby=(0, 1), orderby_on_limitby=False).first()
         if record:
+            if hasattr(record, 'is_active') and not record.is_ctive:
+                record.update_record(is_active=True)
             id = record.id
         else:
             id = permission.insert(group_id=group_id, name=name,
