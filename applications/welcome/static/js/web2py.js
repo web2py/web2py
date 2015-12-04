@@ -257,12 +257,20 @@
           if(form.hasClass('no_trap')) {
             return;
           }
-          form.attr('data-w2p_target', target);
+
+          var w2p_target = $(this).attr('data-w2p_target');
+          if (typeof w2p_target === typeof undefined || w2p_target === false) {
+            form.attr('data-w2p_target', target);
+          } else {
+            target = w2p_target;
+          }
+
           var url = form.attr('action');
           if((url === "") || (url === "#") || (typeof url === 'undefined')) {
             /* form has no action. Use component url. */
             url = action;
           }
+
           form.submit(function(e) {
             web2py.disableElement(form.find(web2py.formInputClickSelector));
             web2py.hide_flash();
