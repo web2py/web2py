@@ -1423,9 +1423,9 @@ class Auth(object):
                  hmac_key=None, controller='default', function='user',
                  cas_provider=None, signature=True, secure=False,
                  csrf_prevention=True, propagate_extension=None,
-                 url_index=None):
+                 url_index=None, jwt=None):
 
-        ## next two lines for backward compatibility
+        ## next two lines for backward compatibility        
         if not db and environment and isinstance(environment, DAL):
             db = environment
         self.db = db
@@ -1543,7 +1543,7 @@ class Auth(object):
             self.define_signature()
         else:
             self.signature = None
-
+            
     def get_vars_next(self):
         next = current.request.vars._next
         if isinstance(next, (list, tuple)):
