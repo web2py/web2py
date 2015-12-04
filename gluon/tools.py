@@ -2258,7 +2258,8 @@ class Auth(object):
             if not 'first_name' in keys and 'first_name' in table_user.fields:
                 guess = keys.get('email', 'anonymous').split('@')[0]
                 keys['first_name'] = keys.get('username', guess)
-            user_id = table_user.insert(**table_user._filter_fields(keys))
+            form = table_user._filter_fields(keys)
+            user_id = table_user.insert(**form)
             user = table_user[user_id]
             if self.settings.create_user_groups:
                 group_id = self.add_group(
@@ -2268,6 +2269,8 @@ class Auth(object):
                 self.add_membership(self.settings.everybody_group_id, user_id)
             if login:
                 self.user = user
+            if self.settings.register_onaccept:
+                callback(self.settings.register_onaccept, form)
         return user
 
     def basic(self, basic_auth_realm=False):
