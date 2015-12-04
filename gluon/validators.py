@@ -2247,7 +2247,8 @@ class IS_DATETIME(Validator):
                 time.strptime(value, str(self.format))
             value = datetime.datetime(y, m, d, hh, mm, ss)
             if self.timezone is not None:
-                value = self.timezone.localize(value).astimezone(utc)
+                # TODO: https://github.com/web2py/web2py/issues/1094 (temporary solution)
+                value = self.timezone.localize(value).astimezone(utc).replace(tzinfo=None)
             return (value, None)
         except:
             self.extremes.update(IS_DATETIME.nice(self.format))
