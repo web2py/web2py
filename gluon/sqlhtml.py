@@ -736,7 +736,7 @@ class AutocompleteWidget(object):
                      name=name, div_id=div_id, u='F' + self.keyword)
             if self.min_length == 0:
                 attr['_onfocus'] = attr['_onkeyup']
-            return CAT(INPUT(**attr), 
+            return CAT(INPUT(**attr),
                        INPUT(_type='hidden', _id=key3, _value=value,
                              _name=name, requires=field.requires),
                        DIV(_id=div_id, _style='position:absolute;'))
@@ -749,7 +749,7 @@ class AutocompleteWidget(object):
                      key=self.keyword, id=attr['_id'], div_id=div_id, u='F' + self.keyword)
             if self.min_length == 0:
                 attr['_onfocus'] = attr['_onkeyup']
-            return CAT(INPUT(**attr), 
+            return CAT(INPUT(**attr),
                        DIV(_id=div_id, _style='position:absolute;'))
 
 
@@ -840,7 +840,7 @@ def formstyle_bootstrap(form, fields):
             controls.add_class('span4')
 
         if isinstance(label, LABEL):
-            label['_class'] = 'control-label'
+            label['_class'] += ' control-label'
 
         if _submit:
             # submit button has unwrapped label and controls, different class
@@ -890,7 +890,7 @@ def formstyle_bootstrap3_stacked(form, fields):
                 e.add_class('form-control')
 
         if isinstance(label, LABEL):
-            label['_class'] = 'control-label'
+            label['_class'] += ' control-label'
 
         parent.append(DIV(label, _controls, _class='form-group', _id=id))
     return parent
@@ -941,7 +941,7 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
             elif controls is None or isinstance(controls, basestring):
                 _controls = P(controls, _class="form-control-static %s" % col_class)
             if isinstance(label, LABEL):
-                label['_class'] = 'control-label %s' % label_col_class
+                label['_class'] += ' control-label %s' % label_col_class
 
             parent.append(DIV(label, _controls, _class='form-group', _id=id))
         return parent
@@ -1187,6 +1187,14 @@ class SQLFORM(FORM):
             label = LABEL(label, label and sep, _for=field_id,
                           _id=field_id + SQLFORM.ID_LABEL_SUFFIX)
 
+            cond = readonly or \
+                (not ignore_rw and not field.writable and field.readable)
+
+            if cond:
+                label['_class'] = 'readonly'
+            else:
+                label['_class'] = ''
+
             row_id = field_id + SQLFORM.ID_ROW_SUFFIX
             if field.type == 'id':
                 self.custom.dspval.id = nbsp
@@ -1215,8 +1223,6 @@ class SQLFORM(FORM):
                 default = field.default
                 if isinstance(default, CALLABLETYPES):
                     default = default()
-            cond = readonly or \
-                (not ignore_rw and not field.writable and field.readable)
 
             if default is not None and not cond:
                 default = field.formatter(default)
@@ -2114,7 +2120,7 @@ class SQLFORM(FORM):
             elif isinstance(orderby, Field) and orderby is not field_id:
                 # here we're with an ASC order on a field stored as orderby
                 orderby = orderby | field_id
-            elif (isinstance(orderby, Expression) and 
+            elif (isinstance(orderby, Expression) and
                   orderby.first and orderby.first is not field_id):
                 # here we're with a DESC order on a field stored as orderby.first
                 orderby = orderby | field_id
