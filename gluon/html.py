@@ -1138,7 +1138,7 @@ class DIV(XmlComponent):
         for (key, value) in kargs.iteritems():
             if key not in ['first_only', 'replace', 'find_text']:
                 if isinstance(value, (str, int)):
-                    if self[key] != str(value):
+                    if str(self[key]) != str(value):
                         check = False
                 elif key in self.attributes:
                     if not value.search(str(self[key])):
