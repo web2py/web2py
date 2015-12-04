@@ -784,6 +784,9 @@ class DIV(XmlComponent):
         else:
             return self.components[i]
 
+    def get(self, i):
+        return self.attributes.get(i)
+
     def __setitem__(self, i, value):
         """
         Sets attribute with name 'i' or component #i.
