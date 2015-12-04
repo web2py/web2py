@@ -1423,7 +1423,7 @@ class Auth(object):
                  hmac_key=None, controller='default', function='user',
                  cas_provider=None, signature=True, secure=False,
                  csrf_prevention=True, propagate_extension=None,
-                 url_index=None, jwt=None):
+                 url_index=None):
 
         ## next two lines for backward compatibility        
         if not db and environment and isinstance(environment, DAL):
