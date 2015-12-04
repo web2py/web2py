@@ -131,7 +131,7 @@ def app_cleanup(app, request):
     return r
 
 
-def app_compile(app, request):
+def app_compile(app, request, skip_failed_views=False):
     """Compiles the application
 
     Args:
@@ -145,8 +145,8 @@ def app_compile(app, request):
     from compileapp import compile_application, remove_compiled_application
     folder = apath(app, request)
     try:
-        compile_application(folder)
-        return None
+        failed_views = compile_application(folder, skip_failed_views)
+        return failed_views
     except (Exception, RestrictedError):
         tb = traceback.format_exc(sys.exc_info)
         remove_compiled_application(folder)
