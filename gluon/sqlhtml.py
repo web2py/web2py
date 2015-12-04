@@ -2079,7 +2079,7 @@ class SQLFORM(FORM):
             ## if it's not an integer
             if cache_count is None or isinstance(cache_count, tuple):
                 if groupby:
-                    c = 'count(*)'
+                    c = 'count(*) AS count_all'
                     nrows = db.executesql(
                         'select count(*) from (%s) _tmp;' %
                         dbset._select(c, left=left, cacheable=True,
