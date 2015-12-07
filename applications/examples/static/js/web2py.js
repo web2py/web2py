@@ -75,8 +75,8 @@
          * this over and over... all will be bound to the document
          */
         /*adds btn class to buttons*/
-        $('button', target).addClass('btn');
-        $('form input[type="submit"], form input[type="button"]', target).addClass('btn');
+        $('button:not([class^="btn"])', target).addClass('btn');
+        $('form input[type="submit"]:not([class^="btn"]), form input[type="button"]:not([class^="btn"])', target).addClass('btn');
         /* javascript for PasswordWidget*/
         $('input[type=password][data-w2p_entropy]', target).each(function() {
           web2py.validate_entropy($(this));
@@ -133,7 +133,7 @@
       },
       ajax_init: function(target) {
         /*called whenever a fragment gets loaded */
-        $('.hidden', target).hide();
+        $('.w2p_hidden', target).hide();
         web2py.manage_errors(target);
         web2py.ajax_fields(target);
         web2py.show_if_handler(target);
@@ -161,7 +161,7 @@
          * and require no dom manipulations
          */
         var doc = $(document);
-        doc.on('click', '.flash', function(e) {
+        doc.on('click', '.w2p_flash', function(e) {
           var t = $(this);
           if(t.css('top') == '0px') t.slideUp('slow');
           else t.fadeOut();
@@ -241,7 +241,7 @@
           /*personally I don't like it.
            *if there's an error it it flashed and can be removed
            *as any other message
-           *doc.off('click', '.flash')
+           *doc.off('click', '.w2p_flash')
            */
           switch(xhr.status) {
             case 500:
@@ -257,12 +257,20 @@
           if(form.hasClass('no_trap')) {
             return;
           }
-          form.attr('data-w2p_target', target);
+
+          var w2p_target = $(this).attr('data-w2p_target');
+          if (typeof w2p_target === typeof undefined || w2p_target === false) {
+            form.attr('data-w2p_target', target);
+          } else {
+            target = w2p_target;
+          }
+
           var url = form.attr('action');
           if((url === "") || (url === "#") || (typeof url === 'undefined')) {
             /* form has no action. Use component url. */
             url = action;
           }
+
           form.submit(function(e) {
             web2py.disableElement(form.find(web2py.formInputClickSelector));
             web2py.hide_flash();
@@ -530,13 +538,13 @@
       },
       /*helper for flash messages*/
       flash: function(message, status) {
-        var flash = $('.flash');
+        var flash = $('.w2p_flash');
         web2py.hide_flash();
         flash.html(message).addClass(status);
         if(flash.html()) flash.append('<span id="closeflash"> &times; </span>').slideDown();
       },
       hide_flash: function() {
-        $('.flash').fadeOut(0).html('');
+        $('.w2p_flash').fadeOut(0).html('');
       },
       show_if_handler: function(target) {
         var triggers = {};
@@ -692,7 +700,7 @@
         $.web2py.component_handler(target);
       },
       main_hook: function() {
-        var flash = $('.flash');
+        var flash = $('.w2p_flash');
         flash.hide();
         if(flash.html()) web2py.flash(flash.html());
         web2py.ajax_init(document);

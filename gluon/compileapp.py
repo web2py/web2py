@@ -464,22 +464,28 @@ def read_pyc(filename):
     return marshal.loads(data[8:])
 
 
-def compile_views(folder):
+def compile_views(folder, skip_failed_views=False):
     """
     Compiles all the views in the application specified by `folder`
     """
 
     path = pjoin(folder, 'views')
+    failed_views = [] 
     for fname in listdir(path, '^[\w/\-]+(\.\w+)*$'):
         try:
             data = parse_template(fname, path)
         except Exception, e:
-            raise Exception("%s in %s" % (e, fname))
-        filename = 'views.%s.py' % fname.replace(os.path.sep, '.')
-        filename = pjoin(folder, 'compiled', filename)
-        write_file(filename, data)
-        save_pyc(filename)
-        os.unlink(filename)
+            if skip_failed_views:                                                                            
+                failed_views.append(file)                                                                    
+            else:                                                                                            
+                raise Exception("%s in %s" % (e, file))                                                      
+        else:                                                                                                
+            filename = ('views/%s.py' % file).replace('/', '_').replace('\\', '_')                           
+            filename = pjoin(folder, 'compiled', filename)                                                   
+            write_file(filename, data)                                                                       
+            save_pyc(filename)                                                                               
+            os.unlink(filename)                                                                              
+    return failed_views if failed_views else None
 
 
 def compile_models(folder):
@@ -667,32 +673,28 @@ def run_view_in(environment):
         ccode = parse_template(view, pjoin(folder, 'views'),
                                context=environment)
         restricted(ccode, environment, 'file stream')
-    elif os.path.exists(path):
-        x = view.replace('/', '.')
-        files = ['views.%s.pyc' % x]
-        if allow_generic:
-            files.append('views.generic.%s.pyc' % request.extension)
-        # for backward compatibility
-        x = view.replace('/', '_')
-        files.append('views_%s.pyc' % x)
-        if allow_generic:
-            files.append('views_generic.%s.pyc' % request.extension)
-        if request.extension == 'html':
-            files.append('views_%s.pyc' % x[:-5])
-            if allow_generic:
-                files.append('views_generic.pyc')
-        # end backward compatibility code
-        for f in files:
-            filename = pjoin(path, f)
-            if os.path.exists(filename):
-                code = read_pyc(filename)
-                restricted(code, environment, layer=filename)
-                return
-        raise HTTP(404,
-                   rewrite.THREAD_LOCAL.routes.error_message % badv,
-                   web2py_error=badv)
     else:
         filename = pjoin(folder, 'views', view)
+        if os.path.exists(path): # compiled views                                                            
+            x = view.replace('/', '_')                                                                       
+            files = ['views_%s.pyc' % x]                                                                     
+            is_compiled = os.path.exists(pjoin(path, files[0]))                                              
+            # Don't use a generic view if the non-compiled view exists.                                      
+            if is_compiled or (not is_compiled and not os.path.exists(filename)):                            
+                if allow_generic:                                                                            
+                    files.append('views_generic.%s.pyc' % request.extension)                                 
+                # for backward compatibility                                                                 
+                if request.extension == 'html':                                                              
+                    files.append('views_%s.pyc' % x[:-5])                                                    
+                    if allow_generic:                                                                        
+                        files.append('views_generic.pyc')                                                    
+                # end backward compatibility code                                                            
+                for f in files:                                                                              
+                    compiled = pjoin(path, f)                                                                
+                    if os.path.exists(compiled):                                                             
+                        code = read_pyc(compiled)                                                            
+                        restricted(code, environment, layer=compiled)                                        
+                        return
         if not os.path.exists(filename) and allow_generic:
             view = 'generic.' + request.extension
             filename = pjoin(folder, 'views', view)
@@ -726,7 +728,7 @@ def remove_compiled_application(folder):
         pass
 
 
-def compile_application(folder):
+def compile_application(folder, skip_failed_views=False):
     """
     Compiles all models, views, controller for the application in `folder`.
     """
@@ -734,7 +736,8 @@ def compile_application(folder):
     os.mkdir(pjoin(folder, 'compiled'))
     compile_models(folder)
     compile_controllers(folder)
-    compile_views(folder)
+    failed_views = compile_views(folder, skip_failed_views)
+    return failed_views
 
 
 def test():
