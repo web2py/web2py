@@ -164,7 +164,7 @@ server for requests.  It can be used for the optional"scope" parameters for Face
                     code=code,
                     grant_type='authorization_code'
                 )
-            if refresh_token:
+            elif refresh_token:
                 data.update(
                     refresh_token=refresh_token,
                     grant_type='refresh_token'
