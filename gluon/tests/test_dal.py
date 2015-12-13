@@ -104,11 +104,15 @@ class TestDALAdapters(unittest.TestCase):
         return unittest.TextTestRunner(verbosity=2).run(suite)
 
     def test_mysql(self):
+        if os.environ.get('APPVEYOR'):
+            return
         os.environ["DB"] = "mysql://root:@localhost/pydal"
         result = self._run_tests()
         self.assertTrue(result)
 
     def test_pg8000(self):
+        if os.environ.get('APPVEYOR'):
+            return
         os.environ["DB"] = "postgres:pg8000://postgres:@localhost/pydal"
         result = self._run_tests()
         self.assertTrue(result)
