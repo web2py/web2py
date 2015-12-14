@@ -3,7 +3,7 @@ from fabric.operations import put, get
 from fabric.contrib.files import exists
 import os
 import datetime
-import passwd
+import getpass
 
 env.hosts = env.hosts or raw_input('hostname (example.com):').split(',')
 env.user = env.user or raw_input('username              :')
