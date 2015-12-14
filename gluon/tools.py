@@ -523,6 +523,7 @@ class Mail(object):
                 payload_in.attach(attachment)
         else:
             payload_in.attach(attachments)
+            attachments = [attachments]
 
         #######################################################
         #                      CIPHER                         #
@@ -779,7 +780,7 @@ class Mail(object):
                 attachments = attachments and [mail.Attachment(
                         a.my_filename,
                         a.my_payload,
-                        contebt_id='<attachment-%s>' % k
+                        content_id='<attachment-%s>' % k
                         ) for k, a in enumerate(attachments) if not raw]
                 if attachments:
                     result = mail.send_mail(
