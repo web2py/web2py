@@ -13,7 +13,7 @@ now =  datetime.datetime.now()
 applications = '/home/www-data/web2py/applications'
 
 def create_user(username):
-    """fab -H root@host createuser:username"""
+    """fab -H root@host create_user:username"""
     password = getpass.getpass(name+' password for %s> ' % username)
     run('useradd -m %s' % username)
     run('usermod --password %s %s' % (crypt.crypt(password, 'salt'), username))
