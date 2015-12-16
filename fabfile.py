@@ -58,7 +58,7 @@ def down(appname=None):
     appfolder = applications+'/'+appname
     with cd(appfolder):
         sudo('echo `date` > DISABLED')
-        sudo('rm -r sessions/*')
+        sudo('rm -rf sessions/* || true')
 
 def up(appname=None):
     """fab -H username@host up:appname"""
@@ -96,6 +96,17 @@ def git_deploy(appname, repo):
             sudo('git clone git@github.com/%s %s' % (repo, name))
             sudo('chown -R www-data:www-data %s' % name)
     
+def retrieve(appname=None):
+    """fab -H username@host retrieve:appname"""
+    appname = appname or os.path.split(os.getcwd())[-1]
+    appfolder = applications+'/'+appname
+    filename = '%s.zip' % appname
+    with cd(appfolder):
+        sudo('zip -r /tmp/%s *' % filename)
+    get('/tmp/%s' % filename, filename)
+    sudo('rm /tmp/%s' % filename)
+    local('unzip %s' % filename)
+    local('rm %s' % filename)
 
 def deploy(appname=None, all=False):
     """fab -H username@host deploy:appname,all"""
@@ -134,6 +145,6 @@ def cleanup(appname):
     appname = appname or os.path.split(os.getcwd())[-1]
     appfolder = applications + '/' + appname
     with cd(appfolder):
-        sudo('rm -r session/*')
-        sudo('rm -r errors/*')
-        sudo('rm -r cache/*')
+        sudo('rm -rf sessions/* || true')
+        sudo('rm -rf errors/* || true')
+        sudo('rm -rf cache/* || true')
