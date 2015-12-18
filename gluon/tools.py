@@ -2652,8 +2652,8 @@ class Auth(object):
                         user = table_user(**{username: entered_username})
                     if user:
                         # user in db, check if registration pending or disabled
-                        temp_user = user
-                        if temp_user.registration_key == 'pending':
+                        temp_user = user                        
+                        if (temp_user.registration_key or '').startswith('pending'):
                             response.flash = self.messages.registration_pending
                             return form
                         elif temp_user.registration_key in ('disabled', 'blocked'):
@@ -3028,7 +3028,11 @@ class Auth(object):
                    DIV(_id="pre-reg", *self.settings.pre_registration_div),
                    '', formstyle, '')
 
-        table_user.registration_key.default = key = web2py_uuid()
+        key = web2py_uuid()
+        if self.settings.registration_requires_approval:
+            key = 'pending-'+key
+
+        table_user.registration_key.default = key
         if form.accepts(request, session if self.csrf_prevention else None,
                         formname='register',
                         onvalidation=onvalidation,
@@ -3242,11 +3246,12 @@ class Auth(object):
                         formname='retrieve_password', dbio=False,
                         onvalidation=onvalidation, hideerror=self.settings.hideerror):
             user = table_user(email=form.vars.email)
+            key = user.registration_key
             if not user:
                 current.session.flash = \
                     self.messages.invalid_email
                 redirect(self.url(args=request.args))
-            elif user.registration_key in ('pending', 'disabled', 'blocked'):
+            elif key in ('pending', 'disabled', 'blocked') or (key or '').startswith('pending'):
                 current.session.flash = \
                     self.messages.registration_pending
                 redirect(self.url(args=request.args))
@@ -3450,8 +3455,9 @@ class Auth(object):
         except Exception:
             session.flash = self.messages.invalid_reset_password
             redirect(next, client_side=self.settings.client_side)
-
-        if user.registration_key in ('pending', 'disabled', 'blocked'):
+        
+        key = user.registration_key
+        if key in ('pending', 'disabled', 'blocked') or (key or '').startswith('pending'):
             session.flash = self.messages.registration_pending
             redirect(next, client_side=self.settings.client_side)
 
@@ -3548,11 +3554,12 @@ class Auth(object):
                         onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
             user = table_user(**{userfield:form.vars.get(userfield)})
+            key = user.registration_key 
             if not user:
                 session.flash = self.messages['invalid_%s' % userfield]
                 redirect(self.url(args=request.args),
                          client_side=self.settings.client_side)
-            elif user.registration_key in ('pending', 'disabled', 'blocked'):
+            elif key in ('pending', 'disabled', 'blocked') or (key or '').startswith('pending'):
                 session.flash = self.messages.registration_pending
                 redirect(self.url(args=request.args),
                          client_side=self.settings.client_side)
