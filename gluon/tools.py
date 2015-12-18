@@ -3451,6 +3451,10 @@ class Auth(object):
             session.flash = self.messages.invalid_reset_password
             redirect(next, client_side=self.settings.client_side)
 
+        if user.registration_key in ('pending', 'disabled', 'blocked'):
+            session.flash = self.messages.registration_pending
+            redirect(next, client_side=self.settings.client_side)
+
         if onvalidation is DEFAULT:
             onvalidation = self.settings.reset_password_onvalidation
         if onaccept is DEFAULT:
