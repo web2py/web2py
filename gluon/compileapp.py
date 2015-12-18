@@ -476,11 +476,11 @@ def compile_views(folder, skip_failed_views=False):
             data = parse_template(fname, path)
         except Exception, e:
             if skip_failed_views:
-                failed_views.append(file)
+                failed_views.append(fname)
             else:
-                raise Exception("%s in %s" % (e, file))
+                raise Exception("%s in %s" % (e, fname))
         else:
-            filename = ('views/%s.py' % file).replace('/', '_').replace('\\', '_')
+            filename = ('views/%s.py' % fname).replace('/', '_').replace('\\', '_')
             filename = pjoin(folder, 'compiled', filename)
             write_file(filename, data)
             save_pyc(filename)
