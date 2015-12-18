@@ -3367,7 +3367,7 @@ class IS_IPV4(Validator):
                     (number == self.localhost)):
                     ok = False
             if not (self.is_private is None or self.is_private ==
-                    (sum([private_number[0] <= number <= private_number[1] 
+                    (sum([private_number[0] <= number <= private_number[1]
                           for private_number in self.private]) > 0)):
                     ok = False
             if not (self.is_automatic is None or self.is_automatic ==
