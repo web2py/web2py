@@ -1,8 +1,18 @@
-## master
-- Change .flash and .hidden to .w2p_flash and .w2p_hidden
-     - copy the static folder from the new welcome app when you update web2py
+## 2.13.1
 
-## 2.12.1
+- added fabfile.py
+- fixed oauth2 renew token, thanks dokime7
+- fixed add_membership, del_membership, add_membership IntegrityError (when auth.enable_record_versioning) 
+- allow passing unicode to template render
+- allow IS_NOT_IN_DB to work with custom primarykey, thanks timmyborg
+- allow HttpOnly cookies
+- french pluralizaiton rules, thanks Mathieu Clabaut
+- fixed bug in redirect to cas service, thanks Fernando González
+- allow deploying to pythonanywhere from the web2py admin that you're running locally, thanks Leonel
+- better tests
+- many more bug fixes
+
+## 2.12.1-3
 
 - security fix: Validate for open redirect everywhere, not just in login()
 - allow to pack invidual apps and selected files as packed exe files

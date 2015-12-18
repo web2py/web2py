@@ -120,7 +120,7 @@ def app_cleanup(app, request):
                 r = False
 
     # Remove cache files
-    path = apath('%s/cache/' % app, request)    
+    path = apath('%s/cache/' % app, request)
     if os.path.exists(path):
         CacheOnDisk(folder=path).clear()
         for f in os.listdir(path):

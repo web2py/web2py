@@ -24,42 +24,42 @@ class TestUtils(unittest.TestCase):
 
         data = md5_hash("web2py rocks")
         self.assertEqual(data, '79509f3246a2824dee64635303e99204')
-        
+
     def test_compare(self):
         """ Tests the compare funciton """
-        
+
         a, b = 'test123', 'test123'
         compare_result_true = compare(a, b)
         self.assertTrue(compare_result_true)
-        
+
         a, b = 'test123', 'test456'
         compare_result_false = compare(a, b)
         self.assertFalse(compare_result_false)
-    
+
     def test_simple_hash(self):
         """ Tests the simple_hash function """
-        
+
         # no key, no salt, md5
         data_md5 = simple_hash('web2py rocks!', key='', salt='', digest_alg='md5')
         self.assertEqual(data_md5, '37d95defba6c8834cb8cae86ee888568')
-        
+
         # no key, no salt, sha1
         data_sha1 = simple_hash('web2py rocks!', key='', salt='', digest_alg='sha1')
         self.assertEqual(data_sha1, '00489a46753d8db260c71542611cdef80652c4b7')
-        
+
         # no key, no salt, sha224
         data_sha224 = simple_hash('web2py rocks!', key='', salt='', digest_alg='sha224')
         self.assertEqual(data_sha224, '84d7054271842c2c17983baa2b1447e0289d101140a8c002d49d60da')
-        
+
         # no key, no salt, sha256
         data_sha256 = simple_hash('web2py rocks!', key='', salt='', digest_alg='sha256')
         self.assertEqual(data_sha256, '0849f224d8deb267e4598702aaec1bd749e6caec90832469891012a4be24af08')
-        
+
         # no key, no salt, sha384
         data_sha384 = simple_hash('web2py rocks!', key='', salt='', digest_alg='sha384')
-        self.assertEqual(data_sha384, 
+        self.assertEqual(data_sha384,
             '3cffaf39371adbe84eb10f588d2718207d8e965e9172a27a278321b86977351376ae79f92e91d8c58cad86c491282d5f')
-        
+
         # no key, no salt, sha512
         data_sha512 = simple_hash('web2py rocks!', key='', salt='', digest_alg='sha512')
         self.assertEqual(data_sha512, 'fa3237f594743e1d7b6c800bb134b3255cf4a98ab8b01e2ec23256328c9f8059'

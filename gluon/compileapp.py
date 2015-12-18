@@ -470,21 +470,21 @@ def compile_views(folder, skip_failed_views=False):
     """
 
     path = pjoin(folder, 'views')
-    failed_views = [] 
+    failed_views = []
     for fname in listdir(path, '^[\w/\-]+(\.\w+)*$'):
         try:
             data = parse_template(fname, path)
         except Exception, e:
-            if skip_failed_views:                                                                            
-                failed_views.append(file)                                                                    
-            else:                                                                                            
-                raise Exception("%s in %s" % (e, file))                                                      
-        else:                                                                                                
-            filename = ('views/%s.py' % file).replace('/', '_').replace('\\', '_')                           
-            filename = pjoin(folder, 'compiled', filename)                                                   
-            write_file(filename, data)                                                                       
-            save_pyc(filename)                                                                               
-            os.unlink(filename)                                                                              
+            if skip_failed_views:
+                failed_views.append(file)
+            else:
+                raise Exception("%s in %s" % (e, file))
+        else:
+            filename = ('views/%s.py' % file).replace('/', '_').replace('\\', '_')
+            filename = pjoin(folder, 'compiled', filename)
+            write_file(filename, data)
+            save_pyc(filename)
+            os.unlink(filename)
     return failed_views if failed_views else None
 
 
@@ -675,25 +675,25 @@ def run_view_in(environment):
         restricted(ccode, environment, 'file stream')
     else:
         filename = pjoin(folder, 'views', view)
-        if os.path.exists(path): # compiled views                                                            
-            x = view.replace('/', '_')                                                                       
-            files = ['views_%s.pyc' % x]                                                                     
-            is_compiled = os.path.exists(pjoin(path, files[0]))                                              
-            # Don't use a generic view if the non-compiled view exists.                                      
-            if is_compiled or (not is_compiled and not os.path.exists(filename)):                            
-                if allow_generic:                                                                            
-                    files.append('views_generic.%s.pyc' % request.extension)                                 
-                # for backward compatibility                                                                 
-                if request.extension == 'html':                                                              
-                    files.append('views_%s.pyc' % x[:-5])                                                    
-                    if allow_generic:                                                                        
-                        files.append('views_generic.pyc')                                                    
-                # end backward compatibility code                                                            
-                for f in files:                                                                              
-                    compiled = pjoin(path, f)                                                                
-                    if os.path.exists(compiled):                                                             
-                        code = read_pyc(compiled)                                                            
-                        restricted(code, environment, layer=compiled)                                        
+        if os.path.exists(path): # compiled views
+            x = view.replace('/', '_')
+            files = ['views_%s.pyc' % x]
+            is_compiled = os.path.exists(pjoin(path, files[0]))
+            # Don't use a generic view if the non-compiled view exists.
+            if is_compiled or (not is_compiled and not os.path.exists(filename)):
+                if allow_generic:
+                    files.append('views_generic.%s.pyc' % request.extension)
+                # for backward compatibility
+                if request.extension == 'html':
+                    files.append('views_%s.pyc' % x[:-5])
+                    if allow_generic:
+                        files.append('views_generic.pyc')
+                # end backward compatibility code
+                for f in files:
+                    compiled = pjoin(path, f)
+                    if os.path.exists(compiled):
+                        code = read_pyc(compiled)
+                        restricted(code, environment, layer=compiled)
                         return
         if not os.path.exists(filename) and allow_generic:
             view = 'generic.' + request.extension
