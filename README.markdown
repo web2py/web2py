@@ -8,10 +8,10 @@ Based on https://azure.microsoft.com/en-us/documentation/articles/web-sites-pyth
 1. Create web app on Azure Portal
 2. Fork a repo web2py (github)
 3. Add 4 files  to own github repository (web2py/)
-    ptvs_virtualenv_proxy.py
-    requirements.txt
-    runtime.txt
-    web.config
+    - ptvs_virtualenv_proxy.py
+    - requirements.txt
+    - runtime.txt
+    - web.config
 4. Configure continuous deployment using github https://azure.microsoft.com/en-us/documentation/articles/web-sites-publish-source-control/ 
 look Deploy files from a repository site like BitBucket, CodePlex, Dropbox, GitHub, or Mercurial. 
 Azure creates an association with the selected repository, and pulls in the files from the specified branch. After this process completes, the Deployment section of your web app's blade will show an Active Deployment message that indicates deployment has succeeded.
