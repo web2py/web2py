@@ -4044,35 +4044,41 @@ class Auth(object):
 
     def jwt(self):
         """
-        To user JWT authentication, instantiate auth with
+        To use JWT authentication:
+        1) instantiate auth with
 
             auth = Auth(db, jwt = {'secret_key':'secret'})
 
-        where 'secret' is your own secret string. Then decorate functions that requires login
-        but will accept the JWT token as credential as:
+        where 'secret' is your own secret string. 
+
+        2) Secorate functions that require login but should accept the JWT token credentials:
 
             @auth.allows_jwt()
             @auth.requires_login()
             def myapi(): return 'hello %s' % auth.user.email
     
-        (notice the jwt is allowed but not required. if user is logged in, myapi is accessible)
+        Notice jwt is allowed but not required. if user is logged in, myapi is accessible.
+
+        3) Use it!
+
         Now API users can obtain a token with
 
             http://.../app/default/user/jwt?username=...&password=....
 
-        They can refresh an existing token with
+        (returns json object with a token attribute)
+        API users can refresh an existing token with
 
             http://.../app/default/user/jwt?token=...
 
-        And they can authenticate themselves when calling the myapi by injecting a header
+        they can authenticate themselves when calling http:/.../myapi by injecting a header
 
             Authorization: Bearer <the jwt token>
 
-        For additional arguments that can be passed to
+        Any additional attributes in the jwt argument of Auth() below:
 
            auth = Auth(db, jwt = {...})
 
-        please see class AuthJWT.__init__(...) arguments.
+        are passed to the constructor of class AuthJWT. Look there for documentation.
         """
         if not self.jwt_handler:
             raise HTTP(400, "Not authorized")
