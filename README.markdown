@@ -1,3 +1,31 @@
+## Azure Web Apps version
+https://groups.google.com/forum/#!searchin/web2py/azure/web2py/XGxM_Tb9nJ4/ItS8GF5oAgAJ
+
+web2py setup Azure Web Apps.
+
+Based on https://azure.microsoft.com/en-us/documentation/articles/web-sites-python-configure/
+
+1. Create web app on Azure Portal
+2. Fork a repo web2py (github)
+3. Add 4 files  to own github repository (web2py/)
+    ptvs_virtualenv_proxy.py
+    requirements.txt
+    runtime.txt
+    web.config
+4. Configure continuous deployment using github https://azure.microsoft.com/en-us/documentation/articles/web-sites-publish-source-control/ 
+look Deploy files from a repository site like BitBucket, CodePlex, Dropbox, GitHub, or Mercurial. 
+Azure creates an association with the selected repository, and pulls in the files from the specified branch. After this process completes, the Deployment section of your web app's blade will show an Active Deployment message that indicates deployment has succeeded.
+5. Run web app on on Azure Portal
+
+Admin password:
+1.on local copy web2py - save the password in the parameters_8000.py file
+2.rename parameters_8000.py parameters_443.py
+3.copy parameters_443.py via FTP (link in Azure Portal) in site/wwwroot
+
+Example: 
+https://nbush2py.azurewebsites.net
+https://github.com/Nbushkov/web2py
+
 ## Readme
 
 web2py is a free open source full-stack framework for rapid development of fast, scalable, secure and portable database-driven web-based applications. 
