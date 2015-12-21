@@ -1122,7 +1122,7 @@ def start(cron=True):
         import shutil
         sys.stdout.write("Copying logging.conf.example to logging.conf ... ")
         shutil.copyfile(logfile0, 'logging.conf')
-        sys.stdout.write("OK\n")
+        sys.stdout.write('OK\n')
 
     # ## if -T run doctests (no cron)
     if hasattr(options, 'test') and options.test:
