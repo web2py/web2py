@@ -2646,7 +2646,7 @@ def test():
     >>> form=FORM(INPUT(value="Hello World", _name="var", requires=IS_MATCH('^\w+$')))
     >>> isinstance(form.as_dict(), dict)
     True
-    >>> form.as_dict(flat=True).has_key("vars")
+    >>> "vars" in form.as_dict(flat=True)
     True
     >>> isinstance(form.as_json(), basestring) and len(form.as_json(sanitize=False)) > 0
     True
