@@ -4693,7 +4693,7 @@ class Auth(object):
         if resolve:
             if slug:
                 wiki = self._wiki.read(slug, force_render)
-                if isinstance(wiki, dict) and wiki.has_key('content'):  # FIXME: .has_key() is deprecated
+                if isinstance(wiki, dict) and 'content' in wiki:
                     # We don't want to return a dict object, just the wiki
                     wiki = wiki['content']
             else:
@@ -5710,7 +5710,7 @@ class Service(object):
 
         def return_error(id, code, message=None, data=None):
             error = {'code': code}
-            if Service.jsonrpc_errors.has_key(code):
+            if code in Service.jsonrpc_errors:
                 error['message'] = Service.jsonrpc_errors[code][0]
                 error['data'] = Service.jsonrpc_errors[code][1]
             if message is not None:
