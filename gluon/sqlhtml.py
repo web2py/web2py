@@ -1679,9 +1679,6 @@ class SQLFORM(FORM):
             elif field.type == 'double':
                 if value is not None:
                     fields[fieldname] = safe_float(value)
-            elif field.type in ('string', 'text'):
-                if fieldname in self.request_vars:
-                    fields[fieldname] = self.request_vars[fieldname]
 
         for fieldname in self.vars:
             if fieldname != 'id' and fieldname in self.table.fields\
