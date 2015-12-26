@@ -3,7 +3,6 @@
 
 import os
 import sys
-import gluon.widget
 from multiprocessing import freeze_support
 # import gluon.import_all ##### This should be uncommented for py2exe.py
 
@@ -16,6 +15,10 @@ else:  # should never happen
 os.chdir(path)
 
 sys.path = [path] + [p for p in sys.path if not p == path]
+
+# important that this import is after the os.chdir
+
+import gluon.widget
 
 # Start Web2py and Web2py cron service!
 if __name__ == '__main__':
