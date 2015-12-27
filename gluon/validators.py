@@ -615,8 +615,6 @@ class IS_IN_DB(Validator):
         table = self.dbset.db[self.ktable]
         field = table[self.kfield]
 
-        print self.kfield, value, self.multiple
-        
         if self.multiple:
             if self._and:
                 raise NotImplementedError
@@ -628,7 +626,7 @@ class IS_IN_DB(Validator):
                 values = [value]
             else:
                 values = []
-            print values
+
             if self.field.type in ('id','integer'):
                 new_values = []
                 for value in values:
@@ -640,7 +638,7 @@ class IS_IN_DB(Validator):
                         return (values, translate(self.error_message))
                     new_values.append(value)
                 values = new_values
-            print value
+
             if isinstance(self.multiple, (tuple, list)) and \
                     not self.multiple[0] <= len(values) < self.multiple[1]:
                 return (values, translate(self.error_message))
