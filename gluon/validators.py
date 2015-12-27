@@ -509,7 +509,9 @@ class IS_IN_DB(Validator):
         zero='',
         sort=False,
         _and=None,
-        left=None
+        left=None,
+        delimiter=None,
+        auto_add = False,
     ):
         from pydal.objects import Table
         if hasattr(dbset, 'define_table'):
@@ -530,19 +532,21 @@ class IS_IN_DB(Validator):
         if isinstance(label, str):
             if regex1.match(str(label)):
                 label = '%%(%s)s' % str(label).split('.')[-1]
-            ks = regex2.findall(label)
-            if kfield not in ks:
-                ks += [kfield]
-            fields = ks
+            fieldnames = regex2.findall(label)
+            if kfield not in fieldnames:
+                fieldnames.append(kfield) # kfield must be last
+        elif isinstance(label, Field):
+            fieldnames = [label.name, kfield] # kfield must be last
+            label = '%%(%s)s' % label.name
+        elif callable(label):
+            fieldnames = '*'
         else:
-            ks = [kfield]
-            fields = 'all'
+            raise NotImplementedError
         self.field = field # the lookup field
-        self.fields = fields # fields requires to build the formatting
+        self.fieldnames = fieldnames # fields requires to build the formatting
         self.label = label
         self.ktable = ktable
         self.kfield = kfield
-        self.ks = ks
         self.error_message = error_message
         self.theset = None
         self.orderby = orderby
@@ -554,6 +558,8 @@ class IS_IN_DB(Validator):
         self.sort = sort
         self._and = _and
         self.left = left
+        self.delimiter = delimiter
+        self.auto_add = auto_add
 
     def set_self_id(self, id):
         if self._and:
@@ -561,10 +567,10 @@ class IS_IN_DB(Validator):
 
     def build_set(self):
         table = self.dbset.db[self.ktable]
-        if self.fields == 'all':
+        if self.fieldnames == '*':
             fields = [f for f in table]
         else:
-            fields = [table[k] for k in self.fields]
+            fields = [table[k] for k in self.fieldnames]
         ignore = (FieldVirtual, FieldMethod)
         fields = filter(lambda f: not isinstance(f, ignore), fields)
         if self.dbset.db._dbname != 'gae':
@@ -585,8 +591,6 @@ class IS_IN_DB(Validator):
         self.theset = [str(r[self.kfield]) for r in records]
         if isinstance(self.label, str):
             self.labels = [self.label % r for r in records]
-        elif isinstance(self.label, Field):
-            self.labels = [r[self.label.name] for r in records]
         else:
             self.labels = [self.label(r) for r in records]
 
@@ -599,18 +603,44 @@ class IS_IN_DB(Validator):
             items.insert(0, ('', self.zero))
         return items
 
+    def maybe_add(self, table, fieldname, value):
+        d = {fieldname: value}
+        record = table(**d)
+        if record:
+            return record.id
+        else:
+            return table.insert(**d)
+
     def __call__(self, value):
         table = self.dbset.db[self.ktable]
         field = table[self.kfield]
+
+        print self.kfield, value, self.multiple
+        
         if self.multiple:
             if self._and:
                 raise NotImplementedError
             if isinstance(value, list):
                 values = value
+            elif self.delimiter:
+                values = value.split(self.delimiter) # because of autocomplete
             elif value:
                 values = [value]
             else:
                 values = []
+            print values
+            if self.field.type in ('id','integer'):
+                new_values = []
+                for value in values:
+                    if isinstance(value,(int,long)) or value.isdigit():
+                        value = int(value)
+                    elif self.auto_add:
+                        value = self.maybe_add(table, self.fieldnames[0], value)
+                    else:
+                        return (values, translate(self.error_message))
+                    new_values.append(value)
+                values = new_values
+            print value
             if isinstance(self.multiple, (tuple, list)) and \
                     not self.multiple[0] <= len(values) < self.multiple[1]:
                 return (values, translate(self.error_message))
@@ -629,18 +659,32 @@ class IS_IN_DB(Validator):
                         return (values, None)
                 elif count(values) == len(values):
                     return (values, None)
-        elif self.theset:
-            if str(value) in self.theset:
-                if self._and:
-                    return self._and(value)
-                else:
-                    return (value, None)
         else:
-            if self.dbset(field == value).count():
-                if self._and:
-                    return self._and(value)
+            if self.field.type in ('id','integer'):
+                if isinstance(value,(int,long)) or value.isdigit():
+                    value = int(value)
+                elif self.auto_add:
+                    value = self.maybe_add(table, self.fieldnames[0], value)
                 else:
-                    return (value, None)
+                    return (value, translate(self.error_message))
+
+                try:
+                    value = int(value)
+                except TypeError:
+                    return (values, translate(self.error_message))
+
+            if self.theset:
+                if str(value) in self.theset:
+                    if self._and:
+                        return self._and(value)
+                    else:
+                        return (value, None)
+            else:
+                if self.dbset(field == value).count():
+                    if self._and:
+                        return self._and(value)
+                    else:
+                        return (value, None)
         return (value, translate(self.error_message))
 
 

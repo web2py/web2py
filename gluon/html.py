@@ -1859,6 +1859,8 @@ class INPUT(DIV):
                 try:
                     (value, errors) = validator(value)
                 except:
+                    import traceback
+                    print traceback.format_exc()
                     msg = "Validation error, field:%s %s" % (name,validator)
                     raise Exception(msg)
                 if not errors is None:
