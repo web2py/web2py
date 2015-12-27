@@ -1504,13 +1504,12 @@ class SQLFORM(FORM):
             hideerror=hideerror,
             **kwargs
         )
-
-        self.deleted = \
-            request_vars.get(self.FIELDNAME_REQUEST_DELETE, False)
+        
+        self.deleted = request_vars.get(self.FIELDNAME_REQUEST_DELETE, False)
 
         self.custom.end = CAT(self.hidden_fields(), self.custom.end)
 
-        auch = self.record_id and self.errors and self.deleted
+        delete_exception = self.record_id and self.errors and self.deleted
 
         if self.record_changed and self.detect_record_change:
             message_onchange = \
@@ -1522,8 +1521,9 @@ class SQLFORM(FORM):
             if message_onchange is not None:
                 current.response.flash = message_onchange
             return ret
-        elif (not ret) and (not auch):
-            # auch is true when user tries to delete a record
+
+        elif (not ret) and (not delete_exception):
+            # delete_exception is true when user tries to delete a record
             # that does not pass validation, yet it should be deleted
             for fieldname in self.fields:
 
@@ -1720,6 +1720,7 @@ class SQLFORM(FORM):
                                        self.id_field_name]).update(**fields)
                 else:
                     self.vars.id = self.table.insert(**fields)
+
         self.accepted = ret
         return ret
 

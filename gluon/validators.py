@@ -511,7 +511,7 @@ class IS_IN_DB(Validator):
         _and=None,
         left=None,
         delimiter=None,
-        auto_add = False,
+        auto_add=False,
     ):
         from pydal.objects import Table
         if hasattr(dbset, 'define_table'):
