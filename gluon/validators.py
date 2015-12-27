@@ -22,7 +22,7 @@ import decimal
 import unicodedata
 from cStringIO import StringIO
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
-from pydal.objects import FieldVirtual, FieldMethod
+from pydal.objects import Field, FieldVirtual, FieldMethod
 
 regex_isint = re.compile('^[+-]?\d+$')
 
@@ -512,13 +512,18 @@ class IS_IN_DB(Validator):
         left=None
     ):
         from pydal.objects import Table
-        if isinstance(field, Table):
-            field = field._id
-
         if hasattr(dbset, 'define_table'):
             self.dbset = dbset()
         else:
             self.dbset = dbset
+
+        if isinstance(field, Table):
+            field = field._id
+        elif isinstance(field, str):
+            items = field.split('.')
+            if len(items)==1: items+=['id']
+            field = self.dbset.db[items[0]][items[1]]
+
         (ktable, kfield) = str(field).split('.')
         if not label:
             label = '%%(%s)s' % kfield
@@ -532,7 +537,8 @@ class IS_IN_DB(Validator):
         else:
             ks = [kfield]
             fields = 'all'
-        self.fields = fields
+        self.field = field # the lookup field
+        self.fields = fields # fields requires to build the formatting
         self.label = label
         self.ktable = ktable
         self.kfield = kfield
@@ -579,6 +585,8 @@ class IS_IN_DB(Validator):
         self.theset = [str(r[self.kfield]) for r in records]
         if isinstance(self.label, str):
             self.labels = [self.label % r for r in records]
+        elif isinstance(self.label, Field):
+            self.labels = [r[self.label.name] for r in records]
         else:
             self.labels = [self.label(r) for r in records]
 
