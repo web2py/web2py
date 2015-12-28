@@ -1386,6 +1386,7 @@ class AuthJWT(object):
         response = current.response
         session = current.session
         # forget and unlock response
+        valid_user = None
         if request.vars.token:
             if not self.allow_refresh:
                 raise HTTP(403, u'Refreshing token is not allowed')
@@ -1399,16 +1400,16 @@ class AuthJWT(object):
             username = request.vars[self.user_param]
             password = request.vars[self.pass_param]
             valid_user = self.auth.login_bare(username, password)
+        else:
+            valid_user = self.auth.user
             if valid_user:
                 payload = self.serialize_auth_session(current.session.auth)
                 self.alter_payload(payload)
                 ret = {'token':self.generate_token(payload)}
             else:
                 raise HTTP(
-                    401, u'Not Authorized', 
+                    401, u'Not Authorized',
                     **{'WWW-Authenticate': u'JWT realm="%s"' % self.realm})
-        else:
-            raise HTTP(400, u'Must pass token for refresh or username and password for login')
         response.headers['content-type'] = 'application/json'
         return json.dumps(ret)
 
