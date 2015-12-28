@@ -295,9 +295,10 @@ class Form(object):
 
         if isinstance(table, list):
             dbio = False
-            fields = table
-            table = DAL(None).define_table('tmp', *fields)
-        
+            # mimic a table from a list of fields without calling define_table
+            formname = formname or 'none'
+            for field in table: field.tablename = formname
+ 
         if isinstance(record, (int, long, basestring)):
             record_id = int(str(record))
             self.record = table[record_id]
