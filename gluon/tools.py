@@ -117,6 +117,12 @@ def replace_id(url, form):
     return URL(url)
 
 
+def json_date_handler(obj):
+    if hasattr(obj, 'isoformat'):
+        return obj.isoformat()
+    else:
+        raise TypeError('%s is not JSON serializable' % obj)
+
 class Mail(object):
     """
     Class for configuring and sending emails with alternative text / html
@@ -1279,7 +1285,7 @@ class AuthJWT(object):
             if isinstance(secret, unicode):
                 secret = secret.encode('ascii', 'ignore')
         b64h = self.cached_b64h
-        b64p = self.jwt_b64e(json_parser.dumps(payload))
+        b64p = self.jwt_b64e(json_parser.dumps(payload, default=json_date_handler))
         jbody = b64h + '.' + b64p
         mauth = hmac.new(key=secret, msg=jbody, digestmod=self.digestmod)
         jsign = self.jwt_b64e(mauth.digest())
