@@ -207,7 +207,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
                 {{=peekfile('views',c, dict(id=id))}}
             </span>
             <span class="extras celled celled-one">
-                {{if extend.has_key(c):}}{{=T("extends")}} <b>{{=extend[c]}}</b> {{pass}}
+                {{if c in extend:}}{{=T("extends")}} <b>{{=extend[c]}}</b> {{pass}}
                 {{if include[c]:}}{{=T("includes")}} {{pass}}{{=XML(', '.join([B(f).xml() for f in include[c]]))}}
             </span>
         </li>

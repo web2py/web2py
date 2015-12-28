@@ -40,8 +40,8 @@ ProgramInfo = '''%s
                  %s
                  %s''' % (ProgramName, ProgramAuthor, ProgramVersion)
 
-if not sys.version[:3] in ['2.5', '2.6', '2.7']:
-    msg = 'Warning: web2py requires Python 2.5, 2.6 or 2.7 but you are running:\n%s'
+if not sys.version[:3] in ['2.6', '2.7']:
+    msg = 'Warning: web2py requires Python 2.6 or 2.7 but you are running:\n%s'
     msg = msg % sys.version
     sys.stderr.write(msg)
 
@@ -56,8 +56,8 @@ def run_system_tests(options):
     major_version = sys.version_info[0]
     minor_version = sys.version_info[1]
     if major_version == 2:
-        if minor_version in (5, 6):
-            sys.stderr.write("Python 2.5 or 2.6\n")
+        if minor_version in (6,):
+            sys.stderr.write('Python 2.6\n')
             ret = subprocess.call(['unit2', '-v', 'gluon.tests'])
         elif minor_version in (7,):
             call_args = [sys.executable, '-m', 'unittest', '-v', 'gluon.tests']
@@ -1117,12 +1117,12 @@ def start(cron=True):
             if hasattr(options, key):
                 setattr(options, key, getattr(options2, key))
 
-    logfile0 = os.path.join('extras', 'examples', 'logging.example.conf')
+    logfile0 = os.path.join('examples', 'logging.example.conf')
     if not os.path.exists('logging.conf') and os.path.exists(logfile0):
         import shutil
         sys.stdout.write("Copying logging.conf.example to logging.conf ... ")
-        shutil.copyfile('logging.example.conf', logfile0)
-        sys.stdout.write("OK\n")
+        shutil.copyfile(logfile0, 'logging.conf')
+        sys.stdout.write('OK\n')
 
     # ## if -T run doctests (no cron)
     if hasattr(options, 'test') and options.test:

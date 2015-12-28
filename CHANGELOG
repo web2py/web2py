@@ -1,5 +1,6 @@
-## 2.13.1
+## 2.13.1-2
 
+- fixed a security issue in request_reset_password
 - added fabfile.py
 - fixed oauth2 renew token, thanks dokime7
 - fixed add_membership, del_membership, add_membership IntegrityError (when auth.enable_record_versioning) 
