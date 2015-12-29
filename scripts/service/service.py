@@ -74,7 +74,7 @@ class ServiceBase(Base):
             key = config['https_key']
             cert = config['https_cert']
             if key != '' and cert != '':
-                interfaces.append('%s:%s:%s:%s' % (ip, port, cert, key))
+                interfaces.append('%s:%s:%s:%s' % (ip, port, key, cert))
                 ports.append(ports)
         if len(interfaces) == 0:
             sys.exit('Configuration error. Must have settings for http and/or https')
@@ -92,7 +92,7 @@ class ServiceBase(Base):
         interfaces = ';'.join(interfaces)
         args.append('--interfaces=%s' % interfaces)
 
-        if 'log_filename' in config.key():
+        if 'log_filename' in config.keys():
             log_filename = config['log_filename']
             args.append('--log_filename=%s' % log_filename)
 
