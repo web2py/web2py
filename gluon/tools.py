@@ -1397,14 +1397,14 @@ class AuthJWT(object):
             valid_user = self.auth.login_bare(username, password)
         else:
             valid_user = self.auth.user
-            if valid_user:
-                payload = self.serialize_auth_session(current.session.auth)
-                self.alter_payload(payload)
-                ret = {'token':self.generate_token(payload)}
-            else:
-                raise HTTP(
-                    401, u'Not Authorized',
-                    **{'WWW-Authenticate': u'JWT realm="%s"' % self.realm})
+        if valid_user:
+            payload = self.serialize_auth_session(current.session.auth)
+            self.alter_payload(payload)
+            ret = {'token':self.generate_token(payload)}
+        else:
+            raise HTTP(
+                401, u'Not Authorized - need to be logged in, to pass a token for refresh or username and password for login',
+                **{'WWW-Authenticate': u'JWT realm="%s"' % self.realm})
         response.headers['content-type'] = 'application/json'
         return serializers.json(ret)
 
