@@ -1255,7 +1255,7 @@ class AuthJWT(object):
     @staticmethod
     def jwt_b64e(string):
         if isinstance(string, unicode):
-            string = string.encode('uft-8', 'strict')
+            string = string.encode('utf-8', 'strict')
         return base64.urlsafe_b64encode(string).strip(b'=')
 
     @staticmethod
