@@ -34,7 +34,6 @@ import email.utils
 import random
 import hmac
 import hashlib
-import json
 from email import MIMEBase, MIMEMultipart, MIMEText, Encoders, Header, message_from_string, Charset
 
 from gluon.serializers import json_parser
@@ -116,12 +115,6 @@ def replace_id(url, form):
             return url
     return URL(url)
 
-
-def json_date_handler(obj):
-    if hasattr(obj, 'isoformat'):
-        return obj.isoformat()
-    else:
-        raise TypeError('%s is not JSON serializable' % obj)
 
 class Mail(object):
     """
@@ -1285,7 +1278,7 @@ class AuthJWT(object):
             if isinstance(secret, unicode):
                 secret = secret.encode('ascii', 'ignore')
         b64h = self.cached_b64h
-        b64p = self.jwt_b64e(json_parser.dumps(payload, default=json_date_handler))
+        b64p = self.jwt_b64e(serializers.json(payload))
         jbody = b64h + '.' + b64p
         mauth = hmac.new(key=secret, msg=jbody, digestmod=self.digestmod)
         jsign = self.jwt_b64e(mauth.digest())
@@ -1304,7 +1297,7 @@ class AuthJWT(object):
             # header not the same
             raise HTTP(400, u'Invalid JWT Header')
         secret = self.secret_key
-        tokend = json_parser.loads(self.jwt_b64d(b64b))
+        tokend = serializers.loads_json(self.jwt_b64d(b64b))
         if self.salt:
             if callable(self.salt):
                 secret = "%s$%s" % (secret, self.salt(tokend))
@@ -1411,7 +1404,7 @@ class AuthJWT(object):
                     401, u'Not Authorized',
                     **{'WWW-Authenticate': u'JWT realm="%s"' % self.realm})
         response.headers['content-type'] = 'application/json'
-        return json.dumps(ret)
+        return serializers.json(ret)
 
     def inject_token(self, tokend):
         """
