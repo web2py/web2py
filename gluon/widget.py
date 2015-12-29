@@ -150,7 +150,7 @@ class web2pyDialog(object):
         self.scheduler_processes = {}
         self.menu = Tkinter.Menu(self.root)
         servermenu = Tkinter.Menu(self.menu, tearoff=0)
-        httplog = os.path.join(self.options.folder, 'httpserver.log')
+        httplog = os.path.join(self.options.folder, self.options.log_filename)
         iconphoto = os.path.join('extras', 'icons', 'web2py.gif')
         if os.path.exists(iconphoto):
             img = Tkinter.PhotoImage(file=iconphoto)
@@ -225,9 +225,9 @@ class web2pyDialog(object):
                       text=str(ProgramVersion + "\n" + ProgramAuthor),
                       font=('Helvetica', 11), justify=Tkinter.CENTER,
                       foreground='#195866', background=bg_color,
-                      height=3).pack( side='top',
-                                      fill='both',
-                                      expand='yes')
+                      height=3).pack(side='top',
+                                     fill='both',
+                                     expand='yes')
 
         self.bannerarea.after(1000, self.update_canvas)
 
@@ -322,11 +322,15 @@ class web2pyDialog(object):
             self.tb = None
 
     def update_schedulers(self, start=False):
+        applications_folder = os.path.join(self.options.folder, 'applications')
         apps = []
-        available_apps = [arq for arq in os.listdir('applications/')]
-        available_apps = [arq for arq in available_apps
-                          if os.path.exists(
-                'applications/%s/models/scheduler.py' % arq)]
+        ##FIXME - can't start scheduler in the correct dir from Tk
+        if self.options.folder:
+            return
+        available_apps = [
+            arq for arq in os.listdir(applications_folder)
+            if os.path.exists(os.path.join(applications_folder, arq, 'models', 'scheduler.py'))
+        ]
         if start:
             # the widget takes care of starting the scheduler
             if self.options.scheduler and self.options.with_scheduler:
@@ -414,9 +418,11 @@ class web2pyDialog(object):
     def connect_pages(self):
         """ Connects pages """
         # reset the menu
-        available_apps = [arq for arq in os.listdir('applications/')
-                          if os.path.exists(
-                'applications/%s/__init__.py' % arq)]
+        applications_folder = os.path.join(self.options.folder, 'applications')
+        available_apps = [
+            arq for arq in os.listdir(applications_folder)
+            if os.path.exists(os.path.join(applications_folder, arq, '__init__.py'))
+        ]
         self.pagesmenu.delete(0, len(available_apps))
         for arq in available_apps:
             url = self.url + arq
@@ -552,14 +558,15 @@ class web2pyDialog(object):
     def update_canvas(self):
         """ Updates canvas """
 
+        httplog = os.path.join(self.options.folder, self.options.log_filename)
         try:
-            t1 = os.path.getsize('httpserver.log')
+            t1 = os.path.getsize(httplog)
         except:
             self.canvas.after(1000, self.update_canvas)
             return
 
         try:
-            fp = open('httpserver.log', 'r')
+            fp = open(httplog, 'r')
             fp.seek(self.t0)
             data = fp.read(t1 - self.t0)
             fp.close()
@@ -1051,6 +1058,8 @@ def start_schedulers(options):
         apps = options.scheduler_groups
     code = "from gluon import current;current._scheduler.loop()"
     logging.getLogger().setLevel(options.debuglevel)
+    if options.folder:
+        os.chdir(options.folder)
     if len(apps) == 1 and not options.with_scheduler:
         app_, code = get_code_for_scheduler(apps[0], options)
         if not app_:
@@ -1118,11 +1127,12 @@ def start(cron=True):
                 setattr(options, key, getattr(options2, key))
 
     logfile0 = os.path.join('examples', 'logging.example.conf')
-    if not os.path.exists('logging.conf') and os.path.exists(logfile0):
+    logfile1 = os.path.join(options.folder, 'logging.conf')
+    if not os.path.exists(logfile1) and os.path.exists(logfile0):
         import shutil
         sys.stdout.write("Copying logging.conf.example to logging.conf ... ")
-        shutil.copyfile(logfile0, 'logging.conf')
-        sys.stdout.write('OK\n')
+        shutil.copyfile(logfile0, logfile1)
+        sys.stdout.write("OK\n")
 
     # ## if -T run doctests (no cron)
     if hasattr(options, 'test') and options.test:
