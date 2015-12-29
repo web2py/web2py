@@ -1174,7 +1174,9 @@ class AuthJWT(object):
                                return payload
      - before_authorization: can be a callable that takes the deserialized token (a dict) as input.
                              Gets called right after signature verification but before the actual
-                             authorization takes place. You can raise with HTTP a proper error message
+                             authorization takes place. It may be use to cast
+                             the extra auth_user fields to their actual types.
+                             You can raise with HTTP a proper error message
                              Example:
                              def mybefore_authorization(tokend):
                                  if not tokend['my_name_is'] == 'bond,james bond':
