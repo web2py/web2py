@@ -34,7 +34,6 @@ import email.utils
 import random
 import hmac
 import hashlib
-import json
 from email import MIMEBase, MIMEMultipart, MIMEText, Encoders, Header, message_from_string, Charset
 
 from gluon.serializers import json_parser
@@ -1175,7 +1174,9 @@ class AuthJWT(object):
                                return payload
      - before_authorization: can be a callable that takes the deserialized token (a dict) as input.
                              Gets called right after signature verification but before the actual
-                             authorization takes place. You can raise with HTTP a proper error message
+                             authorization takes place. It may be use to cast
+                             the extra auth_user fields to their actual types.
+                             You can raise with HTTP a proper error message
                              Example:
                              def mybefore_authorization(tokend):
                                  if not tokend['my_name_is'] == 'bond,james bond':
@@ -1204,7 +1205,7 @@ class AuthJWT(object):
 
     """
 
-    def __init__(self, 
+    def __init__(self,
                  auth,
                  secret_key,
                  algorithm='HS256',
@@ -1256,7 +1257,7 @@ class AuthJWT(object):
     @staticmethod
     def jwt_b64e(string):
         if isinstance(string, unicode):
-            string = string.encode('uft-8', 'strict')
+            string = string.encode('utf-8', 'strict')
         return base64.urlsafe_b64encode(string).strip(b'=')
 
     @staticmethod
@@ -1279,7 +1280,7 @@ class AuthJWT(object):
             if isinstance(secret, unicode):
                 secret = secret.encode('ascii', 'ignore')
         b64h = self.cached_b64h
-        b64p = self.jwt_b64e(json_parser.dumps(payload))
+        b64p = self.jwt_b64e(serializers.json(payload))
         jbody = b64h + '.' + b64p
         mauth = hmac.new(key=secret, msg=jbody, digestmod=self.digestmod)
         jsign = self.jwt_b64e(mauth.digest())
@@ -1298,7 +1299,7 @@ class AuthJWT(object):
             # header not the same
             raise HTTP(400, u'Invalid JWT Header')
         secret = self.secret_key
-        tokend = json_parser.loads(self.jwt_b64d(b64b))
+        tokend = serializers.loads_json(self.jwt_b64d(b64b))
         if self.salt:
             if callable(self.salt):
                 secret = "%s$%s" % (secret, self.salt(tokend))
@@ -1380,6 +1381,7 @@ class AuthJWT(object):
         response = current.response
         session = current.session
         # forget and unlock response
+        valid_user = None
         if request.vars.token:
             if not self.allow_refresh:
                 raise HTTP(403, u'Refreshing token is not allowed')
@@ -1393,18 +1395,18 @@ class AuthJWT(object):
             username = request.vars[self.user_param]
             password = request.vars[self.pass_param]
             valid_user = self.auth.login_bare(username, password)
-            if valid_user:
-                payload = self.serialize_auth_session(current.session.auth)
-                self.alter_payload(payload)
-                ret = {'token':self.generate_token(payload)}
-            else:
-                raise HTTP(
-                    401, u'Not Authorized', 
-                    **{'WWW-Authenticate': u'JWT realm="%s"' % self.realm})
         else:
-            raise HTTP(400, u'Must pass token for refresh or username and password for login')
+            valid_user = self.auth.user
+        if valid_user:
+            payload = self.serialize_auth_session(current.session.auth)
+            self.alter_payload(payload)
+            ret = {'token':self.generate_token(payload)}
+        else:
+            raise HTTP(
+                401, u'Not Authorized - need to be logged in, to pass a token for refresh or username and password for login',
+                **{'WWW-Authenticate': u'JWT realm="%s"' % self.realm})
         response.headers['content-type'] = 'application/json'
-        return json.dumps(ret)
+        return serializers.json(ret)
 
     def inject_token(self, tokend):
         """
@@ -1846,7 +1848,7 @@ class Auth(object):
             self.define_signature()
         else:
             self.signature = None
-        
+
         self.jwt_handler = jwt and AuthJWT(self, **jwt)
 
     def get_vars_next(self):
@@ -1931,7 +1933,7 @@ class Auth(object):
             elif args(1) == self.settings.cas_actions['proxyvalidate']:
                 return self.cas_validate(version=2, proxy=True)
             elif args(1) == self.settings.cas_actions['logout']:
-                return self.logout(next=request.vars.service or DEFAULT)        
+                return self.logout(next=request.vars.service or DEFAULT)
         else:
             raise HTTP(404)
 
@@ -2956,7 +2958,7 @@ class Auth(object):
                         user = table_user(**{username: entered_username})
                     if user:
                         # user in db, check if registration pending or disabled
-                        temp_user = user                        
+                        temp_user = user
                         if (temp_user.registration_key or '').startswith('pending'):
                             response.flash = self.messages.registration_pending
                             return form
@@ -3759,7 +3761,7 @@ class Auth(object):
         except Exception:
             session.flash = self.messages.invalid_reset_password
             redirect(next, client_side=self.settings.client_side)
-        
+
         key = user.registration_key
         if key in ('pending', 'disabled', 'blocked') or (key or '').startswith('pending'):
             session.flash = self.messages.registration_pending
@@ -3858,7 +3860,7 @@ class Auth(object):
                         onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
             user = table_user(**{userfield:form.vars.get(userfield)})
-            key = user.registration_key 
+            key = user.registration_key
             if not user:
                 session.flash = self.messages['invalid_%s' % userfield]
                 redirect(self.url(args=request.args),
@@ -4049,14 +4051,14 @@ class Auth(object):
 
             auth = Auth(db, jwt = {'secret_key':'secret'})
 
-        where 'secret' is your own secret string. 
+        where 'secret' is your own secret string.
 
         2) Secorate functions that require login but should accept the JWT token credentials:
 
             @auth.allows_jwt()
             @auth.requires_login()
             def myapi(): return 'hello %s' % auth.user.email
-    
+
         Notice jwt is allowed but not required. if user is logged in, myapi is accessible.
 
         3) Use it!
@@ -4085,7 +4087,7 @@ class Auth(object):
         else:
             current.response.headers['content-type'] = 'application/json'
             raise HTTP(200, self.jwt_handler.jwt_token_manager())
-        
+
     def is_impersonating(self):
         return self.is_logged_in() and 'impersonator' in current.session.auth
 
