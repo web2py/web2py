@@ -477,11 +477,11 @@ function filter_files() {
           message=data['message'];
           for(var i=0; i<files.length; i++)
             jQuery('li#_'+files[i].replace(/\//g,'__').replace('.','__')).slideDown();
-          jQuery('.flash').html(message).slideDown();
+          jQuery('.w2p_flash').html(message).slideDown();
           });
       } else {
           jQuery('.component_contents li, .formfield, .comptools').slideDown();
-          jQuery('.flash').html('').hide();
+          jQuery('.w2p_flash').html('').hide();
       }
 }
 jQuery(document).ready(function(){
