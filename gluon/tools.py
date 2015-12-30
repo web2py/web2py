@@ -4035,13 +4035,13 @@ class Auth(object):
     def jwt(self):
         """
         To use JWT authentication:
-        1) instantiate auth with
+        1) instantiate auth with::
 
             auth = Auth(db, jwt = {'secret_key':'secret'})
 
         where 'secret' is your own secret string.
 
-        2) Secorate functions that require login but should accept the JWT token credentials:
+        2) Decorate functions that require login but should accept the JWT token credentials::
 
             @auth.allows_jwt()
             @auth.requires_login()
@@ -4064,7 +4064,7 @@ class Auth(object):
 
             Authorization: Bearer <the jwt token>
 
-        Any additional attributes in the jwt argument of Auth() below:
+        Any additional attributes in the jwt argument of Auth() below::
 
            auth = Auth(db, jwt = {...})
 
