@@ -13,7 +13,7 @@ from utils import compare
 
 import hashlib
 from hashlib import md5, sha1, sha224, sha256, sha384, sha512
-from utils import simple_hash, get_digest
+from utils import simple_hash, get_digest, secure_dumps, secure_loads
 
 
 class TestUtils(unittest.TestCase):
@@ -65,27 +65,36 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(data_sha512, 'fa3237f594743e1d7b6c800bb134b3255cf4a98ab8b01e2ec23256328c9f8059'
                                       '64fdef25a038d6cc3fda1b2fb45d66461eeed5c4669e506ec8bdfee71348db7e')
 
+    def test_secure_dumps_and_loads(self):
+        """ Tests secure_dumps and secure_loads"""
+        testobj = {'a': 1, 'b': 2}
+        testkey = 'mysecret'
+        secured = secure_dumps(testobj, testkey)
+        original = secure_loads(secured, testkey)
+        self.assertEqual(testobj, original)
+        self.assertTrue(isinstance(secured, basestring))
+        self.assertTrue(':' in secured)
 
+        large_testobj = [x for x in range(1000)]
+        secured_comp = secure_dumps(large_testobj, testkey, compression_level=9)
+        original_comp = secure_loads(secured_comp, testkey, compression_level=9)
+        self.assertEqual(large_testobj, original_comp)
+        secured = secure_dumps(large_testobj, testkey)
+        self.assertTrue(len(secured_comp) < len(secured))
 
-class TestPack(unittest.TestCase):
-    """ Tests the compileapp.py module """
+        testhash = 'myhash'
+        secured = secure_dumps(testobj, testkey, testhash)
+        original = secure_loads(secured, testkey, testhash)
+        self.assertEqual(testobj, original)
 
-    def test_compile(self):
-        from compileapp import compile_application, remove_compiled_application
-        from gluon.fileutils import w2p_pack, w2p_unpack
-        import os
-        #apps = ['welcome', 'admin', 'examples']
-        apps = ['welcome']
-        for appname in apps:
-            appname_path = os.path.join(os.getcwd(), 'applications', appname)
-            compile_application(appname_path)
-            remove_compiled_application(appname_path)
-            test_path = os.path.join(os.getcwd(), "%s.w2p" % appname)
-            unpack_path = os.path.join(os.getcwd(), 'unpack', appname)
-            w2p_pack(test_path, appname_path, compiled=True, filenames=None)
-            w2p_pack(test_path, appname_path, compiled=False, filenames=None)
-            w2p_unpack(test_path, unpack_path)
-        return
+        wrong1 = secure_loads(secured, testkey, 'wronghash')
+        self.assertEqual(wrong1, None)
+        wrong2 = secure_loads(secured, 'wrongkey', testhash)
+        self.assertEqual(wrong2, None)
+        wrong3 = secure_loads(secured, 'wrongkey', 'wronghash')
+        self.assertEqual(wrong3, None)
+        wrong4 = secure_loads('abc', 'a', 'b')
+        self.assertEqual(wrong4, None)
 
 if __name__ == '__main__':
     unittest.main()
