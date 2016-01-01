@@ -253,7 +253,7 @@ class Mail(object):
             MIMEBase.MIMEBase.__init__(self, *content_type.split('/', 1))
             self.set_payload(payload)
             self['Content-Disposition'] = 'attachment; filename="%s"' % filename
-            if not content_id is None:
+            if content_id is not None:
                 self['Content-Id'] = '<%s>' % content_id.encode(encoding)
             Encoders.encode_base64(self)
 
@@ -1181,8 +1181,8 @@ class AuthJWT(object):
         def login_and_take_token():
             return myjwt.jwt_token_manager()
 
-    A call then to /app/controller/login_and_take_token/auth with username and password returns the token
-    A call to /app/controller/login_and_take_token/refresh with the original token returns the refreshed token
+    A call then to /app/controller/login_and_take_token with username and password returns the token
+    A call to /app/controller/login_and_take_token with the original token returns the refreshed token
 
     To protect a function with JWT
 
@@ -1313,7 +1313,10 @@ class AuthJWT(object):
         We (mis)use the heavy default auth mechanism to avoid any further computation,
         while sticking to a somewhat-stable Auth API.
         """
-        now = time.mktime(datetime.datetime.utcnow().timetuple())
+        ## is the following safe or should we use
+        ## calendar.timegm(datetime.datetime.utcnow().timetuple())
+        ## result seem to be the same (seconds since epoch, in UTC)
+        now = time.mktime(datetime.datetime.now().timetuple())
         expires = now + self.expiration
         payload = dict(
             hmac_key=session_auth['hmac_key'],
@@ -1325,7 +1328,7 @@ class AuthJWT(object):
         return payload
 
     def refresh_token(self, orig_payload):
-        now = time.mktime(datetime.datetime.utcnow().timetuple())
+        now = time.mktime(datetime.datetime.now().timetuple())
         if self.verify_expiration:
             orig_exp = orig_payload['exp']
             if orig_exp + self.leeway < now:
@@ -1335,7 +1338,7 @@ class AuthJWT(object):
         if orig_iat + self.refresh_expiration_delta < now:
             # refreshed too long ago
             raise HTTP(400, u'Token issued too long ago')
-        expires = now + self.refresh_expiration_delta
+        expires = now + self.expiration
         orig_payload.update(
             orig_iat=orig_iat,
             iat=now,
@@ -1361,15 +1364,17 @@ class AuthJWT(object):
             def api_auth():
                 return myjwt.jwt_token_manager()
 
-        Then, a call to /app/c/api_auth/auth with username and password
-        returns a token, while /app/c/api_auth/refresh with the current token
+        Then, a call to /app/c/api_auth with username and password
+        returns a token, while /app/c/api_auth with the current token
         issues another token
         """
         request = current.request
         response = current.response
         session = current.session
         # forget and unlock response
+        session.forget(response)
         valid_user = None
+        ret = None
         if request.vars.token:
             if not self.allow_refresh:
                 raise HTTP(403, u'Refreshing token is not allowed')
@@ -1379,7 +1384,6 @@ class AuthJWT(object):
             refreshed = self.refresh_token(tokend)
             ret = {'token': self.generate_token(refreshed)}
         elif self.user_param in request.vars and self.pass_param in request.vars:
-            session.forget(response)
             username = request.vars[self.user_param]
             password = request.vars[self.pass_param]
             valid_user = self.auth.login_bare(username, password)
@@ -1389,11 +1393,11 @@ class AuthJWT(object):
             payload = self.serialize_auth_session(current.session.auth)
             self.alter_payload(payload)
             ret = {'token': self.generate_token(payload)}
-        else:
+        elif ret is None:
             raise HTTP(
                 401, u'Not Authorized - need to be logged in, to pass a token for refresh or username and password for login',
                 **{'WWW-Authenticate': u'JWT realm="%s"' % self.realm})
-        response.headers['content-type'] = 'application/json'
+        response.headers['Content-Type'] = 'application/json'
         return serializers.json(ret)
 
     def inject_token(self, tokend):
@@ -1836,7 +1840,6 @@ class Auth(object):
             self.define_signature()
         else:
             self.signature = None
-
         self.jwt_handler = jwt and AuthJWT(self, **jwt)
 
     def get_vars_next(self):
@@ -4073,8 +4076,8 @@ class Auth(object):
         if not self.jwt_handler:
             raise HTTP(400, "Not authorized")
         else:
-            current.response.headers['content-type'] = 'application/json'
-            raise HTTP(200, self.jwt_handler.jwt_token_manager())
+            rtn = self.jwt_handler.jwt_token_manager()
+            raise HTTP(200, rtn, cookies=None, **current.response.headers)
 
     def is_impersonating(self):
         return self.is_logged_in() and 'impersonator' in current.session.auth
@@ -4178,7 +4181,7 @@ class Auth(object):
         if not self.jwt_handler:
             raise HTTP(400, "Not authorized")
         else:
-            return self.jwt_handler.allows_jwt()
+            return self.jwt_handler.allows_jwt(otherwise=otherwise)
 
     def requires(self, condition, requires_login=True, otherwise=None):
         """
@@ -4191,7 +4194,6 @@ class Auth(object):
 
                 basic_allowed, basic_accepted, user = self.basic()
                 user = user or self.user
-
                 login_required = requires_login
                 if callable(login_required):
                     login_required = login_required()
@@ -4200,7 +4202,7 @@ class Auth(object):
                     if not user:
                         if current.request.ajax:
                             raise HTTP(401, self.messages.ajax_failed_authentication)
-                        elif not otherwise is None:
+                        elif otherwise is not None:
                             if callable(otherwise):
                                 return otherwise()
                             redirect(otherwise)
@@ -4238,7 +4240,7 @@ class Auth(object):
         return self.requires(True, otherwise=otherwise)
 
     def requires_login_or_token(self, otherwise=None):
-        if self.settings.enable_tokens == True:
+        if self.settings.enable_tokens is True:
             user = None
             request = current.request
             token = request.env.http_web2py_user_token or request.vars._token
