@@ -9,7 +9,7 @@
 Generates names for cache and session files
 --------------------------------------------
 """
-import os, uuid
+import os
 
 
 def generate(filename, depth=2, base=512):
@@ -17,10 +17,10 @@ def generate(filename, depth=2, base=512):
         path, filename = os.path.split(filename)
     else:
         path = None
-    dummyhash = sum(ord(c)*256**(i % 4) for i, c in enumerate(filename)) % base**depth
+    dummyhash = sum(ord(c) * 256 ** (i % 4) for i, c in enumerate(filename)) % base ** depth
     folders = []
-    for level in range(depth-1, -1, -1):
-        code, dummyhash = divmod(dummyhash, base**level)
+    for level in range(depth - 1, -1, -1):
+        code, dummyhash = divmod(dummyhash, base ** level)
         folders.append("%03x" % code)
     folders.append(filename)
     if path:
@@ -63,17 +63,3 @@ def open(filename, mode="r", path=None):
         if mode.startswith('w') and not os.path.exists(os.path.dirname(fullfilename)):
             os.makedirs(os.path.dirname(fullfilename))
     return file(fullfilename, mode)
-
-
-def test():
-    if not os.path.exists('tests'):
-        os.mkdir('tests')
-    for k in range(20):
-        filename = os.path.join('tests', str(uuid.uuid4()) + '.test')
-        open(filename, "w").write('test')
-        assert open(filename, "r").read() == 'test'
-        if exists(filename):
-            remove(filename)
-
-if __name__ == '__main__':
-    test()
