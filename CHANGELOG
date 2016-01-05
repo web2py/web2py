@@ -1,9 +1,38 @@
+## trunk
+- new JWT implementation (experimental)
+- new gluon.contrib.redis_scheduler
+- BREAKING: changes to gluon.contrib.redis_cache
+    BEFORE:
+    from gluon.contrib.redis_cache import RedisCache
+    cache.redis = RedisCache('localhost:6379',db=None, debug=True)
+    NOW:
+    from gluon.contrib.redis_utils import RConn
+    from gluon.contrib.redis_cache import RedisCache
+    rconn = RConn()
+    # or RConn(host='localhost', port=6379,
+    # db=0, password=None, socket_timeout=None,
+    # socket_connect_timeout=None, .....)
+    # exactly as a redis.StrictRedis instance
+    cache.redis = RedisCache(redis_conn=rconn, debug=True)
+- BREAKING: changes to gluon.contrib.redis_session
+    BEFORE:
+    from gluon.contrib.redis_session import RedisSession
+    sessiondb = RedisSession('localhost:6379',db=0, session_expiry=False)
+    session.connect(request, response, db = sessiondb)
+    NOW:
+    from gluon.contrib.redis_utils import RConn
+    from gluon.contrib.redis_session import RedisSession
+    rconn = RConn()
+    sessiondb = RedisSession(redis_conn=rconn, session_expiry=False)
+    session.connect(request, response, db = sessiondb)
+
+
 ## 2.13.1-2
 
 - fixed a security issue in request_reset_password
 - added fabfile.py
 - fixed oauth2 renew token, thanks dokime7
-- fixed add_membership, del_membership, add_membership IntegrityError (when auth.enable_record_versioning) 
+- fixed add_membership, del_membership, add_membership IntegrityError (when auth.enable_record_versioning)
 - allow passing unicode to template render
 - allow IS_NOT_IN_DB to work with custom primarykey, thanks timmyborg
 - allow HttpOnly cookies

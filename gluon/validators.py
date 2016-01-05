@@ -201,12 +201,15 @@ class IS_MATCH(Validator):
 
     def __call__(self, value):
         if self.is_unicode:
-            if isinstance(value,unicode):
-                match = self.regex.search(value)
-            else:
+            if not isinstance(value, unicode):
                 match = self.regex.search(str(value).decode('utf8'))
+            else:
+                match = self.regex.search(value)
         else:
-            match = self.regex.search(str(value))
+            if not isinstance(value, unicode):
+                match = self.regex.search(str(value))
+            else:
+                match = self.regex.search(value.encode('utf8'))
         if match is not None:
             return (self.extract and match.group() or value, None)
         return (value, translate(self.error_message))
