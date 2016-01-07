@@ -777,16 +777,16 @@ class Mail(object):
                 if attachments:
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=unicode(subject), body=unicode(text), html=html,
+                        subject=str(subject), body=str(text), html=html,
                         attachments=attachments, **xcc)
                 elif html and (not raw):
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=unicode(subject), body=unicode(text), html=html, **xcc)
+                        subject=str(subject), body=str(text), html=html, **xcc)
                 else:
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=unicode(subject), body=unicode(text), **xcc)
+                        subject=str(subject), body=str(text), **xcc)
             else:
                 smtp_args = self.settings.server.split(':')
                 kwargs = dict(timeout=self.settings.timeout)
