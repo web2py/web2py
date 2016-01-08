@@ -44,7 +44,7 @@ div.error {
 
 
 def content():
-    return """<div class="flash">{{=response.flash or ''}}</div>{{include}}"""
+    return """<div class="w2p_flash">{{=response.flash or ''}}</div>{{include}}"""
 
 
 def process(folder):
