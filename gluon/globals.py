@@ -362,20 +362,30 @@ class Request(Storage):
             redirect(URL(scheme='https', args=self.args, vars=self.vars))
 
     def restful(self):
-        def wrapper(action, self=self):
-            def f(_action=action, _self=self, *a, **b):
-                self.is_restful = True
-                method = _self.env.request_method
-                if len(_self.args) and '.' in _self.args[-1]:
-                    _self.args[-1], _, self.extension = self.args[-1].rpartition('.')
+        def wrapper(action, request=self):
+            def f(_action=action, *a, **b):
+                request.is_restful = True
+                env = request.env
+                is_json = env.content_type=='application/json'
+                method = env.request_method
+                if len(request.args) and '.' in request.args[-1]:
+                    request.args[-1], _, request.extension = request.args[-1].rpartition('.')
                     current.response.headers['Content-Type'] = \
-                        contenttype('.' + _self.extension.lower())
+                        contenttype('.' + request.extension.lower())
                 rest_action = _action().get(method, None)
                 if not (rest_action and method == method.upper()
                         and callable(rest_action)):
                     raise HTTP(405, "method not allowed")
                 try:
-                    return rest_action(*_self.args, **getattr(_self, 'vars', {}))
+                    vars = request.vars
+                    if method == 'POST' and is_json:
+                        body = request.body.read()
+                        if len(body):
+                            vars = sj.loads(body)
+                    res = rest_action(*request.args, **vars)
+                    if is_json and not isinstance(res, str):
+                        res = json(res)
+                    return res
                 except TypeError, e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
                     if len(traceback.extract_tb(exc_traceback)) == 1:
