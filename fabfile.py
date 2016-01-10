@@ -85,7 +85,7 @@ def mkdir_or_backup(appname):
 def git_deploy(appname, repo):
     """fab -H username@host git_deploy:appname,username/remoname"""
     appfolder = applications+'/'+appname
-    backup = mkdir_or_backup(appfolder)
+    backup = mkdir_or_backup(appname)
 
     if exists(appfolder):
         with cd(appfolder):
@@ -115,7 +115,7 @@ def deploy(appname=None, all=False):
     if os.path.exists('_update.zip'):
         os.unlink('_update.zip')
 
-    backup = mkdir_or_backup(appfolder)
+    backup = mkdir_or_backup(appname)
             
     if all=='all' or not backup:
         local('zip -r _update.zip * -x *~ -x .* -x \#* -x *.bak -x *.bak2')
