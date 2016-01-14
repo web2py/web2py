@@ -7,9 +7,9 @@ from redis.exceptions import ConnectionError
 from gluon import current
 from gluon.cache import CacheAbstract
 try:
-   import cPickle as pickle
+    import cPickle as pickle
 except:
-   import pickle
+    import pickle
 import time
 import re
 import logging
@@ -26,6 +26,13 @@ def RedisCache(*args, **vars):
     """
     Usage example: put in models
 
+    First of all install Redis
+    Ubuntu :
+    sudo apt-get install redis-server
+    sudo pip install redis
+
+    Then
+
     from gluon.contrib.redis_cache import RedisCache
     cache.redis = RedisCache('localhost:6379',db=None, debug=True, with_lock=True, password=None)
 
@@ -36,8 +43,12 @@ def RedisCache(*args, **vars):
             for performances reason)
             When True, only one thread/process can set a value concurrently
 
-    When you use cache.redis directly you can use
-        value = cache.redis('mykey', lambda: time.time(), with_lock=True)
+    It can be used pretty much the same as cache.ram()
+    When you use cache.redis directly you can use :
+
+        redis_key_and_var_name = cache.redis('redis_key_and_var_name', lambda or function,
+                                             time_expire=time.time(), with_lock=True)
+
     to enforce locking. The with_lock parameter overrides the one set in the
     cache.redis instance creation
 
@@ -90,13 +101,13 @@ class RedisClient(object):
         self.request = current.request
         self.debug = debug
         self.with_lock = with_lock
-        self.prefix = "w2p:%s:" % (self.request.application)
+        self.prefix = "w2p:%s:" % self.request.application
         if self.request:
             app = self.request.application
         else:
             app = ''
 
-        if not app in self.meta_storage:
+        if app not in self.meta_storage:
             self.storage = self.meta_storage[app] = {
                 CacheAbstract.cache_stats_name: {
                     'hit_total': 0,
@@ -105,7 +116,7 @@ class RedisClient(object):
         else:
             self.storage = self.meta_storage[app]
 
-        self.cache_set_key = 'w2p:%s:___cache_set' % (self.request.application)
+        self.cache_set_key = 'w2p:%s:___cache_set' % self.request.application
 
         self.r_server = redis.Redis(host=host, port=port, db=self.db, password=self.password)
 
@@ -121,23 +132,23 @@ class RedisClient(object):
         value = None
         ttl = 0
         try:
-            #is there a value
+            # is there a value
             obj = self.r_server.get(newKey)
-            #what's its ttl
+            # what's its ttl
             if obj:
                 ttl = self.r_server.ttl(newKey)
             if ttl > time_expire:
                 obj = None
             if obj:
-                #was cached
+                # was cached
                 if self.debug:
                     self.r_server.incr('web2py_cache_statistics:hit_total')
                 value = pickle.loads(obj)
             elif f is None:
-                #delete and never look back
+                # delete and never look back
                 self.r_server.delete(newKey)
             else:
-                #naive distributed locking
+                # naive distributed locking
                 if with_lock:
                     lock_key = '%s:__lock' % newKey
                     try:
@@ -148,7 +159,7 @@ class RedisClient(object):
                                 break
                             else:
                                 time.sleep(0.2)
-                                #did someone else create it in the meanwhile ?
+                                # did someone else create it in the meanwhile ?
                                 obj = self.r_server.get(newKey)
                                 if obj:
                                     value = pickle.loads(obj)
@@ -156,7 +167,7 @@ class RedisClient(object):
                     finally:
                         self.r_server.delete(lock_key)
                 else:
-                    #without distributed locking
+                    # without distributed locking
                     value = self.cache_it(newKey, f, time_expire)
             return value
         except ConnectionError:
@@ -166,39 +177,37 @@ class RedisClient(object):
         if self.debug:
             self.r_server.incr('web2py_cache_statistics:misses')
         cache_set_key = self.cache_set_key
-        expireat = int(time.time() + time_expire) + 120
-        bucket_key = "%s:%s" % (cache_set_key, expireat / 60)
+        expire_at = int(time.time() + time_expire) + 120
+        bucket_key = "%s:%s" % (cache_set_key, expire_at / 60)
         value = f()
         value_ = pickle.dumps(value, pickle.HIGHEST_PROTOCOL)
         if time_expire == 0:
             time_expire = 1
         self.r_server.setex(key, value_, time_expire)
-        #print '%s will expire on %s: it goes in bucket %s' % (key, time.ctime(expireat))
-        #print 'that will expire on %s' % (bucket_key, time.ctime(((expireat/60) + 1)*60))
+        # print '%s will expire on %s: it goes in bucket %s' % (key, time.ctime(expire_at))
+        # print 'that will expire on %s' % (bucket_key, time.ctime(((expire_at / 60) + 1) * 60))
         p = self.r_server.pipeline()
-        #add bucket to the fixed set
+        # add bucket to the fixed set
         p.sadd(cache_set_key, bucket_key)
-        #sets the key
+        # sets the key
         p.setex(key, value_, time_expire)
-        #add the key to the bucket
+        # add the key to the bucket
         p.sadd(bucket_key, key)
-        #expire the bucket properly
-        p.expireat(bucket_key, ((expireat/60) + 1)*60)
+        # expire the bucket properly
+        p.expireat(bucket_key, ((expire_at / 60) + 1) * 60)
         p.execute()
         return value
 
     def retry_call(self, key, f, time_expire, with_locking):
         self.RETRIES += 1
         if self.RETRIES <= self.MAX_RETRIES:
-            logger.error("sleeping %s seconds before reconnecting" %
-                         (2 * self.RETRIES))
+            logger.error("sleeping %s seconds before reconnecting" % (2 * self.RETRIES))
             time.sleep(2 * self.RETRIES)
             self.__init__(self.server, self.db, self.debug, self.with_lock)
             return self.__call__(key, f, time_expire, with_locking)
         else:
             self.RETRIES = 0
-            raise ConnectionError('Redis instance is unavailable at %s' % (
-                self.server))
+            raise ConnectionError('Redis instance is unavailable at %s' % self.server)
 
     def increment(self, key, value=1):
         try:
@@ -216,18 +225,19 @@ class RedisClient(object):
             return self.increment(key, value)
         else:
             self.RETRIES = 0
-            raise ConnectionError('Redis instance is unavailable at %s' % (
-                self.server))
+            raise ConnectionError('Redis instance is unavailable at %s' % self.server)
 
     def clear(self, regex):
         """
         Auxiliary function called by `clear` to search and
         clear cache entries
+
+        :param regex:
         """
         r = re.compile(regex)
-        #get all buckets
+        # get all buckets
         buckets = self.r_server.smembers(self.cache_set_key)
-        #get all keys in buckets
+        # get all keys in buckets
         if buckets:
             keys = self.r_server.sunion(buckets)
         else:
@@ -237,8 +247,8 @@ class RedisClient(object):
         for a in keys:
             if r.match(str(a).replace(prefix, '', 1)):
                 pipe.delete(a)
-        if random.randrange(0,100) < 10:
-            #do this just once in a while (10% chance)
+        if random.randrange(0, 100) < 10:
+            # do this just once in a while (10% chance)
             self.clear_buckets(buckets)
         pipe.execute()
 
@@ -254,19 +264,19 @@ class RedisClient(object):
         return self.r_server.delete(newKey)
 
     def stats(self):
-        statscollector = self.r_server.info()
+        stats_collector = self.r_server.info()
         if self.debug:
-            statscollector['w2p_stats'] = dict(
+            stats_collector['w2p_stats'] = dict(
                 hit_total=self.r_server.get(
                     'web2py_cache_statistics:hit_total'),
                 misses=self.r_server.get('web2py_cache_statistics:misses')
             )
-        statscollector['w2p_keys'] = dict()
+        stats_collector['w2p_keys'] = dict()
 
         for a in self.r_server.keys("w2p:%s:*" % (
                 self.request.application)):
-            statscollector['w2p_keys']["%s_expire_in_sec" % (a)] = self.r_server.ttl(a)
-        return statscollector
+            stats_collector['w2p_keys']["%s_expire_in_sec" % a] = self.r_server.ttl(a)
+        return stats_collector
 
     def __keyFormat__(self, key):
         return '%s%s' % (self.prefix, key.replace(' ', '_'))
