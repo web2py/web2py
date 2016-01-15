@@ -25,7 +25,6 @@ regex_stop_range = re.compile('(?<=\-)\d+')
 
 DEFAULT_CHUNK_SIZE = 64 * 1024
 
-
 def streamer(stream, chunk_size=DEFAULT_CHUNK_SIZE, bytes=None):
     offset = 0
     while bytes is None or offset < bytes:
@@ -51,11 +50,12 @@ def stream_file_or_304_or_206(
     status=200,
     error_message=None
     ):
-    if error_message is None:
-        error_message = rewrite.THREAD_LOCAL.routes.error_message % 'invalid request'
+    # FIX THIS
+    # if error_message is None:
+    #     error_message = rewrite.THREAD_LOCAL.routes.error_message % 'invalid request'
     try:
         open = file # this makes no sense but without it GAE cannot open files
-        fp = open(static_file)
+        fp = open(static_file,'rb')
     except IOError, e:
         if e[0] == errno.EISDIR:
             raise HTTP(403, error_message, web2py_error='file is a directory')

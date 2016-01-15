@@ -1,4 +1,4 @@
-div.flash {
+div.w2p_flash {
     background-image: none;
     border-radius: 4px;
     -o-border-radius: 4px;
@@ -15,13 +15,13 @@ div.flash {
     margin: 0 0 20px;
     padding: 15px 35px 15px 15px;
 }
-div.flash.alert:hover {
+div.w2p_flash.alert:hover {
     opacity: 1;
 }
-.ie-lte8 div.flash {
+.ie-lte8 div.w2p_flash {
     filter: progid: DXImageTransform.Microsoft.gradient(startColorstr='#222222', endColorstr='#000000', GradientType=0);
 }
-.ie-lte8 div.flash:hover {
+.ie-lte8 div.w2p_flash:hover {
     filter: alpha(opacity=25);
 }
 .main-container {
@@ -37,7 +37,7 @@ div.error {
     display: inline-block;
     padding: 5px;
 }
-div.flash.alert {
+div.w2p_flash.alert {
     display: none;
     position: fixed;
     top: 70px;
@@ -136,7 +136,7 @@ header h1 {
 header .jumbotron {
     background-color: transparent;
 }
-.flash {
+.w2p_flash {
     opacity: 0.9!important;
     right: 100px;
 }
@@ -313,7 +313,4 @@ td.w2p_fc,
 }
 input[type=checkbox], input[type=radio] {
     margin: 4px 4px 0 0;
-}
-.btn {
-    margin-right: 4px;
 }

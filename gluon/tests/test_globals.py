@@ -6,16 +6,42 @@
 """
 
 
+import re
 import unittest
 from fix_path import fix_sys_path
 
 fix_sys_path(__file__)
 
-from gluon.globals import Response
+from gluon.globals import Request, Response, Session
 from gluon import URL
 
+def setup_clean_session():
+        request = Request(env={})
+        request.application = 'a'
+        request.controller = 'c'
+        request.function = 'f'
+        request.folder = 'applications/admin'
+        response = Response()
+        session = Session()
+        session.connect(request, response)
+        from gluon.globals import current
+        current.request = request
+        current.response = response
+        current.session = session
+        return current
 
 class testResponse(unittest.TestCase):
+
+    #port from python 2.7, needed for 2.5 and 2.6 tests
+    def assertRegexpMatches(self, text, expected_regexp, msg=None):
+        """Fail the test unless the text matches the regular expression."""
+        if isinstance(expected_regexp, basestring):
+            expected_regexp = re.compile(expected_regexp)
+        if not expected_regexp.search(text):
+            msg = msg or "Regexp didn't match"
+            msg = '%s: %r not found in %r' % (
+                msg, expected_regexp.pattern, text)
+            raise self.failureException(msg)
 
     def test_include_files(self):
 
@@ -119,6 +145,44 @@ class testResponse(unittest.TestCase):
         response.files.append(('js1', 'http://maps.google.com/maps/api/js?sensor=false'))
         content = return_includes(response)
         self.assertEqual(content, '')
+
+    def test_cookies(self):
+        current = setup_clean_session()
+        cookie = str(current.response.cookies)
+        session_key='%s=%s'%(current.response.session_id_name,current.response.session_id)
+        self.assertRegexpMatches(cookie, r'^Set-Cookie: ')
+        self.assertTrue(session_key in cookie)
+        self.assertTrue('Path=/' in cookie)
+
+    def test_cookies_secure(self):
+        current = setup_clean_session()
+        current.session._fixup_before_save()
+        cookie = str(current.response.cookies)
+        self.assertTrue('secure' not in cookie)
+
+        current = setup_clean_session()
+        current.session.secure()
+        current.session._fixup_before_save()
+        cookie = str(current.response.cookies)
+        self.assertTrue('secure' in cookie)
+
+    def test_cookies_httponly(self):
+        current = setup_clean_session()
+        current.session._fixup_before_save()
+        cookie = str(current.response.cookies)
+        self.assertTrue('httponly' in cookie)
+
+        current = setup_clean_session()
+        current.session.httponly_cookies = True
+        current.session._fixup_before_save()
+        cookie = str(current.response.cookies)
+        self.assertTrue('httponly' in cookie)
+
+        current = setup_clean_session()
+        current.session.httponly_cookies = False
+        current.session._fixup_before_save()
+        cookie = str(current.response.cookies)
+        self.assertTrue('httponly' not in cookie)
 
 if __name__ == '__main__':
     unittest.main()

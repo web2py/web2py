@@ -484,9 +484,15 @@ def cleanup():
 
 def compile_app():
     app = get_app()
-    c = app_compile(app, request)
+    c = app_compile(app, request,
+        skip_failed_views = (request.args(1) == 'skip_failed_views'))
     if not c:
         session.flash = T('application compiled')
+    elif isinstance(c, list):
+        session.flash = DIV(*[T('application compiled'), BR(), BR(),
+                              T('WARNING: The following views could not be compiled:'), BR()] +
+                             [CAT(BR(), view) for view in c] +
+                             [BR(), BR(), T('DO NOT use the "Pack compiled" feature.')])
     else:
         session.flash = DIV(T('Cannot compile: there are errors in your app:'),
                             CODE(c))

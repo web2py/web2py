@@ -309,7 +309,7 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(XML('<h1>Hello<a data-hello="world">World</a></h1>', sanitize=True),
             XML('<h1>HelloWorld</h1>'))
         #bug check for the sanitizer for closing no-close tags
-        self.assertEqual(XML('<p>Test</p><br/><p>Test</p><br/>', sanitize=True), 
+        self.assertEqual(XML('<p>Test</p><br/><p>Test</p><br/>', sanitize=True),
             XML('<p>Test</p><br /><p>Test</p><br />'))
 
     def testTAG(self):

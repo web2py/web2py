@@ -6,9 +6,9 @@
      * this over and over... all will be bound to the document
      */
     /*adds btn class to buttons*/
-    $('button', target).addClass('btn btn-default');
+    $('button:not([class^="btn"])', target).addClass('btn btn-default');
     $("p.w2p-autocomplete-widget input").addClass('form-control');
-    $('form input[type="submit"], form input[type="button"]', target).addClass('btn btn-default');
+    $('form input[type="submit"]:not([class^="btn"]), form input[type="button"]:not([class^="btn"])', target).addClass('btn btn-default');
     /* javascript for PasswordWidget*/
     $('input[type=password][data-w2p_entropy]', target).each(function() {
       web2py.validate_entropy($(this));
@@ -18,9 +18,9 @@
       function pe(ul, e) {
         var new_line = ml(ul);
         rel(ul);
-        if ($(e.target).parent().is(':visible')) {
+        if ($(e.target).closest('li').is(':visible')) {
           /* make sure we didn't delete the element before we insert after */
-          new_line.insertAfter($(e.target).parent());
+          new_line.insertAfter($(e.target).closest('li'));
         } else {
           /* the line we clicked on was deleted, just add to end of list */
           new_line.appendTo(ul);
@@ -30,9 +30,9 @@
       }
 
       function rl(ul, e) {
-        if ($(ul).children().length > 1) {
+        if ($(ul).find('li').length > 1) {
           /* only remove if we have more than 1 item so the list is never empty */
-          $(e.target).parent().remove();
+          $(e.target).closest('li').remove();
         }
       }
 
@@ -46,13 +46,13 @@
       function rel(ul) {
         /* keep only as many as needed*/
         $(ul).find("li").each(function() {
-          var trimmed = $.trim($(this.firstChild).val());
+          var trimmed = $.trim($(this).find(":text").val());
           if (trimmed == '') $(this).remove();
-          else $(this.firstChild).val(trimmed);
+          else $(this).find(":text").val(trimmed);
         });
       }
       var ul = this;
-      $(ul).find(":text").after('<a class="btn btn-default" href="#">+</a>&nbsp;<a class="btn btn-default" href="#">-</a>').keypress(function(e) {
+      $(ul).find(":text").addClass('form-control').wrap("<div class='input-group'></div>").after('<div class="input-group-addon"><i class="glyphicon glyphicon-plus"></i></div><div class="input-group-addon"><i class="glyphicon glyphicon-minus"></i></div>').keypress(function(e) {
         return (e.which == 13) ? pe(ul, e) : true;
       }).next().click(function(e) {
         pe(ul, e);

@@ -898,6 +898,9 @@ def render(content="hello world",
         if not 'NOESCAPE' in context:
             context['NOESCAPE'] = NOESCAPE
 
+    if isinstance(content, unicode):
+        content = content.encode('utf8')
+
     # save current response class
     if context and 'response' in context:
         old_response_body = context['response'].body

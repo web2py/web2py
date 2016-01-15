@@ -129,6 +129,8 @@ def env(
     if global_settings.cmd_options:
         ip = global_settings.cmd_options.ip
         port = global_settings.cmd_options.port
+        request.is_shell = global_settings.cmd_options.shell is not None
+        request.is_scheduler = global_settings.cmd_options.scheduler is not None
     else:
         ip, port = '127.0.0.1', '8000'
     request.env.http_host = '%s:%s' % (ip, port)

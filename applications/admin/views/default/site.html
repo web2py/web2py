@@ -27,7 +27,9 @@
           {{buttons.append((URL('pack',args=a), T("Pack all")))}}
           {{buttons.append((URL('pack_custom',args=a), T("Pack custom")))}}
           {{if not os.path.exists('applications/%s/compiled' % a):}}
-                {{buttons.append((URL('compile_app',args=a), T("Compile")))}}
+                {{buttons.append((URL('compile_app',args=[a, 'skip_failed_views']),
+                                 T("Compile (skip failed views)")))}}
+                {{buttons.append((URL('compile_app',args=a), T("Compile (all or nothing)")))}}
           {{else:}}
         {{buttons.append((URL('pack',args=(a, 'compiled')), T("Pack compiled")))}}
         {{if glob.glob('applications/%s/controllers/*.py' % a):}}
@@ -138,6 +140,7 @@
     <p class="row-buttons">
       {{=button(URL('gae','deploy'), T('Deploy on Google App Engine'))}}
       {{=button(URL('openshift','deploy'),T('Deploy to OpenShift'))}}
+      {{=button(URL('pythonanywhere','deploy'), T('Deploy to PythonAnywhere'))}}
     </p>
       </div> <!-- /DEPLOY ON GAE -->
       <!-- APP WIZARD -->

@@ -29,7 +29,7 @@ from gluon.html import URL, FIELDSET, P, DEFAULT_PASSWORD_DISPLAY
 from pydal.base import DEFAULT
 from pydal.objects import Table, Row, Expression, Field
 from pydal.adapters.base import CALLABLETYPES
-from pydal.helpers.methods import smart_query, bar_encode
+from pydal.helpers.methods import smart_query, bar_encode,  _repr_ref
 from pydal.helpers.classes import Reference, SQLCustomType
 from gluon.storage import Storage
 from gluon.utils import md5_hash
@@ -71,6 +71,26 @@ def represent(field, value, record):
     else:
         raise RuntimeError("field representation must take 1 or 2 args")
 
+class CacheRepresenter(object):
+    def __init__(self):
+        self.cache = {}
+    def __call__(self, field, value, row):
+        cache = self.cache
+        if field not in cache:
+            cache[field] = {}
+        try:
+            nvalue = cache[field][value]
+        except KeyError:
+            try:
+                nvalue = field.represent(value, row)
+            except KeyError:
+                try:
+                    nvalue = field.represent(value, row[field.tablename])
+                except KeyError:
+                    nvalue = None
+            if isinstance(field, _repr_ref):
+                cache[field][value] = nvalue
+        return nvalue
 
 def safe_int(x):
     try:
@@ -626,13 +646,12 @@ class AutocompleteWidget(object):
     def __init__(self, request, field, id_field=None, db=None,
                  orderby=None, limitby=(0, 10), distinct=False,
                  keyword='_autocomplete_%(tablename)s_%(fieldname)s',
-                 min_length=2, help_fields=None, help_string=None):
+                 min_length=2, help_fields=None, help_string=None, at_beginning = True):
 
         self.help_fields = help_fields or []
         self.help_string = help_string
         if self.help_fields and not self.help_string:
-            self.help_string = ' '.join('%%(%s)s' % f.name
-                                        for f in self.help_fields)
+            self.help_string = ' '.join('%%(%s)s' % f.name for f in self.help_fields)
 
         self.request = request
         self.keyword = keyword % dict(tablename=field.tablename,
@@ -642,6 +661,7 @@ class AutocompleteWidget(object):
         self.limitby = limitby
         self.distinct = distinct
         self.min_length = min_length
+        self.at_beginning = at_beginning
         self.fields = [field]
         if id_field:
             self.is_reference = True
@@ -659,8 +679,10 @@ class AutocompleteWidget(object):
             field = self.fields[0]
             if settings and settings.global_settings.web2py_runtime_gae:
                 rows = self.db(field.__ge__(self.request.vars[self.keyword]) & field.__lt__(self.request.vars[self.keyword] + u'\ufffd')).select(orderby=self.orderby, limitby=self.limitby, *(self.fields+self.help_fields))
-            else:
+            elif self.at_beginning:
                 rows = self.db(field.like(self.request.vars[self.keyword] + '%', case_sensitive=False)).select(orderby=self.orderby, limitby=self.limitby, distinct=self.distinct, *(self.fields+self.help_fields))
+            else:
+                rows = self.db(field.contains(self.request.vars[self.keyword], case_sensitive=False)).select(orderby=self.orderby, limitby=self.limitby, distinct=self.distinct, *(self.fields+self.help_fields))
             if rows:
                 if self.is_reference:
                     id_field = self.fields[1]
@@ -714,7 +736,7 @@ class AutocompleteWidget(object):
                      name=name, div_id=div_id, u='F' + self.keyword)
             if self.min_length == 0:
                 attr['_onfocus'] = attr['_onkeyup']
-            return CAT(INPUT(**attr), 
+            return CAT(INPUT(**attr),
                        INPUT(_type='hidden', _id=key3, _value=value,
                              _name=name, requires=field.requires),
                        DIV(_id=div_id, _style='position:absolute;'))
@@ -727,7 +749,7 @@ class AutocompleteWidget(object):
                      key=self.keyword, id=attr['_id'], div_id=div_id, u='F' + self.keyword)
             if self.min_length == 0:
                 attr['_onfocus'] = attr['_onkeyup']
-            return CAT(INPUT(**attr), 
+            return CAT(INPUT(**attr),
                        DIV(_id=div_id, _style='position:absolute;'))
 
 
@@ -818,7 +840,7 @@ def formstyle_bootstrap(form, fields):
             controls.add_class('span4')
 
         if isinstance(label, LABEL):
-            label['_class'] = 'control-label'
+            label['_class'] = add_class(label.get('_class'),'control-label')
 
         if _submit:
             # submit button has unwrapped label and controls, different class
@@ -868,7 +890,7 @@ def formstyle_bootstrap3_stacked(form, fields):
                 e.add_class('form-control')
 
         if isinstance(label, LABEL):
-            label['_class'] = 'control-label'
+            label['_class'] = add_class(label.get('_class'),'control-label')
 
         parent.append(DIV(label, _controls, _class='form-group', _id=id))
     return parent
@@ -916,8 +938,10 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
             elif isinstance(controls, UL):
                 for e in controls.elements("input"):
                     e.add_class('form-control')
+            elif controls is None or isinstance(controls, basestring):
+                _controls = P(controls, _class="form-control-static %s" % col_class)
             if isinstance(label, LABEL):
-                label['_class'] = 'control-label %s' % label_col_class
+                label['_class'] = add_class(label.get('_class'),'control-label %s' % label_col_class)
 
             parent.append(DIV(label, _controls, _class='form-group', _id=id))
         return parent
@@ -1100,10 +1124,12 @@ class SQLFORM(FORM):
                 raise HTTP(404, "Object not found")
         self.record = record
 
-        self.record_id = record_id
         if keyed:
             self.record_id = dict([(k, record and str(record[k]) or None)
                                    for k in table._primarykey])
+        else:
+            self.record_id = record_id
+
         self.field_parent = {}
         xfields = []
         self.fields = fields
@@ -1126,7 +1152,8 @@ class SQLFORM(FORM):
         extra_fields = extra_fields or []
         self.extra_fields = {}
         for extra_field in extra_fields:
-            self.fields.append(extra_field.name)
+            if not extra_field.name in self.fields:
+                self.fields.append(extra_field.name)
             self.extra_fields[extra_field.name] = extra_field
             extra_field.db = table._db
             extra_field.table = table
@@ -1160,6 +1187,14 @@ class SQLFORM(FORM):
             label = LABEL(label, label and sep, _for=field_id,
                           _id=field_id + SQLFORM.ID_LABEL_SUFFIX)
 
+            cond = readonly or \
+                (not ignore_rw and not field.writable and field.readable)
+
+            if cond:
+                label['_class'] = 'readonly'
+            else:
+                label['_class'] = ''
+
             row_id = field_id + SQLFORM.ID_ROW_SUFFIX
             if field.type == 'id':
                 self.custom.dspval.id = nbsp
@@ -1188,8 +1223,6 @@ class SQLFORM(FORM):
                 default = field.default
                 if isinstance(default, CALLABLETYPES):
                     default = default()
-            cond = readonly or \
-                (not ignore_rw and not field.writable and field.readable)
 
             if default is not None and not cond:
                 default = field.formatter(default)
@@ -1471,13 +1504,12 @@ class SQLFORM(FORM):
             hideerror=hideerror,
             **kwargs
         )
-
-        self.deleted = \
-            request_vars.get(self.FIELDNAME_REQUEST_DELETE, False)
+        
+        self.deleted = request_vars.get(self.FIELDNAME_REQUEST_DELETE, False)
 
         self.custom.end = CAT(self.hidden_fields(), self.custom.end)
 
-        auch = record_id and self.errors and self.deleted
+        delete_exception = self.record_id and self.errors and self.deleted
 
         if self.record_changed and self.detect_record_change:
             message_onchange = \
@@ -1489,8 +1521,9 @@ class SQLFORM(FORM):
             if message_onchange is not None:
                 current.response.flash = message_onchange
             return ret
-        elif (not ret) and (not auch):
-            # auch is true when user tries to delete a record
+
+        elif (not ret) and (not delete_exception):
+            # delete_exception is true when user tries to delete a record
             # that does not pass validation, yet it should be deleted
             for fieldname in self.fields:
 
@@ -1520,9 +1553,10 @@ class SQLFORM(FORM):
             self.accepted = ret
             return ret
 
-        if record_id and str(record_id) != str(self.record_id):
-            raise SyntaxError('user is tampering with form\'s record_id: '
-                              '%s != %s' % (record_id, self.record_id))
+        if self.record_id:
+            if str(record_id) != str(self.record_id):
+                raise SyntaxError('user is tampering with form\'s record_id: '
+                                  '%s != %s' % (record_id, self.record_id))
 
         if record_id and dbio and not keyed:
             self.vars.id = self.record[self.id_field_name]
@@ -1686,6 +1720,7 @@ class SQLFORM(FORM):
                                        self.id_field_name]).update(**fields)
                 else:
                     self.vars.id = self.table.insert(**fields)
+
         self.accepted = ret
         return ret
 
@@ -2048,7 +2083,7 @@ class SQLFORM(FORM):
             ## if it's not an integer
             if cache_count is None or isinstance(cache_count, tuple):
                 if groupby:
-                    c = 'count(*)'
+                    c = 'count(*) AS count_all'
                     nrows = db.executesql(
                         'select count(*) from (%s) _tmp;' %
                         dbset._select(c, left=left, cacheable=True,
@@ -2083,7 +2118,7 @@ class SQLFORM(FORM):
             elif isinstance(orderby, Field) and orderby is not field_id:
                 # here we're with an ASC order on a field stored as orderby
                 orderby = orderby | field_id
-            elif (isinstance(orderby, Expression) and 
+            elif (isinstance(orderby, Expression) and
                   orderby.first and orderby.first is not field_id):
                 # here we're with a DESC order on a field stored as orderby.first
                 orderby = orderby | field_id
@@ -2668,7 +2703,7 @@ class SQLFORM(FORM):
             htmltable = TABLE(COLGROUP(*cols), THEAD(head))
             tbody = TBODY()
             numrec = 0
-            repr_cache = {}
+            repr_cache = CacheRepresenter()
             for row in rows:
                 trcols = []
                 id = row[field_id]
@@ -2688,27 +2723,13 @@ class SQLFORM(FORM):
                     maxlength = maxtextlengths.get(str(field), maxtextlength)
                     if field.represent:
                         if field.type.startswith('reference'):
-                            if field not in repr_cache:
-                                repr_cache[field] = {}
-                            try:
-                                nvalue = repr_cache[field][value]
-                            except KeyError:
-                                try:
-                                    nvalue = field.represent(value, row)
-                                except KeyError:
-                                    try:
-                                        nvalue = field.represent(
-                                            value, row[field.tablename])
-                                    except KeyError:
-                                        nvalue = None
-                                repr_cache[field][value] = nvalue
+                            nvalue = repr_cache(field, value, row)
                         else:
                             try:
                                 nvalue = field.represent(value, row)
                             except KeyError:
                                 try:
-                                    nvalue = field.represent(
-                                        value, row[field.tablename])
+                                    nvalue = field.represent(value, row[field.tablename])
                                 except KeyError:
                                     nvalue = None
                         value = nvalue
