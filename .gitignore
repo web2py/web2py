@@ -54,6 +54,8 @@ applications/*/progress.log
 applications/examples/static/epydoc
 applications/examples/static/sphinx
 applications/admin/cron/cron.master
+applications/book
+applications/book/*
 HOWTO-web2py-devel
 *.sublime-project
 *.sublime-workspace
