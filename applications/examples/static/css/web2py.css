@@ -320,3 +320,10 @@ li.w2p_grid_breadcrumb_elem {
 .ie-lte8 div.flash{ filter: progid:DXImageTransform.Microsoft.gradient(startColorstr='#222222', endColorstr='#000000', GradientType=0 ); }
 .ie-lte8 div.flash:hover {filter:alpha(opacity=25);}
 .ie9 #w2p_query_panel {padding-bottom:2px}
+.control-label.readonly{
+   padding-top:0px !important;
+   padding-right:0px !important;
+}
+
+
+

@@ -736,7 +736,7 @@ class AutocompleteWidget(object):
                      name=name, div_id=div_id, u='F' + self.keyword)
             if self.min_length == 0:
                 attr['_onfocus'] = attr['_onkeyup']
-            return CAT(INPUT(**attr), 
+            return CAT(INPUT(**attr),
                        INPUT(_type='hidden', _id=key3, _value=value,
                              _name=name, requires=field.requires),
                        DIV(_id=div_id, _style='position:absolute;'))
@@ -749,7 +749,7 @@ class AutocompleteWidget(object):
                      key=self.keyword, id=attr['_id'], div_id=div_id, u='F' + self.keyword)
             if self.min_length == 0:
                 attr['_onfocus'] = attr['_onkeyup']
-            return CAT(INPUT(**attr), 
+            return CAT(INPUT(**attr),
                        DIV(_id=div_id, _style='position:absolute;'))
 
 
@@ -840,7 +840,7 @@ def formstyle_bootstrap(form, fields):
             controls.add_class('span4')
 
         if isinstance(label, LABEL):
-            label['_class'] = 'control-label'
+            label['_class'] = add_class(label.get('_class'),'control-label')
 
         if _submit:
             # submit button has unwrapped label and controls, different class
@@ -890,7 +890,7 @@ def formstyle_bootstrap3_stacked(form, fields):
                 e.add_class('form-control')
 
         if isinstance(label, LABEL):
-            label['_class'] = 'control-label'
+            label['_class'] = add_class(label.get('_class'),'control-label')
 
         parent.append(DIV(label, _controls, _class='form-group', _id=id))
     return parent
@@ -941,7 +941,7 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
             elif controls is None or isinstance(controls, basestring):
                 _controls = P(controls, _class="form-control-static %s" % col_class)
             if isinstance(label, LABEL):
-                label['_class'] = 'control-label %s' % label_col_class
+                label['_class'] = add_class(label.get('_class'),'control-label %s' % label_col_class)
 
             parent.append(DIV(label, _controls, _class='form-group', _id=id))
         return parent
@@ -1187,6 +1187,14 @@ class SQLFORM(FORM):
             label = LABEL(label, label and sep, _for=field_id,
                           _id=field_id + SQLFORM.ID_LABEL_SUFFIX)
 
+            cond = readonly or \
+                (not ignore_rw and not field.writable and field.readable)
+
+            if cond:
+                label['_class'] = 'readonly'
+            else:
+                label['_class'] = ''
+
             row_id = field_id + SQLFORM.ID_ROW_SUFFIX
             if field.type == 'id':
                 self.custom.dspval.id = nbsp
@@ -1215,8 +1223,6 @@ class SQLFORM(FORM):
                 default = field.default
                 if isinstance(default, CALLABLETYPES):
                     default = default()
-            cond = readonly or \
-                (not ignore_rw and not field.writable and field.readable)
 
             if default is not None and not cond:
                 default = field.formatter(default)
@@ -1498,13 +1504,12 @@ class SQLFORM(FORM):
             hideerror=hideerror,
             **kwargs
         )
-
-        self.deleted = \
-            request_vars.get(self.FIELDNAME_REQUEST_DELETE, False)
+        
+        self.deleted = request_vars.get(self.FIELDNAME_REQUEST_DELETE, False)
 
         self.custom.end = CAT(self.hidden_fields(), self.custom.end)
 
-        auch = self.record_id and self.errors and self.deleted
+        delete_exception = self.record_id and self.errors and self.deleted
 
         if self.record_changed and self.detect_record_change:
             message_onchange = \
@@ -1516,8 +1521,9 @@ class SQLFORM(FORM):
             if message_onchange is not None:
                 current.response.flash = message_onchange
             return ret
-        elif (not ret) and (not auch):
-            # auch is true when user tries to delete a record
+
+        elif (not ret) and (not delete_exception):
+            # delete_exception is true when user tries to delete a record
             # that does not pass validation, yet it should be deleted
             for fieldname in self.fields:
 
@@ -1673,9 +1679,6 @@ class SQLFORM(FORM):
             elif field.type == 'double':
                 if value is not None:
                     fields[fieldname] = safe_float(value)
-            elif field.type in ('string', 'text'):
-                if fieldname in self.request_vars:
-                    fields[fieldname] = self.request_vars[fieldname]
 
         for fieldname in self.vars:
             if fieldname != 'id' and fieldname in self.table.fields\
@@ -1717,6 +1720,7 @@ class SQLFORM(FORM):
                                        self.id_field_name]).update(**fields)
                 else:
                     self.vars.id = self.table.insert(**fields)
+
         self.accepted = ret
         return ret
 
@@ -2079,7 +2083,7 @@ class SQLFORM(FORM):
             ## if it's not an integer
             if cache_count is None or isinstance(cache_count, tuple):
                 if groupby:
-                    c = 'count(*)'
+                    c = 'count(*) AS count_all'
                     nrows = db.executesql(
                         'select count(*) from (%s) _tmp;' %
                         dbset._select(c, left=left, cacheable=True,
@@ -2114,7 +2118,7 @@ class SQLFORM(FORM):
             elif isinstance(orderby, Field) and orderby is not field_id:
                 # here we're with an ASC order on a field stored as orderby
                 orderby = orderby | field_id
-            elif (isinstance(orderby, Expression) and 
+            elif (isinstance(orderby, Expression) and
                   orderby.first and orderby.first is not field_id):
                 # here we're with a DESC order on a field stored as orderby.first
                 orderby = orderby | field_id

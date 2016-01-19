@@ -58,7 +58,7 @@ def remove_oldest_entries(storage, percentage=90):
     # compute current memory usage (%)
     old_mem = psutil.virtual_memory().percent
     # if we have data in storage and utilization exceeds 90%
-    while storage and old_mem > percentage:    
+    while storage and old_mem > percentage:
         # removed oldest entry
         storage.popitem(last=False)
         # garbage collect
@@ -378,7 +378,7 @@ class CacheOnDisk(CacheAbstract):
 
 
         def safe_apply(self, key, function, default_value=None):
-            """ 
+            """
             Safely apply a function to the value of a key in storage and set
             the return value of the function to it.
 

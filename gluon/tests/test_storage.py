@@ -146,7 +146,7 @@ class TestList(unittest.TestCase):
                          'something')
         # except if default is especified
         self.assertEqual(b(0, default=0, otherwise=lambda: 'something'), 0)
-        
+
     def test_listgetitem(self):
         '''Mantains list behaviour.'''
         a = List((1, 2, 3))

@@ -668,7 +668,7 @@ class XML(XmlComponent):
 
 
 def XML_unpickle(data):
-    return marshal.loads(data)
+    return XML(marshal.loads(data))
 
 
 def XML_pickle(data):
@@ -783,6 +783,9 @@ class DIV(XmlComponent):
                 return None
         else:
             return self.components[i]
+
+    def get(self, i):
+        return self.attributes.get(i)
 
     def __setitem__(self, i, value):
         """
@@ -1135,7 +1138,7 @@ class DIV(XmlComponent):
         for (key, value) in kargs.iteritems():
             if key not in ['first_only', 'replace', 'find_text']:
                 if isinstance(value, (str, int)):
-                    if self[key] != str(value):
+                    if str(self[key]) != str(value):
                         check = False
                 elif key in self.attributes:
                     if not value.search(str(self[key])):
@@ -1856,6 +1859,8 @@ class INPUT(DIV):
                 try:
                     (value, errors) = validator(value)
                 except:
+                    import traceback
+                    print traceback.format_exc()
                     msg = "Validation error, field:%s %s" % (name,validator)
                     raise Exception(msg)
                 if not errors is None:
@@ -2643,7 +2648,7 @@ def test():
     >>> form=FORM(INPUT(value="Hello World", _name="var", requires=IS_MATCH('^\w+$')))
     >>> isinstance(form.as_dict(), dict)
     True
-    >>> form.as_dict(flat=True).has_key("vars")
+    >>> "vars" in form.as_dict(flat=True)
     True
     >>> isinstance(form.as_json(), basestring) and len(form.as_json(sanitize=False)) > 0
     True

@@ -16,19 +16,19 @@ from gluon.globals import Request, Response, Session
 from gluon import URL
 
 def setup_clean_session():
-	request = Request(env={})
-	request.application = 'a'
-	request.controller = 'c'
-	request.function = 'f'
-	request.folder = 'applications/admin'
-	response = Response()
-	session = Session()
-	session.connect(request, response)
-	from gluon.globals import current
-	current.request = request
-	current.response = response
-	current.session = session
-	return current
+        request = Request(env={})
+        request.application = 'a'
+        request.controller = 'c'
+        request.function = 'f'
+        request.folder = 'applications/admin'
+        response = Response()
+        session = Session()
+        session.connect(request, response)
+        from gluon.globals import current
+        current.request = request
+        current.response = response
+        current.session = session
+        return current
 
 class testResponse(unittest.TestCase):
 

@@ -35,7 +35,6 @@ from gluon.serializers import json_parser
 
 locker = thread.allocate_lock()
 
-
 def AppConfig(*args, **vars):
 
     locker.acquire()

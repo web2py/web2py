@@ -618,6 +618,9 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, (u'hell', None))
         rtn = IS_MATCH('hell', is_unicode=True)(u'hell')
         self.assertEqual(rtn, (u'hell', None))
+        # regr test for #1044
+        rtn = IS_MATCH('hello')(u'\xff')
+        self.assertEqual(rtn, (u'\xff', 'Invalid expression'))
 
 
     def test_IS_EQUAL_TO(self):

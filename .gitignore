@@ -61,3 +61,4 @@ HOWTO-web2py-devel
 *.sublime-workspace
 .idea/*
 site-packages/
+logs/
