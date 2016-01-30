@@ -51,7 +51,7 @@ class OneallAccount(object):
             reg_id=profile.get('identity_token','')
             username=profile.get('preferredUsername',email)
             first_name=name.get('givenName', dname.split(' ')[0])
-            last_name=profile.get('familyName',dname.split(' ')[1])
+            last_name=profile.get('familyName', dname.split(' ')[1] if(len(dname.split(' ')) > 1) else None)
             return dict(registration_id=reg_id,username=username,email=email,
                         first_name=first_name,last_name=last_name)
         self.mappings.default = defaultmapping
