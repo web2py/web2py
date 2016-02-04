@@ -421,7 +421,8 @@ def ldap_auth(server='ldap',
                     store_user_mail = None
                 update_or_insert_values = {'first_name': store_user_firstname,
                                            'last_name': store_user_lastname,
-                                           'email': store_user_mail}
+                                           'email': store_user_mail,
+                                           'username': username}
                 if '@' not in username:
                     # user as username
                     # ################
