@@ -27,7 +27,7 @@ from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT, COL, COLGROUP
 from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE, SCRIPT
 from gluon.html import URL, FIELDSET, P, DEFAULT_PASSWORD_DISPLAY
 from pydal.base import DEFAULT
-from pydal.objects import Table, Row, Expression, Field
+from pydal.objects import Table, Row, Expression, Field, Set
 from pydal.adapters.base import CALLABLETYPES
 from pydal.helpers.methods import smart_query, bar_encode,  _repr_ref
 from pydal.helpers.classes import Reference, SQLCustomType
@@ -2012,6 +2012,8 @@ class SQLFORM(FORM):
              use_cursor=False):
 
         formstyle = formstyle or current.response.formstyle
+        if isinstance(query, Set): 
+            query = query.query
 
         # jQuery UI ThemeRoller classes (empty if ui is disabled)
         if ui == 'jquery-ui':
@@ -2178,12 +2180,15 @@ class SQLFORM(FORM):
 
         dbset = db(query, ignore_common_filters=ignore_common_filters)
         tablenames = db._adapter.tables(dbset.query)
+        print dbset.query
+        print tablenames
         if left is not None:
             if not isinstance(left, (list, tuple)):
                 left = [left]
             for join in left:
                 tablenames += db._adapter.tables(join)
         tables = [db[tablename] for tablename in tablenames]
+        print tables
         if fields:
             # add missing tablename to virtual fields
             for table in tables:
