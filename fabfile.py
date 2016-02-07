@@ -5,6 +5,9 @@ import os
 import datetime
 import getpass
 
+if os.path.exists('hosts'):
+    env.hosts = [h.strip() for h in open('hosts').readlines() if h.strip()]
+
 env.hosts = env.hosts or raw_input('hostname (example.com):').split(',')
 env.user = env.user or raw_input('username              :')
 
