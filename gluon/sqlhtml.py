@@ -677,7 +677,23 @@ class AutocompleteWidget(object):
     def callback(self):
         if self.keyword in self.request.vars:
             field = self.fields[0]
-            if settings and settings.global_settings.web2py_runtime_gae:
+            if type(field) is FieldVirtual:
+                records = []
+                table_rows = self.db(self.db[field.tablename]).select(orderby=self.orderby)
+                count = 0
+                for row in table_rows:
+                    if self.at_beginning:
+                        if row[field.name].lower().startswith(self.request.vars[self.keyword]):
+                            count += 1
+                            records.append(row)
+                    else:
+                        if self.request.vars[self.keyword] in row[field.name].lower():
+                            count += 1
+                            records.append(row)
+                    if count == 10:
+                        break
+                rows = Rows(self.db, records, table_rows.colnames, compact=table_rows.compact)
+            elif settings and settings.global_settings.web2py_runtime_gae:
                 rows = self.db(field.__ge__(self.request.vars[self.keyword]) & field.__lt__(self.request.vars[self.keyword] + u'\ufffd')).select(orderby=self.orderby, limitby=self.limitby, *(self.fields+self.help_fields))
             elif self.at_beginning:
                 rows = self.db(field.like(self.request.vars[self.keyword] + '%', case_sensitive=False)).select(orderby=self.orderby, limitby=self.limitby, distinct=self.distinct, *(self.fields+self.help_fields))
@@ -725,8 +741,16 @@ class AutocompleteWidget(object):
                 del attr['requires']
             attr['_name'] = key2
             value = attr['value']
-            record = self.db(
-                self.fields[1] == value).select(self.fields[0]).first()
+            if type(self.fields[0]) is FieldVirtual:
+                record = None
+                table_rows = self.db(self.db[self.fields[0].tablename]).select(orderby=self.orderby)
+                for row in table_rows:
+                    if row.id == value:
+                        record = row
+                        break
+            else:
+                record = self.db(
+                    self.fields[1] == value).select(self.fields[0]).first()
             attr['value'] = record and record[self.fields[0].name]
             attr['_onblur'] = "jQuery('#%(div_id)s').delay(1000).fadeOut('slow');" % \
                 dict(div_id=div_id, u='F' + self.keyword)
