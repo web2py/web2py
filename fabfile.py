@@ -5,6 +5,9 @@ import os
 import datetime
 import getpass
 
+if os.path.exists('hosts'):
+    env.hosts = [h.strip() for h in open('hosts').readlines() if h.strip()]
+
 env.hosts = env.hosts or raw_input('hostname (example.com):').split(',')
 env.user = env.user or raw_input('username              :')
 
@@ -121,12 +124,16 @@ def deploy(appname=None, all=False):
         local('zip -r _update.zip * -x *~ -x .* -x \#* -x *.bak -x *.bak2')
     else:        
         local('zip -r _update.zip */*.py views/*.html views/*/*.html static/*')
-    put('_update.zip','/tmp/_update.zip')
 
-    with cd(appfolder):
-        sudo('unzip -o /tmp/_update.zip')
-        sudo('chown -R www-data:www-data *')
-        sudo('echo "%s" > DATE_DEPLOYMENT' % now)
+    put('_update.zip','/tmp/_update.zip')
+    try:
+        with cd(appfolder):
+            sudo('unzip -o /tmp/_update.zip')
+            sudo('chown -R www-data:www-data *')
+            sudo('echo "%s" > DATE_DEPLOYMENT' % now)
+    
+    finally:
+        sudo('rm /tmp/_update.zip')
                
     if backup:
         print 'TO RESTORE: fab restore:%s' % backup
