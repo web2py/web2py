@@ -1765,7 +1765,7 @@ class Auth(object):
 
         settings = self.settings = Settings()
         settings.update(Auth.default_settings)        
-        host = host or request.env.http_host,
+        host = host or request.env.http_host
         settings.update(
             cas_domains=[host],
             enable_tokens=False,

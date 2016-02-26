@@ -35,7 +35,7 @@ else:
 response.generic_patterns = ['*'] if request.is_local else []
 ## choose a style for forms
 response.formstyle = myconf.get('forms.formstyle')  # or 'bootstrap3_stacked' or 'bootstrap2' or other
-response.form_label_separator = myconf.get('forms.separator')
+response.form_label_separator = myconf.get('forms.separator') or ''
 
 
 ## (optional) optimize handling of static files
@@ -67,8 +67,8 @@ mail = auth.settings.mailer
 mail.settings.server = 'logging' if request.is_local else myconf.get('smtp.server')
 mail.settings.sender = myconf.get('smtp.sender')
 mail.settings.login = myconf.get('smtp.login')
-mail.settings.tls = myconf.get('smtp.tls')
-mail.settings.ssl = myconf.get('smtp.ssl')
+mail.settings.tls = myconf.get('smtp.tls') or False
+mail.settings.ssl = myconf.get('smtp.ssl') or False
 
 ## configure auth policy
 auth.settings.registration_requires_verification = False
