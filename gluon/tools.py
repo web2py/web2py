@@ -777,16 +777,16 @@ class Mail(object):
                 if attachments:
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=unicode(subject), body=unicode(text), html=html,
+                        subject=unicode(subject, encoding), body=unicode(text, encoding), html=html,
                         attachments=attachments, **xcc)
                 elif html and (not raw):
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=unicode(subject), body=unicode(text), html=html, **xcc)
+                        subject=unicode(subject, encoding), body=unicode(text, encoding), html=html, **xcc)
                 else:
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=unicode(subject), body=unicode(text), **xcc)
+                        subject=unicode(subject, encoding), body=unicode(text, encoding), **xcc)
             else:
                 smtp_args = self.settings.server.split(':')
                 kwargs = dict(timeout=self.settings.timeout)
@@ -1710,8 +1710,9 @@ class Auth(object):
             args = []
         if vars is None:
             vars = {}
+        host = scheme and self.settings.host
         return URL(c=self.settings.controller,
-                   f=f, args=args, vars=vars, scheme=scheme)
+                   f=f, args=args, vars=vars, scheme=scheme, host=host)
 
     def here(self):
         return URL(args=current.request.args, vars=current.request.get_vars)
@@ -1720,7 +1721,7 @@ class Auth(object):
                  hmac_key=None, controller='default', function='user',
                  cas_provider=None, signature=True, secure=False,
                  csrf_prevention=True, propagate_extension=None,
-                 url_index=None, jwt=None):
+                 url_index=None, jwt=None, host=None):
 
         ## next two lines for backward compatibility
         if not db and environment and isinstance(environment, DAL):
@@ -1763,9 +1764,10 @@ class Auth(object):
         # ## what happens after registration?
 
         settings = self.settings = Settings()
-        settings.update(Auth.default_settings)
+        settings.update(Auth.default_settings)        
+        host = host or request.env.http_host
         settings.update(
-            cas_domains=[request.env.http_host],
+            cas_domains=[host],
             enable_tokens=False,
             cas_provider=cas_provider,
             cas_actions=dict(login='login',
@@ -1815,6 +1817,7 @@ class Auth(object):
             label_separator=current.response.form_label_separator,
             two_factor_methods = [],
             two_factor_onvalidation = [],
+            host = host,
         )
         settings.lock_keys = True
         # ## these are messages that can be customized
