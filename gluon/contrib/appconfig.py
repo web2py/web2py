@@ -58,6 +58,27 @@ class AppConfigDict(dict):
         dict.__init__(self, *args, **kwargs)
         self.int_cache = {}
 
+    def get(self, path, default=None):
+        try:
+            value = self.take(path).strip()
+            if value.lower() in ('none','null',''):
+                return None
+            elif value.lower() == 'true':
+                return True
+            elif value.lower() == 'false':
+                return False
+            elif value.isdigit() or (value[0]=='-' and value[1:].isdigit()):
+                return int(value)
+            elif ', ' in value:
+                return value.split(', ')
+            else:
+                try:
+                    return float(value)
+                except:
+                    return value
+        except:
+            return default
+
     def take(self, path, cast=None):
         parts = path.split('.')
         if path in self.int_cache:
