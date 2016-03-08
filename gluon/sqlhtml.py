@@ -2364,7 +2364,7 @@ class SQLFORM(FORM):
                 if deletable(record):
                     if ondelete:
                         ondelete(table, request.args[-1])
-                    record.delete_record()
+                    db(table[table._id.name] == request.args[-1]).delete()
             if request.ajax:
                 # this means javascript is enabled, so we don't need to do
                 # a redirect
