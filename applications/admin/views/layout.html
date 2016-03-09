@@ -1,69 +1,114 @@
-<html>
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <link href="{{=URL('static','css/stupid.css')}}" rel="stylesheet" type="text/css"/>
-    <link href="{{=URL('static','css/calendar.css')}}" rel="stylesheet" type="text/css"/>
-    <link href="{{=URL('static','css/web2py.css')}}" rel="stylesheet" type="text/css"/>
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
-    <style>
-      th, td {color: black}
-      tbody tr:hover {background-color:transparent}
-      tbody tr {border-bottom: none}
-      p {text-align: left}
-      pre {background-color: black!important;border-radius:5px; color:white; padding:10px}
-      a.btn.btn180 {padding:20px; font-size:1.2em; width:200px!important}
-      [type=submit], [type=button] {border-radius:5px!important;padding:5px 10px;margin-top:10px}
-    </style>
-    {{
-    left_sidebar_enabled = globals().get('left_sidebar_enabled', False)
-    right_sidebar_enabled = globals().get('right_sidebar_enabled', False)
-    middle_column = {0: 'fill', 1: 'threequarters', 2: 'half'}[
-    (left_sidebar_enabled and 1 or 0)+(right_sidebar_enabled and 1 or 0)]
-    }}
-    {{include "web2py_ajax.html"}}
-  </head>
-  <body class="black">   
-    <header class="black padded">      
-      <div class="container middle max900">
-        <div class="fill middle">                    
-          <label class="ham padded fa fa-bars" for="menu"></label>
-          <div class="burger accordion">
-            <input type="checkbox" id="menu"/>
-            {{=MENU(response.menu,_class='menu')}}
-          </div>
-        </div>
-      </div>
-    </header>
-    {{if response.flash:}}
-    <div class="w2p_flash">
-      {{=response.flash}}
-    </div>
-    {{pass}}
-    <main class="white">
-      <div class="hidden">{{block sectionclass}}design{{end}}</div>
-      <div class="container max900">
-        {{if left_sidebar_enabled:}}
-        <div class="quarter padded">{{block left_sidebar}}{{end}}</div>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+
+    <head>
+        <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+        <meta http-equiv="P3P" content="CP=\"IDC DSP COR CURa ADMa OUR IND PHY ONL COM STA\"" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{{=response.title or URL()}}</title>
+        {{
+        response.files.append(URL('static','css/bootstrap.min.css'))
+        response.files.append(URL('static','css/bootstrap_essentials.css'))
+        response.files.append(URL('static','css/bootstrap-responsive.min.css'))
+        }}
+        {{include 'web2py_ajax.html'}}
+    </head>
+
+    <body class="{{=T('direction: ltr') == 'direction: rtl' and 'RTLbody' or ''}} {{block sectionclass}}home{{end}}">
+
+        <!-- NAVBAR
+        ============== -->
+        <div id="header" class="navbar navbar-inverse navbar-fixed-top">
+            <div class="navbar-inner">
+                <div class="container-fluid">
+                    <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                    </button>
+                    <div id="start" class="brand_wrapper">
+                        <a href="{{=URL('default', 'index')}}" class="button brand" ><span>web2py&trade; {{=T('administrative interface')}}</span></a>
+                    </div>
+                    <div class="nav-collapse">
+                        {{if response.menu is not None:}}
+                        <ul id="menu" class="nav pull-right">
+                            {{for _name,_active,_link in response.menu:}}
+                            <li>{{=A(SPAN(_name), _href=_link, _class=_active and 'button select' or 'button')}}</li>
+                            {{pass}}
+                        </ul>
+                        {{pass}}
+                    </div><!--/.nav-collapse -->
+                </div><!-- /container-fluid -->
+            </div><!-- /navbar-inner -->
+        </div><!-- /#header -->
+
+        <!-- MAIN
+        =========== -->
+            <div id="{{=globals().get('main_id', 'main')}}" class="container-fluid">
+                <div id="main_inner" class="row-fluid">
+                    <div class="span12">
+                        <div class="w2p_flash alert">{{=response.flash or ''}}</div>
+                        {{include}}
+                    </div><!-- /main span12 -->
+                </div><!-- /main row-fluid -->
+            </div><!-- /#main -->
+
+        <!-- FOOTER
+        ============== -->
+        {{block footer}}
+        <footer id="footer" class="fixed">
+            <p><span>{{=T('Powered by')}} {{=A('web2py', _href='http://www.web2py.com')}}&trade; {{=T('created by')}} Massimo Di Pierro &copy;2007-{{=request.now.year}}
+                {{if hasattr(T,'get_possible_languages_info'):}}
+                - {{=T('Admin language')}}</span>
+                <select name="adminlanguage" onchange="var date = new Date();cookieDate=date.setTime(date.getTime()+(100*24*60*60*1000));document.cookie='adminLanguage='+this.options[this.selectedIndex].id+'; expires='+cookieDate+'; path=/';window.location.reload()">
+                    {{for langinfo in sorted([(code,info[1]) for code,info in T.get_possible_languages_info().iteritems() if code != 'default']):}}
+                    <option {{=T.accepted_language==langinfo[0] and 'selected' or ''}} {{='id='+langinfo[0]}} >{{=langinfo[1]}}</option>
+                    {{pass}}
+                </select>
+                {{else:}}
+                </span>{{pass}}
+            </p>
+        </footer><!-- /#footer -->
+        {{end}}
+
+        <!-- BS JAVASCRIPT
+        ====================== -->
+        <script src="{{=URL('static','js/bootstrap.min.js')}}"></script>
+        <script type="text/javascript">
+            jQuery(document).ready(function(){
+                jQuery("[rel=tooltip]").tooltip();
+                jQuery(":input").attr("autocomplete","off");
+            });
+        </script>
+        <script>
+            // ====================
+            // upload input mask
+            // ====================
+
+            function FileSelectHandler(e) {
+                e.stopPropagation();
+                var filename = e.target.value.split(/\\|\//).pop();
+                jQuery('#fileselect>span').removeClass('txtPlaceholder').text(filename)
+            }
+
+            jQuery(document).ready(function(){
+                var iupload = jQuery('#appupdate_file');
+                var ow = 300, oh = 20;
+                var iplaceholder = jQuery('<span class="txtPlaceholder">{{=T("no package selected")}}</span>'),
+                    iuploadbtn = jQuery('<button class="btn btn-inverse btn-mini uploadbtn"><i class="icon-white icon-circle-arrow-up"></i></button>');
+                iupload
+                    .addClass('masked')
+                    .wrap('<div id="fileselect" style="width:'+ow+'px;height:'+oh+'px"></div>')
+                    .on('change', function(event){FileSelectHandler(event)});
+                jQuery('#fileselect').append(iplaceholder, iuploadbtn);
+            });
+        </script>
+
+        {{if request.function in ('index','site'):}}
+        <a style="position:fixed;bottom:0;left:0;z-index:1000" href="https://groups.google.com/forum/?fromgroups#!forum/web2py" target="_blank">
+            <!-- http://webchat.freenode.net/?channels=web2py" //-->
+            <img src="{{=URL('static','images/questions.png')}}" />
+        </a>
         {{pass}}
-        <div class="{{=middle_column}} padded">{{include}}</div>
-        {{if right_sidebar_enabled:}}
-        <div class="quarter padded">{{block right_sidebar}}{{end}}</div>
-        {{pass}}
-      </div>
-    </main>
-    <footer class="black">
-      <div class="container padded max900">
-        <div class="fill">
-          Copyright @ 2016 - Powered by Web2py
-        </div>
-      </div>
-    </footer>
-  </body>  
-  <script>
-    // prevent android horizontal scrolling
-    window.addEventListener("scroll", function(){window.scroll(0, window.pageYOffset);}, false);
-  </script>
+    </body>
 </html>
