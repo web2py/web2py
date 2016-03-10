@@ -24,8 +24,7 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(options_sorter(('a', 'a'), ('a', 'a')), -1)
         self.assertEqual(options_sorter(('A', 'A'), ('a', 'a')), -1)
         self.assertEqual(options_sorter(('b', 'b'), ('a', 'a')), 1)
-        with self.assertRaises(NotImplementedError):
-            Validator()(1)
+        self.assertRaises(NotImplementedError, Validator(), 1)
         utc = UTC()
         dt = datetime.datetime.now()
         self.assertEqual(utc.utcoffset(dt), UTC.ZERO)
