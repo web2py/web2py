@@ -141,7 +141,6 @@ class Validator(object):
 
     def __call__(self, value):
         raise NotImplementedError
-        return (value, None)
 
 
 class IS_MATCH(Validator):
