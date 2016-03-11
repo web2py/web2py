@@ -10,7 +10,7 @@ session.forget()
 cache_expire = not request.is_local and 300 or 0
 
 
-@cache.action(time_expire=300, cache_model=cache.ram, quick='P')
+#@cache.action(time_expire=300, cache_model=cache.ram, quick='P')
 def index():
     return response.render()
 
@@ -26,7 +26,7 @@ def what():
     return response.render(images=images)
 
 
-@cache.action(time_expire=300, cache_model=cache.ram, quick='P')
+#@cache.action(time_expire=300, cache_model=cache.ram, quick='P')
 def download():
     return response.render()
 

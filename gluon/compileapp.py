@@ -261,7 +261,7 @@ class LoadFactory(object):
         import globals
         target = target or 'c' + str(random.random())[2:]
         attr['_id'] = target
-        request = self.environment['request']
+        request = current.request
         if '.' in f:
             f, extension = f.rsplit('.', 1)
         if url or ajax:
@@ -464,22 +464,28 @@ def read_pyc(filename):
     return marshal.loads(data[8:])
 
 
-def compile_views(folder):
+def compile_views(folder, skip_failed_views=False):
     """
     Compiles all the views in the application specified by `folder`
     """
 
     path = pjoin(folder, 'views')
+    failed_views = []
     for fname in listdir(path, '^[\w/\-]+(\.\w+)*$'):
         try:
             data = parse_template(fname, path)
         except Exception, e:
-            raise Exception("%s in %s" % (e, fname))
-        filename = 'views.%s.py' % fname.replace(os.path.sep, '.')
-        filename = pjoin(folder, 'compiled', filename)
-        write_file(filename, data)
-        save_pyc(filename)
-        os.unlink(filename)
+            if skip_failed_views:
+                failed_views.append(fname)
+            else:
+                raise Exception("%s in %s" % (e, fname))
+        else:
+            filename = ('views/%s.py' % fname).replace('/', '_').replace('\\', '_')
+            filename = pjoin(folder, 'compiled', filename)
+            write_file(filename, data)
+            save_pyc(filename)
+            os.unlink(filename)
+    return failed_views if failed_views else None
 
 
 def compile_models(folder):
@@ -532,10 +538,11 @@ def run_models_in(environment):
     It tries pre-compiled models first before compiling them.
     """
 
-    folder = environment['request'].folder
-    c = environment['request'].controller
+    request = current.request
+    folder = request.folder
+    c = request.controller
     #f = environment['request'].function
-    response = environment['response']
+    response = current.response
 
     path = pjoin(folder, 'models')
     cpath = pjoin(folder, 'compiled')
@@ -577,7 +584,7 @@ def run_controller_in(controller, function, environment):
     """
 
     # if compiled should run compiled!
-    folder = environment['request'].folder
+    folder = current.request.folder
     path = pjoin(folder, 'compiled')
     badc = 'invalid controller (%s/%s)' % (controller, function)
     badf = 'invalid function (%s/%s)' % (controller, function)
@@ -631,7 +638,7 @@ def run_controller_in(controller, function, environment):
             layer = filename + ':' + function
             code = getcfs(layer, filename, lambda: compile2(code, layer))
         restricted(code, environment, filename)
-    response = environment['response']
+    response = current.response
     vars = response._vars
     if response.postprocessing:
         vars = reduce(lambda vars, p: p(vars), response.postprocessing, vars)
@@ -649,9 +656,9 @@ def run_view_in(environment):
     or `view/generic.extension`
     It tries the pre-compiled views_controller_function.pyc before compiling it.
     """
-    request = environment['request']
-    response = environment['response']
-    view = response.view
+    request = current.request
+    response = current.response
+    view = environment['response'].view
     folder = request.folder
     path = pjoin(folder, 'compiled')
     badv = 'invalid view (%s)' % view
@@ -666,32 +673,28 @@ def run_view_in(environment):
         ccode = parse_template(view, pjoin(folder, 'views'),
                                context=environment)
         restricted(ccode, environment, 'file stream')
-    elif os.path.exists(path):
-        x = view.replace('/', '.')
-        files = ['views.%s.pyc' % x]
-        if allow_generic:
-            files.append('views.generic.%s.pyc' % request.extension)
-        # for backward compatibility
-        x = view.replace('/', '_')
-        files.append('views_%s.pyc' % x)
-        if allow_generic:
-            files.append('views_generic.%s.pyc' % request.extension)
-        if request.extension == 'html':
-            files.append('views_%s.pyc' % x[:-5])
-            if allow_generic:
-                files.append('views_generic.pyc')
-        # end backward compatibility code
-        for f in files:
-            filename = pjoin(path, f)
-            if os.path.exists(filename):
-                code = read_pyc(filename)
-                restricted(code, environment, layer=filename)
-                return
-        raise HTTP(404,
-                   rewrite.THREAD_LOCAL.routes.error_message % badv,
-                   web2py_error=badv)
     else:
         filename = pjoin(folder, 'views', view)
+        if os.path.exists(path): # compiled views
+            x = view.replace('/', '.')
+            files = ['views.%s.pyc' % x]
+            is_compiled = os.path.exists(pjoin(path, files[0]))
+            # Don't use a generic view if the non-compiled view exists.
+            if is_compiled or (not is_compiled and not os.path.exists(filename)):
+                if allow_generic:
+                    files.append('views_generic.%s.pyc' % request.extension)
+                # for backward compatibility
+                if request.extension == 'html':
+                    files.append('views_%s.pyc' % x[:-5])
+                    if allow_generic:
+                        files.append('views_generic.pyc')
+                # end backward compatibility code
+                for f in files:
+                    compiled = pjoin(path, f)
+                    if os.path.exists(compiled):
+                        code = read_pyc(compiled)
+                        restricted(code, environment, layer=compiled)
+                        return
         if not os.path.exists(filename) and allow_generic:
             view = 'generic.' + request.extension
             filename = pjoin(folder, 'views', view)
@@ -725,7 +728,7 @@ def remove_compiled_application(folder):
         pass
 
 
-def compile_application(folder):
+def compile_application(folder, skip_failed_views=False):
     """
     Compiles all models, views, controller for the application in `folder`.
     """
@@ -733,7 +736,8 @@ def compile_application(folder):
     os.mkdir(pjoin(folder, 'compiled'))
     compile_models(folder)
     compile_controllers(folder)
-    compile_views(folder)
+    failed_views = compile_views(folder, skip_failed_views)
+    return failed_views
 
 
 def test():

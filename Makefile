@@ -11,7 +11,7 @@ clean:
 	find ./ -name '*.rej' -exec rm -f {} \; 
 	find ./ -name '#*' -exec rm -f {} \;
 	find ./ -name 'Thumbs.db' -exec rm -f {} \; 
-	find ./gluon/ -name '.*' -exec rm -f {} \;
+	# find ./gluon/ -name '.*' -exec rm -f {} \;
 	find ./gluon/ -name '*class' -exec rm -f {} \; 
 	find ./applications/admin/ -name '.*' -exec rm -f {} \; 
 	find ./applications/examples/ -name '.*' -exec rm -f {} \; 
@@ -32,7 +32,7 @@ update:
 	echo "remember that pymysql was tweaked"
 src:
 	### Use semantic versioning
-	echo 'Version 2.11.2-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
+	echo 'Version 2.13.4-stable+timestamp.'`date +%Y.%m.%d.%H.%M.%S` > VERSION
 	### rm -f all junk files
 	make clean
 	### clean up baisc apps

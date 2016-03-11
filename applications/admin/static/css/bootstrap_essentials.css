@@ -476,7 +476,7 @@ h4.editableapp { background: #fff url(../images/folder.png) no-repeat; }
 
 h4.currentapp { background: #fff url(../images/folder_locked.png) no-repeat; }
 
-.flash { position:fixed; width:50%; top:49px; left:25%; right:25%; cursor:default; text-align:center; z-index:5620; }
+.w2p_flash { position:fixed; width:50%; top:49px; left:25%; right:25%; cursor:default; text-align:center; z-index:5620; }
 span#closeflash {position:absolute; top:1px; right:-1px; font-size:150%; border:1px solid black; border-color: transparent transparent #fbeed5 #fbeed5; border-radius: 0 0 0 4px; width:22px; }
 span#closeflash:hover {font-weight:bold; cursor:pointer; }
 

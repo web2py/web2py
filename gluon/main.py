@@ -370,8 +370,8 @@ def wsgibase(environ, responder):
                     cid = env.http_web2py_component_element,
                     is_local = (env.remote_addr in local_hosts and
                                 client == env.remote_addr),
-                    is_shell = cmd_opts and cmd_opts.shell,
-                    is_sheduler = cmd_opts and cmd_opts.scheduler,
+                    is_shell = False,
+                    is_scheduler = False,
                     is_https = env.wsgi_url_scheme in HTTPS_SCHEMES or \
                         request.env.http_x_forwarded_proto in HTTPS_SCHEMES \
                         or env.https == 'on'
@@ -423,10 +423,13 @@ def wsgibase(environ, responder):
                 # ##################################################
 
                 if env.http_cookie:
-                    try:
-                        request.cookies.load(env.http_cookie)
-                    except Cookie.CookieError, e:
-                        pass  # invalid cookies
+                    for single_cookie in env.http_cookie.split(';'):
+                        single_cookie = single_cookie.strip()
+                        if single_cookie:
+                            try:
+                                request.cookies.load(single_cookie)
+                            except Cookie.CookieError:
+                                pass  # single invalid cookie ignore
 
                 # ##################################################
                 # try load session or create new session file

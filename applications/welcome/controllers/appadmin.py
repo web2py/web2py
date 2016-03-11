@@ -49,7 +49,8 @@ if request.function == 'manage':
                                       auth.table_group(),
                                       auth.table_permission()])
     manager_role = manager_action.get('role', None) if manager_action else None
-    auth.requires_membership(manager_role)(lambda: None)()
+    if not (gluon.fileutils.check_credentials(request) or auth.has_membership(manager_role)):
+        raise HTTP(403, "Not authorized")
     menu = False
 elif (request.application == 'admin' and not session.authorized) or \
         (request.application != 'admin' and not gluon.fileutils.check_credentials(request)):
@@ -444,30 +445,31 @@ def ccache():
         gae_stats['oldest'] = GetInHMS(time.time() - gae_stats['oldest_item_age'])
         total.update(gae_stats)
     else:
+        # get ram stats directly from the cache object
+        ram_stats = cache.ram.stats[request.application]
+        ram['hits'] = ram_stats['hit_total'] - ram_stats['misses']
+        ram['misses'] = ram_stats['misses']
+        try:
+            ram['ratio'] = ram['hits'] * 100 / ram_stats['hit_total']
+        except (KeyError, ZeroDivisionError):
+            ram['ratio'] = 0
+
         for key, value in cache.ram.storage.iteritems():
-            if isinstance(value, dict):
-                ram['hits'] = value['hit_total'] - value['misses']
-                ram['misses'] = value['misses']
-                try:
-                    ram['ratio'] = ram['hits'] * 100 / value['hit_total']
-                except (KeyError, ZeroDivisionError):
-                    ram['ratio'] = 0
-            else:
-                if hp:
-                    ram['bytes'] += hp.iso(value[1]).size
-                    ram['objects'] += hp.iso(value[1]).count
-                ram['entries'] += 1
-                if value[0] < ram['oldest']:
-                    ram['oldest'] = value[0]
-                ram['keys'].append((key, GetInHMS(time.time() - value[0])))
+            if hp:
+                ram['bytes'] += hp.iso(value[1]).size
+                ram['objects'] += hp.iso(value[1]).count
+            ram['entries'] += 1
+            if value[0] < ram['oldest']:
+                ram['oldest'] = value[0]
+            ram['keys'].append((key, GetInHMS(time.time() - value[0])))
 
         for key in cache.disk.storage:
             value = cache.disk.storage[key]
-            if isinstance(value, dict):
-                disk['hits'] = value['hit_total'] - value['misses']
-                disk['misses'] = value['misses']
+            if isinstance(value[1], dict):
+                disk['hits'] = value[1]['hit_total'] - value[1]['misses']
+                disk['misses'] = value[1]['misses']
                 try:
-                    disk['ratio'] = disk['hits'] * 100 / value['hit_total']
+                    disk['ratio'] = disk['hits'] * 100 / value[1]['hit_total']
                 except (KeyError, ZeroDivisionError):
                     disk['ratio'] = 0
             else:
@@ -484,7 +486,7 @@ def ccache():
         ram_keys.remove('oldest')
         for key in ram_keys:
             total[key] = ram[key] + disk[key]
-            
+
         try:
             total['ratio'] = total['hits'] * 100 / (total['hits'] +
                                                 total['misses'])
@@ -574,7 +576,7 @@ def bg_graph_model():
             meta_graphmodel = dict(group=request.application, color='#ECECEC')
 
         group = meta_graphmodel['group'].replace(' ', '')
-        if not subgraphs.has_key(group):
+        if group not in subgraphs:
             subgraphs[group] = dict(meta=meta_graphmodel, tables=[])
         subgraphs[group]['tables'].append(tablename)
 

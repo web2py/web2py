@@ -18,6 +18,10 @@ before_script:
   - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install --download-cache $HOME/.pip-cache unittest2; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --download-cache $HOME/.pip-cache coverage; fi;
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --download-cache $HOME/.pip-cache codecov; fi
+  - mysql -e 'create database pydal;'
+  - psql -c 'create database pydal;' -U postgres
+  - psql -c 'create extension postgis;' -U postgres -d pydal;
+  - psql -c 'SHOW SERVER_VERSION' -U postgres
 
 
 script: export COVERAGE_PROCESS_START=gluon/tests/coverage.ini; ./web2py.py --run_system_tests --with_coverage
@@ -28,3 +32,6 @@ after_success:
 
 notifications:
   email: true
+
+addons:
+  postgresql: "9.4"

@@ -53,8 +53,8 @@ except:
     except:
         try:
             import win32con
-            import win32file
             import pywintypes
+            import win32file
             os_locking = 'windows'
         except:
             pass
@@ -119,7 +119,7 @@ class LockedFile(object):
             lock(self.file, LOCK_EX)
             if not 'a' in mode:
                 self.file.seek(0)
-                self.file.truncate()
+                self.file.truncate(0)
         else:
             raise RuntimeError("invalid LockedFile(...,mode)")
 

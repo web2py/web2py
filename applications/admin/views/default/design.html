@@ -1,5 +1,7 @@
 {{extend 'layout.html'}}
 {{
+import re
+regex_space = re.compile('\s+')
 def all(items):
     return reduce(lambda a,b:a and b,items,True)
 def peekfile(path,file,vars={},title=None):
@@ -205,7 +207,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
                 {{=peekfile('views',c, dict(id=id))}}
             </span>
             <span class="extras celled celled-one">
-                {{if extend.has_key(c):}}{{=T("extends")}} <b>{{=extend[c]}}</b> {{pass}}
+                {{if c in extend:}}{{=T("extends")}} <b>{{=extend[c]}}</b> {{pass}}
                 {{if include[c]:}}{{=T("includes")}} {{pass}}{{=XML(', '.join([B(f).xml() for f in include[c]]))}}
             </span>
         </li>
@@ -304,7 +306,7 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
             while path!=file_path:
                 if len(file_path)>=len(path) and all([v==file_path[k] for k,v in enumerate(path)]):
                     path.append(file_path[len(path)])
-                    thispath='static__'+'__'.join(path)
+                    thispath = regex_space.sub('-', 'static__'+'__'.join(path))
     }}
         <li class="folder"><i>&nbsp;</i>
             <a href="javascript:collapse('{{=thispath}}');" class="file">{{=path[-1]}}/</a>
@@ -475,11 +477,11 @@ function filter_files() {
           message=data['message'];
           for(var i=0; i<files.length; i++)
             jQuery('li#_'+files[i].replace(/\//g,'__').replace('.','__')).slideDown();
-          jQuery('.flash').html(message).slideDown();
+          jQuery('.w2p_flash').html(message).slideDown();
           });
       } else {
           jQuery('.component_contents li, .formfield, .comptools').slideDown();
-          jQuery('.flash').html('').hide();
+          jQuery('.w2p_flash').html('').hide();
       }
 }
 jQuery(document).ready(function(){
