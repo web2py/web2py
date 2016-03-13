@@ -98,7 +98,7 @@ def git_deploy(appname, repo):
         with cd(applications):
             sudo('git clone git@github.com/%s %s' % (repo, name))
             sudo('chown -R www-data:www-data %s' % name)
-    
+
 def retrieve(appname=None):
     """fab -H username@host retrieve:appname"""
     appname = appname or os.path.split(os.getcwd())[-1]

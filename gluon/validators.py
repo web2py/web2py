@@ -633,12 +633,11 @@ class IS_IN_DB(Validator):
             if self.field.type in ('id','integer'):
                 new_values = []
                 for value in values:
-                    if isinstance(value,(int,long)) or value.isdigit():
-                        value = int(value)
-                    elif self.auto_add:
-                        value = self.maybe_add(table, self.fieldnames[0], value)
-                    else:
-                        return (values, translate(self.error_message))
+                    if not (isinstance(value,(int,long)) or value.isdigit()):
+                        if self.auto_add:
+                            value = str(self.maybe_add(table, self.fieldnames[0], value))
+                        else:
+                            return (values, translate(self.error_message))
                     new_values.append(value)
                 values = new_values
 

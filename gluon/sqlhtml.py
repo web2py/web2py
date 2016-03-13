@@ -936,7 +936,7 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
             # wrappers
             _help = SPAN(help, _class='help-block')
             # embed _help into _controls
-            _controls = DIV(controls, _help, _class="%s %s" % (offset_class, col_class))
+            _controls = DIV(controls, _help, _class="%s" % (col_class))
             if isinstance(controls, INPUT):
                 if controls['_type'] == 'submit':
                     controls.add_class('btn btn-primary')
@@ -2364,7 +2364,7 @@ class SQLFORM(FORM):
                 if deletable(record):
                     if ondelete:
                         ondelete(table, request.args[-1])
-                    record.delete_record()
+                    db(table[table._id.name] == request.args[-1]).delete()
             if request.ajax:
                 # this means javascript is enabled, so we don't need to do
                 # a redirect
