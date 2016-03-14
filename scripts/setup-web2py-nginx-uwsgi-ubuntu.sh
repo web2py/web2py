@@ -1,6 +1,6 @@
 #!/bin/bash
 echo 'setup-web2py-nginx-uwsgi-ubuntu-precise.sh'
-echo 'Requires Ubuntu > 12.04 and installs Nginx + uWSGI + Web2py'
+echo 'Requires Ubuntu > 12.04 or Debian >= 8 and installs Nginx + uWSGI + Web2py'
 # Check if user has root privileges
 if [[ $EUID -ne 0 ]]; then
    echo "You must run the script as root or using sudo"
@@ -137,6 +137,26 @@ fi
 # Prepare folders for uwsgi
 sudo mkdir /etc/uwsgi
 sudo mkdir /var/log/uwsgi
+sudo mkdir /etc/systemd
+sudo mkdir /etc/systemd/system
+
+#systemd
+echo '[Unit]
+Description = uWSGI Emperor
+After = syslog.target
+
+[Service]
+ExecStart = /usr/local/bin/uwsgi --ini /etc/uwsgi/web2py.ini
+RuntimeDirectory = uwsgi
+Restart = always
+KillSignal = SIGQUIT
+Type = notify
+StandardError = syslog
+NotifyAccess = all
+
+[Install]
+WantedBy = multi-user.target
+' > /etc/systemd/system/emperor.uwsgi.service
 
 # Create configuration file /etc/uwsgi/web2py.ini
 echo '[uwsgi]
@@ -159,7 +179,7 @@ gid = www-data
 touch-reload = /home/www-data/web2py/routes.py
 cron = 0 0 -1 -1 -1 python /home/www-data/web2py/web2py.py -Q -S welcome -M -R scripts/sessions2trash.py -A -o
 no-orphans = true
-' >/etc/uwsgi/web2py.ini
+' > /etc/uwsgi/web2py.ini
 
 #Create a configuration file for uwsgi in emperor-mode
 #for Upstart in /etc/init/uwsgi-emperor.conf
@@ -179,6 +199,7 @@ stop on runlevel [06]
 respawn
 exec uwsgi --master --die-on-term --emperor /etc/uwsgi --logto /var/log/uwsgi/uwsgi.log
 ' > /etc/init/uwsgi-emperor.conf
+
 # Install Web2py
 mkdir /home/www-data
 cd /home/www-data
@@ -192,20 +213,20 @@ if [ "$nopassword" -eq 0 ]
 then
    sudo -u www-data python -c "from gluon.main import save_password; save_password('$PW',443)"
 fi
-start uwsgi-emperor
+systemctl enable emperor.uwsgi.service
+systemctl start emperor.uwsgi.service
 /etc/init.d/nginx restart
 
 echo <<EOF
 you can reload uwsgi with
 
-  restart uwsgi-emperor
+  service emperor.uwsgi restart
 
 and stop it with
 
-  stop uwsgi-emperor
+  service emperor.uwsgi stop
 
 to reload web2py only (without restarting uwsgi)
 
   touch /etc/uwsgi/web2py.ini
 EOF
-

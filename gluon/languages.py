@@ -983,7 +983,6 @@ def findT(path, language=DEFAULT_LANGUAGE):
             else sentences['!langcode!'])
     write_dict(lang_file, sentences)
 
-
 def update_all_languages(application_path):
     """
     Note:
@@ -993,6 +992,22 @@ def update_all_languages(application_path):
     for language in oslistdir(path):
         if regex_langfile.match(language):
             findT(application_path, language[:-3])
+
+def update_from_langfile(target, source):
+    """this will update untranslated messages in target from source (where both are language files)
+    this can be used as first step when creating language file for new but very similar language
+        or if you want update your app from welcome app of newer web2py version
+        or in non-standard scenarios when you work on target and from any reason you have partial translation in source
+    """
+    src = read_dict(source)
+    sentences = read_dict(target)
+    for key in sentences:
+        val = sentences[key]
+        if not val or val == key:
+            new_val = src.get(key)
+            if new_val and new_val != val:
+                sentences[key] = new_val
+    write_dict(target, sentences)
 
 
 if __name__ == '__main__':
