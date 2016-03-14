@@ -642,7 +642,7 @@ def regex_url_in(request, environ):
         items = filename.split('/', 1)
         if regex_version.match(items[0]):
             version, filename = items
-        static_folder = pjoin(global_settings.application_parent,
+        static_folder = pjoin(global_settings.applications_parent,
                               'applications', application, 'static')
         static_file = os.path.abspath(pjoin(static_folder, filename))
         if not static_file.startswith(static_folder):
