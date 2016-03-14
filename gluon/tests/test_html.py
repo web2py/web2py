@@ -264,8 +264,8 @@ class TestBareHelpers(unittest.TestCase):
     def testTHEAD(self):
         self.assertEqual(THEAD('<>', _a='1', _b='2').xml(),
                          '<thead a="1" b="2"><tr><th>&lt;&gt;</th></tr></thead>')
-        #self.assertEqual(THEAD(TRHEAD('<>'), _a='1', _b='2').xml(),
-        #                 '<thead a="1" b="2"><tr><th>&lt;&gt;</th></tr></thead>')
+        # self.assertEqual(THEAD(TRHEAD('<>'), _a='1', _b='2').xml(),
+        #                  '<thead a="1" b="2"><tr><th>&lt;&gt;</th></tr></thead>')
         self.assertEqual(THEAD(TR('<>'), _a='1', _b='2').xml(),
                          '<thead a="1" b="2"><tr><td>&lt;&gt;</td></tr></thead>')
 
@@ -288,10 +288,10 @@ class TestBareHelpers(unittest.TestCase):
     def testXML(self):
         # sanitization process
         self.assertEqual(XML('<h1>Hello<a data-hello="world">World</a></h1>').xml(),
-            '<h1>Hello<a data-hello="world">World</a></h1>')
+                         '<h1>Hello<a data-hello="world">World</a></h1>')
         # with sanitize, data-attributes are not permitted
         self.assertEqual(XML('<h1>Hello<a data-hello="world">World</a></h1>', sanitize=True).xml(),
-            '<h1>HelloWorld</h1>')
+                         '<h1>HelloWorld</h1>')
         # stringify by default
         self.assertEqual(XML(1.3), '1.3')
         self.assertEqual(XML(u'<div>è</div>').xml(), '<div>\xc3\xa8</div>')
@@ -307,17 +307,17 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(XML('a') == XML('a'), True)
         # beware that the comparison is made on the XML repr
         self.assertEqual(XML('<h1>Hello<a data-hello="world">World</a></h1>', sanitize=True),
-            XML('<h1>HelloWorld</h1>'))
-        #bug check for the sanitizer for closing no-close tags
+                         XML('<h1>HelloWorld</h1>'))
+        # bug check for the sanitizer for closing no-close tags
         self.assertEqual(XML('<p>Test</p><br/><p>Test</p><br/>', sanitize=True),
-            XML('<p>Test</p><br /><p>Test</p><br />'))
+                         XML('<p>Test</p><br /><p>Test</p><br />'))
 
     def testTAG(self):
         self.assertEqual(TAG.first(TAG.second('test'), _key=3).xml(),
-            '<first key="3"><second>test</second></first>')
+                         '<first key="3"><second>test</second></first>')
         # ending in underscore "triggers" <input /> style
         self.assertEqual(TAG.first_(TAG.second('test'), _key=3).xml(),
-            '<first key="3" />')
+                         '<first key="3" />')
 
     def testStaticURL(self):
         # test response.static_version coupled with response.static_version_urls
@@ -343,14 +343,17 @@ class TestBareHelpers(unittest.TestCase):
         request.controller = 'c'
         request.function = 'f'
         request.env = {}
-        from globals import current
+
+        from globals import current  # TODO: Check if this import can go at the top of the file with other imports
         current.request = request
+
         must_return = '/a/c/f'
         self.assertEqual(URL(), must_return)
         self.assertEqual(URL('f'), must_return)
         self.assertEqual(URL('c', 'f'), must_return)
         self.assertEqual(URL('a', 'c', 'f'), must_return)
         self.assertEqual(URL('a', 'c', 'f', extension='json'), '/a/c/f.json')
+
         def weird():
             pass
         self.assertEqual(URL('a', 'c', weird), '/a/c/weird')
@@ -372,15 +375,15 @@ class TestBareHelpers(unittest.TestCase):
         current.session = Storage(auth=Storage(hmac_key='key'))
         self.assertEqual(URL(user_signature=True), '/a/c/f?_signature=c4aed53c08cff08f369dbf8b5ba51889430cf2c2')
         # hash_vars combination
-        rtn = URL('a','c','f', args=['x', 'y', 'z'], vars={'p' : (1,3), 'q' : 2}, hmac_key='key')
+        rtn = URL('a', 'c', 'f', args=['x', 'y', 'z'], vars={'p': (1, 3), 'q': 2}, hmac_key='key')
         self.assertEqual(rtn, '/a/c/f/x/y/z?p=1&p=3&q=2&_signature=a32530f0d0caa80964bb92aad2bedf8a4486a31f')
-        rtn = URL('a','c','f', args=['x', 'y', 'z'], vars={'p' : (1,3), 'q' : 2}, hmac_key='key', hash_vars=True)
+        rtn = URL('a', 'c', 'f', args=['x', 'y', 'z'], vars={'p': (1, 3), 'q': 2}, hmac_key='key', hash_vars=True)
         self.assertEqual(rtn, '/a/c/f/x/y/z?p=1&p=3&q=2&_signature=a32530f0d0caa80964bb92aad2bedf8a4486a31f')
-        rtn = URL('a','c','f', args=['x', 'y', 'z'], vars={'p' : (1,3), 'q' : 2}, hmac_key='key', hash_vars=False)
+        rtn = URL('a', 'c', 'f', args=['x', 'y', 'z'], vars={'p': (1, 3), 'q': 2}, hmac_key='key', hash_vars=False)
         self.assertEqual(rtn, '/a/c/f/x/y/z?p=1&p=3&q=2&_signature=0b5a0702039992aad23c82794b8496e5dcd59a5b')
-        rtn = URL('a','c','f', args=['x', 'y', 'z'], vars={'p' : (1,3), 'q' : 2}, hmac_key='key', hash_vars=['p'])
+        rtn = URL('a', 'c', 'f', args=['x', 'y', 'z'], vars={'p': (1, 3), 'q': 2}, hmac_key='key', hash_vars=['p'])
         self.assertEqual(rtn, '/a/c/f/x/y/z?p=1&p=3&q=2&_signature=5d01b982fd72b39674b012e0288071034e156d7a')
-        rtn = URL('a','c','f', args=['x', 'y', 'z'], vars={'p' : (1,3), 'q' : 2}, hmac_key='key', hash_vars='p')
+        rtn = URL('a', 'c', 'f', args=['x', 'y', 'z'], vars={'p': (1, 3), 'q': 2}, hmac_key='key', hash_vars='p')
         self.assertEqual(rtn, '/a/c/f/x/y/z?p=1&p=3&q=2&_signature=5d01b982fd72b39674b012e0288071034e156d7a')
         # test CRLF detection
         self.assertRaises(SyntaxError, URL, *['a\n', 'c', 'f'])
@@ -434,7 +437,7 @@ class TestData(unittest.TestCase):
 
     def testAdata(self):
         self.assertEqual(A('<>', data=dict(abc='<def?asd>', cde='standard'), _a='1', _b='2').xml(),
-            '<a a="1" b="2" data-abc="&lt;def?asd&gt;" data-cde="standard">&lt;&gt;</a>')
+                         '<a a="1" b="2" data-abc="&lt;def?asd&gt;" data-cde="standard">&lt;&gt;</a>')
 
 
 if __name__ == '__main__':
