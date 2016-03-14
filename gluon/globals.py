@@ -375,12 +375,7 @@ class Request(Storage):
                         and callable(rest_action)):
                     raise HTTP(405, "method not allowed")
                 try:
-                    vars = request.vars
-                    if method == 'POST' and is_json:
-                        body = request.body.read()
-                        if len(body):
-                            vars = sj.loads(body)
-                    res = rest_action(*request.args, **vars)
+                    res = rest_action(*request.args, **request.vars)
                     if is_json and not isinstance(res, str):
                         res = json(res)
                     return res
