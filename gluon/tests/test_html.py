@@ -17,33 +17,33 @@ from storage import Storage
 
 class TestBareHelpers(unittest.TestCase):
 
-    def testBR(self):
+    def test_BR(self):
         self.assertEqual(BR(_a='1', _b='2').xml(), '<br a="1" b="2" />')
 
-    def testEMBED(self):
+    def test_EMBED(self):
         self.assertEqual(EMBED(_a='1', _b='2').xml(),
                          '<embed a="1" b="2" />')
 
-    def testHR(self):
+    def test_HR(self):
         self.assertEqual(HR(_a='1', _b='2').xml(), '<hr a="1" b="2" />')
 
-    def testIMG(self):
+    def test_IMG(self):
         self.assertEqual(IMG(_a='1', _b='2').xml(),
                          '<img a="1" b="2" />')
 
-    def testINPUT(self):
+    def test_INPUT(self):
         self.assertEqual(INPUT(_a='1', _b='2').xml(),
                          '<input a="1" b="2" type="text" />')
 
-    def testLINK(self):
+    def test_LINK(self):
         self.assertEqual(LINK(_a='1', _b='2').xml(),
                          '<link a="1" b="2" />')
 
-    def testMETA(self):
+    def test_META(self):
         self.assertEqual(META(_a='1', _b='2').xml(),
                          '<meta a="1" b="2" />')
 
-    def testA(self):
+    def test_A(self):
         self.assertEqual(
             A('<>', _a='1', _b='2').xml(),
             '<a a="1" b="2">&lt;&gt;</a>'
@@ -89,19 +89,19 @@ class TestBareHelpers(unittest.TestCase):
             '<a data-w2p_confirm="Are you sure?" data-w2p_disable_with="default" data-w2p_method="POST" data-w2p_remove="tr" href="b" id="c">a</a>'
             )
 
-    def testB(self):
+    def test_B(self):
         self.assertEqual(B('<>', _a='1', _b='2').xml(),
                          '<b a="1" b="2">&lt;&gt;</b>')
 
-    def testBODY(self):
+    def test_BODY(self):
         self.assertEqual(BODY('<>', _a='1', _b='2').xml(),
                          '<body a="1" b="2">&lt;&gt;</body>')
 
-    def testCENTER(self):
+    def test_CENTER(self):
         self.assertEqual(CENTER('<>', _a='1', _b='2').xml(),
                          '<center a="1" b="2">&lt;&gt;</center>')
 
-    def testDIV(self):
+    def test_DIV(self):
         self.assertEqual(DIV('<>', _a='1', _b='2').xml(),
                          '<div a="1" b="2">&lt;&gt;</div>')
         # attributes can be updated like in a dict
@@ -127,87 +127,87 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(s.sibling().xml(), '<div>b</div>')
         self.assertEqual(s.siblings('a'), [])
 
-    def testEM(self):
+    def test_EM(self):
         self.assertEqual(EM('<>', _a='1', _b='2').xml(),
                          '<em a="1" b="2">&lt;&gt;</em>')
 
-    def testFIELDSET(self):
+    def test_FIELDSET(self):
         self.assertEqual(FIELDSET('<>', _a='1', _b='2').xml(),
                          '<fieldset a="1" b="2">&lt;&gt;</fieldset>')
 
-    def testFORM(self):
+    def test_FORM(self):
         self.assertEqual(FORM('<>', _a='1', _b='2').xml(),
                          '<form a="1" action="#" b="2" enctype="multipart/form-data" method="post">&lt;&gt;</form>')
 
-    def testH1(self):
+    def test_H1(self):
         self.assertEqual(H1('<>', _a='1', _b='2').xml(),
                          '<h1 a="1" b="2">&lt;&gt;</h1>')
 
-    def testH2(self):
+    def test_H2(self):
         self.assertEqual(H2('<>', _a='1', _b='2').xml(),
                          '<h2 a="1" b="2">&lt;&gt;</h2>')
 
-    def testH3(self):
+    def test_H3(self):
         self.assertEqual(H3('<>', _a='1', _b='2').xml(),
                          '<h3 a="1" b="2">&lt;&gt;</h3>')
 
-    def testH4(self):
+    def test_H4(self):
         self.assertEqual(H4('<>', _a='1', _b='2').xml(),
                          '<h4 a="1" b="2">&lt;&gt;</h4>')
 
-    def testH5(self):
+    def test_H5(self):
         self.assertEqual(H5('<>', _a='1', _b='2').xml(),
                          '<h5 a="1" b="2">&lt;&gt;</h5>')
 
-    def testH6(self):
+    def test_H6(self):
         self.assertEqual(H6('<>', _a='1', _b='2').xml(),
                          '<h6 a="1" b="2">&lt;&gt;</h6>')
 
-    def testHEAD(self):
+    def test_HEAD(self):
         self.assertEqual(HEAD('<>', _a='1', _b='2').xml(),
                          '<head a="1" b="2">&lt;&gt;</head>')
 
-    def testHTML(self):
+    def test_HTML(self):
         self.assertEqual(HTML('<>', _a='1', _b='2').xml(),
                          '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">\n<html a="1" b="2" lang="en">&lt;&gt;</html>')
 
-    def testIFRAME(self):
+    def test_IFRAME(self):
         self.assertEqual(IFRAME('<>', _a='1', _b='2').xml(),
                          '<iframe a="1" b="2">&lt;&gt;</iframe>')
 
-    def testLABEL(self):
+    def test_LABEL(self):
         self.assertEqual(LABEL('<>', _a='1', _b='2').xml(),
                          '<label a="1" b="2">&lt;&gt;</label>')
 
-    def testLI(self):
+    def test_LI(self):
         self.assertEqual(LI('<>', _a='1', _b='2').xml(),
                          '<li a="1" b="2">&lt;&gt;</li>')
 
-    def testOBJECT(self):
+    def test_OBJECT(self):
         self.assertEqual(OBJECT('<>', _a='1', _b='2').xml(),
                          '<object a="1" b="2">&lt;&gt;</object>')
 
-    def testOL(self):
+    def test_OL(self):
         self.assertEqual(OL('<>', _a='1', _b='2').xml(),
                          '<ol a="1" b="2"><li>&lt;&gt;</li></ol>')
 
-    def testOPTION(self):
+    def test_OPTION(self):
         self.assertEqual(OPTION('<>', _a='1', _b='2').xml(),
                          '<option a="1" b="2" value="&lt;&gt;">&lt;&gt;' +
                          '</option>')
 
-    def testP(self):
+    def test_P(self):
         self.assertEqual(P('<>', _a='1', _b='2').xml(),
                          '<p a="1" b="2">&lt;&gt;</p>')
         # test cr2br
         self.assertEqual(P('a\nb').xml(), '<p>a\nb</p>')
         self.assertEqual(P('a\nb', cr2br=True).xml(), '<p>a<br />b</p>')
 
-    def testPRE(self):
+    def test_PRE(self):
         self.assertEqual(PRE('<>', _a='1', _b='2').xml(),
                          '<pre a="1" b="2">&lt;&gt;</pre>')
 
-    def testSCRIPT(self):
+    def test_SCRIPT(self):
         self.assertEqual(SCRIPT('<>', _a='1', _b='2').xml(),
                          '''<script a="1" b="2"><!--
 <>
@@ -218,33 +218,33 @@ class TestBareHelpers(unittest.TestCase):
 //--></script>''')
         self.assertEqual(SCRIPT().xml(), '<script></script>')
 
-    def testSELECT(self):
+    def test_SELECT(self):
         self.assertEqual(SELECT('<>', _a='1', _b='2').xml(),
                          '<select a="1" b="2">' +
                          '<option value="&lt;&gt;">&lt;&gt;</option></select>')
 
-    def testSPAN(self):
+    def test_SPAN(self):
         self.assertEqual(SPAN('<>', _a='1', _b='2').xml(),
                          '<span a="1" b="2">&lt;&gt;</span>')
 
-    def testSTYLE(self):
+    def test_STYLE(self):
         self.assertEqual(STYLE('<>', _a='1', _b='2').xml(),
                          '<style a="1" b="2"><!--/*--><![CDATA[/*><!--*/\n<>\n/*]]>*/--></style>')
 
-    def testTABLE(self):
+    def test_TABLE(self):
         self.assertEqual(TABLE('<>', _a='1', _b='2').xml(),
                          '<table a="1" b="2"><tr><td>&lt;&gt;</td></tr>' +
                          '</table>')
 
-    def testTBODY(self):
+    def test_TBODY(self):
         self.assertEqual(TBODY('<>', _a='1', _b='2').xml(),
                          '<tbody a="1" b="2"><tr><td>&lt;&gt;</td></tr></tbody>')
 
-    def testTD(self):
+    def test_TD(self):
         self.assertEqual(TD('<>', _a='1', _b='2').xml(),
                          '<td a="1" b="2">&lt;&gt;</td>')
 
-    def testTEXTAREA(self):
+    def test_TEXTAREA(self):
         self.assertEqual(TEXTAREA('<>', _a='1', _b='2').xml(),
                          '<textarea a="1" b="2" cols="40" rows="10">&lt;&gt;' +
                          '</textarea>')
@@ -253,15 +253,15 @@ class TestBareHelpers(unittest.TestCase):
                          '<textarea a="1" b="2" cols="20" rows="5">&lt;&gt;' +
                          '</textarea>')
 
-    def testTFOOT(self):
+    def test_TFOOT(self):
         self.assertEqual(TFOOT('<>', _a='1', _b='2').xml(),
                          '<tfoot a="1" b="2"><tr><td>&lt;&gt;</td></tr></tfoot>')
 
-    def testTH(self):
+    def test_TH(self):
         self.assertEqual(TH('<>', _a='1', _b='2').xml(),
                          '<th a="1" b="2">&lt;&gt;</th>')
 
-    def testTHEAD(self):
+    def test_THEAD(self):
         self.assertEqual(THEAD('<>', _a='1', _b='2').xml(),
                          '<thead a="1" b="2"><tr><th>&lt;&gt;</th></tr></thead>')
         # self.assertEqual(THEAD(TRHEAD('<>'), _a='1', _b='2').xml(),
@@ -269,23 +269,23 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(THEAD(TR('<>'), _a='1', _b='2').xml(),
                          '<thead a="1" b="2"><tr><td>&lt;&gt;</td></tr></thead>')
 
-    def testTITLE(self):
+    def test_TITLE(self):
         self.assertEqual(TITLE('<>', _a='1', _b='2').xml(),
                          '<title a="1" b="2">&lt;&gt;</title>')
 
-    def testTR(self):
+    def test_TR(self):
         self.assertEqual(TR('<>', _a='1', _b='2').xml(),
                          '<tr a="1" b="2"><td>&lt;&gt;</td></tr>')
 
-    def testTT(self):
+    def test_TT(self):
         self.assertEqual(TT('<>', _a='1', _b='2').xml(),
                          '<tt a="1" b="2">&lt;&gt;</tt>')
 
-    def testUL(self):
+    def test_UL(self):
         self.assertEqual(UL('<>', _a='1', _b='2').xml(),
                          '<ul a="1" b="2"><li>&lt;&gt;</li></ul>')
 
-    def testXML(self):
+    def test_XML(self):
         # sanitization process
         self.assertEqual(XML('<h1>Hello<a data-hello="world">World</a></h1>').xml(),
                          '<h1>Hello<a data-hello="world">World</a></h1>')
@@ -312,14 +312,14 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(XML('<p>Test</p><br/><p>Test</p><br/>', sanitize=True),
                          XML('<p>Test</p><br /><p>Test</p><br />'))
 
-    def testTAG(self):
+    def test_TAG(self):
         self.assertEqual(TAG.first(TAG.second('test'), _key=3).xml(),
                          '<first key="3"><second>test</second></first>')
         # ending in underscore "triggers" <input /> style
         self.assertEqual(TAG.first_(TAG.second('test'), _key=3).xml(),
                          '<first key="3" />')
 
-    def testStaticURL(self):
+    def test_StaticURL(self):
         # test response.static_version coupled with response.static_version_urls
         self.assertEqual(URL('a', 'c', 'f'), '/a/c/f')
         self.assertEqual(URL('a', 'static', 'design.css'), '/a/static/design.css')
@@ -331,7 +331,7 @@ class TestBareHelpers(unittest.TestCase):
         response.static_version_urls = True
         self.assertEqual(URL('a', 'static', 'design.css'), '/a/static/_1.2.3/design.css')
 
-    def testURL(self):
+    def test_URL(self):
         self.assertEqual(URL('a', 'c', 'f', args='1'), '/a/c/f/1')
         self.assertEqual(URL('a', 'c', 'f', args=('1', '2')), '/a/c/f/1/2')
         self.assertEqual(URL('a', 'c', 'f', args=['1', '2']), '/a/c/f/1/2')
@@ -389,7 +389,7 @@ class TestBareHelpers(unittest.TestCase):
         self.assertRaises(SyntaxError, URL, *['a\n', 'c', 'f'])
         self.assertRaises(SyntaxError, URL, *['a\r', 'c', 'f'])
 
-    def testverifyURL(self):
+    def test_verifyURL(self):
         r = Storage()
         r.application = 'a'
         r.controller = 'c'
@@ -435,7 +435,7 @@ class TestBareHelpers(unittest.TestCase):
 
 class TestData(unittest.TestCase):
 
-    def testAdata(self):
+    def test_Adata(self):
         self.assertEqual(A('<>', data=dict(abc='<def?asd>', cde='standard'), _a='1', _b='2').xml(),
                          '<a a="1" b="2" data-abc="&lt;def?asd&gt;" data-cde="standard">&lt;&gt;</a>')
 
