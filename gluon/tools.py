@@ -4387,7 +4387,10 @@ class Auth(object):
             return record.id
         else:
             id = membership.insert(group_id=group_id, user_id=user_id)
-        self.update_groups()
+        if role:
+            self.user_groups[group_id] = role
+        else:
+            self.update_groups()
         self.log_event(self.messages['add_membership_log'],
                        dict(user_id=user_id, group_id=group_id))
         return id
