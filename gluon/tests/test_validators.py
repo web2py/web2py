@@ -17,6 +17,21 @@ from gluon.validators import *
 
 class TestValidators(unittest.TestCase):
 
+    def test_MISC(self):
+        """ Test miscelaneous utility functions and some general behavior guarantees """
+        from gluon.validators import translate, options_sorter, Validator, UTC
+        self.assertEqual(translate(None), None)
+        self.assertEqual(options_sorter(('a', 'a'), ('a', 'a')), -1)
+        self.assertEqual(options_sorter(('A', 'A'), ('a', 'a')), -1)
+        self.assertEqual(options_sorter(('b', 'b'), ('a', 'a')), 1)
+        self.assertRaises(NotImplementedError, Validator(), 1)
+        utc = UTC()
+        dt = datetime.datetime.now()
+        self.assertEqual(utc.utcoffset(dt), UTC.ZERO)
+        self.assertEqual(utc.dst(dt), UTC.ZERO)
+        self.assertEqual(utc.tzname(dt), 'UTC')
+
+
     #port from python 2.7, needed for 2.5 and 2.6 tests
     def assertRegexpMatches(self, text, expected_regexp, msg=None):
         """Fail the test unless the text matches the regular expression."""
@@ -37,6 +52,10 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ('@ab.co', 'Enter only letters, numbers, and underscore'))
         rtn = ANY_OF([IS_ALPHANUMERIC(),IS_EMAIL()])('@ab.co')
         self.assertEqual(rtn, ('@ab.co', 'Enter a valid email address'))
+        rtn = ANY_OF([IS_DATE(),IS_EMAIL()])('a@b.co')
+        self.assertEqual(rtn, ('a@b.co', None))
+        rtn = ANY_OF([IS_DATE(),IS_EMAIL()])('1982-12-14')
+        self.assertEqual(rtn, (datetime.date(1982, 12, 14), None))
 
     def test_CLEANUP(self):
         rtn = CLEANUP()('helloò')
@@ -115,13 +134,13 @@ class TestValidators(unittest.TestCase):
             maximum=datetime.datetime(2009,12,31,12,20),
             format="%m/%d/%Y %H:%M",error_message="oops")
         rtn = v('03/03/2008 12:40')
-        self.assertEquals(rtn, (datetime.datetime(2008, 3, 3, 12, 40), None))
+        self.assertEqual(rtn, (datetime.datetime(2008, 3, 3, 12, 40), None))
         rtn = v('03/03/2010 10:34')
-        self.assertEquals(rtn, ('03/03/2010 10:34', 'oops'))
+        self.assertEqual(rtn, ('03/03/2010 10:34', 'oops'))
         rtn =  v(datetime.datetime(2008,3,3,0,0))
-        self.assertEquals(rtn, (datetime.datetime(2008, 3, 3, 0, 0), None))
+        self.assertEqual(rtn, (datetime.datetime(2008, 3, 3, 0, 0), None))
         rtn =  v(datetime.datetime(2010,3,3,0,0))
-        self.assertEquals(rtn, (datetime.datetime(2010, 3, 3, 0, 0), 'oops'))
+        self.assertEqual(rtn, (datetime.datetime(2010, 3, 3, 0, 0), 'oops'))
         v = IS_DATETIME_IN_RANGE(maximum=datetime.datetime(2009,12,31,12,20),
             format='%m/%d/%Y %H:%M:%S')
         rtn = v('03/03/2010 12:20:00')
@@ -135,6 +154,10 @@ class TestValidators(unittest.TestCase):
             format='%m/%d/%Y %H:%M:%S')
         rtn = v('03/03/2007 12:20:00')
         self.assertEqual(rtn, ('03/03/2007 12:20:00', 'Enter date and time in range 01/01/2008 12:20:00 12/31/2009 12:20:00'))
+        v = IS_DATETIME_IN_RANGE(maximum=datetime.datetime(2009,12,31,12,20),
+            format='%Y-%m-%d %H:%M:%S', error_message='oops')
+        rtn = v('clearly not a date')
+        self.assertEqual(rtn, ('clearly not a date', 'oops'))
 
     def test_IS_DATETIME(self):
         v = IS_DATETIME(format="%m/%d/%Y %H:%M",error_message="oops")
@@ -142,6 +165,24 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, (datetime.datetime(2008, 3, 3, 12, 40), None))
         rtn = v('31/03/2008 29:40')
         self.assertEqual(rtn, ('31/03/2008 29:40', 'oops'))
+        # Test timezone is removed and value is properly converted
+        #
+        # https://github.com/web2py/web2py/issues/1094
+        class DummyTimezone(datetime.tzinfo):
+
+            ONE = datetime.timedelta(hours=1)
+
+            def utcoffset(self, dt):
+                return DummyTimezone.ONE
+            def tzname(self, dt):
+                return "UTC+1"
+            def dst(self, dt):
+                return DummyTimezone.ONE
+            def localize(self, dt, is_dst=False):
+                return dt.replace(tzinfo=self)
+        v = IS_DATETIME(format="%Y-%m-%d %H:%M", error_message="oops", timezone=DummyTimezone())
+        rtn = v('1982-12-14 08:00')
+        self.assertEqual(rtn, (datetime.datetime(1982, 12, 14, 7, 0), None))
 
     def test_IS_DECIMAL_IN_RANGE(self):
         rtn =  IS_DECIMAL_IN_RANGE(1,5)('4')
@@ -548,6 +589,14 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ([1, 2], None))
         rtn = IS_LENGTH(minsize=1)([1])
         self.assertEqual(rtn, ([1], None))
+        # test non utf-8 str
+        cpstr = u'lálá'.encode('cp1252')
+        rtn = IS_LENGTH(minsize=4)(cpstr)
+        self.assertEqual(rtn, (cpstr, None))
+        rtn = IS_LENGTH(maxsize=4)(cpstr)
+        self.assertEqual(rtn, (cpstr, None))
+        rtn = IS_LENGTH(minsize=0, maxsize=3)(cpstr)
+        self.assertEqual(rtn, (cpstr, 'Enter from 0 to 3 characters'))
         # test unicode
         rtn = IS_LENGTH(2)(u'°2')
         self.assertEqual(rtn, ('\xc2\xb02', None))
@@ -734,7 +783,15 @@ class TestValidators(unittest.TestCase):
                       'Must include at least 1 upper case',
                       'Must include at least 1 number']))
             )
-
+        rtn = IS_STRONG(upper=0, lower=0, number=0, es=True)('Abcde1')
+        self.assertEqual(rtn,
+            ('Abcde1',
+             '|'.join(['Minimum length is 8',
+                      'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
+                      'May not include any upper case letters',
+                      'May not include any lower case letters',
+                      'May not include any numbers']))
+            )
 
     def test_IS_TIME(self):
         rtn = IS_TIME()('21:30')
