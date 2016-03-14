@@ -186,7 +186,6 @@ class Request(Storage):
         Storage.__init__(self)
         self.env = Storage(env)
         self.env.web2py_path = global_settings.applications_parent
-        self.env.update(global_settings)
         self.cookies = Cookie.SimpleCookie()
         self._get_vars = None
         self._post_vars = None
@@ -202,7 +201,6 @@ class Request(Storage):
         self.is_restful = False
         self.is_https = False
         self.is_local = False
-        self.global_settings = settings.global_settings
         self._uuid = None
 
     def parse_get_vars(self):
