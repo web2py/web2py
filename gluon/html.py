@@ -96,6 +96,7 @@ __all__ = [
     'SPAN',
     'STRONG',
     'STYLE',
+    'CAPTION',
     'TABLE',
     'TAG',
     'TD',
@@ -1769,6 +1770,11 @@ class COLGROUP(DIV):
     tag = 'colgroup'
 
 
+class CAPTION(DIV):
+
+    tag = 'caption'
+
+
 class TABLE(DIV):
     """
     TABLE Component.
@@ -1781,7 +1787,7 @@ class TABLE(DIV):
     tag = 'table'
 
     def _fixup(self):
-        self._wrap_components((TR, TBODY, THEAD, TFOOT, COL, COLGROUP), TR)
+        self._wrap_components((TR, TBODY, THEAD, TFOOT, COL, COLGROUP, CAPTION), TR)
 
 
 class I(DIV):
