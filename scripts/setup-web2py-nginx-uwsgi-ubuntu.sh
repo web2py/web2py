@@ -1,6 +1,6 @@
 #!/bin/bash
 echo 'setup-web2py-nginx-uwsgi-ubuntu-precise.sh'
-echo 'Requires Ubuntu > 12.04 and installs Nginx + uWSGI + Web2py'
+echo 'Requires Ubuntu > 12.04 or Debian >= 8 and installs Nginx + uWSGI + Web2py'
 # Check if user has root privileges
 if [[ $EUID -ne 0 ]]; then
    echo "You must run the script as root or using sudo"
@@ -137,6 +137,26 @@ fi
 # Prepare folders for uwsgi
 sudo mkdir /etc/uwsgi
 sudo mkdir /var/log/uwsgi
+sudo mkdir /etc/systemd
+sudo mkdir /etc/systemd/system
+
+#uWSGI Emperor
+echo '[Unit]
+Description = uWSGI Emperor
+After = syslog.target
+
+[Service]
+ExecStart = /usr/local/bin/uwsgi --ini /etc/uwsgi/web2py.ini
+RuntimeDirectory = uwsgi
+Restart = always
+KillSignal = SIGQUIT
+Type = notify
+StandardError = syslog
+NotifyAccess = all
+
+[Install]
+WantedBy = multi-user.target
+' > /etc/systemd/system/emperor.uwsgi.service
 
 # Create configuration file /etc/uwsgi/web2py.ini
 echo '[uwsgi]
@@ -192,17 +212,18 @@ if [ "$nopassword" -eq 0 ]
 then
    sudo -u www-data python -c "from gluon.main import save_password; save_password('$PW',443)"
 fi
-start uwsgi-emperor
+systemctl enable emperor.uwsgi.service
+systemctl start emperor.uwsgi.service
 /etc/init.d/nginx restart
 
 echo <<EOF
 you can reload uwsgi with
 
-  restart uwsgi-emperor
+  systemctl restart emperor.uwsgi
 
 and stop it with
 
-  stop uwsgi-emperor
+  systemctl stop emperor.uwsgi
 
 to reload web2py only (without restarting uwsgi)
 

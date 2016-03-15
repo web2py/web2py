@@ -361,7 +361,7 @@ def wsgibase(environ, responder):
                     local_hosts = global_settings.local_hosts
                 client = get_client(env)
                 x_req_with = str(env.http_x_requested_with).lower()
-                cmd_opts = request.global_settings.cmd_options
+                cmd_opts = global_settings.cmd_options
 
                 request.update(
                     client = client,
