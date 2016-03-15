@@ -116,6 +116,7 @@ __all__ = [
 
 DEFAULT_PASSWORD_DISPLAY = '*' * 8
 
+
 def xmlescape(data, quote=True):
     """
     Returns an escaped string of the provided data
@@ -139,11 +140,13 @@ def xmlescape(data, quote=True):
     data = cgi.escape(data, quote).replace("'", "&#x27;")
     return data
 
+
 def call_as_list(f, *a, **b):
     if not isinstance(f, (list, tuple)):
         f = [f]
     for item in f:
         item(*a, **b)
+
 
 def truncate_string(text, length, dots='...'):
     text = text.decode('utf-8')
@@ -152,27 +155,26 @@ def truncate_string(text, length, dots='...'):
     return text
 
 
-def URL(
-    a=None,
-    c=None,
-    f=None,
-    r=None,
-    args=None,
-    vars=None,
-    anchor='',
-    extension=None,
-    env=None,
-    hmac_key=None,
-    hash_vars=True,
-    salt=None,
-    user_signature=None,
-    scheme=None,
-    host=None,
-    port=None,
-    encode_embedded_slash=False,
-    url_encode=True,
-    language=None,
-):
+def URL(a=None,
+        c=None,
+        f=None,
+        r=None,
+        args=None,
+        vars=None,
+        anchor='',
+        extension=None,
+        env=None,
+        hmac_key=None,
+        hash_vars=True,
+        salt=None,
+        user_signature=None,
+        scheme=None,
+        host=None,
+        port=None,
+        encode_embedded_slash=False,
+        url_encode=True,
+        language=None
+        ):
     """
     generates a url '/a/c/f' corresponding to application a, controller c
     and function f. If r=request is passed, a, c, f are set, respectively,
@@ -186,6 +188,8 @@ def URL(
     within the present application and controller.
 
     Args:
+        language:
+        env:
         a: application (default to current if r is given)
         c: controller (default to current if r is given)
         f: function (default to current if r is given)
@@ -256,10 +260,6 @@ def URL(
 
     >>> str(URL(a='a', c='c', f='f', anchor='%(id)d', url_encode=True))
     '/a/c/f#%25%28id%29d'
-
-
-
-
     """
 
     from rewrite import url_out  # done here in case used not-in web2py
@@ -407,14 +407,6 @@ def verifyURL(request, hmac_key=None, hash_vars=True, salt=None, user_signature=
     """
     Verifies that a request's args & vars have not been tampered with by the user
 
-    :param request: web2py's request object
-    :param hmac_key: the key to authenticate with, must be the same one previously
-                    used when calling URL()
-    :param hash_vars: which vars to include in our hashing. (Optional)
-                    Only uses the 1st value currently
-                    True (or undefined) means all, False none,
-                    an iterable just the specified keys
-
     do not call directly. Use instead:
 
     URL.verify(hmac_key='...')
@@ -437,9 +429,20 @@ def verifyURL(request, hmac_key=None, hash_vars=True, salt=None, user_signature=
         >>> verifyURL(r, 'key')
         False
 
+    Args:
+        user_signature:
+        salt:
+        request: web2py's request object
+        hmac_key: the key to authenticate with, must be the same one previously
+                    used when calling URL()
+        hash_vars: which vars to include in our hashing. (Optional)
+                    Only uses the 1st value currently
+                    True (or undefined) means all, False none,
+                    an iterable just the specified keys
+
     """
 
-    if not '_signature' in request.get_vars:
+    if '_signature' not in request.get_vars:
         return False  # no signature in the request URL
 
     # check if user_signature requires
@@ -539,18 +542,29 @@ class XmlComponent(object):
         return CAT(*components)
 
     def add_class(self, name):
-        """ add a class to _class attribute """
+        """
+        add a class to _class attribute
+
+        Args:
+            name:
+        """
         c = self['_class']
         classes = (set(c.split()) if c else set()) | set(name.split())
         self['_class'] = ' '.join(classes) if classes else None
         return self
 
     def remove_class(self, name):
-        """ remove a class from _class attribute """
+        """
+        remove a class from _class attribute
+
+        Args:
+            name:
+        """
         c = self['_class']
         classes = (set(c.split()) if c else set()) - set(name.split())
         self['_class'] = ' '.join(classes) if classes else None
         return self
+
 
 class XML(XmlComponent):
     """
@@ -651,6 +665,9 @@ class XML(XmlComponent):
         """
         returns the text stored by the XML object rendered
         by the `render` function
+
+        Args:
+            render:
         """
         if render:
             return render(self.text, None, {})
@@ -664,7 +681,7 @@ class XML(XmlComponent):
         """
         return []
 
-### important to allow safe session.flash=T(....)
+# ## important to allow safe session.flash=T(....)
 
 
 def XML_unpickle(data):
@@ -744,6 +761,9 @@ class DIV(XmlComponent):
         >>> a.append(SPAN('x'))
         >>> print a
         <div><span>x</span></div>
+
+        Args:
+            value:
         """
         self._setnode(value)
         ret = self.components.append(value)
@@ -760,6 +780,10 @@ class DIV(XmlComponent):
         >>> a.insert(0,SPAN('x'))
         >>> print a
         <div><span>x</span></div>
+
+        Args:
+            i:
+            value:
         """
         self._setnode(value)
         ret = self.components.insert(i, value)
@@ -994,6 +1018,9 @@ class DIV(XmlComponent):
         >>> a=TAG('<h1>Header</h1><p>this is a     test</p>')
         >>> a.flatten(markdown)
         '#Header\\n\\nthis is a test\\n'
+
+        Args:
+            render:
         """
 
         text = ''
@@ -1172,7 +1199,7 @@ class DIV(XmlComponent):
         # loop the components
         if find_text or find_components:
             i = 0
-            while i<len(self.components):
+            while i < len(self.components):
                 c = self[i]
                 j = i+1
                 if check and find_text and isinstance(c, str) and \
@@ -1264,6 +1291,7 @@ class __tag_div__(DIV):
         self.tag = name
 
 copy_reg.pickle(__tag_div__, TAG_pickler, TAG_unpickler)
+
 
 class __TAG__(XmlComponent):
 
@@ -1589,6 +1617,7 @@ class A(DIV):
                 self['_data-w2p_pre_call'] = self['pre_call']
         return DIV.xml(self)
 
+
 class BUTTON(DIV):
 
     tag = 'button'
@@ -1863,11 +1892,11 @@ class INPUT(DIV):
                     print traceback.format_exc()
                     msg = "Validation error, field:%s %s" % (name,validator)
                     raise Exception(msg)
-                if not errors is None:
+                if errors is not None:
                     self.vars[name] = value
                     self.errors[name] = errors
                     break
-        if not name in self.errors:
+        if name not in self.errors:
             self.vars[name] = value
             return True
         return False
@@ -1882,7 +1911,7 @@ class INPUT(DIV):
             _value = None
         else:
             _value = str(self['_value'])
-        if '_checked' in self.attributes and not 'value' in self.attributes:
+        if '_checked' in self.attributes and 'value' not in self.attributes:
             pass
         elif t == 'checkbox':
             if not _value:
@@ -1912,8 +1941,7 @@ class INPUT(DIV):
         if name and hasattr(self, 'errors') \
                 and self.errors.get(name, None) \
                 and self['hideerror'] != True:
-            self['_class'] = (self['_class'] and self['_class']
-                              + ' ' or '') + 'invalidinput'
+            self['_class'] = (self['_class'] and self['_class'] + ' ' or '') + 'invalidinput'
             return DIV.xml(self) + DIV(
                 DIV(
                     self.errors[name], _class='error',
@@ -1941,11 +1969,11 @@ class TEXTAREA(INPUT):
     tag = 'textarea'
 
     def _postprocessing(self):
-        if not '_rows' in self.attributes:
+        if '_rows' not in self.attributes:
             self['_rows'] = 10
-        if not '_cols' in self.attributes:
+        if '_cols' not in self.attributes:
             self['_cols'] = 40
-        if not self['value'] is None:
+        if self['value'] is not None:
             self.components = [self['value']]
         elif self.components:
             self['value'] = self.components[0]
@@ -1956,7 +1984,7 @@ class OPTION(DIV):
     tag = 'option'
 
     def _fixup(self):
-        if not '_value' in self.attributes:
+        if '_value' not in self.attributes:
             self.attributes['_value'] = str(self.components[0])
 
 
@@ -2012,11 +2040,10 @@ class SELECT(INPUT):
         options = itertools.chain(*component_list)
 
         value = self['value']
-        if not value is None:
+        if value is not None:
             if not self['_multiple']:
                 for c in options:  # my patch
-                    if ((value is not None) and
-                        (str(c['_value']) == str(value))):
+                    if ((value is not None) and (str(c['_value']) == str(value))):
                         c['_selected'] = 'selected'
                     else:
                         c['_selected'] = None
@@ -2026,8 +2053,7 @@ class SELECT(INPUT):
                 else:
                     values = [str(value)]
                 for c in options:  # my patch
-                    if ((value is not None) and
-                        (str(c['_value']) in values)):
+                    if ((value is not None) and (str(c['_value']) in values)):
                         c['_selected'] = 'selected'
                     else:
                         c['_selected'] = None
@@ -2077,18 +2103,25 @@ class FORM(DIV):
     def assert_status(self, status, request_vars):
         return status
 
-    def accepts(
-        self,
-        request_vars,
-        session=None,
-        formname='default',
-        keepvalues=False,
-        onvalidation=None,
-        hideerror=False,
-        **kwargs
-    ):
+    def accepts(self,
+                request_vars,
+                session=None,
+                formname='default',
+                keepvalues=False,
+                onvalidation=None,
+                hideerror=False,
+                **kwargs
+                ):
         """
         kwargs is not used but allows to specify the same interface for FORM and SQLFORM
+
+        Args:
+            hideerror:
+            onvalidation:
+            keepvalues:
+            formname:
+            session:
+            request_vars:
         """
         if request_vars.__class__.__name__ == 'Request':
             request_vars = request_vars.post_vars
@@ -2128,8 +2161,7 @@ class FORM(DIV):
                 onsuccess = onvalidation.get('onsuccess', None)
                 onfailure = onvalidation.get('onfailure', None)
                 onchange = onvalidation.get('onchange', None)
-                if [k for k in onvalidation if not k in (
-                        'onsuccess', 'onfailure', 'onchange')]:
+                if [k for k in onvalidation if k not in ('onsuccess', 'onfailure', 'onchange')]:
                     raise RuntimeError('Invalid key in onvalidate dict')
                 if onsuccess and status:
                     call_as_list(onsuccess, self)
@@ -2144,7 +2176,7 @@ class FORM(DIV):
                 call_as_list(onvalidation, self)
         if self.errors:
             status = False
-        if not session is None:
+        if session is not None:
             if hasattr(self, 'record_hash'):
                 formkey = self.record_hash + ':' + web2py_uuid()
             else:
@@ -2158,25 +2190,22 @@ class FORM(DIV):
         return status
 
     def _postprocessing(self):
-        if not '_action' in self.attributes:
+        if '_action' not in self.attributes:
             self['_action'] = '#'
-        if not '_method' in self.attributes:
+        if '_method' not in self.attributes:
             self['_method'] = 'post'
-        if not '_enctype' in self.attributes:
+        if '_enctype' not in self.attributes:
             self['_enctype'] = 'multipart/form-data'
 
     def hidden_fields(self):
         c = []
         attr = self.attributes.get('hidden', {})
         if 'hidden' in self.attributes:
-            c = [INPUT(_type='hidden', _name=key, _value=value)
-                 for (key, value) in attr.iteritems()]
+            c = [INPUT(_type='hidden', _name=key, _value=value) for (key, value) in attr.iteritems()]
         if hasattr(self, 'formkey') and self.formkey:
-            c.append(INPUT(_type='hidden', _name='_formkey',
-                     _value=self.formkey))
+            c.append(INPUT(_type='hidden', _name='_formkey', _value=self.formkey))
         if hasattr(self, 'formname') and self.formname:
-            c.append(INPUT(_type='hidden', _name='_formname',
-                     _value=self.formname))
+            c.append(INPUT(_type='hidden', _name='_formname', _value=self.formname))
         return DIV(c, _style="display:none;")
 
     def xml(self):
@@ -2221,8 +2250,7 @@ class FORM(DIV):
         kwargs['request_vars'] = kwargs.get(
             'request_vars', current.request.post_vars)
         kwargs['session'] = kwargs.get('session', current.session)
-        kwargs['dbio'] = kwargs.get('dbio', False)
-                                    # necessary for SQLHTML forms
+        kwargs['dbio'] = kwargs.get('dbio', False)  # necessary for SQLHTML forms
 
         onsuccess = kwargs.get('onsuccess', 'flash')
         onfailure = kwargs.get('onfailure', 'flash')
@@ -2301,8 +2329,7 @@ class FORM(DIV):
 
 
         """
-        kwargs['dbio'] = kwargs.get('dbio', True)
-                                    # necessary for SQLHTML forms
+        kwargs['dbio'] = kwargs.get('dbio', True)  # necessary for SQLHTML forms
         self.validate(**kwargs)
         return self
 
@@ -2339,6 +2366,10 @@ class FORM(DIV):
 
         Sanitize is naive. It should catch any unsafe value
         for client retrieval.
+
+        Args:
+            sanitize:
+            flat:
         """
         SERIALIZABLE = (int, float, bool, basestring, long,
                         set, list, dict, tuple, Storage, type(None))
@@ -2348,10 +2379,9 @@ class FORM(DIV):
         def sanitizer(obj):
             if isinstance(obj, dict):
                 for k in obj.keys():
-                    if any([unsafe in str(k).upper() for
-                           unsafe in UNSAFE]):
-                       # erease unsafe pair
-                       obj.pop(k)
+                    if any([unsafe in str(k).upper() for unsafe in UNSAFE]):
+                        # erease unsafe pair
+                        obj.pop(k)
             else:
                 # not implemented
                 pass
@@ -2377,8 +2407,10 @@ class FORM(DIV):
                         return [flatten(item) for item in newobj]
                     else:
                         return newobj
-                else: return str(newobj)
-            else: return newobj
+                else:
+                    return str(newobj)
+            else:
+                return newobj
         return flatten(d)
 
     def as_json(self, sanitize=True):
@@ -2505,19 +2537,19 @@ class MENU(DIV):
         self.data = data
         self.attributes = args
         self.components = []
-        if not '_class' in self.attributes:
+        if '_class' not in self.attributes:
             self['_class'] = 'web2py-menu web2py-menu-vertical'
-        if not 'ul_class' in self.attributes:
+        if 'ul_class' not in self.attributes:
             self['ul_class'] = 'web2py-menu-vertical'
-        if not 'li_class' in self.attributes:
+        if 'li_class' not in self.attributes:
             self['li_class'] = 'web2py-menu-expand'
-        if not 'li_first' in self.attributes:
+        if 'li_first' not in self.attributes:
             self['li_first'] = 'web2py-menu-first'
-        if not 'li_last' in self.attributes:
+        if 'li_last' not in self.attributes:
             self['li_last'] = 'web2py-menu-last'
-        if not 'li_active' in self.attributes:
+        if 'li_active' not in self.attributes:
             self['li_active'] = 'web2py-menu-active'
-        if not 'mobile' in self.attributes:
+        if 'mobile' not in self.attributes:
             self['mobile'] = False
 
     def serialize(self, data, level=0):
@@ -2587,16 +2619,16 @@ class MENU(DIV):
             return self.serialize(self.data, 0).xml()
 
 
-def embed64(
-    filename=None,
-    file=None,
-    data=None,
-    extension='image/gif',
-):
+def embed64(filename=None,
+            file=None,
+            data=None,
+            extension='image/gif'
+            ):
     """
     helper to encode the provided (binary) data into base64.
 
     Args:
+        extension:
         filename: if provided, opens and reads this file in 'rb' mode
         file: if provided, reads this file
         data: if provided, uses the provided data
@@ -2833,6 +2865,7 @@ class MARKMIN(XmlComponent):
 
     def __str__(self):
         return self.xml()
+
 
 def ASSIGNJS(**kargs):
     from gluon.serializers import json
