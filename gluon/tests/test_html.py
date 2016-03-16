@@ -34,7 +34,7 @@ class TestBareHelpers(unittest.TestCase):
         response.static_version_urls = True
         self.assertEqual(URL('a', 'static', 'design.css'), '/a/static/_1.2.3/design.css')
 
-    def testURL(self):
+    def test_URL(self):
         self.assertEqual(URL('a', 'c', 'f', args='1'), '/a/c/f/1')
         self.assertEqual(URL('a', 'c', 'f', args=('1', '2')), '/a/c/f/1/2')
         self.assertEqual(URL('a', 'c', 'f', args=['1', '2']), '/a/c/f/1/2')
@@ -63,17 +63,13 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(URL('a', 'c', weird), '/a/c/weird')
         self.assertRaises(SyntaxError, URL, *['a', 'c', 1])
         # test signature
-        rtn = URL(
-            a='a', c='c', f='f', args=['x', 'y', 'z'],
-            vars={'p': (1, 3), 'q': 2}, anchor='1', hmac_key='key'
-            )
+        rtn = URL(a='a', c='c', f='f', args=['x', 'y', 'z'],
+                  vars={'p': (1, 3), 'q': 2}, anchor='1', hmac_key='key')
         self.assertEqual(rtn, '/a/c/f/x/y/z?p=1&p=3&q=2&_signature=a32530f0d0caa80964bb92aad2bedf8a4486a31f#1')
         # test _signature exclusion
-        rtn = URL(
-            a='a', c='c', f='f', args=['x', 'y', 'z'],
-            vars={'p': (1, 3), 'q': 2, '_signature': 'abc'},
-            anchor='1', hmac_key='key'
-            )
+        rtn = URL(a='a', c='c', f='f', args=['x', 'y', 'z'],
+                  vars={'p': (1, 3), 'q': 2, '_signature': 'abc'},
+                  anchor='1', hmac_key='key')
         self.assertEqual(rtn, '/a/c/f/x/y/z?p=1&p=3&q=2&_signature=a32530f0d0caa80964bb92aad2bedf8a4486a31f#1')
         # emulate user_signature
         current.session = Storage(auth=Storage(hmac_key='key'))
