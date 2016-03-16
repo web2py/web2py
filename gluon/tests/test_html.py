@@ -474,7 +474,13 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(OBJECT('<>', _a='1', _b='2').xml(),
                          '<object a="1" b="2">&lt;&gt;</object>')
 
-    # TODO: def test_OPTGROUP(self):
+    def test_OPTGROUP(self):
+        # Empty OPTGROUP test
+        self.assertEqual(OPTGROUP().xml(),
+                         '<optgroup></optgroup>')
+        # Not Empty OPTGROUP test
+        self.assertEqual(OPTGROUP('<>', _a='1', _b='2').xml(),
+                         '<optgroup a="1" b="2"><option value="&lt;&gt;">&lt;&gt;</option></optgroup>')
 
     def test_SELECT(self):
         self.assertEqual(SELECT('<>', _a='1', _b='2').xml(),
