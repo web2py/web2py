@@ -220,7 +220,13 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(HTML('<>', _a='1', _b='2').xml(),
                          '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">\n<html a="1" b="2" lang="en">&lt;&gt;</html>')
 
-    # TODO: def test_XHTML(self):
+    def test_XHTML(self):
+        # Empty XHTML test
+        self.assertEqual(XHTML().xml(),
+                         '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\n<html lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml"></html>')
+        # Not Empty XHTML test
+        self.assertEqual(XHTML('<>', _a='1', _b='2').xml(),
+                         '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\n<html a="1" b="2" lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">&lt;&gt;</html>')
 
     def test_HEAD(self):
         self.assertEqual(HEAD('<>', _a='1', _b='2').xml(),
