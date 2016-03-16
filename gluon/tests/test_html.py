@@ -435,9 +435,21 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(TFOOT('<>', _a='1', _b='2').xml(),
                          '<tfoot a="1" b="2"><tr><td>&lt;&gt;</td></tr></tfoot>')
 
-    # TODO: def test_COL(self):
+    def test_COL(self):
+        # Empty COL test
+        self.assertEqual(COL().xml(), '<col />')
+        # Not Empty COL test
+        self.assertEqual(COL(_span='2').xml(), '<col span="2" />')
+        # Failing COL test
+        with self.assertRaises(SyntaxError) as cm:
+            COL('<>').xml()
+        self.assertEqual(cm.exception[0], '<col/> tags cannot have components')
 
-    # TODO: def test_COLGROUP(self):
+    def test_COLGROUP(self):
+        # Empty COLGROUP test
+        self.assertEqual(COLGROUP().xml(), '<colgroup></colgroup>')
+        # Not Empty COLGROUP test
+        self.assertEqual(COLGROUP('<>', _a='1', _b='2').xml(), '<colgroup a="1" b="2">&lt;&gt;</colgroup>')
 
     def test_TABLE(self):
         self.assertEqual(TABLE('<>', _a='1', _b='2').xml(),
