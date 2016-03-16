@@ -19,8 +19,16 @@ class TestBareHelpers(unittest.TestCase):
 
     # TODO: def test_xmlescape(self):
     # TODO: def test_call_as_list(self):
-    # TODO: def test_truncate_string(self):
-    # TODO: def test_truncate_string(self):
+
+    def test_truncate_string(self):
+        # Ascii text
+        self.assertEqual(truncate_string('Lorem ipsum dolor sit amet, consectetur adipiscing elit, '
+                                         'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
+                                         length=30), 'Lorem ipsum dolor sit amet,...')
+        # French text
+        self.assertEqual(truncate_string('Un texte en français avec des accents et des caractères bizarre.', length=30),
+                         'Un texte en français avec d...')
+
 
     def test_StaticURL(self):
         # test response.static_version coupled with response.static_version_urls
