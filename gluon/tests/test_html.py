@@ -485,7 +485,9 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(FIELDSET('<>', _a='1', _b='2').xml(),
                          '<fieldset a="1" b="2">&lt;&gt;</fieldset>')
 
-    # TODO: def test_LEGEND(self):
+    def test_LEGEND(self):
+        self.assertEqual(LEGEND('<>', _a='1', _b='2').xml(),
+                         '<legend a="1" b="2">&lt;&gt;</legend>')
 
     def test_FORM(self):
         self.assertEqual(FORM('<>', _a='1', _b='2').xml(),
