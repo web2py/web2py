@@ -2610,6 +2610,7 @@ def embed64(
     return 'data:%s;base64,%s' % (extension, data)
 
 
+# TODO: Check if this test() is still relevant now that we have gluon/tests/test_html.py
 def test():
     """
     Example:

@@ -25,7 +25,7 @@ def RedisSession(*args, **vars):
 
         from gluon.contrib.redis_utils import RConn
         rconn = RConn()
-        from gluon.contrib.redis_session
+        from gluon.contrib.redis_session import RedisSession
         sessiondb = RedisSession(redis_conn=rconn, with_lock=True, session_expiry=False)
         session.connect(request, response, db = sessiondb)
 

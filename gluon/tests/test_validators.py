@@ -180,9 +180,38 @@ class TestValidators(unittest.TestCase):
         rtn = IS_IN_SET([('id1','first label'), ('id2','second label')])('id1') # Redundant way
         self.assertEqual(rtn, ('id1', None))
 
-    # TODO: def test_IS_IN_DB(self):
+    def test_IS_IN_DB(self):
+        from gluon.dal import DAL, Field
+        db = DAL('sqlite:memory')
+        db.define_table('person', Field('name'))
+        george_id = db.person.insert(name='george')
+        costanza_id = db.person.insert(name='costanza')
+        rtn = IS_IN_DB(db, 'person.id', '%(name)s')(george_id)
+        self.assertEqual(rtn, (george_id, None))
+        rtn = IS_IN_DB(db, 'person.id', '%(name)s', error_message='oops')(george_id+costanza_id)
+        self.assertEqual(rtn, (george_id+costanza_id, 'oops'))
+        rtn = IS_IN_DB(db, db.person.id, '%(name)s')(george_id)
+        self.assertEqual(rtn, (george_id, None))
+        rtn = IS_IN_DB(db, db.person.id, '%(name)s', error_message='oops')(george_id+costanza_id)
+        self.assertEqual(rtn, (george_id+costanza_id, 'oops'))
+        rtn = IS_IN_DB(db, 'person.id', '%(name)s', multiple=True)([george_id,costanza_id])
+        self.assertEqual(rtn, ([george_id,costanza_id], None))
+        rtn = IS_IN_DB(db, 'person.id', '%(name)s', multiple=True, delimiter=',')('%d,%d' % (george_id, costanza_id))
+        self.assertEqual(rtn, ( ('%d,%d' % (george_id, costanza_id)).split(','), None))
+        rtn = IS_IN_DB(db, db.person.id, '%(name)s', error_message='oops').options(zero=False)
+        self.assertEqual(sorted(rtn), [('%d' % george_id, 'george'), ('%d' % costanza_id, 'costanza')])
+        db.person.drop()
 
-    # TODO: def test_IS_NOT_IN_DB(self):
+    def test_IS_NOT_IN_DB(self):
+        from gluon.dal import DAL, Field
+        db = DAL('sqlite:memory')
+        db.define_table('person', Field('name'))
+        db.person.insert(name='george')
+        rtn = IS_NOT_IN_DB(db, 'person.name', error_message='oops')('george')
+        self.assertEqual(rtn, ('george', 'oops'))
+        rtn = IS_NOT_IN_DB(db, 'person.name')('jerry')
+        self.assertEqual(rtn, ('jerry', None))
+        db.person.drop()
 
     def test_IS_INT_IN_RANGE(self):
         rtn =  IS_INT_IN_RANGE(1,5)('4')
@@ -400,11 +429,19 @@ class TestValidators(unittest.TestCase):
         rtn = IS_LIST_OF_EMAILS()(';'.join(emails))
         self.assertEqual(rtn, ('localguy@localhost;_Yosemite.Sam@example.com;a', 'Invalid emails: a'))
 
-    # TODO: def test_IS_GENERIC_URL(self):
-
-    # TODO: def test_IS_HTTP_URL(self):
-
-    # TODO: def test_IS_URL(self):
+    def test_IS_URL(self):
+        rtn = IS_URL()('http://example.com')
+        self.assertEqual(rtn, ('http://example.com', None))
+        rtn = IS_URL(error_message='oops')('http://example,com')
+        self.assertEqual(rtn, ('http://example,com', 'oops'))
+        rtn = IS_URL(error_message='oops')('http://www.example.com:8800/a/b/c/d/e/f/g/h')
+        self.assertEqual(rtn, ('http://www.example.com:8800/a/b/c/d/e/f/g/h', None))
+        rtn = IS_URL(error_message='oops', prepend_scheme='http')('example.com')
+        self.assertEqual(rtn, ('http://example.com', None))
+        rtn = IS_URL()('http://example.com?q=george&p=22')
+        self.assertEqual(rtn, ('http://example.com?q=george&p=22', None))
+        rtn = IS_URL(mode='generic', prepend_scheme=None)('example.com')
+        self.assertEqual(rtn, ('example.com', None))
 
     def test_IS_TIME(self):
         rtn = IS_TIME()('21:30')
