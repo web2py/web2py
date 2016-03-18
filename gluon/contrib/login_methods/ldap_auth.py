@@ -36,11 +36,13 @@ def ldap_auth(server='ldap',
               user_lastname_attrib='cn:2',
               user_mail_attrib='mail',
               manage_groups=False,
+              manage_groups_callback=[],
               db=None,
               group_dn=None,
               group_name_attrib='cn',
               group_member_attrib='memberUid',
               group_filterstr='objectClass=*',
+              group_mapping={},
               tls=False,
               logging_level='error'):
 
@@ -207,6 +209,7 @@ def ldap_auth(server='ldap',
                       user_mail_attrib=user_mail_attrib,
                       manage_groups=manage_groups,
                       allowed_groups=allowed_groups,
+                      group_mapping=group_mapping,
                       db=db):
         if password == '':  # http://tools.ietf.org/html/rfc4513#section-5.1.2
             logger.warning('blank password not allowed')
@@ -262,6 +265,7 @@ def ldap_auth(server='ldap',
                 requested_attrs = ['sAMAccountName']
                 if manage_user:
                     requested_attrs.extend([user_firstname_attrib, user_lastname_attrib, user_mail_attrib])
+
                 result = con.search_ext_s(
                     ldap_basedn, ldap.SCOPE_SUBTREE,
                     "(&(sAMAccountName=%s)(%s))" % (ldap.filter.escape_filter_chars(username_bare), filterstr),
@@ -444,7 +448,7 @@ def ldap_auth(server='ldap',
             con.unbind()
 
             if manage_groups:
-                if not do_manage_groups(username, password):
+                if not do_manage_groups(username, password, group_mapping):
                     return False
             return True
         except ldap.INVALID_CREDENTIALS, e:
@@ -482,7 +486,7 @@ def ldap_auth(server='ldap',
         # No match
         return False
 
-    def do_manage_groups(username, password=None, db=db):
+    def do_manage_groups(username, password=None, group_mapping={}, db=db):
         """
         Manage user groups
 
@@ -497,6 +501,14 @@ def ldap_auth(server='ldap',
             # #########################################################
             ldap_groups_of_the_user = get_user_groups_from_ldap(
                 username, password)
+
+            if group_mapping != {}:
+                l = []
+                for group in ldap_groups_of_the_user:
+                    if group in group_mapping:
+                        l += group_mapping[group]
+                ldap_groups_of_the_user = l
+                logging.info("User groups after remapping: %s" % str(l))
 
             #
             # Get all group name where the user is in actually in local db
@@ -540,6 +552,7 @@ def ldap_auth(server='ldap',
                     db_groups_of_the_user.append(group.role)
             logging.debug('db groups of user %s: %s' % (username, str(db_groups_of_the_user)))
 
+            auth_membership_changed = False
             #
             # Delete user membership from groups where user is not anymore
             # #############################################################
@@ -547,6 +560,7 @@ def ldap_auth(server='ldap',
                 if ldap_groups_of_the_user.count(group_to_del) == 0:
                     db((db.auth_membership.user_id == db_user_id) &
                        (db.auth_membership.group_id == db_group_id[group_to_del])).delete()
+                    auth_membership_changed = True
 
             #
             # Create user membership in groups where user is not in already
@@ -558,6 +572,12 @@ def ldap_auth(server='ldap',
                     else:
                         gid = db(db.auth_group.role == group_to_add).select(db.auth_group.id).first().id
                     db.auth_membership.insert(user_id=db_user_id, group_id=gid)
+                    auth_membership_changed = True
+
+            if auth_membership_changed:
+                for callback in manage_groups_callback:
+                    callback()
+
         except:
             logger.warning("[%s] Groups are not managed successfully!" % str(username))
             import traceback
