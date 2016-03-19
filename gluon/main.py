@@ -80,10 +80,9 @@ locale.setlocale(locale.LC_CTYPE, "C") # IMPORTANT, web2py requires locale "C"
 exists = os.path.exists
 pjoin = os.path.join
 
-logpath = abspath("logging.conf")
-if exists(logpath):
+try:
     logging.config.fileConfig(abspath("logging.conf"))
-else:
+except: # fails on GAE or when logfile is missing
     logging.basicConfig()
 logger = logging.getLogger("web2py")
 
