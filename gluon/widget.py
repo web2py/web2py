@@ -1130,14 +1130,6 @@ def start(cron=True):
             if hasattr(options, key):
                 setattr(options, key, getattr(options2, key))
 
-    logfile0 = os.path.join('examples', 'logging.example.conf')
-    logfile1 = os.path.join(options.folder, 'logging.conf')
-    if not os.path.exists(logfile1) and os.path.exists(logfile0):
-        import shutil
-        sys.stdout.write("Copying logging.conf.example to logging.conf ... ")
-        shutil.copyfile(logfile0, logfile1)
-        sys.stdout.write("OK\n")
-
     # ## if -T run doctests (no cron)
     if hasattr(options, 'test') and options.test:
         test(options.test, verbose=options.verbose)
