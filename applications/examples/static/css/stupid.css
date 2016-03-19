@@ -5,8 +5,8 @@
 ************/
 
 /*** basic styles ***/
-* {border:0; margin:0; padding:0; font-familiy:Helvetica}
-html, body {max-width: 100vw !important;overflow-x: hidden !important}
+*, *:after, *:before {border:0; margin:0; padding:0; -webkit-box-sizing:border-box; -moz-box-sizing:border-box; box-sizing:border-box}
+html, body {max-width: 100vw !important; overflow-x: hidden !important}
 body {font-family:"HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif}
 p, li {margin-bottom:0.5em}
 p {text-align:justify}
@@ -49,14 +49,14 @@ header, footer {with:100%}
 
 /*** helpers ***/
 .rounded {-moz-border-radius:5px; border-radius:5px}
-.padded {padding:10px 20px !important; -webkit-box-sizing:border-box; -moz-box-sizing:border-box; box-sizing:border-box}
+.padded {padding:10px 20px !important}
 .center {text-align:center !important; margin-left:auto; margin-right:auto}
 .center>div {text-align:left}
 .right {right:0; text-align:right}
 .middle div {vertical-align:middle !important}
 .bottom div {vertical-align:bottom !important}
-.xscroll {overflow-x:scroll; width:100%}
-.yscroll {overflow-y:scroll; width:100%}
+.xscroll {overflow-x:scroll}
+.yscroll {overflow-y:scroll}
 .nowrap {white-space:nowrap; overflow-x:hidden}
 .fill {width:100%}
 .lifted {box-shadow:5px 5px 10px #666}
@@ -66,15 +66,16 @@ header, footer {with:100%}
 .hidden {display:none}
 
 /*** forms ***/
-input:not([type]), input:not([type=checkbox]):not([type=radio]):not([type=submit]), [type=file]:before {outline:none; padding:0.5em 1em; margin:0.5px; border-bottom:1px solid #ddd; width:100%}
+input:not([type]), input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]), [type=file]:before {outline:none; padding:0.5em 1em; margin:0.5px; border-bottom:1px solid #ddd; width:100%}
 textarea {width:100%; border:1px solid #ddd; padding:4px 8px; outline:none; outline:none}
 select {-webkit-appearance:none; outline:none; padding:0.5em 1em; border-radius:0; margin:0.5px; border-bottom:1px solid #ddd}
 input, textarea, select, button {font-size:12px}
-input:not([type]), input:not([type=checkbox]):not([type=radio]):not([type=submit]):hover, select:hover, textarea:hover {background-color:#fbf6d9; transition:background-color 1s ease}
+input:not([type]):hover, input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):hover, select:hover, textarea:hover {background-color:#fbf6d9; transition:background-color 1s ease}
+input:invalid, input.error {background:#cc1f00!important;color:white}
 
 /*** grid ***/
 .container {margin-right:-20px}
-.container>.quarter, .container>.half, .container>.third, .container>.twothirds, .container>.threequarters, .container>.fill{display:inline-block; padding:5px 20px 5px 0; -webkit-box-sizing:border-box; -moz-box-sizing:border-box; box-sizing:border-box; vertical-align:top}
+.container>.quarter, .container>.half, .container>.third, .container>.twothirds, .container>.threequarters, .container>.fill{display:inline-block; padding:5px 20px 5px 0; vertical-align:top}
 .container>.fill {width:100%; margin-right:-20px}
 .container img, .container video {max-width:100%}
 @media (min-width:800px) {
@@ -189,7 +190,7 @@ input:not([type]), input:not([type=checkbox]):not([type=radio]):not([type=submit
 .menu ul {background:white; border:1px solid #e1e1e1; visibility:hidden; opacity:0;  position:absolute; top:110%; padding:0; z-index:1000; transition:all 0.2s ease-out; list-style-type:none; box-shadow:5px 5px 10px #666}
 .menu ul a {padding:10px 15px; color:#333; font-weight:700; font-size:12px; line-height:16px; display: block}
 .menu ul li {float:none; width:200px}
-.menu ul ul {top:0; left:80%; z-index:2000}
+.menu ul ul {top:0; left:80%; z-index:1100}
 .menu li:hover > ul {visibility:visible; opacity:1}
 .menu>li>ul>li:first-child:before{content:''; position:absolute; width:1px; height:1px; border:10px solid transparent; left:50px; top:-20px; margin-left:-10px; border-bottom-color:white}
 .menu.dark ul {background:black; border:1px solid black}
@@ -199,7 +200,7 @@ input:not([type]), input:not([type=checkbox]):not([type=radio]):not([type=submit
 @media (max-width:599px) {
   header .menu li, header .menu ul {width: 100%}  
   header .menu.right {float:left; text-align:left}
-  header .menu ul ul {top:2.5em; left:-1px; z-index:2000}
+  header .menu ul ul {top:2.5em; left:-1px}
 }
 
 @media (min-width:600px) {
@@ -264,24 +265,30 @@ a:not(.btn):not(.noeffect):after {
 
 /*** tooltips from http://codepen.io/trezy/pen/Khnzy ***/
 [data-tooltip] {position:relative}
-[data-tooltip]:hover:after,[data-tooltip]:hover:before {display:block}
 [data-tooltip]:before, [data-tooltip]:after {display:none; position:absolute; top:0}
-[data-tooltip]:before {
+[data-tooltip]:hover:after,[data-tooltip]:hover:before {display:block}
+[data-tooltip]:hover:before {
   border-bottom:.6em solid black;
   border-bottom:.6em solid black;
   border-left:7px solid transparent;
   border-right:7px solid transparent;
   content:"";
-  left:20px;
-  margin-top:1em;
+  left:0;
+  margin-top:12px;
+  z-index:2000;
 }
-[data-tooltip]:after {
+[data-tooltip]:hover:after {
+  z-index:2000;
   background-color:rgba(0,0,0,0.8);
   border:4px solid rgba(0,0,0,0.8);
   border-radius:7px;
   color:white;
+  text-transform:none;
+  font-size: 12px;
   content:attr(data-tooltip);
   left:0;
+  top:2px;
+  margin-left:-20;
   margin-top:1.5em;
   padding:5px 15px;
   white-space:pre-wrap;
@@ -336,24 +343,17 @@ a:not(.btn):not(.noeffect):after {
 .navy{background-color:#001f3f!important;color:white}.blue{background-color:#0074d9!important;color:white}.aqua{background-color:#7fdbff!important;color:black}.teal{background-color:#39cccc!important;color:white}.olive{background-color:#3d9970!important;color:white}.green{background-color:#2ecc40!important;color:white}.aquamarine{background-color:#26a69a!important;color:white}.lime{background-color:#01ff70!important;color:black}.yellow{background-color:#ffdc00!important;color:black}.orange{background-color:#ff851b!important;color:white}.red{background-color:#cc1f00!important;color:white}.fuchsia{background-color:#f012be!important;color:white}.pink{background-color:#ee6e73!important;color:white}.purple{background-color:#b10dc9!important;color:white}.maroon{background-color:#85144b!important;color:white}.white{background-color:#fff!important;color:black;-webkit-box-shadow:inset 0px 0px 0px 1px #ddd;-moz-box-shadow:inset 0px 0px 0px 1px #ddd;box-shadow:inset 0px 0px 0px 1px #ddd}.gray{background-color:#aaa!important;color:white}.silver{background-color:#f1f1f1!important;color:black}.black{background-color:#000!important;color:white}.glass{background:rgba(255,255,255,0.5)!important;color:black}
 
 /**** tags ****/
-.tags > span, .tags > span.off:hover {
-  height: 30px;
+.tags > span {
   padding: 4px 9px;
-  text-decoration: none;
-  margin: 0 5px 30px 0 !important;
   white-space: nowrap;
   color: white;
   background-color: #26a69a;
   border-radius: 5px;
+  font-size:12px;
+  margin: 5px 5px 5px 0 !important;
   line-height: 32px;
 }
-.tags.dismissible > span:not(.off):hover {
-  background-color: #ccc !important;
-}
-.tags.dismissible > span:not(.off):after {
-  content: " \f00d";
-  font-family: FontAwesome;
-}
-.tags > span.off {
-  background-color: #ccc;
-}
+.tags.dismissible > span:hover {opacity: 0.5}
+.tags.dismissible > span:not(.off):after {content:" ✕"}
+.tags > span.off {background-color: #ccc}
+.tags.dismissible > span.off:hover {background-color:#26a69a}
