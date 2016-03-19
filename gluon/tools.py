@@ -2571,7 +2571,7 @@ class Auth(object):
             if login:
                 self.user = user
             if self.settings.register_onaccept:
-                callback(self.settings.register_onaccept, form)
+                callback(self.settings.register_onaccept, user)
         return user
 
     def basic(self, basic_auth_realm=False):
