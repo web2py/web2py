@@ -179,6 +179,8 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ('1', None))
         rtn = IS_IN_SET([('id1','first label'), ('id2','second label')])('id1') # Redundant way
         self.assertEqual(rtn, ('id1', None))
+        rtn = IS_IN_SET([('id1','first label'), ('id2','second label')]).options(zero=False)
+        self.assertEqual(rtn, [('id1', 'first label'), ('id2', 'second label')])
 
     def test_IS_IN_DB(self):
         from gluon.dal import DAL, Field
@@ -268,6 +270,8 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ('6,5', 'Enter a number'))
         rtn = IS_FLOAT_IN_RANGE(dot=',')('6.5')
         self.assertEqual(rtn, (6.5, None))
+        rtn = IS_FLOAT_IN_RANGE(dot=',').formatter(0.25)
+        self.assertEqual(rtn, '0,25')
 
     def test_IS_DECIMAL_IN_RANGE(self):
         rtn =  IS_DECIMAL_IN_RANGE(1,5)('4')
@@ -314,6 +318,8 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, (decimal.Decimal('6.5'), None))
         rtn =  IS_DECIMAL_IN_RANGE(1,5)(decimal.Decimal('4'))
         self.assertEqual(rtn, (decimal.Decimal('4'), None))
+        rtn = IS_DECIMAL_IN_RANGE(dot=',').formatter(0.25)
+        self.assertEqual(rtn, '0,25')
 
     def test_IS_NOT_EMPTY(self):
         rtn = IS_NOT_EMPTY()(1)
@@ -428,6 +434,8 @@ class TestValidators(unittest.TestCase):
         emails.append('a')
         rtn = IS_LIST_OF_EMAILS()(';'.join(emails))
         self.assertEqual(rtn, ('localguy@localhost;_Yosemite.Sam@example.com;a', 'Invalid emails: a'))
+        rtn = IS_LIST_OF_EMAILS().formatter(['test@example.com', 'dude@example.com'])
+        self.assertEqual(rtn, 'test@example.com, dude@example.com')
 
     def test_IS_URL(self):
         rtn = IS_URL()('http://example.com')
@@ -477,6 +485,8 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, (datetime.date(2008, 3, 3), None))
         rtn = v('31/03/2008')
         self.assertEqual(rtn, ('31/03/2008', 'oops'))
+        rtn = IS_DATE(format="%m/%d/%Y",error_message="oops").formatter(datetime.date(1834, 12, 14))
+        self.assertEqual(rtn, '12/14/1834')
 
     def test_IS_DATETIME(self):
         v = IS_DATETIME(format="%m/%d/%Y %H:%M",error_message="oops")
@@ -657,6 +667,10 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ('abc', 'Enter a valid email address'))
         rtn =  IS_EMPTY_OR(IS_EMAIL())(' abc ')
         self.assertEqual(rtn, ('abc', 'Enter a valid email address'))
+        rtn = IS_EMPTY_OR(IS_IN_SET([('id1','first label'), ('id2','second label')], zero='zero')).options(zero=False)
+        self.assertEqual(rtn, [('', ''),('id1', 'first label'), ('id2', 'second label')])
+        rtn = IS_EMPTY_OR(IS_IN_SET([('id1','first label'), ('id2','second label')], zero='zero')).options()
+        self.assertEqual(rtn, [('', 'zero'),('id1', 'first label'), ('id2', 'second label')])
 
     def test_CLEANUP(self):
         rtn = CLEANUP()('helloò')
@@ -733,9 +747,67 @@ class TestValidators(unittest.TestCase):
                       'May not include any numbers']))
             )
 
-    # TODO: def test_IS_IN_SUBSET(self):
+    def test_IS_IMAGE(self):
+        class DummyImageFile(object):
+            def __init__(self, filename, ext, width, height):
+                from StringIO import StringIO
+                import struct
+                self.filename = filename + '.' + ext
+                self.file = StringIO()
+                if ext == 'bmp':
+                    self.file.write(b'BM')
+                    self.file.write(b' '*16)
+                    self.file.write(struct.pack('<LL', width, height))
+                elif ext == 'gif':
+                    self.file.write(b'GIF87a')
+                    self.file.write(struct.pack('<HHB', width, height, 0))
+                elif ext in ('jpg', 'jpeg'):
+                    self.file.write(b'\xFF\xD8')
+                    self.file.write(struct.pack('!BBH', 0xFF, 0xC0, 5))
+                    self.file.write(struct.pack('!xHH', height, width))
+                elif ext == 'png':
+                    self.file.write(b'\211PNG\r\n\032\n')
+                    self.file.write(b' '*4)
+                    self.file.write(b'IHDR')
+                    self.file.write(struct.pack('!LL', width, height))
+                self.file.seek(0)
 
-    # TODO: def test_IS_IMAGE(self):
+        img = DummyImageFile('test', 'bmp', 50, 100)
+        rtn = IS_IMAGE()(img)
+        self.assertEqual(rtn, (img, None))
+        rtn = IS_IMAGE(error_message='oops', maxsize=(100, 50))(img)
+        self.assertEqual(rtn, (img, 'oops'))
+        rtn = IS_IMAGE(error_message='oops', minsize=(100, 50))(img)
+        self.assertEqual(rtn, (img, 'oops'))
+
+        img = DummyImageFile('test', 'gif', 50, 100)
+        rtn = IS_IMAGE()(img)
+        self.assertEqual(rtn, (img, None))
+        rtn = IS_IMAGE(error_message='oops', maxsize=(100, 50))(img)
+        self.assertEqual(rtn, (img, 'oops'))
+        rtn = IS_IMAGE(error_message='oops', minsize=(100, 50))(img)
+        self.assertEqual(rtn, (img, 'oops'))
+        
+        img = DummyImageFile('test', 'jpeg', 50, 100)
+        rtn = IS_IMAGE()(img)
+        self.assertEqual(rtn, (img, None))
+        rtn = IS_IMAGE(error_message='oops', maxsize=(100, 50))(img)
+        self.assertEqual(rtn, (img, 'oops'))
+        rtn = IS_IMAGE(error_message='oops', minsize=(100, 50))(img)
+        self.assertEqual(rtn, (img, 'oops'))
+        
+        img = DummyImageFile('test', 'png', 50, 100)
+        rtn = IS_IMAGE()(img)
+        self.assertEqual(rtn, (img, None))
+        rtn = IS_IMAGE(error_message='oops', maxsize=(100, 50))(img)
+        self.assertEqual(rtn, (img, 'oops'))
+        rtn = IS_IMAGE(error_message='oops', minsize=(100, 50))(img)
+        self.assertEqual(rtn, (img, 'oops'))
+
+        img = DummyImageFile('test', 'xls', 50, 100)
+        rtn = IS_IMAGE(error_message='oops')(img)
+        self.assertEqual(rtn, (img, 'oops'))
+
 
     def test_IS_UPLOAD_FILENAME(self):
         import cgi
