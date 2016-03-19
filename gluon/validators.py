@@ -141,7 +141,6 @@ class Validator(object):
 
     def __call__(self, value):
         raise NotImplementedError
-        return (value, None)
 
 
 class IS_MATCH(Validator):
@@ -2246,7 +2245,7 @@ class IS_DATE(Validator):
         y = '%.4i' % year
         format = format.replace('%y', y[-2:])
         format = format.replace('%Y', y)
-        if year < 1900:
+        if year < 1900: 
             year = 2000
         d = datetime.date(year, value.month, value.day)
         return d.strftime(format)
@@ -2642,8 +2641,8 @@ class IS_EMPTY_OR(Validator):
         if hasattr(other, 'options'):
             self.options = self._options
 
-    def _options(self):
-        options = self.other.options()
+    def _options(self, *args, **kwargs):
+        options = self.other.options(*args, **kwargs)
         if (not options or options[0][0] != '') and not self.multiple:
             options.insert(0, ('', ''))
         return options
@@ -3061,21 +3060,6 @@ class IS_STRONG(object):
             return (value, XML('<br />'.join(failures)))
         else:
             return (value, translate(self.error_message))
-
-
-class IS_IN_SUBSET(IS_IN_SET):
-
-    REGEX_W = re.compile('\w+')
-
-    def __init__(self, *a, **b):
-        IS_IN_SET.__init__(self, *a, **b)
-
-    def __call__(self, value):
-        values = self.REGEX_W.findall(str(value))
-        failures = [x for x in values if IS_IN_SET.__call__(self, x)[1]]
-        if failures:
-            return (value, translate(self.error_message))
-        return (value, None)
 
 
 class IS_IMAGE(Validator):
