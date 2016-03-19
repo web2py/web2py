@@ -901,6 +901,7 @@ def formstyle_bootstrap3_stacked(form, fields):
             elif controls['_type'] == 'checkbox':
                 label['_for'] = None
                 label.insert(0, controls)
+                label.insert(0, ' ')
                 _controls = DIV(label, _help, _class="checkbox")
                 label = ''
             elif isinstance(controls, (SELECT, TEXTAREA)):
@@ -950,6 +951,7 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
                 elif controls['_type'] == 'checkbox':
                     label['_for'] = None
                     label.insert(0, controls)
+                    label.insert(1, ' ')
                     _controls = DIV(DIV(label, _help, _class="checkbox"),
                                     _class="%s %s" % (offset_class, col_class))
                     label = ''
