@@ -74,8 +74,8 @@ def _default_validators(db, field):
         return requires
     if field.unique:
         requires.append(validators.IS_NOT_IN_DB(db, field))
-    
-    if field.notnull or field.unique:
+
+    if field.notnull or field.unique and not field_type in ['string','boolean']:
         requires.insert(0,validators.IS_NOT_EMPTY())
     elif not field.notnull and requires:
         requires[0] = validators.IS_EMPTY_OR(requires[0])
