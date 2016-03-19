@@ -804,6 +804,11 @@ class TestValidators(unittest.TestCase):
         rtn = IS_IMAGE(error_message='oops', minsize=(100, 50))(img)
         self.assertEqual(rtn, (img, 'oops'))
 
+        img = DummyImageFile('test', 'xls', 50, 100)
+        rtn = IS_IMAGE(error_message='oops')(img)
+        self.assertEqual(rtn, (img, 'oops'))
+
+
     def test_IS_UPLOAD_FILENAME(self):
         import cgi
         from StringIO import StringIO
