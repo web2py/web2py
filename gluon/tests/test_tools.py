@@ -87,7 +87,7 @@ class TestMail(unittest.TestCase):
     """
 
     class Message(object):
-        def __init__(self,sender, to, payload):
+        def __init__(self, sender, to, payload):
             self.sender = sender
             self.to = to
             self.payload = payload
@@ -101,21 +101,20 @@ class TestMail(unittest.TestCase):
         inbox = []
         users = {}
 
-        def __init__(self,address, port, **kwargs):
+        def __init__(self, address, port, **kwargs):
             self.address=address
             self.port = port
             self.has_quit = False
             self.tls = False
 
-        def login(self,username,password):
+        def login(self, username, password):
             if username not in self.users or self.users[username] != password:
                 raise smtplib.SMTPAuthenticationError
             self.username=username
             self.password=password
 
-        def sendmail(self,from_address,to_address,fullmessage):
-            self.inbox.append(TestMail.Message(from_address,to_address,fullmessage))
-            return []
+        def sendmail(self, sender, to, payload):
+            self.inbox.append(TestMail.Message(sender, to, payload))
 
         def quit(self):
             self.has_quit=True
