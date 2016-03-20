@@ -5,6 +5,9 @@
 ## File is released under public domain and you can use without limitations
 #########################################################################
 
+if request.global_settings.web2py_version < "2.13.3":
+    raise HTTP(500, "Requires web2py 2.13.3 or newer")
+
 ## if SSL/HTTPS is properly configured and you want all HTTP requests to
 ## be redirected to HTTPS, uncomment the line below:
 # request.requires_https()

@@ -61,7 +61,13 @@ PY_STRING_LITERAL_RE = r'(?<=[^\w]T\()(?P<name>'\
     + r"(?:'(?:[^'\\]|\\.)*')|" + r'(?:"""(?:[^"]|"{1,2}(?!"))*""")|'\
     + r'(?:"(?:[^"\\]|\\.)*"))'
 
+PY_M_STRING_LITERAL_RE = r'(?<=[^\w]T\.M\()(?P<name>'\
+    + r"[uU]?[rR]?(?:'''(?:[^']|'{1,2}(?!'))*''')|"\
+    + r"(?:'(?:[^'\\]|\\.)*')|" + r'(?:"""(?:[^"]|"{1,2}(?!"))*""")|'\
+    + r'(?:"(?:[^"\\]|\\.)*"))'
+
 regex_translate = re.compile(PY_STRING_LITERAL_RE, re.DOTALL)
+regex_translate_m = re.compile(PY_M_STRING_LITERAL_RE, re.DOTALL)
 regex_param = re.compile(r'{(?P<s>.+?)}')
 
 # pattern for a valid accept_language
@@ -960,6 +966,7 @@ def findT(path, language=DEFAULT_LANGUAGE):
             + listdir(vp, '^.+\.html$', 0) + listdir(mop, '^.+\.py$', 0):
         data = read_locked(filename)
         items = regex_translate.findall(data)
+        items += regex_translate_m.findall(data)
         for item in items:
             try:
                 message = safe_eval(item)

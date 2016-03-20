@@ -1,3 +1,6 @@
+"""
+converts a static file to a web2py view. needs work
+"""
 import os
 import sys
 import glob
@@ -96,7 +99,5 @@ def convert(source, destination,prefix='imported'):
         if not os.path.exists(os.path.split(fullname)[0]):
             os.makedirs(os.path.split(fullname)[0])
         open(fullname,'w').write(views[name])
-
-
 
 convert(sys.argv[1],sys.argv[2])

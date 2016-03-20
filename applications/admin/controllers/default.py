@@ -268,7 +268,7 @@ def site():
                     raise Exception("404 file not found")
             except Exception, e:
                 session.flash = \
-                    DIV(T('Unable to download app because:'), PRE(str(e)))
+                    DIV(T('Unable to download app because:'), PRE(repr(e)))
                 redirect(URL(r=request))
             fname = form_update.vars.url
 
@@ -740,7 +740,7 @@ def edit():
                                  B(ex_name), ' ' + T('at line %s', e.lineno),
                                  offset and ' ' +
                                  T('at char %s', offset) or '',
-                                 PRE(str(e)))
+                                 PRE(repr(e)))
     if data_or_revert and request.args[1] == 'modules':
         # Lets try to reload the modules
         try:
@@ -751,7 +751,7 @@ def edit():
                                % (request.args[0], mopath)])
         except Exception, e:
             response.flash = DIV(
-                T('failed to reload module because:'), PRE(str(e)))
+                T('failed to reload module because:'), PRE(repr(e)))
 
     edit_controller = None
     editviewlinks = None
