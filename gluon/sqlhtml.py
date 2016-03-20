@@ -2185,7 +2185,7 @@ class SQLFORM(FORM):
                        buttonurl=url(args=[]), callback=None,
                        delete=None, trap=True, noconfirm=None, title=None):
             if showbuttontext:
-                return A(SPAN(_class=ui.get(buttonclass)),
+                return A(SPAN(_class=ui.get(buttonclass)), CAT(' '),
                          SPAN(T(buttontext), _title=title or T(buttontext),
                               _class=ui.get('buttontext')),
                          _href=buttonurl,
