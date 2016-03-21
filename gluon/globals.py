@@ -812,7 +812,7 @@ class Session(Storage):
         response.session_data_name = 'session_data_%s' % masterapp.lower()
         response.session_cookie_expires = cookie_expires
         response.session_client = str(request.client).replace(':', '.')
-        response.session_cookie_key = cookie_key
+        current._session_cookie_key = cookie_key
         response.session_cookie_compression_level = compression_level
 
         # check if there is a session_id in cookies
@@ -1065,7 +1065,7 @@ class Session(Storage):
 
         # if not cookie_key, but session_data_name in cookies
         # expire session_data_name from cookies
-        if not response.session_cookie_key:
+        if not current._session_cookie_key:
             if response.session_data_name in cookies:
                 rcookies[response.session_data_name] = 'expired'
                 rcookies[response.session_data_name]['path'] = '/'
@@ -1128,7 +1128,7 @@ class Session(Storage):
         name = response.session_data_name
         compression_level = response.session_cookie_compression_level
         value = secure_dumps(dict(self),
-                             response.session_cookie_key,
+                             current._session_cookie_key,
                              compression_level=compression_level)
         rcookies = response.cookies
         rcookies.pop(name, None)
