@@ -23,6 +23,7 @@ import glob
 import os
 import re
 import time
+import fnmatch
 import traceback
 import smtplib
 import urllib
@@ -1717,11 +1718,29 @@ class Auth(object):
     def here(self):
         return URL(args=current.request.args, vars=current.request.get_vars)
 
+    def select_host(self, host, host_names=None):
+        """
+        checks that host is valid, i.e. in the list of glob host_names
+        if the host is missing, then is it selects the first entry from host_names
+        read more here: https://github.com/web2py/web2py/issues/1196
+        """
+        if host:
+            if host_names:
+                for item in host_names:
+                    if fnmatch.fnmatch(host, item):
+                        break
+                else:
+                    raise HTTP(403, "Invalid Hostname")
+        elif host_names:
+            host = host_names[0]
+        else:
+            host = 'localhost'
+
     def __init__(self, environment=None, db=None, mailer=True,
                  hmac_key=None, controller='default', function='user',
                  cas_provider=None, signature=True, secure=False,
                  csrf_prevention=True, propagate_extension=None,
-                 url_index=None, jwt=None, host=None):
+                 url_index=None, jwt=None, host_names=None):
 
         ## next two lines for backward compatibility
         if not db and environment and isinstance(environment, DAL):
@@ -1765,7 +1784,7 @@ class Auth(object):
 
         settings = self.settings = Settings()
         settings.update(Auth.default_settings)        
-        host = host or request.env.http_host
+        host = self.select_host(request.env.http_host, host_names)
         settings.update(
             cas_domains=[host],
             enable_tokens=False,
