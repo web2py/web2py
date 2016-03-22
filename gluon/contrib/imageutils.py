@@ -27,10 +27,10 @@ from gluon import current
 
 class RESIZE(object):
 
-    def __init__(self, nx=160, ny=80, quality=100,
+    def __init__(self, nx=160, ny=80, quality=100, padding = False
                  error_message=' image resize'):
-        (self.nx, self.ny, self.quality, self.error_message) = (
-            nx, ny, quality, error_message)
+        (self.nx, self.ny, self.quality, self.error_message, self.padding) = (
+            nx, ny, quality, error_message, padding)
 
     def __call__(self, value):
         if isinstance(value, str) and len(value) == 0:
@@ -41,7 +41,14 @@ class RESIZE(object):
             img = Image.open(value.file)
             img.thumbnail((self.nx, self.ny), Image.ANTIALIAS)
             s = cStringIO.StringIO()
-            img.save(s, 'JPEG', quality=self.quality)
+            if self.padding:
+                background = Image.new('RGBA', (self.nx, self.ny), (255, 255, 255, 0))
+                background.paste(
+                    img,
+                    ((self.nx - img.size[0]) / 2, (self.ny - img.size[1]) / 2))
+                background.save(s, 'JPEG', quality=self.quality)
+            else:
+                img.save(s, 'JPEG', queality=self.quality)
             s.seek(0)
             value.file = s
         except:

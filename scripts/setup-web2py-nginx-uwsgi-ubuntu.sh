@@ -1,14 +1,26 @@
 #!/bin/bash
 echo 'setup-web2py-nginx-uwsgi-ubuntu-precise.sh'
-echo 'Requires Ubuntu > 12.04 and installs Nginx + uWSGI + Web2py'
+echo 'Requires Ubuntu > 12.04 or Debian >= 8 and installs Nginx + uWSGI + Web2py'
 # Check if user has root privileges
 if [[ $EUID -ne 0 ]]; then
    echo "You must run the script as root or using sudo"
    exit 1
 fi
+# parse command line arguments
+nopassword=0
+nocertificate=0
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    --no-password) nopassword=1; shift 1;;
+    --no-certificate) nocertificate=1; shift 1;;
+  esac
+done
 # Get Web2py Admin Password
-echo -e "Web2py Admin Password: \c "
-read  PW
+if [ "$nopassword" -eq 0 ]
+then
+  echo -e "Web2py Admin Password: \c "
+  read  PW
+fi
 # Upgrade and install needed software
 apt-get update
 apt-get -y upgrade
@@ -115,16 +127,36 @@ ln -s /etc/nginx/sites-available/web2py /etc/nginx/sites-enabled/web2py
 rm /etc/nginx/sites-enabled/default
 mkdir /etc/nginx/ssl
 cd /etc/nginx/ssl
-
-openssl genrsa 1024 > web2py.key
-chmod 400 web2py.key
-openssl req -new -x509 -nodes -sha1 -days 1780 -key web2py.key > web2py.crt
-openssl x509 -noout -fingerprint -text < web2py.crt > web2py.info
-
-
+if [ "$nocertificate" -eq 0 ]
+then
+  openssl genrsa 1024 > web2py.key
+  chmod 400 web2py.key
+  openssl req -new -x509 -nodes -sha1 -days 1780 -key web2py.key > web2py.crt
+  openssl x509 -noout -fingerprint -text < web2py.crt > web2py.info
+fi
 # Prepare folders for uwsgi
 sudo mkdir /etc/uwsgi
 sudo mkdir /var/log/uwsgi
+sudo mkdir /etc/systemd
+sudo mkdir /etc/systemd/system
+
+#uWSGI Emperor
+echo '[Unit]
+Description = uWSGI Emperor
+After = syslog.target
+
+[Service]
+ExecStart = /usr/local/bin/uwsgi --ini /etc/uwsgi/web2py.ini
+RuntimeDirectory = uwsgi
+Restart = always
+KillSignal = SIGQUIT
+Type = notify
+StandardError = syslog
+NotifyAccess = all
+
+[Install]
+WantedBy = multi-user.target
+' > /etc/systemd/system/emperor.uwsgi.service
 
 # Create configuration file /etc/uwsgi/web2py.ini
 echo '[uwsgi]
@@ -176,13 +208,25 @@ mv web2py/handlers/wsgihandler.py web2py/wsgihandler.py
 rm web2py_src.zip
 chown -R www-data:www-data web2py
 cd /home/www-data/web2py
-sudo -u www-data python -c "from gluon.main import save_password; save_password('$PW',443)"
-start uwsgi-emperor
+if [ "$nopassword" -eq 0 ]
+then
+   sudo -u www-data python -c "from gluon.main import save_password; save_password('$PW',443)"
+fi
+systemctl enable emperor.uwsgi.service
+systemctl start emperor.uwsgi.service
 /etc/init.d/nginx restart
 
-## you can reload uwsgi with
-# restart uwsgi-emperor
-## and stop it with
-# stop uwsgi-emperor
-## to reload web2py only (without restarting uwsgi)
-# touch /etc/uwsgi/web2py.ini
+echo <<EOF
+you can reload uwsgi with
+
+  systemctl restart emperor.uwsgi
+
+and stop it with
+
+  systemctl stop emperor.uwsgi
+
+to reload web2py only (without restarting uwsgi)
+
+  touch /etc/uwsgi/web2py.ini
+EOF
+

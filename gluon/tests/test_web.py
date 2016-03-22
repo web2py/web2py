@@ -22,20 +22,21 @@ from urllib2 import HTTPError
 
 webserverprocess = None
 
+
 def startwebserver():
     global webserverprocess
     path = path = os.path.dirname(os.path.abspath(__file__))
-    if not os.path.isfile(os.path.join(path,'web2py.py')):
+    if not os.path.isfile(os.path.join(path, 'web2py.py')):
         i = 0
-        while i<10:
+        while i < 10:
             i += 1
-            if os.path.exists(os.path.join(path,'web2py.py')):
+            if os.path.exists(os.path.join(path, 'web2py.py')):
                 break
             path = os.path.abspath(os.path.join(path, '..'))
     web2py_exec = os.path.join(path, 'web2py.py')
     webserverprocess = subprocess.Popen([sys.executable, web2py_exec, '-a',  'testpass'])
     print 'Sleeping before web2py starts...'
-    for a in range(1,11):
+    for a in range(1, 11):
         time.sleep(1)
         print a, '...'
         try:
@@ -46,10 +47,11 @@ def startwebserver():
             continue
     print ''
 
+
 def terminate_process(pid):
-    #Taken from http://stackoverflow.com/questions/1064335/in-python-2-5-how-do-i-kill-a-subprocess
+    # Taken from http://stackoverflow.com/questions/1064335/in-python-2-5-how-do-i-kill-a-subprocess
     # all this **blah** is because we are stuck with Python 2.5 and \
-    #we cannot use Popen.terminate()
+    # we cannot use Popen.terminate()
     if sys.platform.startswith('win'):
         import ctypes
         PROCESS_TERMINATE = 1
@@ -59,10 +61,11 @@ def terminate_process(pid):
     else:
         os.kill(pid, signal.SIGKILL)
 
+
 def stopwebserver():
     global webserverprocess
     print 'Killing webserver'
-    if sys.version_info < (2,6):
+    if sys.version_info < (2, 6):
         terminate_process(webserverprocess.pid)
     else:
         webserverprocess.terminate()
@@ -108,7 +111,6 @@ class TestWeb(LiveTest):
         # check registration and login were successful
         client.get('index')
 
-        # COMMENTED BECAUSE FAILS BUT WHY?
         self.assertTrue('Welcome Homer' in client.text)
 
         client = WebClient('http://127.0.0.1:8000/admin/default/')
@@ -153,7 +155,7 @@ class TestWeb(LiveTest):
         try:
             s.post('examples/soap_examples/call/soap', data=xml_request, method="POST")
         except HTTPError, e:
-            assert(e.msg=='INTERNAL SERVER ERROR')
+            assert(e.msg == 'INTERNAL SERVER ERROR')
         # check internal server error returned (issue 153)
         assert(s.status == 500)
         assert(s.text == xml_response)

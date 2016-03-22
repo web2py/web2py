@@ -677,7 +677,7 @@ class AutocompleteWidget(object):
     def callback(self):
         if self.keyword in self.request.vars:
             field = self.fields[0]
-            if type(field) is FieldVirtual:
+            if type(field) is Field.Virtual:
                 records = []
                 table_rows = self.db(self.db[field.tablename]).select(orderby=self.orderby)
                 count = 0
@@ -741,7 +741,7 @@ class AutocompleteWidget(object):
                 del attr['requires']
             attr['_name'] = key2
             value = attr['value']
-            if type(self.fields[0]) is FieldVirtual:
+            if type(self.fields[0]) is Field.Virtual:
                 record = None
                 table_rows = self.db(self.db[self.fields[0].tablename]).select(orderby=self.orderby)
                 for row in table_rows:
@@ -901,6 +901,7 @@ def formstyle_bootstrap3_stacked(form, fields):
             elif controls['_type'] == 'checkbox':
                 label['_for'] = None
                 label.insert(0, controls)
+                label.insert(0, ' ')
                 _controls = DIV(label, _help, _class="checkbox")
                 label = ''
             elif isinstance(controls, (SELECT, TEXTAREA)):
@@ -936,7 +937,7 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
             # wrappers
             _help = SPAN(help, _class='help-block')
             # embed _help into _controls
-            _controls = DIV(controls, _help, _class="%s %s" % (offset_class, col_class))
+            _controls = DIV(controls, _help, _class="%s" % (col_class))
             if isinstance(controls, INPUT):
                 if controls['_type'] == 'submit':
                     controls.add_class('btn btn-primary')
@@ -950,6 +951,7 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
                 elif controls['_type'] == 'checkbox':
                     label['_for'] = None
                     label.insert(0, controls)
+                    label.insert(1, ' ')
                     _controls = DIV(DIV(label, _help, _class="checkbox"),
                                     _class="%s %s" % (offset_class, col_class))
                     label = ''
@@ -2364,7 +2366,7 @@ class SQLFORM(FORM):
                 if deletable(record):
                     if ondelete:
                         ondelete(table, request.args[-1])
-                    record.delete_record()
+                    db(table[table._id.name] == request.args[-1]).delete()
             if request.ajax:
                 # this means javascript is enabled, so we don't need to do
                 # a redirect

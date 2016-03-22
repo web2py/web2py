@@ -27,4 +27,4 @@ def xml():
 
 
 def beautify():
-    return dict(message=BEAUTIFY(request))
+    return dict(message=BEAUTIFY(dict(a=1,b=[2,3,dict(hello='world')])))

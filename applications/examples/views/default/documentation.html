@@ -1,14 +1,13 @@
 {{extend 'layout.html'}}
 
-<iframe src="//player.vimeo.com/hubnut/album/3016728?color=ff6600&amp;background=ffffff&amp;slideshow=1&amp;video_title=1&amp;video_byline=1" width="400" height="300" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe>
-
-<div class="contentleft">
-    <div >
-        {{=get_content('main')}}
-    </div>
-         {{=get_content('official')}}
-         {{=get_content('community')}}
-         {{=get_content('more')}}
+<div>
+  {{=get_content('main')}}
+  <center>
+    <iframe src="//player.vimeo.com/hubnut/album/3016728?color=ff6600&amp;background=ffffff&amp;slideshow=1&amp;video_title=1&amp;video_byline=1" width="400" height="300" frameborder="0" webkitAllowFullScreen mozallowfullscreen allowFullScreen></iframe>
+  </center>
+  {{=get_content('official')}}
+  {{=get_content('community')}}
+  {{=get_content('more')}}
 </div>
 
 

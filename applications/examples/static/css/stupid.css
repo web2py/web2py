@@ -1,0 +1,359 @@
+/************
+  Created by Massimo Di Pierro
+  Stupid.css is what the names says, take it with a grain of salt
+  License: BSD
+************/
+
+/*** basic styles ***/
+*, *:after, *:before {border:0; margin:0; padding:0; -webkit-box-sizing:border-box; -moz-box-sizing:border-box; box-sizing:border-box}
+html, body {max-width: 100vw !important; overflow-x: hidden !important}
+body {font-family:"HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif}
+p, li {margin-bottom:0.5em}
+p {text-align:justify}
+label, strong {font-weight:bold}
+ul {list-style-type:none; padding-left:20px}
+a {text-decoration:none; color:#26a69a; white-space:nowrap}
+a:hover {cursor:pointer}
+h1,h2,h3,h4,h5,h6{font-weight:strong; text-transform:uppercase}
+h1{font-size:4em; margin:1.0em 0 0.25em 0}
+h2{font-size:2.4em; margin:0.9em 0 0.25em 0}
+h3{font-size:1.8em; margin:0.8em 0 0.25em 0}
+h4{font-size:1.6em; margin:0.7em 0 0.25em 0}
+h5{font-size:1.4em; margin:0.6em 0 0.25em 0}
+h6{font-size:1.2em; margin:0.5em 0 0.25em 0}
+table {border-collapse:collapse}
+tbody tr:hover {background-color:#fbf6d9}
+td, th {padding:5px; vertical-align:top; text-align:left; border:0}
+thead tr {background-color:#f1f1f1}
+tbody tr {border-bottom:2px solid #f1f1f1}
+th {font-weight:string; padding:5px; vertical-align:bottom; text-align:left}
+thead th {vertical-align:bottom}
+tbody th {vertical-align:top}
+header, footer {with:100%}
+
+@media (max-width:599px) {
+  h1{font-size:2em}
+  h2{font-size:1.8em}
+  h3{font-size:1.6em}
+  h4{font-size:1.4em}
+  h5{font-size:1.2em}
+  h6{font-size:1.0em}
+}
+
+/*** buttons ***/
+.btn, button, [type=button], [type=submit] {padding:0.5em 1em !important; margin:0 0.5em 0.5em 0; line-height:2.4em; background-color:#26a69a; color:white}
+.btn:hover, button:hover, [type=button]:hover, [type=submit]:hover {box-shadow:0 0 10px #666; text-decoration:none; cursor:pointer}
+.btn.small, table .btn {padding:0.25em 0.5em !important; font-size:0.8em; line-height:1.5em}
+.btn.large {padding:1em 2em !important; font-size:1.2em; line-height:4em}
+.btn.oval {border-radius:50%}
+
+/*** helpers ***/
+.rounded {-moz-border-radius:5px; border-radius:5px}
+.padded {padding:10px 20px !important}
+.center {text-align:center !important; margin-left:auto; margin-right:auto}
+.center>div {text-align:left}
+.right {right:0; text-align:right}
+.middle div {vertical-align:middle !important}
+.bottom div {vertical-align:bottom !important}
+.xscroll {overflow-x:scroll}
+.yscroll {overflow-y:scroll}
+.nowrap {white-space:nowrap; overflow-x:hidden}
+.fill {width:100%}
+.lifted {box-shadow:5px 5px 10px #666}
+.relative {position:relative}
+.relative>div {position:absolute}
+.spaced {margin-bottom:20px; margin-top:20px}
+.hidden {display:none}
+
+/*** forms ***/
+input:not([type]), input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]), [type=file]:before {outline:none; padding:0.5em 1em; margin:0.5px; border-bottom:1px solid #ddd; width:100%}
+textarea {width:100%; border:1px solid #ddd; padding:4px 8px; outline:none; outline:none}
+select {-webkit-appearance:none; outline:none; padding:0.5em 1em; border-radius:0; margin:0.5px; border-bottom:1px solid #ddd; width:100%;background-color:transparent}
+input, textarea, select, button {font-size:12px}
+input:not([type]):hover, input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):hover, select:hover, textarea:hover {background-color:#fbf6d9; transition:background-color 1s ease}
+input:invalid, input.error {background:#cc1f00!important;color:white}
+
+/*** grid ***/
+.container {margin-right:-20px}
+.container>.quarter, .container>.half, .container>.third, .container>.twothirds, .container>.threequarters, .container>.fill{display:inline-block; padding:5px 20px 5px 0; vertical-align:top}
+.container>.fill {width:100%; margin-right:-20px}
+.container img, .container video {max-width:100%}
+@media (min-width:800px) {
+  .max900 {max-width:900px; margin-left:auto; margin-right:auto}
+  .quarter {width:25%; margin-right:-5px}
+  .half {width:50%; margin-right:-10px}
+  .third {width:33.33%; margin-right:-6.66px}
+  .twothirds {width:66.66%; margin-right:-13.33px}
+  .threequarters {width:75%; margin-right:-15px}
+}
+@media (min-width:600px) and (max-width:799px) {
+  .quarter.compressible {width:25%; margin-right:-5px}
+  .half.compressible {width:50%; margin-right:-10px}
+  .threequarters.compressible {width:75%; margin-right:-15px}
+  .quarter:not(.compressible), .half:not(.compressible), .threequarters:not(.compressible) {width:100%; margin-right:-20px}
+  .third {width:33.33%; margin-right:-6.66px}
+  .twothirds {width:66.66%; margin-right:-13.33px}
+  label.quarter:not(.compressible).right, label.half:not(.compressible).right, label.threequarters:not(.compressible).right   {float:left; text-align:left}
+}
+@media (max-width:599px) {  
+  .quarter:not(.compressible), .half:not(.compressible), .third:not(.compressible), .twothirds:not(.compressible), .threequarters:not(.compressible) {width:100%;}
+  label.quarter:not(.compressible).right, label.half:not(.compressible).right, label.threequarters:not(.compressible).right,
+  label.third:not(.compressible).right, label.twothirds:not(.compressible).right   {float:left; text-align:left}
+  .quarter.compressible {width:25%; margin-right:-5px}
+  .half.compressible {width:50%; margin-right:-10px}
+  .third.compressible {width:33.33%; margin-right:-6.66px}
+  .twothirds.compressible {width:66.66%; margin-right:-13.33px}
+  .threequarters.compressible {width:75%; margin-right:-15px}
+}
+
+/*** progress bar from http://codepen.io/holdencreative/details/pvxGxy  ***/
+.progress {
+  margin-left:-15px;
+  margin-right:-15px;
+  position:relative;
+  height:8px;
+  display:block;
+  width:120%;
+  background-color:#acece6;
+  border-radius:0 !important;
+  background-clip:padding-box;
+  overflow:hidden;
+}
+.progress .determinate {
+  position:absolute;
+  background-color:inherit;
+  top:0;
+  bottom:0;
+  background-color:#26a69a;
+  transition:width .3s linear;
+}
+.progress .indeterminate {
+  background-color:#26a69a;
+}
+.progress .indeterminate:before {
+  content:'';
+  position:absolute;
+  background-color:inherit;
+  top:0;
+  left:0;
+  bottom:0;
+  will-change:left, right;
+  animation:indeterminate 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) infinite;
+}
+.progress .indeterminate:after {
+  content:'';
+  position:absolute;
+  background-color:inherit;
+  top:0;
+  left:0;
+  bottom:0;
+  will-change:left, right;
+  animation:indeterminate-short 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) infinite;
+  animation-delay:1.15s;
+}
+@-webkit-keyframes indeterminate {
+  0% {left:-35%; right:100%}
+  60% {left:100%; right:-90%}
+  100% {left:100%; right:-90%}
+}
+@-moz-keyframes indeterminate {
+  0% {left:-35%; right:100%}
+  60% {left:100%; right:-90%}
+  100% {left:100%; right:-90%}
+}
+@keyframes indeterminate {
+  0% {left:-35%; right:100%}
+  60% {left:100%; right:-90%}
+  100% {left:100%; right:-90%}
+}
+@-webkit-keyframes indeterminate-short {
+  0% {left:-200%; right:100%}
+  60% {left:107%; right:-8%}
+  100% {left:107%; right:-8%}
+}
+@-moz-keyframes indeterminate-short {
+  0% {left:-200%; right:100%}
+  60% {left:107%; right:-8%}
+  100% {left:107%; right:-8%}
+}
+@keyframes indeterminate-short {
+  0% {left:-200%; right:100%}
+  60% {left:107%; right:-8%}
+  100% {left:107%; right:-8%}
+}
+
+/**** dropdown menu from http://codepen.io/philhoyt/pen/ujHzd ***/
+.menu {list-style:none; position:relative; margin:0; padding:0}
+.menu.right {float:right}
+.menu a {padding:0 15px; text-decoration:none;text-align:left;font-family:"HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; text-align:left}
+.menu li {position:relative; float:left; margin:0; padding:0}
+.menu ul {background:white; border:1px solid #e1e1e1; visibility:hidden; opacity:0;  position:absolute; top:110%; padding:0; z-index:1000; transition:all 0.2s ease-out; list-style-type:none; box-shadow:5px 5px 10px #666}
+.menu ul a {padding:10px 15px; color:#333; font-weight:700; font-size:12px; line-height:16px; display: block}
+.menu ul li {float:none; width:200px}
+.menu ul ul {top:0; left:80%; z-index:1100}
+.menu li:hover > ul {visibility:visible; opacity:1}
+.menu>li>ul>li:first-child:before{content:''; position:absolute; width:1px; height:1px; border:10px solid transparent; left:50px; top:-20px; margin-left:-10px; border-bottom-color:white}
+.menu.dark ul {background:black; border:1px solid black}
+.menu.dark ul a {color:white}
+.menu.dark>li>ul>li:first-child:before{border-bottom-color:black}
+
+@media (max-width:599px) {
+  header .menu li, header .menu ul {width: 100%}  
+  header .menu.right {float:left; text-align:left}
+  header .menu ul ul {top:2.5em; left:-1px}
+}
+
+@media (min-width:600px) {
+  .ham {display:none!important}
+  .burger.accordion * {max-height:1000px; overflow:visible}
+}
+
+/*** pulsating ring from https://jsfiddle.net/mandynicole/7xrKP/ *******/
+.pulse:after {
+    content:"";
+    border:3px solid #00e6ac;
+    -webkit-border-radius:30px;
+    height:40px;
+    width:40px;
+    position:absolute;
+    margin-left:-20px;
+    margin-top:-20px;
+    -webkit-animation:pulsate 1s ease-out;
+    -webkit-animation-iteration-count:infinite;
+    opacity:0.0
+}
+@-webkit-keyframes pulsate {
+    0% {-webkit-transform:scale(0.1, 0.1); opacity:0.0}
+    50% {opacity:1.0}
+    100% {-webkit-transform:scale(1.2, 1.2); opacity:0.0}
+}
+
+/**** underline effect ***/
+a:not(.btn):not(.noeffect) {position:relative}
+a:not(.btn):not(.noeffect):hover {color:#26a69a}
+a:not(.btn):not(.noeffect):hover:after {width:100%}
+a:not(.btn):not(.noeffect):after {
+  display:block;
+  position:absolute;
+  left:0;
+  bottom:-1px;
+  width:0;
+  height:2px;
+  background-color:#26a69a;
+  content:"";
+  transition:width 0.2s;
+}
+
+/**** modal ***/
+.modal {
+  position:fixed;
+  z-index:9999;
+  top:0;
+  bottom:0;
+  left:0;
+  right:0;
+  background-color:rgba(0,0,0,0.8);
+  padding-top:20vh;
+  transition:opacity 500ms;
+  visibility:hidden;
+  opacity:0;
+}
+.modal:target {visibility:visible; opacity:1}
+.modal div {margin-left:auto; margin-right:auto}
+.modal .close:not(.btn) {position:absolute; top:10px; right:10px; font-size:20px}
+.modal .close {transition:all 200ms}
+
+/*** tooltips from http://codepen.io/trezy/pen/Khnzy ***/
+[data-tooltip] {position:relative}
+[data-tooltip]:before, [data-tooltip]:after {display:none; position:absolute; top:0}
+[data-tooltip]:hover:after,[data-tooltip]:hover:before {display:block}
+[data-tooltip]:hover:before {
+  border-bottom:.6em solid black;
+  border-bottom:.6em solid black;
+  border-left:7px solid transparent;
+  border-right:7px solid transparent;
+  content:"";
+  left:0;
+  margin-top:12px;
+  z-index:2000;
+}
+[data-tooltip]:hover:after {
+  z-index:2000;
+  background-color:rgba(0,0,0,0.8);
+  border:4px solid rgba(0,0,0,0.8);
+  border-radius:7px;
+  color:white;
+  text-transform:none;
+  font-size: 12px;
+  content:attr(data-tooltip);
+  left:0;
+  top:2px;
+  margin-left:-20;
+  margin-top:1.5em;
+  padding:5px 15px;
+  white-space:pre-wrap;
+  width:100px;
+}
+
+/*** accordion ***/
+.accordion>input ~ label:before {content:"▲ "; color:#ddd}
+.accordion>input:checked ~ label:before {content:"▼ "; color:#ddd}
+.accordion>input {display:none}
+.accordion>input:checked ~ *:not(label) {
+  max-height: 1000px !important;
+  overflow:visible !important;
+  -webkit-transition: max-height .3s ease-in;
+  transition: max-height .3s ease-in;
+}
+.accordion>*:not(label) {
+  max-height: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  -webkit-transition: max-height .3s ease-out;
+  transition: max-height .3s ease-out;
+}
+
+
+/*** cards from http://codepen.io/edeesims/pen/iGDzk ***/
+.card {perspective: 500px; max-width:100%}
+.card>div {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  box-shadow: 0 0 15px rgba(0,0,0,0.1);
+  transition: transform 1s;
+  transform-style: preserve-3d;
+}
+.card:hover>div {
+  transform: rotateY( 180deg ) ;
+  transition: transform 0.5s;
+}
+.card>div>div {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  backface-visibility: hidden;
+}
+.card>div>div:nth-child(2) {
+  transform: rotateY( 180deg );
+}
+
+/*** colors from http://clrs.cc/ ***/
+.navy{background-color:#001f3f!important;color:white}.blue{background-color:#0074d9!important;color:white}.aqua{background-color:#7fdbff!important;color:black}.teal{background-color:#39cccc!important;color:white}.olive{background-color:#3d9970!important;color:white}.green{background-color:#2ecc40!important;color:white}.aquamarine{background-color:#26a69a!important;color:white}.lime{background-color:#01ff70!important;color:black}.yellow{background-color:#ffdc00!important;color:black}.orange{background-color:#ff851b!important;color:white}.red{background-color:#cc1f00!important;color:white}.fuchsia{background-color:#f012be!important;color:white}.pink{background-color:#ee6e73!important;color:white}.purple{background-color:#b10dc9!important;color:white}.maroon{background-color:#85144b!important;color:white}.white{background-color:#fff!important;color:black;-webkit-box-shadow:inset 0px 0px 0px 1px #ddd;-moz-box-shadow:inset 0px 0px 0px 1px #ddd;box-shadow:inset 0px 0px 0px 1px #ddd}.gray{background-color:#aaa!important;color:white}.silver{background-color:#f1f1f1!important;color:black}.black{background-color:#000!important;color:white}.glass{background:rgba(255,255,255,0.5)!important;color:black}
+
+/**** tags ****/
+.tags > span {
+  padding: 4px 9px;
+  white-space: nowrap;
+  color: white;
+  background-color: #26a69a;
+  border-radius: 5px;
+  font-size:12px;
+  margin: 5px 5px 5px 0 !important;
+  line-height: 32px;
+}
+.tags.dismissible > span:hover {opacity: 0.5}
+.tags.dismissible > span:not(.off):after {content:" ✕"}
+.tags > span.off {background-color: #ccc}
+.tags.dismissible > span.off:hover {background-color:#26a69a}

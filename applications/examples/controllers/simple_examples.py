@@ -35,12 +35,6 @@ def hello6():
     response.flash = 'Hello World in a flash!'
     return dict(message=T('Hello World'))
 
-
-def status():
-    """ page that shows internal status"""
-    return dict(toolbar=response.toolbar())
-
-
 def redirectme():
     """ redirects to /{{=request.application}}/{{=request.controller}}/hello3 """
 
