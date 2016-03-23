@@ -562,6 +562,9 @@ class TestBareHelpers(unittest.TestCase):
         # Tuple
         self.assertEqual(SELECT((1, 2, 3, 4, 5)).xml(),
                          '<select><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>')
+        # String value
+        self.assertEqual(SELECT('Option 1', 'Option 2').xml(),
+                         '<select><option value="Option 1">Option 1</option><option value="Option 2">Option 2</option></select>')
 
     def test_FIELDSET(self):
         self.assertEqual(FIELDSET('<>', _a='1', _b='2').xml(),
