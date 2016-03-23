@@ -234,8 +234,6 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(HTML('<>', _a='1', _b='2', doctype='').xml(),
                          '<html a="1" b="2" lang="en">&lt;&gt;</html>')
 
-
-
     def test_XHTML(self):
         # Empty XHTML test
         self.assertEqual(XHTML().xml(),
@@ -243,6 +241,16 @@ class TestBareHelpers(unittest.TestCase):
         # Not Empty XHTML test
         self.assertEqual(XHTML('<>', _a='1', _b='2').xml(),
                          '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\n<html a="1" b="2" lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">&lt;&gt;</html>')
+        self.assertEqual(XHTML('<>', _a='1', _b='2', doctype='').xml(),
+                         '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\n<html a="1" b="2" lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">&lt;&gt;</html>')
+        self.assertEqual(XHTML('<>', _a='1', _b='2', doctype='strict').xml(),
+                         '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\n<html a="1" b="2" lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">&lt;&gt;</html>')
+        self.assertEqual(XHTML('<>', _a='1', _b='2', doctype='transitional').xml(),
+                         '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\n<html a="1" b="2" lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">&lt;&gt;</html>')
+        self.assertEqual(XHTML('<>', _a='1', _b='2', doctype='frameset').xml(),
+                         '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">\n<html a="1" b="2" lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">&lt;&gt;</html>')
+        self.assertEqual(XHTML('<>', _a='1', _b='2', doctype='xmlns').xml(),
+                         'xmlns\n<html a="1" b="2" lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">&lt;&gt;</html>')
 
     def test_HEAD(self):
         self.assertEqual(HEAD('<>', _a='1', _b='2').xml(),
