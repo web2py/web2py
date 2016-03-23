@@ -233,6 +233,9 @@ class TestBareHelpers(unittest.TestCase):
                          '<!DOCTYPE HTML>\n<html a="1" b="2" lang="en">&lt;&gt;</html>')
         self.assertEqual(HTML('<>', _a='1', _b='2', doctype='').xml(),
                          '<html a="1" b="2" lang="en">&lt;&gt;</html>')
+        self.assertEqual(HTML('<>', _a='1', _b='2', doctype='CustomDocType').xml(),
+                         'CustomDocType\n<html a="1" b="2" lang="en">&lt;&gt;</html>')
+
 
     def test_XHTML(self):
         # Empty XHTML test
