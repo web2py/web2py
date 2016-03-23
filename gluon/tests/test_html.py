@@ -452,6 +452,7 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(COL(_span='2').xml(), '<col span="2" />')
         # Commented for now not so sure how to make it pass properly was passing locally
         # I think this test is interesting and add value
+        # This fail relate to python 2.6 limitation I think
         # Failing COL test
         # with self.assertRaises(SyntaxError) as cm:
         #     COL('<>').xml()
@@ -523,9 +524,13 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(FORM('<>', _a='1', _b='2').xml(),
                          '<form a="1" action="#" b="2" enctype="multipart/form-data" method="post">&lt;&gt;</form>')
 
-    # TODO: def test_BEAUTIFY(self):
+    def test_BEAUTIFY(self):
+        self.assertEqual(BEAUTIFY(['a', 'b', {'hello': 'world'}]).xml(),
+                         '<div><table><tr><td><div>a</div></td></tr><tr><td><div>b</div></td></tr><tr><td><div><table><tr><td style="font-weight:bold;vertical-align:top;">hello</td><td style="vertical-align:top;">:</td><td><div>world</div></td></tr></table></div></td></tr></table></div>')
 
-    # TODO: def test_MENU(self):
+    def test_MENU(self):
+        self.assertEqual(MENU([('Home', False, '/welcome/default/index', [])]).xml(),
+                         '<ul class="web2py-menu web2py-menu-vertical"><li class="web2py-menu-first"><a href="/welcome/default/index">Home</a></li></ul>')
 
     # TODO: def test_embed64(self):
 
@@ -535,9 +540,24 @@ class TestBareHelpers(unittest.TestCase):
 
     # TODO: def test_markmin_serializer(self):
 
-    # TODO: def test_MARKMIN(self):
+    def test_MARKMIN(self):
+        # This test pass with python 2.7 but expected to fail under 2.6
+        # with self.assertRaises(TypeError) as cm:
+        #     MARKMIN().xml()
+        # self.assertEqual(cm.exception[0], '__init__() takes at least 2 arguments (1 given)')
+        self.assertEqual(MARKMIN('').xml(), '')
+        self.assertEqual(MARKMIN('<>').xml(),
+                         '<p>&lt;&gt;</p>')
+        self.assertEqual(MARKMIN("``hello_world = 'Hello World!'``:python").xml(),
+                         '<code class="python">hello_world = \'Hello World!\'</code>')
 
-    # TODO: def test_ASSIGNJS(self):
+    def test_ASSIGNJS(self):
+        # empty assignation
+        self.assertEqual(ASSIGNJS().xml(), '')
+        # text assignation
+        self.assertEqual(ASSIGNJS(var1='1', var2='2').xml(), 'var var1 = "1";\nvar var2 = "2";\n')
+        # int assignation
+        self.assertEqual(ASSIGNJS(var1=1, var2=2).xml(), 'var var1 = 1;\nvar var2 = 2;\n')
 
 
 class TestData(unittest.TestCase):

@@ -2831,10 +2831,24 @@ class MARKMIN(XmlComponent):
 
 
 def ASSIGNJS(**kargs):
+    """
+    Example:
+        ASSIGNJS(var1='1', var2='2') will return the following javascript variables assignations :
+
+            var var1 = "1";
+            var var2 = "2";
+
+    Args:
+        **kargs: Any keywords arguments and assigned values.
+
+    Returns:
+        Javascript vars assignations for the key/value passed.
+
+    """
     from gluon.serializers import json
     s = ""
     for key, value in kargs.items():
-        s+='var %s = %s;\n' % (key, json(value))
+        s += 'var %s = %s;\n' % (key, json(value))
     return XML(s)
 
 
