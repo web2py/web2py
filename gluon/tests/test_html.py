@@ -200,6 +200,12 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual([el.xml() for el in s.siblings()], ['<div>b</div>'])
         self.assertEqual(s.sibling().xml(), '<div>b</div>')
         self.assertEqual(s.siblings('a'), [])
+        # Corner case for raise coverage of one line
+        # I think such assert fail cause of python 2.6
+        # Work under python 2.7
+        # with self.assertRaises(SyntaxError) as cm:
+        #     DIV(BR('<>')).xml()
+        # self.assertEqual(cm.exception[0], '<br/> tags cannot have components')
 
     def test_CAT(self):
         # Empty CAT()
@@ -223,6 +229,18 @@ class TestBareHelpers(unittest.TestCase):
     def test_HTML(self):
         self.assertEqual(HTML('<>', _a='1', _b='2').xml(),
                          '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">\n<html a="1" b="2" lang="en">&lt;&gt;</html>')
+        self.assertEqual(HTML('<>', _a='1', _b='2', doctype='strict').xml(),
+                         '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">\n<html a="1" b="2" lang="en">&lt;&gt;</html>')
+        self.assertEqual(HTML('<>', _a='1', _b='2', doctype='transitional').xml(),
+                         '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">\n<html a="1" b="2" lang="en">&lt;&gt;</html>')
+        self.assertEqual(HTML('<>', _a='1', _b='2', doctype='frameset').xml(),
+                         '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">\n<html a="1" b="2" lang="en">&lt;&gt;</html>')
+        self.assertEqual(HTML('<>', _a='1', _b='2', doctype='html5').xml(),
+                         '<!DOCTYPE HTML>\n<html a="1" b="2" lang="en">&lt;&gt;</html>')
+        self.assertEqual(HTML('<>', _a='1', _b='2', doctype='').xml(),
+                         '<html a="1" b="2" lang="en">&lt;&gt;</html>')
+        self.assertEqual(HTML('<>', _a='1', _b='2', doctype='CustomDocType').xml(),
+                         'CustomDocType\n<html a="1" b="2" lang="en">&lt;&gt;</html>')
 
     def test_XHTML(self):
         # Empty XHTML test
@@ -231,6 +249,16 @@ class TestBareHelpers(unittest.TestCase):
         # Not Empty XHTML test
         self.assertEqual(XHTML('<>', _a='1', _b='2').xml(),
                          '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\n<html a="1" b="2" lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">&lt;&gt;</html>')
+        self.assertEqual(XHTML('<>', _a='1', _b='2', doctype='').xml(),
+                         '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\n<html a="1" b="2" lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">&lt;&gt;</html>')
+        self.assertEqual(XHTML('<>', _a='1', _b='2', doctype='strict').xml(),
+                         '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\n<html a="1" b="2" lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">&lt;&gt;</html>')
+        self.assertEqual(XHTML('<>', _a='1', _b='2', doctype='transitional').xml(),
+                         '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\n<html a="1" b="2" lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">&lt;&gt;</html>')
+        self.assertEqual(XHTML('<>', _a='1', _b='2', doctype='frameset').xml(),
+                         '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">\n<html a="1" b="2" lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">&lt;&gt;</html>')
+        self.assertEqual(XHTML('<>', _a='1', _b='2', doctype='xmlns').xml(),
+                         'xmlns\n<html a="1" b="2" lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">&lt;&gt;</html>')
 
     def test_HEAD(self):
         self.assertEqual(HEAD('<>', _a='1', _b='2').xml(),
@@ -452,6 +480,7 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(COL(_span='2').xml(), '<col span="2" />')
         # Commented for now not so sure how to make it pass properly was passing locally
         # I think this test is interesting and add value
+        # This fail relate to python 2.6 limitation I think
         # Failing COL test
         # with self.assertRaises(SyntaxError) as cm:
         #     COL('<>').xml()
@@ -488,6 +517,8 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(TEXTAREA('<>', _a='1', _b='2', _rows=5, _cols=20).xml(),
                          '<textarea a="1" b="2" cols="20" rows="5">&lt;&gt;' +
                          '</textarea>')
+        self.assertEqual(TEXTAREA('<>', value='bla bla bla...', _rows=10, _cols=40).xml(),
+                         '<textarea cols="40" rows="10">bla bla bla...</textarea>')
 
     def test_OPTION(self):
         self.assertEqual(OPTION('<>', _a='1', _b='2').xml(),
@@ -505,11 +536,35 @@ class TestBareHelpers(unittest.TestCase):
         # Not Empty OPTGROUP test
         self.assertEqual(OPTGROUP('<>', _a='1', _b='2').xml(),
                          '<optgroup a="1" b="2"><option value="&lt;&gt;">&lt;&gt;</option></optgroup>')
+        # With an OPTION
+        self.assertEqual(OPTGROUP(OPTION('Option 1', _value='1'), _label='Group 1').xml(),
+                         '<optgroup label="Group 1"><option value="1">Option 1</option></optgroup>')
 
     def test_SELECT(self):
         self.assertEqual(SELECT('<>', _a='1', _b='2').xml(),
                          '<select a="1" b="2">' +
                          '<option value="&lt;&gt;">&lt;&gt;</option></select>')
+        self.assertEqual(SELECT(OPTION('option 1', _value='1'),
+                                OPTION('option 2', _value='2')).xml(),
+                         '<select><option value="1">option 1</option><option value="2">option 2</option></select>')
+        self.assertEqual(SELECT(OPTION('option 1', _value='1', _selected='selected'),
+                                OPTION('option 2', _value='2'),
+                                _multiple='multiple').xml(),
+                         '<select multiple="multiple"><option selected="selected" value="1">option 1</option><option value="2">option 2</option></select>')
+        # OPTGROUP
+        self.assertEqual(SELECT(OPTGROUP(OPTION('option 1', _value='1'),
+                                         OPTION('option 2', _value='2'),
+                                         _label='Group 1',)).xml(),
+                         '<select><optgroup label="Group 1"><option value="1">option 1</option><option value="2">option 2</option></optgroup></select>')
+        # List
+        self.assertEqual(SELECT([1, 2, 3, 4, 5]).xml(),
+                         '<select><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>')
+        # Tuple
+        self.assertEqual(SELECT((1, 2, 3, 4, 5)).xml(),
+                         '<select><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>')
+        # String value
+        self.assertEqual(SELECT('Option 1', 'Option 2').xml(),
+                         '<select><option value="Option 1">Option 1</option><option value="Option 2">Option 2</option></select>')
 
     def test_FIELDSET(self):
         self.assertEqual(FIELDSET('<>', _a='1', _b='2').xml(),
@@ -523,9 +578,13 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(FORM('<>', _a='1', _b='2').xml(),
                          '<form a="1" action="#" b="2" enctype="multipart/form-data" method="post">&lt;&gt;</form>')
 
-    # TODO: def test_BEAUTIFY(self):
+    def test_BEAUTIFY(self):
+        self.assertEqual(BEAUTIFY(['a', 'b', {'hello': 'world'}]).xml(),
+                         '<div><table><tr><td><div>a</div></td></tr><tr><td><div>b</div></td></tr><tr><td><div><table><tr><td style="font-weight:bold;vertical-align:top;">hello</td><td style="vertical-align:top;">:</td><td><div>world</div></td></tr></table></div></td></tr></table></div>')
 
-    # TODO: def test_MENU(self):
+    def test_MENU(self):
+        self.assertEqual(MENU([('Home', False, '/welcome/default/index', [])]).xml(),
+                         '<ul class="web2py-menu web2py-menu-vertical"><li class="web2py-menu-first"><a href="/welcome/default/index">Home</a></li></ul>')
 
     # TODO: def test_embed64(self):
 
@@ -535,9 +594,24 @@ class TestBareHelpers(unittest.TestCase):
 
     # TODO: def test_markmin_serializer(self):
 
-    # TODO: def test_MARKMIN(self):
+    def test_MARKMIN(self):
+        # This test pass with python 2.7 but expected to fail under 2.6
+        # with self.assertRaises(TypeError) as cm:
+        #     MARKMIN().xml()
+        # self.assertEqual(cm.exception[0], '__init__() takes at least 2 arguments (1 given)')
+        self.assertEqual(MARKMIN('').xml(), '')
+        self.assertEqual(MARKMIN('<>').xml(),
+                         '<p>&lt;&gt;</p>')
+        self.assertEqual(MARKMIN("``hello_world = 'Hello World!'``:python").xml(),
+                         '<code class="python">hello_world = \'Hello World!\'</code>')
 
-    # TODO: def test_ASSIGNJS(self):
+    def test_ASSIGNJS(self):
+        # empty assignation
+        self.assertEqual(ASSIGNJS().xml(), '')
+        # text assignation
+        self.assertEqual(ASSIGNJS(var1='1', var2='2').xml(), 'var var1 = "1";\nvar var2 = "2";\n')
+        # int assignation
+        self.assertEqual(ASSIGNJS(var1=1, var2=2).xml(), 'var var1 = 1;\nvar var2 = 2;\n')
 
 
 class TestData(unittest.TestCase):
