@@ -200,6 +200,12 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual([el.xml() for el in s.siblings()], ['<div>b</div>'])
         self.assertEqual(s.sibling().xml(), '<div>b</div>')
         self.assertEqual(s.siblings('a'), [])
+        # Corner case for raise coverage of one line
+        # I think such assert fail cause of python 2.6
+        # Work under python 2.7
+        # with self.assertRaises(SyntaxError) as cm:
+        #     DIV(BR('<>')).xml()
+        # self.assertEqual(cm.exception[0], '<br/> tags cannot have components')
 
     def test_CAT(self):
         # Empty CAT()
@@ -511,6 +517,8 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(TEXTAREA('<>', _a='1', _b='2', _rows=5, _cols=20).xml(),
                          '<textarea a="1" b="2" cols="20" rows="5">&lt;&gt;' +
                          '</textarea>')
+        self.assertEqual(TEXTAREA('<>', _value='bla bla bla', _rows=10, _cols=40).xml(),
+                         '<textarea cols="40" rows="10" value="bla bla bla">&lt;&gt;</textarea>')
 
     def test_OPTION(self):
         self.assertEqual(OPTION('<>', _a='1', _b='2').xml(),
