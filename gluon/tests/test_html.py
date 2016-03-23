@@ -223,6 +223,18 @@ class TestBareHelpers(unittest.TestCase):
     def test_HTML(self):
         self.assertEqual(HTML('<>', _a='1', _b='2').xml(),
                          '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">\n<html a="1" b="2" lang="en">&lt;&gt;</html>')
+        self.assertEqual(HTML('<>', _a='1', _b='2', doctype='strict').xml(),
+                         '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">\n<html a="1" b="2" lang="en">&lt;&gt;</html>')
+        self.assertEqual(HTML('<>', _a='1', _b='2', doctype='transitional').xml(),
+                         '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">\n<html a="1" b="2" lang="en">&lt;&gt;</html>')
+        self.assertEqual(HTML('<>', _a='1', _b='2', doctype='frameset').xml(),
+                         '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">\n<html a="1" b="2" lang="en">&lt;&gt;</html>')
+        self.assertEqual(HTML('<>', _a='1', _b='2', doctype='html5').xml(),
+                         '<!DOCTYPE HTML>\n<html a="1" b="2" lang="en">&lt;&gt;</html>')
+        self.assertEqual(HTML('<>', _a='1', _b='2', doctype='').xml(),
+                         '<html a="1" b="2" lang="en">&lt;&gt;</html>')
+
+
 
     def test_XHTML(self):
         # Empty XHTML test
