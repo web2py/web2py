@@ -236,7 +236,6 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(HTML('<>', _a='1', _b='2', doctype='CustomDocType').xml(),
                          'CustomDocType\n<html a="1" b="2" lang="en">&lt;&gt;</html>')
 
-
     def test_XHTML(self):
         # Empty XHTML test
         self.assertEqual(XHTML().xml(),
@@ -534,6 +533,13 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(SELECT('<>', _a='1', _b='2').xml(),
                          '<select a="1" b="2">' +
                          '<option value="&lt;&gt;">&lt;&gt;</option></select>')
+        self.assertEqual(SELECT(OPTION('option 1', _value='1'),
+                                OPTION('option 2', _value='2')).xml(),
+                         '<select><option value="1">option 1</option><option value="2">option 2</option></select>')
+        self.assertEqual(SELECT(OPTION('option 1', _value='1', _selected='selected'),
+                                OPTION('option 2', _value='2'),
+                                _multiple='multiple').xml(),
+                         '<select multiple="multiple"><option selected="selected" value="1">option 1</option><option value="2">option 2</option></select>')
 
     def test_FIELDSET(self):
         self.assertEqual(FIELDSET('<>', _a='1', _b='2').xml(),
