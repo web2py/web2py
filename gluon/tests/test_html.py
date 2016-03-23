@@ -517,8 +517,8 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(TEXTAREA('<>', _a='1', _b='2', _rows=5, _cols=20).xml(),
                          '<textarea a="1" b="2" cols="20" rows="5">&lt;&gt;' +
                          '</textarea>')
-        self.assertEqual(TEXTAREA('<>', _value='bla bla bla', _rows=10, _cols=40).xml(),
-                         '<textarea cols="40" rows="10" value="bla bla bla">&lt;&gt;</textarea>')
+        self.assertEqual(TEXTAREA('<>', value='bla bla bla...', _rows=10, _cols=40).xml(),
+                         '<textarea cols="40" rows="10">bla bla bla...</textarea>')
 
     def test_OPTION(self):
         self.assertEqual(OPTION('<>', _a='1', _b='2').xml(),
@@ -548,6 +548,17 @@ class TestBareHelpers(unittest.TestCase):
                                 OPTION('option 2', _value='2'),
                                 _multiple='multiple').xml(),
                          '<select multiple="multiple"><option selected="selected" value="1">option 1</option><option value="2">option 2</option></select>')
+        # OPTGROUP
+        self.assertEqual(SELECT(OPTGROUP(OPTION('option 1', _value='1'),
+                                         OPTION('option 2', _value='2'),
+                                         _label='Group 1',)).xml(),
+                         '<select><optgroup label="Group 1"><option value="1">option 1</option><option value="2">option 2</option></optgroup></select>')
+        # List
+        self.assertEqual(SELECT([1, 2, 3, 4, 5]).xml(),
+                         '<select><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>')
+        # Tuple
+        self.assertEqual(SELECT((1, 2, 3, 4, 5)).xml(),
+                         '<select><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option></select>')
 
     def test_FIELDSET(self):
         self.assertEqual(FIELDSET('<>', _a='1', _b='2').xml(),
