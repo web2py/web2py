@@ -163,11 +163,8 @@ def get_callable_argspec(fn):
 
 
 def pad(s, n=32, padchar=' '):
-    if len(s)<n:
-        s += (32 - len(s)) * padchar
-    elif len(s)>n:
-        s = s[:n]
-    return s
+    return s + (32 - len(s) % 32) * padchar
+
 
 def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
     if not hash_key:
@@ -175,7 +172,7 @@ def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
     dump = pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
     if compression_level:
         dump = zlib.compress(dump, compression_level)
-    key = pad(encryption_key)
+    key = pad(encryption_key)[:32]
     cipher, IV = AES_new(key)
     encrypted_data = base64.urlsafe_b64encode(IV + cipher.encrypt(pad(dump)))
     signature = hmac.new(hash_key, encrypted_data).hexdigest()
@@ -191,7 +188,7 @@ def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
     actual_signature = hmac.new(hash_key, encrypted_data).hexdigest()
     if not compare(signature, actual_signature):
         return None
-    key = pad(encryption_key[:32])
+    key = pad(encryption_key)[:32]
     encrypted_data = base64.urlsafe_b64decode(encrypted_data)
     IV, encrypted_data = encrypted_data[:16], encrypted_data[16:]
     cipher, _ = AES_new(key, IV=IV)
