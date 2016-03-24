@@ -1,10 +1,28 @@
-## trunk
+## 2.14.1
+
+
+- fixed two major security issues that caused the examples app to leak information
+- new Auth(…,host_names=[…]) to prevent host header injection
+- improved scheduler
+- pep8 enhancements
+- many bug fixes
+- restored GAE support that was broken in 2.13.*
+- improved fabfile for deployment
+- refactored examples with stupid.css
 - new JWT implementation (experimental)
 - new gluon.contrib.redis_scheduler
-- BREAKING: changes to gluon.contrib.redis_cache
+- myconf.get
+- LDAP groups (experimental)
+- .flash -> .w2p_flash
+- Updated feedparser.py 5.2.1
+- Updated jQuery 1.12.2
+- welcome app now checks for version number
+- Redis improvements. The old syntax still works but we recommend moving to new syntax:
+
     BEFORE:
     from gluon.contrib.redis_cache import RedisCache
     cache.redis = RedisCache('localhost:6379',db=None, debug=True)
+
     NOW:
     from gluon.contrib.redis_utils import RConn
     from gluon.contrib.redis_cache import RedisCache
@@ -14,11 +32,12 @@
     # socket_connect_timeout=None, .....)
     # exactly as a redis.StrictRedis instance
     cache.redis = RedisCache(redis_conn=rconn, debug=True)
-- BREAKING: changes to gluon.contrib.redis_session
+
     BEFORE:
     from gluon.contrib.redis_session import RedisSession
     sessiondb = RedisSession('localhost:6379',db=0, session_expiry=False)
     session.connect(request, response, db = sessiondb)
+
     NOW:
     from gluon.contrib.redis_utils import RConn
     from gluon.contrib.redis_session import RedisSession
@@ -27,7 +46,7 @@
     session.connect(request, response, db = sessiondb)
 
 
-## 2.13.1-2
+## 2.13.*
 
 - fixed a security issue in request_reset_password
 - added fabfile.py

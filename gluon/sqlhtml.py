@@ -2185,7 +2185,7 @@ class SQLFORM(FORM):
                        buttonurl=url(args=[]), callback=None,
                        delete=None, trap=True, noconfirm=None, title=None):
             if showbuttontext:
-                return A(SPAN(_class=ui.get(buttonclass)),
+                return A(SPAN(_class=ui.get(buttonclass)), CAT(' '),
                          SPAN(T(buttontext), _title=title or T(buttontext),
                               _class=ui.get('buttontext')),
                          _href=buttonurl,
@@ -2206,15 +2206,12 @@ class SQLFORM(FORM):
 
         dbset = db(query, ignore_common_filters=ignore_common_filters)
         tablenames = db._adapter.tables(dbset.query)
-        print dbset.query
-        print tablenames
         if left is not None:
             if not isinstance(left, (list, tuple)):
                 left = [left]
             for join in left:
                 tablenames += db._adapter.tables(join)
         tables = [db[tablename] for tablename in tablenames]
-        print tables
         if fields:
             # add missing tablename to virtual fields
             for table in tables:

@@ -11,7 +11,7 @@ import logging
 import thread
 from gluon import current
 from gluon.storage import Storage
-from gluon.contrib.redis_utils import acquire_lock, release_lock
+from gluon.contrib.redis_utils import acquire_lock, release_lock, RConn
 from gluon.contrib.redis_utils import register_release_lock
 
 logger = logging.getLogger("web2py.session.redis")
@@ -19,7 +19,7 @@ logger = logging.getLogger("web2py.session.redis")
 locker = thread.allocate_lock()
 
 
-def RedisSession(*args, **vars):
+def RedisSession(redis_conn, session_expiry=False, with_lock=False, db=None):
     """
     Usage example: put in models::
 
@@ -39,11 +39,17 @@ def RedisSession(*args, **vars):
     Simple slip-in storage for session
     """
 
+    # for backward compatibility
+    if isinstance(redis_conn, str):
+        host, port = redis_conn.split(':')
+        redis_conn = RConn(host=host, port=int(port), db=db)
+
     locker.acquire()
     try:
         instance_name = 'redis_instance_' + current.request.application
         if not hasattr(RedisSession, instance_name):
-            setattr(RedisSession, instance_name, RedisClient(*args, **vars))
+            setattr(RedisSession, instance_name, 
+                    RedisClient(redis_conn, session_expiry=session_expiry, with_lock=with_lock))
         return getattr(RedisSession, instance_name)
     finally:
         locker.release()
