@@ -2743,7 +2743,11 @@ class SQLFORM(FORM):
                     if field.type == 'blob':
                         continue
                     if isinstance(field, Field.Virtual) and field.tablename in row:
-                        value = dbset.db[field.tablename][row[field.tablename][field_id]][field.name]
+                        try:
+                            # fast path, works for joins
+                            value = row[field.tablename][field.name]
+                        except KeyError:
+                            value = dbset.db[field.tablename][row[field.tablename][field_id]][field.name]
                     else:
                         value = row[str(field)]
                     maxlength = maxtextlengths.get(str(field), maxtextlength)
