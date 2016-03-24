@@ -23,15 +23,11 @@ import logging
 import socket
 import base64
 import zlib
+import json
 
 _struct_2_long_long = struct.Struct('=QQ')
 
 python_version = sys.version_info[0]
-
-if python_version == 2:
-    import cPickle as pickle
-else:
-    import pickle
 
 import hashlib
 from hashlib import md5, sha1, sha224, sha256, sha384, sha512
@@ -163,13 +159,16 @@ def get_callable_argspec(fn):
 
 
 def pad(s, n=32, padchar=' '):
-    return s + (32 - len(s) % 32) * padchar
-
+    if len(s)<n:
+        s += (32 - len(s)) * padchar
+    elif len(s)>n:
+        s = s[:n]
+    return s
 
 def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
     if not hash_key:
         hash_key = sha1(encryption_key).hexdigest()
-    dump = pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
+    dump = json.dumps(data)
     if compression_level:
         dump = zlib.compress(dump, compression_level)
     key = pad(encryption_key[:32])
@@ -197,7 +196,7 @@ def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
         data = data.rstrip(' ')
         if compression_level:
             data = zlib.decompress(data)
-        return pickle.loads(data)
+        return json.loads(data)
     except Exception, e:
         return None
 
