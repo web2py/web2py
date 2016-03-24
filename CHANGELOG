@@ -17,7 +17,7 @@
 - Updated feedparser.py 5.2.1
 - Updated jQuery 1.12.2
 - welcome app now checks for version number
-- Redis improvements. The old syntax still works but we recommend moving to new syntax:
+- Redis improvements. New syntax:
 
     BEFORE:
     from gluon.contrib.redis_cache import RedisCache
