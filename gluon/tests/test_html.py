@@ -363,6 +363,13 @@ class TestBareHelpers(unittest.TestCase):
             A('a', callback='b', _id='c').xml(),
             '<a data-w2p_disable_with="default" data-w2p_method="POST" href="b" id="c">a</a>'
             )
+        # Callback with no id trigger web2py_uuid() call
+        from html import web2pyHTMLParser
+        a = A('a', callback='b').xml()
+        for tag in web2pyHTMLParser(a).tree.elements('a'):
+            uuid_generated = tag.attributes['_id']
+        self.assertEqual(a,
+                         '<a data-w2p_disable_with="default" data-w2p_method="POST" href="b" id="{id}">a</a>'.format(id=uuid_generated))
         self.assertEqual(
             A('a', delete='tr').xml(),
             '<a data-w2p_disable_with="default" data-w2p_remove="tr">a</a>'
@@ -485,6 +492,8 @@ class TestBareHelpers(unittest.TestCase):
         # with self.assertRaises(SyntaxError) as cm:
         #     COL('<>').xml()
         # self.assertEqual(cm.exception[0], '<col/> tags cannot have components')
+        # For now
+        self.assertRaises(SyntaxError, COL, '<>')
 
     def test_COLGROUP(self):
         # Empty COLGROUP test
@@ -585,6 +594,9 @@ class TestBareHelpers(unittest.TestCase):
     def test_MENU(self):
         self.assertEqual(MENU([('Home', False, '/welcome/default/index', [])]).xml(),
                          '<ul class="web2py-menu web2py-menu-vertical"><li class="web2py-menu-first"><a href="/welcome/default/index">Home</a></li></ul>')
+        # mobile=True
+        self.assertEqual(MENU([('Home', False, '/welcome/default/index', [])], mobile=True).xml(),
+                         '<select class="web2py-menu web2py-menu-vertical" onchange="window.location=this.value"><option value="/welcome/default/index">Home</option></select>')
 
     # TODO: def test_embed64(self):
 
@@ -599,11 +611,14 @@ class TestBareHelpers(unittest.TestCase):
         # with self.assertRaises(TypeError) as cm:
         #     MARKMIN().xml()
         # self.assertEqual(cm.exception[0], '__init__() takes at least 2 arguments (1 given)')
+        # For now
+        self.assertRaises(TypeError, MARKMIN)
         self.assertEqual(MARKMIN('').xml(), '')
         self.assertEqual(MARKMIN('<>').xml(),
                          '<p>&lt;&gt;</p>')
         self.assertEqual(MARKMIN("``hello_world = 'Hello World!'``:python").xml(),
                          '<code class="python">hello_world = \'Hello World!\'</code>')
+        self.assertEqual(MARKMIN('<>').flatten(), '<>')
 
     def test_ASSIGNJS(self):
         # empty assignation
