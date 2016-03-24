@@ -1,4 +1,5 @@
-## trunk
+## 2.14.1
+
 - new JWT implementation (experimental)
 - new gluon.contrib.redis_scheduler
 - BREAKING: changes to gluon.contrib.redis_cache
@@ -27,7 +28,7 @@
     session.connect(request, response, db = sessiondb)
 
 
-## 2.13.1-2
+## 2.13.*
 
 - fixed a security issue in request_reset_password
 - added fabfile.py

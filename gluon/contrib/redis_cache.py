@@ -15,14 +15,14 @@ import random
 from gluon import current
 from gluon.cache import CacheAbstract
 from gluon.contrib.redis_utils import acquire_lock, release_lock
-from gluon.contrib.redis_utils import register_release_lock, RConnectionError
+from gluon.contrib.redis_utils import register_release_lock, RConnectionError, RConn
 
 logger = logging.getLogger("web2py.cache.redis")
 
 locker = thread.allocate_lock()
 
 
-def RedisCache(*args, **vars):
+def RedisCache(redis_conn=None, debug=False, with_lock=False, fail_gracefully=False, db=None):
     """
     Usage example: put in models::
 
@@ -81,11 +81,18 @@ def RedisCache(*args, **vars):
     - we scan the keys and then delete them
     """
 
+    # for backward compatibility
+    if isinstance(redis_conn, str):
+        host, port = redis_conn.split(':')
+        redis_conn = RConn(host=host, port=int(port), db=db)
+
     locker.acquire()
     try:
         instance_name = 'redis_instance_' + current.request.application
         if not hasattr(RedisCache, instance_name):
-            setattr(RedisCache, instance_name, RedisClient(*args, **vars))
+            setattr(RedisCache, instance_name, 
+                    RedisClient(redis_conn=redis_conn, debug=debug,
+                                with_lock=with_lock, fail_gracefully=fail_gracefully))
         return getattr(RedisCache, instance_name)
     finally:
         locker.release()
