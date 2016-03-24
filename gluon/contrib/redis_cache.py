@@ -15,7 +15,7 @@ import random
 from gluon import current
 from gluon.cache import CacheAbstract
 from gluon.contrib.redis_utils import acquire_lock, release_lock
-from gluon.contrib.redis_utils import register_release_lock, RConnectionError, RConn
+from gluon.contrib.redis_utils import register_release_lock, RConnectionError
 
 logger = logging.getLogger("web2py.cache.redis")
 
@@ -80,11 +80,6 @@ def RedisCache(redis_conn=None, debug=False, with_lock=False, fail_gracefully=Fa
     - buckets that are expired are removed from the fixed set
     - we scan the keys and then delete them
     """
-
-    # for backward compatibility
-    if isinstance(redis_conn, str):
-        host, port = redis_conn.split(':')
-        redis_conn = RConn(host=host, port=int(port), db=db)
 
     locker.acquire()
     try:
