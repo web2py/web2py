@@ -197,7 +197,7 @@ def app_create(app, request, force=False, key=None, info=False):
     except:
         rmtree(path)
         if info:
-            return False, traceback.format_exc(sys.exc_info)
+            return False, traceback.format_exc()
         else:
             return False
 
