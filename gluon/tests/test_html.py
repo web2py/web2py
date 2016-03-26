@@ -14,11 +14,14 @@ from html import *
 from html import verifyURL
 from html import truncate_string
 from storage import Storage
+from html import XML_pickle, XML_unpickle
+from html import TAG_pickler, TAG_unpickler
 
 
 class TestBareHelpers(unittest.TestCase):
 
-    # TODO: def test_xmlescape(self):
+    # xmlescape() = covered by other tests
+
     # TODO: def test_call_as_list(self):
 
     def test_truncate_string(self):
@@ -26,6 +29,8 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(truncate_string('Lorem ipsum dolor sit amet, consectetur adipiscing elit, '
                                          'sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
                                          length=30), 'Lorem ipsum dolor sit amet,...')
+        self.assertEqual(truncate_string('Short text shorter than the length parameter.', length=100),
+                         'Short text shorter than the length parameter.')
         # French text
         self.assertEqual(truncate_string('Un texte en français avec des accents et des caractères bizarre.', length=30),
                          'Un texte en français avec d...')
@@ -169,9 +174,9 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(XML('<p>Test</p><br/><p>Test</p><br/>', sanitize=True),
                          XML('<p>Test</p><br /><p>Test</p><br />'))
 
-    # TODO: def test_XML_unpickle(self):
-
-    # TODO: def test_XML_pickle(self):
+    def test_XML_pickle_unpickle(self):
+        # weird test
+        self.assertEqual(XML_unpickle(XML_pickle('data to be pickle')[1][0]), 'data to be pickle')
 
     def test_DIV(self):
         # Empty DIV()
@@ -199,7 +204,31 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(a.xml(), '<div class="abc"><span>a</span><div>b</div></div>')
         self.assertEqual([el.xml() for el in s.siblings()], ['<div>b</div>'])
         self.assertEqual(s.sibling().xml(), '<div>b</div>')
+        # siblings with wrong args
         self.assertEqual(s.siblings('a'), [])
+        # siblings with good args
+        self.assertEqual(s.siblings('div')[0].xml(), '<div>b</div>')
+        # Check for siblings with wrong kargs and value
+        self.assertEqual(s.siblings(a='d'), [])
+        # Check for siblings with good kargs and value
+        # Can't figure this one out what is a right value here??
+        # Commented for now...
+        # self.assertEqual(s.siblings(div='<div>b</div>'), ???)
+        # No other sibling should return None
+        self.assertEqual(DIV(P('First element')).element('p').sibling(), None)
+        # --------------------------------------------------------------------------------------------------------------
+        # This use unicode to hit xmlescape() line :
+        #     """
+        #     elif isinstance(data, unicode):
+        #         data = data.encode('utf8', 'xmlcharrefreplace')
+        #     """
+        self.assertEqual(DIV(u'Texte en français avec des caractères accentués...').xml(),
+                         '<div>Texte en fran\xc3\xa7ais avec des caract\xc3\xa8res accentu\xc3\xa9s...</div>')
+        # --------------------------------------------------------------------------------------------------------------
+        self.assertEqual(DIV('Test with an ID', _id='id-of-the-element').xml(),
+                         '<div id="id-of-the-element">Test with an ID</div>')
+        self.assertEqual(DIV().element('p'), None)
+
         # Corner case for raise coverage of one line
         # I think such assert fail cause of python 2.6
         # Work under python 2.7
@@ -215,9 +244,10 @@ class TestBareHelpers(unittest.TestCase):
         # CAT(' ')
         self.assertEqual(CAT(' ').xml(), ' ')
 
-    # TODO: def test_TAG_unpickler(self):
-
-    # TODO: def test_TAG_pickler(self):
+    def test_TAG_pickler_unpickler(self):
+        # weird test
+        self.assertEqual(TAG_unpickler(TAG_pickler(TAG.div('data to be pickle'))[1][0]).xml(),
+                         '<div>data to be pickle</div>')
 
     def test_TAG(self):
         self.assertEqual(TAG.first(TAG.second('test'), _key=3).xml(),
@@ -225,6 +255,9 @@ class TestBareHelpers(unittest.TestCase):
         # ending in underscore "triggers" <input /> style
         self.assertEqual(TAG.first_(TAG.second('test'), _key=3).xml(),
                          '<first key="3" />')
+        # unicode test for TAG
+        self.assertEqual(TAG.div(u'Texte en français avec des caractères accentués...').xml(),
+                         '<div>Texte en fran\xc3\xa7ais avec des caract\xc3\xa8res accentu\xc3\xa9s...</div>')
 
     def test_HTML(self):
         self.assertEqual(HTML('<>', _a='1', _b='2').xml(),
@@ -259,6 +292,8 @@ class TestBareHelpers(unittest.TestCase):
                          '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">\n<html a="1" b="2" lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">&lt;&gt;</html>')
         self.assertEqual(XHTML('<>', _a='1', _b='2', doctype='xmlns').xml(),
                          'xmlns\n<html a="1" b="2" lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">&lt;&gt;</html>')
+        self.assertEqual(XHTML('<>', _a='1', _b='2', _xmlns='xmlns').xml(),
+                         '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\n<html a="1" b="2" lang="en" xml:lang="en" xmlns="http://www.w3.org/1999/xhtml">&lt;&gt;</html>')
 
     def test_HEAD(self):
         self.assertEqual(HEAD('<>', _a='1', _b='2').xml(),
@@ -290,6 +325,8 @@ class TestBareHelpers(unittest.TestCase):
     def test_STYLE(self):
         self.assertEqual(STYLE('<>', _a='1', _b='2').xml(),
                          '<style a="1" b="2"><!--/*--><![CDATA[/*><!--*/\n<>\n/*]]>*/--></style>')
+        # Try to hit : return DIV.xml(self)
+        self.assertEqual(STYLE().xml(), '<style></style>')
 
     def test_IMG(self):
         self.assertEqual(IMG(_a='1', _b='2').xml(),
@@ -515,8 +552,9 @@ class TestBareHelpers(unittest.TestCase):
                          '<iframe a="1" b="2">&lt;&gt;</iframe>')
 
     def test_INPUT(self):
-        self.assertEqual(INPUT(_a='1', _b='2').xml(),
-                         '<input a="1" b="2" type="text" />')
+        self.assertEqual(INPUT(_a='1', _b='2').xml(), '<input a="1" b="2" type="text" />')
+        # list value
+        self.assertEqual(INPUT(_value=[1, 2, 3]).xml(), '<input type="text" value="[1, 2, 3]" />')
 
     def test_TEXTAREA(self):
         self.assertEqual(TEXTAREA('<>', _a='1', _b='2').xml(),
@@ -560,6 +598,12 @@ class TestBareHelpers(unittest.TestCase):
                                 OPTION('option 2', _value='2'),
                                 _multiple='multiple').xml(),
                          '<select multiple="multiple"><option selected="selected" value="1">option 1</option><option value="2">option 2</option></select>')
+        # More then one select with mutilple
+        self.assertEqual(SELECT(OPTION('option 1', _value='1', _selected='selected'),
+                                OPTION('option 2', _value='2', _selected='selected'),
+                                _multiple='multiple').xml(),
+                         '<select multiple="multiple"><option selected="selected" value="1">option 1</option><option selected="selected" value="2">option 2</option></select>'
+                         )
         # OPTGROUP
         self.assertEqual(SELECT(OPTGROUP(OPTION('option 1', _value='1'),
                                          OPTION('option 2', _value='2'),
@@ -574,6 +618,11 @@ class TestBareHelpers(unittest.TestCase):
         # String value
         self.assertEqual(SELECT('Option 1', 'Option 2').xml(),
                          '<select><option value="Option 1">Option 1</option><option value="Option 2">Option 2</option></select>')
+        # list as a value
+        self.assertEqual(SELECT(OPTION('option 1', _value=[1, 2, 3]),
+                                OPTION('option 2', _value=[4, 5, 6], _selected='selected'),
+                                _multiple='multiple').xml(),
+                         '<select multiple="multiple"><option value="[1, 2, 3]">option 1</option><option selected="selected" value="[4, 5, 6]">option 2</option></select>')
 
     def test_FIELDSET(self):
         self.assertEqual(FIELDSET('<>', _a='1', _b='2').xml(),
@@ -586,17 +635,40 @@ class TestBareHelpers(unittest.TestCase):
     def test_FORM(self):
         self.assertEqual(FORM('<>', _a='1', _b='2').xml(),
                          '<form a="1" action="#" b="2" enctype="multipart/form-data" method="post">&lt;&gt;</form>')
+        # These 2 crash AppVeyor and Travis with: "ImportError: No YAML serializer available"
+        # self.assertEqual(FORM('<>', _a='1', _b='2').as_yaml(),
+        #                  "accepted: null\nattributes: {_a: '1', _action: '#', _b: '2', _enctype: multipart/form-data, _method: post}\ncomponents: [<>]\nerrors: {}\nlatest: {}\nparent: null\nvars: {}\n")
+        # self.assertEqual(FORM('<>', _a='1', _b='2').as_xml(),
+        #                  '<?xml version="1.0" encoding="UTF-8"?><document><errors></errors><vars></vars><parent>None</parent><attributes><_enctype>multipart/form-data</_enctype><_action>#</_action><_b>2</_b><_a>1</_a><_method>post</_method></attributes><components><item>&amp;lt;&amp;gt;</item></components><accepted>None</accepted><latest></latest></document>')
 
     def test_BEAUTIFY(self):
         self.assertEqual(BEAUTIFY(['a', 'b', {'hello': 'world'}]).xml(),
                          '<div><table><tr><td><div>a</div></td></tr><tr><td><div>b</div></td></tr><tr><td><div><table><tr><td style="font-weight:bold;vertical-align:top;">hello</td><td style="vertical-align:top;">:</td><td><div>world</div></td></tr></table></div></td></tr></table></div>')
+        # unicode
+        self.assertEqual(BEAUTIFY([P(u'àéèûôç'), 'a', 'b', {'hello': 'world'}]).xml(),
+                         '<div><table><tr><td><div><p>\xc3\xa0\xc3\xa9\xc3\xa8\xc3\xbb\xc3\xb4\xc3\xa7</p></div></td></tr><tr><td><div>a</div></td></tr><tr><td><div>b</div></td></tr><tr><td><div><table><tr><td style="font-weight:bold;vertical-align:top;">hello</td><td style="vertical-align:top;">:</td><td><div>world</div></td></tr></table></div></td></tr></table></div>')
 
     def test_MENU(self):
         self.assertEqual(MENU([('Home', False, '/welcome/default/index', [])]).xml(),
                          '<ul class="web2py-menu web2py-menu-vertical"><li class="web2py-menu-first"><a href="/welcome/default/index">Home</a></li></ul>')
+        # Multiples entries menu
+        self.assertEqual(MENU([('Home', False, '/welcome/default/index', []),
+                               ('Item 1', False, '/welcome/default/func_one', []),
+                               ('Item 2', False, '/welcome/default/func_two', []),
+                               ('Item 3', False, '/welcome/default/func_three', []),
+                               ('Item 4', False, '/welcome/default/func_four', [])]).xml(),
+                         '<ul class="web2py-menu web2py-menu-vertical"><li class="web2py-menu-first"><a href="/welcome/default/index">Home</a></li><li><a href="/welcome/default/func_one">Item 1</a></li><li><a href="/welcome/default/func_two">Item 2</a></li><li><a href="/welcome/default/func_three">Item 3</a></li><li class="web2py-menu-last"><a href="/welcome/default/func_four">Item 4</a></li></ul>'
+                         )
         # mobile=True
         self.assertEqual(MENU([('Home', False, '/welcome/default/index', [])], mobile=True).xml(),
                          '<select class="web2py-menu web2py-menu-vertical" onchange="window.location=this.value"><option value="/welcome/default/index">Home</option></select>')
+        # Multiples entries menu for mobile
+        self.assertEqual(MENU([('Home', False, '/welcome/default/index', []),
+                               ('Item 1', False, '/welcome/default/func_one', []),
+                               ('Item 2', False, '/welcome/default/func_two', []),
+                               ('Item 3', False, '/welcome/default/func_three', []),
+                               ('Item 4', False, '/welcome/default/func_four', [])], mobile=True).xml(),
+                         '<select class="web2py-menu web2py-menu-vertical" onchange="window.location=this.value"><option value="/welcome/default/index">Home</option><option value="/welcome/default/func_one">Item 1</option><option value="/welcome/default/func_two">Item 2</option><option value="/welcome/default/func_three">Item 3</option><option value="/welcome/default/func_four">Item 4</option></select>')
 
     # TODO: def test_embed64(self):
 
