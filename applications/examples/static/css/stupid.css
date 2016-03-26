@@ -41,10 +41,10 @@ header, footer {with:100%}
 }
 
 /*** buttons ***/
-.btn, button, [type=button], [type=submit] {padding:0.5em 1em !important; margin:0 0.5em 0.5em 0; line-height:2.4em; background-color:#26a69a; color:white}
+.btn, button, [type=button], [type=submit] {padding:0.5em 1em !important; margin:0 0.5em 0.5em 0; display:inline-block; background-color:#26a69a; color:white}
 .btn:hover, button:hover, [type=button]:hover, [type=submit]:hover {box-shadow:0 0 10px #666; text-decoration:none; cursor:pointer}
-.btn.small, table .btn {padding:0.25em 0.5em !important; font-size:0.8em; line-height:1.5em}
-.btn.large {padding:1em 2em !important; font-size:1.2em; line-height:4em}
+.btn.small, table .btn {padding:0.25em 0.5em !important; font-size:0.8em}
+.btn.large {padding:1em 2em !important; font-size:1.2em}
 .btn.oval {border-radius:50%}
 
 /*** helpers ***/
@@ -75,7 +75,7 @@ input:invalid, input.error {background:#cc1f00!important;color:white}
 
 /*** grid ***/
 .container {margin-right:-20px}
-.container>.quarter, .container>.half, .container>.third, .container>.twothirds, .container>.threequarters, .container>.fill{display:inline-block; padding:5px 20px 5px 0; vertical-align:top}
+.container>.quarter, .container>.half, .container>.third, .container>.twothirds, .container>.threequarters, .container>.fill{display:inline-block; padding: 0 20px 0 0; vertical-align:top}
 .container>.fill {width:100%; margin-right:-20px}
 .container img, .container video {max-width:100%}
 @media (min-width:800px) {
