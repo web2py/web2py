@@ -14,7 +14,7 @@ label, strong {font-weight:bold}
 ul {list-style-type:none; padding-left:20px}
 a {text-decoration:none; color:#26a69a; white-space:nowrap}
 a:hover {cursor:pointer}
-h1,h2,h3,h4,h5,h6{font-weight:strong; text-transform:uppercase}
+h1,h2,h3,h4,h5,h6{font-weight:bold; text-transform:uppercase}
 h1{font-size:4em; margin:1.0em 0 0.25em 0}
 h2{font-size:2.4em; margin:0.9em 0 0.25em 0}
 h3{font-size:1.8em; margin:0.8em 0 0.25em 0}
@@ -26,7 +26,7 @@ tbody tr:hover {background-color:#fbf6d9}
 td, th {padding:5px; vertical-align:top; text-align:left; border:0}
 thead tr {background-color:#f1f1f1}
 tbody tr {border-bottom:2px solid #f1f1f1}
-th {font-weight:string; padding:5px; vertical-align:bottom; text-align:left}
+th {font-weight:bold; padding:5px; vertical-align:bottom; text-align:left}
 thead th {vertical-align:bottom}
 tbody th {vertical-align:top}
 header, footer {with:100%}
