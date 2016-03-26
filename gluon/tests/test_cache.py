@@ -37,10 +37,11 @@ def tearDownModule():
         pass
 
 
-
 class TestCache(unittest.TestCase):
 
-    def testCacheInRam(self):
+    # TODO: test_CacheAbstract(self):
+
+    def test_CacheInRam(self):
 
         # defaults to mode='http'
         cache = CacheInRam()
@@ -53,22 +54,21 @@ class TestCache(unittest.TestCase):
         cache.clear()
         self.assertEqual(cache('a', lambda: 3, 100), 3)
         self.assertEqual(cache('a', lambda: 4, 0), 4)
-        #test singleton behaviour
+        # test singleton behaviour
         cache = CacheInRam()
         cache.clear()
         self.assertEqual(cache('a', lambda: 3, 100), 3)
         self.assertEqual(cache('a', lambda: 4, 0), 4)
-        #test key deletion
+        # test key deletion
         cache('a', None)
         self.assertEqual(cache('a', lambda: 5, 100), 5)
-        #test increment
+        # test increment
         self.assertEqual(cache.increment('a'), 6)
         self.assertEqual(cache('a', lambda: 1, 100), 6)
         cache.increment('b')
         self.assertEqual(cache('b', lambda: 'x', 100), 1)
 
-
-    def testCacheOnDisk(self):
+    def test_CacheOnDisk(self):
 
         # defaults to mode='http'
         s = Storage({'application': 'admin',
@@ -83,30 +83,36 @@ class TestCache(unittest.TestCase):
         cache.clear()
         self.assertEqual(cache('a', lambda: 3, 100), 3)
         self.assertEqual(cache('a', lambda: 4, 0), 4)
-        #test singleton behaviour
+        # test singleton behaviour
         cache = CacheOnDisk(s)
         cache.clear()
         self.assertEqual(cache('a', lambda: 3, 100), 3)
         self.assertEqual(cache('a', lambda: 4, 0), 4)
-        #test key deletion
+        # test key deletion
         cache('a', None)
         self.assertEqual(cache('a', lambda: 5, 100), 5)
-        #test increment
+        # test increment
         self.assertEqual(cache.increment('a'), 6)
         self.assertEqual(cache('a', lambda: 1, 100), 6)
         cache.increment('b')
         self.assertEqual(cache('b', lambda: 'x', 100), 1)
 
-    def testCacheWithPrefix(self):
+    # TODO: def test_CacheAction(self):
+
+    # TODO: def test_Cache(self):
+
+    # TODO: def test_lazy_cache(self):
+
+    def test_CacheWithPrefix(self):
         s = Storage({'application': 'admin',
                      'folder': 'applications/admin'})
         cache = Cache(s)
-        prefix = cache.with_prefix(cache.ram,'prefix')
+        prefix = cache.with_prefix(cache.ram, 'prefix')
         self.assertEqual(prefix('a', lambda: 1, 0), 1)
         self.assertEqual(prefix('a', lambda: 2, 100), 1)
         self.assertEqual(cache.ram('prefixa', lambda: 2, 100), 1)
 
-    def testRegex(self):
+    def test_Regex(self):
         cache = CacheInRam()
         self.assertEqual(cache('a1', lambda: 1, 0), 1)
         self.assertEqual(cache('a2', lambda: 2, 100), 2)
@@ -114,7 +120,7 @@ class TestCache(unittest.TestCase):
         self.assertEqual(cache('a1', lambda: 2, 0), 2)
         self.assertEqual(cache('a2', lambda: 3, 100), 3)
 
-    def testDALcache(self):
+    def test_DALcache(self):
         s = Storage({'application': 'admin',
                      'folder': 'applications/admin'})
         cache = Cache(s)
