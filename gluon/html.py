@@ -663,7 +663,7 @@ class XML(XmlComponent):
         """
         to be considered experimental since the behavior of this method
         is questionable
-        another option could be `TAG(self.text).elements(*args,**kwargs)`
+        another option could be `TAG(self.text).elements(*args, **kwargs)`
         """
         return []
 
@@ -760,7 +760,7 @@ class DIV(XmlComponent):
         Examples:
 
         >>> a=DIV()
-        >>> a.insert(0,SPAN('x'))
+        >>> a.insert(0, SPAN('x'))
         >>> print a
         <div><span>x</span></div>
         """
@@ -856,7 +856,7 @@ class DIV(XmlComponent):
         """
         components = []
         for c in self.components:
-            if isinstance(c, (allowed_parents,CAT)):
+            if isinstance(c, (allowed_parents, CAT)):
                 pass
             elif wrap_lambda:
                 c = wrap_lambda(c)
@@ -1027,7 +1027,7 @@ class DIV(XmlComponent):
         Examples:
 
         >>> a = DIV(DIV(SPAN('x'),3,DIV(SPAN('y'))))
-        >>> for c in a.elements('span',first_only=True): c[0]='z'
+        >>> for c in a.elements('span', first_only=True): c[0]='z'
         >>> print a
         <div><div><span>z</span>3<div><span>y</span></div></div></div>
         >>> for c in a.elements('span'): c[0]='z'
@@ -1059,7 +1059,7 @@ class DIV(XmlComponent):
 
         >>> a = DIV(DIV(SPAN('x', _class='abc'), DIV(SPAN('y', _class='abc'), SPAN('z', _class='abc'))))
         >>> b = a.elements('span.abc', replace=P('x', _class='xyz'))
-        >>> print a
+        >>> print a  # We should .xml() here instead of print
         <div><div><p class="xyz">x</p><div><p class="xyz">x</p><p class="xyz">x</p></div></div></div>
 
         "replace" can be a callable, which will be passed the original element and
