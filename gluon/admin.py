@@ -148,7 +148,7 @@ def app_compile(app, request, skip_failed_views=False):
         failed_views = compile_application(folder, skip_failed_views)
         return failed_views
     except (Exception, RestrictedError):
-        tb = traceback.format_exc(sys.exc_info)
+        tb = traceback.format_exc()
         remove_compiled_application(folder)
         return tb
 
@@ -167,7 +167,7 @@ def app_create(app, request, force=False, key=None, info=False):
             os.mkdir(path)
         except:
             if info:
-                return False, traceback.format_exc(sys.exc_info)
+                return False, traceback.format_exc()
             else:
                 return False
     elif not force:
@@ -197,7 +197,7 @@ def app_create(app, request, force=False, key=None, info=False):
     except:
         rmtree(path)
         if info:
-            return False, traceback.format_exc(sys.exc_info)
+            return False, traceback.format_exc()
         else:
             return False
 

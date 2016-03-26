@@ -27,7 +27,7 @@ from gluon import current
 
 class RESIZE(object):
 
-    def __init__(self, nx=160, ny=80, quality=100, padding = False
+    def __init__(self, nx=160, ny=80, quality=100, padding = False,
                  error_message=' image resize'):
         (self.nx, self.ny, self.quality, self.error_message, self.padding) = (
             nx, ny, quality, error_message, padding)
