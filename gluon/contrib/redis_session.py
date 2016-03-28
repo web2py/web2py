@@ -19,13 +19,13 @@ logger = logging.getLogger("web2py.session.redis")
 locker = thread.allocate_lock()
 
 
-def RedisSession(*args, **vars):
+def RedisSession(redis_conn, session_expiry=False, with_lock=False, db=None):
     """
     Usage example: put in models::
 
         from gluon.contrib.redis_utils import RConn
         rconn = RConn()
-        from gluon.contrib.redis_session
+        from gluon.contrib.redis_session import RedisSession
         sessiondb = RedisSession(redis_conn=rconn, with_lock=True, session_expiry=False)
         session.connect(request, response, db = sessiondb)
 
@@ -43,7 +43,8 @@ def RedisSession(*args, **vars):
     try:
         instance_name = 'redis_instance_' + current.request.application
         if not hasattr(RedisSession, instance_name):
-            setattr(RedisSession, instance_name, RedisClient(*args, **vars))
+            setattr(RedisSession, instance_name, 
+                    RedisClient(redis_conn, session_expiry=session_expiry, with_lock=with_lock))
         return getattr(RedisSession, instance_name)
     finally:
         locker.release()

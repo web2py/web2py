@@ -5,6 +5,9 @@
 ## File is released under public domain and you can use without limitations
 #########################################################################
 
+if request.global_settings.web2py_version < "2.14.1":
+    raise HTTP(500, "Requires web2py 2.13.3 or newer")
+
 ## if SSL/HTTPS is properly configured and you want all HTTP requests to
 ## be redirected to HTTPS, uncomment the line below:
 # request.requires_https()
@@ -55,7 +58,8 @@ response.form_label_separator = myconf.get('forms.separator') or ''
 
 from gluon.tools import Auth, Service, PluginManager
 
-auth = Auth(db, host=myconf.get('host.name'))
+# host names must be a list of allowed host names (glob syntax allowed)
+auth = Auth(db, host_names=myconf.get('host.names'))
 service = Service()
 plugins = PluginManager()
 

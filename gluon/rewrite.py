@@ -642,7 +642,7 @@ def regex_url_in(request, environ):
         items = filename.split('/', 1)
         if regex_version.match(items[0]):
             version, filename = items
-        static_folder = pjoin(request.env.applications_parent,
+        static_folder = pjoin(global_settings.applications_parent,
                               'applications', application, 'static')
         static_file = os.path.abspath(pjoin(static_folder, filename))
         if not static_file.startswith(static_folder):
@@ -947,7 +947,7 @@ class MapUrlIn(object):
 
         if len(self.args) == 1 and self.arg0 in self.router.root_static:
             self.controller = self.request.controller = 'static'
-            root_static_file = pjoin(self.request.env.applications_parent,
+            root_static_file = pjoin(global_settings.applications_parent,
                                      'applications', self.application,
                                      self.controller, self.arg0)
             log_rewrite("route: root static=%s" % root_static_file)
@@ -1016,11 +1016,11 @@ class MapUrlIn(object):
         #  if language-specific file doesn't exist, try same file in static
         #
         if self.language:
-            static_file = pjoin(self.request.env.applications_parent,
+            static_file = pjoin(global_settings.applications_parent,
                                 'applications', self.application,
                                 'static', self.language, file)
         if not self.language or not isfile(static_file):
-            static_file = pjoin(self.request.env.applications_parent,
+            static_file = pjoin(global_settings.applications_parent,
                                 'applications', self.application,
                                 'static', file)
         self.extension = None

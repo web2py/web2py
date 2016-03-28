@@ -94,7 +94,6 @@ def status():
     return dict(toobar=response.toolbar())
     """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}
     <p>Here we are showing the request, session and response objects using the generic.html template.
-    <br/>Try it here: <a class="btn" href="/{{=request.application}}/simple_examples/status">status</a></p>
 
     <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: simple_examples.py</b>
     {{=CODE("""
@@ -278,7 +277,7 @@ def xml():
     <h3>Example {{=c}}{{c+=1}}</h3><b>In controller: template_examples.py </b>
     {{=CODE("""
 def beautify():
-    return dict(message=BEAUTIFY(request))
+    dict(message=BEAUTIFY(dict(a=1,b=[2,3,dict(hello='world')])))
     """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}<b>and view: template_examples/beautify.html</b>
     {{=CODE(open(os.path.join(request.folder,'views/template_examples/beautify.html'),'r').read(),language='html',link=URL('global','vars'),_class='boxCode')}}
     <p>You can use BEAUTIFY to turn lists and dictionaries into organized HTML.

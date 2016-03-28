@@ -69,8 +69,8 @@ class AppConfigDict(dict):
                 return False
             elif value.isdigit() or (value[0]=='-' and value[1:].isdigit()):
                 return int(value)
-            elif ', ' in value:
-                return value.split(', ')
+            elif ',' in value:
+                return map(lambda x:x.strip(),value.split(','))
             else:
                 try:
                     return float(value)

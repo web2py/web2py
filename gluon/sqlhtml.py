@@ -677,7 +677,7 @@ class AutocompleteWidget(object):
     def callback(self):
         if self.keyword in self.request.vars:
             field = self.fields[0]
-            if type(field) is FieldVirtual:
+            if type(field) is Field.Virtual:
                 records = []
                 table_rows = self.db(self.db[field.tablename]).select(orderby=self.orderby)
                 count = 0
@@ -741,7 +741,7 @@ class AutocompleteWidget(object):
                 del attr['requires']
             attr['_name'] = key2
             value = attr['value']
-            if type(self.fields[0]) is FieldVirtual:
+            if type(self.fields[0]) is Field.Virtual:
                 record = None
                 table_rows = self.db(self.db[self.fields[0].tablename]).select(orderby=self.orderby)
                 for row in table_rows:
@@ -901,6 +901,7 @@ def formstyle_bootstrap3_stacked(form, fields):
             elif controls['_type'] == 'checkbox':
                 label['_for'] = None
                 label.insert(0, controls)
+                label.insert(0, ' ')
                 _controls = DIV(label, _help, _class="checkbox")
                 label = ''
             elif isinstance(controls, (SELECT, TEXTAREA)):
@@ -950,6 +951,7 @@ def formstyle_bootstrap3_inline_factory(col_label_size=3):
                 elif controls['_type'] == 'checkbox':
                     label['_for'] = None
                     label.insert(0, controls)
+                    label.insert(1, ' ')
                     _controls = DIV(DIV(label, _help, _class="checkbox"),
                                     _class="%s %s" % (offset_class, col_class))
                     label = ''
@@ -2183,7 +2185,7 @@ class SQLFORM(FORM):
                        buttonurl=url(args=[]), callback=None,
                        delete=None, trap=True, noconfirm=None, title=None):
             if showbuttontext:
-                return A(SPAN(_class=ui.get(buttonclass)),
+                return A(SPAN(_class=ui.get(buttonclass)), CAT(' '),
                          SPAN(T(buttontext), _title=title or T(buttontext),
                               _class=ui.get('buttontext')),
                          _href=buttonurl,
@@ -2204,15 +2206,12 @@ class SQLFORM(FORM):
 
         dbset = db(query, ignore_common_filters=ignore_common_filters)
         tablenames = db._adapter.tables(dbset.query)
-        print dbset.query
-        print tablenames
         if left is not None:
             if not isinstance(left, (list, tuple)):
                 left = [left]
             for join in left:
                 tablenames += db._adapter.tables(join)
         tables = [db[tablename] for tablename in tablenames]
-        print tables
         if fields:
             # add missing tablename to virtual fields
             for table in tables:
@@ -2744,7 +2743,11 @@ class SQLFORM(FORM):
                     if field.type == 'blob':
                         continue
                     if isinstance(field, Field.Virtual) and field.tablename in row:
-                        value = dbset.db[field.tablename][row[field.tablename][field_id]][field.name]
+                        try:
+                            # fast path, works for joins
+                            value = row[field.tablename][field.name]
+                        except KeyError:
+                            value = dbset.db[field.tablename][row[field.tablename][field_id]][field.name]
                     else:
                         value = row[str(field)]
                     maxlength = maxtextlengths.get(str(field), maxtextlength)

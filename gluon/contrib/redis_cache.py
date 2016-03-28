@@ -22,7 +22,7 @@ logger = logging.getLogger("web2py.cache.redis")
 locker = thread.allocate_lock()
 
 
-def RedisCache(*args, **vars):
+def RedisCache(redis_conn=None, debug=False, with_lock=False, fail_gracefully=False, db=None):
     """
     Usage example: put in models::
 
@@ -85,7 +85,9 @@ def RedisCache(*args, **vars):
     try:
         instance_name = 'redis_instance_' + current.request.application
         if not hasattr(RedisCache, instance_name):
-            setattr(RedisCache, instance_name, RedisClient(*args, **vars))
+            setattr(RedisCache, instance_name, 
+                    RedisClient(redis_conn=redis_conn, debug=debug,
+                                with_lock=with_lock, fail_gracefully=fail_gracefully))
         return getattr(RedisCache, instance_name)
     finally:
         locker.release()

@@ -17,6 +17,7 @@ import time
 import thread
 import threading
 import os
+import copy
 import socket
 import signal
 import math
@@ -940,7 +941,10 @@ def console():
     sys.argv, other_args = sys.argv[:k], sys.argv[k + 1:]
     (options, args) = parser.parse_args()
     options.args = [options.run] + other_args
-    global_settings.cmd_options = options
+    
+    copy_options = copy.deepcopy(options)
+    copy_options.password = '******'
+    global_settings.cmd_options = copy_options
     global_settings.cmd_args = args
 
     if options.gae:
@@ -1125,14 +1129,6 @@ def start(cron=True):
         for key in dir(options2):
             if hasattr(options, key):
                 setattr(options, key, getattr(options2, key))
-
-    logfile0 = os.path.join('examples', 'logging.example.conf')
-    logfile1 = os.path.join(options.folder, 'logging.conf')
-    if not os.path.exists(logfile1) and os.path.exists(logfile0):
-        import shutil
-        sys.stdout.write("Copying logging.conf.example to logging.conf ... ")
-        shutil.copyfile(logfile0, logfile1)
-        sys.stdout.write("OK\n")
 
     # ## if -T run doctests (no cron)
     if hasattr(options, 'test') and options.test:
