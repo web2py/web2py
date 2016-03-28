@@ -471,8 +471,6 @@ class IS_IN_SET(Validator):
         thestrset = [str(x) for x in self.theset]
         failures = [x for x in values if not str(x) in thestrset]
         if failures and self.theset:
-            if self.multiple and (value is None or value == ''):
-                return ([], None)
             return (value, translate(self.error_message))
         if self.multiple:
             if isinstance(self.multiple, (tuple, list)) and \

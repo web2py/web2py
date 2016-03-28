@@ -184,6 +184,10 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ('id1', None))
         rtn = IS_IN_SET(['id1', 'id2'], error_message='oops', multiple=True)(None)
         self.assertEqual(rtn, ([], None))
+        rtn = IS_IN_SET(['id1', 'id2'], error_message='oops', multiple=True)('')
+        self.assertEqual(rtn, ([], None))
+        rtn = IS_IN_SET(['id1', 'id2'], error_message='oops', multiple=True)('id1')
+        self.assertEqual(rtn, (['id1'], None))
         rtn = IS_IN_SET(['id1', 'id2'], error_message='oops', multiple=(1,2))(None)
         self.assertEqual(rtn, ([], 'oops'))
         import itertools
