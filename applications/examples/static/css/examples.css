@@ -1,0 +1,28 @@
+h1,h2,h3,h4,h5,h6{color: #111; text-transform:none}
+
+th, td {color: black}
+tbody tr:hover {background-color:transparent}
+tbody tr {border-bottom: none}
+p {text-align: left}
+p, li { line-height: 1.6em}
+pre {background-color: black!important;border-radius:5px; color:white; padding:10px}
+a.btn.btn180 {padding:20px; font-size:1.2em; width:200px}   
+
+.menu .web2py-menu-active a {
+    color: #26a69a;
+}
+
+.spaced-vertical {
+    margin: 0 0.5em 0.5em 0;
+}
+
+.btn:hover,
+a.noeffect img:hover {
+    transition: scale .5s;
+    transform: scale(1.05);
+}
+
+.btn,
+a.noeffect img {
+    transition: all .2s ease-in-out;
+} 
