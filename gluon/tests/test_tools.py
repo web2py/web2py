@@ -29,6 +29,7 @@ from gluon.http import HTTP
 python_version = sys.version[:3]
 IS_IMAP = "imap" in DEFAULT_URI
 
+
 @unittest.skipIf(IS_IMAP, "TODO: Imap raises 'Connection refused'")
 class TestAuth(unittest.TestCase):
 
@@ -102,7 +103,7 @@ class TestMail(unittest.TestCase):
         users = {}
 
         def __init__(self, address, port, **kwargs):
-            self.address=address
+            self.address = address
             self.port = port
             self.has_quit = False
             self.tls = False
@@ -110,21 +111,20 @@ class TestMail(unittest.TestCase):
         def login(self, username, password):
             if username not in self.users or self.users[username] != password:
                 raise smtplib.SMTPAuthenticationError
-            self.username=username
-            self.password=password
+            self.username = username
+            self.password = password
 
         def sendmail(self, sender, to, payload):
             self.inbox.append(TestMail.Message(sender, to, payload))
 
         def quit(self):
-            self.has_quit=True
+            self.has_quit = True
 
         def ehlo(self, hostname=None):
             pass
 
         def starttls(self):
             self.tls = True
-
 
     def setUp(self):
         self.original_SMTP = smtplib.SMTP
@@ -141,10 +141,10 @@ class TestMail(unittest.TestCase):
         mail.settings.server = 'smtp.example.com:25'
         mail.settings.sender = 'you@example.com'
         self.assertTrue(mail.send(to=['somebody@example.com'],
-                  subject='hello',
-                  # If reply_to is omitted, then mail.settings.sender is used
-                  reply_to='us@example.com',
-                  message='world'))
+                                  subject='hello',
+                                  # If reply_to is omitted, then mail.settings.sender is used
+                                  reply_to='us@example.com',
+                                  message='world'))
         message = TestMail.DummySMTP.inbox.pop()
         self.assertEqual(message.sender, mail.settings.sender)
         self.assertEqual(message.to, ['somebody@example.com'])
@@ -158,10 +158,10 @@ class TestMail(unittest.TestCase):
         mail.settings.sender = 'you@example.com'
         mail.settings.login = 'username:password'
         self.assertFalse(mail.send(to=['somebody@example.com'],
-                  subject='hello',
-                  # If reply_to is omitted, then mail.settings.sender is used
-                  reply_to='us@example.com',
-                  message='world'))
+                                   subject='hello',
+                                   # If reply_to is omitted, then mail.settings.sender is used
+                                   reply_to='us@example.com',
+                                   message='world'))
 
     def test_login(self):
         TestMail.DummySMTP.users['username'] = 'password'
@@ -170,10 +170,10 @@ class TestMail(unittest.TestCase):
         mail.settings.sender = 'you@example.com'
         mail.settings.login = 'username:password'
         self.assertTrue(mail.send(to=['somebody@example.com'],
-                  subject='hello',
-                  # If reply_to is omitted, then mail.settings.sender is used
-                  reply_to='us@example.com',
-                  message='world'))
+                                  subject='hello',
+                                  # If reply_to is omitted, then mail.settings.sender is used
+                                  reply_to='us@example.com',
+                                  message='world'))
         del TestMail.DummySMTP.users['username']
         TestMail.DummySMTP.inbox.pop()
 
@@ -182,10 +182,10 @@ class TestMail(unittest.TestCase):
         mail.settings.server = 'smtp.example.com:25'
         mail.settings.sender = 'you@example.com'
         self.assertTrue(mail.send(to=['somebody@example.com'],
-                  subject='hello',
-                  # If reply_to is omitted, then mail.settings.sender is used
-                  reply_to='us@example.com',
-                  message='<html><head></head><body></body></html>'))
+                                  subject='hello',
+                                  # If reply_to is omitted, then mail.settings.sender is used
+                                  reply_to='us@example.com',
+                                  message='<html><head></head><body></body></html>'))
         message = TestMail.DummySMTP.inbox.pop()
         self.assertTrue('Content-Type: text/html' in message.payload)
 
@@ -195,10 +195,10 @@ class TestMail(unittest.TestCase):
         mail.settings.sender = 'you@example.com'
         mail.settings.ssl = True
         self.assertTrue(mail.send(to=['somebody@example.com'],
-                  subject='hello',
-                  # If reply_to is omitted, then mail.settings.sender is used
-                  reply_to='us@example.com',
-                  message='world'))
+                                  subject='hello',
+                                  # If reply_to is omitted, then mail.settings.sender is used
+                                  reply_to='us@example.com',
+                                  message='world'))
         TestMail.DummySMTP.inbox.pop()
 
     def test_tls(self):
@@ -207,16 +207,11 @@ class TestMail(unittest.TestCase):
         mail.settings.sender = 'you@example.com'
         mail.settings.tls = True
         self.assertTrue(mail.send(to=['somebody@example.com'],
-                  subject='hello',
-                  # If reply_to is omitted, then mail.settings.sender is used
-                  reply_to='us@example.com',
-                  message='world'))
+                                  subject='hello',
+                                  # If reply_to is omitted, then mail.settings.sender is used
+                                  reply_to='us@example.com',
+                                  message='world'))
         TestMail.DummySMTP.inbox.pop()
-
-
-
-
-
 
 if __name__ == '__main__':
     unittest.main()
