@@ -6236,7 +6236,7 @@ class Expose(object):
 
     def table_folders(self):
         if self.folders:
-            return SPAN(H3('Folders'),
+            return SPAN(H3(T('Folders')),
                         TABLE(*[TR(TD(A(folder, _href=URL(args=self.args + [folder]))))
                                 for folder in self.folders], **dict(_class="table")))
         return ''
@@ -6252,7 +6252,7 @@ class Expose(object):
 
     def table_files(self, width=160):
         if self.filenames:
-            return SPAN(H3('Files'),
+            return SPAN(H3(T('Files')),
                         TABLE(*[TR(TD(A(f, _href=URL(args=self.args + [f]))),
                                    TD(IMG(_src=URL(args=self.args + [f]),
                                           _style='max-width:%spx' % width)
