@@ -247,6 +247,12 @@ class TestAuth(unittest.TestCase):
         # user2 doesn't exist yet and get created
         self.assertEqual(self.auth.get_or_create_user({'email': 'user2@test.com',
                                                        'username': 'user2'})['username'], 'user2')
+        # user3 for corner case
+        self.assertEqual(self.auth.get_or_create_user({'first_name': 'Omer',
+                                                       'last_name': 'Simpson',
+                                                       'email': 'user3@test.com',
+                                                       'registration_id': 'user3',
+                                                       'username': 'user3'})['username'], 'user3')
         # False case
         self.assertEqual(self.auth.get_or_create_user({'email': ''}), None)
         self.db.auth_user.truncate()
@@ -260,6 +266,8 @@ class TestAuth(unittest.TestCase):
         self.assertEqual(self.auth.login_bare(username='user1', password='bad_password'), False)
 
     def test_register_bare(self):
+        # corner case empty register call register_bare without args
+        self.assertRaises(ValueError, self.auth.register_bare)
         # failing register_bare user already exist
         self.assertEqual(self.auth.register_bare(username='user1', password='wrong_password'), False)
         # successful register_bare
