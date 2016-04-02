@@ -6,7 +6,7 @@
 
 /*** basic styles ***/
 *, *:after, *:before {border:0; margin:0; padding:0; -webkit-box-sizing:border-box; -moz-box-sizing:border-box; box-sizing:border-box}
-html, body {max-width: 100vw !important; overflow-x: hidden !important}
+html, body {max-width: 100vw; overflow-x: hidden}
 body {font-family:"HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif}
 p, li {margin-bottom:0.5em}
 p {text-align:justify}
@@ -31,7 +31,7 @@ thead th {vertical-align:bottom}
 tbody th {vertical-align:top}
 header, footer {with:100%}
 
-@media (max-width:599px) {
+@media all and (max-width:599px) {
   h1{font-size:2em}
   h2{font-size:1.8em}
   h3{font-size:1.6em}
@@ -41,20 +41,20 @@ header, footer {with:100%}
 }
 
 /*** buttons ***/
-.btn, button, [type=button], [type=submit] {padding:0.5em 1em !important; margin:0 0.5em 0.5em 0; display:inline-block; background-color:#26a69a; color:white}
+.btn, button, [type=button], [type=submit] {padding:0.5em 1em; margin:0 0.5em 0.5em 0; display:inline-block; background-color:#26a69a; color:white}
 .btn:hover, button:hover, [type=button]:hover, [type=submit]:hover {box-shadow:0 0 10px #666; text-decoration:none; cursor:pointer}
-.btn.small, table .btn {padding:0.25em 0.5em !important; font-size:0.8em}
-.btn.large {padding:1em 2em !important; font-size:1.2em}
+.btn.small, table .btn {padding:0.25em 0.5em; font-size:0.8em}
+.btn.large {padding:1em 2em; font-size:1.2em}
 .btn.oval {border-radius:50%}
 
 /*** helpers ***/
 .rounded {-moz-border-radius:5px; border-radius:5px}
-.padded {padding:10px 20px !important}
-.center {text-align:center !important; margin-left:auto; margin-right:auto}
+.padded {padding:10px 20px}
+.center {text-align:center; margin-left:auto; margin-right:auto}
 .center>div {text-align:left}
 .right {right:0; text-align:right}
-.middle div {vertical-align:middle !important}
-.bottom div {vertical-align:bottom !important}
+.middle div {vertical-align:middle}
+.bottom div {vertical-align:bottom}
 .xscroll {overflow-x:scroll}
 .yscroll {overflow-y:scroll}
 .nowrap {white-space:nowrap; overflow-x:hidden}
@@ -71,14 +71,15 @@ textarea {width:100%; border:1px solid #ddd; padding:4px 8px; outline:none; outl
 select {-webkit-appearance:none; outline:none; padding:0.5em 1em; border-radius:0; margin:0.5px; border-bottom:1px solid #ddd; width:100%;background-color:transparent}
 input, textarea, select, button {font-size:12px}
 input:not([type]):hover, input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):hover, select:hover, textarea:hover {background-color:#fbf6d9; transition:background-color 1s ease}
-input:invalid, input.error {background:#cc1f00!important;color:white}
+input:invalid, input.error {background:#cc1f00;color:white}
 
 /*** grid ***/
 .container {margin-right:-20px}
-.container>.quarter, .container>.half, .container>.third, .container>.twothirds, .container>.threequarters, .container>.fill{display:inline-block; padding: 0 20px 0 0; vertical-align:top}
-.container>.fill {width:100%; margin-right:-20px}
+.container>.quarter, .container>.half, .container>.third, .container>.twothirds, .container>.threequarters {display:inline-block; padding: 0 20px 0 0; vertical-align:top}
+.container>.fill{display: inline-block}
 .container img, .container video {max-width:100%}
-@media (min-width:800px) {
+
+@media all and (min-width:800px) {
   .max900 {max-width:900px; margin-left:auto; margin-right:auto}
   .quarter {width:25%; margin-right:-5px}
   .half {width:50%; margin-right:-10px}
@@ -86,7 +87,7 @@ input:invalid, input.error {background:#cc1f00!important;color:white}
   .twothirds {width:66.66%; margin-right:-13.33px}
   .threequarters {width:75%; margin-right:-15px}
 }
-@media (min-width:600px) and (max-width:799px) {
+@media all and (min-width:600px) and (max-width:799px) {
   .quarter.compressible {width:25%; margin-right:-5px}
   .half.compressible {width:50%; margin-right:-10px}
   .threequarters.compressible {width:75%; margin-right:-15px}
@@ -95,7 +96,7 @@ input:invalid, input.error {background:#cc1f00!important;color:white}
   .twothirds {width:66.66%; margin-right:-13.33px}
   label.quarter:not(.compressible).right, label.half:not(.compressible).right, label.threequarters:not(.compressible).right   {float:left; text-align:left}
 }
-@media (max-width:599px) {  
+@media all and (max-width:599px) {  
   .quarter:not(.compressible), .half:not(.compressible), .third:not(.compressible), .twothirds:not(.compressible), .threequarters:not(.compressible) {width:100%;}
   label.quarter:not(.compressible).right, label.half:not(.compressible).right, label.threequarters:not(.compressible).right,
   label.third:not(.compressible).right, label.twothirds:not(.compressible).right   {float:left; text-align:left}
@@ -115,7 +116,7 @@ input:invalid, input.error {background:#cc1f00!important;color:white}
   display:block;
   width:120%;
   background-color:#acece6;
-  border-radius:0 !important;
+  border-radius:0;
   background-clip:padding-box;
   overflow:hidden;
 }
@@ -197,13 +198,13 @@ input:invalid, input.error {background:#cc1f00!important;color:white}
 .menu.dark ul a {color:white}
 .menu.dark>li>ul>li:first-child:before{border-bottom-color:black}
 
-@media (max-width:599px) {
+@media all and (max-width:599px) {
   header .menu li, header .menu ul {width: 100%}  
   header .menu.right {float:left; text-align:left}
   header .menu ul ul {top:2.5em; left:-1px}
 }
 
-@media (min-width:600px) {
+@media all and (min-width:600px) {
   .ham {display:none!important}
   .burger.accordion * {max-height:1000px; overflow:visible}
 }
@@ -288,7 +289,7 @@ a:not(.btn):not(.noeffect):after {
   content:attr(data-tooltip);
   left:0;
   top:2px;
-  margin-left:-20;
+  margin-left:-20px;
   margin-top:1.5em;
   padding:5px 15px;
   white-space:pre-wrap;
@@ -339,9 +340,6 @@ a:not(.btn):not(.noeffect):after {
   transform: rotateY( 180deg );
 }
 
-/*** colors from http://clrs.cc/ ***/
-.navy{background-color:#001f3f!important;color:white}.blue{background-color:#0074d9!important;color:white}.aqua{background-color:#7fdbff!important;color:black}.teal{background-color:#39cccc!important;color:white}.olive{background-color:#3d9970!important;color:white}.green{background-color:#2ecc40!important;color:white}.aquamarine{background-color:#26a69a!important;color:white}.lime{background-color:#01ff70!important;color:black}.yellow{background-color:#ffdc00!important;color:black}.orange{background-color:#ff851b!important;color:white}.red{background-color:#cc1f00!important;color:white}.fuchsia{background-color:#f012be!important;color:white}.pink{background-color:#ee6e73!important;color:white}.purple{background-color:#b10dc9!important;color:white}.maroon{background-color:#85144b!important;color:white}.white{background-color:#fff!important;color:black;-webkit-box-shadow:inset 0px 0px 0px 1px #ddd;-moz-box-shadow:inset 0px 0px 0px 1px #ddd;box-shadow:inset 0px 0px 0px 1px #ddd}.gray{background-color:#aaa!important;color:white}.silver{background-color:#f1f1f1!important;color:black}.black{background-color:#000!important;color:white}.glass{background:rgba(255,255,255,0.5)!important;color:black}
-
 /**** tags ****/
 .tags > span {
   padding: 4px 9px;
@@ -350,10 +348,13 @@ a:not(.btn):not(.noeffect):after {
   background-color: #26a69a;
   border-radius: 5px;
   font-size:12px;
-  margin: 5px 5px 5px 0 !important;
-  line-height: 32px;
+  margin: 2px 5px 2px 0;
+  display: inline-block;
 }
 .tags.dismissible > span:hover {opacity: 0.5}
 .tags.dismissible > span:not(.off):after {content:" ✕"}
 .tags > span.off {background-color: #ccc}
 .tags.dismissible > span.off:hover {background-color:#26a69a}
+
+/*** colors from http://clrs.cc/ ***/
+.navy{background-color:#001f3f;color:white}.blue{background-color:#0074d9;color:white}.aqua{background-color:#7fdbff;color:black}.teal{background-color:#39cccc;color:white}.olive{background-color:#3d9970;color:white}.green{background-color:#2ecc40;color:white}.aquamarine{background-color:#26a69a;color:white}.lime{background-color:#01ff70;color:black}.yellow{background-color:#ffdc00;color:black}.orange{background-color:#ff851b;color:white}.red{background-color:#cc1f00;color:white}.fuchsia{background-color:#f012be;color:white}.pink{background-color:#ee6e73;color:white}.purple{background-color:#b10dc9;color:white}.maroon{background-color:#85144b;color:white}.white{background-color:#fff;color:black;-webkit-box-shadow:inset 0px 0px 0px 1px #ddd;-moz-box-shadow:inset 0px 0px 0px 1px #ddd;box-shadow:inset 0px 0px 0px 1px #ddd}.gray{background-color:#aaa;color:white}.silver{background-color:#f1f1f1;color:black}.black{background-color:#000;color:white}.glass{background:rgba(255,255,255,0.5);color:black}
