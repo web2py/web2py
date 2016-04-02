@@ -4,19 +4,13 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <link href="{{=URL('static','css/stupid.css')}}" rel="stylesheet" type="text/css"/>
     <link href="{{=URL('static','css/calendar.css')}}" rel="stylesheet" type="text/css"/>
     <link href="{{=URL('static','css/web2py.css')}}" rel="stylesheet" type="text/css"/>
+    <link href="{{=URL('static','css/stupid.css')}}" rel="stylesheet" type="text/css"/>
+    <link href="{{=URL('static','css/examples.css')}}" rel="stylesheet" type="text/css"/>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.5.0/css/font-awesome.min.css">
-    <style>
-      th, td {color: black!important}
-      tbody tr:hover {background-color:transparent}
-      tbody tr {border-bottom: none}
-      p {text-align: left}
-      p, li { line-height: 1.6em}
-      pre {background-color: black!important;border-radius:5px; color:white; padding:10px}
-      a.btn.btn180 {padding:20px; font-size:1.2em; width:200px!important}      
-    </style>
+    <link rel="shortcut icon" href="{{=URL('static','images/favicon.ico')}}" type="image/x-icon">
+    <link rel="apple-touch-icon" href="{{=URL('static','images/favicon.png')}}">
     {{
     left_sidebar_enabled = globals().get('left_sidebar_enabled', False)
     right_sidebar_enabled = globals().get('right_sidebar_enabled', False)
@@ -29,7 +23,7 @@
     <header class="black padded">      
       <div class="container middle max900">
         <div class="fill middle">                    
-          <label class="ham padded fa fa-bars" for="menu"></label>
+          <label class="ham" for="menu"><i class="fa fa-bars padded"></i></label>
           <div class="burger accordion">
             <input type="checkbox" id="menu"/>
             {{=MENU(response.menu,_class='menu')}}
