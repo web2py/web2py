@@ -471,8 +471,6 @@ class IS_IN_SET(Validator):
         thestrset = [str(x) for x in self.theset]
         failures = [x for x in values if not str(x) in thestrset]
         if failures and self.theset:
-            if self.multiple and (value is None or value == ''):
-                return ([], None)
             return (value, translate(self.error_message))
         if self.multiple:
             if isinstance(self.multiple, (tuple, list)) and \
@@ -1200,7 +1198,12 @@ class IS_EMAIL(Validator):
         self.error_message = error_message
 
     def __call__(self, value):
-        match = self.regex.match(value)
+        try:
+            match = self.regex.match(value)
+        except TypeError:
+            # Value may not be a string where we can look for matches.
+            # Example: we're calling ANY_OF formatter and IS_EMAIL is asked to validate a date.
+            match = None
         if match:
             domain = value.split('@')[1]
             if (not self.banned or not self.banned.match(domain)) \
@@ -2608,7 +2611,7 @@ class ANY_OF(Validator):
         # Use the formatter of the first subvalidator
         # that validates the value and has a formatter
         for validator in self.subs:
-            if hasattr(validator, 'formatter') and validator(value)[1] != None:
+            if hasattr(validator, 'formatter') and validator(value)[1] is None:
                 return validator.formatter(value)
 
 

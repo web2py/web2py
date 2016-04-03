@@ -2575,7 +2575,7 @@ class Auth(object):
                     update_keys[key] = keys[key]
             user.update_record(**update_keys)
         elif checks:
-            if not 'first_name' in keys and 'first_name' in table_user.fields:
+            if 'first_name' not in keys and 'first_name' in table_user.fields:
                 guess = keys.get('email', 'anonymous').split('@')[0]
                 keys['first_name'] = keys.get('username', guess)
             vars = table_user._filter_fields(keys)
@@ -2698,8 +2698,7 @@ class Auth(object):
             fields[settings.passfield] = \
                 settings.table_user[settings.passfield].validate(fields[settings.passfield])[0]
         if not fields.get(settings.userfield):
-            raise ValueError('register_bare: ' +
-                             'userfield not provided or invalid')
+            raise ValueError('register_bare: userfield not provided or invalid')
         user = self.get_or_create_user(fields, login=False, get=False,
                                        update_fields=self.settings.update_fields)
         if not user:
