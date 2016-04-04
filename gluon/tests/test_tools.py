@@ -217,8 +217,7 @@ class TestMail(unittest.TestCase):
 
 
 def have_symlinks():
-    return False
-    #return os.name == 'posix'
+    return os.name == 'posix'
 
 class TestExpose(unittest.TestCase):
 
