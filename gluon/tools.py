@@ -6245,8 +6245,14 @@ class Expose(object):
         return ''
 
     def in_base(self, f):
-        "True if f is under self.base"
-        return os.path.realpath(f).startswith("%s%s" % (self.base, os.path.sep))
+        """True if f/ is under self.base/
+        Where f ans slef.base are normalized paths
+        """
+        s = lambda f: '%s%s' % (f, os.path.sep) # f -> f/
+        # The trailing '/' is for the case of '/foobar' in_base of '/foo':
+        # - becase '/foobar'  starts with        '/foo'
+        # - but    '/foobar/' doesn't start with '/foo/'
+        return s(os.path.realpath(f)).startswith(s(self.base))
 
     def issymlink_out(self, f):
         "True if f is a symlink and is pointing outside of self.base"
