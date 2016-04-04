@@ -6194,7 +6194,7 @@ class Expose(object):
 
         """
         current.session.forget()
-        base = base or os.path.join(current.request.folder, 'static')
+        self.base = base = os.path.realpath(base or os.path.join(current.request.folder, 'static'))
         basename = basename or current.request.function
         self.basename = basename
 
@@ -6205,16 +6205,19 @@ class Expose(object):
         filename = os.path.join(base, *self.args)
         if not os.path.exists(filename):
             raise HTTP(404, "FILE NOT FOUND")
-        if not os.path.normpath(filename).startswith(base):
+        if not self.in_base(filename):
             raise HTTP(401, "NOT AUTHORIZED")
         if allow_download and not os.path.isdir(filename):
             current.response.headers['Content-Type'] = contenttype(filename)
             raise HTTP(200, open(filename, 'rb'), **current.response.headers)
         self.path = path = os.path.join(filename, '*')
-        self.folders = [f[len(path) - 1:] for f in sorted(glob.glob(path))
-                        if os.path.isdir(f) and not self.isprivate(f)]
-        self.filenames = [f[len(path) - 1:] for f in sorted(glob.glob(path))
-                          if not os.path.isdir(f) and not self.isprivate(f)]
+        dirname_len = len(path) - 1
+        allowed = [f for f in sorted(glob.glob(path))
+                   if not any([self.isprivate(f), self.issymlink_out(f)])]
+        self.folders = [f[dirname_len:]
+                        for f in allowed if os.path.isdir(f)]
+        self.filenames = [f[dirname_len:]
+                          for f in allowed if not os.path.isdir(f)]
         if 'README' in self.filenames:
             readme = open(os.path.join(filename, 'README')).read()
             self.paragraph = MARKMIN(readme)
@@ -6240,6 +6243,14 @@ class Expose(object):
                         TABLE(*[TR(TD(A(folder, _href=URL(args=self.args + [folder]))))
                                 for folder in self.folders], **dict(_class="table")))
         return ''
+
+    def in_base(self, f):
+        "True if f is under self.base"
+        return os.path.realpath(f).startswith("%s%s" % (self.base, os.path.sep))
+
+    def issymlink_out(self, f):
+        "True if f is a symlink and is pointing outside of self.base"
+        return os.path.islink(f) and not self.in_base(f)
 
     @staticmethod
     def isprivate(f):
