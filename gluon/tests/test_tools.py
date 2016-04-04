@@ -215,6 +215,9 @@ class TestMail(unittest.TestCase):
         TestMail.DummySMTP.inbox.pop()
 
 
+def have_symlinks(self):
+    return os.name == 'posix'
+
 class TestExpose(unittest.TestCase):
 
     def setUp(self):
@@ -223,7 +226,7 @@ class TestExpose(unittest.TestCase):
         self.make_dirs()
         self.touch_files()
         self.make_readme()
-        if os.name == 'posix':
+        if have_symlinks():
             self.make_symlinks()
 
         # self.set_expectations()
@@ -276,7 +279,7 @@ class TestExpose(unittest.TestCase):
     #         _class='table',
     #     ))
     #     self.expected_folders['inside/dir1'] = ''
-    #     if os.name == 'posix':
+    #     if have_symlinks():
     #         self.expected_folders['inside/dir2'] = SPAN(H3(T('Folders')), TABLE(
     #             TR(TD(A('link_to_dir1', _href=url(args=['dir2', 'link_to_dir1'])))),
     #             _class='table',
@@ -294,7 +297,7 @@ class TestExpose(unittest.TestCase):
     #         TR(TD(A('file2', _href=url(args=['dir1', 'file2']))), TD('')),
     #         _class='table',
     #     ))
-    #     if os.name == 'posix':
+    #     if have_symlinks():
     #         self.expected_files['inside/dir2'] = SPAN(H3(T('Files')), TABLE(
     #             TR(TD(A('link_to_file1', _href=url(args=['dir2', 'link_to_file1']))), TD('')),
     #             _class='table',
@@ -327,7 +330,7 @@ class TestExpose(unittest.TestCase):
     def test_expose_inside_dir2_state(self):
         expose = self.make_expose(base='inside', show='dir2')
         self.assertEqual(expose.args, ['dir2'])
-        if os.name == 'posix':
+        if have_symlinks():
             self.assertEqual(expose.folders, ['link_to_dir1'])
             self.assertEqual(expose.filenames, ['link_to_file1'])
         else:
@@ -337,7 +340,7 @@ class TestExpose(unittest.TestCase):
     def test_expose_base_inside_state(self):
         expose = self.make_expose(base='', show='inside')
         self.assertEqual(expose.args, ['inside'])
-        if os.name == 'posix':
+        if have_symlinks():
             self.assertEqual(expose.folders, ['dir1', 'dir2', 'link_to_outside'])
             self.assertEqual(expose.filenames, ['README', 'link_to_file3'])
         else:
@@ -347,7 +350,7 @@ class TestExpose(unittest.TestCase):
     def test_expose_base_inside_dir2_state(self):
         expose = self.make_expose(base='', show='inside/dir2')
         self.assertEqual(expose.args, ['inside', 'dir2'])
-        if os.name == 'posix':
+        if have_symlinks():
             self.assertEqual(expose.folders, ['link_to_dir1'])
             self.assertEqual(expose.filenames, ['link_to_file1'])
         else:
