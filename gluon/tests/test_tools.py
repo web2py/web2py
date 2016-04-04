@@ -21,6 +21,7 @@ fix_sys_path(__file__)
 DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 
 from gluon.dal import DAL, Field
+import tools
 from tools import Auth, Mail, Expose
 from gluon.globals import Request, Response, Session
 from languages import translator
@@ -215,7 +216,7 @@ class TestMail(unittest.TestCase):
         TestMail.DummySMTP.inbox.pop()
 
 
-def have_symlinks(self):
+def have_symlinks():
     return os.name == 'posix'
 
 class TestExpose(unittest.TestCase):
@@ -229,7 +230,8 @@ class TestExpose(unittest.TestCase):
         if have_symlinks():
             self.make_symlinks()
 
-        # self.set_expectations()
+        self.set_expectations()
+        tools.URL = lambda args: URL(a='a', c='c', f='f', args=args)
 
     def make_dirs(self):
         """setup direcotry strucutre"""
@@ -268,44 +270,45 @@ class TestExpose(unittest.TestCase):
             os.path.join(self.base_dir, 'outside', 'file3'),
             os.path.join(self.base_dir, 'inside', 'link_to_file3'))
 
-    # def set_expectations(self):
-    #     T = current.T
-    #     url = lambda args: URL('a', 'c', 'f', args=args)
+    def set_expectations(self):
+        T = current.T
+        url = lambda args: URL('a', 'c', 'f', args=args)
 
-    #     self.expected_folders = {}
-    #     self.expected_folders['inside'] = SPAN(H3(T('Folders')), TABLE(
-    #         TR(TD(A('dir1', _href=url(args=['dir1'])))),
-    #         TR(TD(A('dir2', _href=url(args=['dir2'])))),
-    #         _class='table',
-    #     ))
-    #     self.expected_folders['inside/dir1'] = ''
-    #     if have_symlinks():
-    #         self.expected_folders['inside/dir2'] = SPAN(H3(T('Folders')), TABLE(
-    #             TR(TD(A('link_to_dir1', _href=url(args=['dir2', 'link_to_dir1'])))),
-    #             _class='table',
-    #         ))
-    #     else:
-    #         self.expected_folders['inside/dir2'] = ''
+        self.expected_folders = {}
+        self.expected_folders['inside'] = SPAN(H3(T('Folders')), TABLE(
+            TR(TD(A('dir1', _href=url(args=['dir1'])))),
+            TR(TD(A('dir2', _href=url(args=['dir2'])))),
+            _class='table',
+        ))
+        self.expected_folders['inside/dir1'] = ''
+        if have_symlinks():
+            self.expected_folders['inside/dir2'] = SPAN(H3(T('Folders')), TABLE(
+                TR(TD(A('link_to_dir1', _href=url(args=['dir2', 'link_to_dir1'])))),
+                _class='table',
+            ))
+        else:
+            self.expected_folders['inside/dir2'] = ''
 
-    #     self.expected_files = {}
-    #     self.expected_files['inside'] = SPAN(H3(T('Files')), TABLE(
-    #         TR(TD(A('README', _href=url(args=['README']))), TD('')),
-    #         _class='table',
-    #     ))
-    #     self.expected_files['inside/dir1'] = SPAN(H3(T('Files')), TABLE(
-    #         TR(TD(A('file1', _href=url(args=['dir1', 'file1']))), TD('')),
-    #         TR(TD(A('file2', _href=url(args=['dir1', 'file2']))), TD('')),
-    #         _class='table',
-    #     ))
-    #     if have_symlinks():
-    #         self.expected_files['inside/dir2'] = SPAN(H3(T('Files')), TABLE(
-    #             TR(TD(A('link_to_file1', _href=url(args=['dir2', 'link_to_file1']))), TD('')),
-    #             _class='table',
-    #         ))
-    #     else:
-    #         self.expected_files['inside/dir2'] = ''
+        self.expected_files = {}
+        self.expected_files['inside'] = SPAN(H3(T('Files')), TABLE(
+            TR(TD(A('README', _href=url(args=['README']))), TD('')),
+            _class='table',
+        ))
+        self.expected_files['inside/dir1'] = SPAN(H3(T('Files')), TABLE(
+            TR(TD(A('file1', _href=url(args=['dir1', 'file1']))), TD('')),
+            TR(TD(A('file2', _href=url(args=['dir1', 'file2']))), TD('')),
+            _class='table',
+        ))
+        if have_symlinks():
+            self.expected_files['inside/dir2'] = SPAN(H3(T('Files')), TABLE(
+                TR(TD(A('link_to_file1', _href=url(args=['dir2', 'link_to_file1']))), TD('')),
+                _class='table',
+            ))
+        else:
+            self.expected_files['inside/dir2'] = ''
 
     def tearDown(self):
+        tools.URL = URL
         shutil.rmtree(self.base_dir)
 
     def make_expose(self, base, show=''):
@@ -357,25 +360,25 @@ class TestExpose(unittest.TestCase):
             self.assertEqual(expose.folders, [])
             self.assertEqual(expose.filenames, [])
 
+    def assertSameXML(self, a, b):
+        self.assertEqual(a if isinstance(a, str) else a.xml(),
+                         b if isinstance(b, str) else b.xml())
 
-    # def assertSameXML(self, a, b):
-    #     self.assertEqual(a if isinstance(a, str) else a.xml(),
-    #                      b if isinstance(b, str) else b.xml())
+    def run_test_xml_for(self, base, show):
+        expose = self.make_expose(base, show)
+        path = os.path.join(base, show).rstrip('/')
+        request = Request(env={})
+        self.assertSameXML(expose.table_files(), self.expected_files[path])
+        self.assertSameXML(expose.table_folders(), self.expected_folders[path])
 
-    # def run_test_xml_for(self, base, show):
-    #     expose = self.make_expose(base, show)
-    #     path = os.path.join(base, show).rstrip('/')
-    #     self.assertSameXML(expose.table_files(), self.expected_files[path])
-    #     self.assertSameXML(expose.table_folders(), self.expected_folders[path])
+    def test_xml_inside(self):
+        self.run_test_xml_for(base='inside', show='')
 
-    # def test_xml_inside(self):
-    #     self.run_test_xml_for(base='inside', show='')
+    def test_xml_dir1(self):
+        self.run_test_xml_for(base='inside', show='dir1')
 
-    # def test_xml_dir1(self):
-    #     self.run_test_xml_for(base='inside', show='dir1')
-
-    # def test_xml_dir2(self):
-    #     self.run_test_xml_for(base='inside', show='dir2')
+    def test_xml_dir2(self):
+        self.run_test_xml_for(base='inside', show='dir2')
 
     def test_file_not_found(self):
         with self.assertRaises(HTTP):
