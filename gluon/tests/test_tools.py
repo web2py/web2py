@@ -6,6 +6,8 @@
 """
 import os
 import sys
+import shutil
+import tempfile
 import smtplib
 if sys.version < "2.7":
     import unittest2 as unittest
@@ -19,12 +21,11 @@ fix_sys_path(__file__)
 DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 
 from gluon.dal import DAL, Field
-from pydal.objects import Table
-from tools import Auth, Mail
+from tools import Auth, Mail, Expose
 from gluon.globals import Request, Response, Session
-from storage import Storage
 from languages import translator
 from gluon.http import HTTP
+from gluon import SPAN, H3, TABLE, TR, TD, A, URL, T
 
 python_version = sys.version[:3]
 IS_IMAP = "imap" in DEFAULT_URI
@@ -214,8 +215,108 @@ class TestMail(unittest.TestCase):
         TestMail.DummySMTP.inbox.pop()
 
 
+class TestExpose(unittest.TestCase):
 
+    def setUp(self):
+        self.base_dir = tempfile.mkdtmp()
 
+        self.make_dirs()
+        self.touch_files()
+        self.make_readme()
+        if os.name == 'posix':
+            self.make_symlinks()
+
+        self.set_expectations()
+
+        self.expose = Expose(base=os.path.join(self.base_dir, 'inside'),
+                             basename='inside')
+
+    def make_dirs(self):
+        """setup direcotry strucutre"""
+        for d in (['inside'],
+                  ['inside', 'dir1'],
+                  ['inside', 'dir2'],
+                  ['outside']):
+            os.mkdir(os.path.join(self.base_dir, *d))
+
+    def touch_files(self):
+        """create some files"""
+        for f in (['inside', 'dir1', 'file1'],
+                  ['inside', 'dir1', 'file2']
+                  ['outside', 'file3']):
+            with open(os.path.join(self.base_dir, *f), 'a'):
+                pass
+
+    def make_readme(self):
+        with open(os.path.join(self.base_dir, 'README'), 'w') as f:
+            f.write('README content')
+
+    def make_symlinks(self):
+        """setup extenstion for posix systems"""
+        # inside links
+        os.symlink(
+            os.path.join(self.base_dir, 'inside', 'dir1'),
+            os.path.join(self.base_dir, 'inside', 'dir2', 'link_to_dir1'))
+        os.symlink(
+            os.path.join(self.base_dir, 'inside', 'dir1', 'file1'),
+            os.path.join(self.base_dir, 'inside', 'dir2', 'link_to_file1'))
+        # outside links
+        os.symlink(
+            os.path.join(self.base_dir, 'outside'),
+            os.path.join(self.base_dir, 'inside', 'link_to_outside'))
+        os.symlink(
+            os.path.join(self.base_dir, 'outside', 'file3'),
+            os.path.join(self.base_dir, 'inside', 'link_to_file3'))
+
+    def set_expectations(self):
+        self.expected_folders = {}
+        self.expected_folders['inside'] = SPAN(H3(T('Folders')), TABLE(
+            TR(TD(A('dir1', _href=URL(args=['inside', 'dir1'])))),
+            TR(TD(A('dir2', _href=URL(args=['inside', 'dir2'])))),
+        ))
+        self.expected_folders['inside/dir1'] = ''
+        if os.name == 'posix':
+            self.expected_folders['inside/dir2'] = SPAN(H3(T('Folders')), TABLE(
+                TR(TD(A('link_to_dir1', _href=URL(args=['inside', 'dir2', 'link_to_dir1'])))),
+            ))
+        else:
+            self.expected_folders['inside/dir2'] = ''
+
+        self.expected_files = {}
+        self.expected_files['inside'] = SPAN(H3(T('Files')), TABLE(
+            TR(TD(A('README', _href=URL(args=['inside', 'README']))), TD('')),
+        ))
+        self.expected_files['inside/dir1'] = SPAN(H3(T('Files')), TABLE(
+            TR(TD(A('file1', _href=URL(args=['inside', 'dir1', 'file1']))), TD('')),
+            TR(TD(A('file2', _href=URL(args=['inside', 'dir1', 'file2']))), TD('')),
+        ))
+        if os.name == 'posix':
+            self.expected_files['inside/dir2'] = SPAN(H3(T('Files')), TABLE(
+                TR(TD(A('link_to_file1', _href=URL(args=['inside', 'dir2', 'link_to_file1']))), TD('')),
+            ))
+        else:
+            self.expected_files['inside/dir2'] = ''
+
+    def tearDown(self):
+        shutil.rmtree(self.base_dir)
+
+    def test_inside(self):
+        self.expose.args = []
+        self.assertEqual(self.expose.table_files(), self.expected_files['inside'])
+        self.assertEqual(self.expose.table_folders(), self.expected_folders['inside'])
+
+    def test_dir1(self):
+        self.expose.args = ['dir1']
+        self.assertEqual(self.expose.table_files(), self.expected_files['inside/dir1'])
+        self.assertEqual(self.expose.table_folders(), self.expected_folders['inside/dir1'])
+
+    def test_dir2(self):
+        self.expose.args = ['dir2']
+        self.assertEqual(self.expose.table_files(), self.expected_files['inside/dir2'])
+        self.assertEqual(self.expose.table_folders(), self.expected_folders['inside/dir2'])
+
+    #@TBD: test file not found
+    #@TBD: test not authorized
 
 
 if __name__ == '__main__':
