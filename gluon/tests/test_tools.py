@@ -272,7 +272,7 @@ class TestExpose(unittest.TestCase):
     #     self.expected_folders = {}
     #     self.expected_folders['inside'] = SPAN(H3(T('Folders')), TABLE(
     #         TR(TD(A('dir1', _href=url(args=['dir1'])))),
-    #         TR(TD(A('dir2', _href=url(args=['dir2'])))), 
+    #         TR(TD(A('dir2', _href=url(args=['dir2'])))),
     #         _class='table',
     #     ))
     #     self.expected_folders['inside/dir1'] = ''
@@ -286,8 +286,8 @@ class TestExpose(unittest.TestCase):
 
     #     self.expected_files = {}
     #     self.expected_files['inside'] = SPAN(H3(T('Files')), TABLE(
-    #         TR(TD(A('README', _href=url(args=['README']))), TD('')), 
-    #         _class='table',          
+    #         TR(TD(A('README', _href=url(args=['README']))), TD('')),
+    #         _class='table',
     #     ))
     #     self.expected_files['inside/dir1'] = SPAN(H3(T('Files')), TABLE(
     #         TR(TD(A('file1', _href=url(args=['dir1', 'file1']))), TD('')),
@@ -353,9 +353,9 @@ class TestExpose(unittest.TestCase):
         else:
             self.assertEqual(expose.folders, [])
             self.assertEqual(expose.filenames, [])
-            
 
-    # def assertSameXML(self, a, b):        
+
+    # def assertSameXML(self, a, b):
     #     self.assertEqual(a if isinstance(a, str) else a.xml(),
     #                      b if isinstance(b, str) else b.xml())
 
@@ -364,13 +364,13 @@ class TestExpose(unittest.TestCase):
     #     path = os.path.join(base, show).rstrip('/')
     #     self.assertSameXML(expose.table_files(), self.expected_files[path])
     #     self.assertSameXML(expose.table_folders(), self.expected_folders[path])
-    
+
     # def test_xml_inside(self):
     #     self.run_test_xml_for(base='inside', show='')
 
     # def test_xml_dir1(self):
     #     self.run_test_xml_for(base='inside', show='dir1')
-    
+
     # def test_xml_dir2(self):
     #     self.run_test_xml_for(base='inside', show='dir2')
 
