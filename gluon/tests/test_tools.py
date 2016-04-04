@@ -226,7 +226,7 @@ class TestExpose(unittest.TestCase):
         if os.name == 'posix':
             self.make_symlinks()
 
-        self.set_expectations()
+        # self.set_expectations()
 
     def make_dirs(self):
         """setup direcotry strucutre"""
@@ -265,91 +265,122 @@ class TestExpose(unittest.TestCase):
             os.path.join(self.base_dir, 'outside', 'file3'),
             os.path.join(self.base_dir, 'inside', 'link_to_file3'))
 
-    def set_expectations(self):
-        T = current.T
+    # def set_expectations(self):
+    #     T = current.T
+    #     url = lambda args: URL('a', 'c', 'f', args=args)
 
-        self.expected_folders = {}
-        self.expected_folders['inside'] = SPAN(H3(T('Folders')), TABLE(
-            TR(TD(A('dir1', _href=URL(args=['dir1'])))),
-            TR(TD(A('dir2', _href=URL(args=['dir2'])))), 
-            _class='table',
-        ))
-        self.expected_folders['inside/dir1'] = ''
-        if os.name == 'posix':
-            self.expected_folders['inside/dir2'] = SPAN(H3(T('Folders')), TABLE(
-                TR(TD(A('link_to_dir1', _href=URL(args=['dir2', 'link_to_dir1'])))),
-                _class='table',
-            ))
-        else:
-            self.expected_folders['inside/dir2'] = ''
+    #     self.expected_folders = {}
+    #     self.expected_folders['inside'] = SPAN(H3(T('Folders')), TABLE(
+    #         TR(TD(A('dir1', _href=url(args=['dir1'])))),
+    #         TR(TD(A('dir2', _href=url(args=['dir2'])))), 
+    #         _class='table',
+    #     ))
+    #     self.expected_folders['inside/dir1'] = ''
+    #     if os.name == 'posix':
+    #         self.expected_folders['inside/dir2'] = SPAN(H3(T('Folders')), TABLE(
+    #             TR(TD(A('link_to_dir1', _href=url(args=['dir2', 'link_to_dir1'])))),
+    #             _class='table',
+    #         ))
+    #     else:
+    #         self.expected_folders['inside/dir2'] = ''
 
-        self.expected_files = {}
-        self.expected_files['inside'] = SPAN(H3(T('Files')), TABLE(
-            TR(TD(A('README', _href=URL(args=['README']))), TD('')), 
-            _class='table',          
-        ))
-        self.expected_files['inside/dir1'] = SPAN(H3(T('Files')), TABLE(
-            TR(TD(A('file1', _href=URL(args=['dir1', 'file1']))), TD('')),
-            TR(TD(A('file2', _href=URL(args=['dir1', 'file2']))), TD('')),
-            _class='table',
-        ))
-        if os.name == 'posix':
-            self.expected_files['inside/dir2'] = SPAN(H3(T('Files')), TABLE(
-                TR(TD(A('link_to_file1', _href=URL(args=['dir2', 'link_to_file1']))), TD('')),
-                _class='table',
-            ))
-        else:
-            self.expected_files['inside/dir2'] = ''
+    #     self.expected_files = {}
+    #     self.expected_files['inside'] = SPAN(H3(T('Files')), TABLE(
+    #         TR(TD(A('README', _href=url(args=['README']))), TD('')), 
+    #         _class='table',          
+    #     ))
+    #     self.expected_files['inside/dir1'] = SPAN(H3(T('Files')), TABLE(
+    #         TR(TD(A('file1', _href=url(args=['dir1', 'file1']))), TD('')),
+    #         TR(TD(A('file2', _href=url(args=['dir1', 'file2']))), TD('')),
+    #         _class='table',
+    #     ))
+    #     if os.name == 'posix':
+    #         self.expected_files['inside/dir2'] = SPAN(H3(T('Files')), TABLE(
+    #             TR(TD(A('link_to_file1', _href=url(args=['dir2', 'link_to_file1']))), TD('')),
+    #             _class='table',
+    #         ))
+    #     else:
+    #         self.expected_files['inside/dir2'] = ''
 
     def tearDown(self):
         shutil.rmtree(self.base_dir)
 
     def make_expose(self, base, show=''):
-        request = Request(env={})
-        request.folder = 'myapp'
-        request.application = 'a'
-        request.controller = 'c'
-        request.function = 'f'
-        request.raw_args = show
-        request.args = show.split('/')
-        current.request = request
+        current.request = Request(env={})
+        current.request.raw_args = show
+        current.request.args = show.split('/')
         return Expose(base=os.path.join(self.base_dir, base),
                       basename='inside')
 
-    def test_expose_inside_args(self):
+    def test_expose_inside_state(self):
         expose = self.make_expose(base='inside', show='')
         self.assertEqual(expose.args, [])
         self.assertEqual(expose.folders, ['dir1', 'dir2'])
         self.assertEqual(expose.filenames, ['README'])
 
-    def test_expose_dir1_args(self):
+    def test_expose_inside_dir1_state(self):
         expose = self.make_expose(base='inside', show='dir1')
         self.assertEqual(expose.args, ['dir1'])
         self.assertEqual(expose.folders, [])
         self.assertEqual(expose.filenames, ['file1', 'file2'])
 
-    def assertSameXML(self, a, b):        
-        self.assertEqual(a if isinstance(a, str) else a.xml(),
-                         b if isinstance(b, str) else b.xml())
+    def test_expose_inside_dir2_state(self):
+        expose = self.make_expose(base='inside', show='dir2')
+        self.assertEqual(expose.args, ['dir2'])
+        if os.name == 'posix':
+            self.assertEqual(expose.folders, ['link_to_dir1'])
+            self.assertEqual(expose.filenames, ['link_to_file1'])
+        else:
+            self.assertEqual(expose.folders, [])
+            self.assertEqual(expose.filenames, [])
 
-    def run_test_xml_for(self, base, show):
-        expose = self.make_expose(base, show)
-        path = os.path.join(base, show).rstrip('/')
-        self.assertSameXML(expose.table_files(), self.expected_files[path])
-        self.assertSameXML(expose.table_folders(), self.expected_folders[path])
+    def test_expose_base_inside_state(self):
+        expose = self.make_expose(base='', show='inside')
+        self.assertEqual(expose.args, ['inside'])
+        if os.name == 'posix':
+            self.assertEqual(expose.folders, ['dir1', 'dir2', 'link_to_outside'])
+            self.assertEqual(expose.filenames, ['README', 'link_to_file3'])
+        else:
+            self.assertEqual(expose.folders, ['dir1', 'dir2'])
+            self.assertEqual(expose.filenames, ['README'])
+
+    def test_expose_base_inside_dir2_state(self):
+        expose = self.make_expose(base='', show='inside/dir2')
+        self.assertEqual(expose.args, ['inside', 'dir2'])
+        if os.name == 'posix':
+            self.assertEqual(expose.folders, ['link_to_dir1'])
+            self.assertEqual(expose.filenames, ['link_to_file1'])
+        else:
+            self.assertEqual(expose.folders, [])
+            self.assertEqual(expose.filenames, [])
+            
+
+    # def assertSameXML(self, a, b):        
+    #     self.assertEqual(a if isinstance(a, str) else a.xml(),
+    #                      b if isinstance(b, str) else b.xml())
+
+    # def run_test_xml_for(self, base, show):
+    #     expose = self.make_expose(base, show)
+    #     path = os.path.join(base, show).rstrip('/')
+    #     self.assertSameXML(expose.table_files(), self.expected_files[path])
+    #     self.assertSameXML(expose.table_folders(), self.expected_folders[path])
     
-    def test_xml_inside(self):
-        self.run_test_xml_for(base='inside', show='')
+    # def test_xml_inside(self):
+    #     self.run_test_xml_for(base='inside', show='')
 
-    def test_xml_dir1(self):
-        self.run_test_xml_for(base='inside', show='dir1')
+    # def test_xml_dir1(self):
+    #     self.run_test_xml_for(base='inside', show='dir1')
     
-    def test_xml_dir2(self):
-        self.run_test_xml_for(base='inside', show='dir2')
+    # def test_xml_dir2(self):
+    #     self.run_test_xml_for(base='inside', show='dir2')
 
-    #@TBD: test file not found
-    #@TBD: test not authorized
+    def test_file_not_found(self):
+        with self.assertRaises(HTTP):
+            self.make_expose(base='inside', show='dir1/file_not_found')
 
+    def test_not_authorized(self):
+        with self.assertRaises(HTTP):
+            self.make_expose(base='inside', show='link_to_file3')
 
 if __name__ == '__main__':
     unittest.main()
