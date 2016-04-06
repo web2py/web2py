@@ -274,7 +274,11 @@ sched = Scheduler(sched_dal, max_empty_runs=20, migrate=False, heartbeat=1)
 
     def exec_sched(self):
         import subprocess
-        call_args = [sys.executable, 'web2py.py', '-K', 'welcome']
+        call_args = ['coverage', 'run',
+                     '--rcfile', os.path.join(os.path.dirname(os.path.abspath(__file__)), 
+                                              'coverage.ini'),
+                     'web2py.py', '-K', 'welcome'
+                    ]
         ret = subprocess.call(call_args, env=dict(os.environ))
         return ret
 
