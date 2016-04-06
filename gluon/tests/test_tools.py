@@ -90,7 +90,6 @@ class TestMail(unittest.TestCase):
         mail.settings.sender = 'you@example.com'
         self.assertTrue(mail.send(to=['somebody@example.com'],
                                   subject='hello',
-                                  # If reply_to is omitted, then mail.settings.sender is used
                                   reply_to='us@example.com',
                                   message='world'))
         message = TestMail.DummySMTP.inbox.pop()
@@ -107,7 +106,6 @@ class TestMail(unittest.TestCase):
         mail.settings.login = 'username:password'
         self.assertFalse(mail.send(to=['somebody@example.com'],
                                    subject='hello',
-                                   # If reply_to is omitted, then mail.settings.sender is used
                                    reply_to='us@example.com',
                                    message='world'))
 
@@ -119,7 +117,6 @@ class TestMail(unittest.TestCase):
         mail.settings.login = 'username:password'
         self.assertTrue(mail.send(to=['somebody@example.com'],
                                   subject='hello',
-                                  # If reply_to is omitted, then mail.settings.sender is used
                                   reply_to='us@example.com',
                                   message='world'))
         del TestMail.DummySMTP.users['username']
@@ -131,7 +128,6 @@ class TestMail(unittest.TestCase):
         mail.settings.sender = 'you@example.com'
         self.assertTrue(mail.send(to=['somebody@example.com'],
                                   subject='hello',
-                                  # If reply_to is omitted, then mail.settings.sender is used
                                   reply_to='us@example.com',
                                   message='<html><head></head><body></body></html>'))
         message = TestMail.DummySMTP.inbox.pop()
@@ -144,7 +140,6 @@ class TestMail(unittest.TestCase):
         mail.settings.ssl = True
         self.assertTrue(mail.send(to=['somebody@example.com'],
                                   subject='hello',
-                                  # If reply_to is omitted, then mail.settings.sender is used
                                   reply_to='us@example.com',
                                   message='world'))
         TestMail.DummySMTP.inbox.pop()
@@ -156,11 +151,25 @@ class TestMail(unittest.TestCase):
         mail.settings.tls = True
         self.assertTrue(mail.send(to=['somebody@example.com'],
                                   subject='hello',
-                                  # If reply_to is omitted, then mail.settings.sender is used
                                   reply_to='us@example.com',
                                   message='world'))
         TestMail.DummySMTP.inbox.pop()
 
+    def test_attachment(self):
+        module_file = os.path.abspath(__file__)
+        mail = Mail()
+        mail.settings.server = 'smtp.example.com:25'
+        mail.settings.sender = 'you@example.com'
+        self.assertTrue(mail.send(to=['somebody@example.com'],
+                                    subject='hello',
+                                    message='world',
+                                    attachments=Mail.Attachment(module_file)))
+        message = TestMail.DummySMTP.inbox.pop()
+        import email
+        parsed_msg = email.message_from_string(message.payload)
+        attachment = parsed_msg.get_payload(1).get_payload(decode=True)
+        with open(module_file) as mf:
+            self.assertEqual(attachment, mf.read())
 
 # TODO class TestRecaptcha(unittest.TestCase):
 
