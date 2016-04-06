@@ -1735,6 +1735,7 @@ class Auth(object):
             host = host_names[0]
         else:
             host = 'localhost'
+        return host
 
     def __init__(self, environment=None, db=None, mailer=True,
                  hmac_key=None, controller='default', function='user',
