@@ -168,8 +168,8 @@ class TestMail(unittest.TestCase):
         import email
         parsed_msg = email.message_from_string(message.payload)
         attachment = parsed_msg.get_payload(1).get_payload(decode=True)
-        with open(module_file) as mf:
-            self.assertEqual(attachment, mf.read())
+        with open(module_file, 'r') as mf:
+            self.assertEqual(attachment.decode('utf-8'), mf.read().decode('utf-8'))
 
 # TODO class TestRecaptcha(unittest.TestCase):
 
