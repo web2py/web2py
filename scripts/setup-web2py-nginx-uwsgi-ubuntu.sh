@@ -212,21 +212,20 @@ if [ "$nopassword" -eq 0 ]
 then
    sudo -u www-data python -c "from gluon.main import save_password; save_password('$PW',443)"
 fi
-systemctl enable emperor.uwsgi.service
-systemctl start emperor.uwsgi.service
-/etc/init.d/nginx restart
+
+/etc/init.d/nginx start
+start uwsgi-emperor
 
 echo <<EOF
-you can reload uwsgi with
+you can stop uwsgi and nginx with
 
-  systemctl restart emperor.uwsgi
+  sudo /etc/init.d/nginx stop
+  sudo stop uwsgi-emperor
+ 
+and start it with
 
-and stop it with
+  sudo /etc/init.d/nginx start
+  sudo start uwsgi-emperor
 
-  systemctl stop emperor.uwsgi
-
-to reload web2py only (without restarting uwsgi)
-
-  touch /etc/uwsgi/web2py.ini
 EOF
 
