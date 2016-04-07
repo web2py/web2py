@@ -1783,7 +1783,7 @@ class Auth(object):
         # ## what happens after registration?
 
         settings = self.settings = Settings()
-        settings.update(Auth.default_settings)        
+        settings.update(Auth.default_settings)
         host = self.select_host(request.env.http_host, host_names)
         settings.update(
             cas_domains=[host],
