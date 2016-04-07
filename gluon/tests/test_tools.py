@@ -250,7 +250,7 @@ class TestAuth(unittest.TestCase):
             self.assertTrue('name="_formkey"' in html_form)
 
         # NOTE: Not sure it is the proper way to logout_bare() as there is not methods for that and auth.logout() failed
-        self.auth.user = None
+        self.auth.logout_bare()
         # self.assertTrue(self.auth.is_logged_in())
 
         for f in ['logout', 'verify_email', 'reset_password',

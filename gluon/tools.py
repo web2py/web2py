@@ -3251,11 +3251,15 @@ class Auth(object):
                 next = cas.logout_url(next)
 
         current.session.auth = None
+        self.user = None
         if self.settings.renew_session_onlogout:
             current.session.renew(clear_session=not self.settings.keep_session_onlogout)
         current.session.flash = self.messages.logged_out
         if next is not None:
             redirect(next)
+
+    def logout_bare(self):
+        self.logout(next=None, onlogout=None, log=None)
 
     def register(self,
                  next=DEFAULT,
