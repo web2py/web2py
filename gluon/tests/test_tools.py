@@ -133,10 +133,10 @@ class TestMail(unittest.TestCase):
         mail.settings.server = 'smtp.example.com:25'
         mail.settings.sender = 'you@example.com'
         self.assertTrue(mail.send(to=['somebody@example.com'],
-                  subject='hello',
-                  # If reply_to is omitted, then mail.settings.sender is used
-                  reply_to='us@example.com',
-                  message='<html><head></head><body></body></html>'))
+                                  subject='hello',
+                                  # If reply_to is omitted, then mail.settings.sender is used
+                                  reply_to='us@example.com',
+                                  message='<html><head></head><body></body></html>'))
         message = TestMail.DummySMTP.inbox.pop()
         self.assertTrue('Content-Type: text/html' in message.payload)
 
@@ -146,10 +146,10 @@ class TestMail(unittest.TestCase):
         mail.settings.sender = 'you@example.com'
         mail.settings.ssl = True
         self.assertTrue(mail.send(to=['somebody@example.com'],
-                  subject='hello',
-                  # If reply_to is omitted, then mail.settings.sender is used
-                  reply_to='us@example.com',
-                  message='world'))
+                                  subject='hello',
+                                  # If reply_to is omitted, then mail.settings.sender is used
+                                  reply_to='us@example.com',
+                                  message='world'))
         TestMail.DummySMTP.inbox.pop()
 
     def test_tls(self):
