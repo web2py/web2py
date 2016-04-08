@@ -229,7 +229,8 @@ class TestExpose(unittest.TestCase):
         self.make_readme()
         if have_symlinks():
             self.make_symlinks()
-        # $BASE
+
+        # $BASE/
         # |-- inside/
         # |   |-- dir1/
         # |   |   |-- file1
@@ -237,7 +238,7 @@ class TestExpose(unittest.TestCase):
         # |   |-- dir2/
         # |   |   |-- link_to_dir1/@ -> $BASE/inside/dir1/
         # |   |   `-- link_to_file1@ -> $BASE/inside/dir1/file1
-        # |   |-- link_to_outsize/@ -> $BASE/outside/
+        # |   |-- link_to_outside/@ -> $BASE/outside/
         # |   |-- link_to_file3@ -> $BASE/outside/file3
         # |   `-- README
         # `-- outside/
@@ -247,14 +248,7 @@ class TestExpose(unittest.TestCase):
         tools.URL = lambda args: URL(a='a', c='c', f='f', args=args)
 
     def make_dirs(self):
-        """setup directory structure:
-
-        .
-        |-- inside/
-        |   |-- dir1/
-        |   `-- dir2/
-        `-- outside/
-        """
+        """setup direcotry strucutre"""
         for d in (['inside'],
                   ['inside', 'dir1'],
                   ['inside', 'dir2'],
@@ -274,7 +268,7 @@ class TestExpose(unittest.TestCase):
             f.write('README content')
 
     def make_symlinks(self):
-        """setup extenstion for POSIX systems"""
+        """setup extenstion for posix systems"""
         # inside links
         os.symlink(
             os.path.join(self.base_dir, 'inside', 'dir1'),

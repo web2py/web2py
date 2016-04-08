@@ -6173,7 +6173,8 @@ class PluginManager(object):
 
 
 class Expose(object):
-    def __init__(self, base=None, basename=None, extensions=None, allow_download=True, follow_symlink_out=False):
+    def __init__(self, base=None, basename=None, extensions=None,
+                 allow_download=True, follow_symlink_out=False):
         """
         Examples:
             Use as::
@@ -6196,12 +6197,16 @@ class Expose(object):
                 Warning: setting this to `True` might pose a security risk
                          if you don't also have complete control over writing
                          and file creation under `base`.
+
         """
         current.session.forget()
         self.follow_symlink_out = follow_symlink_out
         self.base = self.normalize_path(
             base or os.path.join(current.request.folder, 'static'))
         self.basename = basename or current.request.function
+        self.base = base = os.path.realpath(base or os.path.join(current.request.folder, 'static'))
+        basename = basename or current.request.function
+        self.basename = basename
 
         if current.request.raw_args:
             self.args = [arg for arg in current.request.raw_args.split('/') if arg]
