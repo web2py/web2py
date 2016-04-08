@@ -181,7 +181,7 @@ class JobGraph(object):
                                            task_child=task_child,
                                            job_name=self.job_name)
 
-    def validate(self, job_name):
+    def validate(self, job_name=None):
         """Validates if all tasks job_name can be completed, i.e. there
         are no mutual dependencies among tasks.
         Commits at the end if successfull, or it rollbacks the entire

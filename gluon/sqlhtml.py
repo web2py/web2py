@@ -1897,33 +1897,39 @@ class SQLFORM(FORM):
                 else:
                     field_type = field.type
 
-                operators = SELECT(*[OPTION(T(option), _value=option) for option in options], _class='form-control')
+                operators = SELECT(*[OPTION(T(option), _value=option) for option in options], 
+                                    _class='form-control')
                 _id = "%s_%s" % (value_id, name)
                 if field_type in ['boolean', 'double', 'time', 'integer']:
                     widget_ = SQLFORM.widgets[field_type]
-                    value_input = widget_.widget(field, field.default, _id=_id, _class=widget_._class + ' form-control')
+                    value_input = widget_.widget(field, field.default, _id=_id, 
+                                                 _class=widget_._class + ' form-control')
                 elif field_type == 'date':
                     iso_format = {'_data-w2p_date_format': '%Y-%m-%d'}
                     widget_ = SQLFORM.widgets.date
-                    value_input = widget_.widget(field, field.default, _id=_id, _class=widget_._class + ' form-control', **iso_format)
+                    value_input = widget_.widget(field, field.default, _id=_id, 
+                                                 _class=widget_._class + ' form-control', 
+                                                 **iso_format)
                 elif field_type == 'datetime':
                     iso_format = {'_data-w2p_datetime_format': '%Y-%m-%d %H:%M:%S'}
                     widget_ = SQLFORM.widgets.datetime
-                    value_input = widget_.widget(field, field.default, _id=_id, _class=widget_._class + ' form-control', **iso_format)
-                elif (field_type.startswith('reference ') or
-                      field_type.startswith('list:reference ')) and \
-                      hasattr(field.requires, 'options') or \
-                      hasattr(field.requires, 'options'):
+                    value_input = widget_.widget(field, field.default, _id=_id, 
+                                                 _class=widget_._class + ' form-control', 
+                                                 **iso_format)
+                elif hasattr(field.requires, 'options'):
                     value_input = SELECT(
                         *[OPTION(v, _value=k)
                           for k, v in field.requires.options()],
                          _class='form-control',
                          **dict(_id=_id))
-                elif field_type.startswith('reference ') or \
-                     field_type.startswith('list:integer') or \
-                     field_type.startswith('list:reference '):
+                elif (field_type.startswith('integer') or
+                      field_type.startswith('reference ') or
+                      field_type.startswith('list:integer') or
+                      field_type.startswith('list:reference ')):
                     widget_ = SQLFORM.widgets.integer
-                    value_input = widget_.widget(field, field.default, _id=_id, _class=widget_._class + ' form-control')
+                    value_input = widget_.widget(
+                        field, field.default, _id=_id, 
+                        _class=widget_._class + ' form-control')
                 else:
                     value_input = INPUT(
                         _type='text', _id=_id,

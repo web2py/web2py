@@ -1735,6 +1735,7 @@ class Auth(object):
             host = host_names[0]
         else:
             host = 'localhost'
+        return host
 
     def __init__(self, environment=None, db=None, mailer=True,
                  hmac_key=None, controller='default', function='user',
@@ -2575,7 +2576,7 @@ class Auth(object):
                     update_keys[key] = keys[key]
             user.update_record(**update_keys)
         elif checks:
-            if not 'first_name' in keys and 'first_name' in table_user.fields:
+            if 'first_name' not in keys and 'first_name' in table_user.fields:
                 guess = keys.get('email', 'anonymous').split('@')[0]
                 keys['first_name'] = keys.get('username', guess)
             vars = table_user._filter_fields(keys)
@@ -2698,8 +2699,7 @@ class Auth(object):
             fields[settings.passfield] = \
                 settings.table_user[settings.passfield].validate(fields[settings.passfield])[0]
         if not fields.get(settings.userfield):
-            raise ValueError('register_bare: ' +
-                             'userfield not provided or invalid')
+            raise ValueError('register_bare: userfield not provided or invalid')
         user = self.get_or_create_user(fields, login=False, get=False,
                                        update_fields=self.settings.update_fields)
         if not user:
@@ -3251,11 +3251,15 @@ class Auth(object):
                 next = cas.logout_url(next)
 
         current.session.auth = None
+        self.user = None
         if self.settings.renew_session_onlogout:
             current.session.renew(clear_session=not self.settings.keep_session_onlogout)
         current.session.flash = self.messages.logged_out
         if next is not None:
             redirect(next)
+
+    def logout_bare(self):
+        self.logout(next=None, onlogout=None, log=None)
 
     def register(self,
                  next=DEFAULT,
