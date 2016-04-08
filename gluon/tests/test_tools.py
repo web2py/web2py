@@ -229,12 +229,32 @@ class TestExpose(unittest.TestCase):
         self.make_readme()
         if have_symlinks():
             self.make_symlinks()
+        # $BASE
+        # |-- inside/
+        # |   |-- dir1/
+        # |   |   |-- file1
+        # |   |   `-- file2
+        # |   |-- dir2/
+        # |   |   |-- link_to_dir1/@ -> $BASE/inside/dir1/
+        # |   |   `-- link_to_file1@ -> $BASE/inside/dir1/file1
+        # |   |-- link_to_outsize/@ -> $BASE/outside/
+        # |   |-- link_to_file3@ -> $BASE/outside/file3
+        # |   `-- README
+        # `-- outside/
+        #     `-- file3
 
         self.set_expectations()
         tools.URL = lambda args: URL(a='a', c='c', f='f', args=args)
 
     def make_dirs(self):
-        """setup direcotry strucutre"""
+        """setup directory structure:
+
+        .
+        |-- inside/
+        |   |-- dir1/
+        |   `-- dir2/
+        `-- outside/
+        """
         for d in (['inside'],
                   ['inside', 'dir1'],
                   ['inside', 'dir2'],
@@ -254,7 +274,7 @@ class TestExpose(unittest.TestCase):
             f.write('README content')
 
     def make_symlinks(self):
-        """setup extenstion for posix systems"""
+        """setup extenstion for POSIX systems"""
         # inside links
         os.symlink(
             os.path.join(self.base_dir, 'inside', 'dir1'),
@@ -311,18 +331,27 @@ class TestExpose(unittest.TestCase):
         tools.URL = URL
         shutil.rmtree(self.base_dir)
 
-    def make_expose(self, base, show=''):
+    def make_expose(self, base, show='', follow_symlink_out=False):
         current.request = Request(env={})
         current.request.raw_args = show
         current.request.args = show.split('/')
         return Expose(base=os.path.join(self.base_dir, base),
-                      basename='inside')
+                      basename=base,
+                      follow_symlink_out=follow_symlink_out)
 
     def test_expose_inside_state(self):
         expose = self.make_expose(base='inside', show='')
         self.assertEqual(expose.args, [])
         self.assertEqual(expose.folders, ['dir1', 'dir2'])
         self.assertEqual(expose.filenames, ['README'])
+
+    @unittest.skipUnless(have_symlinks(), 'requires symlinks')
+    def test_expose_inside_state_floow_symlink_out(self):
+        expose = self.make_expose(base='inside', show='',
+                                  follow_symlink_out=True)
+        self.assertEqual(expose.args, [])
+        self.assertEqual(expose.folders, ['dir1', 'dir2', 'link_to_outside'])
+        self.assertEqual(expose.filenames, ['README', 'link_to_file3'])
 
     def test_expose_inside_dir1_state(self):
         expose = self.make_expose(base='inside', show='dir1')
