@@ -820,12 +820,12 @@ class Recaptcha(DIV):
     Examples:
         Use as::
 
-            form = FORM(Recaptcha(public_key='...',private_key='...'))
+            form = FORM(Recaptcha(public_key='...', private_key='...'))
 
         or::
 
             form = SQLFORM(...)
-            form.append(Recaptcha(public_key='...',private_key='...'))
+            form.append(Recaptcha(public_key='...', private_key='...'))
 
     """
 
@@ -984,17 +984,17 @@ class Recaptcha2(DIV):
     Examples:
         Use as::
 
-            form = FORM(Recaptcha2(public_key='...',private_key='...'))
+            form = FORM(Recaptcha2(public_key='...', private_key='...'))
 
         or::
 
             form = SQLFORM(...)
-            form.append(Recaptcha2(public_key='...',private_key='...'))
+            form.append(Recaptcha2(public_key='...', private_key='...'))
 
         to protect the login page instead, use::
 
             from gluon.tools import Recaptcha2
-            auth.settings.captcha = Recaptcha2(request, public_key='...',private_key='...')
+            auth.settings.captcha = Recaptcha2(request, public_key='...', private_key='...')
 
     """
 
