@@ -308,7 +308,7 @@ def URL(a=None,
         else:
             function = f
 
-        # if the url gets a static resource, don't force extention
+        # if the url gets a static resource, don't force extension
         if controller == 'static':
             extension = None
             # add static version to url
@@ -955,7 +955,6 @@ class DIV(XmlComponent):
         # get the xml for the inner components
         co = join([xmlescape(component) for component in
                    self.components])
-
         return (fa, co)
 
     def xml(self):
@@ -990,7 +989,7 @@ class DIV(XmlComponent):
 
         Examples:
 
-        >>> markdown = lambda text,tag=None,attributes={}: \
+        >>> markdown = lambda text, tag=None, attributes={}: \
                         {None: re.sub('\s+',' ',text), \
                          'h1':'#'+text+'\\n\\n', \
                          'p':text+'\\n'}.get(tag,text)
@@ -1171,13 +1170,13 @@ class DIV(XmlComponent):
                 return i
             else:
                 self[i] = replace(self[i]) if callable(replace) else replace
-                return i+1
+                return i + 1
         # loop the components
         if find_text or find_components:
             i = 0
             while i < len(self.components):
                 c = self[i]
-                j = i+1
+                j = i + 1
                 if check and find_text and isinstance(c, str) and \
                         ((is_regex and find_text.search(c)) or (str(find_text) in c)):
                     j = replace_component(i)
@@ -2573,7 +2572,7 @@ class MENU(DIV):
                         item[3], select, prefix=CAT(prefix, item[0], '/'))
         select['_onchange'] = 'window.location=this.value'
         # avoid to wrap the select if no custom items are present
-        html = DIV(select,  self.serialize(custom_items)) if len(custom_items) else select
+        html = DIV(select, self.serialize(custom_items)) if len(custom_items) else select
         return html
 
     def xml(self):
@@ -2805,7 +2804,7 @@ class MARKMIN(XmlComponent):
         self.extra = extra or {}
         self.allowed = allowed or {}
         self.sep = sep
-        self.url = URL if url == True else url
+        self.url = URL if url is True else url
         self.environment = environment
         self.latex = latex
         self.autolinks = autolinks
