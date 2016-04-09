@@ -4128,6 +4128,7 @@ class Auth(object):
             raise HTTP(401, "Not Authorized")
         current_id = auth.user.id
         requested_id = user_id
+        user = None
         if user_id is DEFAULT:
             user_id = current.request.post_vars.user_id
         if user_id and user_id != self.user.id and user_id != '0':
@@ -4156,7 +4157,10 @@ class Auth(object):
             return None
         if requested_id is DEFAULT and not request.post_vars:
             return SQLFORM.factory(Field('user_id', 'integer'))
-        return SQLFORM(table_user, user.id, readonly=True)
+        elif not user:
+            return None
+        else:
+            return SQLFORM(table_user, user.id, readonly=True)
 
     def update_groups(self):
         if not self.user:
