@@ -3043,7 +3043,16 @@ class SQLFORM(FORM):
             query = query & constraints[table._tablename]
         if isinstance(links, dict):
             links = links.get(table._tablename, [])
-        for key in 'columns,orderby,searchable,sortable,paginate,deletable,editable,details,selectable,create,fields'.split(','):
+        for key in ('fields', 'field_id', 'left', 'headers', 'orderby', 'groupby', 'searchable', 
+                    'sortable', 'paginate', 'deletable', 'editable', 'details', 'selectable',
+                    'create', 'csv', 'links', 'links_in_grid', 'upload', 'maxtextlengths',
+                    'maxtextlength', 'onvalidation', 'onfailure', 'oncreate', 'onupdate',
+                    'ondelete', 'sorter_icons', 'ui', 'showbuttontext', '_class', 'formname',
+                    'search_widget', 'advanced_search', 'ignore_rw', 'formstyle', 'exportclasses',
+                    'formargs', 'createargs', 'editargs', 'viewargs', 'selectable_submit_button',
+                    'buttons_placement', 'links_placement', 'noconfirm', 'cache_count', 'client_side_delete',
+                    'ignore_common_filters', 'auto_pagination', 'use_cursor'
+                   ):
             if isinstance(kwargs.get(key, None), dict):
                 if table._tablename in kwargs[key]:
                     kwargs[key] = kwargs[key][table._tablename]
