@@ -230,6 +230,8 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ( ('%d,%d' % (george_id, costanza_id)).split(','), 'oops'))
         rtn = IS_IN_DB(db, db.person.id, '%(name)s', error_message='oops').options(zero=False)
         self.assertEqual(sorted(rtn), [('%d' % george_id, 'george'), ('%d' % costanza_id, 'costanza')])
+        rtn = IS_IN_DB(db, db.person.id, db.person.name, error_message='oops', sort=True).options(zero=True)
+        self.assertEqual(rtn, [('', ''), ('%d' % costanza_id, 'costanza'), ('%d' % george_id, 'george')])
         db.person.drop()
 
     def test_IS_NOT_IN_DB(self):

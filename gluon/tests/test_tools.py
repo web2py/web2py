@@ -176,6 +176,19 @@ class TestMail(unittest.TestCase):
         attachment = parsed_msg.get_payload(1).get_payload(decode=True)
         with open(module_file, 'rb') as mf:
             self.assertEqual(attachment.decode('utf-8'), mf.read().decode('utf-8'))
+        # Test missing attachment name error
+        stream = open(module_file)
+        self.assertRaises(Exception, lambda *args, **kwargs: Mail.Attachment(*args, **kwargs), stream)
+        stream.close()
+        # Test you can define content-id and content type
+        self.assertTrue(mail.send(to=['somebody@example.com'],
+                                  subject='hello',
+                                  message='world',
+                                  attachments=Mail.Attachment(module_file, content_id='trololo', content_type='tra/lala')))
+        message = TestMail.DummySMTP.inbox.pop()
+        self.assertTrue('Content-Type: tra/lala' in message.payload)
+        self.assertTrue('Content-Id: <trololo>' in message.payload)
+
 
 # class TestRecaptcha(unittest.TestCase):
 #     def test_Recaptcha(self):
