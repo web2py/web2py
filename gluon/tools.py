@@ -4512,7 +4512,7 @@ class Auth(object):
                           ignore_common_filters=True).select(
             limitby=(0, 1), orderby_on_limitby=False).first()
         if record:
-            if hasattr(record, 'is_active') and not record.is_ctive:
+            if hasattr(record, 'is_active') and not record.is_active:
                 record.update_record(is_active=True)
             id = record.id
         else:
