@@ -36,10 +36,19 @@ class TestMail(unittest.TestCase):
     """
 
     class Message(object):
+
         def __init__(self, sender, to, payload):
             self.sender = sender
             self.to = to
             self.payload = payload
+            self._parsed_payload = None
+
+        @property
+        def parsed_payload(self):
+            if self._parsed_payload is None:
+                import email
+                self._parsed_payload = email.message_from_string(self.payload)
+            return self._parsed_payload
 
     class DummySMTP(object):
         """
@@ -137,6 +146,19 @@ class TestMail(unittest.TestCase):
         message = TestMail.DummySMTP.inbox.pop()
         self.assertTrue('Content-Type: text/html' in message.payload)
 
+    def test_alternative(self):
+        mail = Mail()
+        mail.settings.server = 'smtp.example.com:25'
+        mail.settings.sender = 'you@example.com'
+        self.assertTrue(mail.send(to=['somebody@example.com'],
+                                  message=('Text only', '<html><pre>HTML Only</pre></html>')))
+        message = TestMail.DummySMTP.inbox.pop()
+        self.assertTrue(message.parsed_payload.is_multipart())
+        self.assertTrue(message.parsed_payload.get_content_type() == 'multipart/alternative')
+        parts = message.parsed_payload.get_payload()
+        self.assertTrue('Text only' in parts[0].as_string())
+        self.assertTrue('<html><pre>HTML Only</pre></html>' in parts[1].as_string())
+
     def test_ssl(self):
         mail = Mail()
         mail.settings.server = 'smtp.example.com:25'
@@ -171,9 +193,7 @@ class TestMail(unittest.TestCase):
                                   message='world',
                                   attachments=Mail.Attachment(module_file)))
         message = TestMail.DummySMTP.inbox.pop()
-        import email
-        parsed_msg = email.message_from_string(message.payload)
-        attachment = parsed_msg.get_payload(1).get_payload(decode=True)
+        attachment = message.parsed_payload.get_payload(1).get_payload(decode=True)
         with open(module_file, 'rb') as mf:
             self.assertEqual(attachment.decode('utf-8'), mf.read().decode('utf-8'))
         # Test missing attachment name error
