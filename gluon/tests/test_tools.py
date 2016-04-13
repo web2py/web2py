@@ -134,6 +134,18 @@ class TestMail(unittest.TestCase):
         del TestMail.DummySMTP.users['username']
         TestMail.DummySMTP.inbox.pop()
 
+    def test_html(self):
+        mail = Mail()
+        mail.settings.server = 'smtp.example.com:25'
+        mail.settings.sender = 'you@example.com'
+        self.assertTrue(mail.send(to=['somebody@example.com'],
+                                  subject='hello',
+                                  # If reply_to is omitted, then mail.settings.sender is used
+                                  reply_to='us@example.com',
+                                  message='<html><head></head><body></body></html>'))
+        message = TestMail.DummySMTP.inbox.pop()
+        self.assertTrue('Content-Type: text/html' in message.payload)
+
     def test_alternative(self):
         mail = Mail()
         mail.settings.server = 'smtp.example.com:25'
@@ -146,18 +158,6 @@ class TestMail(unittest.TestCase):
         parts = message.parsed_payload.get_payload()
         self.assertTrue('Text only' in parts[0].as_string())
         self.assertTrue('<html><pre>HTML Only</pre></html>' in parts[1].as_string())
-
-    def test_html(self):
-        mail = Mail()
-        mail.settings.server = 'smtp.example.com:25'
-        mail.settings.sender = 'you@example.com'
-        self.assertTrue(mail.send(to=['somebody@example.com'],
-                                  subject='hello',
-                                  # If reply_to is omitted, then mail.settings.sender is used
-                                  reply_to='us@example.com',
-                                  message='<html><head></head><body></body></html>'))
-        message = TestMail.DummySMTP.inbox.pop()
-        self.assertTrue('Content-Type: text/html' in message.payload)
 
     def test_ssl(self):
         mail = Mail()
