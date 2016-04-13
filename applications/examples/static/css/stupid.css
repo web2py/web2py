@@ -28,6 +28,7 @@ tbody tr {border-bottom:2px solid #f1f1f1}
 td, th {padding: 5px; text-align: left; vertical-align:top}
 thead th {vertical-align:bottom}
 header, footer {with:100%}
+main {display: block;} /* IE fix */
 
 @media all and (max-width:599px) {
   h1{font-size:2em}
