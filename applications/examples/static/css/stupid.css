@@ -5,7 +5,8 @@
 ************/
 
 /*** basic styles ***/
-*, *:after, *:before {border:0; margin:0; padding:0; -webkit-box-sizing:border-box; -moz-box-sizing:border-box; box-sizing:border-box}
+html {box-sizing:border-box;}
+*, *:after, *:before {border:0; margin:0; padding:0; box-sizing:inherit;}
 html, body {max-width: 100vw; overflow-x: hidden}
 body {font-family:"HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif}
 p, li {margin-bottom:0.5em}
