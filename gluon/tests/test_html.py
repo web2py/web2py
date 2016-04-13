@@ -173,6 +173,9 @@ class TestBareHelpers(unittest.TestCase):
         # bug check for the sanitizer for closing no-close tags
         self.assertEqual(XML('<p>Test</p><br/><p>Test</p><br/>', sanitize=True),
                          XML('<p>Test</p><br /><p>Test</p><br />'))
+        # basic flatten test
+        self.assertEqual(XML('<p>Test</p>').flatten(), '<p>Test</p>')
+        self.assertEqual(XML('<p>Test</p>').flatten(render=lambda text, tag, attr: text), '<p>Test</p>')
 
     def test_XML_pickle_unpickle(self):
         # weird test
@@ -235,6 +238,9 @@ class TestBareHelpers(unittest.TestCase):
         # with self.assertRaises(SyntaxError) as cm:
         #     DIV(BR('<>')).xml()
         # self.assertEqual(cm.exception[0], '<br/> tags cannot have components')
+
+        # test .get('attrib')
+        self.assertEqual(DIV('<p>Test</p>', _class="class_test").get('_class'), 'class_test')
 
     def test_CAT(self):
         # Empty CAT()
