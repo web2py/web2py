@@ -523,8 +523,8 @@ class IS_IN_DB(Validator):
             field = field._id
         elif isinstance(field, str):
             items = field.split('.')
-            if len(items)==1: items+=['id']
-            field = self.dbset.db[items[0]][items[1]]
+            if len(items)==1:
+                field = items[0] + '.id'
 
         (ktable, kfield) = str(field).split('.')
         if not label:
@@ -542,7 +542,7 @@ class IS_IN_DB(Validator):
             fieldnames = '*'
         else:
             raise NotImplementedError
-        self.field = field # the lookup field
+
         self.fieldnames = fieldnames # fields requires to build the formatting
         self.label = label
         self.ktable = ktable
@@ -627,7 +627,7 @@ class IS_IN_DB(Validator):
             else:
                 values = []
 
-            if self.field.type in ('id','integer'):
+            if field.type in ('id','integer'):
                 new_values = []
                 for value in values:
                     if not (isinstance(value,(int,long)) or value.isdigit()):
@@ -657,7 +657,7 @@ class IS_IN_DB(Validator):
                 elif count(values) == len(values):
                     return (values, None)
         else:
-            if self.field.type in ('id','integer'):
+            if field.type in ('id','integer'):
                 if isinstance(value,(int,long)) or value.isdigit():
                     value = int(value)
                 elif self.auto_add:
