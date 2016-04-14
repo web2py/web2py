@@ -74,12 +74,12 @@ def _default_validators(db, field):
         return requires
     # does not get here for reference and list:reference
     if field.unique:
-        requires.insert(0,validators.IS_NOT_IN_DB(db, field))
-    excluded_fields = ['string','upload','text','password','boolean']
+        requires.insert(0, validators.IS_NOT_IN_DB(db, field))
+    excluded_fields = ['string', 'upload', 'text', 'password', 'boolean']
     if (field.notnull or field.unique) and not field_type in excluded_fields:
-        requires.insert(0,validators.IS_NOT_EMPTY())
+        requires.insert(0, validators.IS_NOT_EMPTY())
     elif not field.notnull and not field.unique and requires:
-        requires[0] = validators.IS_EMPTY_OR(requires[0])
+        requires[0] = validators.IS_EMPTY_OR(requires[0], null='' if field in ('string', 'text', 'password') else None)
     return requires
 
 from gluon.serializers import custom_json, xml
@@ -93,7 +93,7 @@ DAL.uuid = lambda x: web2py_uuid()
 DAL.representers = {
     'rows_render': sqlhtml.represent,
     'rows_xml': sqlhtml.SQLTABLE
-    }
+}
 DAL.Field = Field
 DAL.Table = Table
 
