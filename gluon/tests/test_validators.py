@@ -230,7 +230,21 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ( ('%d,%d' % (george_id, costanza_id)).split(','), 'oops'))
         rtn = IS_IN_DB(db, db.person.id, '%(name)s', error_message='oops').options(zero=False)
         self.assertEqual(sorted(rtn), [('%d' % george_id, 'george'), ('%d' % costanza_id, 'costanza')])
+        rtn = IS_IN_DB(db, db.person.id, db.person.name, error_message='oops', sort=True).options(zero=True)
+        self.assertEqual(rtn, [('', ''), ('%d' % costanza_id, 'costanza'), ('%d' % george_id, 'george')])
+        # Test it works with self reference
+        db.define_table('category',
+            Field('parent_id', 'reference category', requires=IS_EMPTY_OR(IS_IN_DB(db, 'category.id', '%(name)s'))),
+            Field('name')
+        )
+        ret = db.category.validate_and_insert(name='seinfeld')
+        self.assertFalse(list(ret.errors))
+        ret = db.category.validate_and_insert(name='characters', parent_id=ret.id)
+        self.assertFalse(list(ret.errors))
+        rtn = IS_IN_DB(db, 'category.id', '%(name)s')(ret.id)
+        self.assertEqual(rtn, (ret.id, None))
         db.person.drop()
+        db.category.drop()
 
     def test_IS_NOT_IN_DB(self):
         from gluon.dal import DAL, Field

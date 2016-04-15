@@ -820,12 +820,12 @@ class Recaptcha(DIV):
     Examples:
         Use as::
 
-            form = FORM(Recaptcha(public_key='...',private_key='...'))
+            form = FORM(Recaptcha(public_key='...', private_key='...'))
 
         or::
 
             form = SQLFORM(...)
-            form.append(Recaptcha(public_key='...',private_key='...'))
+            form.append(Recaptcha(public_key='...', private_key='...'))
 
     """
 
@@ -984,17 +984,17 @@ class Recaptcha2(DIV):
     Examples:
         Use as::
 
-            form = FORM(Recaptcha2(public_key='...',private_key='...'))
+            form = FORM(Recaptcha2(public_key='...', private_key='...'))
 
         or::
 
             form = SQLFORM(...)
-            form.append(Recaptcha2(public_key='...',private_key='...'))
+            form.append(Recaptcha2(public_key='...', private_key='...'))
 
         to protect the login page instead, use::
 
             from gluon.tools import Recaptcha2
-            auth.settings.captcha = Recaptcha2(request, public_key='...',private_key='...')
+            auth.settings.captcha = Recaptcha2(request, public_key='...', private_key='...')
 
     """
 
@@ -1735,6 +1735,7 @@ class Auth(object):
             host = host_names[0]
         else:
             host = 'localhost'
+        return host
 
     def __init__(self, environment=None, db=None, mailer=True,
                  hmac_key=None, controller='default', function='user',
@@ -3250,11 +3251,15 @@ class Auth(object):
                 next = cas.logout_url(next)
 
         current.session.auth = None
+        self.user = None
         if self.settings.renew_session_onlogout:
             current.session.renew(clear_session=not self.settings.keep_session_onlogout)
         current.session.flash = self.messages.logged_out
         if next is not None:
             redirect(next)
+
+    def logout_bare(self):
+        self.logout(next=None, onlogout=None, log=None)
 
     def register(self,
                  next=DEFAULT,
@@ -4123,6 +4128,7 @@ class Auth(object):
             raise HTTP(401, "Not Authorized")
         current_id = auth.user.id
         requested_id = user_id
+        user = None
         if user_id is DEFAULT:
             user_id = current.request.post_vars.user_id
         if user_id and user_id != self.user.id and user_id != '0':
@@ -4151,7 +4157,10 @@ class Auth(object):
             return None
         if requested_id is DEFAULT and not request.post_vars:
             return SQLFORM.factory(Field('user_id', 'integer'))
-        return SQLFORM(table_user, user.id, readonly=True)
+        elif not user:
+            return None
+        else:
+            return SQLFORM(table_user, user.id, readonly=True)
 
     def update_groups(self):
         if not self.user:
@@ -4503,7 +4512,7 @@ class Auth(object):
                           ignore_common_filters=True).select(
             limitby=(0, 1), orderby_on_limitby=False).first()
         if record:
-            if hasattr(record, 'is_active') and not record.is_ctive:
+            if hasattr(record, 'is_active') and not record.is_active:
                 record.update_record(is_active=True)
             id = record.id
         else:

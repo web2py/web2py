@@ -376,8 +376,8 @@ class IS_JSON(Validator):
     def __call__(self, value):
         try:
             if self.native_json:
-                simplejson.loads(value) # raises error in case of malformed json
-                return (value, None) #  the serialized value is not passed
+                simplejson.loads(value)  # raises error in case of malformed json
+                return (value, None)  # the serialized value is not passed
             else:
                 return (simplejson.loads(value), None)
         except JSONErrors:
@@ -459,7 +459,7 @@ class IS_IN_SET(Validator):
 
     def __call__(self, value):
         if self.multiple:
-            ### if below was values = re.compile("[\w\-:]+").findall(str(value))
+            # if below was values = re.compile("[\w\-:]+").findall(str(value))
             if not value:
                 values = []
             elif isinstance(value, (tuple, list)):
@@ -523,8 +523,8 @@ class IS_IN_DB(Validator):
             field = field._id
         elif isinstance(field, str):
             items = field.split('.')
-            if len(items)==1: items+=['id']
-            field = self.dbset.db[items[0]][items[1]]
+            if len(items) == 1:
+                field = items[0] + '.id'
 
         (ktable, kfield) = str(field).split('.')
         if not label:
@@ -534,16 +534,16 @@ class IS_IN_DB(Validator):
                 label = '%%(%s)s' % str(label).split('.')[-1]
             fieldnames = regex2.findall(label)
             if kfield not in fieldnames:
-                fieldnames.append(kfield) # kfield must be last
+                fieldnames.append(kfield)  # kfield must be last
         elif isinstance(label, Field):
-            fieldnames = [label.name, kfield] # kfield must be last
+            fieldnames = [label.name, kfield]  # kfield must be last
             label = '%%(%s)s' % label.name
         elif callable(label):
             fieldnames = '*'
         else:
             raise NotImplementedError
-        self.field = field # the lookup field
-        self.fieldnames = fieldnames # fields requires to build the formatting
+
+        self.fieldnames = fieldnames  # fields requires to build the formatting
         self.label = label
         self.ktable = ktable
         self.kfield = kfield
@@ -621,16 +621,16 @@ class IS_IN_DB(Validator):
             if isinstance(value, list):
                 values = value
             elif self.delimiter:
-                values = value.split(self.delimiter) # because of autocomplete
+                values = value.split(self.delimiter)  # because of autocomplete
             elif value:
                 values = [value]
             else:
                 values = []
 
-            if self.field.type in ('id','integer'):
+            if field.type in ('id', 'integer'):
                 new_values = []
                 for value in values:
-                    if not (isinstance(value,(int,long)) or value.isdigit()):
+                    if not (isinstance(value, (int, long)) or value.isdigit()):
                         if self.auto_add:
                             value = str(self.maybe_add(table, self.fieldnames[0], value))
                         else:
@@ -657,8 +657,8 @@ class IS_IN_DB(Validator):
                 elif count(values) == len(values):
                     return (values, None)
         else:
-            if self.field.type in ('id','integer'):
-                if isinstance(value,(int,long)) or value.isdigit():
+            if field.type in ('id', 'integer'):
+                if isinstance(value, (int, long)) or value.isdigit():
                     value = int(value)
                 elif self.auto_add:
                     value = self.maybe_add(table, self.fieldnames[0], value)
@@ -818,7 +818,7 @@ class IS_INT_IN_RANGE(Validator):
         if regex_isint.match(str(value)):
             v = int(value)
             if ((self.minimum is None or v >= self.minimum) and
-                (self.maximum is None or v < self.maximum)):
+                    (self.maximum is None or v < self.maximum)):
                 return (v, None)
         return (value, self.error_message)
 
@@ -892,7 +892,7 @@ class IS_FLOAT_IN_RANGE(Validator):
             else:
                 v = float(str(value).replace(self.dot, '.'))
             if ((self.minimum is None or v >= self.minimum) and
-                (self.maximum is None or v <= self.maximum)):
+                    (self.maximum is None or v <= self.maximum)):
                 return (v, None)
         except (ValueError, TypeError):
             pass
@@ -978,7 +978,7 @@ class IS_DECIMAL_IN_RANGE(Validator):
             else:
                 v = decimal.Decimal(str(value).replace(self.dot, '.'))
             if ((self.minimum is None or v >= self.minimum) and
-                (self.maximum is None or v <= self.maximum)):
+                    (self.maximum is None or v <= self.maximum)):
                 return (v, None)
         except (ValueError, TypeError, decimal.InvalidOperation):
             pass
@@ -2248,7 +2248,7 @@ class IS_DATE(Validator):
         y = '%.4i' % year
         format = format.replace('%y', y[-2:])
         format = format.replace('%Y', y)
-        if year < 1900: 
+        if year < 1900:
             year = 2000
         d = datetime.date(year, value.month, value.day)
         return d.strftime(format)
@@ -2347,6 +2347,7 @@ class IS_DATE_IN_RANGE(IS_DATE):
             (datetime.date(2010, 3, 3), 'oops')
 
     """
+
     def __init__(self,
                  minimum=None,
                  maximum=None,
@@ -2400,6 +2401,7 @@ class IS_DATETIME_IN_RANGE(IS_DATETIME):
             (datetime.datetime(2010, 3, 3, 0, 0), 'oops')
 
     """
+
     def __init__(self,
                  minimum=None,
                  maximum=None,
@@ -2513,7 +2515,7 @@ def urlify(s, maxlen=80, keep_underscores=False):
     if keep_underscores:
         s = re.sub('\s+', '-', s)         # whitespace to hyphens
         s = re.sub('[^\w\-]', '', s)
-                   # strip all but alphanumeric/underscore/hyphen
+        # strip all but alphanumeric/underscore/hyphen
     else:
         s = re.sub('[\s_]+', '-', s)      # whitespace & underscores to hyphens
         s = re.sub('[^a-z0-9\-]', '', s)  # strip all but alphanumeric/hyphen
@@ -2705,6 +2707,7 @@ class LazyCrypt(object):
     """
     Stores a lazy password hash
     """
+
     def __init__(self, crypt, password):
         """
         crypt is an instance of the CRYPT validator,
@@ -2760,8 +2763,8 @@ class LazyCrypt(object):
         # LazyCrypt objects comparison
         if isinstance(stored_password, self.__class__):
             return ((self is stored_password) or
-                   ((self.crypt.key == stored_password.crypt.key) and
-                   (self.password == stored_password.password)))
+                    ((self.crypt.key == stored_password.crypt.key) and
+                     (self.password == stored_password.password)))
 
         if self.crypt.key:
             if ':' in self.crypt.key:
@@ -3404,14 +3407,14 @@ class IS_IPV4(Validator):
                     ok = True
             if not (self.is_localhost is None or self.is_localhost ==
                     (number == self.localhost)):
-                    ok = False
+                ok = False
             if not (self.is_private is None or self.is_private ==
                     (sum([private_number[0] <= number <= private_number[1]
                           for private_number in self.private]) > 0)):
-                    ok = False
+                ok = False
             if not (self.is_automatic is None or self.is_automatic ==
                     (self.automatic[0] <= number <= self.automatic[1])):
-                    ok = False
+                ok = False
             if ok:
                 return (value, None)
         return (value, translate(self.error_message))
@@ -3695,6 +3698,7 @@ class IS_IPADDRESS(Validator):
         >>> IS_IPADDRESS(subnets='invalidsubnet')('2001::8ffa:fe22:b3af')
         ('2001::8ffa:fe22:b3af', 'invalid subnet provided')
     """
+
     def __init__(
             self,
             minip='0.0.0.0',
@@ -3757,7 +3761,7 @@ class IS_IPADDRESS(Validator):
                 is_private=self.is_private,
                 is_automatic=self.is_automatic,
                 error_message=self.error_message
-                )(value)
+            )(value)
         elif self.is_ipv6 or isinstance(ip, IPv6Address):
             retval = IS_IPV6(
                 is_private=self.is_private,
@@ -3769,7 +3773,7 @@ class IS_IPADDRESS(Validator):
                 is_teredo=self.is_teredo,
                 subnets=self.subnets,
                 error_message=self.error_message
-                )(value)
+            )(value)
         else:
             retval = (value, translate(self.error_message))
 

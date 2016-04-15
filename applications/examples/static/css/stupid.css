@@ -5,7 +5,8 @@
 ************/
 
 /*** basic styles ***/
-*, *:after, *:before {border:0; margin:0; padding:0; -webkit-box-sizing:border-box; -moz-box-sizing:border-box; box-sizing:border-box}
+html {box-sizing:border-box;}
+*, *:after, *:before {border:0; margin:0; padding:0; box-sizing:inherit;}
 html, body {max-width: 100vw; overflow-x: hidden}
 body {font-family:"HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif}
 p, li {margin-bottom:0.5em}
@@ -23,13 +24,11 @@ h5{font-size:1.4em; margin:0.6em 0 0.25em 0}
 h6{font-size:1.2em; margin:0.5em 0 0.25em 0}
 table {border-collapse:collapse}
 tbody tr:hover {background-color:#fbf6d9}
-td, th {padding:5px; vertical-align:top; text-align:left; border:0}
 thead tr {background-color:#f1f1f1}
 tbody tr {border-bottom:2px solid #f1f1f1}
-th {font-weight:bold; padding:5px; vertical-align:bottom; text-align:left}
+td, th {padding: 5px; text-align: left; vertical-align:top}
 thead th {vertical-align:bottom}
-tbody th {vertical-align:top}
-header, footer {with:100%}
+header, main, footer {display:block; with:100%} /* IE fix */
 
 @media all and (max-width:599px) {
   h1{font-size:2em}
@@ -194,9 +193,9 @@ input:invalid, input.error {background:#cc1f00;color:white}
 .menu ul ul {top:0; left:80%; z-index:1100}
 .menu li:hover > ul {visibility:visible; opacity:1}
 .menu>li>ul>li:first-child:before{content:''; position:absolute; width:1px; height:1px; border:10px solid transparent; left:50px; top:-20px; margin-left:-10px; border-bottom-color:white}
-.menu.dark ul {background:black; border:1px solid black}
+.menu.dark ul {background:#111111; border:1px solid #111111}
 .menu.dark ul a {color:white}
-.menu.dark>li>ul>li:first-child:before{border-bottom-color:black}
+.menu.dark>li>ul>li:first-child:before{border-bottom-color:#111111}
 
 @media all and (max-width:599px) {
   header .menu li, header .menu ul {width: 100%}  
@@ -269,8 +268,8 @@ a:not(.btn):not(.noeffect):after {
 [data-tooltip]:before, [data-tooltip]:after {display:none; position:absolute; top:0}
 [data-tooltip]:hover:after,[data-tooltip]:hover:before {display:block}
 [data-tooltip]:hover:before {
-  border-bottom:.6em solid black;
-  border-bottom:.6em solid black;
+  border-bottom:.6em solid #111111;
+  border-bottom:.6em solid #111111;
   border-left:7px solid transparent;
   border-right:7px solid transparent;
   content:"";
@@ -357,4 +356,4 @@ a:not(.btn):not(.noeffect):after {
 .tags.dismissible > span.off:hover {background-color:#26a69a}
 
 /*** colors from http://clrs.cc/ ***/
-.navy{background-color:#001f3f;color:white}.blue{background-color:#0074d9;color:white}.aqua{background-color:#7fdbff;color:black}.teal{background-color:#39cccc;color:white}.olive{background-color:#3d9970;color:white}.green{background-color:#2ecc40;color:white}.aquamarine{background-color:#26a69a;color:white}.lime{background-color:#01ff70;color:black}.yellow{background-color:#ffdc00;color:black}.orange{background-color:#ff851b;color:white}.red{background-color:#cc1f00;color:white}.fuchsia{background-color:#f012be;color:white}.pink{background-color:#ee6e73;color:white}.purple{background-color:#b10dc9;color:white}.maroon{background-color:#85144b;color:white}.white{background-color:#fff;color:black;-webkit-box-shadow:inset 0px 0px 0px 1px #ddd;-moz-box-shadow:inset 0px 0px 0px 1px #ddd;box-shadow:inset 0px 0px 0px 1px #ddd}.gray{background-color:#aaa;color:white}.silver{background-color:#f1f1f1;color:black}.black{background-color:#000;color:white}.glass{background:rgba(255,255,255,0.5);color:black}
+.navy{background-color:#001f3f;color:white}.blue{background-color:#0074d9;color:white}.aqua{background-color:#7fdbff;color:#111111}.teal{background-color:#39cccc;color:white}.olive{background-color:#3d9970;color:white}.green{background-color:#2ecc40;color:white}.aquamarine{background-color:#26a69a;color:white}.lime{background-color:#01ff70;color:#111111}.yellow{background-color:#ffdc00;color:#111111}.orange{background-color:#ff851b;color:white}.red{background-color:#cc1f00;color:white}.fuchsia{background-color:#f012be;color:white}.pink{background-color:#ee6e73;color:white}.purple{background-color:#b10dc9;color:white}.maroon{background-color:#85144b;color:white}.white{background-color:#fff;color:#111111;-webkit-box-shadow:inset 0px 0px 0px 1px #ddd;-moz-box-shadow:inset 0px 0px 0px 1px #ddd;box-shadow:inset 0px 0px 0px 1px #ddd}.gray{background-color:#aaa;color:white}.silver{background-color:#f1f1f1;color:#111111}.black{background-color:#111111;color:white}.glass{background:rgba(255,255,255,0.5);color:#111111}

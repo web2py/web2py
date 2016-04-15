@@ -1,5 +1,4 @@
-## 2.14.1
-
+## 2.14.1-5
 
 - fixed two major security issues that caused the examples app to leak information
 - new Auth(…,host_names=[…]) to prevent host header injection
@@ -45,6 +44,7 @@
     sessiondb = RedisSession(redis_conn=rconn, session_expiry=False)
     session.connect(request, response, db = sessiondb)
 
+Many thanks to Richard and Simone for their work and dedication.
 
 ## 2.13.*
 
