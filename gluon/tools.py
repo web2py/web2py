@@ -1217,7 +1217,7 @@ class AuthJWT(object):
         self.auth = auth
         self.algorithm = algorithm
         if self.algorithm not in ('HS256', 'HS384', 'HS512'):
-            raise NotImplementedError('Algoritm %s not allowed' % algorithm)
+            raise NotImplementedError('Algorithm %s not allowed' % algorithm)
         self.verify_expiration = verify_expiration
         self.leeway = leeway
         self.expiration = expiration
@@ -1314,6 +1314,7 @@ class AuthJWT(object):
         We (mis)use the heavy default auth mechanism to avoid any further computation,
         while sticking to a somewhat-stable Auth API.
         """
+        # TODO: Check the following comment
         ## is the following safe or should we use
         ## calendar.timegm(datetime.datetime.utcnow().timetuple())
         ## result seem to be the same (seconds since epoch, in UTC)
@@ -1395,9 +1396,10 @@ class AuthJWT(object):
             self.alter_payload(payload)
             ret = {'token': self.generate_token(payload)}
         elif ret is None:
-            raise HTTP(
-                401, u'Not Authorized - need to be logged in, to pass a token for refresh or username and password for login',
-                **{'WWW-Authenticate': u'JWT realm="%s"' % self.realm})
+            raise HTTP(401,
+                       u'Not Authorized - need to be logged in, to pass a token '
+                       u'for refresh or username and password for login',
+                       **{'WWW-Authenticate': u'JWT realm="%s"' % self.realm})
         response.headers['Content-Type'] = 'application/json'
         return serializers.json(ret)
 
@@ -1450,9 +1452,9 @@ class Auth(object):
         everybody_group_id=None,
         manager_actions={},
         auth_manager_role=None,
-        two_factor_authentication_group = None,
-        auth_two_factor_enabled = False,
-        auth_two_factor_tries_left = 3,
+        two_factor_authentication_group=None,
+        auth_two_factor_enabled=False,
+        auth_two_factor_tries_left=3,
         login_captcha=None,
         register_captcha=None,
         pre_registration_div=None,
@@ -1469,7 +1471,7 @@ class Auth(object):
         on_failed_authentication=lambda x: redirect(x),
         formstyle=None,
         label_separator=None,
-        logging_enabled = True,
+        logging_enabled=True,
         allow_delete_accounts=False,
         password_field='password',
         table_user_name='auth_user',
@@ -1743,7 +1745,7 @@ class Auth(object):
                  csrf_prevention=True, propagate_extension=None,
                  url_index=None, jwt=None, host_names=None):
 
-        ## next two lines for backward compatibility
+        # next two lines for backward compatibility
         if not db and environment and isinstance(environment, DAL):
             db = environment
         self.db = db
@@ -1780,7 +1782,7 @@ class Auth(object):
 
         url_index = url_index or URL(controller, 'index')
         url_login = URL(controller, function, args='login',
-                        extension = propagate_extension)
+                        extension=propagate_extension)
         # ## what happens after registration?
 
         settings = self.settings = Settings()
@@ -1835,9 +1837,9 @@ class Auth(object):
             hmac_key=hmac_key,
             formstyle=current.response.formstyle,
             label_separator=current.response.form_label_separator,
-            two_factor_methods = [],
-            two_factor_onvalidation = [],
-            host = host,
+            two_factor_methods=[],
+            two_factor_onvalidation=[],
+            host=host,
         )
         settings.lock_keys = True
         # ## these are messages that can be customized
@@ -1932,7 +1934,7 @@ class Auth(object):
                        'reset_password', 'request_reset_password',
                        'change_password', 'profile', 'groups',
                        'impersonate', 'not_authorized', 'confirm_registration',
-                       'bulk_register','manage_tokens','jwt'):
+                       'bulk_register', 'manage_tokens', 'jwt'):
             if len(request.args) >= 2 and args[0] == 'impersonate':
                 return getattr(self, args[0])(request.args[1])
             else:
@@ -1974,10 +1976,8 @@ class Auth(object):
         else:
             next = '?_next=' + urllib.quote(URL(args=request.args,
                                                 vars=request.get_vars))
-        href = lambda function: '%s/%s%s' % (action, function, next
-                                             if referrer_actions is DEFAULT
-                                             or function in referrer_actions
-                                             else '')
+        href = lambda function: \
+            '%s/%s%s' % (action, function, next if referrer_actions is DEFAULT or function in referrer_actions else '')
         if isinstance(prefix, str):
             prefix = T(prefix)
         if prefix:
@@ -1990,9 +1990,7 @@ class Auth(object):
         if self.user_id:  # User is logged in
             logout_next = self.settings.logout_next
             items.append({'name': T('Log Out'),
-                          'href': '%s/logout?_next=%s' % (action,
-                                                          urllib.quote(
-                                                          logout_next)),
+                          'href': '%s/logout?_next=%s' % (action, urllib.quote(logout_next)),
                           'icon': 'icon-off'})
             if 'profile' not in self.settings.actions_disabled:
                 items.append({'name': T('Profile'), 'href': href('profile'),
@@ -2025,8 +2023,8 @@ class Auth(object):
             if (self.settings.use_username and not
                     'retrieve_username' in self.settings.actions_disabled):
                 items.append({'name': T('Forgot username?'),
-                             'href': href('retrieve_username'),
-                             'icon': 'icon-edit'})
+                              'href': href('retrieve_username'),
+                              'icon': 'icon-edit'})
 
         def menu():  # For inclusion in MENU
             self.bar = [(items[0]['name'], False, items[0]['href'], [])]
@@ -2146,11 +2144,11 @@ class Auth(object):
             if self.user_id:
                 self.bar = SPAN(prefix, user_identifier, s1,
                                 Anr(items[0]['name'],
-                                _href=items[0]['href']), s3,
+                                    _href=items[0]['href']), s3,
                                 _class='auth_navbar')
             else:
                 self.bar = SPAN(s1, Anr(items[0]['name'],
-                                _href=items[0]['href']), s3,
+                                        _href=items[0]['href']), s3,
                                 _class='auth_navbar')
             for item in items[1:]:
                 self.bar.insert(-1, s2)
@@ -2207,11 +2205,10 @@ class Auth(object):
             if ('id' in fieldnames and
                 'modified_on' in fieldnames and
                 not current_record in fieldnames):
-                table._enable_record_versioning(
-                    archive_db=archive_db,
-                    archive_name=archive_names,
-                    current_record=current_record,
-                    current_record_label=current_record_label)
+                table._enable_record_versioning(archive_db=archive_db,
+                                                archive_name=archive_names,
+                                                current_record=current_record,
+                                                current_record_label=current_record_label)
 
     def define_signature(self):
         db = self.db
@@ -2475,13 +2472,11 @@ class Auth(object):
                     settings.table_token_name,
                     Field('user_id', reference_table_user, default=None,
                           label=self.messages.label_user_id),
-                    Field('expires_on', 'datetime', default=datetime.datetime(2999,12,31)),
-                    Field('token',writable=False,default=web2py_uuid,unique=True),
+                    Field('expires_on', 'datetime', default=datetime.datetime(2999, 12, 31)),
+                    Field('token', writable=False, default=web2py_uuid, unique=True),
                     *extra_fields,
-                    **dict(
-                        migrate=self.__get_migrate(
-                            settings.table_token_name, migrate),
-                        fake_migrate=fake_migrate))
+                    **dict(migrate=self.__get_migrate(settings.table_token_name, migrate),
+                           fake_migrate=fake_migrate))
         if not db._lazy_tables:
             settings.table_user = db[settings.table_user_name]
             settings.table_group = db[settings.table_group_name]
@@ -2750,7 +2745,7 @@ class Auth(object):
             redirect(session._cas_service)
 
         def cas_onaccept(form, onaccept=onaccept):
-            if not onaccept is DEFAULT:
+            if onaccept is not DEFAULT:
                 onaccept(form)
             return allow_access(interactivelogin=True)
         return self.login(next, onvalidation, cas_onaccept, log)
@@ -2837,14 +2832,14 @@ class Auth(object):
         response = current.response
         session = current.session
 
-        ### use session for federated login
+        # use session for federated login
         snext = self.get_vars_next()
 
         if snext:
             session._auth_next = snext
         elif session._auth_next:
             snext = session._auth_next
-        ### pass
+        # pass
 
         if next is DEFAULT:
             # important for security
@@ -2950,7 +2945,7 @@ class Auth(object):
                                )
 
                 captcha = settings.login_captcha or \
-                    (settings.login_captcha != False and settings.captcha)
+                    (settings.login_captcha is not False and settings.captcha)
                 if captcha:
                     addrow(form, captcha.label, captcha, captcha.comment,
                            settings.formstyle, 'captcha__row')
@@ -2978,8 +2973,7 @@ class Auth(object):
                         elif temp_user.registration_key in ('disabled', 'blocked'):
                             response.flash = self.messages.login_disabled
                             return form
-                        elif (temp_user.registration_key is not None
-                              and temp_user.registration_key.strip()):
+                        elif (temp_user.registration_key is not None and temp_user.registration_key.strip()):
                             response.flash = \
                                 self.messages.registration_verifying
                             return form
@@ -3090,7 +3084,7 @@ class Auth(object):
                         subject=self.messages.retrieve_two_factor_code_subject,
                         message=self.messages.retrieve_two_factor_code.format(session.auth_two_factor))
                 else:
-                    #Check for all method. It is possible to have multiples
+                    # Check for all method. It is possible to have multiples
                     for two_factor_method in two_factor_methods:
                         try:
                             # By default we use session.auth_two_factor generated before.
@@ -3104,8 +3098,6 @@ class Auth(object):
                             formname='login', dbio=False,
                             onvalidation=onvalidation,
                             hideerror=settings.hideerror):
-                accepted_form = True
-
                 accepted_form = True
 
                 '''
@@ -3312,7 +3304,7 @@ class Auth(object):
 
         passfield = self.settings.password_field
         formstyle = self.settings.formstyle
-        try: # Make sure we have our original minimum length as other auth forms change it
+        try:  # Make sure we have our original minimum length as other auth forms change it
             table_user[passfield].requires[-1].min_length = self.settings.password_min_length
         except:
             pass
@@ -3385,8 +3377,7 @@ class Auth(object):
                not self.settings.registration_requires_verification:
                 table_user[form.vars.id] = dict(registration_key='pending')
                 session.flash = self.messages.registration_pending
-            elif (not self.settings.registration_requires_verification or
-                      self.settings.login_after_registration):
+            elif (not self.settings.registration_requires_verification or self.settings.login_after_registration):
                 if not self.settings.registration_requires_verification:
                     table_user[form.vars.id] = dict(registration_key='')
                 session.flash = self.messages.registration_successful
@@ -3464,7 +3455,7 @@ class Auth(object):
         response = current.response
         session = current.session
         captcha = self.settings.retrieve_username_captcha or \
-                  (self.settings.retrieve_username_captcha != False and self.settings.captcha)
+                  (self.settings.retrieve_username_captcha is not False and self.settings.captcha)
         if not self.settings.mailer:
             response.flash = self.messages.function_disabled
             return ''
@@ -3622,7 +3613,7 @@ class Auth(object):
 
         if self.settings.prevent_password_reset_attacks:
             key = request.vars.key
-            if not key and len(request.args)>1:
+            if not key and len(request.args) > 1:
                 key = request.args[-1]
             if key:
                 session._reset_password_key = key
@@ -3732,7 +3723,7 @@ class Auth(object):
     def manage_tokens(self):
         if not self.user:
             redirect(self.settings.login_url)
-        table_token =self.table_token()
+        table_token = self.table_token()
         table_token.user_id.writable = False
         table_token.user_id.default = self.user.id
         table_token.token.writable = False
@@ -3796,8 +3787,7 @@ class Auth(object):
                   requires=self.table_user()[passfield].requires),
             Field('new_password2', 'password',
                   label=self.messages.verify_password,
-                  requires=[IS_EXPR(
-                      'value==%s' % repr(request.vars.new_password),
+                  requires=[IS_EXPR('value==%s' % repr(request.vars.new_password),
                                     self.messages.mismatched_password)]),
             submit_button=self.messages.password_reset_button,
             hidden=dict(_next=next),
@@ -3831,7 +3821,7 @@ class Auth(object):
         response = current.response
         session = current.session
         captcha = self.settings.retrieve_password_captcha or \
-                (self.settings.retrieve_password_captcha != False and self.settings.captcha)
+                (self.settings.retrieve_password_captcha is not False and self.settings.captcha)
 
         if next is DEFAULT:
             next = self.get_vars_next() or self.settings.request_reset_password_next
@@ -3876,7 +3866,7 @@ class Auth(object):
                         formname='reset_password', dbio=False,
                         onvalidation=onvalidation,
                         hideerror=self.settings.hideerror):
-            user = table_user(**{userfield:form.vars.get(userfield)})
+            user = table_user(**{userfield: form.vars.get(userfield)})
             key = user.registration_key
             if not user:
                 session.flash = self.messages['invalid_%s' % userfield]
@@ -4242,10 +4232,8 @@ class Auth(object):
                         else:
                             next = self.here()
                             current.session.flash = current.response.flash
-                            return call_or_redirect(
-                                self.settings.on_failed_authentication,
-                                self.settings.login_url +
-                                    '?_next=' + urllib.quote(next))
+                            return call_or_redirect(self.settings.on_failed_authentication,
+                                                    self.settings.login_url + '?_next=' + urllib.quote(next))
 
                 if callable(condition):
                     flag = condition()
@@ -4405,8 +4393,8 @@ class Auth(object):
             user_id = self.user.id
         membership = self.table_membership()
         db = membership._db
-        record = db((membership.user_id==user_id)&
-                    (membership.group_id==group_id),
+        record = db((membership.user_id == user_id) &
+                    (membership.group_id == group_id),
                     ignore_common_filters=True).select().first()
         if record:
             if hasattr(record, 'is_active') and not record.is_active:
@@ -4434,10 +4422,9 @@ class Auth(object):
         membership = self.table_membership()
         self.log_event(self.messages['del_membership_log'],
                        dict(user_id=user_id, group_id=group_id))
-        ret = self.db(membership.user_id
-                      == user_id)(membership.group_id
-                                  == group_id).delete()
-        if group_id in self.user_groups: del self.user_groups[group_id]
+        ret = self.db(membership.user_id == user_id)(membership.group_id == group_id).delete()
+        if group_id in self.user_groups:
+            del self.user_groups[group_id]
         return ret
 
     def has_permission(self,
@@ -4454,34 +4441,32 @@ class Auth(object):
         """
 
         if not group_id and self.settings.everybody_group_id and \
-                self.has_permission(
-            name, table_name, record_id, user_id=None,
-            group_id=self.settings.everybody_group_id):
+                self.has_permission(name, table_name, record_id, user_id=None,
+                                    group_id=self.settings.everybody_group_id):
                 return True
 
         if not user_id and not group_id and self.user:
             user_id = self.user.id
         if user_id:
             membership = self.table_membership()
-            rows = self.db(membership.user_id
-                           == user_id).select(membership.group_id)
+            rows = self.db(membership.user_id == user_id).select(membership.group_id)
             groups = set([row.group_id for row in rows])
             if group_id and group_id not in groups:
                 return False
         else:
             groups = set([group_id])
         permission = self.table_permission()
-        rows = self.db(permission.name == name)(permission.table_name
-                 == str(table_name))(permission.record_id
-                 == record_id).select(permission.group_id)
+        rows = self.db(permission.name ==
+                       name)(permission.table_name ==
+                             str(table_name))(permission.record_id ==
+                                              record_id).select(permission.group_id)
         groups_required = set([row.group_id for row in rows])
         if record_id:
-            rows = self.db(permission.name
-                            == name)(permission.table_name
-                     == str(table_name))(permission.record_id
-                     == 0).select(permission.group_id)
-            groups_required = groups_required.union(set([row.group_id
-                    for row in rows]))
+            rows = self.db(permission.name ==
+                           name)(permission.table_name ==
+                                 str(table_name))(permission.record_id ==
+                                                  0).select(permission.group_id)
+            groups_required = groups_required.union(set([row.group_id for row in rows]))
         if groups.intersection(groups_required):
             r = True
         else:
@@ -4505,12 +4490,12 @@ class Auth(object):
         permission = self.table_permission()
         if group_id == 0:
             group_id = self.user_group()
-        record = self.db((permission.group_id == group_id)&
-                         (permission.name == name)&
-                         (permission.table_name == str(table_name))&
+        record = self.db((permission.group_id == group_id) &
+                         (permission.name == name) &
+                         (permission.table_name == str(table_name)) &
                          (permission.record_id == long(record_id)),
-                          ignore_common_filters=True).select(
-            limitby=(0, 1), orderby_on_limitby=False).first()
+                         ignore_common_filters=True
+                         ).select(limitby=(0, 1), orderby_on_limitby=False).first()
         if record:
             if hasattr(record, 'is_active') and not record.is_active:
                 record.update_record(is_active=True)
@@ -4539,10 +4524,11 @@ class Auth(object):
         self.log_event(self.messages['del_permission_log'],
                        dict(group_id=group_id, name=name,
                             table_name=table_name, record_id=record_id))
-        return self.db(permission.group_id == group_id)(permission.name
-                 == name)(permission.table_name
-                           == str(table_name))(permission.record_id
-                 == long(record_id)).delete()
+        return self.db(permission.group_id ==
+                       group_id)(permission.name ==
+                                 name)(permission.table_name ==
+                                       str(table_name))(permission.record_id ==
+                                                        long(record_id)).delete()
 
     def accessible_query(self, name, table, user_id=None):
         """
@@ -4569,10 +4555,9 @@ class Auth(object):
                 cquery = table
             tablenames = db._adapter.tables(cquery)
             for tablename in tablenames:
-                cquery &= self.accessible_query(name, tablename,
-                                                user_id=user_id)
+                cquery &= self.accessible_query(name, tablename, user_id=user_id)
             return cquery
-        if not isinstance(table, str) and\
+        if not isinstance(table, str) and \
                 self.has_permission(name, table, 0, user_id):
             return table.id > 0
         membership = self.table_membership()
@@ -4601,11 +4586,11 @@ class Auth(object):
         If you have a table (db.mytable) that needs full revision history you
         can just do::
 
-            form=crud.update(db.mytable,myrecord,onaccept=auth.archive)
+            form = crud.update(db.mytable, myrecord, onaccept=auth.archive)
 
         or::
 
-            form=SQLFORM(db.mytable,myrecord).process(onaccept=auth.archive)
+            form = SQLFORM(db.mytable, myrecord).process(onaccept=auth.archive)
 
         crud.archive will define a new table "mytable_archive" and store
         a copy of the current record (if archive_current=True)
@@ -4619,18 +4604,18 @@ class Auth(object):
         in a model::
 
             db.define_table('mytable_archive',
-                Field('current_record',db.mytable),
-                db.mytable)
+                            Field('current_record', db.mytable),
+                            db.mytable)
 
         Notice such table includes all fields of db.mytable plus one: current_record.
         crud.archive does not timestamp the stored record unless your original table
         has a fields like::
 
             db.define_table(...,
-                Field('saved_on','datetime',
-                     default=request.now,update=request.now,writable=False),
-                Field('saved_by',auth.user,
-                     default=auth.user_id,update=auth.user_id,writable=False),
+                Field('saved_on', 'datetime',
+                      default=request.now, update=request.now, writable=False),
+                Field('saved_by', auth.user,
+                      default=auth.user_id, update=auth.user_id, writable=False),
 
         there is nothing special about these fields since they are filled before
         the record is archived.
@@ -4639,15 +4624,14 @@ class Auth(object):
         you can do, for example::
 
             db.define_table('myhistory',
-                Field('parent_record',db.mytable),
-                db.mytable)
+                Field('parent_record', db.mytable), db.mytable)
 
         and use it as::
 
-            form=crud.update(db.mytable,myrecord,
-                             onaccept=lambda form:crud.archive(form,
-                             archive_table=db.myhistory,
-                             current_record='parent_record'))
+            form = crud.update(db.mytable, myrecord,
+                               onaccept=lambda form:crud.archive(form,
+                                                                 archive_table=db.myhistory,
+                                                                 current_record='parent_record'))
 
         """
         if not archive_current and not form.record:
@@ -4655,7 +4639,7 @@ class Auth(object):
         table = form.table
         if not archive_table:
             archive_table_name = '%s_archive' % table
-            if not archive_table_name in table._db:
+            if archive_table_name not in table._db:
                 table._db.define_table(
                     archive_table_name,
                     Field(current_record, table),
@@ -4910,18 +4894,16 @@ class Crud(object):
         self.deleted = False
         captcha = self.settings.update_captcha or self.settings.captcha
         if record and captcha:
-            addrow(form, captcha.label, captcha, captcha.comment,
-                         self.settings.formstyle, 'captcha__row')
+            addrow(form, captcha.label, captcha, captcha.comment, self.settings.formstyle, 'captcha__row')
         captcha = self.settings.create_captcha or self.settings.captcha
         if not record and captcha:
-            addrow(form, captcha.label, captcha, captcha.comment,
-                         self.settings.formstyle, 'captcha__row')
+            addrow(form, captcha.label, captcha, captcha.comment, self.settings.formstyle, 'captcha__row')
         if request.extension not in ('html', 'load'):
             (_session, _formname) = (None, None)
         else:
             (_session, _formname) = (
                 session, '%s/%s' % (table._tablename, form.record_id))
-        if not formname is DEFAULT:
+        if formname is not DEFAULT:
             _formname = formname
         keepvalues = self.settings.keepvalues
         if request.vars.delete_this_record:
@@ -5210,7 +5192,7 @@ class Crud(object):
                     elif validate:
                         value, error = field.validate(txtval)
                         if not error:
-                            ### TODO deal with 'starts with', 'ends with', 'contains' on GAE
+                            # TODO deal with 'starts with', 'ends with', 'contains' on GAE
                             query &= self.get_query(field, opval, value)
                         else:
                             row[3].append(DIV(error, _class='error'))
@@ -5223,7 +5205,7 @@ class Crud(object):
                 results = db(query).select(*selected, **attributes)
                 for r in refsearch:
                     results = results.find(r)
-            except:  # hmmm, we should do better here
+            except:  # TODO: hmmm, we should do better here
                 results = None
         return form, results
 
@@ -5235,7 +5217,7 @@ def fetch(url, data=None, headers=None,
           cookie=Cookie.SimpleCookie(),
           user_agent='Mozilla/5.0'):
     headers = headers or {}
-    if not data is None:
+    if data is not None:
         data = urllib.urlencode(data)
     if user_agent:
         headers['User-agent'] = user_agent
@@ -5698,12 +5680,12 @@ class Service(object):
         methods = self.jsonrpc_procedures
         data = json_parser.loads(request.body.read())
         jsonrpc_2 = data.get('jsonrpc')
-        if jsonrpc_2: #hand over to version 2 of the protocol
+        if jsonrpc_2:  # hand over to version 2 of the protocol
             return self.serve_jsonrpc2(data)
         id, method, params = data.get('id'), data.get('method'), data.get('params', [])
         if id is None:
             return return_error(0, 100, 'missing id')
-        if not method in methods:
+        if method not in methods:
             return return_error(id, 100, 'method "%s" does not exist' % method)
         try:
             if isinstance(params, dict):
@@ -5727,8 +5709,7 @@ class Service(object):
         def return_response(id, result):
             if not must_respond:
                 return None
-            return serializers.json({'jsonrpc': '2.0',
-                'id': id, 'result': result})
+            return serializers.json({'jsonrpc': '2.0', 'id': id, 'result': result})
 
         def return_error(id, code, message=None, data=None):
             error = {'code': code}
@@ -5739,9 +5720,7 @@ class Service(object):
                 error['message'] = message
             if data is not None:
                 error['data'] = data
-            return serializers.json({'jsonrpc': '2.0',
-                                     'id': id,
-                                     'error': error})
+            return serializers.json({'jsonrpc': '2.0', 'id': id, 'error': error})
 
         def validate(data):
             """
@@ -5801,7 +5780,7 @@ class Service(object):
             return return_error(None, e.code, e.info)
 
         id, method, params = data.get('id'), data['method'], data.get('params', '')
-        if not method in methods:
+        if method not in methods:
             return return_error(id, -32601, data='Method "%s" does not exist' % method)
         try:
             if isinstance(params, dict):
@@ -5907,7 +5886,7 @@ class Service(object):
                     UL(LI("Location: %s" % dispatcher.location),
                        LI("Namespace: %s" % dispatcher.namespace),
                        LI("SoapAction: %s" % dispatcher.action),
-                    ),
+                       ),
                     H3("Sample SOAP XML Request Message:"),
                     CODE(sample_req_xml, language="xml"),
                     H3("Sample SOAP XML Response Message:"),
@@ -6501,9 +6480,8 @@ class Wiki(object):
         groups = self.settings.groups
         return ('wiki_editor' in groups or
                 (page is None and 'wiki_author' in groups) or
-                not page is None and (
-                set(groups).intersection(set(page.can_edit)) or
-                page.created_by == self.auth.user.id))
+                page is not None and (set(groups).intersection(set(page.can_edit)) or
+                                      page.created_by == self.auth.user.id))
 
     def can_manage(self):
         if not self.auth.user:
@@ -6524,7 +6502,7 @@ class Wiki(object):
                     return True
         return False
 
-    ### END POLICY
+    # END POLICY
 
     def automenu(self):
         """adds the menu if not present"""
@@ -6742,20 +6720,15 @@ class Wiki(object):
         if self.settings.templates:
             fields.append(
                 Field("from_template", "reference wiki_page",
-                      requires=IS_EMPTY_OR(
-                                   IS_IN_DB(db(self.settings.templates),
-                                            db.wiki_page._id,
-                                            '%(slug)s')),
-                      comment=current.T(
-                        "Choose Template or empty for new Page")))
+                      requires=IS_EMPTY_OR(IS_IN_DB(db(self.settings.templates), db.wiki_page._id, '%(slug)s')),
+                      comment=current.T("Choose Template or empty for new Page")))
         form = SQLFORM.factory(*fields, **dict(_class="well"))
         form.element("[type=submit]").attributes["_value"] = \
             current.T("Create Page from Slug")
 
         if form.process().accepted:
-             form.vars.from_template = 0 if not form.vars.from_template \
-                 else form.vars.from_template
-             redirect(URL(args=('_edit', form.vars.slug, form.vars.from_template or 0)))  # added param
+            form.vars.from_template = 0 if not form.vars.from_template else form.vars.from_template
+            redirect(URL(args=('_edit', form.vars.slug, form.vars.from_template or 0)))  # added param
         return dict(content=form)
 
     def pages(self):
@@ -6846,25 +6819,25 @@ class Wiki(object):
                     mode = 0
                 if mode in (2, 3):
                     submenu.append((current.T('View Page'), None,
-                    URL(controller, function, args=slug)))
+                                    URL(controller, function, args=slug)))
                 if mode in (1, 3):
                     submenu.append((current.T('Edit Page'), None,
-                    URL(controller, function, args=('_edit', slug))))
+                                    URL(controller, function, args=('_edit', slug))))
                 if mode in (1, 2):
                     submenu.append((current.T('Edit Page Media'), None,
-                    URL(controller, function, args=('_editmedia', slug))))
+                                    URL(controller, function, args=('_editmedia', slug))))
 
             submenu.append((current.T('Create New Page'), None,
                             URL(controller, function, args=('_create'))))
             # Moved next if to inside self.auth.user check
             if self.can_manage():
                 submenu.append((current.T('Manage Pages'), None,
-                            URL(controller, function, args=('_pages'))))
+                                URL(controller, function, args=('_pages'))))
                 submenu.append((current.T('Edit Menu'), None,
-                            URL(controller, function, args=('_edit', 'wiki-menu'))))
+                                URL(controller, function, args=('_edit', 'wiki-menu'))))
             # Also moved inside self.auth.user check
             submenu.append((current.T('Search Pages'), None,
-                        URL(controller, function, args=('_search'))))
+                            URL(controller, function, args=('_search'))))
         return menu
 
     def search(self, tags=None, query=None, cloud=True, preview=True,
@@ -6882,7 +6855,7 @@ class Wiki(object):
             if request.vars.q:
                 tags = [v.strip() for v in request.vars.q.split(',')]
                 tags = [v.lower() for v in tags if v]
-        if tags or not query is None:
+        if tags or query is not None:
             db = self.auth.db
             count = db.wiki_tag.wiki_page.count()
             fields = [db.wiki_page.id, db.wiki_page.slug,
