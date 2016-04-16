@@ -2527,9 +2527,7 @@ class Auth(object):
         # log messages should not be translated
         if type(description).__name__ == 'lazyT':
             description = description.m
-        self.table_event().insert(
-            description=str(description % vars),
-            origin=origin, user_id=user_id)
+        self.table_event().insert(description=str(description % vars), origin=origin, user_id=user_id)
 
     def get_or_create_user(self, keys, update_fields=['email'],
                            login=True, get=True):

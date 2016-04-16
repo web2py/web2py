@@ -516,6 +516,49 @@ class TestAuth(unittest.TestCase):
             pass
         return
 
+    def test_log_event(self):
+        self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
+        bart_id = self.db(self.db.auth_user.username == 'bart').select(self.db.auth_user.id).first().id
+        # user logged in
+        self.auth.log_event(description='some_log_event_description_%(var1)s',
+                            vars={"var1": "var1"},
+                            origin='log_event_test_1')
+        rtn = self.db(self.db.auth_event.origin == 'log_event_test_1'
+                      ).select(*[self.db.auth_event[f]
+                                 for f in self.db.auth_event.fields if f not in ('id', 'time_stamp')]).first().as_dict()
+        self.assertEqual(set(rtn.items()), set({'origin': 'log_event_test_1',
+                                                'client_ip': None,
+                                                'user_id': bart_id,
+                                                'description': 'some_log_event_description_var1'}.items()))
+        # user not logged
+        self.auth.logout_bare()
+        self.auth.log_event(description='some_log_event_description_%(var2)s',
+                            vars={"var2": "var2"},
+                            origin='log_event_test_2')
+        rtn = self.db(self.db.auth_event.origin == 'log_event_test_2'
+                      ).select(*[self.db.auth_event[f]
+                                 for f in self.db.auth_event.fields if f not in ('id', 'time_stamp')]).first().as_dict()
+        self.assertEqual(set(rtn.items()), set({'origin': 'log_event_test_2',
+                                                'client_ip': None,
+                                                'user_id': None,
+                                                'description': 'some_log_event_description_var2'}.items()))
+        # no logging tests
+        self.auth.settings.logging_enabled = False
+        count_log_event_test_before = self.db(self.db.auth_event.id > 0).count()
+        self.auth.log_event(description='some_log_event_description_%(var3)s',
+                            vars={"var3": "var3"},
+                            origin='log_event_test_3')
+        count_log_event_test_after = self.db(self.db.auth_event.id > 0).count()
+        self.assertEqual(count_log_event_test_after, count_log_event_test_before)
+        self.auth.settings.logging_enabled = True
+        count_log_event_test_before = self.db(self.db.auth_event.id > 0).count()
+        self.auth.log_event(description=None,
+                            vars={"var4": "var4"},
+                            origin='log_event_test_4')
+        count_log_event_test_after = self.db(self.db.auth_event.id > 0).count()
+        self.assertEqual(count_log_event_test_after, count_log_event_test_before)
+        # TODO: Corner case translated description...
+
     def test_get_or_create_user(self):
         self.db.auth_user.insert(email='user1@test.com', username='user1', password='password_123')
         self.db.commit()
@@ -662,6 +705,10 @@ class TestAuth(unittest.TestCase):
     def test_not_authorized(self):
         self.current.request.ajax = 'facke_ajax_request'
         self.assertRaisesRegexp(HTTP, "403*", self.auth.not_authorized)
+
+    def test_add_group(self):
+        self.assertEqual(self.auth.add_group(role='a_group', description='a_group_role_description'),
+                         self.db(self.db.auth_group.role == 'a_group').select(self.db.auth_group.id).first().id)
 
     def test_del_group(self):
         bart_group_id = 1  # Should be group 1, 'user_1'
