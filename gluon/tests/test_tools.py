@@ -7,6 +7,7 @@
 import os
 import sys
 import smtplib
+import datetime
 if sys.version < "2.7":
     import unittest2 as unittest
 else:
@@ -20,7 +21,7 @@ DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 
 from gluon.dal import DAL, Field
 from pydal.objects import Table
-from tools import Auth, Mail, Recaptcha, Recaptcha2
+from tools import Auth, Mail, Recaptcha, Recaptcha2, prettydate
 from gluon.globals import Request, Response, Session
 from storage import Storage
 from languages import translator
@@ -704,8 +705,88 @@ class TestAuth(unittest.TestCase):
 # TODO: class TestConfig(unittest.TestCase):
 
 
-# TODO: class TestToolsFunctions(unittest.TestCase):
-# For all the tools.py functions
+class TestToolsFunctions(unittest.TestCase):
+    """
+    Test suite for all the tools.py functions
+    """
+    def test_prettydate(self):
+        # plain
+        now = datetime.datetime.now()
+        self.assertEqual(prettydate(d=now), 'now')
+        one_second = now - datetime.timedelta(seconds=1)
+        self.assertEqual(prettydate(d=one_second), '1 second ago')
+        more_than_one_second = now - datetime.timedelta(seconds=2)
+        self.assertEqual(prettydate(d=more_than_one_second), '2 seconds ago')
+        one_minute = now - datetime.timedelta(seconds=60)
+        self.assertEqual(prettydate(d=one_minute), '1 minute ago')
+        more_than_one_minute = now - datetime.timedelta(seconds=61)
+        self.assertEqual(prettydate(d=more_than_one_minute), '1 minute ago')
+        two_minutes = now - datetime.timedelta(seconds=120)
+        self.assertEqual(prettydate(d=two_minutes), '2 minutes ago')
+        more_than_two_minutes = now - datetime.timedelta(seconds=121)
+        self.assertEqual(prettydate(d=more_than_two_minutes), '2 minutes ago')
+        one_hour = now - datetime.timedelta(seconds=60 * 60)
+        self.assertEqual(prettydate(d=one_hour), '1 hour ago')
+        more_than_one_hour = now - datetime.timedelta(seconds=3601)
+        self.assertEqual(prettydate(d=more_than_one_hour), '1 hour ago')
+        two_hours = now - datetime.timedelta(seconds=2 * 60 * 60)
+        self.assertEqual(prettydate(d=two_hours), '2 hours ago')
+        more_than_two_hours = now - datetime.timedelta(seconds=2 * 60 * 60 + 1)
+        self.assertEqual(prettydate(d=more_than_two_hours), '2 hours ago')
+        one_day = now - datetime.timedelta(days=1)
+        self.assertEqual(prettydate(d=one_day), '1 day ago')
+        more_than_one_day = now - datetime.timedelta(days=2)
+        self.assertEqual(prettydate(d=more_than_one_day), '2 days ago')
+        one_week = now - datetime.timedelta(days=7)
+        self.assertEqual(prettydate(d=one_week), '1 week ago')
+        more_than_one_week = now - datetime.timedelta(days=8)
+        self.assertEqual(prettydate(d=more_than_one_week), '1 week ago')
+        two_weeks = now - datetime.timedelta(days=14)
+        self.assertEqual(prettydate(d=two_weeks), '2 weeks ago')
+        more_than_two_weeks = now - datetime.timedelta(days=15)
+        self.assertEqual(prettydate(d=more_than_two_weeks), '2 weeks ago')
+        three_weeks = now - datetime.timedelta(days=21)
+        self.assertEqual(prettydate(d=three_weeks), '3 weeks ago')
+        one_month = now - datetime.timedelta(days=27)
+        self.assertEqual(prettydate(d=one_month), '1 month ago')
+        more_than_one_month = now - datetime.timedelta(days=28)
+        self.assertEqual(prettydate(d=more_than_one_month), '1 month ago')
+        two_months = now - datetime.timedelta(days=60)
+        self.assertEqual(prettydate(d=two_months), '2 months ago')
+        three_months = now - datetime.timedelta(days=90)
+        self.assertEqual(prettydate(d=three_months), '3 months ago')
+        one_year = now - datetime.timedelta(days=365)
+        self.assertEqual(prettydate(d=one_year), '1 year ago')
+        more_than_one_year = now - datetime.timedelta(days=366)
+        self.assertEqual(prettydate(d=more_than_one_year), '1 year ago')
+        two_years = now - datetime.timedelta(days=2 * 365)
+        self.assertEqual(prettydate(d=two_years), '2 years ago')
+        more_than_two_years = now - datetime.timedelta(days=2 * 365 + 1)
+        self.assertEqual(prettydate(d=more_than_two_years), '2 years ago')
+        # date()
+        d = now.date()
+        self.assertEqual(prettydate(d=d), 'now')
+        one_day = now.date() - datetime.timedelta(days=1)
+        self.assertEqual(prettydate(d=one_day), '1 day ago')
+        tow_days = now.date() - datetime.timedelta(days=2)
+        self.assertEqual(prettydate(d=tow_days), '2 days ago')
+        # from now
+        # from now is picky depending of the execution time, so we can't use sharp value like 1 second or 1 day
+        in_one_minute = now - datetime.timedelta(seconds=-65)
+        self.assertEqual(prettydate(d=in_one_minute), '1 minute from now')
+        in_twenty_three_hours = now - datetime.timedelta(hours=-23.5)
+        self.assertEqual(prettydate(d=in_twenty_three_hours), '23 hours from now')
+        in_one_year = now - datetime.timedelta(days=-366)
+        self.assertEqual(prettydate(d=in_one_year), '1 year from now')
+        # utc=True
+        now = datetime.datetime.utcnow()
+        self.assertEqual(prettydate(d=now, utc=True), 'now')
+        one_second = now - datetime.timedelta(seconds=1)
+        self.assertEqual(prettydate(d=one_second, utc=True), '1 second ago')
+        # not d or invalid date
+        self.assertEqual(prettydate(d=None), '')
+        self.assertEqual(prettydate(d='invalid_date'), '[invalid date]')
+
 
 if __name__ == '__main__':
     unittest.main()
