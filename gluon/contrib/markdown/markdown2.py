@@ -53,8 +53,9 @@ see <https://github.com/trentm/python-markdown2/wiki/Extras> for details):
 * header-ids: Adds "id" attributes to headers. The id value is a slug of
   the header text.
 * html-classes: Takes a dict mapping html tag names (lowercase) to a
-  string to use for a "class" tag attribute. Currently only supports
-  "pre" and "code" tags. Add an issue if you require this for other tags.
+  string to use for a "class" tag attribute. Currently only supports "img",
+  "table", "pre" and "code" tags. Add an issue if you require this for other
+  tags.
 * markdown-in-html: Allow the use of `markdown="1"` in a block HTML tag to
   have markdown processing be done on its contents. Similar to
   <http://michelf.com/projects/php-markdown/extra/#markdown-attr> but with
@@ -70,9 +71,14 @@ see <https://github.com/trentm/python-markdown2/wiki/Extras> for details):
 * smarty-pants: Replaces ' and " with curly quotation marks or curly
   apostrophes.  Replaces --, ---, ..., and . . . with en dashes, em dashes,
   and ellipses.
+* spoiler: A special kind of blockquote commonly hidden behind a
+  click on SO. Syntax per <http://meta.stackexchange.com/a/72878>.
 * toc: The returned HTML string gets a new "toc_html" attribute which is
   a Table of Contents for the document. (experimental)
 * xml: Passes one-liner processing instructions and namespaced XML tags.
+* tables: Tables using the same format as GFM
+  <https://help.github.com/articles/github-flavored-markdown#tables> and
+  PHP-Markdown Extra <https://michelf.ca/projects/php-markdown/extra/#table>.
 * wiki-tables: Google Code Wiki-style tables. See
   <http://code.google.com/p/support/wiki/WikiSyntax#Tables>.
 """
@@ -82,13 +88,11 @@ see <https://github.com/trentm/python-markdown2/wiki/Extras> for details):
 #   not yet sure if there implications with this. Compare 'pydoc sre'
 #   and 'perldoc perlre'.
 
-__version_info__ = (2, 2, 4)
+__version_info__ = (2, 3, 1)
 __version__ = '.'.join(map(str, __version_info__))
 __author__ = "Trent Mick"
 
-import os
 import sys
-from pprint import pprint
 import re
 import logging
 try:
@@ -102,13 +106,7 @@ import codecs
 
 #---- Python version compat
 
-try:
-    from urllib.parse import quote # python3
-except ImportError:
-    from urllib import quote # python2
-
 if sys.version_info[:2] < (2,4):
-    from sets import Set as set
     def reversed(sequence):
         for i in sequence[::-1]:
             yield i
@@ -804,6 +802,8 @@ class Markdown(object):
             text = self._prepare_pyshell_blocks(text)
         if "wiki-tables" in self.extras:
             text = self._do_wiki_tables(text)
+        if "tables" in self.extras:
+            text = self._do_tables(text)
 
         text = self._do_code_blocks(text)
 
@@ -844,6 +844,79 @@ class Markdown(object):
 
         return _pyshell_block_re.sub(self._pyshell_block_sub, text)
 
+    def _table_sub(self, match):
+        trim_space_re = '^[ \t\n]+|[ \t\n]+$'
+        trim_bar_re = '^\||\|$'
+
+        head, underline, body = match.groups()
+
+        # Determine aligns for columns.
+        cols = [cell.strip() for cell in re.sub(trim_bar_re, "", re.sub(trim_space_re, "", underline)).split('|')]
+        align_from_col_idx = {}
+        for col_idx, col in enumerate(cols):
+            if col[0] == ':' and col[-1] == ':':
+                align_from_col_idx[col_idx] = ' align="center"'
+            elif col[0] == ':':
+                align_from_col_idx[col_idx] = ' align="left"'
+            elif col[-1] == ':':
+                align_from_col_idx[col_idx] = ' align="right"'
+
+        # thead
+        hlines = ['<table%s>' % self._html_class_str_from_tag('table'), '<thead>', '<tr>']
+        cols = [cell.strip() for cell in re.sub(trim_bar_re, "", re.sub(trim_space_re, "", head)).split('|')]
+        for col_idx, col in enumerate(cols):
+            hlines.append('  <th%s>%s</th>' % (
+                align_from_col_idx.get(col_idx, ''),
+                self._run_span_gamut(col)
+            ))
+        hlines.append('</tr>')
+        hlines.append('</thead>')
+
+        # tbody
+        hlines.append('<tbody>')
+        for line in body.strip('\n').split('\n'):
+            hlines.append('<tr>')
+            cols = [cell.strip() for cell in re.sub(trim_bar_re, "", re.sub(trim_space_re, "", line)).split('|')]
+            for col_idx, col in enumerate(cols):
+                hlines.append('  <td%s>%s</td>' % (
+                    align_from_col_idx.get(col_idx, ''),
+                    self._run_span_gamut(col)
+                ))
+            hlines.append('</tr>')
+        hlines.append('</tbody>')
+        hlines.append('</table>')
+
+        return '\n'.join(hlines) + '\n'
+
+    def _do_tables(self, text):
+        """Copying PHP-Markdown and GFM table syntax. Some regex borrowed from
+        https://github.com/michelf/php-markdown/blob/lib/Michelf/Markdown.php#L2538
+        """
+        less_than_tab = self.tab_width - 1
+        table_re = re.compile(r'''
+                (?:(?<=\n\n)|\A\n?)             # leading blank line
+
+                ^[ ]{0,%d}                      # allowed whitespace
+                (.*[|].*)  \n                   # $1: header row (at least one pipe)
+
+                ^[ ]{0,%d}                      # allowed whitespace
+                (                               # $2: underline row
+                    # underline row with leading bar
+                    (?:  \|\ *:?-+:?\ *  )+  \|?  \n
+                    |
+                    # or, underline row without leading bar
+                    (?:  \ *:?-+:?\ *\|  )+  (?:  \ *:?-+:?\ *  )?  \n
+                )
+
+                (                               # $3: data rows
+                    (?:
+                        ^[ ]{0,%d}(?!\ )         # ensure line begins with 0 to less_than_tab spaces
+                        .*\|.*  \n
+                    )+
+                )
+            ''' % (less_than_tab, less_than_tab, less_than_tab), re.M | re.X)
+        return table_re.sub(self._table_sub, text)
+
     def _wiki_table_sub(self, match):
         ttext = match.group(0).strip()
         #print 'wiki table: %r' % match.group(0)
@@ -853,7 +926,7 @@ class Markdown(object):
             row = [c.strip() for c in re.split(r'(?<!\\)\|\|', line)]
             rows.append(row)
         #pprint(rows)
-        hlines = ['<table>', '<tbody>']
+        hlines = ['<table%s>' % self._html_class_str_from_tag('table'), '<tbody>']
         for row in rows:
             hrow = ['<tr>']
             for cell in row:
@@ -898,6 +971,9 @@ class Markdown(object):
             text = self._do_link_patterns(text)
 
         text = self._encode_amps_and_angles(text)
+
+        if "strike" in self.extras:
+            text = self._do_strike(text)
 
         text = self._do_italics_and_bold(text)
 
@@ -1206,7 +1282,6 @@ class Markdown(object):
                                  .replace('_', self._escape_table['_'])
                         title = self.titles.get(link_id)
                         if title:
-                            before = title
                             title = _xml_escape_attr(title) \
                                 .replace('*', self._escape_table['*']) \
                                 .replace('_', self._escape_table['_'])
@@ -1418,7 +1493,6 @@ class Markdown(object):
     def _list_item_sub(self, match):
         item = match.group(4)
         leading_line = match.group(1)
-        leading_space = match.group(2)
         if leading_line or "\n\n" in item or self._last_li_endswith_two_eols:
             item = self._run_block_gamut(self._outdent(item))
         else:
@@ -1654,6 +1728,11 @@ class Markdown(object):
         self._escape_table[text] = hashed
         return hashed
 
+    _strike_re = re.compile(r"~~(?=\S)(.+?)(?<=\S)~~", re.S)
+    def _do_strike(self, text):
+        text = self._strike_re.sub(r"<strike>\1</strike>", text)
+        return text
+
     _strong_re = re.compile(r"(\*\*|__)(?=\S)(.+?[*_]*)(?<=\S)\1", re.S)
     _em_re = re.compile(r"(\*|_)(?=\S)(.+?)(?<=\S)\1", re.S)
     _code_friendly_strong_re = re.compile(r"\*\*(?=\S)(.+?[*_]*)(?<=\S)\*\*", re.S)
@@ -1714,38 +1793,53 @@ class Markdown(object):
         text = text.replace(". . .", "&#8230;")
         return text
 
-    _block_quote_re = re.compile(r'''
+    _block_quote_base = r'''
         (                           # Wrap whole match in \1
           (
-            ^[ \t]*>[ \t]?          # '>' at the start of a line
+            ^[ \t]*>%s[ \t]?        # '>' at the start of a line
               .+\n                  # rest of the first line
             (.+\n)*                 # subsequent consecutive lines
             \n*                     # blanks
           )+
         )
-        ''', re.M | re.X)
+    '''
+    _block_quote_re = re.compile(_block_quote_base % '', re.M | re.X)
+    _block_quote_re_spoiler = re.compile(_block_quote_base % '[ \t]*?!?', re.M | re.X)
     _bq_one_level_re = re.compile('^[ \t]*>[ \t]?', re.M);
-
+    _bq_one_level_re_spoiler = re.compile('^[ \t]*>[ \t]*?![ \t]?', re.M);
+    _bq_all_lines_spoilers = re.compile(r'\A(?:^[ \t]*>[ \t]*?!.*[\n\r]*)+\Z', re.M)
     _html_pre_block_re = re.compile(r'(\s*<pre>.+?</pre>)', re.S)
     def _dedent_two_spaces_sub(self, match):
         return re.sub(r'(?m)^  ', '', match.group(1))
 
     def _block_quote_sub(self, match):
         bq = match.group(1)
-        bq = self._bq_one_level_re.sub('', bq)  # trim one level of quoting
-        bq = self._ws_only_line_re.sub('', bq)  # trim whitespace-only lines
+        is_spoiler = 'spoiler' in self.extras and self._bq_all_lines_spoilers.match(bq)
+        # trim one level of quoting
+        if is_spoiler:
+            bq = self._bq_one_level_re_spoiler.sub('', bq)
+        else:
+            bq = self._bq_one_level_re.sub('', bq)
+        # trim whitespace-only lines
+        bq = self._ws_only_line_re.sub('', bq)
         bq = self._run_block_gamut(bq)          # recurse
 
         bq = re.sub('(?m)^', '  ', bq)
         # These leading spaces screw with <pre> content, so we need to fix that:
         bq = self._html_pre_block_re.sub(self._dedent_two_spaces_sub, bq)
 
-        return "<blockquote>\n%s\n</blockquote>\n\n" % bq
+        if is_spoiler:
+            return '<blockquote class="spoiler">\n%s\n</blockquote>\n\n' % bq
+        else:
+            return '<blockquote>\n%s\n</blockquote>\n\n' % bq
 
     def _do_block_quotes(self, text):
         if '>' not in text:
             return text
-        return self._block_quote_re.sub(self._block_quote_sub, text)
+        if 'spoiler' in self.extras:
+            return self._block_quote_re_spoiler.sub(self._block_quote_sub, text)
+        else:
+            return self._block_quote_re.sub(self._block_quote_sub, text)
 
     def _form_paragraphs(self, text):
         # Strip leading and trailing lines:
@@ -2053,7 +2147,6 @@ def _dedentlines(lines, tabsize=8, skip_first_line=False):
     if DEBUG:
         print("dedent: dedent(..., tabsize=%d, skip_first_line=%r)"\
               % (tabsize, skip_first_line))
-    indents = []
     margin = None
     for i, line in enumerate(lines):
         if i == 0 and skip_first_line: continue
