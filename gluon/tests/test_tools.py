@@ -842,8 +842,89 @@ class TestAuth(unittest.TestCase):
         self.assertTrue(self.auth.del_membership('some_test_group', user_id=bart_id))
         self.assertEqual(self.db.auth_membership(membership_id), None)  # is really deleted
 
-    # TODO: def test_add_permission(self):
-    # TODO: def test_del_permission(self):
+    def test_has_permission(self):
+        self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
+        bart_id = self.db(self.db.auth_user.username == 'bart').select(self.db.auth_user.id).first().id
+        self.auth.add_permission(group_id=self.auth.id_group('user_1'),
+                                 name='some_permission',
+                                 table_name='auth_user',
+                                 record_id=0,
+                                 )
+        # True case
+        self.assertTrue(self.auth.has_permission(name='some_permission',
+                                                 table_name='auth_user',
+                                                 record_id=0,
+                                                 user_id=bart_id,
+                                                 group_id=self.auth.id_group('user_1')))
+        # False case
+        self.assertFalse(self.auth.has_permission(name='some_other_permission',
+                                                  table_name='auth_user',
+                                                  record_id=0,
+                                                  user_id=bart_id,
+                                                  group_id=self.auth.id_group('user_1')))
+
+    def test_add_permission(self):
+        count_log_event_test_before = self.db(self.db.auth_event.id > 0).count()
+        permission_id = \
+            self.auth.add_permission(group_id=self.auth.id_group('user_1'),
+                                     name='some_permission',
+                                     table_name='auth_user',
+                                     record_id=0,
+                                     )
+        count_log_event_test_after = self.db(self.db.auth_event.id > 0).count()
+        # check that event is logged
+        self.assertEqual(count_log_event_test_after, count_log_event_test_before)
+        # True case
+        permission_count = \
+            self.db(self.db.auth_permission.id == permission_id).count()
+        self.assertTrue(permission_count)
+        # False case
+        permission_count = \
+            self.db((self.db.auth_permission.group_id == self.auth.id_group('user_1')) &
+                    (self.db.auth_permission.name == 'no_permission') &
+                    (self.db.auth_permission.table_name == 'no_table') &
+                    (self.db.auth_permission.record_id == 0)).count()
+        self.assertFalse(permission_count)
+        # corner case
+        self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
+        permission_id = \
+            self.auth.add_permission(group_id=0,
+                                     name='user_1_permission',
+                                     table_name='auth_user',
+                                     record_id=0,
+                                     )
+        permission_name = \
+            self.db(self.db.auth_permission.id == permission_id).select(self.db.auth_permission.name).first().name
+        self.assertEqual(permission_name, 'user_1_permission')
+        # add an existing permission
+        permission_id =\
+            self.auth.add_permission(group_id=0,
+                                     name='user_1_permission',
+                                     table_name='auth_user',
+                                     record_id=0,
+                                     )
+        self.assertTrue(permission_id)
+
+    def test_del_permission(self):
+        permission_id = \
+            self.auth.add_permission(group_id=self.auth.id_group('user_1'),
+                                     name='del_permission_test',
+                                     table_name='auth_user',
+                                     record_id=0,
+                                     )
+        count_log_event_test_before = self.db(self.db.auth_event.id > 0).count()
+        self.assertTrue(self.auth.del_permission(group_id=self.auth.id_group('user_1'),
+                                                 name='del_permission_test',
+                                                 table_name='auth_user',
+                                                 record_id=0,))
+        count_log_event_test_after = self.db(self.db.auth_event.id > 0).count()
+        # check that event is logged
+        self.assertEqual(count_log_event_test_after, count_log_event_test_before)
+        # really deleted
+        permission_count = \
+            self.db(self.db.auth_permission.id == permission_id).count()
+        self.assertFalse(permission_count)
+
     # TODO: def test_accessible_query(self):
     # TODO: def test_archive(self):
     # TODO: def test_wiki(self):
