@@ -785,15 +785,62 @@ class TestAuth(unittest.TestCase):
         self.assertEqual(self.auth.user_group(user_id=1), 1)
         # Bart should be user 1 and it unique group should be 1, 'user_1'
 
-    # TODO: def test_user_group_role(self):
-    # TODO: def test_has_membership(self):
-    # TODO: def test_add_membership(self):
-    # TODO: def test_del_membership(self):
+    def test_user_group_role(self):
+        self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
+        user_group_role = 'user_%s' % self.db(self.db.auth_user.username == 'bart'
+                                              ).select(self.db.auth_user.id).first().id
+        self.assertEqual(self.auth.user_group_role(), user_group_role)
+        self.auth.logout_bare()
+        # with user_id args
+        self.assertEqual(self.auth.user_group_role(user_id=1), 'user_1')
+        # test None
+        self.auth.settings.create_user_groups = None
+        self.assertEqual(self.auth.user_group_role(user_id=1), None)
 
     def test_has_membership(self):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
+        self.assertTrue(self.auth.has_membership('user_1'))
+        self.assertFalse(self.auth.has_membership('user_555'))
         self.assertTrue(self.auth.has_membership(group_id=1))
-        self.assertTrue(self.auth.has_membership(role='user_1'))
+        self.auth.logout_bare()
+        self.assertTrue(self.auth.has_membership(role='user_1', user_id=1))
+        self.assertTrue(self.auth.has_membership(group_id=1, user_id=1))
+        # check that event is logged
+        count_log_event_test_before = self.db(self.db.auth_event.id > 0).count()
+        self.assertTrue(self.auth.has_membership(group_id=1, user_id=1))
+        count_log_event_test_after = self.db(self.db.auth_event.id > 0).count()
+        self.assertEqual(count_log_event_test_after, count_log_event_test_before)
+
+    # Waiting guidance : https://github.com/web2py/web2py/issues/1300
+    # def test_add_membership(self):
+    #     self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
+    #     # failing case
+    #     rtn = self.auth.add_membership('not_existing_role_name')
+    #     # self.assertEqual(rtn, 'test')
+    #     self.assertEqual(self.db(self.db.auth_group.role == 'not_existing_role_name').select().first(), 'test')
+
+    def test_del_membership(self):
+        self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
+        count_log_event_test_before = self.db(self.db.auth_event.id > 0).count()
+        user_1_role_id = self.db(self.db.auth_membership.group_id == self.auth.id_group('user_1')
+                                 ).select(self.db.auth_membership.id).first().id
+        self.assertEqual(self.auth.del_membership('user_1'), user_1_role_id)
+        count_log_event_test_after = self.db(self.db.auth_event.id > 0).count()
+        # check that event is logged
+        self.assertEqual(count_log_event_test_after, count_log_event_test_before)
+        # not logged in test case
+        group_id = self.auth.add_group('some_test_group')
+        membership_id = self.auth.add_membership('some_test_group')
+        self.assertEqual(self.auth.user_groups[group_id], 'some_test_group')
+        self.auth.logout_bare()
+        # not deleted
+        self.assertFalse(self.auth.del_membership('some_test_group'))
+        self.assertEqual(set(self.db.auth_membership(membership_id).as_dict().items()),
+                         set({'group_id': 2L, 'user_id': 1L, 'id': 2L}.items()))  # is not deleted
+        # deleted
+        bart_id = self.db(self.db.auth_user.username == 'bart').select(self.db.auth_user.id).first().id
+        self.assertTrue(self.auth.del_membership('some_test_group', user_id=bart_id))
+        self.assertEqual(self.db.auth_membership(membership_id), None)  # is really deleted
 
     # TODO: def test_add_permission(self):
     # TODO: def test_del_permission(self):

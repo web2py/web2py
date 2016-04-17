@@ -2576,8 +2576,7 @@ class Auth(object):
             user_id = table_user.insert(**vars)
             user = table_user[user_id]
             if self.settings.create_user_groups:
-                group_id = self.add_group(
-                    self.settings.create_user_groups % user)
+                group_id = self.add_group(self.settings.create_user_groups % user)
                 self.add_membership(group_id, user_id)
             if self.settings.everybody_group_id:
                 self.add_membership(self.settings.everybody_group_id, user_id)
@@ -3343,7 +3342,7 @@ class Auth(object):
 
         key = web2py_uuid()
         if self.settings.registration_requires_approval:
-            key = 'pending-'+key
+            key = 'pending-' + key
 
         table_user.registration_key.default = key
         if form.accepts(request, session if self.csrf_prevention else None,
@@ -3352,12 +3351,10 @@ class Auth(object):
                         hideerror=self.settings.hideerror):
             description = self.messages.group_description % form.vars
             if self.settings.create_user_groups:
-                group_id = self.add_group(
-                    self.settings.create_user_groups % form.vars, description)
+                group_id = self.add_group(self.settings.create_user_groups % form.vars, description)
                 self.add_membership(group_id, form.vars.id)
             if self.settings.everybody_group_id:
-                self.add_membership(
-                    self.settings.everybody_group_id, form.vars.id)
+                self.add_membership(self.settings.everybody_group_id, form.vars.id)
             if self.settings.registration_requires_verification:
                 link = self.url(
                     self.settings.function, args=('verify_email', key), scheme=True)
@@ -4312,11 +4309,8 @@ class Auth(object):
         """
         Creates a group associated to a role
         """
-
-        group_id = self.table_group().insert(
-            role=role, description=description)
-        self.log_event(self.messages['add_group_log'],
-                       dict(group_id=group_id, role=role))
+        group_id = self.table_group().insert(role=role, description=description)
+        self.log_event(self.messages['add_group_log'], dict(group_id=group_id, role=role))
         return group_id
 
     def del_group(self, group_id):
@@ -4326,7 +4320,8 @@ class Auth(object):
         self.db(self.table_group().id == group_id).delete()
         self.db(self.table_membership().group_id == group_id).delete()
         self.db(self.table_permission().group_id == group_id).delete()
-        if group_id in self.user_groups: del self.user_groups[group_id]
+        if group_id in self.user_groups:
+            del self.user_groups[group_id]
         self.log_event(self.messages.del_group_log, dict(group_id=group_id))
 
     def id_group(self, role):
@@ -4358,7 +4353,6 @@ class Auth(object):
         """
         Checks if user is member of group_id or role
         """
-
         group_id = group_id or self.id_group(role)
         try:
             group_id = int(group_id)
@@ -4367,8 +4361,8 @@ class Auth(object):
         if not user_id and self.user:
             user_id = self.user.id
         membership = self.table_membership()
-        if group_id and user_id and self.db((membership.user_id == user_id)
-                    & (membership.group_id == group_id)).select():
+        if group_id and user_id and self.db((membership.user_id == user_id) &
+                                            (membership.group_id == group_id)).select():
             r = True
         else:
             r = False
@@ -4415,6 +4409,10 @@ class Auth(object):
         """
 
         group_id = group_id or self.id_group(role)
+        try:
+            group_id = int(group_id)
+        except:
+            group_id = self.id_group(group_id)  # interpret group_id as a role
         if not user_id and self.user:
             user_id = self.user.id
         membership = self.table_membership()
@@ -6424,10 +6422,9 @@ class Wiki(object):
                 args += value['args']
                 db.define_table(key, *args, **value['vars'])
 
-        if self.settings.templates is None and not \
-           self.settings.manage_permissions:
-            self.settings.templates = db.wiki_page.tags.contains('template') & \
-                db.wiki_page.can_read.contains('everybody')
+        if self.settings.templates is None and not self.settings.manage_permissions:
+            self.settings.templates = \
+                db.wiki_page.tags.contains('template') & db.wiki_page.can_read.contains('everybody')
 
         def update_tags_insert(page, id, db=db):
             for tag in page.tags or []:
@@ -6450,8 +6447,10 @@ class Wiki(object):
             'wiki_editor' not in auth.user_groups.values() and
                 self.settings.groups == auth.user_groups.values()):
             group = db.auth_group(role='wiki_editor')
-            gid = group.id if group else db.auth_group.insert(
-                role='wiki_editor')
+            if group:
+                gid = group.id
+            else:
+                db.auth_group.insert(role='wiki_editor')
             auth.add_membership(gid)
 
         settings.lock_keys = True
