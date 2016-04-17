@@ -493,9 +493,7 @@ class TestAuth(unittest.TestCase):
         self.assertTrue('auth_permission' in self.db)
         self.assertTrue('auth_event' in self.db)
 
-    def test_enable_record_versioning(self):
-        self.assertTrue('t0_archive' in self.db)
-
+    # Just calling many form functions
     def test_basic_blank_forms(self):
         for f in ['login', 'retrieve_password', 'retrieve_username', 'register']:
             html_form = getattr(self.auth, f)().xml()
@@ -515,6 +513,20 @@ class TestAuth(unittest.TestCase):
             # GAE doesn't support drop
             pass
         return
+
+    def test_get_vars_next(self):
+        self.current.request.vars._next = 'next_test'
+        self.assertEqual(self.auth.get_vars_next(), 'next_test')
+
+    # TODO: def test_navbar(self):
+    # TODO: def test___get_migrate(self):
+
+    def test_enable_record_versioning(self):
+        self.assertTrue('t0_archive' in self.db)
+
+    # TODO: def test_define_signature(self):
+    # TODO: def test_define_signature(self):
+    # TODO: def test_define_table(self):
 
     def test_log_event(self):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
@@ -581,6 +593,10 @@ class TestAuth(unittest.TestCase):
         self.db.auth_user.truncate()
         self.db.commit()
 
+    # TODO: def test_basic(self):
+    # TODO: def test_login_user(self):
+    # TODO: def test__get_login_settings(self):
+
     # login_bare() seems broken see my post on web2py-developpers
     # commented for now
     # def test_login_bare(self):
@@ -591,12 +607,6 @@ class TestAuth(unittest.TestCase):
     #     self.assertEqual(self.auth.login_bare(username='bart', password='wrong_password'), False)
     #     self.auth.logout_bare()
     #     self.db.auth_user.truncate()
-
-    def test_logout_bare(self):
-        self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
-        self.assertTrue(self.auth.is_logged_in())
-        self.auth.logout_bare()
-        self.assertFalse(self.auth.is_logged_in())
 
     def test_register_bare(self):
         # corner case empty register call register_bare without args
@@ -616,11 +626,49 @@ class TestAuth(unittest.TestCase):
         self.db.auth_user.truncate()
         self.db.commit()
 
+    # TODO: def test_cas_login(self):
+    # TODO: def test_cas_validate(self):
+    # TODO: def test__reset_two_factor_auth(self):
+    # TODO: def test_when_is_logged_in_bypass_next_in_url(self):
+    # TODO: def test_login(self):
+    # TODO: def test_logout(self):
+
+    def test_logout_bare(self):
+        self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
+        self.assertTrue(self.auth.is_logged_in())
+        self.auth.logout_bare()
+        self.assertFalse(self.auth.is_logged_in())
+
+    # TODO: def test_register(self):
+
+    def test_is_logged_in(self):
+        self.auth.user = 'logged_in'
+        self.assertTrue(self.auth.is_logged_in())
+        self.auth.user = None
+        self.assertFalse(self.auth.is_logged_in())
+
+    # TODO: def test_verify_email(self):
+    # TODO: def test_retrieve_username(self):
+
+    def test_random_password(self):
+        # let just check that the function is callable
+        self.assertTrue(self.auth.random_password())
+
+    # TODO: def test_reset_password_deprecated(self):
+    # TODO: def test_confirm_registration(self):
+    # TODO: def test_email_registration(self):
+
     def test_bulk_register(self):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
         self.auth.settings.bulk_register_enabled = True
         bulk_register_form = self.auth.bulk_register(max_emails=10).xml()
         self.assertTrue('name="_formkey"' in bulk_register_form)
+
+    # TODO: def test_manage_tokens(self):
+    # TODO: def test_reset_password(self):
+    # TODO: def test_request_reset_password(self):
+    # TODO: def test_email_reset_password(self):
+    # TODO: def test_retrieve_password(self):
 
     def test_change_password(self):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
@@ -632,9 +680,9 @@ class TestAuth(unittest.TestCase):
         profile_form = getattr(self.auth, 'profile')().xml()
         self.assertTrue('name="_formkey"' in profile_form)
 
-    def test_get_vars_next(self):
-        self.current.request.vars._next = 'next_test'
-        self.assertEqual(self.auth.get_vars_next(), 'next_test')
+    # TODO: def test_run_login_onaccept(self):
+    # TODO: def test_jwt(self):
+    # TODO: def test_is_impersonating(self):
 
     def test_impersonate(self):
         # Create a user to be impersonated
@@ -697,7 +745,9 @@ class TestAuth(unittest.TestCase):
         self.assertTrue(self.auth.is_impersonating())
         self.assertEqual(self.auth.impersonate(user_id=0), None)
 
-    def test_group(self):
+    # TODO: def test_update_groups(self):
+
+    def test_groups(self):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
         self.assertEqual(self.auth.groups().xml(),
                          '<table><tr><td><h3>user_1(1)</h3></td></tr><tr><td><p></p></td></tr></table>')
@@ -705,6 +755,18 @@ class TestAuth(unittest.TestCase):
     def test_not_authorized(self):
         self.current.request.ajax = 'facke_ajax_request'
         self.assertRaisesRegexp(HTTP, "403*", self.auth.not_authorized)
+        self.current.request.ajax = None
+        self.assertEqual(self.auth.not_authorized(), self.auth.messages.access_denied)
+
+    def test_allows_jwt(self):
+        self.assertRaisesRegexp(HTTP, "400*", self.auth.allows_jwt)
+
+    # TODO: def test_requires(self):
+    # TODO: def test_requires_login(self):
+    # TODO: def test_requires_login_or_token(self):
+    # TODO: def test_requires_membership(self):
+    # TODO: def test_requires_permission(self):
+    # TODO: def test_requires_signature(self):
 
     def test_add_group(self):
         self.assertEqual(self.auth.add_group(role='a_group', description='a_group_role_description'),
@@ -723,13 +785,23 @@ class TestAuth(unittest.TestCase):
         self.assertEqual(self.auth.user_group(user_id=1), 1)
         # Bart should be user 1 and it unique group should be 1, 'user_1'
 
+    # TODO: def test_user_group_role(self):
+    # TODO: def test_has_membership(self):
+    # TODO: def test_add_membership(self):
+    # TODO: def test_del_membership(self):
+
     def test_has_membership(self):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
         self.assertTrue(self.auth.has_membership(group_id=1))
         self.assertTrue(self.auth.has_membership(role='user_1'))
 
-    def test_allows_jwt(self):
-        self.assertRaisesRegexp(HTTP, "400*", self.auth.allows_jwt)
+    # TODO: def test_add_permission(self):
+    # TODO: def test_del_permission(self):
+    # TODO: def test_accessible_query(self):
+    # TODO: def test_archive(self):
+    # TODO: def test_wiki(self):
+    # TODO: def test_wikimenu(self):
+    # End Auth test
 
 
 # TODO: class TestCrud(unittest.TestCase):
