@@ -6020,7 +6020,7 @@ def prettydate(d, T=lambda x: x, utc=False):
         return T('1 year' + suffix)
     elif dt.days >= 60:
         return T('%d months' + suffix) % int(dt.days / 30)
-    elif dt.days > 21:
+    elif dt.days >= 27:  # 4 weeks ugly
         return T('1 month' + suffix)
     elif dt.days >= 14:
         return T('%d weeks' + suffix) % int(dt.days / 7)
