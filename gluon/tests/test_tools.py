@@ -494,9 +494,7 @@ class TestAuth(unittest.TestCase):
         self.assertTrue('auth_permission' in self.db)
         self.assertTrue('auth_event' in self.db)
 
-    def test_enable_record_versioning(self):
-        self.assertTrue('t0_archive' in self.db)
-
+    # Just calling many form functions
     def test_basic_blank_forms(self):
         for f in ['login', 'retrieve_password', 'retrieve_username', 'register']:
             html_form = getattr(self.auth, f)().xml()
@@ -516,6 +514,63 @@ class TestAuth(unittest.TestCase):
             # GAE doesn't support drop
             pass
         return
+
+    def test_get_vars_next(self):
+        self.current.request.vars._next = 'next_test'
+        self.assertEqual(self.auth.get_vars_next(), 'next_test')
+
+    # TODO: def test_navbar(self):
+    # TODO: def test___get_migrate(self):
+
+    def test_enable_record_versioning(self):
+        self.assertTrue('t0_archive' in self.db)
+
+    # TODO: def test_define_signature(self):
+    # TODO: def test_define_signature(self):
+    # TODO: def test_define_table(self):
+
+    def test_log_event(self):
+        self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
+        bart_id = self.db(self.db.auth_user.username == 'bart').select(self.db.auth_user.id).first().id
+        # user logged in
+        self.auth.log_event(description='some_log_event_description_%(var1)s',
+                            vars={"var1": "var1"},
+                            origin='log_event_test_1')
+        rtn = self.db(self.db.auth_event.origin == 'log_event_test_1'
+                      ).select(*[self.db.auth_event[f]
+                                 for f in self.db.auth_event.fields if f not in ('id', 'time_stamp')]).first().as_dict()
+        self.assertEqual(set(rtn.items()), set({'origin': 'log_event_test_1',
+                                                'client_ip': None,
+                                                'user_id': bart_id,
+                                                'description': 'some_log_event_description_var1'}.items()))
+        # user not logged
+        self.auth.logout_bare()
+        self.auth.log_event(description='some_log_event_description_%(var2)s',
+                            vars={"var2": "var2"},
+                            origin='log_event_test_2')
+        rtn = self.db(self.db.auth_event.origin == 'log_event_test_2'
+                      ).select(*[self.db.auth_event[f]
+                                 for f in self.db.auth_event.fields if f not in ('id', 'time_stamp')]).first().as_dict()
+        self.assertEqual(set(rtn.items()), set({'origin': 'log_event_test_2',
+                                                'client_ip': None,
+                                                'user_id': None,
+                                                'description': 'some_log_event_description_var2'}.items()))
+        # no logging tests
+        self.auth.settings.logging_enabled = False
+        count_log_event_test_before = self.db(self.db.auth_event.id > 0).count()
+        self.auth.log_event(description='some_log_event_description_%(var3)s',
+                            vars={"var3": "var3"},
+                            origin='log_event_test_3')
+        count_log_event_test_after = self.db(self.db.auth_event.id > 0).count()
+        self.assertEqual(count_log_event_test_after, count_log_event_test_before)
+        self.auth.settings.logging_enabled = True
+        count_log_event_test_before = self.db(self.db.auth_event.id > 0).count()
+        self.auth.log_event(description=None,
+                            vars={"var4": "var4"},
+                            origin='log_event_test_4')
+        count_log_event_test_after = self.db(self.db.auth_event.id > 0).count()
+        self.assertEqual(count_log_event_test_after, count_log_event_test_before)
+        # TODO: Corner case translated description...
 
     def test_get_or_create_user(self):
         self.db.auth_user.insert(email='user1@test.com', username='user1', password='password_123')
@@ -539,6 +594,10 @@ class TestAuth(unittest.TestCase):
         self.db.auth_user.truncate()
         self.db.commit()
 
+    # TODO: def test_basic(self):
+    # TODO: def test_login_user(self):
+    # TODO: def test__get_login_settings(self):
+
     # login_bare() seems broken see my post on web2py-developpers
     # commented for now
     # def test_login_bare(self):
@@ -549,12 +608,6 @@ class TestAuth(unittest.TestCase):
     #     self.assertEqual(self.auth.login_bare(username='bart', password='wrong_password'), False)
     #     self.auth.logout_bare()
     #     self.db.auth_user.truncate()
-
-    def test_logout_bare(self):
-        self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
-        self.assertTrue(self.auth.is_logged_in())
-        self.auth.logout_bare()
-        self.assertFalse(self.auth.is_logged_in())
 
     def test_register_bare(self):
         # corner case empty register call register_bare without args
@@ -574,11 +627,49 @@ class TestAuth(unittest.TestCase):
         self.db.auth_user.truncate()
         self.db.commit()
 
+    # TODO: def test_cas_login(self):
+    # TODO: def test_cas_validate(self):
+    # TODO: def test__reset_two_factor_auth(self):
+    # TODO: def test_when_is_logged_in_bypass_next_in_url(self):
+    # TODO: def test_login(self):
+    # TODO: def test_logout(self):
+
+    def test_logout_bare(self):
+        self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
+        self.assertTrue(self.auth.is_logged_in())
+        self.auth.logout_bare()
+        self.assertFalse(self.auth.is_logged_in())
+
+    # TODO: def test_register(self):
+
+    def test_is_logged_in(self):
+        self.auth.user = 'logged_in'
+        self.assertTrue(self.auth.is_logged_in())
+        self.auth.user = None
+        self.assertFalse(self.auth.is_logged_in())
+
+    # TODO: def test_verify_email(self):
+    # TODO: def test_retrieve_username(self):
+
+    def test_random_password(self):
+        # let just check that the function is callable
+        self.assertTrue(self.auth.random_password())
+
+    # TODO: def test_reset_password_deprecated(self):
+    # TODO: def test_confirm_registration(self):
+    # TODO: def test_email_registration(self):
+
     def test_bulk_register(self):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
         self.auth.settings.bulk_register_enabled = True
         bulk_register_form = self.auth.bulk_register(max_emails=10).xml()
         self.assertTrue('name="_formkey"' in bulk_register_form)
+
+    # TODO: def test_manage_tokens(self):
+    # TODO: def test_reset_password(self):
+    # TODO: def test_request_reset_password(self):
+    # TODO: def test_email_reset_password(self):
+    # TODO: def test_retrieve_password(self):
 
     def test_change_password(self):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
@@ -590,9 +681,9 @@ class TestAuth(unittest.TestCase):
         profile_form = getattr(self.auth, 'profile')().xml()
         self.assertTrue('name="_formkey"' in profile_form)
 
-    def test_get_vars_next(self):
-        self.current.request.vars._next = 'next_test'
-        self.assertEqual(self.auth.get_vars_next(), 'next_test')
+    # TODO: def test_run_login_onaccept(self):
+    # TODO: def test_jwt(self):
+    # TODO: def test_is_impersonating(self):
 
     def test_impersonate(self):
         # Create a user to be impersonated
@@ -655,7 +746,9 @@ class TestAuth(unittest.TestCase):
         self.assertTrue(self.auth.is_impersonating())
         self.assertEqual(self.auth.impersonate(user_id=0), None)
 
-    def test_group(self):
+    # TODO: def test_update_groups(self):
+
+    def test_groups(self):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
         self.assertEqual(self.auth.groups().xml(),
                          '<table><tr><td><h3>user_1(1)</h3></td></tr><tr><td><p></p></td></tr></table>')
@@ -663,6 +756,22 @@ class TestAuth(unittest.TestCase):
     def test_not_authorized(self):
         self.current.request.ajax = 'facke_ajax_request'
         self.assertRaisesRegexp(HTTP, "403*", self.auth.not_authorized)
+        self.current.request.ajax = None
+        self.assertEqual(self.auth.not_authorized(), self.auth.messages.access_denied)
+
+    def test_allows_jwt(self):
+        self.assertRaisesRegexp(HTTP, "400*", self.auth.allows_jwt)
+
+    # TODO: def test_requires(self):
+    # TODO: def test_requires_login(self):
+    # TODO: def test_requires_login_or_token(self):
+    # TODO: def test_requires_membership(self):
+    # TODO: def test_requires_permission(self):
+    # TODO: def test_requires_signature(self):
+
+    def test_add_group(self):
+        self.assertEqual(self.auth.add_group(role='a_group', description='a_group_role_description'),
+                         self.db(self.db.auth_group.role == 'a_group').select(self.db.auth_group.id).first().id)
 
     def test_del_group(self):
         bart_group_id = 1  # Should be group 1, 'user_1'
@@ -677,13 +786,151 @@ class TestAuth(unittest.TestCase):
         self.assertEqual(self.auth.user_group(user_id=1), 1)
         # Bart should be user 1 and it unique group should be 1, 'user_1'
 
+    def test_user_group_role(self):
+        self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
+        user_group_role = 'user_%s' % self.db(self.db.auth_user.username == 'bart'
+                                              ).select(self.db.auth_user.id).first().id
+        self.assertEqual(self.auth.user_group_role(), user_group_role)
+        self.auth.logout_bare()
+        # with user_id args
+        self.assertEqual(self.auth.user_group_role(user_id=1), 'user_1')
+        # test None
+        self.auth.settings.create_user_groups = None
+        self.assertEqual(self.auth.user_group_role(user_id=1), None)
+
     def test_has_membership(self):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
+        self.assertTrue(self.auth.has_membership('user_1'))
+        self.assertFalse(self.auth.has_membership('user_555'))
         self.assertTrue(self.auth.has_membership(group_id=1))
-        self.assertTrue(self.auth.has_membership(role='user_1'))
+        self.auth.logout_bare()
+        self.assertTrue(self.auth.has_membership(role='user_1', user_id=1))
+        self.assertTrue(self.auth.has_membership(group_id=1, user_id=1))
+        # check that event is logged
+        count_log_event_test_before = self.db(self.db.auth_event.id > 0).count()
+        self.assertTrue(self.auth.has_membership(group_id=1, user_id=1))
+        count_log_event_test_after = self.db(self.db.auth_event.id > 0).count()
+        self.assertEqual(count_log_event_test_after, count_log_event_test_before)
 
-    def test_allows_jwt(self):
-        self.assertRaisesRegexp(HTTP, "400*", self.auth.allows_jwt)
+    # Waiting guidance : https://github.com/web2py/web2py/issues/1300
+    # def test_add_membership(self):
+    #     self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
+    #     # failing case
+    #     rtn = self.auth.add_membership('not_existing_role_name')
+    #     # self.assertEqual(rtn, 'test')
+    #     self.assertEqual(self.db(self.db.auth_group.role == 'not_existing_role_name').select().first(), 'test')
+
+    def test_del_membership(self):
+        self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
+        count_log_event_test_before = self.db(self.db.auth_event.id > 0).count()
+        user_1_role_id = self.db(self.db.auth_membership.group_id == self.auth.id_group('user_1')
+                                 ).select(self.db.auth_membership.id).first().id
+        self.assertEqual(self.auth.del_membership('user_1'), user_1_role_id)
+        count_log_event_test_after = self.db(self.db.auth_event.id > 0).count()
+        # check that event is logged
+        self.assertEqual(count_log_event_test_after, count_log_event_test_before)
+        # not logged in test case
+        group_id = self.auth.add_group('some_test_group')
+        membership_id = self.auth.add_membership('some_test_group')
+        self.assertEqual(self.auth.user_groups[group_id], 'some_test_group')
+        self.auth.logout_bare()
+        # not deleted
+        self.assertFalse(self.auth.del_membership('some_test_group'))
+        self.assertEqual(set(self.db.auth_membership(membership_id).as_dict().items()),
+                         set({'group_id': 2L, 'user_id': 1L, 'id': 2L}.items()))  # is not deleted
+        # deleted
+        bart_id = self.db(self.db.auth_user.username == 'bart').select(self.db.auth_user.id).first().id
+        self.assertTrue(self.auth.del_membership('some_test_group', user_id=bart_id))
+        self.assertEqual(self.db.auth_membership(membership_id), None)  # is really deleted
+
+    def test_has_permission(self):
+        self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
+        bart_id = self.db(self.db.auth_user.username == 'bart').select(self.db.auth_user.id).first().id
+        self.auth.add_permission(group_id=self.auth.id_group('user_1'),
+                                 name='some_permission',
+                                 table_name='auth_user',
+                                 record_id=0,
+                                 )
+        # True case
+        self.assertTrue(self.auth.has_permission(name='some_permission',
+                                                 table_name='auth_user',
+                                                 record_id=0,
+                                                 user_id=bart_id,
+                                                 group_id=self.auth.id_group('user_1')))
+        # False case
+        self.assertFalse(self.auth.has_permission(name='some_other_permission',
+                                                  table_name='auth_user',
+                                                  record_id=0,
+                                                  user_id=bart_id,
+                                                  group_id=self.auth.id_group('user_1')))
+
+    def test_add_permission(self):
+        count_log_event_test_before = self.db(self.db.auth_event.id > 0).count()
+        permission_id = \
+            self.auth.add_permission(group_id=self.auth.id_group('user_1'),
+                                     name='some_permission',
+                                     table_name='auth_user',
+                                     record_id=0,
+                                     )
+        count_log_event_test_after = self.db(self.db.auth_event.id > 0).count()
+        # check that event is logged
+        self.assertEqual(count_log_event_test_after, count_log_event_test_before)
+        # True case
+        permission_count = \
+            self.db(self.db.auth_permission.id == permission_id).count()
+        self.assertTrue(permission_count)
+        # False case
+        permission_count = \
+            self.db((self.db.auth_permission.group_id == self.auth.id_group('user_1')) &
+                    (self.db.auth_permission.name == 'no_permission') &
+                    (self.db.auth_permission.table_name == 'no_table') &
+                    (self.db.auth_permission.record_id == 0)).count()
+        self.assertFalse(permission_count)
+        # corner case
+        self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
+        permission_id = \
+            self.auth.add_permission(group_id=0,
+                                     name='user_1_permission',
+                                     table_name='auth_user',
+                                     record_id=0,
+                                     )
+        permission_name = \
+            self.db(self.db.auth_permission.id == permission_id).select(self.db.auth_permission.name).first().name
+        self.assertEqual(permission_name, 'user_1_permission')
+        # add an existing permission
+        permission_id =\
+            self.auth.add_permission(group_id=0,
+                                     name='user_1_permission',
+                                     table_name='auth_user',
+                                     record_id=0,
+                                     )
+        self.assertTrue(permission_id)
+
+    def test_del_permission(self):
+        permission_id = \
+            self.auth.add_permission(group_id=self.auth.id_group('user_1'),
+                                     name='del_permission_test',
+                                     table_name='auth_user',
+                                     record_id=0,
+                                     )
+        count_log_event_test_before = self.db(self.db.auth_event.id > 0).count()
+        self.assertTrue(self.auth.del_permission(group_id=self.auth.id_group('user_1'),
+                                                 name='del_permission_test',
+                                                 table_name='auth_user',
+                                                 record_id=0,))
+        count_log_event_test_after = self.db(self.db.auth_event.id > 0).count()
+        # check that event is logged
+        self.assertEqual(count_log_event_test_after, count_log_event_test_before)
+        # really deleted
+        permission_count = \
+            self.db(self.db.auth_permission.id == permission_id).count()
+        self.assertFalse(permission_count)
+
+    # TODO: def test_accessible_query(self):
+    # TODO: def test_archive(self):
+    # TODO: def test_wiki(self):
+    # TODO: def test_wikimenu(self):
+    # End Auth test
 
 
 # TODO: class TestCrud(unittest.TestCase):
