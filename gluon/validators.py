@@ -645,11 +645,10 @@ class IS_IN_DB(Validator):
                 if not [v for v in values if v not in self.theset]:
                     return (values, None)
             else:
-                from pydal.adapters import GoogleDatastoreAdapter
-
                 def count(values, s=self.dbset, f=field):
                     return s(f.belongs(map(int, values))).count()
-                if GoogleDatastoreAdapter is not None and isinstance(self.dbset.db._adapter, GoogleDatastoreAdapter):
+
+                if self.dbset.db._adapter.dbengine == "google:datastore":
                     range_ids = range(0, len(values), 30)
                     total = sum(count(values[i:i + 30]) for i in range_ids)
                     if total == len(values):
