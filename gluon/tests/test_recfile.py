@@ -23,7 +23,7 @@ class TestRecfile(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree('tests')
 
-    def testgeneration(self):
+    def test_generation(self):
         for k in range(10):
             teststring = 'test%s' % k
             filename = os.path.join('tests', str(uuid.uuid4()) + '.test')
@@ -48,7 +48,7 @@ class TestRecfile(unittest.TestCase):
             self.assertFalse(is_there)
         for k in range(10):
             teststring = 'test%s' % k
-            filename = os.path.join('tests', str(uuid.uuid4()) , str(uuid.uuid4()) + '.test')
+            filename = os.path.join('tests', str(uuid.uuid4()), str(uuid.uuid4()) + '.test')
             with recfile.open(filename, "w") as g:
                 g.write(teststring)
             self.assertEqual(recfile.open(filename, "r").read(), teststring)
@@ -68,7 +68,6 @@ class TestRecfile(unittest.TestCase):
         self.assertFalse(recfile.exists(filename))
         self.assertRaises(IOError, recfile.remove, filename)
         self.assertRaises(IOError, recfile.open, filename, "r")
-
 
 
 if __name__ == '__main__':
