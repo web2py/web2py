@@ -98,6 +98,11 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(rtn, '/a/c/f/x/y/z?p=1&p=3&q=2&_signature=5d01b982fd72b39674b012e0288071034e156d7a')
         rtn = URL('a', 'c', 'f', args=['x', 'y', 'z'], vars={'p': (1, 3), 'q': 2}, hmac_key='key', hash_vars='p')
         self.assertEqual(rtn, '/a/c/f/x/y/z?p=1&p=3&q=2&_signature=5d01b982fd72b39674b012e0288071034e156d7a')
+        # test url_encode
+        rtn = URL('a', 'c', 'f', args=['x', 'y', 'z'], vars={'maï': (1, 3), 'lié': 2}, url_encode=False)
+        self.assertEqual(rtn, '/a/c/f/x/y/z?li\xc3\xa9=2&ma\xc3\xaf=1&ma\xc3\xaf=3')
+        rtn = URL('a', 'c', 'f', args=['x', 'y', 'z'], vars={'maï': (1, 3), 'lié': 2}, url_encode=True)
+        self.assertEqual(rtn, '/a/c/f/x/y/z?li%C3%A9=2&ma%C3%AF=1&ma%C3%AF=3')
         # test CRLF detection
         self.assertRaises(SyntaxError, URL, *['a\n', 'c', 'f'])
         self.assertRaises(SyntaxError, URL, *['a\r', 'c', 'f'])
@@ -394,18 +399,12 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(HR(_a='1', _b='2').xml(), '<hr a="1" b="2" />')
 
     def test_A(self):
-        self.assertEqual(
-            A('<>', _a='1', _b='2').xml(),
-            '<a a="1" b="2">&lt;&gt;</a>'
-            )
-        self.assertEqual(
-            A('a', cid='b').xml(),
-            '<a data-w2p_disable_with="default" data-w2p_method="GET" data-w2p_target="b">a</a>'
-            )
-        self.assertEqual(
-            A('a', callback='b', _id='c').xml(),
-            '<a data-w2p_disable_with="default" data-w2p_method="POST" href="b" id="c">a</a>'
-            )
+        self.assertEqual(A('<>', _a='1', _b='2').xml(),
+                         '<a a="1" b="2">&lt;&gt;</a>')
+        self.assertEqual(A('a', cid='b').xml(),
+                         '<a data-w2p_disable_with="default" data-w2p_method="GET" data-w2p_target="b">a</a>')
+        self.assertEqual(A('a', callback='b', _id='c').xml(),
+                         '<a data-w2p_disable_with="default" data-w2p_method="POST" href="b" id="c">a</a>')
         # Callback with no id trigger web2py_uuid() call
         from html import web2pyHTMLParser
         a = A('a', callback='b').xml()
@@ -413,38 +412,22 @@ class TestBareHelpers(unittest.TestCase):
             uuid_generated = tag.attributes['_id']
         self.assertEqual(a,
                          '<a data-w2p_disable_with="default" data-w2p_method="POST" href="b" id="{id}">a</a>'.format(id=uuid_generated))
-        self.assertEqual(
-            A('a', delete='tr').xml(),
-            '<a data-w2p_disable_with="default" data-w2p_remove="tr">a</a>'
-            )
-        self.assertEqual(
-            A('a', _id='b', target='<self>').xml(),
-            '<a data-w2p_disable_with="default" data-w2p_target="b" id="b">a</a>'
-            )
-        self.assertEqual(
-            A('a', component='b').xml(),
-            '<a data-w2p_disable_with="default" data-w2p_method="GET" href="b">a</a>'
-            )
-        self.assertEqual(
-            A('a', _id='b', callback='c', noconfirm=True).xml(),
-            '<a data-w2p_disable_with="default" data-w2p_method="POST" href="c" id="b">a</a>'
-            )
-        self.assertEqual(
-            A('a', cid='b').xml(),
-            '<a data-w2p_disable_with="default" data-w2p_method="GET" data-w2p_target="b">a</a>'
-            )
-        self.assertEqual(
-            A('a', cid='b', _disable_with='processing...').xml(),
-            '<a data-w2p_disable_with="processing..." data-w2p_method="GET" data-w2p_target="b">a</a>'
-            )
-        self.assertEqual(
-            A('a', callback='b', delete='tr', noconfirm=True, _id='c').xml(),
-            '<a data-w2p_disable_with="default" data-w2p_method="POST" data-w2p_remove="tr" href="b" id="c">a</a>'
-            )
-        self.assertEqual(
-            A('a', callback='b', delete='tr', confirm='Are you sure?', _id='c').xml(),
-            '<a data-w2p_confirm="Are you sure?" data-w2p_disable_with="default" data-w2p_method="POST" data-w2p_remove="tr" href="b" id="c">a</a>'
-            )
+        self.assertEqual(A('a', delete='tr').xml(),
+                         '<a data-w2p_disable_with="default" data-w2p_remove="tr">a</a>')
+        self.assertEqual(A('a', _id='b', target='<self>').xml(),
+                         '<a data-w2p_disable_with="default" data-w2p_target="b" id="b">a</a>')
+        self.assertEqual(A('a', component='b').xml(),
+                         '<a data-w2p_disable_with="default" data-w2p_method="GET" href="b">a</a>')
+        self.assertEqual(A('a', _id='b', callback='c', noconfirm=True).xml(),
+                         '<a data-w2p_disable_with="default" data-w2p_method="POST" href="c" id="b">a</a>')
+        self.assertEqual(A('a', cid='b').xml(),
+                         '<a data-w2p_disable_with="default" data-w2p_method="GET" data-w2p_target="b">a</a>')
+        self.assertEqual(A('a', cid='b', _disable_with='processing...').xml(),
+                         '<a data-w2p_disable_with="processing..." data-w2p_method="GET" data-w2p_target="b">a</a>')
+        self.assertEqual(A('a', callback='b', delete='tr', noconfirm=True, _id='c').xml(),
+                         '<a data-w2p_disable_with="default" data-w2p_method="POST" data-w2p_remove="tr" href="b" id="c">a</a>')
+        self.assertEqual(A('a', callback='b', delete='tr', confirm='Are you sure?', _id='c').xml(),
+                         '<a data-w2p_confirm="Are you sure?" data-w2p_disable_with="default" data-w2p_method="POST" data-w2p_remove="tr" href="b" id="c">a</a>')
 
     def test_BUTTON(self):
         self.assertEqual(BUTTON('test', _type='button').xml(),
