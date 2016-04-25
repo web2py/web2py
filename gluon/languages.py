@@ -1002,17 +1002,19 @@ def update_all_languages(application_path):
             findT(application_path, language[:-3])
 
 
-def update_from_langfile(target, source):
+def update_from_langfile(target, source, force_update=False):
     """this will update untranslated messages in target from source (where both are language files)
     this can be used as first step when creating language file for new but very similar language
         or if you want update your app from welcome app of newer web2py version
         or in non-standard scenarios when you work on target and from any reason you have partial translation in source
+    Args:
+        force_update: if False existing translations remain unchanged, if True existing translations will update from source
     """
     src = read_dict(source)
     sentences = read_dict(target)
     for key in sentences:
         val = sentences[key]
-        if not val or val == key:
+        if not val or val == key or force_update:
             new_val = src.get(key)
             if new_val and new_val != val:
                 sentences[key] = new_val
