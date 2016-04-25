@@ -317,7 +317,7 @@ def URL(a=None,
                 response = current.response
                 if response.static_version and response.static_version_urls:
                     args = [function] + args
-                    function = '_'+str(response.static_version)
+                    function = '_' + str(response.static_version)
 
         if '.' in function:
             function, extension = function.rsplit('.', 1)
@@ -330,18 +330,16 @@ def URL(a=None,
     if args:
         if url_encode:
             if encode_embedded_slash:
-                other = '/' + '/'.join([urllib.quote(str(
-                    x), '') for x in args])
+                other = '/' + '/'.join([urllib.quote(str(x), '') for x in args])
             else:
-                other = args and urllib.quote(
-                    '/' + '/'.join([str(x) for x in args]))
+                other = args and urllib.quote('/' + '/'.join([str(x) for x in args]))
         else:
             other = args and ('/' + '/'.join([str(x) for x in args]))
     else:
         other = ''
 
     if other.endswith('/'):
-        other += '/'    # add trailing slash to make last trailing empty arg explicit
+        other += '/'  # add trailing slash to make last trailing empty arg explicit
 
     list_vars = []
     for (key, vals) in sorted(vars.items()):
@@ -364,11 +362,11 @@ def URL(a=None,
         h_args = '/%s/%s/%s%s' % (application, controller, function2, other)
 
         # how many of the vars should we include in our hash?
-        if hash_vars is True:       # include them all
+        if hash_vars is True:  # include them all
             h_vars = list_vars
-        elif hash_vars is False:    # include none of them
+        elif hash_vars is False:  # include none of them
             h_vars = ''
-        else:                       # include just those specified
+        else:  # include just those specified
             if hash_vars and not isinstance(hash_vars, (list, tuple)):
                 hash_vars = [hash_vars]
             h_vars = [(k, v) for (k, v) in list_vars if k in hash_vars]
