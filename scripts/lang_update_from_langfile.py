@@ -30,8 +30,15 @@ if __name__ == '__main__':
         dest="source",
         help="Specify language file (ro) where seek for translations"
     )
+    parser.add_argument(
+        '-f', '--force-update',
+        dest="force_update",
+        action="store_true",
+        default=False,
+        help="without it: add new + translate untranslated, if used: in addition update items if translation differs"
+    )
     args = parser.parse_args()
 
-    update_from_langfile(args.target, args.source)
+    update_from_langfile(args.target, args.source, force_update=args.force_update)
 
     print '%s was updated.' % args.target
