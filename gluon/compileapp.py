@@ -480,7 +480,7 @@ def compile_views(folder, skip_failed_views=False):
             else:
                 raise Exception("%s in %s" % (e, fname))
         else:
-            filename = ('views/%s.py' % fname).replace('/', '_').replace('\\', '_')
+            filename = ('views/%s.py' % fname).replace('/', '.').replace('\\', '_')
             filename = pjoin(folder, 'compiled', filename)
             write_file(filename, data)
             save_pyc(filename)
