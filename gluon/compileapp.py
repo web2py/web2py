@@ -676,8 +676,8 @@ def run_view_in(environment):
     else:
         filename = pjoin(folder, 'views', view)
         if os.path.exists(path): # compiled views
-            x = view.replace('/', '.')
-            files = ['views.%s.pyc' % x]
+            x = view.replace('/', '_')
+            files = ['views_%s.pyc' % x]
             is_compiled = os.path.exists(pjoin(path, files[0]))
             # Don't use a generic view if the non-compiled view exists.
             if is_compiled or (not is_compiled and not os.path.exists(filename)):
