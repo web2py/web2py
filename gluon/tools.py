@@ -1786,7 +1786,7 @@ class Auth(object):
         # ## what happens after registration?
 
         settings = self.settings = Settings()
-        settings.update(Auth.default_settings)        
+        settings.update(Auth.default_settings)
         host = self.select_host(request.env.http_host, host_names)
         settings.update(
             cas_domains=[host],
@@ -6156,7 +6156,8 @@ class PluginManager(object):
 
 
 class Expose(object):
-    def __init__(self, base=None, basename=None, extensions=None, allow_download=True):
+    def __init__(self, base=None, basename=None, extensions=None,
+                 allow_download=True, follow_symlink_out=False):
         """
         Examples:
             Use as::
@@ -6174,10 +6175,19 @@ class Expose(object):
             extensions: an optional list of file extensions for filtering
                 displayed files: e.g. `['.py', '.jpg']`
             allow_download: whether to allow downloading selected files
+            follow_symlink_out: whether to follow symbolic links that points
+                points outside of `base`.
+                Warning: setting this to `True` might pose a security risk
+                         if you don't also have complete control over writing
+                         and file creation under `base`.
 
         """
         current.session.forget()
-        base = base or os.path.join(current.request.folder, 'static')
+        self.follow_symlink_out = follow_symlink_out
+        self.base = self.normalize_path(
+            base or os.path.join(current.request.folder, 'static'))
+        self.basename = basename or current.request.function
+        self.base = base = os.path.realpath(base or os.path.join(current.request.folder, 'static'))
         basename = basename or current.request.function
         self.basename = basename
 
@@ -6185,19 +6195,23 @@ class Expose(object):
             self.args = [arg for arg in current.request.raw_args.split('/') if arg]
         else:
             self.args = [arg for arg in current.request.args if arg]
-        filename = os.path.join(base, *self.args)
+
+        filename = os.path.join(self.base, *self.args)
         if not os.path.exists(filename):
             raise HTTP(404, "FILE NOT FOUND")
-        if not os.path.normpath(filename).startswith(base):
+        if not self.in_base(filename):
             raise HTTP(401, "NOT AUTHORIZED")
         if allow_download and not os.path.isdir(filename):
             current.response.headers['Content-Type'] = contenttype(filename)
             raise HTTP(200, open(filename, 'rb'), **current.response.headers)
         self.path = path = os.path.join(filename, '*')
-        self.folders = [f[len(path) - 1:] for f in sorted(glob.glob(path))
-                        if os.path.isdir(f) and not self.isprivate(f)]
-        self.filenames = [f[len(path) - 1:] for f in sorted(glob.glob(path))
-                          if not os.path.isdir(f) and not self.isprivate(f)]
+        dirname_len = len(path) - 1
+        allowed = [f for f in sorted(glob.glob(path))
+                   if not any([self.isprivate(f), self.issymlink_out(f)])]
+        self.folders = [f[dirname_len:]
+                        for f in allowed if os.path.isdir(f)]
+        self.filenames = [f[dirname_len:]
+                          for f in allowed if not os.path.isdir(f)]
         if 'README' in self.filenames:
             readme = open(os.path.join(filename, 'README')).read()
             self.paragraph = MARKMIN(readme)
@@ -6223,6 +6237,26 @@ class Expose(object):
                         TABLE(*[TR(TD(A(folder, _href=URL(args=self.args + [folder]))))
                                 for folder in self.folders], **dict(_class="table")))
         return ''
+
+    def in_base(self, f):
+        """True if f/ is under self.base/
+        Where f ans slef.base are normalized paths
+        """
+        s = lambda f: '%s%s' % (f, os.path.sep) # f -> f/
+        # The trailing '/' is for the case of '/foobar' in_base of '/foo':
+        # - becase '/foobar'  starts with        '/foo'
+        # - but    '/foobar/' doesn't start with '/foo/'
+        return s(self.normalize_path(f)).startswith(s(self.base))
+
+    def normalize_path(self, f):
+        if self.follow_symlink_out:
+            return os.path.normpath(f)
+        else:
+            return os.path.realpath(f)
+
+    def issymlink_out(self, f):
+        "True if f is a symlink and is pointing outside of self.base"
+        return os.path.islink(f) and not self.in_base(f)
 
     @staticmethod
     def isprivate(f):
