@@ -9,6 +9,7 @@ import unittest
 import glob
 import datetime
 import sys
+
 from fix_path import fix_sys_path
 
 
@@ -255,6 +256,14 @@ class testForSchedulerRunnerBase(BaseTestScheduler):
         from gluon import current
         fdest = os.path.join(current.request.folder, 'models', 'scheduler.py')
         os.unlink(fdest)
+        additional_files = [
+            os.path.join(current.request.folder, 'private', 'demo8.pholder')
+        ]
+        for f in additional_files:
+            try:
+                os.unlink(f)
+            except:
+                pass
 
     def writefunction(self, content, initlines=None):
         from gluon import current
@@ -266,7 +275,7 @@ import time
 from gluon.scheduler import Scheduler
 db_dal = os.path.abspath(os.path.join(request.folder, '..', '..', 'dummy2.db'))
 sched_dal = DAL('sqlite://%s' % db_dal, folder=os.path.dirname(db_dal))
-sched = Scheduler(sched_dal, max_empty_runs=20, migrate=False, heartbeat=1)
+sched = Scheduler(sched_dal, max_empty_runs=15, migrate=False, heartbeat=1)
             """
         with open(fdest, 'w') as q:
             q.write(initlines)
@@ -274,34 +283,179 @@ sched = Scheduler(sched_dal, max_empty_runs=20, migrate=False, heartbeat=1)
 
     def exec_sched(self):
         import subprocess
-        call_args = [sys.executable, 'web2py.py', '-K', 'welcome']
+        call_args = [sys.executable, 'web2py.py', '--no-banner', '-D', '20','-K', 'welcome']
         ret = subprocess.call(call_args, env=dict(os.environ))
         return ret
+
+    def fetch_results(self, sched, task):
+        info = sched.task_status(task.id)
+        task_runs = self.db(self.db.scheduler_run.task_id == task.id).select()
+        return info, task_runs
+
+    def exec_asserts(self, stmts, tag):
+        for stmt in stmts:
+            self.assertEqual(stmt[1], True, msg="%s - %s" % (tag, stmt[0]))
 
 
 class TestsForSchedulerRunner(testForSchedulerRunnerBase):
 
-    def testBasic(self):
+    def testRepeats_and_Expired_and_Prio(self):
         s = Scheduler(self.db)
-        foo = s.queue_task('foo')
+        repeats = s.queue_task('demo1', ['a', 'b'], dict(c=1, d=2), repeats=2, period=5)
+        a_while_ago = datetime.datetime.now() - datetime.timedelta(seconds=60)
+        expired = s.queue_task('demo4', stop_time=a_while_ago)
+        prio1 = s.queue_task('demo1', ['scheduled_first'])
+        prio2 = s.queue_task('demo1', ['scheduled_second'], next_run_time=a_while_ago)
         self.db.commit()
         self.writefunction(r"""
-def foo():
-    return 'a'
+def demo1(*args,**vars):
+    print 'you passed args=%s and vars=%s' % (args, vars)
+    return args[0]
+
+def demo4():
+    time.sleep(15)
+    print "I'm printing something"
+    return dict(a=1, b=2)
 """)
         ret = self.exec_sched()
-        # process finished just fine
         self.assertEqual(ret, 0)
-        info = s.task_status(foo.id, output=True)
-        self.assertEqual(info.result, 'a')
+        # repeats check
+        task, task_run = self.fetch_results(s, repeats)
+        res = [
+            ("task status completed", task.status == 'COMPLETED'),
+            ("task times_run is 2", task.times_run == 2),
+            ("task ran 2 times only", len(task_run) == 2),
+            ("scheduler_run records are COMPLETED ", (task_run[0].status == task_run[1].status == 'COMPLETED')),
+            ("period is respected", (task_run[1].start_time > task_run[0].start_time + datetime.timedelta(seconds=task.period)))
+        ]
+        self.exec_asserts(res, 'REPEATS')
+
+        # expired check
+        task, task_run = self.fetch_results(s, expired)
+        res = [
+            ("task status expired", task.status == 'EXPIRED'),
+            ("task times_run is 0", task.times_run == 0),
+            ("task didn't run at all", len(task_run) == 0)
+        ]
+        self.exec_asserts(res, 'EXPIRATION')
+
+        # prio check
+        task1 = s.task_status(prio1.id, output=True)
+        task2 = s.task_status(prio2.id, output=True)
+        res = [
+            ("tasks status completed", task1.scheduler_task.status == task2.scheduler_task.status == 'COMPLETED'),
+            ("priority2 was executed before priority1" , task1.scheduler_run.id > task2.scheduler_run.id)
+        ]
+        self.exec_asserts(res, 'PRIORITY')
+
+    def testNoReturn_and_Timeout_and_Progress(self):
+        s = Scheduler(self.db)
+        noret1 = s.queue_task('demo5')
+        noret2 = s.queue_task('demo3')
+        timeout1 = s.queue_task('demo4', timeout=5)
+        timeout2 = s.queue_task('demo4')
+        progress = s.queue_task('demo6', sync_output=2)
+        self.db.commit()
+        self.writefunction(r"""
+def demo3():
+    time.sleep(15)
+    print 1/0
+    return None
+
+def demo4():
+    time.sleep(15)
+    print "I'm printing something"
+    return dict(a=1, b=2)
+
+def demo5():
+    time.sleep(15)
+    print "I'm printing something"
+    rtn = dict(a=1, b=2)
+
+def demo6():
+    time.sleep(5)
+    print '50%'
+    time.sleep(5)
+    print '!clear!100%'
+    return 1
+""")
+        ret = self.exec_sched()
+        self.assertEqual(ret, 0)
+        # noreturn check
+        task1, task_run1 = self.fetch_results(s, noret1)
+        task2, task_run2 = self.fetch_results(s, noret2)
+        res = [
+            ("tasks no_returns1 completed", task1.status == 'COMPLETED'),
+            ("tasks no_returns2 failed", task2.status == 'FAILED'),
+            ("no_returns1 doesn't have a scheduler_run record", len(task_run1) == 0),
+            ("no_returns2 has a scheduler_run record FAILED", (len(task_run2) == 1 and task_run2[0].status == 'FAILED')),
+        ]
+        self.exec_asserts(res, 'NO_RETURN')
+
+        # timeout check
+        task1 = s.task_status(timeout1.id, output=True)
+        task2 = s.task_status(timeout2.id, output=True)
+        res = [
+            ("tasks timeouts1 timeoutted", task1.scheduler_task.status == 'TIMEOUT'),
+            ("tasks timeouts2 completed", task2.scheduler_task.status == 'COMPLETED')
+        ]
+        self.exec_asserts(res, 'TIMEOUT')
+
+        # progress check
+        task1 = s.task_status(progress.id, output=True)
+        res = [
+            ("tasks percentages completed", task1.scheduler_task.status == 'COMPLETED'),
+            ("output contains only 100%", task1.scheduler_run.run_output.strip() == "100%")
+        ]
+        self.exec_asserts(res, 'PROGRESS')
+
+    def testDrift_and_env_and_immediate(self):
+        s = Scheduler(self.db)
+        immediate = s.queue_task('demo1', ['a', 'b'], dict(c=1, d=2), immediate=True)
+        env = s.queue_task('demo7')
+        drift = s.queue_task('demo1', ['a', 'b'], dict(c=1, d=2), period=93, prevent_drift=True)
+        self.db.commit()
+        self.writefunction(r"""
+def demo1(*args,**vars):
+    print 'you passed args=%s and vars=%s' % (args, vars)
+    return args[0]
+import random
+def demo7():
+    time.sleep(random.randint(1,5))
+    print W2P_TASK, request.now
+    return W2P_TASK.id, W2P_TASK.uuid, W2P_TASK.run_id
+""")
+        ret = self.exec_sched()
+        self.assertEqual(ret, 0)
+        # immediate check, can only check that nothing breaks
+        task1 = s.task_status(immediate.id)
+        res = [
+            ("tasks status completed", task1.status == 'COMPLETED'),
+        ]
+        self.exec_asserts(res, 'IMMEDIATE')
+
+        # drift check
+        task, task_run = self.fetch_results(s, drift)
+        res = [
+            ("task status completed", task.status == 'COMPLETED'),
+            ("next_run_time is exactly start_time + period", (task.next_run_time == task.start_time + datetime.timedelta(seconds=task.period)))
+        ]
+        self.exec_asserts(res, 'DRIFT')
+
+        # env check
+        task1 = s.task_status(env.id, output=True)
+        res = [
+            ("task %s returned W2P_TASK correctly" % (task1.scheduler_task.id),  task1.result == [task1.scheduler_task.id, task1.scheduler_task.uuid, task1.scheduler_run.id]),
+        ]
+        self.exec_asserts(res, 'ENV')
+
 
     def testRetryFailed(self):
         s = Scheduler(self.db)
-        failed = s.queue_task('demo2', retry_failed=1, period=5)
-        failed_consecutive = s.queue_task('demo8', retry_failed=2, repeats=2, period=5)
+        failed = s.queue_task('demo2', retry_failed=1, period=1)
+        failed_consecutive = s.queue_task('demo8', retry_failed=2, repeats=2, period=1)
         self.db.commit()
         self.writefunction(r"""
-
 def demo2():
     1/0
 
@@ -323,32 +477,50 @@ def demo8():
         # process finished just fine
         self.assertEqual(ret, 0)
         # failed - checks
-        info = s.task_status(failed.id)
-        task_runs = self.db(self.db.scheduler_run.task_id == info.id).select()
+        task, task_run = self.fetch_results(s, failed)
         res = [
-            ("task status failed", info.status == 'FAILED'),
-            ("task times_run is 0", info.times_run == 0),
-            ("task times_failed is 2", info.times_failed == 2),
-            ("task ran 2 times only", len(task_runs) == 2),
-            ("scheduler_run records are FAILED", (task_runs[0].status == task_runs[1].status == 'FAILED')),
-            ("period is respected", (task_runs[1].start_time > task_runs[0].start_time + datetime.timedelta(seconds=info.period)))
+            ("task status failed", task.status == 'FAILED'),
+            ("task times_run is 0", task.times_run == 0),
+            ("task times_failed is 2", task.times_failed == 2),
+            ("task ran 2 times only", len(task_run) == 2),
+            ("scheduler_run records are FAILED", (task_run[0].status == task_run[1].status == 'FAILED')),
+            ("period is respected", (task_run[1].start_time > task_run[0].start_time + datetime.timedelta(seconds=task.period)))
         ]
-        for a in res:
-            self.assertEqual(a[1], True, msg=a[0])
+        self.exec_asserts(res, 'FAILED')
 
         # failed consecutive - checks
-        info = s.task_status(failed_consecutive.id)
-        task_runs = self.db(self.db.scheduler_run.task_id == info.id).select()
+        task, task_run = self.fetch_results(s, failed_consecutive)
         res = [
-            ("task status completed", info.status == 'COMPLETED'),
-            ("task times_run is 2", info.times_run == 2),
-            ("task times_failed is 0", info.times_failed == 0),
-            ("task ran 6 times", len(task_runs) == 6),
-            ("scheduler_run records for COMPLETED is 2", len([run.status for run in task_runs if run.status == 'COMPLETED']) == 2),
-            ("scheduler_run records for FAILED is 4", len([run.status for run in task_runs if run.status == 'FAILED']) == 4),
+            ("task status completed", task.status == 'COMPLETED'),
+            ("task times_run is 2", task.times_run == 2),
+            ("task times_failed is 0", task.times_failed == 0),
+            ("task ran 6 times", len(task_run) == 6),
+            ("scheduler_run records for COMPLETED is 2", len([run.status for run in task_run if run.status == 'COMPLETED']) == 2),
+            ("scheduler_run records for FAILED is 4", len([run.status for run in task_run if run.status == 'FAILED']) == 4),
         ]
-        for a in res:
-            self.assertEqual(a[1], True, msg=a[0])
+        self.exec_asserts(res, 'FAILED_CONSECUTIVE')
+
+    def testHugeResult(self):
+        s = Scheduler(self.db)
+        huge_result = s.queue_task('demo10', retry_failed=1, period=1)
+        self.db.commit()
+        self.writefunction(r"""
+def demo10():
+    res = 'a' * 99999
+    return dict(res=res)
+""")
+        ret = self.exec_sched()
+        # process finished just fine
+        self.assertEqual(ret, 0)
+        # huge_result - checks
+        task = s.task_status(huge_result.id, output=True)
+        res = [
+            ("task status completed", task.scheduler_task.status == 'COMPLETED'),
+            ("task times_run is 1", task.scheduler_task.times_run == 1),
+            ("result is the correct one", task.result == dict(res='a' * 99999))
+        ]
+        self.exec_asserts(res, 'HUGE_RESULT')
+
 
 if __name__ == '__main__':
     unittest.main()
