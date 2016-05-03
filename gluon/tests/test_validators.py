@@ -178,9 +178,9 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, (('max', 'john'), None))
         rtn = IS_IN_SET(['max', 'john'], multiple=True)(('bill', 'john'))
         self.assertEqual(rtn, (('bill', 'john'), 'Value not allowed'))
-        rtn = IS_IN_SET(('id1','id2'), ['first label','second label'])('id1') # Traditional way
+        rtn = IS_IN_SET(('id1', 'id2'), ['first label', 'second label'])('id1')  # Traditional way
         self.assertEqual(rtn, ('id1', None))
-        rtn = IS_IN_SET({'id1':'first label', 'id2':'second label'})('id1')
+        rtn = IS_IN_SET({'id1': 'first label', 'id2': 'second label'})('id1')
         self.assertEqual(rtn, ('id1', None))
         rtn = IS_IN_SET(['id1', 'id2'], error_message='oops', multiple=True)(None)
         self.assertEqual(rtn, ([], None))
@@ -188,14 +188,14 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ([], None))
         rtn = IS_IN_SET(['id1', 'id2'], error_message='oops', multiple=True)('id1')
         self.assertEqual(rtn, (['id1'], None))
-        rtn = IS_IN_SET(['id1', 'id2'], error_message='oops', multiple=(1,2))(None)
+        rtn = IS_IN_SET(['id1', 'id2'], error_message='oops', multiple=(1, 2))(None)
         self.assertEqual(rtn, ([], 'oops'))
         import itertools
-        rtn = IS_IN_SET(itertools.chain(['1','3','5'],['2','4','6']))('1')
+        rtn = IS_IN_SET(itertools.chain(['1', '3', '5'], ['2', '4', '6']))('1')
         self.assertEqual(rtn, ('1', None))
-        rtn = IS_IN_SET([('id1','first label'), ('id2','second label')])('id1') # Redundant way
+        rtn = IS_IN_SET([('id1', 'first label'), ('id2', 'second label')])('id1')  # Redundant way
         self.assertEqual(rtn, ('id1', None))
-        rtn = IS_IN_SET([('id1','first label'), ('id2','second label')]).options(zero=False)
+        rtn = IS_IN_SET([('id1', 'first label'), ('id2', 'second label')]).options(zero=False)
         self.assertEqual(rtn, [('id1', 'first label'), ('id2', 'second label')])
         rtn = IS_IN_SET(['id1', 'id2']).options(zero=False)
         self.assertEqual(rtn, [('id1', 'id1'), ('id2', 'id2')])
@@ -210,47 +210,79 @@ class TestValidators(unittest.TestCase):
         costanza_id = db.person.insert(name='costanza')
         rtn = IS_IN_DB(db, 'person.id', '%(name)s')(george_id)
         self.assertEqual(rtn, (george_id, None))
+        rtn = IS_IN_DB(db, 'person.name', '%(name)s')('george')
+        self.assertEqual(rtn, ('george', None))
         rtn = IS_IN_DB(db, db.person, '%(name)s')(george_id)
         self.assertEqual(rtn, (george_id, None))
         rtn = IS_IN_DB(db(db.person.id > 0), db.person, '%(name)s')(george_id)
         self.assertEqual(rtn, (george_id, None))
-        rtn = IS_IN_DB(db, 'person.id', '%(name)s', error_message='oops')(george_id+costanza_id)
-        self.assertEqual(rtn, (george_id+costanza_id, 'oops'))
+        rtn = IS_IN_DB(db, 'person.id', '%(name)s', error_message='oops')(george_id + costanza_id)
+        self.assertEqual(rtn, (george_id + costanza_id, 'oops'))
         rtn = IS_IN_DB(db, db.person.id, '%(name)s')(george_id)
         self.assertEqual(rtn, (george_id, None))
-        rtn = IS_IN_DB(db, db.person.id, '%(name)s', error_message='oops')(george_id+costanza_id)
-        self.assertEqual(rtn, (george_id+costanza_id, 'oops'))
-        rtn = IS_IN_DB(db, 'person.id', '%(name)s', multiple=True)([george_id,costanza_id])
-        self.assertEqual(rtn, ([george_id,costanza_id], None))
+        rtn = IS_IN_DB(db, db.person.id, '%(name)s', error_message='oops')(george_id + costanza_id)
+        self.assertEqual(rtn, (george_id + costanza_id, 'oops'))
+        rtn = IS_IN_DB(db, 'person.id', '%(name)s', multiple=True)([george_id, costanza_id])
+        self.assertEqual(rtn, ([george_id, costanza_id], None))
+        rtn = IS_IN_DB(db, 'person.id', '%(name)s', multiple=True, error_message='oops')("I'm not even an id")
+        self.assertEqual(rtn, (["I'm not even an id"], 'oops'))
         rtn = IS_IN_DB(db, 'person.id', '%(name)s', multiple=True, delimiter=',')('%d,%d' % (george_id, costanza_id))
-        self.assertEqual(rtn, ( ('%d,%d' % (george_id, costanza_id)).split(','), None))
-        rtn = IS_IN_DB(db, 'person.id', '%(name)s', multiple=(1,3), delimiter=',')('%d,%d' % (george_id, costanza_id))
-        self.assertEqual(rtn, ( ('%d,%d' % (george_id, costanza_id)).split(','), None))
-        rtn = IS_IN_DB(db, 'person.id', '%(name)s', multiple=(1,2), delimiter=',', error_message='oops')('%d,%d' % (george_id, costanza_id))
-        self.assertEqual(rtn, ( ('%d,%d' % (george_id, costanza_id)).split(','), 'oops'))
+        self.assertEqual(rtn, (('%d,%d' % (george_id, costanza_id)).split(','), None))
+        rtn = IS_IN_DB(db, 'person.id', '%(name)s', multiple=(1, 3), delimiter=',')('%d,%d' % (george_id, costanza_id))
+        self.assertEqual(rtn, (('%d,%d' % (george_id, costanza_id)).split(','), None))
+        rtn = IS_IN_DB(db, 'person.id', '%(name)s', multiple=(1, 2), delimiter=',', error_message='oops')('%d,%d' % (george_id, costanza_id))
+        self.assertEqual(rtn, (('%d,%d' % (george_id, costanza_id)).split(','), 'oops'))
         rtn = IS_IN_DB(db, db.person.id, '%(name)s', error_message='oops').options(zero=False)
         self.assertEqual(sorted(rtn), [('%d' % george_id, 'george'), ('%d' % costanza_id, 'costanza')])
         rtn = IS_IN_DB(db, db.person.id, db.person.name, error_message='oops', sort=True).options(zero=True)
         self.assertEqual(rtn, [('', ''), ('%d' % costanza_id, 'costanza'), ('%d' % george_id, 'george')])
+        # Test using the set it made for options
+        vldtr = IS_IN_DB(db, 'person.name', '%(name)s', error_message='oops')
+        vldtr.options()
+        rtn = vldtr('george')
+        self.assertEqual(rtn, ('george', None))
+        rtn = vldtr('jerry')
+        self.assertEqual(rtn, ('jerry', 'oops'))
+        vldtr = IS_IN_DB(db, 'person.name', '%(name)s', error_message='oops', multiple=True)
+        vldtr.options()
+        rtn = vldtr(['george', 'costanza'])
+        self.assertEqual(rtn, (['george', 'costanza'], None))
         # Test it works with self reference
         db.define_table('category',
-            Field('parent_id', 'reference category', requires=IS_EMPTY_OR(IS_IN_DB(db, 'category.id', '%(name)s'))),
-            Field('name')
-        )
+                        Field('parent_id', 'reference category', requires=IS_EMPTY_OR(IS_IN_DB(db, 'category.id', '%(name)s'))),
+                        Field('name')
+                        )
         ret = db.category.validate_and_insert(name='seinfeld')
         self.assertFalse(list(ret.errors))
         ret = db.category.validate_and_insert(name='characters', parent_id=ret.id)
         self.assertFalse(list(ret.errors))
         rtn = IS_IN_DB(db, 'category.id', '%(name)s')(ret.id)
         self.assertEqual(rtn, (ret.id, None))
+        # Test _and
+        vldtr = IS_IN_DB(db, 'person.name', '%(name)s', error_message='oops', _and=IS_LENGTH(maxsize=7, error_message='bad'))
+        rtn = vldtr('george')
+        self.assertEqual(rtn, ('george', None))
+        rtn = vldtr('costanza')
+        self.assertEqual(rtn, ('costanza', 'bad'))
+        rtn = vldtr('jerry')
+        self.assertEqual(rtn, ('jerry', 'oops'))
+        vldtr.options() # test theset with _and
+        rtn = vldtr('jerry')
+        self.assertEqual(rtn, ('jerry', 'oops'))
+        # Test auto_add
+        rtn = IS_IN_DB(db, 'person.id', '%(name)s', error_message='oops')('jerry')
+        self.assertEqual(rtn, ('jerry', 'oops'))
+        rtn = IS_IN_DB(db, 'person.id', '%(name)s', auto_add=True)('jerry')
+        self.assertEqual(rtn, (3, None))
         db.person.drop()
         db.category.drop()
 
     def test_IS_NOT_IN_DB(self):
         from gluon.dal import DAL, Field
         db = DAL('sqlite:memory')
-        db.define_table('person', Field('name'))
+        db.define_table('person', Field('name'), Field('nickname'))
         db.person.insert(name='george')
+        db.person.insert(name='costanza', nickname='T Bone')
         rtn = IS_NOT_IN_DB(db, 'person.name', error_message='oops')('george')
         self.assertEqual(rtn, ('george', 'oops'))
         rtn = IS_NOT_IN_DB(db, 'person.name', error_message='oops', allowed_override=['george'])('george')
@@ -261,6 +293,17 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ('jerry', None))
         rtn = IS_NOT_IN_DB(db, 'person.name')(u'jerry')
         self.assertEqual(rtn, ('jerry', None))
+        rtn = IS_NOT_IN_DB(db(db.person.id > 0), 'person.name')(u'jerry')
+        self.assertEqual(rtn, ('jerry', None))
+        rtn = IS_NOT_IN_DB(db, db.person, error_message='oops')(1)
+        self.assertEqual(rtn, ('1', 'oops'))
+        vldtr = IS_NOT_IN_DB(db, 'person.name', error_message='oops')
+        vldtr.set_self_id({'name': 'costanza', 'nickname': 'T Bone'})
+        rtn = vldtr('george')
+        self.assertEqual(rtn, ('george', 'oops'))
+        rtn = vldtr('costanza')
+        self.assertEqual(rtn, ('costanza', None))
+
         db.person.drop()
 
     def test_IS_INT_IN_RANGE(self):
@@ -413,7 +456,7 @@ class TestValidators(unittest.TestCase):
     def test_IS_ALPHANUMERIC(self):
         rtn = IS_ALPHANUMERIC()('1')
         self.assertEqual(rtn, ('1', None))
-        rtn =  IS_ALPHANUMERIC()('')
+        rtn = IS_ALPHANUMERIC()('')
         self.assertEqual(rtn, ('', None))
         rtn = IS_ALPHANUMERIC()('A_a')
         self.assertEqual(rtn, ('A_a', None))
@@ -421,62 +464,62 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ('!', 'Enter only letters, numbers, and underscore'))
 
     def test_IS_EMAIL(self):
-        rtn =  IS_EMAIL()('a@b.com')
+        rtn = IS_EMAIL()('a@b.com')
         self.assertEqual(rtn, ('a@b.com', None))
-        rtn =  IS_EMAIL()('abc@def.com')
+        rtn = IS_EMAIL()('abc@def.com')
         self.assertEqual(rtn, ('abc@def.com', None))
-        rtn =  IS_EMAIL()('abc@3def.com')
+        rtn = IS_EMAIL()('abc@3def.com')
         self.assertEqual(rtn, ('abc@3def.com', None))
-        rtn =  IS_EMAIL()('abc@def.us')
+        rtn = IS_EMAIL()('abc@def.us')
         self.assertEqual(rtn, ('abc@def.us', None))
-        rtn =  IS_EMAIL()('abc@d_-f.us')
+        rtn = IS_EMAIL()('abc@d_-f.us')
         self.assertEqual(rtn, ('abc@d_-f.us', None))
-        rtn =  IS_EMAIL()('@def.com')           # missing name
+        rtn = IS_EMAIL()('@def.com')           # missing name
         self.assertEqual(rtn, ('@def.com', 'Enter a valid email address'))
-        rtn =  IS_EMAIL()('"abc@def".com')      # quoted name
+        rtn = IS_EMAIL()('"abc@def".com')      # quoted name
         self.assertEqual(rtn, ('"abc@def".com', 'Enter a valid email address'))
-        rtn =  IS_EMAIL()('abc+def.com')        # no @
+        rtn = IS_EMAIL()('abc+def.com')        # no @
         self.assertEqual(rtn, ('abc+def.com', 'Enter a valid email address'))
-        rtn =  IS_EMAIL()('abc@def.x')          # one-char TLD
+        rtn = IS_EMAIL()('abc@def.x')          # one-char TLD
         self.assertEqual(rtn, ('abc@def.x', 'Enter a valid email address'))
-        rtn =  IS_EMAIL()('abc@def.12')         # numeric TLD
+        rtn = IS_EMAIL()('abc@def.12')         # numeric TLD
         self.assertEqual(rtn, ('abc@def.12', 'Enter a valid email address'))
-        rtn =  IS_EMAIL()('abc@def..com')       # double-dot in domain
+        rtn = IS_EMAIL()('abc@def..com')       # double-dot in domain
         self.assertEqual(rtn, ('abc@def..com', 'Enter a valid email address'))
-        rtn =  IS_EMAIL()('abc@.def.com')       # dot starts domain
+        rtn = IS_EMAIL()('abc@.def.com')       # dot starts domain
         self.assertEqual(rtn, ('abc@.def.com', 'Enter a valid email address'))
-        rtn =  IS_EMAIL()('abc@def.c_m')        # underscore in TLD
+        rtn = IS_EMAIL()('abc@def.c_m')        # underscore in TLD
         self.assertEqual(rtn, ('abc@def.c_m', 'Enter a valid email address'))
-        rtn =  IS_EMAIL()('NotAnEmail')         # missing @
+        rtn = IS_EMAIL()('NotAnEmail')         # missing @
         self.assertEqual(rtn, ('NotAnEmail', 'Enter a valid email address'))
-        rtn =  IS_EMAIL()('abc@NotAnEmail')     # missing TLD
+        rtn = IS_EMAIL()('abc@NotAnEmail')     # missing TLD
         self.assertEqual(rtn, ('abc@NotAnEmail', 'Enter a valid email address'))
-        rtn =  IS_EMAIL()('customer/department@example.com')
+        rtn = IS_EMAIL()('customer/department@example.com')
         self.assertEqual(rtn, ('customer/department@example.com', None))
-        rtn =  IS_EMAIL()('$A12345@example.com')
+        rtn = IS_EMAIL()('$A12345@example.com')
         self.assertEqual(rtn, ('$A12345@example.com', None))
-        rtn =  IS_EMAIL()('!def!xyz%abc@example.com')
+        rtn = IS_EMAIL()('!def!xyz%abc@example.com')
         self.assertEqual(rtn, ('!def!xyz%abc@example.com', None))
-        rtn =  IS_EMAIL()('_Yosemite.Sam@example.com')
+        rtn = IS_EMAIL()('_Yosemite.Sam@example.com')
         self.assertEqual(rtn, ('_Yosemite.Sam@example.com', None))
-        rtn =  IS_EMAIL()('~@example.com')
+        rtn = IS_EMAIL()('~@example.com')
         self.assertEqual(rtn, ('~@example.com', None))
-        rtn =  IS_EMAIL()('.wooly@example.com')       # dot starts name
+        rtn = IS_EMAIL()('.wooly@example.com')       # dot starts name
         self.assertEqual(rtn, ('.wooly@example.com', 'Enter a valid email address'))
-        rtn =  IS_EMAIL()('wo..oly@example.com')      # adjacent dots in name
+        rtn = IS_EMAIL()('wo..oly@example.com')      # adjacent dots in name
         self.assertEqual(rtn, ('wo..oly@example.com', 'Enter a valid email address'))
-        rtn =  IS_EMAIL()('pootietang.@example.com')  # dot ends name
+        rtn = IS_EMAIL()('pootietang.@example.com')  # dot ends name
         self.assertEqual(rtn, ('pootietang.@example.com', 'Enter a valid email address'))
-        rtn =  IS_EMAIL()('.@example.com')            # name is bare dot
+        rtn = IS_EMAIL()('.@example.com')            # name is bare dot
         self.assertEqual(rtn, ('.@example.com', 'Enter a valid email address'))
-        rtn =  IS_EMAIL()('Ima.Fool@example.com')
+        rtn = IS_EMAIL()('Ima.Fool@example.com')
         self.assertEqual(rtn, ('Ima.Fool@example.com', None))
-        rtn =  IS_EMAIL()('Ima Fool@example.com')     # space in name
+        rtn = IS_EMAIL()('Ima Fool@example.com')     # space in name
         self.assertEqual(rtn, ('Ima Fool@example.com', 'Enter a valid email address'))
-        rtn =  IS_EMAIL()('localguy@localhost')       # localhost as domain
+        rtn = IS_EMAIL()('localguy@localhost')       # localhost as domain
         self.assertEqual(rtn, ('localguy@localhost', None))
         # test for banned
-        rtn =  IS_EMAIL(banned='^.*\.com(|\..*)$')('localguy@localhost')       # localhost as domain
+        rtn = IS_EMAIL(banned='^.*\.com(|\..*)$')('localguy@localhost')       # localhost as domain
         self.assertEqual(rtn, ('localguy@localhost', None))
         rtn = IS_EMAIL(banned='^.*\.com(|\..*)$')('abc@example.com')
         self.assertEqual(rtn, ('abc@example.com', 'Enter a valid email address'))
@@ -485,6 +528,9 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ('localguy@localhost', 'Enter a valid email address'))
         rtn = IS_EMAIL(forced='^.*\.edu(|\..*)$')('localguy@example.edu')
         self.assertEqual(rtn, ('localguy@example.edu', None))
+        # test for not a string at all
+        rtn = IS_EMAIL(error_message='oops')(42)
+        self.assertEqual(rtn, (42, 'oops'))
 
     def test_IS_LIST_OF_EMAILS(self):
         emails = ['localguy@localhost', '_Yosemite.Sam@example.com']
@@ -543,16 +589,16 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ('', 'Enter time as hh:mm:ss (seconds, am, pm optional)'))
 
     def test_IS_DATE(self):
-        v = IS_DATE(format="%m/%d/%Y",error_message="oops")
+        v = IS_DATE(format="%m/%d/%Y", error_message="oops")
         rtn = v('03/03/2008')
         self.assertEqual(rtn, (datetime.date(2008, 3, 3), None))
         rtn = v('31/03/2008')
         self.assertEqual(rtn, ('31/03/2008', 'oops'))
-        rtn = IS_DATE(format="%m/%d/%Y",error_message="oops").formatter(datetime.date(1834, 12, 14))
+        rtn = IS_DATE(format="%m/%d/%Y", error_message="oops").formatter(datetime.date(1834, 12, 14))
         self.assertEqual(rtn, '12/14/1834')
 
     def test_IS_DATETIME(self):
-        v = IS_DATETIME(format="%m/%d/%Y %H:%M",error_message="oops")
+        v = IS_DATETIME(format="%m/%d/%Y %H:%M", error_message="oops")
         rtn = v('03/03/2008 12:40')
         self.assertEqual(rtn, (datetime.datetime(2008, 3, 3, 12, 40), None))
         rtn = v('31/03/2008 29:40')
@@ -560,16 +606,20 @@ class TestValidators(unittest.TestCase):
         # Test timezone is removed and value is properly converted
         #
         # https://github.com/web2py/web2py/issues/1094
+
         class DummyTimezone(datetime.tzinfo):
 
             ONE = datetime.timedelta(hours=1)
 
             def utcoffset(self, dt):
                 return DummyTimezone.ONE
+
             def tzname(self, dt):
                 return "UTC+1"
+
             def dst(self, dt):
                 return DummyTimezone.ONE
+
             def localize(self, dt, is_dst=False):
                 return dt.replace(tzinfo=self)
         v = IS_DATETIME(format="%Y-%m-%d %H:%M", error_message="oops", timezone=DummyTimezone())
@@ -577,65 +627,65 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, (datetime.datetime(1982, 12, 14, 7, 0), None))
 
     def test_IS_DATE_IN_RANGE(self):
-        v = IS_DATE_IN_RANGE(minimum=datetime.date(2008,1,1),
-                             maximum=datetime.date(2009,12,31),
-                             format="%m/%d/%Y",error_message="oops")
+        v = IS_DATE_IN_RANGE(minimum=datetime.date(2008, 1, 1),
+                             maximum=datetime.date(2009, 12, 31),
+                             format="%m/%d/%Y", error_message="oops")
 
         rtn = v('03/03/2008')
         self.assertEqual(rtn, (datetime.date(2008, 3, 3), None))
         rtn = v('03/03/2010')
         self.assertEqual(rtn, ('03/03/2010', 'oops'))
-        rtn = v(datetime.date(2008,3,3))
+        rtn = v(datetime.date(2008, 3, 3))
         self.assertEqual(rtn, (datetime.date(2008, 3, 3), None))
-        rtn =  v(datetime.date(2010,3,3))
+        rtn = v(datetime.date(2010, 3, 3))
         self.assertEqual(rtn, (datetime.date(2010, 3, 3), 'oops'))
-        v = IS_DATE_IN_RANGE(maximum=datetime.date(2009,12,31),
-            format="%m/%d/%Y")
+        v = IS_DATE_IN_RANGE(maximum=datetime.date(2009, 12, 31),
+                             format="%m/%d/%Y")
         rtn = v('03/03/2010')
         self.assertEqual(rtn, ('03/03/2010', 'Enter date on or before 12/31/2009'))
-        v = IS_DATE_IN_RANGE(minimum=datetime.date(2008,1,1),
-            format="%m/%d/%Y")
+        v = IS_DATE_IN_RANGE(minimum=datetime.date(2008, 1, 1),
+                             format="%m/%d/%Y")
         rtn = v('03/03/2007')
         self.assertEqual(rtn, ('03/03/2007', 'Enter date on or after 01/01/2008'))
-        v = IS_DATE_IN_RANGE(minimum=datetime.date(2008,1,1),
-            maximum=datetime.date(2009,12,31),
-            format="%m/%d/%Y")
+        v = IS_DATE_IN_RANGE(minimum=datetime.date(2008, 1, 1),
+                             maximum=datetime.date(2009, 12, 31),
+                             format="%m/%d/%Y")
         rtn = v('03/03/2007')
         self.assertEqual(rtn, ('03/03/2007', 'Enter date in range 01/01/2008 12/31/2009'))
 
     def test_IS_DATETIME_IN_RANGE(self):
         v = IS_DATETIME_IN_RANGE(
-            minimum=datetime.datetime(2008,1,1,12,20),
-            maximum=datetime.datetime(2009,12,31,12,20),
-            format="%m/%d/%Y %H:%M",error_message="oops")
+            minimum=datetime.datetime(2008, 1, 1, 12, 20),
+            maximum=datetime.datetime(2009, 12, 31, 12, 20),
+            format="%m/%d/%Y %H:%M", error_message="oops")
         rtn = v('03/03/2008 12:40')
         self.assertEqual(rtn, (datetime.datetime(2008, 3, 3, 12, 40), None))
         rtn = v('03/03/2010 10:34')
         self.assertEqual(rtn, ('03/03/2010 10:34', 'oops'))
-        rtn =  v(datetime.datetime(2008,3,3,0,0))
+        rtn = v(datetime.datetime(2008, 3, 3, 0, 0))
         self.assertEqual(rtn, (datetime.datetime(2008, 3, 3, 0, 0), None))
-        rtn =  v(datetime.datetime(2010,3,3,0,0))
+        rtn = v(datetime.datetime(2010, 3, 3, 0, 0))
         self.assertEqual(rtn, (datetime.datetime(2010, 3, 3, 0, 0), 'oops'))
-        v = IS_DATETIME_IN_RANGE(maximum=datetime.datetime(2009,12,31,12,20),
-            format='%m/%d/%Y %H:%M:%S')
+        v = IS_DATETIME_IN_RANGE(maximum=datetime.datetime(2009, 12, 31, 12, 20),
+                                 format='%m/%d/%Y %H:%M:%S')
         rtn = v('03/03/2010 12:20:00')
         self.assertEqual(rtn, ('03/03/2010 12:20:00', 'Enter date and time on or before 12/31/2009 12:20:00'))
-        v = IS_DATETIME_IN_RANGE(minimum=datetime.datetime(2008,1,1,12,20),
-            format='%m/%d/%Y %H:%M:%S')
+        v = IS_DATETIME_IN_RANGE(minimum=datetime.datetime(2008, 1, 1, 12, 20),
+                                 format='%m/%d/%Y %H:%M:%S')
         rtn = v('03/03/2007 12:20:00')
         self.assertEqual(rtn, ('03/03/2007 12:20:00', 'Enter date and time on or after 01/01/2008 12:20:00'))
-        v = IS_DATETIME_IN_RANGE(minimum=datetime.datetime(2008,1,1,12,20),
-            maximum=datetime.datetime(2009,12,31,12,20),
-            format='%m/%d/%Y %H:%M:%S')
+        v = IS_DATETIME_IN_RANGE(minimum=datetime.datetime(2008, 1, 1, 12, 20),
+                                 maximum=datetime.datetime(2009, 12, 31, 12, 20),
+                                 format='%m/%d/%Y %H:%M:%S')
         rtn = v('03/03/2007 12:20:00')
         self.assertEqual(rtn, ('03/03/2007 12:20:00', 'Enter date and time in range 01/01/2008 12:20:00 12/31/2009 12:20:00'))
-        v = IS_DATETIME_IN_RANGE(maximum=datetime.datetime(2009,12,31,12,20),
-            format='%Y-%m-%d %H:%M:%S', error_message='oops')
+        v = IS_DATETIME_IN_RANGE(maximum=datetime.datetime(2009, 12, 31, 12, 20),
+                                 format='%Y-%m-%d %H:%M:%S', error_message='oops')
         rtn = v('clearly not a date')
         self.assertEqual(rtn, ('clearly not a date', 'oops'))
 
     def test_IS_LIST_OF(self):
-        values = [0,1,2,3,4]
+        values = [0, 1, 2, 3, 4]
         rtn = IS_LIST_OF(IS_INT_IN_RANGE(0, 10))(values)
         self.assertEqual(rtn, (values, None))
         values.append(11)
@@ -643,9 +693,9 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, (values, 'Enter an integer between 0 and 9'))
         rtn = IS_LIST_OF(IS_INT_IN_RANGE(0, 10))(1)
         self.assertEqual(rtn, ([1], None))
-        rtn = IS_LIST_OF(IS_INT_IN_RANGE(0, 10), minimum=10)([1,2])
+        rtn = IS_LIST_OF(IS_INT_IN_RANGE(0, 10), minimum=10)([1, 2])
         self.assertEqual(rtn, ([1, 2], 'Enter between 10 and 100 values'))
-        rtn =  IS_LIST_OF(IS_INT_IN_RANGE(0, 10), maximum=2)([1,2,3])
+        rtn = IS_LIST_OF(IS_INT_IN_RANGE(0, 10), maximum=2)([1, 2, 3])
         self.assertEqual(rtn, ([1, 2, 3], 'Enter between 0 and 2 values'))
         # regression test for issue 742
         rtn = IS_LIST_OF(minimum=1)('')
@@ -704,69 +754,69 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ('a bc', 'Must be slug'))
 
     def test_ANY_OF(self):
-        rtn = ANY_OF([IS_EMAIL(),IS_ALPHANUMERIC()])('a@b.co')
+        rtn = ANY_OF([IS_EMAIL(), IS_ALPHANUMERIC()])('a@b.co')
         self.assertEqual(rtn, ('a@b.co', None))
-        rtn = ANY_OF([IS_EMAIL(),IS_ALPHANUMERIC()])('abco')
+        rtn = ANY_OF([IS_EMAIL(), IS_ALPHANUMERIC()])('abco')
         self.assertEqual(rtn, ('abco', None))
-        rtn = ANY_OF([IS_EMAIL(),IS_ALPHANUMERIC()])('@ab.co')
+        rtn = ANY_OF([IS_EMAIL(), IS_ALPHANUMERIC()])('@ab.co')
         self.assertEqual(rtn, ('@ab.co', 'Enter only letters, numbers, and underscore'))
-        rtn = ANY_OF([IS_ALPHANUMERIC(),IS_EMAIL()])('@ab.co')
+        rtn = ANY_OF([IS_ALPHANUMERIC(), IS_EMAIL()])('@ab.co')
         self.assertEqual(rtn, ('@ab.co', 'Enter a valid email address'))
-        rtn = ANY_OF([IS_DATE(),IS_EMAIL()])('a@b.co')
+        rtn = ANY_OF([IS_DATE(), IS_EMAIL()])('a@b.co')
         self.assertEqual(rtn, ('a@b.co', None))
-        rtn = ANY_OF([IS_DATE(),IS_EMAIL()])('1982-12-14')
+        rtn = ANY_OF([IS_DATE(), IS_EMAIL()])('1982-12-14')
         self.assertEqual(rtn, (datetime.date(1982, 12, 14), None))
-        rtn = ANY_OF([IS_DATE(format='%m/%d/%Y'),IS_EMAIL()]).formatter(datetime.date(1834, 12, 14))
+        rtn = ANY_OF([IS_DATE(format='%m/%d/%Y'), IS_EMAIL()]).formatter(datetime.date(1834, 12, 14))
         self.assertEqual(rtn, '12/14/1834')
 
     def test_IS_EMPTY_OR(self):
         rtn = IS_EMPTY_OR(IS_EMAIL())('abc@def.com')
         self.assertEqual(rtn, ('abc@def.com', None))
-        rtn =  IS_EMPTY_OR(IS_EMAIL())('   ')
+        rtn = IS_EMPTY_OR(IS_EMAIL())('   ')
         self.assertEqual(rtn, (None, None))
-        rtn =  IS_EMPTY_OR(IS_EMAIL(), null='abc')('   ')
+        rtn = IS_EMPTY_OR(IS_EMAIL(), null='abc')('   ')
         self.assertEqual(rtn, ('abc', None))
-        rtn =  IS_EMPTY_OR(IS_EMAIL(), null='abc', empty_regex='def')('def')
+        rtn = IS_EMPTY_OR(IS_EMAIL(), null='abc', empty_regex='def')('def')
         self.assertEqual(rtn, ('abc', None))
-        rtn =  IS_EMPTY_OR(IS_EMAIL())('abc')
+        rtn = IS_EMPTY_OR(IS_EMAIL())('abc')
         self.assertEqual(rtn, ('abc', 'Enter a valid email address'))
-        rtn =  IS_EMPTY_OR(IS_EMAIL())(' abc ')
+        rtn = IS_EMPTY_OR(IS_EMAIL())(' abc ')
         self.assertEqual(rtn, ('abc', 'Enter a valid email address'))
-        rtn = IS_EMPTY_OR(IS_IN_SET([('id1','first label'), ('id2','second label')], zero='zero')).options(zero=False)
-        self.assertEqual(rtn, [('', ''),('id1', 'first label'), ('id2', 'second label')])
-        rtn = IS_EMPTY_OR(IS_IN_SET([('id1','first label'), ('id2','second label')], zero='zero')).options()
-        self.assertEqual(rtn, [('', 'zero'),('id1', 'first label'), ('id2', 'second label')])
+        rtn = IS_EMPTY_OR(IS_IN_SET([('id1', 'first label'), ('id2', 'second label')], zero='zero')).options(zero=False)
+        self.assertEqual(rtn, [('', ''), ('id1', 'first label'), ('id2', 'second label')])
+        rtn = IS_EMPTY_OR(IS_IN_SET([('id1', 'first label'), ('id2', 'second label')], zero='zero')).options()
+        self.assertEqual(rtn, [('', 'zero'), ('id1', 'first label'), ('id2', 'second label')])
 
     def test_CLEANUP(self):
         rtn = CLEANUP()('helloò')
         self.assertEqual(rtn, ('hello', None))
 
     def test_CRYPT(self):
-        rtn = str(CRYPT(digest_alg='md5',salt=True)('test')[0])
+        rtn = str(CRYPT(digest_alg='md5', salt=True)('test')[0])
         self.assertRegexpMatches(rtn, r'^md5\$.{16}\$.{32}$')
-        rtn = str(CRYPT(digest_alg='sha1',salt=True)('test')[0])
+        rtn = str(CRYPT(digest_alg='sha1', salt=True)('test')[0])
         self.assertRegexpMatches(rtn, r'^sha1\$.{16}\$.{40}$')
-        rtn = str(CRYPT(digest_alg='sha256',salt=True)('test')[0])
+        rtn = str(CRYPT(digest_alg='sha256', salt=True)('test')[0])
         self.assertRegexpMatches(rtn, r'^sha256\$.{16}\$.{64}$')
-        rtn = str(CRYPT(digest_alg='sha384',salt=True)('test')[0])
+        rtn = str(CRYPT(digest_alg='sha384', salt=True)('test')[0])
         self.assertRegexpMatches(rtn, r'^sha384\$.{16}\$.{96}$')
-        rtn = str(CRYPT(digest_alg='sha512',salt=True)('test')[0])
+        rtn = str(CRYPT(digest_alg='sha512', salt=True)('test')[0])
         self.assertRegexpMatches(rtn, r'^sha512\$.{16}\$.{128}$')
         alg = 'pbkdf2(1000,20,sha512)'
-        rtn = str(CRYPT(digest_alg=alg,salt=True)('test')[0])
+        rtn = str(CRYPT(digest_alg=alg, salt=True)('test')[0])
         self.assertRegexpMatches(rtn, r'^pbkdf2\(1000,20,sha512\)\$.{16}\$.{40}$')
-        rtn = str(CRYPT(digest_alg='md5',key='mykey',salt=True)('test')[0])
+        rtn = str(CRYPT(digest_alg='md5', key='mykey', salt=True)('test')[0])
         self.assertRegexpMatches(rtn, r'^md5\$.{16}\$.{32}$')
-        a = str(CRYPT(digest_alg='sha1',salt=False)('test')[0])
-        self.assertEqual(CRYPT(digest_alg='sha1',salt=False)('test')[0], a)
-        self.assertEqual(CRYPT(digest_alg='sha1',salt=False)('test')[0], a[6:])
-        self.assertEqual(CRYPT(digest_alg='md5',salt=False)('test')[0], a)
-        self.assertEqual(CRYPT(digest_alg='md5',salt=False)('test')[0], a[6:])
+        a = str(CRYPT(digest_alg='sha1', salt=False)('test')[0])
+        self.assertEqual(CRYPT(digest_alg='sha1', salt=False)('test')[0], a)
+        self.assertEqual(CRYPT(digest_alg='sha1', salt=False)('test')[0], a[6:])
+        self.assertEqual(CRYPT(digest_alg='md5', salt=False)('test')[0], a)
+        self.assertEqual(CRYPT(digest_alg='md5', salt=False)('test')[0], a[6:])
 
     def test_IS_STRONG(self):
         rtn = IS_STRONG(es=True)('Abcd1234')
         self.assertEqual(rtn, ('Abcd1234',
-         'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|'))
+                               'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|'))
         rtn = IS_STRONG(es=True)('Abcd1234!')
         self.assertEqual(rtn, ('Abcd1234!', None))
         rtn = IS_STRONG(es=True, entropy=1)('a')
@@ -787,33 +837,34 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(rtn, ('********', None))
         rtn = IS_STRONG(es=True, max=4)('abcde')
         self.assertEqual(rtn,
-            ('abcde',
-             '|'.join(['Minimum length is 8',
-                      'Maximum length is 4',
-                      'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
-                      'Must include at least 1 upper case',
-                      'Must include at least 1 number']))
-            )
+                         ('abcde',
+                          '|'.join(['Minimum length is 8',
+                                    'Maximum length is 4',
+                                    'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
+                                    'Must include at least 1 upper case',
+                                    'Must include at least 1 number']))
+                         )
         rtn = IS_STRONG(es=True)('abcde')
         self.assertEqual(rtn,
-            ('abcde',
-             '|'.join(['Minimum length is 8',
-                      'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
-                      'Must include at least 1 upper case',
-                      'Must include at least 1 number']))
-            )
+                         ('abcde',
+                          '|'.join(['Minimum length is 8',
+                                    'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
+                                    'Must include at least 1 upper case',
+                                    'Must include at least 1 number']))
+                         )
         rtn = IS_STRONG(upper=0, lower=0, number=0, es=True)('Abcde1')
         self.assertEqual(rtn,
-            ('Abcde1',
-             '|'.join(['Minimum length is 8',
-                      'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
-                      'May not include any upper case letters',
-                      'May not include any lower case letters',
-                      'May not include any numbers']))
-            )
+                         ('Abcde1',
+                          '|'.join(['Minimum length is 8',
+                                    'Must include at least 1 of the following: ~!@#$%^&*()_+-=?<>,.:;{}[]|',
+                                    'May not include any upper case letters',
+                                    'May not include any lower case letters',
+                                    'May not include any numbers']))
+                         )
 
     def test_IS_IMAGE(self):
         class DummyImageFile(object):
+
             def __init__(self, filename, ext, width, height):
                 from StringIO import StringIO
                 import struct
@@ -821,7 +872,7 @@ class TestValidators(unittest.TestCase):
                 self.file = StringIO()
                 if ext == 'bmp':
                     self.file.write(b'BM')
-                    self.file.write(b' '*16)
+                    self.file.write(b' ' * 16)
                     self.file.write(struct.pack('<LL', width, height))
                 elif ext == 'gif':
                     self.file.write(b'GIF87a')
@@ -832,7 +883,7 @@ class TestValidators(unittest.TestCase):
                     self.file.write(struct.pack('!xHH', height, width))
                 elif ext == 'png':
                     self.file.write(b'\211PNG\r\n\032\n')
-                    self.file.write(b' '*4)
+                    self.file.write(b' ' * 4)
                     self.file.write(b'IHDR')
                     self.file.write(struct.pack('!LL', width, height))
                 self.file.seek(0)
@@ -873,10 +924,10 @@ class TestValidators(unittest.TestCase):
         rtn = IS_IMAGE(error_message='oops')(img)
         self.assertEqual(rtn, (img, 'oops'))
 
-
     def test_IS_UPLOAD_FILENAME(self):
         import cgi
         from StringIO import StringIO
+
         def gen_fake(filename):
             formdata_file_data = """
 ---123
@@ -984,7 +1035,7 @@ this is the content of the fake file
         self.assertEqual(rtn, ('2001::8ffa:fe22:b3af', None))
         rtn = IS_IPV6(subnets='fb00::/8')('2001::8ffa:fe22:b3af')
         self.assertEqual(rtn, ('2001::8ffa:fe22:b3af', 'Enter valid IPv6 address'))
-        rtn = IS_IPV6(subnets=['fc00::/8','2001::/32'])('2001::8ffa:fe22:b3af')
+        rtn = IS_IPV6(subnets=['fc00::/8', '2001::/32'])('2001::8ffa:fe22:b3af')
         self.assertEqual(rtn, ('2001::8ffa:fe22:b3af', None))
         rtn = IS_IPV6(subnets='invalidsubnet')('2001::8ffa:fe22:b3af')
         self.assertEqual(rtn, ('2001::8ffa:fe22:b3af', 'invalid subnet provided'))
@@ -1059,7 +1110,7 @@ this is the content of the fake file
         self.assertEqual(rtn, ('2001::8ffa:fe22:b3af', None))
         rtn = IS_IPADDRESS(subnets='fb00::/8')('2001::8ffa:fe22:b3af')
         self.assertEqual(rtn, ('2001::8ffa:fe22:b3af', 'Enter valid IP address'))
-        rtn = IS_IPADDRESS(subnets=['fc00::/8','2001::/32'])('2001::8ffa:fe22:b3af')
+        rtn = IS_IPADDRESS(subnets=['fc00::/8', '2001::/32'])('2001::8ffa:fe22:b3af')
         self.assertEqual(rtn, ('2001::8ffa:fe22:b3af', None))
         rtn = IS_IPADDRESS(subnets='invalidsubnet')('2001::8ffa:fe22:b3af')
         self.assertEqual(rtn, ('2001::8ffa:fe22:b3af', 'invalid subnet provided'))
