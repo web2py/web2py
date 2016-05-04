@@ -1954,6 +1954,9 @@ def install_plugin():
     plugin = request.vars.plugin
     if not (source and app):
         raise HTTP(500, T("Invalid request"))
+    # make sure no XSS attacks in source
+    if not source.lower().split('://')[0] in ('http','https'):
+        raise HTTP(500, T("Invalid request"))
     form = SQLFORM.factory()
     result = None
     if form.process().accepted:
