@@ -121,6 +121,9 @@ def index():
         send = URL('site')
     if session.authorized:
         redirect(send)
+    elif failed_login_count() >= allowed_number_of_attempts:
+        time.sleep(2 ** allowed_number_of_attempts)
+        raise HTTP(403)
     elif request.vars.password:
         if verify_password(request.vars.password[:1024]):
             session.authorized = True
