@@ -4,6 +4,7 @@ import time
 from gluon import portalocker
 from gluon.admin import apath
 from gluon.fileutils import read_file
+from gluon.utils import web2py_uuid
 # ###########################################################
 # ## make sure administrator is on localhost or https
 # ###########################################################
@@ -49,15 +50,18 @@ except IOError:
 def verify_password(password):
     session.pam_user = None
     if DEMO_MODE:
-        return True
+        ret = True
     elif not _config.get('password'):
-        return False
+        ret - False
     elif _config['password'].startswith('pam_user:'):
         session.pam_user = _config['password'][9:].strip()
         import gluon.contrib.pam
-        return gluon.contrib.pam.authenticate(session.pam_user, password)
+        ret = gluon.contrib.pam.authenticate(session.pam_user, password)
     else:
-        return _config['password'] == CRYPT()(password)[0]
+        ret = _config['password'] == CRYPT()(password)[0]
+    if ret:
+        session.hmac_key = web2py_uuid()
+    return ret
 
 
 # ###########################################################

@@ -533,8 +533,8 @@ def delete():
         redirect(URL(sender, anchor=request.vars.id2))
     return dict(dialog=dialog, filename=filename)
 
-
 def enable():
+    if not URL.verify(request, hmac_key=session.hmac_key): raise HTTP(401)
     app = get_app()
     filename = os.path.join(apath(app, r=request), 'DISABLED')
     if is_gae:

@@ -68,7 +68,7 @@ header, main, footer {display:block; with:100%} /* IE fix */
 input:not([type]), input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]), [type=file]:before {outline:none; padding:0.5em 1em; margin:0.5px; border-bottom:1px solid #ddd; width:100%}
 textarea {width:100%; border:1px solid #ddd; padding:4px 8px; outline:none; outline:none}
 select {-webkit-appearance:none; outline:none; padding:0.5em 1em; border-radius:0; margin:0.5px; border-bottom:1px solid #ddd; width:100%;background-color:transparent}
-input, textarea, select, button {font-size:12px}
+input, textarea, select, button, .btn {font-size:12px}
 input:not([type]):hover, input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):hover, select:hover, textarea:hover {background-color:#fbf6d9; transition:background-color 1s ease}
 input:invalid, input.error {background:#cc1f00;color:white}
 
