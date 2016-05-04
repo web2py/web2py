@@ -21,6 +21,7 @@ from test_contribs import *
 from test_web import *
 from test_dal import *
 from test_tools import *
+from test_appadmin import *
 from test_scheduler import *
 
 if sys.version[:3] == '2.7':

@@ -9,6 +9,26 @@ Background processes made simple
 ---------------------------------
 """
 
+
+import os
+import time
+import multiprocessing
+import sys
+import threading
+import traceback
+import signal
+import socket
+import datetime
+import logging
+import optparse
+import tempfile
+import types
+import Queue
+from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB
+from gluon import IS_INT_IN_RANGE, IS_DATETIME, IS_IN_DB
+from gluon.utils import web2py_uuid
+from gluon.storage import Storage
+
 USAGE = """
 ## Example
 
@@ -67,20 +87,6 @@ sudo restart web2py-scheduler
 sudo status web2py-scheduler
 """
 
-import os
-import time
-import multiprocessing
-import sys
-import threading
-import traceback
-import signal
-import socket
-import datetime
-import logging
-import optparse
-import types
-import Queue
-
 path = os.getcwd()
 
 if 'WEB2PY_PATH' not in os.environ:
@@ -100,12 +106,6 @@ except ImportError:
 IDENTIFIER = "%s#%s" % (socket.gethostname(), os.getpid())
 
 logger = logging.getLogger('web2py.scheduler.%s' % IDENTIFIER)
-
-from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB
-from gluon import IS_INT_IN_RANGE, IS_DATETIME, IS_IN_DB
-from gluon.utils import web2py_uuid
-from gluon.storage import Storage
-
 
 QUEUED = 'QUEUED'
 ASSIGNED = 'ASSIGNED'
@@ -168,24 +168,25 @@ class TaskReport(object):
 
 
 class JobGraph(object):
-    """Experimental: with JobGraph you can specify
-    dependencies amongs tasks"""
+    """Experimental: dependencies amongs tasks"""
 
     def __init__(self, db, job_name):
         self.job_name = job_name or 'job_0'
         self.db = db
 
     def add_deps(self, task_parent, task_child):
-        """Creates a dependency between task_parent and task_child"""
+        """Create a dependency between task_parent and task_child."""
         self.db.scheduler_task_deps.insert(task_parent=task_parent,
                                            task_child=task_child,
                                            job_name=self.job_name)
 
     def validate(self, job_name=None):
-        """Validates if all tasks job_name can be completed, i.e. there
-        are no mutual dependencies among tasks.
+        """Validate if all tasks job_name can be completed.
+
+        Checks if there are no mutual dependencies among tasks.
         Commits at the end if successfull, or it rollbacks the entire
-        transaction. Handle with care!"""
+        transaction. Handle with care!
+        """
         db = self.db
         sd = db.scheduler_task_deps
         if job_name:
@@ -223,14 +224,6 @@ class JobGraph(object):
             db.rollback()
             return None
 
-
-def demo_function(*argv, **kwargs):
-    """ test function """
-    for i in range(argv[0]):
-        print 'click', i
-        time.sleep(1)
-    return 'done'
-
 # the two functions below deal with simplejson decoding as unicode, esp for the dict decode
 # and subsequent usage as function Keyword arguments unicode variable names won't work!
 # borrowed from http://stackoverflow.com/questions/956867/how-to-get-string-objects-instead-unicode-ones-from-json-in-python
@@ -261,11 +254,12 @@ def _decode_dict(dct):
 
 
 def executor(queue, task, out):
-    """The function used to execute tasks in the background process"""
+    """The function used to execute tasks in the background process."""
     logger.debug('    task started')
 
     class LogOutput(object):
-        """Facility to log output at intervals"""
+        """Facility to log output at intervals."""
+
         def __init__(self, out_queue):
             self.out_queue = out_queue
             self.stdout = sys.stdout
@@ -280,7 +274,11 @@ def executor(queue, task, out):
         def write(self, data):
             self.out_queue.put(data)
 
-    W2P_TASK = Storage({'id': task.task_id, 'uuid': task.uuid})
+    W2P_TASK = Storage({
+                       'id': task.task_id,
+                       'uuid': task.uuid,
+                       'run_id': task.run_id
+                       })
     stdout = LogOutput(out)
     try:
         if task.app:
@@ -318,6 +316,11 @@ def executor(queue, task, out):
             result = eval(task.function)(
                 *loads(task.args, object_hook=_decode_dict),
                 **loads(task.vars, object_hook=_decode_dict))
+        if len(result) >= 1024:
+            fd, temp_path = tempfile.mkstemp(suffix='.w2p_sched')
+            with os.fdopen(fd, 'w') as f:
+                f.write(result)
+            result = 'w2p_special:%s' % temp_path
         queue.put(TaskReport('COMPLETED', result=result))
     except BaseException, e:
         tb = traceback.format_exc()
@@ -335,7 +338,7 @@ class MetaScheduler(threading.Thread):
         self.empty_runs = 0
 
     def async(self, task):
-        """Starts the background process
+        """Start the background process.
 
         Args:
             task : a `Task` object
@@ -410,6 +413,12 @@ class MetaScheduler(threading.Thread):
             else:
                 logger.debug('  task completed or failed')
                 tr = queue.get()
+        result = tr.result
+        if result and result.startswith('w2p_special'):
+            temp_path = result.replace('w2p_special:', '', 1)
+            with open(temp_path) as f:
+                tr.result = f.read()
+            os.unlink(temp_path)
         tr.output = task_output
         return tr
 
@@ -444,50 +453,23 @@ class MetaScheduler(threading.Thread):
         self.start()
 
     def send_heartbeat(self, counter):
-        print 'thum'
-        time.sleep(1)
+        raise NotImplementedError
 
     def pop_task(self):
         """Fetches a task ready to be executed"""
-        return Task(
-            app=None,
-            function='demo_function',
-            timeout=7,
-            args='[2]',
-            vars='{}')
+        raise NotImplementedError
 
     def report_task(self, task, task_report):
         """Creates a task report"""
-        print 'reporting task'
-        pass
+        raise NotImplementedError
 
     def sleep(self):
-        pass
+        raise NotImplementedError
 
     def loop(self):
         """Main loop, fetching tasks and starting executor's background
         processes"""
-        try:
-            self.start_heartbeats()
-            while True and self.have_heartbeat:
-                logger.debug('looping...')
-                task = self.pop_task()
-                if task:
-                    self.empty_runs = 0
-                    self.report_task(task, self.async(task))
-                else:
-                    self.empty_runs += 1
-                    logger.debug('sleeping...')
-                    if self.max_empty_runs != 0:
-                        logger.debug('empty runs %s/%s',
-                                     self.empty_runs, self.max_empty_runs)
-                        if self.empty_runs >= self.max_empty_runs:
-                            logger.info(
-                                'empty runs limit reached, killing myself')
-                            self.die()
-                    self.sleep()
-        except KeyboardInterrupt:
-            self.die()
+        raise NotImplementedError
 
 
 TASK_STATUS = (QUEUED, RUNNING, COMPLETED, FAILED, TIMEOUT, STOPPED, EXPIRED)
@@ -594,11 +576,11 @@ class Scheduler(MetaScheduler):
         return True
 
     def now(self):
-        """Shortcut that fetches current time based on UTC preferences"""
+        """Shortcut that fetches current time based on UTC preferences."""
         return self.utc_time and datetime.datetime.utcnow() or datetime.datetime.now()
 
     def set_requirements(self, scheduler_task):
-        """Called to set defaults for lazy_tables connections"""
+        """Called to set defaults for lazy_tables connections."""
         from gluon import current
         if hasattr(current, 'request'):
             scheduler_task.application_name.default = '%s/%s' % (
@@ -606,7 +588,7 @@ class Scheduler(MetaScheduler):
             )
 
     def define_tables(self, db, migrate):
-        """Defines Scheduler tables structure"""
+        """Define Scheduler tables structure."""
         from pydal.base import DEFAULT
         logger.debug('defining tables (migrate=%s)', migrate)
         now = self.now
@@ -693,14 +675,14 @@ class Scheduler(MetaScheduler):
 
     @staticmethod
     def total_seconds(td):
-        # backport for py2.6
+        """Backport for py2.6."""
         if hasattr(td, 'total_seconds'):
             return td.total_seconds()
         else:
             return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 10 ** 6) / 10.0 ** 6
 
     def loop(self, worker_name=None):
-        """Main loop
+        """Main loop.
 
         This works basically as a neverending loop that:
 
@@ -752,7 +734,8 @@ class Scheduler(MetaScheduler):
             self.die()
 
     def wrapped_assign_tasks(self, db):
-        """Commodity function to call `assign_tasks` and trap exceptions
+        """Commodity function to call `assign_tasks` and trap exceptions.
+
         If an exception is raised, assume it happened because of database
         contention and retries `assign_task` after 0.5 seconds
         """
@@ -773,7 +756,8 @@ class Scheduler(MetaScheduler):
                 time.sleep(0.5)
 
     def wrapped_pop_task(self):
-        """Commodity function to call `pop_task` and trap exceptions
+        """Commodity function to call `pop_task` and trap exceptions.
+
         If an exception is raised, assume it happened because of database
         contention and retries `pop_task` after 0.5 seconds
         """
@@ -793,7 +777,7 @@ class Scheduler(MetaScheduler):
                 time.sleep(0.5)
 
     def pop_task(self, db):
-        """Grabs a task ready to be executed from the queue"""
+        """Grab a task ready to be executed from the queue."""
         now = self.now()
         st = self.db.scheduler_task
         if self.is_a_ticker and self.do_assign_tasks:
@@ -874,7 +858,8 @@ class Scheduler(MetaScheduler):
             uuid=task.uuid)
 
     def wrapped_report_task(self, task, task_report):
-        """Commodity function to call `report_task` and trap exceptions
+        """Commodity function to call `report_task` and trap exceptions.
+
         If an exception is raised, assume it happened because of database
         contention and retries `pop_task` after 0.5 seconds
         """
@@ -891,8 +876,10 @@ class Scheduler(MetaScheduler):
                 time.sleep(0.5)
 
     def report_task(self, task, task_report):
-        """Takes care of storing the result according to preferences
-        and deals with logic for repeating tasks"""
+        """Take care of storing the result according to preferences.
+
+        Deals with logic for repeating tasks.
+        """
         db = self.db
         now = self.now()
         st = db.scheduler_task
@@ -914,12 +901,12 @@ class Scheduler(MetaScheduler):
                 logger.debug(' deleting task report in db because of no result')
                 db(sr.id == task.run_id).delete()
         # if there is a stop_time and the following run would exceed it
-        is_expired = (task.stop_time
-                      and task.next_run_time > task.stop_time
-                      and True or False)
-        status = (task.run_again and is_expired and EXPIRED
-                  or task.run_again and not is_expired
-                  and QUEUED or COMPLETED)
+        is_expired = (task.stop_time and
+                      task.next_run_time > task.stop_time and
+                      True or False)
+        status = (task.run_again and is_expired and EXPIRED or
+                  task.run_again and not is_expired and
+                  QUEUED or COMPLETED)
         if task_report.status == COMPLETED:
             d = dict(status=status,
                      next_run_time=task.next_run_time,
@@ -945,27 +932,26 @@ class Scheduler(MetaScheduler):
         logger.info('task completed (%s)', task_report.status)
 
     def update_dependencies(self, db, task_id):
+        """Unblock execution paths for Jobs."""
         db(db.scheduler_task_deps.task_child == task_id).update(can_visit=True)
 
     def adj_hibernation(self):
-        """Used to increase the "sleep" interval for DISABLED workers"""
+        """Used to increase the "sleep" interval for DISABLED workers."""
         if self.w_stats.status == DISABLED:
             wk_st = self.w_stats.sleep
             hibernation = wk_st + HEARTBEAT if wk_st < MAXHIBERNATION else MAXHIBERNATION
             self.w_stats.sleep = hibernation
 
     def send_heartbeat(self, counter):
-        """This function is vital for proper coordination among available
-        workers.
-        It:
+        """Coordination among available workers.
 
+        It:
         - sends the heartbeat
         - elects a ticker among available workers (the only process that
             effectively dispatch tasks to workers)
         - deals with worker's statuses
         - does "housecleaning" for dead workers
         - triggers tasks assignment to workers
-
         """
         if not self.db_thread:
             logger.debug('thread building own DAL object')
@@ -1053,7 +1039,8 @@ class Scheduler(MetaScheduler):
         self.sleep()
 
     def being_a_ticker(self):
-        """Elects a TICKER process that assigns tasks to available workers.
+        """Elect a TICKER process that assigns tasks to available workers.
+
         Does its best to elect a worker that is not busy processing other tasks
         to allow a proper distribution of tasks among all active workers ASAP
         """
@@ -1087,7 +1074,7 @@ class Scheduler(MetaScheduler):
             return False
 
     def assign_tasks(self, db):
-        """Assigns task to workers, that can then pop them from the queue
+        """Assign task to workers, that can then pop them from the queue.
 
         Deals with group_name(s) logic, in order to assign linearly tasks
         to available workers for those groups
@@ -1137,9 +1124,6 @@ class Scheduler(MetaScheduler):
 
         all_available = db(
             (st.status.belongs((QUEUED, ASSIGNED))) &
-            ((st.times_run < st.repeats) | (st.repeats == 0)) &
-            (st.start_time <= now) &
-            ((st.stop_time == None) | (st.stop_time > now)) &
             (st.next_run_time <= now) &
             (st.enabled == True) &
             (st.id.belongs(no_deps))
@@ -1151,8 +1135,8 @@ class Scheduler(MetaScheduler):
         # intelligence (like esteeming how many tasks will a worker complete
         # before the ticker reassign them around, but the gain is quite small
         # 50 is a sweet spot also for fast tasks, with sane heartbeat values
-        # NB: ticker reassign tasks every 5 cycles, so if a worker completes its
-        # 50 tasks in less than heartbeat*5 seconds,
+        # NB: ticker reassign tasks every 5 cycles, so if a worker completes
+        # its 50 tasks in less than heartbeat*5 seconds,
         # it won't pick new tasks until heartbeat*5 seconds pass.
 
         # If a worker is currently elaborating a long task, its tasks needs to
@@ -1165,7 +1149,7 @@ class Scheduler(MetaScheduler):
         x = 0
         for group in wkgroups.keys():
             tasks = all_available(st.group_name == group).select(
-                limitby=(0, limit), orderby = st.next_run_time)
+                limitby=(0, limit), orderby=st.next_run_time)
             # let's break up the queue evenly among workers
             for task in tasks:
                 x += 1
@@ -1183,8 +1167,6 @@ class Scheduler(MetaScheduler):
                         status=ASSIGNED,
                         assigned_worker_name=assigned_wn
                     )
-                    if not task.task_name:
-                        d['task_name'] = task.function_name
                     db(
                         (st.id == task.id) &
                         (st.status.belongs((QUEUED, ASSIGNED)))
@@ -1204,14 +1186,13 @@ class Scheduler(MetaScheduler):
         logger.info('TICKER: tasks are %s', x)
 
     def sleep(self):
-        """Calculates the number of seconds to sleep according to worker's
-        status and `heartbeat` parameter"""
+        """Calculate the number of seconds to sleep."""
         time.sleep(self.w_stats.sleep)
         # should only sleep until next available task
 
     def set_worker_status(self, group_names=None, action=ACTIVE,
                           exclude=None, limit=None, worker_name=None):
-        """Internal function to set worker's status"""
+        """Internal function to set worker's status."""
         ws = self.db.scheduler_worker
         if not group_names:
             group_names = self.group_names
@@ -1235,10 +1216,12 @@ class Scheduler(MetaScheduler):
                 self.db(ws.id.belongs(workers)).update(status=action)
 
     def disable(self, group_names=None, limit=None, worker_name=None):
-        """Sets DISABLED on the workers processing `group_names` tasks.
+        """Set DISABLED on the workers processing `group_names` tasks.
+
         A DISABLED worker will be kept alive but it won't be able to process
         any waiting tasks, essentially putting it to sleep.
-        By default, all group_names of Scheduler's instantation are selected"""
+        By default, all group_names of Scheduler's instantation are selected
+        """
         self.set_worker_status(
             group_names=group_names,
             action=DISABLED,
@@ -1283,8 +1266,9 @@ class Scheduler(MetaScheduler):
             pvars: "raw" kwargs to be passed to the function. Automatically
                 jsonified
             kwargs: all the parameters available (basically, every
-                `scheduler_task` column). If args and vars are here, they should
-                be jsonified already, and they will override pargs and pvars
+                `scheduler_task` column). If args and vars are here, they
+                should be jsonified already, and they will override pargs
+                and pvars
 
         Returns:
             a dict just as a normal validate_and_insert(), plus a uuid key
