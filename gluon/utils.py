@@ -83,11 +83,9 @@ def compare(a, b):
     """ Compares two strings and not vulnerable to timing attacks """
     if HAVE_COMPARE_DIGEST:
         return hmac.compare_digest(a, b)
-    if len(a) != len(b):
-        return False
-    result = 0
-    for x, y in zip(a, b):
-        result |= ord(x) ^ ord(y)
+    result = len(a) ^ len(b)
+    for i in xrange(len(b)):
+		result |= ord(a[i%len(a)]) ^ ord(b[i])
     return result == 0
 
 
