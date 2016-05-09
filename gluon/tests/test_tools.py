@@ -254,7 +254,6 @@ class TestAuthJWT(unittest.TestCase):
 
     def test_jwt_token_manager(self):
         self.request.vars.update(self.user_data)
-        print self.current.request.vars
         self.token = self.jwtauth.jwt_token_manager()
             
         
