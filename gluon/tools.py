@@ -1428,7 +1428,6 @@ class AuthJWT(object):
         """
         token = None
         token_in_header = request.env.http_authorization
-        logger.debug('%s' % token_in_header)
         if token_in_header:
             parts = token_in_header.split()
             if parts[0].lower() != self.header_prefix.lower():
