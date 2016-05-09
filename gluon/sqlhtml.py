@@ -110,19 +110,19 @@ def show_if(cond):
     if not cond:
         return None
     base = "%s_%s" % (cond.first.tablename, cond.first.name)
-    if ((cond.op.__name__ == 'EQ' and cond.second is True) or
-            (cond.op.__name__ == 'NE' and cond.second is False)):
+    if ((cond.op.__name__ == 'eq' and cond.second is True) or
+            (cond.op.__name__ == 'ne' and cond.second is False)):
         return base, ":checked"
-    if ((cond.op.__name__ == 'EQ' and cond.second is False) or
-            (cond.op.__name__ == 'NE' and cond.second is True)):
+    if ((cond.op.__name__ == 'eq' and cond.second is False) or
+            (cond.op.__name__ == 'ne' and cond.second is True)):
         return base, ":not(:checked)"
-    if cond.op.__name__ == 'EQ':
+    if cond.op.__name__ == 'eq':
         return base, "[value='%s']" % cond.second
-    if cond.op.__name__ == 'NE':
+    if cond.op.__name__ == 'ne':
         return base, "[value!='%s']" % cond.second
-    if cond.op.__name__ == 'CONTAINS':
+    if cond.op.__name__ == 'contains':
         return base, "[value~='%s']" % cond.second
-    if cond.op.__name__ == 'BELONGS':
+    if cond.op.__name__ == 'belongs':
         if isinstance(cond.second, set):
             cond.second = list(cond.second)
         if isinstance(cond.second, (list, tuple)):
@@ -1528,7 +1528,7 @@ class SQLFORM(FORM):
             hideerror=hideerror,
             **kwargs
         )
-        
+
         self.deleted = request_vars.get(self.FIELDNAME_REQUEST_DELETE, False)
 
         self.custom.end = CAT(self.hidden_fields(), self.custom.end)
@@ -1897,24 +1897,24 @@ class SQLFORM(FORM):
                 else:
                     field_type = field.type
 
-                operators = SELECT(*[OPTION(T(option), _value=option) for option in options], 
+                operators = SELECT(*[OPTION(T(option), _value=option) for option in options],
                                     _class='form-control')
                 _id = "%s_%s" % (value_id, name)
                 if field_type in ['boolean', 'double', 'time', 'integer']:
                     widget_ = SQLFORM.widgets[field_type]
-                    value_input = widget_.widget(field, field.default, _id=_id, 
+                    value_input = widget_.widget(field, field.default, _id=_id,
                                                  _class=widget_._class + ' form-control')
                 elif field_type == 'date':
                     iso_format = {'_data-w2p_date_format': '%Y-%m-%d'}
                     widget_ = SQLFORM.widgets.date
-                    value_input = widget_.widget(field, field.default, _id=_id, 
-                                                 _class=widget_._class + ' form-control', 
+                    value_input = widget_.widget(field, field.default, _id=_id,
+                                                 _class=widget_._class + ' form-control',
                                                  **iso_format)
                 elif field_type == 'datetime':
                     iso_format = {'_data-w2p_datetime_format': '%Y-%m-%d %H:%M:%S'}
                     widget_ = SQLFORM.widgets.datetime
-                    value_input = widget_.widget(field, field.default, _id=_id, 
-                                                 _class=widget_._class + ' form-control', 
+                    value_input = widget_.widget(field, field.default, _id=_id,
+                                                 _class=widget_._class + ' form-control',
                                                  **iso_format)
                 elif hasattr(field.requires, 'options'):
                     value_input = SELECT(
@@ -1928,7 +1928,7 @@ class SQLFORM(FORM):
                       field_type.startswith('list:reference ')):
                     widget_ = SQLFORM.widgets.integer
                     value_input = widget_.widget(
-                        field, field.default, _id=_id, 
+                        field, field.default, _id=_id,
                         _class=widget_._class + ' form-control')
                 else:
                     value_input = INPUT(
@@ -2044,7 +2044,7 @@ class SQLFORM(FORM):
              use_cursor=False):
 
         formstyle = formstyle or current.response.formstyle
-        if isinstance(query, Set): 
+        if isinstance(query, Set):
             query = query.query
 
         # jQuery UI ThemeRoller classes (empty if ui is disabled)
@@ -3043,7 +3043,7 @@ class SQLFORM(FORM):
             query = query & constraints[table._tablename]
         if isinstance(links, dict):
             links = links.get(table._tablename, [])
-        for key in ('fields', 'field_id', 'left', 'headers', 'orderby', 'groupby', 'searchable', 
+        for key in ('fields', 'field_id', 'left', 'headers', 'orderby', 'groupby', 'searchable',
                     'sortable', 'paginate', 'deletable', 'editable', 'details', 'selectable',
                     'create', 'csv', 'links', 'links_in_grid', 'upload', 'maxtextlengths',
                     'maxtextlength', 'onvalidation', 'onfailure', 'oncreate', 'onupdate',
