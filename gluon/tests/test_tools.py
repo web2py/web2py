@@ -227,8 +227,44 @@ class TestMail(unittest.TestCase):
 #         self.assertEqual(form.xml(), rtn)
 
 # TODO: class TestAuthJWT(unittest.TestCase):
+class TestAuthJWT(unittest.TestCase):
+    def setUp(self):
+        from gluon.tools import AuthJWT
+
+        from gluon import current
+        
+        self.request = Request(env={})
+        self.request.application = 'a'
+        self.request.controller = 'c'
+        self.request.function = 'f'
+        self.request.folder = 'applications/admin'
+        self.current = current
+        self.current.request = self.request
+
+        self.db = DAL(DEFAULT_URI, check_reserved=['all'])
+        self.auth = Auth(self.db)
+        self.auth.define_tables(username=True, signature=False)
+        self.user_data = dict(username='jwtuser', password='jwtuser123')
+        self.db.auth_user.insert(username=self.user_data['username'],
+                                 password=str(
+                                     self.db.auth_user.password.requires[0](
+                                         self.user_data['password'])[0]))
+        self.jwtauth = AuthJWT(self.auth, secret_key='secret', verify_expiration=True)
 
 
+    def test_jwt_token_manager(self):
+        self.request.vars.update(self.user_data)
+        print self.current.request.vars
+        self.token = self.jwtauth.jwt_token_manager()
+            
+        
+    def test_allows_jwt(self):
+        request = self.request
+        @self.jwtauth.allows_jwt()
+        def optional_auth():
+            assertEqual(self.user_data['username'], self.auth.user.username)
+
+        
 @unittest.skipIf(IS_IMAP, "TODO: Imap raises 'Connection refused'")
 # class TestAuth(unittest.TestCase):
 #
