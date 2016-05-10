@@ -1,3 +1,11 @@
+## 2.14.6
+
+- Increased test coverage (thanks Richard)
+- Fixed some newly discovered security issues in admin:
+  CSRF vulnerability in admin that allows disabling apps
+  Brute force password attack vulnerability in admin
+  (thanks Narendra and Leonel)  
+
 ## 2.14.1-5
 
 - fixed two major security issues that caused the examples app to leak information
