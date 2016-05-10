@@ -7,7 +7,7 @@ Developed by Massimo Di Pierro, optional component of web2py, BSDv3 license.
 import re
 import pickle
 import copy
-import simplejson
+import json
 
 
 def quote(text):
@@ -292,7 +292,7 @@ class Sheet:
         # modified: dict of modified cells for client-side
 
         """
-        data = simplejson.loads(data)
+        data = json.loads(data)
 
         # record update dict
         changes = {}
@@ -381,7 +381,7 @@ class Sheet:
                     result["db_callback"] = db_callback
             else:
                 result["message"] = "Sheet.process Error. No db found."
-            return simplejson.dumps(result)
+            return json.dumps(result)
 
         return jquery
 
@@ -862,7 +862,7 @@ class Sheet:
                     w2p_spreadsheet_update_db);
               });
             }
-            """ % dict(data=simplejson.dumps(self.client),
+            """ % dict(data=json.dumps(self.client),
                        name=attributes["_class"],
                        url=self.url,
                        update_button=self.update_button))

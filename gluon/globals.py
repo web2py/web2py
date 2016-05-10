@@ -49,6 +49,7 @@ import cgi
 import urlparse
 import copy
 import tempfile
+import json
 
 
 FMT = '%a, %d-%b-%Y %H:%M:%S PST'
@@ -61,13 +62,6 @@ try:
 except ImportError:
     have_minify = False
 
-try:
-    import simplejson as sj  # external installed library
-except:
-    try:
-        import json as sj  # standard installed library
-    except:
-        import gluon.contrib.simplejson as sj  # pure python library
 
 regex_session_id = re.compile('^([\w\-]+/)?[\w\-\.]+$')
 
@@ -227,7 +221,7 @@ class Request(Storage):
 
         if is_json:
             try:
-                json_vars = sj.load(body)
+                json_vars = json.load(body)
             except:
                 # incoherent request bodies can still be parsed "ad-hoc"
                 json_vars = {}

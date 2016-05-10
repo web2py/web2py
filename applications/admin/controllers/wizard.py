@@ -80,7 +80,7 @@ def index():
 
 
 def step1():
-    from gluon.contrib.simplejson import loads
+    from json import loads
     import urllib
     if not session.themes:
         #url = LAYOUTS_APP + '/default/layouts.json'

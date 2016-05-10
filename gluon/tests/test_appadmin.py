@@ -6,10 +6,8 @@
 """
 import os
 import sys
-if sys.version < "2.7":
-    import unittest2 as unittest
-else:
-    import unittest
+import unittest
+import json
 
 from fix_path import fix_sys_path
 
@@ -25,10 +23,6 @@ from gluon.http import HTTP
 
 DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 
-try:
-    import json
-except ImportError:
-    from gluon.contrib import simplejson as json
 
 
 def fake_check_credentials(foo):

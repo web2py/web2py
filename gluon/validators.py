@@ -16,6 +16,7 @@ import re
 import datetime
 import time
 import cgi
+import json
 import urllib
 import struct
 import decimal
@@ -28,12 +29,6 @@ regex_isint = re.compile('^[+-]?\d+$')
 
 JSONErrors = (NameError, TypeError, ValueError, AttributeError,
               KeyError)
-try:
-    import json as simplejson
-except ImportError:
-    from gluon.contrib import simplejson
-    from gluon.contrib.simplejson.decoder import JSONDecodeError
-    JSONErrors += (JSONDecodeError,)
 
 __all__ = [
     'ANY_OF',
@@ -376,10 +371,10 @@ class IS_JSON(Validator):
     def __call__(self, value):
         try:
             if self.native_json:
-                simplejson.loads(value)  # raises error in case of malformed json
+                json.loads(value)  # raises error in case of malformed json
                 return (value, None)  # the serialized value is not passed
             else:
-                return (simplejson.loads(value), None)
+                return (json.loads(value), None)
         except JSONErrors:
             return (value, translate(self.error_message))
 
@@ -389,7 +384,7 @@ class IS_JSON(Validator):
         if self.native_json:
             return value
         else:
-            return simplejson.dumps(value)
+            return json.dumps(value)
 
 
 class IS_IN_SET(Validator):

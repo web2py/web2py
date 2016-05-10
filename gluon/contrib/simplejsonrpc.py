@@ -22,13 +22,7 @@ from xmlrpclib import Transport, SafeTransport
 from cStringIO import StringIO
 import random
 import sys
-try:
-    import gluon.contrib.simplejson as json     # try web2py json serializer
-except ImportError:
-    try:
-        import json                             # try stdlib (py2.6)
-    except:
-        import simplejson as json               # try external module
+import json
 
 
 class JSONRPCError(RuntimeError):

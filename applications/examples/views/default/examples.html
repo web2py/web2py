@@ -134,7 +134,7 @@ def servejs():
     def makejson():
         return response.json(['foo', {'bar': ('baz', None, 1.0, 2)}])
     """.strip(),language='web2py',link=URL('global','vars'),_class='boxCode')}}
-    <p>If you are into Ajax, web2py includes gluon.contrib.<a href="http://cheeseshop.python.org/pypi/simplejson">simplejson</a>, developed by Bob Ippolito. This module provides a fast and easy way to serve asynchronous content to your Ajax page. gluon.simplesjson.dumps(...) can serialize most Python types into <a href="http://www.json.org">JSON</a>. gluon.contrib.simplejson.loads(...) performs the reverse operation.
+    <p>If you are into Ajax, <a href="http://www.json.org">JSON</a> is fully supported in web2py. Providing a fast and easy way to serve asynchronous content to your Ajax page. Response.json can serialize most Python types into JSON.
     <br/>Try it here: <a class="btn" href="/{{=request.application}}/simple_examples/makejson">makejson</a></p>
 
     <p>New in web2py 1.63: Any normal action returning a dict is automatically serialized in JSON if '.json' is appended to the URL.</p>

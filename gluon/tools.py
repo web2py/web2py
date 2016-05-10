@@ -35,9 +35,9 @@ import email.utils
 import random
 import hmac
 import hashlib
+import json
 from email import MIMEBase, MIMEMultipart, MIMEText, Encoders, Header, message_from_string, Charset
 
-from gluon.serializers import json_parser
 from gluon.contenttype import contenttype
 from gluon.storage import Storage, StorageList, Settings, Messages
 from gluon.utils import web2py_uuid, compare
@@ -1043,7 +1043,7 @@ class Recaptcha2(DIV):
         content = httpresp.read()
         httpresp.close()
         try:
-            response_dict = json_parser.loads(content)
+            response_dict = json.loads(content)
         except:
             self.errors['captcha'] = self.error_message
             return False
@@ -1228,7 +1228,7 @@ class AuthJWT(object):
         base_header = {'alg': self.algorithm, 'typ': 'JWT'}
         for k, v in self.jwt_add_header.iteritems():
             base_header[k] = v
-        self.cached_b64h = self.jwt_b64e(json_parser.dumps(base_header))
+        self.cached_b64h = self.jwt_b64e(json.dumps(base_header))
         digestmod_mapping = {
             'HS256': hashlib.sha256,
             'HS384': hashlib.sha384,
@@ -4854,7 +4854,7 @@ class Crud(object):
         response = current.response
         session = current.session
         if request.extension == 'json' and request.vars.json:
-            request.vars.update(json_parser.loads(request.vars.json))
+            request.vars.update(json.loads(request.vars.json))
         if next is DEFAULT:
             next = request.get_vars._next \
                 or request.post_vars._next \
@@ -5260,7 +5260,7 @@ def reverse_geocode(lat, lng, lang=None):
     if not lang:
         lang = current.T.accepted_language
     try:
-        return json_parser.loads(fetch('http://maps.googleapis.com/maps/api/geocode/json?latlng=%(lat)s,%(lng)s&language=%(lang)s' % locals()))['results'][0]['formatted_address']
+        return json.loads(fetch('http://maps.googleapis.com/maps/api/geocode/json?latlng=%(lat)s,%(lng)s&language=%(lang)s' % locals()))['results'][0]['formatted_address']
     except:
         return ''
 
@@ -5674,7 +5674,7 @@ class Service(object):
         response = current.response
         response.headers['Content-Type'] = 'application/json; charset=utf-8'
         methods = self.jsonrpc_procedures
-        data = json_parser.loads(request.body.read())
+        data = json.loads(request.body.read())
         jsonrpc_2 = data.get('jsonrpc')
         if jsonrpc_2:  # hand over to version 2 of the protocol
             return self.serve_jsonrpc2(data)
@@ -5752,7 +5752,7 @@ class Service(object):
         if not data:
             response.headers['Content-Type'] = 'application/json; charset=utf-8'
             try:
-                data = json_parser.loads(request.body.read())
+                data = json.loads(request.body.read())
             except ValueError:  # decoding error in json lib
                 return return_error(None, -32700)
 
