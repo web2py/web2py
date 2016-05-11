@@ -24,6 +24,7 @@ import optparse
 import tempfile
 import types
 import Queue
+from json import loads, dumps
 from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB
 from gluon import IS_INT_IN_RANGE, IS_DATETIME, IS_IN_DB
 from gluon.utils import web2py_uuid
@@ -91,17 +92,6 @@ path = os.getcwd()
 
 if 'WEB2PY_PATH' not in os.environ:
     os.environ['WEB2PY_PATH'] = path
-
-try:
-    # try external module
-    from simplejson import loads, dumps
-except ImportError:
-    try:
-        # try stdlib (Python >= 2.6)
-        from json import loads, dumps
-    except:
-        # fallback to pure-Python module
-        from gluon.contrib.simplejson import loads, dumps
 
 IDENTIFIER = "%s#%s" % (socket.gethostname(), os.getpid())
 

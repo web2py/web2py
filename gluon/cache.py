@@ -33,10 +33,8 @@ import tempfile
 from gluon import recfile
 from gluon import portalocker
 from collections import defaultdict
-try:
-    from collections import OrderedDict
-except ImportError:
-    from gluon.contrib.ordereddict import OrderedDict
+from collections import OrderedDict
+
 try:
     from gluon import settings
     have_settings = True

@@ -45,7 +45,7 @@ viddler.com
 import re
 import cgi
 import sys
-from simplejson import loads
+from json import loads
 import urllib
 import uuid
 try:

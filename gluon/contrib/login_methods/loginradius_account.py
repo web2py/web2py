@@ -13,9 +13,8 @@
 import os
 from gluon import *
 from gluon.storage import Storage
-from gluon.contrib.simplejson import JSONDecodeError
 from gluon.tools import fetch
-import gluon.contrib.simplejson as json
+import json
 
 
 class LoginRadiusAccount(object):
@@ -64,7 +63,7 @@ class LoginRadiusAccount(object):
                 provider = self.profile['Provider']
                 mapping = self.mappings.get(provider, self.mappings['default'])
                 user = mapping(self.profile)
-            except (JSONDecodeError, KeyError):
+            except (ValueError, KeyError):
                 pass
             if user is None and self.on_login_failure:
                 redirect(self.on_login_failure)

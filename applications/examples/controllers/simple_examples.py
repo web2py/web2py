@@ -56,8 +56,7 @@ def servejs():
     return 'alert("This is a Javascript document, it is not supposed to run!");'
 
 def makejson():
-    import gluon.contrib.simplejson as sj
-    return sj.dumps(['foo', {'bar': ('baz', None, 1.0, 2)}])
+    return response.json(['foo', {'bar': ('baz', None, 1.0, 2)}])
 
 
 def makertf():

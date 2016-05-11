@@ -31,7 +31,7 @@ import thread
 import os
 from ConfigParser import SafeConfigParser
 from gluon import current
-from gluon.serializers import json_parser
+import json
 
 locker = thread.allocate_lock()
 
@@ -132,7 +132,7 @@ class AppConfigLoader(object):
 
     def read_config_json(self):
         with open(self.file, 'r') as c:
-            self.settings = AppConfigDict(json_parser.load(c))
+            self.settings = AppConfigDict(json.load(c))
 
     def read_config(self):
         if self.settings is None:

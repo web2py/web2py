@@ -1,5 +1,5 @@
 import urllib
-import simplejson
+import json
 from hashlib import sha1
 
 class Stripe:
@@ -75,17 +75,17 @@ Low level API:
             d.update(mode)
         params = urllib.urlencode(d)
         u = urllib.urlopen(self.URL_CHARGE % self.key, params)
-        return simplejson.loads(u.read())
+        return json.loads(u.read())
 
     def check(self, charge_id):
         u = urllib.urlopen(self.URL_CHECK % (self.key, charge_id))
-        return simplejson.loads(u.read())
+        return json.loads(u.read())
 
     def refund(self, charge_id):
         params = urllib.urlencode({})
         u = urllib.urlopen(self.URL_REFUND % (self.key, charge_id),
                            params)
-        return simplejson.loads(u.read())
+        return json.loads(u.read())
 
 class StripeForm(object):
     def __init__(self,

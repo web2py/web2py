@@ -14,6 +14,7 @@ import time
 import socket
 import datetime
 import logging
+from json import loads, dumps
 from gluon.utils import web2py_uuid
 from gluon.storage import Storage
 from gluon.scheduler import *
@@ -51,17 +52,6 @@ path = os.getcwd()
 
 if 'WEB2PY_PATH' not in os.environ:
     os.environ['WEB2PY_PATH'] = path
-
-try:
-    # try external module
-    from simplejson import loads, dumps
-except ImportError:
-    try:
-        # try stdlib (Python >= 2.6)
-        from json import loads, dumps
-    except:
-        # fallback to pure-Python module
-        from gluon.contrib.simplejson import loads, dumps
 
 IDENTIFIER = "%s#%s" % (socket.gethostname(), os.getpid())
 

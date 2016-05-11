@@ -9,21 +9,7 @@ from gluon.storage import Storage
 from gluon.html import TAG, XmlComponent, xmlescape
 from gluon.languages import lazyT
 import gluon.contrib.rss2 as rss2
-
-try:
-    # try external module
-    import simplejson as json_parser
-except ImportError:
-    try:
-        # try stdlib (Python >= 2.6)
-        import json as json_parser
-    except:
-        # fallback to pure-Python module
-        import gluon.contrib.simplejson as json_parser
-
-# simplejson >= 2.1.3 needs use_decimal = False
-# to stringify decimals
-decimal_false_option = json_parser.__version__.split('.') >= ['2', '1', '3']
+import json as json_parser
 
 have_yaml = True
 try:
@@ -131,11 +117,7 @@ def xml(value, encoding='UTF-8', key='document', quote=True):
 
 
 def json(value, default=custom_json):
-    if decimal_false_option:
-        value = json_parser.dumps(value, default=default, use_decimal=False)
-    else:
-        value = json_parser.dumps(value, default=default)
-
+    value = json_parser.dumps(value, default=default)
     # replace JavaScript incompatible spacing
     # http://timelessrepo.com/json-isnt-a-javascript-subset
     return value.replace(ur'\u2028', '\\u2028').replace(ur'\2029', '\\u2029')

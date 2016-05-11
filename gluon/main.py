@@ -26,14 +26,6 @@ import urllib2
 import string
 
 
-try:
-    import simplejson as sj #external installed library
-except:
-    try:
-        import json as sj #standard installed library
-    except:
-        import gluon.contrib.simplejson as sj #pure python library
-
 from thread import allocate_lock
 
 from gluon.fileutils import abspath, write_file

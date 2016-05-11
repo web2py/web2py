@@ -7,7 +7,6 @@ cache:
     - $HOME/.pip-cache/
 
 python:
-  - '2.6'
   - '2.7'
   - 'pypy'
 
@@ -29,7 +28,6 @@ install:
 
 
 before_script:
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.6' ]]; then pip install --download-cache $HOME/.pip-cache unittest2; fi
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --download-cache $HOME/.pip-cache coverage; fi;
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --download-cache $HOME/.pip-cache codecov; fi
   - mysql -e 'create database pydal;'
