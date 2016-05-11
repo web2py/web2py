@@ -1192,6 +1192,15 @@ class AuthJWT(object):
         def protected():
             return '%s$%s' % (request.now, auth.user_id)
 
+    To inject optional auth info into the action with JWT
+        @myjwt.allows_jwt()
+        def unprotected():
+            if auth.user:
+                return '%s$%s' % (request.now, auth.user_id)
+
+            return "No auth info!"
+    
+
     """
 
     def __init__(self,
@@ -1411,12 +1420,13 @@ class AuthJWT(object):
         self.auth.user_groups = tokend['user_groups']
         self.auth.hmac_key = tokend['hmac_key']
 
-    def allows_jwt(self, otherwise=None):
+    def get_jwt_token_from_request(self):
         """
-        The validator that checks for the header or the
-        _token var
+        The method that extracts and validates the token, either
+        from the header or the _token var
+
         """
-        request = current.request
+        token = None
         token_in_header = request.env.http_authorization
         if token_in_header:
             parts = token_in_header.split()
@@ -1429,11 +1439,31 @@ class AuthJWT(object):
             token = parts[1]
         else:
             token = request.vars._token
-        if token and len(token) < self.max_header_length:
-            tokend = self.load_token(token)
-            self.inject_token(tokend)
-        return self.auth.requires(True, otherwise=otherwise)
 
+        return token
+            
+    def allows_jwt(self, otherwise=None):
+        """
+        The decorator that takes care of injecting auth info in the decorated action.
+        Works w/o resorting to session.
+        """
+        def decorator(action):
+            def f(*args, **kwargs):
+                token = self.get_jwt_token_from_request()
+                if token and len(token) < self.max_header_length:
+                    try:
+                        tokend = self.load_token(token)
+                    except ValueError:
+                        raise HTTP(400, 'Invalid JWT header, wrong token format')
+                    self.inject_token(tokend)
+                return action(*args, **kwargs)
+
+            f.__doc__ = action.__doc__
+            f.__name__ = action.__name__
+            f.__dict__.update(action.__dict__)
+            return f
+
+        return decorator
 
 class Auth(object):
 
