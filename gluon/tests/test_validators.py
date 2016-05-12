@@ -31,17 +31,6 @@ class TestValidators(unittest.TestCase):
         self.assertEqual(utc.dst(dt), UTC.ZERO)
         self.assertEqual(utc.tzname(dt), 'UTC')
 
-    # port from python 2.7, needed for 2.5 and 2.6 tests
-    def assertRegexpMatches(self, text, expected_regexp, msg=None):
-        """Fail the test unless the text matches the regular expression."""
-        if isinstance(expected_regexp, basestring):
-            expected_regexp = re.compile(expected_regexp)
-        if not expected_regexp.search(text):
-            msg = msg or "Regexp didn't match"
-            msg = '%s: %r not found in %r' % (
-                msg, expected_regexp.pattern, text)
-            raise self.failureException(msg)
-
     def test_IS_MATCH(self):
         rtn = IS_MATCH('.+')('hello')
         self.assertEqual(rtn, ('hello', None))
