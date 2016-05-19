@@ -217,15 +217,14 @@ fi
 start uwsgi-emperor
 
 echo <<EOF
-you can stop uwsgi and nginx with
+you can stop nginx and uwsgi with
 
-  sudo /etc/init.d/nginx stop
-  sudo stop uwsgi-emperor
+  sudo systemctl stop nginx
+  sudo systemctl stop emperor.uwsgi
  
-and start it with
+and start (or restart) it with
 
-  sudo /etc/init.d/nginx start
-  sudo start uwsgi-emperor
+  sudo systemctl restart nginx
+  sudo systemctl restart emperor.uwsgi
 
 EOF
-
