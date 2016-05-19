@@ -213,8 +213,8 @@ then
    sudo -u www-data python -c "from gluon.main import save_password; save_password('$PW',443)"
 fi
 
-/etc/init.d/nginx start
-start uwsgi-emperor
+sudo systemctl restart nginx
+sudo systemctl restart emperor.uwsgi
 
 echo <<EOF
 you can stop nginx and uwsgi with
