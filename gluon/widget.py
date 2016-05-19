@@ -41,8 +41,8 @@ ProgramInfo = '''%s
                  %s
                  %s''' % (ProgramName, ProgramAuthor, ProgramVersion)
 
-if not sys.version[:3] in ['2.6', '2.7']:
-    msg = 'Warning: web2py requires Python 2.6 or 2.7 but you are running:\n%s'
+if not sys.version[:3] in ['2.7']:
+    msg = 'Warning: web2py requires Python 2.7 but you are running:\n%s'
     msg = msg % sys.version
     sys.stderr.write(msg)
 
@@ -57,10 +57,7 @@ def run_system_tests(options):
     major_version = sys.version_info[0]
     minor_version = sys.version_info[1]
     if major_version == 2:
-        if minor_version in (6,):
-            sys.stderr.write('Python 2.6\n')
-            ret = subprocess.call(['unit2', '-v', 'gluon.tests'])
-        elif minor_version in (7,):
+        if minor_version in (7,):
             call_args = [sys.executable, '-m', 'unittest', '-v', 'gluon.tests']
             if options.with_coverage:
                 try:
