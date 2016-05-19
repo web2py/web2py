@@ -5,10 +5,7 @@
 """
 import sys
 import os
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
+import unittest
 import subprocess
 import time
 import signal
@@ -48,27 +45,10 @@ def startwebserver():
     print ''
 
 
-def terminate_process(pid):
-    # Taken from http://stackoverflow.com/questions/1064335/in-python-2-5-how-do-i-kill-a-subprocess
-    # all this **blah** is because we are stuck with Python 2.5 and \
-    # we cannot use Popen.terminate()
-    if sys.platform.startswith('win'):
-        import ctypes
-        PROCESS_TERMINATE = 1
-        handle = ctypes.windll.kernel32.OpenProcess(PROCESS_TERMINATE, False, pid)
-        ctypes.windll.kernel32.TerminateProcess(handle, -1)
-        ctypes.windll.kernel32.CloseHandle(handle)
-    else:
-        os.kill(pid, signal.SIGKILL)
-
-
 def stopwebserver():
     global webserverprocess
     print 'Killing webserver'
-    if sys.version_info < (2, 6):
-        terminate_process(webserverprocess.pid)
-    else:
-        webserverprocess.terminate()
+    webserverprocess.terminate()
 
 
 class LiveTest(unittest.TestCase):

@@ -236,6 +236,7 @@ def restricted(code, environment=None, layer='Unknown'):
         # XXX Show exception in Wing IDE if running in debugger
         if __debug__ and 'WINGDB_ACTIVE' in os.environ:
             sys.excepthook(etype, evalue, tb)
+        del tb
         output = "%s %s" % (etype, evalue)
         raise RestrictedError(layer, code, output, environment)
 
@@ -261,6 +262,7 @@ def snapshot(info=None, context=5, code=None, environment=None):
 
     # start to process frames
     records = inspect.getinnerframes(etb, context)
+    del etb # Prevent circular references that would cause memory leaks
     s['frames'] = []
     for frame, file, lnum, func, lines, index in records:
         file = file and os.path.abspath(file) or '?'
@@ -319,10 +321,8 @@ def snapshot(info=None, context=5, code=None, environment=None):
     s['exception'] = {}
     if isinstance(evalue, BaseException):
         for name in dir(evalue):
-            # prevent py26 DeprecatedWarning:
-            if name != 'message' or sys.version_info < (2.6):
-                value = pydoc.text.repr(getattr(evalue, name))
-                s['exception'][name] = value
+            value = pydoc.text.repr(getattr(evalue, name))
+            s['exception'][name] = value
 
     # add all local values (of last frame) to the snapshot
     s['locals'] = {}
