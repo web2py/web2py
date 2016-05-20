@@ -2920,7 +2920,7 @@ class SQLFORM(FORM):
     def smartgrid(table, constraints=None, linked_tables=None,
                   links=None, links_in_grid=True,
                   args=None, user_signature=True,
-                  divider='>', breadcrumbs_class='',
+                  divider=2*unichr(160) + '>' + 2*unichr(160), breadcrumbs_class='',
                   **kwargs):
         """
         Builds a system of SQLFORM.grid(s) between any referenced tables
