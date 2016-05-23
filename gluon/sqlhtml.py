@@ -1711,8 +1711,8 @@ class SQLFORM(FORM):
                 fields[fieldname] = self.vars[fieldname]
 
         if dbio:
-            for fieldname in fields:
-                if fieldname in self.extra_fields:
+            for fieldname in self.extra_fields:
+                if fieldname in fields:
                     del fields[fieldname]
             if 'delete_this_record' in fields:
                 # this should never happen but seems to happen to some
