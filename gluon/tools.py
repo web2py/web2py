@@ -1,3 +1,4 @@
+
 #!/bin/python
 # -*- coding: utf-8 -*-
 
@@ -1427,7 +1428,7 @@ class AuthJWT(object):
 
         """
         token = None
-        token_in_header = request.env.http_authorization
+        token_in_header = current.request.env.http_authorization
         if token_in_header:
             parts = token_in_header.split()
             if parts[0].lower() != self.header_prefix.lower():
@@ -1438,7 +1439,7 @@ class AuthJWT(object):
                 raise HTTP(400, 'Invalid JWT header, token contains spaces')
             token = parts[1]
         else:
-            token = request.vars._token
+            token = current.request.vars._token
 
         return token
             
