@@ -21,6 +21,7 @@ import datetime
 import platform
 import portalocker
 import fileutils
+from functools import reduce
 try:
     import cPickle as pickle
 except:

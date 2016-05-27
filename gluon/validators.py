@@ -24,6 +24,7 @@ import unicodedata
 from cStringIO import StringIO
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from pydal.objects import Field, FieldVirtual, FieldMethod
+from functools import reduce
 
 regex_isint = re.compile('^[+-]?\d+$')
 

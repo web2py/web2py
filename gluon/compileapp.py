@@ -40,6 +40,7 @@ import shutil
 import imp
 import logging
 import types
+from functools import reduce
 logger = logging.getLogger("web2py")
 from gluon import rewrite
 from custom_import import custom_import_install

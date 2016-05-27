@@ -21,6 +21,7 @@ import sanitizer
 import itertools
 import decoder
 import copy_reg
+from functools import reduce
 try:
     import cPickle as pickle
 except:

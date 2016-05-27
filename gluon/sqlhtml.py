@@ -39,6 +39,7 @@ from gluon.validators import IS_STRONG
 
 import gluon.serializers as serializers
 from gluon.globals import current
+from functools import reduce
 
 try:
     import gluon.settings as settings

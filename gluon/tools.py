@@ -11,6 +11,7 @@ Auth, Mail, PluginManager and various utilities
 """
 
 import base64
+from functools import reduce
 try:
     import cPickle as pickle
 except:

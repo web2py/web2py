@@ -1,6 +1,7 @@
 import json
 from collections import OrderedDict
 from gluon import URL, IS_SLUG
+from functools import reduce
 
 # compliant with https://github.com/collection-json/spec
 # also compliant with http://code.ge/media-types/collection-next-json/

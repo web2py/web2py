@@ -29,6 +29,7 @@ from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB
 from gluon import IS_INT_IN_RANGE, IS_DATETIME, IS_IN_DB
 from gluon.utils import web2py_uuid
 from gluon.storage import Storage
+from functools import reduce
 
 USAGE = """
 ## Example
