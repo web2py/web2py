@@ -722,7 +722,7 @@ def TEXT( *params, **kwargs ) :
         return Text( params[ 0 ], text_props )
 
     result = Inline( text_props )
-    apply( result.append, params )
+    result.append(*params)
     return result
 
 def B( *params ) :
@@ -732,7 +732,7 @@ def B( *params ) :
         return Text( params[ 0 ], text_props )
 
     result = Inline( text_props )
-    apply( result.append, params )
+    result.append(*params)
     return result
 
 def I( *params ) :
@@ -742,7 +742,7 @@ def I( *params ) :
         return Text( params[ 0 ], text_props )
 
     result = Inline( text_props )
-    apply( result.append, params )
+    result.append(*params)
     return result
 
 def U( *params ) :
@@ -752,6 +752,6 @@ def U( *params ) :
         return Text( params[ 0 ], text_props )
 
     result = Inline( text_props )
-    apply( result.append, params )
+    result.append(*params)
     return result
 

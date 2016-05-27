@@ -413,7 +413,7 @@ class Qdb(bdb.Bdb):
             except AttributeError:
                 pass
             if f:
-                argspec = apply(inspect.formatargspec, inspect.getargspec(f))
+                argspec = inspect.formatargspec(*inspect.getargspec(f))
             doc = ''
             if callable(obj):
                 try:
