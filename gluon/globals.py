@@ -1137,7 +1137,7 @@ class Session(Storage):
 
     def _unchanged(self, response):
         if response.session_new:
-	    internal = ['_last_timestamp', '_secure', '_start_timestamp']
+            internal = ['_last_timestamp', '_secure', '_start_timestamp']
             for item in self.keys():
                 if item not in internal:
                     return False
