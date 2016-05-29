@@ -415,7 +415,7 @@ class Image( RawCode ) :
             fin = infile
             if 'datatype' not in kwargs.keys():
                 msg = "If passing in a file object, you must also specify type='xxx' where xxx is one of %s" % self.PICT_TYPES.keys()
-                raise ValueError,msg
+                raise ValueError(msg)
             file_name = kwargs.pop('datatype')
         else:
             fin = file( infile, 'rb' )

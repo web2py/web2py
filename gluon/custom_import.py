@@ -86,7 +86,7 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
                         try:
                             result = result or sys.modules[modules_prefix+'.'+itemname]
                         except KeyError as e:
-                            raise ImportError, 'Cannot import module %s' % str(e)
+                            raise ImportError('Cannot import module %s' % str(e))
                         modules_prefix += "." + itemname
                     return result
                 else:

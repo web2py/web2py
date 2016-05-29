@@ -1131,7 +1131,7 @@ class Server(object):
         is passed at initialization time, this must be implemented by
         a subclass.
         """
-        raise NotImplementedError, self.__class__.__name__ + '.handler'
+        raise NotImplementedError(self.__class__.__name__ + '.handler')
 
     def error(self, req):
         """

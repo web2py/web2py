@@ -529,7 +529,7 @@ class Sheet:
         """
 
         if not self.regex.match(key):
-            raise SyntaxError, "Invalid cell name: %s" % key
+            raise SyntaxError("Invalid cell name: %s" % key)
         else:
             attributes = self.get_attributes(kwarg)
             if attributes is not None:
