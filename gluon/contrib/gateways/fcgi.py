@@ -1010,7 +1010,7 @@ class Server(object):
         else:
             # Run as a server
             oldUmask = None
-            if type(self._bindAddress) is str:
+            if isinstance(self._bindAddress, str):
                 # Unix socket
                 sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                 try:
@@ -1021,7 +1021,7 @@ class Server(object):
                     oldUmask = os.umask(self._umask)
             else:
                 # INET socket
-                assert type(self._bindAddress) is tuple
+                assert isinstance(self._bindAddress, tuple)
                 assert len(self._bindAddress) == 2
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -1209,7 +1209,7 @@ class WSGIServer(Server):
         result = None
 
         def write(data):
-            assert type(data) is str, 'write() argument must be string'
+            assert isinstance(data, str), 'write() argument must be string'
             assert headers_set, 'write() before start_response()'
 
             if not headers_sent:
@@ -1246,15 +1246,15 @@ class WSGIServer(Server):
             else:
                 assert not headers_set, 'Headers already set!'
 
-            assert type(status) is str, 'Status must be a string'
+            assert isinstance(status, str), 'Status must be a string'
             assert len(status) >= 4, 'Status must be at least 4 characters'
             assert int(status[:3]), 'Status must begin with 3-digit code'
             assert status[3] == ' ', 'Status must have a space after code'
-            assert type(response_headers) is list, 'Headers must be a list'
+            assert isinstance(response_headers, list), 'Headers must be a list'
             if __debug__:
                 for name,val in response_headers:
-                    assert type(name) is str, 'Header names must be strings'
-                    assert type(val) is str, 'Header values must be strings'
+                    assert isinstance(name, str), 'Header names must be strings'
+                    assert isinstance(val, str), 'Header values must be strings'
 
             headers_set[:] = [status, response_headers]
             return write
@@ -1310,8 +1310,7 @@ if __name__ == '__main__':
               '<body>\n' \
               '<p>Hello World!</p>\n' \
               '<table border="1">'
-        names = environ.keys()
-        names.sort()
+        names = sorted(environ.keys())
         for name in names:
             yield '<tr><td>%s</td><td>%s</td></tr>\n' % (
                 name, cgi.escape(repr(environ[name])))

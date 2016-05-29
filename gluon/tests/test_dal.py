@@ -62,7 +62,7 @@ def _prepare_exec_for_file(filename):
         raise 'The file provided (%s) does is not a valid Python file.'
     filename = os.path.realpath(filename)
     dirpath = filename
-    while 1:
+    while True:
         dirpath, extra = os.path.split(dirpath)
         module.append(extra)
         if not os.path.isfile(os.path.join(dirpath, '__init__.py')):

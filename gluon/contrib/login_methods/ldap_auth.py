@@ -477,7 +477,7 @@ def ldap_auth(server='ldap',
         ldap_groups_of_the_user = get_user_groups_from_ldap(username, password)
 
         # search for allowed group names
-        if type(allowed_groups) != type(list()):
+        if not isinstance(allowed_groups, type(list())):
             allowed_groups = [allowed_groups]
         for group in allowed_groups:
             if ldap_groups_of_the_user.count(group) > 0:
@@ -695,7 +695,7 @@ def ldap_auth(server='ldap',
         ldap_groups_of_the_user = list()
         for group_row in group_search_result:
             group = group_row[1]
-            if type(group) == dict and group_name_attrib in group:
+            if isinstance(group, dict) and group_name_attrib in group:
                 ldap_groups_of_the_user.extend(group[group_name_attrib])
 
         con.unbind()

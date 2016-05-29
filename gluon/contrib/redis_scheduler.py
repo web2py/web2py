@@ -317,7 +317,7 @@ class RScheduler(Scheduler):
         now = self.now()
         status_keyset = self._nkey('worker_statuses')
         with r_server.pipeline() as pipe:
-            while 1:
+            while True:
                 try:
                     # making sure we're the only one doing the job
                     pipe.watch('ASSIGN_TASKS')

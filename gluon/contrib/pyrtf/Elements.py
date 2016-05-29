@@ -384,8 +384,7 @@ def _get_emf_dimensions( fin ):
     header.HeightDevMM = get_LONG()      # Height of reference device in millimeters
 
     if 0:
-        klist = header.__dict__.keys()
-        klist.sort()
+        klist = sorted(header.__dict__.keys())
         for k in klist:
             print "%20s:%s" % (k,header.__dict__[k])
 

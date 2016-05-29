@@ -678,7 +678,7 @@ class AutocompleteWidget(object):
     def callback(self):
         if self.keyword in self.request.vars:
             field = self.fields[0]
-            if type(field) is Field.Virtual:
+            if isinstance(field, Field.Virtual):
                 records = []
                 table_rows = self.db(self.db[field.tablename]).select(orderby=self.orderby)
                 count = 0
@@ -742,7 +742,7 @@ class AutocompleteWidget(object):
                 del attr['requires']
             attr['_name'] = key2
             value = attr['value']
-            if type(self.fields[0]) is Field.Virtual:
+            if isinstance(self.fields[0], Field.Virtual):
                 record = None
                 table_rows = self.db(self.db[self.fields[0].tablename]).select(orderby=self.orderby)
                 for row in table_rows:

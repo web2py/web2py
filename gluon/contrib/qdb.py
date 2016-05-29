@@ -602,7 +602,7 @@ class Frontend(object):
         req = {'method': method, 'args': args, 'id': self.i}
         self.send(req)
         self.i += 1  # increment the id
-        while 1:
+        while True:
             # wait until command acknowledge (response id match the request)
             res = self.recv()
             if 'id' not in res or not res['id']:
@@ -715,7 +715,7 @@ class Cli(Frontend, cmd.Cmd):
     # redefine Frontend methods:
 
     def run(self):
-        while 1:
+        while True:
             try:
                 Frontend.run(self)
             except KeyboardInterrupt:
@@ -850,7 +850,7 @@ def test():
     qdb = Test(front_conn)
     time.sleep(5)
 
-    while 1:
+    while True:
         print "running..."
         Frontend.run(qdb)
         time.sleep(1)

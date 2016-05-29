@@ -17,7 +17,7 @@ from    copy        import  deepcopy
 #   We need some basic Type like fonts, colours and paper definitions
 #
 def MakeAttributeName( value ) :
-    assert value and type( value ) is StringType
+    assert value and isinstance(value, StringType)
     value = value.replace( ' ', '' )
     return value
 
