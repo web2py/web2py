@@ -580,7 +580,7 @@ class Mail(object):
                     payload.attach(p)
                     # it's just a trick to handle the no encryption case
                     payload_in = payload
-                except errors.GPGMEError, ex:
+                except errors.GPGMEError as ex:
                     self.error = "GPG error: %s" % ex.getstring()
                     return False
             ############################################
@@ -621,7 +621,7 @@ class Mail(object):
                     p = MIMEBase.MIMEBase("application", 'octet-stream')
                     p.set_payload(cipher.read())
                     payload.attach(p)
-                except errors.GPGMEError, ex:
+                except errors.GPGMEError as ex:
                     self.error = "GPG error: %s" % ex.getstring()
                     return False
         #######################################################
@@ -648,7 +648,7 @@ class Mail(object):
             # need m2crypto
             try:
                 from M2Crypto import BIO, SMIME, X509
-            except Exception, e:
+            except Exception as e:
                 self.error = "Can't load M2Crypto module"
                 return False
             msg_bio = BIO.MemoryBuffer(payload_in.as_string())
@@ -673,7 +673,7 @@ class Mail(object):
                             else X509.load_cert_string(x509_sign_chainfile)
                         sk.push(chain)
                         s.set_x509_stack(sk)
-                except Exception, e:
+                except Exception as e:
                     self.error = "Something went wrong on certificate / private key loading: <%s>" % str(e)
                     return False
                 try:
@@ -686,7 +686,7 @@ class Mail(object):
                     p7 = s.sign(msg_bio, flags=flags)
                     msg_bio = BIO.MemoryBuffer(payload_in.as_string(
                     ))  # Recreate coz sign() has consumed it.
-                except Exception, e:
+                except Exception as e:
                     self.error = "Something went wrong on signing: <%s> %s" % (
                         str(e), str(flags))
                     return False
@@ -713,7 +713,7 @@ class Mail(object):
                     else:
                         tmp_bio.write(payload_in.as_string())
                     p7 = s.encrypt(tmp_bio)
-                except Exception, e:
+                except Exception as e:
                     self.error = "Something went wrong on encrypting: <%s>" % str(e)
                     return False
 
@@ -805,7 +805,7 @@ class Mail(object):
                 result = server.sendmail(
                     sender, to, payload.as_string())
                 server.quit()
-        except Exception, e:
+        except Exception as e:
             logger.warn('Mail.send failure:%s' % e)
             self.result = result
             self.error = e
@@ -5722,7 +5722,7 @@ class Service(object):
             if hasattr(s, 'as_list'):
                 s = s.as_list()
             return return_response(id, s)
-        except Service.JsonRpcException, e:
+        except Service.JsonRpcException as e:
             return return_error(id, e.code, e.info)
         except:
             etype, eval, etb = sys.exc_info()
@@ -5803,7 +5803,7 @@ class Service(object):
 
         try:
             must_respond = validate(data)
-        except Service.JsonRpcException, e:
+        except Service.JsonRpcException as e:
             return return_error(None, e.code, e.info)
 
         id, method, params = data.get('id'), data['method'], data.get('params', '')
@@ -5820,9 +5820,9 @@ class Service(object):
                 return return_response(id, s)
             else:
                 return ''
-        except HTTP, e:
+        except HTTP as e:
             raise e
-        except Service.JsonRpcException, e:
+        except Service.JsonRpcException as e:
             return return_error(id, e.code, e.info)
         except:
             etype, eval, etb = sys.exc_info()

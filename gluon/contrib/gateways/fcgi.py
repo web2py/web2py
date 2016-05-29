@@ -470,7 +470,7 @@ class Record(object):
         while length:
             try:
                 data = sock.recv(length)
-            except socket.error, e:
+            except socket.error as e:
                 if e[0] == errno.EAGAIN:
                     select.select([sock], [], [])
                     continue
@@ -527,7 +527,7 @@ class Record(object):
         while length:
             try:
                 sent = sock.send(data)
-            except socket.error, e:
+            except socket.error as e:
                 if e[0] == errno.EAGAIN:
                     select.select([], [sock], [])
                     continue
@@ -664,7 +664,7 @@ class Connection(object):
                 self.process_input()
             except EOFError:
                 break
-            except (select.error, socket.error), e:
+            except (select.error, socket.error) as e:
                 if e[0] == errno.EBADF: # Socket was closed by Request.
                     break
                 raise
@@ -990,7 +990,7 @@ class Server(object):
                                  socket.SOCK_STREAM)
             try:
                 sock.getpeername()
-            except socket.error, e:
+            except socket.error as e:
                 if e[0] == errno.ENOTSOCK:
                     # Not a socket, assume CGI context.
                     isFCGI = False
@@ -1077,7 +1077,7 @@ class Server(object):
         while self._keepGoing:
             try:
                 r, w, e = select.select([sock], [], [], timeout)
-            except select.error, e:
+            except select.error as e:
                 if e[0] == errno.EINTR:
                     continue
                 raise
@@ -1085,7 +1085,7 @@ class Server(object):
             if r:
                 try:
                     clientSock, addr = sock.accept()
-                except socket.error, e:
+                except socket.error as e:
                     if e[0] in (errno.EINTR, errno.EAGAIN):
                         continue
                     raise
@@ -1273,7 +1273,7 @@ class WSGIServer(Server):
                 finally:
                     if hasattr(result, 'close'):
                         result.close()
-            except socket.error, e:
+            except socket.error as e:
                 if e[0] != errno.EPIPE:
                     raise # Don't let EPIPE propagate beyond server
         finally:

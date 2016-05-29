@@ -259,7 +259,7 @@ def run(history, statement, env={}):
                 if not name.startswith('__'):
                     try:
                         history.set_global(name, val)
-                    except (TypeError, pickle.PicklingError), ex:
+                    except (TypeError, pickle.PicklingError) as ex:
                         UNPICKLABLE_TYPES.append(type(val))
                         history.add_unpicklable(statement, new_globals.keys())
 

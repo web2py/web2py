@@ -255,7 +255,7 @@ class Sheet:
         try:
             r, c = Sheet.pregex.findall(key)
             r, c = int(r), int(c)
-        except (ValueError, IndexError, TypeError), e:
+        except (ValueError, IndexError, TypeError) as e:
             error = "%s. %s" % \
                 ("Unexpected position parameter",
                  "Must be a key of type 'rncn'")
@@ -742,7 +742,7 @@ class Sheet:
                 exec('__value__=' + node.value[1:], {}, self.environment)
                 node.computed_value = self.environment['__value__']
                 del self.environment['__value__']
-            except Exception, e:
+            except Exception as e:
                 node.computed_value = self.error % dict(error=str(e))
         self.environment[node.name] = node.computed_value
         if node.onchange:

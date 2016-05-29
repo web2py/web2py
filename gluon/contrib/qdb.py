@@ -69,7 +69,7 @@ class Qdb(bdb.Bdb):
             method = getattr(self, request['method'])
             response['result'] = method.__call__(*request['args'],
                                                  **request.get('kwargs', {}))
-        except Exception, e:
+        except Exception as e:
             response['error'] = {'code': 0, 'message': str(e)}
         # send the result for normal method calls, not for notifications
         if request.get('id'):
@@ -259,7 +259,7 @@ class Qdb(bdb.Bdb):
         try:
             self.frame.f_lineno = arg
             return arg
-        except ValueError, e:
+        except ValueError as e:
             print '*** Jump failed:', e
             return False
 
@@ -375,7 +375,7 @@ class Qdb(bdb.Bdb):
         "Return list of auto-completion options for expression"
         try:
             obj = self.do_eval(expression)
-        except Exception, e:
+        except Exception as e:
             return ('', '', str(e))
         else:
             name = ''

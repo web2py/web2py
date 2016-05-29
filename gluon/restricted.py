@@ -230,7 +230,7 @@ def restricted(code, environment=None, layer='Unknown'):
     except RestrictedError:
         # do not encapsulate (obfuscate) the original RestrictedError
         raise
-    except Exception, error:
+    except Exception as error:
         # extract the exception type and value (used as output message)
         etype, evalue, tb = sys.exc_info()
         # XXX Show exception in Wing IDE if running in debugger

@@ -2453,7 +2453,7 @@ class SQLFORM(FORM):
                                 sfields, keywords))
                         rows = dbset.select(left=left, orderby=orderby,
                                             cacheable=True, *selectable_columns)
-                    except Exception, e:
+                    except Exception as e:
                         response.flash = T('Internal Error')
                         rows = []
                 else:
@@ -2651,7 +2651,7 @@ class SQLFORM(FORM):
             rows = None
             next_cursor = None
             error = T("Query Not Supported")
-        except Exception, e:
+        except Exception as e:
             rows = None
             next_cursor = None
             error = T("Query Not Supported: %s") % e

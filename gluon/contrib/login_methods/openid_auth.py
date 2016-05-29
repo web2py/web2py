@@ -44,7 +44,7 @@ try:
     from openid.extensions.sreg import SRegRequest, SRegResponse
     from openid.store import nonce
     from openid.consumer.discover import DiscoveryFailure
-except ImportError, err:
+except ImportError as err:
     raise ImportError("OpenIDAuth requires python-openid package")
 
 DEFAULT = lambda: None

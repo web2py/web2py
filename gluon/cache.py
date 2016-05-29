@@ -265,7 +265,7 @@ class CacheInRam(CacheAbstract):
             if key in self.storage:
                 value = self.storage[key][1] + value
             self.storage[key] = (time.time(), value)
-        except BaseException, e:
+        except BaseException as e:
             self.locker.release()
             raise e
         self.locker.release()
@@ -635,7 +635,7 @@ class Cache(object):
                         # action returns something
                         rtn = cache_model(cache_key, lambda: func(), time_expire=time_expire)
                         http, status = None, current.response.status
-                    except HTTP, e:
+                    except HTTP as e:
                         # action raises HTTP (can still be valid)
                         rtn = cache_model(cache_key, lambda: e.body, time_expire=time_expire)
                         http, status = HTTP(e.status, rtn, **e.headers), e.status
@@ -648,7 +648,7 @@ class Cache(object):
                         # action returns something
                         rtn = func()
                         http, status = None, current.response.status
-                    except HTTP, e:
+                    except HTTP as e:
                         # action raises HTTP (can still be valid)
                         status = e.status
                         http = HTTP(e.status, e.body, **e.headers)

@@ -362,7 +362,7 @@ def get_session(request, other_application='admin'):
         if not os.path.exists(session_filename):
             session_filename = generate(session_filename)
         osession = storage.load_storage(session_filename)
-    except Exception, e:
+    except Exception as e:
         osession = storage.Storage()
     return osession
 

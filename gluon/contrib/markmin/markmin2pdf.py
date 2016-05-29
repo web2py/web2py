@@ -20,7 +20,8 @@ def removeall(path):
     def rmgeneric(path, __func__):
         try:
             __func__(path)
-        except OSError, (errno, strerror):
+        except OSError as xxx_todo_changeme:
+            (errno, strerror) = xxx_todo_changeme.args
             print ERROR_STR % {'path': path, 'error': strerror}
 
     files = [path]

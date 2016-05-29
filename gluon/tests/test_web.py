@@ -121,7 +121,7 @@ class TestWeb(LiveTest):
 
         try:
             ret = client.Division(a=3, b=0)
-        except SoapFault, sf:
+        except SoapFault as sf:
             # verify the exception value is ok
             # assert(sf.faultstring == "float division by zero") # true only in 2.7
             assert(sf.faultcode == "Server.ZeroDivisionError")
@@ -134,7 +134,7 @@ class TestWeb(LiveTest):
         s = WebClient('http://127.0.0.1:8000/')
         try:
             s.post('examples/soap_examples/call/soap', data=xml_request, method="POST")
-        except HTTPError, e:
+        except HTTPError as e:
             assert(e.msg == 'INTERNAL SERVER ERROR')
         # check internal server error returned (issue 153)
         assert(s.status == 500)

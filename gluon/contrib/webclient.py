@@ -126,7 +126,7 @@ class WebClient(object):
             t0 = time.time()
             self.response = opener.open(self.url, data)
             self.time = time.time() - t0
-        except urllib2.HTTPError, error:
+        except urllib2.HTTPError as error:
             # catch HTTP errors
             self.time = time.time() - t0
             self.response = error

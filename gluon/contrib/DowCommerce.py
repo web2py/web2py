@@ -233,7 +233,7 @@ def test():
             print 'Your credit card was declined by your bank'
         elif payment.isError():
             raise DowCommerce.DowCommerceError('An uncaught error occurred')
-    except DowCommerce.DowCommerceError, e:
+    except DowCommerce.DowCommerceError as e:
         print "Exception thrown:", e
         print 'An error occured'
     print 'approved', payment.isApproved()

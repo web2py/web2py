@@ -9,7 +9,7 @@ try:
     import ldap
     import ldap.filter
     ldap.set_option(ldap.OPT_REFERRALS, 0)
-except Exception, e:
+except Exception as e:
     logging.error('missing ldap, try "easy_install python-ldap"')
     raise e
 
@@ -357,7 +357,7 @@ def ldap_auth(server='ldap',
                             con.simple_bind_s(user_dn, password)
                             found = True
                             break
-                    except ldap.LDAPError, detail:
+                    except ldap.LDAPError as detail:
                         (exc_type, exc_value) = sys.exc_info()[:2]
                         logger.warning("ldap_auth: searching %s for %s resulted in %s: %s\n" % (basedn,
                                                                                                 filter,
@@ -392,7 +392,7 @@ def ldap_auth(server='ldap',
                             con.simple_bind_s(user_dn, password)
                             found = True
                             break
-                    except ldap.LDAPError, detail:
+                    except ldap.LDAPError as detail:
                         (exc_type, exc_value) = sys.exc_info()[:2]
                         logger.warning("ldap_auth: searching %s for %s resulted in %s: %s\n" % (basedn,
                                                                                                 filter,
@@ -410,18 +410,18 @@ def ldap_auth(server='ldap',
                         store_user_firstname = result[user_firstname_attrib][0].split(' ', 1)[user_firstname_part]
                     else:
                         store_user_firstname = result[user_firstname_attrib][0]
-                except KeyError, e:
+                except KeyError as e:
                     store_user_firstname = None
                 try:
                     if user_lastname_part is not None:
                         store_user_lastname = result[user_lastname_attrib][0].split(' ', 1)[user_lastname_part]
                     else:
                         store_user_lastname = result[user_lastname_attrib][0]
-                except KeyError, e:
+                except KeyError as e:
                     store_user_lastname = None
                 try:
                     store_user_mail = result[user_mail_attrib][0]
-                except KeyError, e:
+                except KeyError as e:
                     store_user_mail = None
                 update_or_insert_values = {'first_name': store_user_firstname,
                                            'last_name': store_user_lastname,
@@ -451,14 +451,14 @@ def ldap_auth(server='ldap',
                 if not do_manage_groups(username, password, group_mapping):
                     return False
             return True
-        except ldap.INVALID_CREDENTIALS, e:
+        except ldap.INVALID_CREDENTIALS as e:
             return False
-        except ldap.LDAPError, e:
+        except ldap.LDAPError as e:
             import traceback
             logger.warning('[%s] Error in ldap processing' % str(username))
             logger.debug(traceback.format_exc())
             return False
-        except IndexError, ex:  # for AD membership test
+        except IndexError as ex:  # for AD membership test
             import traceback
             logger.warning('[%s] Ldap result indexing error' % str(username))
             logger.debug(traceback.format_exc())
@@ -518,14 +518,14 @@ def ldap_auth(server='ldap',
             except:
                 try:
                     db_user_id = db(db.auth_user.email == username).select(db.auth_user.id).first().id
-                except AttributeError, e:
+                except AttributeError as e:
                     #
                     # There is no user in local db
                     # We create one
                     # ##############################
                     try:
                         db_user_id = db.auth_user.insert(username=username, first_name=username)
-                    except AttributeError, e:
+                    except AttributeError as e:
                         db_user_id = db.auth_user.insert(email=username, first_name=username)
             if not db_user_id:
                 logging.error(

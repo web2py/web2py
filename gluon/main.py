@@ -440,7 +440,7 @@ def wsgibase(environ, responder):
 
                 serve_controller(request, response, session)
 
-            except HTTP, http_response:
+            except HTTP as http_response:
 
                 if static_file:
                     return http_response.to(responder, env=env)
@@ -495,7 +495,7 @@ def wsgibase(environ, responder):
 
                 ticket = None
 
-            except RestrictedError, e:
+            except RestrictedError as e:
 
                 if request.body:
                     request.body.close()

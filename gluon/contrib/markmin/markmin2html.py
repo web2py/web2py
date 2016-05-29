@@ -650,7 +650,7 @@ def replace_components(text, env):
                 pass
             try:
                 f = f(**b) if isinstance(b, dict) else f(b)
-            except Exception, e:
+            except Exception as e:
                 f = 'ERROR: %s' % e
             return str(f)
 

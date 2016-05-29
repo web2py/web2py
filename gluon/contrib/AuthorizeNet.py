@@ -259,7 +259,7 @@ def test():
             print 'Your credit card was declined by your bank'
         elif payment.isError():
             raise AIM.AIMError('An uncaught error occurred')
-    except AIM.AIMError, e:
+    except AIM.AIMError as e:
         print "Exception thrown:", e
         print 'An error occured'
     print 'approved', payment.isApproved()

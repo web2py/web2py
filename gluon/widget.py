@@ -512,7 +512,7 @@ class web2pyDialog(object):
                 interfaces=options.interfaces)
 
             thread.start_new_thread(self.server.start, ())
-        except Exception, e:
+        except Exception as e:
             self.button_start.configure(state='normal')
             return self.error(str(e))
 

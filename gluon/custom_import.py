@@ -85,7 +85,7 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
                             modules_prefix, globals, locals, [itemname], level)
                         try:
                             result = result or sys.modules[modules_prefix+'.'+itemname]
-                        except KeyError, e:
+                        except KeyError as e:
                             raise ImportError, 'Cannot import module %s' % str(e)
                         modules_prefix += "." + itemname
                     return result
@@ -93,13 +93,13 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
                     # import like "from x import a, b, ..."
                     pname = modules_prefix + "." + name
                     return base_importer(pname, globals, locals, fromlist, level)
-        except ImportError, e1:
+        except ImportError as e1:
             import_tb = sys.exc_info()[2]
             try:
                 return NATIVE_IMPORTER(name, globals, locals, fromlist, level)
-            except ImportError, e3:
+            except ImportError as e3:
                 raise ImportError, e1, import_tb  # there an import error in the module
-        except Exception, e2:
+        except Exception as e2:
             raise  # there is an error in the module
         finally:
             if import_tb:
@@ -135,7 +135,7 @@ class TrackImporter(object):
             # Module maybe loaded for the 1st time so we need to set the date
             self._update_dates(name, globals, locals, fromlist, level)
             return result
-        except Exception, e:
+        except Exception as e:
             raise  # Don't hide something that went wrong
 
     def _update_dates(self, name, globals, locals, fromlist, level):

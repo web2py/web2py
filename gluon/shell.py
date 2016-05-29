@@ -161,7 +161,7 @@ def env(
     if import_models:
         try:
             run_models_in(environment)
-        except RestrictedError, e:
+        except RestrictedError as e:
             sys.stderr.write(e.traceback + '\n')
             sys.exit(1)
 
@@ -264,7 +264,7 @@ def run(
 
             if import_models:
                 BaseAdapter.close_all_instances('commit')
-        except Exception, e:
+        except Exception as e:
             print traceback.format_exc()
             if import_models:
                 BaseAdapter.close_all_instances('rollback')
@@ -273,7 +273,7 @@ def run(
             exec(python_code, _env)
             if import_models:
                 BaseAdapter.close_all_instances('commit')
-        except Exception, e:
+        except Exception as e:
             print traceback.format_exc()
             if import_models:
                 BaseAdapter.close_all_instances('rollback')

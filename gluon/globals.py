@@ -375,7 +375,7 @@ class Request(Storage):
                     if is_json and not isinstance(res, str):
                         res = json(res)
                     return res
-                except TypeError, e:
+                except TypeError as e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
                     if len(traceback.extract_tb(exc_traceback)) == 1:
                         raise HTTP(400, "invalid arguments")

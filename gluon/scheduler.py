@@ -313,7 +313,7 @@ def executor(queue, task, out):
                 f.write(result)
             result = 'w2p_special:%s' % temp_path
         queue.put(TaskReport('COMPLETED', result=result))
-    except BaseException, e:
+    except BaseException as e:
         tb = traceback.format_exc()
         queue.put(TaskReport('FAILED', tb=tb))
     del stdout

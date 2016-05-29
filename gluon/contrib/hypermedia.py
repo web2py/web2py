@@ -305,7 +305,7 @@ class Collection(object):
                         response.headers['location'] = \
                             URL(args=(tablename,res.id),scheme=True)
                         return ''
-                except SyntaxError,e: #Exception,e:
+                except SyntaxError as e: #Exception,e:
                     db.rollback()
                     return self.error(400,'BAD REQUEST','Invalid Query:'+e)
 

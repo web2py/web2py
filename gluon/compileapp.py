@@ -475,7 +475,7 @@ def compile_views(folder, skip_failed_views=False):
     for fname in listdir(path, '^[\w/\-]+(\.\w+)*$'):
         try:
             data = parse_template(fname, path)
-        except Exception, e:
+        except Exception as e:
             if skip_failed_views:
                 failed_views.append(fname)
             else:

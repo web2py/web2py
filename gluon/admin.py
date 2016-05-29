@@ -58,7 +58,7 @@ def app_pack(app, request, raise_ex=False, filenames=None):
         filename = apath('../deposit/web2py.app.%s.w2p' % app, request)
         w2p_pack(filename, apath(app, request), filenames=filenames)
         return filename
-    except Exception, e:
+    except Exception as e:
         import traceback
         print traceback.format_exc()
         if raise_ex:
@@ -82,7 +82,7 @@ def app_pack_compiled(app, request, raise_ex=False):
         filename = apath('../deposit/%s.w2p' % app, request)
         w2p_pack(filename, apath(app, request), compiled=True)
         return filename
-    except Exception, e:
+    except Exception as e:
         if raise_ex:
             raise
         return None
@@ -423,12 +423,12 @@ def upgrade(request, url='http://web2py.com'):
     filename = abspath('web2py_%s_downloaded.zip' % version_type)
     try:
         write_file(filename, urllib.urlopen(full_url).read(), 'wb')
-    except Exception, e:
+    except Exception as e:
         return False, e
     try:
         unzip(filename, destination, subfolder)
         return True, None
-    except Exception, e:
+    except Exception as e:
         return False, e
 
 
