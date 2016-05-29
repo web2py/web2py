@@ -41,8 +41,7 @@ regex_crlf = re.compile('\r|\n')
 join = ''.join
 
 # name2codepoint is incomplete respect to xhtml (and xml): 'apos' is missing.
-entitydefs = dict(map(lambda (
-    k, v): (k, unichr(v).encode('utf-8')), name2codepoint.iteritems()))
+entitydefs = dict(map(lambda k_v: (k_v[0], unichr(k_v[1]).encode('utf-8')), name2codepoint.iteritems()))
 entitydefs.setdefault('apos', u"'".encode('utf-8'))
 
 
