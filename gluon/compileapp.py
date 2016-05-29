@@ -214,7 +214,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
             request.env.path_info
         other_request.cid = target
         other_request.env.http_web2py_component_element = target
-        other_request.restful = types.MethodType(request.restful.im_func, other_request) # A bit nasty but needed to use LOAD on action decorates with @request.restful()
+        other_request.restful = types.MethodType(request.restful.__func__, other_request) # A bit nasty but needed to use LOAD on action decorates with @request.restful()
         other_response.view = '%s/%s.%s' % (c, f, other_request.extension)
 
         other_environment = copy.copy(current.globalenv)  # NASTY

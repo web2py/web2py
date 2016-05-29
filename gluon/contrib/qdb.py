@@ -391,16 +391,16 @@ class Qdb(bdb.Bdb):
                     pass
                 elif inspect.ismethod(obj):
                     # Get the function from the object
-                    f = obj.im_func
+                    f = obj.__func__
                     drop_self = 1
                 elif inspect.isclass(obj):
                     # Get the __init__ method function for the class.
                     if hasattr(obj, '__init__'):
-                        f = obj.__init__.im_func
+                        f = obj.__init__.__func__
                     else:
                         for base in object.__bases__:
                             if hasattr(base, '__init__'):
-                                f = base.__init__.im_func
+                                f = base.__init__.__func__
                                 break
                     if f is not None:
                         drop_self = 1
@@ -408,7 +408,7 @@ class Qdb(bdb.Bdb):
                     # use the obj as a function by default
                     f = obj
                     # Get the __call__ method instead.
-                    f = obj.__call__.im_func
+                    f = obj.__call__.__func__
                     drop_self = 0
             except AttributeError:
                 pass
