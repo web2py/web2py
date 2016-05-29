@@ -60,7 +60,7 @@ def represent(field, value, record):
     if not callable(f):
         return str(value)
     if hasattr(f,'func_code'):
-        n = f.func_code.co_argcount - len(f.func_defaults or [])
+        n = f.__code__.co_argcount - len(f.__defaults__ or [])
         if getattr(f, 'im_self', None):
             n -= 1
     else:

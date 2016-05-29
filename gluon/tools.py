@@ -5297,10 +5297,10 @@ def reverse_geocode(lat, lng, lang=None):
 
 
 def universal_caller(f, *a, **b):
-    c = f.func_code.co_argcount
-    n = f.func_code.co_varnames[:c]
+    c = f.__code__.co_argcount
+    n = f.__code__.co_varnames[:c]
 
-    defaults = f.func_defaults or []
+    defaults = f.__defaults__ or []
     pos_args = n[0:-len(defaults)]
     named_args = n[-len(defaults):]
 
