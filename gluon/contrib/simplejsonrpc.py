@@ -105,7 +105,7 @@ class ServerProxy(object):
         "JSON RPC communication (method invocation)"
 
         # build data sent to the service
-        request_id = random.randint(0, sys.maxint)
+        request_id = random.randint(0, sys.maxsize)
         data = {'id': request_id, 'method': method, 'params': args, }
         if self.version:
             data['jsonrpc'] = self.version #mandatory key/value for jsonrpc2 validation else err -32600
