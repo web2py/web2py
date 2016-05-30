@@ -9,6 +9,7 @@
 Template helpers
 --------------------------------------------
 """
+from __future__ import print_function
 
 import cgi
 import os
@@ -743,7 +744,7 @@ class DIV(XmlComponent):
 
         >>> a=DIV()
         >>> a.append(SPAN('x'))
-        >>> print a
+        >>> print(a)
         <div><span>x</span></div>
         """
         self._setnode(value)
@@ -759,7 +760,7 @@ class DIV(XmlComponent):
 
         >>> a=DIV()
         >>> a.insert(0, SPAN('x'))
-        >>> print a
+        >>> print(a)
         <div><span>x</span></div>
         """
         self._setnode(value)
@@ -1025,10 +1026,10 @@ class DIV(XmlComponent):
 
         >>> a = DIV(DIV(SPAN('x'),3,DIV(SPAN('y'))))
         >>> for c in a.elements('span', first_only=True): c[0]='z'
-        >>> print a
+        >>> print(a)
         <div><div><span>z</span>3<div><span>y</span></div></div></div>
         >>> for c in a.elements('span'): c[0]='z'
-        >>> print a
+        >>> print(a)
         <div><div><span>z</span>3<div><span>z</span></div></div></div>
 
         It also supports a syntax compatible with jQuery
@@ -1036,10 +1037,10 @@ class DIV(XmlComponent):
         Examples:
 
         >>> a=TAG('<div><span><a id="1-1" u:v=$>hello</a></span><p class="this is a test">world</p></div>')
-        >>> for e in a.elements('div a#1-1, p.is'): print e.flatten()
+        >>> for e in a.elements('div a#1-1, p.is'): print(e.flatten())
         hello
         world
-        >>> for e in a.elements('#1-1'): print e.flatten()
+        >>> for e in a.elements('#1-1'): print(e.flatten())
         hello
         >>> a.elements('a[u:v=$]')[0].xml()
         '<a id="1-1" u:v="$">hello</a>'
@@ -1056,7 +1057,7 @@ class DIV(XmlComponent):
 
         >>> a = DIV(DIV(SPAN('x', _class='abc'), DIV(SPAN('y', _class='abc'), SPAN('z', _class='abc'))))
         >>> b = a.elements('span.abc', replace=P('x', _class='xyz'))
-        >>> print a  # We should .xml() here instead of print
+        >>> print(a)  # We should .xml() here instead of print
         <div><div><p class="xyz">x</p><div><p class="xyz">x</p><p class="xyz">x</p></div></div></div>
 
         "replace" can be a callable, which will be passed the original element and
@@ -1066,7 +1067,7 @@ class DIV(XmlComponent):
 
         >>> a = DIV(DIV(SPAN('x', _class='abc'), DIV(SPAN('y', _class='abc'), SPAN('z', _class='abc'))))
         >>> b = a.elements('span.abc', replace=lambda el: P(el[0], _class='xyz'))
-        >>> print a
+        >>> print(a)
         <div><div><p class="xyz">x</p><div><p class="xyz">y</p><p class="xyz">z</p></div></div></div>
 
         If replace=None, matching elements will be removed completely.
@@ -1075,7 +1076,7 @@ class DIV(XmlComponent):
 
         >>> a = DIV(DIV(SPAN('x', _class='abc'), DIV(SPAN('y', _class='abc'), SPAN('z', _class='abc'))))
         >>> b = a.elements('span', find='y', replace=None)
-        >>> print a
+        >>> print(a)
         <div><div><span class="abc">x</span><div><span class="abc">z</span></div></div></div>
 
         If a "find_text" argument is specified, elements will be searched for text
@@ -1087,7 +1088,7 @@ class DIV(XmlComponent):
 
         >>> a = DIV(DIV(SPAN('x', _class='abc'), DIV(SPAN('y', _class='abc'), SPAN('z', _class='abc'))))
         >>> b = a.elements(find_text=re.compile('x|y|z'), replace='hello')
-        >>> print a
+        >>> print(a)
         <div><div><span class="abc">hello</span><div><span class="abc">hello</span><span class="abc">hello</span></div></div></div>
 
         If other attributes are specified along with find_text, then only components
@@ -1097,7 +1098,7 @@ class DIV(XmlComponent):
 
         >>> a = DIV(DIV(SPAN('x', _class='abc'), DIV(SPAN('y', _class='efg'), SPAN('z', _class='abc'))))
         >>> b = a.elements('span.efg', find_text=re.compile('x|y|z'), replace='hello')
-        >>> print a
+        >>> print(a)
         <div><div><span class="abc">x</span><div><span class="efg">hello</span><span class="abc">z</span></div></div></div>
         """
         if len(args) == 1:
@@ -1273,7 +1274,7 @@ class __TAG__(XmlComponent):
 
     Examples:
 
-    >>> print TAG.first(TAG.second('test'), _key = 3)
+    >>> print(TAG.first(TAG.second('test'), _key = 3))
     <first key=\"3\"><second>test</second></first>
 
     """
@@ -1633,7 +1634,7 @@ class CODE(DIV):
 
     Examples:
 
-    {{=CODE(\"print 'hello world'\", language='python', link=None,
+    {{=CODE(\"print('hello world')\", language='python', link=None,
         counter=1, styles={}, highlight_line=None)}}
 
 
@@ -1862,7 +1863,7 @@ class INPUT(DIV):
                     (value, errors) = validator(value)
                 except:
                     import traceback
-                    print traceback.format_exc()
+                    print(traceback.format_exc())
                     msg = "Validation error, field:%s %s" % (name,validator)
                     raise Exception(msg)
                 if errors is not None:
@@ -2608,34 +2609,34 @@ def test():
     Example:
 
     >>> from validators import *
-    >>> print DIV(A('click me', _href=URL(a='a', c='b', f='c')), BR(), HR(), DIV(SPAN("World"), _class='unknown')).xml()
+    >>> print(DIV(A('click me', _href=URL(a='a', c='b', f='c')), BR(), HR(), DIV(SPAN("World"), _class='unknown')).xml())
     <div><a href="/a/b/c">click me</a><br /><hr /><div class=\"unknown\"><span>World</span></div></div>
-    >>> print DIV(UL("doc","cat","mouse")).xml()
+    >>> print(DIV(UL("doc","cat","mouse")).xml())
     <div><ul><li>doc</li><li>cat</li><li>mouse</li></ul></div>
-    >>> print DIV(UL("doc", LI("cat", _class='feline'), 18)).xml()
+    >>> print(DIV(UL("doc", LI("cat", _class='feline'), 18)).xml())
     <div><ul><li>doc</li><li class=\"feline\">cat</li><li>18</li></ul></div>
-    >>> print TABLE(['a', 'b', 'c'], TR('d', 'e', 'f'), TR(TD(1), TD(2), TD(3))).xml()
+    >>> print(TABLE(['a', 'b', 'c'], TR('d', 'e', 'f'), TR(TD(1), TD(2), TD(3))).xml())
     <table><tr><td>a</td><td>b</td><td>c</td></tr><tr><td>d</td><td>e</td><td>f</td></tr><tr><td>1</td><td>2</td><td>3</td></tr></table>
     >>> form=FORM(INPUT(_type='text', _name='myvar', requires=IS_EXPR('int(value)<10')))
-    >>> print form.xml()
+    >>> print(form.xml())
     <form action=\"#\" enctype=\"multipart/form-data\" method=\"post\"><input name=\"myvar\" type=\"text\" /></form>
-    >>> print form.accepts({'myvar':'34'}, formname=None)
+    >>> print(form.accepts({'myvar':'34'}, formname=None))
     False
-    >>> print form.xml()
+    >>> print(form.xml())
     <form action="#" enctype="multipart/form-data" method="post"><input class="invalidinput" name="myvar" type="text" value="34" /><div class="error_wrapper"><div class="error" id="myvar__error">Invalid expression</div></div></form>
-    >>> print form.accepts({'myvar':'4'}, formname=None, keepvalues=True)
+    >>> print(form.accepts({'myvar':'4'}, formname=None, keepvalues=True))
     True
-    >>> print form.xml()
+    >>> print(form.xml())
     <form action=\"#\" enctype=\"multipart/form-data\" method=\"post\"><input name=\"myvar\" type=\"text\" value=\"4\" /></form>
     >>> form=FORM(SELECT('cat', 'dog', _name='myvar'))
-    >>> print form.accepts({'myvar':'dog'}, formname=None, keepvalues=True)
+    >>> print(form.accepts({'myvar':'dog'}, formname=None, keepvalues=True))
     True
-    >>> print form.xml()
+    >>> print(form.xml())
     <form action=\"#\" enctype=\"multipart/form-data\" method=\"post\"><select name=\"myvar\"><option value=\"cat\">cat</option><option selected=\"selected\" value=\"dog\">dog</option></select></form>
     >>> form=FORM(INPUT(_type='text', _name='myvar', requires=IS_MATCH('^\w+$', 'only alphanumeric!')))
-    >>> print form.accepts({'myvar':'as df'}, formname=None)
+    >>> print(form.accepts({'myvar':'as df'}, formname=None))
     False
-    >>> print form.xml()
+    >>> print(form.xml())
     <form action="#" enctype="multipart/form-data" method="post"><input class="invalidinput" name="myvar" type="text" value="as df" /><div class="error_wrapper"><div class="error" id="myvar__error">only alphanumeric!</div></div></form>
     >>> session={}
     >>> form=FORM(INPUT(value="Hello World", _name="var", requires=IS_MATCH('^\w+$')))
@@ -2645,8 +2646,8 @@ def test():
     True
     >>> isinstance(form.as_json(), basestring) and len(form.as_json(sanitize=False)) > 0
     True
-    >>> if form.accepts({}, session,formname=None): print 'passed'
-    >>> if form.accepts({'var':'test ', '_formkey': session['_formkey[None]']}, session, formname=None): print 'passed'
+    >>> if form.accepts({}, session,formname=None): print('passed')
+    >>> if form.accepts({'var':'test ', '_formkey': session['_formkey[None]']}, session, formname=None): print('passed')
     """
     pass
 

@@ -41,6 +41,7 @@ wordpress.com
 revision3.com
 viddler.com
 """
+from __future__ import print_function
 
 import re
 import cgi
@@ -215,6 +216,6 @@ laoreet tortor.</p>
 
 if __name__ == "__main__":
     if len(sys.argv) > 1:
-        print expand_html(open(sys.argv[1]).read())
+        print(expand_html(open(sys.argv[1]).read()))
     else:
-        print test()
+        print(test())

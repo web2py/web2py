@@ -10,6 +10,7 @@
 Web2py environment in the shell
 --------------------------------
 """
+from __future__ import print_function
 
 import os
 import sys
@@ -265,7 +266,7 @@ def run(
             if import_models:
                 BaseAdapter.close_all_instances('commit')
         except Exception as e:
-            print traceback.format_exc()
+            print(traceback.format_exc())
             if import_models:
                 BaseAdapter.close_all_instances('rollback')
     elif python_code:
@@ -274,7 +275,7 @@ def run(
             if import_models:
                 BaseAdapter.close_all_instances('commit')
         except Exception as e:
-            print traceback.format_exc()
+            print(traceback.format_exc())
             if import_models:
                 BaseAdapter.close_all_instances('rollback')
     else:
@@ -347,7 +348,7 @@ def parse_path_info(path_info, av=False):
 
 
 def die(msg):
-    print >> sys.stderr, msg
+    print(msg, file=sys.stderr)
     sys.exit(1)
 
 

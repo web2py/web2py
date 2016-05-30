@@ -15,6 +15,7 @@ mostly for testing purposes
 
 Some examples at the bottom.
 """
+from __future__ import print_function
 import re
 import time
 import urllib
@@ -160,7 +161,7 @@ class WebClient(object):
                 if match:
                     name = match.group('name')
                     if name in self.sessions and self.sessions[name] != value:
-                        print RuntimeError('Changed session ID %s' % name)
+                        print(RuntimeError('Changed session ID %s' % name))
                     self.sessions[name] = value
 
         # find all forms and formkeys in page
@@ -202,13 +203,13 @@ def test_web2py_registration_and_login():
     assert 'Welcome Homer' in client.text
 
     # print some variables
-    print '\nsessions:\n', client.sessions
-    print '\nheaders:\n', client.headers
-    print '\ncookies:\n', client.cookies
-    print '\nforms:\n', client.forms
-    print
+    print('\nsessions:\n', client.sessions)
+    print('\nheaders:\n', client.headers)
+    print('\ncookies:\n', client.cookies)
+    print('\nforms:\n', client.forms)
+    print()
     for method, url, status, t in client.history:
-        print method, url, status, t
+        print(method, url, status, t)
 
 if __name__ == '__main__':
     test_web2py_registration_and_login()

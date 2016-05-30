@@ -9,6 +9,7 @@
 The gluon wsgi application
 ---------------------------
 """
+from __future__ import print_function
 
 if False: import import_all # DO NOT REMOVE PART OF FREEZE PROCESS
 import gc
@@ -570,9 +571,9 @@ def save_password(password, port):
         chars = string.letters + string.digits
         password = ''.join([random.choice(chars) for _ in range(8)])
         cpassword = CRYPT()(password)[0]
-        print '******************* IMPORTANT!!! ************************'
-        print 'your admin password is "%s"' % password
-        print '*********************************************************'
+        print('******************* IMPORTANT!!! ************************')
+        print('your admin password is "%s"' % password)
+        print('*********************************************************')
     elif password == '<recycle>':
         # reuse the current password if any
         if exists(password_file):

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # created my Massimo Di Pierro
 # license MIT/BSD/GPL
+from __future__ import print_function
 import re
 import cgi
 import sys
@@ -309,4 +310,4 @@ if __name__ == '__main__':
         output = markmin2latex(content,
                                wrapper=wrapper,
                                chapters=options.chapters)
-        print output
+        print(output)

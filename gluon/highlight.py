@@ -6,6 +6,7 @@
 | Copyrighted by Massimo Di Pierro <mdipierro@cs.depaul.edu>
 | License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
+from __future__ import print_function
 
 import re
 import cgi
@@ -341,5 +342,5 @@ if __name__ == '__main__':
     argfp = open(sys.argv[1])
     data = argfp.read()
     argfp.close()
-    print '<html><body>' + highlight(data, sys.argv[2])\
-        + '</body></html>'
+    print('<html><body>' + highlight(data, sys.argv[2])\
+        + '</body></html>')

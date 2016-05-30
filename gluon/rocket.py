@@ -5,6 +5,7 @@
 # Modified by Massimo Di Pierro
 
 # Import System Modules
+from __future__ import print_function
 import sys
 import errno
 import socket
@@ -1681,7 +1682,7 @@ class WSGIWorker(Worker):
                 environ['SSL_CLIENT_RAW_CERT'] = \
                     peercert and ssl.DER_cert_to_PEM_cert(peercert)
             except Exception:
-                print sys.exc_info()[1]
+                print(sys.exc_info()[1])
         else:
             environ['wsgi.url_scheme'] = 'http'
 
@@ -1907,7 +1908,7 @@ def demo():
     (options, args) = parser.parse_args()
     global static_folder
     static_folder = options.static
-    print 'Rocket running on %s:%s' % (options.ip, options.port)
+    print('Rocket running on %s:%s' % (options.ip, options.port))
     r=Rocket((options.ip,int(options.port)),'wsgi', {'wsgi_app':demo_app})
     r.start()
 

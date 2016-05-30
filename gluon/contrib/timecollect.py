@@ -1,3 +1,4 @@
+from __future__ import print_function
 # Only Python 2.6 and up, because of NamedTuple.
 import time
 from collections import namedtuple

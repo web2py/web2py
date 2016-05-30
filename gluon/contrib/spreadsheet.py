@@ -3,6 +3,7 @@
 """
 Developed by Massimo Di Pierro, optional component of web2py, BSDv3 license.
 """
+from __future__ import print_function
 
 import re
 import pickle
@@ -900,4 +901,4 @@ if __name__ == '__main__':
     s.cell('a', value="2")
     s.cell('b', value="=sin(a)")
     s.cell('c', value="=cos(a)**2+b*b")
-    print s['c'].computed_value
+    print(s['c'].computed_value)

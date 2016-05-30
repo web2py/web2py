@@ -15,6 +15,7 @@ routes.py supports two styles of URL rewriting, depending on whether 'routers' i
 Refer to router.example.py and routes.example.py for additional documentation.
 
 """
+from __future__ import print_function
 
 import os
 import re
@@ -117,7 +118,7 @@ def log_rewrite(string):
     elif params.logging == 'off' or not params.logging:
         pass
     elif params.logging == 'print':
-        print string
+        print(string)
     elif params.logging == 'info':
         logger.info(string)
     elif params.logging == 'warning':

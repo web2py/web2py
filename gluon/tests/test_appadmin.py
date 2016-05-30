@@ -4,6 +4,7 @@
 """
     Unit tests for gluon.sqlhtml
 """
+from __future__ import print_function
 import os
 import sys
 import unittest
@@ -87,7 +88,7 @@ class TestAppAdmin(unittest.TestCase):
         try:
             self.run_view()
         except Exception as e:
-            print e.message
+            print(e.message)
             self.fail('Could not make the view')
 
     def test_select(self):
@@ -102,7 +103,7 @@ class TestAppAdmin(unittest.TestCase):
         try:
             self.run_view()
         except Exception as e:
-            print e.message
+            print(e.message)
             self.fail('Could not make the view')
 
     def test_insert(self):
@@ -116,7 +117,7 @@ class TestAppAdmin(unittest.TestCase):
         try:
             self.run_view()
         except Exception as e:
-            print e.message
+            print(e.message)
             self.fail('Could not make the view')
 
     def test_insert_submit(self):
@@ -138,7 +139,7 @@ class TestAppAdmin(unittest.TestCase):
         try:
             self.run_view()
         except Exception as e:
-            print e.message
+            print(e.message)
             self.fail('Could not make the view')
         db = self.env['db']
         lisa_record = db(db.auth_user.username == 'lisasimpson').select().first()

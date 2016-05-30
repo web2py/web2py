@@ -1,3 +1,4 @@
+from __future__ import print_function
 from    types       import  IntType, FloatType, LongType, StringTypes
 from    copy        import  deepcopy
 from    binascii    import  hexlify
@@ -386,7 +387,7 @@ def _get_emf_dimensions( fin ):
     if 0:
         klist = sorted(header.__dict__.keys())
         for k in klist:
-            print "%20s:%s" % (k,header.__dict__[k])
+            print("%20s:%s" % (k,header.__dict__[k]))
 
     dw = header.FrameRight-header.FrameLeft
     dh = header.FrameBottom-header.FrameTop

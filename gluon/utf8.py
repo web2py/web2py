@@ -10,6 +10,7 @@
 Utilities and class for UTF8 strings managing
 ----------------------------------------------
 """
+from __future__ import print_function
 import __builtin__
 __all__ = ['Utf8']
 
@@ -749,8 +750,8 @@ if __name__ == '__main__':
         reload(sys)
         sys.setdefaultencoding("UTF-8")
         import doctest
-        print "DOCTESTS STARTED..."
+        print("DOCTESTS STARTED...")
         doctest.testmod()
-        print "DOCTESTS FINISHED"
+        print("DOCTESTS FINISHED")
 
     doctests()

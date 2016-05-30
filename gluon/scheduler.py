@@ -8,6 +8,7 @@
 Background processes made simple
 ---------------------------------
 """
+from __future__ import print_function
 
 
 import os
@@ -1458,26 +1459,26 @@ def main():
     )
     (options, args) = parser.parse_args()
     if not options.tasks or not options.db_uri:
-        print USAGE
+        print(USAGE)
     if options.tasks:
         path, filename = os.path.split(options.tasks)
         if filename.endswith('.py'):
             filename = filename[:-3]
         sys.path.append(path)
-        print 'importing tasks...'
+        print('importing tasks...')
         tasks = __import__(filename, globals(), locals(), [], -1).tasks
-        print 'tasks found: ' + ', '.join(tasks.keys())
+        print('tasks found: ' + ', '.join(tasks.keys()))
     else:
         tasks = {}
     group_names = [x.strip() for x in options.group_names.split(',')]
 
     logging.getLogger().setLevel(options.logger_level)
 
-    print 'groups for this worker: ' + ', '.join(group_names)
-    print 'connecting to database in folder: ' + options.db_folder or './'
-    print 'using URI: ' + options.db_uri
+    print('groups for this worker: ' + ', '.join(group_names))
+    print('connecting to database in folder: ' + options.db_folder or './')
+    print('using URI: ' + options.db_uri)
     db = DAL(options.db_uri, folder=options.db_folder)
-    print 'instantiating scheduler...'
+    print('instantiating scheduler...')
     scheduler = Scheduler(db=db,
                           worker_name=options.worker_name,
                           tasks=tasks,
@@ -1487,7 +1488,7 @@ def main():
                           max_empty_runs=options.max_empty_runs,
                           utc_time=options.utc_time)
     signal.signal(signal.SIGTERM, lambda signum, stack_frame: sys.exit(1))
-    print 'starting main worker loop...'
+    print('starting main worker loop...')
     scheduler.loop()
 
 if __name__ == '__main__':

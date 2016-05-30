@@ -9,6 +9,7 @@
 The widget is called from web2py
 ----------------------------------
 """
+from __future__ import print_function
 
 import datetime
 import sys
@@ -118,14 +119,14 @@ def get_url(host, path='/', proto='http', port=80):
 
 def start_browser(url, startup=False):
     if startup:
-        print 'please visit:'
-        print '\t', url
-        print 'starting browser...'
+        print('please visit:')
+        print('\t', url)
+        print('starting browser...')
     try:
         import webbrowser
         webbrowser.open(url)
     except:
-        print 'warning: unable to detect your browser'
+        print('warning: unable to detect your browser')
 
 
 class web2pyDialog(object):
@@ -357,16 +358,16 @@ class web2pyDialog(object):
             sys.stderr.write('Sorry, -K only supported for python 2.6-2.7\n')
             return
         code = "from gluon import current;current._scheduler.loop()"
-        print 'starting scheduler from widget for "%s"...' % app
+        print('starting scheduler from widget for "%s"...' % app)
         args = (app, True, True, None, False, code)
         logging.getLogger().setLevel(self.options.debuglevel)
         p = Process(target=run, args=args)
         self.scheduler_processes[app] = p
         self.update_schedulers()
-        print "Currently running %s scheduler processes" % (
-            len(self.scheduler_processes))
+        print("Currently running %s scheduler processes" % (
+            len(self.scheduler_processes)))
         p.start()
-        print "Processes started"
+        print("Processes started")
 
     def try_stop_scheduler(self, app):
         if app in self.scheduler_processes:
@@ -950,12 +951,12 @@ def console():
             content = open(os.path.join('examples', 'app.example.yaml'), 'rb').read()
             open('app.yaml', 'wb').write(content.replace("yourappname", name))
         else:
-            print "app.yaml alreday exists in the web2py folder"
+            print("app.yaml alreday exists in the web2py folder")
         if not os.path.exists('gaehandler.py'):
             content = open(os.path.join('handlers', 'gaehandler.py'), 'rb').read()
             open('gaehandler.py', 'wb').write(content)
         else:
-            print "gaehandler.py alreday exists in the web2py folder"
+            print("gaehandler.py alreday exists in the web2py folder")
         sys.exit(0)
 
     try:
@@ -1042,7 +1043,7 @@ def get_code_for_scheduler(app, options):
         code = code % ("','".join(app[1:]))
     app_ = app[0]
     if not check_existent_app(options, app_):
-        print "Application '%s' doesn't exist, skipping" % app_
+        print("Application '%s' doesn't exist, skipping" % app_)
         return None, None
     return app_, code
 
@@ -1065,7 +1066,7 @@ def start_schedulers(options):
         app_, code = get_code_for_scheduler(apps[0], options)
         if not app_:
             return
-        print 'starting single-scheduler for "%s"...' % app_
+        print('starting single-scheduler for "%s"...' % app_)
         run(app_, True, True, None, False, code)
         return
 
@@ -1077,20 +1078,20 @@ def start_schedulers(options):
         app_, code = get_code_for_scheduler(app, options)
         if not app_:
             continue
-        print 'starting scheduler for "%s"...' % app_
+        print('starting scheduler for "%s"...' % app_)
         args = (app_, True, True, None, False, code)
         p = Process(target=run, args=args)
         processes.append(p)
-        print "Currently running %s scheduler processes" % (len(processes))
+        print("Currently running %s scheduler processes" % (len(processes)))
         p.start()
         ##to avoid bashing the db at the same time
         time.sleep(0.7)
-        print "Processes started"
+        print("Processes started")
     for p in processes:
         try:
             p.join()
         except (KeyboardInterrupt, SystemExit):
-            print "Processes stopped"
+            print("Processes stopped")
         except:
             p.terminate()
             p.join()
@@ -1104,13 +1105,13 @@ def start(cron=True):
     (options, args) = console()
 
     if not options.nobanner:
-        print ProgramName
-        print ProgramAuthor
-        print ProgramVersion
+        print(ProgramName)
+        print(ProgramAuthor)
+        print(ProgramVersion)
 
     from pydal.drivers import DRIVERS
     if not options.nobanner:
-        print 'Database drivers available: %s' % ', '.join(DRIVERS)
+        print('Database drivers available: %s' % ', '.join(DRIVERS))
 
     # ## if -L load options from options.config file
     if options.config:
@@ -1121,7 +1122,7 @@ def start(cron=True):
                 # Jython doesn't like the extra stuff
                 options2 = __import__(options.config)
             except Exception:
-                print 'Cannot import config file [%s]' % options.config
+                print('Cannot import config file [%s]' % options.config)
                 sys.exit(1)
         for key in dir(options2):
             if hasattr(options, key):
@@ -1170,7 +1171,7 @@ def start(cron=True):
     # ## if --softcron use softcron
     # ## use hardcron in all other cases
     if cron and options.runcron and options.softcron:
-        print 'Using softcron (but this is not very efficient)'
+        print('Using softcron (but this is not very efficient)')
         global_settings.web2py_crontype = 'soft'
     elif cron and options.runcron:
         logger.debug('Starting hardcron...')
@@ -1186,7 +1187,7 @@ def start(cron=True):
         options.taskbar = False
 
     if options.taskbar and os.name != 'nt':
-        print 'Error: taskbar not supported on this platform'
+        print('Error: taskbar not supported on this platform')
         sys.exit(1)
 
     root = None
@@ -1234,7 +1235,7 @@ end tell
         options.password = getpass.getpass('choose a password:')
 
     if not options.password and not options.nobanner:
-        print 'no password, no admin interface'
+        print('no password, no admin interface')
 
     # ##-X (if no tk, the widget takes care of it himself)
     if not root and options.scheduler and options.with_scheduler:
@@ -1265,7 +1266,7 @@ end tell
             message += 'use "taskkill /f /pid %i" to shutdown the web2py server\n\n' % os.getpid()
         else:
             message += 'use "kill -SIGTERM %i" to shutdown the web2py server\n\n' % os.getpid()
-        print message
+        print(message)
 
     # enhance linecache.getline (used by debugger) to look at the source file
     # if the line was not found (under py2exe & when file was modified)

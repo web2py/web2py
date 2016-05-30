@@ -1,6 +1,7 @@
 """
 BSD license -  created by Massimo Di Pierro
 """
+from __future__ import print_function
 from reportlab.pdfgen.canvas import Canvas
 from reportlab.platypus import Table
 from reportlab.lib.pagesizes import A4
@@ -158,4 +159,4 @@ if __name__=='__main__':
             ['000001','Chairs',600.0],
             ['','Tax',50.0]],
         }
-    print PDF().draw(invoice,items_page=20)
+    print(PDF().draw(invoice,items_page=20))

@@ -3,6 +3,7 @@
 """
     Unit tests for running web2py
 """
+from __future__ import print_function
 import sys
 import os
 import unittest
@@ -32,22 +33,22 @@ def startwebserver():
             path = os.path.abspath(os.path.join(path, '..'))
     web2py_exec = os.path.join(path, 'web2py.py')
     webserverprocess = subprocess.Popen([sys.executable, web2py_exec, '-a',  'testpass'])
-    print 'Sleeping before web2py starts...'
+    print('Sleeping before web2py starts...')
     for a in range(1, 11):
         time.sleep(1)
-        print a, '...'
+        print(a, '...')
         try:
             c = WebClient('http://127.0.0.1:8000')
             c.get('/')
             break
         except:
             continue
-    print ''
+    print('')
 
 
 def stopwebserver():
     global webserverprocess
-    print 'Killing webserver'
+    print('Killing webserver')
     webserverprocess.terminate()
 
 

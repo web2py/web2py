@@ -9,6 +9,7 @@
 Utility functions for the Admin application
 -------------------------------------------
 """
+from __future__ import print_function
 import os
 import sys
 import traceback
@@ -60,7 +61,7 @@ def app_pack(app, request, raise_ex=False, filenames=None):
         return filename
     except Exception as e:
         import traceback
-        print traceback.format_exc()
+        print(traceback.format_exc())
         if raise_ex:
             raise
         return False
@@ -343,7 +344,7 @@ def check_new_version(myversion, version_url):
         pmyversion = parse_version(myversion)
     except IOError:
         import traceback
-        print traceback.format_exc()
+        print(traceback.format_exc())
         return -1, myversion
 
     if pversion[:3]+pversion[-6:] > pmyversion[:3]+pmyversion[-6:]:
