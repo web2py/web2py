@@ -18,19 +18,10 @@ import copy
 import types
 import urllib
 import base64
-import sanitizer
+from gluon import sanitizer, decoder
 import itertools
-import decoder
-import copy_reg
-from functools import reduce
-try:
-    import cPickle as pickle
-except:
-    import pickle
+from gluon._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT
 import marshal
-
-from HTMLParser import HTMLParser
-from htmlentitydefs import name2codepoint
 
 from gluon.storage import Storage
 from gluon.utils import web2py_uuid, simple_hash, compare
@@ -42,7 +33,7 @@ regex_crlf = re.compile('\r|\n')
 join = ''.join
 
 # name2codepoint is incomplete respect to xhtml (and xml): 'apos' is missing.
-entitydefs = dict(map(lambda k_v: (k_v[0], unichr(k_v[1]).encode('utf-8')), name2codepoint.iteritems()))
+entitydefs = dict(map(lambda k_v: (k_v[0], unichr(k_v[1]).encode('utf-8')), iteritems(name2codepoint)))
 entitydefs.setdefault('apos', u"'".encode('utf-8'))
 
 
@@ -132,9 +123,9 @@ def xmlescape(data, quote=True):
         return data.xml()
 
     # otherwise, make it a string
-    if not isinstance(data, (str, unicode)):
+    if not isinstance(data, (str, unicodeT)):
         data = str(data)
-    elif isinstance(data, unicode):
+    elif isinstance(data, unicodeT):
         data = data.encode('utf8', 'xmlcharrefreplace')
 
     # ... and do the escaping
@@ -608,7 +599,7 @@ class XML(XmlComponent):
 
         if sanitize:
             text = sanitizer.sanitize(text, permitted_tags, allowed_attributes)
-        if isinstance(text, unicode):
+        if isinstance(text, unicodeT):
             text = text.encode('utf8', 'xmlcharrefreplace')
         elif not isinstance(text, str):
             text = str(text)
@@ -675,7 +666,7 @@ def XML_unpickle(data):
 
 def XML_pickle(data):
     return XML_unpickle, (marshal.dumps(str(data)),)
-copy_reg.pickle(XML, XML_pickle, XML_unpickle)
+copyreg.pickle(XML, XML_pickle, XML_unpickle)
 
 
 class DIV(XmlComponent):
@@ -799,7 +790,7 @@ class DIV(XmlComponent):
             value: the new value
         """
         self._setnode(value)
-        if isinstance(i, (str, unicode)):
+        if isinstance(i, (str, unicodeT)):
             self.attributes[i] = value
         else:
             self.components[i] = value
@@ -1264,7 +1255,7 @@ class __tag_div__(DIV):
         DIV.__init__(self, *a, **b)
         self.tag = name
 
-copy_reg.pickle(__tag_div__, TAG_pickler, TAG_unpickler)
+copyreg.pickle(__tag_div__, TAG_pickler, TAG_unpickler)
 
 
 class __TAG__(XmlComponent):
@@ -1285,7 +1276,7 @@ class __TAG__(XmlComponent):
     def __getattr__(self, name):
         if name[-1:] == '_':
             name = name[:-1] + '/'
-        if isinstance(name, unicode):
+        if isinstance(name, unicodeT):
             name = name.encode('utf-8')
         return lambda *a, **b: __tag_div__(name, *a, **b)
 
@@ -2442,7 +2433,7 @@ class BEAUTIFY(DIV):
                 try:
                     keys = (sorter and sorter(c)) or c
                     for key in keys:
-                        if isinstance(key, (str, unicode)) and keyfilter:
+                        if isinstance(key, (str, unicodeT)) and keyfilter:
                             filtered_key = keyfilter(key)
                         else:
                             filtered_key = str(key)
@@ -2462,7 +2453,7 @@ class BEAUTIFY(DIV):
                     pass
             if isinstance(c, str):
                 components.append(str(c))
-            elif isinstance(c, unicode):
+            elif isinstance(c, unicodeT):
                 components.append(c.encode('utf8'))
             elif isinstance(c, (list, tuple)):
                 items = [TR(TD(BEAUTIFY(item, **attributes)))
@@ -2691,7 +2682,7 @@ class web2pyHTMLParser(HTMLParser):
             self.last = tag.tag[:-1]
 
     def handle_data(self, data):
-        if not isinstance(data, unicode):
+        if not isinstance(data, unicodeT):
             try:
                 data = data.decode('utf8')
             except:

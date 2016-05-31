@@ -13,7 +13,7 @@ from __future__ import print_function
 
 if False: import import_all # DO NOT REMOVE PART OF FREEZE PROCESS
 import gc
-import Cookie
+
 import os
 import re
 import copy
@@ -23,11 +23,10 @@ import datetime
 import signal
 import socket
 import random
-import urllib2
 import string
 
-
-from thread import allocate_lock
+from gluon._compat import Cookie, urllib2
+#from thread import allocate_lock
 
 from gluon.fileutils import abspath, write_file
 from gluon.settings import global_settings
@@ -710,9 +709,9 @@ class HttpServer(object):
             # if interfaces is specified, it must be tested for rocket parameter correctness
             # not necessarily completely tested (e.g. content of tuples or ip-format)
             import types
-            if isinstance(interfaces, types.ListType):
+            if isinstance(interfaces, list):
                 for i in interfaces:
-                    if not isinstance(i, types.TupleType):
+                    if not isinstance(i, tuple):
                         raise "Wrong format for rocket interfaces parameter - see http://packages.python.org/rocket/"
             else:
                 raise "Wrong format for rocket interfaces parameter - see http://packages.python.org/rocket/"

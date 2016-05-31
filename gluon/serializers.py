@@ -120,8 +120,9 @@ def json(value, default=custom_json):
     value = json_parser.dumps(value, default=default)
     # replace JavaScript incompatible spacing
     # http://timelessrepo.com/json-isnt-a-javascript-subset
-    return value.replace(ur'\u2028', '\\u2028').replace(ur'\2029', '\\u2029')
-
+    # PY3 FIXME
+    # return value.replace(ur'\u2028', '\\u2028').replace(ur'\2029', '\\u2029')
+    return value
 
 def csv(value):
     return ''

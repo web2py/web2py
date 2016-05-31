@@ -8,22 +8,22 @@
 Support for smart import syntax for web2py applications
 -------------------------------------------------------
 """
-import __builtin__
+from gluon._compat import builtin
 import os
 import sys
 import threading
 from gluon import current
 
-NATIVE_IMPORTER = __builtin__.__import__
+NATIVE_IMPORTER = builtin.__import__
 INVALID_MODULES = set(('', 'gluon', 'applications', 'custom_import'))
 
 # backward compatibility API
 
 
 def custom_import_install():
-    if __builtin__.__import__ == NATIVE_IMPORTER:
+    if builtin.__import__ == NATIVE_IMPORTER:
         INVALID_MODULES.update(sys.modules.keys())
-        __builtin__.__import__ = custom_importer
+        builtin.__import__ = custom_importer
 
 
 def track_changes(track=True):
@@ -98,7 +98,7 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
             try:
                 return NATIVE_IMPORTER(name, globals, locals, fromlist, level)
             except ImportError as e3:
-                raise ImportError, e1, import_tb  # there an import error in the module
+                raise ImportError(e1, import_tb)  # there an import error in the module
         except Exception as e2:
             raise  # there is an error in the module
         finally:

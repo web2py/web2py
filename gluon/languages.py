@@ -18,20 +18,17 @@ import pkgutil
 import logging
 from cgi import escape
 from threading import RLock
-
-try:
-    import copyreg as copy_reg # python 3
-except ImportError:
-    import copy_reg # python 2
+from gluon._compat import copyreg, PY2, maketrans
 
 from gluon.portalocker import read_locked, LockedFile
-from utf8 import Utf8
+from gluon.utf8 import Utf8
 
 from gluon.fileutils import listdir
 from gluon.cfs import getcfs
 from gluon.html import XML, xmlescape
-from gluon.contrib.markmin.markmin2html import render, markmin_escape
-from string import maketrans
+if PY2:
+    # FIXME PY3
+    from gluon.contrib.markmin.markmin2html import render, markmin_escape
 
 __all__ = ['translator', 'findT', 'update_all_languages']
 
@@ -53,7 +50,10 @@ DEFAULT_GET_PLURAL_ID = lambda n: 0
 # word is unchangeable
 DEFAULT_CONSTRUCT_PLURAL_FORM = lambda word, plural_id: word
 
-NUMBERS = (int, long, float)
+if PY2:
+    NUMBERS = (int, long, float)
+else:
+    NUMBERS = (int, float)
 
 # pattern to find T(blah blah blah) expressions
 PY_STRING_LITERAL_RE = r'(?<=[^\w]T\()(?P<name>'\
@@ -446,7 +446,7 @@ class lazyT(object):
 def pickle_lazyT(c):
     return str, (c.xml(),)
 
-copy_reg.pickle(lazyT, pickle_lazyT)
+copyreg.pickle(lazyT, pickle_lazyT)
 
 
 class translator(object):

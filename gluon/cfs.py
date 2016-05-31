@@ -14,7 +14,7 @@ Note:
 """
 
 from os import stat
-import thread
+from ._compat import thread
 from gluon.fileutils import read_file
 
 cfs = {}  # for speed-up

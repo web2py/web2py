@@ -86,7 +86,7 @@ def exec_environment(
     if pyfile:
         pycfile = pyfile + 'c'
         if os.path.isfile(pycfile):
-            exec read_pyc(pycfile) in env
+            exec (read_pyc(pycfile)) in env
         else:
             execfile(pyfile, env)
     return Storage(env)
@@ -243,7 +243,7 @@ def run(
                                  "controllers_%s_%s.pyc" % (c, f))
         if ((cronjob and os.path.isfile(pycfile))
             or not os.path.isfile(pyfile)):
-            exec read_pyc(pycfile) in _env
+            exec (read_pyc(pycfile)) in _env
         elif os.path.isfile(pyfile):
             execfile(pyfile, _env)
         else:
@@ -259,7 +259,7 @@ def run(
             ccode = None
             if startfile.endswith('.pyc'):
                 ccode = read_pyc(startfile)
-                exec ccode in _env
+                exec (ccode) in _env
             else:
                 execfile(startfile, _env)
 
@@ -397,8 +397,7 @@ def test(testpath, import_models=True, verbose=False):
         def doctest_object(name, obj):
             """doctest obj and enclosed methods and classes."""
 
-            if type(obj) in (types.FunctionType, types.TypeType,
-                             types.ClassType, types.MethodType,
+            if type(obj) in (types.FunctionType, type, types.MethodType,
                              types.UnboundMethodType):
 
                 # Reload environment before each test.
@@ -409,7 +408,7 @@ def test(testpath, import_models=True, verbose=False):
                     obj, globs=globs,
                     name='%s: %s' % (os.path.basename(testfile),
                                      name), verbose=verbose)
-                if type(obj) in (types.TypeType, types.ClassType):
+                if type(obj) in (type):
                     for attr_name in dir(obj):
 
                         # Execute . operator so decorators are executed.

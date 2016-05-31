@@ -13,10 +13,9 @@ Contains the classes for the global used variables:
 - Session
 
 """
-
+from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2
 from gluon.storage import Storage, List
 from gluon.streamer import streamer, stream_file_or_304_or_206, DEFAULT_CHUNK_SIZE
-from gluon.xmlrpc import handler
 from gluon.contenttype import contenttype
 from gluon.html import xmlescape, TABLE, TR, PRE, URL
 from gluon.http import HTTP, redirect
@@ -29,24 +28,16 @@ from gluon import recfile
 from gluon.cache import CacheInRam
 from gluon.fileutils import copystream
 import hashlib
-import portalocker
-try:
-    import cPickle as pickle
-except:
-    import pickle
+from gluon import portalocker
 from pickle import Pickler, MARK, DICT, EMPTY_DICT
-from types import DictionaryType
-import cStringIO
+#from types import DictionaryType
 import datetime
 import re
-import copy_reg
-import Cookie
 import os
 import sys
 import traceback
 import threading
 import cgi
-import urlparse
 import copy
 import tempfile
 import json
@@ -96,12 +87,14 @@ class SortingPickler(Pickler):
         self.memoize(obj)
         self._batch_setitems([(key, obj[key]) for key in sorted(obj)])
 
-SortingPickler.dispatch = copy.copy(Pickler.dispatch)
-SortingPickler.dispatch[DictionaryType] = SortingPickler.save_dict
+if PY2:
+#FIXME PY3
+    SortingPickler.dispatch = copy.copy(Pickler.dispatch)
+    SortingPickler.dispatch[dict] = SortingPickler.save_dict
 
 
 def sorting_dumps(obj, protocol=None):
-    file = cStringIO.StringIO()
+    file = StringIO()
     SortingPickler(file, protocol).dump(obj)
     return file.getvalue()
 # END #####################################################################
@@ -115,7 +108,7 @@ def copystream_progress(request, chunk_size=10 ** 5):
     """
     env = request.env
     if not env.get('CONTENT_LENGTH', None):
-        return cStringIO.StringIO()
+        return StringIO()
     source = env['wsgi.input']
     try:
         size = int(env['CONTENT_LENGTH'])
@@ -399,7 +392,7 @@ class Response(Storage):
         self.status = 200
         self.headers = dict()
         self.headers['X-Powered-By'] = 'web2py'
-        self.body = cStringIO.StringIO()
+        self.body = StringIO()
         self.session_id = None
         self.cookies = Cookie.SimpleCookie()
         self.postprocessing = []
@@ -441,9 +434,9 @@ class Response(Storage):
         self._vars.update(b)
         self._view_environment.update(self._vars)
         if view:
-            import cStringIO
+            from .compat import StringIO
             (obody, oview) = (self.body, self.view)
-            (self.body, self.view) = (cStringIO.StringIO(), view)
+            (self.body, self.view) = (StringIO(), view)
             run_view_in(self._view_environment)
             page = self.body.getvalue()
             self.body.close()
@@ -655,6 +648,7 @@ class Response(Storage):
         return json(data, default=default or custom_json)
 
     def xmlrpc(self, request, methods):
+        from gluon.xmlrpc import handler
         """
         assuming::
 
@@ -671,7 +665,7 @@ class Response(Storage):
             import xmlrpclib
             connection = xmlrpclib.ServerProxy(
                 'http://hostname/app/contr/func')
-            print connection.add(3, 4)
+            print(connection.add(3, 4))
 
         """
 
@@ -1234,4 +1228,4 @@ class Session(Storage):
 def pickle_session(s):
     return Session, (dict(s),)
 
-copy_reg.pickle(Session, pickle_session)
+copyreg.pickle(Session, pickle_session)

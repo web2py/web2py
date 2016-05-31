@@ -18,7 +18,7 @@ import fnmatch
 import os
 import copy
 import random
-import __builtin__
+from gluon._compat import builtin
 from gluon.storage import Storage, List
 from gluon.template import parse_template
 from gluon.restricted import restricted, compile2
@@ -43,7 +43,7 @@ import types
 from functools import reduce
 logger = logging.getLogger("web2py")
 from gluon import rewrite
-from custom_import import custom_import_install
+from gluon.custom_import import custom_import_install
 
 try:
     import py_compile
@@ -117,7 +117,7 @@ class mybuiltin(object):
     #__builtins__
     def __getitem__(self, key):
         try:
-            return getattr(__builtin__, key)
+            return getattr(builtin, key)
         except AttributeError:
             raise KeyError(key)
 
@@ -431,7 +431,7 @@ def build_environment(request, response, session, store_current=True):
     elif is_pypy:  # apply the same hack to pypy too
         __builtins__ = mybuiltin()
     else:
-        __builtins__['__import__'] = __builtin__.__import__  # WHY?
+        __builtins__['__import__'] = builtin.__import__  # WHY?
     environment['request'] = request
     environment['response'] = response
     environment['session'] = session

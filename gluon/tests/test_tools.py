@@ -869,7 +869,7 @@ class TestAuth(unittest.TestCase):
         # not deleted
         self.assertFalse(self.auth.del_membership('some_test_group'))
         self.assertEqual(set(self.db.auth_membership(membership_id).as_dict().items()),
-                         set({'group_id': 2L, 'user_id': 1L, 'id': 2L}.items()))  # is not deleted
+                         set({'group_id': 2, 'user_id': 1, 'id': 2}.items()))  # is not deleted
         # deleted
         bart_id = self.db(self.db.auth_user.username == 'bart').select(self.db.auth_user.id).first().id
         self.assertTrue(self.auth.del_membership('some_test_group', user_id=bart_id))

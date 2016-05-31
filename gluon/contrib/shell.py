@@ -52,8 +52,7 @@ _HISTORY_KIND = '_Shell_History'
 # Types that can't be pickled.
 UNPICKLABLE_TYPES = [
     types.ModuleType,
-    types.TypeType,
-    types.ClassType,
+    type,
     types.FunctionType,
 ]
 

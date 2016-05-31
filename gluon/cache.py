@@ -20,7 +20,6 @@ caching will be provided by the GAE memcache
 (see gluon.contrib.gae_memcache)
 """
 import time
-import thread
 import os
 import gc
 import sys
@@ -41,10 +40,7 @@ try:
 except ImportError:
     have_settings = False
 
-try:
-    import cPickle as pickle
-except:
-    import pickle
+from gluon._compat import pickle, thread
 
 try:
     import psutil

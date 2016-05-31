@@ -10,6 +10,13 @@ if PY2:
     import cPickle as pickle
     from cStringIO import StringIO
     import copy_reg as copyreg
+    from HTMLParser import HTMLParser
+    import urlparse
+    from htmlentitydefs import entitydefs, name2codepoint
+    import __builtin__ as builtin
+    import thread
+    import Cookie
+    import urllib2
     reduce = reduce
     hashlib_md5 = hashlib.md5
     iterkeys = lambda d: d.iterkeys()
@@ -20,6 +27,10 @@ if PY2:
     text_type = unicode
     basestring = basestring
     xrange = xrange
+    long = long
+    unichr = unichr
+    unicodeT = unicode
+    from string import maketrans
 
     def implements_iterator(cls):
         cls.next = cls.__next__
@@ -49,6 +60,13 @@ else:
     from io import StringIO
     import copyreg
     from functools import reduce
+    from html.parser import HTMLParser
+    from http import cookies as Cookie
+    from urllib import parse as urlparse
+    from urllib import request as urllib2
+    from html.entities import entitydefs, name2codepoint
+    import builtins as builtin
+    import _thread as thread
     hashlib_md5 = lambda s: hashlib.md5(bytes(s, 'utf8'))
     iterkeys = lambda d: iter(d.keys())
     itervalues = lambda d: iter(d.values())
@@ -58,6 +76,10 @@ else:
     text_type = str
     basestring = str
     xrange = range
+    long = int
+    unichr = chr
+    unicodeT = str
+    maketrans = str.maketrans
 
     implements_iterator = _identity
     implements_bool = _identity

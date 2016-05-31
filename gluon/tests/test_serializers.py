@@ -43,7 +43,7 @@ class TestSerializers(unittest.TestCase):
         json_web2pyfied = [json(obj) for obj in iso_objs]
         self.assertEqual(json_objs, json_web2pyfied)
         # int or long int()ified
-        self.assertEqual(json(1), json(1L))
+        # self.assertEqual(json(1), json(1))
         # decimal stringified
         obj = {'a': decimal.Decimal('4.312312312312')}
         self.assertEqual(json(obj), u'{"a": "4.312312312312"}')

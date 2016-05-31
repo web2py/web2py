@@ -21,7 +21,7 @@ import urllib
 import struct
 import decimal
 import unicodedata
-from cStringIO import StringIO
+from gluon._compat import StringIO, long, unicodeT
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from pydal.objects import Field, FieldVirtual, FieldMethod
 from functools import reduce
@@ -80,7 +80,7 @@ except ImportError:
 def translate(text):
     if text is None:
         return None
-    elif isinstance(text, (str, unicode)) and have_current:
+    elif isinstance(text, (str, unicodeT)) and have_current:
         if hasattr(current, 'T'):
             return str(current.T(text))
     return str(text)
@@ -185,7 +185,7 @@ class IS_MATCH(Validator):
             if not expression.endswith('$'):
                 expression = '(%s)$' % expression
         if is_unicode:
-            if not isinstance(expression, unicode):
+            if not isinstance(expression, unicodeT):
                 expression = expression.decode('utf8')
             self.regex = re.compile(expression, re.UNICODE)
         else:
@@ -196,12 +196,12 @@ class IS_MATCH(Validator):
 
     def __call__(self, value):
         if self.is_unicode:
-            if not isinstance(value, unicode):
+            if not isinstance(value, unicodeT):
                 match = self.regex.search(str(value).decode('utf8'))
             else:
                 match = self.regex.search(value)
         else:
-            if not isinstance(value, unicode):
+            if not isinstance(value, unicodeT):
                 match = self.regex.search(str(value))
             else:
                 match = self.regex.search(value.encode('utf8'))
@@ -267,7 +267,7 @@ class IS_EXPR(Validator):
             return (value, self.expression(value))
         # for backward compatibility
         self.environment.update(value=value)
-        exec '__ret__=' + self.expression in self.environment
+        exec ('__ret__=' + self.expression) in self.environment
         if self.environment['__ret__']:
             return (value, None)
         return (value, translate(self.error_message))
@@ -338,7 +338,7 @@ class IS_LENGTH(Validator):
                 lvalue = len(value)
             if self.minsize <= lvalue <= self.maxsize:
                 return (value, None)
-        elif isinstance(value, unicode):
+        elif isinstance(value, unicodeT):
             if self.minsize <= len(value) <= self.maxsize:
                 return (value.encode('utf8'), None)
         elif isinstance(value, (tuple, list)):
@@ -717,7 +717,7 @@ class IS_NOT_IN_DB(Validator):
         self.record_id = id
 
     def __call__(self, value):
-        if isinstance(value, unicode):
+        if isinstance(value, unicodeT):
             value = value.encode('utf8')
         else:
             value = str(value)
@@ -987,7 +987,7 @@ class IS_DECIMAL_IN_RANGE(Validator):
 
 def is_empty(value, empty_regex=None):
     """test empty field"""
-    if isinstance(value, (str, unicode)):
+    if isinstance(value, (str, unicodeT)):
         value = value.strip()
         if empty_regex is not None and empty_regex.match(value):
             value = ''
@@ -2096,7 +2096,7 @@ class IS_URL(Validator):
         else:
             raise SyntaxError("invalid mode '%s' in IS_URL" % self.mode)
 
-        if not isinstance(value, unicode):
+        if not isinstance(value, unicodeT):
             return subMethod(value)
         else:
             try:
@@ -2896,13 +2896,13 @@ class CRYPT(object):
 
 #  entropy calculator for IS_STRONG
 #
-lowerset = frozenset(unicode('abcdefghijklmnopqrstuvwxyz'))
-upperset = frozenset(unicode('ABCDEFGHIJKLMNOPQRSTUVWXYZ'))
-numberset = frozenset(unicode('0123456789'))
-sym1set = frozenset(unicode('!@#$%^&*()'))
-sym2set = frozenset(unicode('~`-_=+[]{}\\|;:\'",.<>?/'))
+lowerset = frozenset(u'abcdefghijklmnopqrstuvwxyz')
+upperset = frozenset(u'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+numberset = frozenset(u'0123456789')
+sym1set = frozenset(u'!@#$%^&*()')
+sym2set = frozenset(u'~`-_=+[]{}\\|;:\'",.<>?/')
 otherset = frozenset(
-    unicode('0123456789abcdefghijklmnopqrstuvwxyz'))  # anything else
+    u'0123456789abcdefghijklmnopqrstuvwxyz')  # anything else
 
 
 def calc_entropy(string):
@@ -3350,8 +3350,8 @@ class IS_IPV4(Validator):
         '^(([1-9]?\d|1\d\d|2[0-4]\d|25[0-5])\.){3}([1-9]?\d|1\d\d|2[0-4]\d|25[0-5])$')
     numbers = (16777216, 65536, 256, 1)
     localhost = 2130706433
-    private = ((2886729728L, 2886795263L), (3232235520L, 3232301055L))
-    automatic = (2851995648L, 2852061183L)
+    private = ((2886729728, 2886795263), (3232235520, 3232301055))
+    automatic = (2851995648, 2852061183)
 
     def __init__(
         self,

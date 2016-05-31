@@ -17,9 +17,9 @@ Holds:
 import datetime
 import urllib
 import re
-import cStringIO
 
 import os
+from gluon._compat import StringIO, unichr
 from gluon.http import HTTP, redirect
 from gluon.html import XmlComponent, truncate_string
 from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG
@@ -1654,7 +1654,7 @@ class SQLFORM(FORM):
                 elif isinstance(f, (str, unicode)):
                     # do not know why this happens, it should not
                     (source_file, original_filename) = \
-                        (cStringIO.StringIO(f), 'file.txt')
+                        (StringIO(f), 'file.txt')
                 else:
                     # this should never happen, why does it happen?
                     # print 'f=', repr(f)
@@ -3472,8 +3472,8 @@ class ExporterTSV(ExportClass):
         ExportClass.__init__(self, rows)
 
     def export(self):
-        out = cStringIO.StringIO()
-        final = cStringIO.StringIO()
+        out = StringIO()
+        final = StringIO()
         import csv
         writer = csv.writer(out, delimiter='\t')
         if self.rows:
@@ -3511,7 +3511,7 @@ class ExporterCSV(ExportClass):
 
     def export(self):  # export CSV with rows.represent
         if self.rows:
-            s = cStringIO.StringIO()
+            s = StringIO()
             self.rows.export_to_csv_file(s, represent=True)
             return s.getvalue()
         else:
