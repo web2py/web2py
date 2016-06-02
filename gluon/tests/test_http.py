@@ -4,12 +4,12 @@
 """Unit tests for http.py """
 
 import unittest
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 
 fix_sys_path(__file__)
 
 
-from http import HTTP, defined_status
+from gluon.http import HTTP, defined_status
 
 
 class TestHTTP(unittest.TestCase):

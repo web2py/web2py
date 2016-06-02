@@ -5,12 +5,12 @@
 """
 
 import unittest
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 
 fix_sys_path(__file__)
 
-import template
-from template import render
+from gluon import template
+from gluon.template import render
 
 
 class TestTemplate(unittest.TestCase):

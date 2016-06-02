@@ -6,16 +6,17 @@
 """
 
 import unittest
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 
 fix_sys_path(__file__)
 
-from html import *
-from html import verifyURL
-from html import truncate_string
-from storage import Storage
-from html import XML_pickle, XML_unpickle
-from html import TAG_pickler, TAG_unpickler
+from gluon.html import A, ASSIGNJS, B, BEAUTIFY, P, BODY, BR, BUTTON, CAT, CENTER, CODE, COL, COLGROUP, DIV, SPAN, URL, verifyURL
+from gluon.html import truncate_string, EM, FIELDSET, FORM, H1, H2, H3, H4, H5, H6, HEAD, HR, HTML, I, IFRAME, IMG, INPUT, EMBED
+from gluon.html import LABEL, LEGEND, LI, LINK, MARKMIN, MENU, META, OBJECT, OL, OPTGROUP, OPTION, PRE, SCRIPT, SELECT, STRONG
+from gluon.html import STYLE, TABLE, TR, TD, TAG, TBODY, THEAD, TEXTAREA, TFOOT, TH, TITLE, TT, UL, XHTML, XML
+from gluon.storage import Storage
+from gluon.html import XML_pickle, XML_unpickle
+from gluon.html import TAG_pickler, TAG_unpickler
 
 
 class TestBareHelpers(unittest.TestCase):
@@ -41,7 +42,7 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(URL('a', 'static', 'design.css'), '/a/static/design.css')
         response = Storage()
         response.static_version = '1.2.3'
-        from globals import current
+        from gluon.globals import current
         current.response = response
         self.assertEqual(URL('a', 'static', 'design.css'), '/a/static/design.css')
         response.static_version_urls = True
@@ -53,6 +54,8 @@ class TestBareHelpers(unittest.TestCase):
         self.assertEqual(URL('a', 'c', 'f', args=['1', '2']), '/a/c/f/1/2')
         self.assertEqual(URL('a', 'c', '/f'), '/a/c/f')
         self.assertEqual(URL('a', 'c', 'f.json'), '/a/c/f.json')
+        from gluon.globals import current
+        current.request = None
         self.assertRaises(SyntaxError, URL, *['a'])
 
         request = Storage()
@@ -61,7 +64,7 @@ class TestBareHelpers(unittest.TestCase):
         request.function = 'f'
         request.env = {}
 
-        from globals import current  # Can't be moved with other import
+        from gluon.globals import current  # Can't be moved with other import
         current.request = request
 
         must_return = '/a/c/f'
@@ -144,7 +147,7 @@ class TestBareHelpers(unittest.TestCase):
         rtn = verifyURL(r)
         self.assertEqual(rtn, False)
         # emulate user signature
-        from globals import current
+        from gluon.globals import current
         current.session = Storage(auth=Storage(hmac_key='key'))
         r.get_vars['_signature'] = 'a32530f0d0caa80964bb92aad2bedf8a4486a31f'
         rtn = verifyURL(r, user_signature=True)

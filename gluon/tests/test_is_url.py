@@ -5,13 +5,13 @@ Unit tests for IS_URL()
 """
 
 import unittest
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 
 fix_sys_path(__file__)
 
 
-from validators import IS_URL, IS_HTTP_URL, IS_GENERIC_URL
-from validators import unicode_to_ascii_authority
+from gluon.validators import IS_URL, IS_HTTP_URL, IS_GENERIC_URL
+from gluon.validators import unicode_to_ascii_authority
 
 
 class TestIsUrl(unittest.TestCase):
@@ -296,7 +296,7 @@ class TestIsGenericUrl(unittest.TestCase):
 
     def testInvalidUrls(self):
         urlsToCheckA = []
-        for i in range(0, 32) + [127]:
+        for i in list(range(0, 32)) + [127]:
 
             # Control characters are disallowed in any part of a URL
 

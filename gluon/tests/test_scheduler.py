@@ -10,7 +10,7 @@ import glob
 import datetime
 import sys
 
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 
 
 fix_sys_path(__file__)

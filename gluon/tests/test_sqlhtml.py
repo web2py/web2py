@@ -8,7 +8,7 @@ import os
 import sys
 import unittest
 
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 
 fix_sys_path(__file__)
 
@@ -18,12 +18,12 @@ DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 
 from gluon.dal import DAL, Field
 from pydal.objects import Table
-from tools import Auth, Mail
+from gluon.tools import Auth, Mail
 from gluon.globals import Request, Response, Session
-from storage import Storage
-from languages import translator
+from gluon.storage import Storage
+from gluon.languages import translator
 from gluon.http import HTTP
-from validators import *
+from gluon.validators import *
 
 # TODO: Create these test...
 

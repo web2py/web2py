@@ -17,6 +17,13 @@ if PY2:
     import thread
     import Cookie
     import urllib2
+    import Queue
+    import ConfigParser as configparser
+    from email.MIMEBase import MIMEBase
+    from email.Header import Header
+    from email import MIMEMultipart, MIMEText, Encoders, Charset
+    from urllib import FancyURLopener
+    from urllib import quote as urllib_quote, unquote as urllib_unquote
     reduce = reduce
     hashlib_md5 = hashlib.md5
     iterkeys = lambda d: d.iterkeys()
@@ -67,6 +74,16 @@ else:
     from html.entities import entitydefs, name2codepoint
     import builtins as builtin
     import _thread as thread
+    import configparser
+    import queue as Queue
+    from email.mime.base import MIMEBase
+    from email.mime.multipart import MIMEMultipart
+    from email.mime.text import MIMEText
+    from email import encoders as Encoders
+    from email.header import Header
+    from email.charset import Charset
+    from urllib.request import FancyURLopener
+    from urllib.parse import quote as urllib_quote, unquote as urllib_unquote
     hashlib_md5 = lambda s: hashlib.md5(bytes(s, 'utf8'))
     iterkeys = lambda d: iter(d.keys())
     itervalues = lambda d: iter(d.values())

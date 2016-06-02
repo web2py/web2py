@@ -13,7 +13,7 @@ Contains the classes for the global used variables:
 - Session
 
 """
-from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2
+from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems
 from gluon.storage import Storage, List
 from gluon.streamer import streamer, stream_file_or_304_or_206, DEFAULT_CHUNK_SIZE
 from gluon.contenttype import contenttype
@@ -198,7 +198,7 @@ class Request(Storage):
         query_string = self.env.get('query_string', '')
         dget = urlparse.parse_qs(query_string, keep_blank_values=1)  # Ref: https://docs.python.org/2/library/cgi.html#cgi.parse_qs
         get_vars = self._get_vars = Storage(dget)
-        for (key, value) in get_vars.iteritems():
+        for (key, value) in iteritems(get_vars):
             if isinstance(value, list) and len(value) == 1:
                 get_vars[key] = value[0]
 
@@ -272,7 +272,7 @@ class Request(Storage):
         """Merges get_vars and post_vars to vars
         """
         self._vars = copy.copy(self.get_vars)
-        for key, value in self.post_vars.iteritems():
+        for key, value in iteritems(self.post_vars):
             if key not in self._vars:
                 self._vars[key] = value
             else:
@@ -448,7 +448,7 @@ class Response(Storage):
 
     def include_meta(self):
         s = "\n"
-        for meta in (self.meta or {}).iteritems():
+        for meta in iteritems((self.meta or {})):
             k, v = meta
             if isinstance(v, dict):
                 s += '<meta' + ''.join(' %s="%s"' % (xmlescape(key), xmlescape(v[key])) for key in v) +' />\n'
@@ -680,7 +680,7 @@ class Response(Storage):
         dbstats = []
         dbtables = {}
         infos = DAL.get_instances()
-        for k, v in infos.iteritems():
+        for k, v in iteritems(infos):
             dbstats.append(TABLE(*[TR(PRE(row[0]), '%.2fms' % (row[1]*1000))
                                    for row in v['dbstats']]))
             dbtables[k] = dict(defined=v['dbtables']['defined'] or '[no defined tables]',

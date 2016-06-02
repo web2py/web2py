@@ -4,11 +4,11 @@
 """ Unit tests for utils.py """
 
 import unittest
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 
 fix_sys_path(__file__)
 
-from compileapp import compile_application, remove_compiled_application
+from gluon.compileapp import compile_application, remove_compiled_application
 from gluon.fileutils import w2p_pack, w2p_unpack
 import os
 

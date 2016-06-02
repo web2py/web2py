@@ -12,12 +12,9 @@ Auth, Mail, PluginManager and various utilities
 
 import base64
 from functools import reduce
-try:
-    import cPickle as pickle
-except:
-    import pickle
+from gluon._compat import pickle, thread, urllib2, Cookie, StringIO, configparser, MIMEBase, MIMEMultipart, \
+                          MIMEText, Encoders, Charset, long, urllib_quote
 import datetime
-import thread
 import logging
 import sys
 import glob
@@ -28,16 +25,13 @@ import fnmatch
 import traceback
 import smtplib
 import urllib
-import urllib2
-import Cookie
-import cStringIO
-import ConfigParser
 import email.utils
 import random
 import hmac
 import hashlib
 import json
-from email import MIMEBase, MIMEMultipart, MIMEText, Encoders, Header, message_from_string, Charset
+
+from email import message_from_string
 
 from gluon.contenttype import contenttype
 from gluon.storage import Storage, StorageList, Settings, Messages
@@ -184,7 +178,7 @@ class Mail(object):
         in this way the can be referenced from the HTML as <img src="cid:attachment-0" /> etc.
     """
 
-    class Attachment(MIMEBase.MIMEBase):
+    class Attachment(MIMEBase):
         """
         Email attachment
 
@@ -252,7 +246,7 @@ class Mail(object):
                 content_type = contenttype(filename)
             self.my_filename = filename
             self.my_payload = payload
-            MIMEBase.MIMEBase.__init__(self, *content_type.split('/', 1))
+            MIMEBase.__init__(self, *content_type.split('/', 1))
             self.set_payload(payload)
             self['Content-Disposition'] = 'attachment; filename="%s"' % filename
             if content_id is not None:
@@ -415,7 +409,7 @@ class Mail(object):
 
         def encode_header(key):
             if [c for c in key if 32 > ord(c) or ord(c) > 127]:
-                return Header.Header(key.encode('utf-8'), 'utf-8')
+                return Header(key.encode('utf-8'), 'utf-8')
             else:
                 return key
 
@@ -575,7 +569,7 @@ class Mail(object):
                     # insert the origin payload
                     payload.attach(payload_in)
                     # insert the detached signature
-                    p = MIMEBase.MIMEBase("application", 'pgp-signature')
+                    p = MIMEBase("application", 'pgp-signature')
                     p.set_payload(sig.read())
                     payload.attach(p)
                     # it's just a trick to handle the no encryption case
@@ -615,10 +609,10 @@ class Mail(object):
                                                           boundary=None,
                                                           _subparts=None,
                                                           **dict(protocol="application/pgp-encrypted"))
-                    p = MIMEBase.MIMEBase("application", 'pgp-encrypted')
+                    p = MIMEBase("application", 'pgp-encrypted')
                     p.set_payload("Version: 1\r\n")
                     payload.attach(p)
-                    p = MIMEBase.MIMEBase("application", 'octet-stream')
+                    p = MIMEBase("application", 'octet-stream')
                     p.set_payload(cipher.read())
                     payload.attach(p)
                 except errors.GPGMEError as ex:
@@ -1881,7 +1875,7 @@ class Auth(object):
                             'Please ',
                             A('login',
                               _href=self.settings.login_url +
-                                    ('?_next=' + urllib.quote(current.request.env.http_web2py_component_location))
+                                    ('?_next=' + urllib_quote(current.request.env.http_web2py_component_location))
                               if current.request.env.http_web2py_component_location else ''),
                             ' to view this content.',
                             _class='not-authorized alert alert-block'))
@@ -2005,7 +1999,7 @@ class Auth(object):
         if URL() == action:
             next = ''
         else:
-            next = '?_next=' + urllib.quote(URL(args=request.args,
+            next = '?_next=' + urllib_quote(URL(args=request.args,
                                                 vars=request.get_vars))
         href = lambda function: \
             '%s/%s%s' % (action, function, next if referrer_actions is DEFAULT or function in referrer_actions else '')
@@ -2021,7 +2015,7 @@ class Auth(object):
         if self.user_id:  # User is logged in
             logout_next = self.settings.logout_next
             items.append({'name': T('Log Out'),
-                          'href': '%s/logout?_next=%s' % (action, urllib.quote(logout_next)),
+                          'href': '%s/logout?_next=%s' % (action, urllib_quote(logout_next)),
                           'icon': 'icon-off'})
             if 'profile' not in self.settings.actions_disabled:
                 items.append({'name': T('Profile'), 'href': href('profile'),
@@ -2667,7 +2661,8 @@ class Auth(object):
             delattr(user, 'password')
         else:
             user = Row(user)
-            for key, value in user.items():
+            for key in list(user.keys()):
+                value = user[key]
                 if callable(value) or key == 'password':
                     delattr(user, key)
         if self.settings.renew_session_onlogin:
@@ -4259,7 +4254,7 @@ class Auth(object):
                             next = self.here()
                             current.session.flash = current.response.flash
                             return call_or_redirect(self.settings.on_failed_authentication,
-                                                    self.settings.login_url + '?_next=' + urllib.quote(next))
+                                                    self.settings.login_url + '?_next=' + urllib_quote(next))
 
                 if callable(condition):
                     flag = condition()
@@ -5277,7 +5272,7 @@ regex_geocode = \
 
 def geocode(address):
     try:
-        a = urllib.quote(address)
+        a = urllib_quote(address)
         txt = fetch('http://maps.googleapis.com/maps/api/geocode/xml?sensor=false&address=%s' % a)
         item = regex_geocode.search(txt)
         (la, lo) = (float(item.group('la')), float(item.group('lo')))
@@ -5611,7 +5606,7 @@ class Service(object):
             import types
             r = universal_caller(self.run_procedures[args[0]],
                                  *args[1:], **dict(request.vars))
-            s = cStringIO.StringIO()
+            s = StringIO()
             if hasattr(r, 'export_to_csv_file'):
                 r.export_to_csv_file(s)
             elif r and not isinstance(r, types.GeneratorType) and isinstance(r[0], (dict, Storage)):
@@ -6968,7 +6963,7 @@ class Config(object):
         section,
         default_values={}
     ):
-        self.config = ConfigParser.ConfigParser(default_values)
+        self.config = configparser.ConfigParser(default_values)
         self.config.read(filename)
         if not self.config.has_section(section):
             self.config.add_section(section)

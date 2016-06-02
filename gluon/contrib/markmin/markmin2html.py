@@ -7,7 +7,7 @@ from __future__ import print_function
 import re
 import urllib
 from cgi import escape
-from string import maketrans
+from gluon._compat import maketrans, urllib_quote
 
 try:
     from ast import parse as ast_parse
@@ -1418,7 +1418,7 @@ def render(text,
             return '[' + ','.join('<a href="#%s" class="%s">%s</a>' %
                                   (id_prefix + d, b, d) for d in escape(code).split(',')) + ']'
         elif b == 'latex':
-            return LATEX % urllib.quote(code)
+            return LATEX % urllib_quote(code)
         elif b in html_colors:
             return '<span style="color: %s">%s</span>' \
                    % (b, render(code, {}, {}, 'br', URL, environment, latex,

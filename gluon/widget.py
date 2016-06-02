@@ -55,9 +55,9 @@ def run_system_tests(options):
     import subprocess
     major_version = sys.version_info[0]
     minor_version = sys.version_info[1]
+    call_args = [sys.executable, '-m', 'unittest', '-v', 'gluon.tests']
     if major_version == 2:
         if minor_version in (7,):
-            call_args = [sys.executable, '-m', 'unittest', '-v', 'gluon.tests']
             if options.with_coverage:
                 try:
                     import coverage
@@ -76,8 +76,8 @@ def run_system_tests(options):
             sys.stderr.write("unknown python 2.x version\n")
             ret = 256
     else:
-        sys.stderr.write("Only Python 2.x supported.\n")
-        ret = 256
+        sys.stderr.write("Experimental Python 3.x.\n")
+        ret = subprocess.call(call_args)
     sys.exit(ret and 1)
 
 

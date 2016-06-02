@@ -20,7 +20,7 @@ import urllib
 import base64
 from gluon import sanitizer, decoder
 import itertools
-from gluon._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT
+from gluon._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, urllib_quote
 import marshal
 
 from gluon.storage import Storage
@@ -252,7 +252,7 @@ def URL(a=None,
     '/a/c/f#%25%28id%29d'
     """
 
-    from rewrite import url_out  # done here in case used not-in web2py
+    from gluon.rewrite import url_out  # done here in case used not-in web2py
 
     if args in (None, []):
         args = []
@@ -269,7 +269,7 @@ def URL(a=None,
             (f, a, c) = (a, c, f)
         elif a and c and not f:
             (c, f, a) = (a, c, f)
-        from globals import current
+        from gluon.globals import current
         if hasattr(current, 'request'):
             r = current.request
 
@@ -304,7 +304,7 @@ def URL(a=None,
         if controller == 'static':
             extension = None
             # add static version to url
-            from globals import current
+            from gluon.globals import current
             if hasattr(current, 'response'):
                 response = current.response
                 if response.static_version and response.static_version_urls:
@@ -322,9 +322,9 @@ def URL(a=None,
     if args:
         if url_encode:
             if encode_embedded_slash:
-                other = '/' + '/'.join([urllib.quote(str(x), '') for x in args])
+                other = '/' + '/'.join([urllib_quote(str(x), '') for x in args])
             else:
-                other = args and urllib.quote('/' + '/'.join([str(x) for x in args]))
+                other = args and urllib_quote('/' + '/'.join([str(x) for x in args]))
         else:
             other = args and ('/' + '/'.join([str(x) for x in args]))
     else:
@@ -377,7 +377,7 @@ def URL(a=None,
             other += '?%s' % '&'.join(['%s=%s' % var[:2] for var in list_vars])
     if anchor:
         if url_encode:
-            other += '#' + urllib.quote(str(anchor))
+            other += '#' + urllib_quote(str(anchor))
         else:
             other += '#' + (str(anchor))
     if extension:
@@ -451,7 +451,7 @@ def verifyURL(request, hmac_key=None, hash_vars=True, salt=None, user_signature=
     # join all the args & vars into one long string
 
     # always include all of the args
-    other = args and urllib.quote('/' + '/'.join([str(x) for x in args])) or ''
+    other = args and urllib_quote('/' + '/'.join([str(x) for x in args])) or ''
     h_args = '/%s/%s/%s.%s%s' % (request.application,
                                  request.controller,
                                  request.function,
@@ -723,7 +723,7 @@ class DIV(XmlComponent):
         dictionary like updating of the tag attributes
         """
 
-        for (key, value) in kargs.iteritems():
+        for (key, value) in iteritems(kargs):
             self[key] = value
         return self
 
@@ -924,7 +924,7 @@ class DIV(XmlComponent):
         # get the attributes for this component
         # (they start with '_', others may have special meanings)
         attr = []
-        for key, value in self.attributes.iteritems():
+        for key, value in iteritems(self.attributes):
             if key[:1] != '_':
                 continue
             name = key[1:]
@@ -934,7 +934,7 @@ class DIV(XmlComponent):
                 continue
             attr.append((name, value))
         data = self.attributes.get('data', {})
-        for key, value in data.iteritems():
+        for key, value in iteritems(data):
             name = 'data-' + key
             value = data[key]
             attr.append((name, value))
@@ -1127,7 +1127,7 @@ class DIV(XmlComponent):
         # value as provided
         tag = getattr(self, 'tag').replace('/', '')
         check = not (args and tag not in args)
-        for (key, value) in kargs.iteritems():
+        for (key, value) in iteritems(kargs):
             if key not in ['first_only', 'replace', 'find_text']:
                 if isinstance(value, (str, int)):
                     if str(self[key]) != str(value):
@@ -1211,7 +1211,7 @@ class DIV(XmlComponent):
                 tag = getattr(c, 'tag').replace("/", "")
                 if args and tag not in args:
                         check = False
-                for (key, value) in kargs.iteritems():
+                for (key, value) in iteritems(kargs):
                     if c[key] != value:
                             check = False
                 if check:
@@ -2158,7 +2158,7 @@ class FORM(DIV):
         c = []
         attr = self.attributes.get('hidden', {})
         if 'hidden' in self.attributes:
-            c = [INPUT(_type='hidden', _name=key, _value=value) for (key, value) in attr.iteritems()]
+            c = [INPUT(_type='hidden', _name=key, _value=value) for (key, value) in iteritems(attr)]
         if hasattr(self, 'formkey') and self.formkey:
             c.append(INPUT(_type='hidden', _name='_formkey', _value=self.formkey))
         if hasattr(self, 'formname') and self.formname:
@@ -2235,9 +2235,9 @@ class FORM(DIV):
                 onsuccess(self)
             if next:
                 if self.vars:
-                    for key, value in self.vars.iteritems():
+                    for key, value in iteritems(self.vars):
                         next = next.replace('[%s]' % key,
-                                            urllib.quote(str(value)))
+                                            urllib_quote(str(value)))
                     if not next.startswith('/'):
                         next = URL(next)
                 redirect(next)
@@ -2309,11 +2309,11 @@ class FORM(DIV):
         inputs = [INPUT(_type='button',
                         _value=name,
                         _onclick=FORM.REDIRECT_JS % link)
-                  for name, link in buttons.iteritems()]
+                  for name, link in iteritems(buttons)]
         inputs += [INPUT(_type='hidden',
                          _name=name,
                          _value=value)
-                   for name, value in hidden.iteritems()]
+                   for name, value in iteritems(hidden)]
         form = FORM(INPUT(_type='submit', _value=text), *inputs)
         form.process()
         return form

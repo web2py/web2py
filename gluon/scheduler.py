@@ -9,7 +9,7 @@ Background processes made simple
 ---------------------------------
 """
 from __future__ import print_function
-
+from gluon._compat import Queue
 
 import os
 import time
@@ -24,7 +24,7 @@ import logging
 import optparse
 import tempfile
 import types
-import Queue
+
 from json import loads, dumps
 from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB
 from gluon import IS_INT_IN_RANGE, IS_DATETIME, IS_IN_DB

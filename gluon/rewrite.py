@@ -27,6 +27,7 @@ from gluon.storage import Storage, List
 from gluon.http import HTTP
 from gluon.fileutils import abspath, read_file
 from gluon.settings import global_settings
+from gluon._compat import urllib_unquote, urllib_quote
 
 isdir = os.path.isdir
 isfile = os.path.isfile
@@ -625,7 +626,7 @@ def regex_url_in(request, environ):
     # serve if a static file
     # ##################################################
 
-    path = urllib.unquote(request.env.path_info) or '/'
+    path = urllib_unquote(request.env.path_info) or '/'
     path = path.replace('\\', '/')
     if path.endswith('/') and len(path) > 1:
         path = path[:-1]
@@ -715,7 +716,7 @@ def filter_url(url, method='get', remote='0.0.0.0',
     if isinstance(domain, str):
         domain = (domain, None)
     (path_info, query_string) = (uri[:k], uri[k + 1:])
-    path_info = urllib.unquote(path_info)   # simulate server
+    path_info = urllib_unquote(path_info)   # simulate server
     e = {
         'REMOTE_ADDR': remote,
         'REQUEST_METHOD': method,
@@ -1100,7 +1101,7 @@ class MapUrlIn(object):
         uri = '/%s%s%s%s' % (
             app,
             uri,
-            urllib.quote('/' + '/'.join(
+            urllib_quote('/' + '/'.join(
                 str(x) for x in self.args)) if self.args else '',
             ('?' + self.query) if self.query else '')
         self.env['REQUEST_URI'] = uri

@@ -21,7 +21,7 @@ import urllib
 import struct
 import decimal
 import unicodedata
-from gluon._compat import StringIO, long, unicodeT
+from gluon._compat import StringIO, long, unicodeT, to_unicode, urllib_unquote, unichr, to_bytes
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from pydal.objects import Field, FieldVirtual, FieldMethod
 from functools import reduce
@@ -1508,7 +1508,7 @@ def unicode_to_ascii_url(url, prepend_scheme):
         # Try appending a scheme to see if that fixes the problem
         scheme_to_prepend = prepend_scheme or 'http'
         groups = url_split_regex.match(
-            unicode(scheme_to_prepend) + u'://' + url).groups()
+            to_unicode(scheme_to_prepend) + u'://' + url).groups()
     # if we still can't find the authority
     if not groups[3]:
         raise Exception('No authority component found, ' +
@@ -1609,7 +1609,7 @@ class IS_GENERIC_URL(Validator):
                     scheme = url_split_regex.match(value).group(2)
                     # Clean up the scheme before we check it
                     if not scheme is None:
-                        scheme = urllib.unquote(scheme).lower()
+                        scheme = urllib_unquote(scheme).lower()
                     # If the scheme really exists
                     if scheme in self.allowed_schemes:
                         # Then the URL is valid

@@ -4,18 +4,15 @@
 """ Unit tests for utils.py """
 
 import unittest
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 
 fix_sys_path(__file__)
 
-from utils import md5_hash
-from utils import compare
-from utils import is_valid_ip_address
-from utils import web2py_uuid
+from gluon.utils import md5_hash, compare, is_valid_ip_address, web2py_uuid
 
 import hashlib
 from hashlib import md5, sha1, sha224, sha256, sha384, sha512
-from utils import simple_hash, get_digest, secure_dumps, secure_loads
+from gluon.utils import simple_hash, get_digest, secure_dumps, secure_loads
 
 
 class TestUtils(unittest.TestCase):

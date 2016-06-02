@@ -155,7 +155,7 @@ class CacheAbstract(object):
         Auxiliary function called by `clear` to search and clear cache entries
         """
         r = re.compile(regex)
-        for key in storage.keys():
+        for key in list(storage.keys()):
             if r.match(str(key)):
                 del storage[key]
         return

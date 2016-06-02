@@ -5,13 +5,13 @@
 
 import unittest
 import os
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 
 fix_sys_path(__file__)
 
 from gluon.storage import Storage
-import gluon.contrib.fpdf as fpdf
-import gluon.contrib.pyfpdf as pyfpdf
+from gluon.contrib import fpdf as fpdf
+from gluon.contrib import pyfpdf as pyfpdf
 from gluon.contrib.appconfig import AppConfig
 
 

@@ -18,7 +18,7 @@ import pkgutil
 import logging
 from cgi import escape
 from threading import RLock
-from gluon._compat import copyreg, PY2, maketrans
+from gluon._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode
 
 from gluon.portalocker import read_locked, LockedFile
 from gluon.utf8 import Utf8
@@ -334,7 +334,7 @@ def write_dict(filename, contents):
     try:
         fp = LockedFile(filename, 'w')
         fp.write('# -*- coding: utf-8 -*-\n{\n')
-        for key in sorted(contents, sort_function):
+        for key in sorted(contents, key=lambda x: to_unicode(x, 'utf-8').lower()):
             fp.write('%s: %s,\n' % (repr(Utf8(key)),
                                     repr(Utf8(contents[key]))))
         fp.write('}\n')
@@ -541,7 +541,7 @@ class translator(object):
     def get_possible_languages(self):
         """ Gets list of all possible languages for current application """
         return list(set(self.current_languages +
-                        [lang for lang in read_possible_languages(self.langpath).iterkeys()
+                        [lang for lang in iterkeys(read_possible_languages(self.langpath))
                          if lang != 'default']))
 
     def set_current_languages(self, *languages):
@@ -658,7 +658,7 @@ class translator(object):
             languages = []
         self.requested_languages = languages = tuple(languages)
         if languages:
-            all_languages = set(lang for lang in pl_info.iterkeys()
+            all_languages = set(lang for lang in iterkeys(pl_info)
                                 if lang != 'default') \
                 | set(self.current_languages)
             for lang in languages:
@@ -800,9 +800,9 @@ class translator(object):
         the ## notation is ignored in multiline strings and strings that
         start with ##. This is needed to allow markmin syntax to be translated
         """
-        if isinstance(message, unicode):
+        if isinstance(message, unicodeT):
             message = message.encode('utf8')
-        if isinstance(prefix, unicode):
+        if isinstance(prefix, unicodeT):
             prefix = prefix.encode('utf8')
         key = prefix + message
         mt = self.t.get(key, None)

@@ -1044,6 +1044,9 @@ class TestRouter(unittest.TestCase):
                 'http://domain.com/app2/static/filename-with_underscore'),
             norm_root("%s/applications/app2/static/filename-with_underscore" % root))
 
+        from gluon.globals import current
+        current.response.static_version = None
+        
         self.assertEqual(str(URL(a='init', c='default', f='a_b')), "/a_b")
         self.assertEqual(str(URL(a='app1', c='default', f='a_b')), "/app1/a-b")
         self.assertEqual(str(URL(a='app2', c='default', f='a_b')), "/app2/a_b")

@@ -18,10 +18,7 @@ import os
 import cgi
 import logging
 from re import compile, sub, escape, DOTALL
-try:
-    import cStringIO as StringIO
-except:
-    from io import StringIO
+from gluon._compat import StringIO
 
 try:
     # have web2py
@@ -279,13 +276,12 @@ class TemplateParser(object):
         self.context = context
 
         # allow optional alternative delimiters
-
         if delimiters != self.default_delimiters:
             escaped_delimiters = (escape(delimiters[0]),
                                   escape(delimiters[1]))
             self.r_tag = compile(r'(%s.*?%s)' % escaped_delimiters, DOTALL)
         elif hasattr(context.get('response', None), 'delimiters'):
-            if context['response'].delimiters != self.default_delimiters:
+            if (context['response'].delimiters != self.default_delimiters) and (context['response'].delimiters != None):
                 delimiters = context['response'].delimiters
                 escaped_delimiters = (
                     escape(delimiters[0]),
@@ -807,7 +803,7 @@ def get_parsed(text):
 
 class DummyResponse():
     def __init__(self):
-        self.body = StringIO.StringIO()
+        self.body = StringIO()
 
     def write(self, data, escape=True):
         if not escape:
@@ -904,7 +900,7 @@ def render(content="hello world",
     # save current response class
     if context and 'response' in context:
         old_response_body = context['response'].body
-        context['response'].body = StringIO.StringIO()
+        context['response'].body = StringIO()
     else:
         old_response_body = None
         context['response'] = Response()
@@ -921,7 +917,7 @@ def render(content="hello world",
             stream = open(filename, 'rb')
             close_stream = True
         elif content:
-            stream = StringIO.StringIO(content)
+            stream = StringIO(content)
 
     # Execute the template.
     code = str(TemplateParser(stream.read(

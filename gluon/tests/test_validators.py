@@ -7,7 +7,7 @@ import unittest
 import datetime
 import decimal
 import re
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 
 fix_sys_path(__file__)
 

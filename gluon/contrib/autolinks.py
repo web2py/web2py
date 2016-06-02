@@ -42,6 +42,7 @@ revision3.com
 viddler.com
 """
 from __future__ import print_function
+from gluon._compat import FancyURLopener, urllib_quote
 
 import re
 import cgi
@@ -94,7 +95,7 @@ def video(url):
 
 
 def googledoc_viewer(url):
-    return '<iframe src="https://docs.google.com/viewer?url=%s&embedded=true" style="max-width:100%%"></iframe>' % urllib.quote(url)
+    return '<iframe src="https://docs.google.com/viewer?url=%s&embedded=true" style="max-width:100%%"></iframe>' % urllib_quote(url)
 
 
 def web2py_component(url):
@@ -136,7 +137,7 @@ EXTENSION_MAPS = {
 }
 
 
-class VimeoURLOpener(urllib.FancyURLopener):
+class VimeoURLOpener(FancyURLopener):
     "Vimeo blocks the urllib user agent for some reason"
     version = "Mozilla/4.0"
 urllib._urlopener = VimeoURLOpener()

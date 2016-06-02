@@ -6,13 +6,13 @@
 """
 import os
 import unittest
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 
 fix_sys_path(__file__)
 
 
-from storage import Storage
-from cache import CacheInRam, CacheOnDisk, Cache
+from gluon.storage import Storage
+from gluon.cache import CacheInRam, CacheOnDisk, Cache
 from gluon.dal import DAL, Field
 
 oldcwd = None

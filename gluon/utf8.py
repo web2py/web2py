@@ -11,7 +11,7 @@ Utilities and class for UTF8 strings managing
 ----------------------------------------------
 """
 from __future__ import print_function
-from gluon._compat import builtin as __builtin__
+from gluon._compat import builtin as __builtin__, unicodeT
 
 __all__ = ['Utf8']
 
@@ -62,7 +62,7 @@ def ord(char):
     """Returns unicode id for utf8 or unicode *char* character
     SUPPOSE that *char* is an utf-8 or unicode character only
     """
-    if isinstance(char, unicode):
+    if isinstance(char, unicodeT):
         return __builtin__.ord(char)
     return __builtin__.ord(unicode(char, 'utf-8'))
 
@@ -119,7 +119,7 @@ class Utf8(str):
     You can see the benefit of this class in doctests() below
     """
     def __new__(cls, content='', codepage='utf-8'):
-        if isinstance(content, unicode):
+        if isinstance(content, unicodeT):
             return str.__new__(cls, unicode.encode(content, 'utf-8'))
         elif codepage in ('utf-8', 'utf8') or isinstance(content, cls):
             return str.__new__(cls, content)

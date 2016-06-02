@@ -6,14 +6,14 @@
 """
 
 import unittest
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 import datetime
 import decimal
 
 fix_sys_path(__file__)
 
-from serializers import *
-from storage import Storage
+from gluon.serializers import *
+from gluon.storage import Storage
 # careful with the import path 'cause of isinstance() checks
 from gluon.languages import translator
 from gluon.html import SPAN

@@ -11,12 +11,12 @@ import subprocess
 import time
 import signal
 
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 
 fix_sys_path(__file__)
 
-from contrib.webclient import WebClient
-from urllib2 import HTTPError
+from gluon.contrib.webclient import WebClient
+from gluon._compat import urllib2
 
 webserverprocess = None
 
@@ -135,7 +135,7 @@ class TestWeb(LiveTest):
         s = WebClient('http://127.0.0.1:8000/')
         try:
             s.post('examples/soap_examples/call/soap', data=xml_request, method="POST")
-        except HTTPError as e:
+        except urllib2.HTTPError as e:
             assert(e.msg == 'INTERNAL SERVER ERROR')
         # check internal server error returned (issue 153)
         assert(s.status == 500)
