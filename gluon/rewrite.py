@@ -27,7 +27,7 @@ from gluon.storage import Storage, List
 from gluon.http import HTTP
 from gluon.fileutils import abspath, read_file
 from gluon.settings import global_settings
-from gluon._compat import urllib_unquote, urllib_quote
+from gluon._compat import urllib_unquote, urllib_quote, iteritems
 
 isdir = os.path.isdir
 isfile = os.path.isfile
@@ -514,7 +514,7 @@ def load_routers(all_apps):
     #
     domains = dict()
     if routers.BASE.domains:
-        for (d, a) in routers.BASE.domains.iteritems():
+        for (d, a) in iteritems(routers.BASE.domains):
             (domain, app) = (d.strip(':'), a.strip('/'))
             if ':' in domain:
                 (domain, port) = domain.split(':')
@@ -620,7 +620,7 @@ def regex_url_in(request, environ):
     if routes.routes_in:
         environ = regex_filter_in(environ)
     request.env.update(
-        (k.lower().replace('.', '_'), v) for k, v in environ.iteritems())
+        (k.lower().replace('.', '_'), v) for k, v in iteritems(environ))
 
     # ##################################################
     # serve if a static file
@@ -1074,7 +1074,7 @@ class MapUrlIn(object):
 
     def sluggify(self):
         self.request.env.update(
-            (k.lower().replace('.', '_'), v) for k, v in self.env.iteritems())
+            (k.lower().replace('.', '_'), v) for k, v in iteritems(self.env))
 
     def update_request(self):
         """

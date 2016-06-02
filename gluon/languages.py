@@ -18,7 +18,7 @@ import pkgutil
 import logging
 from cgi import escape
 from threading import RLock
-from gluon._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode
+from gluon._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes
 
 from gluon.portalocker import read_locked, LockedFile
 from gluon.utf8 import Utf8
@@ -809,7 +809,9 @@ class translator(object):
         if mt is not None:
             return mt
         # we did not find a translation
-        if message.find('##') > 0 and not '\n' in message:
+        if message.find(to_bytes('##')) > 0:
+            pass
+        if message.find(to_bytes('##')) > 0 and not '\n' in message:
             # remove comments
             message = message.rsplit('##', 1)[0]
         # guess translation same as original
@@ -819,7 +821,7 @@ class translator(object):
                 self.language_file != self.default_language_file:
             write_dict(self.language_file, self.t)
         return regex_backslash.sub(
-            lambda m: m.group(1).translate(ttab_in), mt)
+            lambda m: m.group(1).translate(ttab_in), str(mt))
 
     def params_substitution(self, message, symbols):
         """

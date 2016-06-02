@@ -14,6 +14,7 @@ fix_sys_path(__file__)
 
 from gluon.globals import Request, Response, Session
 from gluon import URL
+from gluon._compat import basestring
 
 def setup_clean_session():
         request = Request(env={})
@@ -158,31 +159,32 @@ class testResponse(unittest.TestCase):
         current = setup_clean_session()
         current.session._fixup_before_save()
         cookie = str(current.response.cookies)
-        self.assertTrue('secure' not in cookie)
+        self.assertTrue('secure' not in cookie.lower())
 
         current = setup_clean_session()
         current.session.secure()
         current.session._fixup_before_save()
         cookie = str(current.response.cookies)
-        self.assertTrue('secure' in cookie)
+        self.assertTrue('secure' in cookie.lower())
 
     def test_cookies_httponly(self):
         current = setup_clean_session()
         current.session._fixup_before_save()
         cookie = str(current.response.cookies)
-        self.assertTrue('httponly' in cookie)
+        # cookies in PY3 have capital letters
+        self.assertTrue('httponly' in cookie.lower())
 
         current = setup_clean_session()
         current.session.httponly_cookies = True
         current.session._fixup_before_save()
         cookie = str(current.response.cookies)
-        self.assertTrue('httponly' in cookie)
+        self.assertTrue('httponly' in cookie.lower())
 
         current = setup_clean_session()
         current.session.httponly_cookies = False
         current.session._fixup_before_save()
         cookie = str(current.response.cookies)
-        self.assertTrue('httponly' not in cookie)
+        self.assertTrue('httponly' not in cookie.lower())
 
 if __name__ == '__main__':
     unittest.main()

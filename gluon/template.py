@@ -18,7 +18,7 @@ import os
 import cgi
 import logging
 from re import compile, sub, escape, DOTALL
-from gluon._compat import StringIO
+from gluon._compat import StringIO, unicodeT
 
 try:
     # have web2py
@@ -812,9 +812,9 @@ class DummyResponse():
             self.body.write(data.xml())
         else:
             # make it a string
-            if not isinstance(data, (str, unicode)):
+            if not isinstance(data, (str, unicodeT)):
                 data = str(data)
-            elif isinstance(data, unicode):
+            elif isinstance(data, unicodeT):
                 data = data.encode('utf8', 'xmlcharrefreplace')
             data = cgi.escape(data, True).replace("'", "&#x27;")
             self.body.write(data)
@@ -894,7 +894,7 @@ def render(content="hello world",
         if not 'NOESCAPE' in context:
             context['NOESCAPE'] = NOESCAPE
 
-    if isinstance(content, unicode):
+    if isinstance(content, unicodeT):
         content = content.encode('utf8')
 
     # save current response class

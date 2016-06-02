@@ -9,7 +9,7 @@ Background processes made simple
 ---------------------------------
 """
 from __future__ import print_function
-from gluon._compat import Queue
+from gluon._compat import Queue, long
 
 import os
 import time
