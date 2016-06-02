@@ -6,10 +6,11 @@ from .test_fileutils import *
 from .test_globals import *
 from .test_recfile import *
 from .test_storage import *
+from .test_dal import *
+from .test_cache import *
 
 
 if sys.version[:3] == '2.7':
-    from .test_cache import *
     from .test_compileapp import *
     from .test_html import *
     from .test_is_url import *
@@ -20,7 +21,6 @@ if sys.version[:3] == '2.7':
     from .test_template import *
     from .test_validators import *
     from .test_utils import *
-    from .test_dal import *
     from .test_tools import *
     from .test_appadmin import *
     from .test_scheduler import *

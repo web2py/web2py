@@ -11,7 +11,7 @@ Utilities and class for UTF8 strings managing
 ----------------------------------------------
 """
 from __future__ import print_function
-from gluon._compat import builtin as __builtin__, unicodeT
+from gluon._compat import builtin as __builtin__, unicodeT, iteritems
 
 __all__ = ['Utf8']
 
@@ -339,9 +339,8 @@ class Utf8(str):
                 s, 'utf-8') if isinstance(s, str) else s for s in args]
             kwargs = dict((unicode(k, 'utf-8') if isinstance(k, str) else k,
                            unicode(v, 'utf-8') if isinstance(v, str) else v)
-                          for k, v in kwargs.iteritems())
-            return str.__new__(Utf8, unicode(self, 'utf-8').
-                               format(*args, **kwargs).encode('utf-8'))
+                          for k, v in iteritems(kwargs))
+            return str.__new__(Utf8, unicode(self, 'utf-8').format(*args, **kwargs).encode('utf-8'))
 
     def __mod__(self, right):
         if isinstance(right, tuple):
@@ -350,7 +349,7 @@ class Utf8(str):
         elif isinstance(right, dict):
             right = dict((unicode(k, 'utf-8') if isinstance(k, str) else k,
                           unicode(v, 'utf-8') if isinstance(v, str) else v)
-                         for k, v in right.iteritems())
+                         for k, v in iteritems(right))
         elif isinstance(right, str):
             right = unicode(right, 'utf-8')
         return str.__new__(Utf8, unicode(self, 'utf-8').__mod__(right).encode('utf-8'))

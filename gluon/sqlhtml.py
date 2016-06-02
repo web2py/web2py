@@ -19,7 +19,7 @@ import urllib
 import re
 
 import os
-from gluon._compat import StringIO, unichr, urllib_quote
+from gluon._compat import StringIO, unichr, urllib_quote, iteritems
 from gluon.http import HTTP, redirect
 from gluon.html import XmlComponent, truncate_string
 from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG
@@ -2222,7 +2222,7 @@ class SQLFORM(FORM):
         if fields:
             # add missing tablename to virtual fields
             for table in tables:
-                for k, f in table.iteritems():
+                for k, f in iteritems(table):
                     if isinstance(f, Field.Virtual):
                         f.tablename = table._tablename
             columns = [f for f in fields if f.tablename in tablenames]
@@ -2234,7 +2234,7 @@ class SQLFORM(FORM):
             for table in tables:
                 fields += filter(filter1, table)
                 columns += filter(filter2, table)
-                for k, f in table.iteritems():
+                for k, f in iteritems(table):
                     if not k.startswith('_'):
                         if isinstance(f, Field.Virtual) and f.readable:
                             f.tablename = table._tablename
@@ -2434,7 +2434,7 @@ class SQLFORM(FORM):
                                 selectable_columns.append(str(field))
                     # look for virtual fields not displayed (and virtual method
                     # fields to be added here?)
-                    for (field_name, field) in table.iteritems():
+                    for (field_name, field) in iteritems(table):
                         if isinstance(field, Field.Virtual) and not str(field) in expcolumns:
                             expcolumns.append(str(field))
 

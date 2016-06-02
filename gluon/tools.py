@@ -13,7 +13,7 @@ Auth, Mail, PluginManager and various utilities
 import base64
 from functools import reduce
 from gluon._compat import pickle, thread, urllib2, Cookie, StringIO, configparser, MIMEBase, MIMEMultipart, \
-                          MIMEText, Encoders, Charset, long, urllib_quote
+                          MIMEText, Encoders, Charset, long, urllib_quote, iteritems
 import datetime
 import logging
 import sys
@@ -744,7 +744,7 @@ class Mail(object):
             to.extend(bcc)
         payload['Subject'] = encoded_or_raw(subject.decode(encoding))
         payload['Date'] = email.utils.formatdate()
-        for k, v in headers.iteritems():
+        for k, v in iteritems(headers):
             payload[k] = encoded_or_raw(v.decode(encoding))
         result = {}
         try:
@@ -1230,7 +1230,7 @@ class AuthJWT(object):
         self.header_prefix = header_prefix
         self.jwt_add_header = jwt_add_header or {}
         base_header = {'alg': self.algorithm, 'typ': 'JWT'}
-        for k, v in self.jwt_add_header.iteritems():
+        for k, v in iteritems(self.jwt_add_header):
             base_header[k] = v
         self.cached_b64h = self.jwt_b64e(json.dumps(base_header))
         digestmod_mapping = {
@@ -5879,7 +5879,7 @@ class Service(object):
             prefix='pys',
             documentation=documentation,
             ns=True)
-        for method, (function, returns, args, doc) in procedures.iteritems():
+        for method, (function, returns, args, doc) in iteritems(procedures):
             dispatcher.register_function(method, function, returns, args, doc)
         if request.env.request_method == 'POST':
             fault = {}

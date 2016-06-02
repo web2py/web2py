@@ -18,7 +18,7 @@ import pkgutil
 import logging
 from cgi import escape
 from threading import RLock
-from gluon._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes
+from gluon._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes, iteritems
 
 from gluon.portalocker import read_locked, LockedFile
 from gluon.utf8 import Utf8
@@ -756,7 +756,7 @@ class translator(object):
             if isinstance(symbols, dict):
                 symbols.update(
                     (key, xmlescape(value).translate(ttab_in))
-                    for key, value in symbols.iteritems()
+                    for key, value in iteritems(symbols)
                     if not isinstance(value, NUMBERS))
             else:
                 if not isinstance(symbols, tuple):
@@ -939,7 +939,7 @@ class translator(object):
             if isinstance(symbols, dict):
                 symbols.update(
                     (key, str(value).translate(ttab_in))
-                    for key, value in symbols.iteritems()
+                    for key, value in iteritems(symbols)
                     if not isinstance(value, NUMBERS))
             else:
                 if not isinstance(symbols, tuple):

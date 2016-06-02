@@ -34,7 +34,7 @@ class TestDALSubclass(unittest.TestCase):
         db.close()
 
     def testSerialization(self):
-        import pickle
+        from gluon._compat import pickle
         db = DAL(check_reserved=['all'])
         db.define_table('t_a', Field('f_a'))
         db.t_a.insert(f_a='test')

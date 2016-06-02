@@ -9,7 +9,7 @@ Background processes made simple
 ---------------------------------
 """
 from __future__ import print_function
-from gluon._compat import Queue, long
+from gluon._compat import Queue, long, iteritems
 
 import os
 import time
@@ -234,7 +234,7 @@ def _decode_list(lst):
 
 def _decode_dict(dct):
     newdict = {}
-    for k, v in dct.iteritems():
+    for k, v in iteritems(dct):
         if isinstance(k, unicode):
             k = k.encode('utf-8')
         if isinstance(v, unicode):

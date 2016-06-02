@@ -11,6 +11,7 @@ HTTP statuses helpers
 """
 
 import re
+from gluon._compat import iteritems
 
 __all__ = ['HTTP', 'redirect']
 
@@ -112,7 +113,7 @@ class HTTP(Exception):
             if isinstance(body, str):
                 headers['Content-Length'] = len(body)
         rheaders = []
-        for k, v in headers.iteritems():
+        for k, v in iteritems(headers):
             if isinstance(v, list):
                 rheaders += [(k, str(item)) for item in v]
             elif not v is None:

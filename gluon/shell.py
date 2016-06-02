@@ -30,6 +30,7 @@ from gluon.globals import Request, Response, Session
 from gluon.storage import Storage, List
 from gluon.admin import w2p_unpack
 from pydal.base import BaseAdapter
+from gluon._compat import iteritems
 
 logger = logging.getLogger("web2py")
 
@@ -146,7 +147,7 @@ def env(
         path_info = '%s/%s' % (path_info, '/'.join(request.args))
     if request.vars:
         vars = ['%s=%s' % (k, v) if v else '%s' % k
-                for (k, v) in request.vars.iteritems()]
+                for (k, v) in iteritems(request.vars)]
         path_info = '%s?%s' % (path_info, '&'.join(vars))
     request.env.path_info = path_info
 

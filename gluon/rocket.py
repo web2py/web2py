@@ -11,6 +11,7 @@ import errno
 import socket
 import logging
 import platform
+from gluon._compat import iteritems
 
 # Define Constants
 VERSION = '1.2.6'
@@ -1430,7 +1431,7 @@ class Worker(Thread):
             raise BadRequest
 
         req = match.groupdict()
-        for k, v in req.iteritems():
+        for k, v in iteritems(req):
             if not v:
                 req[k] = ""
             if k == 'path':
@@ -1654,7 +1655,7 @@ class WSGIWorker(Worker):
         environ = self.base_environ.copy()
 
         # Grab the headers
-        for k, v in self.read_headers(sock_file).iteritems():
+        for k, v in iteritems(self.read_headers(sock_file)):
             environ[str('HTTP_' + k)] = v
 
         # Add CGI Variables
