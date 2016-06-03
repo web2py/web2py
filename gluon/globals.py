@@ -435,7 +435,7 @@ class Response(Storage):
         self._vars.update(b)
         self._view_environment.update(self._vars)
         if view:
-            from gluon.compat import StringIO
+            from gluon._compat import StringIO
             (obody, oview) = (self.body, self.view)
             (self.body, self.view) = (StringIO(), view)
             run_view_in(self._view_environment)
