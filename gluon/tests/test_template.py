@@ -32,6 +32,7 @@ class TestTemplate(unittest.TestCase):
 
     def testEqualWrite(self):
         "test generation of response.write from ="
+        self.assertEqual(render(content='{{=2+2}}'), '4')
         self.assertEqual(render(content='{{="abc"}}'), 'abc')
         # whitespace is stripped
         self.assertEqual(render(content='{{ ="abc"}}'), 'abc')
@@ -65,7 +66,7 @@ class TestTemplate(unittest.TestCase):
     def testWithDummyFileSystem(self):
         from os.path import join as pjoin
         import contextlib
-        from StringIO import StringIO
+        from gluon._compat import StringIO
         from gluon.restricted import RestrictedError
 
         @contextlib.contextmanager

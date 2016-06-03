@@ -93,6 +93,9 @@ def simple_hash(text, key='', salt='', digest_alg='md5'):
     Generates hash with the given text using the specified
     digest hashing algorithm
     """
+    text = to_bytes(text)
+    key = to_bytes(key)
+    salt = to_bytes(salt)
     if not digest_alg:
         raise RuntimeError("simple_hash with digest_alg=None")
     elif not isinstance(digest_alg, str):  # manual approach

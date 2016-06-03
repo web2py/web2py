@@ -7,7 +7,7 @@
 | License: LGPLv3 (http://www.gnu.org/licenses/lgpl.html)
 """
 from __future__ import print_function
-
+from gluon._compat import xrange
 import re
 import cgi
 

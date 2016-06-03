@@ -20,7 +20,8 @@ import urllib
 import base64
 from gluon import sanitizer, decoder
 import itertools
-from gluon._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, urllib_quote
+from gluon._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, urllib_quote, to_bytes, \
+                          to_native, to_unicode, _local_html_escape, basestring, urlencode
 import marshal
 
 from gluon.storage import Storage
@@ -108,7 +109,6 @@ __all__ = [
 
 DEFAULT_PASSWORD_DISPLAY = '*' * 8
 
-
 def xmlescape(data, quote=True):
     """
     Returns an escaped string of the provided data
@@ -120,16 +120,16 @@ def xmlescape(data, quote=True):
 
     # first try the xml function
     if hasattr(data, 'xml') and callable(data.xml):
-        return data.xml()
+        return to_bytes(data.xml())
 
-    # otherwise, make it a string
-    if not isinstance(data, (str, unicodeT)):
-        data = str(data)
-    elif isinstance(data, unicodeT):
-        data = data.encode('utf8', 'xmlcharrefreplace')
+    if not(isinstance(data, basestring)):
+        # i.e., integers
+        data=str(data)
+    data = to_bytes(data, 'utf8', 'xmlcharrefreplace')
 
+    
     # ... and do the escaping
-    data = cgi.escape(data, quote).replace("'", "&#x27;")
+    data = _local_html_escape(data, quote)
     return data
 
 
@@ -141,9 +141,9 @@ def call_as_list(f, *a, **b):
 
 
 def truncate_string(text, length, dots='...'):
-    text = text.decode('utf-8')
+    text = to_unicode(text)
     if len(text) > length:
-        text = text[:length - len(dots)].encode('utf-8') + dots
+        text = to_native(text[:length - len(dots)]) + dots
     return text
 
 
@@ -343,7 +343,7 @@ def URL(a=None,
             list_vars.append((key, val))
 
     if user_signature:
-        from globals import current
+        from gluon.globals import current
         if current.session.auth:
             hmac_key = current.session.auth.hmac_key
 
@@ -364,7 +364,7 @@ def URL(a=None,
             h_vars = [(k, v) for (k, v) in list_vars if k in hash_vars]
 
         # re-assembling the same way during hash authentication
-        message = h_args + '?' + urllib.urlencode(sorted(h_vars))
+        message = h_args + '?' + urlencode(sorted(h_vars))
         sig = simple_hash(
             message, hmac_key or '', salt or '', digest_alg='sha1')
         # add the signature into vars
@@ -372,7 +372,7 @@ def URL(a=None,
 
     if list_vars:
         if url_encode:
-            other += '?%s' % urllib.urlencode(list_vars)
+            other += '?%s' % urlencode(list_vars)
         else:
             other += '?%s' % '&'.join(['%s=%s' % var[:2] for var in list_vars])
     if anchor:
@@ -432,7 +432,7 @@ def verifyURL(request, hmac_key=None, hash_vars=True, salt=None, user_signature=
 
     # check if user_signature requires
     if user_signature:
-        from globals import current
+        from gluon.globals import current
         if not current.session or not current.session.auth:
             return False
         hmac_key = current.session.auth.hmac_key
@@ -483,7 +483,7 @@ def verifyURL(request, hmac_key=None, hash_vars=True, salt=None, user_signature=
             # user has removed one of our vars! Immediate fail
             return False
     # build the full message string with both args & vars
-    message = h_args + '?' + urllib.urlencode(sorted(h_vars))
+    message = h_args + '?' + urlencode(sorted(h_vars))
 
     # hash with the hmac_key provided
     sig = simple_hash(message, str(hmac_key), salt or '', digest_alg='sha1')
@@ -600,16 +600,18 @@ class XML(XmlComponent):
         if sanitize:
             text = sanitizer.sanitize(text, permitted_tags, allowed_attributes)
         if isinstance(text, unicodeT):
-            text = text.encode('utf8', 'xmlcharrefreplace')
+            text = to_native(text.encode('utf8', 'xmlcharrefreplace'))
         elif not isinstance(text, str):
             text = str(text)
-        self.text = text
+        self.text = to_bytes(text)
 
     def xml(self):
         return self.text
 
     def __str__(self):
         return self.text
+
+    __repr__ = __str__
 
     def __add__(self, other):
         return '%s%s' % (self, other)
@@ -815,11 +817,13 @@ class DIV(XmlComponent):
         """
         return len(self.components)
 
-    def __nonzero__(self):
+    def __bool__(self):
         """
         Always returns True
         """
         return True
+
+    __nonzero__ = __bool__
 
     def _fixup(self):
         """
@@ -939,12 +943,12 @@ class DIV(XmlComponent):
             value = data[key]
             attr.append((name, value))
         attr.sort()
-        fa = ''
+        fa = b''
         for name, value in attr:
-            fa += ' %s="%s"' % (name, xmlescape(value, True))
+            fa += (b' %s="%s"') % (to_bytes(name), xmlescape(value, True))
+        
         # get the xml for the inner components
-        co = join([xmlescape(component) for component in
-                   self.components])
+        co = b''.join([xmlescape(component) for component in self.components])
         return (fa, co)
 
     def xml(self):
@@ -957,20 +961,21 @@ class DIV(XmlComponent):
         if not self.tag:
             return co
 
-        if self.tag[-1:] == '/':
+        tagname = to_bytes(self.tag)
+        if tagname[-1:] == b'/':
             # <tag [attributes] />
-            return '<%s%s />' % (self.tag[:-1], fa)
+            return b'<%s%s />' % (tagname[:-1], fa)
 
         # else: <tag [attributes]>  inner components xml </tag>
-        return '<%s%s>%s</%s>' % (self.tag, fa, co, self.tag)
+        xml_tag = b'<%s%s>%s</%s>' % (tagname, fa, co, tagname)
+        return xml_tag
 
     def __str__(self):
         """
         str(COMPONENT) returns COMPONENT.xml()
         """
-
         return self.xml()
-
+        
     def flatten(self, render=None):
         """
         Returns the text stored by the DIV object rendered by the render function
@@ -1125,7 +1130,7 @@ class DIV(XmlComponent):
         matches = []
         # check if the component has an attribute with the same
         # value as provided
-        tag = getattr(self, 'tag').replace('/', '')
+        tag = to_native(getattr(self, 'tag')).replace('/', '')
         check = not (args and tag not in args)
         for (key, value) in iteritems(kargs):
             if key not in ['first_only', 'replace', 'find_text']:
@@ -1276,8 +1281,7 @@ class __TAG__(XmlComponent):
     def __getattr__(self, name):
         if name[-1:] == '_':
             name = name[:-1] + '/'
-        if isinstance(name, unicodeT):
-            name = name.encode('utf-8')
+        name=to_bytes(name)
         return lambda *a, **b: __tag_div__(name, *a, **b)
 
     def __call__(self, html):
@@ -1303,12 +1307,12 @@ class HTML(DIV):
     See also `DIV`
     """
 
-    tag = 'html'
+    tag = b'html'
 
-    strict = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">\n'
-    transitional = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">\n'
-    frameset = '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">\n'
-    html5 = '<!DOCTYPE HTML>\n'
+    strict = b'<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">\n'
+    transitional = b'<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">\n'
+    frameset = b'<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Frameset//EN" "http://www.w3.org/TR/html4/frameset.dtd">\n'
+    html5 = b'<!DOCTYPE HTML>\n'
 
     def xml(self):
         lang = self['lang']
@@ -1327,11 +1331,12 @@ class HTML(DIV):
         elif doctype == 'html5':
             doctype = self.html5
         elif doctype == '':
-            doctype = ''
+            doctype = b''
         else:
-            doctype = '%s\n' % doctype
+            doctype = b'%s\n' % to_bytes(doctype)
         (fa, co) = self._xml()
-        return '%s<%s%s>%s</%s>' % (doctype, self.tag, fa, co, self.tag)
+
+        return b'%s<%s%s>%s</%s>' % (doctype, self.tag, fa, co, self.tag)
 
 
 class XHTML(DIV):
@@ -1355,11 +1360,11 @@ class XHTML(DIV):
     See also `DIV`
     """
 
-    tag = 'html'
+    tag = b'html'
 
-    strict = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\n'
-    transitional = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\n'
-    frameset = '<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">\n'
+    strict = b'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">\n'
+    transitional = b'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">\n'
+    frameset = b'<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Frameset//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd">\n'
     xmlns = 'http://www.w3.org/1999/xhtml'
 
     def xml(self):
@@ -1382,11 +1387,11 @@ class XHTML(DIV):
             elif doctype == 'frameset':
                 doctype = self.frameset
             else:
-                doctype = '%s\n' % doctype
+                doctype = b'%s\n' % to_bytes(doctype)
         else:
             doctype = self.transitional
         (fa, co) = self._xml()
-        return '%s<%s%s>%s</%s>' % (doctype, self.tag, fa, co, self.tag)
+        return b'%s<%s%s>%s</%s>' % (doctype, self.tag, fa, co, self.tag)
 
 
 class HEAD(DIV):
@@ -1415,6 +1420,7 @@ class SCRIPT(DIV):
 
     def xml(self):
         (fa, co) = self._xml()
+        fa = to_native(fa)
         # no escaping of subcomponents
         co = '\n'.join([str(component) for component in
                        self.components])
@@ -1434,6 +1440,7 @@ class STYLE(DIV):
 
     def xml(self):
         (fa, co) = self._xml()
+        fa = to_native(fa)        
         # no escaping of subcomponents
         co = '\n'.join([str(component) for component in
                        self.components])
@@ -1503,7 +1510,7 @@ class P(DIV):
     def xml(self):
         text = DIV.xml(self)
         if self['cr2br']:
-            text = text.replace('\n', '<br />')
+            text = text.replace(b'\n', b'<br />')
         return text
 
 
@@ -2676,7 +2683,7 @@ class web2pyHTMLParser(HTMLParser):
             tag['_' + key] = value
         tag.parent = self.parent
         self.parent.append(tag)
-        if not tag.tag.endswith('/'):
+        if not tag.tag.endswith(b'/'):
             self.parent = tag
         else:
             self.last = tag.tag[:-1]
@@ -2699,6 +2706,7 @@ class web2pyHTMLParser(HTMLParser):
         self.parent.append(entitydefs[name])
 
     def handle_endtag(self, tagname):
+        tagname = to_bytes(tagname)
         # this deals with unbalanced tags
         if tagname == self.last:
             return
@@ -2790,7 +2798,7 @@ class MARKMIN(XmlComponent):
                  class_prefix='',
                  id_prefix='markmin_',
                  **kwargs):
-        self.text = text
+        self.text = to_bytes(text)
         self.extra = extra or {}
         self.allowed = allowed or {}
         self.sep = sep
@@ -2813,7 +2821,7 @@ class MARKMIN(XmlComponent):
                       URL=self.url, environment=self.environment,
                       autolinks=self.autolinks, protolinks=self.protolinks,
                       class_prefix=self.class_prefix, id_prefix=self.id_prefix)
-        return html if not self.kwargs else DIV(XML(html), **self.kwargs).xml()
+        return to_bytes(html) if not self.kwargs else to_bytes(DIV(XML(html), **self.kwargs).xml())
 
     def __str__(self):
         return self.xml()

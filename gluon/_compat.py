@@ -22,8 +22,10 @@ if PY2:
     from email.MIMEBase import MIMEBase
     from email.Header import Header
     from email import MIMEMultipart, MIMEText, Encoders, Charset
-    from urllib import FancyURLopener
+    from urllib import FancyURLopener, urlencode
     from urllib import quote as urllib_quote, unquote as urllib_unquote
+    from string import maketrans
+    import cgi
     reduce = reduce
     hashlib_md5 = hashlib.md5
     iterkeys = lambda d: d.iterkeys()
@@ -37,7 +39,6 @@ if PY2:
     long = long
     unichr = unichr
     unicodeT = unicode
-    from string import maketrans
 
     def implements_iterator(cls):
         cls.next = cls.__next__
@@ -62,6 +63,10 @@ if PY2:
         if obj is None or isinstance(obj, str):
             return obj
         return obj.encode(charset, errors)
+
+    def _local_html_escape(data, quote):
+        return cgi.escape(data, quote).replace("'", "&#x27;")
+
 else:
     import pickle
     from io import StringIO
@@ -83,7 +88,8 @@ else:
     from email.header import Header
     from email.charset import Charset
     from urllib.request import FancyURLopener
-    from urllib.parse import quote as urllib_quote, unquote as urllib_unquote
+    from urllib.parse import quote as urllib_quote, unquote as urllib_unquote, urlencode
+    import html
     hashlib_md5 = lambda s: hashlib.md5(bytes(s, 'utf8'))
     iterkeys = lambda d: iter(d.keys())
     itervalues = lambda d: iter(d.values())
@@ -115,6 +121,21 @@ else:
             return obj
         return obj.decode(charset, errors)
 
+    def _local_html_escape(s, quote=True):
+        """
+        Works with bytes.
+        Replace special characters "&", "<" and ">" to HTML-safe sequences.
+        If the optional flag quote is true (the default), the quotation mark
+        characters, both double quote (") and single quote (') characters are also
+        translated.
+        """
+        s = s.replace(b"&", b"&amp;") # Must be done first!
+        s = s.replace(b"<", b"&lt;")
+        s = s.replace(b">", b"&gt;")
+        if quote:
+            s = s.replace(b'"', b"&quot;")
+            s = s.replace(b'\'', b"&#x27;")
+        return s
 
 def with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""

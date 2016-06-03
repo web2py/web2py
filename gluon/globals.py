@@ -13,7 +13,7 @@ Contains the classes for the global used variables:
 - Session
 
 """
-from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems
+from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems, to_unicode, to_native
 from gluon.storage import Storage, List
 from gluon.streamer import streamer, stream_file_or_304_or_206, DEFAULT_CHUNK_SIZE
 from gluon.contenttype import contenttype
@@ -414,7 +414,8 @@ class Response(Storage):
         if not escape:
             self.body.write(str(data))
         else:
-            self.body.write(xmlescape(data))
+            # FIXME PY3:
+            self.body.write(to_native(xmlescape(data)))
 
     def render(self, *a, **b):
         from compileapp import run_view_in
@@ -434,7 +435,7 @@ class Response(Storage):
         self._vars.update(b)
         self._view_environment.update(self._vars)
         if view:
-            from .compat import StringIO
+            from gluon.compat import StringIO
             (obody, oview) = (self.body, self.view)
             (self.body, self.view) = (StringIO(), view)
             run_view_in(self._view_environment)

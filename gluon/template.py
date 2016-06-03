@@ -18,7 +18,7 @@ import os
 import cgi
 import logging
 from re import compile, sub, escape, DOTALL
-from gluon._compat import StringIO, unicodeT
+from gluon._compat import StringIO, unicodeT, to_unicode, to_bytes, to_native
 
 try:
     # have web2py
@@ -917,13 +917,14 @@ def render(content="hello world",
             stream = open(filename, 'rb')
             close_stream = True
         elif content:
-            stream = StringIO(content)
+            stream = StringIO(to_native(content))
 
     # Execute the template.
     code = str(TemplateParser(stream.read(
     ), context=context, path=path, lexers=lexers, delimiters=delimiters, writer=writer))
+
     try:
-        exec(code) in context
+        exec(code, context)
     except Exception:
         # for i,line in enumerate(code.split('\n')): print i,line
         raise

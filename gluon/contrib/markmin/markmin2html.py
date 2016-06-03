@@ -7,7 +7,7 @@ from __future__ import print_function
 import re
 import urllib
 from cgi import escape
-from gluon._compat import maketrans, urllib_quote
+from gluon._compat import maketrans, urllib_quote, unicodeT, _local_html_escape, to_bytes
 
 try:
     from ast import parse as ast_parse
@@ -950,7 +950,7 @@ def render(text,
     if protolinks == "default":
         protolinks = protolinks_simple
     pp = '\n' if pretty_print else ''
-    if isinstance(text, unicode):
+    if isinstance(text, unicodeT):
         text = text.encode('utf8')
     text = str(text or '')
     text = regex_backslash.sub(lambda m: m.group(1).translate(ttab_in), text)

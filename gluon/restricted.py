@@ -221,7 +221,7 @@ def restricted(code, environment=None, layer='Unknown'):
             ccode = code
         else:
             ccode = compile2(code, layer)
-        exec (ccode) in environment
+        exec(ccode, environment)
     except HTTP:
         raise
     except RestrictedError:
