@@ -1136,6 +1136,12 @@ class Session(Storage):
         return True
 
     def _unchanged(self, response):
+        if response.session_new:
+            internal = ['_last_timestamp', '_secure', '_start_timestamp']
+            for item in self.keys():
+                if item not in internal:
+                    return False
+            return True
         session_pickled = pickle.dumps(self, pickle.HIGHEST_PROTOCOL)
         response.session_pickled = session_pickled
         session_hash = hashlib.md5(session_pickled).hexdigest()
