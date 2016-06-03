@@ -250,16 +250,30 @@ class TestAuthJWT(unittest.TestCase):
 
 
     def test_jwt_token_manager(self):
+        import gluon.serializers
         self.request.vars.update(self.user_data)
         self.token = self.jwtauth.jwt_token_manager()
-            
+        self.assertIsNotNone(self.token)
+        del self.request.vars['username']
+        del self.request.vars['password']
+        self.request.vars._token = gluon.serializers.json_parser.loads(self.token)['token']
+        self.token = self.jwtauth.jwt_token_manager()
+        self.assertIsNotNone(self.token)
+
         
     def test_allows_jwt(self):
-        request = self.request
+        import gluon.serializers
+        self.request.vars.update(self.user_data)
+        self.token = self.jwtauth.jwt_token_manager()
+        self.assertIsNotNone(self.token)
+        del self.request.vars['username']
+        del self.request.vars['password']
+        self.token = self.jwtauth.jwt_token_manager()
+        self.request.vars._token = gluon.serializers.json_parser.loads(self.token)['token']
         @self.jwtauth.allows_jwt()
         def optional_auth():
-            assertEqual(self.user_data['username'], self.auth.user.username)
-
+            self.assertEqual(self.user_data['username'], self.auth.user.username)
+        optional_auth()
         
 @unittest.skipIf(IS_IMAP, "TODO: Imap raises 'Connection refused'")
 # class TestAuth(unittest.TestCase):
