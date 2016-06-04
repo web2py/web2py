@@ -10,6 +10,7 @@ from .test_dal import *
 from .test_cache import *
 from .test_template import *
 from .test_html import *
+from .test_contribs import *
 
 if sys.version[:3] == '2.7':
     from .test_compileapp import *
@@ -24,5 +25,4 @@ if sys.version[:3] == '2.7':
     from .test_appadmin import *
     from .test_scheduler import *
     from .test_web import *
-    from .test_contribs import *
     from .test_old_doctests import *
