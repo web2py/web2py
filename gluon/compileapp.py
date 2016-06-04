@@ -18,7 +18,7 @@ import fnmatch
 import os
 import copy
 import random
-from gluon._compat import builtin
+from gluon._compat import builtin, PY2
 from gluon.storage import Storage, List
 from gluon.template import parse_template
 from gluon.restricted import restricted, compile2
@@ -548,10 +548,17 @@ def run_models_in(environment):
     path = pjoin(folder, 'models')
     cpath = pjoin(folder, 'compiled')
     compiled = os.path.exists(cpath)
-    if compiled:
-        models = sorted(listdir(cpath, '^models[_.][\w.]+\.pyc$', 0), model_cmp)
+    if PY2:
+        if compiled:
+            models = sorted(listdir(cpath, '^models[_.][\w.]+\.pyc$', 0), model_cmp)
+        else:
+            models = sorted(listdir(path, '^\w+\.py$', 0, sort=False), model_cmp_sep)
     else:
-        models = sorted(listdir(path, '^\w+\.py$', 0, sort=False), model_cmp_sep)
+        if compiled:
+            models = sorted(listdir(cpath, '^models[_.][\w.]+\.pyc$', 0), key=lambda f: '{0:03d}'.format(f.count('.')) + f)
+        else:
+            models = sorted(listdir(path, '^\w+\.py$', 0, sort=False), key=lambda f: '{0:03d}'.format(f.count(os.path.sep)) + f)
+
     models_to_run = None
     for model in models:
         if response.models_to_run != models_to_run:

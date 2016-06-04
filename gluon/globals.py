@@ -418,7 +418,7 @@ class Response(Storage):
             self.body.write(to_native(xmlescape(data)))
 
     def render(self, *a, **b):
-        from compileapp import run_view_in
+        from gluon.compileapp import run_view_in
         if len(a) > 2:
             raise SyntaxError(
                 'Response.render can be called with two arguments, at most')

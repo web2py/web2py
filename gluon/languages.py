@@ -164,7 +164,7 @@ def clear_cache(filename):
 
 
 def read_dict_aux(filename):
-    lang_text = read_locked(filename).replace('\r\n', '\n')
+    lang_text = read_locked(filename).replace(b'\r\n', b'\n')
     clear_cache(filename)
     try:
         return safe_eval(lang_text) or {}
@@ -287,7 +287,7 @@ def read_possible_languages(langpath):
 
 
 def read_plural_dict_aux(filename):
-    lang_text = read_locked(filename).replace('\r\n', '\n')
+    lang_text = read_locked(filename).replace(b'\r\n', b'\n')
     try:
         return eval(lang_text) or {}
     except Exception:
