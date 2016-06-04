@@ -41,7 +41,7 @@ Create File: app/models/scheduler.py ======
 from gluon.scheduler import Scheduler
 
 def demo1(*args,**vars):
-    print('you passed args=%s and vars=%s') % (args, vars)
+    print('you passed args=%s and vars=%s' % (args, vars))
     return 'done!'
 
 def demo2():

@@ -307,7 +307,7 @@ class TestsForSchedulerRunner(testForSchedulerRunnerBase):
         self.db.commit()
         self.writefunction(r"""
 def demo1(*args,**vars):
-    print('you passed args=%s and vars=%s') % (args, vars)
+    print('you passed args=%s and vars=%s' % (args, vars))
     return args[0]
 
 def demo4():

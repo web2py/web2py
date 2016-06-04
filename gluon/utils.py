@@ -23,7 +23,7 @@ import logging
 import socket
 import base64
 import zlib
-from gluon._compat import basestring, pickle, PY2, xrange, to_bytes
+from gluon._compat import basestring, pickle, PY2, xrange, to_bytes, to_native
 
 _struct_2_long_long = struct.Struct('=QQ')
 
@@ -102,8 +102,8 @@ def simple_hash(text, key='', salt='', digest_alg='md5'):
         h = digest_alg(text + key + salt)
     elif digest_alg.startswith('pbkdf2'):  # latest and coolest!
         iterations, keylen, alg = digest_alg[7:-1].split(',')
-        return pbkdf2_hex(text, salt, int(iterations),
-                          int(keylen), get_digest(alg))
+        return to_native(pbkdf2_hex(text, salt, int(iterations),
+                                    int(keylen), get_digest(alg)))
     elif key:  # use hmac
         digest_alg = get_digest(digest_alg)
         h = hmac.new(key + salt, text, digest_alg)

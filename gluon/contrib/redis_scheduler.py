@@ -31,7 +31,7 @@ from gluon.contrib.redis_utils import RConn
 from gluon.contrib.redis_scheduler import RScheduler
 
 def demo1(*args,**vars):
-    print('you passed args=%s and vars=%s') % (args, vars)
+    print('you passed args=%s and vars=%s' % (args, vars))
     return 'done!'
 
 def demo2():
