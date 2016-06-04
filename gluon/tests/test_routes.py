@@ -21,6 +21,7 @@ from gluon.fileutils import abspath
 from gluon.settings import global_settings
 from gluon.http import HTTP
 from gluon.storage import Storage
+from gluon._compat import to_bytes
 
 logger = None
 oldcwd = None
@@ -319,7 +320,9 @@ routes_out = [
         self.assertEqual(str(URL(
             a='welcome', c='default', f='f', args=['årg'])), "/f/%C3%A5rg")
         self.assertEqual(
-            str(URL(a='welcome', c='default', f='fünc')), "/f\xc3\xbcnc")
+            URL(a='welcome', c='default', f='fünc'), "/fünc")
+        self.assertEqual(
+            to_bytes(URL(a='welcome', c='default', f='fünc')), b"/f\xc3\xbcnc")
 
     def test_routes_anchor(self):
         '''

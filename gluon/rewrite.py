@@ -27,7 +27,7 @@ from gluon.storage import Storage, List
 from gluon.http import HTTP
 from gluon.fileutils import abspath, read_file
 from gluon.settings import global_settings
-from gluon._compat import urllib_unquote, urllib_quote, iteritems
+from gluon._compat import urllib_unquote, urllib_quote, iteritems, xrange
 
 isdir = os.path.isdir
 isfile = os.path.isfile
@@ -317,7 +317,7 @@ def load(routes='routes.py', app=None, data=None, rdict=None):
 
         symbols = dict(app=app)
         try:
-            exec (data + '\n') in symbols
+            exec(data + '\n', symbols)
         except SyntaxError as e:
             logger.error(
                 '%s has a syntax error and will not be loaded\n' % path

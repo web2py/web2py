@@ -11,8 +11,6 @@ import datetime
 import sys
 
 from .fix_path import fix_sys_path
-
-
 fix_sys_path(__file__)
 
 from gluon.storage import Storage
@@ -25,7 +23,7 @@ class BaseTestScheduler(unittest.TestCase):
     def setUp(self):
         self.db = None
         self.cleanfolder()
-        from gluon import current
+        from gluon.globals import current
         s = Storage({'application': 'welcome',
                      'folder': 'applications/welcome',
                      'controller': 'default'})
