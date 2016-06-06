@@ -2041,7 +2041,8 @@ class SQLFORM(FORM):
              client_side_delete=False,
              ignore_common_filters=None,
              auto_pagination=True,
-             use_cursor=False):
+             use_cursor=False,
+             represent_none=None):
 
         formstyle = formstyle or current.response.formstyle
         if isinstance(query, Set):
@@ -2789,6 +2790,8 @@ class SQLFORM(FORM):
                         value = truncate_string(value, maxlength)
                     elif not isinstance(value, XmlComponent):
                         value = field.formatter(value)
+                    if value is None:
+                        value = represent_none
                     trcols.append(TD(value))
                 row_buttons = TD(_class='row_buttons', _nowrap=True)
                 if links and links_in_grid:
