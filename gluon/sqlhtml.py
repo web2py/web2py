@@ -2318,6 +2318,10 @@ class SQLFORM(FORM):
         elif details and request.args(-3) == 'view':
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(referrer)
+            if represent_none is not None:
+                for field in record.iterkeys():
+                    if record[field] is None:
+                        record[field] = represent_none
             sqlformargs = dict(upload=upload, ignore_rw=ignore_rw,
                                formstyle=formstyle, readonly=True,
                                _class='web2py_form')
