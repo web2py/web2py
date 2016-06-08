@@ -2041,7 +2041,8 @@ class SQLFORM(FORM):
              client_side_delete=False,
              ignore_common_filters=None,
              auto_pagination=True,
-             use_cursor=False):
+             use_cursor=False,
+             represent_none=None):
 
         formstyle = formstyle or current.response.formstyle
         if isinstance(query, Set):
@@ -2317,6 +2318,10 @@ class SQLFORM(FORM):
         elif details and request.args(-3) == 'view':
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(referrer)
+            if represent_none is not None:
+                for field in record.iterkeys():
+                    if record[field] is None:
+                        record[field] = represent_none
             sqlformargs = dict(upload=upload, ignore_rw=ignore_rw,
                                formstyle=formstyle, readonly=True,
                                _class='web2py_form')
@@ -2789,6 +2794,8 @@ class SQLFORM(FORM):
                         value = truncate_string(value, maxlength)
                     elif not isinstance(value, XmlComponent):
                         value = field.formatter(value)
+                    if value is None:
+                        value = represent_none
                     trcols.append(TD(value))
                 row_buttons = TD(_class='row_buttons', _nowrap=True)
                 if links and links_in_grid:
