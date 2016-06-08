@@ -48,6 +48,7 @@ PAST = 'Sat, 1-Jan-1971 00:00:00'
 FUTURE = 'Tue, 1-Dec-2999 23:59:59'
 
 try:
+    #FIXME PY3
     from gluon.contrib.minify import minify
     have_minify = True
 except ImportError:

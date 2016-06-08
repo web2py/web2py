@@ -11,14 +11,14 @@ Utilities and class for UTF8 strings managing
 ----------------------------------------------
 """
 from __future__ import print_function
-from gluon._compat import builtin as __builtin__, unicodeT, iteritems
+from gluon._compat import builtin as __builtin__, unicodeT, iteritems, to_unicode
 
 __all__ = ['Utf8']
 
 repr_escape_tab = {}
 #FIXME PY3
-#for i in range(1, 32):
-#    repr_escape_tab[i] = ur'\x%02x' % i
+for i in range(1, 32):
+    repr_escape_tab[i] = to_unicode("\\"+"x%02x" % i)
 repr_escape_tab[7] = u'\\a'
 repr_escape_tab[8] = u'\\b'
 repr_escape_tab[9] = u'\\t'

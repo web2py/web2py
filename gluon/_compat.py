@@ -22,9 +22,10 @@ if PY2:
     from email.MIMEBase import MIMEBase
     from email.Header import Header
     from email import MIMEMultipart, MIMEText, Encoders, Charset
-    from urllib import FancyURLopener, urlencode
+    from urllib import FancyURLopener, urlencode, urlopen
     from urllib import quote as urllib_quote, unquote as urllib_unquote
     from string import maketrans
+    from types import ClassType
     import cgi
     reduce = reduce
     hashlib_md5 = hashlib.md5
@@ -64,8 +65,9 @@ if PY2:
             return obj
         return obj.encode(charset, errors)
 
-    def _local_html_escape(data, quote):
-        return cgi.escape(data, quote).replace("'", "&#x27;")
+    def _local_html_escape(data, quote=False):
+        s = cgi.escape(data, quote)
+        return s.replace("'", "&#x27;") if quote else s
 
 else:
     import pickle
@@ -87,7 +89,7 @@ else:
     from email import encoders as Encoders
     from email.header import Header
     from email.charset import Charset
-    from urllib.request import FancyURLopener
+    from urllib.request import FancyURLopener, urlopen
     from urllib.parse import quote as urllib_quote, unquote as urllib_unquote, urlencode
     import html
     hashlib_md5 = lambda s: hashlib.md5(bytes(s, 'utf8'))
@@ -103,6 +105,7 @@ else:
     unichr = chr
     unicodeT = str
     maketrans = str.maketrans
+    ClassType = type
 
     implements_iterator = _identity
     implements_bool = _identity
@@ -129,6 +132,9 @@ else:
         characters, both double quote (") and single quote (') characters are also
         translated.
         """
+        if isinstance(s, str):
+            return html.escape(s, quote=quote)
+
         s = s.replace(b"&", b"&amp;") # Must be done first!
         s = s.replace(b"<", b"&lt;")
         s = s.replace(b">", b"&gt;")

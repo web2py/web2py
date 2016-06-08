@@ -541,7 +541,7 @@ class translator(object):
     def get_possible_languages(self):
         """ Gets list of all possible languages for current application """
         return list(set(self.current_languages +
-                        [lang for lang in iterkeys(read_possible_languages(self.langpath))
+                        [lang for lang in read_possible_languages(self.langpath)
                          if lang != 'default']))
 
     def set_current_languages(self, *languages):
@@ -658,7 +658,7 @@ class translator(object):
             languages = []
         self.requested_languages = languages = tuple(languages)
         if languages:
-            all_languages = set(lang for lang in iterkeys(pl_info)
+            all_languages = set(lang for lang in pl_info
                                 if lang != 'default') \
                 | set(self.current_languages)
             for lang in languages:

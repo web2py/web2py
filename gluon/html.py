@@ -2210,7 +2210,8 @@ class FORM(DIV):
         next      = where to redirect in case of success
         any other kwargs will be passed for form.accepts(...)
         """
-        from gluon import current, redirect
+        from gluon.globals import current
+        from gluon.http import redirect
         kwargs['request_vars'] = kwargs.get(
             'request_vars', current.request.post_vars)
         kwargs['session'] = kwargs.get('session', current.session)

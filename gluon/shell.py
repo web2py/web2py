@@ -30,7 +30,7 @@ from gluon.globals import Request, Response, Session
 from gluon.storage import Storage, List
 from gluon.admin import w2p_unpack
 from pydal.base import BaseAdapter
-from gluon._compat import iteritems
+from gluon._compat import iteritems, ClassType
 
 logger = logging.getLogger("web2py")
 
@@ -87,7 +87,7 @@ def exec_environment(
     if pyfile:
         pycfile = pyfile + 'c'
         if os.path.isfile(pycfile):
-            exec (read_pyc(pycfile)) in env
+            exec (read_pyc(pycfile), env)
         else:
             execfile(pyfile, env)
     return Storage(env)
@@ -244,14 +244,14 @@ def run(
                                  "controllers_%s_%s.pyc" % (c, f))
         if ((cronjob and os.path.isfile(pycfile))
             or not os.path.isfile(pyfile)):
-            exec (read_pyc(pycfile)) in _env
+            exec(read_pyc(pycfile), _env)
         elif os.path.isfile(pyfile):
             execfile(pyfile, _env)
         else:
             die(errmsg)
 
     if f:
-        exec ('print %s()' % f, _env)
+        exec('print %s()' % f, _env)
         return
 
     _env.update(exec_pythonrc())
@@ -260,7 +260,7 @@ def run(
             ccode = None
             if startfile.endswith('.pyc'):
                 ccode = read_pyc(startfile)
-                exec (ccode) in _env
+                exec(ccode, _env)
             else:
                 execfile(startfile, _env)
 
@@ -398,7 +398,7 @@ def test(testpath, import_models=True, verbose=False):
         def doctest_object(name, obj):
             """doctest obj and enclosed methods and classes."""
 
-            if type(obj) in (types.FunctionType, type, types.MethodType,
+            if type(obj) in (types.FunctionType, type, ClassType, types.MethodType,
                              types.UnboundMethodType):
 
                 # Reload environment before each test.
@@ -409,7 +409,7 @@ def test(testpath, import_models=True, verbose=False):
                     obj, globs=globs,
                     name='%s: %s' % (os.path.basename(testfile),
                                      name), verbose=verbose)
-                if type(obj) in (type):
+                if type(obj) in (type, ClassType):
                     for attr_name in dir(obj):
 
                         # Execute . operator so decorators are executed.

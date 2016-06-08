@@ -477,7 +477,7 @@ def ldap_auth(server='ldap',
         ldap_groups_of_the_user = get_user_groups_from_ldap(username, password)
 
         # search for allowed group names
-        if not isinstance(allowed_groups, type(list())):
+        if not isinstance(allowed_groups, list):
             allowed_groups = [allowed_groups]
         for group in allowed_groups:
             if ldap_groups_of_the_user.count(group) > 0:

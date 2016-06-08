@@ -71,7 +71,7 @@ __all__ = [
 ]
 
 try:
-    from globals import current
+    from gluon.globals import current
     have_current = True
 except ImportError:
     have_current = False

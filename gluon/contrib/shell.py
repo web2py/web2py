@@ -29,17 +29,12 @@
 An interactive, stateful AJAX shell that runs Python code on the server.
 """
 from __future__ import print_function
-
+from gluon._compat import ClassType, pickle, StringIO
 import logging
 import new
-try:
-   import cPickle as pickle
-except:
-   import pickle
 import sys
 import traceback
 import types
-import StringIO
 import threading
 locker = threading.RLock()
 
@@ -53,6 +48,7 @@ _HISTORY_KIND = '_Shell_History'
 UNPICKLABLE_TYPES = [
     types.ModuleType,
     type,
+    ClassType
     types.FunctionType,
 ]
 
@@ -204,7 +200,7 @@ def run(history, statement, env={}):
     # globals, run the statement, and re-pickle the history globals, all
     # inside it.
     old_main = sys.modules.get('__main__')
-    output = StringIO.StringIO()
+    output = StringIO()
     try:
         sys.modules['__main__'] = statement_module
         statement_module.__name__ = '__main__'
@@ -212,7 +208,7 @@ def run(history, statement, env={}):
 
         # re-evaluate the unpicklables
         for code in history.unpicklables:
-            exec code in statement_module.__dict__
+            exec(code, statement_module.__dict__)
 
         # re-initialize the globals
         for name, val in history.globals_dict().items():
@@ -232,7 +228,7 @@ def run(history, statement, env={}):
             try:
                 sys.stderr = sys.stdout = output
                 locker.acquire()
-                exec compiled in statement_module.__dict__
+                exec(compiled, statement_module.__dict__)
             finally:
                 locker.release()
                 sys.stdout, sys.stderr = old_stdout, old_stderr

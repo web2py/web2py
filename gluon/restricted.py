@@ -10,7 +10,7 @@ Restricted environment to execute application's code
 """
 
 import sys
-from gluon._compat import pickle
+from gluon._compat import pickle, ClassType
 import traceback
 import types
 import os
@@ -249,7 +249,7 @@ def snapshot(info=None, context=5, code=None, environment=None):
     # if no exception info given, get current:
     etype, evalue, etb = info or sys.exc_info()
 
-    if isinstance(etype, type):
+    if isinstance(etype, ClassType):
         etype = etype.__name__
 
     # create a snapshot dict with some basic information

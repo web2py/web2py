@@ -355,7 +355,7 @@ class web2pyDialog(object):
         except:
             sys.stderr.write('Sorry, -K only supported for python 2.6-2.7\n')
             return
-        code = "from gluon import current;current._scheduler.loop()"
+        code = "from gluon.globals import current;current._scheduler.loop()"
         print('starting scheduler from widget for "%s"...' % app)
         args = (app, True, True, None, False, code)
         logging.getLogger().setLevel(self.options.debuglevel)
@@ -1034,9 +1034,9 @@ def check_existent_app(options, appname):
 
 def get_code_for_scheduler(app, options):
     if len(app) == 1 or app[1] is None:
-        code = "from gluon import current;current._scheduler.loop()"
+        code = "from gluon.globals import current;current._scheduler.loop()"
     else:
-        code = "from gluon import current;current._scheduler.group_names = ['%s'];"
+        code = "from gluon.globals import current;current._scheduler.group_names = ['%s'];"
         code += "current._scheduler.loop()"
         code = code % ("','".join(app[1:]))
     app_ = app[0]
@@ -1056,7 +1056,7 @@ def start_schedulers(options):
     apps = [(app.strip(), None) for app in options.scheduler.split(',')]
     if options.scheduler_groups:
         apps = options.scheduler_groups
-    code = "from gluon import current;current._scheduler.loop()"
+    code = "from gluon.globals import current;current._scheduler.loop()"
     logging.getLogger().setLevel(options.debuglevel)
     if options.folder:
         os.chdir(options.folder)
