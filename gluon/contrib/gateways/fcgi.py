@@ -436,13 +436,13 @@ def encode_pair(name, value):
     if nameLength < 128:
         s = chr(nameLength)
     else:
-        s = struct.pack('!L', nameLength | 0x80000000)
+        s = struct.pack('!L', nameLength | 0x80000000L)
 
     valueLength = len(value)
     if valueLength < 128:
         s += chr(valueLength)
     else:
-        s += struct.pack('!L', valueLength | 0x80000000)
+        s += struct.pack('!L', valueLength | 0x80000000L)
 
     return s + name + value
 
@@ -470,7 +470,7 @@ class Record(object):
         while length:
             try:
                 data = sock.recv(length)
-            except socket.error as e:
+            except socket.error, e:
                 if e[0] == errno.EAGAIN:
                     select.select([sock], [], [])
                     continue
@@ -527,7 +527,7 @@ class Record(object):
         while length:
             try:
                 sent = sock.send(data)
-            except socket.error as e:
+            except socket.error, e:
                 if e[0] == errno.EAGAIN:
                     select.select([], [sock], [])
                     continue
@@ -592,7 +592,7 @@ class Request(object):
         self._flush()
         self._end(appStatus, protocolStatus)
 
-    def _end(self, appStatus=0, protocolStatus=FCGI_REQUEST_COMPLETE):
+    def _end(self, appStatus=0L, protocolStatus=FCGI_REQUEST_COMPLETE):
         self._conn.end_request(self, appStatus, protocolStatus)
 
     def _flush(self):
@@ -615,7 +615,7 @@ class CGIRequest(Request):
         self.stderr = sys.stderr
         self.data = StringIO.StringIO()
 
-    def _end(self, appStatus=0, protocolStatus=FCGI_REQUEST_COMPLETE):
+    def _end(self, appStatus=0L, protocolStatus=FCGI_REQUEST_COMPLETE):
         sys.exit(appStatus)
 
     def _flush(self):
@@ -664,7 +664,7 @@ class Connection(object):
                 self.process_input()
             except EOFError:
                 break
-            except (select.error, socket.error) as e:
+            except (select.error, socket.error), e:
                 if e[0] == errno.EBADF: # Socket was closed by Request.
                     break
                 raise
@@ -714,7 +714,7 @@ class Connection(object):
         """
         rec.write(self._sock)
 
-    def end_request(self, req, appStatus=0,
+    def end_request(self, req, appStatus=0L,
                     protocolStatus=FCGI_REQUEST_COMPLETE, remove=True):
         """
         End a Request.
@@ -763,7 +763,7 @@ class Connection(object):
 
         if not self._multiplexed and self._requests:
             # Can't multiplex requests.
-            self.end_request(req, 0, FCGI_CANT_MPX_CONN, remove=False)
+            self.end_request(req, 0L, FCGI_CANT_MPX_CONN, remove=False)
         else:
             self._requests[inrec.requestId] = req
 
@@ -854,7 +854,7 @@ class MultiplexedConnection(Connection):
         finally:
             self._lock.release()
 
-    def end_request(self, req, appStatus=0,
+    def end_request(self, req, appStatus=0L,
                     protocolStatus=FCGI_REQUEST_COMPLETE, remove=True):
         self._lock.acquire()
         try:
@@ -990,7 +990,7 @@ class Server(object):
                                  socket.SOCK_STREAM)
             try:
                 sock.getpeername()
-            except socket.error as e:
+            except socket.error, e:
                 if e[0] == errno.ENOTSOCK:
                     # Not a socket, assume CGI context.
                     isFCGI = False
@@ -1010,7 +1010,7 @@ class Server(object):
         else:
             # Run as a server
             oldUmask = None
-            if isinstance(self._bindAddress, str):
+            if type(self._bindAddress) is str:
                 # Unix socket
                 sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
                 try:
@@ -1021,7 +1021,7 @@ class Server(object):
                     oldUmask = os.umask(self._umask)
             else:
                 # INET socket
-                assert isinstance(self._bindAddress, tuple)
+                assert type(self._bindAddress) is tuple
                 assert len(self._bindAddress) == 2
                 sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                 sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -1077,7 +1077,7 @@ class Server(object):
         while self._keepGoing:
             try:
                 r, w, e = select.select([sock], [], [], timeout)
-            except select.error as e:
+            except select.error, e:
                 if e[0] == errno.EINTR:
                     continue
                 raise
@@ -1085,7 +1085,7 @@ class Server(object):
             if r:
                 try:
                     clientSock, addr = sock.accept()
-                except socket.error as e:
+                except socket.error, e:
                     if e[0] in (errno.EINTR, errno.EAGAIN):
                         continue
                     raise
@@ -1131,7 +1131,7 @@ class Server(object):
         is passed at initialization time, this must be implemented by
         a subclass.
         """
-        raise NotImplementedError(self.__class__.__name__ + '.handler')
+        raise NotImplementedError, self.__class__.__name__ + '.handler'
 
     def error(self, req):
         """
@@ -1156,7 +1156,7 @@ class WSGIServer(Server):
 
         Set multithreaded to False if your application is not MT-safe.
         """
-        if 'handler' in kw:
+        if kw.has_key('handler'):
             del kw['handler'] # Doesn't make sense to let this through
         super(WSGIServer, self).__init__(**kw)
 
@@ -1209,7 +1209,7 @@ class WSGIServer(Server):
         result = None
 
         def write(data):
-            assert isinstance(data, str), 'write() argument must be string'
+            assert type(data) is str, 'write() argument must be string'
             assert headers_set, 'write() before start_response()'
 
             if not headers_sent:
@@ -1246,15 +1246,15 @@ class WSGIServer(Server):
             else:
                 assert not headers_set, 'Headers already set!'
 
-            assert isinstance(status, str), 'Status must be a string'
+            assert type(status) is str, 'Status must be a string'
             assert len(status) >= 4, 'Status must be at least 4 characters'
             assert int(status[:3]), 'Status must begin with 3-digit code'
             assert status[3] == ' ', 'Status must have a space after code'
-            assert isinstance(response_headers, list), 'Headers must be a list'
+            assert type(response_headers) is list, 'Headers must be a list'
             if __debug__:
                 for name,val in response_headers:
-                    assert isinstance(name, str), 'Header names must be strings'
-                    assert isinstance(val, str), 'Header values must be strings'
+                    assert type(name) is str, 'Header names must be strings'
+                    assert type(val) is str, 'Header values must be strings'
 
             headers_set[:] = [status, response_headers]
             return write
@@ -1273,7 +1273,7 @@ class WSGIServer(Server):
                 finally:
                     if hasattr(result, 'close'):
                         result.close()
-            except socket.error as e:
+            except socket.error, e:
                 if e[0] != errno.EPIPE:
                     raise # Don't let EPIPE propagate beyond server
         finally:
@@ -1284,9 +1284,9 @@ class WSGIServer(Server):
 
     def _sanitizeEnv(self, environ):
         """Ensure certain values are present, if required by WSGI."""
-        if 'SCRIPT_NAME' not in environ:
+        if not environ.has_key('SCRIPT_NAME'):
             environ['SCRIPT_NAME'] = ''
-        if 'PATH_INFO' not in environ:
+        if not environ.has_key('PATH_INFO'):
             environ['PATH_INFO'] = ''
 
         # If any of these are missing, it probably signifies a broken
@@ -1295,7 +1295,7 @@ class WSGIServer(Server):
                              ('SERVER_NAME', 'localhost'),
                              ('SERVER_PORT', '80'),
                              ('SERVER_PROTOCOL', 'HTTP/1.0')]:
-            if name not in environ:
+            if not environ.has_key(name):
                 environ['wsgi.errors'].write('%s: missing FastCGI param %s '
                                              'required by WSGI!\n' %
                                              (self.__class__.__name__, name))
@@ -1310,10 +1310,11 @@ if __name__ == '__main__':
               '<body>\n' \
               '<p>Hello World!</p>\n' \
               '<table border="1">'
-        names = sorted(environ.keys())
+        names = environ.keys()
+        names.sort()
         for name in names:
             yield '<tr><td>%s</td><td>%s</td></tr>\n' % (
-                name, cgi.escape(repr(environ[name])))
+                name, cgi.escape(`environ[name]`))
 
         form = cgi.FieldStorage(fp=environ['wsgi.input'], environ=environ,
                                 keep_blank_values=1)
