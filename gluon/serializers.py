@@ -83,6 +83,8 @@ def custom_json(o):
         return int(o)
     elif isinstance(o, decimal.Decimal):
         return str(o)
+    elif isinstance(o, (bytes, bytearray)):
+        return str(o)
     elif isinstance(o, lazyT):
         return str(o)
     elif isinstance(o, XmlComponent):

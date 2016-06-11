@@ -21,7 +21,10 @@ if PY2:
     import ConfigParser as configparser
     from email.MIMEBase import MIMEBase
     from email.Header import Header
-    from email import MIMEMultipart, MIMEText, Encoders, Charset
+    from email import Encoders, Charset
+    from email.MIMEMultipart import MIMEMultipart
+    from email.MIMEText import MIMEText
+    from email.Charset import add_charset, QP as charset_QP
     from urllib import FancyURLopener, urlencode, urlopen
     from urllib import quote as urllib_quote, unquote as urllib_unquote
     from string import maketrans
@@ -88,7 +91,7 @@ else:
     from email.mime.text import MIMEText
     from email import encoders as Encoders
     from email.header import Header
-    from email.charset import Charset
+    from email.charset import Charset, add_charset, QP as charset_QP
     from urllib.request import FancyURLopener, urlopen
     from urllib.parse import quote as urllib_quote, unquote as urllib_unquote, urlencode
     import html

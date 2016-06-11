@@ -547,7 +547,7 @@ class TestAuth(unittest.TestCase):
     def test_basic_blank_forms(self):
         for f in ['login', 'retrieve_password', 'retrieve_username', 'register']:
             html_form = getattr(self.auth, f)().xml()
-            self.assertTrue('name="_formkey"' in html_form)
+            self.assertTrue(b'name="_formkey"' in html_form)
 
         for f in ['logout', 'verify_email', 'reset_password', 'change_password', 'profile', 'groups']:
             self.assertRaisesRegexp(HTTP, "303*", getattr(self.auth, f))
@@ -712,7 +712,7 @@ class TestAuth(unittest.TestCase):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
         self.auth.settings.bulk_register_enabled = True
         bulk_register_form = self.auth.bulk_register(max_emails=10).xml()
-        self.assertTrue('name="_formkey"' in bulk_register_form)
+        self.assertTrue(b'name="_formkey"' in bulk_register_form)
 
     # TODO: def test_manage_tokens(self):
     # TODO: def test_reset_password(self):
@@ -723,12 +723,12 @@ class TestAuth(unittest.TestCase):
     def test_change_password(self):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
         change_password_form = getattr(self.auth, 'change_password')().xml()
-        self.assertTrue('name="_formkey"' in change_password_form)
+        self.assertTrue(b'name="_formkey"' in change_password_form)
 
     def test_profile(self):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
         profile_form = getattr(self.auth, 'profile')().xml()
-        self.assertTrue('name="_formkey"' in profile_form)
+        self.assertTrue(b'name="_formkey"' in profile_form)
 
     # TODO: def test_run_login_onaccept(self):
     # TODO: def test_jwt(self):
@@ -766,7 +766,7 @@ class TestAuth(unittest.TestCase):
 
         # basic impersonate() test that return a read form
         self.assertEqual(self.auth.impersonate().xml(),
-                         '<form action="#" enctype="multipart/form-data" method="post"><table><tr id="no_table_user_id__row"><td class="w2p_fl"><label class="" for="no_table_user_id" id="no_table_user_id__label">User Id: </label></td><td class="w2p_fw"><input class="integer" id="no_table_user_id" name="user_id" type="text" value="" /></td><td class="w2p_fc"></td></tr><tr id="submit_record__row"><td class="w2p_fl"></td><td class="w2p_fw"><input type="submit" value="Submit" /></td><td class="w2p_fc"></td></tr></table></form>')
+                         b'<form action="#" enctype="multipart/form-data" method="post"><table><tr id="no_table_user_id__row"><td class="w2p_fl"><label class="" for="no_table_user_id" id="no_table_user_id__label">User Id: </label></td><td class="w2p_fw"><input class="integer" id="no_table_user_id" name="user_id" type="text" value="" /></td><td class="w2p_fc"></td></tr><tr id="submit_record__row"><td class="w2p_fl"></td><td class="w2p_fw"><input type="submit" value="Submit" /></td><td class="w2p_fc"></td></tr></table></form>')
         # bart impersonate itself
         self.assertEqual(self.auth.impersonate(bart_id), None)
         self.assertFalse(self.auth.is_impersonating())  # User shouldn't impersonate itself?
@@ -776,7 +776,7 @@ class TestAuth(unittest.TestCase):
         self.assertTrue(self.auth.is_impersonating())
         self.assertEqual(self.auth.user_id, omer_id)  # we make it really sure
         self.assertEqual(impersonate_form.xml(),
-                         '<form action="#" enctype="multipart/form-data" method="post"><table><tr id="auth_user_id__row"><td class="w2p_fl"><label class="readonly" for="auth_user_id" id="auth_user_id__label">Id: </label></td><td class="w2p_fw"><span id="auth_user_id">2</span></td><td class="w2p_fc"></td></tr><tr id="auth_user_first_name__row"><td class="w2p_fl"><label class="readonly" for="auth_user_first_name" id="auth_user_first_name__label">First name: </label></td><td class="w2p_fw">Omer</td><td class="w2p_fc"></td></tr><tr id="auth_user_last_name__row"><td class="w2p_fl"><label class="readonly" for="auth_user_last_name" id="auth_user_last_name__label">Last name: </label></td><td class="w2p_fw">Simpson</td><td class="w2p_fc"></td></tr><tr id="auth_user_email__row"><td class="w2p_fl"><label class="readonly" for="auth_user_email" id="auth_user_email__label">E-mail: </label></td><td class="w2p_fw">omer@test.com</td><td class="w2p_fc"></td></tr><tr id="auth_user_username__row"><td class="w2p_fl"><label class="readonly" for="auth_user_username" id="auth_user_username__label">Username: </label></td><td class="w2p_fw">omer</td><td class="w2p_fc"></td></tr></table><div style="display:none;"><input name="id" type="hidden" value="2" /></div></form>')
+                         b'<form action="#" enctype="multipart/form-data" method="post"><table><tr id="auth_user_id__row"><td class="w2p_fl"><label class="readonly" for="auth_user_id" id="auth_user_id__label">Id: </label></td><td class="w2p_fw"><span id="auth_user_id">2</span></td><td class="w2p_fc"></td></tr><tr id="auth_user_first_name__row"><td class="w2p_fl"><label class="readonly" for="auth_user_first_name" id="auth_user_first_name__label">First name: </label></td><td class="w2p_fw">Omer</td><td class="w2p_fc"></td></tr><tr id="auth_user_last_name__row"><td class="w2p_fl"><label class="readonly" for="auth_user_last_name" id="auth_user_last_name__label">Last name: </label></td><td class="w2p_fw">Simpson</td><td class="w2p_fc"></td></tr><tr id="auth_user_email__row"><td class="w2p_fl"><label class="readonly" for="auth_user_email" id="auth_user_email__label">E-mail: </label></td><td class="w2p_fw">omer@test.com</td><td class="w2p_fc"></td></tr><tr id="auth_user_username__row"><td class="w2p_fl"><label class="readonly" for="auth_user_username" id="auth_user_username__label">Username: </label></td><td class="w2p_fw">omer</td><td class="w2p_fc"></td></tr></table><div style="display:none;"><input name="id" type="hidden" value="2" /></div></form>')
         self.auth.logout_bare()
         # Failing impersonation
         # User lacking impersonate membership
@@ -800,7 +800,7 @@ class TestAuth(unittest.TestCase):
     def test_groups(self):
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
         self.assertEqual(self.auth.groups().xml(),
-                         '<table><tr><td><h3>user_1(1)</h3></td></tr><tr><td><p></p></td></tr></table>')
+                         b'<table><tr><td><h3>user_1(1)</h3></td></tr><tr><td><p></p></td></tr></table>')
 
     def test_not_authorized(self):
         self.current.request.ajax = 'facke_ajax_request'

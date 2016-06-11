@@ -18,7 +18,7 @@ import pkgutil
 import logging
 from cgi import escape
 from threading import RLock
-from gluon._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes, iteritems
+from gluon._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes, iteritems, _local_html_escape, to_native
 
 from gluon.portalocker import read_locked, LockedFile
 from gluon.utf8 import Utf8
@@ -426,7 +426,7 @@ class lazyT(object):
         return len(str(self))
 
     def xml(self):
-        return str(self) if self.M else escape(str(self))
+        return str(self) if self.M else _local_html_escape(str(self), quote=False)
 
     def encode(self, *a, **b):
         return str(self).encode(*a, **b)
@@ -821,7 +821,7 @@ class translator(object):
                 self.language_file != self.default_language_file:
             write_dict(self.language_file, self.t)
         return regex_backslash.sub(
-            lambda m: m.group(1).translate(ttab_in), str(mt))
+            lambda m: m.group(1).translate(ttab_in), to_native(mt))
 
     def params_substitution(self, message, symbols):
         """

@@ -19,7 +19,7 @@ import urllib
 import re
 
 import os
-from gluon._compat import StringIO, unichr, urllib_quote, iteritems
+from gluon._compat import StringIO, unichr, urllib_quote, iteritems, basestring, long, unicodeT
 from gluon.http import HTTP, redirect
 from gluon.html import XmlComponent, truncate_string
 from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG
@@ -1141,7 +1141,7 @@ class SQLFORM(FORM):
 
         # try to retrieve the indicated record using its id
         # otherwise ignore it
-        if record and isinstance(record, (int, long, str, unicode)):
+        if record and isinstance(record, (int, long, str, unicodeT)):
             if not str(record).isdigit():
                 raise HTTP(404, "Object not found")
             record = table._db(table._id == record).select().first()
@@ -1651,7 +1651,7 @@ class SQLFORM(FORM):
                         original_filename = os.path.split(f)[1]
                 elif hasattr(f, 'file'):
                     (source_file, original_filename) = (f.file, f.filename)
-                elif isinstance(f, (str, unicode)):
+                elif isinstance(f, (str, unicodeT)):
                     # do not know why this happens, it should not
                     (source_file, original_filename) = \
                         (StringIO(f), 'file.txt')
@@ -3426,7 +3426,7 @@ class ExportClass(object):
             """
             if value is None:
                 return '<NULL>'
-            elif isinstance(value, unicode):
+            elif isinstance(value, unicodeT):
                 return value.encode('utf8')
             elif isinstance(value, Reference):
                 return int(value)
