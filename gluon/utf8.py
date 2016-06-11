@@ -11,7 +11,7 @@ Utilities and class for UTF8 strings managing
 ----------------------------------------------
 """
 from __future__ import print_function
-from gluon._compat import builtin as __builtin__, unicodeT, iteritems, to_unicode
+from gluon._compat import builtin as __builtin__, unicodeT, iteritems, to_unicode, to_native
 
 __all__ = ['Utf8']
 
@@ -51,10 +51,10 @@ def sort_key(s):
         from gluon.contrib.pyuca import unicode_collator
         unicode_sort_key = unicode_collator.sort_key
         sort_key = lambda s: unicode_sort_key(
-            unicode(s, 'utf-8') if isinstance(s, str) else s)
+            to_unicode(s, 'utf-8') if isinstance(s, str) else s)
     except:
         sort_key = lambda s: (
-            unicode(s, 'utf-8') if isinstance(s, str) else s).lower()
+            to_unicode(s, 'utf-8') if isinstance(s, str) else s).lower()
     return sort_key(s)
 
 
@@ -64,7 +64,7 @@ def ord(char):
     """
     if isinstance(char, unicodeT):
         return __builtin__.ord(char)
-    return __builtin__.ord(unicode(char, 'utf-8'))
+    return __builtin__.ord(to_unicode(char, 'utf-8'))
 
 
 def chr(code):
@@ -92,8 +92,8 @@ def truncate(string, length, dots='...'):
     Returns:
         (utf8-str): original or cutted string
     """
-    text = unicode(string, 'utf-8')
-    dots = unicode(dots, 'utf-8') if isinstance(dots, str) else dots
+    text = to_unicode(string, 'utf-8')
+    dots = to_unicode(dots, 'utf-8') if isinstance(dots, str) else dots
     if len(text) > length:
         text = text[:length - len(dots)] + dots
     return str.__new__(Utf8, text.encode('utf-8'))
@@ -120,11 +120,11 @@ class Utf8(str):
     """
     def __new__(cls, content='', codepage='utf-8'):
         if isinstance(content, unicodeT):
-            return str.__new__(cls, unicode.encode(content, 'utf-8'))
+            return str.__new__(cls, to_native(content, 'utf-8'))
         elif codepage in ('utf-8', 'utf8') or isinstance(content, cls):
             return str.__new__(cls, content)
         else:
-            return str.__new__(cls, unicode(content, codepage).encode('utf-8'))
+            return str.__new__(cls, to_native(to_unicode(content, codepage), 'utf-8'))
 
     def __repr__(self):
         r''' # note that we use raw strings to avoid having to use double back slashes below
@@ -156,9 +156,9 @@ class Utf8(str):
             True
         '''
         if str.find(self, "'") >= 0 and str.find(self, '"') < 0:  # only single quote exists
-            return '"' + unicode(self, 'utf-8').translate(repr_escape_tab).encode('utf-8') + '"'
+            return '"' + to_native(to_unicode(self, 'utf-8').translate(repr_escape_tab), 'utf-8') + '"'
         else:
-            return "'" + unicode(self, 'utf-8').translate(repr_escape_tab2).encode('utf-8') + "'"
+            return "'" + to_native(to_unicode(self, 'utf-8').translate(repr_escape_tab2), 'utf-8') + "'"
 
     def __size__(self):
         """ length of utf-8 string in bytes """
@@ -168,17 +168,17 @@ class Utf8(str):
         return str.__contains__(self, Utf8(other))
 
     def __getitem__(self, index):
-        return str.__new__(Utf8, unicode(self, 'utf-8')[index].encode('utf-8'))
+        return str.__new__(Utf8, to_native(to_unicode(self, 'utf-8')[index], 'utf-8'))
 
     def __getslice__(self, begin, end):
-        return str.__new__(Utf8, unicode(self, 'utf-8')[begin:end].encode('utf-8'))
+        return str.__new__(Utf8, to_native(to_unicode(self, 'utf-8')[begin:end], 'utf-8'))
 
     def __add__(self, other):
         return str.__new__(Utf8, str.__add__(self, unicode.encode(other, 'utf-8')
                                              if isinstance(other, unicode) else other))
 
     def __len__(self):
-        return len(unicode(self, 'utf-8'))
+        return len(to_unicode(self, 'utf-8'))
 
     def __mul__(self, integer):
         return str.__new__(Utf8, str.__mul__(self, integer))

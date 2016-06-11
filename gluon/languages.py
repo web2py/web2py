@@ -18,7 +18,8 @@ import pkgutil
 import logging
 from cgi import escape
 from threading import RLock
-from gluon._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes, iteritems, _local_html_escape, to_native
+from gluon._compat import copyreg, PY2, maketrans, iterkeys, unicodeT, to_unicode, to_bytes, iteritems, _local_html_escape, to_native, \
+                          pjoin
 
 from gluon.portalocker import read_locked, LockedFile
 from gluon.utf8 import Utf8
@@ -34,8 +35,6 @@ __all__ = ['translator', 'findT', 'update_all_languages']
 
 ostat = os.stat
 oslistdir = os.listdir
-pjoin = os.path.join
-pexists = os.path.exists
 pdirname = os.path.dirname
 isdir = os.path.isdir
 
@@ -167,7 +166,7 @@ def read_dict_aux(filename):
     lang_text = read_locked(filename).replace(b'\r\n', b'\n')
     clear_cache(filename)
     try:
-        return safe_eval(lang_text) or {}
+        return safe_eval(to_native(lang_text)) or {}
     except Exception:
         e = sys.exc_info()[1]
         status = 'Syntax error in %s (%s)' % (filename, e)
@@ -623,7 +622,6 @@ class translator(object):
         of them matches possible_languages.
         """
         pl_info = read_possible_languages(self.langpath)
-
         def set_plural(language):
             """
             initialize plural forms subsystem
@@ -800,18 +798,16 @@ class translator(object):
         the ## notation is ignored in multiline strings and strings that
         start with ##. This is needed to allow markmin syntax to be translated
         """
-        if isinstance(message, unicodeT):
-            message = message.encode('utf8')
-        if isinstance(prefix, unicodeT):
-            prefix = prefix.encode('utf8')
+        message = to_native(message, 'utf8')
+        prefix = to_native(prefix, 'utf8')
         key = prefix + message
         mt = self.t.get(key, None)
         if mt is not None:
             return mt
         # we did not find a translation
-        if message.find(to_bytes('##')) > 0:
+        if message.find('##') > 0:
             pass
-        if message.find(to_bytes('##')) > 0 and not '\n' in message:
+        if message.find('##') > 0 and not '\n' in message:
             # remove comments
             message = message.rsplit('##', 1)[0]
         # guess translation same as original
@@ -966,7 +962,7 @@ def findT(path, language=DEFAULT_LANGUAGE):
     for filename in \
             listdir(mp, '^.+\.py$', 0) + listdir(cp, '^.+\.py$', 0)\
             + listdir(vp, '^.+\.html$', 0) + listdir(mop, '^.+\.py$', 0):
-        data = read_locked(filename)
+        data = to_native(read_locked(filename))
         items = regex_translate.findall(data)
         items += regex_translate_m.findall(data)
         for item in items:
