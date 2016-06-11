@@ -85,7 +85,7 @@ def compare(a, b):
 
 def md5_hash(text):
     """ Generates a md5 hash with the given text """
-    return md5(text).hexdigest()
+    return md5(to_bytes(text)).hexdigest()
 
 
 def simple_hash(text, key='', salt='', digest_alg='md5'):
@@ -157,11 +157,12 @@ def get_callable_argspec(fn):
     return inspect.getargspec(inspectable)
 
 
-def pad(s, n=32, padchar=' '):
+def pad(s, n=32, padchar=b' '):
     return s + (32 - len(s) % 32) * padchar
 
 
 def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
+    encryption_key = to_bytes(encryption_key)
     if not hash_key:
         hash_key = sha1(encryption_key).hexdigest()
     dump = pickle.dumps(data, pickle.HIGHEST_PROTOCOL)
@@ -170,17 +171,20 @@ def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
     key = pad(encryption_key)[:32]
     cipher, IV = AES_new(key)
     encrypted_data = base64.urlsafe_b64encode(IV + cipher.encrypt(pad(dump)))
-    signature = hmac.new(hash_key, encrypted_data).hexdigest()
-    return signature + ':' + encrypted_data
+    signature = to_bytes(hmac.new(to_bytes(hash_key), encrypted_data).hexdigest())
+    return signature + b':' + encrypted_data
 
 
 def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
+    encryption_key = to_bytes(encryption_key)
+    data = to_native(data)
     if ':' not in data:
         return None
     if not hash_key:
         hash_key = sha1(encryption_key).hexdigest()
     signature, encrypted_data = data.split(':', 1)
-    actual_signature = hmac.new(hash_key, encrypted_data).hexdigest()
+    encrypted_data = to_bytes(encrypted_data)
+    actual_signature = hmac.new(to_bytes(hash_key), encrypted_data).hexdigest()
     if not compare(signature, actual_signature):
         return None
     key = pad(encryption_key)[:32]
@@ -189,7 +193,7 @@ def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
     cipher, _ = AES_new(key, IV=IV)
     try:
         data = cipher.decrypt(encrypted_data)
-        data = data.rstrip(' ')
+        data = data.rstrip(b' ')
         if compression_level:
             data = zlib.decompress(data)
         return pickle.loads(data)
