@@ -6294,15 +6294,20 @@ class Expose(object):
                                 for folder in self.folders], **dict(_class="table")))
         return ''
 
+    @staticmethod
+    def __in_base(subdir, basedir, sep=os.path.sep):
+        """True if subdir/ is under basedir/"""
+        s = lambda f: '%s%s' % (f.rstrip(sep), sep) # f -> f/
+        # The trailing '/' is for the case of '/foobar' in_base of '/foo':
+        # - becase '/foobar'  starts with        '/foo'
+        # - but    '/foobar/' doesn't start with '/foo/'
+        return s(subdir).startswith(s(basedir))
+
     def in_base(self, f):
         """True if f/ is under self.base/
         Where f ans slef.base are normalized paths
         """
-        s = lambda f: '%s%s' % (f, os.path.sep) # f -> f/
-        # The trailing '/' is for the case of '/foobar' in_base of '/foo':
-        # - becase '/foobar'  starts with        '/foo'
-        # - but    '/foobar/' doesn't start with '/foo/'
-        return s(self.normalize_path(f)).startswith(s(self.base))
+        return self.__in_base(self.normalize_path(f), self.base)
 
     def normalize_path(self, f):
         if self.follow_symlink_out:

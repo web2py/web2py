@@ -1081,11 +1081,37 @@ class TestToolsFunctions(unittest.TestCase):
         self.assertEqual(prettydate(d='invalid_date'), '[invalid date]')
 
 
-
 pjoin = os.path.join
 
 def have_symlinks():
     return os.name == 'posix'
+
+
+class Test_Expose__in_base(unittest.TestCase):
+
+    def test_in_base(self):
+        are_under = [ # (sub, base)
+            ('/foo/bar', '/foo'),
+            ('/foo', '/foo'),
+            ('/foo', '/'),
+            ('/', '/'),
+        ]
+        for sub, base in are_under:
+            self.assertTrue( Expose._Expose__in_base(subdir=sub, basedir=base, sep='/'),
+                             '%s is not under %s' % (sub, base) )
+
+    def test_not_in_base(self):
+        are_not_under = [ # (sub, base)
+            ('/foobar', '/foo'),
+            ('/foo', '/foo/bar'),
+            ('/bar', '/foo'),
+            ('/foo/bar', '/bar'),
+            ('/', '/x'),
+        ]
+        for sub, base in are_not_under:
+            self.assertFalse( Expose._Expose__in_base(subdir=sub, basedir=base, sep='/'),
+                              '%s should not be under %s' % (sub, base) )
+
 
 class TestExpose(unittest.TestCase):
 
