@@ -3487,7 +3487,7 @@ class ExporterTSV(ExportClass):
             import codecs
             final.write(codecs.BOM_UTF16)
             writer.writerow(
-                [unicode(col).encode("utf8") for col in self.rows.colnames])
+                [to_unicode(col, "utf8") for col in self.rows.colnames])
             data = out.getvalue().decode("utf8")
             data = data.encode("utf-16")
             data = data[2:]
