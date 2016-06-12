@@ -1457,7 +1457,7 @@ class AuthJWT(object):
             def f(*args, **kwargs):
                 try:
                     token = self.get_jwt_token_from_request(token_param=token_param)
-                except HTTP, e:
+                except HTTP as e:
                     if required:
                         raise e
                     token = None
@@ -4759,7 +4759,7 @@ class Auth(object):
             self._wiki.automenu()
 
 
-class Crud(object):
+class Crud(object): # pragma: no cover
 
     def url(self, f=None, args=None, vars=None):
         """

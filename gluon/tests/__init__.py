@@ -18,9 +18,9 @@ from .test_tools import *
 from .test_utils import *
 from .test_serializers import *
 from .test_languages import *
+from .test_compileapp import *
 
 if sys.version[:3] == '2.7':
-    from .test_compileapp import *
     from .test_is_url import *
     from .test_appadmin import *
     from .test_scheduler import *

@@ -18,7 +18,7 @@ import fnmatch
 import os
 import copy
 import random
-from gluon._compat import builtin, PY2
+from gluon._compat import builtin, PY2, unicodeT, to_native
 from gluon.storage import Storage, List
 from gluon.template import parse_template
 from gluon.restricted import restricted, compile2
@@ -650,8 +650,8 @@ def run_controller_in(controller, function, environment):
     vars = response._vars
     if response.postprocessing:
         vars = reduce(lambda vars, p: p(vars), response.postprocessing, vars)
-    if isinstance(vars, unicode):
-        vars = vars.encode('utf8')
+    if isinstance(vars, unicodeT):
+        vars = to_native(vars)
     elif hasattr(vars, 'xml') and callable(vars.xml):
         vars = vars.xml()
     return vars
