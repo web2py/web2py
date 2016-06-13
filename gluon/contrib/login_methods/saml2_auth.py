@@ -133,7 +133,7 @@ def saml2_handler(session, request, config_filename = None):
             data = client.parse_authn_request_response(
                 unquoted_response, binding, session.saml_outstanding_queries)
             res['response'] = data if data else {}
-        except Exception, e:
+        except Exception as e:
             import traceback
             res['error'] = traceback.format_exc()
         return res

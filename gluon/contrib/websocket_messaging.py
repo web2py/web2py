@@ -83,6 +83,7 @@ Acknowledgements:
 Tornado code inspired by http://thomas.pelletier.im/2010/08/websocket-tornado-redis/
 
 """
+from __future__ import print_function
 
 import tornado.httpserver
 import tornado.websocket
@@ -117,7 +118,7 @@ class PostHandler(tornado.web.RequestHandler):
         if 'message' in self.request.arguments:
             message = self.request.arguments['message'][0]
             group = self.request.arguments.get('group', ['default'])[0]
-            print '%s:MESSAGE to %s:%s' % (time.time(), group, message)
+            print('%s:MESSAGE to %s:%s' % (time.time(), group, message))
             if hmac_key:
                 signature = self.request.arguments['signature'][0]
                 if not hmac.new(hmac_key, message).hexdigest() == signature:
@@ -167,7 +168,7 @@ class DistributeHandler(tornado.websocket.WebSocketHandler):
             client.write_message('+' + self.name)
         listeners[self.group].append(self)
         names[self] = self.name
-        print '%s:CONNECT to %s' % (time.time(), self.group)
+        print('%s:CONNECT to %s' % (time.time(), self.group))
 
     def on_message(self, message):
         pass
@@ -179,7 +180,7 @@ class DistributeHandler(tornado.websocket.WebSocketHandler):
         # notify clients that a member has left the groups
         for client in listeners.get(self.group, []):
             client.write_message('-' + self.name)
-        print '%s:DISCONNECT from %s' % (time.time(), self.group)
+        print('%s:DISCONNECT from %s' % (time.time(), self.group))
 
 # if your webserver is different from tornado server uncomment this
 # or override using something more restrictive:

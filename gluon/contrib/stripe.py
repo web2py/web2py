@@ -1,3 +1,4 @@
+from __future__ import print_function
 import urllib
 import json
 from hashlib import sha1
@@ -244,8 +245,8 @@ jQuery(function(){
 if __name__ == '__main__':
     key = raw_input('user>')
     d = Stripe(key).charge(100)
-    print 'charged', d['paid']
+    print('charged', d['paid'])
     s = Stripe(key).check(d[u'id'])
-    print 'paid', s['paid'], s['amount'], s['currency']
+    print('paid', s['paid'], s['amount'], s['currency'])
     s = Stripe(key).refund(d[u'id'])
-    print 'refunded', s['refunded']
+    print('refunded', s['refunded'])

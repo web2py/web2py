@@ -148,14 +148,14 @@ class LockedFile(object):
 
 
 def read_locked(filename):
-    fp = LockedFile(filename, 'r')
+    fp = LockedFile(filename, 'rb')
     data = fp.read()
     fp.close()
     return data
 
 
 def write_locked(filename, data):
-    fp = LockedFile(filename, 'w')
+    fp = LockedFile(filename, 'wb')
     data = fp.write(data)
     fp.close()
 

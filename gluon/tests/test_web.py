@@ -3,6 +3,7 @@
 """
     Unit tests for running web2py
 """
+from __future__ import print_function
 import sys
 import os
 import unittest
@@ -10,12 +11,12 @@ import subprocess
 import time
 import signal
 
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 
 fix_sys_path(__file__)
 
-from contrib.webclient import WebClient
-from urllib2 import HTTPError
+from gluon.contrib.webclient import WebClient
+from gluon._compat import urllib2
 
 webserverprocess = None
 
@@ -32,22 +33,22 @@ def startwebserver():
             path = os.path.abspath(os.path.join(path, '..'))
     web2py_exec = os.path.join(path, 'web2py.py')
     webserverprocess = subprocess.Popen([sys.executable, web2py_exec, '-a',  'testpass'])
-    print 'Sleeping before web2py starts...'
+    print('Sleeping before web2py starts...')
     for a in range(1, 11):
         time.sleep(1)
-        print a, '...'
+        print(a, '...')
         try:
             c = WebClient('http://127.0.0.1:8000')
             c.get('/')
             break
         except:
             continue
-    print ''
+    print('')
 
 
 def stopwebserver():
     global webserverprocess
-    print 'Killing webserver'
+    print('Killing webserver')
     webserverprocess.terminate()
 
 
@@ -121,7 +122,7 @@ class TestWeb(LiveTest):
 
         try:
             ret = client.Division(a=3, b=0)
-        except SoapFault, sf:
+        except SoapFault as sf:
             # verify the exception value is ok
             # assert(sf.faultstring == "float division by zero") # true only in 2.7
             assert(sf.faultcode == "Server.ZeroDivisionError")
@@ -134,7 +135,7 @@ class TestWeb(LiveTest):
         s = WebClient('http://127.0.0.1:8000/')
         try:
             s.post('examples/soap_examples/call/soap', data=xml_request, method="POST")
-        except HTTPError, e:
+        except urllib2.HTTPError as e:
             assert(e.msg == 'INTERNAL SERVER ERROR')
         # check internal server error returned (issue 153)
         assert(s.status == 500)

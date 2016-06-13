@@ -8,7 +8,8 @@
 Background processes made simple
 ---------------------------------
 """
-
+from __future__ import print_function
+from gluon._compat import Queue, long, iteritems
 
 import os
 import time
@@ -23,12 +24,13 @@ import logging
 import optparse
 import tempfile
 import types
-import Queue
+
 from json import loads, dumps
 from gluon import DAL, Field, IS_NOT_EMPTY, IS_IN_SET, IS_NOT_IN_DB
 from gluon import IS_INT_IN_RANGE, IS_DATETIME, IS_IN_DB
 from gluon.utils import web2py_uuid
 from gluon.storage import Storage
+from functools import reduce
 
 USAGE = """
 ## Example
@@ -39,7 +41,7 @@ Create File: app/models/scheduler.py ======
 from gluon.scheduler import Scheduler
 
 def demo1(*args,**vars):
-    print 'you passed args=%s and vars=%s' % (args, vars)
+    print('you passed args=%s and vars=%s' % (args, vars))
     return 'done!'
 
 def demo2():
@@ -232,7 +234,7 @@ def _decode_list(lst):
 
 def _decode_dict(dct):
     newdict = {}
-    for k, v in dct.iteritems():
+    for k, v in iteritems(dct):
         if isinstance(k, unicode):
             k = k.encode('utf-8')
         if isinstance(v, unicode):
@@ -312,7 +314,7 @@ def executor(queue, task, out):
                 f.write(result)
             result = 'w2p_special:%s' % temp_path
         queue.put(TaskReport('COMPLETED', result=result))
-    except BaseException, e:
+    except BaseException as e:
         tb = traceback.format_exc()
         queue.put(TaskReport('FAILED', tb=tb))
     del stdout
@@ -1457,26 +1459,26 @@ def main():
     )
     (options, args) = parser.parse_args()
     if not options.tasks or not options.db_uri:
-        print USAGE
+        print(USAGE)
     if options.tasks:
         path, filename = os.path.split(options.tasks)
         if filename.endswith('.py'):
             filename = filename[:-3]
         sys.path.append(path)
-        print 'importing tasks...'
+        print('importing tasks...')
         tasks = __import__(filename, globals(), locals(), [], -1).tasks
-        print 'tasks found: ' + ', '.join(tasks.keys())
+        print('tasks found: ' + ', '.join(tasks.keys()))
     else:
         tasks = {}
     group_names = [x.strip() for x in options.group_names.split(',')]
 
     logging.getLogger().setLevel(options.logger_level)
 
-    print 'groups for this worker: ' + ', '.join(group_names)
-    print 'connecting to database in folder: ' + options.db_folder or './'
-    print 'using URI: ' + options.db_uri
+    print('groups for this worker: ' + ', '.join(group_names))
+    print('connecting to database in folder: ' + options.db_folder or './')
+    print('using URI: ' + options.db_uri)
     db = DAL(options.db_uri, folder=options.db_folder)
-    print 'instantiating scheduler...'
+    print('instantiating scheduler...')
     scheduler = Scheduler(db=db,
                           worker_name=options.worker_name,
                           tasks=tasks,
@@ -1486,7 +1488,7 @@ def main():
                           max_empty_runs=options.max_empty_runs,
                           utc_time=options.utc_time)
     signal.signal(signal.SIGTERM, lambda signum, stack_frame: sys.exit(1))
-    print 'starting main worker loop...'
+    print('starting main worker loop...')
     scheduler.loop()
 
 if __name__ == '__main__':

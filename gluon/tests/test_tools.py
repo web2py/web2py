@@ -12,7 +12,7 @@ import smtplib
 import datetime
 import unittest
 
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 
 fix_sys_path(__file__)
 
@@ -20,14 +20,13 @@ DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 
 from gluon.dal import DAL, Field
 from pydal.objects import Table
-import tools
-from tools import Auth, Mail, Recaptcha, Recaptcha2, prettydate, Expose
+from gluon.tools import Auth, Mail, Recaptcha, Recaptcha2, prettydate, Expose
 from gluon.globals import Request, Response, Session
-from languages import translator
+from gluon.storage import Storage
+from gluon.languages import translator
 from gluon.http import HTTP
 from gluon import SPAN, H3, TABLE, TR, TD, A, URL, current
 
-python_version = sys.version[:3]
 IS_IMAP = "imap" in DEFAULT_URI
 
 
@@ -886,7 +885,7 @@ class TestAuth(unittest.TestCase):
         # not deleted
         self.assertFalse(self.auth.del_membership('some_test_group'))
         self.assertEqual(set(self.db.auth_membership(membership_id).as_dict().items()),
-                         set({'group_id': 2L, 'user_id': 1L, 'id': 2L}.items()))  # is not deleted
+                         set({'group_id': 2, 'user_id': 1, 'id': 2}.items()))  # is not deleted
         # deleted
         bart_id = self.db(self.db.auth_user.username == 'bart').select(self.db.auth_user.id).first().id
         self.assertTrue(self.auth.del_membership('some_test_group', user_id=bart_id))

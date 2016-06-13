@@ -15,7 +15,6 @@ import stat
 import time
 import re
 import errno
-import rewrite
 from gluon.http import HTTP
 from gluon.contenttype import contenttype
 
@@ -56,7 +55,7 @@ def stream_file_or_304_or_206(
     try:
         open = file # this makes no sense but without it GAE cannot open files
         fp = open(static_file,'rb')
-    except IOError, e:
+    except IOError as e:
         if e[0] == errno.EISDIR:
             raise HTTP(403, error_message, web2py_error='file is a directory')
         elif e[0] == errno.EACCES:
@@ -90,7 +89,7 @@ def stream_file_or_304_or_206(
             bytes = part[1] - part[0] + 1
             try:
                 stream = open(static_file, 'rb')
-            except IOError, e:
+            except IOError as e:
                 if e[0] in (errno.EISDIR, errno.EACCES):
                     raise HTTP(403)
                 else:
@@ -111,7 +110,7 @@ def stream_file_or_304_or_206(
                 headers['Vary'] = 'Accept-Encoding'
         try:
             stream = open(static_file, 'rb')
-        except IOError, e:
+        except IOError as e:
             # this better does not happer when returning an error page ;-)
             if e[0] in (errno.EISDIR, errno.EACCES):
                 raise HTTP(403)

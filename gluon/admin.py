@@ -9,6 +9,7 @@
 Utility functions for the Admin application
 -------------------------------------------
 """
+from __future__ import print_function
 import os
 import sys
 import traceback
@@ -58,9 +59,9 @@ def app_pack(app, request, raise_ex=False, filenames=None):
         filename = apath('../deposit/web2py.app.%s.w2p' % app, request)
         w2p_pack(filename, apath(app, request), filenames=filenames)
         return filename
-    except Exception, e:
+    except Exception as e:
         import traceback
-        print traceback.format_exc()
+        print(traceback.format_exc())
         if raise_ex:
             raise
         return False
@@ -82,7 +83,7 @@ def app_pack_compiled(app, request, raise_ex=False):
         filename = apath('../deposit/%s.w2p' % app, request)
         w2p_pack(filename, apath(app, request), compiled=True)
         return filename
-    except Exception, e:
+    except Exception as e:
         if raise_ex:
             raise
         return None
@@ -343,7 +344,7 @@ def check_new_version(myversion, version_url):
         pmyversion = parse_version(myversion)
     except IOError:
         import traceback
-        print traceback.format_exc()
+        print(traceback.format_exc())
         return -1, myversion
 
     if pversion[:3]+pversion[-6:] > pmyversion[:3]+pmyversion[-6:]:
@@ -423,12 +424,12 @@ def upgrade(request, url='http://web2py.com'):
     filename = abspath('web2py_%s_downloaded.zip' % version_type)
     try:
         write_file(filename, urllib.urlopen(full_url).read(), 'wb')
-    except Exception, e:
+    except Exception as e:
         return False, e
     try:
         unzip(filename, destination, subfolder)
         return True, None
-    except Exception, e:
+    except Exception as e:
         return False, e
 
 

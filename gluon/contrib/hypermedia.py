@@ -1,6 +1,7 @@
 import json
 from collections import OrderedDict
 from gluon import URL, IS_SLUG
+from functools import reduce
 
 # compliant with https://github.com/collection-json/spec
 # also compliant with http://code.ge/media-types/collection-next-json/
@@ -282,7 +283,7 @@ class Collection(object):
                 # ADD validate fields and return error
                 try:
                     (query, limitby, orderby) = self.request2query(table, request.get_vars)
-                    fields = filter(lambda (fn,value):table[fn].writable,data.items())
+                    fields = filter(lambda fn_value:table[fn_value[0]].writable,data.items())
                     res = db(query).validate_and_update(**dict(fields)) # MAY FAIL
                     if res.errors:
                         return self.error(400,'BAD REQUEST','Validation Error',res.errors)
@@ -295,7 +296,7 @@ class Collection(object):
             else: # create
                 # ADD validate fields and return error
                 try:
-                    fields = filter(lambda (fn,value):table[fn].writable,data.items())
+                    fields = filter(lambda fn_value1:table[fn_value1[0]].writable,data.items())
                     res = table.validate_and_insert(**dict(fields)) # MAY FAIL
                     if res.errors:
                         return self.error(400,'BAD REQUEST','Validation Error',res.errors)
@@ -304,7 +305,7 @@ class Collection(object):
                         response.headers['location'] = \
                             URL(args=(tablename,res.id),scheme=True)
                         return ''
-                except SyntaxError,e: #Exception,e:
+                except SyntaxError as e: #Exception,e:
                     db.rollback()
                     return self.error(400,'BAD REQUEST','Invalid Query:'+e)
 

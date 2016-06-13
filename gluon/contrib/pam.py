@@ -9,6 +9,7 @@ a user against the Pluggable Authentication Modules (PAM) on the system.
 
 Implemented using ctypes, so no compilation is necessary.
 """
+from __future__ import print_function
 __all__ = ['authenticate']
 
 from ctypes import CDLL, POINTER, Structure, CFUNCTYPE, cast, pointer, sizeof
@@ -125,4 +126,4 @@ def authenticate(username, password, service='login'):
 
 if __name__ == "__main__":
     import getpass
-    print authenticate(getpass.getuser(), getpass.getpass())
+    print(authenticate(getpass.getuser(), getpass.getpass()))

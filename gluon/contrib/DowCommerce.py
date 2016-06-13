@@ -9,6 +9,7 @@ Modifed by Dave Stoll dave.stoll@gmail.com
 
 - modifed to support Dow Commerce API
 """
+from __future__ import print_function
 
 __all__ = ['DowCommerce']
 
@@ -227,18 +228,18 @@ def test():
 
         payment.process()
         if payment.isApproved():
-            print 'Payment approved!'
-            print payment.getFullResponse()
+            print('Payment approved!')
+            print(payment.getFullResponse())
         elif payment.isDeclined():
-            print 'Your credit card was declined by your bank'
+            print('Your credit card was declined by your bank')
         elif payment.isError():
             raise DowCommerce.DowCommerceError('An uncaught error occurred')
-    except DowCommerce.DowCommerceError, e:
-        print "Exception thrown:", e
-        print 'An error occured'
-    print 'approved', payment.isApproved()
-    print 'declined', payment.isDeclined()
-    print 'error', payment.isError()
+    except DowCommerce.DowCommerceError as e:
+        print("Exception thrown:", e)
+        print('An error occured')
+    print('approved', payment.isApproved())
+    print('declined', payment.isDeclined())
+    print('error', payment.isError())
 
 if __name__ == '__main__':
     test()

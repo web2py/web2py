@@ -21,6 +21,7 @@ import datetime
 import platform
 import portalocker
 import fileutils
+from functools import reduce
 try:
     import cPickle as pickle
 except:
@@ -318,7 +319,7 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
             lines = [x.strip() for x in cronlines if x.strip(
             ) and not x.strip().startswith('#')]
             tasks = [parsecronline(cline) for cline in lines]
-        except Exception, e:
+        except Exception as e:
             logger.error('WEB2PY CRON: crontab read error %s' % e)
             continue
 
@@ -375,7 +376,7 @@ def crondance(applications_parent, ctype='soft', startup=False, apps=None):
 
             try:
                 cronlauncher(commands, shell=shell).start()
-            except Exception, e:
+            except Exception as e:
                 logger.warning(
                     'WEB2PY CRON: Execution error for %s: %s'
                     % (task.get('cmd'), e))

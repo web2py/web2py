@@ -10,10 +10,7 @@ Restricted environment to execute application's code
 """
 
 import sys
-try:
-    import cPickle as pickle
-except:
-    import pickle
+from gluon._compat import pickle, ClassType
 import traceback
 import types
 import os
@@ -224,13 +221,13 @@ def restricted(code, environment=None, layer='Unknown'):
             ccode = code
         else:
             ccode = compile2(code, layer)
-        exec ccode in environment
+        exec(ccode, environment)
     except HTTP:
         raise
     except RestrictedError:
         # do not encapsulate (obfuscate) the original RestrictedError
         raise
-    except Exception, error:
+    except Exception as error:
         # extract the exception type and value (used as output message)
         etype, evalue, tb = sys.exc_info()
         # XXX Show exception in Wing IDE if running in debugger
@@ -252,7 +249,7 @@ def snapshot(info=None, context=5, code=None, environment=None):
     # if no exception info given, get current:
     etype, evalue, etb = info or sys.exc_info()
 
-    if isinstance(etype, types.ClassType):
+    if isinstance(etype, ClassType):
         etype = etype.__name__
 
     # create a snapshot dict with some basic information

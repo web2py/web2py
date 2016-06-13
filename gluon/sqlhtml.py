@@ -17,9 +17,9 @@ Holds:
 import datetime
 import urllib
 import re
-import cStringIO
 
 import os
+from gluon._compat import StringIO, unichr, urllib_quote, iteritems
 from gluon.http import HTTP, redirect
 from gluon.html import XmlComponent, truncate_string
 from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG
@@ -39,6 +39,7 @@ from gluon.validators import IS_STRONG
 
 import gluon.serializers as serializers
 from gluon.globals import current
+from functools import reduce
 
 try:
     import gluon.settings as settings
@@ -59,7 +60,7 @@ def represent(field, value, record):
     if not callable(f):
         return str(value)
     if hasattr(f,'func_code'):
-        n = f.func_code.co_argcount - len(f.func_defaults or [])
+        n = f.__code__.co_argcount - len(f.__defaults__ or [])
         if getattr(f, 'im_self', None):
             n -= 1
     else:
@@ -677,7 +678,7 @@ class AutocompleteWidget(object):
     def callback(self):
         if self.keyword in self.request.vars:
             field = self.fields[0]
-            if type(field) is Field.Virtual:
+            if isinstance(field, Field.Virtual):
                 records = []
                 table_rows = self.db(self.db[field.tablename]).select(orderby=self.orderby)
                 count = 0
@@ -741,7 +742,7 @@ class AutocompleteWidget(object):
                 del attr['requires']
             attr['_name'] = key2
             value = attr['value']
-            if type(self.fields[0]) is Field.Virtual:
+            if isinstance(self.fields[0], Field.Virtual):
                 record = None
                 table_rows = self.db(self.db[self.fields[0].tablename]).select(orderby=self.orderby)
                 for row in table_rows:
@@ -1328,10 +1329,10 @@ class SQLFORM(FORM):
             db = linkto.split('/')[-1]
             for rfld in table._referenced_by:
                 if keyed:
-                    query = urllib.quote('%s.%s==%s' % (
+                    query = urllib_quote('%s.%s==%s' % (
                         db, rfld, record[rfld.type[10:].split('.')[1]]))
                 else:
-                    query = urllib.quote(
+                    query = urllib_quote(
                         '%s.%s==%s' % (db, rfld, record[self.id_field_name]))
                 lname = olname = '%s.%s' % (rfld.tablename, rfld.name)
                 if ofields and olname not in ofields:
@@ -1653,7 +1654,7 @@ class SQLFORM(FORM):
                 elif isinstance(f, (str, unicode)):
                     # do not know why this happens, it should not
                     (source_file, original_filename) = \
-                        (cStringIO.StringIO(f), 'file.txt')
+                        (StringIO(f), 'file.txt')
                 else:
                     # this should never happen, why does it happen?
                     # print 'f=', repr(f)
@@ -2222,7 +2223,7 @@ class SQLFORM(FORM):
         if fields:
             # add missing tablename to virtual fields
             for table in tables:
-                for k, f in table.iteritems():
+                for k, f in iteritems(table):
                     if isinstance(f, Field.Virtual):
                         f.tablename = table._tablename
             columns = [f for f in fields if f.tablename in tablenames]
@@ -2234,7 +2235,7 @@ class SQLFORM(FORM):
             for table in tables:
                 fields += filter(filter1, table)
                 columns += filter(filter2, table)
-                for k, f in table.iteritems():
+                for k, f in iteritems(table):
                     if not k.startswith('_'):
                         if isinstance(f, Field.Virtual) and f.readable:
                             f.tablename = table._tablename
@@ -2438,7 +2439,7 @@ class SQLFORM(FORM):
                                 selectable_columns.append(str(field))
                     # look for virtual fields not displayed (and virtual method
                     # fields to be added here?)
-                    for (field_name, field) in table.iteritems():
+                    for (field_name, field) in iteritems(table):
                         if isinstance(field, Field.Virtual) and not str(field) in expcolumns:
                             expcolumns.append(str(field))
 
@@ -2457,7 +2458,7 @@ class SQLFORM(FORM):
                                 sfields, keywords))
                         rows = dbset.select(left=left, orderby=orderby,
                                             cacheable=True, *selectable_columns)
-                    except Exception, e:
+                    except Exception as e:
                         response.flash = T('Internal Error')
                         rows = []
                 else:
@@ -2655,7 +2656,7 @@ class SQLFORM(FORM):
             rows = None
             next_cursor = None
             error = T("Query Not Supported")
-        except Exception, e:
+        except Exception as e:
             rows = None
             next_cursor = None
             error = T("Query Not Supported: %s") % e
@@ -3478,8 +3479,8 @@ class ExporterTSV(ExportClass):
         ExportClass.__init__(self, rows)
 
     def export(self):
-        out = cStringIO.StringIO()
-        final = cStringIO.StringIO()
+        out = StringIO()
+        final = StringIO()
         import csv
         writer = csv.writer(out, delimiter='\t')
         if self.rows:
@@ -3517,7 +3518,7 @@ class ExporterCSV(ExportClass):
 
     def export(self):  # export CSV with rows.represent
         if self.rows:
-            s = cStringIO.StringIO()
+            s = StringIO()
             self.rows.export_to_csv_file(s, represent=True)
             return s.getvalue()
         else:
