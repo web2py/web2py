@@ -6234,7 +6234,8 @@ class Expose(object):
                          and file creation under `base`.
 
         """
-        current.session and current.session.forget()
+        # why would this not be callable? but otherwise tests do not pass
+        if current.session and callable(current.session.forget): current.session.forget()
         self.follow_symlink_out = follow_symlink_out
         self.base = self.normalize_path(
             base or os.path.join(current.request.folder, 'static'))
