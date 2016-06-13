@@ -23,17 +23,11 @@ import logging
 import socket
 import base64
 import zlib
+from gluon._compat import basestring, pickle, PY2, xrange, to_bytes, to_native
 
 _struct_2_long_long = struct.Struct('=QQ')
 
-python_version = sys.version_info[0]
-
-if python_version == 2:
-    import cPickle as pickle
-else:
-    import pickle
-
-import hashlib
+import hashlib, binascii
 from hashlib import md5, sha1, sha224, sha256, sha384, sha512
 
 try:
@@ -46,9 +40,9 @@ import hmac
 if hasattr(hashlib, "pbkdf2_hmac"):
     def pbkdf2_hex(data, salt, iterations=1000, keylen=24, hashfunc=None):
         hashfunc = hashfunc or sha1
-        return hashlib.pbkdf2_hmac(hashfunc().name,
-                           data, salt, iterations,
-                           keylen).encode("hex")
+        hmac = hashlib.pbkdf2_hmac(hashfunc().name, to_bytes(data), 
+                                   to_bytes(salt), iterations, keylen)
+        return binascii.hexlify(hmac)
     HAVE_PBKDF2 = True
 else:
     try:
@@ -85,7 +79,7 @@ def compare(a, b):
         return hmac.compare_digest(a, b)
     result = len(a) ^ len(b)
     for i in xrange(len(b)):
-		result |= ord(a[i%len(a)]) ^ ord(b[i])
+        result |= ord(a[i%len(a)]) ^ ord(b[i])
     return result == 0
 
 
@@ -99,14 +93,17 @@ def simple_hash(text, key='', salt='', digest_alg='md5'):
     Generates hash with the given text using the specified
     digest hashing algorithm
     """
+    text = to_bytes(text)
+    key = to_bytes(key)
+    salt = to_bytes(salt)
     if not digest_alg:
         raise RuntimeError("simple_hash with digest_alg=None")
     elif not isinstance(digest_alg, str):  # manual approach
         h = digest_alg(text + key + salt)
     elif digest_alg.startswith('pbkdf2'):  # latest and coolest!
         iterations, keylen, alg = digest_alg[7:-1].split(',')
-        return pbkdf2_hex(text, salt, int(iterations),
-                          int(keylen), get_digest(alg))
+        return to_native(pbkdf2_hex(text, salt, int(iterations),
+                                    int(keylen), get_digest(alg)))
     elif key:  # use hmac
         digest_alg = get_digest(digest_alg)
         h = hmac.new(key + salt, text, digest_alg)
@@ -196,7 +193,7 @@ def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
         if compression_level:
             data = zlib.decompress(data)
         return pickle.loads(data)
-    except Exception, e:
+    except Exception as e:
         return None
 
 ### compute constant CTOKENS
@@ -227,7 +224,7 @@ def initialize_urandom():
             # try to add process-specific entropy
             frandom = open('/dev/urandom', 'wb')
             try:
-                if python_version == 2:
+                if PY2:
                     frandom.write(''.join(chr(t) for t in ctokens)) # python 2
                 else:
                     frandom.write(bytes([]).join(bytes([t]) for t in ctokens)) # python 3
@@ -242,7 +239,7 @@ def initialize_urandom():
             """Cryptographically secure session management is not possible on your system because
 your system does not provide a cryptographically secure entropy source.
 This is not specific to web2py; consider deploying on a different operating system.""")
-    if python_version == 2:
+    if PY2:
         packed = ''.join(chr(x) for x in ctokens) # python 2
     else:
         packed = bytes([]).join(bytes([x]) for x in ctokens) # python 3

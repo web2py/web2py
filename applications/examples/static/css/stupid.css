@@ -15,7 +15,7 @@ label, strong {font-weight:bold}
 ul {list-style-type:none; padding-left:20px}
 a {text-decoration:none; color:#26a69a; white-space:nowrap}
 a:hover {cursor:pointer}
-h1,h2,h3,h4,h5,h6{font-weight:bold; text-transform:uppercase}
+h1,h2,h3,h4,h5,h6{font-weight:bold}
 h1{font-size:4em; margin:1.0em 0 0.25em 0}
 h2{font-size:2.4em; margin:0.9em 0 0.25em 0}
 h3{font-size:1.8em; margin:0.8em 0 0.25em 0}
@@ -44,7 +44,7 @@ header, main, footer {display:block; with:100%} /* IE fix */
 .btn:hover, button:hover, [type=button]:hover, [type=submit]:hover {box-shadow:0 0 10px #666; text-decoration:none; cursor:pointer}
 .btn.small, table .btn {padding:0.25em 0.5em; font-size:0.8em}
 .btn.large {padding:1em 2em; font-size:1.2em}
-.btn.oval {border-radius:50%}
+.oval {border-radius:50%}
 
 /*** helpers ***/
 .rounded {-moz-border-radius:5px; border-radius:5px}
@@ -62,7 +62,7 @@ header, main, footer {display:block; with:100%} /* IE fix */
 .relative {position:relative}
 .relative>div {position:absolute}
 .spaced {margin-bottom:20px; margin-top:20px}
-.hidden {display:none}
+.hidden {display:none !important}
 
 /*** forms ***/
 input:not([type]), input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]), [type=file]:before {outline:none; padding:0.5em 1em; margin:0.5px; border-bottom:1px solid #ddd; width:100%}
@@ -70,7 +70,7 @@ textarea {width:100%; border:1px solid #ddd; padding:4px 8px; outline:none; outl
 select {-webkit-appearance:none; outline:none; padding:0.5em 1em; border-radius:0; margin:0.5px; border-bottom:1px solid #ddd; width:100%;background-color:transparent}
 input, textarea, select, button, .btn {font-size:12px}
 input:not([type]):hover, input:not([type=checkbox]):not([type=radio]):not([type=button]):not([type=submit]):hover, select:hover, textarea:hover {background-color:#fbf6d9; transition:background-color 1s ease}
-input:invalid, input.error {background:#cc1f00;color:white}
+input:invalid, input.error, textarea:invalid, textarea.error {background: #ffdfdf}
 
 /*** grid ***/
 .container {margin-right:-20px}
@@ -108,14 +108,10 @@ input:invalid, input.error {background:#cc1f00;color:white}
 
 /*** progress bar from http://codepen.io/holdencreative/details/pvxGxy  ***/
 .progress {
-  margin-left:-15px;
-  margin-right:-15px;
   position:relative;
   height:8px;
   display:block;
-  width:120%;
   background-color:#acece6;
-  border-radius:0;
   background-clip:padding-box;
   overflow:hidden;
 }
@@ -189,7 +185,7 @@ input:invalid, input.error {background:#cc1f00;color:white}
 .menu li {position:relative; float:left; margin:0; padding:0}
 .menu ul {background:white; border:1px solid #e1e1e1; visibility:hidden; opacity:0;  position:absolute; top:110%; padding:0; z-index:1000; transition:all 0.2s ease-out; list-style-type:none; box-shadow:5px 5px 10px #666}
 .menu ul a {padding:10px 15px; color:#333; font-weight:700; font-size:12px; line-height:16px; display: block}
-.menu ul li {float:none; width:200px}
+.menu ul li {float:none}
 .menu ul ul {top:0; left:80%; z-index:1100}
 .menu li:hover > ul {visibility:visible; opacity:1}
 .menu>li>ul>li:first-child:before{content:''; position:absolute; width:1px; height:1px; border:10px solid transparent; left:50px; top:-20px; margin-left:-10px; border-bottom-color:white}
@@ -207,6 +203,24 @@ input:invalid, input.error {background:#cc1f00;color:white}
   .ham {display:none!important}
   .burger.accordion * {max-height:1000px; overflow:visible}
 }
+
+/*** sliding sidebar ***/
+.sidebar {
+    position:fixed;
+    z-index:1000;
+    -webkit-transition:all 0.5s, -webkit-transform 0.5s;
+    transition:all 0.5s, transform 0.5s;
+    left:0;
+    top:0;
+    height:100vh;
+    box-shadow:0 0 10px #666;    
+    width:220px;
+    padding:0 10px 0 10px;
+    margin-left:-210px;
+}
+.sidebar:hover {margin-left:0}
+.sidebar.right {text-align: left; left: auto; right: 0; margin-right: -210px}
+.sidebar.right:hover {margin-right:0}
 
 /*** pulsating ring from https://jsfiddle.net/mandynicole/7xrKP/ *******/
 .pulse:after {
@@ -292,10 +306,11 @@ a:not(.btn):not(.noeffect):after {
   margin-top:1.5em;
   padding:5px 15px;
   white-space:pre-wrap;
-  width:100px;
+  min-width:100px;
 }
 
 /*** accordion ***/
+.accordion>label{cursor:pointer}
 .accordion>input ~ label:before {content:"▲ "; color:#ddd}
 .accordion>input:checked ~ label:before {content:"▼ "; color:#ddd}
 .accordion>input {display:none}

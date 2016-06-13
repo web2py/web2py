@@ -3,6 +3,7 @@
 """
 Developed by Massimo Di Pierro, optional component of web2py, BSDv3 license.
 """
+from __future__ import print_function
 
 import re
 import pickle
@@ -255,7 +256,7 @@ class Sheet:
         try:
             r, c = Sheet.pregex.findall(key)
             r, c = int(r), int(c)
-        except (ValueError, IndexError, TypeError), e:
+        except (ValueError, IndexError, TypeError) as e:
             error = "%s. %s" % \
                 ("Unexpected position parameter",
                  "Must be a key of type 'rncn'")
@@ -529,7 +530,7 @@ class Sheet:
         """
 
         if not self.regex.match(key):
-            raise SyntaxError, "Invalid cell name: %s" % key
+            raise SyntaxError("Invalid cell name: %s" % key)
         else:
             attributes = self.get_attributes(kwarg)
             if attributes is not None:
@@ -742,7 +743,7 @@ class Sheet:
                 exec('__value__=' + node.value[1:], {}, self.environment)
                 node.computed_value = self.environment['__value__']
                 del self.environment['__value__']
-            except Exception, e:
+            except Exception as e:
                 node.computed_value = self.error % dict(error=str(e))
         self.environment[node.name] = node.computed_value
         if node.onchange:
@@ -900,4 +901,4 @@ if __name__ == '__main__':
     s.cell('a', value="2")
     s.cell('b', value="=sin(a)")
     s.cell('c', value="=cos(a)**2+b*b")
-    print s['c'].computed_value
+    print(s['c'].computed_value)

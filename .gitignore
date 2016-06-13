@@ -48,6 +48,7 @@ applications/*/sessions/*
 applications/*/errors/*
 applications/*/cache/*
 applications/*/uploads/*
+applications/*/private/*
 applications/*/*.py[oc]
 applications/*/static/temp
 applications/*/progress.log

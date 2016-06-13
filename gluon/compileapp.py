@@ -18,7 +18,7 @@ import fnmatch
 import os
 import copy
 import random
-import __builtin__
+from gluon._compat import builtin, PY2
 from gluon.storage import Storage, List
 from gluon.template import parse_template
 from gluon.restricted import restricted, compile2
@@ -40,9 +40,10 @@ import shutil
 import imp
 import logging
 import types
+from functools import reduce
 logger = logging.getLogger("web2py")
 from gluon import rewrite
-from custom_import import custom_import_install
+from gluon.custom_import import custom_import_install
 
 try:
     import py_compile
@@ -116,7 +117,7 @@ class mybuiltin(object):
     #__builtins__
     def __getitem__(self, key):
         try:
-            return getattr(__builtin__, key)
+            return getattr(builtin, key)
         except AttributeError:
             raise KeyError(key)
 
@@ -213,7 +214,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
             request.env.path_info
         other_request.cid = target
         other_request.env.http_web2py_component_element = target
-        other_request.restful = types.MethodType(request.restful.im_func, other_request) # A bit nasty but needed to use LOAD on action decorates with @request.restful()
+        other_request.restful = types.MethodType(request.restful.__func__, other_request) # A bit nasty but needed to use LOAD on action decorates with @request.restful()
         other_response.view = '%s/%s.%s' % (c, f, other_request.extension)
 
         other_environment = copy.copy(current.globalenv)  # NASTY
@@ -430,7 +431,7 @@ def build_environment(request, response, session, store_current=True):
     elif is_pypy:  # apply the same hack to pypy too
         __builtins__ = mybuiltin()
     else:
-        __builtins__['__import__'] = __builtin__.__import__  # WHY?
+        __builtins__['__import__'] = builtin.__import__  # WHY?
     environment['request'] = request
     environment['response'] = response
     environment['session'] = session
@@ -474,7 +475,7 @@ def compile_views(folder, skip_failed_views=False):
     for fname in listdir(path, '^[\w/\-]+(\.\w+)*$'):
         try:
             data = parse_template(fname, path)
-        except Exception, e:
+        except Exception as e:
             if skip_failed_views:
                 failed_views.append(fname)
             else:
@@ -547,10 +548,17 @@ def run_models_in(environment):
     path = pjoin(folder, 'models')
     cpath = pjoin(folder, 'compiled')
     compiled = os.path.exists(cpath)
-    if compiled:
-        models = sorted(listdir(cpath, '^models[_.][\w.]+\.pyc$', 0), model_cmp)
+    if PY2:
+        if compiled:
+            models = sorted(listdir(cpath, '^models[_.][\w.]+\.pyc$', 0), model_cmp)
+        else:
+            models = sorted(listdir(path, '^\w+\.py$', 0, sort=False), model_cmp_sep)
     else:
-        models = sorted(listdir(path, '^\w+\.py$', 0, sort=False), model_cmp_sep)
+        if compiled:
+            models = sorted(listdir(cpath, '^models[_.][\w.]+\.pyc$', 0), key=lambda f: '{0:03d}'.format(f.count('.')) + f)
+        else:
+            models = sorted(listdir(path, '^\w+\.py$', 0, sort=False), key=lambda f: '{0:03d}'.format(f.count(os.path.sep)) + f)
+
     models_to_run = None
     for model in models:
         if response.models_to_run != models_to_run:

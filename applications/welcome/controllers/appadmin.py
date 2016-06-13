@@ -267,7 +267,7 @@ def select():
             else:
                 rows = db(query, ignore_common_filters=True).select(
                     *fields, limitby=(start, stop))
-        except Exception, e:
+        except Exception as e:
             import traceback
             tb = traceback.format_exc()
             (rows, nrows) = ([], 0)
@@ -286,7 +286,7 @@ def select():
             import_csv(db[request.vars.table],
                        request.vars.csvfile.file)
             response.flash = T('data uploaded')
-        except Exception, e:
+        except Exception as e:
             response.flash = DIV(T('unable to parse csv file'), PRE(str(e)))
     # end handle upload csv
 

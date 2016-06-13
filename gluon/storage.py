@@ -12,11 +12,7 @@ Provides:
 - Storage; like dictionary allowing also for `obj.foo` for `obj['foo']`
 """
 
-try:
-    import cPickle as pickle
-except:
-    import pickle
-import copy_reg
+from gluon._compat import copyreg, pickle, PY2
 import gluon.portalocker as portalocker
 
 __all__ = ['List', 'Storage', 'Settings', 'Messages',
@@ -139,10 +135,11 @@ class Storage(dict):
 def pickle_storage(s):
     return Storage, (dict(s),)
 
-copy_reg.pickle(Storage, pickle_storage)
-
-PICKABLE = (str, int, long, float, bool, list, dict, tuple, set)
-
+copyreg.pickle(Storage, pickle_storage)
+if PY2:
+    PICKABLE = (str, int, long, float, bool, list, dict, tuple, set)
+else:
+    PICKABLE = (str, int, float, bool, list, dict, tuple, set)
 
 class StorageList(Storage):
     """
@@ -310,7 +307,7 @@ class List(list):
             if not value and otherwise:
                 raise ValueError('Otherwise will raised.')
         except (ValueError, TypeError):
-            from http import HTTP, redirect
+            from gluon.http import HTTP, redirect
             if otherwise is None:
                 raise HTTP(404)
             elif isinstance(otherwise, str):

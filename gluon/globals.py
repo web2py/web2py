@@ -13,10 +13,9 @@ Contains the classes for the global used variables:
 - Session
 
 """
-
+from gluon._compat import pickle, StringIO, copyreg, Cookie, urlparse, PY2, iteritems, to_unicode, to_native
 from gluon.storage import Storage, List
 from gluon.streamer import streamer, stream_file_or_304_or_206, DEFAULT_CHUNK_SIZE
-from gluon.xmlrpc import handler
 from gluon.contenttype import contenttype
 from gluon.html import xmlescape, TABLE, TR, PRE, URL
 from gluon.http import HTTP, redirect
@@ -29,24 +28,16 @@ from gluon import recfile
 from gluon.cache import CacheInRam
 from gluon.fileutils import copystream
 import hashlib
-import portalocker
-try:
-    import cPickle as pickle
-except:
-    import pickle
+from gluon import portalocker
 from pickle import Pickler, MARK, DICT, EMPTY_DICT
-from types import DictionaryType
-import cStringIO
+#from types import DictionaryType
 import datetime
 import re
-import copy_reg
-import Cookie
 import os
 import sys
 import traceback
 import threading
 import cgi
-import urlparse
 import copy
 import tempfile
 import json
@@ -57,6 +48,7 @@ PAST = 'Sat, 1-Jan-1971 00:00:00'
 FUTURE = 'Tue, 1-Dec-2999 23:59:59'
 
 try:
+    #FIXME PY3
     from gluon.contrib.minify import minify
     have_minify = True
 except ImportError:
@@ -96,12 +88,14 @@ class SortingPickler(Pickler):
         self.memoize(obj)
         self._batch_setitems([(key, obj[key]) for key in sorted(obj)])
 
-SortingPickler.dispatch = copy.copy(Pickler.dispatch)
-SortingPickler.dispatch[DictionaryType] = SortingPickler.save_dict
+if PY2:
+#FIXME PY3
+    SortingPickler.dispatch = copy.copy(Pickler.dispatch)
+    SortingPickler.dispatch[dict] = SortingPickler.save_dict
 
 
 def sorting_dumps(obj, protocol=None):
-    file = cStringIO.StringIO()
+    file = StringIO()
     SortingPickler(file, protocol).dump(obj)
     return file.getvalue()
 # END #####################################################################
@@ -115,7 +109,7 @@ def copystream_progress(request, chunk_size=10 ** 5):
     """
     env = request.env
     if not env.get('CONTENT_LENGTH', None):
-        return cStringIO.StringIO()
+        return StringIO()
     source = env['wsgi.input']
     try:
         size = int(env['CONTENT_LENGTH'])
@@ -205,7 +199,7 @@ class Request(Storage):
         query_string = self.env.get('query_string', '')
         dget = urlparse.parse_qs(query_string, keep_blank_values=1)  # Ref: https://docs.python.org/2/library/cgi.html#cgi.parse_qs
         get_vars = self._get_vars = Storage(dget)
-        for (key, value) in get_vars.iteritems():
+        for (key, value) in iteritems(get_vars):
             if isinstance(value, list) and len(value) == 1:
                 get_vars[key] = value[0]
 
@@ -279,7 +273,7 @@ class Request(Storage):
         """Merges get_vars and post_vars to vars
         """
         self._vars = copy.copy(self.get_vars)
-        for key, value in self.post_vars.iteritems():
+        for key, value in iteritems(self.post_vars):
             if key not in self._vars:
                 self._vars[key] = value
             else:
@@ -375,7 +369,7 @@ class Request(Storage):
                     if is_json and not isinstance(res, str):
                         res = json(res)
                     return res
-                except TypeError, e:
+                except TypeError as e:
                     exc_type, exc_value, exc_traceback = sys.exc_info()
                     if len(traceback.extract_tb(exc_traceback)) == 1:
                         raise HTTP(400, "invalid arguments")
@@ -399,7 +393,7 @@ class Response(Storage):
         self.status = 200
         self.headers = dict()
         self.headers['X-Powered-By'] = 'web2py'
-        self.body = cStringIO.StringIO()
+        self.body = StringIO()
         self.session_id = None
         self.cookies = Cookie.SimpleCookie()
         self.postprocessing = []
@@ -421,10 +415,11 @@ class Response(Storage):
         if not escape:
             self.body.write(str(data))
         else:
-            self.body.write(xmlescape(data))
+            # FIXME PY3:
+            self.body.write(to_native(xmlescape(data)))
 
     def render(self, *a, **b):
-        from compileapp import run_view_in
+        from gluon.compileapp import run_view_in
         if len(a) > 2:
             raise SyntaxError(
                 'Response.render can be called with two arguments, at most')
@@ -441,9 +436,9 @@ class Response(Storage):
         self._vars.update(b)
         self._view_environment.update(self._vars)
         if view:
-            import cStringIO
+            from gluon._compat import StringIO
             (obody, oview) = (self.body, self.view)
-            (self.body, self.view) = (cStringIO.StringIO(), view)
+            (self.body, self.view) = (StringIO(), view)
             run_view_in(self._view_environment)
             page = self.body.getvalue()
             self.body.close()
@@ -455,7 +450,7 @@ class Response(Storage):
 
     def include_meta(self):
         s = "\n"
-        for meta in (self.meta or {}).iteritems():
+        for meta in iteritems((self.meta or {})):
             k, v = meta
             if isinstance(v, dict):
                 s += '<meta' + ''.join(' %s="%s"' % (xmlescape(key), xmlescape(v[key])) for key in v) +' />\n'
@@ -655,6 +650,7 @@ class Response(Storage):
         return json(data, default=default or custom_json)
 
     def xmlrpc(self, request, methods):
+        from gluon.xmlrpc import handler
         """
         assuming::
 
@@ -671,7 +667,7 @@ class Response(Storage):
             import xmlrpclib
             connection = xmlrpclib.ServerProxy(
                 'http://hostname/app/contr/func')
-            print connection.add(3, 4)
+            print(connection.add(3, 4))
 
         """
 
@@ -686,7 +682,7 @@ class Response(Storage):
         dbstats = []
         dbtables = {}
         infos = DAL.get_instances()
-        for k, v in infos.iteritems():
+        for k, v in iteritems(infos):
             dbstats.append(TABLE(*[TR(PRE(row[0]), '%.2fms' % (row[1]*1000))
                                    for row in v['dbstats']]))
             dbtables[k] = dict(defined=v['dbtables']['defined'] or '[no defined tables]',
@@ -1240,4 +1236,4 @@ class Session(Storage):
 def pickle_session(s):
     return Session, (dict(s),)
 
-copy_reg.pickle(Session, pickle_session)
+copyreg.pickle(Session, pickle_session)

@@ -10,12 +10,12 @@ import os
 import shutil
 import tempfile
 import unittest
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 
 fix_sys_path(__file__)
 
+from gluon import languages
 
-import languages
 MP_WORKING = 0
 try:
     import multiprocessing

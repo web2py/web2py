@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """Unit tests for rewrite.py routers option"""
-
+from __future__ import print_function
 import sys
 import os
 import unittest
@@ -21,6 +21,7 @@ from gluon.fileutils import abspath
 from gluon.settings import global_settings
 from gluon.http import HTTP
 from gluon.storage import Storage
+from gluon._compat import to_bytes, to_native
 
 logger = None
 oldcwd = None
@@ -1044,6 +1045,9 @@ class TestRouter(unittest.TestCase):
                 'http://domain.com/app2/static/filename-with_underscore'),
             norm_root("%s/applications/app2/static/filename-with_underscore" % root))
 
+        from gluon.globals import current
+        current.response.static_version = None
+        
         self.assertEqual(str(URL(a='init', c='default', f='a_b')), "/a_b")
         self.assertEqual(str(URL(a='app1', c='default', f='a_b')), "/app1/a-b")
         self.assertEqual(str(URL(a='app2', c='default', f='a_b')), "/app2/a_b")
@@ -1363,8 +1367,9 @@ class TestRouter(unittest.TestCase):
             URL(a='init', c='default', f='f', args=['ar g'])), "/f/ar%20g")
         self.assertEqual(str(
             URL(a='init', c='default', f='f', args=['årg'])), "/f/%C3%A5rg")
+        self.assertEqual(URL(a='init', c='default', f='fünc'), "/fünc")
         self.assertEqual(
-            str(URL(a='init', c='default', f='fünc')), "/f\xc3\xbcnc")
+            to_bytes(URL(a='init', c='default', f='fünc')), b"/f\xc3\xbcnc")
 
     def test_routes_anchor(self):
         '''

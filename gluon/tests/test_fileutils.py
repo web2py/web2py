@@ -3,11 +3,11 @@
 
 import unittest
 import datetime
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 
 fix_sys_path(__file__)
 
-from fileutils import parse_version
+from gluon.fileutils import parse_version
 
 
 class TestFileUtils(unittest.TestCase):

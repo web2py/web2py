@@ -9,6 +9,7 @@ cache:
 python:
   - '2.7'
   - 'pypy'
+  - '3.5'
 
 install:
   - |
@@ -24,8 +25,8 @@ install:
         virtualenv --python="$PYENV_ROOT/versions/pypy-$PYPY_VERSION/bin/python" "$HOME/virtualenvs/pypy-$PYPY_VERSION"
         source "$HOME/virtualenvs/pypy-$PYPY_VERSION/bin/activate"
       fi
-  - pip install -e .
-
+  - if [[ $TRAVIS_PYTHON_VERSION == '3.5' ]]; then pip install --download-cache $HOME/.pip-cache pycrypto; fi;
+  - if [[ $TRAVIS_PYTHON_VERSION != '3.5' ]]; then pip install -e .; fi;
 
 before_script:
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --download-cache $HOME/.pip-cache coverage; fi;
@@ -39,7 +40,7 @@ before_script:
 script: export COVERAGE_PROCESS_START=gluon/tests/coverage.ini; ./web2py.py --run_system_tests --with_coverage
 
 after_success:
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then coverage combine; fi
+  - coverage combine;
   - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then codecov; fi
 
 notifications:

@@ -69,7 +69,7 @@ def autoretry_datastore_timeouts(attempts=5.0, interval=0.1, exponent=2.0):
         while True:
             try:
                 return wrapped(*args, **kwargs)
-            except apiproxy_errors.ApplicationError, err:
+            except apiproxy_errors.ApplicationError as err:
                 errno = err.application_error
                 if errno not in errors:
                     raise

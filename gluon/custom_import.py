@@ -8,22 +8,22 @@
 Support for smart import syntax for web2py applications
 -------------------------------------------------------
 """
-import __builtin__
+from gluon._compat import builtin
 import os
 import sys
 import threading
 from gluon import current
 
-NATIVE_IMPORTER = __builtin__.__import__
+NATIVE_IMPORTER = builtin.__import__
 INVALID_MODULES = set(('', 'gluon', 'applications', 'custom_import'))
 
 # backward compatibility API
 
 
 def custom_import_install():
-    if __builtin__.__import__ == NATIVE_IMPORTER:
+    if builtin.__import__ == NATIVE_IMPORTER:
         INVALID_MODULES.update(sys.modules.keys())
-        __builtin__.__import__ = custom_importer
+        builtin.__import__ = custom_importer
 
 
 def track_changes(track=True):
@@ -85,21 +85,21 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
                             modules_prefix, globals, locals, [itemname], level)
                         try:
                             result = result or sys.modules[modules_prefix+'.'+itemname]
-                        except KeyError, e:
-                            raise ImportError, 'Cannot import module %s' % str(e)
+                        except KeyError as e:
+                            raise ImportError('Cannot import module %s' % str(e))
                         modules_prefix += "." + itemname
                     return result
                 else:
                     # import like "from x import a, b, ..."
                     pname = modules_prefix + "." + name
                     return base_importer(pname, globals, locals, fromlist, level)
-        except ImportError, e1:
+        except ImportError as e1:
             import_tb = sys.exc_info()[2]
             try:
                 return NATIVE_IMPORTER(name, globals, locals, fromlist, level)
-            except ImportError, e3:
-                raise ImportError, e1, import_tb  # there an import error in the module
-        except Exception, e2:
+            except ImportError as e3:
+                raise ImportError(e1, import_tb)  # there an import error in the module
+        except Exception as e2:
             raise  # there is an error in the module
         finally:
             if import_tb:
@@ -135,7 +135,7 @@ class TrackImporter(object):
             # Module maybe loaded for the 1st time so we need to set the date
             self._update_dates(name, globals, locals, fromlist, level)
             return result
-        except Exception, e:
+        except Exception as e:
             raise  # Don't hide something that went wrong
 
     def _update_dates(self, name, globals, locals, fromlist, level):

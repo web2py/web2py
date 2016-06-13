@@ -2,6 +2,7 @@
 Created by Massimo Di Pierro
 License BSD
 """
+from __future__ import print_function
 
 import subprocess
 import os
@@ -20,8 +21,9 @@ def removeall(path):
     def rmgeneric(path, __func__):
         try:
             __func__(path)
-        except OSError, (errno, strerror):
-            print ERROR_STR % {'path': path, 'error': strerror}
+        except OSError as xxx_todo_changeme:
+            (errno, strerror) = xxx_todo_changeme.args
+            print(ERROR_STR % {'path': path, 'error': strerror})
 
     files = [path]
 
@@ -112,10 +114,10 @@ if __name__ == '__main__':
     if sys.argv[1:2] == ['-h']:
         data, warnings, errors = markmin2pdf(markmin2html.__doc__)
         if errors:
-            print 'ERRORS:' + '\n'.join(errors)
-            print 'WARNGINS:' + '\n'.join(warnings)
+            print('ERRORS:' + '\n'.join(errors))
+            print('WARNGINS:' + '\n'.join(warnings))
         else:
-            print data
+            print(data)
     elif len(sys.argv) > 1:
         fargv = open(sys.argv[1], 'rb')
         try:
@@ -123,9 +125,9 @@ if __name__ == '__main__':
         finally:
             fargv.close()
         if errors:
-            print 'ERRORS:' + '\n'.join(errors)
-            print 'WARNGINS:' + '\n'.join(warnings)
+            print('ERRORS:' + '\n'.join(errors))
+            print('WARNGINS:' + '\n'.join(warnings))
         else:
-            print data
+            print(data)
     else:
         doctest.testmod()

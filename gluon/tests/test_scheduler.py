@@ -10,9 +10,7 @@ import glob
 import datetime
 import sys
 
-from fix_path import fix_sys_path
-
-
+from .fix_path import fix_sys_path
 fix_sys_path(__file__)
 
 from gluon.storage import Storage
@@ -25,7 +23,7 @@ class BaseTestScheduler(unittest.TestCase):
     def setUp(self):
         self.db = None
         self.cleanfolder()
-        from gluon import current
+        from gluon.globals import current
         s = Storage({'application': 'welcome',
                      'folder': 'applications/welcome',
                      'controller': 'default'})
@@ -309,12 +307,12 @@ class TestsForSchedulerRunner(testForSchedulerRunnerBase):
         self.db.commit()
         self.writefunction(r"""
 def demo1(*args,**vars):
-    print 'you passed args=%s and vars=%s' % (args, vars)
+    print('you passed args=%s and vars=%s' % (args, vars))
     return args[0]
 
 def demo4():
     time.sleep(15)
-    print "I'm printing something"
+    print("I'm printing something")
     return dict(a=1, b=2)
 """)
         ret = self.exec_sched()
@@ -359,24 +357,24 @@ def demo4():
         self.writefunction(r"""
 def demo3():
     time.sleep(15)
-    print 1/0
+    print(1/0)
     return None
 
 def demo4():
     time.sleep(15)
-    print "I'm printing something"
+    print("I'm printing something")
     return dict(a=1, b=2)
 
 def demo5():
     time.sleep(15)
-    print "I'm printing something"
+    print("I'm printing something")
     rtn = dict(a=1, b=2)
 
 def demo6():
     time.sleep(5)
-    print '50%'
+    print('50%')
     time.sleep(5)
-    print '!clear!100%'
+    print('!clear!100%')
     return 1
 """)
         ret = self.exec_sched()
@@ -417,12 +415,12 @@ def demo6():
         self.db.commit()
         self.writefunction(r"""
 def demo1(*args,**vars):
-    print 'you passed args=%s and vars=%s' % (args, vars)
+    print('you passed args=%s and vars=%s' % (args, vars))
     return args[0]
 import random
 def demo7():
     time.sleep(random.randint(1,5))
-    print W2P_TASK, request.now
+    print(W2P_TASK, request.now)
     return W2P_TASK.id, W2P_TASK.uuid, W2P_TASK.run_id
 """)
         ret = self.exec_sched()
@@ -466,7 +464,7 @@ def demo8():
     num_of_lines = 0
     with open(placeholder) as f:
         num_of_lines = len([a for a in f.read().split('\n') if a])
-    print 'number of lines', num_of_lines
+    print('number of lines', num_of_lines)
     if num_of_lines <= 2:
        1/0
     else:

@@ -20,7 +20,6 @@ caching will be provided by the GAE memcache
 (see gluon.contrib.gae_memcache)
 """
 import time
-import thread
 import os
 import gc
 import sys
@@ -41,10 +40,7 @@ try:
 except ImportError:
     have_settings = False
 
-try:
-    import cPickle as pickle
-except:
-    import pickle
+from gluon._compat import pickle, thread
 
 try:
     import psutil
@@ -159,7 +155,7 @@ class CacheAbstract(object):
         Auxiliary function called by `clear` to search and clear cache entries
         """
         r = re.compile(regex)
-        for key in storage.keys():
+        for key in list(storage.keys()):
             if r.match(str(key)):
                 del storage[key]
         return
@@ -265,7 +261,7 @@ class CacheInRam(CacheAbstract):
             if key in self.storage:
                 value = self.storage[key][1] + value
             self.storage[key] = (time.time(), value)
-        except BaseException, e:
+        except BaseException as e:
             self.locker.release()
             raise e
         self.locker.release()
@@ -635,7 +631,7 @@ class Cache(object):
                         # action returns something
                         rtn = cache_model(cache_key, lambda: func(), time_expire=time_expire)
                         http, status = None, current.response.status
-                    except HTTP, e:
+                    except HTTP as e:
                         # action raises HTTP (can still be valid)
                         rtn = cache_model(cache_key, lambda: e.body, time_expire=time_expire)
                         http, status = HTTP(e.status, rtn, **e.headers), e.status
@@ -648,7 +644,7 @@ class Cache(object):
                         # action returns something
                         rtn = func()
                         http, status = None, current.response.status
-                    except HTTP, e:
+                    except HTTP as e:
                         # action raises HTTP (can still be valid)
                         status = e.status
                         http = HTTP(e.status, e.body, **e.headers)

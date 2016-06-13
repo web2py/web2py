@@ -9,10 +9,11 @@
 The gluon wsgi application
 ---------------------------
 """
+from __future__ import print_function
 
 if False: import import_all # DO NOT REMOVE PART OF FREEZE PROCESS
 import gc
-import Cookie
+
 import os
 import re
 import copy
@@ -22,11 +23,10 @@ import datetime
 import signal
 import socket
 import random
-import urllib2
 import string
 
-
-from thread import allocate_lock
+from gluon._compat import Cookie, urllib2
+#from thread import allocate_lock
 
 from gluon.fileutils import abspath, write_file
 from gluon.settings import global_settings
@@ -440,7 +440,7 @@ def wsgibase(environ, responder):
 
                 serve_controller(request, response, session)
 
-            except HTTP, http_response:
+            except HTTP as http_response:
 
                 if static_file:
                     return http_response.to(responder, env=env)
@@ -495,7 +495,7 @@ def wsgibase(environ, responder):
 
                 ticket = None
 
-            except RestrictedError, e:
+            except RestrictedError as e:
 
                 if request.body:
                     request.body.close()
@@ -570,9 +570,9 @@ def save_password(password, port):
         chars = string.letters + string.digits
         password = ''.join([random.choice(chars) for _ in range(8)])
         cpassword = CRYPT()(password)[0]
-        print '******************* IMPORTANT!!! ************************'
-        print 'your admin password is "%s"' % password
-        print '*********************************************************'
+        print('******************* IMPORTANT!!! ************************')
+        print('your admin password is "%s"' % password)
+        print('*********************************************************')
     elif password == '<recycle>':
         # reuse the current password if any
         if exists(password_file):
@@ -709,9 +709,9 @@ class HttpServer(object):
             # if interfaces is specified, it must be tested for rocket parameter correctness
             # not necessarily completely tested (e.g. content of tuples or ip-format)
             import types
-            if isinstance(interfaces, types.ListType):
+            if isinstance(interfaces, list):
                 for i in interfaces:
-                    if not isinstance(i, types.TupleType):
+                    if not isinstance(i, tuple):
                         raise "Wrong format for rocket interfaces parameter - see http://packages.python.org/rocket/"
             else:
                 raise "Wrong format for rocket interfaces parameter - see http://packages.python.org/rocket/"

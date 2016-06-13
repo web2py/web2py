@@ -6,6 +6,7 @@
 # # 11/7/08
 # dual licensed under the web2py license (LGPL) and the Python license.
 
+from __future__ import print_function
 import os
 import sys
 import base64
@@ -78,7 +79,7 @@ class TaskBarIcon:
                 hicon = self.__loadFromFile(fp)
                 os.unlink(fp)
             except:
-                print "Can't load web2py icons - using default"
+                print("Can't load web2py icons - using default")
                 hicon = win32gui.LoadIcon(0, win32con.IDI_APPLICATION)
 
         flags = win32gui.NIF_ICON | win32gui.NIF_MESSAGE\
@@ -101,7 +102,7 @@ class TaskBarIcon:
                 # This is common when windows is starting, and this code is hit
                 # before the taskbar has been created.
 
-                print 'Failed to add the taskbar icon - is explorer running?'
+                print('Failed to add the taskbar icon - is explorer running?')
 
                 # but keep running anyway - when explorer starts, we get the
 
@@ -197,7 +198,7 @@ class TaskBarIcon:
             self.status.append(self.EnumStatus.QUIT)
             self.Destroy()
         else:
-            print 'Unknown command -', id
+            print('Unknown command -', id)
 
     def Destroy(self):
         win32gui.DestroyWindow(self.hwnd)

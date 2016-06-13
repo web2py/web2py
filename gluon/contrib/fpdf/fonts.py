@@ -7,7 +7,7 @@ fpdf_charwidths = {}
 
 fpdf_charwidths['courier']={}
 
-for i in xrange(0,256):
+for i in range(0,256):
     fpdf_charwidths['courier'][chr(i)]=600
     fpdf_charwidths['courierB']=fpdf_charwidths['courier']
     fpdf_charwidths['courierI']=fpdf_charwidths['courier']
