@@ -20,6 +20,7 @@ DEFAULT_URI = os.getenv('DB', 'sqlite:memory')
 
 from gluon.dal import DAL, Field
 from pydal.objects import Table
+from gluon import tools
 from gluon.tools import Auth, Mail, Recaptcha, Recaptcha2, prettydate, Expose
 from gluon.globals import Request, Response, Session
 from gluon.storage import Storage
