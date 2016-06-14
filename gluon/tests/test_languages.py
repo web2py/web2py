@@ -106,10 +106,8 @@ class TestTranslations(unittest.TestCase):
                          '1 quark')
         self.assertEqual(str(T('%s %%{quark[0]}', 2)),
                          '2 quarks')
-        if PY2:
-            # FIXME PY3 markmin is not supported yet
-            self.assertEqual(str(T.M('**Hello World**')),
-                             '<strong>Hello World</strong>')
+        self.assertEqual(str(T.M('**Hello World**')),
+                         '<strong>Hello World</strong>')
         T.force('it')
         self.assertEqual(str(T('Hello World')),
                          'Salve Mondo')

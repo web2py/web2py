@@ -27,9 +27,7 @@ from gluon.utf8 import Utf8
 from gluon.fileutils import listdir
 from gluon.cfs import getcfs
 from gluon.html import XML, xmlescape
-if PY2:
-    # FIXME PY3
-    from gluon.contrib.markmin.markmin2html import render, markmin_escape
+from gluon.contrib.markmin.markmin2html import render, markmin_escape
 
 __all__ = ['translator', 'findT', 'update_all_languages']
 
@@ -761,10 +759,10 @@ class translator(object):
                     symbols = (symbols,)
                 symbols = tuple(
                     value if isinstance(value, NUMBERS)
-                    else xmlescape(value).translate(ttab_in)
+                    else to_native(xmlescape(value)).translate(ttab_in)
                     for value in symbols)
             message = self.params_substitution(message, symbols)
-        return XML(message.translate(ttab_out))
+        return to_native(XML(message.translate(ttab_out)).xml())
 
     def M(self, message, symbols={}, language=None,
           lazy=None, filter=None, ftag=None, ns=None):

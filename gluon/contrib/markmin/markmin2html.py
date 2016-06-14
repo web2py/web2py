@@ -6,15 +6,10 @@
 from __future__ import print_function
 import re
 import urllib
-from cgi import escape
-from gluon._compat import maketrans, urllib_quote, unicodeT, _local_html_escape, to_bytes
+from gluon._compat import maketrans, urllib_quote, unicodeT, _local_html_escape, to_bytes, to_native, _local_html_escape as escape
+from ast import parse as ast_parse
+import ast
 
-try:
-    from ast import parse as ast_parse
-    import ast
-except ImportError:  # python 2.5
-    from compiler import parse
-    import compiler.ast as ast
 
 """
 TODO: next version should use MathJax
@@ -950,12 +945,11 @@ def render(text,
     if protolinks == "default":
         protolinks = protolinks_simple
     pp = '\n' if pretty_print else ''
-    if isinstance(text, unicodeT):
-        text = text.encode('utf8')
-    text = str(text or '')
+    text = to_native(text)
+    if not (isinstance(text, str)):
+        text = str(text or '')
     text = regex_backslash.sub(lambda m: m.group(1).translate(ttab_in), text)
     text = text.replace('\x05', '').replace('\r\n', '\n')  # concatenate strings separeted by \\n
-
     if URL is not None:
         text = replace_at_urls(text, URL)
 
