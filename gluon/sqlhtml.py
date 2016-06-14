@@ -2476,8 +2476,7 @@ class SQLFORM(FORM):
                 response.headers['Content-Type'] = oExp.content_type
                 response.headers['Content-Disposition'] = \
                     'attachment;filename=' + filename + ';'
-                document = oExp.export(maxtextlength) if oExp.__class__.__name__== 'ExporterHTML' else oExp.export()
-                raise HTTP(200, document, **response.headers)
+                raise HTTP(200, oExp.export(), **response.headers)
 
         elif request.vars.records and not isinstance(
                 request.vars.records, list):
@@ -3550,8 +3549,8 @@ class ExporterHTML(ExportClass):
     def __init__(self, rows):
         ExportClass.__init__(self, rows)
 
-    def export(self, truncate=16):
-        table = SQLTABLE(self.rows, truncate=truncate) if self.rows else ''
+    def export(self):
+        table = SQLTABLE(self.rows, truncate=None) if self.rows else ''
         return '<html>\n<head>\n<meta http-equiv="content-type" content="text/html; charset=UTF-8" />\n</head>\n<body>\n%s\n</body>\n</html>' % (table or '')
 
 
