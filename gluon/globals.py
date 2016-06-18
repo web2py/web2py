@@ -40,7 +40,7 @@ import threading
 import cgi
 import copy
 import tempfile
-import json
+import json as json_parser
 
 
 FMT = '%a, %d-%b-%Y %H:%M:%S PST'
@@ -215,7 +215,7 @@ class Request(Storage):
 
         if is_json:
             try:
-                json_vars = json.load(body)
+                json_vars = json_parser.load(body)
             except:
                 # incoherent request bodies can still be parsed "ad-hoc"
                 json_vars = {}
