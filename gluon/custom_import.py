@@ -8,7 +8,7 @@
 Support for smart import syntax for web2py applications
 -------------------------------------------------------
 """
-from gluon._compat import builtin
+from gluon._compat import builtin, unicodeT, PY2, to_native
 import os
 import sys
 import threading
@@ -47,8 +47,8 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
     If the import fails, it falls back on naive_importer
     """
 
-    if isinstance(name, unicode):
-        name = name.encode('utf8')
+    if isinstance(name, unicodeT):
+        name = to_native(name)
 
     globals = globals or {}
     locals = locals or {}
@@ -104,6 +104,9 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
         finally:
             if import_tb:
                 import_tb = None
+    elif not(PY2) and level < 0:
+        # FIXME PY3 why level is < 0?
+        level = 0
 
     return NATIVE_IMPORTER(name, globals, locals, fromlist, level)
 

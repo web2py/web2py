@@ -21,6 +21,7 @@ import logging
 from gluon.http import HTTP
 from gzip import open as gzopen
 from gluon.recfile import generate
+from gluon._compat import PY2
 
 __all__ = [
     'parse_version',
@@ -100,7 +101,10 @@ def read_file(filename, mode='r'):
     """Returns content from filename, making sure to close the file explicitly
     on exit.
     """
-    f = open(filename, mode)
+    if PY2 or 'b' in mode:
+        f = open(filename, mode)
+    else:
+        f = open(filename, mode, encoding="utf8")
     try:
         return f.read()
     finally:

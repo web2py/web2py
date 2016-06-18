@@ -18,7 +18,7 @@ import fnmatch
 import os
 import copy
 import random
-from gluon._compat import builtin, PY2
+from gluon._compat import builtin, PY2, unicodeT, to_native, basestring
 from gluon.storage import Storage, List
 from gluon.template import parse_template
 from gluon.restricted import restricted, compile2
@@ -151,7 +151,7 @@ def LOAD(c=None, f='index', args=None, vars=None,
             "infinity" or "continuous" are accepted to reload indefinitely the
             component
     """
-    from html import TAG, DIV, URL, SCRIPT, XML
+    from gluon.html import TAG, DIV, URL, SCRIPT, XML
     if args is None:
         args = []
     vars = Storage(vars or {})
@@ -430,7 +430,7 @@ def build_environment(request, response, session, store_current=True):
         __builtins__ = mybuiltin()
     elif is_pypy:  # apply the same hack to pypy too
         __builtins__ = mybuiltin()
-    else:
+    elif PY2:
         __builtins__['__import__'] = builtin.__import__  # WHY?
     environment['request'] = request
     environment['response'] = response
@@ -650,8 +650,8 @@ def run_controller_in(controller, function, environment):
     vars = response._vars
     if response.postprocessing:
         vars = reduce(lambda vars, p: p(vars), response.postprocessing, vars)
-    if isinstance(vars, unicode):
-        vars = vars.encode('utf8')
+    if isinstance(vars, unicodeT):
+        vars = to_native(vars)
     elif hasattr(vars, 'xml') and callable(vars.xml):
         vars = vars.xml()
     return vars

@@ -298,6 +298,7 @@ def wsgibase(environ, responder):
     env.web2py_version = web2py_version
     #env.update(global_settings)
     static_file = False
+    http_response = None
     try:
         try:
             try:
@@ -439,8 +440,8 @@ def wsgibase(environ, responder):
                     gluon.debug.dbg.do_debug(mainpyfile=request.folder)
 
                 serve_controller(request, response, session)
-
-            except HTTP as http_response:
+            except HTTP as hr:
+                http_response = hr
 
                 if static_file:
                     return http_response.to(responder, env=env)

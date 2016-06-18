@@ -17,6 +17,7 @@ import re
 import errno
 from gluon.http import HTTP
 from gluon.contenttype import contenttype
+from gluon._compat import PY2
 
 
 regex_start_range = re.compile('\d+(?=\-)')
@@ -53,8 +54,11 @@ def stream_file_or_304_or_206(
     # if error_message is None:
     #     error_message = rewrite.THREAD_LOCAL.routes.error_message % 'invalid request'
     try:
-        open = file # this makes no sense but without it GAE cannot open files
-        fp = open(static_file,'rb')
+        if PY2:
+            open_f = file # this makes no sense but without it GAE cannot open files
+        else:
+            open_f = open
+        fp = open_f(static_file,'rb')
     except IOError as e:
         if e[0] == errno.EISDIR:
             raise HTTP(403, error_message, web2py_error='file is a directory')

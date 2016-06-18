@@ -974,7 +974,8 @@ class DIV(XmlComponent):
         """
         str(COMPONENT) returns COMPONENT.xml()
         """
-        return self.xml()
+        # In PY3 __str__ cannot return bytes (TypeError: __str__ returned non-string (type bytes))
+        return to_native(self.xml())
         
     def flatten(self, render=None):
         """

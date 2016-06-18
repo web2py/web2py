@@ -10,7 +10,7 @@ from gluon.html import TAG, XmlComponent, xmlescape
 from gluon.languages import lazyT
 import gluon.contrib.rss2 as rss2
 import json as json_parser
-from gluon._compat import long
+from gluon._compat import long, to_native, unicodeT
 
 have_yaml = True
 try:
@@ -43,7 +43,7 @@ def cast_keys(o, cast=str, encoding="utf-8"):
         else:
             newobj = Storage()
         for k, v in o.items():
-            if (cast == str) and isinstance(k, unicode):
+            if (cast == str) and isinstance(k, unicodeT):
                 key = k.encode(encoding)
             else:
                 key = cast(k)
@@ -83,10 +83,12 @@ def custom_json(o):
         return int(o)
     elif isinstance(o, decimal.Decimal):
         return str(o)
+    elif isinstance(o, (bytes, bytearray)):
+        return str(o)
     elif isinstance(o, lazyT):
         return str(o)
     elif isinstance(o, XmlComponent):
-        return str(o)
+        return to_native(o.xml())
     elif isinstance(o, set):
         return list(o)
     elif hasattr(o, 'as_list') and callable(o.as_list):
@@ -159,7 +161,7 @@ def ics(events, title=None, link=None, timeshift=0, calname=True,
     return s
 
 def safe_encode(text):
-    if not isinstance(text, (str, unicode)):
+    if not isinstance(text, (str, unicodeT)):
         text = str(text)
     try:
         text = text.encode('utf8','replace')

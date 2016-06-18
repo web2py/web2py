@@ -263,7 +263,6 @@ class TemplateParser(object):
         # This will end up as
         # "%s(%s, escape=False)" % (self.writer, value)
         self.writer = writer
-
         # Dictionary of custom name lexers to use.
         if isinstance(lexers, dict):
             self.lexers = lexers
@@ -448,7 +447,7 @@ class TemplateParser(object):
             fileobj.close()
         except IOError:
             self._raise_error('Unable to open included view file: ' + filepath)
-
+        text = to_native(text)
         return text
 
     def include(self, content, filename):
@@ -788,7 +787,7 @@ def parse_template(filename,
             raise RestrictedError(filename, '', 'Unable to find the file')
     else:
         text = filename.read()
-
+    text = to_native(text)
     # Use the file contents to get a parsed template and return it.
     return str(TemplateParser(text, context=context, path=path, lexers=lexers, delimiters=delimiters))
 
@@ -885,7 +884,7 @@ def render(content="hello world",
     """
     # here to avoid circular Imports
     try:
-        from globals import Response
+        from gluon.globals import Response
     except ImportError:
         # Working standalone. Build a mock Response object.
         Response = DummyResponse

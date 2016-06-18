@@ -11,7 +11,7 @@ import errno
 import socket
 import logging
 import platform
-from gluon._compat import iteritems
+from gluon._compat import iteritems, to_bytes
 
 # Define Constants
 VERSION = '1.2.6'
@@ -1772,7 +1772,7 @@ class WSGIWorker(Worker):
                 if self.chunked:
                     self.conn.sendall(b('%x\r\n%s\r\n' % (len(data), data)))
                 else:
-                    self.conn.sendall(data)
+                    self.conn.sendall(to_bytes(data))
             except socket.timeout:
                 self.closeConnection = True
             except socket.error:

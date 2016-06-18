@@ -12,7 +12,7 @@ from gluon.utils import md5_hash, compare, is_valid_ip_address, web2py_uuid
 
 import hashlib
 from hashlib import md5, sha1, sha224, sha256, sha384, sha512
-from gluon.utils import simple_hash, get_digest, secure_dumps, secure_loads
+from gluon.utils import simple_hash, get_digest, secure_dumps, secure_loads, basestring
 
 
 class TestUtils(unittest.TestCase):
@@ -94,8 +94,8 @@ class TestUtils(unittest.TestCase):
         secured = secure_dumps(testobj, testkey)
         original = secure_loads(secured, testkey)
         self.assertEqual(testobj, original)
-        self.assertTrue(isinstance(secured, basestring))
-        self.assertTrue(':' in secured)
+        self.assertTrue(isinstance(secured, bytes))
+        self.assertTrue(b':' in secured)
 
         large_testobj = [x for x in range(1000)]
         secured_comp = secure_dumps(large_testobj, testkey, compression_level=9)

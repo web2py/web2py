@@ -13,7 +13,8 @@ Auth, Mail, PluginManager and various utilities
 import base64
 from functools import reduce
 from gluon._compat import pickle, thread, urllib2, Cookie, StringIO, configparser, MIMEBase, MIMEMultipart, \
-                          MIMEText, Encoders, Charset, long, urllib_quote, iteritems
+                          MIMEText, Encoders, Charset, long, urllib_quote, iteritems, to_bytes, to_native, add_charset, \
+                          charset_QP, basestring, unicodeT, to_unicode
 import datetime
 import logging
 import sys
@@ -241,6 +242,7 @@ class Mail(object):
                 if filename is None:
                     raise Exception('Missing attachment name')
                 payload = payload.read()
+            #FIXME PY3 can be used to_native?
             filename = filename.encode(encoding)
             if content_type is None:
                 content_type = contenttype(filename)
@@ -248,9 +250,9 @@ class Mail(object):
             self.my_payload = payload
             MIMEBase.__init__(self, *content_type.split('/', 1))
             self.set_payload(payload)
-            self['Content-Disposition'] = 'attachment; filename="%s"' % filename
+            self['Content-Disposition'] = 'attachment; filename="%s"' % to_native(filename, encoding)
             if content_id is not None:
-                self['Content-Id'] = '<%s>' % content_id.encode(encoding)
+                self['Content-Id'] = '<%s>' % to_native(content_id, encoding)
             Encoders.encode_base64(self)
 
     def __init__(self, server=None, sender=None, login=None, tls=True):
@@ -405,7 +407,7 @@ class Mail(object):
         """
 
         # We don't want to use base64 encoding for unicode mail
-        Charset.add_charset('utf-8', Charset.QP, Charset.QP, 'utf-8')
+        add_charset('utf-8', charset_QP, charset_QP, 'utf-8')
 
         def encode_header(key):
             if [c for c in key if 32 > ord(c) or ord(c) > 127]:
@@ -428,12 +430,12 @@ class Mail(object):
 
         if not raw and attachments:
             # Use multipart/mixed if there is attachments
-            payload_in = MIMEMultipart.MIMEMultipart('mixed')
+            payload_in = MIMEMultipart('mixed')
         elif raw:
             # no encoding configuration for raw messages
             if not isinstance(message, basestring):
                 message = message.read()
-            if isinstance(message, unicode):
+            if isinstance(message, unicodeT):
                 text = message.encode('utf-8')
             elif not encoding == 'utf-8':
                 text = message.decode(encoding).encode('utf-8')
@@ -442,7 +444,7 @@ class Mail(object):
             # No charset passed to avoid transport encoding
             # NOTE: some unicode encoded strings will produce
             # unreadable mail contents.
-            payload_in = MIMEText.MIMEText(text)
+            payload_in = MIMEText(text)
         if to:
             if not isinstance(to, (list, tuple)):
                 to = [to]
@@ -471,14 +473,14 @@ class Mail(object):
             if text is not None:
                 if not isinstance(text, basestring):
                     text = text.read()
-                if isinstance(text, unicode):
+                if isinstance(text, unicodeT):
                     text = text.encode('utf-8')
                 elif not encoding == 'utf-8':
                     text = text.decode(encoding).encode('utf-8')
             if html is not None:
                 if not isinstance(html, basestring):
                     html = html.read()
-                if isinstance(html, unicode):
+                if isinstance(html, unicodeT):
                     html = html.encode('utf-8')
                 elif not encoding == 'utf-8':
                     html = html.decode(encoding).encode('utf-8')
@@ -486,15 +488,13 @@ class Mail(object):
             # Construct mime part only if needed
             if text is not None and html:
                 # We have text and html we need multipart/alternative
-                attachment = MIMEMultipart.MIMEMultipart('alternative')
-                attachment.attach(MIMEText.MIMEText(text, _charset='utf-8'))
-                attachment.attach(
-                    MIMEText.MIMEText(html, 'html', _charset='utf-8'))
+                attachment = MIMEMultipart('alternative')
+                attachment.attach(MIMEText(text, _charset='utf-8'))
+                attachment.attach(MIMEText(html, 'html', _charset='utf-8'))
             elif text is not None:
-                attachment = MIMEText.MIMEText(text, _charset='utf-8')
+                attachment = MIMEText(text, _charset='utf-8')
             elif html:
-                attachment = \
-                    MIMEText.MIMEText(html, 'html', _charset='utf-8')
+                attachment = MIMEText(html, 'html', _charset='utf-8')
 
             if attachments:
                 # If there is attachments put text and html into
@@ -560,12 +560,11 @@ class Mail(object):
                     c.op_sign(plain, sig, mode.DETACH)
                     sig.seek(0, 0)
                     # make it part of the email
-                    payload = \
-                        MIMEMultipart.MIMEMultipart('signed',
-                                                    boundary=None,
-                                                    _subparts=None,
-                                                    **dict(micalg="pgp-sha1",
-                                                           protocol="application/pgp-signature"))
+                    payload = MIMEMultipart('signed',
+                                            boundary=None,
+                                            _subparts=None,
+                                            **dict(micalg="pgp-sha1",
+                                                   protocol="application/pgp-signature"))
                     # insert the origin payload
                     payload.attach(payload_in)
                     # insert the detached signature
@@ -605,10 +604,10 @@ class Mail(object):
                     c.op_encrypt(recipients, 1, plain, cipher)
                     cipher.seek(0, 0)
                     # make it a part of the email
-                    payload = MIMEMultipart.MIMEMultipart('encrypted',
-                                                          boundary=None,
-                                                          _subparts=None,
-                                                          **dict(protocol="application/pgp-encrypted"))
+                    payload = MIMEMultipart('encrypted',
+                                            boundary=None,
+                                            _subparts=None,
+                                            **dict(protocol="application/pgp-encrypted"))
                     p = MIMEBase("application", 'pgp-encrypted')
                     p.set_payload("Version: 1\r\n")
                     payload.attach(p)
@@ -729,29 +728,29 @@ class Mail(object):
             payload = payload_in
 
         if from_address:
-            payload['From'] = encoded_or_raw(from_address.decode(encoding))
+            payload['From'] = encoded_or_raw(to_unicode(from_address, encoding))
         else:
-            payload['From'] = encoded_or_raw(sender.decode(encoding))
+            payload['From'] = encoded_or_raw(to_unicode(sender, encoding))
         origTo = to[:]
         if to:
-            payload['To'] = encoded_or_raw(', '.join(to).decode(encoding))
+            payload['To'] = encoded_or_raw(to_unicode(', '.join(to), encoding))
         if reply_to:
-            payload['Reply-To'] = encoded_or_raw(reply_to.decode(encoding))
+            payload['Reply-To'] = encoded_or_raw(to_unicode(reply_to, encoding))
         if cc:
-            payload['Cc'] = encoded_or_raw(', '.join(cc).decode(encoding))
+            payload['Cc'] = encoded_or_raw(to_unicode(', '.join(cc), encoding))
             to.extend(cc)
         if bcc:
             to.extend(bcc)
-        payload['Subject'] = encoded_or_raw(subject.decode(encoding))
+        payload['Subject'] = encoded_or_raw(to_unicode(subject, encoding))
         payload['Date'] = email.utils.formatdate()
         for k, v in iteritems(headers):
-            payload[k] = encoded_or_raw(v.decode(encoding))
+            payload[k] = encoded_or_raw(to_unicode(v, encoding))
         result = {}
         try:
             if self.settings.server == 'logging':
                 entry = 'email not sent\n%s\nFrom: %s\nTo: %s\nSubject: %s\n\n%s\n%s\n' % \
                     ('-' * 40, sender, ', '.join(to), subject, text or html, '-' * 40)
-                logger.warn(entry)
+                logger.warning(entry)
             elif self.settings.server.startswith('logging:'):
                 entry = 'email not sent\n%s\nFrom: %s\nTo: %s\nSubject: %s\n\n%s\n%s\n' % \
                     ('-' * 40, sender, ', '.join(to), subject, text or html, '-' * 40)
@@ -773,16 +772,16 @@ class Mail(object):
                 if attachments:
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=unicode(subject, encoding), body=unicode(text, encoding), html=html,
+                        subject=to_unicode(subject, encoding), body=to_unicode(text, encoding), html=html,
                         attachments=attachments, **xcc)
                 elif html and (not raw):
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=unicode(subject, encoding), body=unicode(text, encoding), html=html, **xcc)
+                        subject=to_unicode(subject, encoding), body=to_unicode(text, encoding), html=html, **xcc)
                 else:
                     result = mail.send_mail(
                         sender=sender, to=origTo,
-                        subject=unicode(subject, encoding), body=unicode(text, encoding), **xcc)
+                        subject=to_unicode(subject, encoding), body=to_unicode(text, encoding), **xcc)
             else:
                 smtp_args = self.settings.server.split(':')
                 kwargs = dict(timeout=self.settings.timeout)
@@ -800,7 +799,7 @@ class Mail(object):
                     sender, to, payload.as_string())
                 server.quit()
         except Exception as e:
-            logger.warn('Mail.send failure:%s' % e)
+            logger.warning('Mail.send failure:%s' % e)
             self.result = result
             self.error = e
             return False
@@ -1250,8 +1249,7 @@ class AuthJWT(object):
         
     @staticmethod
     def jwt_b64e(string):
-        if isinstance(string, unicode):
-            string = string.encode('utf-8', 'strict')
+        string = to_bytes(string)
         return base64.urlsafe_b64encode(string).strip(b'=')
 
     @staticmethod
@@ -1260,47 +1258,44 @@ class AuthJWT(object):
         called with a unicode string).
         The result is also a bytestring.
         """
-        if isinstance(string, unicode):
-            string = string.encode('ascii', 'ignore')
-        return base64.urlsafe_b64decode(string + '=' * (-len(string) % 4))
+        string = to_bytes(string, 'ascii', 'ignore')
+        return base64.urlsafe_b64decode(string + b'=' * (-len(string) % 4))
 
     def generate_token(self, payload):
-        secret = self.secret_key
+        secret = to_bytes(self.secret_key)
         if self.salt:
             if callable(self.salt):
                 secret = "%s$%s" % (secret, self.salt(payload))
             else:
                 secret = "%s$%s" % (secret, self.salt)
-            if isinstance(secret, unicode):
+            if isinstance(secret, unicodeT):
                 secret = secret.encode('ascii', 'ignore')
         b64h = self.cached_b64h
         b64p = self.jwt_b64e(serializers.json(payload))
-        jbody = b64h + '.' + b64p
+        jbody = b64h + b'.' + b64p
         mauth = hmac.new(key=secret, msg=jbody, digestmod=self.digestmod)
         jsign = self.jwt_b64e(mauth.digest())
-        return jbody + '.' + jsign
+        return to_native(jbody + b'.' + jsign)
 
     def verify_signature(self, body, signature, secret):
         mauth = hmac.new(key=secret, msg=body, digestmod=self.digestmod)
         return compare(self.jwt_b64e(mauth.digest()), signature)
 
     def load_token(self, token):
-        if isinstance(token, unicode):
-            token = token.encode('utf-8', 'strict')
-        body, sig = token.rsplit('.', 1)
-        b64h, b64b = body.split('.', 1)
+        token = to_bytes(token, 'utf-8', 'strict')
+        body, sig = token.rsplit(b'.', 1)
+        b64h, b64b = body.split(b'.', 1)
         if b64h != self.cached_b64h:
             # header not the same
             raise HTTP(400, u'Invalid JWT Header')
         secret = self.secret_key
-        tokend = serializers.loads_json(self.jwt_b64d(b64b))
+        tokend = serializers.loads_json(to_native(self.jwt_b64d(b64b)))
         if self.salt:
             if callable(self.salt):
                 secret = "%s$%s" % (secret, self.salt(tokend))
             else:
                 secret = "%s$%s" % (secret, self.salt)
-            if isinstance(secret, unicode):
-                secret = secret.encode('ascii', 'ignore')
+        secret = to_bytes(secret, 'ascii', 'ignore')
         if not self.verify_signature(body, sig, secret):
             # signature verification failed
             raise HTTP(400, u'Token signature is invalid')
@@ -1462,7 +1457,7 @@ class AuthJWT(object):
             def f(*args, **kwargs):
                 try:
                     token = self.get_jwt_token_from_request(token_param=token_param)
-                except HTTP, e:
+                except HTTP as e:
                     if required:
                         raise e
                     token = None
@@ -3560,8 +3555,8 @@ class Auth(object):
         password = ''
         specials = r'!#$*'
         for i in range(0, 3):
-            password += random.choice(string.lowercase)
-            password += random.choice(string.uppercase)
+            password += random.choice(string.ascii_lowercase)
+            password += random.choice(string.ascii_uppercase)
             password += random.choice(string.digits)
             password += random.choice(specials)
         return ''.join(random.sample(password, len(password)))
@@ -3994,7 +3989,7 @@ class Auth(object):
         requires = table_user[passfield].requires
         if not isinstance(requires, (list, tuple)):
             requires = [requires]
-        requires = filter(lambda t: isinstance(t, CRYPT), requires)
+        requires = list(filter(lambda t: isinstance(t, CRYPT), requires))
         if requires:
             requires[0].min_length = 0
         form = SQLFORM.factory(
@@ -4764,7 +4759,7 @@ class Auth(object):
             self._wiki.automenu()
 
 
-class Crud(object):
+class Crud(object): # pragma: no cover
 
     def url(self, f=None, args=None, vars=None):
         """
@@ -5621,7 +5616,7 @@ class Service(object):
             args = request.args
 
         def none_exception(value):
-            if isinstance(value, unicode):
+            if isinstance(value, unicodeT):
                 return value.encode('utf8')
             if hasattr(value, 'isoformat'):
                 return value.isoformat()[:19].replace('T', ' ')
