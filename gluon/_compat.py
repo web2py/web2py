@@ -30,6 +30,7 @@ if PY2:
     from string import maketrans
     from types import ClassType
     import cgi
+    import cookielib
     reduce = reduce
     hashlib_md5 = hashlib.md5
     iterkeys = lambda d: d.iterkeys()
@@ -94,6 +95,7 @@ else:
     from email.charset import Charset, add_charset, QP as charset_QP
     from urllib.request import FancyURLopener, urlopen
     from urllib.parse import quote as urllib_quote, unquote as urllib_unquote, urlencode
+    from http import cookiejar as cookielib
     import html
     hashlib_md5 = lambda s: hashlib.md5(bytes(s, 'utf8'))
     iterkeys = lambda d: iter(d.keys())
