@@ -1,19 +1,14 @@
 """
 Extract client information from http user agent
 The module does not try to detect all capabilities of browser in current form (it can easily be extended though).
-Aim is
-    * fast
+Tries to
+    * be fast
     * very easy to extend
     * reliable enough for practical purposes
-    * and assist python web apps to detect clients.
-
-Taken from http://pypi.python.org/pypi/httpagentparser (MIT license)
-Modified my Ross Peoples for web2py to better support iPhone and iPad.
-Modified by Angelo Compagnucci <angelo.compagnucci@gmail.com> to better support a wide ringe of mobile devices.
-Now it supports: tablet device (is_tablet), BlackBerry, BlackBerry PlayBook, Android Tablets, Windows Mobile,
-Symbian.
+    * assist python web apps to detect clients.
 """
-import sys
+
+__version__ = '1.7.8'
 
 
 class DetectorsHub(dict):
@@ -32,24 +27,11 @@ class DetectorsHub(dict):
         else:
             self[detector.info_type].append(detector)
 
-    def reorderByPrefs(self, detectors, prefs):
-        if prefs is None:
-            return []
-        elif prefs == []:
-            return detectors
-        else:
-            prefs.insert(0, '')
-
-            def key_name(d):
-                return d.name in prefs and prefs.index(d.name) or sys.maxint
-            return sorted(detectors, key=key_name)
-
     def __iter__(self):
         return iter(self._known_types)
 
     def registerDetectors(self):
-        detectors = [v() for v in globals().values()
-                     if DetectorBase in getattr(v, '__mro__', [])]
+        detectors = [v() for v in globals().values() if DetectorBase in getattr(v, '__mro__', [])]
         for d in detectors:
             if d.can_register:
                 self.register(d)
@@ -57,17 +39,17 @@ class DetectorsHub(dict):
 
 class DetectorBase(object):
     name = ""  # "to perform match in DetectorsHub object"
-    info_type = ''  # override me
-    result_key = ''  # override me
+    info_type = "override me"
+    result_key = "override me"
     order = 10  # 0 is highest
-    look_for = []  # list of words to look for
+    look_for = "string to look for"
     skip_if_found = []  # strings if present stop processin
     can_register = False
-    is_mobile = False
-    is_tablet = False
-    prefs = dict()  # dict(info_type = [name1, name2], ..)
-    version_splitters = ["/", " "]
+    version_markers = [("/", " ")]
+    allow_space_in_version = False
     _suggested_detectors = None
+    platform = None
+    bot = False
 
     def __init__(self):
         if not self.name:
@@ -75,54 +57,65 @@ class DetectorBase(object):
         self.can_register = (self.__class__.__dict__.get('can_register', True))
 
     def detect(self, agent, result):
-        if agent and self.checkWords(agent):
+        # -> True/None
+        word = self.checkWords(agent)
+        if word:
             result[self.info_type] = dict(name=self.name)
-            is_mobile = self.is_mobile
-            is_tablet = self.is_tablet
-            if is_mobile:
-                result['is_mobile'] = is_mobile
-            if is_tablet:
-                result['is_tablet'] = is_tablet
-
-            version = self.getVersion(agent)
+            result['bot'] = self.bot
+            version = self.getVersion(agent, word)
             if version:
                 result[self.info_type]['version'] = version
-
+            if self.platform:
+                result['platform'] = {'name': self.platform, 'version': version}
             return True
-        return False
 
     def checkWords(self, agent):
+        # -> True/None
         for w in self.skip_if_found:
             if w in agent:
                 return False
-        for w in self.look_for:
-            if not w in agent:
-                return False
-        return True
+        if isinstance(self.look_for, (tuple, list)):
+            for word in self.look_for:
+                if word in agent:
+                    return word
+        elif self.look_for in agent:
+            return self.look_for
 
-    # This works only for the first element of look_for
-    # If you want a different behaviour, you have to
-    # override this method
-    def getVersion(self, agent):
-        # -> version string /None
-        vs = self.version_splitters
-        return agent.partition(self.look_for[0] + vs[0])[2].partition(vs[1])[0].strip()
+    def getVersion(self, agent, word):
+        """
+        => version string /None
+        """
+        version_markers = self.version_markers if \
+            isinstance(self.version_markers[0], (list, tuple)) else [self.version_markers]
+        version_part = agent.split(word, 1)[-1]
+        for start, end in version_markers:
+            if version_part.startswith(start) and end in version_part:
+                version = version_part[1:]
+                if end:  # end could be empty string
+                    version = version.split(end)[0]
+                if not self.allow_space_in_version:
+                    version = version.split()[0]
+                return version
 
 
 class OS(DetectorBase):
     info_type = "os"
     can_register = False
-    version_splitters = [";", " "]
+    version_markers = [";", " "]
+    allow_space_in_version = True
+    platform = None
 
 
 class Dist(DetectorBase):
     info_type = "dist"
     can_register = False
+    platform = None
 
 
 class Flavor(DetectorBase):
     info_type = "flavor"
     can_register = False
+    platform = None
 
 
 class Browser(DetectorBase):
@@ -130,293 +123,536 @@ class Browser(DetectorBase):
     can_register = False
 
 
-class Macintosh(OS):
-    look_for = ['Macintosh']
-    prefs = dict(dist=None)
-
-    def getVersion(self, agent):
-        pass
-
-
 class Firefox(Browser):
-    look_for = ["Firefox"]
+    look_for = "Firefox"
+    version_markers = [('/', '')]
+    skip_if_found = ["SeaMonkey", "web/snippet"]
+
+
+class SeaMonkey(Browser):
+    look_for = "SeaMonkey"
+    version_markers = [('/', '')]
 
 
 class Konqueror(Browser):
-    look_for = ["Konqueror"]
-    version_splitters = ["/", ";"]
+    look_for = "Konqueror"
+    version_markers = ["/", ";"]
+
+
+class OperaMobile(Browser):
+    look_for = "Opera Mobi"
+    name = "Opera Mobile"
+
+    def getVersion(self, agent, word):
+        try:
+            look_for = "Version"
+            return agent.split(look_for)[1][1:].split(' ')[0]
+        except IndexError:
+            look_for = "Opera"
+            return agent.split(look_for)[1][1:].split(' ')[0]
 
 
 class Opera(Browser):
-    look_for = ["Opera"]
+    look_for = "Opera"
 
-    def getVersion(self, agent):
-        return agent.partition(self.look_for[0])[2][1:].partition(' ')[0]
+    def getVersion(self, agent, word):
+        try:
+            look_for = "Version"
+            return agent.split(look_for)[1][1:].split(' ')[0]
+        except IndexError:
+            look_for = "Opera"
+            version = agent.split(look_for)[1][1:].split(' ')[0]
+            return version.split('(')[0]
+
+
+class OperaNew(Browser):
+    """
+    Opera after version 15
+    """
+    name = "Opera"
+    look_for = "OPR"
+    version_markers = [('/', '')]
 
 
 class Netscape(Browser):
-    look_for = ["Netscape"]
+    look_for = "Netscape"
+    version_markers = [("/", '')]
+
+
+class Trident(Browser):
+    look_for = "Trident"
+    skip_if_found = ["MSIE", "Opera"]
+    name = "Microsoft Internet Explorer"
+    version_markers = ["/", ";"]
+    trident_to_ie_versions = {
+        '4.0': '8.0',
+        '5.0': '9.0',
+        '6.0': '10.0',
+        '7.0': '11.0',
+    }
+
+    def getVersion(self, agent, word):
+        return self.trident_to_ie_versions.get(super(Trident, self).getVersion(agent, word))
 
 
 class MSIE(Browser):
-    look_for = ["MSIE"]
+    look_for = "MSIE"
     skip_if_found = ["Opera"]
     name = "Microsoft Internet Explorer"
-    version_splitters = [" ", ";"]
+    version_markers = [" ", ";"]
 
+class MSEdge(Browser):
+    look_for = "Edge"
+    skip_if_found = ["MSIE"]
+    version_markers = ["/", ""]
 
 class Galeon(Browser):
-    look_for = ["Galeon"]
+    look_for = "Galeon"
+
+
+class WOSBrowser(Browser):
+    look_for = "wOSBrowser"
+
+    def getVersion(self, agent, word):
+        pass
 
 
 class Safari(Browser):
-    look_for = ["Safari"]
-    skip_if_found = ["Chrome", "OmniWeb", "Mobile", "iPad", 'Android']
+    look_for = "Safari"
+    skip_if_found = ["Edge"]
 
-    def getVersion(self, agent):
+    def checkWords(self, agent):
+        unless_list = ["Chrome", "OmniWeb", "wOSBrowser", "Android"]
+        if self.look_for in agent:
+            for word in unless_list:
+                if word in agent:
+                    return False
+            return self.look_for
+
+    def getVersion(self, agent, word):
         if "Version/" in agent:
-            return agent.partition('Version/')[2].partition(' ')[0].strip()
+            return agent.split('Version/')[-1].split(' ')[0].strip()
+        if "Safari/" in agent:
+            return agent.split('Safari/')[-1].split(' ')[0].strip()
+        else:
+            return agent.split('Safari ')[-1].split(' ')[0].strip()  # Mobile Safari
 
+class GoogleBot(Browser):
+    # https://support.google.com/webmasters/answer/1061943
+    look_for = ["Googlebot", "Googlebot-News", "Googlebot-Image",
+                "Googlebot-Video", "Googlebot-Mobile", "Mediapartners-Google",
+                "Mediapartners", "AdsBot-Google", "web/snippet"]
+    bot = True
+    version_markers = [('/', ';'), ('/', ' ')]
 
-class SafariTablet(Browser):
-    name = "Safari"
-    look_for = ['Safari', 'Android']
-    skip_if_found = ["Chrome", "OmniWeb", "Mobile", "iPad"]
-    is_mobile = True
-    is_tablet = True
+class GoogleFeedFetcher(Browser):
+    look_for = "Feedfetcher-Google"
+    bot = True
 
-    def getVersion(self, agent):
-        if "Version/" in agent:
-            return agent.partition('Version/')[2].partition(' ')[0].strip()
-
-
-class SafariMobile(Browser):
-    name = "Safari"
-    look_for = ["Safari", "Mobile"]
-    is_mobile = True
-
-    def getVersion(self, agent):
-        if "Version/" in agent:
-            return agent.partition('Version/')[2].partition(' ')[0].strip()
-
-
-class SafariNokia(Browser):
-    name = "Safari"
-    look_for = ["Safari", "SymbianOS"]
-    is_mobile = True
-
-    def getVersion(self, agent):
+    def get_version(self, agent):
         pass
 
+class RunscopeRadar(Browser):
+    look_for = "runscope-radar"
+    bot = True
 
-class SafariiPad(Browser):
-    name = "Safari"
-    look_for = ["Safari", "iPad"]
-    skip_if_found = ["Chrome", "OmniWeb"]
-    is_mobile = True
-    is_tablet = True
+class GoogleAppEngine(Browser):
+    look_for = "AppEngine-Google"
+    bot = True
 
-    def getVersion(self, agent):
-        if "Version/" in agent:
-            return agent.partition('Version/')[2].partition(' ')[0].strip()
+    def get_version(self, agent):
+        pass
+
+class GoogleApps(Browser):
+    look_for = "GoogleApps script"
+    bot = True
+
+    def get_version(self, agent):
+        pass
+
+class TwitterBot(Browser):
+    look_for = "Twitterbot"
+    bot = True
+
+class MJ12Bot(Browser):
+    look_for = "MJ12bot"
+    bot = True
+
+class YandexBot(Browser):
+    # http://help.yandex.com/search/robots/agent.xml
+    look_for = "Yandex"
+    bot = True
+
+    def getVersion(self, agent, word):
+        return agent[agent.index('Yandex'):].split('/')[-1].split(')')[0].strip()
+
+class BingBot(Browser):
+    look_for = "bingbot"
+    version_markers = ["/", ";"]
+    bot = True
+
+
+class BaiduBot(Browser):
+    # http://help.baidu.com/question?prod_en=master&class=1&id=1000973
+    look_for = ["Baiduspider", "Baiduspider-image", "Baiduspider-video",
+                "Baiduspider-news", "Baiduspider-favo", "Baiduspider-cpro",
+                "Baiduspider-ads"]
+    bot = True
+    version_markers = ('/', ';')
+
+
+class LinkedInBot(Browser):
+    look_for = "LinkedInBot"
+    bot = True
+
+class ArchiveDotOrgBot(Browser):
+    look_for = "archive.org_bot"
+    bot = True
+
+class YoudaoBot(Browser):
+    look_for = "YoudaoBot"
+    bot = True
+
+class YoudaoBotImage(Browser):
+    look_for = "YodaoBot-Image"
+    bot = True
+
+class RogerBot(Browser):
+    look_for = "rogerbot"
+    bot = True
+
+class TweetmemeBot(Browser):
+    look_for = "TweetmemeBot"
+    bot = True
+
+class WebshotBot(Browser):
+    look_for = "WebshotBot"
+    bot = True
+
+class SensikaBot(Browser):
+    look_for = "SensikaBot"
+    bot = True
+
+class YesupBot(Browser):
+    look_for = "YesupBot"
+    bot = True
+
+class DotBot(Browser):
+    look_for = "DotBot"
+    bot = True
+
+class PhantomJS(Browser):
+    look_for = "Browser/Phantom"
+    bot = True
+
+class FacebookExternalHit(Browser):
+    look_for = 'facebookexternalhit'
+    bot = True
+
+
+class NokiaOvi(Browser):
+    look_for = "S40OviBrowser"
+
+class UCBrowser(Browser):
+    look_for = "UCBrowser"
+
+class BrowserNG(Browser):
+    look_for = "BrowserNG"
+
+class Dolfin(Browser):
+    look_for = 'Dolfin'
+
+class NetFront(Browser):
+    look_for = 'NetFront'
+
+class Jasmine(Browser):
+    look_for = 'Jasmine'
+
+class Openwave(Browser):
+    look_for = 'Openwave'
+
+class UPBrowser(Browser):
+    look_for = 'UP.Browser'
+
+class OneBrowser(Browser):
+    look_for = 'OneBrowser'
+
+class ObigoInternetBrowser(Browser):
+    look_for = 'ObigoInternetBrowser'
+
+class TelecaBrowser(Browser):
+    look_for = 'TelecaBrowser'
+
+class MAUI(Browser):
+    look_for = 'Browser/MAUI'
+
+    def getVersion(self, agent, word):
+        version = agent.split("Release/")[-1][:10]
+        return version
+
+
+class NintendoBrowser(Browser):
+    look_for = 'NintendoBrowser'
+
+
+class AndroidBrowser(Browser):
+    look_for = "Android"
+    skip_if_found = ['Chrome', 'Windows Phone']
+
+    # http://decadecity.net/blog/2013/11/21/android-browser-versions
+    def getVersion(self, agent, word):
+        pass
 
 
 class Linux(OS):
-    look_for = ["Linux"]
-    prefs = dict(dist=["Ubuntu", "Android", "Debian"], flavor=None)
+    look_for = 'Linux'
+    platform = 'Linux'
 
-    def getVersion(self, agent):
+    def getVersion(self, agent, word):
         pass
 
 
-class BlackBerry(OS):
-    look_for = ['BlackBerry']
-    prefs = dict(flavor=['PlayBook'])
-    is_mobile = True
+class Blackberry(OS):
+    look_for = 'BlackBerry'
+    platform = 'BlackBerry'
 
-    # Manual check for tablet
-    def checkWords(self, agent):
-        if 'BlackBerry' in agent or 'PlayBook' in agent:
-            return True
-        return False
-
-    def getVersion(self, agent):
+    def getVersion(self, agent, word):
         pass
 
 
-class PlayBook(Flavor):
-    look_for = ['PlayBook']
-    is_mobile = True
-    is_tablet = True
+class BlackberryPlaybook(Dist):
+    look_for = 'PlayBook'
+    platform = 'BlackBerry'
 
-    def getVersion(self, agent):
-        return agent.partition('Tablet OS')[2].partition(';')[0].strip()
+    def getVersion(self, agent, word):
+        pass
+
+
+class WindowsPhone(OS):
+    name = "Windows Phone"
+    platform = 'Windows'
+    look_for = ["Windows Phone OS", "Windows Phone"]
+    version_markers = [(" ", ";"), (" ", ")")]
+
+
+class iOS(OS):
+    look_for = ('iPhone', 'iPad')
+    skip_if_found = ['like iPhone']
+
+
+class iPhone(Dist):
+    look_for = 'iPhone'
+    platform = 'iOS'
+    skip_if_found = ['like iPhone']
+
+    def getVersion(self, agent, word):
+        version_end_chars = [' ']
+        if not "iPhone OS" in agent:
+            return None
+        part = agent.split('iPhone OS')[-1].strip()
+        for c in version_end_chars:
+            if c in part:
+                version = part.split(c)[0]
+                return version.replace('_', '.')
+        return None
+
+
+class IPad(Dist):
+    look_for = 'iPad;'
+    platform = 'iOS'
+
+    def getVersion(self, agent, word):
+        version_end_chars = [' ']
+        if not "CPU OS " in agent:
+            return None
+        part = agent.split('CPU OS ')[-1].strip()
+        for c in version_end_chars:
+            if c in part:
+                version = part.split(c)[0]
+                return version.replace('_', '.')
+        return None
 
 
 class Macintosh(OS):
-    look_for = ['Macintosh']
-    prefs = dict(dist=None, flavor=['MacOS'])
+    look_for = 'Macintosh'
 
-    def getVersion(self, agent):
+    def getVersion(self, agent, word):
         pass
 
 
 class MacOS(Flavor):
-    look_for = ['Mac OS']
-    prefs = dict(browser=['Safari', 'SafariMobile', 'SafariIpad',
-                 'Firefox', 'Opera', "Microsoft Internet Explorer"])
+    look_for = 'Mac OS'
+    platform = 'Mac OS'
+    skip_if_found = ['iPhone', 'iPad']
 
-    def getVersion(self, agent):
+    def getVersion(self, agent, word):
         version_end_chars = [';', ')']
-        part = agent.partition('Mac OS')[2].strip()
+        part = agent.split('Mac OS')[-1].strip()
         for c in version_end_chars:
             if c in part:
-                version = part.partition(c)[0]
-                break
-        return version.replace('_', '.')
+                version = part.split(c)[0]
+                return version.replace('_', '.')
+        return ''
+
+
+class Windows(Dist):
+    look_for = 'Windows'
+    platform = 'Windows'
 
 
 class Windows(OS):
-    look_for = ['Windows', 'NT']
-    prefs = dict(browser=["Microsoft Internet Explorer", 'Firefox'],
-                 dist=['WindowsMobile'], flavor=None)
+    look_for = 'Windows'
+    platform = 'Windows'
+    skip_if_found = ["Windows Phone"]
+    win_versions = {
+                    "NT 10.0": "10",
+                    "NT 6.3": "8.1",
+                    "NT 6.2": "8",
+                    "NT 6.1": "7",
+                    "NT 6.0": "Vista",
+                    "NT 5.2": "Server 2003 / XP x64",
+                    "NT 5.1": "XP",
+                    "NT 5.01": "2000 SP1",
+                    "NT 5.0": "2000",
+                    "98; Win 9x 4.90": "Me"
+    }
 
-    def getVersion(self, agent):
-        v = agent.partition('NT')
-        return v[1] + ' ' + v[2].replace(')', ';').partition(';')[0].strip()
-
-
-class WindowsMobile(Dist):
-    name = 'Phone'
-    look_for = ['Windows', 'Phone']
-    is_mobile = True
-
-    def getVersion(self, agent):
-        return agent.partition('Windows Phone')[2].replace(')', '').partition(';')[0].strip()
+    def getVersion(self, agent, word):
+        v = agent.split('Windows')[-1].split(';')[0].strip()
+        if ')' in v:
+            v = v.split(')')[0]
+        v = self.win_versions.get(v, v)
+        return v
 
 
 class Ubuntu(Dist):
-    look_for = ['Ubuntu']
-    version_splitters = ["/", " "]
-    prefs = dict(browser=['Firefox'])
+    look_for = 'Ubuntu'
+    version_markers = ["/", " "]
 
 
 class Debian(Dist):
-    look_for = ['Debian']
-    version_splitters = ["/", " "]
-    prefs = dict(browser=['Firefox'])
+    look_for = 'Debian'
+    version_markers = ["/", " "]
 
 
 class Chrome(Browser):
-    look_for = ['Chrome']
-    version_splitters = ["/", " "]
+    look_for = "Chrome"
+    version_markers = ["/", " "]
+    skip_if_found = ["OPR", "Edge"]
+
+    def getVersion(self, agent, word):
+        part = agent.split(word + self.version_markers[0])[-1]
+        version = part.split(self.version_markers[1])[0]
+        if '+' in version:
+            version = part.split('+')[0]
+        return version.strip()
+
+
+class ChromeiOS(Browser):
+    look_for = "CriOS"
+    version_markers = ["/", " "]
 
 
 class ChromeOS(OS):
-    look_for = ['CrOS']
-    version_splitters = [" ", ")"]
-    prefs = dict(browser=['Chrome'])
+    look_for = "CrOS"
+    platform = ' ChromeOS'
+    version_markers = [" ", " "]
 
-    def getVersion(self, agent):
-        vs = self.version_splitters
-        return agent.partition(self.look_for[0] + vs[0])[2].partition(vs[1])[0].partition(" ")[2].strip()
+    def getVersion(self, agent, word):
+        version_markers = self.version_markers
+        if word + '+' in agent:
+            version_markers = ['+', '+']
+        return agent.split(word + version_markers[0])[-1].split(version_markers[1])[1].strip()[:-1]
 
 
 class Android(Dist):
-    look_for = ['Android']
-    prefs = dict(browser=['SafariTablet', 'SafariMobile'])
-    is_mobile = True
+    look_for = 'Android'
+    platform = 'Android'
+    skip_if_found = ['Windows Phone']
 
-    def getVersion(self, agent):
-        return agent.partition('Android')[2].partition(';')[0].strip()
-
-
-class SymbianOS(OS):
-    look_for = ['SymbianOS']
-    prefs = dict(dist=['Series'], browser=['Safari', 'Opera'])
-    is_mobile = True
-    version_splitters = ['/', '; ']
+    def getVersion(self, agent, word):
+        return agent.split(word)[-1].split(';')[0].strip()
 
 
-class Series(Flavor):
-    look_for = ['SymbianOS', 'Series']
-    version_splitters = ['/', ';']
+class WebOS(Dist):
+    look_for = 'hpwOS'
 
-    def getVersion(self, agent):
-        return agent.partition('Series')[2].partition(' ')[0].replace('/', ' ')
-
-
-class BrowserNG(Browser):
-    look_for = ['BrowserNG']
-    version_splitters = ['/', ';']
+    def getVersion(self, agent, word):
+        return agent.split('hpwOS/')[-1].split(';')[0].strip()
 
 
-class iPhone(Dist):
-    look_for = ['iPhone']
-    is_mobile = True
-    prefs = dict(browser=['SafariMobile'])
+class NokiaS40(OS):
+    look_for = 'Series40'
+    platform = 'Nokia S40'
 
-    def getVersion(self, agent):
-        version_end_chars = ['like', ';', ')']
-        if (not 'CPU iPhone OS' in agent) and (not 'CPU OS' in agent):
-            return 'X'
-        part = agent.partition('OS')[2].strip()
-        for c in version_end_chars:
-            if c in part:
-                version = 'iOS ' + part.partition(c)[0].strip()
-                break
-        return version.replace('_', '.')
+    def getVersion(self, agent, word):
+        pass
 
 
-class iPad(Dist):
-    look_for = ['iPad']
-    is_mobile = True
-    is_tablet = True
+class Symbian(OS):
+    look_for = ['Symbian', 'SymbianOS']
+    platform = 'Symbian'
 
-    def getVersion(self, agent):
-        version_end_chars = ['like', ';', ')']
-        if not 'OS' in agent:
-            return ''
-        part = agent.partition('OS')[2].strip()
-        for c in version_end_chars:
-            if c in part:
-                version = 'iOS ' + part.partition(c)[0].strip()
-                break
-        return version.replace('_', '.')
+
+class PlayStation(OS):
+    look_for = ['PlayStation', 'PLAYSTATION']
+    platform = 'PlayStation'
+    version_markers = [" ", ")"]
+
+
+class prefs:  # experimental
+    os = dict(
+        Linux=dict(dict(browser=[Firefox, Chrome], dist=[Ubuntu, Android])),
+        BlackBerry=dict(dist=[BlackberryPlaybook]),
+        Macintosh=dict(flavor=[MacOS]),
+        Windows=dict(browser=[MSIE, Firefox]),
+        ChromeOS=dict(browser=[Chrome]),
+        Debian=dict(browser=[Firefox])
+    )
+    dist = dict(
+        Ubuntu=dict(browser=[Firefox]),
+        Android=dict(browser=[Safari]),
+        IPhone=dict(browser=[Safari]),
+        IPad=dict(browser=[Safari]),
+    )
+    flavor = dict(
+        MacOS=dict(browser=[Opera, Chrome, Firefox, MSIE])
+    )
+
 
 detectorshub = DetectorsHub()
 
 
-def detect(agent):
-    result = dict()
-    prefs = dict()
-    result['is_mobile'] = False
-    result['is_tablet'] = False
+def detect(agent, fill_none=False):
+    """
+    fill_none: if name/version is not detected respective key is still added to the result with value None
+    """
+    result = dict(platform=dict(name=None, version=None))
+    _suggested_detectors = []
+
     for info_type in detectorshub:
-        detectors = detectorshub[info_type]
-        _d_prefs = prefs.get(info_type, [])
-        detectors = detectorshub.reorderByPrefs(detectors, _d_prefs)
-        try:
-            for detector in detectors:
-                if detector.detect(agent, result):
-                    prefs = detector.prefs
-                    break
-        except Exception, ex:
-            result['exception'] = ex
-    # hack to address https://code.google.com/p/web2py/issues/detail?id=1755
-    if not 'browser' in result:
-        result['browser'] = {'name':'IE11'}
+        detectors = _suggested_detectors or detectorshub[info_type]
+        for detector in detectors:
+            try:
+                detector.detect(agent, result)
+            except Exception as _err:
+                pass
+
+    if fill_none:
+        attrs_d = {'name': None, 'version': None}
+        for key in ('os', 'browser'):
+            if key not in result:
+                result[key] = attrs_d
+            else:
+                for k, v in attrs_d.items():
+                    result[k] = v
+
     return result
-
-
-class Result(dict):
-    def __missing__(self, k):
-        return ""
 
 
 def simple_detect(agent):
     """
-    -> (os, browser, is_mobile) # tuple of strings
+    -> (os, browser) # tuple of strings
     """
     result = detect(agent)
     os_list = []
@@ -428,142 +664,12 @@ def simple_detect(agent):
         os_list.append(result['os']['name'])
 
     os = os_list and " ".join(os_list) or "Unknown OS"
-    os_version = os_list and ('flavor' in result and result['flavor'] and result['flavor'].get(
-        'version')) or ('dist' in result and result['dist'] and result['dist'].get('version')) \
-        or ('os' in result and result['os'] and result['os'].get('version')) or ""
-    browser = 'browser' in result and result['browser'][
-        'name'] or 'Unknown Browser'
-    browser_version = 'browser' in result \
-        and result['browser'].get('version') or ""
+    os_version = os_list and (result.get('flavor') and result['flavor'].get('version')) or \
+        (result.get('dist') and result['dist'].get('version')) or (result.get('os') and result['os'].get('version')) or ""
+    browser = 'browser' in result and result['browser'].get('name') or 'Unknown Browser'
+    browser_version = 'browser' in result and result['browser'].get('version') or ""
     if browser_version:
         browser = " ".join((browser, browser_version))
     if os_version:
         os = " ".join((os, os_version))
-    #is_mobile = ('dist' in result and result.dist.is_mobile) or ('os' in result and result.os.is_mobile) or False
-    return os, browser, result['is_mobile']
-
-
-if __name__ == '__main__':
-    import time
-    import unittest
-
-    data = (
-
-
-        (
-            'Mozilla/5.0 (SymbianOS/9.2; U; Series60/3.1 Nokia6120c/3.83; Profile/MIDP-2.0 Configuration/CLDC-1.1) AppleWebKit/413 (KHTML, like Gecko) Safari/413',
-            ('Series SymbianOS 60 3.1', 'Safari', True),
-            {'is_mobile': True, 'is_tablet': False, 'flavor': {'name': 'Series', 'version': '60 3.1'}, 'os': {'name': 'SymbianOS', 'version': '9.2'}, 'browser': {'name': 'Safari'}},),
-        (
-            'Mozilla/5.0 (SymbianOS/9.4; Series60/5.0 NokiaN97-1/20.0.019; Profile/MIDP-2.1 Configuration/CLDC-1.1) AppleWebKit/525 (KHTML, like Gecko) BrowserNG/7.1.18124',
-            ('Series SymbianOS 60 5.0', 'BrowserNG 7.1.18124', True),
-            {'is_mobile': True, 'is_tablet': False, 'flavor': {'name': 'Series', 'version': '60 5.0'}, 'os': {'name': 'SymbianOS', 'version': '9.4'}, 'browser': {'name': 'BrowserNG', 'version': '7.1.18124'}},),
-        (
-            'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; Windows Phone 6.5.3.5)',
-            ('Phone Windows 6.5.3.5', 'Microsoft Internet Explorer 6.0', True),
-            {'is_mobile': True, 'is_tablet': False, 'dist': {'name': 'Phone', 'version': '6.5.3.5'}, 'os': {'name': 'Windows', 'version': 'NT 5.1'}, 'browser': {'name': 'Microsoft Internet Explorer', 'version': '6.0'}},),
-        (
-            'Mozilla/5.0 (PlayBook; U; RIM Tablet OS 1.0.0; en-US) AppleWebKit/534.8+ (KHTML, like Gecko) Version/0.0.1 Safari/534.8+',
-            ('PlayBook BlackBerry 1.0.0', 'Safari 0.0.1', True),
-            {'is_mobile': True, 'is_tablet': True, 'flavor': {'name': 'PlayBook', 'version': '1.0.0'}, 'os': {'name': 'BlackBerry'}, 'browser': {'name': 'Safari', 'version': '0.0.1'}},),
-        (
-            'Mozilla/5.0 (BlackBerry; U; BlackBerry 9800; en-US) AppleWebKit/534.1+ (KHTML, like Gecko) Version/6.0.0.246 Mobile Safari/534.1+',
-            ('BlackBerry', 'Safari 6.0.0.246', True),
-            {'is_mobile': True, 'is_tablet': False, 'os': {'name': 'BlackBerry'}, 'browser': {'name': 'Safari', 'version': '6.0.0.246'}},),
-        (
-            'Mozilla/5.0 (BlackBerry; U; BlackBerry 9800; en-US) AppleWebKit/534.8+ (KHTML, like Gecko) Version/6.0.0.600 Mobile Safari/534.8+',
-            ('BlackBerry', 'Safari 6.0.0.600', True),
-            {'is_mobile': True, 'is_tablet': False, 'os': {'name': 'BlackBerry'}, 'browser': {'name': 'Safari', 'version': '6.0.0.600'}},),
-        (
-            'Mozilla/5.0 (iPad; U; CPU OS 4_2_1 like Mac OS X; en-us) AppleWebKit/533.17.9 (KHTML, like Gecko) Version/5.0.2 Mobile/8C148 Safari/6533.18.5',
-            ('MacOS iPad X', 'Safari 5.0.2', True),
-            {'is_mobile': True, 'is_tablet': True, 'flavor': {'version': 'X', 'name': 'MacOS'}, 'dist': {'version': 'iOS 4.2.1', 'name': 'iPad'}, 'browser': {'name': 'Safari', 'version': '5.0.2'}},),
-        (
-            'Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.7.5) Gecko/20060127 Netscape/8.1',
-            ('Windows NT 5.1', 'Netscape 8.1', False),
-            {'is_mobile': False, 'is_tablet': False, 'os': {'name': 'Windows', 'version': 'NT 5.1'}, 'browser': {'name': 'Netscape', 'version': '8.1'}},),
-        (
-            'Mozilla/5.0 (Linux; U; Android 3.0.1; en-us; A500 Build/HRI66) AppleWebKit/534.13 (KHTML, like Gecko) Version/4.0 Safari/534.13',
-            ('Android Linux 3.0.1', 'Safari 4.0', True),
-            {'is_mobile': True, 'is_tablet': True, 'dist': {'version': '3.0.1', 'name': 'Android'}, 'os': {'name': 'Linux'}, 'browser': {'version': '4.0', 'name': 'Safari'}},),
-        (
-            'Mozilla/5.0 (Linux; U; Android 2.3.7; it-it; Dream/Sapphire Build/FRG83) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1',
-            ('Android Linux 2.3.7', 'Safari 4.0', True),
-            {'is_mobile': True, 'is_tablet': False, 'dist': {'version': '2.3.7', 'name': 'Android'}, 'os': {'name': 'Linux'}, 'browser': {'version': '4.0', 'name': 'Safari'}},),
-        (
-            'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.5; en-GB; rv:1.9.0.10) Gecko/2009042315 Firefox/3.0.10',
-            ('MacOS Macintosh X 10.5', 'Firefox 3.0.10', False),
-            {'is_mobile': False, 'is_tablet': False, 'flavor': {'version': 'X 10.5', 'name': 'MacOS'}, 'os': {'name': 'Macintosh'}, 'browser': {'version': '3.0.10', 'name': 'Firefox'}},),
-        (
-            'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_6) AppleWebKit/534.24 (KHTML, like Gecko) Chrome/11.0.696.3 Safari/534.24,gzip(gfe)',
-            ('MacOS Macintosh X 10.6.6', 'Chrome 11.0.696.3', False),
-            {'is_mobile': False, 'is_tablet': False, 'flavor': {'version': 'X 10.6.6', 'name': 'MacOS'}, 'os': {'name': 'Macintosh'}, 'browser': {'version': '11.0.696.3', 'name': 'Chrome'}},),
-        (
-            'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2) Gecko/20100308 Ubuntu/10.04 (lucid) Firefox/3.6 GTB7.1',
-            ('Ubuntu Linux 10.04', 'Firefox 3.6', False),
-            {'is_mobile': False, 'is_tablet': False, 'dist': {'version': '10.04', 'name': 'Ubuntu'}, 'os': {'name': 'Linux'}, 'browser': {'version': '3.6', 'name': 'Firefox'}},),
-        (
-            'Mozilla/5.0 (Linux; U; Android 2.2.1; fr-ch; A43 Build/FROYO) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1',
-            ('Android Linux 2.2.1', 'Safari 4.0', True),
-            {'is_mobile': True, 'is_tablet': False, 'dist': {'version': '2.2.1', 'name': 'Android'}, 'os': {'name': 'Linux'}, 'browser': {'version': '4.0', 'name': 'Safari'}},),
-        (
-            'Mozilla/5.0 (Linux; U; Android 2.3.4; it-it; LG-P990 Build/GRJ22) AppleWebKit/533.1 (KHTML, like Gecko) Version/4.0 Mobile Safari/533.1 MMS/LG-Android-MMS-V1.0/1.2',
-            ('Android Linux 2.3.4', 'Safari 4.0', True),
-            {'is_mobile': True, 'is_tablet': False, 'dist': {'version': '2.3.4', 'name': 'Android'}, 'os': {'name': 'Linux'}, 'browser': {'version': '4.0', 'name': 'Safari'}},),
-        (
-            'Mozilla/5.0 (iPhone; U; CPU like Mac OS X; en) AppleWebKit/420+ (KHTML, like Gecko) Version/3.0 Mobile/1A543a Safari/419.3',
-            ('MacOS iPhone X', 'Safari 3.0', True),
-            {'is_mobile': True, 'is_tablet': False, 'flavor': {'version': 'X', 'name': 'MacOS'}, 'dist': {'version': 'X', 'name': 'iPhone'}, 'browser': {'version': '3.0', 'name': 'Safari'}},),
-        (
-            'Mozilla/5.0 (X11; CrOS i686 0.0.0) AppleWebKit/534.24 (KHTML, like Gecko) Chrome/11.0.696.27 Safari/534.24,gzip(gfe)',
-            ('ChromeOS 0.0.0', 'Chrome 11.0.696.27', False),
-            {'is_mobile': False, 'is_tablet': False, 'os': {'name': 'ChromeOS', 'version': '0.0.0'}, 'browser': {'name': 'Chrome', 'version': '11.0.696.27'}},),
-        (
-            'Mozilla/4.0 (compatible; MSIE 6.0; MSIE 5.5; Windows NT 5.1) Opera 7.02 [en]',
-            ('Windows NT 5.1', 'Opera 7.02', False),
-            {'is_mobile': False, 'is_tablet': False, 'os': {'name': 'Windows', 'version': 'NT 5.1'}, 'browser': {'name': 'Opera', 'version': '7.02'}},),
-        ('Opera/9.80 (X11; Linux i686; U; en) Presto/2.9.168 Version/11.50',
-         ('Linux', 'Opera 9.80', False),
-            {'is_mobile': False, 'is_tablet': False, 'os': {'name': 'Linux'}, 'browser': {'name': 'Opera', 'version': '9.80'}},),
-    )
-
-    class TestHAP(unittest.TestCase):
-        def setUp(self):
-            self.harass_repeat = 100
-            self.data = data
-
-        def test_simple_detect(self):
-            for agent, simple_res, res in data:
-                self.assertEqual(simple_detect(agent), simple_res)
-
-        def test_detect(self):
-            for agent, simple_res, res in data:
-                self.assertEqual(detect(agent), res)
-
-        def test_harass(self):
-            then = time.time()
-            for agent, simple_res, res in data * self.harass_repeat:
-                detect(agent)
-            time_taken = time.time() - then
-            no_of_tests = len(self.data) * self.harass_repeat
-            print "\nTime taken for %s detecttions: %s" \
-                % (no_of_tests, time_taken)
-            print "Time taken for single detecttion: ", \
-                time_taken / (len(self.data) * self.harass_repeat)
-
-    unittest.main()
-
-
-class mobilize(object):
-
-    def __init__(self, func):
-        self.func = func
-
-    def __call__(self):
-        from gluon import current
-        user_agent = current.request.user_agent()
-        if user_agent.is_mobile:
-            items = current.response.view.split('.')
-            items.insert(-1, 'mobile')
-            current.response.view = '.'.join(items)
-        return self.func()
+    return os, browser

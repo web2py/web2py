@@ -23,7 +23,7 @@ try:
     if git.__version__ < '0.3.1':
         raise ImportError("Your version of git is %s. Upgrade to 0.3.1 or better." % git.__version__)
     have_git = True
-except ImportError, e:
+except ImportError as e:
     have_git = False
     GIT_MISSING = 'Requires gitpython module, but not installed or incompatible version: %s' % e
 
@@ -123,6 +123,7 @@ def index():
         redirect(send)
     elif failed_login_count() >= allowed_number_of_attempts:
         time.sleep(2 ** allowed_number_of_attempts)
+        print('4033')
         raise HTTP(403)
     elif request.vars.password:
         if verify_password(request.vars.password[:1024]):
@@ -262,7 +263,7 @@ def site():
                 new_repo = git.Repo.clone_from(form_update.vars.url, target)
                 session.flash = T('new application "%s" imported',
                                   form_update.vars.name)
-            except git.GitCommandError, err:
+            except git.GitCommandError as err:
                 session.flash = T('Invalid git repository specified.')
             redirect(URL(r=request))
 
@@ -272,7 +273,7 @@ def site():
                 f = urllib.urlopen(form_update.vars.url)
                 if f.code == 404:
                     raise Exception("404 file not found")
-            except Exception, e:
+            except Exception as e:
                 session.flash = \
                     DIV(T('Unable to download app because:'), PRE(repr(e)))
                 redirect(URL(r=request))
@@ -347,7 +348,7 @@ def pack():
         else:
             fname = 'web2py.app.%s.compiled.w2p' % app
             filename = app_pack_compiled(app, request, raise_ex=True)
-    except Exception, e:
+    except Exception as e:
         filename = None
 
     if filename:
@@ -421,7 +422,7 @@ def pack_custom():
             fname = 'web2py.app.%s.w2p' % app
             try:
                 filename = app_pack(app, request, raise_ex=True, filenames=files)
-            except Exception, e:
+            except Exception as e:
                 filename = None
             if filename:
                 response.headers['Content-Type'] = 'application/w2p'
@@ -732,7 +733,7 @@ def edit():
         try:
             code = request.vars.data.rstrip().replace('\r\n', '\n') + '\n'
             compile(code, path, "exec", _ast.PyCF_ONLY_AST)
-        except Exception, e:
+        except Exception as e:
             # offset calculation is only used for textarea (start/stop)
             start = sum([len(line) + 1 for l, line
                          in enumerate(request.vars.data.split("\n"))
@@ -757,11 +758,11 @@ def edit():
         # Lets try to reload the modules
         try:
             mopath = '.'.join(request.args[2:])[:-3]
-            exec 'import applications.%s.modules.%s' % (
-                request.args[0], mopath)
+            exec('import applications.%s.modules.%s' % (
+                request.args[0], mopath))
             reload(sys.modules['applications.%s.modules.%s'
                                % (request.args[0], mopath)])
-        except Exception, e:
+        except Exception as e:
             response.flash = DIV(
                 T('failed to reload module because:'), PRE(repr(e)))
 
@@ -1468,7 +1469,7 @@ def create_file():
         redirect(URL('edit',
                      args=[os.path.join(request.vars.location, filename)], vars=vars))
 
-    except Exception, e:
+    except Exception as e:
         if not isinstance(e, HTTP):
             session.flash = T('cannot create file')
 
@@ -1661,7 +1662,7 @@ def errors():
                                                 pickel=error, causer=error_causer,
                                                 last_line=last_line, hash=hash,
                                                 ticket=fn.ticket_id)
-            except AttributeError, e:
+            except AttributeError as e:
                 tk_db(tk_table.id == fn.id).delete()
                 tk_db.commit()
 
