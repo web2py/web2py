@@ -6,7 +6,7 @@
 # version.
 #
 # This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 # or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
 # for more details.
 
@@ -37,6 +37,13 @@ log = logging.getLogger(__name__)
 
 # Deprecated?
 NS_RX = re.compile(r'xmlns:(\w+)="(.+?)"')
+
+
+class SoapFault(Exception):
+    def __init__(self, faultcode=None, faultstring=None, detail=None):
+        self.faultcode = faultcode or self.__class__.__name__
+        self.faultstring = faultstring or ''
+        self.detail = detail
 
 
 class SoapDispatcher(object):
@@ -115,6 +122,9 @@ class SoapDispatcher(object):
     def register_function(self, name, fn, returns=None, args=None, doc=None):
         self.methods[name] = fn, returns, args, doc or getattr(fn, "__doc__", "")
 
+    def response_element_name(self, method):
+        return '%sResponse' % method
+
     def dispatch(self, xml, action=None, fault=None):
         """Receive and process SOAP call, returns the xml"""
         # a dict can be sent in fault to expose it to the caller
@@ -137,7 +147,8 @@ class SoapDispatcher(object):
             # detect soap prefix and uri (xmlns attributes of Envelope)
             for k, v in request[:]:
                 if v in ("http://schemas.xmlsoap.org/soap/envelope/",
-                         "http://www.w3.org/2003/05/soap-env",):
+                         "http://www.w3.org/2003/05/soap-env",
+                         "http://www.w3.org/2003/05/soap-envelope",):
                     soap_ns = request.attributes()[k].localName
                     soap_uri = request.attributes()[k].value
 
@@ -184,13 +195,20 @@ class SoapDispatcher(object):
             ret = function(**args)
             log.debug('dispathed method returns: %s', ret)
 
+        except SoapFault as e:
+            fault.update({
+                'faultcode': "%s.%s" % (soap_fault_code, e.faultcode),
+                'faultstring': e.faultstring,
+                'detail': e.detail
+            })
+
         except Exception:  # This shouldn't be one huge try/except
             import sys
             etype, evalue, etb = sys.exc_info()
             log.error(traceback.format_exc())
             if self.debug:
-                detail = ''.join(traceback.format_exception(etype, evalue, etb))
-                detail += '\n\nXML REQUEST\n\n' + xml
+                detail = u''.join(traceback.format_exception(etype, evalue, etb))
+                detail += u'\n\nXML REQUEST\n\n' + xml.decode('UTF-8')
             else:
                 detail = None
             fault.update({'faultcode': "%s.%s" % (soap_fault_code, etype.__name__),
@@ -235,7 +253,7 @@ class SoapDispatcher(object):
             body.marshall("%s:Fault" % soap_ns, fault, ns=False)
         else:
             # return normal value
-            res = body.add_child("%sResponse" % name, ns=self.namespace)
+            res = body.add_child(self.response_element_name(name), ns=self.namespace)
             if not prefix:
                 res['xmlns'] = self.namespace  # add target namespace
 
@@ -251,7 +269,7 @@ class SoapDispatcher(object):
                                      "%s vs %s" % (str(returns_types), str(ret)))
                 if not complex_type or not types_ok:
                     # backward compatibility for scalar and simple types
-                    res.marshall(returns_types.keys()[0], ret, )
+                    res.marshall(list(returns_types.keys())[0], ret, )
                 else:
                     # new style for complex classes
                     for k, v in ret.items():
@@ -367,7 +385,7 @@ class SoapDispatcher(object):
                         parse_element(n, v.items(), complex=True)
                         t = "tns:%s" % n
                     else:
-                        raise TypeError("unknonw type v for marshalling" % str(v))
+                        raise TypeError("unknonw type %s for marshalling" % str(v))
                     e.add_attribute('type', t)
 
             parse_element("%s" % method, args and args.items())
@@ -452,7 +470,13 @@ class SOAPHandler(BaseHTTPRequestHandler):
 
     def do_POST(self):
         """SOAP POST gateway"""
-        request = self.rfile.read(int(self.headers.getheader('content-length')))
+        request = self.rfile.read(int(self.headers.get('content-length')))
+        # convert xml request to unicode (according to request headers)
+        if sys.version < '3':
+            encoding = self.headers.getparam("charset")
+        else:
+            encoding = self.headers.get_param("charset")
+        request = request.decode(encoding)
         fault = {}
         # execute the method
         response = self.server.dispatcher.dispatch(request, fault=fault)
@@ -576,7 +600,7 @@ if __name__ == "__main__":
             namespace="http://example.com/sample.wsdl",
             soap_ns='soap',
             trace=True,
-            ns=False
+            ns="ns0",
         )
         p = {'a': 1, 'b': 2}
         c = [{'d': '1.20'}, {'d': '2.01'}]
