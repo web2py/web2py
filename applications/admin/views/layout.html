@@ -61,7 +61,7 @@
                 {{if hasattr(T,'get_possible_languages_info'):}}
                 - {{=T('Admin language')}}</span>
                 <select name="adminlanguage" onchange="var date = new Date();cookieDate=date.setTime(date.getTime()+(100*24*60*60*1000));document.cookie='adminLanguage='+this.options[this.selectedIndex].id+'; expires='+cookieDate+'; path=/';window.location.reload()">
-                    {{for langinfo in sorted([(code,info[1]) for code,info in T.get_possible_languages_info().iteritems() if code != 'default']):}}
+                    {{for langinfo in sorted([(code,info[1]) for code,info in iteritems(T.get_possible_languages_info()) if code != 'default']):}}
                     <option {{=T.accepted_language==langinfo[0] and 'selected' or ''}} {{='id='+langinfo[0]}} >{{=langinfo[1]}}</option>
                     {{pass}}
                 </select>
