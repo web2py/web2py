@@ -137,7 +137,10 @@ class WebClient(object):
             self.status = None
 
         self.text = to_native(self.response.read())
-        self.headers = dict(self.response.headers)
+        # In PY3 self.response.headers are case sensitive
+        self.headers = dict()
+        for h in self.response.headers:
+            self.headers[h.lower()] = self.response.headers[h]
 
         # treat web2py tickets as special types of errors
         if error is not None:
@@ -145,9 +148,6 @@ class WebClient(object):
                 raise RuntimeError(self.headers['web2py_error'])
             else:
                 raise error
-
-        if 'Set-Cookie' in self.headers:    #PY3
-            self.headers['set-cookie'] = self.headers['Set-Cookie']
 
         # parse headers into cookies
         self.cookies = {}

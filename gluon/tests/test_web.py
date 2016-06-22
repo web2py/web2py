@@ -16,7 +16,7 @@ from .fix_path import fix_sys_path
 fix_sys_path(__file__)
 
 from gluon.contrib.webclient import WebClient
-from gluon._compat import urllib2
+from gluon._compat import urllib2, PY2
 
 webserverprocess = None
 
@@ -110,6 +110,7 @@ class TestWeb(LiveTest):
         assert('expires' in s.headers)
         assert(s.headers['cache-control'].startswith('max-age'))
 
+    @unittest.skipIf(not(PY2), 'skip PY3 testSoap')
     def testSoap(self):
         # test soap server implementation
         from gluon.contrib.pysimplesoap.client import SoapClient, SoapFault

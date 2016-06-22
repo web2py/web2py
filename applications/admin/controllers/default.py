@@ -15,6 +15,7 @@ from gluon.utils import web2py_uuid
 from gluon.tools import Config
 from gluon.compileapp import find_exposed_functions
 from glob import glob
+from gluon._compat import iteritems, PY2
 import shutil
 import platform
 
@@ -81,7 +82,10 @@ def safe_open(a, b):
             def close(self):
                 pass
         return tmp()
-    return open(a, b)
+    if PY2 or 'b' in b:
+        return open(a, b)
+    else:
+        return open(a, b, encoding="utf8")
 
 
 def safe_read(a, b='r'):
@@ -314,7 +318,7 @@ def site():
     if FILTER_APPS:
         apps = [f for f in apps if f in FILTER_APPS]
 
-    apps = sorted(apps, lambda a, b: cmp(a.upper(), b.upper()))
+    apps = sorted(apps, key=lambda a: a.upper())
     myplatform = platform.python_version()
     return dict(app=None, apps=apps, myversion=myversion, myplatform=myplatform,
                 form_create=form_create, form_update=form_update)
@@ -1152,7 +1156,7 @@ def design():
     # Get all languages
     langpath = os.path.join(apath(app, r=request), 'languages')
     languages = dict([(lang, info) for lang, info
-                      in read_possible_languages(langpath).iteritems()
+                      in iteritems(read_possible_languages(langpath))
                       if info[2] != 0])  # info[2] is langfile_mtime:
     # get only existed files
 
@@ -1288,7 +1292,7 @@ def plugin():
 
     # Get all languages
     languages = sorted([lang + '.py' for lang, info in
-                        T.get_possible_languages_info().iteritems()
+                        iteritems(T.get_possible_languages_info())
                         if info[2] != 0])  # info[2] is langfile_mtime:
     # get only existed files
 

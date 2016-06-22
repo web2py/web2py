@@ -18,7 +18,7 @@ import fnmatch
 import os
 import copy
 import random
-from gluon._compat import builtin, PY2, unicodeT, to_native, basestring
+from gluon._compat import builtin, PY2, unicodeT, to_native, to_bytes, iteritems, basestring
 from gluon.storage import Storage, List
 from gluon.template import parse_template
 from gluon.restricted import restricted, compile2
@@ -395,6 +395,11 @@ _base_environment_['SQLField'] = Field  # for backward compatibility
 _base_environment_['SQLFORM'] = SQLFORM
 _base_environment_['SQLTABLE'] = SQLTABLE
 _base_environment_['LOAD'] = LOAD
+# For an easier PY3 migration
+_base_environment_['PY2'] = PY2
+_base_environment_['to_native'] = to_native
+_base_environment_['to_bytes'] = to_bytes
+_base_environment_['iteritems'] = iteritems
 
 def build_environment(request, response, session, store_current=True):
     """
