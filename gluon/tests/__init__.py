@@ -20,9 +20,9 @@ from .test_serializers import *
 from .test_languages import *
 from .test_compileapp import *
 from .test_appadmin import *
+from .test_web import *
 
 if sys.version[:3] == '2.7':
     from .test_is_url import *
     from .test_scheduler import *
-    from .test_web import *
     from .test_old_doctests import *
