@@ -700,6 +700,7 @@
 'Welcome to web2py': 'Vitejte ve Web2py aplikaci.',
 'Welcome to web2py!': 'Vítejte ve Web2py aplikaci.',
 'Which called the function %s located in the file %s': 'která zavolala funkci %s v souboru (kontroléru) %s.',
+'Working...': 'Pracuji...',
 'WSGI reference name': 'jméno WSGI reference',
 'YES': 'ANO',
 'Yes': 'Ano',
