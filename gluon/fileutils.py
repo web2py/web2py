@@ -115,7 +115,10 @@ def write_file(filename, value, mode='w'):
     """Writes <value> to filename, making sure to close the file
     explicitly on exit.
     """
-    f = open(filename, mode)
+    if PY2:
+        f = open(filename, mode)
+    else:
+        f = open(filename, mode, encoding="utf8")
     try:
         return f.write(value)
     finally:

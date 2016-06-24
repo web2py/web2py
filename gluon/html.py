@@ -2826,7 +2826,8 @@ class MARKMIN(XmlComponent):
         return to_bytes(html) if not self.kwargs else to_bytes(DIV(XML(html), **self.kwargs).xml())
 
     def __str__(self):
-        return self.xml()
+        # In PY3 __str__ cannot return bytes (TypeError: __str__ returned non-string (type bytes))
+        return to_native(self.xml())
 
 
 def ASSIGNJS(**kargs):

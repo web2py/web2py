@@ -18,7 +18,7 @@ import fnmatch
 import os
 import copy
 import random
-from gluon._compat import builtin, PY2, unicodeT, to_native, to_bytes, iteritems, basestring
+from gluon._compat import builtin, PY2, unicodeT, to_native, to_bytes, iteritems, basestring, reduce, xrange, long
 from gluon.storage import Storage, List
 from gluon.template import parse_template
 from gluon.restricted import restricted, compile2
@@ -400,6 +400,9 @@ _base_environment_['PY2'] = PY2
 _base_environment_['to_native'] = to_native
 _base_environment_['to_bytes'] = to_bytes
 _base_environment_['iteritems'] = iteritems
+_base_environment_['reduce'] = reduce
+_base_environment_['xrange'] = xrange
+
 
 def build_environment(request, response, session, store_current=True):
     """

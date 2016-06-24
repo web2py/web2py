@@ -14,7 +14,6 @@ import os
 import sys
 import traceback
 import zipfile
-import urllib
 from shutil import rmtree
 from gluon.utils import web2py_uuid
 from gluon.fileutils import w2p_pack, w2p_unpack, w2p_pack_plugin, w2p_unpack_plugin
@@ -23,7 +22,7 @@ from gluon.fileutils import read_file, write_file, parse_version
 from gluon.restricted import RestrictedError
 from gluon.settings import global_settings
 from gluon.cache import CacheOnDisk
-
+from gluon._compat import urlopen, to_native
 
 if not global_settings.web2py_runtime_gae:
     import site
@@ -338,8 +337,7 @@ def check_new_version(myversion, version_url):
 
     """
     try:
-        from urllib import urlopen
-        version = urlopen(version_url).read()
+        version = to_native(urlopen(version_url).read())
         pversion = parse_version(version)
         pmyversion = parse_version(myversion)
     except IOError:
@@ -423,7 +421,7 @@ def upgrade(request, url='http://web2py.com'):
     full_url = url + '/examples/static/web2py_%s.zip' % version_type
     filename = abspath('web2py_%s_downloaded.zip' % version_type)
     try:
-        write_file(filename, urllib.urlopen(full_url).read(), 'wb')
+        write_file(filename, urlopen(full_url).read(), 'wb')
     except Exception as e:
         return False, e
     try:

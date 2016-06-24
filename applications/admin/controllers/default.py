@@ -15,7 +15,7 @@ from gluon.utils import web2py_uuid
 from gluon.tools import Config
 from gluon.compileapp import find_exposed_functions
 from glob import glob
-from gluon._compat import iteritems, PY2
+from gluon._compat import iteritems, PY2, pickle, xrange, urlopen, to_bytes
 import shutil
 import platform
 
@@ -127,7 +127,6 @@ def index():
         redirect(send)
     elif failed_login_count() >= allowed_number_of_attempts:
         time.sleep(2 ** allowed_number_of_attempts)
-        print('4033')
         raise HTTP(403)
     elif request.vars.password:
         if verify_password(request.vars.password[:1024]):
@@ -274,7 +273,7 @@ def site():
         elif form_update.vars.url:
             # fetch an application via URL or file upload
             try:
-                f = urllib.urlopen(form_update.vars.url)
+                f = urlopen(form_update.vars.url)
                 if f.code == 404:
                     raise Exception("404 file not found")
             except Exception as e:
@@ -387,7 +386,7 @@ def pack_exe(app, base, filenames=None):
     # Download latest web2py_win and open it with zipfile
     download_url = 'http://www.web2py.com/examples/static/web2py_win.zip'
     out = StringIO()
-    out.write(urllib.urlopen(download_url).read())
+    out.write(urlopen(download_url).read())
     web2py_win = zipfile.ZipFile(out, mode='a')
     # Write routes.py with the application as default
     routes = u'# -*- coding: utf-8 -*-\nrouters = dict(BASE=dict(default_application="%s"))' % app
@@ -858,7 +857,7 @@ def todolist():
         for f in listfiles(app, d):
             matches = []
             filename = apath(os.path.join(app, d, f), r=request)
-            with open(filename, 'r') as f_s:
+            with safe_open(filename, 'r') as f_s:
                 src = f_s.read()
                 for m in regex.finditer(src):
                     start = m.start()
@@ -1575,7 +1574,6 @@ def errors():
     """ Error handler """
     import operator
     import os
-    import pickle
     import hashlib
 
     app = get_app()
@@ -1605,7 +1603,7 @@ def errors():
             if not os.path.isfile(fullpath):
                 continue
             try:
-                fullpath_file = open(fullpath, 'r')
+                fullpath_file = safe_open(fullpath, 'rb')
                 try:
                     error = pickle.load(fullpath_file)
                 finally:
@@ -1615,7 +1613,7 @@ def errors():
             except EOFError:
                 continue
 
-            hash = hashlib.md5(error['traceback']).hexdigest()
+            hash = hashlib.md5(to_bytes(error['traceback'])).hexdigest()
 
             if hash in delete_hashes:
                 os.unlink(fullpath)
@@ -1710,7 +1708,7 @@ def get_ticket_storage(app):
     private_folder = apath('%s/private' % app, r=request)
     ticket_file = os.path.join(private_folder, 'ticket_storage.txt')
     if os.path.exists(ticket_file):
-        db_string = open(ticket_file).read()
+        db_string = safe_open(ticket_file).read()
         db_string = db_string.strip().replace('\r', '').replace('\n', '')
     elif is_gae:
         # use Datastore as fallback if there is no ticket_file
@@ -1965,9 +1963,9 @@ def plugins():
     from serializers import loads_json
     if not session.plugins:
         try:
-            rawlist = urllib.urlopen("http://www.web2pyslices.com/" +
-                                     "public/api.json/action/list/content/Package?package" +
-                                     "_type=plugin&search_index=false").read()
+            rawlist = urlopen("http://www.web2pyslices.com/" +
+                              "public/api.json/action/list/content/Package?package" +
+                              "_type=plugin&search_index=false").read()
             session.plugins = loads_json(rawlist)
         except:
             response.flash = T('Unable to download the list of plugins')
@@ -1993,7 +1991,7 @@ def install_plugin():
                 source.split("web2py.plugin.")[-1].split(".w2p")[0]
         else:
             filename = "web2py.plugin.%s.w2p" % cleanpath(plugin)
-        if plugin_install(app, urllib.urlopen(source),
+        if plugin_install(app, urlopen(source),
                           request, filename):
             session.flash = T('New plugin installed: %s', filename)
         else:

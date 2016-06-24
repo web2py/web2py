@@ -25,12 +25,12 @@ install:
         virtualenv --python="$PYENV_ROOT/versions/pypy-$PYPY_VERSION/bin/python" "$HOME/virtualenvs/pypy-$PYPY_VERSION"
         source "$HOME/virtualenvs/pypy-$PYPY_VERSION/bin/activate"
       fi
-  - if [[ $TRAVIS_PYTHON_VERSION == '3.5' ]]; then pip install --download-cache $HOME/.pip-cache pycrypto pg8000 pymysql; fi;
+  - if [[ $TRAVIS_PYTHON_VERSION == '3.5' ]]; then pip install pycrypto pg8000 pymysql; fi;
   - if [[ $TRAVIS_PYTHON_VERSION != '3.5' ]]; then pip install -e .; fi;
 
 before_script:
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --download-cache $HOME/.pip-cache coverage; fi;
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then pip install --download-cache $HOME/.pip-cache codecov; fi
+  - pip install --download-cache $HOME/.pip-cache coverage
+  - pip install --download-cache $HOME/.pip-cache codecov
   - mysql -e 'create database pydal;'
   - psql -c 'create database pydal;' -U postgres
   - psql -c 'create extension postgis;' -U postgres -d pydal;
@@ -41,7 +41,7 @@ script: export COVERAGE_PROCESS_START=gluon/tests/coverage.ini; ./web2py.py --ru
 
 after_success:
   - coverage combine;
-  - if [[ $TRAVIS_PYTHON_VERSION == '2.7' ]]; then codecov; fi
+  - codecov
 
 notifications:
   email: true

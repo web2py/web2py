@@ -11,7 +11,7 @@ import errno
 import socket
 import logging
 import platform
-from gluon._compat import iteritems, to_bytes
+from gluon._compat import iteritems, to_bytes, StringIO, urllib_unquote
 
 # Define Constants
 VERSION = '1.2.6'
@@ -182,13 +182,6 @@ class Connection(object):
 
 # Import System Modules
 import socket
-try:
-    from io import StringIO
-except ImportError:
-    try:
-        from cStringIO import StringIO
-    except ImportError:
-        from StringIO import StringIO
 # Import Package Modules
 # package imports removed in monolithic build
 
@@ -1180,19 +1173,6 @@ from threading import Thread
 from datetime import datetime
 
 try:
-    from urllib import unquote
-except ImportError:
-    from urllib.parse import unquote
-
-try:
-    from io import StringIO
-except ImportError:
-    try:
-        from cStringIO import StringIO
-    except ImportError:
-        from StringIO import StringIO
-
-try:
     from ssl import SSLError
 except ImportError:
     class SSLError(socket.error):
@@ -1436,7 +1416,7 @@ class Worker(Thread):
                 req[k] = ""
             if k == 'path':
                 req['path'] = r'%2F'.join(
-                    [unquote(x) for x in re_SLASH.split(v)])
+                    [urllib_unquote(x) for x in re_SLASH.split(v)])
 
         self.protocol = req['protocol']
         return req
@@ -1471,7 +1451,7 @@ class Worker(Thread):
         if '?' in path:
             path, query_string = path.split('?', 1)
 
-        path = r'%2F'.join([unquote(x) for x in re_SLASH.split(path)])
+        path = r'%2F'.join([urllib_unquote(x) for x in re_SLASH.split(path)])
 
         req.update(path=path,
                    query_string=query_string,
