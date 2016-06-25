@@ -59,8 +59,6 @@ def app_pack(app, request, raise_ex=False, filenames=None):
         w2p_pack(filename, apath(app, request), filenames=filenames)
         return filename
     except Exception as e:
-        import traceback
-        print(traceback.format_exc())
         if raise_ex:
             raise
         return False
