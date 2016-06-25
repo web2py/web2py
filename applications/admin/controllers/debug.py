@@ -1,12 +1,12 @@
 import os
 import sys
-import gluon.contrib.shell
+#import gluon.contrib.shell
 import gluon.dal
 import gluon.html
 import gluon.validators
 import code
-import thread
 from gluon.debug import communicate, web_debugger, qdb_debugger
+from gluon._compat import thread
 import pydoc
 
 
