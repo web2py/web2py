@@ -29,8 +29,8 @@ install:
   - if [[ $TRAVIS_PYTHON_VERSION != '3.5' ]]; then pip install -e .; fi;
 
 before_script:
-  - pip install --download-cache $HOME/.pip-cache coverage
-  - pip install --download-cache $HOME/.pip-cache codecov
+  - pip install coverage
+  - pip install codecov
   - mysql -e 'create database pydal;'
   - psql -c 'create database pydal;' -U postgres
   - psql -c 'create extension postgis;' -U postgres -d pydal;
