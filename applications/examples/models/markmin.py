@@ -28,7 +28,7 @@ def get_content(b=None,
 
     try:
         openedfile = openfile()
-    except Exception, IOError:
+    except (Exception, IOError):
         l = 'en'
         openedfile = openfile()
 

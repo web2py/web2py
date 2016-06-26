@@ -10,6 +10,7 @@ import datetime
 import copy
 import gluon.contenttype
 import gluon.fileutils
+from gluon._compat import iteritems
 
 try:
     import pygraphviz as pgv
@@ -267,7 +268,7 @@ def select():
             else:
                 rows = db(query, ignore_common_filters=True).select(
                     *fields, limitby=(start, stop))
-        except Exception, e:
+        except Exception as e:
             import traceback
             tb = traceback.format_exc()
             (rows, nrows) = ([], 0)
@@ -286,7 +287,7 @@ def select():
             import_csv(db[request.vars.table],
                        request.vars.csvfile.file)
             response.flash = T('data uploaded')
-        except Exception, e:
+        except Exception as e:
             response.flash = DIV(T('unable to parse csv file'), PRE(str(e)))
     # end handle upload csv
 
@@ -454,7 +455,7 @@ def ccache():
         except (KeyError, ZeroDivisionError):
             ram['ratio'] = 0
 
-        for key, value in cache.ram.storage.iteritems():
+        for key, value in iteritems(cache.ram.storage):
             if hp:
                 ram['bytes'] += hp.iso(value[1]).size
                 ram['objects'] += hp.iso(value[1]).count

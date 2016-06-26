@@ -10,6 +10,7 @@ import datetime
 import copy
 import gluon.contenttype
 import gluon.fileutils
+from gluon._compat import iteritems
 
 try:
     import pygraphviz as pgv
@@ -454,7 +455,7 @@ def ccache():
         except (KeyError, ZeroDivisionError):
             ram['ratio'] = 0
 
-        for key, value in cache.ram.storage.iteritems():
+        for key, value in iteritems(cache.ram.storage):
             if hp:
                 ram['bytes'] += hp.iso(value[1]).size
                 ram['objects'] += hp.iso(value[1]).count

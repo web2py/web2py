@@ -110,7 +110,7 @@ class HTTP(Exception):
         if status[:1] == '4':
             if not body:
                 body = status
-            if isinstance(body, str):
+            if isinstance(body, (str, bytes, bytearray)):
                 headers['Content-Length'] = len(body)
         rheaders = []
         for k, v in iteritems(headers):
@@ -121,7 +121,7 @@ class HTTP(Exception):
         responder(status, rheaders)
         if env.get('request_method', '') == 'HEAD':
             return ['']
-        elif isinstance(body, str):
+        elif isinstance(body, (str, bytes, bytearray)):
             return [body]
         elif hasattr(body, '__iter__'):
             return body
