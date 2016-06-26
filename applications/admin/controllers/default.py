@@ -15,7 +15,7 @@ from gluon.utils import web2py_uuid
 from gluon.tools import Config
 from gluon.compileapp import find_exposed_functions
 from glob import glob
-from gluon._compat import iteritems, PY2, pickle, xrange, urlopen, to_bytes
+from gluon._compat import iteritems, PY2, pickle, xrange, urlopen, to_bytes, StringIO, to_native
 import shutil
 import platform
 
@@ -382,7 +382,6 @@ def pack_plugin():
 def pack_exe(app, base, filenames=None):
     import urllib
     import zipfile
-    from cStringIO import StringIO
     # Download latest web2py_win and open it with zipfile
     download_url = 'http://www.web2py.com/examples/static/web2py_win.zip'
     out = StringIO()
@@ -1742,9 +1741,9 @@ def make_link(path):
         for key in editable.keys():
             check_extension = folder.endswith("%s/%s" % (app, key))
             if ext.lower() == editable[key] and check_extension:
-                return A('"' + tryFile + '"',
-                         _href=URL(r=request,
-                                   f='edit/%s/%s/%s' % (app, key, filename))).xml()
+                return to_native(A('"' + tryFile + '"',
+                                   _href=URL(r=request,
+                                   f='edit/%s/%s/%s' % (app, key, filename))).xml())
     return ''
 
 
