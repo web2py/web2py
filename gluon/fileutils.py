@@ -97,14 +97,19 @@ def parse_version(version):
     return version_tuple
 
 
-def read_file(filename, mode='r'):
-    """Returns content from filename, making sure to close the file explicitly
-    on exit.
-    """
+def open_file(filename, mode):
     if PY2 or 'b' in mode:
         f = open(filename, mode)
     else:
         f = open(filename, mode, encoding="utf8")
+    return f
+
+
+def read_file(filename, mode='r'):
+    """Returns content from filename, making sure to close the file explicitly
+    on exit.
+    """
+    f = open_file(filename, mode)
     try:
         return f.read()
     finally:
@@ -115,7 +120,7 @@ def write_file(filename, value, mode='w'):
     """Writes <value> to filename, making sure to close the file
     explicitly on exit.
     """
-    f = open(filename, mode)
+    f = open_file(filename, mode)
     try:
         return f.write(value)
     finally:

@@ -596,17 +596,18 @@ class XML(XmlComponent):
                 for A, IMG and BlockQuote).
                 The key is the tag; the value is a list of allowed attributes.
         """
-
         if sanitize:
             text = sanitizer.sanitize(text, permitted_tags, allowed_attributes)
         if isinstance(text, unicodeT):
             text = to_native(text.encode('utf8', 'xmlcharrefreplace'))
+        elif isinstance(text, bytes):
+            text = to_native(text)
         elif not isinstance(text, str):
             text = str(text)
-        self.text = to_bytes(text)
+        self.text = text
 
     def xml(self):
-        return self.text
+        return to_bytes(self.text)
 
     def __str__(self):
         return self.text
@@ -2826,7 +2827,8 @@ class MARKMIN(XmlComponent):
         return to_bytes(html) if not self.kwargs else to_bytes(DIV(XML(html), **self.kwargs).xml())
 
     def __str__(self):
-        return self.xml()
+        # In PY3 __str__ cannot return bytes (TypeError: __str__ returned non-string (type bytes))
+        return to_native(self.xml())
 
 
 def ASSIGNJS(**kargs):

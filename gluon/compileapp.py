@@ -18,7 +18,7 @@ import fnmatch
 import os
 import copy
 import random
-from gluon._compat import builtin, PY2, unicodeT, to_native, to_bytes, iteritems, basestring
+from gluon._compat import builtin, PY2, unicodeT, to_native, to_bytes, iteritems, basestring, reduce, xrange, long
 from gluon.storage import Storage, List
 from gluon.template import parse_template
 from gluon.restricted import restricted, compile2
@@ -44,17 +44,14 @@ from functools import reduce
 logger = logging.getLogger("web2py")
 from gluon import rewrite
 from gluon.custom_import import custom_import_install
-
-try:
-    import py_compile
-except:
-    logger.warning('unable to import py_compile')
+import py_compile
 
 is_pypy = settings.global_settings.is_pypy
 is_gae = settings.global_settings.web2py_runtime_gae
 is_jython = settings.global_settings.is_jython
-
 pjoin = os.path.join
+
+marshal_header_size = 8 if PY2 else 12
 
 TEST_CODE = \
     r"""
@@ -400,6 +397,9 @@ _base_environment_['PY2'] = PY2
 _base_environment_['to_native'] = to_native
 _base_environment_['to_bytes'] = to_bytes
 _base_environment_['iteritems'] = iteritems
+_base_environment_['reduce'] = reduce
+_base_environment_['xrange'] = xrange
+
 
 def build_environment(request, response, session, store_current=True):
     """
@@ -453,7 +453,8 @@ def save_pyc(filename):
     """
     Bytecode compiles the file `filename`
     """
-    py_compile.compile(filename)
+    cfile = "%sc" % filename
+    py_compile.compile(filename, cfile=cfile)
 
 
 def read_pyc(filename):
@@ -467,7 +468,7 @@ def read_pyc(filename):
     data = read_file(filename, 'rb')
     if not is_gae and data[:4] != imp.get_magic():
         raise SystemError('compiled code is incompatible')
-    return marshal.loads(data[8:])
+    return marshal.loads(data[marshal_header_size:])
 
 
 def compile_views(folder, skip_failed_views=False):

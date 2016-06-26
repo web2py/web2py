@@ -13,7 +13,7 @@ from __future__ import print_function
 
 import datetime
 import sys
-from gluon._compat import StringIO, thread
+from gluon._compat import StringIO, thread, xrange
 import time
 import threading
 import os
@@ -87,7 +87,7 @@ class IO(object):
     def __init__(self):
         """   """
 
-        self.buffer = cStringIO.StringIO()
+        self.buffer = StringIO()
 
     def write(self, data):
         """   """
@@ -968,7 +968,7 @@ def console():
         run_system_tests(options)
 
     if options.quiet:
-        capture = cStringIO.StringIO()
+        capture = StringIO()
         sys.stdout = capture
         logger.setLevel(logging.CRITICAL + 1)
     else:
