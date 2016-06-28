@@ -833,7 +833,7 @@ class Scheduler(MetaScheduler):
             Field('assigned_worker_name', default='', writable=False),
             on_define=self.set_requirements,
             migrate=self.__get_migrate('scheduler_task', migrate),
-            format='%(task_name)s')
+            format='(%(id)s) %(task_name)s')
 
         db.define_table(
             'scheduler_run',
