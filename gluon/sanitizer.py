@@ -129,7 +129,7 @@ class XssCleaner(HTMLParser):
 
     def handle_endtag(self, tag):
         bracketed = '</%s>' % tag
-        self.in_disallowed.pop()
+        self.in_disallowed and self.in_disallowed.pop()
         if tag not in self.permitted_tags:
             if (not self.strip_disallowed):
                 self.result += xssescape(bracketed)
