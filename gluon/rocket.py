@@ -1184,17 +1184,17 @@ except ImportError:
 # Define Constants
 re_SLASH = re.compile('%2F', re.IGNORECASE)
 re_REQUEST_LINE = re.compile(r"""^
-(?P<method>OPTIONS|GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT)   # Request Method
-\                                                            # (single space)
+(?P<method>OPTIONS|GET|HEAD|POST|PUT|DELETE|PATCH|TRACE|CONNECT) # Req Method
+\                                                                # single space
 (
-    (?P<scheme>[^:/]+)                                       # Scheme
+    (?P<scheme>[^:/]+)                                           # Scheme
     (://)  #
-    (?P<host>[^/]+)                                          # Host
+    (?P<host>[^/]+)                                              # Host
 )? #
-(?P<path>(\*|/[^ \?]*))                                      # Path
-(\? (?P<query_string>[^ ]*))?                                # Query String
-\                                                            # (single space)
-(?P<protocol>HTTPS?/1\.[01])                                 # Protocol
+(?P<path>(\*|/[^ \?]*))                                          # Path
+(\? (?P<query_string>[^ ]*))?                                    # Query String
+\                                                                # single space
+(?P<protocol>HTTPS?/1\.[01])                                     # Protocol
 $
 """, re.X)
 LOG_LINE = '%(client_ip)s - "%(request_line)s" - %(status)s %(size)s'
