@@ -1,6 +1,5 @@
 import os
 import sys
-#import gluon.contrib.shell
 import gluon.dal
 import gluon.html
 import gluon.validators
