@@ -1915,17 +1915,24 @@ class Auth(object):
 
     def get_vars_next(self):
         next = current.request.vars._next
+        host = current.request.env.http_host
         if isinstance(next, (list, tuple)):
             next = next[0]
         if next and self.settings.prevent_open_redirect_attacks:
-            # Prevent an attacker from adding an arbitrary url after the _next variable in the request.
-            # Browsers will fix a single / so check multiple things just in case
-            items = filter(None, next.split('/'))
-            has_url = any(x in next for x in ['//', ':', 'ftp', 'http', 'rss', 'xml'])
-            if has_url and len(items) > 1:
-                if items[1] != current.request.env.http_host:
-                    next = None
-        return next
+            return self.prevent_open_redirect(next, host)
+        return next or None
+
+    @staticmethod
+    def prevent_open_redirect(next, host):
+        # Prevent an attacker from adding an arbitrary url after the
+        # _next variable in the request.
+        if next:
+            parts = next.split('/')
+            if not ':' in parts[0]:
+                return next
+            elif len(parts)>2 and parts[0].endswith(':') and parts[1:3]==('', host):
+                return next
+        return None
 
     def _get_user_id(self):
         """accessor for auth.user_id"""
