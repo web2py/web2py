@@ -77,9 +77,10 @@ input:invalid, input.error, textarea:invalid, textarea.error {background: #ffdfd
 .container>.quarter, .container>.half, .container>.third, .container>.twothirds, .container>.threequarters {display:inline-block; padding: 0 20px 0 0; vertical-align:top}
 .container>.fill{display: inline-block}
 .container img, .container video {max-width:100%}
+.max900 {margin-left:auto; margin-right:auto}
 
 @media all and (min-width:800px) {
-  .max900 {max-width:900px; margin-left:auto; margin-right:auto}
+  .max900 {max-width:900px}
   .quarter {width:25%; margin-right:-5px}
   .half {width:50%; margin-right:-10px}
   .third {width:33.33%; margin-right:-6.66px}

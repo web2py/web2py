@@ -149,7 +149,6 @@ for c in controllers: controller_functions+=[c[:-3]+'/%s.html'%x for x in functi
 <div id="controllers_inner" class="component_contents">
     {{if not controllers:}}<p><strong>{{=T("There are no controllers")}}</strong></p>{{else:}}
     <div class="controls comptools">
-        {{=button(URL(r=request,c='shell',f='index',args=app), T("shell"))}}
         {{=button(URL('test',args=app), T("test"))}}
         {{=button(URL('edit',args=[app,'cron','crontab']), T("crontab"))}}
     </div>
