@@ -199,11 +199,7 @@ class RestrictedError(Exception):
 
 
 def compile2(code, layer):
-    """
-    The ``+'\\n'`` is necessary else compile fails when code ends in a comment.
-    """
-
-    return compile(code.rstrip().replace('\r\n', '\n') + '\n', layer, 'exec')
+    return compile(code.rstrip(), layer, 'exec')
 
 
 def restricted(code, environment=None, layer='Unknown'):

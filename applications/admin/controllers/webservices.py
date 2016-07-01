@@ -7,14 +7,10 @@ import platform
 import time
 import base64
 import os
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+from gluon._compat import StringIO
 
 
 service = Service(globals())
-
 
 @service.jsonrpc
 def login():

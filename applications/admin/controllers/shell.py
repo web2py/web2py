@@ -1,10 +1,10 @@
 import sys
-import cStringIO
 import gluon.contrib.shell
 import code
 import thread
 import cgi
 from gluon.shell import env
+from gluon._compat import StringIO
 
 if DEMO_MODE or MULTI_USER_MODE:
     session.flash = T('disabled in demo mode')
