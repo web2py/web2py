@@ -85,7 +85,7 @@ def RedisCache(redis_conn=None, debug=False, with_lock=False, fail_gracefully=Fa
     try:
         instance_name = 'redis_instance_' + current.request.application
         if not hasattr(RedisCache, instance_name):
-            setattr(RedisCache, instance_name, 
+            setattr(RedisCache, instance_name,
                     RedisClient(redis_conn=redis_conn, debug=debug,
                                 with_lock=with_lock, fail_gracefully=fail_gracefully))
         return getattr(RedisCache, instance_name)
@@ -137,6 +137,10 @@ class RedisClient(object):
         value = None
         ttl = 0
         try:
+            if f is None:
+                # delete and never look back
+                self.r_server.delete(newKey)
+                return None
             # is there a value
             obj = self.r_server.get(newKey)
             # what's its ttl
@@ -149,9 +153,6 @@ class RedisClient(object):
                 if self.debug:
                     self.r_server.incr('web2py_cache_statistics:hit_total')
                 value = pickle.loads(obj)
-            elif f is None:
-                # delete and never look back
-                self.r_server.delete(newKey)
             else:
                 # naive distributed locking
                 if with_lock:
