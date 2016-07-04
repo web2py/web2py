@@ -40,7 +40,7 @@ try:
 except ImportError:
     have_settings = False
 
-from gluon._compat import pickle, thread
+from gluon._compat import pickle, thread, to_bytes, to_native
 
 try:
     import psutil
@@ -304,13 +304,13 @@ class CacheOnDisk(CacheAbstract):
                     Windows doesn't allow \ / : * ? "< > | in filenames.
                     To go around this encode the keys with base32.
                     """
-                    return base64.b32encode(key)
+                    return to_native(base64.b32encode(to_bytes(key)))
 
                 def key_filter_out_windows(key):
                     """
                     We need to decode the keys so regex based removal works.
                     """
-                    return base64.b32decode(key)
+                    return to_native(base64.b32decode(to_bytes(key)))
 
                 self.key_filter_in = key_filter_in_windows
                 self.key_filter_out = key_filter_out_windows
