@@ -40,7 +40,7 @@ try:
 except ImportError:
     have_settings = False
 
-from gluon._compat import pickle, thread, to_bytes, to_native
+from gluon._compat import pickle, thread, to_bytes, to_native, hashlib_md5
 
 try:
     import psutil
@@ -624,7 +624,7 @@ class Cache(object):
                         cache_key.append(current.request.env.query_string)
                     if lang_:
                         cache_key.append(current.T.accepted_language)
-                    cache_key = hashlib.md5('__'.join(cache_key)).hexdigest()
+                    cache_key = hashlib_md5('__'.join(cache_key)).hexdigest()
                     if prefix:
                         cache_key = prefix + cache_key
                     try:
