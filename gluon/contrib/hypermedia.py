@@ -26,8 +26,7 @@ def api():
             'DELETE':{'query':None},
             },
         }
-    return Collection(db).process(request,response,policies)
-
+    return Collection(db).process(request, response, policies)
 """
 
 __all__ = ['Collection']
@@ -226,8 +225,7 @@ class Collection(object):
                 id = row.id
                 for name in ('slug','fullname','title','name'):
                     if name in row:
-                        href = URL(args=(tablename,id,IS_SLUG.urlify(row[name] or '')),
-                                   scheme=True)
+                        href = URL(args=(tablename,id),scheme=True)
                         break
                 else:
                     href = URL(args=(tablename,id),scheme=True)

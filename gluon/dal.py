@@ -15,7 +15,6 @@ from pydal import Field
 from pydal.objects import Row, Rows, Table, Query, Set, Expression
 from pydal import SQLCustomType, geoPoint, geoLine, geoPolygon
 
-
 def _default_validators(db, field):
     """
     Field type validation, using web2py's validators mechanism.
