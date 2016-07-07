@@ -21,7 +21,7 @@ import base64
 from gluon import sanitizer, decoder
 import itertools
 from gluon._compat import reduce, pickle, copyreg, HTMLParser, name2codepoint, iteritems, unichr, unicodeT, urllib_quote, to_bytes, \
-                          to_native, to_unicode, _local_html_escape, basestring, urlencode
+                          to_native, to_unicode, _local_html_escape, basestring, urlencode, implements_bool
 import marshal
 
 from gluon.storage import Storage
@@ -671,7 +671,7 @@ def XML_pickle(data):
     return XML_unpickle, (marshal.dumps(str(data)),)
 copyreg.pickle(XML, XML_pickle, XML_unpickle)
 
-
+@implements_bool
 class DIV(XmlComponent):
     """
     HTML helper, for easy generating and manipulating a DOM structure.
@@ -823,8 +823,6 @@ class DIV(XmlComponent):
         Always returns True
         """
         return True
-
-    __nonzero__ = __bool__
 
     def _fixup(self):
         """

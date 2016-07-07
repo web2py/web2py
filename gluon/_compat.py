@@ -45,11 +45,6 @@ if PY2:
     unichr = unichr
     unicodeT = unicode
 
-    def implements_iterator(cls):
-        cls.next = cls.__next__
-        del cls.__next__
-        return cls
-
     def implements_bool(cls):
         cls.__nonzero__ = cls.__bool__
         del cls.__bool__
