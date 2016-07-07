@@ -644,10 +644,10 @@ class Response(Storage):
                 'attachment; filename="%s"' % download_filename.replace('"', '\"')
         return self.stream(stream, chunk_size=chunk_size, request=request)
 
-    def json(self, data, default=None):
+    def json(self, data, default=None, indent=None):
         if 'Content-Type' not in self.headers:
             self.headers['Content-Type'] = 'application/json'
-        return json(data, default=default or custom_json)
+        return json(data, default=default or custom_json, indent=indent)
 
     def xmlrpc(self, request, methods):
         from gluon.xmlrpc import handler

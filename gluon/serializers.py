@@ -119,8 +119,8 @@ def xml(value, encoding='UTF-8', key='document', quote=True):
     return ('<?xml version="1.0" encoding="%s"?>' % encoding) + str(xml_rec(value, key, quote))
 
 
-def json(value, default=custom_json):
-    value = json_parser.dumps(value, default=default)
+def json(value, default=custom_json, indent=None):
+    value = json_parser.dumps(value, default=default, sort_keys=True, indent=indent)
     # replace JavaScript incompatible spacing
     # http://timelessrepo.com/json-isnt-a-javascript-subset
     # PY3 FIXME
