@@ -321,9 +321,6 @@ class web2pyDialog(object):
     def update_schedulers(self, start=False):
         applications_folder = os.path.join(self.options.folder, 'applications')
         apps = []
-        ##FIXME - can't start scheduler in the correct dir from Tk
-        if self.options.folder:
-            return
         available_apps = [
             arq for arq in os.listdir(applications_folder)
             if os.path.exists(os.path.join(applications_folder, arq, 'models', 'scheduler.py'))
@@ -339,6 +336,7 @@ class web2pyDialog(object):
 
         # reset the menu
         self.schedmenu.delete(0, len(available_apps))
+
         for arq in available_apps:
             if arq not in self.scheduler_processes:
                 item = lambda u = arq: self.try_start_scheduler(u)
