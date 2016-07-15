@@ -19,7 +19,7 @@ import urllib
 import re
 
 import os
-from gluon._compat import StringIO, unichr, urllib_quote, iteritems, basestring, long, unicodeT
+from gluon._compat import StringIO, unichr, urllib_quote, iteritems, basestring, long, unicodeT, to_native
 from gluon.http import HTTP, redirect
 from gluon.html import XmlComponent, truncate_string
 from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG
@@ -1395,8 +1395,8 @@ class SQLFORM(FORM):
                 self['hidden']['id'] = record[table._id.name]
 
         (begin, end) = self._xml()
-        self.custom.begin = XML("<%s %s>" % (self.tag, begin))
-        self.custom.end = XML("%s</%s>" % (end, self.tag))
+        self.custom.begin = XML("<%s %s>" % (self.tag, to_native(begin)))
+        self.custom.end = XML("%s</%s>" % (to_native(end), self.tag))
         table = self.createform(xfields)
         self.components = [table]
 
