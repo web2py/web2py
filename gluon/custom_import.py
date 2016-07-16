@@ -62,6 +62,9 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
     except:  # there is no current.request (should never happen)
         base_importer = NATIVE_IMPORTER
 
+    if not(PY2) and level < 0:
+        level = 0
+
     # if not relative and not from applications:
     if hasattr(current, 'request') \
             and level <= 0 \
@@ -104,9 +107,6 @@ def custom_importer(name, globals=None, locals=None, fromlist=None, level=-1):
         finally:
             if import_tb:
                 import_tb = None
-    elif not(PY2) and level < 0:
-        # FIXME PY3 why level is < 0?
-        level = 0
 
     return NATIVE_IMPORTER(name, globals, locals, fromlist, level)
 

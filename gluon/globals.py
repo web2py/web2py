@@ -453,9 +453,9 @@ class Response(Storage):
         for meta in iteritems((self.meta or {})):
             k, v = meta
             if isinstance(v, dict):
-                s += '<meta' + ''.join(' %s="%s"' % (xmlescape(key), xmlescape(v[key])) for key in v) +' />\n'
+                s += '<meta' + ''.join(' %s="%s"' % (xmlescape(key), to_native(xmlescape(v[key]))) for key in v) +' />\n'
             else:
-                s += '<meta name="%s" content="%s" />\n' % (k, xmlescape(v))
+                s += '<meta name="%s" content="%s" />\n' % (k, to_native(xmlescape(v)))
         self.write(s, escape=False)
 
     def include_files(self, extensions=None):
