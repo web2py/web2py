@@ -1192,28 +1192,29 @@ class Session(Storage):
 
     def _try_store_in_file(self, request, response):
         try:
-            if (not response.session_id or self._forget
-                    or self._unchanged(response)):
+            if (not response.session_id or 
+                not response.session_filename or
+                self._forget
+                or self._unchanged(response)):
                 # self.clear_session_cookies()
-                self.save_session_id_cookie()
                 return False
-            if response.session_new or not response.session_file:
-                # Tests if the session sub-folder exists, if not, create it
-                session_folder = os.path.dirname(response.session_filename)
-                if not os.path.exists(session_folder):
-                    os.mkdir(session_folder)
-                response.session_file = recfile.open(response.session_filename, 'wb')
-                portalocker.lock(response.session_file, portalocker.LOCK_EX)
-                response.session_locked = True
-            if response.session_file:
-                session_pickled = response.session_pickled or pickle.dumps(self, pickle.HIGHEST_PROTOCOL)
-                response.session_file.write(session_pickled)
-                response.session_file.truncate()
+            else:
+                if response.session_new or not response.session_file:
+                    # Tests if the session sub-folder exists, if not, create it
+                    session_folder = os.path.dirname(response.session_filename)
+                    if not os.path.exists(session_folder):
+                        os.mkdir(session_folder)
+                    response.session_file = recfile.open(response.session_filename, 'wb')
+                    portalocker.lock(response.session_file, portalocker.LOCK_EX)
+                    response.session_locked = True
+                if response.session_file:
+                    session_pickled = response.session_pickled or pickle.dumps(self, pickle.HIGHEST_PROTOCOL)
+                    response.session_file.write(session_pickled)
+                    response.session_file.truncate()
+                return True
         finally:
             self._close(response)
-
-        self.save_session_id_cookie()
-        return True
+            self.save_session_id_cookie()
 
     def _unlock(self, response):
         if response and response.session_file and response.session_locked:

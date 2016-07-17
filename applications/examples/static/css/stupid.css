@@ -317,7 +317,7 @@ a:not(.btn):not(.noeffect):after {
 .accordion>input {display:none}
 .accordion>input:checked ~ *:not(label) {
   max-height: 1000px !important;
-  overflow:visible !important;
+  overflow:hidden !important;
   -webkit-transition: max-height .3s ease-in;
   transition: max-height .3s ease-in;
 }
