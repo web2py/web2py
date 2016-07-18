@@ -22,6 +22,7 @@ from gluon.dal import DAL, Field
 from pydal.objects import Table
 from gluon import tools
 from gluon.tools import Auth, Mail, Recaptcha, Recaptcha2, prettydate, Expose
+from gluon._compat import PY2
 from gluon.globals import Request, Response, Session
 from gluon.storage import Storage
 from gluon.languages import translator
@@ -232,7 +233,7 @@ class TestAuthJWT(unittest.TestCase):
         from gluon.tools import AuthJWT
 
         from gluon import current
-        
+
         self.request = Request(env={})
         self.request.application = 'a'
         self.request.controller = 'c'
@@ -263,7 +264,7 @@ class TestAuthJWT(unittest.TestCase):
         self.token = self.jwtauth.jwt_token_manager()
         self.assertIsNotNone(self.token)
 
-        
+
     def test_allows_jwt(self):
         import gluon.serializers
         self.request.vars.update(self.user_data)
@@ -277,7 +278,7 @@ class TestAuthJWT(unittest.TestCase):
         def optional_auth():
             self.assertEqual(self.user_data['username'], self.auth.user.username)
         optional_auth()
-        
+
 @unittest.skipIf(IS_IMAP, "TODO: Imap raises 'Connection refused'")
 # class TestAuth(unittest.TestCase):
 #
@@ -498,7 +499,15 @@ class TestAuthJWT(unittest.TestCase):
 #     #     impersonate_form = auth.impersonate(user_id=omer_id)
 #     #     self.assertTrue(auth.is_impersonating())
 #     #     self.assertEqual(impersonate_form, 'test')
+
+
 class TestAuth(unittest.TestCase):
+
+    def myassertRaisesRegex(self, *args, **kwargs):
+        if PY2:
+            return getattr(self, 'assertRaisesRegexp')(*args, **kwargs)
+        return getattr(self, 'assertRaisesRegex')(*args, **kwargs)
+
     def setUp(self):
         self.request = Request(env={})
         self.request.application = 'a'
@@ -550,9 +559,9 @@ class TestAuth(unittest.TestCase):
             self.assertTrue(b'name="_formkey"' in html_form)
 
         for f in ['logout', 'verify_email', 'reset_password', 'change_password', 'profile', 'groups']:
-            self.assertRaisesRegexp(HTTP, "303*", getattr(self.auth, f))
+            self.myassertRaisesRegex(HTTP, "303*", getattr(self.auth, f))
 
-        self.assertRaisesRegexp(HTTP, "401*", self.auth.impersonate)
+        self.myassertRaisesRegex(HTTP, "401*", self.auth.impersonate)
 
         try:
             for t in ['t0_archive', 't0', 'auth_cas', 'auth_event',
@@ -783,13 +792,13 @@ class TestAuth(unittest.TestCase):
         self.auth.login_user(self.db(self.db.auth_user.username == 'omer').select().first())  # bypass login_bare()
         # self.assertTrue(self.auth.is_logged_in())  # For developing test
         # self.assertFalse(self.auth.is_impersonating())  # For developing test
-        self.assertRaisesRegexp(HTTP, "403*", self.auth.impersonate, bart_id)
+        self.myassertRaisesRegex(HTTP, "403*", self.auth.impersonate, bart_id)
         self.auth.logout_bare()
         # Try impersonate a non existing user
         self.auth.login_user(self.db(self.db.auth_user.username == 'bart').select().first())  # bypass login_bare()
         # self.assertTrue(self.auth.is_logged_in())  # For developing test
         # self.assertFalse(self.auth.is_impersonating())  # For developing test
-        self.assertRaisesRegexp(HTTP, "401*", self.auth.impersonate, 1000)  # user with id 1000 shouldn't exist
+        self.myassertRaisesRegex(HTTP, "401*", self.auth.impersonate, 1000)  # user with id 1000 shouldn't exist
         # Try impersonate user with id = 0 or '0' when bart impersonating omer
         self.auth.impersonate(user_id=omer_id)
         self.assertTrue(self.auth.is_impersonating())
@@ -804,12 +813,12 @@ class TestAuth(unittest.TestCase):
 
     def test_not_authorized(self):
         self.current.request.ajax = 'facke_ajax_request'
-        self.assertRaisesRegexp(HTTP, "403*", self.auth.not_authorized)
+        self.myassertRaisesRegex(HTTP, "403*", self.auth.not_authorized)
         self.current.request.ajax = None
         self.assertEqual(self.auth.not_authorized(), self.auth.messages.access_denied)
 
     def test_allows_jwt(self):
-        self.assertRaisesRegexp(HTTP, "400*", self.auth.allows_jwt)
+        self.myassertRaisesRegex(HTTP, "400*", self.auth.allows_jwt)
 
     # TODO: def test_requires(self):
     # TODO: def test_requires_login(self):

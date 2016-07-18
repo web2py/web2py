@@ -40,7 +40,7 @@ import hmac
 if hasattr(hashlib, "pbkdf2_hmac"):
     def pbkdf2_hex(data, salt, iterations=1000, keylen=24, hashfunc=None):
         hashfunc = hashfunc or sha1
-        hmac = hashlib.pbkdf2_hmac(hashfunc().name, to_bytes(data), 
+        hmac = hashlib.pbkdf2_hmac(hashfunc().name, to_bytes(data),
                                    to_bytes(salt), iterations, keylen)
         return binascii.hexlify(hmac)
     HAVE_PBKDF2 = True
@@ -171,7 +171,7 @@ def secure_dumps(data, encryption_key, hash_key=None, compression_level=None):
     key = pad(encryption_key)[:32]
     cipher, IV = AES_new(key)
     encrypted_data = base64.urlsafe_b64encode(IV + cipher.encrypt(pad(dump)))
-    signature = to_bytes(hmac.new(to_bytes(hash_key), encrypted_data).hexdigest())
+    signature = to_bytes(hmac.new(to_bytes(hash_key), encrypted_data, hashlib.md5).hexdigest())
     return signature + b':' + encrypted_data
 
 
@@ -184,7 +184,7 @@ def secure_loads(data, encryption_key, hash_key=None, compression_level=None):
         hash_key = sha1(encryption_key).hexdigest()
     signature, encrypted_data = data.split(':', 1)
     encrypted_data = to_bytes(encrypted_data)
-    actual_signature = hmac.new(to_bytes(hash_key), encrypted_data).hexdigest()
+    actual_signature = hmac.new(to_bytes(hash_key), encrypted_data, hashlib.md5).hexdigest()
     if not compare(signature, actual_signature):
         return None
     key = pad(encryption_key)[:32]

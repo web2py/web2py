@@ -21,7 +21,7 @@ from gluon.fileutils import abspath
 from gluon.settings import global_settings
 from gluon.http import HTTP
 from gluon.storage import Storage
-from gluon._compat import to_bytes, to_native
+from gluon._compat import to_bytes, to_native, PY2
 
 logger = None
 oldcwd = None
@@ -93,6 +93,11 @@ def tearDownModule():
 class TestRouter(unittest.TestCase):
     """ Tests the routers logic from gluon.rewrite """
 
+    def myassertRaisesRegex(self, *args, **kwargs):
+        if PY2:
+            return getattr(self, 'assertRaisesRegexp')(*args, **kwargs)
+        return getattr(self, 'assertRaisesRegex')(*args, **kwargs)
+
     def test_router_syntax(self):
         """ Test router syntax error """
         level = logger.getEffectiveLevel()
@@ -102,16 +107,13 @@ class TestRouter(unittest.TestCase):
             SyntaxError, load, rdict=dict(BASE=dict(badkey="value")))
         self.assertRaises(SyntaxError, load, rdict=dict(
             BASE=dict(), app=dict(default_application="name")))
-        try:
-            # 2.7+ only
-            self.assertRaisesRegexp(SyntaxError, "invalid syntax",
-                                    load, data='x:y')
-            self.assertRaisesRegexp(SyntaxError, "unknown key",
-                                    load, rdict=dict(BASE=dict(badkey="value")))
-            self.assertRaisesRegexp(SyntaxError, "BASE-only key",
-                                    load, rdict=dict(BASE=dict(), app=dict(default_application="name")))
-        except AttributeError:
-            pass
+
+        self.myassertRaisesRegex(SyntaxError, "invalid syntax",
+                                load, data='x:y')
+        self.myassertRaisesRegex(SyntaxError, "unknown key",
+                                load, rdict=dict(BASE=dict(badkey="value")))
+        self.myassertRaisesRegex(SyntaxError, "BASE-only key",
+                                load, rdict=dict(BASE=dict(), app=dict(default_application="name")))
         logger.setLevel(level)
 
     def test_router_null(self):
@@ -135,11 +137,7 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(filter_url('http://domain.com/welcome/static/path/to/static').replace('/', os.sep),
             norm_root("%s/applications/welcome/static/path/to/static" % root))
         self.assertRaises(HTTP, filter_url, 'http://domain.com/welcome/static/bad/path/to/st~tic')
-        try:
-            # 2.7+ only
-            self.assertRaisesRegexp(HTTP, "400.*invalid static file", filter_url, 'http://domain.com/welcome/static/bad/path/to/st~tic')
-        except AttributeError:
-            pass
+        self.myassertRaisesRegex(HTTP, "400.*invalid static file", filter_url, 'http://domain.com/welcome/static/bad/path/to/st~tic')
         # outgoing
         self.assertEqual(
             filter_url('http://domain.com/init/default/index', out=True), '/')
@@ -287,15 +285,10 @@ class TestRouter(unittest.TestCase):
         # incoming
         self.assertRaises(HTTP, filter_url, 'http://domain.com')
         self.assertRaises(HTTP, filter_url, 'http://domain.com/appadmin')
-        try:
-            # 2.7+ only
-            self.assertRaisesRegexp(HTTP, "400.*invalid application",
-                                    filter_url, 'http://domain.com')
-            self.assertRaisesRegexp(HTTP, "400.*invalid application",
+        self.myassertRaisesRegex(HTTP, "400.*invalid application",
+                                filter_url, 'http://domain.com')
+        self.myassertRaisesRegex(HTTP, "400.*invalid application",
                                     filter_url, 'http://domain.com/appadmin')
-        except AttributeError:
-            pass
-
         routers = dict(
             BASE=dict(default_application='welcome', applications=None),
         )
@@ -324,12 +317,7 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(
             filter_url('http://domain.com/'), '/welcome/default/index')
         self.assertRaises(HTTP, filter_url, 'http://domain.com/appadmin')
-        try:
-            # 2.7+ only
-            self.assertRaisesRegexp(HTTP, "400.*unknown application: 'appadmin'", filter_url, 'http://domain.com/appadmin')
-        except AttributeError:
-            pass
-
+        self.myassertRaisesRegex(HTTP, "400.*unknown application: 'appadmin'", filter_url, 'http://domain.com/appadmin')
         routers = dict(
             BASE=dict(default_application='welcome', applications=None),
             welcome=dict(controllers=None),
@@ -359,11 +347,7 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(
             filter_url('http://domain.com/'), '/welcome/default/index')
         self.assertRaises(HTTP, filter_url, 'http://domain.com/appadmin')
-        try:
-            # 2.7+ only
-            self.assertRaisesRegexp(HTTP, "400.*unknown application: 'appadmin'", filter_url, 'http://domain.com/appadmin')
-        except AttributeError:
-            pass
+        self.myassertRaisesRegex(HTTP, "400.*unknown application: 'appadmin'", filter_url, 'http://domain.com/appadmin')
 
         routers = dict(
             BASE=dict(default_application='welcome', applications=None),
@@ -391,13 +375,9 @@ class TestRouter(unittest.TestCase):
         # incoming
         self.assertRaises(HTTP, filter_url, 'http://domain.com')
         self.assertRaises(HTTP, filter_url, 'http://domain.com/appadmin')
-        try:
-            # 2.7+ only
-            self.assertRaisesRegexp(HTTP, "400.*invalid controller",
-                                    filter_url, 'http://domain.com')
-            self.assertRaisesRegexp(HTTP, "400.*unknown application: 'appadmin'", filter_url, 'http://domain.com/appadmin')
-        except AttributeError:
-            pass
+        self.myassertRaisesRegex(HTTP, "400.*invalid controller",
+                                filter_url, 'http://domain.com')
+        self.myassertRaisesRegex(HTTP, "400.*unknown application: 'appadmin'", filter_url, 'http://domain.com/appadmin')
 
         routers = dict(
             BASE=dict(default_application='welcome', applications=None),
@@ -425,13 +405,9 @@ class TestRouter(unittest.TestCase):
         # incoming
         self.assertRaises(HTTP, filter_url, 'http://domain.com')
         self.assertRaises(HTTP, filter_url, 'http://domain.com/appadmin')
-        try:
-            # 2.7+ only
-            self.assertRaisesRegexp(HTTP, "400.*invalid function",
-                                    filter_url, 'http://domain.com')
-            self.assertRaisesRegexp(HTTP, "400.*unknown application: 'appadmin'", filter_url, 'http://domain.com/appadmin')
-        except AttributeError:
-            pass
+        self.myassertRaisesRegex(HTTP, "400.*invalid function",
+                                filter_url, 'http://domain.com')
+        self.myassertRaisesRegex(HTTP, "400.*unknown application: 'appadmin'", filter_url, 'http://domain.com/appadmin')
 
     def test_router_app(self):
         """ Tests the doctest router app resolution"""
@@ -474,21 +450,13 @@ class TestRouter(unittest.TestCase):
             filter_url('http://domain.com/goodapp', app=True), 'goodapp')
         self.assertRaises(
             HTTP, filter_url, 'http://domain.com/bad!app', app=True)
-        try:
-            # 2.7+ only
-            self.assertRaisesRegexp(HTTP, '400.*invalid application',
+        self.myassertRaisesRegex(HTTP, '400.*invalid application',
                                     filter_url, 'http://domain.com/bad!app')
-        except AttributeError:
-            pass
 
         routers['BASE']['domains']['domain3.com'] = 'app3'
         self.assertRaises(SyntaxError, load, rdict=routers)
-        try:
-            # 2.7+ only
-            self.assertRaisesRegexp(
+        self.myassertRaisesRegex(
                 SyntaxError, "unknown.*app3", load, rdict=routers)
-        except AttributeError:
-            pass
 
     def test_router_domains_fs(self):
         '''
@@ -632,11 +600,8 @@ class TestRouter(unittest.TestCase):
         self.assertEqual(filter_url('http://domain2.com/app3/c3a/f3',
                          domain=('app2b', None), out=True), "/app3/c3a/f3")
         self.assertRaises(SyntaxError, filter_url, 'http://domain1.com/app1/c1/f1', domain=('app2b', None), out=True)
-        try:
-            # 2.7+ only
-            self.assertRaisesRegexp(SyntaxError, 'cross-domain conflict', filter_url, 'http://domain1.com/app1/c1/f1', domain=('app2b', None), out=True)
-        except AttributeError:
-            pass
+        self.myassertRaisesRegex(SyntaxError, 'cross-domain conflict', filter_url,
+                                 'http://domain1.com/app1/c1/f1', domain=('app2b', None), out=True)
         self.assertEqual(filter_url('http://domain1.com/app1/c1/f1', domain=(
             'app2b', None), host='domain2.com', out=True), "/app1")
 
@@ -752,11 +717,8 @@ class TestRouter(unittest.TestCase):
 
         self.assertRaises(SyntaxError, filter_url, 'http://domain2.com/app3/c3a/f3', domain=('app2b', None), out=True)
         self.assertRaises(SyntaxError, filter_url, 'http://domain1.com/app1/c1/f1', domain=('app2b', None), out=True)
-        try:
-            # 2.7+ only
-            self.assertRaisesRegexp(SyntaxError, 'cross-domain conflict', filter_url, 'http://domain1.com/app1/c1/f1', domain=('app2b', None), out=True)
-        except AttributeError:
-            pass
+        self.myassertRaisesRegex(SyntaxError, 'cross-domain conflict', filter_url,
+                                 'http://domain1.com/app1/c1/f1', domain=('app2b', None), out=True)
         self.assertEqual(filter_url('http://domain1.com/app1/c1/f1', domain=(
             'app2b', None), host='domain2.com', out=True), "/app1")
 
@@ -789,28 +751,20 @@ class TestRouter(unittest.TestCase):
             HTTP, filter_url, 'http://domain.com/ctl/fcn.bad!ext')
         self.assertRaises(
             HTTP, filter_url, 'http://domain.com/ctl/fcn/bad!arg')
-        try:
-            # 2.7+ only
-            self.assertRaisesRegexp(HTTP, '400.*invalid controller', filter_url, 'http://domain.com/init/bad!ctl')
-            self.assertRaisesRegexp(HTTP, '400.*invalid function', filter_url,
-                                    'http://domain.com/init/ctlr/bad!fcn')
-            self.assertRaisesRegexp(HTTP, '400.*invalid extension', filter_url,
-                                    'http://domain.com/init/ctlr/fcn.bad!ext')
-            self.assertRaisesRegexp(HTTP, '400.*invalid arg', filter_url,
-                                    'http://domain.com/appc/init/fcn/bad!arg')
-        except AttributeError:
-            pass
+        self.myassertRaisesRegex(HTTP, '400.*invalid controller', filter_url, 'http://domain.com/init/bad!ctl')
+        self.myassertRaisesRegex(HTTP, '400.*invalid function', filter_url,
+                                'http://domain.com/init/ctlr/bad!fcn')
+        self.myassertRaisesRegex(HTTP, '400.*invalid extension', filter_url,
+                                'http://domain.com/init/ctlr/fcn.bad!ext')
+        self.myassertRaisesRegex(HTTP, '400.*invalid arg', filter_url,
+                                'http://domain.com/appc/init/fcn/bad!arg')
 
         self.assertEqual(filter_url('http://domain.com/welcome/default/fcn_1'),
                          "/welcome/default/fcn_1")
         self.assertRaises(
             HTTP, filter_url, 'http://domain.com/welcome/default/fcn-1')
-        try:
-            # 2.7+ only
-            self.assertRaisesRegexp(HTTP, '400.*invalid function', filter_url,
+        self.myassertRaisesRegex(HTTP, '400.*invalid function', filter_url,
                                     'http://domain.com/welcome/default/fcn-1')
-        except AttributeError:
-            pass
 
     def test_router_out(self):
         '''
@@ -1047,7 +1001,7 @@ class TestRouter(unittest.TestCase):
 
         from gluon.globals import current
         current.response.static_version = None
-        
+
         self.assertEqual(str(URL(a='init', c='default', f='a_b')), "/a_b")
         self.assertEqual(str(URL(a='app1', c='default', f='a_b')), "/app1/a-b")
         self.assertEqual(str(URL(a='app2', c='default', f='a_b')), "/app2/a_b")

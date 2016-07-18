@@ -67,8 +67,8 @@ class TestStorage(unittest.TestCase):
         #self.assertRaises(KeyError, lambda x: s[x], 'd')   # old Storage
         s.a = 1
         s['a'] = None
-        self.assertEquals(s.a, None)
-        self.assertEquals(s['a'], None)
+        self.assertEqual(s.a, None)
+        self.assertEqual(s['a'], None)
         self.assertTrue('a' in s)
 
     def test_pickling(self):

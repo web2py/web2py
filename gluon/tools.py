@@ -6270,7 +6270,8 @@ class Expose(object):
         self.filenames = [f[dirname_len:]
                           for f in allowed if not os.path.isdir(f)]
         if 'README' in self.filenames:
-            readme = open(os.path.join(filename, 'README')).read()
+            with open(os.path.join(filename, 'README')) as f:
+                readme = f.read()
             self.paragraph = MARKMIN(readme)
         else:
             self.paragraph = None
