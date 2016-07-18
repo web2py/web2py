@@ -8,6 +8,7 @@
 Scheduler with redis backend
 ---------------------------------
 """
+from __future__ import print_function
 
 import os
 import time
@@ -475,7 +476,10 @@ class RScheduler(Scheduler):
             logger.info('nothing to do')
             return None
         times_run = task.times_run + 1
-        if not task.prevent_drift:
+        if task.cronline:
+            cron_recur = CronParser(task.cronline, now.replace(second=0))
+            next_run_time = cron_recur.get_next()
+        elif not task.prevent_drift:
             next_run_time = task.last_run_time + datetime.timedelta(
                 seconds=task.period
             )
@@ -711,13 +715,20 @@ class RScheduler(Scheduler):
         tuuid = 'uuid' in kwargs and kwargs.pop('uuid') or web2py_uuid()
         tname = 'task_name' in kwargs and kwargs.pop('task_name') or function
         immediate = 'immediate' in kwargs and kwargs.pop('immediate') or None
-        rtn = self.db.scheduler_task.validate_and_insert(
-            function_name=function,
+        cronline = kwargs.get('cronline')
+        kwargs.update(function_name=function,
             task_name=tname,
             args=targs,
             vars=tvars,
-            uuid=tuuid,
-            **kwargs)
+            uuid=tuuid)
+        if cronline:
+            try:
+                start_time = kwargs.get('start_time', self.now)
+                next_run_time = CronParser(cronline, start_time).get_next()
+                kwargs.update(start_time=start_time, next_run_time=next_run_time)
+            except:
+                pass
+        rtn = self.db.scheduler_task.validate_and_insert(**kwargs)
         if not rtn.errors:
             rtn.uuid = tuuid
             if immediate:
