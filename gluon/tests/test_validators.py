@@ -17,6 +17,11 @@ from gluon._compat import PY2, to_bytes
 
 class TestValidators(unittest.TestCase):
 
+    def myassertRegex(self, *args, **kwargs):
+        if PY2:
+            return getattr(self, 'assertRegexp')(*args, **kwargs)
+        return getattr(self, 'assertRegex')(*args, **kwargs)
+
     def test_MISC(self):
         """ Test miscelaneous utility functions and some general behavior guarantees """
         from gluon.validators import translate, options_sorter, Validator, UTC
@@ -791,20 +796,20 @@ class TestValidators(unittest.TestCase):
 
     def test_CRYPT(self):
         rtn = str(CRYPT(digest_alg='md5', salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^md5\$.{16}\$.{32}$')
+        self.myassertRegex(rtn, r'^md5\$.{16}\$.{32}$')
         rtn = str(CRYPT(digest_alg='sha1', salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^sha1\$.{16}\$.{40}$')
+        self.myassertRegex(rtn, r'^sha1\$.{16}\$.{40}$')
         rtn = str(CRYPT(digest_alg='sha256', salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^sha256\$.{16}\$.{64}$')
+        self.myassertRegex(rtn, r'^sha256\$.{16}\$.{64}$')
         rtn = str(CRYPT(digest_alg='sha384', salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^sha384\$.{16}\$.{96}$')
+        self.myassertRegex(rtn, r'^sha384\$.{16}\$.{96}$')
         rtn = str(CRYPT(digest_alg='sha512', salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^sha512\$.{16}\$.{128}$')
+        self.myassertRegex(rtn, r'^sha512\$.{16}\$.{128}$')
         alg = 'pbkdf2(1000,20,sha512)'
         rtn = str(CRYPT(digest_alg=alg, salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^pbkdf2\(1000,20,sha512\)\$.{16}\$.{40}$')
+        self.myassertRegex(rtn, r'^pbkdf2\(1000,20,sha512\)\$.{16}\$.{40}$')
         rtn = str(CRYPT(digest_alg='md5', key='mykey', salt=True)('test')[0])
-        self.assertRegexpMatches(rtn, r'^md5\$.{16}\$.{32}$')
+        self.myassertRegex(rtn, r'^md5\$.{16}\$.{32}$')
         a = str(CRYPT(digest_alg='sha1', salt=False)('test')[0])
         self.assertEqual(CRYPT(digest_alg='sha1', salt=False)('test')[0], a)
         self.assertEqual(CRYPT(digest_alg='sha1', salt=False)('test')[0], a[6:])
