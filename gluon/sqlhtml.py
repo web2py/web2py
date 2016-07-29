@@ -3550,8 +3550,8 @@ class ExporterHTML(ExportClass):
         ExportClass.__init__(self, rows)
 
     def export(self):
-        xml = self.rows.xml() if self.rows else ''
-        return '<html>\n<head>\n<meta http-equiv="content-type" content="text/html; charset=UTF-8" />\n</head>\n<body>\n%s\n</body>\n</html>' % (xml or '')
+        table = SQLTABLE(self.rows, truncate=None) if self.rows else ''
+        return '<html>\n<head>\n<meta http-equiv="content-type" content="text/html; charset=UTF-8" />\n</head>\n<body>\n%s\n</body>\n</html>' % (table or '')
 
 
 class ExporterXML(ExportClass):
