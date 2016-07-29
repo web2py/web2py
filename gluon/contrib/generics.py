@@ -14,11 +14,11 @@ def wrapper(f):
         try:
             output = f(data)
             return XML(ouput)
-        except (TypeError, ValueError), e:
+        except (TypeError, ValueError) as e:
             raise HTTP(405, '%s serialization error' % e)
-        except ImportError, e:
+        except ImportError as e:
             raise HTTP(405, '%s not available' % e)
-        except Exception, e:
+        except Exception as e:
             raise HTTP(405, '%s error' % e)
     return g
 

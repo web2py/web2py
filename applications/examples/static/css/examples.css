@@ -1,0 +1,69 @@
+/* Gray the black as suggested by Anthony */
+h1,h2,h3,h4,h5,h6 {color: rgb(35, 35, 35); text-transform:none}
+.black {
+    color: rgb(35, 35, 35);
+    background-color: rgb(35, 35, 35);
+}
+
+/* Spacing between thead and tbody */
+/* Ref: http://stackoverflow.com/questions/9258754/spacing-between-thead-and-tbody */
+tbody:before {
+    content: "-";
+    display: block;
+    line-height: 1em;
+    color: transparent;
+}
+
+/* Improve buttons in download page */
+th, td {padding: 0}
+
+
+tbody tr:hover {background-color:transparent}
+tbody tr {border-bottom: none}
+p {text-align: left}
+p, li { line-height: 1.6em}
+
+/* Improve CODE() display though padding has no effect as some PRE are hardcoded somewhere can't find it */
+/* padding of 10px should make it... */
+pre {background-color: rgb(35, 35, 35)!important; border-radius:5px; color:white; padding: 10px}
+
+/* Improve buttons in download page */
+a.btn.btn180 {padding:10px; font-size:1.2em; width:200px}
+
+.menu .web2py-menu-active a {
+    color: #26a69a;
+}
+
+.spaced-vertical {
+    margin: 0 0.5em 0.5em 0;
+}
+
+.btn:hover,
+a.noeffect img:hover {
+    transition: scale .5s;
+    transform: scale(1.05);
+}
+
+.btn,
+a.noeffect img {
+    transition: all .2s ease-in-out;
+}
+
+/* Lower saturation of color #26a69a - 20 points lower */
+/* The below change to color #26a69a should come before other color change or they override all buttons background-color */
+/* The color should maybe change at stupid.css level as it herited from there also in stupid.css it would be better
+   to define this color at one place actually color is defined all over the place */
+a {color:#47a69d}
+.btn, button, [type=button], [type=submit] {background-color:#47a69d}
+.progress .determinate {background-color:#47a69d}
+.progress .indeterminate {background-color:#47a69d}
+a:not(.btn):not(.noeffect):hover {color:#47a69d}
+a:not(.btn):not(.noeffect):after {background-color:#47a69d}
+.tags > span {background-color:#47a69d}
+.tags.dismissible > span.off:hover {background-color:#47a69d}
+.aquamarine{background-color:#47a69d}
+
+/* Lower the saturation of 20 points */
+.green {background-color: #58cc65}
+.yellow {background-color: #ffe333}
+.red {background-color: #cc4229}

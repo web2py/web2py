@@ -5,11 +5,13 @@
 # Modified by Massimo Di Pierro
 
 # Import System Modules
+from __future__ import print_function
 import sys
 import errno
 import socket
 import logging
 import platform
+from gluon._compat import iteritems, to_bytes, StringIO, urllib_unquote
 
 # Define Constants
 VERSION = '1.2.6'
@@ -180,13 +182,6 @@ class Connection(object):
 
 # Import System Modules
 import socket
-try:
-    from io import StringIO
-except ImportError:
-    try:
-        from cStringIO import StringIO
-    except ImportError:
-        from StringIO import StringIO
 # Import Package Modules
 # package imports removed in monolithic build
 
@@ -1178,19 +1173,6 @@ from threading import Thread
 from datetime import datetime
 
 try:
-    from urllib import unquote
-except ImportError:
-    from urllib.parse import unquote
-
-try:
-    from io import StringIO
-except ImportError:
-    try:
-        from cStringIO import StringIO
-    except ImportError:
-        from StringIO import StringIO
-
-try:
     from ssl import SSLError
 except ImportError:
     class SSLError(socket.error):
@@ -1202,17 +1184,17 @@ except ImportError:
 # Define Constants
 re_SLASH = re.compile('%2F', re.IGNORECASE)
 re_REQUEST_LINE = re.compile(r"""^
-(?P<method>OPTIONS|GET|HEAD|POST|PUT|DELETE|TRACE|CONNECT)   # Request Method
-\                                                            # (single space)
+(?P<method>OPTIONS|GET|HEAD|POST|PUT|DELETE|PATCH|TRACE|CONNECT) # Req Method
+\                                                                # single space
 (
-    (?P<scheme>[^:/]+)                                       # Scheme
+    (?P<scheme>[^:/]+)                                           # Scheme
     (://)  #
-    (?P<host>[^/]+)                                          # Host
+    (?P<host>[^/]+)                                              # Host
 )? #
-(?P<path>(\*|/[^ \?]*))                                      # Path
-(\? (?P<query_string>[^ ]*))?                                # Query String
-\                                                            # (single space)
-(?P<protocol>HTTPS?/1\.[01])                                 # Protocol
+(?P<path>(\*|/[^ \?]*))                                          # Path
+(\? (?P<query_string>[^ ]*))?                                    # Query String
+\                                                                # single space
+(?P<protocol>HTTPS?/1\.[01])                                     # Protocol
 $
 """, re.X)
 LOG_LINE = '%(client_ip)s - "%(request_line)s" - %(status)s %(size)s'
@@ -1429,12 +1411,12 @@ class Worker(Thread):
             raise BadRequest
 
         req = match.groupdict()
-        for k, v in req.iteritems():
+        for k, v in iteritems(req):
             if not v:
                 req[k] = ""
             if k == 'path':
                 req['path'] = r'%2F'.join(
-                    [unquote(x) for x in re_SLASH.split(v)])
+                    [urllib_unquote(x) for x in re_SLASH.split(v)])
 
         self.protocol = req['protocol']
         return req
@@ -1469,7 +1451,7 @@ class Worker(Thread):
         if '?' in path:
             path, query_string = path.split('?', 1)
 
-        path = r'%2F'.join([unquote(x) for x in re_SLASH.split(path)])
+        path = r'%2F'.join([urllib_unquote(x) for x in re_SLASH.split(path)])
 
         req.update(path=path,
                    query_string=query_string,
@@ -1653,7 +1635,7 @@ class WSGIWorker(Worker):
         environ = self.base_environ.copy()
 
         # Grab the headers
-        for k, v in self.read_headers(sock_file).iteritems():
+        for k, v in iteritems(self.read_headers(sock_file)):
             environ[str('HTTP_' + k)] = v
 
         # Add CGI Variables
@@ -1681,7 +1663,7 @@ class WSGIWorker(Worker):
                 environ['SSL_CLIENT_RAW_CERT'] = \
                     peercert and ssl.DER_cert_to_PEM_cert(peercert)
             except Exception:
-                print sys.exc_info()[1]
+                print(sys.exc_info()[1])
         else:
             environ['wsgi.url_scheme'] = 'http'
 
@@ -1770,7 +1752,7 @@ class WSGIWorker(Worker):
                 if self.chunked:
                     self.conn.sendall(b('%x\r\n%s\r\n' % (len(data), data)))
                 else:
-                    self.conn.sendall(data)
+                    self.conn.sendall(to_bytes(data))
             except socket.timeout:
                 self.closeConnection = True
             except socket.error:
@@ -1907,7 +1889,7 @@ def demo():
     (options, args) = parser.parse_args()
     global static_folder
     static_folder = options.static
-    print 'Rocket running on %s:%s' % (options.ip, options.port)
+    print('Rocket running on %s:%s' % (options.ip, options.port))
     r=Rocket((options.ip,int(options.port)),'wsgi', {'wsgi_app':demo_app})
     r.start()
 

@@ -115,8 +115,9 @@ def deploy(appname=None, all=False):
     """fab -H username@host deploy:appname,all"""
     appname = appname or os.path.split(os.getcwd())[-1]
     appfolder = applications+'/'+appname
-    if os.path.exists('_update.zip'):
-        os.unlink('_update.zip')
+    zipfile = os.path.join(appfolder, '_update.zip')
+    if os.path.exists(zipfile):
+        os.unlink(zipfile)
 
     backup = mkdir_or_backup(appname)
             

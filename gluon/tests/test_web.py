@@ -3,22 +3,20 @@
 """
     Unit tests for running web2py
 """
+from __future__ import print_function
 import sys
 import os
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
+import unittest
 import subprocess
 import time
 import signal
 
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 
 fix_sys_path(__file__)
 
-from contrib.webclient import WebClient
-from urllib2 import HTTPError
+from gluon.contrib.webclient import WebClient
+from gluon._compat import urllib2, PY2
 
 webserverprocess = None
 
@@ -35,40 +33,23 @@ def startwebserver():
             path = os.path.abspath(os.path.join(path, '..'))
     web2py_exec = os.path.join(path, 'web2py.py')
     webserverprocess = subprocess.Popen([sys.executable, web2py_exec, '-a',  'testpass'])
-    print 'Sleeping before web2py starts...'
+    print('Sleeping before web2py starts...')
     for a in range(1, 11):
         time.sleep(1)
-        print a, '...'
+        print(a, '...')
         try:
             c = WebClient('http://127.0.0.1:8000')
             c.get('/')
             break
         except:
             continue
-    print ''
-
-
-def terminate_process(pid):
-    # Taken from http://stackoverflow.com/questions/1064335/in-python-2-5-how-do-i-kill-a-subprocess
-    # all this **blah** is because we are stuck with Python 2.5 and \
-    # we cannot use Popen.terminate()
-    if sys.platform.startswith('win'):
-        import ctypes
-        PROCESS_TERMINATE = 1
-        handle = ctypes.windll.kernel32.OpenProcess(PROCESS_TERMINATE, False, pid)
-        ctypes.windll.kernel32.TerminateProcess(handle, -1)
-        ctypes.windll.kernel32.CloseHandle(handle)
-    else:
-        os.kill(pid, signal.SIGKILL)
+    print('')
 
 
 def stopwebserver():
     global webserverprocess
-    print 'Killing webserver'
-    if sys.version_info < (2, 6):
-        terminate_process(webserverprocess.pid)
-    else:
-        webserverprocess.terminate()
+    print('Killing webserver')
+    webserverprocess.terminate()
 
 
 class LiveTest(unittest.TestCase):
@@ -129,6 +110,7 @@ class TestWeb(LiveTest):
         assert('expires' in s.headers)
         assert(s.headers['cache-control'].startswith('max-age'))
 
+    @unittest.skipIf(not(PY2), 'skip PY3 testSoap')
     def testSoap(self):
         # test soap server implementation
         from gluon.contrib.pysimplesoap.client import SoapClient, SoapFault
@@ -141,7 +123,7 @@ class TestWeb(LiveTest):
 
         try:
             ret = client.Division(a=3, b=0)
-        except SoapFault, sf:
+        except SoapFault as sf:
             # verify the exception value is ok
             # assert(sf.faultstring == "float division by zero") # true only in 2.7
             assert(sf.faultcode == "Server.ZeroDivisionError")
@@ -154,7 +136,7 @@ class TestWeb(LiveTest):
         s = WebClient('http://127.0.0.1:8000/')
         try:
             s.post('examples/soap_examples/call/soap', data=xml_request, method="POST")
-        except HTTPError, e:
+        except urllib2.HTTPError as e:
             assert(e.msg == 'INTERNAL SERVER ERROR')
         # check internal server error returned (issue 153)
         assert(s.status == 500)

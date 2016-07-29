@@ -17,9 +17,9 @@ Holds:
 import datetime
 import urllib
 import re
-import cStringIO
 
 import os
+from gluon._compat import StringIO, unichr, urllib_quote, iteritems, basestring, long, unicodeT, to_native
 from gluon.http import HTTP, redirect
 from gluon.html import XmlComponent, truncate_string
 from gluon.html import XML, SPAN, TAG, A, DIV, CAT, UL, LI, TEXTAREA, BR, IMG
@@ -27,7 +27,7 @@ from gluon.html import FORM, INPUT, LABEL, OPTION, SELECT, COL, COLGROUP
 from gluon.html import TABLE, THEAD, TBODY, TR, TD, TH, STYLE, SCRIPT
 from gluon.html import URL, FIELDSET, P, DEFAULT_PASSWORD_DISPLAY
 from pydal.base import DEFAULT
-from pydal.objects import Table, Row, Expression, Field, Set
+from pydal.objects import Table, Row, Expression, Field, Set, Rows
 from pydal.adapters.base import CALLABLETYPES
 from pydal.helpers.methods import smart_query, bar_encode,  _repr_ref
 from pydal.helpers.classes import Reference, SQLCustomType
@@ -39,6 +39,7 @@ from gluon.validators import IS_STRONG
 
 import gluon.serializers as serializers
 from gluon.globals import current
+from functools import reduce
 
 try:
     import gluon.settings as settings
@@ -59,7 +60,7 @@ def represent(field, value, record):
     if not callable(f):
         return str(value)
     if hasattr(f,'func_code'):
-        n = f.func_code.co_argcount - len(f.func_defaults or [])
+        n = f.__code__.co_argcount - len(f.__defaults__ or [])
         if getattr(f, 'im_self', None):
             n -= 1
     else:
@@ -110,19 +111,19 @@ def show_if(cond):
     if not cond:
         return None
     base = "%s_%s" % (cond.first.tablename, cond.first.name)
-    if ((cond.op.__name__ == 'EQ' and cond.second is True) or
-            (cond.op.__name__ == 'NE' and cond.second is False)):
+    if ((cond.op.__name__ == 'eq' and cond.second is True) or
+            (cond.op.__name__ == 'ne' and cond.second is False)):
         return base, ":checked"
-    if ((cond.op.__name__ == 'EQ' and cond.second is False) or
-            (cond.op.__name__ == 'NE' and cond.second is True)):
+    if ((cond.op.__name__ == 'eq' and cond.second is False) or
+            (cond.op.__name__ == 'ne' and cond.second is True)):
         return base, ":not(:checked)"
-    if cond.op.__name__ == 'EQ':
+    if cond.op.__name__ == 'eq':
         return base, "[value='%s']" % cond.second
-    if cond.op.__name__ == 'NE':
+    if cond.op.__name__ == 'ne':
         return base, "[value!='%s']" % cond.second
-    if cond.op.__name__ == 'CONTAINS':
+    if cond.op.__name__ == 'contains':
         return base, "[value~='%s']" % cond.second
-    if cond.op.__name__ == 'BELONGS':
+    if cond.op.__name__ == 'belongs':
         if isinstance(cond.second, set):
             cond.second = list(cond.second)
         if isinstance(cond.second, (list, tuple)):
@@ -677,7 +678,7 @@ class AutocompleteWidget(object):
     def callback(self):
         if self.keyword in self.request.vars:
             field = self.fields[0]
-            if type(field) is Field.Virtual:
+            if isinstance(field, Field.Virtual):
                 records = []
                 table_rows = self.db(self.db[field.tablename]).select(orderby=self.orderby)
                 count = 0
@@ -741,7 +742,7 @@ class AutocompleteWidget(object):
                 del attr['requires']
             attr['_name'] = key2
             value = attr['value']
-            if type(self.fields[0]) is Field.Virtual:
+            if isinstance(self.fields[0], Field.Virtual):
                 record = None
                 table_rows = self.db(self.db[self.fields[0].tablename]).select(orderby=self.orderby)
                 for row in table_rows:
@@ -1140,7 +1141,7 @@ class SQLFORM(FORM):
 
         # try to retrieve the indicated record using its id
         # otherwise ignore it
-        if record and isinstance(record, (int, long, str, unicode)):
+        if record and isinstance(record, (int, long, str, unicodeT)):
             if not str(record).isdigit():
                 raise HTTP(404, "Object not found")
             record = table._db(table._id == record).select().first()
@@ -1328,10 +1329,10 @@ class SQLFORM(FORM):
             db = linkto.split('/')[-1]
             for rfld in table._referenced_by:
                 if keyed:
-                    query = urllib.quote('%s.%s==%s' % (
+                    query = urllib_quote('%s.%s==%s' % (
                         db, rfld, record[rfld.type[10:].split('.')[1]]))
                 else:
-                    query = urllib.quote(
+                    query = urllib_quote(
                         '%s.%s==%s' % (db, rfld, record[self.id_field_name]))
                 lname = olname = '%s.%s' % (rfld.tablename, rfld.name)
                 if ofields and olname not in ofields:
@@ -1394,8 +1395,8 @@ class SQLFORM(FORM):
                 self['hidden']['id'] = record[table._id.name]
 
         (begin, end) = self._xml()
-        self.custom.begin = XML("<%s %s>" % (self.tag, begin))
-        self.custom.end = XML("%s</%s>" % (end, self.tag))
+        self.custom.begin = XML("<%s %s>" % (self.tag, to_native(begin)))
+        self.custom.end = XML("%s</%s>" % (to_native(end), self.tag))
         table = self.createform(xfields)
         self.components = [table]
 
@@ -1528,7 +1529,7 @@ class SQLFORM(FORM):
             hideerror=hideerror,
             **kwargs
         )
-        
+
         self.deleted = request_vars.get(self.FIELDNAME_REQUEST_DELETE, False)
 
         self.custom.end = CAT(self.hidden_fields(), self.custom.end)
@@ -1650,10 +1651,10 @@ class SQLFORM(FORM):
                         original_filename = os.path.split(f)[1]
                 elif hasattr(f, 'file'):
                     (source_file, original_filename) = (f.file, f.filename)
-                elif isinstance(f, (str, unicode)):
+                elif isinstance(f, (str, unicodeT)):
                     # do not know why this happens, it should not
                     (source_file, original_filename) = \
-                        (cStringIO.StringIO(f), 'file.txt')
+                        (StringIO(f), 'file.txt')
                 else:
                     # this should never happen, why does it happen?
                     # print 'f=', repr(f)
@@ -1711,8 +1712,8 @@ class SQLFORM(FORM):
                 fields[fieldname] = self.vars[fieldname]
 
         if dbio:
-            for fieldname in fields:
-                if fieldname in self.extra_fields:
+            for fieldname in self.extra_fields:
+                if fieldname in fields:
                     del fields[fieldname]
             if 'delete_this_record' in fields:
                 # this should never happen but seems to happen to some
@@ -1897,33 +1898,39 @@ class SQLFORM(FORM):
                 else:
                     field_type = field.type
 
-                operators = SELECT(*[OPTION(T(option), _value=option) for option in options], _class='form-control')
+                operators = SELECT(*[OPTION(T(option), _value=option) for option in options],
+                                    _class='form-control')
                 _id = "%s_%s" % (value_id, name)
                 if field_type in ['boolean', 'double', 'time', 'integer']:
                     widget_ = SQLFORM.widgets[field_type]
-                    value_input = widget_.widget(field, field.default, _id=_id, _class=widget_._class + ' form-control')
+                    value_input = widget_.widget(field, field.default, _id=_id,
+                                                 _class=widget_._class + ' form-control')
                 elif field_type == 'date':
                     iso_format = {'_data-w2p_date_format': '%Y-%m-%d'}
                     widget_ = SQLFORM.widgets.date
-                    value_input = widget_.widget(field, field.default, _id=_id, _class=widget_._class + ' form-control', **iso_format)
+                    value_input = widget_.widget(field, field.default, _id=_id,
+                                                 _class=widget_._class + ' form-control',
+                                                 **iso_format)
                 elif field_type == 'datetime':
                     iso_format = {'_data-w2p_datetime_format': '%Y-%m-%d %H:%M:%S'}
                     widget_ = SQLFORM.widgets.datetime
-                    value_input = widget_.widget(field, field.default, _id=_id, _class=widget_._class + ' form-control', **iso_format)
-                elif (field_type.startswith('reference ') or
-                      field_type.startswith('list:reference ')) and \
-                      hasattr(field.requires, 'options') or \
-                      hasattr(field.requires, 'options'):
+                    value_input = widget_.widget(field, field.default, _id=_id,
+                                                 _class=widget_._class + ' form-control',
+                                                 **iso_format)
+                elif hasattr(field.requires, 'options'):
                     value_input = SELECT(
                         *[OPTION(v, _value=k)
                           for k, v in field.requires.options()],
                          _class='form-control',
                          **dict(_id=_id))
-                elif field_type.startswith('reference ') or \
-                     field_type.startswith('list:integer') or \
-                     field_type.startswith('list:reference '):
+                elif (field_type.startswith('integer') or
+                      field_type.startswith('reference ') or
+                      field_type.startswith('list:integer') or
+                      field_type.startswith('list:reference ')):
                     widget_ = SQLFORM.widgets.integer
-                    value_input = widget_.widget(field, field.default, _id=_id, _class=widget_._class + ' form-control')
+                    value_input = widget_.widget(
+                        field, field.default, _id=_id,
+                        _class=widget_._class + ' form-control')
                 else:
                     value_input = INPUT(
                         _type='text', _id=_id,
@@ -2035,10 +2042,11 @@ class SQLFORM(FORM):
              client_side_delete=False,
              ignore_common_filters=None,
              auto_pagination=True,
-             use_cursor=False):
+             use_cursor=False,
+             represent_none=None):
 
         formstyle = formstyle or current.response.formstyle
-        if isinstance(query, Set): 
+        if isinstance(query, Set):
             query = query.query
 
         # jQuery UI ThemeRoller classes (empty if ui is disabled)
@@ -2185,7 +2193,7 @@ class SQLFORM(FORM):
                        buttonurl=url(args=[]), callback=None,
                        delete=None, trap=True, noconfirm=None, title=None):
             if showbuttontext:
-                return A(SPAN(_class=ui.get(buttonclass)),
+                return A(SPAN(_class=ui.get(buttonclass)), CAT(' '),
                          SPAN(T(buttontext), _title=title or T(buttontext),
                               _class=ui.get('buttontext')),
                          _href=buttonurl,
@@ -2206,19 +2214,16 @@ class SQLFORM(FORM):
 
         dbset = db(query, ignore_common_filters=ignore_common_filters)
         tablenames = db._adapter.tables(dbset.query)
-        print dbset.query
-        print tablenames
         if left is not None:
             if not isinstance(left, (list, tuple)):
                 left = [left]
             for join in left:
                 tablenames += db._adapter.tables(join)
         tables = [db[tablename] for tablename in tablenames]
-        print tables
         if fields:
             # add missing tablename to virtual fields
             for table in tables:
-                for k, f in table.iteritems():
+                for k, f in iteritems(table):
                     if isinstance(f, Field.Virtual):
                         f.tablename = table._tablename
             columns = [f for f in fields if f.tablename in tablenames]
@@ -2230,7 +2235,7 @@ class SQLFORM(FORM):
             for table in tables:
                 fields += filter(filter1, table)
                 columns += filter(filter2, table)
-                for k, f in table.iteritems():
+                for k, f in iteritems(table):
                     if not k.startswith('_'):
                         if isinstance(f, Field.Virtual) and f.readable:
                             f.tablename = table._tablename
@@ -2314,6 +2319,10 @@ class SQLFORM(FORM):
         elif details and request.args(-3) == 'view':
             table = db[request.args[-2]]
             record = table(request.args[-1]) or redirect(referrer)
+            if represent_none is not None:
+                for field in record.iterkeys():
+                    if record[field] is None:
+                        record[field] = represent_none
             sqlformargs = dict(upload=upload, ignore_rw=ignore_rw,
                                formstyle=formstyle, readonly=True,
                                _class='web2py_form')
@@ -2430,7 +2439,7 @@ class SQLFORM(FORM):
                                 selectable_columns.append(str(field))
                     # look for virtual fields not displayed (and virtual method
                     # fields to be added here?)
-                    for (field_name, field) in table.iteritems():
+                    for (field_name, field) in iteritems(table):
                         if isinstance(field, Field.Virtual) and not str(field) in expcolumns:
                             expcolumns.append(str(field))
 
@@ -2449,7 +2458,7 @@ class SQLFORM(FORM):
                                 sfields, keywords))
                         rows = dbset.select(left=left, orderby=orderby,
                                             cacheable=True, *selectable_columns)
-                    except Exception, e:
+                    except Exception as e:
                         response.flash = T('Internal Error')
                         rows = []
                 else:
@@ -2647,7 +2656,7 @@ class SQLFORM(FORM):
             rows = None
             next_cursor = None
             error = T("Query Not Supported")
-        except Exception, e:
+        except Exception as e:
             rows = None
             next_cursor = None
             error = T("Query Not Supported: %s") % e
@@ -2746,7 +2755,11 @@ class SQLFORM(FORM):
                     if field.type == 'blob':
                         continue
                     if isinstance(field, Field.Virtual) and field.tablename in row:
-                        value = dbset.db[field.tablename][row[field.tablename][field_id]][field.name]
+                        try:
+                            # fast path, works for joins
+                            value = row[field.tablename][field.name]
+                        except KeyError:
+                            value = dbset.db[field.tablename][row[field.tablename][field_id]][field.name]
                     else:
                         value = row[str(field)]
                     maxlength = maxtextlengths.get(str(field), maxtextlength)
@@ -2782,6 +2795,8 @@ class SQLFORM(FORM):
                         value = truncate_string(value, maxlength)
                     elif not isinstance(value, XmlComponent):
                         value = field.formatter(value)
+                    if value is None:
+                        value = represent_none
                     trcols.append(TD(value))
                 row_buttons = TD(_class='row_buttons', _nowrap=True)
                 if links and links_in_grid:
@@ -2913,7 +2928,7 @@ class SQLFORM(FORM):
     def smartgrid(table, constraints=None, linked_tables=None,
                   links=None, links_in_grid=True,
                   args=None, user_signature=True,
-                  divider='>', breadcrumbs_class='',
+                  divider=2*unichr(160) + '>' + 2*unichr(160), breadcrumbs_class='',
                   **kwargs):
         """
         Builds a system of SQLFORM.grid(s) between any referenced tables
@@ -3036,7 +3051,16 @@ class SQLFORM(FORM):
             query = query & constraints[table._tablename]
         if isinstance(links, dict):
             links = links.get(table._tablename, [])
-        for key in 'columns,orderby,searchable,sortable,paginate,deletable,editable,details,selectable,create,fields'.split(','):
+        for key in ('fields', 'field_id', 'left', 'headers', 'orderby', 'groupby', 'searchable',
+                    'sortable', 'paginate', 'deletable', 'editable', 'details', 'selectable',
+                    'create', 'csv', 'links', 'links_in_grid', 'upload', 'maxtextlengths',
+                    'maxtextlength', 'onvalidation', 'onfailure', 'oncreate', 'onupdate',
+                    'ondelete', 'sorter_icons', 'ui', 'showbuttontext', '_class', 'formname',
+                    'search_widget', 'advanced_search', 'ignore_rw', 'formstyle', 'exportclasses',
+                    'formargs', 'createargs', 'editargs', 'viewargs', 'selectable_submit_button',
+                    'buttons_placement', 'links_placement', 'noconfirm', 'cache_count', 'client_side_delete',
+                    'ignore_common_filters', 'auto_pagination', 'use_cursor'
+                   ):
             if isinstance(kwargs.get(key, None), dict):
                 if table._tablename in kwargs[key]:
                     kwargs[key] = kwargs[key][table._tablename]
@@ -3402,7 +3426,7 @@ class ExportClass(object):
             """
             if value is None:
                 return '<NULL>'
-            elif isinstance(value, unicode):
+            elif isinstance(value, unicodeT):
                 return value.encode('utf8')
             elif isinstance(value, Reference):
                 return int(value)
@@ -3455,15 +3479,15 @@ class ExporterTSV(ExportClass):
         ExportClass.__init__(self, rows)
 
     def export(self):
-        out = cStringIO.StringIO()
-        final = cStringIO.StringIO()
+        out = StringIO()
+        final = StringIO()
         import csv
         writer = csv.writer(out, delimiter='\t')
         if self.rows:
             import codecs
             final.write(codecs.BOM_UTF16)
             writer.writerow(
-                [unicode(col).encode("utf8") for col in self.rows.colnames])
+                [to_unicode(col, "utf8") for col in self.rows.colnames])
             data = out.getvalue().decode("utf8")
             data = data.encode("utf-16")
             data = data[2:]
@@ -3494,7 +3518,7 @@ class ExporterCSV(ExportClass):
 
     def export(self):  # export CSV with rows.represent
         if self.rows:
-            s = cStringIO.StringIO()
+            s = StringIO()
             self.rows.export_to_csv_file(s, represent=True)
             return s.getvalue()
         else:

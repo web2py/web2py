@@ -6,7 +6,7 @@
 # version.
 #
 # This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTIBILITY
+# WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 # or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
 # for more details.
 
@@ -14,6 +14,7 @@
 
 
 import logging
+import ssl
 import sys
 try:
     import urllib2
@@ -23,7 +24,7 @@ except ImportError:
     from http.cookiejar import CookieJar
 
 from . import __author__, __copyright__, __license__, __version__, TIMEOUT
-from .simplexml import SimpleXMLElement, TYPE_MAP, OrderedDict
+from .simplexml import SimpleXMLElement, TYPE_MAP, Struct
 
 log = logging.getLogger(__name__)
 
@@ -83,14 +84,14 @@ else:
         _wrapper_name = 'httplib2'
 
         def __init__(self, timeout, proxy=None, cacert=None, sessions=False):
-            ##httplib2.debuglevel=4
+#            httplib2.debuglevel=4 
             kwargs = {}
             if proxy:
                 import socks
                 kwargs['proxy_info'] = httplib2.ProxyInfo(proxy_type=socks.PROXY_TYPE_HTTP, **proxy)
                 log.info("using proxy %s" % proxy)
 
-            # set optional parameters according supported httplib2 version
+            # set optional parameters according to supported httplib2 version
             if httplib2.__version__ >= '0.3.0':
                 kwargs['timeout'] = timeout
             if httplib2.__version__ >= '0.7.0':
@@ -121,12 +122,21 @@ class urllib2Transport(TransportBase):
             raise RuntimeError('proxy is not supported with urllib2 transport')
         if cacert:
             raise RuntimeError('cacert is not support with urllib2 transport')
+        
+        handlers = []
 
-        self.request_opener = urllib2.urlopen
+        if ((sys.version_info[0] == 2 and sys.version_info >= (2,7,9)) or
+            (sys.version_info[0] == 3 and sys.version_info >= (3,2,0))):
+            context = ssl.create_default_context()
+            context.check_hostname = False
+            context.verify_mode = ssl.CERT_NONE
+            handlers.append(urllib2.HTTPSHandler(context=context))
+        
         if sessions:
-            opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(CookieJar()))
-            self.request_opener = opener.open
-
+            handlers.append(urllib2.HTTPCookieProcessor(CookieJar()))
+        
+        opener = urllib2.build_opener(*handlers)
+        self.request_opener = opener.open
         self._timeout = timeout
 
     def request(self, url, method="GET", body=None, headers={}):
@@ -142,10 +152,8 @@ class urllib2Transport(TransportBase):
 _http_connectors['urllib2'] = urllib2Transport
 _http_facilities.setdefault('sessions', []).append('urllib2')
 
-import sys
 if sys.version_info >= (2, 6):
     _http_facilities.setdefault('timeout', []).append('urllib2')
-del sys
 
 #
 # pycurl support.
@@ -191,7 +199,7 @@ else:
                 c.setopt(c.CAINFO, self.cacert)
             c.setopt(pycurl.SSL_VERIFYPEER, self.cacert and 1 or 0)
             c.setopt(pycurl.SSL_VERIFYHOST, self.cacert and 2 or 0)
-            c.setopt(pycurl.CONNECTTIMEOUT, self.timeout / 6)
+            c.setopt(pycurl.CONNECTTIMEOUT, self.timeout)
             c.setopt(pycurl.TIMEOUT, self.timeout)
             if method == 'POST':
                 c.setopt(pycurl.POST, 1)

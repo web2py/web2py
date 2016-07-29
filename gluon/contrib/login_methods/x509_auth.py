@@ -15,6 +15,7 @@ from gluon.http import HTTP, redirect
 
 #requires M2Crypto
 from M2Crypto import X509
+from functools import reduce
 
 
 class X509Auth(object):

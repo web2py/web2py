@@ -1,3 +1,4 @@
+from __future__ import print_function
 # The following code is not part of Rocket but was added to
 # web2py for testing purposes.
 
@@ -42,7 +43,7 @@ def demo():
     (options, args) = parser.parse_args()
     global static_folder
     static_folder = options.static
-    print 'Rocket running on %s:%s' % (options.ip, options.port)
+    print('Rocket running on %s:%s' % (options.ip, options.port))
     r = Rocket((options.ip, int(options.port)), 'wsgi', {'wsgi_app': demo_app})
     r.start()
 

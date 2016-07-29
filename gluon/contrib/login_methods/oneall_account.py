@@ -14,9 +14,8 @@ import os
 import base64
 from gluon import *
 from gluon.storage import Storage
-from gluon.contrib.simplejson import JSONDecodeError
 from gluon.tools import fetch
-import gluon.contrib.simplejson as json
+import json
 
 class OneallAccount(object):
 
@@ -51,7 +50,7 @@ class OneallAccount(object):
             reg_id=profile.get('identity_token','')
             username=profile.get('preferredUsername',email)
             first_name=name.get('givenName', dname.split(' ')[0])
-            last_name=profile.get('familyName', dname.split(' ')[1] if(len(dname.split(' ')) > 1) else None)
+            last_name=profile.get('familyName', dname.split(' ')[1] if(dname.count(' ') > 0) else None)
             return dict(registration_id=reg_id,username=username,email=email,
                         first_name=first_name,last_name=last_name)
         self.mappings.default = defaultmapping
@@ -76,7 +75,7 @@ class OneallAccount(object):
                         source = self.profile['source']['key']
                         mapping = self.mappings.get(source,self.mappings['default'])
                         user = mapping(self.profile)
-            except (JSONDecodeError, KeyError):
+            except (ValueError, KeyError):
                 pass
             if user is None and self.on_login_failure:
                     redirect(self.on_login_failure)

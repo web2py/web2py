@@ -7,14 +7,10 @@ import platform
 import time
 import base64
 import os
-try:
-    from cStringIO import StringIO
-except ImportError:
-    from StringIO import StringIO
+from gluon._compat import StringIO
 
 
 service = Service(globals())
-
 
 @service.jsonrpc
 def login():
@@ -101,7 +97,7 @@ def attach_debugger(host='localhost', port=6000, authkey='secret password'):
         gluon.debug.qdb_debugger = qdb.Qdb(gluon.debug.qdb_connection)
         gluon.debug.dbg = gluon.debug.qdb_debugger
         # welcome message (this should be displayed on the frontend)
-        print 'debugger connected to', gluon.debug.qdb_listener.last_accepted
+        print('debugger connected to', gluon.debug.qdb_listener.last_accepted)
     return True     # connection successful!
 
 

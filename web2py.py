@@ -28,5 +28,6 @@ if __name__ == '__main__':
             import coverage
             coverage.process_startup()
         except:
+            print('Coverage is not available')
             pass
     gluon.widget.start(cron=True)

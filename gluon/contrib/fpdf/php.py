@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
 
+from .py3k import PY3K, basestring, unicode
+
 # fpdf php helpers:
 
 def substr(s, start, length=-1):
@@ -14,16 +16,19 @@ def print_r(array):
     if not isinstance(array, dict):
         array = dict([(k, k) for k in array])
     for k, v in array.items():
-        print "[%s] => %s" % (k, v),
+        print("[%s] => %s " % (k, v))
         
 def UTF8ToUTF16BE(instr, setbom=True):
     "Converts UTF-8 strings to UTF16-BE."
-    outstr = ""
+    outstr = "".encode()
     if (setbom):
-        outstr += "\xFE\xFF"; 
+        outstr += "\xFE\xFF".encode("latin1")
     if not isinstance(instr, unicode):
         instr = instr.decode('UTF-8')
     outstr += instr.encode('UTF-16BE')
+    # convert bytes back to fake unicode string until PEP461-like is implemented
+    if PY3K:
+        outstr = outstr.decode("latin1")
     return outstr
 
 def UTF8StringToArray(instr):

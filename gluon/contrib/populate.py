@@ -1,3 +1,4 @@
+from __future__ import print_function
 import re
 import cPickle
 import random
@@ -267,4 +268,4 @@ def populate_generator(table, default=True, compute=False, contents={}):
 if __name__ == '__main__':
     ell = Learner()
     ell.loadd(IUP)
-    print ell.generate(1000, prefix=None)
+    print(ell.generate(1000, prefix=None))

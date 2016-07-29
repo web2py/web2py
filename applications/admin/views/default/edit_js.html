@@ -25,11 +25,11 @@
     <p class="formfield">
     {{if functions:}}
         <span style="text-align:left;" class="exposed">
-        {{=B(T('exposes:'))}} {{=XML(', '.join([A(f,_target="_blank", _href=URL(a=app,c=controller,f=f)).xml() for f in functions]))}}
+        {{=B(T('exposes:'))}} {{=XML(b', '.join([A(f,_target="_blank", _href=URL(a=app,c=controller,f=f)).xml() for f in functions]))}}
         </span>
         {{if editviewlinks:}}<br/>
             {{=B(T('edit views:'))}}
-            {{=XML(', '.join([v.xml() for v in editviewlinks]))}}
+            {{=XML(b', '.join([v.xml() for v in editviewlinks]))}}
         {{pass}}
     {{pass}}
     {{if edit_controller:}}

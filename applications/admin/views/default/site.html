@@ -56,7 +56,7 @@
         {{pass}}
           </ul>
         </div>
-        {{=button_enable(URL('enable',args=a), a) if a!='admin' else ''}}
+        {{=button_enable(URL('enable',args=a, hmac_key=session.hmac_key), a) if a!='admin' else ''}}
       </td>
     </tr>
     {{pass}}

@@ -27,11 +27,10 @@ Once the value has been fetched (and casted) it won't change until the process
 is restarted (or reload=True is passed).
 
 """
-import thread
 import os
-from ConfigParser import SafeConfigParser
-from gluon import current
-from gluon.serializers import json_parser
+import json
+from gluon._compat import thread, configparser
+from gluon.globals import current
 
 locker = thread.allocate_lock()
 
@@ -121,7 +120,7 @@ class AppConfigLoader(object):
         self.read_config()
 
     def read_config_ini(self):
-        config = SafeConfigParser()
+        config = configparser.SafeConfigParser()
         config.read(self.file)
         settings = {}
         for section in config.sections():
@@ -132,7 +131,7 @@ class AppConfigLoader(object):
 
     def read_config_json(self):
         with open(self.file, 'r') as c:
-            self.settings = AppConfigDict(json_parser.load(c))
+            self.settings = AppConfigDict(json.load(c))
 
     def read_config(self):
         if self.settings is None:

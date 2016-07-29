@@ -44,7 +44,7 @@ def test_soap_sub():
     try:
         ret = client.SubIntegers(a=3, b=2)
         result = ret['SubResult']
-    except SoapFault, sf:
+    except SoapFault as sf:
         result = sf
     response.view = "soap_examples/generic.html"
     return dict(xml_request=client.xml_request, 

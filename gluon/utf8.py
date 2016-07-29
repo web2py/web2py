@@ -10,12 +10,15 @@
 Utilities and class for UTF8 strings managing
 ----------------------------------------------
 """
-import __builtin__
+from __future__ import print_function
+from gluon._compat import builtin as __builtin__, unicodeT, iteritems, to_unicode, to_native
+
 __all__ = ['Utf8']
 
 repr_escape_tab = {}
+#FIXME PY3
 for i in range(1, 32):
-    repr_escape_tab[i] = ur'\x%02x' % i
+    repr_escape_tab[i] = to_unicode("\\"+"x%02x" % i)
 repr_escape_tab[7] = u'\\a'
 repr_escape_tab[8] = u'\\b'
 repr_escape_tab[9] = u'\\t'
@@ -48,10 +51,10 @@ def sort_key(s):
         from gluon.contrib.pyuca import unicode_collator
         unicode_sort_key = unicode_collator.sort_key
         sort_key = lambda s: unicode_sort_key(
-            unicode(s, 'utf-8') if isinstance(s, str) else s)
+            to_unicode(s, 'utf-8') if isinstance(s, str) else s)
     except:
         sort_key = lambda s: (
-            unicode(s, 'utf-8') if isinstance(s, str) else s).lower()
+            to_unicode(s, 'utf-8') if isinstance(s, str) else s).lower()
     return sort_key(s)
 
 
@@ -59,9 +62,9 @@ def ord(char):
     """Returns unicode id for utf8 or unicode *char* character
     SUPPOSE that *char* is an utf-8 or unicode character only
     """
-    if isinstance(char, unicode):
+    if isinstance(char, unicodeT):
         return __builtin__.ord(char)
-    return __builtin__.ord(unicode(char, 'utf-8'))
+    return __builtin__.ord(to_unicode(char, 'utf-8'))
 
 
 def chr(code):
@@ -89,8 +92,8 @@ def truncate(string, length, dots='...'):
     Returns:
         (utf8-str): original or cutted string
     """
-    text = unicode(string, 'utf-8')
-    dots = unicode(dots, 'utf-8') if isinstance(dots, str) else dots
+    text = to_unicode(string, 'utf-8')
+    dots = to_unicode(dots, 'utf-8') if isinstance(dots, str) else dots
     if len(text) > length:
         text = text[:length - len(dots)] + dots
     return str.__new__(Utf8, text.encode('utf-8'))
@@ -116,12 +119,12 @@ class Utf8(str):
     You can see the benefit of this class in doctests() below
     """
     def __new__(cls, content='', codepage='utf-8'):
-        if isinstance(content, unicode):
-            return str.__new__(cls, unicode.encode(content, 'utf-8'))
+        if isinstance(content, unicodeT):
+            return str.__new__(cls, to_native(content, 'utf-8'))
         elif codepage in ('utf-8', 'utf8') or isinstance(content, cls):
             return str.__new__(cls, content)
         else:
-            return str.__new__(cls, unicode(content, codepage).encode('utf-8'))
+            return str.__new__(cls, to_native(to_unicode(content, codepage), 'utf-8'))
 
     def __repr__(self):
         r''' # note that we use raw strings to avoid having to use double back slashes below
@@ -153,9 +156,9 @@ class Utf8(str):
             True
         '''
         if str.find(self, "'") >= 0 and str.find(self, '"') < 0:  # only single quote exists
-            return '"' + unicode(self, 'utf-8').translate(repr_escape_tab).encode('utf-8') + '"'
+            return '"' + to_native(to_unicode(self, 'utf-8').translate(repr_escape_tab), 'utf-8') + '"'
         else:
-            return "'" + unicode(self, 'utf-8').translate(repr_escape_tab2).encode('utf-8') + "'"
+            return "'" + to_native(to_unicode(self, 'utf-8').translate(repr_escape_tab2), 'utf-8') + "'"
 
     def __size__(self):
         """ length of utf-8 string in bytes """
@@ -165,17 +168,17 @@ class Utf8(str):
         return str.__contains__(self, Utf8(other))
 
     def __getitem__(self, index):
-        return str.__new__(Utf8, unicode(self, 'utf-8')[index].encode('utf-8'))
+        return str.__new__(Utf8, to_native(to_unicode(self, 'utf-8')[index], 'utf-8'))
 
     def __getslice__(self, begin, end):
-        return str.__new__(Utf8, unicode(self, 'utf-8')[begin:end].encode('utf-8'))
+        return str.__new__(Utf8, to_native(to_unicode(self, 'utf-8')[begin:end], 'utf-8'))
 
     def __add__(self, other):
         return str.__new__(Utf8, str.__add__(self, unicode.encode(other, 'utf-8')
                                              if isinstance(other, unicode) else other))
 
     def __len__(self):
-        return len(unicode(self, 'utf-8'))
+        return len(to_unicode(self, 'utf-8'))
 
     def __mul__(self, integer):
         return str.__new__(Utf8, str.__mul__(self, integer))
@@ -336,9 +339,8 @@ class Utf8(str):
                 s, 'utf-8') if isinstance(s, str) else s for s in args]
             kwargs = dict((unicode(k, 'utf-8') if isinstance(k, str) else k,
                            unicode(v, 'utf-8') if isinstance(v, str) else v)
-                          for k, v in kwargs.iteritems())
-            return str.__new__(Utf8, unicode(self, 'utf-8').
-                               format(*args, **kwargs).encode('utf-8'))
+                          for k, v in iteritems(kwargs))
+            return str.__new__(Utf8, unicode(self, 'utf-8').format(*args, **kwargs).encode('utf-8'))
 
     def __mod__(self, right):
         if isinstance(right, tuple):
@@ -347,7 +349,7 @@ class Utf8(str):
         elif isinstance(right, dict):
             right = dict((unicode(k, 'utf-8') if isinstance(k, str) else k,
                           unicode(v, 'utf-8') if isinstance(v, str) else v)
-                         for k, v in right.iteritems())
+                         for k, v in iteritems(right))
         elif isinstance(right, str):
             right = unicode(right, 'utf-8')
         return str.__new__(Utf8, unicode(self, 'utf-8').__mod__(right).encode('utf-8'))
@@ -749,8 +751,8 @@ if __name__ == '__main__':
         reload(sys)
         sys.setdefaultencoding("UTF-8")
         import doctest
-        print "DOCTESTS STARTED..."
+        print("DOCTESTS STARTED...")
         doctest.testmod()
-        print "DOCTESTS FINISHED"
+        print("DOCTESTS FINISHED")
 
     doctests()

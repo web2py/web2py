@@ -3,11 +3,12 @@
 """
 Developed by Massimo Di Pierro, optional component of web2py, BSDv3 license.
 """
+from __future__ import print_function
 
 import re
 import pickle
 import copy
-import simplejson
+import json
 
 
 def quote(text):
@@ -255,7 +256,7 @@ class Sheet:
         try:
             r, c = Sheet.pregex.findall(key)
             r, c = int(r), int(c)
-        except (ValueError, IndexError, TypeError), e:
+        except (ValueError, IndexError, TypeError) as e:
             error = "%s. %s" % \
                 ("Unexpected position parameter",
                  "Must be a key of type 'rncn'")
@@ -292,7 +293,7 @@ class Sheet:
         # modified: dict of modified cells for client-side
 
         """
-        data = simplejson.loads(data)
+        data = json.loads(data)
 
         # record update dict
         changes = {}
@@ -381,7 +382,7 @@ class Sheet:
                     result["db_callback"] = db_callback
             else:
                 result["message"] = "Sheet.process Error. No db found."
-            return simplejson.dumps(result)
+            return json.dumps(result)
 
         return jquery
 
@@ -529,7 +530,7 @@ class Sheet:
         """
 
         if not self.regex.match(key):
-            raise SyntaxError, "Invalid cell name: %s" % key
+            raise SyntaxError("Invalid cell name: %s" % key)
         else:
             attributes = self.get_attributes(kwarg)
             if attributes is not None:
@@ -742,7 +743,7 @@ class Sheet:
                 exec('__value__=' + node.value[1:], {}, self.environment)
                 node.computed_value = self.environment['__value__']
                 del self.environment['__value__']
-            except Exception, e:
+            except Exception as e:
                 node.computed_value = self.error % dict(error=str(e))
         self.environment[node.name] = node.computed_value
         if node.onchange:
@@ -862,7 +863,7 @@ class Sheet:
                     w2p_spreadsheet_update_db);
               });
             }
-            """ % dict(data=simplejson.dumps(self.client),
+            """ % dict(data=json.dumps(self.client),
                        name=attributes["_class"],
                        url=self.url,
                        update_button=self.update_button))
@@ -900,4 +901,4 @@ if __name__ == '__main__':
     s.cell('a', value="2")
     s.cell('b', value="=sin(a)")
     s.cell('c', value="=cos(a)**2+b*b")
-    print s['c'].computed_value
+    print(s['c'].computed_value)

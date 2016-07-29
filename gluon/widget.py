@@ -9,12 +9,12 @@
 The widget is called from web2py
 ----------------------------------
 """
+from __future__ import print_function
 
 import datetime
 import sys
-import cStringIO
+from gluon._compat import StringIO, thread, xrange
 import time
-import thread
 import threading
 import os
 import copy
@@ -22,9 +22,8 @@ import socket
 import signal
 import math
 import logging
-import newcron
 import getpass
-import gluon.main as main
+from gluon import main, newcron
 
 from gluon.fileutils import read_file, write_file, create_welcome_w2p
 from gluon.settings import global_settings
@@ -41,8 +40,8 @@ ProgramInfo = '''%s
                  %s
                  %s''' % (ProgramName, ProgramAuthor, ProgramVersion)
 
-if not sys.version[:3] in ['2.6', '2.7']:
-    msg = 'Warning: web2py requires Python 2.6 or 2.7 but you are running:\n%s'
+if not sys.version[:3] in ['2.7']:
+    msg = 'Warning: web2py requires Python 2.7 but you are running:\n%s'
     msg = msg % sys.version
     sys.stderr.write(msg)
 
@@ -56,12 +55,9 @@ def run_system_tests(options):
     import subprocess
     major_version = sys.version_info[0]
     minor_version = sys.version_info[1]
+    call_args = [sys.executable, '-m', 'unittest', '-v', 'gluon.tests']
     if major_version == 2:
-        if minor_version in (6,):
-            sys.stderr.write('Python 2.6\n')
-            ret = subprocess.call(['unit2', '-v', 'gluon.tests'])
-        elif minor_version in (7,):
-            call_args = [sys.executable, '-m', 'unittest', '-v', 'gluon.tests']
+        if minor_version in (7,):
             if options.with_coverage:
                 try:
                     import coverage
@@ -80,8 +76,8 @@ def run_system_tests(options):
             sys.stderr.write("unknown python 2.x version\n")
             ret = 256
     else:
-        sys.stderr.write("Only Python 2.x supported.\n")
-        ret = 256
+        sys.stderr.write("Experimental Python 3.x.\n")
+        ret = subprocess.call(call_args)
     sys.exit(ret and 1)
 
 
@@ -91,7 +87,7 @@ class IO(object):
     def __init__(self):
         """   """
 
-        self.buffer = cStringIO.StringIO()
+        self.buffer = StringIO()
 
     def write(self, data):
         """   """
@@ -121,14 +117,14 @@ def get_url(host, path='/', proto='http', port=80):
 
 def start_browser(url, startup=False):
     if startup:
-        print 'please visit:'
-        print '\t', url
-        print 'starting browser...'
+        print('please visit:')
+        print('\t', url)
+        print('starting browser...')
     try:
         import webbrowser
         webbrowser.open(url)
     except:
-        print 'warning: unable to detect your browser'
+        print('warning: unable to detect your browser')
 
 
 class web2pyDialog(object):
@@ -325,9 +321,6 @@ class web2pyDialog(object):
     def update_schedulers(self, start=False):
         applications_folder = os.path.join(self.options.folder, 'applications')
         apps = []
-        ##FIXME - can't start scheduler in the correct dir from Tk
-        if self.options.folder:
-            return
         available_apps = [
             arq for arq in os.listdir(applications_folder)
             if os.path.exists(os.path.join(applications_folder, arq, 'models', 'scheduler.py'))
@@ -343,6 +336,7 @@ class web2pyDialog(object):
 
         # reset the menu
         self.schedmenu.delete(0, len(available_apps))
+
         for arq in available_apps:
             if arq not in self.scheduler_processes:
                 item = lambda u = arq: self.try_start_scheduler(u)
@@ -359,17 +353,17 @@ class web2pyDialog(object):
         except:
             sys.stderr.write('Sorry, -K only supported for python 2.6-2.7\n')
             return
-        code = "from gluon import current;current._scheduler.loop()"
-        print 'starting scheduler from widget for "%s"...' % app
+        code = "from gluon.globals import current;current._scheduler.loop()"
+        print('starting scheduler from widget for "%s"...' % app)
         args = (app, True, True, None, False, code)
         logging.getLogger().setLevel(self.options.debuglevel)
         p = Process(target=run, args=args)
         self.scheduler_processes[app] = p
         self.update_schedulers()
-        print "Currently running %s scheduler processes" % (
-            len(self.scheduler_processes))
+        print("Currently running %s scheduler processes" % (
+            len(self.scheduler_processes)))
         p.start()
-        print "Processes started"
+        print("Processes started")
 
     def try_stop_scheduler(self, app):
         if app in self.scheduler_processes:
@@ -515,7 +509,7 @@ class web2pyDialog(object):
                 interfaces=options.interfaces)
 
             thread.start_new_thread(self.server.start, ())
-        except Exception, e:
+        except Exception as e:
             self.button_start.configure(state='normal')
             return self.error(str(e))
 
@@ -953,12 +947,12 @@ def console():
             content = open(os.path.join('examples', 'app.example.yaml'), 'rb').read()
             open('app.yaml', 'wb').write(content.replace("yourappname", name))
         else:
-            print "app.yaml alreday exists in the web2py folder"
+            print("app.yaml alreday exists in the web2py folder")
         if not os.path.exists('gaehandler.py'):
             content = open(os.path.join('handlers', 'gaehandler.py'), 'rb').read()
             open('gaehandler.py', 'wb').write(content)
         else:
-            print "gaehandler.py alreday exists in the web2py folder"
+            print("gaehandler.py alreday exists in the web2py folder")
         sys.exit(0)
 
     try:
@@ -972,7 +966,7 @@ def console():
         run_system_tests(options)
 
     if options.quiet:
-        capture = cStringIO.StringIO()
+        capture = StringIO()
         sys.stdout = capture
         logger.setLevel(logging.CRITICAL + 1)
     else:
@@ -1038,14 +1032,14 @@ def check_existent_app(options, appname):
 
 def get_code_for_scheduler(app, options):
     if len(app) == 1 or app[1] is None:
-        code = "from gluon import current;current._scheduler.loop()"
+        code = "from gluon.globals import current;current._scheduler.loop()"
     else:
-        code = "from gluon import current;current._scheduler.group_names = ['%s'];"
+        code = "from gluon.globals import current;current._scheduler.group_names = ['%s'];"
         code += "current._scheduler.loop()"
         code = code % ("','".join(app[1:]))
     app_ = app[0]
     if not check_existent_app(options, app_):
-        print "Application '%s' doesn't exist, skipping" % app_
+        print("Application '%s' doesn't exist, skipping" % app_)
         return None, None
     return app_, code
 
@@ -1060,7 +1054,7 @@ def start_schedulers(options):
     apps = [(app.strip(), None) for app in options.scheduler.split(',')]
     if options.scheduler_groups:
         apps = options.scheduler_groups
-    code = "from gluon import current;current._scheduler.loop()"
+    code = "from gluon.globals import current;current._scheduler.loop()"
     logging.getLogger().setLevel(options.debuglevel)
     if options.folder:
         os.chdir(options.folder)
@@ -1068,7 +1062,7 @@ def start_schedulers(options):
         app_, code = get_code_for_scheduler(apps[0], options)
         if not app_:
             return
-        print 'starting single-scheduler for "%s"...' % app_
+        print('starting single-scheduler for "%s"...' % app_)
         run(app_, True, True, None, False, code)
         return
 
@@ -1080,20 +1074,20 @@ def start_schedulers(options):
         app_, code = get_code_for_scheduler(app, options)
         if not app_:
             continue
-        print 'starting scheduler for "%s"...' % app_
+        print('starting scheduler for "%s"...' % app_)
         args = (app_, True, True, None, False, code)
         p = Process(target=run, args=args)
         processes.append(p)
-        print "Currently running %s scheduler processes" % (len(processes))
+        print("Currently running %s scheduler processes" % (len(processes)))
         p.start()
         ##to avoid bashing the db at the same time
         time.sleep(0.7)
-        print "Processes started"
+        print("Processes started")
     for p in processes:
         try:
             p.join()
         except (KeyboardInterrupt, SystemExit):
-            print "Processes stopped"
+            print("Processes stopped")
         except:
             p.terminate()
             p.join()
@@ -1107,13 +1101,13 @@ def start(cron=True):
     (options, args) = console()
 
     if not options.nobanner:
-        print ProgramName
-        print ProgramAuthor
-        print ProgramVersion
+        print(ProgramName)
+        print(ProgramAuthor)
+        print(ProgramVersion)
 
     from pydal.drivers import DRIVERS
     if not options.nobanner:
-        print 'Database drivers available: %s' % ', '.join(DRIVERS)
+        print('Database drivers available: %s' % ', '.join(DRIVERS))
 
     # ## if -L load options from options.config file
     if options.config:
@@ -1124,7 +1118,7 @@ def start(cron=True):
                 # Jython doesn't like the extra stuff
                 options2 = __import__(options.config)
             except Exception:
-                print 'Cannot import config file [%s]' % options.config
+                print('Cannot import config file [%s]' % options.config)
                 sys.exit(1)
         for key in dir(options2):
             if hasattr(options, key):
@@ -1173,7 +1167,7 @@ def start(cron=True):
     # ## if --softcron use softcron
     # ## use hardcron in all other cases
     if cron and options.runcron and options.softcron:
-        print 'Using softcron (but this is not very efficient)'
+        print('Using softcron (but this is not very efficient)')
         global_settings.web2py_crontype = 'soft'
     elif cron and options.runcron:
         logger.debug('Starting hardcron...')
@@ -1189,7 +1183,7 @@ def start(cron=True):
         options.taskbar = False
 
     if options.taskbar and os.name != 'nt':
-        print 'Error: taskbar not supported on this platform'
+        print('Error: taskbar not supported on this platform')
         sys.exit(1)
 
     root = None
@@ -1237,7 +1231,7 @@ end tell
         options.password = getpass.getpass('choose a password:')
 
     if not options.password and not options.nobanner:
-        print 'no password, no admin interface'
+        print('no password, no admin interface')
 
     # ##-X (if no tk, the widget takes care of it himself)
     if not root and options.scheduler and options.with_scheduler:
@@ -1268,7 +1262,7 @@ end tell
             message += 'use "taskkill /f /pid %i" to shutdown the web2py server\n\n' % os.getpid()
         else:
             message += 'use "kill -SIGTERM %i" to shutdown the web2py server\n\n' % os.getpid()
-        print message
+        print(message)
 
     # enhance linecache.getline (used by debugger) to look at the source file
     # if the line was not found (under py2exe & when file was modified)

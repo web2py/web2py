@@ -15,6 +15,7 @@ from gluon.utils import web2py_uuid
 from gluon.tools import Config
 from gluon.compileapp import find_exposed_functions
 from glob import glob
+from gluon._compat import iteritems, PY2, pickle, xrange, urlopen, to_bytes, StringIO, to_native
 import shutil
 import platform
 
@@ -23,7 +24,7 @@ try:
     if git.__version__ < '0.3.1':
         raise ImportError("Your version of git is %s. Upgrade to 0.3.1 or better." % git.__version__)
     have_git = True
-except ImportError, e:
+except ImportError as e:
     have_git = False
     GIT_MISSING = 'Requires gitpython module, but not installed or incompatible version: %s' % e
 
@@ -32,15 +33,15 @@ from gluon.languages import (read_possible_languages, read_dict, write_dict,
 
 
 if DEMO_MODE and request.function in ['change_password', 'pack',
-'pack_custom','pack_plugin', 'upgrade_web2py', 'uninstall',
-'cleanup', 'compile_app', 'remove_compiled_app', 'delete',
-'delete_plugin', 'create_file', 'upload_file', 'update_languages',
-'reload_routes', 'git_push', 'git_pull', 'install_plugin']:
+                                      'pack_custom', 'pack_plugin', 'upgrade_web2py', 'uninstall',
+                                      'cleanup', 'compile_app', 'remove_compiled_app', 'delete',
+                                      'delete_plugin', 'create_file', 'upload_file', 'update_languages',
+                                      'reload_routes', 'git_push', 'git_pull', 'install_plugin']:
     session.flash = T('disabled in demo mode')
     redirect(URL('site'))
 
 if is_gae and request.function in ('edit', 'edit_language',
-'edit_plurals', 'update_languages', 'create_file', 'install_plugin'):
+                                   'edit_plurals', 'update_languages', 'create_file', 'install_plugin'):
     session.flash = T('disabled in GAE mode')
     redirect(URL('site'))
 
@@ -74,12 +75,17 @@ def log_progress(app, mode='EDIT', filename=None, progress=0):
 def safe_open(a, b):
     if (DEMO_MODE or is_gae) and ('w' in b or 'a' in b):
         class tmp:
+
             def write(self, data):
                 pass
+
             def close(self):
                 pass
         return tmp()
-    return open(a, b)
+    if PY2 or 'b' in b:
+        return open(a, b)
+    else:
+        return open(a, b, encoding="utf8")
 
 
 def safe_read(a, b='r'):
@@ -119,6 +125,9 @@ def index():
         send = URL('site')
     if session.authorized:
         redirect(send)
+    elif failed_login_count() >= allowed_number_of_attempts:
+        time.sleep(2 ** allowed_number_of_attempts)
+        raise HTTP(403)
     elif request.vars.password:
         if verify_password(request.vars.password[:1024]):
             session.authorized = True
@@ -208,6 +217,7 @@ def site():
     file_or_appurl = 'file' in request.vars or 'appurl' in request.vars
 
     class IS_VALID_APPNAME(object):
+
         def __call__(self, value):
             if not re.compile('^\w+$').match(value):
                 return (value, T('Invalid application name'))
@@ -256,17 +266,17 @@ def site():
                 new_repo = git.Repo.clone_from(form_update.vars.url, target)
                 session.flash = T('new application "%s" imported',
                                   form_update.vars.name)
-            except git.GitCommandError, err:
+            except git.GitCommandError as err:
                 session.flash = T('Invalid git repository specified.')
             redirect(URL(r=request))
 
         elif form_update.vars.url:
             # fetch an application via URL or file upload
             try:
-                f = urllib.urlopen(form_update.vars.url)
+                f = urlopen(form_update.vars.url)
                 if f.code == 404:
                     raise Exception("404 file not found")
-            except Exception, e:
+            except Exception as e:
                 session.flash = \
                     DIV(T('Unable to download app because:'), PRE(repr(e)))
                 redirect(URL(r=request))
@@ -307,7 +317,7 @@ def site():
     if FILTER_APPS:
         apps = [f for f in apps if f in FILTER_APPS]
 
-    apps = sorted(apps, lambda a, b: cmp(a.upper(), b.upper()))
+    apps = sorted(apps, key=lambda a: a.upper())
     myplatform = platform.python_version()
     return dict(app=None, apps=apps, myversion=myversion, myplatform=myplatform,
                 form_create=form_create, form_update=form_update)
@@ -325,7 +335,7 @@ def report_progress(app):
         if not m:
             continue
         days = -(request.now - datetime.datetime.strptime(m[0],
-                 '%Y-%m-%d %H:%M:%S')).days
+                                                          '%Y-%m-%d %H:%M:%S')).days
         counter += int(m[1])
         events.append([days, counter])
     return events
@@ -341,7 +351,7 @@ def pack():
         else:
             fname = 'web2py.app.%s.compiled.w2p' % app
             filename = app_pack_compiled(app, request, raise_ex=True)
-    except Exception, e:
+    except Exception as e:
         filename = None
 
     if filename:
@@ -352,6 +362,7 @@ def pack():
     else:
         session.flash = T('internal error: %s', e)
         redirect(URL('site'))
+
 
 def pack_plugin():
     app = get_app()
@@ -368,15 +379,13 @@ def pack_plugin():
         redirect(URL('plugin', args=request.args))
 
 
-
 def pack_exe(app, base, filenames=None):
     import urllib
     import zipfile
-    from cStringIO import StringIO
     # Download latest web2py_win and open it with zipfile
     download_url = 'http://www.web2py.com/examples/static/web2py_win.zip'
     out = StringIO()
-    out.write(urllib.urlopen(download_url).read())
+    out.write(urlopen(download_url).read())
     web2py_win = zipfile.ZipFile(out, mode='a')
     # Write routes.py with the application as default
     routes = u'# -*- coding: utf-8 -*-\nrouters = dict(BASE=dict(default_application="%s"))' % app
@@ -397,15 +406,25 @@ def pack_exe(app, base, filenames=None):
 def pack_custom():
     app = get_app()
     base = apath(app, r=request)
+
+    def ignore(fs):
+        return [f for f in fs if not (
+                f[:1] in '#' or f.endswith('~') or f.endswith('.bak'))]
+    files = {}
+    for (r, d, f) in os.walk(base):
+        files[r] = {'folders': ignore(d), 'files': ignore(f)}
+
     if request.post_vars.file:
-        
+        valid_set = set(os.path.relpath(os.path.join(r, f), base) for r in files for f in files[r]['files'])
         files = request.post_vars.file
-        files = [files] if not isinstance(files,list) else files
+        files = [files] if not isinstance(files, list) else files
+        files = [file for file in files if file in valid_set]
+
         if request.post_vars.doexe is None:
             fname = 'web2py.app.%s.w2p' % app
             try:
                 filename = app_pack(app, request, raise_ex=True, filenames=files)
-            except Exception, e:
+            except Exception as e:
                 filename = None
             if filename:
                 response.headers['Content-Type'] = 'application/w2p'
@@ -417,12 +436,7 @@ def pack_custom():
                 redirect(URL(args=request.args))
         else:
             return pack_exe(app, base, files)
-    def ignore(fs):
-        return [f for f in fs if not (
-                f[:1] in '#' or f.endswith('~') or f.endswith('.bak'))]
-    files = {}
-    for (r,d,f) in os.walk(base):
-        files[r] = {'folders':ignore(d),'files':ignore(f)}
+
     return locals()
 
 
@@ -485,14 +499,14 @@ def cleanup():
 def compile_app():
     app = get_app()
     c = app_compile(app, request,
-        skip_failed_views = (request.args(1) == 'skip_failed_views'))
+                    skip_failed_views=(request.args(1) == 'skip_failed_views'))
     if not c:
         session.flash = T('application compiled')
     elif isinstance(c, list):
         session.flash = DIV(*[T('application compiled'), BR(), BR(),
                               T('WARNING: The following views could not be compiled:'), BR()] +
-                             [CAT(BR(), view) for view in c] +
-                             [BR(), BR(), T('DO NOT use the "Pack compiled" feature.')])
+                            [CAT(BR(), view) for view in c] +
+                            [BR(), BR(), T('DO NOT use the "Pack compiled" feature.')])
     else:
         session.flash = DIV(T('Cannot compile: there are errors in your app:'),
                             CODE(c))
@@ -533,8 +547,8 @@ def delete():
         redirect(URL(sender, anchor=request.vars.id2))
     return dict(dialog=dialog, filename=filename)
 
-
 def enable():
+    if not URL.verify(request, hmac_key=session.hmac_key): raise HTTP(401)
     app = get_app()
     filename = os.path.join(apath(app, r=request), 'DISABLED')
     if is_gae:
@@ -545,6 +559,7 @@ def enable():
     else:
         safe_open(filename, 'wb').write('disabled: True\ntime-disabled: %s' % request.now)
         return SPAN(T('Enable'), _style='color:red')
+
 
 def peek():
     """ Visualize object code """
@@ -609,7 +624,7 @@ def edit():
     # Load json only if it is ajax edited...
     app = get_app(request.vars.app)
     app_path = apath(app, r=request)
-    preferences={'theme':'web2py', 'editor': 'default', 'closetag': 'true', 'codefolding': 'false', 'tabwidth':'4', 'indentwithtabs':'false', 'linenumbers':'true', 'highlightline':'true'}
+    preferences = {'theme': 'web2py', 'editor': 'default', 'closetag': 'true', 'codefolding': 'false', 'tabwidth': '4', 'indentwithtabs': 'false', 'linenumbers': 'true', 'highlightline': 'true'}
     config = Config(os.path.join(request.folder, 'settings.cfg'),
                     section='editor', default_values={})
     preferences.update(config.read())
@@ -617,14 +632,14 @@ def edit():
     if not(request.ajax) and not(is_mobile):
         # return the scaffolding, the rest will be through ajax requests
         response.title = T('Editing %s') % app
-        return response.render ('default/edit.html', dict(app=app, editor_settings=preferences))
+        return response.render('default/edit.html', dict(app=app, editor_settings=preferences))
 
     # show settings tab and save prefernces
     if 'settings' in request.vars:
-        if request.post_vars:        #save new preferences
+        if request.post_vars:  # save new preferences
             post_vars = request.post_vars.items()
             # Since unchecked checkbox are not serialized, we must set them as false by hand to store the correct preference in the settings
-            post_vars+= [(opt, 'false') for opt in preferences if opt not in request.post_vars ]
+            post_vars += [(opt, 'false') for opt in preferences if opt not in request.post_vars]
             if config.save(post_vars):
                 response.headers["web2py-component-flash"] = T('Preferences saved correctly')
             else:
@@ -632,8 +647,8 @@ def edit():
             response.headers["web2py-component-command"] = "update_editor(%s);$('a[href=#editor_settings] button.close').click();" % response.json(config.read())
             return
         else:
-            details = {'realfilename':'settings', 'filename':'settings', 'id':'editor_settings', 'force': False}
-            details['plain_html'] = response.render('default/editor_settings.html', {'editor_settings':preferences})
+            details = {'realfilename': 'settings', 'filename': 'settings', 'id': 'editor_settings', 'force': False}
+            details['plain_html'] = response.render('default/editor_settings.html', {'editor_settings': preferences})
             return response.json(details)
 
     """ File edit handler """
@@ -720,7 +735,7 @@ def edit():
         try:
             code = request.vars.data.rstrip().replace('\r\n', '\n') + '\n'
             compile(code, path, "exec", _ast.PyCF_ONLY_AST)
-        except Exception, e:
+        except Exception as e:
             # offset calculation is only used for textarea (start/stop)
             start = sum([len(line) + 1 for l, line
                          in enumerate(request.vars.data.split("\n"))
@@ -745,11 +760,11 @@ def edit():
         # Lets try to reload the modules
         try:
             mopath = '.'.join(request.args[2:])[:-3]
-            exec 'import applications.%s.modules.%s' % (
-                request.args[0], mopath)
+            exec('import applications.%s.modules.%s' % (
+                request.args[0], mopath))
             reload(sys.modules['applications.%s.modules.%s'
                                % (request.args[0], mopath)])
-        except Exception, e:
+        except Exception as e:
             response.flash = DIV(
                 T('failed to reload module because:'), PRE(repr(e)))
 
@@ -764,8 +779,8 @@ def edit():
             view = request.args[3].replace('.html', '')
             view_link = URL(request.args[0], request.args[2], view)
     elif filetype == 'python' and request.args[1] == 'controllers':
-        ## it's a controller file.
-        ## Create links to all of the associated view files.
+        # it's a controller file.
+        # Create links to all of the associated view files.
         app = get_app()
         viewname = os.path.splitext(request.args[2])[0]
         viewpath = os.path.join(app, 'views', viewname)
@@ -796,22 +811,22 @@ def edit():
         return response.json({'file_hash': file_hash, 'saved_on': saved_on, 'functions': functions, 'controller': controller, 'application': request.args[0], 'highlight': highlight})
     else:
         file_details = dict(app=request.args[0],
-                    lineno=request.vars.lineno or 1,
-                    editor_settings=preferences,
-                    filename=filename,
-                    realfilename=realfilename,
-                    filetype=filetype,
-                    data=data,
-                    edit_controller=edit_controller,
-                    file_hash=file_hash,
-                    saved_on=saved_on,
-                    controller=controller,
-                    functions=functions,
-                    view_link=view_link,
-                    editviewlinks=editviewlinks,
-                    id=IS_SLUG()(filename)[0],
-                    force= True if (request.vars.restore or
-                                    request.vars.revert) else False)
+                            lineno=request.vars.lineno or 1,
+                            editor_settings=preferences,
+                            filename=filename,
+                            realfilename=realfilename,
+                            filetype=filetype,
+                            data=data,
+                            edit_controller=edit_controller,
+                            file_hash=file_hash,
+                            saved_on=saved_on,
+                            controller=controller,
+                            functions=functions,
+                            view_link=view_link,
+                            editviewlinks=editviewlinks,
+                            id=IS_SLUG()(filename)[0],
+                            force=True if (request.vars.restore or
+                                           request.vars.revert) else False)
         plain_html = response.render('default/edit_js.html', file_details)
         file_details['plain_html'] = plain_html
         if is_mobile:
@@ -820,14 +835,16 @@ def edit():
         else:
             return response.json(file_details)
 
+
 def todolist():
     """ Returns all TODO of the requested app
     """
     app = request.vars.app or ''
-    app_path = apath('%(app)s' % {'app':app}, r=request)
-    dirs=['models', 'controllers', 'modules', 'private' ]
+    app_path = apath('%(app)s' % {'app': app}, r=request)
+    dirs = ['models', 'controllers', 'modules', 'private']
+
     def listfiles(app, dir, regexp='.*\.py$'):
-        files = sorted( listdir(apath('%(app)s/%(dir)s/' % {'app':app, 'dir':dir}, r=request), regexp))
+        files = sorted(listdir(apath('%(app)s/%(dir)s/' % {'app': app, 'dir': dir}, r=request), regexp))
         files = [x.replace(os.path.sep, '/') for x in files if not x.endswith('.bak')]
         return files
 
@@ -838,17 +855,18 @@ def todolist():
     for d in dirs:
         for f in listfiles(app, d):
             matches = []
-            filename= apath(os.path.join(app, d, f), r=request)
-            with open(filename, 'r') as f_s:
+            filename = apath(os.path.join(app, d, f), r=request)
+            with safe_open(filename, 'r') as f_s:
                 src = f_s.read()
                 for m in regex.finditer(src):
                     start = m.start()
                     lineno = src.count('\n', 0, start) + 1
-                    matches.append({'text':m.group(0), 'lineno':lineno})
+                    matches.append({'text': m.group(0), 'lineno': lineno})
             if len(matches) != 0:
-                output.append({'filename':f,'matches':matches, 'dir':d})
+                output.append({'filename': f, 'matches': matches, 'dir': d})
 
-    return {'todo':output, 'app': app}
+    return {'todo': output, 'app': app}
+
 
 def editor_sessions():
     config = Config(os.path.join(request.folder, 'settings.cfg'),
@@ -858,13 +876,14 @@ def editor_sessions():
     if request.vars.session_name and request.vars.files:
         session_name = request.vars.session_name
         files = request.vars.files
-        preferences.update({session_name:','.join(files)})
+        preferences.update({session_name: ','.join(files)})
         if config.save(preferences.items()):
             response.headers["web2py-component-flash"] = T('Session saved correctly')
         else:
             response.headers["web2py-component-flash"] = T('Session saved on session only')
 
-    return response.render('default/editor_sessions.html', {'editor_sessions':preferences})
+    return response.render('default/editor_sessions.html', {'editor_sessions': preferences})
+
 
 def resolve():
     """
@@ -901,8 +920,8 @@ def resolve():
 
     def getclass(item):
         """ Determine item class """
-        operators = {' ':'normal', '+':'plus', '-':'minus'}
-        
+        operators = {' ': 'normal', '+': 'plus', '-': 'minus'}
+
         return operators[item[0]]
 
     if request.vars:
@@ -921,7 +940,7 @@ def resolve():
         diff = TABLE(*[TR(TD(gen_data(i, item)),
                           TD(item[0]),
                           TD(leading(item[2:]),
-                          TT(item[2:].rstrip())),
+                             TT(item[2:].rstrip())),
                           _class=getclass(item))
                        for (i, item) in enumerate(d) if item[0] != '?'])
 
@@ -968,11 +987,11 @@ def edit_language():
 
         new_row = DIV(LABEL(prefix, k, _style="font-weight:normal;"),
                       CAT(elem, '\n', TAG.BUTTON(
-                    T('delete'),
-                    _onclick='return delkey("%s")' % name,
-                    _class='btn')), _id=name, _class='span6 well well-small')
+                          T('delete'),
+                          _onclick='return delkey("%s")' % name,
+                          _class='btn')), _id=name, _class='span6 well well-small')
 
-        rows.append(DIV(new_row,_class="row-fluid"))
+        rows.append(DIV(new_row, _class="row-fluid"))
     rows.append(DIV(INPUT(_type='submit', _value=T('update'), _class="btn btn-primary"), _class='controls'))
     form = FORM(*rows)
     if form.accepts(request.vars, keepvalues=True):
@@ -1128,18 +1147,18 @@ def design():
 
     # Get all static files
     statics = listdir(apath('%s/static/' % app, r=request), '[^\.#].*',
-                      maxnum = MAXNFILES)
+                      maxnum=MAXNFILES)
     statics = [x.replace(os.path.sep, '/') for x in statics]
     statics.sort()
 
     # Get all languages
-    langpath = os.path.join(apath(app, r=request),'languages')
+    langpath = os.path.join(apath(app, r=request), 'languages')
     languages = dict([(lang, info) for lang, info
-                      in read_possible_languages(langpath).iteritems()
+                      in iteritems(read_possible_languages(langpath))
                       if info[2] != 0])  # info[2] is langfile_mtime:
-                                         # get only existed files
+    # get only existed files
 
-    #Get crontab
+    # Get crontab
     cronfolder = apath('%s/cron' % app, r=request)
     crontab = apath('%s/cron/crontab' % app, r=request)
     if not is_gae:
@@ -1265,17 +1284,17 @@ def plugin():
 
     # Get all static files
     statics = listdir(apath('%s/static/' % app, r=request), '[^\.#].*',
-                      maxnum = MAXNFILES)
+                      maxnum=MAXNFILES)
     statics = [x.replace(os.path.sep, '/') for x in statics]
     statics.sort()
 
     # Get all languages
     languages = sorted([lang + '.py' for lang, info in
-                        T.get_possible_languages_info().iteritems()
+                        iteritems(T.get_possible_languages_info())
                         if info[2] != 0])  # info[2] is langfile_mtime:
-                                    # get only existed files
+    # get only existed files
 
-    #Get crontab
+    # Get crontab
     crontab = apath('%s/cron/crontab' % app, r=request)
     if not os.path.exists(crontab):
         safe_write(crontab, '#crontab')
@@ -1298,6 +1317,7 @@ def plugin():
                 languages=languages,
                 crontab=crontab)
 
+
 def create_file():
     """ Create files handler """
     if request.vars and not request.vars.token == session.token:
@@ -1309,7 +1329,7 @@ def create_file():
             path = abspath(request.vars.location)
         else:
             if request.vars.dir:
-                    request.vars.location += request.vars.dir + '/'
+                request.vars.location += request.vars.dir + '/'
             app = get_app(name=request.vars.location.split('/')[0])
             path = apath(request.vars.location, r=request)
         filename = re.sub('[^\w./-]+', '_', request.vars.filename)
@@ -1419,7 +1439,7 @@ def create_file():
 
         elif (path[-8:] == '/static/') or (path[-9:] == '/private/'):
             if (request.vars.plugin and
-                not filename.startswith('plugin_%s/' % request.vars.plugin)):
+                    not filename.startswith('plugin_%s/' % request.vars.plugin)):
                 filename = 'plugin_%s/%s' % (request.vars.plugin, filename)
             text = ''
 
@@ -1439,19 +1459,19 @@ def create_file():
         log_progress(app, 'CREATE', filename)
         if request.vars.dir:
             result = T('file "%(filename)s" created',
-                          dict(filename=full_filename[len(path):]))
+                       dict(filename=full_filename[len(path):]))
         else:
             session.flash = T('file "%(filename)s" created',
-                          dict(filename=full_filename[len(path):]))
+                              dict(filename=full_filename[len(path):]))
         vars = {}
         if request.vars.id:
             vars['id'] = request.vars.id
         if request.vars.app:
             vars['app'] = request.vars.app
         redirect(URL('edit',
-                 args=[os.path.join(request.vars.location, filename)], vars=vars))
+                     args=[os.path.join(request.vars.location, filename)], vars=vars))
 
-    except Exception, e:
+    except Exception as e:
         if not isinstance(e, HTTP):
             session.flash = T('cannot create file')
 
@@ -1460,7 +1480,7 @@ def create_file():
         response.headers['web2py-component-content'] = 'append'
         response.headers['web2py-component-command'] = "%s %s %s" % (
             "$.web2py.invalidate('#files_menu');",
-            "load_file('%s');" % URL('edit', args=[app,request.vars.dir,filename]),
+            "load_file('%s');" % URL('edit', args=[app, request.vars.dir, filename]),
             "$.web2py.enableElement($('#form form').find($.web2py.formInputClickSelector));")
         return ''
     else:
@@ -1468,32 +1488,35 @@ def create_file():
 
 
 def listfiles(app, dir, regexp='.*\.py$'):
-        files = sorted(
-         listdir(apath('%(app)s/%(dir)s/' % {'app':app, 'dir':dir}, r=request), regexp))
-        files = [x.replace('\\', '/') for x in files if not x.endswith('.bak')]
-        return files
+    files = sorted(
+        listdir(apath('%(app)s/%(dir)s/' % {'app': app, 'dir': dir}, r=request), regexp))
+    files = [x.replace('\\', '/') for x in files if not x.endswith('.bak')]
+    return files
 
-def editfile(path,file,vars={}, app = None):
-        args=(path,file) if 'app' in vars else (app,path,file)
-        url = URL('edit', args=args, vars=vars)
-        return A(file, _class='editor_filelink', _href=url, _style='word-wrap: nowrap;')
+
+def editfile(path, file, vars={}, app=None):
+    args = (path, file) if 'app' in vars else (app, path, file)
+    url = URL('edit', args=args, vars=vars)
+    return A(file, _class='editor_filelink', _href=url, _style='word-wrap: nowrap;')
+
 
 def files_menu():
-        app = request.vars.app or 'welcome'
-        dirs=[{'name':'models', 'reg':'.*\.py$'},
-              {'name':'controllers', 'reg':'.*\.py$'},
-              {'name':'views', 'reg':'[\w/\-]+(\.\w+)+$'},
-              {'name':'modules', 'reg':'.*\.py$'},
-              {'name':'static', 'reg': '[^\.#].*'},
-              {'name':'private', 'reg':'.*\.py$'}]
-        result_files = []
-        for dir in dirs:
-                result_files.append(TAG[''](LI(dir['name'], _class="nav-header component", _onclick="collapse('" + dir['name'] + "_files');"),
-                                      LI(UL(*[LI(editfile(dir['name'], f, dict(id=dir['name'] + f.replace('.','__')), app), _style="overflow:hidden", _id=dir['name']+"__"+f.replace('.','__'))
-                                                      for f in listfiles(app, dir['name'], regexp=dir['reg'])],
-                                                      _class="nav nav-list small-font"),
-                                               _id=dir['name'] + '_files', _style="display: none;")))
-        return dict(result_files = result_files)
+    app = request.vars.app or 'welcome'
+    dirs = [{'name': 'models', 'reg': '.*\.py$'},
+            {'name': 'controllers', 'reg': '.*\.py$'},
+            {'name': 'views', 'reg': '[\w/\-]+(\.\w+)+$'},
+            {'name': 'modules', 'reg': '.*\.py$'},
+            {'name': 'static', 'reg': '[^\.#].*'},
+            {'name': 'private', 'reg': '.*\.py$'}]
+    result_files = []
+    for dir in dirs:
+        result_files.append(TAG[''](LI(dir['name'], _class="nav-header component", _onclick="collapse('" + dir['name'] + "_files');"),
+                                    LI(UL(*[LI(editfile(dir['name'], f, dict(id=dir['name'] + f.replace('.', '__')), app), _style="overflow:hidden", _id=dir['name'] + "__" + f.replace('.', '__'))
+                                            for f in listfiles(app, dir['name'], regexp=dir['reg'])],
+                                          _class="nav nav-list small-font"),
+                                       _id=dir['name'] + '_files', _style="display: none;")))
+    return dict(result_files=result_files)
+
 
 def upload_file():
     """ File uploading handler """
@@ -1550,13 +1573,12 @@ def errors():
     """ Error handler """
     import operator
     import os
-    import pickle
     import hashlib
 
     app = get_app()
     if is_gae:
         method = 'dbold' if ('old' in
-                     (request.args(1) or '')) else 'dbnew'
+                             (request.args(1) or '')) else 'dbnew'
     else:
         method = request.args(1) or 'new'
     db_ready = {}
@@ -1580,7 +1602,7 @@ def errors():
             if not os.path.isfile(fullpath):
                 continue
             try:
-                fullpath_file = open(fullpath, 'r')
+                fullpath_file = safe_open(fullpath, 'rb')
                 try:
                     error = pickle.load(fullpath_file)
                 finally:
@@ -1590,7 +1612,7 @@ def errors():
             except EOFError:
                 continue
 
-            hash = hashlib.md5(error['traceback']).hexdigest()
+            hash = hashlib.md5(to_bytes(error['traceback'])).hexdigest()
 
             if hash in delete_hashes:
                 os.unlink(fullpath)
@@ -1599,7 +1621,7 @@ def errors():
                     hash2error[hash]['count'] += 1
                 except KeyError:
                     error_lines = error['traceback'].split("\n")
-                    last_line = error_lines[-2] if len(error_lines)>1 else 'unknown'
+                    last_line = error_lines[-2] if len(error_lines) > 1 else 'unknown'
                     error_causer = os.path.split(error['layer'])[1]
                     hash2error[hash] = dict(count=1, pickel=error,
                                             causer=error_causer,
@@ -1638,10 +1660,10 @@ def errors():
                         last_line = error_lines[-2]
                         error_causer = os.path.split(error['layer'])[1]
                         hash2error[hash] = dict(count=1,
-                            pickel=error, causer=error_causer,
-                            last_line=last_line, hash=hash,
-                            ticket=fn.ticket_id)
-            except AttributeError, e:
+                                                pickel=error, causer=error_causer,
+                                                last_line=last_line, hash=hash,
+                                                ticket=fn.ticket_id)
+            except AttributeError as e:
                 tk_db(tk_table.id == fn.id).delete()
                 tk_db.commit()
 
@@ -1657,11 +1679,11 @@ def errors():
                 tk_db(tk_table.ticket_id == item[7:]).delete()
                 tk_db.commit()
         tickets_ = tk_db(tk_table.id > 0).select(tk_table.ticket_id,
-            tk_table.created_datetime,
-            orderby=~tk_table.created_datetime)
+                                                 tk_table.created_datetime,
+                                                 orderby=~tk_table.created_datetime)
         tickets = [row.ticket_id for row in tickets_]
         times = dict([(row.ticket_id, row.created_datetime) for
-            row in tickets_])
+                      row in tickets_])
         return dict(app=app, tickets=tickets, method=method,
                     times=times, db_ready=db_ready)
 
@@ -1685,7 +1707,7 @@ def get_ticket_storage(app):
     private_folder = apath('%s/private' % app, r=request)
     ticket_file = os.path.join(private_folder, 'ticket_storage.txt')
     if os.path.exists(ticket_file):
-        db_string = open(ticket_file).read()
+        db_string = safe_open(ticket_file).read()
         db_string = db_string.strip().replace('\r', '').replace('\n', '')
     elif is_gae:
         # use Datastore as fallback if there is no ticket_file
@@ -1719,9 +1741,9 @@ def make_link(path):
         for key in editable.keys():
             check_extension = folder.endswith("%s/%s" % (app, key))
             if ext.lower() == editable[key] and check_extension:
-                return A('"' + tryFile + '"',
-                         _href=URL(r=request,
-                         f='edit/%s/%s/%s' % (app, key, filename))).xml()
+                return to_native(A('"' + tryFile + '"',
+                                   _href=URL(r=request,
+                                   f='edit/%s/%s/%s' % (app, key, filename))).xml())
     return ''
 
 
@@ -1867,7 +1889,7 @@ def bulk_register():
         redirect(URL('site'))
     return locals()
 
-### Begin experimental stuff need fixes:
+# Begin experimental stuff need fixes:
 # 1) should run in its own process - cannot os.chdir
 # 2) should not prompt user at console
 # 3) should give option to force commit and not reuqire manual merge
@@ -1934,25 +1956,30 @@ def git_push():
             redirect(URL('site'))
     return dict(app=app, form=form)
 
+
 def plugins():
     app = request.args(0)
     from serializers import loads_json
     if not session.plugins:
         try:
-            rawlist = urllib.urlopen("http://www.web2pyslices.com/" +
-                                     "public/api.json/action/list/content/Package?package" +
-                                     "_type=plugin&search_index=false").read()
+            rawlist = urlopen("http://www.web2pyslices.com/" +
+                              "public/api.json/action/list/content/Package?package" +
+                              "_type=plugin&search_index=false").read()
             session.plugins = loads_json(rawlist)
         except:
             response.flash = T('Unable to download the list of plugins')
             session.plugins = []
     return dict(plugins=session.plugins["results"], app=request.args(0))
 
+
 def install_plugin():
     app = request.args(0)
     source = request.vars.source
     plugin = request.vars.plugin
     if not (source and app):
+        raise HTTP(500, T("Invalid request"))
+    # make sure no XSS attacks in source
+    if not source.lower().split('://')[0] in ('http','https'):
         raise HTTP(500, T("Invalid request"))
     form = SQLFORM.factory()
     result = None
@@ -1963,11 +1990,11 @@ def install_plugin():
                 source.split("web2py.plugin.")[-1].split(".w2p")[0]
         else:
             filename = "web2py.plugin.%s.w2p" % cleanpath(plugin)
-        if plugin_install(app, urllib.urlopen(source),
+        if plugin_install(app, urlopen(source),
                           request, filename):
             session.flash = T('New plugin installed: %s', filename)
         else:
             session.flash = \
                 T('unable to install plugin "%s"', filename)
-        redirect(URL(f="plugins", args=[app,]))
+        redirect(URL(f="plugins", args=[app, ]))
     return dict(form=form, app=app, plugin=plugin, source=source)

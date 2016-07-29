@@ -10,11 +10,9 @@ Cross-site scripting (XSS) defense
 -----------------------------------
 """
 
-from HTMLParser import HTMLParser
+from ._compat import HTMLParser, urlparse, entitydefs, basestring
 from cgi import escape
-from urlparse import urlparse
 from formatter import AbstractFormatter
-from htmlentitydefs import entitydefs
 from xml.sax.saxutils import quoteattr
 
 __all__ = ['sanitize']
@@ -131,7 +129,7 @@ class XssCleaner(HTMLParser):
 
     def handle_endtag(self, tag):
         bracketed = '</%s>' % tag
-        self.in_disallowed.pop()
+        self.in_disallowed and self.in_disallowed.pop()
         if tag not in self.permitted_tags:
             if (not self.strip_disallowed):
                 self.result += xssescape(bracketed)

@@ -4,13 +4,13 @@
 """ Unit tests for storage.py """
 
 import unittest
-from fix_path import fix_sys_path
+from .fix_path import fix_sys_path
 
 fix_sys_path(__file__)
 
-from storage import Storage, StorageList, List
-from http import HTTP
-import pickle
+from gluon.storage import Storage, StorageList, List
+from gluon.http import HTTP
+from gluon._compat import pickle
 
 
 class TestStorage(unittest.TestCase):
@@ -67,8 +67,8 @@ class TestStorage(unittest.TestCase):
         #self.assertRaises(KeyError, lambda x: s[x], 'd')   # old Storage
         s.a = 1
         s['a'] = None
-        self.assertEquals(s.a, None)
-        self.assertEquals(s['a'], None)
+        self.assertEqual(s.a, None)
+        self.assertEqual(s['a'], None)
         self.assertTrue('a' in s)
 
     def test_pickling(self):

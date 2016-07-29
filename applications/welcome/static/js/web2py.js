@@ -201,7 +201,7 @@
                         showsTime: true,
                         timeFormat: '24'
                     });
-                    $(this).attr('autocomplete', 'off');
+                    $(this).prop('autocomplete', 'off');
                     $(this).data('w2p_datetime', 1);
                     $(this).trigger('click');
                 }
@@ -218,7 +218,7 @@
                         showsTime: false
                     });
                     $(this).data('w2p_date', 1);
-                    $(this).attr('autocomplete', 'off');
+                    $(this).prop('autocomplete', 'off');
                     $(this).trigger('click');
                 }
             });
@@ -227,7 +227,7 @@
                 if (web2py.isUndefined(active)) {
                     $(this).timeEntry({
                         spinnerImage: ''
-                    }).attr('autocomplete', 'off');
+                    }).prop('autocomplete', 'off');
                     $(this).data('w2p_time', 1);
                 }
             });

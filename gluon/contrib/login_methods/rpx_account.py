@@ -17,7 +17,7 @@ import urllib
 from gluon import *
 from gluon.tools import fetch
 from gluon.storage import Storage
-import gluon.contrib.simplejson as json
+import json
 
 
 class RPXAccount(object):

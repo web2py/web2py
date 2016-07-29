@@ -16,24 +16,20 @@ import re
 import datetime
 import time
 import cgi
+import json
 import urllib
 import struct
 import decimal
 import unicodedata
-from cStringIO import StringIO
+from gluon._compat import StringIO, long, unicodeT, to_unicode, urllib_unquote, unichr, to_bytes, PY2, to_unicode, to_native
 from gluon.utils import simple_hash, web2py_uuid, DIGEST_ALG_BY_SIZE
 from pydal.objects import Field, FieldVirtual, FieldMethod
+from functools import reduce
 
 regex_isint = re.compile('^[+-]?\d+$')
 
 JSONErrors = (NameError, TypeError, ValueError, AttributeError,
               KeyError)
-try:
-    import json as simplejson
-except ImportError:
-    from gluon.contrib import simplejson
-    from gluon.contrib.simplejson.decoder import JSONDecodeError
-    JSONErrors += (JSONDecodeError,)
 
 __all__ = [
     'ANY_OF',
@@ -75,7 +71,7 @@ __all__ = [
 ]
 
 try:
-    from globals import current
+    from gluon.globals import current
     have_current = True
 except ImportError:
     have_current = False
@@ -84,7 +80,7 @@ except ImportError:
 def translate(text):
     if text is None:
         return None
-    elif isinstance(text, (str, unicode)) and have_current:
+    elif isinstance(text, (str, unicodeT)) and have_current:
         if hasattr(current, 'T'):
             return str(current.T(text))
     return str(text)
@@ -189,23 +185,26 @@ class IS_MATCH(Validator):
             if not expression.endswith('$'):
                 expression = '(%s)$' % expression
         if is_unicode:
-            if not isinstance(expression, unicode):
+            if not isinstance(expression, unicodeT):
                 expression = expression.decode('utf8')
             self.regex = re.compile(expression, re.UNICODE)
         else:
             self.regex = re.compile(expression)
         self.error_message = error_message
         self.extract = extract
-        self.is_unicode = is_unicode
+        self.is_unicode = is_unicode or (not(PY2))
 
     def __call__(self, value):
-        if self.is_unicode:
-            if not isinstance(value, unicode):
+        if not(PY2): # PY3 convert bytes to unicode
+            value = to_unicode(value)
+
+        if self.is_unicode or not(PY2):
+            if not isinstance(value, unicodeT):
                 match = self.regex.search(str(value).decode('utf8'))
             else:
                 match = self.regex.search(value)
         else:
-            if not isinstance(value, unicode):
+            if not isinstance(value, unicodeT):
                 match = self.regex.search(str(value))
             else:
                 match = self.regex.search(value.encode('utf8'))
@@ -271,7 +270,7 @@ class IS_EXPR(Validator):
             return (value, self.expression(value))
         # for backward compatibility
         self.environment.update(value=value)
-        exec '__ret__=' + self.expression in self.environment
+        exec ('__ret__=' + self.expression, self.environment)
         if self.environment['__ret__']:
             return (value, None)
         return (value, translate(self.error_message))
@@ -337,14 +336,17 @@ class IS_LENGTH(Validator):
                 return (value, None)
         elif isinstance(value, str):
             try:
-                lvalue = len(value.decode('utf8'))
+                lvalue = len(to_unicode(value))
             except:
                 lvalue = len(value)
             if self.minsize <= lvalue <= self.maxsize:
                 return (value, None)
-        elif isinstance(value, unicode):
+        elif isinstance(value, unicodeT):
             if self.minsize <= len(value) <= self.maxsize:
                 return (value.encode('utf8'), None)
+        elif isinstance(value, (bytes, bytearray)):
+            if self.minsize <= len(value) <= self.maxsize:
+                return (value, None)
         elif isinstance(value, (tuple, list)):
             if self.minsize <= len(value) <= self.maxsize:
                 return (value, None)
@@ -376,10 +378,10 @@ class IS_JSON(Validator):
     def __call__(self, value):
         try:
             if self.native_json:
-                simplejson.loads(value) # raises error in case of malformed json
-                return (value, None) #  the serialized value is not passed
+                json.loads(value)  # raises error in case of malformed json
+                return (value, None)  # the serialized value is not passed
             else:
-                return (simplejson.loads(value), None)
+                return (json.loads(value), None)
         except JSONErrors:
             return (value, translate(self.error_message))
 
@@ -389,7 +391,7 @@ class IS_JSON(Validator):
         if self.native_json:
             return value
         else:
-            return simplejson.dumps(value)
+            return json.dumps(value)
 
 
 class IS_IN_SET(Validator):
@@ -452,14 +454,14 @@ class IS_IN_SET(Validator):
         else:
             items = [(k, self.labels[i]) for (i, k) in enumerate(self.theset)]
         if self.sort:
-            items.sort(options_sorter)
+            items.sort(key=lambda o: str(o[1]).upper())
         if zero and not self.zero is None and not self.multiple:
             items.insert(0, ('', self.zero))
         return items
 
     def __call__(self, value):
         if self.multiple:
-            ### if below was values = re.compile("[\w\-:]+").findall(str(value))
+            # if below was values = re.compile("[\w\-:]+").findall(str(value))
             if not value:
                 values = []
             elif isinstance(value, (tuple, list)):
@@ -471,8 +473,6 @@ class IS_IN_SET(Validator):
         thestrset = [str(x) for x in self.theset]
         failures = [x for x in values if not str(x) in thestrset]
         if failures and self.theset:
-            if self.multiple and (value is None or value == ''):
-                return ([], None)
             return (value, translate(self.error_message))
         if self.multiple:
             if isinstance(self.multiple, (tuple, list)) and \
@@ -525,8 +525,8 @@ class IS_IN_DB(Validator):
             field = field._id
         elif isinstance(field, str):
             items = field.split('.')
-            if len(items)==1: items+=['id']
-            field = self.dbset.db[items[0]][items[1]]
+            if len(items) == 1:
+                field = items[0] + '.id'
 
         (ktable, kfield) = str(field).split('.')
         if not label:
@@ -536,16 +536,16 @@ class IS_IN_DB(Validator):
                 label = '%%(%s)s' % str(label).split('.')[-1]
             fieldnames = regex2.findall(label)
             if kfield not in fieldnames:
-                fieldnames.append(kfield) # kfield must be last
+                fieldnames.append(kfield)  # kfield must be last
         elif isinstance(label, Field):
-            fieldnames = [label.name, kfield] # kfield must be last
+            fieldnames = [label.name, kfield]  # kfield must be last
             label = '%%(%s)s' % label.name
         elif callable(label):
             fieldnames = '*'
         else:
             raise NotImplementedError
-        self.field = field # the lookup field
-        self.fieldnames = fieldnames # fields requires to build the formatting
+
+        self.fieldnames = fieldnames  # fields requires to build the formatting
         self.label = label
         self.ktable = ktable
         self.kfield = kfield
@@ -600,7 +600,7 @@ class IS_IN_DB(Validator):
         self.build_set()
         items = [(k, self.labels[i]) for (i, k) in enumerate(self.theset)]
         if self.sort:
-            items.sort(options_sorter)
+            items.sort(key=lambda o: str(o[1]).upper())
         if zero and self.zero is not None and not self.multiple:
             items.insert(0, ('', self.zero))
         return items
@@ -623,16 +623,16 @@ class IS_IN_DB(Validator):
             if isinstance(value, list):
                 values = value
             elif self.delimiter:
-                values = value.split(self.delimiter) # because of autocomplete
+                values = value.split(self.delimiter)  # because of autocomplete
             elif value:
                 values = [value]
             else:
                 values = []
 
-            if self.field.type in ('id','integer'):
+            if field.type in ('id', 'integer'):
                 new_values = []
                 for value in values:
-                    if not (isinstance(value,(int,long)) or value.isdigit()):
+                    if not (isinstance(value, (int, long)) or value.isdigit()):
                         if self.auto_add:
                             value = str(self.maybe_add(table, self.fieldnames[0], value))
                         else:
@@ -647,11 +647,10 @@ class IS_IN_DB(Validator):
                 if not [v for v in values if v not in self.theset]:
                     return (values, None)
             else:
-                from pydal.adapters import GoogleDatastoreAdapter
-
                 def count(values, s=self.dbset, f=field):
                     return s(f.belongs(map(int, values))).count()
-                if GoogleDatastoreAdapter is not None and isinstance(self.dbset.db._adapter, GoogleDatastoreAdapter):
+
+                if self.dbset.db._adapter.dbengine == "google:datastore":
                     range_ids = range(0, len(values), 30)
                     total = sum(count(values[i:i + 30]) for i in range_ids)
                     if total == len(values):
@@ -659,8 +658,8 @@ class IS_IN_DB(Validator):
                 elif count(values) == len(values):
                     return (values, None)
         else:
-            if self.field.type in ('id','integer'):
-                if isinstance(value,(int,long)) or value.isdigit():
+            if field.type in ('id', 'integer'):
+                if isinstance(value, (int, long)) or value.isdigit():
                     value = int(value)
                 elif self.auto_add:
                     value = self.maybe_add(table, self.fieldnames[0], value)
@@ -724,10 +723,7 @@ class IS_NOT_IN_DB(Validator):
         self.record_id = id
 
     def __call__(self, value):
-        if isinstance(value, unicode):
-            value = value.encode('utf8')
-        else:
-            value = str(value)
+        value = to_native(str(value))
         if not value.strip():
             return (value, translate(self.error_message))
         if value in self.allowed_override:
@@ -820,7 +816,7 @@ class IS_INT_IN_RANGE(Validator):
         if regex_isint.match(str(value)):
             v = int(value)
             if ((self.minimum is None or v >= self.minimum) and
-                (self.maximum is None or v < self.maximum)):
+                    (self.maximum is None or v < self.maximum)):
                 return (v, None)
         return (value, self.error_message)
 
@@ -894,7 +890,7 @@ class IS_FLOAT_IN_RANGE(Validator):
             else:
                 v = float(str(value).replace(self.dot, '.'))
             if ((self.minimum is None or v >= self.minimum) and
-                (self.maximum is None or v <= self.maximum)):
+                    (self.maximum is None or v <= self.maximum)):
                 return (v, None)
         except (ValueError, TypeError):
             pass
@@ -980,7 +976,7 @@ class IS_DECIMAL_IN_RANGE(Validator):
             else:
                 v = decimal.Decimal(str(value).replace(self.dot, '.'))
             if ((self.minimum is None or v >= self.minimum) and
-                (self.maximum is None or v <= self.maximum)):
+                    (self.maximum is None or v <= self.maximum)):
                 return (v, None)
         except (ValueError, TypeError, decimal.InvalidOperation):
             pass
@@ -994,7 +990,7 @@ class IS_DECIMAL_IN_RANGE(Validator):
 
 def is_empty(value, empty_regex=None):
     """test empty field"""
-    if isinstance(value, (str, unicode)):
+    if isinstance(value, (str, unicodeT)):
         value = value.strip()
         if empty_regex is not None and empty_regex.match(value):
             value = ''
@@ -1200,7 +1196,12 @@ class IS_EMAIL(Validator):
         self.error_message = error_message
 
     def __call__(self, value):
-        match = self.regex.match(value)
+        try:
+            match = self.regex.match(value)
+        except TypeError:
+            # Value may not be a string where we can look for matches.
+            # Example: we're calling ANY_OF formatter and IS_EMAIL is asked to validate a date.
+            match = None
         if match:
             domain = value.split('@')[1]
             if (not self.banned or not self.banned.match(domain)) \
@@ -1457,7 +1458,7 @@ def unicode_to_ascii_authority(authority):
         import encodings.idna
         for label in labels:
             if label:
-                asciiLabels.append(encodings.idna.ToASCII(label))
+                asciiLabels.append(to_native(encodings.idna.ToASCII(label)))
             else:
                  # encodings.idna.ToASCII does not accept an empty string, but
                  # it is necessary for us to allow for empty labels so that we
@@ -1510,7 +1511,7 @@ def unicode_to_ascii_url(url, prepend_scheme):
         # Try appending a scheme to see if that fixes the problem
         scheme_to_prepend = prepend_scheme or 'http'
         groups = url_split_regex.match(
-            unicode(scheme_to_prepend) + u'://' + url).groups()
+            to_unicode(scheme_to_prepend) + u'://' + url).groups()
     # if we still can't find the authority
     if not groups[3]:
         raise Exception('No authority component found, ' +
@@ -1527,6 +1528,7 @@ def unicode_to_ascii_url(url, prepend_scheme):
         scheme = str(scheme) + '://'
     else:
         scheme = ''
+
     return scheme + unicode_to_ascii_authority(authority) +\
         escape_unicode(path) + escape_unicode(query) + str(fragment)
 
@@ -1611,7 +1613,7 @@ class IS_GENERIC_URL(Validator):
                     scheme = url_split_regex.match(value).group(2)
                     # Clean up the scheme before we check it
                     if not scheme is None:
-                        scheme = urllib.unquote(scheme).lower()
+                        scheme = urllib_unquote(scheme).lower()
                     # If the scheme really exists
                     if scheme in self.allowed_schemes:
                         # Then the URL is valid
@@ -2085,7 +2087,6 @@ class IS_URL(Validator):
             may be modified to (1) prepend a scheme, and/or (2) convert a
             non-compliant unicode URL into a compliant US-ASCII version.
         """
-
         if self.mode == 'generic':
             subMethod = IS_GENERIC_URL(error_message=self.error_message,
                                        allowed_schemes=self.allowed_schemes,
@@ -2098,12 +2099,12 @@ class IS_URL(Validator):
         else:
             raise SyntaxError("invalid mode '%s' in IS_URL" % self.mode)
 
-        if type(value) != unicode:
+        if not isinstance(value, unicodeT):
             return subMethod(value)
         else:
             try:
                 asciiValue = unicode_to_ascii_url(value, self.prepend_scheme)
-            except Exception:
+            except Exception as e:
                 # If we are not able to convert the unicode url into a
                 # US-ASCII URL, then the URL is not valid
                 return (value, translate(self.error_message))
@@ -2245,7 +2246,7 @@ class IS_DATE(Validator):
         y = '%.4i' % year
         format = format.replace('%y', y[-2:])
         format = format.replace('%Y', y)
-        if year < 1900: 
+        if year < 1900:
             year = 2000
         d = datetime.date(year, value.month, value.day)
         return d.strftime(format)
@@ -2344,6 +2345,7 @@ class IS_DATE_IN_RANGE(IS_DATE):
             (datetime.date(2010, 3, 3), 'oops')
 
     """
+
     def __init__(self,
                  minimum=None,
                  maximum=None,
@@ -2397,6 +2399,7 @@ class IS_DATETIME_IN_RANGE(IS_DATETIME):
             (datetime.datetime(2010, 3, 3, 0, 0), 'oops')
 
     """
+
     def __init__(self,
                  minimum=None,
                  maximum=None,
@@ -2477,7 +2480,7 @@ class IS_LOWER(Validator):
     """
 
     def __call__(self, value):
-        return (value.decode('utf8').lower().encode('utf8'), None)
+        return (to_bytes(to_unicode(value).lower()), None)
 
 
 class IS_UPPER(Validator):
@@ -2492,7 +2495,7 @@ class IS_UPPER(Validator):
     """
 
     def __call__(self, value):
-        return (value.decode('utf8').upper().encode('utf8'), None)
+        return (to_bytes(to_unicode(value).upper()), None)
 
 
 def urlify(s, maxlen=80, keep_underscores=False):
@@ -2501,16 +2504,15 @@ def urlify(s, maxlen=80, keep_underscores=False):
     if (keep_underscores): underscores are retained in the string
     else: underscores are translated to hyphens (default)
     """
-    if isinstance(s, str):
-        s = s.decode('utf-8')             # to unicode
+    s = to_unicode(s)                     # to unicode
     s = s.lower()                         # to lowercase
     s = unicodedata.normalize('NFKD', s)  # replace special characters
-    s = s.encode('ascii', 'ignore')       # encode as ASCII
+    s = to_native(s, charset='ascii', errors='ignore')       # encode as ASCII
     s = re.sub('&\w+?;', '', s)           # strip html entities
     if keep_underscores:
         s = re.sub('\s+', '-', s)         # whitespace to hyphens
         s = re.sub('[^\w\-]', '', s)
-                   # strip all but alphanumeric/underscore/hyphen
+        # strip all but alphanumeric/underscore/hyphen
     else:
         s = re.sub('[\s_]+', '-', s)      # whitespace & underscores to hyphens
         s = re.sub('[^a-z0-9\-]', '', s)  # strip all but alphanumeric/hyphen
@@ -2608,7 +2610,7 @@ class ANY_OF(Validator):
         # Use the formatter of the first subvalidator
         # that validates the value and has a formatter
         for validator in self.subs:
-            if hasattr(validator, 'formatter') and validator(value)[1] != None:
+            if hasattr(validator, 'formatter') and validator(value)[1] is None:
                 return validator.formatter(value)
 
 
@@ -2702,6 +2704,7 @@ class LazyCrypt(object):
     """
     Stores a lazy password hash
     """
+
     def __init__(self, crypt, password):
         """
         crypt is an instance of the CRYPT validator,
@@ -2757,8 +2760,8 @@ class LazyCrypt(object):
         # LazyCrypt objects comparison
         if isinstance(stored_password, self.__class__):
             return ((self is stored_password) or
-                   ((self.crypt.key == stored_password.crypt.key) and
-                   (self.password == stored_password.password)))
+                    ((self.crypt.key == stored_password.crypt.key) and
+                     (self.password == stored_password.password)))
 
         if self.crypt.key:
             if ':' in self.crypt.key:
@@ -2895,13 +2898,13 @@ class CRYPT(object):
 
 #  entropy calculator for IS_STRONG
 #
-lowerset = frozenset(unicode('abcdefghijklmnopqrstuvwxyz'))
-upperset = frozenset(unicode('ABCDEFGHIJKLMNOPQRSTUVWXYZ'))
-numberset = frozenset(unicode('0123456789'))
-sym1set = frozenset(unicode('!@#$%^&*()'))
-sym2set = frozenset(unicode('~`-_=+[]{}\\|;:\'",.<>?/'))
+lowerset = frozenset(u'abcdefghijklmnopqrstuvwxyz')
+upperset = frozenset(u'ABCDEFGHIJKLMNOPQRSTUVWXYZ')
+numberset = frozenset(u'0123456789')
+sym1set = frozenset(u'!@#$%^&*()')
+sym2set = frozenset(u'~`-_=+[]{}\\|;:\'",.<>?/')
 otherset = frozenset(
-    unicode('0123456789abcdefghijklmnopqrstuvwxyz'))  # anything else
+    u'0123456789abcdefghijklmnopqrstuvwxyz')  # anything else
 
 
 def calc_entropy(string):
@@ -2911,8 +2914,7 @@ def calc_entropy(string):
     other = set()
     seen = set()
     lastset = None
-    if isinstance(string, str):
-        string = unicode(string, encoding='utf8')
+    string = to_unicode(string)
     for c in string:
         # classify this character
         inset = otherset
@@ -3002,13 +3004,13 @@ class IS_STRONG(object):
             if entropy < self.entropy:
                 failures.append(translate("Entropy (%(have)s) less than required (%(need)s)")
                                 % dict(have=entropy, need=self.entropy))
-        if type(self.min) == int and self.min > 0:
+        if isinstance(self.min, int) and self.min > 0:
             if not len(value) >= self.min:
                 failures.append(translate("Minimum length is %s") % self.min)
-        if type(self.max) == int and self.max > 0:
+        if isinstance(self.max, int) and self.max > 0:
             if not len(value) <= self.max:
                 failures.append(translate("Maximum length is %s") % self.max)
-        if type(self.special) == int:
+        if isinstance(self.special, int):
             all_special = [ch in value for ch in self.specials]
             if self.special > 0:
                 if not all_special.count(True) >= self.special:
@@ -3019,7 +3021,7 @@ class IS_STRONG(object):
             if all_invalid.count(True) > 0:
                 failures.append(translate("May not contain any of the following: %s")
                                 % self.invalid)
-        if type(self.upper) == int:
+        if isinstance(self.upper, int):
             all_upper = re.findall("[A-Z]", value)
             if self.upper > 0:
                 if not len(all_upper) >= self.upper:
@@ -3029,7 +3031,7 @@ class IS_STRONG(object):
                 if len(all_upper) > 0:
                     failures.append(
                         translate("May not include any upper case letters"))
-        if type(self.lower) == int:
+        if isinstance(self.lower, int):
             all_lower = re.findall("[a-z]", value)
             if self.lower > 0:
                 if not len(all_lower) >= self.lower:
@@ -3039,7 +3041,7 @@ class IS_STRONG(object):
                 if len(all_lower) > 0:
                     failures.append(
                         translate("May not include any lower case letters"))
-        if type(self.number) == int:
+        if isinstance(self.number, int):
             all_number = re.findall("[0-9]", value)
             if self.number > 0:
                 numbers = "number"
@@ -3056,7 +3058,7 @@ class IS_STRONG(object):
         if not self.error_message:
             if self.estring:
                 return (value, '|'.join(failures))
-            from html import XML
+            from gluon.html import XML
             return (value, XML('<br />'.join(failures)))
         else:
             return (value, translate(self.error_message))
@@ -3133,24 +3135,24 @@ class IS_IMAGE(Validator):
                 and self.minsize[1] <= height <= self.maxsize[1]
             value.file.seek(0)
             return (value, None)
-        except:
+        except Exception as e:
             return (value, translate(self.error_message))
 
     def __bmp(self, stream):
-        if stream.read(2) == 'BM':
+        if stream.read(2) == b'BM':
             stream.read(16)
             return struct.unpack("<LL", stream.read(8))
         return (-1, -1)
 
     def __gif(self, stream):
-        if stream.read(6) in ('GIF87a', 'GIF89a'):
+        if stream.read(6) in (b'GIF87a', b'GIF89a'):
             stream = stream.read(5)
             if len(stream) == 5:
                 return tuple(struct.unpack("<HHB", stream)[:-1])
         return (-1, -1)
 
     def __jpeg(self, stream):
-        if stream.read(2) == '\xFF\xD8':
+        if stream.read(2) == b'\xFF\xD8':
             while True:
                 (marker, code, length) = struct.unpack("!BBH", stream.read(4))
                 if marker != 0xFF:
@@ -3163,9 +3165,9 @@ class IS_IMAGE(Validator):
         return (-1, -1)
 
     def __png(self, stream):
-        if stream.read(8) == '\211PNG\r\n\032\n':
+        if stream.read(8) == b'\211PNG\r\n\032\n':
             stream.read(4)
-            if stream.read(4) == "IHDR":
+            if stream.read(4) == b"IHDR":
                 return struct.unpack("!LL", stream.read(8))
         return (-1, -1)
 
@@ -3349,8 +3351,8 @@ class IS_IPV4(Validator):
         '^(([1-9]?\d|1\d\d|2[0-4]\d|25[0-5])\.){3}([1-9]?\d|1\d\d|2[0-4]\d|25[0-5])$')
     numbers = (16777216, 65536, 256, 1)
     localhost = 2130706433
-    private = ((2886729728L, 2886795263L), (3232235520L, 3232301055L))
-    automatic = (2851995648L, 2852061183L)
+    private = ((2886729728, 2886795263), (3232235520, 3232301055))
+    automatic = (2851995648, 2852061183)
 
     def __init__(
         self,
@@ -3366,7 +3368,7 @@ class IS_IPV4(Validator):
             if isinstance(value, str):
                 temp.append(value.split('.'))
             elif isinstance(value, (list, tuple)):
-                if len(value) == len(filter(lambda item: isinstance(item, int), value)) == 4:
+                if len(value) == len(list(filter(lambda item: isinstance(item, int), value))) == 4:
                     temp.append(value)
                 else:
                     for item in value:
@@ -3401,14 +3403,14 @@ class IS_IPV4(Validator):
                     ok = True
             if not (self.is_localhost is None or self.is_localhost ==
                     (number == self.localhost)):
-                    ok = False
+                ok = False
             if not (self.is_private is None or self.is_private ==
                     (sum([private_number[0] <= number <= private_number[1]
                           for private_number in self.private]) > 0)):
-                    ok = False
+                ok = False
             if not (self.is_automatic is None or self.is_automatic ==
                     (self.automatic[0] <= number <= self.automatic[1])):
-                    ok = False
+                ok = False
             if ok:
                 return (value, None)
         return (value, translate(self.error_message))
@@ -3509,7 +3511,7 @@ class IS_IPV6(Validator):
             from gluon.contrib import ipaddr as ipaddress
 
         try:
-            ip = ipaddress.IPv6Address(value.decode('utf-8'))
+            ip = ipaddress.IPv6Address(to_unicode(value))
             ok = True
         except ipaddress.AddressValueError:
             return (value, translate(self.error_message))
@@ -3521,7 +3523,7 @@ class IS_IPV6(Validator):
                 self.subnets = [self.subnets]
             for network in self.subnets:
                 try:
-                    ipnet = ipaddress.IPv6Network(network.decode('utf-8'))
+                    ipnet = ipaddress.IPv6Network(to_unicode(network))
                 except (ipaddress.NetmaskValueError, ipaddress.AddressValueError):
                     return (value, translate('invalid subnet provided'))
                 if ip in ipnet:
@@ -3692,6 +3694,7 @@ class IS_IPADDRESS(Validator):
         >>> IS_IPADDRESS(subnets='invalidsubnet')('2001::8ffa:fe22:b3af')
         ('2001::8ffa:fe22:b3af', 'invalid subnet provided')
     """
+
     def __init__(
             self,
             minip='0.0.0.0',
@@ -3737,7 +3740,7 @@ class IS_IPADDRESS(Validator):
                                               IPv6Address)
 
         try:
-            ip = IPAddress(value.decode('utf-8'))
+            ip = IPAddress(to_unicode(value))
         except ValueError:
             return (value, translate(self.error_message))
 
@@ -3754,7 +3757,7 @@ class IS_IPADDRESS(Validator):
                 is_private=self.is_private,
                 is_automatic=self.is_automatic,
                 error_message=self.error_message
-                )(value)
+            )(value)
         elif self.is_ipv6 or isinstance(ip, IPv6Address):
             retval = IS_IPV6(
                 is_private=self.is_private,
@@ -3766,7 +3769,7 @@ class IS_IPADDRESS(Validator):
                 is_teredo=self.is_teredo,
                 subnets=self.subnets,
                 error_message=self.error_message
-                )(value)
+            )(value)
         else:
             retval = (value, translate(self.error_message))
 

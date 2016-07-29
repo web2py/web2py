@@ -11,7 +11,7 @@
     $('form input[type="submit"]:not([class^="btn"]), form input[type="button"]:not([class^="btn"])', target).addClass('btn btn-default');
     /* javascript for PasswordWidget*/
     $('input[type=password][data-w2p_entropy]', target).each(function() {
-      web2py.validate_entropy($(this));
+      $.web2py.validate_entropy($(this));
     });
     /* javascript for ListWidget*/
     $('ul.w2p_list', target).each(function() {

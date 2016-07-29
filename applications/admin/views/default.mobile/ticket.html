@@ -118,7 +118,7 @@
         <div class="hide inspect" id="session"><h6>session</h6>{{=BEAUTIFY(snapshot['session'])}}</div>
         <div class="hide inspect" id="response"><h6>response</h6>{{=BEAUTIFY(snapshot['response'])}}</div>
     </div>
-{{except Exception, e:}}
+{{except Exception as e:}}
     <!-- this should not happen, just in case... (cannot output normal hmtl as we don't know current open tags) -->
     {{import traceback;tb=traceback.format_exc().replace("\n","\\n") }}
     <script language='javascript'>alert("Exception during snapshot rendering: {{=tb}} ");</script>
