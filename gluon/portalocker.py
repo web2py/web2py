@@ -26,16 +26,35 @@ Methods::
 
 Constants::
 
-   LOCK_EX
-   LOCK_SH
-   LOCK_NB
+   LOCK_EX - exclusive lock
+   LOCK_SH - shared lock
+   LOCK_NB - don't lock when locking
+
+Original
+---------
+http://code.activestate.com/recipes/65203-portalocker-cross-platform-posixnt-api-for-flock-s/
 
 I learned the win32 technique for locking files from sample code
 provided by John Nielsen <nielsenjf@my-deja.com> in the documentation
 that accompanies the win32 modules.
 
 Author: Jonathan Feinberg <jdf@pobox.com>
-Version: $Id: portalocker.py,v 1.3 2001/05/29 18:47:55 Administrator Exp $
+
+
+
+Roundup Changes
+---------------
+2012-11-28 (anatoly techtonik)
+   - Ported to ctypes
+   - Dropped support for Win95, Win98 and WinME
+   - Added return result
+
+Web2py Changes
+--------------
+2016-07-28 (niphlod)
+   - integrated original recipe, web2py's GAE warnings and roundup in a unique
+     solution
+
 """
 
 import logging
@@ -52,30 +71,70 @@ except:
         os_locking = 'posix'
     except:
         try:
-            import win32con
-            import pywintypes
-            import win32file
+            import msvcrt
+            import ctypes
+            from ctypes.wintypes import BOOL, DWORD, HANDLE
+            from ctypes import windll
             os_locking = 'windows'
         except:
             pass
 
 if os_locking == 'windows':
-    LOCK_EX = win32con.LOCKFILE_EXCLUSIVE_LOCK
-    LOCK_SH = 0  # the default
-    LOCK_NB = win32con.LOCKFILE_FAIL_IMMEDIATELY
+    LOCK_SH = 0    # the default
+    LOCK_NB = 0x1  # LOCKFILE_FAIL_IMMEDIATELY
+    LOCK_EX = 0x2  # LOCKFILE_EXCLUSIVE_LOCK
 
-    # is there any reason not to reuse the following structure?
+    # --- the code is taken from pyserial project ---
+    #
+    # detect size of ULONG_PTR
+    def is_64bit():
+        return ctypes.sizeof(ctypes.c_ulong) != ctypes.sizeof(ctypes.c_void_p)
+    if is_64bit():
+        ULONG_PTR = ctypes.c_int64
+    else:
+        ULONG_PTR = ctypes.c_ulong
+    PVOID = ctypes.c_void_p
 
-    __overlapped = pywintypes.OVERLAPPED()
+    # --- Union inside Structure by stackoverflow:3480240 ---
+    class _OFFSET(ctypes.Structure):
+        _fields_ = [
+            ('Offset', DWORD),
+            ('OffsetHigh', DWORD)]
+
+    class _OFFSET_UNION(ctypes.Union):
+        _anonymous_ = ['_offset']
+        _fields_ = [
+            ('_offset', _OFFSET),
+            ('Pointer', PVOID)]
+
+    class OVERLAPPED(ctypes.Structure):
+        _anonymous_ = ['_offset_union']
+        _fields_ = [
+            ('Internal', ULONG_PTR),
+            ('InternalHigh', ULONG_PTR),
+            ('_offset_union', _OFFSET_UNION),
+            ('hEvent', HANDLE)]
+
+    LPOVERLAPPED = ctypes.POINTER(OVERLAPPED)
+
+    # --- Define function prototypes for extra safety ---
+    LockFileEx = windll.kernel32.LockFileEx
+    LockFileEx.restype = BOOL
+    LockFileEx.argtypes = [HANDLE, DWORD, DWORD, DWORD, DWORD, LPOVERLAPPED]
+    UnlockFileEx = windll.kernel32.UnlockFileEx
+    UnlockFileEx.restype = BOOL
+    UnlockFileEx.argtypes = [HANDLE, DWORD, DWORD, DWORD, LPOVERLAPPED]
 
     def lock(file, flags):
-        hfile = win32file._get_osfhandle(file.fileno())
-        win32file.LockFileEx(hfile, flags, 0, 0x7fff0000, __overlapped)
+        """ Return True on success, False otherwise """
+        hfile = msvcrt.get_osfhandle(file.fileno())
+        overlapped = OVERLAPPED()
+        LockFileEx(hfile, flags, 0, 0, 0xFFFF0000, ctypes.byref(overlapped))
 
     def unlock(file):
-        hfile = win32file._get_osfhandle(file.fileno())
-        win32file.UnlockFileEx(hfile, 0, 0x7fff0000, __overlapped)
-
+        hfile = msvcrt.get_osfhandle(file.fileno())
+        overlapped = OVERLAPPED()
+        UnlockFileEx(hfile, 0, 0, 0xFFFF0000, ctypes.byref(overlapped))
 
 elif os_locking == 'posix':
     LOCK_EX = fcntl.LOCK_EX
@@ -90,9 +149,7 @@ elif os_locking == 'posix':
 
 
 else:
-    if platform.system() == 'Windows':
-        logger.error('no file locking, you must install the win32 extensions from: http://sourceforge.net/projects/pywin32/files/')
-    elif os_locking != 'gae':
+    if os_locking != 'gae':
         logger.debug('no file locking, this will cause problems')
 
     LOCK_EX = None
@@ -137,13 +194,13 @@ class LockedFile(object):
         self.file.flush()
 
     def close(self):
-        if not self.file is None:
+        if self.file is not None:
             unlock(self.file)
             self.file.close()
             self.file = None
 
     def __del__(self):
-        if not self.file is None:
+        if self.file is not None:
             self.close()
 
 
